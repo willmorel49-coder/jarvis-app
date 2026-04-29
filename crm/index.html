@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#070B14">
+<title>Intégral Pharma · CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">💊</div>
+    <div class="login-title">Intégral Pharma</div>
+    <div class="login-sub">CRM · Accès sécurisé</div>
+    <form id="login-form">
+      <div class="field">
+        <label>Email</label>
+        <input id="login-email" type="email" placeholder="votre@email.com" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button class="login-btn" type="submit">Se connecter →</button>
+      <div id="login-error" class="login-error"></div>
+    </form>
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--text3);text-align:center;line-height:1.8">
+      Comptes démo :<br>
+      <code style="background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px">admin@integralpharma.fr</code> / <code style="background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px">***RETIRE***</code>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">💊</div>
+      <div class="sidebar-brand-text">
+        <div class="sidebar-brand-name">Intégral Pharma</div>
+        <div class="sidebar-brand-sub">CRM v1.0</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label-text">Dashboard</span>
+      </div>
+      <div class="nav-item" data-page="pharmacies" onclick="navigate('pharmacies')">
+        <span class="nav-icon">🏥</span>
+        <span class="nav-label-text">Pharmacies</span>
+      </div>
+      <div class="nav-item" data-page="produits" onclick="navigate('produits')">
+        <span class="nav-icon">💊</span>
+        <span class="nav-label-text">Produits</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Données</div>
+      <div class="nav-item" data-page="import" onclick="navigate('import')">
+        <span class="nav-icon">📂</span>
+        <span class="nav-label-text">Import Excel</span>
+        <span class="nav-badge" id="import-badge">0</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Paramètres</div>
+      <div class="nav-item" data-page="admin" id="nav-admin" onclick="navigate('admin')">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label-text">Administration</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="logout()">
+        <div class="sidebar-avatar" id="sidebar-avatar">W</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">Utilisateur</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">role</div>
+        </div>
+        <span style="color:var(--text3);font-size:14px">↩</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="navigate('import')">＋ Importer</button>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div class="page active" id="page-dashboard"><div id="dash-content"></div></div>
+      <div class="page" id="page-pharmacies"><div id="pharma-content"></div></div>
+      <div class="page" id="page-produits"><div id="prod-content"></div></div>
+      <div class="page" id="page-import"><div id="import-content"></div></div>
+      <div class="page" id="page-admin"><div id="admin-content"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- LIBS CDN -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  Chart.defaults.color = '#8899BB';
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+</script>
+<script src="app.js"></script>
+</body>
+</html>
