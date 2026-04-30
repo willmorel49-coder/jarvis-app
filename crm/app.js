@@ -5,11 +5,9 @@
 ═══════════════════════════════════════════════ */
 
 // ── CONSTANTS ────────────────────────────────
-const USERS = [
-  { id: 1, email: 'admin@integralpharma.fr',   password: '***RETIRE***',   role: 'admin',      name: 'William M.',   pharmacyIds: null },
-  { id: 2, email: 'manager@integralpharma.fr', password: '***RETIRE***', role: 'manager',    name: 'Sophie L.',    pharmacyIds: null },
-  { id: 3, email: 'demo@integralpharma.fr',    password: '***RETIRE***',    role: 'commercial', name: 'Demo User',    pharmacyIds: [] },
-];
+
+// ── SUPABASE ──────────────────────────────────
+const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
 const PHARMA_COLORS = ['#0057FF','#00E5A0','#9B5CFF','#FFB020','#FF4D6D','#00C6FF','#FF6B35','#A78BFA','#34D399','#F59E0B'];
 
@@ -37,26 +35,36 @@ function load() {
 }
 
 // ── AUTH ─────────────────────────────────────
-function tryLogin(email, password) {
-  const u = USERS.find(u => u.email === email && u.password === password);
-  if (!u) return false;
-  state.user = u;
-  localStorage.setItem('ip_crm_session', JSON.stringify({ id: u.id, ts: Date.now() }));
+async function loadUserProfile() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return false;
+  const { data: profile } = await sb.from('user_profiles').select('*').eq('id', user.id).single();
+  if (!profile) return false;
+  state.user = {
+    id:          user.id,
+    email:       user.email,
+    name:        profile.name,
+    role:        profile.role,
+    pharmacyIds: profile.pharmacy_ids,
+  };
   return true;
 }
 
-function restoreSession() {
-  const raw = localStorage.getItem('ip_crm_session');
-  if (!raw) return false;
-  const s = JSON.parse(raw);
-  if (Date.now() - s.ts > 8 * 3600 * 1000) { localStorage.removeItem('ip_crm_session'); return false; }
-  state.user = USERS.find(u => u.id === s.id);
-  return !!state.user;
+async function tryLogin(email, password) {
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return false;
+  return await loadUserProfile();
 }
 
-function logout() {
+async function restoreSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return false;
+  return await loadUserProfile();
+}
+
+async function logout() {
+  await sb.auth.signOut();
   state.user = null;
-  localStorage.removeItem('ip_crm_session');
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-screen').style.display = 'flex';
 }
@@ -580,19 +588,13 @@ function renderAdmin() {
 
       <div class="card" style="margin-bottom:20px">
         <div class="card-header"><div class="card-title">Utilisateurs</div></div>
-        <table class="data-table">
-          <thead><tr><th>Email</th><th>Nom</th><th>Rôle</th><th>Accès</th></tr></thead>
-          <tbody>
-            ${USERS.map(u => `
-              <tr>
-                <td class="td-name">${u.email}</td>
-                <td>${u.name}</td>
-                <td><span class="badge ${u.role==='admin'?'badge-rose':u.role==='manager'?'badge-amber':'badge-blue'}">${u.role}</span></td>
-                <td style="color:var(--text3)">${u.pharmacyIds === null ? 'Toutes' : u.pharmacyIds?.length ? u.pharmacyIds.length+' pharmacies' : 'Aucune'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="card-body">
+          <p style="color:var(--text2);font-size:14px;margin:0">
+            Gérer les utilisateurs depuis le
+            <a href="https://supabase.com/dashboard" target="_blank" style="color:var(--blue)">dashboard Supabase</a>
+            → Authentication → Users
+          </p>
+        </div>
       </div>
 
       <div class="card">
@@ -613,7 +615,7 @@ function renderAdmin() {
             </div>
           </div>
           <button class="btn btn-ghost" onclick="if(confirm('Supprimer toutes les données ?')){localStorage.clear();location.reload()}" style="color:var(--rose);border-color:rgba(255,77,109,.3)">
-            🗑 Réinitialiser toutes les données
+            🗑 Réinitialiser données locales
           </button>
         </div>
       </div>
@@ -656,15 +658,12 @@ function emptyState(icon, title, sub) {
 }
 
 // ── INIT ──────────────────────────────────────
-function initApp() {
-  load();
+async function initApp() {
+  await load();
 
-  // Sidebar user info
   document.getElementById('sidebar-user-name').textContent = state.user.name;
   document.getElementById('sidebar-user-role').textContent = state.user.role;
   document.getElementById('sidebar-avatar').textContent = state.user.name.charAt(0);
-
-  // Hide admin for non-admin
   document.getElementById('nav-admin').style.display = state.user.role === 'admin' ? 'flex' : 'none';
 
   updateNavBadge();
@@ -672,24 +671,23 @@ function initApp() {
 }
 
 // ── BOOT ──────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  if (restoreSession()) {
+document.addEventListener('DOMContentLoaded', async () => {
+  if (await restoreSession()) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').classList.add('visible');
-    initApp();
+    await initApp();
   }
 
-  // Login form
-  document.getElementById('login-form').addEventListener('submit', e => {
+  document.getElementById('login-form').addEventListener('submit', async e => {
     e.preventDefault();
     const email    = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const err      = document.getElementById('login-error');
-    if (tryLogin(email, password)) {
+    if (await tryLogin(email, password)) {
       err.classList.remove('show');
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app').classList.add('visible');
-      initApp();
+      await initApp();
     } else {
       err.textContent = 'Email ou mot de passe incorrect';
       err.classList.add('show');
