@@ -29,4 +29,4 @@
 ## Déploiement
 - **GitHub Pages + sous-dossier** : `crm/index.html` → URL `/crm/` sans config supplémentaire.
 - **Auto-deploy** : tout push sur `main` = mise en ligne en 1-2 min.
-- **PATH brew** : doit être réinitialisé à chaque nouveau terminal avec `eval "$(/opt/homebrew/bin/brew shellenv bash)"`. Ajouter au `~/.bash_profile` pour que ce soit permanent.
+- **PATH brew** : doit être réinitialisé à chaque nouveau terminal avec `eval "$(/opt/homebrew/bin/brew shellenv bash)"`. Ajouter au `~/.bash_profile` pour que ce soit permanent. Script fourni : `bash fix-homebrew-path.sh` (à la racine du repo).
