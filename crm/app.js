@@ -22,16 +22,21 @@ let state = {
 };
 
 // ── STORAGE ──────────────────────────────────
-function save() {
-  localStorage.setItem('ip_crm_pharmacies', JSON.stringify(state.pharmacies));
-  localStorage.setItem('ip_crm_imports',    JSON.stringify(state.imports));
-  localStorage.setItem('ip_crm_sales',      JSON.stringify(state.sales));
-}
-
-function load() {
-  state.pharmacies = JSON.parse(localStorage.getItem('ip_crm_pharmacies') || '[]');
-  state.imports    = JSON.parse(localStorage.getItem('ip_crm_imports')    || '[]');
-  state.sales      = JSON.parse(localStorage.getItem('ip_crm_sales')      || '[]');
+async function load() {
+  const [{ data: pharmacies }, { data: imports }, { data: sales }] = await Promise.all([
+    sb.from('pharmacies').select('*').order('name'),
+    sb.from('imports').select('*').order('imported_at', { ascending: false }),
+    sb.from('sales').select('*'),
+  ]);
+  state.pharmacies = (pharmacies || []).map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
+  state.imports    = (imports    || []).map(i => ({ id: i.id, pharmacyId: i.pharmacy_id, month: i.month, year: i.year, filename: i.filename, importedAt: i.imported_at }));
+  state.sales      = (sales      || []).map(s => ({
+    id: s.id, importId: s.import_id, pharmacyId: s.pharmacy_id,
+    month: s.month, year: s.year,
+    artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
+    qte: parseFloat(s.qte)||0, puBrut: parseFloat(s.pu_brut)||0,
+    puNet: parseFloat(s.pu_net)||0, mntNetHt: parseFloat(s.mnt_net_ht)||0,
+  }));
 }
 
 // ── AUTH ─────────────────────────────────────
@@ -74,8 +79,7 @@ async function logout() {
 }
 
 // ── PHARMACY UTILS ────────────────────────────
-function pharmaFromFilename(filename) {
-  // "Phie de la republique 04 26" → { name, month, year }
+function pharmaMetaFromFilename(filename) {
   const base = filename.replace(/\.(xlsx|xls|csv)$/i, '').trim();
   const monthYearMatch = base.match(/(\d{2})\s+(\d{2,4})$/);
   let month = null, year = null, namePart = base;
@@ -85,24 +89,13 @@ function pharmaFromFilename(filename) {
     if (year < 100) year += 2000;
     namePart = base.slice(0, base.length - monthYearMatch[0].length).trim();
   }
-  // Normalize name
   const name = namePart
     .replace(/^Phie\s+/i, 'Pharmacie ')
     .replace(/^Ph\s+/i,   'Pharmacie ')
     .replace(/\b\w/g, c => c.toUpperCase());
-
-  // Find or create pharmacy
-  let pharma = state.pharmacies.find(p => p.name.toLowerCase() === name.toLowerCase());
-  if (!pharma) {
-    pharma = {
-      id:    Date.now() + Math.random(),
-      name,
-      code:  name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,4),
-      color: PHARMA_COLORS[state.pharmacies.length % PHARMA_COLORS.length],
-    };
-    state.pharmacies.push(pharma);
-  }
-  return { pharma, month, year };
+  const code  = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 4);
+  const color = PHARMA_COLORS[state.pharmacies.length % PHARMA_COLORS.length];
+  return { name, code, color, month, year };
 }
 
 // ── EXCEL PARSING ─────────────────────────────
@@ -137,35 +130,58 @@ function normalizeRow(row) {
 }
 
 async function importFile(file) {
-  const { pharma, month, year } = pharmaFromFilename(file.name);
+  const { name, code, color, month, year } = pharmaMetaFromFilename(file.name);
   let rows;
   try { rows = await parseExcel(file); }
   catch(e) { return { ok: false, error: 'Erreur lecture fichier' }; }
-
   if (!rows.length) return { ok: false, error: 'Fichier vide' };
 
-  // Remove existing import for same pharma/period
+  // 1. Find or create pharmacy in Supabase
+  let pharma = state.pharmacies.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (!pharma) {
+    const { data: inserted, error: phErr } = await sb.from('pharmacies').insert({ name, code, color }).select().single();
+    if (phErr) return { ok: false, error: 'Erreur création pharmacie' };
+    pharma = { id: inserted.id, name: inserted.name, code: inserted.code, color: inserted.color };
+    state.pharmacies.push(pharma);
+  }
+
+  // 2. Delete old import for same pharma/period (CASCADE removes its sales)
   if (month && year) {
-    state.imports = state.imports.filter(i => !(i.pharmacyId === pharma.id && i.month === month && i.year === year));
-    state.sales   = state.sales.filter(s => !(s.pharmacyId === pharma.id && s.month === month && s.year === year));
+    const oldImp = state.imports.find(i => i.pharmacyId === pharma.id && i.month === month && i.year === year);
+    if (oldImp) {
+      await sb.from('imports').delete().eq('id', oldImp.id);
+      state.imports = state.imports.filter(i => i.id !== oldImp.id);
+      state.sales   = state.sales.filter(s => s.importId !== oldImp.id);
+    }
   }
 
-  const importId = Date.now() + Math.random();
-  state.imports.push({ id: importId, pharmacyId: pharma.id, month, year, filename: file.name, importedAt: new Date().toISOString() });
+  // 3. Insert import record
+  const { data: imp, error: impErr } = await sb.from('imports')
+    .insert({ pharmacy_id: pharma.id, month, year, filename: file.name, imported_by: state.user.id })
+    .select().single();
+  if (impErr) return { ok: false, error: 'Erreur création import' };
+  state.imports.unshift({ id: imp.id, pharmacyId: imp.pharmacy_id, month: imp.month, year: imp.year, filename: imp.filename, importedAt: imp.imported_at });
 
-  for (const row of rows) {
-    const r = normalizeRow(row);
-    if (!r.artDesignation) continue;
-    state.sales.push({
-      id: Math.random(),
-      importId,
-      pharmacyId: pharma.id,
-      month, year,
-      ...r,
-    });
+  // 4. Bulk insert sales rows in batches of 500
+  const salesRows = rows.map(normalizeRow).filter(r => r.artDesignation).map(r => ({
+    import_id: imp.id, pharmacy_id: pharma.id, month, year,
+    art_designation: r.artDesignation, art_code: r.artCode, art_id: r.artId,
+    qte: r.qte, pu_brut: r.puBrut, pu_net: r.puNet, mnt_net_ht: r.mntNetHt,
+  }));
+  const BATCH = 500;
+  for (let i = 0; i < salesRows.length; i += BATCH) {
+    const { data: batch, error: sErr } = await sb.from('sales').insert(salesRows.slice(i, i + BATCH)).select();
+    if (sErr) return { ok: false, error: 'Erreur insertion ventes' };
+    state.sales.push(...batch.map(s => ({
+      id: s.id, importId: s.import_id, pharmacyId: s.pharmacy_id,
+      month: s.month, year: s.year,
+      artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
+      qte: parseFloat(s.qte)||0, puBrut: parseFloat(s.pu_brut)||0,
+      puNet: parseFloat(s.pu_net)||0, mntNetHt: parseFloat(s.mnt_net_ht)||0,
+    })));
   }
-  save();
-  return { ok: true, pharma, month, year, count: rows.length };
+
+  return { ok: true, pharma, month, year, count: salesRows.length };
 }
 
 // ── DATA UTILS ────────────────────────────────
@@ -585,6 +601,7 @@ async function handleFiles(files) {
 
 // ── ADMIN ─────────────────────────────────────
 function renderAdmin() {
+  const hasLocalData = !!(localStorage.getItem('ip_crm_pharmacies'));
   document.getElementById('admin-content').innerHTML = `
     <div class="fade-up" style="max-width:700px">
       <div class="section-title">Administration</div>
@@ -601,8 +618,8 @@ function renderAdmin() {
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header"><div class="card-title">Données</div></div>
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><div class="card-title">Données Supabase</div></div>
         <div class="card-body">
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
             <div style="background:var(--glass2);border-radius:var(--rs);padding:16px;text-align:center">
@@ -618,13 +635,96 @@ function renderAdmin() {
               <div style="font-size:12px;color:var(--text2);margin-top:4px">Lignes de vente</div>
             </div>
           </div>
-          <button class="btn btn-ghost" onclick="if(confirm('Supprimer toutes les données ?')){localStorage.clear();location.reload()}" style="color:var(--rose);border-color:rgba(255,77,109,.3)">
-            🗑 Réinitialiser données locales
+          <button class="btn btn-ghost" onclick="resetAllData()" style="color:var(--rose);border-color:rgba(255,77,109,.3)">
+            🗑 Vider toutes les données Supabase
           </button>
         </div>
       </div>
+
+      ${hasLocalData ? `
+      <div class="card" style="border-color:rgba(255,176,32,.2)">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Migration V1 → V2</div>
+            <div class="card-subtitle" style="color:var(--amber)">Données localStorage détectées</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <p style="color:var(--text2);font-size:14px;margin:0 0 16px">
+            Des données CRM V1 sont présentes dans le stockage local du navigateur.
+            Cliquez pour les migrer vers Supabase, puis elles seront supprimées.
+          </p>
+          <button class="btn btn-primary" onclick="migrateFromLocalStorage()">⬆ Migrer vers Supabase</button>
+        </div>
+      </div>` : ''}
     </div>
   `;
+}
+
+async function resetAllData() {
+  if (!confirm('Supprimer TOUTES les données Supabase ?\nPharmacies, imports et ventes seront effacés définitivement.')) return;
+  await sb.from('pharmacies').delete().not('id', 'is', null);
+  state.pharmacies = []; state.imports = []; state.sales = [];
+  showToast('Toutes les données ont été supprimées', 'success');
+  updateNavBadge();
+  renderAdmin();
+}
+
+async function migrateFromLocalStorage() {
+  const rawPharmas  = JSON.parse(localStorage.getItem('ip_crm_pharmacies') || '[]');
+  const rawImports  = JSON.parse(localStorage.getItem('ip_crm_imports')    || '[]');
+  const rawSales    = JSON.parse(localStorage.getItem('ip_crm_sales')      || '[]');
+  if (!rawPharmas.length) { showToast('Aucune donnée locale à migrer', 'info'); return; }
+
+  showToast('Migration en cours…', 'info');
+  const idMap = {};
+
+  // Insert pharmacies
+  for (const p of rawPharmas) {
+    const existing = state.pharmacies.find(ep => ep.name.toLowerCase() === p.name.toLowerCase());
+    if (existing) { idMap[p.id] = existing.id; continue; }
+    const color = PHARMA_COLORS[state.pharmacies.length % PHARMA_COLORS.length];
+    const { data, error } = await sb.from('pharmacies').insert({ name: p.name, code: p.code || p.name.slice(0,4).toUpperCase(), color: p.color || color }).select().single();
+    if (error) { showToast('Erreur migration pharmacies', 'error'); return; }
+    idMap[p.id] = data.id;
+    state.pharmacies.push({ id: data.id, name: data.name, code: data.code, color: data.color });
+  }
+
+  // Insert imports + sales
+  for (const imp of rawImports) {
+    const newPhId = idMap[imp.pharmacyId];
+    if (!newPhId) continue;
+    const { data: newImp, error: impErr } = await sb.from('imports')
+      .insert({ pharmacy_id: newPhId, month: imp.month, year: imp.year, filename: imp.filename || 'migration-v1', imported_by: state.user.id })
+      .select().single();
+    if (impErr) continue;
+    idMap[imp.id] = newImp.id;
+    state.imports.unshift({ id: newImp.id, pharmacyId: newPhId, month: newImp.month, year: newImp.year, filename: newImp.filename, importedAt: newImp.imported_at });
+
+    const impSales = rawSales.filter(s => String(s.importId) === String(imp.id)).map(s => ({
+      import_id: newImp.id, pharmacy_id: newPhId, month: imp.month, year: imp.year,
+      art_designation: s.artDesignation, art_code: s.artCode, art_id: s.artId,
+      qte: s.qte||0, pu_brut: s.puBrut||0, pu_net: s.puNet||0, mnt_net_ht: s.mntNetHt||0,
+    }));
+    const BATCH = 500;
+    for (let i = 0; i < impSales.length; i += BATCH) {
+      const { data: batch, error: sErr } = await sb.from('sales').insert(impSales.slice(i, i + BATCH)).select();
+      if (!sErr && batch) state.sales.push(...batch.map(s => ({
+        id: s.id, importId: s.import_id, pharmacyId: s.pharmacy_id,
+        month: s.month, year: s.year,
+        artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
+        qte: parseFloat(s.qte)||0, puBrut: parseFloat(s.pu_brut)||0,
+        puNet: parseFloat(s.pu_net)||0, mntNetHt: parseFloat(s.mnt_net_ht)||0,
+      })));
+    }
+  }
+
+  localStorage.removeItem('ip_crm_pharmacies');
+  localStorage.removeItem('ip_crm_imports');
+  localStorage.removeItem('ip_crm_sales');
+  showToast(`Migration terminée — ${rawPharmas.length} pharmacie(s), ${rawImports.length} import(s)`, 'success');
+  updateNavBadge();
+  renderAdmin();
 }
 
 // ── NAV ───────────────────────────────────────
