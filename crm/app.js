@@ -558,49 +558,151 @@ function renderPharmacies() {
 }
 
 function showPharmaDetail(pharmacyId) {
-  const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  const pharma  = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
   if (!pharma) return;
-  const sales = getSales({ pharmacyId: pharma.id });
-  const top   = topProducts(sales, 10);
-  const ca    = sumCA(sales);
-  const qte   = sumQte(sales);
-  const maxCA = Math.max(...top.map(p => p.ca), 1);
+  const sales   = getSales({ pharmacyId: pharma.id });
+  const ca      = sumCA(sales);
+  const marge   = sumMarge(sales);
+  const mpct    = margePct(sales);
+  const qte     = sumQte(sales);
+  const nRef    = new Set(sales.map(s => s.artCode)).size;
+  const imports = state.imports.filter(i => i.pharmacyId === pharma.id).sort((a,b) => new Date(b.importedAt) - new Date(a.importedAt));
+  const top     = topProducts(sales, 15);
+
+  // Category breakdown
+  const rawCats = byCategory(sales);
+  const catRows = Object.keys(CATS)
+    .map(k => {
+      const d = rawCats[k] || { ca:0, marge:0, qte:0, nb:0 };
+      const brut = d.nb > 0 ? sales.filter(s => classifyProduct(s) === k).reduce((a,s) => a + s.puBrut * s.qte, 0) : 0;
+      return { key: k, ...CATS[k], ...d, taux: brut > 0 ? d.marge / brut * 100 : 0 };
+    })
+    .filter(c => c.nb > 0)
+    .sort((a,b) => b.ca - a.ca);
+
+  const catHtml = catRows.map(c => `
+    <tr>
+      <td><span style="display:inline-flex;align-items:center;gap:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${c.color}"></span>${c.icon} ${c.label}
+      </span></td>
+      <td class="td-num" style="text-align:right">${fmtNum(c.nb)}</td>
+      <td class="td-num" style="text-align:right">${fmt(c.ca)}</td>
+      <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(c.marge)}</td>
+      <td class="td-num" style="text-align:right;color:${c.taux>15?'var(--mint)':'var(--amber)'}">${c.taux.toFixed(1)}%</td>
+      <td style="min-width:80px">${renderProgress(c.ca, ca, c.color)}</td>
+    </tr>`).join('');
+
+  const topHtml = top.map((p,i) => {
+    const cat = CATS[p.cat] || CATS.mi;
+    const taux = (p.ca + p.marge) > 0 ? p.marge / (p.ca + p.marge) * 100 : 0;
+    return `<tr>
+      <td>${renderRank(i)}</td>
+      <td class="td-name">${p.name}</td>
+      <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span></td>
+      <td class="td-num" style="text-align:right">${fmtNum(Math.round(p.qte))}</td>
+      <td class="td-num" style="text-align:right">${fmt(p.ca)}</td>
+      <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(p.marge)}</td>
+    </tr>`;
+  }).join('');
+
+  const importsHtml = imports.map(imp => `
+    <tr>
+      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${imp.filename}</td>
+      <td class="td-num">${imp.month ? monthName(imp.month)+' '+imp.year : '—'}</td>
+      <td style="color:var(--text3);font-size:12px">${new Date(imp.importedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}</td>
+      <td><button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3);padding:4px 10px;font-size:12px" onclick="deleteImport('${imp.id}','${pharmacyId}')">🗑 Supprimer</button></td>
+    </tr>`).join('');
 
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="renderPharmacies()">← Retour</button>
-        <div style="width:12px;height:12px;border-radius:50%;background:${pharma.color}"></div>
-        <span class="section-title" style="margin:0">${pharma.name}</span>
+        <div style="width:14px;height:14px;border-radius:50%;background:${pharma.color}"></div>
+        <span class="section-title" style="margin:0;flex:1">${pharma.name}</span>
         <span class="badge badge-blue">${pharma.code}</span>
+        <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑 Supprimer la pharmacie</button>
       </div>
-      <div class="kpi-grid">
-        <div class="kpi-card kc-b"><div class="kpi-icon">💰</div><div class="kpi-value">${fmt(ca)}</div><div class="kpi-label">CA Total HT</div></div>
-        <div class="kpi-card kc-g"><div class="kpi-icon">📦</div><div class="kpi-value">${fmtNum(qte)}</div><div class="kpi-label">Unités vendues</div></div>
-        <div class="kpi-card kc-p"><div class="kpi-icon">💊</div><div class="kpi-value">${new Set(sales.map(s=>s.artCode)).size}</div><div class="kpi-label">Références</div></div>
-        <div class="kpi-card kc-a"><div class="kpi-icon">📅</div><div class="kpi-value">${state.imports.filter(i=>i.pharmacyId===pharma.id).length}</div><div class="kpi-label">Imports</div></div>
+
+      <div class="kpi-grid fade-up" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi-card kc-b"><div class="kpi-icon">💰</div><div class="kpi-value">${fmt(ca)}</div><div class="kpi-label">CA Net HT</div></div>
+        <div class="kpi-card kc-g"><div class="kpi-icon">📈</div><div class="kpi-value">${fmt(marge)}</div><div class="kpi-label">Marge Brute</div></div>
+        <div class="kpi-card kc-p"><div class="kpi-icon">%</div><div class="kpi-value">${mpct.toFixed(1)}%</div><div class="kpi-label">Taux de marge</div></div>
+        <div class="kpi-card kc-a"><div class="kpi-icon">📦</div><div class="kpi-value">${fmtNum(Math.round(qte))}</div><div class="kpi-label">Unités vendues</div></div>
+        <div class="kpi-card kc-b"><div class="kpi-icon">💊</div><div class="kpi-value">${nRef}</div><div class="kpi-label">Références</div></div>
+        <div class="kpi-card kc-g"><div class="kpi-icon">📂</div><div class="kpi-value">${imports.length}</div><div class="kpi-label">Imports</div></div>
       </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Top Produits</div></div>
-        ${top.length ? `
+
+      ${catRows.length ? `
+      <div class="card fade-up">
+        <div class="card-header"><div class="card-title">Répartition par famille</div></div>
         <div style="overflow-x:auto">
           <table class="data-table">
-            <thead><tr><th>#</th><th>Produit</th><th style="text-align:right">Qté</th><th style="text-align:right">CA HT</th></tr></thead>
-            <tbody>
-              ${top.map((p,i) => `
-                <tr>
-                  <td>${renderRank(i)}</td>
-                  <td class="td-name">${p.name}<br><span class="badge badge-blue" style="margin-top:4px">${p.code}</span></td>
-                  <td class="td-num" style="text-align:right">${fmtNum(p.qte)}</td>
-                  <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(p.ca)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
+            <thead><tr>
+              <th>Famille</th><th style="text-align:right">Lignes</th>
+              <th style="text-align:right">CA Net HT</th><th style="text-align:right">Marge</th>
+              <th style="text-align:right">Taux</th><th>Poids</th>
+            </tr></thead>
+            <tbody>${catHtml}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+
+      <div class="card fade-up">
+        <div class="card-header">
+          <div class="card-title">Top Produits</div>
+          <div class="badge badge-blue">${top.length} produits</div>
+        </div>
+        ${top.length ? `<div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr>
+              <th>#</th><th>Désignation</th><th>Famille</th>
+              <th style="text-align:right">Unités</th>
+              <th style="text-align:right">CA HT</th>
+              <th style="text-align:right">Marge</th>
+            </tr></thead>
+            <tbody>${topHtml}</tbody>
           </table>
         </div>` : emptyState('💊','Aucune donnée','Importez un fichier pour cette pharmacie')}
       </div>
+
+      ${imports.length ? `
+      <div class="card fade-up">
+        <div class="card-header"><div class="card-title">Historique des imports</div></div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Fichier</th><th>Période</th><th>Date</th><th></th></tr></thead>
+            <tbody>${importsHtml}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+
     </div>
   `;
+}
+
+async function deleteImport(importId, pharmacyId) {
+  if (!confirm('Supprimer cet import et toutes ses lignes de vente ?')) return;
+  const { error } = await sb.from('imports').delete().eq('id', importId);
+  if (error) { showToast('Erreur suppression', 'error'); return; }
+  state.imports = state.imports.filter(i => i.id !== importId);
+  state.sales   = state.sales.filter(s => s.importId !== importId);
+  showToast('Import supprimé', 'success');
+  updateNavBadge();
+  showPharmaDetail(pharmacyId);
+}
+
+async function deletePharmacy(pharmacyId) {
+  const pharma = state.pharmacies.find(p => p.id === pharmacyId);
+  if (!confirm(`Supprimer "${pharma?.name}" et toutes ses données ?`)) return;
+  const { error } = await sb.from('pharmacies').delete().eq('id', pharmacyId);
+  if (error) { showToast('Erreur suppression', 'error'); return; }
+  state.pharmacies = state.pharmacies.filter(p => p.id !== pharmacyId);
+  state.imports    = state.imports.filter(i => i.pharmacyId !== pharmacyId);
+  state.sales      = state.sales.filter(s => s.pharmacyId !== pharmacyId);
+  showToast(`${pharma?.name} supprimée`, 'success');
+  updateNavBadge();
+  renderPharmacies();
 }
 
 // ── PRODUITS ──────────────────────────────────
