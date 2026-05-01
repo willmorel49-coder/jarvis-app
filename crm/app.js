@@ -170,14 +170,13 @@ async function importFile(file) {
   }));
   const BATCH = 500;
   for (let i = 0; i < salesRows.length; i += BATCH) {
-    const { data: batch, error: sErr } = await sb.from('sales').insert(salesRows.slice(i, i + BATCH)).select();
-    if (sErr) return { ok: false, error: 'Erreur insertion ventes' };
-    state.sales.push(...batch.map(s => ({
-      id: s.id, importId: s.import_id, pharmacyId: s.pharmacy_id,
+    const { error: sErr } = await sb.from('sales').insert(salesRows.slice(i, i + BATCH));
+    if (sErr) return { ok: false, error: sErr.message || sErr.code || 'Erreur insertion ventes' };
+    state.sales.push(...salesRows.slice(i, i + BATCH).map(s => ({
+      id: crypto.randomUUID(), importId: s.import_id, pharmacyId: s.pharmacy_id,
       month: s.month, year: s.year,
       artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
-      qte: parseFloat(s.qte)||0, puBrut: parseFloat(s.pu_brut)||0,
-      puNet: parseFloat(s.pu_net)||0, mntNetHt: parseFloat(s.mnt_net_ht)||0,
+      qte: s.qte, puBrut: s.pu_brut, puNet: s.pu_net, mntNetHt: s.mnt_net_ht,
     })));
   }
 
