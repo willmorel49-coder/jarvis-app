@@ -307,12 +307,51 @@ function renderDashboard() {
   const top    = topProducts(sales, 8);
   const topPh  = topPharmacies(5);
   const byM    = caByMonth();
-  const cats   = byCategory(sales);
   const maxCA  = Math.max(...topPh.map(p => p.ca), 1);
-  const catList = Object.keys(CATS).map(k => ({ key: k, ...CATS[k], ...(cats[k] || { ca:0, marge:0, qte:0, nb:0 }) })).filter(c => c.nb > 0);
+
+  // Pre-compute categories with taux
+  const rawCats = byCategory(sales);
+  const catRows = Object.keys(CATS)
+    .map(k => {
+      const d = rawCats[k] || { ca: 0, marge: 0, qte: 0, nb: 0 };
+      const brut = Object.keys(rawCats[k] || {}).length
+        ? sales.filter(s => classifyProduct(s) === k).reduce((a, s) => a + s.puBrut * s.qte, 0)
+        : 0;
+      return { key: k, ...CATS[k], ...d, taux: brut > 0 ? d.marge / brut * 100 : 0 };
+    })
+    .filter(c => c.nb > 0)
+    .sort((a, b) => b.ca - a.ca);
+
+  // Pre-compute top products rows HTML
+  const topRowsHtml = top.map((p, i) => {
+    const cat = CATS[p.cat] || CATS.mi;
+    return `<tr>
+      <td>${renderRank(i)}</td>
+      <td class="td-name">${p.name}</td>
+      <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span></td>
+      <td class="td-num" style="text-align:right">${fmt(p.ca)}</td>
+      <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(p.marge)}</td>
+    </tr>`;
+  }).join('');
+
+  // Pre-compute category rows HTML
+  const catRowsHtml = catRows.map(c => `<tr>
+    <td>
+      <span style="display:inline-flex;align-items:center;gap:8px">
+        <span style="width:10px;height:10px;border-radius:50%;background:${c.color};flex-shrink:0"></span>
+        ${c.icon} ${c.label}
+      </span>
+    </td>
+    <td class="td-num" style="text-align:right">${fmtNum(c.nb)}</td>
+    <td class="td-num" style="text-align:right">${fmtNum(Math.round(c.qte))}</td>
+    <td class="td-num" style="text-align:right">${fmt(c.ca)}</td>
+    <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(c.marge)}</td>
+    <td class="td-num" style="text-align:right;color:${c.taux > 15 ? 'var(--mint)' : 'var(--amber)'}">${c.taux.toFixed(1)}%</td>
+    <td style="min-width:100px">${renderProgress(c.ca, ca, c.color)}</td>
+  </tr>`).join('');
 
   document.getElementById('dash-content').innerHTML = `
-    <div class="kpi-grid fade-up" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+    <div class="kpi-grid fade-up" style="grid-template-columns:repeat(3,1fr)">
       <div class="kpi-card kc-b">
         <div class="kpi-icon">💰</div>
         <div class="kpi-value">${fmt(ca)}</div>
@@ -323,22 +362,22 @@ function renderDashboard() {
         <div class="kpi-value">${fmt(marge)}</div>
         <div class="kpi-label">Marge Brute</div>
       </div>
-      <div class="kpi-card kc-a" style="--kc:var(--mint)">
+      <div class="kpi-card kc-p">
         <div class="kpi-icon">%</div>
         <div class="kpi-value">${mpct.toFixed(1)}%</div>
         <div class="kpi-label">Taux de marge</div>
       </div>
-      <div class="kpi-card kc-g" style="--kc:#8899BB">
+      <div class="kpi-card kc-a">
         <div class="kpi-icon">📦</div>
-        <div class="kpi-value">${fmtNum(qte)}</div>
+        <div class="kpi-value">${fmtNum(Math.round(qte))}</div>
         <div class="kpi-label">Unités vendues</div>
       </div>
-      <div class="kpi-card kc-p">
+      <div class="kpi-card kc-b">
         <div class="kpi-icon">🏥</div>
         <div class="kpi-value">${nPh}</div>
         <div class="kpi-label">Pharmacies actives</div>
       </div>
-      <div class="kpi-card kc-a">
+      <div class="kpi-card kc-g">
         <div class="kpi-icon">💊</div>
         <div class="kpi-value">${fmtNum(nProd)}</div>
         <div class="kpi-label">Références</div>
@@ -348,26 +387,24 @@ function renderDashboard() {
     <div class="grid-2 fade-up">
       <div class="card">
         <div class="card-header">
-          <div>
-            <div class="card-title">CA net par période</div>
-            <div class="card-subtitle">${byM.length} période(s) importée(s)</div>
-          </div>
+          <div class="card-title">CA Net par période</div>
+          <div class="card-subtitle">${byM.length} période(s)</div>
         </div>
         <div class="card-body">
-          ${byM.length ? `<div class="chart-wrap"><canvas id="chart-ca-month"></canvas></div>` : emptyState('📊','Aucune donnée','Importez des fichiers Excel pour voir l\'évolution')}
+          ${byM.length ? '<div class="chart-wrap"><canvas id="chart-ca-month"></canvas></div>' : emptyState('📊','Aucune donnée','Importez des fichiers Excel')}
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">Répartition CA par famille</div></div>
+        <div class="card-header"><div class="card-title">Répartition par famille</div></div>
         <div class="card-body">
-          ${catList.length ? `<div class="chart-wrap"><canvas id="chart-cat-donut"></canvas></div>` : emptyState('📊','Aucune donnée','')}
+          ${catRows.length ? '<div class="chart-wrap"><canvas id="chart-cat-donut"></canvas></div>' : emptyState('📊','Aucune donnée','Importez des fichiers Excel')}
         </div>
       </div>
     </div>
 
-    ${catList.length ? `
+    ${catRows.length ? `
     <div class="card fade-up">
-      <div class="card-header"><div class="card-title">Familles produits — 7 catégories</div></div>
+      <div class="card-header"><div class="card-title">Familles produits</div><div class="badge badge-blue">${catRows.length} familles</div></div>
       <div style="overflow-x:auto">
         <table class="data-table">
           <thead><tr>
@@ -376,25 +413,10 @@ function renderDashboard() {
             <th style="text-align:right">Unités</th>
             <th style="text-align:right">CA Net HT</th>
             <th style="text-align:right">Marge brute</th>
-            <th style="text-align:right">Taux</th>
-            <th style="min-width:100px">Poids CA</th>
+            <th style="text-align:right">Taux marge</th>
+            <th>Poids CA</th>
           </tr></thead>
-          <tbody>
-            ${catList.sort((a,b) => b.ca - a.ca).map(c => `
-              <tr>
-                <td><span style="display:inline-flex;align-items:center;gap:6px">
-                  <span style="width:10px;height:10px;border-radius:50%;background:${c.color};flex-shrink:0"></span>
-                  <strong>${c.icon} ${c.label}</strong>
-                </span></td>
-                <td class="td-num" style="text-align:right">${fmtNum(c.nb)}</td>
-                <td class="td-num" style="text-align:right">${fmtNum(Math.round(c.qte))}</td>
-                <td class="td-num" style="text-align:right;color:var(--text)">${fmt(c.ca)}</td>
-                <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(c.marge)}</td>
-                <td class="td-num" style="text-align:right;color:${c.marge/Math.max(c.ca*1.5,1)*100 > 20 ? 'var(--mint)' : 'var(--amber)'}">${ca > 0 ? (c.marge / sumCaBrut(sales.filter(s => classifyProduct(s)===c.key)) * 100).toFixed(1) : '0'}%</td>
-                <td>${renderProgress(c.ca, ca, c.color)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
+          <tbody>${catRowsHtml}</tbody>
         </table>
       </div>
     </div>` : ''}
@@ -403,18 +425,18 @@ function renderDashboard() {
       <div class="card">
         <div class="card-header"><div class="card-title">Top Pharmacies</div></div>
         <div class="card-body" style="padding:12px 0">
-          ${topPh.length ? topPh.map((p,i) => `
-            <div class="stat-row" style="padding:10px 22px" onclick="showPharmaDetail('${p.id}')">
-              <div class="stat-row-rank">${renderRank(i)}</div>
-              <div style="width:10px;height:10px;border-radius:50%;background:${p.pharma.color};flex-shrink:0"></div>
+          ${topPh.length ? topPh.map((p, i) => `
+            <div class="stat-row" style="padding:10px 22px;cursor:pointer" onclick="showPharmaDetail('${p.id}')">
+              ${renderRank(i)}
+              <span style="width:10px;height:10px;border-radius:50%;background:${p.pharma.color};flex-shrink:0"></span>
               <div class="stat-row-info">
                 <div class="stat-row-name">${p.pharma.name}</div>
-                <div class="stat-row-sub">${fmtNum(p.qte)} unités</div>
+                <div class="stat-row-sub">${fmtNum(Math.round(p.qte))} unités</div>
               </div>
               <div class="stat-row-bar">${renderProgress(p.ca, maxCA, p.pharma.color)}</div>
               <div class="stat-row-val">${fmt(p.ca)}</div>
             </div>
-          `).join('') : emptyState('🏥','Aucune pharmacie','Importez des fichiers pour voir les classements')}
+          `).join('') : emptyState('🏥', 'Aucune pharmacie', 'Importez des fichiers pour voir les classements')}
         </div>
       </div>
 
@@ -431,20 +453,8 @@ function renderDashboard() {
               <th style="text-align:right">CA HT</th>
               <th style="text-align:right">Marge</th>
             </tr></thead>
-            <tbody>
-              ${top.map((p,i) => {
-                const cat = CATS[p.cat] || CATS.mi;
-                const pct = p.ca > 0 ? (p.marge / (p.ca / (1 - (p.marge/Math.max(p.ca+p.marge,1)))) * 100) : 0;
-                return `<tr>
-                  <td>${renderRank(i)}</td>
-                  <td class="td-name" style="max-width:180px">${p.name}</td>
-                  <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span></td>
-                  <td class="td-num" style="text-align:right">${fmt(p.ca)}</td>
-                  <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(p.marge)}</td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>` : emptyState('💊','Aucun produit','Les produits apparaîtront après import')}
+            <tbody>${topRowsHtml}</tbody>
+          </table>` : emptyState('💊', 'Aucun produit', 'Les produits apparaîtront après import')}
         </div>
       </div>
     </div>
