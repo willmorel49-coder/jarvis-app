@@ -36,18 +36,22 @@ function load() {
 
 // ── AUTH ─────────────────────────────────────
 async function loadUserProfile() {
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return false;
-  const { data: profile } = await sb.from('user_profiles').select('*').eq('id', user.id).single();
-  if (!profile) return false;
-  state.user = {
-    id:          user.id,
-    email:       user.email,
-    name:        profile.name,
-    role:        profile.role,
-    pharmacyIds: profile.pharmacy_ids,
-  };
-  return true;
+  try {
+    const { data: { user }, error: userErr } = await sb.auth.getUser();
+    if (userErr || !user) return false;
+    const { data: profile, error: profileErr } = await sb.from('user_profiles').select('*').eq('id', user.id).single();
+    if (profileErr || !profile) { await sb.auth.signOut(); return false; }
+    state.user = {
+      id:          user.id,
+      email:       user.email,
+      name:        profile.name,
+      role:        profile.role,
+      pharmacyIds: profile.pharmacy_ids,
+    };
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function tryLogin(email, password) {
@@ -629,10 +633,14 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
 
-  const titles = { dashboard: 'Dashboard', pharmacies: 'Pharmacies', produits: 'Produits', import: 'Import', admin: 'Administration' };
+  const titles = { dashboard: 'Dashboard', pharmacies: 'Pharmacies', produits: 'Produits', catalogue: 'Catalogue IP', import: 'Import', admin: 'Administration' };
   document.getElementById('topbar-title').textContent = titles[page] || page;
 
-  const renders = { dashboard: renderDashboard, pharmacies: renderPharmacies, produits: renderProduits, import: renderImport, admin: renderAdmin };
+  // FAB catalogue visible uniquement sur la page catalogue
+  const fab = document.getElementById('cat-cart-fab');
+  if (fab) fab.style.setProperty('display', page === 'catalogue' ? '' : 'none', 'important');
+
+  const renders = { dashboard: renderDashboard, pharmacies: renderPharmacies, produits: renderProduits, catalogue: renderCatalogue, import: renderImport, admin: renderAdmin };
   if (renders[page]) renders[page]();
 }
 
@@ -659,6 +667,7 @@ function emptyState(icon, title, sub) {
 
 // ── INIT ──────────────────────────────────────
 async function initApp() {
+  if (!state.user) return;
   await load();
 
   document.getElementById('sidebar-user-name').textContent = state.user.name;
@@ -672,9 +681,21 @@ async function initApp() {
 
 // ── BOOT ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  const loginScreen = document.getElementById('login-screen');
+  const appEl       = document.getElementById('app');
+
+  // Réagit aux changements de session : déconnexion depuis un autre onglet, token révoqué, etc.
+  sb.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') {
+      state.user = null;
+      appEl.classList.remove('visible');
+      loginScreen.style.display = 'flex';
+    }
+  });
+
   if (await restoreSession()) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
+    loginScreen.style.display = 'none';
+    appEl.classList.add('visible');
     await initApp();
   }
 
@@ -683,14 +704,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const email    = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const err      = document.getElementById('login-error');
+    const btn      = e.target.querySelector('button[type=submit]');
+
+    btn.disabled    = true;
+    btn.textContent = 'Connexion…';
+
     if (await tryLogin(email, password)) {
       err.classList.remove('show');
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').classList.add('visible');
+      loginScreen.style.display = 'none';
+      appEl.classList.add('visible');
       await initApp();
     } else {
       err.textContent = 'Email ou mot de passe incorrect';
       err.classList.add('show');
+      btn.disabled    = false;
+      btn.textContent = 'Se connecter →';
     }
   });
 });
