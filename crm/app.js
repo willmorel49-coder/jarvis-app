@@ -196,8 +196,45 @@ function getSales(filters = {}) {
   return data;
 }
 
-function sumCA(sales) { return sales.reduce((a, s) => a + (s.mntNetHt || 0), 0); }
-function sumQte(sales) { return sales.reduce((a, s) => a + (s.qte || 0), 0); }
+// ── CATEGORIES ────────────────────────────────
+const CATS = {
+  froid:     { label: 'Froid',          color: '#00C6FF', icon: '❄️' },
+  biosim:    { label: 'Biosimilaires',  color: '#9B5CFF', icon: '🧬' },
+  generique: { label: 'Génériques',     color: '#00E5A0', icon: '💊' },
+  nr:        { label: 'Non remboursés', color: '#FF6B35', icon: '🔴' },
+  ch:        { label: 'Cher',           color: '#FF4D6D', icon: '💎' },
+  mi:        { label: 'Intermédiaire',  color: '#FFB020', icon: '📊' },
+  pp:        { label: 'Petit prix',     color: '#34D399', icon: '✓'  },
+};
+
+function classifyProduct(sale) {
+  const name = (sale.artDesignation || '').toUpperCase();
+  if (/FROID|RÉFRIGÉR|REFRIGER|THERMOSENS/i.test(name)) return 'froid';
+  if (/BIOSIM|BIOSIMILAIRE/i.test(name))                 return 'biosim';
+  if (/\bGNR\b|GÉNÉR|GENERI/i.test(name))               return 'generique';
+  if (/\bNR\b/.test(name))                               return 'nr';
+  const p = sale.puNet || 0;
+  return p > 468 ? 'ch' : p > 4.33 ? 'mi' : 'pp';
+}
+
+function sumCA(sales)    { return sales.reduce((a, s) => a + (s.mntNetHt || 0), 0); }
+function sumQte(sales)   { return sales.reduce((a, s) => a + (s.qte || 0), 0); }
+function sumMarge(sales) { return sales.reduce((a, s) => a + Math.max(0, (s.puBrut - s.puNet) * s.qte), 0); }
+function sumCaBrut(sales){ return sales.reduce((a, s) => a + (s.puBrut * s.qte), 0); }
+function margePct(sales) { const b = sumCaBrut(sales); return b > 0 ? sumMarge(sales) / b * 100 : 0; }
+
+function byCategory(sales) {
+  const map = {};
+  for (const s of sales) {
+    const cat = classifyProduct(s);
+    if (!map[cat]) map[cat] = { ca: 0, marge: 0, qte: 0, nb: 0 };
+    map[cat].ca    += s.mntNetHt;
+    map[cat].marge += Math.max(0, (s.puBrut - s.puNet) * s.qte);
+    map[cat].qte   += s.qte;
+    map[cat].nb    += 1;
+  }
+  return map;
+}
 
 function fmt(n) {
   if (n >= 1000000) return (n/1000000).toFixed(1) + 'M€';
@@ -214,9 +251,10 @@ function topProducts(sales, n = 10) {
   const map = {};
   for (const s of sales) {
     const k = s.artCode || s.artDesignation;
-    if (!map[k]) map[k] = { name: s.artDesignation, code: s.artCode, qte: 0, ca: 0 };
-    map[k].qte += s.qte;
-    map[k].ca  += s.mntNetHt;
+    if (!map[k]) map[k] = { name: s.artDesignation, code: s.artCode, cat: classifyProduct(s), qte: 0, ca: 0, marge: 0 };
+    map[k].qte   += s.qte;
+    map[k].ca    += s.mntNetHt;
+    map[k].marge += Math.max(0, (s.puBrut - s.puNet) * s.qte);
   }
   return Object.values(map).sort((a,b) => b.ca - a.ca).slice(0, n);
 }
@@ -259,24 +297,38 @@ function renderProgress(value, max, color) {
 
 // ── DASHBOARD ────────────────────────────────
 function renderDashboard() {
-  const sales = getSales();
-  const ca    = sumCA(sales);
-  const qte   = sumQte(sales);
-  const nPh   = new Set(sales.map(s => s.pharmacyId)).size;
-  const nProd = new Set(sales.map(s => s.artCode)).size;
-  const top   = topProducts(sales, 8);
-  const topPh = topPharmacies(5);
-  const byM   = caByMonth();
-  const maxCA = Math.max(...topPh.map(p => p.ca), 1);
+  const sales  = getSales();
+  const ca     = sumCA(sales);
+  const marge  = sumMarge(sales);
+  const mpct   = margePct(sales);
+  const qte    = sumQte(sales);
+  const nPh    = new Set(sales.map(s => s.pharmacyId)).size;
+  const nProd  = new Set(sales.map(s => s.artCode)).size;
+  const top    = topProducts(sales, 8);
+  const topPh  = topPharmacies(5);
+  const byM    = caByMonth();
+  const cats   = byCategory(sales);
+  const maxCA  = Math.max(...topPh.map(p => p.ca), 1);
+  const catList = Object.keys(CATS).map(k => ({ key: k, ...CATS[k], ...(cats[k] || { ca:0, marge:0, qte:0, nb:0 }) })).filter(c => c.nb > 0);
 
   document.getElementById('dash-content').innerHTML = `
-    <div class="kpi-grid fade-up">
+    <div class="kpi-grid fade-up" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
       <div class="kpi-card kc-b">
         <div class="kpi-icon">💰</div>
         <div class="kpi-value">${fmt(ca)}</div>
-        <div class="kpi-label">CA Total HT</div>
+        <div class="kpi-label">CA Net HT</div>
       </div>
       <div class="kpi-card kc-g">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-value">${fmt(marge)}</div>
+        <div class="kpi-label">Marge Brute</div>
+      </div>
+      <div class="kpi-card kc-a" style="--kc:var(--mint)">
+        <div class="kpi-icon">%</div>
+        <div class="kpi-value">${mpct.toFixed(1)}%</div>
+        <div class="kpi-label">Taux de marge</div>
+      </div>
+      <div class="kpi-card kc-g" style="--kc:#8899BB">
         <div class="kpi-icon">📦</div>
         <div class="kpi-value">${fmtNum(qte)}</div>
         <div class="kpi-label">Unités vendues</div>
@@ -297,7 +349,7 @@ function renderDashboard() {
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">CA par période</div>
+            <div class="card-title">CA net par période</div>
             <div class="card-subtitle">${byM.length} période(s) importée(s)</div>
           </div>
         </div>
@@ -305,6 +357,49 @@ function renderDashboard() {
           ${byM.length ? `<div class="chart-wrap"><canvas id="chart-ca-month"></canvas></div>` : emptyState('📊','Aucune donnée','Importez des fichiers Excel pour voir l\'évolution')}
         </div>
       </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Répartition CA par famille</div></div>
+        <div class="card-body">
+          ${catList.length ? `<div class="chart-wrap"><canvas id="chart-cat-donut"></canvas></div>` : emptyState('📊','Aucune donnée','')}
+        </div>
+      </div>
+    </div>
+
+    ${catList.length ? `
+    <div class="card fade-up">
+      <div class="card-header"><div class="card-title">Familles produits — 7 catégories</div></div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr>
+            <th>Famille</th>
+            <th style="text-align:right">Lignes</th>
+            <th style="text-align:right">Unités</th>
+            <th style="text-align:right">CA Net HT</th>
+            <th style="text-align:right">Marge brute</th>
+            <th style="text-align:right">Taux</th>
+            <th style="min-width:100px">Poids CA</th>
+          </tr></thead>
+          <tbody>
+            ${catList.sort((a,b) => b.ca - a.ca).map(c => `
+              <tr>
+                <td><span style="display:inline-flex;align-items:center;gap:6px">
+                  <span style="width:10px;height:10px;border-radius:50%;background:${c.color};flex-shrink:0"></span>
+                  <strong>${c.icon} ${c.label}</strong>
+                </span></td>
+                <td class="td-num" style="text-align:right">${fmtNum(c.nb)}</td>
+                <td class="td-num" style="text-align:right">${fmtNum(Math.round(c.qte))}</td>
+                <td class="td-num" style="text-align:right;color:var(--text)">${fmt(c.ca)}</td>
+                <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(c.marge)}</td>
+                <td class="td-num" style="text-align:right;color:${c.marge/Math.max(c.ca*1.5,1)*100 > 20 ? 'var(--mint)' : 'var(--amber)'}">${ca > 0 ? (c.marge / sumCaBrut(sales.filter(s => classifyProduct(s)===c.key)) * 100).toFixed(1) : '0'}%</td>
+                <td>${renderProgress(c.ca, ca, c.color)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
+
+    <div class="grid-2 fade-up">
       <div class="card">
         <div class="card-header"><div class="card-title">Top Pharmacies</div></div>
         <div class="card-body" style="padding:12px 0">
@@ -322,65 +417,97 @@ function renderDashboard() {
           `).join('') : emptyState('🏥','Aucune pharmacie','Importez des fichiers pour voir les classements')}
         </div>
       </div>
-    </div>
 
-    <div class="card fade-up">
-      <div class="card-header">
-        <div class="card-title">Top Produits</div>
-        <div class="badge badge-blue">${top.length} produits</div>
-      </div>
-      <div style="overflow-x:auto">
-        ${top.length ? `
-        <table class="data-table">
-          <thead><tr>
-            <th>#</th><th>Désignation</th><th>Code</th>
-            <th style="text-align:right">Quantité</th><th style="text-align:right">CA HT</th>
-          </tr></thead>
-          <tbody>
-            ${top.map((p,i) => `
-              <tr>
-                <td>${renderRank(i)}</td>
-                <td class="td-name">${p.name}</td>
-                <td><span class="badge badge-blue">${p.code}</span></td>
-                <td class="td-num" style="text-align:right">${fmtNum(p.qte)}</td>
-                <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(p.ca)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>` : emptyState('💊','Aucun produit','Les produits apparaîtront après import')}
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Top Produits</div>
+          <div class="badge badge-blue">${top.length} produits</div>
+        </div>
+        <div style="overflow-x:auto">
+          ${top.length ? `
+          <table class="data-table">
+            <thead><tr>
+              <th>#</th><th>Désignation</th><th>Famille</th>
+              <th style="text-align:right">CA HT</th>
+              <th style="text-align:right">Marge</th>
+            </tr></thead>
+            <tbody>
+              ${top.map((p,i) => {
+                const cat = CATS[p.cat] || CATS.mi;
+                const pct = p.ca > 0 ? (p.marge / (p.ca / (1 - (p.marge/Math.max(p.ca+p.marge,1)))) * 100) : 0;
+                return `<tr>
+                  <td>${renderRank(i)}</td>
+                  <td class="td-name" style="max-width:180px">${p.name}</td>
+                  <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span></td>
+                  <td class="td-num" style="text-align:right">${fmt(p.ca)}</td>
+                  <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(p.marge)}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>` : emptyState('💊','Aucun produit','Les produits apparaîtront après import')}
+        </div>
       </div>
     </div>
   `;
 
-  if (byM.length) {
-    setTimeout(() => {
+  setTimeout(() => {
+    if (byM.length) {
       const ctx = document.getElementById('chart-ca-month');
-      if (!ctx) return;
-      if (state.charts['ca-month']) state.charts['ca-month'].destroy();
-      state.charts['ca-month'] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: byM.map(([k]) => { const [y,m] = k.split('-'); return `${monthName(+m)} ${y}`; }),
-          datasets: [{
-            label: 'CA HT (€)',
-            data: byM.map(([,v]) => +v.toFixed(2)),
-            backgroundColor: 'rgba(0,87,255,0.5)',
-            borderColor: '#0057FF',
-            borderWidth: 2,
-            borderRadius: 8,
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8899BB', font: { size: 11 } } },
-            y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8899BB', font: { size: 11 }, callback: v => fmt(v) } },
+      if (ctx) {
+        if (state.charts['ca-month']) state.charts['ca-month'].destroy();
+        state.charts['ca-month'] = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: byM.map(([k]) => { const [y,m] = k.split('-'); return `${monthName(+m)} ${y}`; }),
+            datasets: [{
+              label: 'CA Net HT (€)',
+              data: byM.map(([,v]) => +v.toFixed(2)),
+              backgroundColor: 'rgba(0,87,255,0.5)',
+              borderColor: '#0057FF',
+              borderWidth: 2,
+              borderRadius: 8,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8899BB', font: { size: 11 } } },
+              y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8899BB', font: { size: 11 }, callback: v => fmt(v) } },
+            }
           }
-        }
-      });
-    }, 50);
-  }
+        });
+      }
+    }
+
+    if (catList.length) {
+      const ctx2 = document.getElementById('chart-cat-donut');
+      if (ctx2) {
+        if (state.charts['cat-donut']) state.charts['cat-donut'].destroy();
+        const sorted = [...catList].sort((a,b) => b.ca - a.ca);
+        state.charts['cat-donut'] = new Chart(ctx2, {
+          type: 'doughnut',
+          data: {
+            labels: sorted.map(c => c.label),
+            datasets: [{
+              data: sorted.map(c => +c.ca.toFixed(2)),
+              backgroundColor: sorted.map(c => c.color + 'CC'),
+              borderColor: sorted.map(c => c.color),
+              borderWidth: 2,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'right', labels: { color: '#8899BB', font: { size: 11 }, boxWidth: 12, padding: 10 } },
+              tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.parsed)} (${(ctx.parsed / ca * 100).toFixed(1)}%)` } },
+            },
+            cutout: '65%',
+          }
+        });
+      }
+    }
+  }, 50);
 }
 
 // ── PHARMACIES ────────────────────────────────
