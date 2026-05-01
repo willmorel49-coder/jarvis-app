@@ -259,8 +259,8 @@ function topProducts(sales, n = 10) {
   return Object.values(map).sort((a,b) => b.ca - a.ca).slice(0, n);
 }
 
-function topPharmacies(n = 10) {
-  const sales = getSales();
+function topPharmacies(n = 10, salesData) {
+  const sales = salesData || getSales();
   const map = {};
   for (const s of sales) {
     if (!map[s.pharmacyId]) map[s.pharmacyId] = { id: s.pharmacyId, qte: 0, ca: 0 };
@@ -274,10 +274,10 @@ function topPharmacies(n = 10) {
     .filter(p => p.pharma);
 }
 
-function caByMonth() {
-  const sales = getSales();
+function caByMonth(salesData) {
+  const data = salesData || getSales();
   const map = {};
-  for (const s of sales) {
+  for (const s of data) {
     const k = `${s.year}-${String(s.month).padStart(2,'0')}`;
     map[k] = (map[k] || 0) + s.mntNetHt;
   }
@@ -296,8 +296,26 @@ function renderProgress(value, max, color) {
 }
 
 // ── DASHBOARD ────────────────────────────────
+let dashPeriod = 'all'; // 'all' | 'YYYY-MM'
+
 function renderDashboard() {
-  const sales  = getSales();
+  // Construire la liste des périodes disponibles
+  const periodsSet = new Set();
+  for (const s of getSales()) {
+    if (s.month && s.year) periodsSet.add(`${s.year}-${String(s.month).padStart(2,'0')}`);
+  }
+  const periods = [...periodsSet].sort();
+
+  // Valider que dashPeriod existe encore (si données rechargées)
+  if (dashPeriod !== 'all' && !periods.includes(dashPeriod)) dashPeriod = 'all';
+
+  // Filtres à appliquer
+  let periodFilter = {};
+  if (dashPeriod !== 'all') {
+    const [py, pm] = dashPeriod.split('-');
+    periodFilter = { year: +py, month: +pm };
+  }
+  const sales  = getSales(periodFilter);
   const ca     = sumCA(sales);
   const marge  = sumMarge(sales);
   const mpct   = margePct(sales);
@@ -305,8 +323,8 @@ function renderDashboard() {
   const nPh    = new Set(sales.map(s => s.pharmacyId)).size;
   const nProd  = new Set(sales.map(s => s.artCode)).size;
   const top    = topProducts(sales, 8);
-  const topPh  = topPharmacies(5);
-  const byM    = caByMonth();
+  const topPh  = topPharmacies(5, sales);
+  const byM    = caByMonth(sales);
   const maxCA  = Math.max(...topPh.map(p => p.ca), 1);
 
   // Pre-compute categories with taux
@@ -350,7 +368,24 @@ function renderDashboard() {
     <td style="min-width:100px">${renderProgress(c.ca, ca, c.color)}</td>
   </tr>`).join('');
 
+  // Chips filtre période
+  const periodChipsHtml = periods.length > 1 ? `
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px">
+      ${[{key:'all',label:'Toutes périodes'}, ...periods.map(p => {
+          const [py,pm] = p.split('-');
+          return { key: p, label: monthName(+pm)+' '+py };
+        })].map(f => {
+          const active = dashPeriod === f.key;
+          return `<button onclick="dashPeriod='${f.key}';renderDashboard()" style="
+            padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'rgba(255,255,255,.12)'};
+            background:${active ? 'rgba(0,87,255,.18)' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
+            cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
+          ">${f.label}</button>`;
+        }).join('')}
+    </div>` : '';
+
   document.getElementById('dash-content').innerHTML = `
+    ${periodChipsHtml}
     <div class="kpi-grid fade-up" style="grid-template-columns:repeat(3,1fr)">
       <div class="kpi-card kc-b">
         <div class="kpi-icon">💰</div>
@@ -490,11 +525,11 @@ function renderDashboard() {
       }
     }
 
-    if (catList.length) {
+    if (catRows.length) {
       const ctx2 = document.getElementById('chart-cat-donut');
       if (ctx2) {
         if (state.charts['cat-donut']) state.charts['cat-donut'].destroy();
-        const sorted = [...catList].sort((a,b) => b.ca - a.ca);
+        const sorted = [...catRows].sort((a,b) => b.ca - a.ca);
         state.charts['cat-donut'] = new Chart(ctx2, {
           type: 'doughnut',
           data: {
@@ -706,44 +741,111 @@ async function deletePharmacy(pharmacyId) {
 }
 
 // ── PRODUITS ──────────────────────────────────
-let prodSearch = '';
+let prodSearch  = '';
+let prodFamille = 'tous';
+let prodSortCol = 'ca';
+let prodSortAsc = false;
 
 function renderProduits() {
   const sales = getSales();
-  const top   = topProducts(sales, 100).filter(p => p.name.toLowerCase().includes(prodSearch.toLowerCase()) || p.code.toLowerCase().includes(prodSearch.toLowerCase()));
-  const maxCA = Math.max(...top.map(p => p.ca), 1);
+  let all = topProducts(sales, 500);
+
+  // Filtre texte
+  if (prodSearch) {
+    const q = prodSearch.toLowerCase();
+    all = all.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
+  }
+
+  // Filtre famille
+  if (prodFamille !== 'tous') {
+    all = all.filter(p => p.cat === prodFamille);
+  }
+
+  // Enrichir avec taux pour le tri
+  all = all.map(p => ({
+    ...p,
+    taux: (p.ca + p.marge) > 0 ? p.marge / (p.ca + p.marge) * 100 : 0,
+  }));
+
+  // Tri
+  all.sort((a, b) => {
+    let av = a[prodSortCol] ?? 0;
+    let bv = b[prodSortCol] ?? 0;
+    return prodSortAsc ? av - bv : bv - av;
+  });
+
+  const maxCA = Math.max(...all.map(p => p.ca), 1);
+
+  // Chips famille
+  const familles = [
+    { key: 'tous',      label: 'Tous',         color: '#8899BB' },
+    { key: 'pp',        label: 'PP',            color: CATS.pp.color },
+    { key: 'mi',        label: 'MI',            color: CATS.mi.color },
+    { key: 'ch',        label: 'CH',            color: CATS.ch.color },
+    { key: 'biosim',    label: 'Biosim',        color: CATS.biosim.color },
+    { key: 'generique', label: 'Générique',     color: CATS.generique.color },
+    { key: 'nr',        label: 'NR',            color: CATS.nr.color },
+    { key: 'froid',     label: 'Froid',         color: CATS.froid.color },
+  ];
+
+  const chipsHtml = familles.map(f => {
+    const active = prodFamille === f.key;
+    return `<button onclick="prodFamille='${f.key}';renderProduits()" style="
+      padding:5px 14px;border-radius:20px;border:1px solid ${active ? f.color : 'rgba(255,255,255,.12)'};
+      background:${active ? f.color + '22' : 'transparent'};color:${active ? f.color : 'var(--text2)'};
+      cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
+    ">${f.label}</button>`;
+  }).join('');
+
+  // En-têtes triables
+  function thSort(col, label, align = 'right') {
+    const active = prodSortCol === col;
+    const arrow  = active ? (prodSortAsc ? ' ↑' : ' ↓') : '';
+    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active ? 'var(--blue)' : ''}" onclick="prodSortCol='${col}';prodSortAsc=${active ? !prodSortAsc : false};renderProduits()">${label}${arrow}</th>`;
+  }
+
+  const rowsHtml = all.map((p, i) => {
+    const cat  = CATS[p.cat] || CATS.mi;
+    const taux = p.taux;
+    return `<tr>
+      <td>${renderRank(i)}</td>
+      <td class="td-name">${p.name}</td>
+      <td><span class="badge badge-blue">${p.code || '—'}</span></td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${cat.color}22;color:${cat.color};white-space:nowrap">${cat.label}</span></td>
+      <td class="td-num" style="text-align:right">${fmtNum(Math.round(p.qte))}</td>
+      <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(p.ca)}</td>
+      <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(p.marge)}</td>
+      <td class="td-num" style="text-align:right;color:${taux > 15 ? 'var(--mint)' : 'var(--amber)'}">${taux.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
 
   document.getElementById('prod-content').innerHTML = `
     <div class="card fade-in">
-      <div class="card-header">
-        <div class="card-title">Catalogue produits (${top.length})</div>
-        <div class="search-wrap" style="width:280px">
+      <div class="card-header" style="flex-wrap:wrap;gap:12px">
+        <div class="card-title">Catalogue produits (${all.length})</div>
+        <div class="search-wrap" style="width:260px">
           <span class="search-icon">🔍</span>
           <input type="text" placeholder="Nom ou code produit..." value="${prodSearch}" oninput="prodSearch=this.value;renderProduits()" />
         </div>
       </div>
-      ${top.length ? `<div style="overflow-x:auto">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px 4px">
+        ${chipsHtml}
+      </div>
+      ${all.length ? `<div style="overflow-x:auto">
         <table class="data-table">
           <thead><tr>
-            <th>#</th><th>Désignation</th><th>Code</th>
-            <th style="text-align:right">Qté totale</th>
-            <th style="text-align:right">CA HT</th>
-            <th>Performance</th>
+            <th>#</th>
+            <th>Désignation</th>
+            <th>Code</th>
+            <th>Famille</th>
+            ${thSort('qte',   'Unités')}
+            ${thSort('ca',    'CA HT')}
+            ${thSort('marge', 'Marge')}
+            ${thSort('taux',  'Taux marge')}
           </tr></thead>
-          <tbody>
-            ${top.map((p,i) => `
-              <tr>
-                <td>${renderRank(i)}</td>
-                <td class="td-name">${p.name}</td>
-                <td><span class="badge badge-blue">${p.code}</span></td>
-                <td class="td-num" style="text-align:right">${fmtNum(p.qte)}</td>
-                <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(p.ca)}</td>
-                <td style="min-width:100px">${renderProgress(p.ca, maxCA, '#0057FF')}</td>
-              </tr>
-            `).join('')}
-          </tbody>
+          <tbody>${rowsHtml}</tbody>
         </table>
-      </div>` : emptyState('💊', prodSearch ? 'Aucun résultat' : 'Aucun produit', prodSearch ? 'Essayez un autre terme' : 'Importez des fichiers Excel pour voir les produits')}
+      </div>` : emptyState('💊', prodSearch || prodFamille !== 'tous' ? 'Aucun résultat' : 'Aucun produit', prodSearch || prodFamille !== 'tous' ? 'Essayez un autre terme ou famille' : 'Importez des fichiers Excel pour voir les produits')}
     </div>
   `;
 }
@@ -822,7 +924,15 @@ async function handleFiles(files) {
     if (!item) continue;
 
     if (result.ok) {
-      item.querySelector('.import-item-meta').textContent = `${result.pharma.name} · ${result.month ? monthName(result.month)+' '+result.year : 'Période inconnue'} · ${result.count} lignes`;
+      // Calcul CA / Marge / Taux sur les lignes fraîchement importées
+      const impSales = state.sales.filter(s =>
+        s.pharmacyId === result.pharma.id && s.month === result.month && s.year === result.year);
+      const impCA    = sumCA(impSales);
+      const impMarge = sumMarge(impSales);
+      const impTaux  = margePct(impSales);
+      const periode  = result.month ? monthName(result.month) + ' ' + result.year : 'Période inconnue';
+      item.querySelector('.import-item-meta').textContent =
+        `${result.pharma.name} · ${periode} · ${result.count} lignes · CA: ${fmt(impCA)} · Marge: ${fmt(impMarge)} · Taux: ${impTaux.toFixed(1)}%`;
       item.querySelector('.import-item-status').className = 'import-item-status status-ok';
       item.querySelector('.import-item-status').textContent = '✓ Importé';
       showToast(`${result.pharma.name} importée — ${result.count} lignes`, 'success');
