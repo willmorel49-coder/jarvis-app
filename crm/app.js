@@ -196,14 +196,16 @@ async function importMultiPharmaFile(file, month, year) {
     state.imports.unshift({ id: imp.id, pharmacyId: imp.pharmacy_id, month: imp.month, year: imp.year, filename: imp.filename, importedAt: imp.imported_at });
 
     // Build sales rows (negate qte and mntNetHt because WML stores them negative)
+    // _famille is kept local only — art_famille column may not exist in DB yet
     const salesRows = group.rows.map(r => {
       const famille = classifyFromWMLRow(r.subfamily, r.nature, r.afmCode, r.puNet);
       return {
+        _famille: famille, // local only, not sent to DB
         import_id: imp.id, pharmacy_id: pharma.id, month, year,
         art_designation: r.artDesignation,
         art_code: r.artCode,
         art_id: r.artId || null,
-        art_famille: famille,
+        // NOTE: art_famille intentionally omitted from DB insert (column may not exist yet)
         qte:       -(r.qte),      // negate: negative in file = sale
         pu_brut:   r.puBrut,
         pu_net:    r.puNet,
@@ -214,13 +216,15 @@ async function importMultiPharmaFile(file, month, year) {
     const BATCH = 500;
     let batchOk = true;
     for (let i = 0; i < salesRows.length; i += BATCH) {
-      const { error: sErr } = await sb.from('sales').insert(salesRows.slice(i, i + BATCH));
-      if (sErr) { batchOk = false; break; }
+      const { error: sErr } = await sb.from('sales').insert(
+        salesRows.slice(i, i + BATCH).map(({ _famille, ...s }) => s)
+      );
+      if (sErr) { console.error('Sales insert error:', sErr); batchOk = false; break; }
       state.sales.push(...salesRows.slice(i, i + BATCH).map(s => ({
         id: crypto.randomUUID(), importId: s.import_id, pharmacyId: s.pharmacy_id,
         month: s.month, year: s.year,
         artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
-        artFamille: s.art_famille,
+        artFamille: s._famille,
         qte: s.qte, puBrut: s.pu_brut, puNet: s.pu_net, mntNetHt: s.mnt_net_ht,
       })));
     }
@@ -230,6 +234,9 @@ async function importMultiPharmaFile(file, month, year) {
     }
   }
 
+  if (importedPharmas.length === 0) {
+    return { ok: false, error: `Aucune pharmacie importée — vérifiez la structure du fichier` };
+  }
   return { ok: true, isMulti: true, pharmacies: importedPharmas, month, year, totalLines };
 }
 
@@ -847,6 +854,17 @@ async function deleteImport(importId, pharmacyId) {
   showPharmaDetail(pharmacyId);
 }
 
+async function deleteImportFromHistory(importId, pharmacyId) {
+  if (!confirm('Supprimer cet import et toutes ses ventes ?')) return;
+  const { error } = await sb.from('imports').delete().eq('id', importId);
+  if (error) { showToast('Erreur suppression', 'error'); return; }
+  state.imports = state.imports.filter(i => i.id !== importId);
+  state.sales   = state.sales.filter(s => s.importId !== importId);
+  showToast('Import supprimé', 'success');
+  updateNavBadge();
+  renderImport(); // re-render the page
+}
+
 async function deletePharmacy(pharmacyId) {
   const pharma = state.pharmacies.find(p => p.id === pharmacyId);
   if (!confirm(`Supprimer "${pharma?.name}" et toutes ses données ?`)) return;
@@ -985,7 +1003,7 @@ function renderImport() {
         <input type="file" id="file-input" accept=".xlsx,.xls" multiple onchange="handleFiles(this.files)">
         <div class="import-zone-icon">📂</div>
         <div class="import-zone-title">Glissez vos fichiers ici</div>
-        <div class="import-zone-sub">Formats acceptés : <code style="background:rgba(255,255,255,.07);padding:2px 6px;border-radius:4px">WML_MM_YYYY.xlsx</code> (multi-pharmacies) ou <code style="background:rgba(255,255,255,.07);padding:2px 6px;border-radius:4px">Phie de la republique 04 26.xlsx</code> (mono-pharmacie)</div>
+        <div class="import-zone-sub">Formats acceptés : <code style="background:var(--bg3);padding:2px 6px;border-radius:4px">WML_MM_YYYY.xlsx</code> (multi-pharmacies) ou <code style="background:var(--bg3);padding:2px 6px;border-radius:4px">Phie de la republique 04 26.xlsx</code> (mono-pharmacie)</div>
       </div>
 
       <div id="pending-list" class="import-list" style="${pendingFiles.length ? '' : 'display:none'}"></div>
@@ -995,7 +1013,7 @@ function renderImport() {
         <div class="card-title" style="margin-bottom:12px">Historique des imports</div>
         <div class="card">
           <table class="data-table">
-            <thead><tr><th>Fichier</th><th>Pharmacie</th><th>Période</th><th>Date import</th></tr></thead>
+            <thead><tr><th>Fichier</th><th>Pharmacie</th><th>Période</th><th>Date import</th><th></th></tr></thead>
             <tbody>
               ${recentImports.map(imp => {
                 const ph = state.pharmacies.find(p => p.id === imp.pharmacyId);
@@ -1004,6 +1022,7 @@ function renderImport() {
                   <td><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${ph?.color||'#555'}"></span>${ph?.name||'?'}</span></td>
                   <td class="td-num">${imp.month ? monthName(imp.month)+' '+imp.year : '—'}</td>
                   <td style="color:var(--text3);font-size:12px">${new Date(imp.importedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}</td>
+                  <td><button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(220,38,38,.2);padding:3px 10px;font-size:11px" onclick="deleteImportFromHistory('${imp.id}','${imp.pharmacyId}')">🗑</button></td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -1048,10 +1067,17 @@ async function handleFiles(files) {
         // Multi-pharmacy WML result
         const periode = result.month ? monthName(result.month) + ' ' + result.year : 'Période inconnue';
         item.querySelector('.import-item-meta').textContent =
-          `${result.pharmacies.length} pharmacies · ${periode} · ${result.totalLines} lignes importées`;
+          `${result.pharmacies.length} pharmacies · ${periode} · ${result.totalLines} lignes`;
         item.querySelector('.import-item-status').className = 'import-item-status status-ok';
         item.querySelector('.import-item-status').textContent = '✓ Importé';
-        showToast(`${result.pharmacies.length} pharmacies importées — ${result.totalLines} lignes`, 'success');
+        // Add navigation shortcuts after the item
+        item.insertAdjacentHTML('afterend', `
+          <div style="text-align:center;margin:4px 0">
+            <button class="btn btn-primary" onclick="navigate('dashboard')" style="font-size:12px;padding:6px 16px">→ Voir le dashboard</button>
+            <button class="btn btn-ghost" onclick="navigate('pharmacies')" style="font-size:12px;padding:6px 16px;margin-left:8px">→ Voir les pharmacies</button>
+          </div>
+        `);
+        showToast(`${result.pharmacies.length} pharmacies · ${result.totalLines} lignes importées`, 'success');
       } else {
         // Calcul CA / Marge / Taux sur les lignes fraîchement importées
         const impSales = state.sales.filter(s =>
