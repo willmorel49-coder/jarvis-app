@@ -34,6 +34,7 @@ async function load() {
     id: s.id, importId: s.import_id, pharmacyId: s.pharmacy_id,
     month: s.month, year: s.year,
     artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
+    artFamille: s.art_famille || null,
     qte: parseFloat(s.qte)||0, puBrut: parseFloat(s.pu_brut)||0,
     puNet: parseFloat(s.pu_net)||0, mntNetHt: parseFloat(s.mnt_net_ht)||0,
   }));
@@ -81,6 +82,13 @@ async function logout() {
 // ── PHARMACY UTILS ────────────────────────────
 function pharmaMetaFromFilename(filename) {
   const base = filename.replace(/\.(xlsx|xls|csv)$/i, '').trim();
+
+  // WML multi-pharmacy format: WML_01_2026.xlsx
+  const wmlMatch = base.match(/WML_(\d{2})_(\d{4})/i);
+  if (wmlMatch) {
+    return { name: 'WML', code: 'WML', color: PHARMA_COLORS[0], month: parseInt(wmlMatch[1]), year: parseInt(wmlMatch[2]), isWML: true };
+  }
+
   const monthYearMatch = base.match(/(\d{2})\s+(\d{2,4})$/);
   let month = null, year = null, namePart = base;
   if (monthYearMatch) {
@@ -117,20 +125,118 @@ function parseExcel(file) {
 
 function normalizeRow(row) {
   // Map any column naming variation
-  const get = (...keys) => { for (const k of keys) if (row[k] !== undefined) return row[k]; return ''; };
+  const get = (...keys) => { for (const k of keys) if (row[k] !== undefined && row[k] !== null && row[k] !== '') return row[k]; return ''; };
   return {
-    artDesignation: get('ARTDESIGNATION','Art Designation','designation'),
-    artCode:        get('ARTCODE','Art Code','code'),
+    artDesignation: get('PLVDESIGNATION','ARTDESIGNATION','Art Designation','designation'),
+    artCode:        String(get('ARTCODE','Art Code','code') || ''),
     artId:          get('ARTID','Art ID','id'),
     qte:            parseFloat(get('PLVQTE','Qte','qte')) || 0,
-    puBrut:         parseFloat(get('PLVPUBRUT_MOY','PU Brut','pu_brut')) || 0,
-    puNet:          parseFloat(get('PLVPUNET_MOY','PU Net','pu_net')) || 0,
-    mntNetHt:       parseFloat(get('PLVMNTNETHT_MOY','Mnt Net HT','mnt_net')) || 0,
+    puBrut:         parseFloat(get('PLVPUBRUT','PLVPUBRUT_MOY','PU Brut','pu_brut')) || 0,
+    puNet:          parseFloat(get('PLVPUNET','PLVPUNET_MOY','PU Net','pu_net')) || 0,
+    mntNetHt:       parseFloat(get('PLVMNTNETHT','PLVMNTNETHT_MOY','Mnt Net HT','mnt_net')) || 0,
+    // WML-specific (null for old format)
+    pharmacyName:   get('TIRSOCIETE') || null,
+    pharmacyCode:   get('TIRCODE') || null,
+    subfamily:      get('ARTSOUSFAMILLE') || null,
+    nature:         get('ARTNATURE') || null,
+    afmCode:        get('AFMCODE') || null,
   };
 }
 
+async function importMultiPharmaFile(file, month, year) {
+  let rows;
+  try { rows = await parseExcel(file); }
+  catch(e) { return { ok: false, error: 'Erreur lecture fichier' }; }
+  if (!rows.length) return { ok: false, error: 'Fichier vide' };
+
+  // Group rows by pharmacy name
+  const byPharma = {};
+  for (const row of rows) {
+    const norm = normalizeRow(row);
+    if (!norm.pharmacyName || !norm.artDesignation) continue;
+    const key = String(norm.pharmacyName).trim();
+    if (!byPharma[key]) byPharma[key] = { name: key, code: String(norm.pharmacyCode || ''), rows: [] };
+    byPharma[key].rows.push(norm);
+  }
+
+  const pharmacyGroups = Object.values(byPharma);
+  if (!pharmacyGroups.length) return { ok: false, error: 'Aucune ligne valide' };
+
+  let totalLines = 0;
+  const importedPharmas = [];
+
+  for (const group of pharmacyGroups) {
+    // Find or create pharmacy
+    let pharma = state.pharmacies.find(p => p.name.toLowerCase() === group.name.toLowerCase());
+    if (!pharma) {
+      // Generate display code from initials
+      const code = group.name.replace(/^pharmacie\s+/i,'').split(/\s+/).map(w=>w[0]||'').join('').toUpperCase().slice(0,4) || group.code.slice(-4);
+      const color = PHARMA_COLORS[state.pharmacies.length % PHARMA_COLORS.length];
+      const { data: inserted, error: phErr } = await sb.from('pharmacies').insert({ name: group.name, code, color }).select().single();
+      if (phErr) continue; // skip this pharmacy if error
+      pharma = { id: inserted.id, name: inserted.name, code: inserted.code, color: inserted.color };
+      state.pharmacies.push(pharma);
+    }
+
+    // Delete old import for same period (CASCADE removes its sales)
+    if (month && year) {
+      const oldImp = state.imports.find(i => i.pharmacyId === pharma.id && i.month === month && i.year === year);
+      if (oldImp) {
+        await sb.from('imports').delete().eq('id', oldImp.id);
+        state.imports = state.imports.filter(i => i.id !== oldImp.id);
+        state.sales   = state.sales.filter(s => s.importId !== oldImp.id);
+      }
+    }
+
+    // Insert import record
+    const { data: imp, error: impErr } = await sb.from('imports')
+      .insert({ pharmacy_id: pharma.id, month, year, filename: file.name, imported_by: state.user.id })
+      .select().single();
+    if (impErr) continue;
+    state.imports.unshift({ id: imp.id, pharmacyId: imp.pharmacy_id, month: imp.month, year: imp.year, filename: imp.filename, importedAt: imp.imported_at });
+
+    // Build sales rows (negate qte and mntNetHt because WML stores them negative)
+    const salesRows = group.rows.map(r => {
+      const famille = classifyFromWMLRow(r.subfamily, r.nature, r.afmCode, r.puNet);
+      return {
+        import_id: imp.id, pharmacy_id: pharma.id, month, year,
+        art_designation: r.artDesignation,
+        art_code: r.artCode,
+        art_id: r.artId || null,
+        art_famille: famille,
+        qte:       -(r.qte),      // negate: negative in file = sale
+        pu_brut:   r.puBrut,
+        pu_net:    r.puNet,
+        mnt_net_ht: -(r.mntNetHt), // negate: negative in file = sale
+      };
+    });
+
+    const BATCH = 500;
+    let batchOk = true;
+    for (let i = 0; i < salesRows.length; i += BATCH) {
+      const { error: sErr } = await sb.from('sales').insert(salesRows.slice(i, i + BATCH));
+      if (sErr) { batchOk = false; break; }
+      state.sales.push(...salesRows.slice(i, i + BATCH).map(s => ({
+        id: crypto.randomUUID(), importId: s.import_id, pharmacyId: s.pharmacy_id,
+        month: s.month, year: s.year,
+        artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
+        artFamille: s.art_famille,
+        qte: s.qte, puBrut: s.pu_brut, puNet: s.pu_net, mntNetHt: s.mnt_net_ht,
+      })));
+    }
+    if (batchOk) {
+      totalLines += salesRows.length;
+      importedPharmas.push(pharma);
+    }
+  }
+
+  return { ok: true, isMulti: true, pharmacies: importedPharmas, month, year, totalLines };
+}
+
 async function importFile(file) {
-  const { name, code, color, month, year } = pharmaMetaFromFilename(file.name);
+  const meta = pharmaMetaFromFilename(file.name);
+  if (meta.isWML) return importMultiPharmaFile(file, meta.month, meta.year);
+  const { name, code, color, month, year } = meta;
   let rows;
   try { rows = await parseExcel(file); }
   catch(e) { return { ok: false, error: 'Erreur lecture fichier' }; }
@@ -208,6 +314,7 @@ const CATS = {
 };
 
 function classifyProduct(sale) {
+  if (sale.artFamille && CATS[sale.artFamille]) return sale.artFamille;
   const name = (sale.artDesignation || '').toUpperCase();
   if (/FROID|RÉFRIGÉR|REFRIGER|THERMOSENS/i.test(name)) return 'froid';
   if (/BIOSIM|BIOSIMILAIRE/i.test(name))                 return 'biosim';
@@ -215,6 +322,19 @@ function classifyProduct(sale) {
   if (/\bNR\b/.test(name))                               return 'nr';
   const p = sale.puNet || 0;
   return p > 468 ? 'ch' : p > 4.33 ? 'mi' : 'pp';
+}
+
+function classifyFromWMLRow(sf, nature, afm, puNet) {
+  const s = (sf || '').toLowerCase();
+  const n = (nature || '').toLowerCase();
+  const a = (afm || '').toLowerCase();
+  if (s === 'froid') return 'froid';
+  if (n.includes('biosimilaire')) return 'biosim';
+  if (n.includes('generique')) return 'generique';
+  if (a === 'para' || a === 'dm' || a === 'dm_20') return 'nr';
+  if (puNet > 468) return 'ch';
+  if (puNet > 4.33) return 'mi';
+  return 'pp';
 }
 
 function sumCA(sales)    { return sales.reduce((a, s) => a + (s.mntNetHt || 0), 0); }
@@ -865,7 +985,7 @@ function renderImport() {
         <input type="file" id="file-input" accept=".xlsx,.xls" multiple onchange="handleFiles(this.files)">
         <div class="import-zone-icon">📂</div>
         <div class="import-zone-title">Glissez vos fichiers ici</div>
-        <div class="import-zone-sub">Formats acceptés : <strong>.xlsx</strong>, <strong>.xls</strong><br>Nommez vos fichiers comme : <code style="background:rgba(255,255,255,.07);padding:2px 6px;border-radius:4px">Phie de la republique 04 26.xlsx</code></div>
+        <div class="import-zone-sub">Formats acceptés : <code style="background:rgba(255,255,255,.07);padding:2px 6px;border-radius:4px">WML_MM_YYYY.xlsx</code> (multi-pharmacies) ou <code style="background:rgba(255,255,255,.07);padding:2px 6px;border-radius:4px">Phie de la republique 04 26.xlsx</code> (mono-pharmacie)</div>
       </div>
 
       <div id="pending-list" class="import-list" style="${pendingFiles.length ? '' : 'display:none'}"></div>
@@ -924,18 +1044,28 @@ async function handleFiles(files) {
     if (!item) continue;
 
     if (result.ok) {
-      // Calcul CA / Marge / Taux sur les lignes fraîchement importées
-      const impSales = state.sales.filter(s =>
-        s.pharmacyId === result.pharma.id && s.month === result.month && s.year === result.year);
-      const impCA    = sumCA(impSales);
-      const impMarge = sumMarge(impSales);
-      const impTaux  = margePct(impSales);
-      const periode  = result.month ? monthName(result.month) + ' ' + result.year : 'Période inconnue';
-      item.querySelector('.import-item-meta').textContent =
-        `${result.pharma.name} · ${periode} · ${result.count} lignes · CA: ${fmt(impCA)} · Marge: ${fmt(impMarge)} · Taux: ${impTaux.toFixed(1)}%`;
-      item.querySelector('.import-item-status').className = 'import-item-status status-ok';
-      item.querySelector('.import-item-status').textContent = '✓ Importé';
-      showToast(`${result.pharma.name} importée — ${result.count} lignes`, 'success');
+      if (result.isMulti) {
+        // Multi-pharmacy WML result
+        const periode = result.month ? monthName(result.month) + ' ' + result.year : 'Période inconnue';
+        item.querySelector('.import-item-meta').textContent =
+          `${result.pharmacies.length} pharmacies · ${periode} · ${result.totalLines} lignes importées`;
+        item.querySelector('.import-item-status').className = 'import-item-status status-ok';
+        item.querySelector('.import-item-status').textContent = '✓ Importé';
+        showToast(`${result.pharmacies.length} pharmacies importées — ${result.totalLines} lignes`, 'success');
+      } else {
+        // Calcul CA / Marge / Taux sur les lignes fraîchement importées
+        const impSales = state.sales.filter(s =>
+          s.pharmacyId === result.pharma.id && s.month === result.month && s.year === result.year);
+        const impCA    = sumCA(impSales);
+        const impMarge = sumMarge(impSales);
+        const impTaux  = margePct(impSales);
+        const periode  = result.month ? monthName(result.month) + ' ' + result.year : 'Période inconnue';
+        item.querySelector('.import-item-meta').textContent =
+          `${result.pharma.name} · ${periode} · ${result.count} lignes · CA: ${fmt(impCA)} · Marge: ${fmt(impMarge)} · Taux: ${impTaux.toFixed(1)}%`;
+        item.querySelector('.import-item-status').className = 'import-item-status status-ok';
+        item.querySelector('.import-item-status').textContent = '✓ Importé';
+        showToast(`${result.pharma.name} importée — ${result.count} lignes`, 'success');
+      }
     } else {
       item.querySelector('.import-item-meta').textContent = result.error;
       item.querySelector('.import-item-status').className = 'import-item-status status-err';
