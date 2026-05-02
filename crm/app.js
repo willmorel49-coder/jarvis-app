@@ -1415,20 +1415,144 @@ async function migrateFromLocalStorage() {
   renderAdmin();
 }
 
+// ── BENCHMARK ─────────────────────────────────
+let benchCat = 'tous';
+let benchSearch = '';
+let benchSortCol = 'ip_qty';
+let benchSortAsc = false;
+
+function renderBenchmark() {
+  if (typeof BENCHMARK === 'undefined') {
+    document.getElementById('bench-content').innerHTML = emptyState('📊', 'Données non chargées', 'benchmark-data.js manquant');
+    return;
+  }
+
+  // Filter
+  let data = [...BENCHMARK];
+  if (benchCat !== 'tous') data = data.filter(d => d.categorie === benchCat);
+  if (benchSearch) {
+    const q = benchSearch.toLowerCase();
+    data = data.filter(d => d.designation.toLowerCase().includes(q));
+  }
+
+  // Sort
+  data.sort((a, b) => {
+    const av = a[benchSortCol] ?? 0, bv = b[benchSortCol] ?? 0;
+    return benchSortAsc ? av - bv : bv - av;
+  });
+
+  // Stats globales
+  const totalIPQty = BENCHMARK.reduce((s, d) => s + d.ip_qty, 0);
+  const totalIPCa  = BENCHMARK.reduce((s, d) => s + d.ip_ca, 0);
+  const withAmeli  = BENCHMARK.filter(d => d.has_ameli).length;
+  const cats = [
+    { key: 'tous', label: 'Tous' },
+    { key: 'pp',   label: 'PP <4.8€' },
+    { key: 'mi',   label: 'Médian' },
+    { key: 'ch',   label: '>480€' },
+    { key: 'froid',label: 'Froid' },
+    { key: 'nr',   label: 'Med010' },
+  ];
+
+  const chipsHtml = cats.map(c => {
+    const active = benchCat === c.key;
+    return `<button onclick="benchCat='${c.key}';renderBenchmark()" style="
+      padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};
+      background:${active ? 'var(--blue-bg)' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
+      cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
+    ">${c.label}</button>`;
+  }).join('');
+
+  function thB(col, label, align='right') {
+    const active = benchSortCol === col;
+    const arrow = active ? (benchSortAsc ? ' ↑' : ' ↓') : '';
+    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--blue)':''}" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
+  }
+
+  const rowsHtml = data.slice(0, 200).map((d, i) => {
+    const rotColor = d.rot_pharma_jan26 > 10 ? 'var(--mint)' : d.rot_pharma_jan26 > 1 ? 'var(--amber)' : 'var(--text3)';
+    const catColors = { pp:'#34D399', mi:'#FFB020', ch:'#FF4D6D', froid:'#00C6FF', nr:'#FF6B35', biosim:'#9B5CFF', generique:'#00E5A0' };
+    const cc = catColors[d.categorie] || '#8899BB';
+    return `<tr>
+      <td style="color:var(--text3);font-size:12px">${d.ip_rank_qty}</td>
+      <td class="td-name" style="font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}</td>
+      <td><span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc}">${d.categorie.toUpperCase()}</span></td>
+      <td class="td-num" style="text-align:right">${fmtNum(d.ip_qty)}</td>
+      <td class="td-num" style="text-align:right">${fmt(d.ip_ca)}</td>
+      <td class="td-num" style="text-align:right;color:${rotColor}">${d.has_ameli ? d.rot_pharma_jan26.toFixed(1) : '—'}</td>
+      <td style="text-align:right;font-size:11px;color:var(--text3)">${d.has_ameli ? fmtNum(d.ameli_jan26) : '—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${d.cip13 || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('bench-content').innerHTML = `
+    <div class="fade-up">
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:28px">
+        <div class="kpi-card kc-b">
+          <div class="kpi-icon">📦</div>
+          <div class="kpi-value">${fmtNum(totalIPQty)}</div>
+          <div class="kpi-label">Unités IP totales</div>
+        </div>
+        <div class="kpi-card kc-g">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-value">${fmt(totalIPCa)}</div>
+          <div class="kpi-label">CA IP total</div>
+        </div>
+        <div class="kpi-card kc-p">
+          <div class="kpi-icon">🔗</div>
+          <div class="kpi-value">${withAmeli}/${BENCHMARK.length}</div>
+          <div class="kpi-label">Produits matchés Ameli</div>
+        </div>
+      </div>
+
+      <div class="card fade-up">
+        <div class="card-header" style="flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="card-title">TOP Rotations IP × Ameli France</div>
+            <div class="card-subtitle">Rotation nationale = boîtes remboursées Jan 2026 ÷ 19 000 pharmacies</div>
+          </div>
+          <div class="search-wrap" style="width:260px">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Rechercher un produit..." value="${benchSearch}"
+              oninput="benchSearch=this.value;renderBenchmark()" />
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px 4px">${chipsHtml}</div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr>
+              ${thB('ip_rank_qty','Rang','left')}
+              <th>Produit</th>
+              <th>Cat.</th>
+              ${thB('ip_qty','Qté IP')}
+              ${thB('ip_ca','CA IP')}
+              ${thB('rot_pharma_jan26','Rot./pharma/mois')}
+              <th style="text-align:right">France Jan26</th>
+              <th>CIP13</th>
+            </tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          ${data.length > 200 ? `<div style="padding:12px 20px;font-size:12px;color:var(--text3)">Affichage limité à 200 résultats — utilisez la recherche ou les filtres.</div>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // ── NAV ───────────────────────────────────────
 function navigate(page) {
   state.currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
 
-  const titles = { dashboard: 'Dashboard', pharmacies: 'Pharmacies', produits: 'Produits', catalogue: 'Catalogue IP', import: 'Import', admin: 'Administration' };
+  const titles = { dashboard: 'Dashboard', pharmacies: 'Pharmacies', produits: 'Produits', catalogue: 'Catalogue IP', import: 'Import', admin: 'Administration', benchmark: 'Benchmark Marché' };
   document.getElementById('topbar-title').textContent = titles[page] || page;
 
   // FAB catalogue visible uniquement sur la page catalogue
   const fab = document.getElementById('cat-cart-fab');
   if (fab) fab.style.setProperty('display', page === 'catalogue' ? '' : 'none', 'important');
 
-  const renders = { dashboard: renderDashboard, pharmacies: renderPharmacies, produits: renderProduits, catalogue: renderCatalogue, import: renderImport, admin: renderAdmin };
+  const renders = { dashboard: renderDashboard, pharmacies: renderPharmacies, produits: renderProduits, catalogue: renderCatalogue, import: renderImport, admin: renderAdmin, benchmark: renderBenchmark };
   if (renders[page]) renders[page]();
 }
 
