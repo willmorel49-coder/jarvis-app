@@ -19,6 +19,7 @@ let state = {
   sales: [],
   currentPage: 'dashboard',
   charts: {},
+  sim: { pharmacyId: null, name: 'Simulation 1', items: [] },
 };
 
 // ── STORAGE ──────────────────────────────────
@@ -309,7 +310,6 @@ function getSales(filters = {}) {
 
 // ── CATEGORIES ────────────────────────────────
 const CATS = {
-  froid:     { label: 'Froid',          color: '#00C6FF', icon: '❄️' },
   biosim:    { label: 'Biosimilaires',  color: '#9B5CFF', icon: '🧬' },
   generique: { label: 'Génériques',     color: '#00E5A0', icon: '💊' },
   nr:        { label: 'Non remboursés', color: '#FF6B35', icon: '🔴' },
@@ -317,25 +317,32 @@ const CATS = {
   mi:        { label: 'Intermédiaire',  color: '#FFB020', icon: '📊' },
   pp:        { label: 'Petit prix',     color: '#34D399', icon: '✓'  },
 };
+// froid est un indicateur transversal (❄️), pas une catégorie standalone
+function isFroid(sale) {
+  if (sale && sale.artFamille === 'froid') return true;
+  return /FROID|RÉFRIGÉR|REFRIGER|THERMOSENS/i.test((sale && sale.artDesignation) || '');
+}
+function isFroidBench(b) {
+  return b.categorie === 'froid' || /FROID|RÉFRIGÉR|REFRIGER|THERMOSENS/i.test(b.designation || '');
+}
 
 function classifyProduct(sale) {
-  if (sale.artFamille && CATS[sale.artFamille]) return sale.artFamille;
+  // froid n'est plus une catégorie standalone → indicateur ❄️ seulement
+  if (sale.artFamille && CATS[sale.artFamille] && sale.artFamille !== 'froid') return sale.artFamille;
   const name = (sale.artDesignation || '').toUpperCase();
-  if (/FROID|RÉFRIGÉR|REFRIGER|THERMOSENS/i.test(name)) return 'froid';
-  if (/BIOSIM|BIOSIMILAIRE/i.test(name))                 return 'biosim';
-  if (/\bGNR\b|GÉNÉR|GENERI/i.test(name))               return 'generique';
-  if (/\bNR\b/.test(name))                               return 'nr';
+  if (/BIOSIM|BIOSIMILAIRE/i.test(name))   return 'biosim';
+  if (/\bGNR\b|GÉNÉR|GENERI/i.test(name)) return 'generique';
+  if (/\bNR\b/.test(name))                return 'nr';
   const p = sale.puNet || 0;
   return p > 468 ? 'ch' : p > 4.33 ? 'mi' : 'pp';
 }
 
 function classifyFromWMLRow(sf, nature, afm, puNet) {
-  const s = (sf || '').toLowerCase();
   const n = (nature || '').toLowerCase();
   const a = (afm || '').toLowerCase();
-  if (s === 'froid') return 'froid';
+  // froid = indicateur transversal → on classe sur la nature thérapeutique ou le prix
   if (n.includes('biosimilaire')) return 'biosim';
-  if (n.includes('generique')) return 'generique';
+  if (n.includes('generique'))    return 'generique';
   if (a === 'para' || a === 'dm' || a === 'dm_20') return 'nr';
   if (puNet > 468) return 'ch';
   if (puNet > 4.33) return 'mi';
@@ -376,7 +383,11 @@ function topProducts(sales, n = 10) {
   const map = {};
   for (const s of sales) {
     const k = s.artCode || s.artDesignation;
-    if (!map[k]) map[k] = { name: s.artDesignation, code: s.artCode, cat: classifyProduct(s), qte: 0, ca: 0, marge: 0 };
+    if (!map[k]) map[k] = {
+      name: s.artDesignation, code: s.artCode,
+      cat: classifyProduct(s), froid: isFroid(s),
+      qte: 0, ca: 0, marge: 0,
+    };
     map[k].qte   += s.qte;
     map[k].ca    += s.mntNetHt;
     map[k].marge += Math.max(0, (s.puBrut - s.puNet) * s.qte);
@@ -1171,8 +1182,10 @@ function renderProduits() {
     all = all.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
   }
 
-  // Filtre famille
-  if (prodFamille !== 'tous') {
+  // Filtre famille (froid = filtre transversal par indicateur)
+  if (prodFamille === 'froid') {
+    all = all.filter(p => p.froid);
+  } else if (prodFamille !== 'tous') {
     all = all.filter(p => p.cat === prodFamille);
   }
 
@@ -1191,16 +1204,16 @@ function renderProduits() {
 
   const maxCA = Math.max(...all.map(p => p.ca), 1);
 
-  // Chips famille
+  // Chips famille (froid = indicateur ❄️ uniquement, pas de chip standalone)
   const familles = [
-    { key: 'tous',      label: 'Tous',         color: '#8899BB' },
-    { key: 'pp',        label: 'PP',            color: CATS.pp.color },
-    { key: 'mi',        label: 'MI',            color: CATS.mi.color },
-    { key: 'ch',        label: 'CH',            color: CATS.ch.color },
-    { key: 'biosim',    label: 'Biosim',        color: CATS.biosim.color },
-    { key: 'generique', label: 'Générique',     color: CATS.generique.color },
-    { key: 'nr',        label: 'NR',            color: CATS.nr.color },
-    { key: 'froid',     label: 'Froid',         color: CATS.froid.color },
+    { key: 'tous',      label: 'Tous',       color: '#8899BB' },
+    { key: 'pp',        label: 'PP',         color: CATS.pp.color },
+    { key: 'mi',        label: 'MI',         color: CATS.mi.color },
+    { key: 'ch',        label: 'CH',         color: CATS.ch.color },
+    { key: 'biosim',    label: 'Biosim',     color: CATS.biosim.color },
+    { key: 'generique', label: 'Générique',  color: CATS.generique.color },
+    { key: 'nr',        label: 'NR',         color: CATS.nr.color },
+    { key: 'froid',     label: '❄️ Froid',   color: '#00C6FF' },
   ];
 
   const chipsHtml = familles.map(f => {
@@ -1222,9 +1235,10 @@ function renderProduits() {
   const rowsHtml = all.map((p, i) => {
     const cat  = CATS[p.cat] || CATS.mi;
     const taux = p.taux;
+    const froidBadge = p.froid ? ' <span title="Produit thermosensible" style="font-size:11px;vertical-align:middle">❄️</span>' : '';
     return `<tr>
       <td>${renderRank(i)}</td>
-      <td class="td-name">${p.name}</td>
+      <td class="td-name">${p.name}${froidBadge}</td>
       <td><span class="badge badge-blue">${p.code || '—'}</span></td>
       <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${cat.color}22;color:${cat.color};white-space:nowrap">${cat.label}</span></td>
       <td class="td-num" style="text-align:right">${fmtNum(Math.round(p.qte))}</td>
@@ -1566,9 +1580,10 @@ function renderBenchmark() {
     const rotColor = d.rot_pharma_jan26 > 10 ? 'var(--mint)' : d.rot_pharma_jan26 > 1 ? 'var(--amber)' : 'var(--text3)';
     const catColors = { pp:'#34D399', mi:'#FFB020', ch:'#FF4D6D', froid:'#00C6FF', nr:'#FF6B35', biosim:'#9B5CFF', generique:'#00E5A0' };
     const cc = catColors[d.categorie] || '#8899BB';
+    const froidTag = isFroidBench(d) ? ' <span title="Thermosensible" style="font-size:11px">❄️</span>' : '';
     return `<tr>
       <td style="color:var(--text3);font-size:12px">${d.ip_rank_qty}</td>
-      <td class="td-name" style="font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}</td>
+      <td class="td-name" style="font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}${froidTag}</td>
       <td><span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc}">${d.categorie.toUpperCase()}</span></td>
       <td class="td-num" style="text-align:right">${fmtNum(d.ip_qty)}</td>
       <td class="td-num" style="text-align:right">${fmt(d.ip_ca)}</td>
@@ -1638,14 +1653,31 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
 
-  const titles = { dashboard: 'Dashboard', pharmacies: 'Pharmacies', produits: 'Produits', catalogue: 'Catalogue IP', import: 'Import', admin: 'Administration', benchmark: 'Benchmark Marché' };
+  const titles = {
+    dashboard:  'Dashboard',
+    pharmacies: 'Pharmacies',
+    produits:   'Analyse Portefeuille',
+    catalogue:  'Catalogue IP',
+    import:     'Import',
+    admin:      'Administration',
+    benchmark:  'Benchmark Marché',
+    simulateur: 'Simulateur de panier',
+  };
   document.getElementById('topbar-title').textContent = titles[page] || page;
 
-  // FAB catalogue visible uniquement sur la page catalogue
   const fab = document.getElementById('cat-cart-fab');
   if (fab) fab.style.setProperty('display', page === 'catalogue' ? '' : 'none', 'important');
 
-  const renders = { dashboard: renderDashboard, pharmacies: renderPharmacies, produits: renderProduits, catalogue: renderCatalogue, import: renderImport, admin: renderAdmin, benchmark: renderBenchmark };
+  const renders = {
+    dashboard:  renderDashboard,
+    pharmacies: renderPharmacies,
+    produits:   renderProduits,
+    catalogue:  renderCatalogue,
+    import:     renderImport,
+    admin:      renderAdmin,
+    benchmark:  renderBenchmark,
+    simulateur: renderSimulator,
+  };
   if (renders[page]) renders[page]();
 }
 
@@ -1663,6 +1695,391 @@ function showToast(msg, type = 'info') {
   t.className = `show ${type}`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── SIMULATEUR ────────────────────────────────
+let simSearchQuery = '';
+
+function simProductList() {
+  if (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) {
+    return BENCHMARK.map(b => ({
+      designation: b.designation,
+      code:        b.cip13 || '',
+      cat:         b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi'),
+      froid:       isFroidBench(b),
+      puNet:       b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0,
+      rot:         b.rot_pharma_jan26 || 0,
+      hasAmeli:    b.has_ameli,
+    }));
+  }
+  // Fallback: produits des ventes en mémoire
+  const map = {};
+  for (const s of state.sales) {
+    const k = s.artCode || s.artDesignation;
+    if (!map[k]) map[k] = {
+      designation: s.artDesignation, code: s.artCode,
+      cat: classifyProduct(s), froid: isFroid(s), puNet: s.puNet, rot: 0, hasAmeli: false,
+    };
+  }
+  return Object.values(map);
+}
+
+function simCalc() {
+  const items = state.sim.items;
+  const caTotal    = items.reduce((a, it) => a + it.puNet * it.qty, 0);
+  const margeTotal = items.reduce((a, it) => a + Math.max(0, (it.puBrut - it.puNet) * it.qty), 0);
+  const bycat = {};
+  for (const it of items) {
+    const k = it.cat;
+    if (!bycat[k]) bycat[k] = { ca: 0, qty: 0 };
+    bycat[k].ca  += it.puNet * it.qty;
+    bycat[k].qty += it.qty;
+  }
+  return { caTotal, margeTotal, bycat };
+}
+
+function simSuggestions(query) {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+  const already = new Set(state.sim.items.map(it => it.designation.toLowerCase()));
+  return simProductList()
+    .filter(p => p.designation.toLowerCase().includes(q) && !already.has(p.designation.toLowerCase()))
+    .sort((a, b) => b.rot - a.rot)
+    .slice(0, 8);
+}
+
+function simAddProduct(idx) {
+  const list = simSuggestions(simSearchQuery);
+  const p    = list[idx];
+  if (!p) return;
+  // Si pharmacie sélectionnée : enrichir avec son puNet historique
+  let puNet = p.puNet, puBrut = p.puNet * 1.05; // estimate
+  if (state.sim.pharmacyId) {
+    const match = state.sales
+      .filter(s => s.pharmacyId === state.sim.pharmacyId && (s.artCode === p.code || s.artDesignation === p.designation))
+      .sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month));
+    if (match.length) { puNet = match[0].puNet; puBrut = match[0].puBrut; }
+  }
+  state.sim.items.push({
+    designation: p.designation, code: p.code, cat: p.cat, froid: p.froid,
+    puNet, puBrut, qty: 1,
+  });
+  simSearchQuery = '';
+  renderSimulator();
+}
+
+function simRemove(i) {
+  state.sim.items.splice(i, 1);
+  renderSimulator();
+}
+
+function simUpdateQty(i, v) {
+  const qty = Math.max(0, parseFloat(v) || 0);
+  state.sim.items[i].qty = qty;
+  // Mise à jour partielle des totaux sans full re-render
+  const { caTotal, margeTotal } = simCalc();
+  const el = document.getElementById('sim-total-ca');
+  if (el) el.textContent = fmt(caTotal);
+  const el2 = document.getElementById('sim-total-marge');
+  if (el2) el2.textContent = fmt(margeTotal);
+  const el3 = document.getElementById('sim-line-' + i);
+  if (el3) el3.textContent = fmt(state.sim.items[i].puNet * qty);
+  updateSimBars();
+}
+
+function updateSimBars() {
+  const { bycat, caTotal } = simCalc();
+  const barsEl = document.getElementById('sim-bars');
+  if (!barsEl) return;
+  barsEl.innerHTML = Object.entries(bycat)
+    .sort((a,b) => b[1].ca - a[1].ca)
+    .map(([k, v]) => {
+      const cat  = CATS[k] || CATS.mi;
+      const pct  = caTotal > 0 ? (v.ca / caTotal * 100).toFixed(0) : 0;
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:600;color:${cat.color}">${cat.icon} ${cat.label}</span>
+          <span style="font-size:12px;color:var(--text2)">${fmt(v.ca)} · ${pct}%</span>
+        </div>
+        <div style="height:6px;background:var(--bg3);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${cat.color};border-radius:4px;transition:width .3s"></div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function saveSimulation() {
+  const sims  = JSON.parse(localStorage.getItem('ip_crm_sims') || '[]');
+  const saved = { id: Date.now(), name: state.sim.name, pharmacyId: state.sim.pharmacyId, items: state.sim.items, savedAt: new Date().toISOString() };
+  sims.unshift(saved);
+  localStorage.setItem('ip_crm_sims', JSON.stringify(sims.slice(0, 20)));
+  showToast(`Simulation "${state.sim.name}" sauvegardée`, 'success');
+}
+
+function loadSim(id) {
+  const sims = JSON.parse(localStorage.getItem('ip_crm_sims') || '[]');
+  const sim  = sims.find(s => s.id === id);
+  if (!sim) return;
+  state.sim = { pharmacyId: sim.pharmacyId, name: sim.name, items: sim.items };
+  renderSimulator();
+}
+
+function deleteSavedSim(id) {
+  const sims = JSON.parse(localStorage.getItem('ip_crm_sims') || '[]').filter(s => s.id !== id);
+  localStorage.setItem('ip_crm_sims', JSON.stringify(sims));
+  renderSimulator();
+}
+
+function printSimulation() {
+  const { caTotal, margeTotal } = simCalc();
+  const pharmaName = state.sim.pharmacyId
+    ? (state.pharmacies.find(p => p.id === state.sim.pharmacyId)?.name || 'Pharmacie')
+    : 'Aucune pharmacie';
+  const rows = state.sim.items.map(it => {
+    const froid = it.froid ? ' ❄️' : '';
+    return `<tr><td>${it.designation}${froid}</td><td style="text-align:center">${it.qty}</td><td style="text-align:right">${fmt(it.puNet)}</td><td style="text-align:right;font-weight:600">${fmt(it.puNet * it.qty)}</td></tr>`;
+  }).join('');
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Simulation — ${state.sim.name}</title>
+  <style>body{font-family:Arial,sans-serif;padding:30px;color:#111}h1{font-size:20px;margin-bottom:4px}p{color:#666;font-size:13px;margin-bottom:20px}table{width:100%;border-collapse:collapse}th{background:#f0f2f8;text-align:left;padding:8px 10px;font-size:12px}td{padding:7px 10px;border-bottom:1px solid #eee;font-size:13px}.total{background:#f7f8fc;font-weight:700}</style>
+  </head><body>
+  <h1>🎯 ${state.sim.name}</h1>
+  <p>Pharmacie : ${pharmaName} · ${new Date().toLocaleDateString('fr-FR')}</p>
+  <table><thead><tr><th>Désignation</th><th style="text-align:center">Qté</th><th style="text-align:right">PU net</th><th style="text-align:right">CA HT</th></tr></thead>
+  <tbody>${rows}</tbody>
+  <tfoot><tr class="total"><td colspan="3">TOTAL CA HT</td><td style="text-align:right">${fmt(caTotal)}</td></tr></tfoot>
+  </table></body></html>`);
+  win.document.close();
+  win.print();
+}
+
+function renderSimulator() {
+  const container = document.getElementById('simul-content');
+  if (!container) return;
+
+  const { caTotal, margeTotal } = simCalc();
+  const savedSims = JSON.parse(localStorage.getItem('ip_crm_sims') || '[]');
+
+  // Comparaison avec la dernière commande de la pharmacie sélectionnée
+  let compHtml = '';
+  if (state.sim.pharmacyId) {
+    const allPhSales = getSales({ pharmacyId: state.sim.pharmacyId });
+    const { year: curY, month: curM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+    const lastSales  = curY ? getSales({ pharmacyId: state.sim.pharmacyId, year: curY, month: curM }) : allPhSales;
+    const lastCA     = sumCA(lastSales);
+    const lastQte    = sumQte(lastSales);
+    const lastNbRef  = new Set(lastSales.map(s => s.artCode)).size;
+    const pharmaName = state.pharmacies.find(p => p.id === state.sim.pharmacyId)?.name || '';
+    const delta      = lastCA > 0 ? deltaBadge(caTotal, lastCA) : '';
+    compHtml = `
+      <div class="card sim-card" style="margin-top:0">
+        <div class="card-header">
+          <div class="card-title">Vs dernière commande</div>
+          <div class="card-subtitle">${pharmaName}</div>
+        </div>
+        <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="sim-mini-kpi">
+            <div class="sim-mini-label">CA actuel</div>
+            <div class="sim-mini-val">${fmt(lastCA)}</div>
+          </div>
+          <div class="sim-mini-kpi">
+            <div class="sim-mini-label">CA simulé</div>
+            <div class="sim-mini-val" style="color:var(--blue)">${fmt(caTotal)}</div>
+          </div>
+          <div class="sim-mini-kpi">
+            <div class="sim-mini-label">Évolution</div>
+            <div class="sim-mini-val">${lastCA > 0 ? delta : '—'}</div>
+          </div>
+          <div class="sim-mini-kpi">
+            <div class="sim-mini-label">Refs actuelles</div>
+            <div class="sim-mini-val">${lastNbRef}</div>
+          </div>
+          <div class="sim-mini-kpi">
+            <div class="sim-mini-label">Refs simulées</div>
+            <div class="sim-mini-val" style="color:var(--blue)">${state.sim.items.length}</div>
+          </div>
+          <div class="sim-mini-kpi">
+            <div class="sim-mini-label">Qté actuelle</div>
+            <div class="sim-mini-val">${fmtNum(Math.round(lastQte))}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // Liste items
+  const itemsHtml = state.sim.items.length
+    ? state.sim.items.map((it, i) => {
+        const cat  = CATS[it.cat] || CATS.mi;
+        const froid = it.froid ? '<span title="Thermosensible" style="font-size:12px">❄️</span> ' : '';
+        return `<div class="sim-item">
+          <div class="sim-item-left">
+            <div class="sim-item-name">${froid}${it.designation}</div>
+            <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
+              <span style="font-size:11px;padding:2px 7px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
+              <span style="font-size:11px;color:var(--text3)">PU ${fmt(it.puNet)}</span>
+            </div>
+          </div>
+          <div class="sim-item-right">
+            <input type="number" min="0" step="1" value="${it.qty}"
+              oninput="simUpdateQty(${i},this.value)"
+              style="width:64px;text-align:center;border:1px solid var(--border2);border-radius:8px;padding:5px 6px;font-size:13px;font-weight:600;background:var(--bg2)">
+            <div class="sim-line-ca" id="sim-line-${i}">${fmt(it.puNet * it.qty)}</div>
+            <button onclick="simRemove(${i})" title="Retirer" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:4px">✕</button>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div style="padding:32px;text-align:center;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:8px">🛒</div>
+        <div style="font-weight:600;color:var(--text2)">Panier vide</div>
+        <div style="font-size:12px;margin-top:4px">Recherchez des produits pour commencer votre simulation</div>
+      </div>`;
+
+  // Sauvegardes
+  const savedHtml = savedSims.length
+    ? savedSims.map(s => {
+        const ph = s.pharmacyId ? state.pharmacies.find(p => p.id === s.pharmacyId)?.name : null;
+        const d  = new Date(s.savedAt).toLocaleDateString('fr-FR', { day:'2-digit', month:'short' });
+        return `<div class="sim-saved-item">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+            <div style="font-size:11px;color:var(--text3)">${ph ? ph + ' · ' : ''}${s.items.length} réf. · ${d}</div>
+          </div>
+          <button onclick="loadSim(${s.id})" class="btn btn-ghost" style="padding:3px 10px;font-size:12px">Charger</button>
+          <button onclick="deleteSavedSim(${s.id})" style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:14px;padding:4px">✕</button>
+        </div>`;
+      }).join('')
+    : '<div style="font-size:12px;color:var(--text3);padding:12px 0">Aucune simulation sauvegardée</div>';
+
+  const pharmaOptions = state.pharmacies.map(p =>
+    `<option value="${p.id}" ${state.sim.pharmacyId === p.id ? 'selected' : ''}>${p.name}</option>`
+  ).join('');
+
+  // Suggestions
+  const suggestions = simSuggestions(simSearchQuery);
+  const suggestHtml = simSearchQuery && suggestions.length
+    ? `<div class="sim-suggestions">
+        ${suggestions.map((p, i) => {
+          const cat   = CATS[p.cat] || CATS.mi;
+          const froid = p.froid ? '❄️ ' : '';
+          const rot   = p.hasAmeli && p.rot ? `<span style="font-size:11px;color:var(--mint)">↻ ${p.rot.toFixed(1)}/mois</span>` : '';
+          return `<div class="sim-suggest-item" onclick="simAddProduct(${i})">
+            <div style="flex:1;min-width:0">
+              <div class="sim-suggest-name">${froid}${p.designation}</div>
+              <div style="display:flex;gap:6px;margin-top:2px;align-items:center">
+                <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
+                ${rot}
+              </div>
+            </div>
+            <span style="font-size:12px;color:var(--text2);white-space:nowrap">${fmt(p.puNet)} / u</span>
+            <span style="font-size:18px;color:var(--blue);font-weight:700">+</span>
+          </div>`;
+        }).join('')}
+      </div>`
+    : '';
+
+  container.innerHTML = `
+    <!-- Header controls -->
+    <div class="card fade-up sim-header-card">
+      <div class="card-body" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+        <select onchange="state.sim.pharmacyId=this.value||null;renderSimulator()"
+          style="flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:13px;color:var(--text)">
+          <option value="">Aucune pharmacie cible</option>
+          ${pharmaOptions}
+        </select>
+        <input type="text" value="${state.sim.name}"
+          oninput="state.sim.name=this.value"
+          placeholder="Nom de la simulation"
+          style="flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:13px">
+        <button class="btn btn-primary" onclick="saveSimulation()">💾 Sauvegarder</button>
+        <button class="btn btn-ghost" onclick="printSimulation()">🖨 Imprimer</button>
+        <button class="btn btn-ghost" onclick="state.sim.items=[];renderSimulator()" style="color:var(--rose)">🗑 Vider</button>
+      </div>
+    </div>
+
+    <div class="sim-layout fade-up">
+
+      <!-- Colonne gauche : produits -->
+      <div class="sim-col-left">
+
+        <!-- Recherche produit -->
+        <div class="card" style="position:relative">
+          <div class="card-body" style="padding:12px 16px">
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input id="sim-search-input" type="text" placeholder="Ajouter un produit au panier..." value="${simSearchQuery}"
+                oninput="simSearchQuery=this.value;renderSimulator()"
+                style="border:none;background:transparent;outline:none;flex:1;font-size:13px;color:var(--text)"
+                autocomplete="off">
+              ${simSearchQuery ? `<button onclick="simSearchQuery='';renderSimulator()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px">✕</button>` : ''}
+            </div>
+          </div>
+          ${suggestHtml}
+        </div>
+
+        <!-- Liste des produits -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Panier (${state.sim.items.length} réf.)</div>
+            ${state.sim.items.length ? `<span style="font-size:13px;font-weight:600;color:var(--blue)">${fmt(caTotal)}</span>` : ''}
+          </div>
+          <div>${itemsHtml}</div>
+        </div>
+
+        <!-- Simulations sauvegardées -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Simulations sauvegardées</div>
+          </div>
+          <div class="card-body">
+            <div class="sim-saved-list">${savedHtml}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne droite : totaux + analyse -->
+      <div class="sim-col-right">
+
+        <!-- KPIs totaux -->
+        <div class="card kpi-hero" style="margin-bottom:16px">
+          <div class="card-body" style="padding:20px">
+            <div style="font-size:12px;color:rgba(255,255,255,.65);font-weight:500;margin-bottom:6px">CA HT TOTAL SIMULÉ</div>
+            <div id="sim-total-ca" style="font-size:32px;font-weight:800;color:#fff;letter-spacing:-1px">${fmt(caTotal)}</div>
+            <div style="display:flex;gap:20px;margin-top:16px">
+              <div>
+                <div style="font-size:11px;color:rgba(255,255,255,.55)">Marge brute (est.)</div>
+                <div id="sim-total-marge" style="font-size:16px;font-weight:700;color:rgba(255,255,255,.9)">${fmt(margeTotal)}</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:rgba(255,255,255,.55)">Nb références</div>
+                <div style="font-size:16px;font-weight:700;color:rgba(255,255,255,.9)">${state.sim.items.length}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Répartition catégories -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Répartition par famille</div>
+          </div>
+          <div class="card-body" id="sim-bars">
+            ${state.sim.items.length === 0
+              ? '<div style="font-size:12px;color:var(--text3);padding:8px 0">Ajoutez des produits pour voir la répartition</div>'
+              : '<!-- sera rempli par updateSimBars -->'}
+          </div>
+        </div>
+
+        ${compHtml}
+      </div>
+    </div>
+  `;
+
+  // Focus search input
+  const inp = document.getElementById('sim-search-input');
+  if (inp && simSearchQuery) inp.focus();
+
+  // Render bars
+  if (state.sim.items.length) updateSimBars();
 }
 
 // ── EMPTY STATE ───────────────────────────────
