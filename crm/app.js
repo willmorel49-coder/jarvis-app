@@ -90,6 +90,17 @@ function pharmaMetaFromFilename(filename) {
     return { name: 'WML', code: 'WML', color: PHARMA_COLORS[0], month: parseInt(wmlMatch[1]), year: parseInt(wmlMatch[2]), isWML: true };
   }
 
+  // Format "ventes [nom pharmacie]" sans date → mois courant
+  const ventesMatch = base.match(/^ventes[\s_]+(.+)/i);
+  if (ventesMatch) {
+    const nomRaw = ventesMatch[1].trim();
+    const nom    = nomRaw.replace(/\b\w/g, c => c.toUpperCase());
+    const code   = nom.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 5);
+    const now    = new Date();
+    const color  = PHARMA_COLORS[Math.abs([...nom].reduce((a,c) => a + c.charCodeAt(0), 0)) % PHARMA_COLORS.length];
+    return { name: nom, code, color, month: now.getMonth() + 1, year: now.getFullYear() };
+  }
+
   const monthYearMatch = base.match(/(\d{2})\s+(\d{2,4})$/);
   let month = null, year = null, namePart = base;
   if (monthYearMatch) {
@@ -884,7 +895,60 @@ function renderPharmacies() {
       <div style="padding:12px 24px 0">${filterBarHtml}</div>
       ${listHtml}
     </div>
+
+    ${renderProspects(pharmaSearch)}
   `;
+}
+
+function renderProspects(search = '') {
+  if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
+  const activeNames = new Set(state.pharmacies.map(p => p.name.toUpperCase().trim()));
+
+  let prospects = CLIENTS.filter(c => {
+    if (!c.nom) return false;
+    if (activeNames.has(c.nom.toUpperCase().trim())) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return c.nom.toLowerCase().includes(q) || c.ville.toLowerCase().includes(q) || c.cp.includes(q);
+    }
+    return true;
+  }).sort((a, b) => (b.potentielGx || 0) - (a.potentielGx || 0));
+
+  if (!prospects.length) return '';
+
+  const rows = prospects.slice(0, 20).map(c => {
+    const gxBadge = c.potentielGx > 0
+      ? `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:var(--blue-bg);color:var(--blue);font-weight:600">Gx ${fmt(c.potentielGx)}</span>`
+      : '';
+    const pelgrazBadge = c.pelgraz && c.pelgraz !== '0'
+      ? `<span title="Cibles Pelgraz" style="font-size:10px;padding:2px 7px;border-radius:12px;background:var(--purple-bg);color:var(--purple)">Pelgraz ×${c.pelgraz}</span>`
+      : '';
+    const ca23 = c.ca2023 > 0 ? `<span style="font-size:11px;color:var(--text3)">CA 2023: ${fmt(c.ca2023)}</span>` : '';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border)">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🏥</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${c.nom}</div>
+        <div style="font-size:11px;color:var(--text3)">${c.cp} ${c.ville}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        ${gxBadge}${pelgrazBadge}${ca23}
+        <span style="font-size:10px;padding:2px 8px;border-radius:12px;background:var(--bg3);color:var(--text3);border:1px solid var(--border2)">Prospect</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="card fade-in" style="margin-top:20px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Prospects secteur (${prospects.length})</div>
+          <div class="card-subtitle">Pharmacies du secteur sans commande importée · triées par potentiel Gx</div>
+        </div>
+        <span class="badge" style="background:var(--blue-bg);color:var(--blue)">${prospects.length} prospects</span>
+      </div>
+      ${rows}
+      ${prospects.length > 20 ? `<div style="padding:12px 20px;font-size:12px;color:var(--text3);text-align:center">${prospects.length - 20} autres prospects — utilisez la recherche pour filtrer</div>` : ''}
+    </div>`;
 }
 
 function showPharmaDetail(pharmacyId) {
@@ -1581,15 +1645,22 @@ function renderBenchmark() {
     const catColors = { pp:'#34D399', mi:'#FFB020', ch:'#FF4D6D', froid:'#00C6FF', nr:'#FF6B35', biosim:'#9B5CFF', generique:'#00E5A0' };
     const cc = catColors[d.categorie] || '#8899BB';
     const froidTag = isFroidBench(d) ? ' <span title="Thermosensible" style="font-size:11px">❄️</span>' : '';
+    const yoy = d.yoy_jan != null
+      ? `<span style="font-size:11px;font-weight:600;color:${d.yoy_jan > 5 ? 'var(--mint)' : d.yoy_jan < -5 ? 'var(--rose)' : 'var(--text3)'}">${d.yoy_jan > 0 ? '▲' : '▼'} ${Math.abs(d.yoy_jan).toFixed(0)}%</span>`
+      : '<span style="color:var(--text4);font-size:11px">—</span>';
+    const prixDisplay = d.prix_ip > 0
+      ? `<span style="font-size:11px;color:var(--blue)">${fmt(d.prix_ip)}</span>`
+      : '<span style="color:var(--text4);font-size:11px">—</span>';
     return `<tr>
       <td style="color:var(--text3);font-size:12px">${d.ip_rank_qty}</td>
-      <td class="td-name" style="font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}${froidTag}</td>
+      <td class="td-name" style="font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}${froidTag}</td>
       <td><span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc}">${d.categorie.toUpperCase()}</span></td>
       <td class="td-num" style="text-align:right">${fmtNum(d.ip_qty)}</td>
       <td class="td-num" style="text-align:right">${fmt(d.ip_ca)}</td>
+      <td style="text-align:right">${prixDisplay}</td>
       <td class="td-num" style="text-align:right;color:${rotColor}">${d.has_ameli ? d.rot_pharma_jan26.toFixed(1) : '—'}</td>
+      <td style="text-align:right">${yoy}</td>
       <td style="text-align:right;font-size:11px;color:var(--text3)">${d.has_ameli ? fmtNum(d.ameli_jan26) : '—'}</td>
-      <td style="font-size:11px;color:var(--text3)">${d.cip13 || '—'}</td>
     </tr>`;
   }).join('');
 
@@ -1634,9 +1705,10 @@ function renderBenchmark() {
               <th>Cat.</th>
               ${thB('ip_qty','Qté IP')}
               ${thB('ip_ca','CA IP')}
+              <th style="text-align:right">Prix IP</th>
               ${thB('rot_pharma_jan26','Rot./pharma/mois')}
+              ${thB('yoy_jan','YoY Jan')}
               <th style="text-align:right">France Jan26</th>
-              <th>CIP13</th>
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
