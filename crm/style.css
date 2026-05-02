@@ -626,6 +626,79 @@ body {
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 
 /* ══════════════════════════════════════
+   HERO KPI (gradient bleu)
+══════════════════════════════════════ */
+.kpi-hero {
+  background: linear-gradient(135deg, var(--blue) 0%, #1D4ED8 100%);
+  border: none;
+  box-shadow: 0 8px 32px rgba(37,99,235,0.30);
+}
+.kpi-hero::after { background: none; }
+.kpi-hero::before { background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%); }
+.kpi-hero .kpi-label { color: rgba(255,255,255,0.70); }
+.kpi-hero .kpi-value { color: #fff; }
+.kpi-hero .kpi-icon { background: rgba(255,255,255,0.15); }
+
+/* ══════════════════════════════════════
+   DELTA BADGE
+══════════════════════════════════════ */
+.delta-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+}
+.delta-pos { background: var(--mint-bg); color: var(--mint); }
+.delta-neg { background: var(--rose-bg); color: var(--rose); }
+.delta-neu { background: var(--bg3);     color: var(--text3); }
+
+/* ══════════════════════════════════════
+   STATUS CHIP
+══════════════════════════════════════ */
+.status-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.status-up   { background: var(--mint-bg);  color: var(--mint); }
+.status-flat { background: var(--amber-bg); color: var(--amber); }
+.status-down { background: var(--rose-bg);  color: var(--rose); }
+
+/* ══════════════════════════════════════
+   ALERT FEED
+══════════════════════════════════════ */
+.alert-feed { display: flex; flex-direction: column; gap: 8px; }
+.alert-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 14px; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--border);
+  font-size: 13px;
+}
+.alert-item .alert-icon { font-size: 16px; flex-shrink: 0; }
+.alert-item .alert-body { display: flex; flex-direction: column; gap: 2px; }
+.alert-item .alert-title { font-weight: 600; color: var(--text); }
+.alert-item .alert-sub   { color: var(--text2); font-size: 12px; }
+
+/* ══════════════════════════════════════
+   FILTER CHIPS BAR
+══════════════════════════════════════ */
+.filter-bar {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.filter-chip {
+  padding: 5px 14px; border-radius: 20px;
+  border: 1px solid var(--border2);
+  background: transparent; color: var(--text2);
+  cursor: pointer; font-size: 12px; font-weight: 400;
+  white-space: nowrap; transition: var(--t-fast);
+  font-family: 'Inter', sans-serif;
+}
+.filter-chip:hover { background: var(--bg3); color: var(--text); }
+.filter-chip.active {
+  border-color: var(--blue); background: var(--blue-bg);
+  color: var(--blue); font-weight: 600;
+}
+
+/* ══════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════ */
 @media (max-width: 900px) {

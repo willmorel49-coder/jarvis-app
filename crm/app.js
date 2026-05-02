@@ -421,322 +421,338 @@ function renderProgress(value, max, color) {
 }
 
 // ── DASHBOARD ────────────────────────────────
-let dashPeriod   = 'all'; // 'all' | 'YYYY-MM'
 let pharmaPeriod = 'all'; // 'all' | 'YYYY-MM'
 
+function deltaBadge(current, prev) {
+  if (!prev || prev === 0) return '<span class="delta-badge delta-neu">—</span>';
+  const pct = ((current - prev) / prev * 100);
+  const cls = pct >= 0 ? 'delta-pos' : 'delta-neg';
+  const arrow = pct >= 0 ? '▲' : '▼';
+  return `<span class="delta-badge ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}%</span>`;
+}
+
+function statusChip(pct) {
+  if (pct > 20)  return '<span class="status-chip status-up">● Forte croissance</span>';
+  if (pct >= -5) return '<span class="status-chip status-flat">● Stable</span>';
+  return '<span class="status-chip status-down">● En baisse</span>';
+}
+
+function getCurrentPeriod(sales) {
+  let maxKey = 0, maxY = null, maxM = null;
+  for (const s of sales) {
+    const k = s.year * 12 + s.month;
+    if (k > maxKey) { maxKey = k; maxY = s.year; maxM = s.month; }
+  }
+  return { year: maxY, month: maxM };
+}
+
+function getPrevPeriod(year, month) {
+  if (!year) return { year: null, month: null };
+  return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
+}
+
 function renderDashboard() {
-  // Construire la liste des périodes disponibles
-  const periods = [...new Set(getSales().map(s => `${s.year}-${String(s.month).padStart(2,'0')}`))].sort();
+  const allSalesRaw = getSales();
 
-  // Valider que dashPeriod existe encore (si données rechargées)
-  if (dashPeriod !== 'all' && !periods.includes(dashPeriod)) dashPeriod = 'all';
-
-  // Filtres à appliquer
-  let periodFilter = {};
-  if (dashPeriod !== 'all') {
-    const [py, pm] = dashPeriod.split('-');
-    periodFilter = { year: +py, month: +pm };
+  if (!allSalesRaw.length) {
+    document.getElementById('dash-content').innerHTML = `
+      <div style="margin-bottom:28px">
+        ${emptyState('📊', 'Aucune donnée', 'Importez des fichiers Excel pour voir votre dashboard')}
+      </div>`;
+    return;
   }
 
-  // ── KPI computation ──────────────────────────
-  const allSales = getSales(periodFilter);
+  // ── Périodes clés ────────────────────────────
+  const { year: curY, month: curM } = getCurrentPeriod(allSalesRaw);
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
 
-  const latestPeriodKey = periods[periods.length - 1];
-  const prevPeriodKey   = periods[periods.length - 2];
-  const [ly, lm] = latestPeriodKey ? latestPeriodKey.split('-').map(Number) : [null, null];
-  const [py2, pm2] = prevPeriodKey  ? prevPeriodKey.split('-').map(Number)  : [null, null];
-  const salesLatest = ly ? getSales({ year: ly, month: lm }) : [];
-  const salesPrev   = py2 ? getSales({ year: py2, month: pm2 }) : [];
+  const salesCur  = getSales({ year: curY, month: curM });
+  const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
 
-  const ca         = sumCA(allSales);
-  const marge      = sumMarge(allSales);
-  const mpct       = margePct(allSales);
-  const qte        = sumQte(allSales);
-  const nPh        = new Set(allSales.map(s => s.pharmacyId)).size;
-  const nProd      = new Set(allSales.map(s => s.artCode)).size;
-  const panierMoyen = nPh > 0 ? ca / nPh : 0;
+  // ── KPIs mois courant ─────────────────────────
+  const caCur   = sumCA(salesCur);
+  const caPrev  = sumCA(salesPrev);
 
-  const caLatest    = sumCA(salesLatest);
-  const caPrev      = sumCA(salesPrev);
-  const growthPct   = caPrev > 0 ? ((caLatest - caPrev) / caPrev * 100) : 0;
-  const margeLatest = sumMarge(salesLatest);
-  const margePrevV  = sumMarge(salesPrev);
-  const margeGrowth = margePrevV > 0 ? ((margeLatest - margePrevV) / margePrevV * 100) : 0;
+  const phActifsCur  = new Set(salesCur.map(s => s.pharmacyId));
+  const phActifsPrev = new Set(salesPrev.map(s => s.pharmacyId));
+  const nPhCur  = phActifsCur.size;
+  const nPhPrev = phActifsPrev.size;
 
-  // Growth badges (only shown in 'all' view with at least 2 periods)
-  const showDelta = periods.length >= 2 && dashPeriod === 'all';
-  const caGrowthHtml = showDelta ? `
-    <div class="kpi-delta ${growthPct >= 0 ? 'up' : 'down'}">
-      ${growthPct >= 0 ? '↑' : '↓'} ${Math.abs(growthPct).toFixed(1)}% vs ${monthName(pm2)} ${py2}
-    </div>` : '';
-  const margeGrowthHtml = showDelta ? `
-    <div class="kpi-delta ${margeGrowth >= 0 ? 'up' : 'down'}">
-      ${margeGrowth >= 0 ? '↑' : '↓'} ${Math.abs(margeGrowth).toFixed(1)}% vs ${monthName(pm2)} ${py2}
-    </div>` : '';
+  const panierCur  = nPhCur  > 0 ? caCur  / nPhCur  : 0;
+  const panierPrev = nPhPrev > 0 ? caPrev / nPhPrev  : 0;
 
-  // ── Charts & tables data ──────────────────────
-  const topPh  = topPharmacies(8, allSales);
-  const byM    = caByMonth(allSales);
-  const maxCA  = Math.max(...topPh.map(p => p.ca), 1);
+  // Meilleure progression MoM
+  let bestPharma = null, bestGrowth = -Infinity;
+  for (const pid of phActifsCur) {
+    const cur  = sumCA(salesCur.filter(s => s.pharmacyId === pid));
+    const prev = sumCA(salesPrev.filter(s => s.pharmacyId === pid));
+    if (prev > 0) {
+      const g = (cur - prev) / prev * 100;
+      if (g > bestGrowth) { bestGrowth = g; bestPharma = pid; }
+    }
+  }
+  const bestPharmaObj = bestPharma ? state.pharmacies.find(p => p.id === bestPharma) : null;
 
-  // Categories
-  const rawCats = byCategory(allSales);
+  // ── Alertes commerciales ──────────────────────
+  const alerts = [];
+  for (const pid of phActifsPrev) {
+    const ph   = state.pharmacies.find(p => p.id === pid);
+    if (!ph) continue;
+    const cur  = sumCA(salesCur.filter(s => s.pharmacyId === pid));
+    const prev = sumCA(salesPrev.filter(s => s.pharmacyId === pid));
+
+    if (!phActifsCur.has(pid)) {
+      alerts.push({ type: 'absent', icon: '🟡', title: `${ph.name} — Pas de commande ce mois`, sub: `CA le mois dernier : ${fmt(prev)}` });
+    } else if (prev > 0) {
+      const g = (cur - prev) / prev * 100;
+      if (g <= -15) alerts.push({ type: 'down', icon: '🔴', title: `${ph.name} — Baisse ${Math.abs(g).toFixed(0)}%`, sub: `${fmt(prev)} → ${fmt(cur)}` });
+      else if (g >= 20) alerts.push({ type: 'up', icon: '🟢', title: `${ph.name} — Forte croissance +${g.toFixed(0)}%`, sub: `${fmt(prev)} → ${fmt(cur)}` });
+    }
+  }
+  // Pharmacies nouvelles ce mois (pas de commande le mois dernier)
+  for (const pid of phActifsCur) {
+    if (!phActifsPrev.has(pid) && salesPrev.length > 0) {
+      const ph  = state.pharmacies.find(p => p.id === pid);
+      if (!ph) continue;
+      const cur = sumCA(salesCur.filter(s => s.pharmacyId === pid));
+      alerts.push({ type: 'new', icon: '🟢', title: `${ph.name} — Nouvelle commande`, sub: `CA : ${fmt(cur)}` });
+    }
+  }
+  alerts.sort((a,b) => {
+    const order = { down: 0, absent: 1, new: 2, up: 3 };
+    return (order[a.type] ?? 9) - (order[b.type] ?? 9);
+  });
+
+  // ── Top pharmacies mois courant (bar chart + table) ──
+  const topPh5 = topPharmacies(5, salesCur);
+  const maxPhCA = Math.max(...topPh5.map(p => p.ca), 1);
+
+  // ── Top produits mois courant ──────────────────
+  const top5Prod = topProducts(salesCur, 5);
+
+  // ── Catégories (donut) ────────────────────────
+  const rawCats = byCategory(salesCur);
   const catRows = Object.keys(CATS)
-    .map(k => {
-      const d = rawCats[k] || { ca: 0, marge: 0, qte: 0, nb: 0 };
-      const brut = d.nb > 0
-        ? allSales.filter(s => classifyProduct(s) === k).reduce((a, s) => a + s.puBrut * s.qte, 0)
-        : 0;
-      return { key: k, ...CATS[k], ...d, taux: brut > 0 ? d.marge / brut * 100 : 0 };
-    })
+    .map(k => { const d = rawCats[k] || { ca:0, qte:0, nb:0 }; return { key: k, ...CATS[k], ...d }; })
     .filter(c => c.nb > 0)
-    .sort((a, b) => b.ca - a.ca);
-
-  // Top products sorted by marge DESC
-  const topByMarge = topProducts(allSales, 10).sort((a, b) => b.marge - a.marge);
+    .sort((a,b) => b.ca - a.ca);
 
   // ── HTML ─────────────────────────────────────
+  const curLabel  = `${monthName(curM)} ${curY}`;
+  const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
 
-  // Period chips
-  const periodChipsHtml = periods.length > 1 ? `
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px">
-      ${[{key:'all',label:'Toutes périodes'}, ...periods.map(p => {
-          const [ky,km] = p.split('-');
-          return { key: p, label: monthName(+km)+' '+ky };
-        })].map(f => {
-          const active = dashPeriod === f.key;
-          return `<button onclick="dashPeriod='${f.key}';renderDashboard()" style="
-            padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};
-            background:${active ? 'var(--blue-bg)' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
-            cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
-          ">${f.label}</button>`;
-        }).join('')}
-    </div>` : '';
+  const alertsHtml = alerts.length
+    ? alerts.slice(0, 6).map(a => `
+        <div class="alert-item">
+          <span class="alert-icon">${a.icon}</span>
+          <div class="alert-body">
+            <div class="alert-title">${a.title}</div>
+            <div class="alert-sub">${a.sub}</div>
+          </div>
+        </div>`).join('')
+    : `<div class="alert-item"><span class="alert-icon">✅</span><div class="alert-body"><div class="alert-title">Aucune alerte</div><div class="alert-sub">Toutes les pharmacies sont actives ce mois</div></div></div>`;
 
-  // Pharmacies table rows
-  const phRowsHtml = topPh.map((p, i) => {
-    const phSales = allSales.filter(s => s.pharmacyId === p.id);
-    const phMarge = sumMarge(phSales);
-    const phTaux  = margePct(phSales);
-    const phPct   = ca > 0 ? p.ca / ca * 100 : 0;
+  const top5PhHtml = topPh5.map((p, i) => {
+    const prev = sumCA(salesPrev.filter(s => s.pharmacyId === p.id));
+    const cur  = p.ca;
+    const g    = prev > 0 ? (cur - prev) / prev * 100 : null;
     return `<tr style="cursor:pointer" onclick="showPharmaDetail('${p.id}')">
       <td>${renderRank(i)}</td>
       <td>
         <span style="display:inline-flex;align-items:center;gap:7px">
           <span style="width:8px;height:8px;border-radius:50%;background:${p.pharma.color};flex-shrink:0"></span>
-          ${p.pharma.name}
+          <span class="td-name">${p.pharma.name}</span>
         </span>
       </td>
-      <td class="td-num" style="text-align:right;font-weight:600">${fmt(p.ca)}</td>
-      <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(phMarge)}</td>
-      <td class="td-num" style="text-align:right;color:${phTaux > 15 ? 'var(--mint)' : 'var(--amber)'}">${phTaux.toFixed(1)}%</td>
-      <td class="td-num" style="text-align:right;color:var(--text3)">${phPct.toFixed(1)}%</td>
-      <td style="min-width:90px">${renderProgress(p.ca, maxCA, p.pharma.color)}</td>
+      <td class="td-num" style="text-align:right">${fmt(cur)}</td>
+      <td style="text-align:right">${g !== null ? deltaBadge(cur, prev) : '<span class="delta-badge delta-neu">—</span>'}</td>
+      <td style="text-align:right">${g !== null ? statusChip(g) : ''}</td>
     </tr>`;
   }).join('');
 
-  // Categories table rows (with % CA column)
-  const catRowsHtml = catRows.map(c => {
-    const pctCA = ca > 0 ? c.ca / ca * 100 : 0;
-    return `<tr>
-      <td>
-        <span style="display:inline-flex;align-items:center;gap:8px">
-          <span style="width:10px;height:10px;border-radius:50%;background:${c.color};flex-shrink:0"></span>
-          ${c.icon} ${c.label}
-        </span>
-      </td>
-      <td class="td-num" style="text-align:right">${fmtNum(Math.round(c.qte))}</td>
-      <td class="td-num" style="text-align:right">${fmt(c.ca)}</td>
-      <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(c.marge)}</td>
-      <td class="td-num" style="text-align:right;color:${c.taux > 15 ? 'var(--mint)' : 'var(--amber)'}">${c.taux.toFixed(1)}%</td>
-      <td class="td-num" style="text-align:right;color:var(--text3)">${pctCA.toFixed(1)}%</td>
-    </tr>`;
-  }).join('');
-
-  // Top products by marge rows
-  const topMargeHtml = topByMarge.map((p, i) => {
-    const cat  = CATS[p.cat] || CATS.mi;
-    const taux = (p.ca + p.marge) > 0 ? p.marge / (p.ca + p.marge) * 100 : 0;
+  const top5ProdHtml = top5Prod.map((p, i) => {
+    const cat = CATS[p.cat] || CATS.mi;
     return `<tr>
       <td>${renderRank(i)}</td>
       <td class="td-name">${p.name}</td>
-      <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span></td>
       <td class="td-num" style="text-align:right">${fmtNum(Math.round(p.qte))}</td>
       <td class="td-num" style="text-align:right">${fmt(p.ca)}</td>
-      <td class="td-num" style="text-align:right;color:var(--mint);font-weight:600">${fmt(p.marge)}</td>
-      <td class="td-num" style="text-align:right;color:${taux > 15 ? 'var(--mint)' : 'var(--amber)'}">${taux.toFixed(1)}%</td>
+      <td><span style="font-size:11px;padding:2px 7px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span></td>
     </tr>`;
   }).join('');
 
   document.getElementById('dash-content').innerHTML = `
-    ${periodChipsHtml}
 
-    <!-- Row 1 : KPI cards -->
-    <div class="kpi-grid fade-up" style="grid-template-columns:repeat(3,1fr)">
-      <div class="kpi-card kc-b">
+    <!-- Row 1 : Hero KPI + 3 secondaires -->
+    <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:24px">
+
+      <!-- Hero -->
+      <div class="kpi-card kpi-hero">
         <div class="kpi-icon">💰</div>
-        <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${fmt(ca)}</div>
-        <div class="kpi-label">CA Net HT</div>
-        ${caGrowthHtml}
+        <div class="kpi-value">${fmt(caCur)}</div>
+        <div class="kpi-label">CA Secteur — ${curLabel}</div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+          ${deltaBadge(caCur, caPrev)}
+          <span style="font-size:11px;color:rgba(255,255,255,0.55)">vs ${prevLabel}</span>
+        </div>
       </div>
+
+      <!-- Pharmacies actives -->
       <div class="kpi-card kc-g">
-        <div class="kpi-icon">📈</div>
-        <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${fmt(marge)}</div>
-        <div class="kpi-label">Marge Brute</div>
-        ${margeGrowthHtml}
+        <div class="kpi-icon">🏥</div>
+        <div class="kpi-value" style="color:var(--mint)">${nPhCur}</div>
+        <div class="kpi-label">Pharmacies actives</div>
+        <div style="margin-top:10px">${deltaBadge(nPhCur, nPhPrev)}</div>
       </div>
-      <div class="kpi-card kc-p">
-        <div class="kpi-icon">🎯</div>
-        <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${mpct.toFixed(1)}%</div>
-        <div class="kpi-label">Taux de marge</div>
-      </div>
+
+      <!-- Panier moyen -->
       <div class="kpi-card kc-a">
         <div class="kpi-icon">🛒</div>
-        <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${fmt(panierMoyen)}</div>
-        <div class="kpi-label">Panier moy / pharmacie</div>
+        <div class="kpi-value" style="color:var(--amber)">${fmt(panierCur)}</div>
+        <div class="kpi-label">Panier moyen</div>
+        <div style="margin-top:10px">${deltaBadge(panierCur, panierPrev)}</div>
       </div>
-      <div class="kpi-card kc-b">
-        <div class="kpi-icon">🏥</div>
-        <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${nPh}</div>
-        <div class="kpi-label">Pharmacies actives</div>
-      </div>
-      <div class="kpi-card kc-g">
-        <div class="kpi-icon">💊</div>
-        <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${fmtNum(nProd)}</div>
-        <div class="kpi-label">Références</div>
-      </div>
-    </div>
 
-    <!-- Row 2 : Charts -->
-    <div class="grid-2 fade-up">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Évolution CA mensuelle</div>
-          <div class="card-subtitle">${byM.length} période(s)</div>
+      <!-- Meilleure progression -->
+      <div class="kpi-card kc-p">
+        <div class="kpi-icon">🚀</div>
+        <div class="kpi-value" style="color:var(--purple);font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${bestPharmaObj ? bestPharmaObj.name.split(' ').slice(-1)[0] : '—'}
         </div>
-        <div class="card-body">
-          ${byM.length ? '<div class="chart-wrap"><canvas id="chart-ca-month"></canvas></div>' : emptyState('📊','Aucune donnée','Importez des fichiers Excel')}
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Répartition par famille</div></div>
-        <div class="card-body">
-          ${catRows.length ? '<div class="chart-wrap"><canvas id="chart-cat-donut"></canvas></div>' : emptyState('📊','Aucune donnée','Importez des fichiers Excel')}
+        <div class="kpi-label">Meilleure progression</div>
+        <div style="margin-top:10px">
+          ${bestPharmaObj && bestGrowth > -Infinity
+            ? `<span class="delta-badge ${bestGrowth >= 0 ? 'delta-pos' : 'delta-neg'}">${bestGrowth >= 0 ? '▲' : '▼'} ${Math.abs(bestGrowth).toFixed(1)}%</span>`
+            : '<span class="delta-badge delta-neu">—</span>'}
         </div>
       </div>
     </div>
 
-    <!-- Row 3 : Performance tables -->
-    <div class="grid-2 fade-up">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Performance pharmacies</div>
-          <div class="badge badge-blue">${topPh.length} pharmacies</div>
-        </div>
-        ${topPh.length ? `<div style="overflow-x:auto">
-          <table class="data-table">
-            <thead><tr>
-              <th>#</th>
-              <th>Pharmacie</th>
-              <th style="text-align:right">CA</th>
-              <th style="text-align:right">Marge</th>
-              <th style="text-align:right">Taux%</th>
-              <th style="text-align:right">% Secteur</th>
-              <th>Barre</th>
-            </tr></thead>
-            <tbody>${phRowsHtml}</tbody>
-          </table>
-        </div>` : emptyState('🏥','Aucune pharmacie','Importez des fichiers pour voir les classements')}
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Familles produits</div>
-          <div class="badge badge-blue">${catRows.length} familles</div>
-        </div>
-        ${catRows.length ? `<div style="overflow-x:auto">
-          <table class="data-table">
-            <thead><tr>
-              <th>Famille</th>
-              <th style="text-align:right">Unités</th>
-              <th style="text-align:right">CA</th>
-              <th style="text-align:right">Marge</th>
-              <th style="text-align:right">Taux</th>
-              <th style="text-align:right">% CA</th>
-            </tr></thead>
-            <tbody>${catRowsHtml}</tbody>
-          </table>
-        </div>` : emptyState('📊','Aucune donnée','Importez des fichiers Excel')}
-      </div>
-    </div>
-
-    <!-- Row 4 : Top produits rentabilité -->
-    ${topByMarge.length ? `
-    <div class="card fade-up">
+    <!-- Row 2 : Alertes commerciales -->
+    <div class="card fade-up" style="margin-bottom:24px">
       <div class="card-header">
-        <div class="card-title">Top produits — rentabilité</div>
-        <div class="badge badge-blue">${topByMarge.length} produits</div>
+        <div>
+          <div class="card-title">Signaux commerciaux</div>
+          <div class="card-subtitle">${curLabel} vs ${prevLabel}</div>
+        </div>
+        ${alerts.length ? `<span class="badge badge-rose" style="background:var(--rose-bg);color:var(--rose)">${alerts.length} signal${alerts.length > 1 ? 's' : ''}</span>` : ''}
       </div>
-      <div style="overflow-x:auto">
-        <table class="data-table">
-          <thead><tr>
-            <th>#</th>
-            <th>Désignation</th>
-            <th>Famille</th>
-            <th style="text-align:right">Qté</th>
-            <th style="text-align:right">CA HT</th>
-            <th style="text-align:right">Marge</th>
-            <th style="text-align:right">Taux marge</th>
-          </tr></thead>
-          <tbody>${topMargeHtml}</tbody>
-        </table>
+      <div class="card-body">
+        <div class="alert-feed">${alertsHtml}</div>
       </div>
-    </div>` : ''}
+    </div>
+
+    <!-- Row 3 : Charts -->
+    <div class="grid-2 fade-up">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">CA par pharmacie — ${curLabel}</div>
+          <div class="card-subtitle">${topPh5.length} pharmacies</div>
+        </div>
+        <div class="card-body">
+          ${topPh5.length
+            ? '<div class="chart-wrap" style="height:220px"><canvas id="chart-ph-bar"></canvas></div>'
+            : emptyState('📊','Aucune donnée','Importez des fichiers Excel')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Répartition par famille</div>
+          <div class="card-subtitle">${curLabel}</div>
+        </div>
+        <div class="card-body">
+          ${catRows.length
+            ? '<div class="chart-wrap" style="height:220px"><canvas id="chart-cat-donut"></canvas></div>'
+            : emptyState('📊','Aucune donnée','Importez des fichiers Excel')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4 : Top tables -->
+    <div class="grid-2 fade-up">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Top 5 pharmacies</div>
+          <div class="card-subtitle">${curLabel}</div>
+        </div>
+        ${top5PhHtml
+          ? `<div style="overflow-x:auto"><table class="data-table">
+              <thead><tr>
+                <th>#</th><th>Pharmacie</th>
+                <th style="text-align:right">CA</th>
+                <th style="text-align:right">Delta MoM</th>
+                <th style="text-align:right">Statut</th>
+              </tr></thead>
+              <tbody>${top5PhHtml}</tbody>
+            </table></div>`
+          : emptyState('🏥','Aucune pharmacie','Importez des fichiers')}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Top 5 produits</div>
+          <div class="card-subtitle">${curLabel}</div>
+        </div>
+        ${top5ProdHtml
+          ? `<div style="overflow-x:auto"><table class="data-table">
+              <thead><tr>
+                <th>#</th><th>Désignation</th>
+                <th style="text-align:right">Qté</th>
+                <th style="text-align:right">CA HT</th>
+                <th>Famille</th>
+              </tr></thead>
+              <tbody>${top5ProdHtml}</tbody>
+            </table></div>`
+          : emptyState('💊','Aucun produit','Importez des fichiers')}
+      </div>
+    </div>
   `;
 
   setTimeout(() => {
-    if (byM.length) {
-      const ctx = document.getElementById('chart-ca-month');
+    // Bar chart pharmacies — horizontal
+    if (topPh5.length) {
+      const ctx = document.getElementById('chart-ph-bar');
       if (ctx) {
-        if (state.charts['ca-month']) state.charts['ca-month'].destroy();
-        state.charts['ca-month'] = new Chart(ctx, {
+        if (state.charts['ph-bar']) state.charts['ph-bar'].destroy();
+        const sorted = [...topPh5].sort((a,b) => a.ca - b.ca);
+        state.charts['ph-bar'] = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: byM.map(([k]) => { const [y,m] = k.split('-'); return `${monthName(+m)} ${y}`; }),
+            labels: sorted.map(p => p.pharma.name),
             datasets: [{
-              label: 'CA Net HT (€)',
-              data: byM.map(([,v]) => +v.toFixed(2)),
-              backgroundColor: 'rgba(37,99,235,0.15)',
-              borderColor: '#2563EB',
-              borderWidth: 2,
-              borderRadius: 8,
+              data: sorted.map(p => +p.ca.toFixed(2)),
+              backgroundColor: sorted.map(p => p.pharma.color + 'CC'),
+              borderColor:     sorted.map(p => p.pharma.color),
+              borderWidth: 2, borderRadius: 6,
             }]
           },
           options: {
+            indexAxis: 'y',
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + fmt(c.parsed.x) } } },
             scales: {
-              x: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 } } },
-              y: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
+              x: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
+              y: { grid: { display: false }, ticks: { color: '#0F172A', font: { size: 12, weight: '600' } } },
             }
           }
         });
       }
     }
 
+    // Donut catégories
     if (catRows.length) {
       const ctx2 = document.getElementById('chart-cat-donut');
       if (ctx2) {
         if (state.charts['cat-donut']) state.charts['cat-donut'].destroy();
-        const sorted = [...catRows].sort((a,b) => b.ca - a.ca);
+        const totalCA = sumCA(salesCur);
         state.charts['cat-donut'] = new Chart(ctx2, {
           type: 'doughnut',
           data: {
-            labels: sorted.map(c => c.label),
+            labels: catRows.map(c => c.label),
             datasets: [{
-              data: sorted.map(c => +c.ca.toFixed(2)),
-              backgroundColor: sorted.map(c => c.color + 'CC'),
-              borderColor: sorted.map(c => c.color),
+              data: catRows.map(c => +c.ca.toFixed(2)),
+              backgroundColor: catRows.map(c => c.color + 'CC'),
+              borderColor:     catRows.map(c => c.color),
               borderWidth: 2,
             }]
           },
@@ -744,7 +760,7 @@ function renderDashboard() {
             responsive: true, maintainAspectRatio: false,
             plugins: {
               legend: { position: 'right', labels: { color: '#64748B', font: { size: 11 }, boxWidth: 12, padding: 10 } },
-              tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.parsed)} (${(ctx.parsed / ca * 100).toFixed(1)}%)` } },
+              tooltip: { callbacks: { label: c => ` ${fmt(c.parsed)} (${totalCA > 0 ? (c.parsed / totalCA * 100).toFixed(1) : 0}%)` } },
             },
             cutout: '65%',
           }
@@ -755,38 +771,107 @@ function renderDashboard() {
 }
 
 // ── PHARMACIES ────────────────────────────────
-let pharmaSearch = '';
+let pharmaSearch  = '';
+let pharmaFilter  = 'all'; // 'all' | 'up' | 'flat' | 'down'
 
 function renderPharmacies() {
-  const topPh = topPharmacies(50);
-  const filtered = topPh.filter(p => p.pharma.name.toLowerCase().includes(pharmaSearch.toLowerCase()));
-  const maxCA = Math.max(...filtered.map(p => p.ca), 1);
+  const allSalesRaw = getSales();
+  const { year: curY, month: curM } = getCurrentPeriod(allSalesRaw);
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
+
+  const salesCur  = curY  ? getSales({ year: curY,  month: curM  }) : [];
+  const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
+
+  // Construire liste enrichie de toutes les pharmacies avec CA et delta
+  let enriched = state.pharmacies.map(ph => {
+    const caCur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+    const caPrev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
+    const g      = caPrev > 0 ? (caCur - caPrev) / caPrev * 100 : null;
+    const status = g === null ? 'new' : g > 20 ? 'up' : g >= -5 ? 'flat' : 'down';
+    return { ph, caCur, caPrev, g, status };
+  }).filter(e => e.caCur > 0 || e.caPrev > 0);
+
+  // Filtre texte
+  if (pharmaSearch) {
+    const q = pharmaSearch.toLowerCase();
+    enriched = enriched.filter(e => e.ph.name.toLowerCase().includes(q));
+  }
+
+  // Filtre statut
+  if (pharmaFilter !== 'all') {
+    enriched = enriched.filter(e => {
+      if (pharmaFilter === 'up')   return e.g !== null && e.g > 20;
+      if (pharmaFilter === 'flat') return e.g !== null && e.g >= -5 && e.g <= 20;
+      if (pharmaFilter === 'down') return e.g !== null && e.g < -5;
+      return true;
+    });
+  }
+
+  // Tri CA courant décroissant
+  enriched.sort((a, b) => b.caCur - a.caCur);
+
+  const maxCA = Math.max(...enriched.map(e => e.caCur), 1);
+
+  const filterDefs = [
+    { key: 'all',  label: 'Toutes' },
+    { key: 'up',   label: 'En croissance' },
+    { key: 'flat', label: 'Stable' },
+    { key: 'down', label: 'En baisse' },
+  ];
+
+  const filterBarHtml = `
+    <div class="filter-bar">
+      ${filterDefs.map(f => `
+        <button class="filter-chip ${pharmaFilter === f.key ? 'active' : ''}"
+          onclick="pharmaFilter='${f.key}';renderPharmacies()">${f.label}</button>`
+      ).join('')}
+    </div>`;
+
+  const listHtml = enriched.length
+    ? enriched.map((e, i) => {
+        const { ph, caCur, caPrev, g, status } = e;
+        const chipHtml = status === 'up'   ? '<span class="status-chip status-up">● Croissance</span>'
+                       : status === 'flat' ? '<span class="status-chip status-flat">● Stable</span>'
+                       : status === 'down' ? '<span class="status-chip status-down">● Baisse</span>'
+                       :                    '<span class="status-chip status-flat">● Nouveau</span>';
+        return `
+          <div class="pharma-item" onclick="showPharmaDetail('${ph.id}')">
+            <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
+            <div class="pharma-dot" style="background:${ph.color}"></div>
+            <div class="pharma-info">
+              <div class="pharma-name">${ph.name}</div>
+              <div class="pharma-meta" style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                ${chipHtml}
+                ${g !== null ? deltaBadge(caCur, caPrev) : ''}
+              </div>
+            </div>
+            <div style="flex:1;max-width:120px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
+            <div class="pharma-stats">
+              <div class="pharma-ca">${fmt(caCur)}</div>
+              <div class="pharma-qte">CA net HT</div>
+            </div>
+            <div style="color:var(--text3);font-size:16px">›</div>
+          </div>`;
+      }).join('')
+    : emptyState('🏥',
+        pharmaSearch ? 'Aucun résultat' : 'Aucune pharmacie',
+        pharmaSearch ? 'Essayez un autre terme' : 'Importez des fichiers Excel pour voir vos pharmacies');
 
   document.getElementById('pharma-content').innerHTML = `
     <div class="card fade-in">
       <div class="card-header">
-        <div class="card-title">Pharmacies (${filtered.length})</div>
-        <div class="search-wrap" style="width:260px">
+        <div>
+          <div class="card-title">Pharmacies (${enriched.length})</div>
+          <div class="card-subtitle">${curY ? `Mois courant : ${monthName(curM)} ${curY}` : 'Aucune donnée'}</div>
+        </div>
+        <div class="search-wrap" style="width:240px">
           <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Rechercher..." value="${pharmaSearch}" oninput="pharmaSearch=this.value;renderPharmacies()" />
+          <input type="text" placeholder="Rechercher..." value="${pharmaSearch}"
+            oninput="pharmaSearch=this.value;renderPharmacies()" />
         </div>
       </div>
-      ${filtered.length ? filtered.map((p,i) => `
-        <div class="pharma-item" onclick="showPharmaDetail('${p.id}')">
-          <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
-          <div class="pharma-dot" style="background:${p.pharma.color}"></div>
-          <div class="pharma-info">
-            <div class="pharma-name">${p.pharma.name}</div>
-            <div class="pharma-meta">${p.pharma.code} · ${fmtNum(p.qte)} unités</div>
-          </div>
-          <div style="flex:1;max-width:160px;padding:0 12px">${renderProgress(p.ca, maxCA, p.pharma.color)}</div>
-          <div class="pharma-stats">
-            <div class="pharma-ca">${fmt(p.ca)}</div>
-            <div class="pharma-qte">CA net HT</div>
-          </div>
-          <div style="color:var(--text3);font-size:16px">›</div>
-        </div>
-      `).join('') : emptyState('🏥', pharmaSearch ? 'Aucun résultat' : 'Aucune pharmacie', pharmaSearch ? 'Essayez un autre terme' : 'Importez des fichiers Excel pour voir vos pharmacies')}
+      <div style="padding:12px 24px 0">${filterBarHtml}</div>
+      ${listHtml}
     </div>
   `;
 }
@@ -795,75 +880,98 @@ function showPharmaDetail(pharmacyId) {
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
   if (!pharma) return;
 
-  // ── Period filter for this pharmacy ──────────
-  let pharmaFilter = { pharmacyId: pharma.id };
-  if (pharmaPeriod !== 'all') {
-    const [fpy, fpm] = pharmaPeriod.split('-');
-    pharmaFilter = { pharmacyId: pharma.id, year: +fpy, month: +fpm };
+  // ── Périodes clés ─────────────────────────────
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  const { year: curY, month: curM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
+
+  const salesCur  = curY  ? getSales({ pharmacyId: pharma.id, year: curY,  month: curM  }) : [];
+  const salesPrev = prevY ? getSales({ pharmacyId: pharma.id, year: prevY, month: prevM }) : [];
+
+  const caCur    = sumCA(salesCur);
+  const caPrev   = sumCA(salesPrev);
+  const margeCur = sumMarge(salesCur);
+  const mpctCur  = margePct(salesCur);
+  const qteCur   = sumQte(salesCur);
+
+  // Nb produits commandés ce mois / panier moyen produit
+  const nRefCur = new Set(salesCur.map(s => s.artCode)).size;
+  const panierProdCur = nRefCur > 0 ? caCur / nRefCur : 0;
+
+  // % du secteur
+  const sectorSalesCur = curY ? getSales({ year: curY, month: curM }) : [];
+  const sectorCA       = sumCA(sectorSalesCur);
+  const pctOfSector    = sectorCA > 0 ? caCur / sectorCA * 100 : 0;
+
+  // Opportunités : produits IP jamais commandés par cette pharmacie
+  const allPhCodes = new Set(allPhSales.map(s => (s.artCode || '').toLowerCase().trim()));
+  let oppsHtml = '';
+  if (typeof BENCHMARK !== 'undefined') {
+    const opps = BENCHMARK
+      .filter(b => {
+        const code = (b.cip13 || b.designation || '').toLowerCase().trim();
+        return !allPhCodes.has(code);
+      })
+      .sort((a,b) => (b.rot_pharma_jan26 || 0) - (a.rot_pharma_jan26 || 0))
+      .slice(0, 8);
+    if (opps.length) {
+      oppsHtml = `
+        <div class="card fade-up">
+          <div class="card-header">
+            <div class="card-title">Opportunités produits</div>
+            <div class="card-subtitle">Produits IP non encore commandés par cette pharmacie</div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr>
+                <th>#</th>
+                <th>Désignation</th>
+                <th style="text-align:right">Rot./pharma/mois</th>
+                <th style="text-align:right">CA IP</th>
+                <th>Cat.</th>
+              </tr></thead>
+              <tbody>
+                ${opps.map((b, i) => {
+                  const catColors = { pp:'#34D399', mi:'#FFB020', ch:'#FF4D6D', froid:'#00C6FF', nr:'#FF6B35', biosim:'#9B5CFF', generique:'#00E5A0' };
+                  const cc = catColors[b.categorie] || '#8899BB';
+                  const rotColor = b.rot_pharma_jan26 > 10 ? 'var(--mint)' : b.rot_pharma_jan26 > 1 ? 'var(--amber)' : 'var(--text3)';
+                  return `<tr>
+                    <td>${renderRank(i)}</td>
+                    <td class="td-name">${b.designation}</td>
+                    <td class="td-num" style="text-align:right;color:${rotColor}">${b.has_ameli ? b.rot_pharma_jan26.toFixed(1) : '—'}</td>
+                    <td class="td-num" style="text-align:right">${fmt(b.ip_ca)}</td>
+                    <td><span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc}">${(b.categorie||'').toUpperCase()}</span></td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }
   }
-  const sales = getSales(pharmaFilter);
-
-  // ── KPIs ─────────────────────────────────────
-  const ca    = sumCA(sales);
-  const marge = sumMarge(sales);
-  const mpct  = margePct(sales);
-  const qte   = sumQte(sales);
-  const nRef  = new Set(sales.map(s => s.artCode)).size;
-  const imports = state.imports.filter(i => i.pharmacyId === pharma.id).sort((a,b) => new Date(b.importedAt) - new Date(a.importedAt));
-  const top     = topProducts(sales, 15);
-
-  // ── Secteur comparison ────────────────────────
-  const sectorFilter      = pharmaPeriod !== 'all' ? { year: pharmaFilter.year, month: pharmaFilter.month } : {};
-  const allSectorSales    = getSales(sectorFilter);
-  const sectorCA          = sumCA(allSectorSales);
-  const sectorMpct        = margePct(allSectorSales);
-  const pctOfSector       = sectorCA > 0 ? ca / sectorCA * 100 : 0;
 
   // ── Period chips ─────────────────────────────
   const pharmaPeriods = [...new Set(
-    getSales({ pharmacyId: pharma.id }).map(s => `${s.year}-${String(s.month).padStart(2,'0')}`)
+    allPhSales.map(s => `${s.year}-${String(s.month).padStart(2,'0')}`)
   )].sort();
 
   const pharmaPeriodChips = pharmaPeriods.length > 1 ? `
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
-      ${[{key:'all',label:'Toutes périodes'}, ...pharmaPeriods.map(p => {
+      ${pharmaPeriods.map(p => {
         const [ky,km] = p.split('-');
-        return { key: p, label: monthName(+km)+' '+ky };
-      })].map(f => {
-        const active = pharmaPeriod === f.key;
-        return `<button onclick="pharmaPeriod='${f.key}';showPharmaDetail('${pharmacyId}')" style="
+        const active = p === `${curY}-${String(curM).padStart(2,'0')}`;
+        return `<button onclick="showPharmaDetail('${pharmacyId}')" style="
           padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};
           background:${active ? 'var(--blue-bg)' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
           cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
-        ">${f.label}</button>`;
+        ">${monthName(+km)+' '+ky}</button>`;
       }).join('')}
     </div>` : '';
 
-  // ── Category breakdown ────────────────────────
-  const rawCats = byCategory(sales);
-  const catRows = Object.keys(CATS)
-    .map(k => {
-      const d = rawCats[k] || { ca:0, marge:0, qte:0, nb:0 };
-      const brut = d.nb > 0 ? sales.filter(s => classifyProduct(s) === k).reduce((a,s) => a + s.puBrut * s.qte, 0) : 0;
-      return { key: k, ...CATS[k], ...d, taux: brut > 0 ? d.marge / brut * 100 : 0 };
-    })
-    .filter(c => c.nb > 0)
-    .sort((a,b) => b.ca - a.ca);
-
-  const catHtml = catRows.map(c => `
-    <tr>
-      <td><span style="display:inline-flex;align-items:center;gap:8px">
-        <span style="width:8px;height:8px;border-radius:50%;background:${c.color}"></span>${c.icon} ${c.label}
-      </span></td>
-      <td class="td-num" style="text-align:right">${fmtNum(c.nb)}</td>
-      <td class="td-num" style="text-align:right">${fmt(c.ca)}</td>
-      <td class="td-num" style="text-align:right;color:var(--mint)">${fmt(c.marge)}</td>
-      <td class="td-num" style="text-align:right;color:${c.taux>15?'var(--mint)':'var(--amber)'}">${c.taux.toFixed(1)}%</td>
-      <td style="min-width:80px">${renderProgress(c.ca, ca, c.color)}</td>
-    </tr>`).join('');
-
+  // ── Top produits mois courant ─────────────────
+  const top = topProducts(salesCur.length ? salesCur : allPhSales, 15);
   const topHtml = top.map((p,i) => {
-    const cat = CATS[p.cat] || CATS.mi;
+    const cat  = CATS[p.cat] || CATS.mi;
     const taux = (p.ca + p.marge) > 0 ? p.marge / (p.ca + p.marge) * 100 : 0;
     return `<tr>
       <td>${renderRank(i)}</td>
@@ -876,6 +984,8 @@ function showPharmaDetail(pharmacyId) {
     </tr>`;
   }).join('');
 
+  // ── Imports ───────────────────────────────────
+  const imports    = state.imports.filter(i => i.pharmacyId === pharma.id).sort((a,b) => new Date(b.importedAt) - new Date(a.importedAt));
   const importsHtml = imports.map(imp => `
     <tr>
       <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${imp.filename}</td>
@@ -884,14 +994,17 @@ function showPharmaDetail(pharmacyId) {
       <td><button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3);padding:4px 10px;font-size:12px" onclick="deleteImport('${imp.id}','${pharmacyId}')">🗑 Supprimer</button></td>
     </tr>`).join('');
 
-  // ── Monthly evolution data (always all periods, for the chart) ──
-  const pharmaByMonth = caByMonth(getSales({ pharmacyId: pharma.id }));
+  // ── Monthly evolution ─────────────────────────
+  const pharmaByMonth = caByMonth(allPhSales);
+
+  const curLabel  = curY  ? `${monthName(curM)} ${curY}`   : '—';
+  const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
 
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
 
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="pharmaPeriod='all';renderPharmacies()">← Retour</button>
+        <button class="btn btn-ghost" onclick="renderPharmacies()">← Retour</button>
         <div style="width:14px;height:14px;border-radius:50%;background:${pharma.color}"></div>
         <span class="section-title" style="margin:0;flex:1">${pharma.name}</span>
         <span class="badge badge-blue">${pharma.code}</span>
@@ -900,38 +1013,33 @@ function showPharmaDetail(pharmacyId) {
 
       ${pharmaPeriodChips}
 
-      <div class="kpi-grid fade-up" style="grid-template-columns:repeat(3,1fr)">
-        <div class="kpi-card kc-b">
+      <!-- Hero KPI -->
+      <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:24px">
+        <div class="kpi-card kpi-hero">
           <div class="kpi-icon">💰</div>
-          <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${fmt(ca)}</div>
-          <div class="kpi-label">CA Net HT</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:6px">${pctOfSector.toFixed(1)}% du secteur</div>
-        </div>
-        <div class="kpi-card kc-g">
-          <div class="kpi-icon">📈</div>
-          <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${fmt(marge)}</div>
-          <div class="kpi-label">Marge Brute</div>
-          <div style="font-size:11px;color:${mpct >= sectorMpct ? 'var(--mint)' : 'var(--amber)'};margin-top:6px">Secteur: ${sectorMpct.toFixed(1)}%</div>
-        </div>
-        <div class="kpi-card kc-p">
-          <div class="kpi-icon">🎯</div>
-          <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${mpct.toFixed(1)}%</div>
-          <div class="kpi-label">Taux de marge</div>
+          <div class="kpi-value">${fmt(caCur)}</div>
+          <div class="kpi-label">CA Net HT — ${curLabel}</div>
+          <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+            ${deltaBadge(caCur, caPrev)}
+            <span style="font-size:11px;color:rgba(255,255,255,0.55)">vs ${prevLabel}</span>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.5)">${pctOfSector.toFixed(1)}% du secteur</div>
         </div>
         <div class="kpi-card kc-a">
-          <div class="kpi-icon">📦</div>
-          <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${fmtNum(Math.round(qte))}</div>
-          <div class="kpi-label">Unités vendues</div>
+          <div class="kpi-icon">🛒</div>
+          <div class="kpi-value" style="color:var(--amber)">${fmt(panierProdCur)}</div>
+          <div class="kpi-label">Panier moy / produit</div>
         </div>
         <div class="kpi-card kc-b">
           <div class="kpi-icon">💊</div>
-          <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${nRef}</div>
-          <div class="kpi-label">Références</div>
+          <div class="kpi-value" style="color:var(--blue)">${nRefCur}</div>
+          <div class="kpi-label">Produits commandés</div>
         </div>
         <div class="kpi-card kc-g">
-          <div class="kpi-icon">📂</div>
-          <div class="kpi-value" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700">${imports.length}</div>
-          <div class="kpi-label">Imports</div>
+          <div class="kpi-icon">📈</div>
+          <div class="kpi-value" style="color:var(--mint)">${fmt(margeCur)}</div>
+          <div class="kpi-label">Marge brute</div>
+          <div style="margin-top:8px;font-size:11px;color:var(--text3)">${mpctCur.toFixed(1)}% taux</div>
         </div>
       </div>
 
@@ -946,24 +1054,9 @@ function showPharmaDetail(pharmacyId) {
         </div>
       </div>` : ''}
 
-      ${catRows.length ? `
-      <div class="card fade-up">
-        <div class="card-header"><div class="card-title">Répartition par famille</div></div>
-        <div style="overflow-x:auto">
-          <table class="data-table">
-            <thead><tr>
-              <th>Famille</th><th style="text-align:right">Lignes</th>
-              <th style="text-align:right">CA Net HT</th><th style="text-align:right">Marge</th>
-              <th style="text-align:right">Taux</th><th>Poids</th>
-            </tr></thead>
-            <tbody>${catHtml}</tbody>
-          </table>
-        </div>
-      </div>` : ''}
-
       <div class="card fade-up">
         <div class="card-header">
-          <div class="card-title">Top Produits</div>
+          <div class="card-title">Top Produits — ${curLabel}</div>
           <div class="badge badge-blue">${top.length} produits</div>
         </div>
         ${top.length ? `<div style="overflow-x:auto">
@@ -980,6 +1073,8 @@ function showPharmaDetail(pharmacyId) {
         </div>` : emptyState('💊','Aucune donnée','Importez un fichier pour cette pharmacie')}
       </div>
 
+      ${oppsHtml}
+
       ${imports.length ? `
       <div class="card fade-up">
         <div class="card-header"><div class="card-title">Historique des imports</div></div>
@@ -994,7 +1089,6 @@ function showPharmaDetail(pharmacyId) {
     </div>
   `;
 
-  // ── Pharma monthly chart ──────────────────────
   if (pharmaByMonth.length > 1) {
     setTimeout(() => {
       const ctx = document.getElementById('chart-pharma-month');
@@ -1009,8 +1103,7 @@ function showPharmaDetail(pharmacyId) {
               data: pharmaByMonth.map(([,v]) => +v.toFixed(2)),
               backgroundColor: pharma.color + '33',
               borderColor: pharma.color,
-              borderWidth: 2,
-              borderRadius: 8,
+              borderWidth: 2, borderRadius: 8,
             }]
           },
           options: {
