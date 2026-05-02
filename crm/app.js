@@ -1779,7 +1779,7 @@ function simProductList() {
       code:        b.cip13 || '',
       cat:         b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi'),
       froid:       isFroidBench(b),
-      puNet:       b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0,
+      puNet:       b.prix_ip > 0 ? b.prix_ip : (b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0),
       rot:         b.rot_pharma_jan26 || 0,
       hasAmeli:    b.has_ameli,
     }));
