@@ -195,21 +195,19 @@ async function importMultiPharmaFile(file, month, year) {
     if (impErr) continue;
     state.imports.unshift({ id: imp.id, pharmacyId: imp.pharmacy_id, month: imp.month, year: imp.year, filename: imp.filename, importedAt: imp.imported_at });
 
-    // Build sales rows (negate qte and mntNetHt because WML stores them negative)
-    // _famille is kept local only — art_famille column may not exist in DB yet
+    // Build sales rows — WML stores sales as POSITIVE values (store as-is)
     const salesRows = group.rows.map(r => {
       const famille = classifyFromWMLRow(r.subfamily, r.nature, r.afmCode, r.puNet);
       return {
-        _famille: famille, // local only, not sent to DB
+        _famille: famille,
         import_id: imp.id, pharmacy_id: pharma.id, month, year,
         art_designation: r.artDesignation,
         art_code: r.artCode,
         art_id: r.artId || null,
-        // NOTE: art_famille intentionally omitted from DB insert (column may not exist yet)
-        qte:       -(r.qte),      // negate: negative in file = sale
-        pu_brut:   r.puBrut,
-        pu_net:    r.puNet,
-        mnt_net_ht: -(r.mntNetHt), // negate: negative in file = sale
+        qte:        r.qte,
+        pu_brut:    r.puBrut,
+        pu_net:     r.puNet,
+        mnt_net_ht: r.mntNetHt,
       };
     });
 
