@@ -6,6 +6,15 @@
    Fond clair · typographie forte · couleurs émotionnelles
 ══════════════════════════════════════════════════════════ */
 
+/* ── Échelle typographique ──────────────────────────
+   Display / KPI value : Syne  26px 700
+   Heading (card title): Syne  15px 700
+   Section title       : Syne  20px 700
+   Body                : Inter 14px 400/500
+   Small / meta        : Inter 12px 400/500
+   Caption             : Inter 11px 500/600
+─────────────────────────────────────────────────── */
+
 :root {
   /* ── Fonds clairs ── */
   --bg:     #F7F8FC;
@@ -363,8 +372,8 @@ body {
 
 .kpi-value {
   font-family: 'Syne', sans-serif;
-  font-size: 36px; font-weight: 800;
-  letter-spacing: -1.2px; line-height: 1;
+  font-size: 26px; font-weight: 700;
+  letter-spacing: -0.6px; line-height: 1;
   margin-bottom: 7px;
   font-variant-numeric: tabular-nums;
 }
@@ -430,6 +439,7 @@ body {
 .data-table .td-name { color: var(--text); font-weight: 500; }
 .data-table .td-num {
   font-family: 'Syne', sans-serif;
+  font-size: 13px;
   font-variant-numeric: tabular-nums; font-weight: 600;
 }
 
@@ -464,7 +474,7 @@ body {
 .pharma-name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pharma-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
 .pharma-stats { text-align: right; flex-shrink: 0; }
-.pharma-ca { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.pharma-ca { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 .pharma-qte { font-size: 11px; color: var(--text3); margin-top: 2px; }
 
 /* ══════════════════════════════════════
@@ -581,7 +591,7 @@ body {
 .stat-row-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stat-row-sub  { font-size: 11px; color: var(--text3); margin-top: 2px; }
 .stat-row-bar  { flex: 1; max-width: 80px; }
-.stat-row-val  { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; text-align: right; min-width: 70px; flex-shrink: 0; }
+.stat-row-val  { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; text-align: right; min-width: 70px; flex-shrink: 0; }
 
 /* ══════════════════════════════════════
    TABS
@@ -594,7 +604,7 @@ body {
 /* ══════════════════════════════════════
    SECTION TITLE
 ══════════════════════════════════════ */
-.section-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px; color: var(--text); }
+.section-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -.4px; margin-bottom: 6px; color: var(--text); }
 .section-sub { font-size: 13px; color: var(--text2); margin-bottom: 28px; }
 
 /* ══════════════════════════════════════

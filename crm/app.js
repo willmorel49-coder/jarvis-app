@@ -377,8 +377,8 @@ function renderDashboard() {
         })].map(f => {
           const active = dashPeriod === f.key;
           return `<button onclick="dashPeriod='${f.key}';renderDashboard()" style="
-            padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'rgba(255,255,255,.12)'};
-            background:${active ? 'rgba(0,87,255,.18)' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
+            padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};
+            background:${active ? 'var(--blue-bg)' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
             cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
           ">${f.label}</button>`;
         }).join('')}
@@ -398,7 +398,7 @@ function renderDashboard() {
         <div class="kpi-label">Marge Brute</div>
       </div>
       <div class="kpi-card kc-p">
-        <div class="kpi-icon">%</div>
+        <div class="kpi-icon">🎯</div>
         <div class="kpi-value">${mpct.toFixed(1)}%</div>
         <div class="kpi-label">Taux de marge</div>
       </div>
@@ -507,8 +507,8 @@ function renderDashboard() {
             datasets: [{
               label: 'CA Net HT (€)',
               data: byM.map(([,v]) => +v.toFixed(2)),
-              backgroundColor: 'rgba(0,87,255,0.5)',
-              borderColor: '#0057FF',
+              backgroundColor: 'rgba(37,99,235,0.15)',
+              borderColor: '#2563EB',
               borderWidth: 2,
               borderRadius: 8,
             }]
@@ -517,8 +517,8 @@ function renderDashboard() {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-              x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8899BB', font: { size: 11 } } },
-              y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8899BB', font: { size: 11 }, callback: v => fmt(v) } },
+              x: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 } } },
+              y: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
             }
           }
         });
@@ -544,7 +544,7 @@ function renderDashboard() {
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'right', labels: { color: '#8899BB', font: { size: 11 }, boxWidth: 12, padding: 10 } },
+              legend: { position: 'right', labels: { color: '#64748B', font: { size: 11 }, boxWidth: 12, padding: 10 } },
               tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.parsed)} (${(ctx.parsed / ca * 100).toFixed(1)}%)` } },
             },
             cutout: '65%',
@@ -662,7 +662,7 @@ function showPharmaDetail(pharmacyId) {
       <div class="kpi-grid fade-up" style="grid-template-columns:repeat(3,1fr)">
         <div class="kpi-card kc-b"><div class="kpi-icon">💰</div><div class="kpi-value">${fmt(ca)}</div><div class="kpi-label">CA Net HT</div></div>
         <div class="kpi-card kc-g"><div class="kpi-icon">📈</div><div class="kpi-value">${fmt(marge)}</div><div class="kpi-label">Marge Brute</div></div>
-        <div class="kpi-card kc-p"><div class="kpi-icon">%</div><div class="kpi-value">${mpct.toFixed(1)}%</div><div class="kpi-label">Taux de marge</div></div>
+        <div class="kpi-card kc-p"><div class="kpi-icon">🎯</div><div class="kpi-value">${mpct.toFixed(1)}%</div><div class="kpi-label">Taux de marge</div></div>
         <div class="kpi-card kc-a"><div class="kpi-icon">📦</div><div class="kpi-value">${fmtNum(Math.round(qte))}</div><div class="kpi-label">Unités vendues</div></div>
         <div class="kpi-card kc-b"><div class="kpi-icon">💊</div><div class="kpi-value">${nRef}</div><div class="kpi-label">Références</div></div>
         <div class="kpi-card kc-g"><div class="kpi-icon">📂</div><div class="kpi-value">${imports.length}</div><div class="kpi-label">Imports</div></div>
@@ -791,7 +791,7 @@ function renderProduits() {
   const chipsHtml = familles.map(f => {
     const active = prodFamille === f.key;
     return `<button onclick="prodFamille='${f.key}';renderProduits()" style="
-      padding:5px 14px;border-radius:20px;border:1px solid ${active ? f.color : 'rgba(255,255,255,.12)'};
+      padding:5px 14px;border-radius:20px;border:1px solid ${active ? f.color : 'var(--border2)'};
       background:${active ? f.color + '22' : 'transparent'};color:${active ? f.color : 'var(--text2)'};
       cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
     ">${f.label}</button>`;
