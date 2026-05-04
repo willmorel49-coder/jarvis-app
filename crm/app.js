@@ -2114,6 +2114,7 @@ function navigate(page) {
     catalogue:  'Catalogue Produits IP',
     benchmark:  'Benchmark Marché',
     simulateur: 'Simulateur de panier',
+    offilog:    'Offilog — Parapharmacie',
   };
   document.getElementById('topbar-title').textContent = titles[page] || page;
 
@@ -2126,6 +2127,7 @@ function navigate(page) {
     catalogue:  renderCatalogue,
     benchmark:  renderBenchmark,
     simulateur: renderSimulator,
+    offilog:    renderOffilog,
   };
   if (renders[page]) renders[page]();
 }
@@ -2699,6 +2701,228 @@ function renderSimulator() {
 
   // Render bars
   if (state.sim.items.length) updateSimBars();
+}
+
+// ── OFFILOG ──────────────────────────────────
+const OFFILOG_ORANGE = '#FF6B35';
+const OFFILOG_PER    = 40;
+let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiPageNum = 1;
+let offiCurrentData = [];
+
+const ROLE_META = {
+  'Héros':           { color: '#FFD700', bg: '#FFD70022', icon: '⭐' },
+  'Héros / Soutien': { color: '#FFD700', bg: '#FFD70018', icon: '⭐' },
+  'Soutien fort':    { color: '#00E5A0', bg: '#00E5A018', icon: '💪' },
+  'Soutien':         { color: '#64748B', bg: '#64748B18', icon: '→' },
+  'Image':           { color: '#9B5CFF', bg: '#9B5CFF18', icon: '🎨' },
+  'Opportunité':     { color: '#FF6B35', bg: '#FF6B3518', icon: '🎯' },
+};
+
+function roleMeta(role) {
+  return ROLE_META[role] || { color: '#64748B', bg: '#64748B18', icon: '·' };
+}
+
+function roleBadge(role) {
+  const m = roleMeta(role);
+  return `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${m.bg};color:${m.color};font-weight:600;white-space:nowrap">${m.icon} ${role}</span>`;
+}
+
+function offiGetList() {
+  if (typeof OFFILOG === 'undefined') return [];
+  const q = offiQuery.toLowerCase().trim();
+  return OFFILOG.filter(p => {
+    if (q && !p.produit.toLowerCase().includes(q) &&
+        !(p.ean || '').includes(q) &&
+        !(p.marque || '').toLowerCase().includes(q)) return false;
+    if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
+    if (offiRole !== 'tous' && offiRole !== 'offilog' && p.role !== offiRole) return false;
+    if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
+    return true;
+  });
+}
+
+function offiGoPage(p) { offiPageNum = p; renderOffilog(); }
+function offiSetRole(r) { offiRole = r; offiPageNum = 1; renderOffilog(); }
+function offiSetUnivers(u) { offiUnivers = u; offiPageNum = 1; renderOffilog(); }
+
+function renderOffilog() {
+  const container = document.getElementById('offilog-content');
+  if (!container) return;
+
+  if (typeof OFFILOG === 'undefined' || !OFFILOG.length) {
+    container.innerHTML = `<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:var(--text3)">Données Offilog non chargées.</div></div>`;
+    return;
+  }
+
+  offiCurrentData = offiGetList();
+  const totalPages = Math.max(1, Math.ceil(offiCurrentData.length / OFFILOG_PER));
+  if (offiPageNum > totalPages) offiPageNum = 1;
+  const startIdx = (offiPageNum - 1) * OFFILOG_PER;
+  const page     = offiCurrentData.slice(startIdx, startIdx + OFFILOG_PER);
+
+  // ── Stats globales ────────────────────────────
+  const nTotal    = OFFILOG.length;
+  const nOff      = OFFILOG.filter(p => p.dans_offilog).length;
+  const nHeros    = OFFILOG.filter(p => p.role === 'Héros' || p.role === 'Héros / Soutien').length;
+  const nOpps     = OFFILOG.filter(p => p.role === 'Opportunité').length;
+  const nApoth    = OFFILOG.filter(p => p.prix_apothical !== null && p.prix_apothical > 0).length;
+  const margeOff  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
+  const margeMoy  = margeOff.length ? (margeOff.reduce((a, b) => a + b, 0) / margeOff.length) : 0;
+  const tauxOff   = nTotal > 0 ? (nOff / nTotal * 100) : 0;
+
+  // ── Univers disponibles ───────────────────────
+  const universSet = [...new Set(OFFILOG.map(p => p.univers).filter(Boolean))].sort();
+
+  // ── Role tabs ─────────────────────────────────
+  const roleTabs = [
+    { key: 'tous',           label: 'Tous',          count: nTotal },
+    { key: 'offilog',        label: '✓ Dans Offilog', count: nOff },
+    { key: 'Héros',          label: '⭐ Héros',       count: OFFILOG.filter(p=>p.role==='Héros').length },
+    { key: 'Héros / Soutien',label: '⭐ Héros/Soutien', count: OFFILOG.filter(p=>p.role==='Héros / Soutien').length },
+    { key: 'Soutien fort',   label: '💪 Soutien fort', count: OFFILOG.filter(p=>p.role==='Soutien fort').length },
+    { key: 'Image',          label: '🎨 Image',       count: OFFILOG.filter(p=>p.role==='Image').length },
+    { key: 'Opportunité',    label: '🎯 Opportunités', count: nOpps },
+  ];
+  const roleTabsHtml = roleTabs.map(t => {
+    const active = offiRole === t.key;
+    return `<button onclick="offiSetRole('${t.key.replace(/'/g, "\\'")}')"
+      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;
+             border:1px solid ${active ? OFFILOG_ORANGE : 'var(--border2)'};
+             background:${active ? OFFILOG_ORANGE : 'transparent'};
+             color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap">
+      ${t.label} <span style="opacity:.6;font-weight:400">${fmtNum(t.count)}</span>
+    </button>`;
+  }).join('');
+
+  // ── Univers select ────────────────────────────
+  const universHtml = `<select onchange="offiSetUnivers(this.value)"
+    style="padding:5px 10px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text)">
+    <option value="tous">Tous les univers</option>
+    ${universSet.map(u => `<option value="${u.replace(/"/g,'&quot;')}" ${offiUnivers===u?'selected':''}>${u}</option>`).join('')}
+  </select>`;
+
+  // ── Rows ──────────────────────────────────────
+  const rowsHtml = page.length ? page.map((p, i) => {
+    const inOff   = p.dans_offilog;
+    const marge   = p.marge_pct != null ? `<span style="font-weight:700;color:${p.marge_pct >= 40 ? 'var(--mint)' : p.marge_pct >= 20 ? 'var(--amber)' : 'var(--text2)'}">${p.marge_pct.toFixed(1)}%</span>` : '<span style="color:var(--text3)">—</span>';
+    const prixOff = p.prix_offilog != null ? `<span style="color:${OFFILOG_ORANGE};font-weight:700">${fmt(p.prix_offilog)}</span>` : '<span style="color:var(--text3)">—</span>';
+    const prixMaxi = p.prix_maxi != null ? fmt(p.prix_maxi) : '—';
+    const prixApoth = p.prix_apothical != null
+      ? `<span style="color:var(--blue)">${fmt(p.prix_apothical)}</span>`
+      : '<span style="color:var(--text3);font-size:10px">N/D</span>';
+    const ecart = p.ecart != null && p.prix_maxi
+      ? `<span style="color:var(--mint);font-size:11px">+${fmt(p.ecart)}</span>`
+      : '';
+    const offTag = inOff
+      ? `<span title="Référencé Offilog" style="font-size:10px;padding:1px 5px;background:rgba(255,107,53,.12);color:${OFFILOG_ORANGE};border-radius:4px">IP</span>`
+      : '';
+    return `<tr style="border-bottom:1px solid var(--border1);${i%2===1?'background:rgba(255,255,255,.015)':''}">
+      <td style="padding:8px 10px;font-size:11px;color:var(--text3)">${p.rang||i+startIdx+1}</td>
+      <td style="padding:8px 10px;min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${p.produit}</div>
+        <div style="display:flex;gap:5px;margin-top:2px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:10px;color:var(--text3)">${p.marque||''}</span>
+          ${offTag}
+        </div>
+      </td>
+      <td style="padding:8px 10px;font-size:11px;color:var(--text2);white-space:nowrap">${p.univers||'—'}</td>
+      <td style="padding:8px 10px;text-align:right;font-size:12px">${prixMaxi}</td>
+      <td style="padding:8px 10px;text-align:right">${prixOff}</td>
+      <td style="padding:8px 10px;text-align:right">${prixApoth}</td>
+      <td style="padding:8px 10px;text-align:right">${marge}${ecart ? '<br>'+ecart : ''}</td>
+      <td style="padding:8px 10px">${roleBadge(p.role)}</td>
+    </tr>`;
+  }).join('')
+  : `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
+
+  // ── Pagination ────────────────────────────────
+  let pagHtml = '';
+  if (totalPages > 1) {
+    const btns = [];
+    if (offiPageNum > 1) { btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(1)">«</button>`); btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(${offiPageNum-1})">‹</button>`); }
+    let ps = Math.max(1, offiPageNum - 3), pe = Math.min(totalPages, ps + 6);
+    if (pe - ps < 6) ps = Math.max(1, pe - 6);
+    for (let p = ps; p <= pe; p++) btns.push(`<button class="cat-pag-btn${p===offiPageNum?' active':''}" onclick="offiGoPage(${p})">${p}</button>`);
+    if (offiPageNum < totalPages) { btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(${offiPageNum+1})">›</button>`); btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(${totalPages})">»</button>`); }
+    pagHtml = `<div style="display:flex;justify-content:center;gap:4px;padding:16px;flex-wrap:wrap">${btns.join('')}</div>`;
+  }
+
+  // ── Apothical status badge ────────────────────
+  const apothBadge = nApoth > 0
+    ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,87,255,.1);color:var(--blue)">${fmtNum(nApoth)} prix Apothical</span>`
+    : `<span title="Le scraper Apothical n'a pas encore terminé ou n'a trouvé aucun prix" style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(100,116,139,.1);color:var(--text3)">Apothical : en attente du scraper</span>`;
+
+  container.innerHTML = `
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">
+      <div class="card kpi-card fade-up">
+        <div class="kpi-label">Produits analysés</div>
+        <div class="kpi-value">${fmtNum(nTotal)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Maxipara × Offilog</div>
+      </div>
+      <div class="card kpi-card fade-up">
+        <div class="kpi-label">Référencés Offilog</div>
+        <div class="kpi-value" style="color:${OFFILOG_ORANGE}">${fmtNum(nOff)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">${tauxOff.toFixed(0)}% de couverture</div>
+      </div>
+      <div class="card kpi-card fade-up">
+        <div class="kpi-label">Marge moy. Offilog</div>
+        <div class="kpi-value" style="color:var(--mint)">${margeMoy.toFixed(1)}%</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">sur produits matchés</div>
+      </div>
+      <div class="card kpi-card fade-up">
+        <div class="kpi-label">⭐ Héros</div>
+        <div class="kpi-value" style="color:#FFD700">${fmtNum(nHeros)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">${fmtNum(nOpps)} opportunités</div>
+      </div>
+    </div>
+
+    <!-- Filters + Search -->
+    <div class="card fade-up" style="margin-bottom:16px;border-top:3px solid ${OFFILOG_ORANGE}">
+      <div class="card-body" style="padding:12px 16px">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <div class="search-wrap" style="flex:1;min-width:200px">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Nom, marque ou EAN…" value="${offiQuery}"
+              oninput="offiQuery=this.value;offiPageNum=1;renderOffilog()"
+              style="border:none;background:transparent;outline:none;flex:1;font-size:13px;color:var(--text)" autocomplete="off">
+            ${offiQuery ? `<button onclick="offiQuery='';offiPageNum=1;renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px">✕</button>` : ''}
+          </div>
+          ${universHtml}
+          ${apothBadge}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${roleTabsHtml}</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card fade-up">
+      <div class="card-header">
+        <div class="card-title" style="display:flex;align-items:center;gap:8px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${OFFILOG_ORANGE};display:inline-block"></span>
+          ${fmtNum(offiCurrentData.length)} produits
+        </div>
+        <div style="font-size:12px;color:var(--text3)">Page ${offiPageNum} / ${totalPages}</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border2)">
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">#</th>
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Produit</th>
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Univers</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Maxipara</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:600">Offilog</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--blue);font-weight:600">Apothical</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Marge</th>
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Rôle</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+      ${pagHtml}
+    </div>`;
 }
 
 // ── EMPTY STATE ───────────────────────────────
