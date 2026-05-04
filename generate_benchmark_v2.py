@@ -102,9 +102,11 @@ for sname, cat_default in sheet_cat_ip.items():
 wb2.close()
 print(f"  Produits matchés par CIP direct: {matched_from_ip}")
 
-# ── 3. WML bridge name→CIP13 (fallback) ──────────────────────────────────────
-print("\nBuilding WML name→CIP13 bridge...")
+# ── 3. WML bridge name→CIP13 + prix réels IP ─────────────────────────────────
+print("\nBuilding WML name→CIP13 bridge + prix IP réels...")
 name_to_cip = {}
+cip_wml_prix = {}   # cip13 → liste de puNet observés → pour faire la médiane
+
 for wf in ['WML_01_2026.xlsx','WML_02_2026.xlsx','WML_03_2026.xlsx']:
     path = os.path.join(BASE, wf)
     if not os.path.exists(path): continue
@@ -113,34 +115,80 @@ for wf in ['WML_01_2026.xlsx','WML_02_2026.xlsx','WML_03_2026.xlsx']:
         ws3 = wb3.active
         headers = [c.value for c in next(ws3.iter_rows(max_row=1))]
         try:
-            di = headers.index('PLVDESIGNATION')
-            ci = headers.index('ARTCODEBARRE')
+            di   = headers.index('PLVDESIGNATION')
+            ci   = headers.index('ARTCODEBARRE')
+            pni  = headers.index('PLVPUNET')
+            pbi  = headers.index('PLVPUBRUT')
         except ValueError: wb3.close(); continue
         for row in ws3.iter_rows(min_row=2, values_only=True):
-            desig = row[di]; cip_raw = row[ci]
+            desig   = row[di]
+            cip_raw = row[ci]
+            punet   = row[pni]
+            pubrut  = row[pbi]
             if desig is None or cip_raw is None: continue
             try:
                 cip = str(int(float(str(cip_raw).replace(',','.'))))
-                if len(cip) >= 10:
-                    name_to_cip[norm(desig)] = cip
+                if len(cip) < 10: continue
+                name_to_cip[norm(desig)] = cip
+                # Collecter les prix nets réels (positifs uniquement = ventes, pas retours)
+                pn = safe_float(punet)
+                pb = safe_float(pubrut)
+                if pn > 0 and pb > 0:
+                    if cip not in cip_wml_prix:
+                        cip_wml_prix[cip] = {'nets': [], 'bruts': []}
+                    cip_wml_prix[cip]['nets'].append(pn)
+                    cip_wml_prix[cip]['bruts'].append(pb)
             except: pass
         wb3.close()
     except Exception as e:
         print(f"  ERROR {wf}: {e}")
 
+# Calculer prix médian par CIP13 depuis WML
+def mediane(lst):
+    s = sorted(lst)
+    n = len(s)
+    return s[n//2] if n % 2 else (s[n//2-1]+s[n//2])/2
+
+cip_wml_prix_med = {}
+for cip, v in cip_wml_prix.items():
+    if v['nets']:
+        pn_med = mediane(v['nets'])
+        pb_med = mediane(v['bruts'])
+        remise = round((pb_med - pn_med) / pb_med * 100, 2) if pb_med > 0 else 0.0
+        cip_wml_prix_med[cip] = {
+            'prix_ht': round(pb_med, 4),
+            'prix_ip': round(pn_med, 4),
+            'remise_pct': remise,
+            'offre_ip': 0.0,
+        }
+
+print(f"  Prix WML disponibles pour {len(cip_wml_prix_med)} CIP13")
+
 # Apply WML bridge to unmatched records
 wml_matched = 0
+wml_prix_added = 0
 for key, rec in records.items():
+    # Étape A : bridge CIP13 si manquant
     if not rec['cip13'] and key in name_to_cip:
         rec['cip13'] = name_to_cip[key]
-        if rec['cip13'] in cip_to_prix:
-            p = cip_to_prix[rec['cip13']]
-            rec.update({k:p[k] for k in ('prix_ht','prix_ip','remise_pct','offre_ip','is_froid')})
         wml_matched += 1
+    # Étape B : enrichir prix depuis TOP IP DÉCROISSANT si CIP connu
+    if rec['cip13'] and rec['prix_ip'] == 0 and rec['cip13'] in cip_to_prix:
+        p = cip_to_prix[rec['cip13']]
+        rec.update({k:p[k] for k in ('prix_ht','prix_ip','remise_pct','offre_ip','is_froid')})
+        wml_prix_added += 1
+    # Étape C : enrichir prix depuis WML si toujours manquant
+    if rec['cip13'] and rec['prix_ip'] == 0 and rec['cip13'] in cip_wml_prix_med:
+        p = cip_wml_prix_med[rec['cip13']]
+        rec.update({k:p[k] for k in ('prix_ht','prix_ip','remise_pct','offre_ip')})
+        wml_prix_added += 1
 
-print(f"  WML bridge additional matches: {wml_matched}")
-total_with_cip = sum(1 for r in records.values() if r['cip13'])
+print(f"  WML bridge CIP13 nouveaux: {wml_matched}")
+print(f"  Prix enrichis (TOP IP + WML): {wml_prix_added}")
+total_with_cip  = sum(1 for r in records.values() if r['cip13'])
+total_with_prix = sum(1 for r in records.values() if r['prix_ip'] > 0)
 print(f"  Total avec CIP13: {total_with_cip} / {len(records)}")
+print(f"  Total avec prix_ip: {total_with_prix} / {len(records)}")
 
 # ── 4. AMELI MONTHLY DATA (13 months: Jan25→Jan26) ───────────────────────────
 print("\nLoading Ameli monthly data (13 months)...")
