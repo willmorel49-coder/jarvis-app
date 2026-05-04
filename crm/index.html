@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="catalogue.css">
 </head>
 <body>
 
@@ -69,11 +68,7 @@
 
     <div class="nav-section">
       <div class="nav-label">Données</div>
-      <div class="nav-item" data-page="catalogue" onclick="navigate('catalogue')">
-        <span class="nav-icon">💊</span>
-        <span class="nav-label-text">Catalogue IP</span>
-      </div>
-      <div class="nav-item" data-page="import" onclick="navigate('import')">
+<div class="nav-item" data-page="import" onclick="navigate('import')">
         <span class="nav-icon">📂</span>
         <span class="nav-label-text">Import Excel</span>
         <span class="nav-badge" id="import-badge">0</span>
@@ -121,8 +116,7 @@
       <div class="page active" id="page-dashboard"><div id="dash-content"></div></div>
       <div class="page" id="page-pharmacies"><div id="pharma-content"></div></div>
       <div class="page" id="page-produits"><div id="prod-content"></div></div>
-      <div class="page" id="page-catalogue"><div id="cat-content"></div></div>
-      <div class="page" id="page-import"><div id="import-content"></div></div>
+<div class="page" id="page-import"><div id="import-content"></div></div>
       <div class="page" id="page-admin"><div id="admin-content"></div></div>
       <div class="page" id="page-benchmark"><div id="bench-content"></div></div>
       <div class="page" id="page-simulateur"><div id="simul-content"></div></div>
@@ -133,43 +127,6 @@
 <!-- TOAST -->
 <div id="toast"></div>
 
-<!-- CATALOGUE : Cart FAB -->
-<button class="cat-cart-fab" id="cat-cart-fab" onclick="openSheet('panier')" style="display:none">
-  🛒<div class="cat-cart-badge" id="cat-cart-badge">0</div>
-</button>
-
-<!-- CATALOGUE : Panier sheet -->
-<div class="cat-sheet-overlay" id="cat-sh-panier" onclick="closeSheet('panier')">
-  <div class="cat-sheet" onclick="event.stopPropagation()">
-    <div class="cat-sh-handle"></div>
-    <div class="cat-sh-hdr">
-      <div class="cat-sh-title">🛒 Panier</div>
-      <button class="cat-sh-close" onclick="closeSheet('panier')">✕</button>
-    </div>
-    <div class="cat-sh-body" id="cat-panier-body"></div>
-  </div>
-</div>
-
-<!-- CATALOGUE : Comparateur sheet -->
-<div class="cat-sheet-overlay" id="cat-sh-cmp" onclick="closeSheet('cmp')">
-  <div class="cat-sheet" onclick="event.stopPropagation()">
-    <div class="cat-sh-handle"></div>
-    <div class="cat-sh-hdr">
-      <div class="cat-sh-title">⚖️ Comparateur</div>
-      <button class="cat-sh-close" onclick="closeSheet('cmp')">✕</button>
-    </div>
-    <div class="cat-sh-body" id="cat-cmp-body"></div>
-  </div>
-</div>
-
-<!-- CATALOGUE : Mode présentation -->
-<div class="cat-pres-overlay" id="cat-pres-overlay">
-  <div class="cat-pres-nav">
-    <button class="cat-pres-back" onclick="closePres()">← Retour</button>
-    <div class="cat-pres-badge">Grossiste IP</div>
-  </div>
-  <div class="cat-pres-body" id="cat-pres-body"></div>
-</div>
 
 <!-- LIBS CDN -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -183,8 +140,6 @@
 </script>
 <script src="clients-data.js"></script>
 <script src="benchmark-data.js"></script>
-<script src="catalogue-data.js"></script>
-<script src="catalogue.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
