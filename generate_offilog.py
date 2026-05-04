@@ -41,7 +41,12 @@ def norm(text: str) -> str:
 def js_str(v) -> str:
     if v is None:
         return 'null'
-    s = str(v).replace('\\', '\\\\').replace('"', '\\"')
+    s = (str(v)
+         .replace('\\', '\\\\')
+         .replace('"', '\\"')
+         .replace('&', '&amp;')
+         .replace('<', '&lt;')
+         .replace('>', '&gt;'))
     return f'"{s}"'
 
 
