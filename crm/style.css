@@ -782,3 +782,18 @@ body {
   .kpi-grid { grid-template-columns: 1fr; }
   .page-content { padding: 16px; }
 }
+
+/* ── CATALOGUE pagination ──────────────── */
+.cat-pag-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background .15s, color .15s;
+}
+.cat-pag-btn:hover { background: var(--bg3); color: var(--text1); }
+.cat-pag-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }

@@ -2111,6 +2111,7 @@ function navigate(page) {
     produits:   'Analyse Portefeuille',
     import:     'Import',
     admin:      'Administration',
+    catalogue:  'Catalogue Produits IP',
     benchmark:  'Benchmark Marché',
     simulateur: 'Simulateur de panier',
   };
@@ -2122,6 +2123,7 @@ function navigate(page) {
     produits:   renderProduits,
     import:     renderImport,
     admin:      renderAdmin,
+    catalogue:  renderCatalogue,
     benchmark:  renderBenchmark,
     simulateur: renderSimulator,
   };
@@ -2142,6 +2144,176 @@ function showToast(msg, type = 'info') {
   t.className = `show ${type}`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── CATALOGUE ────────────────────────────────
+let catQuery = '', catCatFilter = 'tous', catPageNum = 1;
+const CAT_PER_PAGE = 30;
+let catCurrentData = [];
+
+function catGetList() {
+  if (typeof BENCHMARK === 'undefined') return [];
+  const q = catQuery.toLowerCase().trim();
+  return BENCHMARK.filter(b => {
+    if (q && !b.designation.toLowerCase().includes(q) && !(b.cip13 || '').includes(q)) return false;
+    if (catCatFilter === 'froid') return isFroidBench(b);
+    if (catCatFilter === 'ameli') return b.has_ameli;
+    if (catCatFilter !== 'tous') return b.categorie === catCatFilter;
+    return true;
+  });
+}
+
+function catAddToSim(i) {
+  const b = catCurrentData[i];
+  if (!b) return;
+  const already = state.sim.items.find(it => it.designation === b.designation);
+  if (already) { showToast('Déjà dans le simulateur', 'info'); return; }
+  const puNet = b.prix_ip > 0 ? b.prix_ip : (b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0);
+  state.sim.items.push({
+    designation: b.designation,
+    code:        b.cip13 || '',
+    cat:         b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi'),
+    froid:       isFroidBench(b),
+    puNet,
+    puBrut:      puNet * 1.05,
+    qty:         1,
+  });
+  showToast(`"${b.designation.slice(0, 28)}…" ajouté au simulateur ✓`, 'success');
+  renderCatalogue();
+}
+
+function catGoPage(p) { catPageNum = p; renderCatalogue(); }
+
+function renderCatalogue() {
+  const container = document.getElementById('cat-content');
+  if (!container) return;
+
+  if (typeof BENCHMARK === 'undefined' || !BENCHMARK.length) {
+    container.innerHTML = `<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:var(--text3)">Données benchmark non chargées.</div></div>`;
+    return;
+  }
+
+  catCurrentData = catGetList();
+  const totalPages = Math.max(1, Math.ceil(catCurrentData.length / CAT_PER_PAGE));
+  if (catPageNum > totalPages) catPageNum = 1;
+  const startIdx = (catPageNum - 1) * CAT_PER_PAGE;
+  const page = catCurrentData.slice(startIdx, startIdx + CAT_PER_PAGE);
+
+  // ── KPIs ─────────────────────────────────────
+  const nPrix  = BENCHMARK.filter(b => b.prix_ip > 0).length;
+  const nAmeli = BENCHMARK.filter(b => b.has_ameli).length;
+  const nFroid = BENCHMARK.filter(b => isFroidBench(b)).length;
+
+  // ── Category tabs ────────────────────────────
+  const tabDefs = [
+    { key: 'tous',      label: 'Tous' },
+    { key: 'pp',        label: '✓ Petit prix' },
+    { key: 'mi',        label: '📊 Intermédiaire' },
+    { key: 'ch',        label: '💎 Cher' },
+    { key: 'biosim',    label: '🧬 Biosimilaires' },
+    { key: 'generique', label: '💊 Génériques' },
+    { key: 'nr',        label: '🔴 Non remboursés' },
+    { key: 'froid',     label: '❄️ Froid' },
+    { key: 'ameli',     label: '🏥 Ameli' },
+  ];
+  const tabsHtml = tabDefs.map(t => {
+    const active = catCatFilter === t.key;
+    return `<button onclick="catCatFilter='${t.key}';catPageNum=1;renderCatalogue()"
+      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};background:${active ? 'var(--blue)' : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap">${t.label}</button>`;
+  }).join('');
+
+  // ── Products ─────────────────────────────────
+  const prodsHtml = page.length ? page.map((b, i) => {
+    const globalIdx = startIdx + i;
+    const cat    = CATS[b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi')] || CATS.mi;
+    const froid  = isFroidBench(b) ? '❄️ ' : '';
+    const ameliTag = b.has_ameli ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.12);color:var(--mint);border-radius:4px">🏥 SS</span>` : '';
+    const rotTag   = b.rot_pharma_jan26 > 0 ? `<span style="font-size:10px;color:var(--text3)">↻ ${b.rot_pharma_jan26.toFixed(1)}/mois</span>` : '';
+    const cipTag   = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
+    const offreTag = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmt(b.offre_ip)}</span>` : '';
+    const prix = b.prix_ip > 0
+      ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--blue)">${fmt(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
+      : b.prix_ht > 0
+        ? `<div style="font-size:14px;color:var(--text2)">${fmt(b.prix_ht)}</div>`
+        : `<div style="font-size:12px;color:var(--text3)">N/D</div>`;
+    const inSim = state.sim.items.some(it => it.designation === b.designation);
+    const addBtn = `<button onclick="catAddToSim(${globalIdx})"
+      style="padding:5px 12px;border-radius:8px;border:1px solid ${inSim ? 'var(--mint)' : 'var(--blue)'};background:${inSim ? 'rgba(0,229,160,.1)' : 'rgba(0,87,255,.08)'};color:${inSim ? 'var(--mint)' : 'var(--blue)'};font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;min-width:72px">
+      ${inSim ? '✓ Ajouté' : '+ Sim'}
+    </button>`;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${froid}${b.designation}</div>
+        <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
+          ${ameliTag}${offreTag}${rotTag}${cipTag}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">${prix}${addBtn}</div>
+    </div>`;
+  }).join('')
+  : `<div style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</div>`;
+
+  // ── Pagination ───────────────────────────────
+  let pagHtml = '';
+  if (totalPages > 1) {
+    const btns = [];
+    if (catPageNum > 1) { btns.push(`<button class="cat-pag-btn" onclick="catGoPage(1)">«</button>`); btns.push(`<button class="cat-pag-btn" onclick="catGoPage(${catPageNum - 1})">‹</button>`); }
+    let ps = Math.max(1, catPageNum - 3), pe = Math.min(totalPages, ps + 6);
+    if (pe - ps < 6) ps = Math.max(1, pe - 6);
+    for (let p = ps; p <= pe; p++) btns.push(`<button class="cat-pag-btn${p === catPageNum ? ' active' : ''}" onclick="catGoPage(${p})">${p}</button>`);
+    if (catPageNum < totalPages) { btns.push(`<button class="cat-pag-btn" onclick="catGoPage(${catPageNum + 1})">›</button>`); btns.push(`<button class="cat-pag-btn" onclick="catGoPage(${totalPages})">»</button>`); }
+    pagHtml = `<div style="display:flex;justify-content:center;gap:4px;padding:16px;flex-wrap:wrap">${btns.join('')}</div>`;
+  }
+
+  // ── Simulateur shortcut ──────────────────────
+  const simCount = state.sim.items.length;
+  const simBar = simCount > 0
+    ? `<div class="card fade-up" style="margin-bottom:16px;background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2)">
+        <div class="card-body" style="display:flex;align-items:center;gap:16px;padding:12px 16px">
+          <span style="font-size:20px">🛒</span>
+          <div style="flex:1;font-size:13px;font-weight:600">${simCount} produit${simCount > 1 ? 's' : ''} dans le simulateur</div>
+          <button class="btn btn-primary" onclick="navigate('simulateur')" style="font-size:12px;padding:6px 16px">Voir le simulateur →</button>
+        </div>
+      </div>`
+    : '';
+
+  container.innerHTML = `
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px">
+      <div class="card kpi-card fade-up"><div class="kpi-label">Produits IP</div><div class="kpi-value">${fmtNum(BENCHMARK.length)}</div></div>
+      <div class="card kpi-card fade-up"><div class="kpi-label">Avec prix IP</div><div class="kpi-value" style="color:var(--blue)">${fmtNum(nPrix)}</div></div>
+      <div class="card kpi-card fade-up"><div class="kpi-label">Remboursés SS</div><div class="kpi-value" style="color:var(--mint)">${fmtNum(nAmeli)}</div></div>
+      <div class="card kpi-card fade-up"><div class="kpi-label">Thermosensibles</div><div class="kpi-value" style="color:var(--amber)">${fmtNum(nFroid)}</div></div>
+    </div>
+
+    ${simBar}
+
+    <!-- Search + Filters -->
+    <div class="card fade-up" style="margin-bottom:16px">
+      <div class="card-body" style="padding:12px 16px">
+        <div class="search-wrap" style="margin-bottom:12px">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Rechercher par nom ou CIP13…" value="${catQuery}"
+            oninput="catQuery=this.value;catPageNum=1;renderCatalogue()"
+            style="border:none;background:transparent;outline:none;flex:1;font-size:13px;color:var(--text)" autocomplete="off">
+          ${catQuery ? `<button onclick="catQuery='';catPageNum=1;renderCatalogue()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px">✕</button>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${tabsHtml}</div>
+      </div>
+    </div>
+
+    <!-- Product list -->
+    <div class="card fade-up">
+      <div class="card-header">
+        <div class="card-title">
+          ${catCurrentData.length < BENCHMARK.length ? `${fmtNum(catCurrentData.length)} résultats` : `${fmtNum(BENCHMARK.length)} produits`}
+        </div>
+        <div style="font-size:12px;color:var(--text3)">Page ${catPageNum} / ${totalPages}</div>
+      </div>
+      ${prodsHtml}
+      ${pagHtml}
+    </div>`;
 }
 
 // ── SIMULATEUR ────────────────────────────────
