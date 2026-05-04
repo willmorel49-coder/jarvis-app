@@ -2722,6 +2722,11 @@ function roleMeta(role) {
   return ROLE_META[role] || { color: '#64748B', bg: '#64748B18', icon: '·' };
 }
 
+function fmtP(n) {
+  if (n == null || isNaN(n)) return '—';
+  return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
 function roleBadge(role) {
   const m = roleMeta(role);
   return `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${m.bg};color:${m.color};font-weight:600;white-space:nowrap">${m.icon} ${role}</span>`;
@@ -2805,13 +2810,13 @@ function renderOffilog() {
   const rowsHtml = page.length ? page.map((p, i) => {
     const inOff   = p.dans_offilog;
     const marge   = p.marge_pct != null ? `<span style="font-weight:700;color:${p.marge_pct >= 40 ? 'var(--mint)' : p.marge_pct >= 20 ? 'var(--amber)' : 'var(--text2)'}">${p.marge_pct.toFixed(1)}%</span>` : '<span style="color:var(--text3)">—</span>';
-    const prixOff = p.prix_offilog != null ? `<span style="color:${OFFILOG_ORANGE};font-weight:700">${fmt(p.prix_offilog)}</span>` : '<span style="color:var(--text3)">—</span>';
-    const prixMaxi = p.prix_maxi != null ? fmt(p.prix_maxi) : '—';
+    const prixOff = p.prix_offilog != null ? `<span style="color:${OFFILOG_ORANGE};font-weight:700">${fmtP(p.prix_offilog)}</span>` : '<span style="color:var(--text3)">—</span>';
+    const prixMaxi = p.prix_maxi != null ? fmtP(p.prix_maxi) : '—';
     const prixApoth = p.prix_apothical != null
-      ? `<span style="color:var(--blue)">${fmt(p.prix_apothical)}</span>`
+      ? `<span style="color:var(--blue)">${fmtP(p.prix_apothical)}</span>`
       : '<span style="color:var(--text3);font-size:10px">N/D</span>';
-    const ecart = p.ecart != null && p.prix_maxi
-      ? `<span style="color:var(--mint);font-size:11px">+${fmt(p.ecart)}</span>`
+    const ecart = p.ecart != null && p.ecart > 0
+      ? `<span style="color:var(--mint);font-size:11px">+${fmtP(p.ecart)}</span>`
       : '';
     const offTag = inOff
       ? `<span title="Référencé Offilog" style="font-size:10px;padding:1px 5px;background:rgba(255,107,53,.12);color:${OFFILOG_ORANGE};border-radius:4px">IP</span>`
