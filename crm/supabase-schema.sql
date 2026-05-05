@@ -27,8 +27,12 @@ create table if not exists imports (
   year         int,
   filename     text not null,
   imported_at  timestamptz default now(),
-  imported_by  uuid references auth.users(id)
+  imported_by  uuid references auth.users(id),
+  file_path    text
 );
+
+-- Ajout colonne file_path si migration depuis schema précédent
+alter table imports add column if not exists file_path text;
 
 -- 4. Ventes
 create table if not exists sales (
