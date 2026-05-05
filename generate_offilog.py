@@ -4,12 +4,18 @@ generate_offilog.py
 ===================
 Lit : OFFILOG/offilog_x_maxipara_3517.xlsx  (feuille "Croisement Complet")
        benchmark_apothical_medicaments.xlsx    (si disponible → enrichit prix_apothical)
+       benchmark_drakkars.xlsx                 (si disponible → enrichit prix_drakkars)
 Écrit: crm/offilog-data.js
 
 Format JS :
   const OFFILOG = [{rang, produit, produit_norm, ean, marque, univers, saison,
                     prix_maxi, dans_offilog, marque_off, prix_offilog, ecart,
-                    marge_pct, potentiel, role, prix_apothical}, ...]
+                    marge_pct, potentiel, role, prix_apothical, prix_pharmacie,
+                    prix_drakkars}, ...]
+
+Stratégie de matching (par ordre de priorité) :
+  1. Par EAN exact (si ean_str non vide) — sources : Apothical médicaments, Drakkars
+  2. Par nom normalisé (fallback) — toutes les sources
 """
 import re
 import unicodedata
@@ -20,11 +26,12 @@ from pathlib import Path
 
 import openpyxl
 
-BASE   = Path('/Users/williammorel/JARVIS/APP')
-SRC    = BASE / 'OFFILOG' / 'offilog_x_maxipara_3517.xlsx'
-APOTH  = BASE / 'benchmark_apothical_medicaments.xlsx'
-PHARMA = BASE / 'benchmark_apothical_pharmacie_montlouis-sur-loire.xlsx'
-OUT    = BASE / 'crm' / 'offilog-data.js'
+BASE      = Path('/Users/williammorel/JARVIS/APP')
+SRC       = BASE / 'OFFILOG' / 'offilog_x_maxipara_3517.xlsx'
+APOTH     = BASE / 'benchmark_apothical_medicaments.xlsx'
+PHARMA    = BASE / 'benchmark_apothical_pharmacie_montlouis-sur-loire.xlsx'
+DRAKKARS  = BASE / 'benchmark_drakkars.xlsx'
+OUT       = BASE / 'crm' / 'offilog-data.js'
 
 
 # ── HELPERS ─────────────────────────────────────────────────────────────────
@@ -92,7 +99,11 @@ def get(row, col_name):
 
 
 # ── LOAD APOTHICAL (optionnel) ───────────────────────────────────────────────
+# Colonnes: ID, Nom, Nom complet, Sous-titre, Badge, Prix affiché, Prix numérique,
+#           Nom normalisé, URL
+# Matching : priorité EAN via "Nom normalisé" (colonne), fallback par nom normalisé calculé
 apoth_by_norm: dict = {}
+apoth_by_ean:  dict = {}
 if APOTH.exists():
     print(f'Enrichissement Apothical depuis : {APOTH}')
     wb2 = openpyxl.load_workbook(APOTH, read_only=True, data_only=True)
@@ -101,22 +112,39 @@ if APOTH.exists():
     wb2.close()
     hdr2 = rows2[0]
     col2 = {n: i for i, n in enumerate(hdr2) if n}
+    # Colonnes utiles
+    nom_col2   = col2.get('Nom')
+    prix_col2  = col2.get('Prix numérique')
+    id_col2    = col2.get('ID')          # identifiant interne (potentiellement EAN)
     for r in rows2[1:]:
-        nom = r[col2.get('Nom', 1)] if col2.get('Nom') is not None else None
-        prix = r[col2.get('Prix numérique', 6)] if col2.get('Prix numérique') is not None else None
+        nom  = r[nom_col2] if nom_col2 is not None else None
+        prix = r[prix_col2] if prix_col2 is not None else None
+        prod_id = r[id_col2] if id_col2 is not None else None
+        prix_f: float | None = None
+        try:
+            prix_f = float(prix) if prix is not None else None
+        except (TypeError, ValueError):
+            pass
+        # Index par nom normalisé
         if nom:
             k = norm(str(nom))
             if k and k not in apoth_by_norm:
-                try:
-                    apoth_by_norm[k] = float(prix) if prix else None
-                except (TypeError, ValueError):
-                    apoth_by_norm[k] = None
-    print(f'  → {len(apoth_by_norm)} produits Apothical chargés')
+                apoth_by_norm[k] = prix_f
+        # Index par ID (si c'est un EAN numérique à 13 chiffres)
+        if prod_id is not None:
+            ean_candidate = str(int(prod_id)) if isinstance(prod_id, float) else str(prod_id).strip()
+            if ean_candidate.isdigit() and len(ean_candidate) >= 8:
+                if ean_candidate not in apoth_by_ean:
+                    apoth_by_ean[ean_candidate] = prix_f
+    print(f'  → {len(apoth_by_norm)} produits Apothical par nom | {len(apoth_by_ean)} par EAN/ID')
 else:
     print(f'Fichier Apothical non trouvé ({APOTH}) — prix_apothical = null')
 
 
 # ── LOAD PHARMA APOTHICAL (scraper pharmacie, optionnel) ─────────────────────
+# Colonnes: ID, Nom, Catégorie, Prix affiché, Prix original, Type prix,
+#           Disponible, Nom normalisé, URL, Catégorie URL
+# Pas d'EAN dans ce fichier — matching par nom normalisé uniquement
 pharma_by_norm: dict = {}
 if PHARMA.exists():
     print(f'Enrichissement prix pharmacie depuis : {PHARMA}')
@@ -139,6 +167,52 @@ if PHARMA.exists():
     print(f'  → {len(pharma_by_norm)} produits pharmacie chargés')
 else:
     print(f'Fichier pharmacie non trouvé ({PHARMA}) — prix_pharmacie = null')
+
+
+# ── LOAD DRAKKARS (optionnel) ────────────────────────────────────────────────
+# Colonnes: Nom, Marque, EAN, Catégorie, Prix affiché, Prix numérique,
+#           Nom normalisé, URL, Catégorie URL
+# Matching : priorité EAN, fallback nom normalisé
+drakkars_by_norm: dict = {}
+drakkars_by_ean:  dict = {}
+if DRAKKARS.exists():
+    print(f'Enrichissement Drakkars depuis : {DRAKKARS}')
+    wb4 = openpyxl.load_workbook(DRAKKARS, read_only=True, data_only=True)
+    ws4 = wb4.active
+    rows4 = list(ws4.iter_rows(values_only=True))
+    wb4.close()
+    hdr4 = rows4[0]
+    col4 = {n: i for i, n in enumerate(hdr4) if n}
+    ean_col4  = col4.get('EAN')
+    prix_col4 = col4.get('Prix numérique')
+    norm_col4 = col4.get('Nom normalisé')
+    nom_col4  = col4.get('Nom')
+    for r in rows4[1:]:
+        prix = r[prix_col4] if prix_col4 is not None else None
+        prix_f: float | None = None
+        try:
+            prix_f = float(prix) if prix is not None else None
+        except (TypeError, ValueError):
+            pass
+        # Index par EAN
+        ean_raw = r[ean_col4] if ean_col4 is not None else None
+        if ean_raw is not None:
+            ean_str_d = str(int(ean_raw)) if isinstance(ean_raw, float) else str(ean_raw).strip()
+            if ean_str_d.isdigit() and len(ean_str_d) >= 8:
+                if ean_str_d not in drakkars_by_ean:
+                    drakkars_by_ean[ean_str_d] = prix_f
+        # Index par nom normalisé (colonne du scraper ou calculé)
+        nom_norm_raw = r[norm_col4] if norm_col4 is not None else None
+        if nom_norm_raw:
+            k = str(nom_norm_raw).strip()
+        else:
+            nom_raw = r[nom_col4] if nom_col4 is not None else None
+            k = norm(str(nom_raw)) if nom_raw else ''
+        if k and k not in drakkars_by_norm:
+            drakkars_by_norm[k] = prix_f
+    print(f'  → {len(drakkars_by_norm)} produits Drakkars par nom | {len(drakkars_by_ean)} par EAN')
+else:
+    print(f'Fichier Drakkars non trouvé ({DRAKKARS}) — prix_drakkars = null')
 
 
 # ── BUILD RECORDS ────────────────────────────────────────────────────────────
@@ -164,10 +238,24 @@ for row in rows[1:]:
     potentiel  = get(row, 'Potentiel') or ''
     role       = get(row, 'Role_Recommande') or ''
 
-    # Enrichissement Apothical par nom normalisé
-    produit_n   = norm(produit)
-    prix_apoth  = apoth_by_norm.get(produit_n)
+    produit_n = norm(produit)
+
+    # ── Matching Apothical : EAN en priorité, nom normalisé en fallback
+    prix_apoth: float | None = None
+    if ean_str:
+        prix_apoth = apoth_by_ean.get(ean_str)
+    if prix_apoth is None:
+        prix_apoth = apoth_by_norm.get(produit_n)
+
+    # ── Matching Pharmacie : nom normalisé uniquement (pas d'EAN dans ce fichier)
     prix_pharma = pharma_by_norm.get(produit_n)
+
+    # ── Matching Drakkars : EAN en priorité, nom normalisé en fallback
+    prix_drakkars: float | None = None
+    if ean_str:
+        prix_drakkars = drakkars_by_ean.get(ean_str)
+    if prix_drakkars is None:
+        prix_drakkars = drakkars_by_norm.get(produit_n)
 
     records.append({
         'rang':           rang,
@@ -187,13 +275,16 @@ for row in rows[1:]:
         'role':           role,
         'prix_apothical': prix_apoth,
         'prix_pharmacie': prix_pharma,
+        'prix_drakkars':  prix_drakkars,
     })
 
 print(f'Records valides : {len(records)}')
-avec_apoth  = sum(1 for r in records if r['prix_apothical'] is not None)
-avec_pharma = sum(1 for r in records if r['prix_pharmacie'] is not None)
+avec_apoth    = sum(1 for r in records if r['prix_apothical'] is not None)
+avec_pharma   = sum(1 for r in records if r['prix_pharmacie'] is not None)
+avec_drakkars = sum(1 for r in records if r['prix_drakkars']  is not None)
 print(f'Avec prix Apothical : {avec_apoth}')
 print(f'Avec prix Pharmacie : {avec_pharma}')
+print(f'Avec prix Drakkars  : {avec_drakkars}')
 dans_off_n = sum(1 for r in records if r['dans_offilog'])
 print(f'Dans Offilog : {dans_off_n}')
 
@@ -201,9 +292,9 @@ print(f'Dans Offilog : {dans_off_n}')
 # ── WRITE JS ─────────────────────────────────────────────────────────────────
 today = datetime.now().strftime('%Y-%m-%d')
 lines = [
-    f'// Intégral Pharma — Offilog × Maxipara × Apothical',
+    f'// Intégral Pharma — Offilog × Maxipara × Apothical × Drakkars',
     f'// Généré le {today}',
-    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_apoth} Apothical | {avec_pharma} Pharmacie',
+    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_apoth} Apothical | {avec_pharma} Pharmacie | {avec_drakkars} Drakkars',
     f'const OFFILOG = [',
 ]
 
@@ -217,7 +308,8 @@ for r in records:
         f'prix_offilog:{js_num(r["prix_offilog"])},ecart:{js_num(r["ecart"])},'
         f'marge_pct:{js_num(r["marge_pct"])},potentiel:{js_str(r["potentiel"])},'
         f'role:{js_str(r["role"])},prix_apothical:{js_num(r["prix_apothical"])},'
-        f'prix_pharmacie:{js_num(r["prix_pharmacie"])}}},'
+        f'prix_pharmacie:{js_num(r["prix_pharmacie"])},'
+        f'prix_drakkars:{js_num(r["prix_drakkars"])}}},'
     )
     lines.append(line)
 
