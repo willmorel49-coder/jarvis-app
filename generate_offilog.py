@@ -29,6 +29,7 @@ import openpyxl
 BASE      = Path('/Users/williammorel/JARVIS/APP')
 SRC       = BASE / 'OFFILOG' / 'offilog_x_maxipara_3517.xlsx'
 DRAKKARS  = BASE / 'benchmark_drakkars.xlsx'
+CAP3000   = BASE / 'benchmark_cap3000.xlsx'
 OUT       = BASE / 'crm' / 'offilog-data.js'
 
 
@@ -142,6 +143,47 @@ else:
     print(f'Fichier Drakkars non trouvé ({DRAKKARS}) — prix_drakkars = null')
 
 
+# ── LOAD CAP3000 (optionnel) ─────────────────────────────────────────────────
+# EAN disponible directement (extrait du dump PHP du site)
+cap3000_by_ean:  dict = {}
+cap3000_by_norm: dict = {}
+if CAP3000.exists():
+    print(f'Enrichissement Cap3000 depuis : {CAP3000}')
+    wb5 = openpyxl.load_workbook(CAP3000, read_only=True, data_only=True)
+    ws5 = wb5.active
+    rows5 = list(ws5.iter_rows(values_only=True))
+    wb5.close()
+    hdr5 = rows5[0]
+    col5 = {str(n).strip(): i for i, n in enumerate(hdr5) if n}
+    ean_col5  = col5.get('EAN')
+    prix_col5 = col5.get('Prix numérique')
+    norm_col5 = col5.get('Nom normalisé')
+    nom_col5  = col5.get('Nom')
+    for r in rows5[1:]:
+        prix = r[prix_col5] if prix_col5 is not None else None
+        prix_f = None
+        try:
+            prix_f = float(prix) if prix is not None else None
+        except (TypeError, ValueError):
+            pass
+        ean_raw = r[ean_col5] if ean_col5 is not None else None
+        if ean_raw is not None:
+            ean_s = str(int(ean_raw)) if isinstance(ean_raw, float) else str(ean_raw).strip()
+            if ean_s.isdigit() and len(ean_s) >= 8 and ean_s not in cap3000_by_ean:
+                cap3000_by_ean[ean_s] = prix_f
+        nom_norm_raw = r[norm_col5] if norm_col5 is not None else None
+        if nom_norm_raw:
+            k = str(nom_norm_raw).strip()
+        else:
+            nom_raw = r[nom_col5] if nom_col5 is not None else None
+            k = norm(str(nom_raw)) if nom_raw else ''
+        if k and k not in cap3000_by_norm:
+            cap3000_by_norm[k] = prix_f
+    print(f'  → {len(cap3000_by_norm)} produits Cap3000 par nom | {len(cap3000_by_ean)} par EAN')
+else:
+    print(f'Fichier Cap3000 non trouvé ({CAP3000}) — prix_cap3000 = null')
+
+
 # ── BUILD RECORDS ────────────────────────────────────────────────────────────
 records = []
 for row in rows[1:]:
@@ -174,6 +216,13 @@ for row in rows[1:]:
     if prix_drakkars is None:
         prix_drakkars = drakkars_by_norm.get(produit_n)
 
+    # ── Matching Cap3000 : EAN en priorité, nom normalisé en fallback
+    prix_cap3000 = None
+    if ean_str:
+        prix_cap3000 = cap3000_by_ean.get(ean_str)
+    if prix_cap3000 is None:
+        prix_cap3000 = cap3000_by_norm.get(produit_n)
+
     records.append({
         'rang':           rang,
         'produit':        produit,
@@ -191,11 +240,14 @@ for row in rows[1:]:
         'potentiel':      potentiel,
         'role':           role,
         'prix_drakkars':  prix_drakkars,
+        'prix_cap3000':   prix_cap3000,
     })
 
 print(f'Records valides : {len(records)}')
 avec_drakkars = sum(1 for r in records if r['prix_drakkars'] is not None)
+avec_cap3000  = sum(1 for r in records if r['prix_cap3000']  is not None)
 print(f'Avec prix Drakkars : {avec_drakkars}')
+print(f'Avec prix Cap3000  : {avec_cap3000}')
 dans_off_n = sum(1 for r in records if r['dans_offilog'])
 print(f'Dans Offilog : {dans_off_n}')
 
@@ -203,9 +255,9 @@ print(f'Dans Offilog : {dans_off_n}')
 # ── WRITE JS ─────────────────────────────────────────────────────────────────
 today = datetime.now().strftime('%Y-%m-%d')
 lines = [
-    f'// Intégral Pharma — Offilog × Maxipara × Drakkars',
+    f'// Intégral Pharma — Offilog × Maxipara × Drakkars × Cap3000',
     f'// Généré le {today}',
-    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_drakkars} Drakkars',
+    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_drakkars} Drakkars | {avec_cap3000} Cap3000',
     f'const OFFILOG = [',
 ]
 
@@ -218,7 +270,8 @@ for r in records:
         f'dans_offilog:{js_bool(r["dans_offilog"])},marque_off:{js_str(r["marque_off"])},'
         f'prix_offilog:{js_num(r["prix_offilog"])},ecart:{js_num(r["ecart"])},'
         f'marge_pct:{js_num(r["marge_pct"])},potentiel:{js_str(r["potentiel"])},'
-        f'role:{js_str(r["role"])},prix_drakkars:{js_num(r["prix_drakkars"])}}},'
+        f'role:{js_str(r["role"])},prix_drakkars:{js_num(r["prix_drakkars"])},'
+        f'prix_cap3000:{js_num(r["prix_cap3000"])}}},'
     )
     lines.append(line)
 

@@ -2886,6 +2886,7 @@ function renderOffilog() {
   const nHeros    = OFFILOG.filter(p => p.role === 'Héros' || p.role === 'Héros / Soutien').length;
   const nOpps     = OFFILOG.filter(p => p.role === 'Opportunité').length;
   const nDrakkars = OFFILOG.filter(p => p.prix_drakkars != null && p.prix_drakkars > 0).length;
+  const nCap3000  = OFFILOG.filter(p => p.prix_cap3000  != null && p.prix_cap3000  > 0).length;
   const margeOff  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
   const margeMoy  = margeOff.length ? (margeOff.reduce((a, b) => a + b, 0) / margeOff.length) : 0;
   const tauxOff   = nTotal > 0 ? (nOff / nTotal * 100) : 0;
@@ -2930,6 +2931,9 @@ function renderOffilog() {
     const prixDrakkars = (p.prix_drakkars != null && p.prix_drakkars > 0)
       ? `<span style="color:#FF6B35;font-weight:600">${fmtP(p.prix_drakkars)}</span>`
       : '<span style="color:var(--text3);font-size:10px">N/D</span>';
+    const prixCap3000 = (p.prix_cap3000 != null && p.prix_cap3000 > 0)
+      ? `<span style="color:#2D6A4F;font-weight:600">${fmtP(p.prix_cap3000)}</span>`
+      : '<span style="color:var(--text3);font-size:10px">N/D</span>';
     const ecart = p.ecart != null && p.ecart > 0
       ? `<span style="color:var(--mint);font-size:11px">+${fmtP(p.ecart)}</span>`
       : '';
@@ -2949,11 +2953,12 @@ function renderOffilog() {
       <td style="padding:8px 10px;text-align:right;font-size:12px">${prixMaxi}</td>
       <td style="padding:8px 10px;text-align:right">${prixOff}</td>
       <td style="padding:8px 10px;text-align:right">${prixDrakkars}</td>
+      <td style="padding:8px 10px;text-align:right">${prixCap3000}</td>
       <td style="padding:8px 10px;text-align:right">${marge}${ecart ? '<br>'+ecart : ''}</td>
       <td style="padding:8px 10px">${roleBadge(p.role)}</td>
     </tr>`;
   }).join('')
-  : `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
+  : `<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
 
   // ── Pagination ────────────────────────────────
   let pagHtml = '';
@@ -2970,6 +2975,9 @@ function renderOffilog() {
   // ── Apothical status badge ────────────────────
   const drakkBadge = nDrakkars > 0
     ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,107,53,.1);color:#FF6B35">${fmtNum(nDrakkars)} prix Drakkars</span>`
+    : '';
+  const cap3000Badge = nCap3000 > 0
+    ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(45,106,79,.15);color:#2D6A4F">${fmtNum(nCap3000)} prix Cap3000</span>`
     : '';
 
   container.innerHTML = `
@@ -3010,6 +3018,7 @@ function renderOffilog() {
           </div>
           ${universHtml}
           ${drakkBadge}
+          ${cap3000Badge}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${roleTabsHtml}</div>
       </div>
@@ -3034,6 +3043,7 @@ function renderOffilog() {
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Maxipara</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:600">Offilog</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:#FF6B35;font-weight:600">Drakkars</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:#2D6A4F;font-weight:600">Cap3000</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Marge</th>
               <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Rôle</th>
             </tr>
