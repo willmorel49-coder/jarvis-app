@@ -2844,6 +2844,7 @@ function renderOffilog() {
   const nOpps     = OFFILOG.filter(p => p.role === 'Opportunité').length;
   const nApoth    = OFFILOG.filter(p => p.prix_apothical !== null && p.prix_apothical > 0).length;
   const nPharma   = OFFILOG.filter(p => p.prix_pharmacie != null && p.prix_pharmacie > 0).length;
+  const nDrakkars = OFFILOG.filter(p => p.prix_drakkars != null && p.prix_drakkars > 0).length;
   const margeOff  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
   const margeMoy  = margeOff.length ? (margeOff.reduce((a, b) => a + b, 0) / margeOff.length) : 0;
   const tauxOff   = nTotal > 0 ? (nOff / nTotal * 100) : 0;
@@ -2891,6 +2892,9 @@ function renderOffilog() {
     const prixPharma = (p.prix_pharmacie != null && p.prix_pharmacie > 0)
       ? `<span style="color:var(--mint);font-weight:600">${fmtP(p.prix_pharmacie)}</span>`
       : '<span style="color:var(--text3);font-size:10px">N/D</span>';
+    const prixDrakkars = (p.prix_drakkars != null && p.prix_drakkars > 0)
+      ? `<span style="color:#FF6B35;font-weight:600">${fmtP(p.prix_drakkars)}</span>`
+      : '<span style="color:var(--text3);font-size:10px">N/D</span>';
     const ecart = p.ecart != null && p.ecart > 0
       ? `<span style="color:var(--mint);font-size:11px">+${fmtP(p.ecart)}</span>`
       : '';
@@ -2911,11 +2915,12 @@ function renderOffilog() {
       <td style="padding:8px 10px;text-align:right">${prixOff}</td>
       <td style="padding:8px 10px;text-align:right">${prixApoth}</td>
       <td style="padding:8px 10px;text-align:right">${prixPharma}</td>
+      <td style="padding:8px 10px;text-align:right">${prixDrakkars}</td>
       <td style="padding:8px 10px;text-align:right">${marge}${ecart ? '<br>'+ecart : ''}</td>
       <td style="padding:8px 10px">${roleBadge(p.role)}</td>
     </tr>`;
   }).join('')
-  : `<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
+  : `<tr><td colspan="10" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
 
   // ── Pagination ────────────────────────────────
   let pagHtml = '';
@@ -2935,6 +2940,9 @@ function renderOffilog() {
     : `<span title="Le scraper Apothical n'a pas encore terminé ou n'a trouvé aucun prix" style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(100,116,139,.1);color:var(--text3)">Apothical : en attente du scraper</span>`;
   const pharmaBadge = nPharma > 0
     ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,229,160,.1);color:var(--mint)">${fmtNum(nPharma)} prix Ma Pharmacie</span>`
+    : '';
+  const drakkBadge = nDrakkars > 0
+    ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,107,53,.1);color:#FF6B35">${fmtNum(nDrakkars)} prix Drakkars</span>`
     : '';
 
   container.innerHTML = `
@@ -2976,6 +2984,7 @@ function renderOffilog() {
           ${universHtml}
           ${apothBadge}
           ${pharmaBadge}
+          ${drakkBadge}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${roleTabsHtml}</div>
       </div>
@@ -3001,6 +3010,7 @@ function renderOffilog() {
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:600">Offilog</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--blue);font-weight:600">Apothical</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--mint);font-weight:600">Ma Pharmacie</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:#FF6B35;font-weight:600">Drakkars</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Marge</th>
               <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Rôle</th>
             </tr>
