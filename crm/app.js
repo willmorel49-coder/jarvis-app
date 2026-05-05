@@ -2885,8 +2885,6 @@ function renderOffilog() {
   const nOff      = OFFILOG.filter(p => p.dans_offilog).length;
   const nHeros    = OFFILOG.filter(p => p.role === 'Héros' || p.role === 'Héros / Soutien').length;
   const nOpps     = OFFILOG.filter(p => p.role === 'Opportunité').length;
-  const nApoth    = OFFILOG.filter(p => p.prix_apothical !== null && p.prix_apothical > 0).length;
-  const nPharma   = OFFILOG.filter(p => p.prix_pharmacie != null && p.prix_pharmacie > 0).length;
   const nDrakkars = OFFILOG.filter(p => p.prix_drakkars != null && p.prix_drakkars > 0).length;
   const margeOff  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
   const margeMoy  = margeOff.length ? (margeOff.reduce((a, b) => a + b, 0) / margeOff.length) : 0;
@@ -2929,12 +2927,6 @@ function renderOffilog() {
     const marge   = p.marge_pct != null ? `<span style="font-weight:700;color:${p.marge_pct >= 40 ? 'var(--mint)' : p.marge_pct >= 20 ? 'var(--amber)' : 'var(--text2)'}">${p.marge_pct.toFixed(1)}%</span>` : '<span style="color:var(--text3)">—</span>';
     const prixOff = p.prix_offilog != null ? `<span style="color:${OFFILOG_ORANGE};font-weight:700">${fmtP(p.prix_offilog)}</span>` : '<span style="color:var(--text3)">—</span>';
     const prixMaxi = p.prix_maxi != null ? fmtP(p.prix_maxi) : '—';
-    const prixApoth = p.prix_apothical != null
-      ? `<span style="color:var(--blue)">${fmtP(p.prix_apothical)}</span>`
-      : '<span style="color:var(--text3);font-size:10px">N/D</span>';
-    const prixPharma = (p.prix_pharmacie != null && p.prix_pharmacie > 0)
-      ? `<span style="color:var(--mint);font-weight:600">${fmtP(p.prix_pharmacie)}</span>`
-      : '<span style="color:var(--text3);font-size:10px">N/D</span>';
     const prixDrakkars = (p.prix_drakkars != null && p.prix_drakkars > 0)
       ? `<span style="color:#FF6B35;font-weight:600">${fmtP(p.prix_drakkars)}</span>`
       : '<span style="color:var(--text3);font-size:10px">N/D</span>';
@@ -2956,14 +2948,12 @@ function renderOffilog() {
       <td style="padding:8px 10px;font-size:11px;color:var(--text2);white-space:nowrap">${p.univers||'—'}</td>
       <td style="padding:8px 10px;text-align:right;font-size:12px">${prixMaxi}</td>
       <td style="padding:8px 10px;text-align:right">${prixOff}</td>
-      <td style="padding:8px 10px;text-align:right">${prixApoth}</td>
-      <td style="padding:8px 10px;text-align:right">${prixPharma}</td>
       <td style="padding:8px 10px;text-align:right">${prixDrakkars}</td>
       <td style="padding:8px 10px;text-align:right">${marge}${ecart ? '<br>'+ecart : ''}</td>
       <td style="padding:8px 10px">${roleBadge(p.role)}</td>
     </tr>`;
   }).join('')
-  : `<tr><td colspan="10" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
+  : `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
 
   // ── Pagination ────────────────────────────────
   let pagHtml = '';
@@ -2978,12 +2968,6 @@ function renderOffilog() {
   }
 
   // ── Apothical status badge ────────────────────
-  const apothBadge = nApoth > 0
-    ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,87,255,.1);color:var(--blue)">${fmtNum(nApoth)} prix Apothical</span>`
-    : `<span title="Le scraper Apothical n'a pas encore terminé ou n'a trouvé aucun prix" style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(100,116,139,.1);color:var(--text3)">Apothical : en attente du scraper</span>`;
-  const pharmaBadge = nPharma > 0
-    ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,229,160,.1);color:var(--mint)">${fmtNum(nPharma)} prix Ma Pharmacie</span>`
-    : '';
   const drakkBadge = nDrakkars > 0
     ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,107,53,.1);color:#FF6B35">${fmtNum(nDrakkars)} prix Drakkars</span>`
     : '';
@@ -3025,8 +3009,6 @@ function renderOffilog() {
             ${offiQuery ? `<button onclick="offiQuery='';offiPageNum=1;renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px">✕</button>` : ''}
           </div>
           ${universHtml}
-          ${apothBadge}
-          ${pharmaBadge}
           ${drakkBadge}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${roleTabsHtml}</div>
@@ -3051,8 +3033,6 @@ function renderOffilog() {
               <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Univers</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Maxipara</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:600">Offilog</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--blue);font-weight:600">Apothical</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--mint);font-weight:600">Ma Pharmacie</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:#FF6B35;font-weight:600">Drakkars</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Marge</th>
               <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Rôle</th>
