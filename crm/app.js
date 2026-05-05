@@ -587,6 +587,29 @@ function renderDashboard() {
         </div>`).join('')
     : `<div class="alert-item"><span class="alert-icon">✅</span><div class="alert-body"><div class="alert-title">Aucune alerte</div><div class="alert-sub">Toutes les pharmacies sont actives ce mois</div></div></div>`;
 
+  // Comparaison per-pharmacy M vs M-1
+  const compRows = state.pharmacies
+    .map(ph => {
+      const cur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+      const prev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
+      return { ph, cur, prev };
+    })
+    .filter(r => r.cur > 0 || r.prev > 0)
+    .sort((a, b) => b.cur - a.cur);
+
+  const compRowsHtml = compRows.map(r =>
+    `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:10px 16px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${r.ph.color};flex-shrink:0"></span>
+          <span style="font-size:13px;font-weight:600">${r.ph.name}</span>
+        </div>
+      </td>
+      <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2)">${r.prev > 0 ? fmt(r.prev) : '—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700">${r.cur > 0 ? fmt(r.cur) : '—'}</td>
+      <td style="padding:10px 12px;text-align:right">${deltaBadge(r.cur, r.prev)}</td>
+    </tr>`
+  ).join('');
 
   document.getElementById('dash-content').innerHTML = `
 
@@ -648,6 +671,30 @@ function renderDashboard() {
         <div class="alert-feed">${alertsHtml}</div>
       </div>
     </div>
+
+    <!-- Row 2b : Comparaison M vs M-1 -->
+    ${compRows.length ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Comparaison M vs M-1 par pharmacie</div>
+          <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border2)">
+              <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--text3)">Pharmacie</th>
+              <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">${prevLabel}</th>
+              <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">${curLabel}</th>
+              <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Évolution</th>
+            </tr>
+          </thead>
+          <tbody>${compRowsHtml}</tbody>
+        </table>
+      </div>
+    </div>` : ''}
 
     <!-- Row 3 : Pipeline conversion -->
     <div class="card fade-up" style="margin-bottom:24px">
@@ -1158,6 +1205,7 @@ function showPharmaDetail(pharmacyId) {
         <div style="width:12px;height:12px;border-radius:50%;background:${pharma.color}"></div>
         <span class="section-title" style="margin:0;flex:1">${pharma.name}</span>
         ${clientInfo?.ville ? `<span style="font-size:12px;color:var(--text3)">${clientInfo.cp} ${clientInfo.ville}</span>` : ''}
+        <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
         <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
       </div>
 
@@ -1337,6 +1385,30 @@ async function deletePharmacy(pharmacyId) {
   showToast(`${pharma?.name} supprimée`, 'success');
   updateNavBadge();
   renderPharmacies();
+}
+
+function exportPharmacyCSV(pharmacyId) {
+  const pharma = state.pharmacies.find(p => p.id === pharmacyId);
+  if (!pharma) return;
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  const { year: curY, month: curM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const salesData = getSales({ pharmacyId: pharma.id, year: curY, month: curM });
+
+  const header = ['Produit','Code','Qté','PU Net HT','Mnt Net HT','Mois','Année'];
+  const rows = salesData.map(s => [
+    `"${(s.artDesignation||'').replace(/"/g,'""')}"`,
+    s.artCode||'', s.qte.toFixed(2), s.puNet.toFixed(4),
+    s.mntNetHt.toFixed(4), s.month, s.year,
+  ]);
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${pharma.name.replace(/\s+/g,'_')}_${monthName(curM)}_${curY}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${salesData.length} lignes`, 'success');
 }
 
 // ── PRODUITS ──────────────────────────────────
@@ -2771,6 +2843,7 @@ function renderOffilog() {
   const nHeros    = OFFILOG.filter(p => p.role === 'Héros' || p.role === 'Héros / Soutien').length;
   const nOpps     = OFFILOG.filter(p => p.role === 'Opportunité').length;
   const nApoth    = OFFILOG.filter(p => p.prix_apothical !== null && p.prix_apothical > 0).length;
+  const nPharma   = OFFILOG.filter(p => p.prix_pharmacie != null && p.prix_pharmacie > 0).length;
   const margeOff  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
   const margeMoy  = margeOff.length ? (margeOff.reduce((a, b) => a + b, 0) / margeOff.length) : 0;
   const tauxOff   = nTotal > 0 ? (nOff / nTotal * 100) : 0;
@@ -2815,6 +2888,9 @@ function renderOffilog() {
     const prixApoth = p.prix_apothical != null
       ? `<span style="color:var(--blue)">${fmtP(p.prix_apothical)}</span>`
       : '<span style="color:var(--text3);font-size:10px">N/D</span>';
+    const prixPharma = (p.prix_pharmacie != null && p.prix_pharmacie > 0)
+      ? `<span style="color:var(--mint);font-weight:600">${fmtP(p.prix_pharmacie)}</span>`
+      : '<span style="color:var(--text3);font-size:10px">N/D</span>';
     const ecart = p.ecart != null && p.ecart > 0
       ? `<span style="color:var(--mint);font-size:11px">+${fmtP(p.ecart)}</span>`
       : '';
@@ -2834,11 +2910,12 @@ function renderOffilog() {
       <td style="padding:8px 10px;text-align:right;font-size:12px">${prixMaxi}</td>
       <td style="padding:8px 10px;text-align:right">${prixOff}</td>
       <td style="padding:8px 10px;text-align:right">${prixApoth}</td>
+      <td style="padding:8px 10px;text-align:right">${prixPharma}</td>
       <td style="padding:8px 10px;text-align:right">${marge}${ecart ? '<br>'+ecart : ''}</td>
       <td style="padding:8px 10px">${roleBadge(p.role)}</td>
     </tr>`;
   }).join('')
-  : `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
+  : `<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
 
   // ── Pagination ────────────────────────────────
   let pagHtml = '';
@@ -2856,6 +2933,9 @@ function renderOffilog() {
   const apothBadge = nApoth > 0
     ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,87,255,.1);color:var(--blue)">${fmtNum(nApoth)} prix Apothical</span>`
     : `<span title="Le scraper Apothical n'a pas encore terminé ou n'a trouvé aucun prix" style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(100,116,139,.1);color:var(--text3)">Apothical : en attente du scraper</span>`;
+  const pharmaBadge = nPharma > 0
+    ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,229,160,.1);color:var(--mint)">${fmtNum(nPharma)} prix Ma Pharmacie</span>`
+    : '';
 
   container.innerHTML = `
     <!-- KPIs -->
@@ -2895,6 +2975,7 @@ function renderOffilog() {
           </div>
           ${universHtml}
           ${apothBadge}
+          ${pharmaBadge}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${roleTabsHtml}</div>
       </div>
@@ -2919,6 +3000,7 @@ function renderOffilog() {
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Maxipara</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:600">Offilog</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--blue);font-weight:600">Apothical</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--mint);font-weight:600">Ma Pharmacie</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Marge</th>
               <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Rôle</th>
             </tr>
