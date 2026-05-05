@@ -30,7 +30,7 @@ async function load() {
     sb.from('sales').select('*'),
   ]);
   state.pharmacies = (pharmacies || []).map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
-  state.imports    = (imports    || []).map(i => ({ id: i.id, pharmacyId: i.pharmacy_id, month: i.month, year: i.year, filename: i.filename, importedAt: i.imported_at }));
+  state.imports    = (imports    || []).map(i => ({ id: i.id, pharmacyId: i.pharmacy_id, month: i.month, year: i.year, filename: i.filename, importedAt: i.imported_at, filePath: i.file_path || null }));
   state.sales      = (sales      || []).map(s => ({
     id: s.id, importId: s.import_id, pharmacyId: s.pharmacy_id,
     month: s.month, year: s.year,
@@ -39,6 +39,37 @@ async function load() {
     qte: parseFloat(s.qte)||0, puBrut: parseFloat(s.pu_brut)||0,
     puNet: parseFloat(s.pu_net)||0, mntNetHt: parseFloat(s.mnt_net_ht)||0,
   }));
+}
+
+// ── STORAGE ──────────────────────────────────
+const STORAGE_BUCKET = 'excel-imports';
+
+async function uploadImportFile(file, importId) {
+  try {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `${state.user.id}/${importId}_${safeName}`;
+    const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
+    if (error) { console.warn('Storage upload failed:', error.message); return null; }
+    await sb.from('imports').update({ file_path: path }).eq('id', importId);
+    return path;
+  } catch(e) { console.warn('Storage error:', e); return null; }
+}
+
+async function downloadImportFile(filePath) {
+  if (!filePath) { showToast('Fichier non disponible', 'error'); return; }
+  try {
+    const { data, error } = await sb.storage.from(STORAGE_BUCKET).createSignedUrl(filePath, 3600);
+    if (error || !data?.signedUrl) { showToast('Fichier non disponible', 'error'); return; }
+    const a = document.createElement('a');
+    a.href = data.signedUrl;
+    a.download = filePath.split('_').slice(1).join('_');
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } catch(e) { showToast('Erreur téléchargement', 'error'); }
+}
+
+async function deleteImportFile(filePath) {
+  if (!filePath) return;
+  try { await sb.storage.from(STORAGE_BUCKET).remove([filePath]); } catch(e) {}
 }
 
 // ── AUTH ─────────────────────────────────────
@@ -205,7 +236,8 @@ async function importMultiPharmaFile(file, month, year) {
       .insert({ pharmacy_id: pharma.id, month, year, filename: file.name, imported_by: state.user.id })
       .select().single();
     if (impErr) continue;
-    state.imports.unshift({ id: imp.id, pharmacyId: imp.pharmacy_id, month: imp.month, year: imp.year, filename: imp.filename, importedAt: imp.imported_at });
+    const filePath = await uploadImportFile(file, imp.id);
+    state.imports.unshift({ id: imp.id, pharmacyId: imp.pharmacy_id, month: imp.month, year: imp.year, filename: imp.filename, importedAt: imp.imported_at, filePath });
 
     // Build sales rows — WML stores sales as POSITIVE values (store as-is)
     const salesRows = group.rows.map(r => {
@@ -283,7 +315,8 @@ async function importFile(file) {
     .insert({ pharmacy_id: pharma.id, month, year, filename: file.name, imported_by: state.user.id })
     .select().single();
   if (impErr) return { ok: false, error: 'Erreur création import' };
-  state.imports.unshift({ id: imp.id, pharmacyId: imp.pharmacy_id, month: imp.month, year: imp.year, filename: imp.filename, importedAt: imp.imported_at });
+  const filePath = await uploadImportFile(file, imp.id);
+  state.imports.unshift({ id: imp.id, pharmacyId: imp.pharmacy_id, month: imp.month, year: imp.year, filename: imp.filename, importedAt: imp.imported_at, filePath });
 
   // 4. Bulk insert sales rows in batches of 500
   const salesRows = rows.map(normalizeRow).filter(r => r.artDesignation).map(r => ({
@@ -1318,7 +1351,10 @@ function showPharmaDetail(pharmacyId) {
               <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${imp.filename}</td>
               <td class="td-num">${imp.month ? monthName(imp.month)+' '+imp.year : '—'}</td>
               <td style="color:var(--text3);font-size:12px">${new Date(imp.importedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}</td>
-              <td><button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3);padding:4px 10px;font-size:12px" onclick="deleteImport('${imp.id}','${pharmacyId}')">🗑</button></td>
+              <td style="display:flex;gap:6px;align-items:center">
+                ${imp.filePath ? `<button class="btn btn-ghost" style="color:var(--blue);border-color:rgba(0,87,255,.3);padding:4px 10px;font-size:12px" onclick="downloadImportFile('${imp.filePath}')" title="Télécharger le fichier Excel original">⬇</button>` : ''}
+                <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3);padding:4px 10px;font-size:12px" onclick="deleteImport('${imp.id}','${pharmacyId}')">🗑</button>
+              </td>
             </tr>`).join('')}</tbody>
           </table>
         </div>
@@ -1354,8 +1390,10 @@ function showPharmaDetail(pharmacyId) {
 
 async function deleteImport(importId, pharmacyId) {
   if (!confirm('Supprimer cet import et toutes ses lignes de vente ?')) return;
+  const imp = state.imports.find(i => i.id === importId);
   const { error } = await sb.from('imports').delete().eq('id', importId);
   if (error) { showToast('Erreur suppression', 'error'); return; }
+  await deleteImportFile(imp?.filePath);
   state.imports = state.imports.filter(i => i.id !== importId);
   state.sales   = state.sales.filter(s => s.importId !== importId);
   showToast('Import supprimé', 'success');
@@ -1365,13 +1403,15 @@ async function deleteImport(importId, pharmacyId) {
 
 async function deleteImportFromHistory(importId, pharmacyId) {
   if (!confirm('Supprimer cet import et toutes ses ventes ?')) return;
+  const imp = state.imports.find(i => i.id === importId);
   const { error } = await sb.from('imports').delete().eq('id', importId);
   if (error) { showToast('Erreur suppression', 'error'); return; }
+  await deleteImportFile(imp?.filePath);
   state.imports = state.imports.filter(i => i.id !== importId);
   state.sales   = state.sales.filter(s => s.importId !== importId);
   showToast('Import supprimé', 'success');
   updateNavBadge();
-  renderImport(); // re-render the page
+  renderImport();
 }
 
 async function deletePharmacy(pharmacyId) {
@@ -1742,7 +1782,10 @@ function renderImport() {
                 <td><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${ph?.color||'#555'}"></span>${ph?.name||'?'}</span></td>
                 <td class="td-num">${imp.month ? monthName(imp.month)+' '+imp.year : '—'}</td>
                 <td style="color:var(--text3);font-size:12px">${new Date(imp.importedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}</td>
-                <td><button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(220,38,38,.2);padding:3px 10px;font-size:11px" onclick="deleteImportFromHistory('${imp.id}','${imp.pharmacyId}')">🗑</button></td>
+                <td style="display:flex;gap:5px;align-items:center">
+                  ${imp.filePath ? `<button class="btn btn-ghost" style="color:var(--blue);border-color:rgba(0,87,255,.3);padding:3px 8px;font-size:11px" onclick="downloadImportFile('${imp.filePath}')" title="Télécharger Excel original">⬇</button>` : ''}
+                  <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(220,38,38,.2);padding:3px 10px;font-size:11px" onclick="deleteImportFromHistory('${imp.id}','${imp.pharmacyId}')">🗑</button>
+                </td>
               </tr>`;
             }).join('')}
           </tbody>

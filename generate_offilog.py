@@ -120,7 +120,7 @@ if APOTH.exists():
         nom  = r[nom_col2] if nom_col2 is not None else None
         prix = r[prix_col2] if prix_col2 is not None else None
         prod_id = r[id_col2] if id_col2 is not None else None
-        prix_f: float | None = None
+        prix_f = None
         try:
             prix_f = float(prix) if prix is not None else None
         except (TypeError, ValueError):
@@ -189,7 +189,7 @@ if DRAKKARS.exists():
     nom_col4  = col4.get('Nom')
     for r in rows4[1:]:
         prix = r[prix_col4] if prix_col4 is not None else None
-        prix_f: float | None = None
+        prix_f = None
         try:
             prix_f = float(prix) if prix is not None else None
         except (TypeError, ValueError):
@@ -241,7 +241,7 @@ for row in rows[1:]:
     produit_n = norm(produit)
 
     # ── Matching Apothical : EAN en priorité, nom normalisé en fallback
-    prix_apoth: float | None = None
+    prix_apoth = None
     if ean_str:
         prix_apoth = apoth_by_ean.get(ean_str)
     if prix_apoth is None:
@@ -251,7 +251,7 @@ for row in rows[1:]:
     prix_pharma = pharma_by_norm.get(produit_n)
 
     # ── Matching Drakkars : EAN en priorité, nom normalisé en fallback
-    prix_drakkars: float | None = None
+    prix_drakkars = None
     if ean_str:
         prix_drakkars = drakkars_by_ean.get(ean_str)
     if prix_drakkars is None:
