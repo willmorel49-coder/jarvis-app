@@ -23,6 +23,7 @@ import openpyxl
 BASE   = Path('/Users/williammorel/JARVIS/APP')
 SRC    = BASE / 'OFFILOG' / 'offilog_x_maxipara_3517.xlsx'
 APOTH  = BASE / 'benchmark_apothical_medicaments.xlsx'
+PHARMA = BASE / 'benchmark_apothical_pharmacie_montlouis-sur-loire.xlsx'
 OUT    = BASE / 'crm' / 'offilog-data.js'
 
 
@@ -115,6 +116,31 @@ else:
     print(f'Fichier Apothical non trouvé ({APOTH}) — prix_apothical = null')
 
 
+# ── LOAD PHARMA APOTHICAL (scraper pharmacie, optionnel) ─────────────────────
+pharma_by_norm: dict = {}
+if PHARMA.exists():
+    print(f'Enrichissement prix pharmacie depuis : {PHARMA}')
+    wb3 = openpyxl.load_workbook(PHARMA, read_only=True, data_only=True)
+    ws3 = wb3.active
+    rows3 = list(ws3.iter_rows(values_only=True))
+    wb3.close()
+    hdr3 = rows3[0]
+    col3 = {n: i for i, n in enumerate(hdr3) if n}
+    nom_col  = col3.get('Nom normalisé')
+    prix_col = col3.get('Prix affiché')
+    for r in rows3[1:]:
+        k = str(r[nom_col]).strip() if nom_col is not None and r[nom_col] else None
+        prix = r[prix_col] if prix_col is not None else None
+        if k and k not in pharma_by_norm:
+            try:
+                pharma_by_norm[k] = float(prix) if prix else None
+            except (TypeError, ValueError):
+                pharma_by_norm[k] = None
+    print(f'  → {len(pharma_by_norm)} produits pharmacie chargés')
+else:
+    print(f'Fichier pharmacie non trouvé ({PHARMA}) — prix_pharmacie = null')
+
+
 # ── BUILD RECORDS ────────────────────────────────────────────────────────────
 records = []
 for row in rows[1:]:
@@ -139,31 +165,35 @@ for row in rows[1:]:
     role       = get(row, 'Role_Recommande') or ''
 
     # Enrichissement Apothical par nom normalisé
-    produit_n  = norm(produit)
-    prix_apoth = apoth_by_norm.get(produit_n)
+    produit_n   = norm(produit)
+    prix_apoth  = apoth_by_norm.get(produit_n)
+    prix_pharma = pharma_by_norm.get(produit_n)
 
     records.append({
-        'rang':          rang,
-        'produit':       produit,
-        'produit_norm':  produit_n,
-        'ean':           ean_str,
-        'marque':        marque,
-        'univers':       univers,
-        'saison':        saison,
-        'prix_maxi':     prix_maxi,
-        'dans_offilog':  dans_off,
-        'marque_off':    marque_off,
-        'prix_offilog':  prix_off,
-        'ecart':         ecart,
-        'marge_pct':     marge_pct,
-        'potentiel':     potentiel,
-        'role':          role,
+        'rang':           rang,
+        'produit':        produit,
+        'produit_norm':   produit_n,
+        'ean':            ean_str,
+        'marque':         marque,
+        'univers':        univers,
+        'saison':         saison,
+        'prix_maxi':      prix_maxi,
+        'dans_offilog':   dans_off,
+        'marque_off':     marque_off,
+        'prix_offilog':   prix_off,
+        'ecart':          ecart,
+        'marge_pct':      marge_pct,
+        'potentiel':      potentiel,
+        'role':           role,
         'prix_apothical': prix_apoth,
+        'prix_pharmacie': prix_pharma,
     })
 
 print(f'Records valides : {len(records)}')
-avec_apoth = sum(1 for r in records if r['prix_apothical'] is not None)
+avec_apoth  = sum(1 for r in records if r['prix_apothical'] is not None)
+avec_pharma = sum(1 for r in records if r['prix_pharmacie'] is not None)
 print(f'Avec prix Apothical : {avec_apoth}')
+print(f'Avec prix Pharmacie : {avec_pharma}')
 dans_off_n = sum(1 for r in records if r['dans_offilog'])
 print(f'Dans Offilog : {dans_off_n}')
 
@@ -173,7 +203,7 @@ today = datetime.now().strftime('%Y-%m-%d')
 lines = [
     f'// Intégral Pharma — Offilog × Maxipara × Apothical',
     f'// Généré le {today}',
-    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_apoth} avec prix Apothical',
+    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_apoth} Apothical | {avec_pharma} Pharmacie',
     f'const OFFILOG = [',
 ]
 
@@ -186,7 +216,8 @@ for r in records:
         f'dans_offilog:{js_bool(r["dans_offilog"])},marque_off:{js_str(r["marque_off"])},'
         f'prix_offilog:{js_num(r["prix_offilog"])},ecart:{js_num(r["ecart"])},'
         f'marge_pct:{js_num(r["marge_pct"])},potentiel:{js_str(r["potentiel"])},'
-        f'role:{js_str(r["role"])},prix_apothical:{js_num(r["prix_apothical"])}}},'
+        f'role:{js_str(r["role"])},prix_apothical:{js_num(r["prix_apothical"])},'
+        f'prix_pharmacie:{js_num(r["prix_pharmacie"])}}},'
     )
     lines.append(line)
 
