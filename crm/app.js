@@ -2926,14 +2926,14 @@ function renderOffilog() {
   const rowsHtml = page.length ? page.map((p, i) => {
     const inOff   = p.dans_offilog;
     const marge   = p.marge_pct != null ? `<span style="font-weight:700;color:${p.marge_pct >= 40 ? 'var(--mint)' : p.marge_pct >= 20 ? 'var(--amber)' : 'var(--text2)'}">${p.marge_pct.toFixed(1)}%</span>` : '<span style="color:var(--text3)">—</span>';
-    const prixOff = p.prix_offilog != null ? `<span style="color:${OFFILOG_ORANGE};font-weight:700">${fmtP(p.prix_offilog)}</span>` : '<span style="color:var(--text3)">—</span>';
-    const prixMaxi = p.prix_maxi != null ? fmtP(p.prix_maxi) : '—';
+    const prixOff  = p.prix_offilog != null ? `<span style="color:${OFFILOG_ORANGE};font-weight:800;font-size:14px">${fmtP(p.prix_offilog)}</span>` : '<span style="color:var(--text3)">—</span>';
+    const prixMaxi = p.prix_maxi != null ? `<span style="color:var(--text2);font-size:12px">${fmtP(p.prix_maxi)}</span>` : '<span style="color:var(--text3)">—</span>';
     const prixDrakkars = (p.prix_drakkars != null && p.prix_drakkars > 0)
-      ? `<span style="color:#FF6B35;font-weight:600">${fmtP(p.prix_drakkars)}</span>`
-      : '<span style="color:var(--text3);font-size:10px">N/D</span>';
+      ? `<span style="color:var(--text2);font-size:12px">${fmtP(p.prix_drakkars)}</span>`
+      : '<span style="color:var(--text3);font-size:10px">—</span>';
     const prixCap3000 = (p.prix_cap3000 != null && p.prix_cap3000 > 0)
-      ? `<span style="color:#2D6A4F;font-weight:600">${fmtP(p.prix_cap3000)}</span>`
-      : '<span style="color:var(--text3);font-size:10px">N/D</span>';
+      ? `<span style="color:var(--text2);font-size:12px">${fmtP(p.prix_cap3000)}</span>`
+      : '<span style="color:var(--text3);font-size:10px">—</span>';
     const ecart = p.ecart != null && p.ecart > 0
       ? `<span style="color:var(--mint);font-size:11px">+${fmtP(p.ecart)}</span>`
       : '';
@@ -2950,11 +2950,11 @@ function renderOffilog() {
         </div>
       </td>
       <td style="padding:8px 10px;font-size:11px;color:var(--text2);white-space:nowrap">${p.univers||'—'}</td>
-      <td style="padding:8px 10px;text-align:right;font-size:12px">${prixMaxi}</td>
       <td style="padding:8px 10px;text-align:right">${prixOff}</td>
-      <td style="padding:8px 10px;text-align:right">${prixDrakkars}</td>
-      <td style="padding:8px 10px;text-align:right">${prixCap3000}</td>
+      <td style="padding:8px 10px;text-align:right">${prixMaxi}</td>
       <td style="padding:8px 10px;text-align:right">${marge}${ecart ? '<br>'+ecart : ''}</td>
+      <td style="padding:8px 10px;text-align:right;border-left:1px solid var(--border1)">${prixDrakkars}</td>
+      <td style="padding:8px 10px;text-align:right">${prixCap3000}</td>
       <td style="padding:8px 10px">${roleBadge(p.role)}</td>
     </tr>`;
   }).join('')
@@ -3040,11 +3040,11 @@ function renderOffilog() {
               <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">#</th>
               <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Produit</th>
               <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Univers</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Maxipara</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:600">Offilog</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:#FF6B35;font-weight:600">Drakkars</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:#2D6A4F;font-weight:600">Cap3000</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:700">Prix Offilog</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Prix public</th>
               <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Marge</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600;border-left:1px solid var(--border1)">Drakkars</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Cap3000</th>
               <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Rôle</th>
             </tr>
           </thead>
