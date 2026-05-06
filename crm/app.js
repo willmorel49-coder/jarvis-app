@@ -2007,10 +2007,11 @@ function renderBenchmark() {
 
   // Filter
   let data = [...BENCHMARK];
-  if (benchCat !== 'tous') data = data.filter(d => d.categorie === benchCat);
+  if (benchCat === 'froid') data = data.filter(d => isFroidBench(d));
+  else if (benchCat !== 'tous') data = data.filter(d => d.categorie === benchCat);
   if (benchSearch) {
     const q = benchSearch.toLowerCase();
-    data = data.filter(d => d.designation.toLowerCase().includes(q));
+    data = data.filter(d => d.designation.toLowerCase().includes(q) || (d.cip13||'').includes(q));
   }
 
   // Sort
@@ -2024,12 +2025,14 @@ function renderBenchmark() {
   const totalIPCa  = BENCHMARK.reduce((s, d) => s + d.ip_ca, 0);
   const withAmeli  = BENCHMARK.filter(d => d.has_ameli).length;
   const cats = [
-    { key: 'tous', label: 'Tous' },
-    { key: 'pp',   label: 'PP <4.8€' },
-    { key: 'mi',   label: 'Médian' },
-    { key: 'ch',   label: '>480€' },
-    { key: 'froid',label: 'Froid' },
-    { key: 'nr',   label: 'Med010' },
+    { key: 'tous',      label: 'Tous' },
+    { key: 'pp',        label: 'PP <4.8€' },
+    { key: 'mi',        label: 'Médian' },
+    { key: 'ch',        label: '>480€' },
+    { key: 'froid',     label: '❄️ Froid' },
+    { key: 'nr',        label: 'Med010' },
+    { key: 'biosim',    label: 'Biosim' },
+    { key: 'generique', label: 'Génériques' },
   ];
 
   const chipsHtml = cats.map(c => {
@@ -2186,7 +2189,6 @@ function renderBenchmark() {
           </div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px 4px">${chipsHtml}</div>
-        ${benchSearch || benchCat !== 'tous' ? `
         <div style="overflow-x:auto">
           <table class="data-table">
             <thead><tr>
@@ -2202,13 +2204,8 @@ function renderBenchmark() {
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          ${data.length > 200 ? `<div style="padding:12px 20px;font-size:12px;color:var(--text3)">Affichage limité à 200 résultats — affinez la recherche pour plus de précision.</div>` : ''}
-        </div>` : `
-        <div style="padding:40px 20px;text-align:center">
-          <div style="font-size:36px;margin-bottom:12px">🔍</div>
-          <div style="font-size:15px;font-weight:700;color:var(--text1)">Explorez ${fmtNum(BENCHMARK.length)} produits IP</div>
-          <div style="font-size:13px;color:var(--text3);margin-top:6px">Tapez un nom de produit ou filtrez par famille ci-dessus</div>
-        </div>`}
+          ${data.length > 200 ? `<div style="padding:12px 20px;font-size:12px;color:var(--text3)">${fmtNum(data.length)} résultats · affichage limité à 200 — affinez la recherche.</div>` : `<div style="padding:8px 20px;font-size:12px;color:var(--text3)">${fmtNum(data.length)} résultat${data.length !== 1 ? 's' : ''}</div>`}
+        </div>
       </div>
     </div>
   `;
@@ -2589,6 +2586,36 @@ function printSimulation() {
   win.print();
 }
 
+function buildSuggestHtml() {
+  const suggestions = simSuggestions(simSearchQuery);
+  if (!simSearchQuery || !suggestions.length) return '';
+  return `<div class="sim-suggestions">
+    ${suggestions.map((p, i) => {
+      const cat   = CATS[p.cat] || CATS.mi;
+      const froid = p.froid ? '❄️ ' : '';
+      const rot   = p.hasAmeli && p.rot ? `<span style="font-size:11px;color:var(--mint)">↻ ${p.rot.toFixed(1)}/mois</span>` : '';
+      return `<div class="sim-suggest-item" onclick="simAddProduct(${i})">
+        <div style="flex:1;min-width:0">
+          <div class="sim-suggest-name">${froid}${p.designation}</div>
+          <div style="display:flex;gap:6px;margin-top:2px;align-items:center">
+            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
+            ${rot}
+          </div>
+        </div>
+        <span style="font-size:12px;color:var(--text2);white-space:nowrap">${fmt(p.puNet)} / u</span>
+        <span style="font-size:18px;color:var(--blue);font-weight:700">+</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function simRefreshSuggestions() {
+  const wrap = document.getElementById('sim-suggestions-wrap');
+  if (wrap) wrap.innerHTML = buildSuggestHtml();
+  const clearBtn = document.getElementById('sim-clear-btn');
+  if (clearBtn) clearBtn.style.display = simSearchQuery ? '' : 'none';
+}
+
 function renderSimulator() {
   const container = document.getElementById('simul-content');
   if (!container) return;
@@ -2690,28 +2717,7 @@ function renderSimulator() {
     `<option value="${p.id}" ${state.sim.pharmacyId === p.id ? 'selected' : ''}>${p.name}</option>`
   ).join('');
 
-  // Suggestions
-  const suggestions = simSuggestions(simSearchQuery);
-  const suggestHtml = simSearchQuery && suggestions.length
-    ? `<div class="sim-suggestions">
-        ${suggestions.map((p, i) => {
-          const cat   = CATS[p.cat] || CATS.mi;
-          const froid = p.froid ? '❄️ ' : '';
-          const rot   = p.hasAmeli && p.rot ? `<span style="font-size:11px;color:var(--mint)">↻ ${p.rot.toFixed(1)}/mois</span>` : '';
-          return `<div class="sim-suggest-item" onclick="simAddProduct(${i})">
-            <div style="flex:1;min-width:0">
-              <div class="sim-suggest-name">${froid}${p.designation}</div>
-              <div style="display:flex;gap:6px;margin-top:2px;align-items:center">
-                <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
-                ${rot}
-              </div>
-            </div>
-            <span style="font-size:12px;color:var(--text2);white-space:nowrap">${fmt(p.puNet)} / u</span>
-            <span style="font-size:18px;color:var(--blue);font-weight:700">+</span>
-          </div>`;
-        }).join('')}
-      </div>`
-    : '';
+  // Suggestions built on-demand via buildSuggestHtml() / simRefreshSuggestions()
 
   container.innerHTML = `
     <!-- Header controls -->
@@ -2743,13 +2749,14 @@ function renderSimulator() {
             <div class="search-wrap">
               <span class="search-icon">🔍</span>
               <input id="sim-search-input" type="text" placeholder="Ajouter un produit au panier..." value="${simSearchQuery}"
-                oninput="simSearchQuery=this.value;renderSimulator()"
+                oninput="simSearchQuery=this.value;simRefreshSuggestions()"
+                onkeydown="if(event.key==='Escape'){simSearchQuery='';simRefreshSuggestions()}"
                 style="border:none;background:transparent;outline:none;flex:1;font-size:13px;color:var(--text)"
                 autocomplete="off">
-              ${simSearchQuery ? `<button onclick="simSearchQuery='';renderSimulator()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px">✕</button>` : ''}
+              <button id="sim-clear-btn" onclick="simSearchQuery='';simRefreshSuggestions()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;display:${simSearchQuery ? '' : 'none'}">✕</button>
             </div>
           </div>
-          ${suggestHtml}
+          <div id="sim-suggestions-wrap">${buildSuggestHtml()}</div>
         </div>
 
         <!-- Liste des produits -->
@@ -2809,10 +2816,6 @@ function renderSimulator() {
       </div>
     </div>
   `;
-
-  // Focus search input
-  const inp = document.getElementById('sim-search-input');
-  if (inp && simSearchQuery) inp.focus();
 
   // Render bars
   if (state.sim.items.length) updateSimBars();
@@ -3026,6 +3029,7 @@ function renderOffilog() {
           </div>
           ${universHtml}
           ${marqueHtml}
+          ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous' ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiPageNum=1;renderOffilog()" style="padding:5px 12px;border-radius:10px;border:1px solid var(--rose);background:rgba(255,77,109,.08);color:var(--rose);font-size:12px;cursor:pointer;white-space:nowrap">✕ Réinitialiser</button>` : ''}
           ${drakkBadge}
           ${cap3000Badge}
         </div>
