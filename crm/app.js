@@ -2909,7 +2909,32 @@ function renderSimulator() {
 
 // ── OFFILOG ──────────────────────────────────
 const OFFILOG_ORANGE = '#FF6B35';
-const OFFILOG_PER    = 40;
+const OFFILOG_PER    = 30;
+
+const UNIVERS_META = {
+  'Dermo / Hydratation / Réparation': { color:'#E91E8C', bg:'#fce4f0', icon:'💧' },
+  'Bébé &amp; Famille':               { color:'#4CAF50', bg:'#e8f5e9', icon:'🍼' },
+  'Solaires':                          { color:'#FF9800', bg:'#fff3e0', icon:'☀️' },
+  'Capillaire':                        { color:'#9C27B0', bg:'#f3e5f5', icon:'💆' },
+  'Hygiène corporelle':                { color:'#2196F3', bg:'#e3f2fd', icon:'🚿' },
+  'Hygiène bucco-dentaire':            { color:'#00BCD4', bg:'#e0f7fa', icon:'🦷' },
+  'Huiles essentielles / Aromathérapie':{ color:'#8BC34A', bg:'#f1f8e9', icon:'🌿' },
+  'Vitalité / Immunité / Vitamines':   { color:'#FF5722', bg:'#fbe9e7', icon:'⚡' },
+  'Premiers secours / Pansements':     { color:'#F44336', bg:'#ffebee', icon:'🩹' },
+  'Allergies / Nez / Respiration':     { color:'#03A9F4', bg:'#e1f5fe', icon:'🌸' },
+  'Stress / Sommeil':                  { color:'#673AB7', bg:'#ede7f6', icon:'🌙' },
+  'Maquillage / Beauté':               { color:'#E91E63', bg:'#fce4ec', icon:'💄' },
+  'Digestion / Transit / Microbiote':  { color:'#795548', bg:'#efebe9', icon:'🌱' },
+  'Vétérinaire':                       { color:'#607D8B', bg:'#eceff1', icon:'🐾' },
+  'Articulations / Mobilité':          { color:'#FF6B35', bg:'#fff0eb', icon:'🦴' },
+  'Jambes légères / Circulation':      { color:'#F06292', bg:'#fce4ec', icon:'🦵' },
+  'Minceur / Silhouette':              { color:'#AB47BC', bg:'#f3e5f5', icon:'✨' },
+  'Anti-moustiques &amp; Voyage':      { color:'#26C6DA', bg:'#e0f7fa', icon:'🌍' },
+  'Non classé':                        { color:'#90A4AE', bg:'#f5f7f9', icon:'📦' },
+};
+function univMeta(u) {
+  return UNIVERS_META[u] || { color:'#90A4AE', bg:'#f5f7f9', icon:'📦' };
+}
 let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiPageNum = 1;
 let offiCurrentData = [];
 
@@ -2961,7 +2986,7 @@ function renderOffilog() {
   if (!container) return;
 
   if (typeof OFFILOG === 'undefined' || !OFFILOG.length) {
-    container.innerHTML = `<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:var(--text3)">Données Offilog non chargées.</div></div>`;
+    container.innerHTML = `<div class="card"><div style="text-align:center;padding:60px;color:var(--text3)">Données Offilog non chargées.</div></div>`;
     return;
   }
 
@@ -2971,190 +2996,218 @@ function renderOffilog() {
   const startIdx = (offiPageNum - 1) * OFFILOG_PER;
   const page     = offiCurrentData.slice(startIdx, startIdx + OFFILOG_PER);
 
-  // ── Stats globales ────────────────────────────
+  // ── Stats ─────────────────────────────────────
   const nTotal    = OFFILOG.length;
   const nOff      = OFFILOG.filter(p => p.dans_offilog).length;
   const nHeros    = OFFILOG.filter(p => p.role === 'Héros' || p.role === 'Héros / Soutien').length;
   const nOpps     = OFFILOG.filter(p => p.role === 'Opportunité').length;
   const nDrakkars = OFFILOG.filter(p => p.prix_drakkars != null && p.prix_drakkars > 0).length;
   const nCap3000  = OFFILOG.filter(p => p.prix_cap3000  != null && p.prix_cap3000  > 0).length;
-  const margeOff  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
-  const margeMoy  = margeOff.length ? (margeOff.reduce((a, b) => a + b, 0) / margeOff.length) : 0;
-  const tauxOff   = nTotal > 0 ? (nOff / nTotal * 100) : 0;
+  const margeArr  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
+  const margeMoy  = margeArr.length ? margeArr.reduce((a, b) => a + b, 0) / margeArr.length : 0;
+  const tauxOff   = nTotal > 0 ? nOff / nTotal * 100 : 0;
 
-  // ── Univers disponibles ───────────────────────
-  const universSet = [...new Set(OFFILOG.map(p => p.univers).filter(Boolean))].sort();
+  // ── Univers counts ────────────────────────────
+  const universCount = {};
+  OFFILOG.forEach(p => { const u = p.univers || 'Non classé'; universCount[u] = (universCount[u] || 0) + 1; });
+  const universSet = Object.keys(universCount).filter(u => u && u !== 'Non classé').sort((a, b) => universCount[b] - universCount[a]);
   const marqueSet  = [...new Set(OFFILOG.map(p => p.marque).filter(Boolean))].sort();
 
-  // ── Role tabs ─────────────────────────────────
+  // ── Universe tiles ────────────────────────────
+  const univTiles = [{ key: 'tous', label: 'Tout voir', count: nTotal, color: OFFILOG_ORANGE, bg: '#fff0eb', icon: '🛍️' }]
+    .concat(universSet.map(u => { const m = univMeta(u); return { key: u, label: u, count: universCount[u], color: m.color, bg: m.bg, icon: m.icon }; }))
+    .map(t => {
+      const active = offiUnivers === t.key || (t.key === 'tous' && offiUnivers === 'tous');
+      return `<button onclick="offiSetUnivers('${t.key === 'tous' ? 'tous' : t.key.replace(/'/g,"\\'")}')"
+        style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;border-radius:14px;border:2px solid ${active ? t.color : 'transparent'};background:${active ? t.bg : 'var(--bg2)'};cursor:pointer;white-space:nowrap;transition:all .18s;flex-shrink:0;min-width:90px">
+        <span style="font-size:20px;line-height:1">${t.icon}</span>
+        <span style="font-size:11px;font-weight:700;color:${active ? t.color : 'var(--text2)'};max-width:90px;overflow:hidden;text-overflow:ellipsis;text-align:center">${t.label.split(' / ')[0].split(' &')[0]}</span>
+        <span style="font-size:10px;font-weight:500;color:${active ? t.color : 'var(--text3)'};opacity:.8">${fmtNum(t.count)}</span>
+      </button>`;
+    }).join('');
+
+  // ── Role chips ────────────────────────────────
   const roleTabs = [
-    { key: 'tous',           label: 'Tous',          count: nTotal },
-    { key: 'offilog',        label: '✓ Dans Offilog', count: nOff },
-    { key: 'Héros',          label: '⭐ Héros',       count: OFFILOG.filter(p=>p.role==='Héros').length },
-    { key: 'Héros / Soutien',label: '⭐ Héros/Soutien', count: OFFILOG.filter(p=>p.role==='Héros / Soutien').length },
-    { key: 'Soutien fort',   label: '💪 Soutien fort', count: OFFILOG.filter(p=>p.role==='Soutien fort').length },
-    { key: 'Image',          label: '🎨 Image',       count: OFFILOG.filter(p=>p.role==='Image').length },
-    { key: 'Opportunité',    label: '🎯 Opportunités', count: nOpps },
+    { key: 'tous',            label: 'Tous',             icon: '✦', color: '#64748B' },
+    { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
+    { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
+    { key: 'Héros / Soutien', label: 'Héros/Soutien',    icon: '⭐', color: '#FBBF24' },
+    { key: 'Soutien fort',    label: 'Soutien fort',     icon: '💪', color: '#3B82F6' },
+    { key: 'Image',           label: 'Image',            icon: '🎨', color: '#9B5CFF' },
+    { key: 'Opportunité',     label: 'Opportunités',     icon: '🎯', color: '#10B981' },
   ];
-  const roleTabsHtml = roleTabs.map(t => {
+  const roleChips = roleTabs.map(t => {
     const active = offiRole === t.key;
-    return `<button onclick="offiSetRole('${t.key.replace(/'/g, "\\'")}')"
-      onmouseover="if(!${active}){this.style.borderColor='${OFFILOG_ORANGE}';this.style.color='${OFFILOG_ORANGE}'}"
-      onmouseout="if(!${active}){this.style.borderColor='var(--border2)';this.style.color='var(--text2)'}"
-      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;
-             border:1px solid ${active ? OFFILOG_ORANGE : 'var(--border2)'};
-             background:${active ? OFFILOG_ORANGE : 'transparent'};
-             color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap;
-             transition:all .15s;${active ? 'box-shadow:0 2px 8px rgba(0,0,0,.1)' : ''}">
-      ${t.label} <span style="opacity:.6;font-weight:400">${fmtNum(t.count)}</span>
+    return `<button onclick="offiSetRole('${t.key.replace(/'/g,"\\'")}')"
+      style="padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid ${active ? t.color : 'var(--border2)'};background:${active ? t.color + '18' : 'transparent'};color:${active ? t.color : 'var(--text2)'};cursor:pointer;transition:all .15s;white-space:nowrap">
+      ${t.icon} ${t.label}
     </button>`;
   }).join('');
 
-  // ── Univers select ────────────────────────────
-  const universHtml = `<select onchange="offiSetUnivers(this.value)"
-    style="padding:5px 10px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text)">
-    <option value="tous">Tous les univers</option>
-    ${universSet.map(u => `<option value="${u.replace(/"/g,'&quot;')}" ${offiUnivers===u?'selected':''}>${u}</option>`).join('')}
-  </select>`;
-  const marqueHtml = `<select onchange="offiSetMarque(this.value)"
-    style="padding:5px 10px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text)">
-    <option value="tous">Toutes les marques</option>
-    ${marqueSet.map(m => `<option value="${m.replace(/"/g,'&quot;')}" ${offiMarque===m?'selected':''}>${m}</option>`).join('')}
-  </select>`;
+  // ── Product cards ─────────────────────────────
+  const cardsHtml = page.length ? page.map(p => {
+    const um  = univMeta(p.univers || 'Non classé');
+    const rm  = roleMeta(p.role);
+    const hasIP   = p.prix_offilog != null && p.prix_offilog > 0;
+    const hasMaxi = p.prix_maxi != null && p.prix_maxi > 0;
+    const hasDrak = p.prix_drakkars != null && p.prix_drakkars > 0;
+    const hasCap  = p.prix_cap3000  != null && p.prix_cap3000  > 0;
+    const hasMarge = p.marge_pct != null;
+    const margeColor = !hasMarge ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
+    const margePct  = hasMarge ? Math.min(100, p.marge_pct) : 0;
 
-  // ── Rows ──────────────────────────────────────
-  const rowsHtml = page.length ? page.map((p, i) => {
-    const inOff   = p.dans_offilog;
-    const marge   = p.marge_pct != null ? `<span style="font-weight:700;color:${p.marge_pct >= 40 ? 'var(--mint)' : p.marge_pct >= 20 ? 'var(--amber)' : 'var(--text2)'}">${p.marge_pct.toFixed(1)}%</span>` : '<span style="color:var(--text3)">—</span>';
-    const prixOff  = p.prix_offilog != null ? `<span style="color:${OFFILOG_ORANGE};font-weight:800;font-size:14px;letter-spacing:-.3px">${fmtP(p.prix_offilog)}</span>` : '<span style="color:var(--text3)">—</span>';
-    const prixMaxi = p.prix_maxi != null ? `<span style="color:var(--text2);font-size:12px">${fmtP(p.prix_maxi)}</span>` : '<span style="color:var(--text3)">—</span>';
-    const prixDrakkars = (p.prix_drakkars != null && p.prix_drakkars > 0)
-      ? `<span style="color:var(--text2);font-size:12px">${fmtP(p.prix_drakkars)}</span>`
-      : '<span style="color:var(--text3);font-size:10px">—</span>';
-    const prixCap3000 = (p.prix_cap3000 != null && p.prix_cap3000 > 0)
-      ? `<span style="color:var(--text2);font-size:12px">${fmtP(p.prix_cap3000)}</span>`
-      : '<span style="color:var(--text3);font-size:10px">—</span>';
-    const ecart = p.ecart != null && p.ecart > 0
-      ? `<span style="color:var(--mint);font-size:11px">+${fmtP(p.ecart)}</span>`
+    // Price delta vs competitors
+    let deltaHtml = '';
+    if (hasIP && (hasDrak || hasCap)) {
+      const concPrix = [hasDrak ? p.prix_drakkars : null, hasCap ? p.prix_cap3000 : null].filter(Boolean);
+      const minConc = Math.min(...concPrix);
+      const delta = minConc - p.prix_offilog;
+      if (delta > 0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 6px;border-radius:8px">−${fmtP(delta)} vs conc.</span>`;
+      else if (delta < -0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#EF4444;background:#fee2e2;padding:1px 6px;border-radius:8px">+${fmtP(Math.abs(delta))} vs conc.</span>`;
+    }
+
+    const saisonBadge = p.saison && p.saison !== 'Toute année'
+      ? `<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:#fef9c3;color:#92400e;font-weight:600">${p.saison === 'Printemps/Été' ? '☀️ P/É' : '❄️ A/H'}</span>`
       : '';
-    const offTag = inOff
-      ? `<span title="Référencé Offilog" style="font-size:10px;padding:1px 5px;background:rgba(255,107,53,.12);color:${OFFILOG_ORANGE};border-radius:4px">IP</span>`
+    const ipBadge = p.dans_offilog
+      ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${OFFILOG_ORANGE}22;color:${OFFILOG_ORANGE};font-weight:700;border:1px solid ${OFFILOG_ORANGE}44">IP</span>`
       : '';
-    return `<tr style="border-bottom:1px solid rgba(0,0,0,.05);transition:background .12s;${i%2===1?'background:rgba(0,0,0,.018)':''}" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='${i%2===1?'rgba(0,0,0,.018)':''}'"  >
-      <td style="padding:8px 10px;font-size:11px;color:var(--text3)">${p.rang||i+startIdx+1}</td>
-      <td style="padding:8px 10px;min-width:0">
-        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${p.produit}</div>
-        <div style="display:flex;gap:5px;margin-top:2px;align-items:center;flex-wrap:wrap">
-          <span style="font-size:10px;color:var(--text3)">${p.marque||''}</span>
-          ${offTag}
+
+    const competHtml = (hasDrak || hasCap) ? `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border1)">
+        ${hasDrak ? `<div style="font-size:10px;color:var(--text3)">🛒 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_drakkars)}</span> <span style="opacity:.6">Drakkars</span></div>` : ''}
+        ${hasCap  ? `<div style="font-size:10px;color:var(--text3)">🏪 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_cap3000)}</span> <span style="opacity:.6">Cap3000</span></div>` : ''}
+      </div>` : '';
+
+    return `<div style="background:var(--bg);border-radius:16px;border:1px solid var(--border1);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:default"
+      onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,.12)';this.style.transform='translateY(-2px)'"
+      onmouseout="this.style.boxShadow='';this.style.transform=''">
+      <!-- Stripe univers -->
+      <div style="height:4px;background:linear-gradient(90deg,${um.color},${um.color}88)"></div>
+      <div style="padding:14px 14px 12px;flex:1;display:flex;flex-direction:column;gap:0">
+        <!-- Brand + badges -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:6px">
+          <span style="font-size:10px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.marque || '—'}</span>
+          <div style="display:flex;gap:4px;flex-shrink:0">${ipBadge}${saisonBadge}</div>
         </div>
-      </td>
-      <td style="padding:8px 10px;font-size:11px;color:var(--text2);white-space:nowrap">${p.univers||'—'}</td>
-      <td style="padding:8px 10px;text-align:right">${prixOff}</td>
-      <td style="padding:8px 10px;text-align:right">${prixMaxi}</td>
-      <td style="padding:8px 10px;text-align:right">${marge}${ecart ? '<br>'+ecart : ''}</td>
-      <td style="padding:8px 10px;text-align:right;border-left:1px solid var(--border1)">${prixDrakkars}</td>
-      <td style="padding:8px 10px;text-align:right">${prixCap3000}</td>
-      <td style="padding:8px 10px">${roleBadge(p.role)}</td>
-    </tr>`;
+        <!-- Nom produit -->
+        <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;margin-bottom:8px">${p.produit}</div>
+        <!-- Tags -->
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+          <span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${um.bg};color:${um.color};font-weight:600;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis">${um.icon} ${(p.univers||'Non classé').split(' / ')[0].split(' &')[0]}</span>
+          <span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${rm.bg};color:${rm.color};font-weight:600;white-space:nowrap">${rm.icon} ${p.role||'—'}</span>
+        </div>
+        <!-- Prix -->
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px">
+          <div>
+            <div style="font-size:10px;color:var(--text3);font-weight:500;margin-bottom:1px">Prix IP</div>
+            <div style="font-size:20px;font-weight:900;color:${OFFILOG_ORANGE};letter-spacing:-.5px;line-height:1">${hasIP ? fmtP(p.prix_offilog) : '<span style="font-size:13px;color:var(--text3)">N/D</span>'}</div>
+          </div>
+          ${hasMaxi ? `<div style="text-align:right">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:1px">Prix public</div>
+            <div style="font-size:13px;color:var(--text2);font-weight:600">${fmtP(p.prix_maxi)}</div>
+          </div>` : ''}
+        </div>
+        <!-- Margin bar -->
+        ${hasMarge ? `<div style="margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <span style="font-size:10px;color:var(--text3)">Marge</span>
+            <span style="font-size:11px;font-weight:700;color:${margeColor}">${p.marge_pct.toFixed(1)}%</span>
+          </div>
+          <div style="height:4px;border-radius:2px;background:var(--border1);overflow:hidden">
+            <div style="height:100%;width:${margePct}%;background:${margeColor};border-radius:2px;transition:width .4s"></div>
+          </div>
+        </div>` : ''}
+        <!-- Delta concurrents -->
+        ${deltaHtml ? `<div style="margin-bottom:4px">${deltaHtml}</div>` : ''}
+        <!-- Competitor prices -->
+        ${competHtml}
+      </div>
+    </div>`;
   }).join('')
-  : `<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</td></tr>`;
+  : `<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text3)">Aucun produit trouvé pour ces filtres.</div>`;
 
   // ── Pagination ────────────────────────────────
   let pagHtml = '';
   if (totalPages > 1) {
     const btns = [];
-    if (offiPageNum > 1) { btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(1)">«</button>`); btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(${offiPageNum-1})">‹</button>`); }
+    if (offiPageNum > 1) { btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(1)">«</button><button class="cat-pag-btn" onclick="offiGoPage(${offiPageNum-1})">‹</button>`); }
     let ps = Math.max(1, offiPageNum - 3), pe = Math.min(totalPages, ps + 6);
     if (pe - ps < 6) ps = Math.max(1, pe - 6);
     for (let p = ps; p <= pe; p++) btns.push(`<button class="cat-pag-btn${p===offiPageNum?' active':''}" onclick="offiGoPage(${p})">${p}</button>`);
-    if (offiPageNum < totalPages) { btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(${offiPageNum+1})">›</button>`); btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(${totalPages})">»</button>`); }
-    pagHtml = `<div style="display:flex;justify-content:center;gap:4px;padding:16px;flex-wrap:wrap">${btns.join('')}</div>`;
+    if (offiPageNum < totalPages) { btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(${offiPageNum+1})">›</button><button class="cat-pag-btn" onclick="offiGoPage(${totalPages})">»</button>`); }
+    pagHtml = `<div style="display:flex;justify-content:center;gap:4px;padding:24px 0 8px;flex-wrap:wrap">${btns.join('')}</div>`;
   }
 
-  // ── Apothical status badge ────────────────────
-  const drakkBadge = nDrakkars > 0
-    ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,107,53,.1);color:#FF6B35">${fmtNum(nDrakkars)} prix Drakkars</span>`
-    : '';
-  const cap3000Badge = nCap3000 > 0
-    ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(45,106,79,.15);color:#2D6A4F">${fmtNum(nCap3000)} prix Cap3000</span>`
-    : '';
-
   container.innerHTML = `
-    <!-- KPIs -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">
-      <div class="card kpi-card fade-up" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
-        <div class="kpi-label">Produits analysés</div>
-        <div class="kpi-value">${fmtNum(nTotal)}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">Maxipara × Offilog</div>
+  <style>
+    .offi-search-input { border:none;background:transparent;outline:none;flex:1;font-size:13px;color:var(--text); }
+  </style>
+
+  <!-- Hero banner -->
+  <div style="background:linear-gradient(135deg,#1a0a00 0%,#3d1500 40%,${OFFILOG_ORANGE} 100%);border-radius:20px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-20px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04)"></div>
+    <div style="position:absolute;bottom:-40px;right:80px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04)"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;position:relative">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">Intégral Pharma</div>
+        <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.1">Catalogue<br><span style="color:${OFFILOG_ORANGE}">Parapharmacie</span></div>
+        <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:8px">${fmtNum(nTotal)} références · ${universSet.length} univers · ${fmtNum(nOff)} dans Offilog</div>
       </div>
-      <div class="card kpi-card fade-up" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
-        <div class="kpi-label">Référencés Offilog</div>
-        <div class="kpi-value" style="color:${OFFILOG_ORANGE}">${fmtNum(nOff)}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">${tauxOff.toFixed(0)}% de couverture</div>
-      </div>
-      <div class="card kpi-card fade-up" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
-        <div class="kpi-label">Marge moy. Offilog</div>
-        <div class="kpi-value" style="color:var(--mint)">${margeMoy.toFixed(1)}%</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">sur produits matchés</div>
-      </div>
-      <div class="card kpi-card fade-up" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
-        <div class="kpi-label">⭐ Héros</div>
-        <div class="kpi-value" style="color:#FFD700">${fmtNum(nHeros)}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">${fmtNum(nOpps)} opportunités</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
+          <div style="font-size:22px;font-weight:900;color:#fff">${fmtNum(nOff)}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Offilog</div>
+        </div>
+        <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
+          <div style="font-size:22px;font-weight:900;color:#fff">${margeMoy.toFixed(0)}%</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Marge moy.</div>
+        </div>
+        <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
+          <div style="font-size:22px;font-weight:900;color:#fff">${fmtNum(nHeros)}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Héros ⭐</div>
+        </div>
       </div>
     </div>
+  </div>
 
-    <!-- Filters + Search -->
-    <div class="card fade-up" style="margin-bottom:16px;border-top:3px solid ${OFFILOG_ORANGE}">
-      <div class="card-body" style="padding:12px 16px">
-        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-          <div class="search-wrap" style="flex:1;min-width:200px">
-            <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Nom, marque ou EAN…" value="${offiQuery}"
-              oninput="offiQuery=this.value;offiPageNum=1;renderOffilog()"
-              style="border:none;background:transparent;outline:none;flex:1;font-size:13px;color:var(--text)" autocomplete="off">
-            ${offiQuery ? `<button onclick="offiQuery='';offiPageNum=1;renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px">✕</button>` : ''}
-          </div>
-          ${universHtml}
-          ${marqueHtml}
-          ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous' ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiPageNum=1;renderOffilog()" style="padding:5px 12px;border-radius:10px;border:1px solid var(--rose);background:rgba(255,77,109,.08);color:var(--rose);font-size:12px;cursor:pointer;white-space:nowrap">✕ Réinitialiser</button>` : ''}
-          ${drakkBadge}
-          ${cap3000Badge}
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">${roleTabsHtml}</div>
+  <!-- Universe navigator -->
+  <div style="overflow-x:auto;padding-bottom:6px;margin-bottom:16px;scrollbar-width:none">
+    <div style="display:flex;gap:8px;width:max-content;padding:2px 2px 4px">${univTiles}</div>
+  </div>
+
+  <!-- Search + role filters -->
+  <div style="background:var(--bg);border:1px solid var(--border1);border-radius:16px;padding:14px 16px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:220px;border:1.5px solid var(--border2);border-radius:12px;padding:8px 12px;background:var(--bg2);transition:border-color .15s" onfocusin="this.style.borderColor='${OFFILOG_ORANGE}'" onfocusout="this.style.borderColor='var(--border2)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="offi-search-input" type="text" placeholder="Rechercher un produit, une marque, un EAN…" value="${offiQuery}"
+          oninput="offiQuery=this.value;offiPageNum=1;renderOffilog()" autocomplete="off">
+        ${offiQuery ? `<button onclick="offiQuery='';offiPageNum=1;renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;padding:0;line-height:1">✕</button>` : ''}
       </div>
+      <select onchange="offiSetMarque(this.value)"
+        style="padding:8px 12px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
+        <option value="tous">Toutes les marques</option>
+        ${marqueSet.map(m => `<option value="${m.replace(/"/g,'&quot;')}" ${offiMarque===m?'selected':''}>${m}</option>`).join('')}
+      </select>
+      ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous'
+        ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiPageNum=1;renderOffilog()"
+            style="padding:8px 14px;border-radius:12px;border:1.5px solid var(--rose);background:rgba(239,68,68,.06);color:#EF4444;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+            ✕ Réinitialiser
+          </button>` : ''}
     </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      ${roleChips}
+      <span style="margin-left:auto;font-size:12px;color:var(--text3)">${fmtNum(offiCurrentData.length)} résultat${offiCurrentData.length>1?'s':''} · page ${offiPageNum}/${totalPages}</span>
+    </div>
+  </div>
 
-    <!-- Table -->
-    <div class="card fade-up">
-      <div class="card-header">
-        <div class="card-title" style="display:flex;align-items:center;gap:8px">
-          <span style="width:10px;height:10px;border-radius:50%;background:${OFFILOG_ORANGE};display:inline-block"></span>
-          ${fmtNum(offiCurrentData.length)} produits
-        </div>
-        <div style="font-size:12px;color:var(--text3)">Page ${offiPageNum} / ${totalPages}</div>
-      </div>
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse">
-          <thead>
-            <tr style="border-bottom:2px solid var(--border2)">
-              <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">#</th>
-              <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Produit</th>
-              <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Univers</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:700">Prix Offilog</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Prix public</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Marge</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600;border-left:1px solid var(--border1)">Drakkars</th>
-              <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">Cap3000</th>
-              <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">Rôle</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-      </div>
-      ${pagHtml}
-    </div>`;
+  <!-- Cards grid -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">
+    ${cardsHtml}
+  </div>
+
+  ${pagHtml}`;
 }
 
 // ── EMPTY STATE ───────────────────────────────
