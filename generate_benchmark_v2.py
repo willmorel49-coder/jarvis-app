@@ -201,6 +201,54 @@ total_with_prix = sum(1 for r in records.values() if r['prix_ip'] > 0)
 print(f"  Total avec CIP13: {total_with_cip} / {len(records)}")
 print(f"  Total avec prix_ip: {total_with_prix} / {len(records)}")
 
+# ── 3.5. STOCK → artnature par CIP13 (source de vérité catégorie) ────────────
+print("\nLoading stock file for artnature enrichment...")
+import glob as _glob
+stock_files = sorted(_glob.glob(os.path.join(BASE, 'stock*.xlsx')))
+cip_to_nature = {}  # cip13 str → artnature normalized
+if not stock_files:
+    print("  AVERTISSEMENT : aucun fichier stock*.xlsx trouvé — artnature sera vide")
+else:
+    stock_path = stock_files[-1]  # le plus récent alphabétiquement
+    print(f"  Stock utilisé : {os.path.basename(stock_path)}")
+    try:
+        wb_s = openpyxl.load_workbook(stock_path, read_only=True, data_only=True)
+        ws_s = wb_s.active
+        rows_s = list(ws_s.iter_rows(values_only=True))
+        hdr_s = [str(c).lower().strip() if c else '' for c in rows_s[0]]
+        col_s = {n: i for i, n in enumerate(hdr_s) if n}
+        i_cip = col_s.get('artcodebarre')
+        i_nat = col_s.get('artnature')
+        i_afm = col_s.get('afmcode')
+        if i_cip is not None and i_nat is not None:
+            for row in rows_s[1:]:
+                cip_raw = row[i_cip]
+                nat_raw = row[i_nat]
+                if not cip_raw or not nat_raw: continue
+                nat_str = str(nat_raw).strip()
+                if nat_str in ('#N/A','None','nan',''): continue
+                try:
+                    cip = str(int(float(str(cip_raw).replace(' ',''))))
+                except: continue
+                if len(cip) < 10: continue
+                # normalize: 'Generique Partenaire' → 'generique_partenaire'
+                cip_to_nature[cip] = nat_str.lower().replace(' ','_')
+        wb_s.close()
+        print(f"  CIP avec artnature : {len(cip_to_nature)}")
+        from collections import Counter as _Ctr
+        print(f"  Distribution : {dict(_Ctr(cip_to_nature.values()).most_common())}")
+    except Exception as e:
+        print(f"  ERREUR lecture stock : {e}")
+
+# Injecter artnature dans records
+nature_matched = 0
+for rec in records.values():
+    cip = rec.get('cip13','')
+    nat = cip_to_nature.get(cip, '')
+    rec['artnature'] = nat
+    if nat: nature_matched += 1
+print(f"  Produits enrichis artnature : {nature_matched} / {len(records)}")
+
 # ── 4. AMELI MONTHLY DATA (13 months: Jan25→Jan26) ───────────────────────────
 print("\nLoading Ameli monthly data (13 months)...")
 ameli = {}  # cip13 → {'months':[13 ints], 'atc2': str}
@@ -321,7 +369,8 @@ for r in recs:
         f'is_froid:{froid},has_ameli:{has},'
         f'ameli_months:{months_js},ameli_jan26:{r["ameli_jan26"]},'
         f'rot_pharma_jan26:{r["rot_pharma_jan26"]:.2f},'
-        f'ameli_total:{r["ameli_total"]},yoy_jan:{yoy},atc2:"{r["atc2"]}"}},'
+        f'ameli_total:{r["ameli_total"]},yoy_jan:{yoy},atc2:"{r["atc2"]}",'
+        f'artnature:"{r.get("artnature","")}"}},'
     )
 
 lines.append('];')
