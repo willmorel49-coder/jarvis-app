@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
 /* ══════════════════════════════════════════════════════════
    INTÉGRAL PHARMA CRM — Thème clair premium
@@ -711,6 +711,7 @@ body {
 .sim-col-right { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 20px; }
 
 .sim-header-card .card-body { padding: 14px 20px; }
+.sim-card { background: #fff; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
 
 /* Suggestions dropdown */
 .sim-suggestions {
