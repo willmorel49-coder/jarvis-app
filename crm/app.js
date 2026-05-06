@@ -2119,7 +2119,7 @@ function renderBenchmark() {
       ? `<span style="font-size:11px;font-weight:600;color:${d.yoy_jan > 5 ? 'var(--mint)' : d.yoy_jan < -5 ? 'var(--rose)' : 'var(--text3)'}">${d.yoy_jan > 0 ? '▲' : '▼'} ${Math.abs(d.yoy_jan).toFixed(0)}%</span>`
       : '<span style="color:var(--text4);font-size:11px">—</span>';
     const prixDisplay = d.prix_ip > 0
-      ? `<span style="font-size:11px;color:var(--blue)">${fmt(d.prix_ip)}</span>`
+      ? `<span style="font-size:11px;color:var(--blue)">${fmtP(d.prix_ip)}</span>`
       : '<span style="color:var(--text4);font-size:11px">—</span>';
     return `<tr style="transition:background .12s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <td style="color:var(--text3);font-size:12px">${d.ip_rank_qty}</td>
@@ -2407,11 +2407,11 @@ function renderCatalogue() {
     const ameliTag = b.has_ameli ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.12);color:var(--mint);border-radius:4px">🏥 SS</span>` : '';
     const rotTag   = b.rot_pharma_jan26 > 0 ? `<span style="font-size:10px;color:var(--text3)">↻ ${b.rot_pharma_jan26.toFixed(1)}/mois</span>` : '';
     const cipTag   = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
-    const offreTag = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmt(b.offre_ip)}</span>` : '';
+    const offreTag = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
     const prix = b.prix_ip > 0
-      ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--blue)">${fmt(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
+      ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--blue)">${fmtP(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
       : b.prix_ht > 0
-        ? `<div style="font-size:14px;color:var(--text2)">${fmt(b.prix_ht)}</div>`
+        ? `<div style="font-size:14px;color:var(--text2)">${fmtP(b.prix_ht)}</div>`
         : `<div style="font-size:12px;color:var(--text3)">N/D</div>`;
     const inSim = state.sim.items.some(it => it.designation === b.designation);
     const addBtn = `<button onclick="catAddToSim(${globalIdx})"
