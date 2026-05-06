@@ -16,7 +16,7 @@ from pathlib import Path
 
 import openpyxl
 
-BASE = Path('/Users/williammorel/JARVIS/APP')
+BASE = Path(__file__).parent
 SRC  = BASE / 'benchmark_cap3000.xlsx'
 OUT  = BASE / 'crm' / 'cap3000-data.js'
 

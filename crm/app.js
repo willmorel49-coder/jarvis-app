@@ -107,6 +107,10 @@ async function restoreSession() {
 async function logout() {
   await sb.auth.signOut();
   state.user = null;
+  state.pharmacies = [];
+  state.imports    = [];
+  state.sales      = [];
+  state.currentPage = 'dashboard';
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-screen').style.display = 'flex';
 }
@@ -319,19 +323,27 @@ async function importFile(file) {
   state.imports.unshift({ id: imp.id, pharmacyId: imp.pharmacy_id, month: imp.month, year: imp.year, filename: imp.filename, importedAt: imp.imported_at, filePath });
 
   // 4. Bulk insert sales rows in batches of 500
-  const salesRows = rows.map(normalizeRow).filter(r => r.artDesignation).map(r => ({
-    import_id: imp.id, pharmacy_id: pharma.id, month, year,
-    art_designation: r.artDesignation, art_code: r.artCode, art_id: r.artId,
-    qte: r.qte, pu_brut: r.puBrut, pu_net: r.puNet, mnt_net_ht: r.mntNetHt,
-  }));
+  const salesRows = rows.map(normalizeRow).filter(r => r.artDesignation).map(r => {
+    const famille = classifyFromWMLRow(r.subfamily, r.nature, r.afmCode, r.puNet);
+    return {
+      _famille: famille,
+      import_id: imp.id, pharmacy_id: pharma.id, month, year,
+      art_designation: r.artDesignation, art_code: r.artCode, art_id: r.artId,
+      art_famille: famille,
+      qte: r.qte, pu_brut: r.puBrut, pu_net: r.puNet, mnt_net_ht: r.mntNetHt,
+    };
+  });
   const BATCH = 500;
   for (let i = 0; i < salesRows.length; i += BATCH) {
-    const { error: sErr } = await sb.from('sales').insert(salesRows.slice(i, i + BATCH));
+    const { error: sErr } = await sb.from('sales').insert(
+      salesRows.slice(i, i + BATCH).map(({ _famille, ...s }) => s)
+    );
     if (sErr) return { ok: false, error: sErr.message || sErr.code || 'Erreur insertion ventes' };
     state.sales.push(...salesRows.slice(i, i + BATCH).map(s => ({
       id: crypto.randomUUID(), importId: s.import_id, pharmacyId: s.pharmacy_id,
       month: s.month, year: s.year,
       artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
+      artFamille: s._famille,
       qte: s.qte, puBrut: s.pu_brut, puNet: s.pu_net, mntNetHt: s.mnt_net_ht,
     })));
   }
@@ -1070,7 +1082,7 @@ function renderProspects(search = '') {
     if (activeNames.has(c.nom.toUpperCase().trim())) return false;
     if (search) {
       const q = search.toLowerCase();
-      return c.nom.toLowerCase().includes(q) || c.ville.toLowerCase().includes(q) || c.cp.includes(q);
+      return c.nom.toLowerCase().includes(q) || (c.ville || '').toLowerCase().includes(q) || (c.cp || '').includes(q);
     }
     return true;
   }).sort((a, b) => (b.potentielGx || 0) - (a.potentielGx || 0));
@@ -1417,6 +1429,11 @@ async function deleteImportFromHistory(importId, pharmacyId) {
 async function deletePharmacy(pharmacyId) {
   const pharma = state.pharmacies.find(p => p.id === pharmacyId);
   if (!confirm(`Supprimer "${pharma?.name}" et toutes ses données ?`)) return;
+  // Supprimer les fichiers Storage associés aux imports de cette pharmacie
+  const pharmaImports = state.imports.filter(i => i.pharmacyId === pharmacyId && i.filePath);
+  for (const imp of pharmaImports) {
+    await deleteImportFile(imp.filePath);
+  }
   const { error } = await sb.from('pharmacies').delete().eq('id', pharmacyId);
   if (error) { showToast('Erreur suppression', 'error'); return; }
   state.pharmacies = state.pharmacies.filter(p => p.id !== pharmacyId);
@@ -1885,6 +1902,25 @@ function renderAdmin() {
       </div>
 
       <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><div class="card-title">Créer une pharmacie manuellement</div></div>
+        <div class="card-body">
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <div style="flex:1;min-width:160px">
+              <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Nom de la pharmacie</label>
+              <input id="admin-pharma-name" type="text" placeholder="Ex : Pharmacie du Centre"
+                style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box">
+            </div>
+            <div style="width:90px">
+              <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Code (4 car.)</label>
+              <input id="admin-pharma-code" type="text" maxlength="5" placeholder="PDC"
+                style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box;text-transform:uppercase">
+            </div>
+            <button class="btn btn-primary" onclick="addPharmacy()" style="white-space:nowrap">+ Créer</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
         <div class="card-header"><div class="card-title">Données Supabase</div></div>
         <div class="card-body">
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
@@ -1925,6 +1961,25 @@ function renderAdmin() {
       </div>` : ''}
     </div>
   `;
+}
+
+async function addPharmacy() {
+  const nameEl = document.getElementById('admin-pharma-name');
+  const codeEl = document.getElementById('admin-pharma-code');
+  if (!nameEl || !codeEl) return;
+  const name = nameEl.value.trim();
+  if (!name) { showToast('Nom de pharmacie requis', 'error'); return; }
+  const existing = state.pharmacies.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (existing) { showToast('Cette pharmacie existe déjà', 'error'); return; }
+  const code  = codeEl.value.trim().toUpperCase().slice(0, 5) ||
+                name.split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 4);
+  const color = PHARMA_COLORS[state.pharmacies.length % PHARMA_COLORS.length];
+  const { data, error } = await sb.from('pharmacies').insert({ name, code, color }).select().single();
+  if (error) { showToast('Erreur création pharmacie : ' + error.message, 'error'); return; }
+  state.pharmacies.push({ id: data.id, name: data.name, code: data.code, color: data.color });
+  showToast(`Pharmacie "${data.name}" créée`, 'success');
+  updateNavBadge();
+  renderAdmin();
 }
 
 async function resetAllData() {

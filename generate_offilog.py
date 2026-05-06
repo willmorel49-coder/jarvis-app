@@ -3,30 +3,28 @@
 generate_offilog.py
 ===================
 Lit : OFFILOG/offilog_x_maxipara_3517.xlsx  (feuille "Croisement Complet")
-       benchmark_apothical_medicaments.xlsx    (si disponible → enrichit prix_apothical)
-       benchmark_drakkars.xlsx                 (si disponible → enrichit prix_drakkars)
+       benchmark_drakkars.xlsx               (si disponible → enrichit prix_drakkars)
+       benchmark_cap3000.xlsx                (si disponible → enrichit prix_cap3000)
 Écrit: crm/offilog-data.js
 
 Format JS :
   const OFFILOG = [{rang, produit, produit_norm, ean, marque, univers, saison,
                     prix_maxi, dans_offilog, marque_off, prix_offilog, ecart,
-                    marge_pct, potentiel, role, prix_apothical, prix_pharmacie,
-                    prix_drakkars}, ...]
+                    marge_pct, potentiel, role, prix_drakkars, prix_cap3000}, ...]
 
 Stratégie de matching (par ordre de priorité) :
-  1. Par EAN exact (si ean_str non vide) — sources : Apothical médicaments, Drakkars
+  1. Par EAN exact (si ean_str non vide) — sources : Drakkars, Cap3000
   2. Par nom normalisé (fallback) — toutes les sources
 """
 import re
 import unicodedata
-import os
 import json
 from datetime import datetime
 from pathlib import Path
 
 import openpyxl
 
-BASE      = Path('/Users/williammorel/JARVIS/APP')
+BASE      = Path(__file__).parent
 SRC       = BASE / 'OFFILOG' / 'offilog_x_maxipara_3517.xlsx'
 DRAKKARS  = BASE / 'benchmark_drakkars.xlsx'
 CAP3000   = BASE / 'benchmark_cap3000.xlsx'
@@ -72,6 +70,12 @@ def js_bool(v) -> str:
 
 
 # ── LOAD OFFILOG EXCEL ───────────────────────────────────────────────────────
+import sys
+if not SRC.exists():
+    print(f'ERREUR : fichier source introuvable → {SRC}')
+    print('Vérifiez que OFFILOG/offilog_x_maxipara_3517.xlsx est présent.')
+    sys.exit(1)
+
 print(f'Lecture : {SRC}')
 wb = openpyxl.load_workbook(SRC, read_only=True, data_only=True)
 ws = wb['Croisement Complet']

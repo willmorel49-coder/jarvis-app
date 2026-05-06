@@ -30,7 +30,7 @@
 | Auth + DB | Supabase (Auth · PostgreSQL · Storage bucket `excel-imports`) |
 | Hosting | GitHub Pages (branche `main`, auto-deploy) |
 | Scrapers | Python 3.9 · requests · BeautifulSoup · openpyxl |
-| Données statiques | `crm/offilog-data.js` · `crm/drakkars-data.js` · `crm/cap3000-data.js` |
+| Données statiques | `crm/clients-data.js` · `crm/benchmark-data.js` · `crm/offilog-data.js` · `crm/drakkars-data.js` · `crm/cap3000-data.js` |
 
 **Design tokens (dark mode) :**
 `--bg #070B14` · `--blue #0057FF` · `--mint #00E5A0` · `--amber #FFB020` · `--rose #FF4D6D` · Font : Space Grotesk + Inter
@@ -112,6 +112,9 @@ python3 generate_cap3000.py    # → crm/cap3000-data.js
 | GitHub Pages | Délai 1-2 min après push avant mise en ligne |
 | ip_app-8.html | Legacy — ne pas toucher |
 | Libs JS | Ne pas ajouter sans accord explicite |
+| DRAKKARS ean | Peut être `null` (EAN absent sur certains produits) — ne pas supposer que l'EAN est toujours présent |
+| OFFILOG champs attendus vs réels | app.js ne lit PAS `role`, `ecart`, `marge_pct`, `potentiel`, `prix_maxi`, `saison` — ces champs sont dans les données mais non consommés par l'interface actuelle |
+| BENCHMARK champs attendus vs réels | `offre_ip` et `remise_pct` SONT présents dans benchmark-data.js (V2) — pas d'incohérence |
 
 ---
 
@@ -120,9 +123,12 @@ python3 generate_cap3000.py    # → crm/cap3000-data.js
 | Indicateur | Valeur |
 |-----------|--------|
 | Auth Supabase | 1 compte actif : `demo@integralpharma.fr` / `demo2026` (rôle admin) |
-| Offilog | 3 520 produits · Drakkars + Cap3000 matchés par EAN |
-| Drakkars | 13 409 produits · 13 409 avec prix |
-| Cap3000 | 7 718 produits · 7 718 avec prix et EAN |
+| Clients | 517 pharmacies · champs : cip, nom, adresse, cp, ville, email, tel, potentielGx, ca2023, prochaineVisite, commentaire, pelgraz, pelmeg, ecodage, gros1, gros2 |
+| Benchmark | 10 500 produits IP · 1 090 matchés Ameli · champs : designation, cip13, categorie, ip_qty, ip_ca, ip_rank_qty, ip_rank_ca, prix_ht, prix_ip, remise_pct, offre_ip, is_froid, has_ameli, ameli_months[13], ameli_jan26, rot_pharma_jan26, ameli_total, yoy_jan, atc2 |
+| Offilog | 3 520 produits · 2 174 dans Offilog · 1 112 Drakkars matchés · 1 391 Cap3000 matchés — champs : rang, produit, produit_norm, ean, marque, univers, saison, prix_maxi, dans_offilog, marque_off, prix_offilog, ecart, marge_pct, potentiel, role, prix_drakkars, prix_cap3000 |
+| Drakkars | 13 409 produits · 13 409 avec prix — champs : nom, nom_norm, marque, ean (null possible), categorie, prix_affiche, prix, url |
+| Cap3000 | 7 718 produits · 7 718 avec prix et EAN — champs : nom, nom_norm, marque, ean, prix_affiche, prix, url |
 | Storage | Bucket `excel-imports` (uploads Excel archivés) |
+| Données générées | clients-data.js : 2026-05-03 · benchmark-data.js : 2026-05-04 · offilog-data.js, drakkars-data.js, cap3000-data.js : 2026-05-06 |
 
 **Backlog → voir `tasks/todo.md`**
