@@ -662,10 +662,10 @@ function renderDashboard() {
     <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:24px">
 
       <!-- Hero -->
-      <div class="kpi-card kpi-hero">
+      <div class="kpi-card kpi-hero" style="background:linear-gradient(135deg,#1E3A8A 0%,#2563EB 60%,#3B82F6 100%);box-shadow:0 8px 32px rgba(37,99,235,.30),0 2px 8px rgba(37,99,235,.15)">
         <div class="kpi-icon">💰</div>
-        <div class="kpi-value">${fmt(caCur)}</div>
-        <div class="kpi-label">CA Secteur — ${curLabel}</div>
+        <div class="kpi-value" style="font-size:38px;font-weight:900;letter-spacing:-2px;font-family:'Syne',sans-serif">${fmt(caCur)}</div>
+        <div class="kpi-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.7)">CA Secteur — ${curLabel}</div>
         <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
           ${deltaBadge(caCur, caPrev)}
           <span style="font-size:11px;color:rgba(255,255,255,0.55)">vs ${prevLabel}</span>
@@ -673,7 +673,7 @@ function renderDashboard() {
       </div>
 
       <!-- Pharmacies actives -->
-      <div class="kpi-card kc-g">
+      <div class="kpi-card kc-g" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
         <div class="kpi-icon">🏥</div>
         <div class="kpi-value" style="color:var(--mint)">${nPhCur}</div>
         <div class="kpi-label">Pharmacies actives</div>
@@ -681,7 +681,7 @@ function renderDashboard() {
       </div>
 
       <!-- Panier moyen -->
-      <div class="kpi-card kc-a">
+      <div class="kpi-card kc-a" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
         <div class="kpi-icon">🛒</div>
         <div class="kpi-value" style="color:var(--amber)">${fmt(panierCur)}</div>
         <div class="kpi-label">Panier moyen</div>
@@ -689,7 +689,7 @@ function renderDashboard() {
       </div>
 
       <!-- Meilleure progression -->
-      <div class="kpi-card kc-p">
+      <div class="kpi-card kc-p" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
         <div class="kpi-icon">🚀</div>
         <div class="kpi-value" style="color:var(--purple);font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
           ${bestPharmaObj ? bestPharmaObj.name.split(' ').slice(-1)[0] : '—'}
@@ -730,10 +730,10 @@ function renderDashboard() {
         <table style="width:100%;border-collapse:collapse">
           <thead>
             <tr style="border-bottom:2px solid var(--border2)">
-              <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--text3)">Pharmacie</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">${prevLabel}</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">${curLabel}</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Évolution</th>
+              <th style="padding:8px 16px;text-align:left;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Pharmacie</th>
+              <th style="padding:8px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">${prevLabel}</th>
+              <th style="padding:8px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">${curLabel}</th>
+              <th style="padding:8px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Évolution</th>
             </tr>
           </thead>
           <tbody>${compRowsHtml}</tbody>
@@ -752,7 +752,7 @@ function renderDashboard() {
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--border)">
         ${pipelineCounts.map((p, i) => `
           <div style="padding:18px 20px;${i < 3 ? 'border-right:1px solid var(--border);' : ''}text-align:center">
-            <div style="font-size:28px;font-weight:900;color:${p.color}">${p.count}</div>
+            <div style="font-size:36px;font-weight:900;letter-spacing:-1px;color:${p.color}">${p.count}</div>
             <div style="font-size:12px;font-weight:600;color:var(--text2);margin-top:4px">${p.label}</div>
             <div style="margin-top:8px;height:4px;border-radius:2px;background:var(--bg3)">
               <div style="height:100%;border-radius:2px;background:${p.color};width:${pipelineTotal > 0 ? Math.round(p.count/pipelineTotal*100) : 0}%"></div>
@@ -764,10 +764,12 @@ function renderDashboard() {
 
     <!-- Row 4 : Charts -->
     <div class="grid-2 fade-up">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">CA par pharmacie — ${curLabel}</div>
-          <div class="card-subtitle">${topPh5.length} pharmacies</div>
+      <div class="card" style="border-radius:var(--r)">
+        <div class="card-header" style="padding:20px 24px 16px">
+          <div>
+            <div class="card-title">CA par pharmacie — ${curLabel}</div>
+            <div class="card-subtitle">${topPh5.length} pharmacies</div>
+          </div>
         </div>
         <div class="card-body">
           ${topPh5.length
@@ -775,10 +777,12 @@ function renderDashboard() {
             : emptyState('📊','Aucune donnée','Importez des fichiers Excel')}
         </div>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Répartition par famille</div>
-          <div class="card-subtitle">${curLabel}</div>
+      <div class="card" style="border-radius:var(--r)">
+        <div class="card-header" style="padding:20px 24px 16px">
+          <div>
+            <div class="card-title">Répartition par famille</div>
+            <div class="card-subtitle">${curLabel}</div>
+          </div>
         </div>
         <div class="card-body">
           ${catRows.length
@@ -789,8 +793,8 @@ function renderDashboard() {
     </div>
 
     <!-- Row 4 : Évolution CA secteur -->
-    <div class="card fade-up" style="margin-top:24px">
-      <div class="card-header">
+    <div class="card fade-up" style="margin-top:24px;border-radius:var(--r)">
+      <div class="card-header" style="padding:20px 24px 16px">
         <div>
           <div class="card-title">Évolution CA secteur</div>
           <div class="card-subtitle">Historique complet importé</div>
@@ -969,7 +973,7 @@ function renderPharmacies() {
                        : status === 'down' ? '<span class="status-chip status-down">● Baisse</span>'
                        :                    '<span class="status-chip status-flat">● Nouveau</span>';
         return `
-          <div class="pharma-item" onclick="showPharmaDetail('${ph.id}')">
+          <div class="pharma-item" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
             <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
             <div class="pharma-dot" style="background:${ph.color}"></div>
             <div class="pharma-info">
@@ -1256,9 +1260,9 @@ function showPharmaDetail(pharmacyId) {
 
       <!-- Row 1 : Hero + KPIs -->
       <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:20px">
-        <div class="kpi-card" style="background:linear-gradient(135deg,#0A1628 0%,#1E293B 100%);border:1px solid rgba(0,87,255,.2)">
-          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">CA Intégral Pharma — ${curLabel}</div>
-          <div style="font-size:34px;font-weight:900;color:var(--mint)">${fmt(caCur)}</div>
+        <div class="kpi-card" style="background:linear-gradient(135deg,#1E3A8A 0%,#2563EB 60%,#3B82F6 100%);box-shadow:0 8px 32px rgba(37,99,235,.30),0 2px 8px rgba(37,99,235,.15);border:none">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.7);margin-bottom:6px">CA Intégral Pharma — ${curLabel}</div>
+          <div style="font-size:38px;font-weight:900;letter-spacing:-2px;font-family:'Syne',sans-serif;color:#fff">${fmt(caCur)}</div>
           <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
             ${deltaBadge(caCur, caPrev)}
             <span style="font-size:11px;color:var(--text3)">vs ${prevLabel}</span>
@@ -2092,17 +2096,19 @@ function renderBenchmark() {
 
   const chipsHtml = cats.map(c => {
     const active = benchCat === c.key;
-    return `<button onclick="benchCat='${c.key}';renderBenchmark()" style="
-      padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};
+    return `<button onclick="benchCat='${c.key}';renderBenchmark()"
+      onmouseover="if(!${active})this.style.background='var(--bg3)';this.style.borderColor='var(--blue)'"
+      onmouseout="if(!${active}){this.style.background='transparent';this.style.borderColor='var(--border2)'}"
+      style="padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};
       background:${active ? 'var(--blue-bg)' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
-      cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
+      cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:all .15s
     ">${c.label}</button>`;
   }).join('');
 
   function thB(col, label, align='right') {
     const active = benchSortCol === col;
-    const arrow = active ? (benchSortAsc ? ' ↑' : ' ↓') : '';
-    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--blue)':''}" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
+    const arrow = active ? `<span style="color:var(--blue);margin-left:3px">${benchSortAsc ? '↑' : '↓'}</span>` : '';
+    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--blue)':'var(--text2)'};font-family:Syne,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
   }
 
   const rowsHtml = data.slice(0, 200).map((d, i) => {
@@ -2115,7 +2121,7 @@ function renderBenchmark() {
     const prixDisplay = d.prix_ip > 0
       ? `<span style="font-size:11px;color:var(--blue)">${fmt(d.prix_ip)}</span>`
       : '<span style="color:var(--text4);font-size:11px">—</span>';
-    return `<tr>
+    return `<tr style="transition:background .12s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <td style="color:var(--text3);font-size:12px">${d.ip_rank_qty}</td>
       <td class="td-name" style="font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}${froidTag}</td>
       <td><span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc}">${d.categorie.toUpperCase()}</span></td>
@@ -2202,7 +2208,7 @@ function renderBenchmark() {
           <div class="kpi-value">${rotMoy.toFixed(1)}</div>
           <div class="kpi-label">Rotation moy./pharma/mois</div>
         </div>
-        <div class="kpi-card" style="background:var(--glass2)">
+        <div class="kpi-card" style="background:var(--glass2);box-shadow:0 2px 12px rgba(0,0,0,.06)">
           <div class="kpi-icon" style="color:var(--mint)">📈</div>
           <div class="kpi-value" style="color:var(--mint)">${fmtNum(croissantCount)}</div>
           <div class="kpi-label">Produits marché croissant</div>
@@ -2388,7 +2394,9 @@ function renderCatalogue() {
   const tabsHtml = tabDefs.map(t => {
     const active = catCatFilter === t.key;
     return `<button onclick="catCatFilter='${t.key}';catPageNum=1;renderCatalogue()"
-      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};background:${active ? 'var(--blue)' : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap">${t.label}</button>`;
+      onmouseover="if(!${active}){this.style.background='var(--blue-bg)';this.style.color='var(--blue)';this.style.borderColor='var(--blue)'}"
+      onmouseout="if(!${active}){this.style.background='transparent';this.style.color='var(--text2)';this.style.borderColor='var(--border2)'}"
+      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};background:${active ? 'var(--blue)' : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap;transition:all .15s;${active ? 'box-shadow:0 2px 8px rgba(37,99,235,.25)' : ''}">${t.label}</button>`;
   }).join('');
 
   // ── Products ─────────────────────────────────
@@ -2407,10 +2415,10 @@ function renderCatalogue() {
         : `<div style="font-size:12px;color:var(--text3)">N/D</div>`;
     const inSim = state.sim.items.some(it => it.designation === b.designation);
     const addBtn = `<button onclick="catAddToSim(${globalIdx})"
-      style="padding:5px 12px;border-radius:8px;border:1px solid ${inSim ? 'var(--mint)' : 'var(--blue)'};background:${inSim ? 'rgba(0,229,160,.1)' : 'rgba(0,87,255,.08)'};color:${inSim ? 'var(--mint)' : 'var(--blue)'};font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;min-width:72px">
+      style="padding:5px 12px;border-radius:8px;border:1px solid ${inSim ? 'var(--mint)' : 'var(--blue)'};background:${inSim ? 'rgba(5,150,105,.1)' : 'var(--blue)'};color:${inSim ? 'var(--mint)' : '#fff'};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:72px;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
       ${inSim ? '✓ Ajouté' : '+ Sim'}
     </button>`;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1)">
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);transition:background .15s;cursor:pointer" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${froid}${b.designation}</div>
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap">
@@ -2438,7 +2446,7 @@ function renderCatalogue() {
   // ── Simulateur shortcut ──────────────────────
   const simCount = state.sim.items.length;
   const simBar = simCount > 0
-    ? `<div class="card fade-up" style="margin-bottom:16px;background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2)">
+    ? `<div class="card fade-up" style="margin-bottom:16px;background:linear-gradient(90deg,var(--blue-bg),transparent);border:1px solid rgba(37,99,235,.2);border-left:3px solid var(--blue)">
         <div class="card-body" style="display:flex;align-items:center;gap:16px;padding:12px 16px">
           <span style="font-size:20px">🛒</span>
           <div style="flex:1;font-size:13px;font-weight:600">${simCount} produit${simCount > 1 ? 's' : ''} dans le simulateur</div>
@@ -2902,7 +2910,7 @@ function fmtP(n) {
 
 function roleBadge(role) {
   const m = roleMeta(role);
-  return `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${m.bg};color:${m.color};font-weight:600;white-space:nowrap">${m.icon} ${role}</span>`;
+  return `<span style="font-size:11px;padding:3px 10px;border-radius:20px;background:${m.bg};color:${m.color};font-weight:700;letter-spacing:.1px;white-space:nowrap">${m.icon} ${role}</span>`;
 }
 
 function offiGetList() {
@@ -2968,10 +2976,13 @@ function renderOffilog() {
   const roleTabsHtml = roleTabs.map(t => {
     const active = offiRole === t.key;
     return `<button onclick="offiSetRole('${t.key.replace(/'/g, "\\'")}')"
+      onmouseover="if(!${active}){this.style.borderColor='${OFFILOG_ORANGE}';this.style.color='${OFFILOG_ORANGE}'}"
+      onmouseout="if(!${active}){this.style.borderColor='var(--border2)';this.style.color='var(--text2)'}"
       style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;
              border:1px solid ${active ? OFFILOG_ORANGE : 'var(--border2)'};
              background:${active ? OFFILOG_ORANGE : 'transparent'};
-             color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap">
+             color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap;
+             transition:all .15s;${active ? 'box-shadow:0 2px 8px rgba(0,0,0,.1)' : ''}">
       ${t.label} <span style="opacity:.6;font-weight:400">${fmtNum(t.count)}</span>
     </button>`;
   }).join('');
@@ -2992,7 +3003,7 @@ function renderOffilog() {
   const rowsHtml = page.length ? page.map((p, i) => {
     const inOff   = p.dans_offilog;
     const marge   = p.marge_pct != null ? `<span style="font-weight:700;color:${p.marge_pct >= 40 ? 'var(--mint)' : p.marge_pct >= 20 ? 'var(--amber)' : 'var(--text2)'}">${p.marge_pct.toFixed(1)}%</span>` : '<span style="color:var(--text3)">—</span>';
-    const prixOff  = p.prix_offilog != null ? `<span style="color:${OFFILOG_ORANGE};font-weight:800;font-size:14px">${fmtP(p.prix_offilog)}</span>` : '<span style="color:var(--text3)">—</span>';
+    const prixOff  = p.prix_offilog != null ? `<span style="color:${OFFILOG_ORANGE};font-weight:800;font-size:14px;letter-spacing:-.3px">${fmtP(p.prix_offilog)}</span>` : '<span style="color:var(--text3)">—</span>';
     const prixMaxi = p.prix_maxi != null ? `<span style="color:var(--text2);font-size:12px">${fmtP(p.prix_maxi)}</span>` : '<span style="color:var(--text3)">—</span>';
     const prixDrakkars = (p.prix_drakkars != null && p.prix_drakkars > 0)
       ? `<span style="color:var(--text2);font-size:12px">${fmtP(p.prix_drakkars)}</span>`
@@ -3006,7 +3017,7 @@ function renderOffilog() {
     const offTag = inOff
       ? `<span title="Référencé Offilog" style="font-size:10px;padding:1px 5px;background:rgba(255,107,53,.12);color:${OFFILOG_ORANGE};border-radius:4px">IP</span>`
       : '';
-    return `<tr style="border-bottom:1px solid var(--border1);${i%2===1?'background:rgba(255,255,255,.015)':''}">
+    return `<tr style="border-bottom:1px solid rgba(0,0,0,.05);transition:background .12s;${i%2===1?'background:rgba(0,0,0,.018)':''}" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='${i%2===1?'rgba(0,0,0,.018)':''}'"  >
       <td style="padding:8px 10px;font-size:11px;color:var(--text3)">${p.rang||i+startIdx+1}</td>
       <td style="padding:8px 10px;min-width:0">
         <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${p.produit}</div>
@@ -3049,22 +3060,22 @@ function renderOffilog() {
   container.innerHTML = `
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">
-      <div class="card kpi-card fade-up">
+      <div class="card kpi-card fade-up" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
         <div class="kpi-label">Produits analysés</div>
         <div class="kpi-value">${fmtNum(nTotal)}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px">Maxipara × Offilog</div>
       </div>
-      <div class="card kpi-card fade-up">
+      <div class="card kpi-card fade-up" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
         <div class="kpi-label">Référencés Offilog</div>
         <div class="kpi-value" style="color:${OFFILOG_ORANGE}">${fmtNum(nOff)}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px">${tauxOff.toFixed(0)}% de couverture</div>
       </div>
-      <div class="card kpi-card fade-up">
+      <div class="card kpi-card fade-up" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
         <div class="kpi-label">Marge moy. Offilog</div>
         <div class="kpi-value" style="color:var(--mint)">${margeMoy.toFixed(1)}%</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px">sur produits matchés</div>
       </div>
-      <div class="card kpi-card fade-up">
+      <div class="card kpi-card fade-up" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
         <div class="kpi-label">⭐ Héros</div>
         <div class="kpi-value" style="color:#FFD700">${fmtNum(nHeros)}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px">${fmtNum(nOpps)} opportunités</div>
