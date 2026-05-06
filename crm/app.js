@@ -381,6 +381,15 @@ function isFroid(sale) {
 function isFroidBench(b) {
   return b.categorie === 'froid' || /FROID|RÉFRIGÉR|REFRIGER|THERMOSENS/i.test(b.designation || '');
 }
+function isGenerique(b) {
+  return /\bEG\b|\bZENTIVA\b|\bZYD\b|\bZYDUS\b|\bTEVA\b|\bBIOGARAN\b|\bMYLAN\b|\bSANDOZ\b|\bARROW\b|\bCRISTERS\b|\bVIATRIS\b|\bALMUS\b|\bACCORD\b|\bRATIOPHARM\b/.test(b.designation || '');
+}
+function isBiosim(b) {
+  return b.atc2 === 'L04';
+}
+function isNonRembourse(b) {
+  return !b.has_ameli;
+}
 
 function classifyProduct(sale) {
   // froid n'est plus une catégorie standalone → indicateur ❄️ seulement
@@ -2066,8 +2075,11 @@ function renderBenchmark() {
 
   // Filter
   let data = [...BENCHMARK];
-  if (benchCat === 'froid') data = data.filter(d => isFroidBench(d));
-  else if (benchCat !== 'tous') data = data.filter(d => d.categorie === benchCat);
+  if (benchCat === 'froid')          data = data.filter(d => isFroidBench(d));
+  else if (benchCat === 'generique') data = data.filter(d => isGenerique(d));
+  else if (benchCat === 'biosim')    data = data.filter(d => isBiosim(d));
+  else if (benchCat === 'nr')        data = data.filter(d => isNonRembourse(d));
+  else if (benchCat !== 'tous')      data = data.filter(d => d.categorie === benchCat);
   if (benchSearch) {
     const q = benchSearch.toLowerCase();
     data = data.filter(d => d.designation.toLowerCase().includes(q) || (d.cip13||'').includes(q));
@@ -2143,7 +2155,10 @@ function renderBenchmark() {
   const catKeys = ['pp','mi','ch','biosim','generique','nr'];
   const catCardsHtml = catKeys.map(key => {
     const cat = CATS[key] || CATS.mi;
-    const prods = BENCHMARK.filter(d => d.categorie === key);
+    const prods = key === 'biosim'    ? BENCHMARK.filter(d => isBiosim(d))
+      : key === 'generique' ? BENCHMARK.filter(d => isGenerique(d))
+      : key === 'nr'        ? BENCHMARK.filter(d => isNonRembourse(d))
+      : BENCHMARK.filter(d => d.categorie === key);
     const prodCount = prods.length;
     const caTotal = prods.reduce((s, d) => s + (d.ip_ca || 0), 0);
     const ameliProds = prods.filter(d => d.has_ameli && d.rot_pharma_jan26 != null);
@@ -2331,9 +2346,12 @@ function catGetList() {
   const q = catQuery.toLowerCase().trim();
   return BENCHMARK.filter(b => {
     if (q && !b.designation.toLowerCase().includes(q) && !(b.cip13 || '').includes(q)) return false;
-    if (catCatFilter === 'froid') return isFroidBench(b);
-    if (catCatFilter === 'ameli') return b.has_ameli;
-    if (catCatFilter !== 'tous') return b.categorie === catCatFilter;
+    if (catCatFilter === 'froid')     return isFroidBench(b);
+    if (catCatFilter === 'generique') return isGenerique(b);
+    if (catCatFilter === 'biosim')    return isBiosim(b);
+    if (catCatFilter === 'nr')        return isNonRembourse(b);
+    if (catCatFilter === 'ameli')     return b.has_ameli;
+    if (catCatFilter !== 'tous')      return b.categorie === catCatFilter;
     return true;
   });
 }
@@ -2404,10 +2422,13 @@ function renderCatalogue() {
     const globalIdx = startIdx + i;
     const cat    = CATS[b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi')] || CATS.mi;
     const froid  = isFroidBench(b) ? '❄️ ' : '';
-    const ameliTag = b.has_ameli ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.12);color:var(--mint);border-radius:4px">🏥 SS</span>` : '';
-    const rotTag   = b.rot_pharma_jan26 > 0 ? `<span style="font-size:10px;color:var(--text3)">↻ ${b.rot_pharma_jan26.toFixed(1)}/mois</span>` : '';
-    const cipTag   = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
-    const offreTag = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
+    const ameliTag   = b.has_ameli ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.12);color:var(--mint);border-radius:4px">🏥 SS</span>` : '';
+    const genTag     = isGenerique(b) ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.08);color:#059669;border-radius:4px;border:1px solid rgba(5,150,105,.2)">💊 GEN</span>` : '';
+    const biosimTag  = isBiosim(b) ? `<span style="font-size:10px;padding:1px 5px;background:rgba(155,92,255,.1);color:#9B5CFF;border-radius:4px;border:1px solid rgba(155,92,255,.2)">🧬 BIOSIM</span>` : '';
+    const nrTag      = (!b.has_ameli && !isGenerique(b) && !isBiosim(b)) ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,107,53,.08);color:#FF6B35;border-radius:4px;border:1px solid rgba(255,107,53,.2)">🔴 NR</span>` : '';
+    const rotTag     = b.rot_pharma_jan26 > 0 ? `<span style="font-size:10px;color:var(--text3)">↻ ${b.rot_pharma_jan26.toFixed(1)}/mois</span>` : '';
+    const cipTag     = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
+    const offreTag   = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
     const prix = b.prix_ip > 0
       ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--blue)">${fmtP(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
       : b.prix_ht > 0
@@ -2423,7 +2444,7 @@ function renderCatalogue() {
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${froid}${b.designation}</div>
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap">
           <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
-          ${ameliTag}${offreTag}${rotTag}${cipTag}
+          ${genTag}${biosimTag}${nrTag}${ameliTag}${offreTag}${rotTag}${cipTag}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">${prix}${addBtn}</div>
