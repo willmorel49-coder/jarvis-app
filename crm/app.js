@@ -2821,7 +2821,7 @@ function renderSimulator() {
 // ── OFFILOG ──────────────────────────────────
 const OFFILOG_ORANGE = '#FF6B35';
 const OFFILOG_PER    = 40;
-let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiPageNum = 1;
+let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiPageNum = 1;
 let offiCurrentData = [];
 
 const ROLE_META = {
@@ -2857,6 +2857,7 @@ function offiGetList() {
     if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
     if (offiRole !== 'tous' && offiRole !== 'offilog' && p.role !== offiRole) return false;
     if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
+    if (offiMarque !== 'tous' && p.marque !== offiMarque) return false;
     return true;
   });
 }
@@ -2864,6 +2865,7 @@ function offiGetList() {
 function offiGoPage(p) { offiPageNum = p; renderOffilog(); }
 function offiSetRole(r) { offiRole = r; offiPageNum = 1; renderOffilog(); }
 function offiSetUnivers(u) { offiUnivers = u; offiPageNum = 1; renderOffilog(); }
+function offiSetMarque(m) { offiMarque = m; offiPageNum = 1; renderOffilog(); }
 
 function renderOffilog() {
   const container = document.getElementById('offilog-content');
@@ -2893,6 +2895,7 @@ function renderOffilog() {
 
   // ── Univers disponibles ───────────────────────
   const universSet = [...new Set(OFFILOG.map(p => p.univers).filter(Boolean))].sort();
+  const marqueSet  = [...new Set(OFFILOG.map(p => p.marque).filter(Boolean))].sort();
 
   // ── Role tabs ─────────────────────────────────
   const roleTabs = [
@@ -2920,6 +2923,11 @@ function renderOffilog() {
     style="padding:5px 10px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text)">
     <option value="tous">Tous les univers</option>
     ${universSet.map(u => `<option value="${u.replace(/"/g,'&quot;')}" ${offiUnivers===u?'selected':''}>${u}</option>`).join('')}
+  </select>`;
+  const marqueHtml = `<select onchange="offiSetMarque(this.value)"
+    style="padding:5px 10px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text)">
+    <option value="tous">Toutes les marques</option>
+    ${marqueSet.map(m => `<option value="${m.replace(/"/g,'&quot;')}" ${offiMarque===m?'selected':''}>${m}</option>`).join('')}
   </select>`;
 
   // ── Rows ──────────────────────────────────────
@@ -3017,6 +3025,7 @@ function renderOffilog() {
             ${offiQuery ? `<button onclick="offiQuery='';offiPageNum=1;renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px">✕</button>` : ''}
           </div>
           ${universHtml}
+          ${marqueHtml}
           ${drakkBadge}
           ${cap3000Badge}
         </div>
