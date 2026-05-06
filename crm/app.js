@@ -3003,6 +3003,8 @@ function renderOffilog() {
   const nOpps     = OFFILOG.filter(p => p.role === 'Opportunité').length;
   const nDrakkars = OFFILOG.filter(p => p.prix_drakkars != null && p.prix_drakkars > 0).length;
   const nCap3000  = OFFILOG.filter(p => p.prix_cap3000  != null && p.prix_cap3000  > 0).length;
+  const nLive     = OFFILOG.filter(p => p.prix_live     != null && p.prix_live     > 0).length;
+  const nImg      = OFFILOG.filter(p => p.img && p.img.length > 0).length;
   const margeArr  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
   const margeMoy  = margeArr.length ? margeArr.reduce((a, b) => a + b, 0) / margeArr.length : 0;
   const tauxOff   = nTotal > 0 ? nOff / nTotal * 100 : 0;
@@ -3049,19 +3051,24 @@ function renderOffilog() {
     const um  = univMeta(p.univers || 'Non classé');
     const rm  = roleMeta(p.role);
     const hasIP   = p.prix_offilog != null && p.prix_offilog > 0;
-    const hasMaxi = p.prix_maxi != null && p.prix_maxi > 0;
+    const hasLive = p.prix_live    != null && p.prix_live    > 0;
+    const hasMaxi = p.prix_maxi    != null && p.prix_maxi    > 0;
     const hasDrak = p.prix_drakkars != null && p.prix_drakkars > 0;
     const hasCap  = p.prix_cap3000  != null && p.prix_cap3000  > 0;
+    const hasImg  = p.img && p.img.length > 0;
     const hasMarge = p.marge_pct != null;
     const margeColor = !hasMarge ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
     const margePct  = hasMarge ? Math.min(100, p.marge_pct) : 0;
 
+    // Prix affiché = live en priorité, sinon Excel
+    const prixDisplay = hasLive ? p.prix_live : (hasIP ? p.prix_offilog : null);
+
     // Price delta vs competitors
     let deltaHtml = '';
-    if (hasIP && (hasDrak || hasCap)) {
+    if (prixDisplay && (hasDrak || hasCap)) {
       const concPrix = [hasDrak ? p.prix_drakkars : null, hasCap ? p.prix_cap3000 : null].filter(Boolean);
       const minConc = Math.min(...concPrix);
-      const delta = minConc - p.prix_offilog;
+      const delta = minConc - prixDisplay;
       if (delta > 0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 6px;border-radius:8px">−${fmtP(delta)} vs conc.</span>`;
       else if (delta < -0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#EF4444;background:#fee2e2;padding:1px 6px;border-radius:8px">+${fmtP(Math.abs(delta))} vs conc.</span>`;
     }
@@ -3071,6 +3078,9 @@ function renderOffilog() {
       : '';
     const ipBadge = p.dans_offilog
       ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${OFFILOG_ORANGE}22;color:${OFFILOG_ORANGE};font-weight:700;border:1px solid ${OFFILOG_ORANGE}44">IP</span>`
+      : '';
+    const liveBadge = hasLive
+      ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#dcfce7;color:#15803d;font-weight:700">● Live</span>`
       : '';
 
     const competHtml = (hasDrak || hasCap) ? `
@@ -3082,13 +3092,22 @@ function renderOffilog() {
     return `<div style="background:var(--bg);border-radius:16px;border:1px solid var(--border1);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:default"
       onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,.12)';this.style.transform='translateY(-2px)'"
       onmouseout="this.style.boxShadow='';this.style.transform=''">
-      <!-- Stripe univers -->
-      <div style="height:4px;background:linear-gradient(90deg,${um.color},${um.color}88)"></div>
+      <!-- Image produit ou stripe univers -->
+      ${hasImg
+        ? `<div style="height:140px;background:${um.bg};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+            <img src="${p.img}" alt="${p.produit.replace(/"/g,'')}" loading="lazy"
+              style="max-height:130px;max-width:100%;object-fit:contain;padding:8px;transition:transform .3s"
+              onerror="this.closest('div').innerHTML='<div style=\\'height:140px;background:linear-gradient(135deg,${um.bg},${um.color}22);display:flex;align-items:center;justify-content:center;font-size:32px\\'>${um.icon}</div>'"
+              onmouseover="this.style.transform='scale(1.07)'" onmouseout="this.style.transform=''">
+            <div style="position:absolute;top:8px;left:8px;display:flex;gap:4px">${ipBadge}${liveBadge}${saisonBadge}</div>
+          </div>`
+        : `<div style="height:4px;background:linear-gradient(90deg,${um.color},${um.color}88)"></div>`
+      }
       <div style="padding:14px 14px 12px;flex:1;display:flex;flex-direction:column;gap:0">
-        <!-- Brand + badges -->
+        <!-- Brand + badges (seulement si pas d'image, sinon déjà dans l'image) -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:6px">
           <span style="font-size:10px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.marque || '—'}</span>
-          <div style="display:flex;gap:4px;flex-shrink:0">${ipBadge}${saisonBadge}</div>
+          ${!hasImg ? `<div style="display:flex;gap:4px;flex-shrink:0">${ipBadge}${liveBadge}${saisonBadge}</div>` : ''}
         </div>
         <!-- Nom produit -->
         <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;margin-bottom:8px">${p.produit}</div>
@@ -3100,8 +3119,8 @@ function renderOffilog() {
         <!-- Prix -->
         <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px">
           <div>
-            <div style="font-size:10px;color:var(--text3);font-weight:500;margin-bottom:1px">Prix IP</div>
-            <div style="font-size:20px;font-weight:900;color:${OFFILOG_ORANGE};letter-spacing:-.5px;line-height:1">${hasIP ? fmtP(p.prix_offilog) : '<span style="font-size:13px;color:var(--text3)">N/D</span>'}</div>
+            <div style="font-size:10px;color:var(--text3);font-weight:500;margin-bottom:1px">${hasLive ? 'Prix Offilog (live)' : 'Prix IP'}</div>
+            <div style="font-size:20px;font-weight:900;color:${OFFILOG_ORANGE};letter-spacing:-.5px;line-height:1">${prixDisplay ? fmtP(prixDisplay) : '<span style="font-size:13px;color:var(--text3)">N/D</span>'}</div>
           </div>
           ${hasMaxi ? `<div style="text-align:right">
             <div style="font-size:10px;color:var(--text3);margin-bottom:1px">Prix public</div>
@@ -3152,7 +3171,7 @@ function renderOffilog() {
       <div>
         <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">Intégral Pharma</div>
         <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.1">Catalogue<br><span style="color:${OFFILOG_ORANGE}">Parapharmacie</span></div>
-        <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:8px">${fmtNum(nTotal)} références · ${universSet.length} univers · ${fmtNum(nOff)} dans Offilog</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:8px">${fmtNum(nTotal)} références · ${universSet.length} univers · ${fmtNum(nImg)} avec photo</div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
         <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
@@ -3160,12 +3179,12 @@ function renderOffilog() {
           <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Offilog</div>
         </div>
         <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
-          <div style="font-size:22px;font-weight:900;color:#fff">${margeMoy.toFixed(0)}%</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Marge moy.</div>
+          <div style="font-size:22px;font-weight:900;color:#fff">${fmtNum(nLive)}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Prix live ●</div>
         </div>
         <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
-          <div style="font-size:22px;font-weight:900;color:#fff">${fmtNum(nHeros)}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Héros ⭐</div>
+          <div style="font-size:22px;font-weight:900;color:#fff">${margeMoy.toFixed(0)}%</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Marge moy.</div>
         </div>
       </div>
     </div>

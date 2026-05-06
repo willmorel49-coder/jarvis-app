@@ -28,6 +28,7 @@ BASE      = Path(__file__).parent
 SRC       = BASE / 'OFFILOG' / 'offilog_x_maxipara_3517.xlsx'
 DRAKKARS  = BASE / 'benchmark_drakkars.xlsx'
 CAP3000   = BASE / 'benchmark_cap3000.xlsx'
+LIVE_JSON = BASE / 'offilog_live.json'
 OUT       = BASE / 'crm' / 'offilog-data.js'
 
 
@@ -188,6 +189,31 @@ else:
     print(f'Fichier Cap3000 non trouvé ({CAP3000}) — prix_cap3000 = null')
 
 
+# ── LOAD OFFILOG LIVE (optionnel) ────────────────────────────────────────────
+# Données scrapées depuis offilog.fr : prix d'achat réel + images produit
+# Matching : EAN prioritaire (tous les produits live ont un EAN)
+live_by_ean:  dict = {}   # ean_str → {prix, img}
+live_by_norm: dict = {}   # nom_norm → {prix, img}
+if LIVE_JSON.exists():
+    print(f'Enrichissement Offilog Live depuis : {LIVE_JSON}')
+    with open(LIVE_JSON, encoding='utf-8') as _f:
+        _live = json.load(_f)
+    for _p in _live.get('products', []):
+        _ean = str(_p.get('ean', '') or '').strip()
+        _prix = _p.get('prix')
+        _img  = _p.get('img', '') or ''
+        _entry = {'prix': float(_prix) if _prix else None, 'img': _img}
+        if _ean and _ean.isdigit() and len(_ean) >= 8:
+            if _ean not in live_by_ean:
+                live_by_ean[_ean] = _entry
+        _nom_n = norm(str(_p.get('nom', '') or ''))
+        if _nom_n and _nom_n not in live_by_norm:
+            live_by_norm[_nom_n] = _entry
+    print(f'  → {len(live_by_ean)} produits Offilog Live par EAN | {len(live_by_norm)} par nom')
+else:
+    print(f'Fichier Offilog Live non trouvé ({LIVE_JSON}) — prix_live/img = null')
+
+
 # ── BUILD RECORDS ────────────────────────────────────────────────────────────
 records = []
 for row in rows[1:]:
@@ -227,6 +253,18 @@ for row in rows[1:]:
     if prix_cap3000 is None:
         prix_cap3000 = cap3000_by_norm.get(produit_n)
 
+    # ── Matching Offilog Live : EAN en priorité, nom en fallback
+    _live_entry = None
+    if ean_str:
+        _live_entry = live_by_ean.get(ean_str)
+    if _live_entry is None:
+        _live_entry = live_by_norm.get(produit_n)
+    prix_live = _live_entry['prix'] if _live_entry else None
+    img       = _live_entry['img']  if _live_entry else ''
+    # Si trouvé dans le live, on confirme dans_offilog=True
+    if _live_entry:
+        dans_off = True
+
     records.append({
         'rang':           rang,
         'produit':        produit,
@@ -245,13 +283,19 @@ for row in rows[1:]:
         'role':           role,
         'prix_drakkars':  prix_drakkars,
         'prix_cap3000':   prix_cap3000,
+        'prix_live':      prix_live,
+        'img':            img,
     })
 
 print(f'Records valides : {len(records)}')
 avec_drakkars = sum(1 for r in records if r['prix_drakkars'] is not None)
 avec_cap3000  = sum(1 for r in records if r['prix_cap3000']  is not None)
-print(f'Avec prix Drakkars : {avec_drakkars}')
-print(f'Avec prix Cap3000  : {avec_cap3000}')
+avec_live     = sum(1 for r in records if r['prix_live']     is not None)
+avec_img      = sum(1 for r in records if r['img'])
+print(f'Avec prix Drakkars  : {avec_drakkars}')
+print(f'Avec prix Cap3000   : {avec_cap3000}')
+print(f'Avec prix Live      : {avec_live}')
+print(f'Avec image          : {avec_img}')
 dans_off_n = sum(1 for r in records if r['dans_offilog'])
 print(f'Dans Offilog : {dans_off_n}')
 
@@ -259,9 +303,9 @@ print(f'Dans Offilog : {dans_off_n}')
 # ── WRITE JS ─────────────────────────────────────────────────────────────────
 today = datetime.now().strftime('%Y-%m-%d')
 lines = [
-    f'// Intégral Pharma — Offilog × Maxipara × Drakkars × Cap3000',
+    f'// Intégral Pharma — Offilog × Maxipara × Drakkars × Cap3000 × Live',
     f'// Généré le {today}',
-    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_drakkars} Drakkars | {avec_cap3000} Cap3000',
+    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_live} prix live | {avec_img} images | {avec_drakkars} Drakkars | {avec_cap3000} Cap3000',
     f'const OFFILOG = [',
 ]
 
@@ -275,7 +319,8 @@ for r in records:
         f'prix_offilog:{js_num(r["prix_offilog"])},ecart:{js_num(r["ecart"])},'
         f'marge_pct:{js_num(r["marge_pct"])},potentiel:{js_str(r["potentiel"])},'
         f'role:{js_str(r["role"])},prix_drakkars:{js_num(r["prix_drakkars"])},'
-        f'prix_cap3000:{js_num(r["prix_cap3000"])}}},'
+        f'prix_cap3000:{js_num(r["prix_cap3000"])},'
+        f'prix_live:{js_num(r["prix_live"])},img:{js_str(r["img"] or None)}}},'
     )
     lines.append(line)
 
