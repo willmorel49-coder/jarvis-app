@@ -382,9 +382,11 @@ function isFroidBench(b) {
   return b.categorie === 'froid' || /FROID|RÉFRIGÉR|REFRIGER|THERMOSENS/i.test(b.designation || '');
 }
 function isGenerique(b) {
+  if (b.artnature) return b.artnature === 'generique' || b.artnature === 'generique_partenaire';
   return /\bEG\b|\bZENTIVA\b|\bZYD\b|\bZYDUS\b|\bTEVA\b|\bBIOGARAN\b|\bMYLAN\b|\bSANDOZ\b|\bARROW\b|\bCRISTERS\b|\bVIATRIS\b|\bALMUS\b|\bACCORD\b|\bRATIOPHARM\b/.test(b.designation || '');
 }
 function isBiosim(b) {
+  if (b.artnature) return b.artnature === 'biosimilaire';
   return b.atc2 === 'L04';
 }
 function isNonRembourse(b) {
