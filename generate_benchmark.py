@@ -14,8 +14,10 @@ warnings.filterwarnings('ignore')
 import openpyxl
 from datetime import datetime
 import os
+import sys
+from pathlib import Path
 
-BASE_DIR = '/Users/williammorel/JARVIS/APP'
+BASE_DIR = str(Path(__file__).parent)
 OUT_FILE = os.path.join(BASE_DIR, 'crm', 'benchmark-data.js')
 N_PHARMACIES = 19000
 
@@ -73,6 +75,9 @@ print("\nLoading Ameli data...")
 ameli = {}  # cip13 -> {'nom': str, 'boites_jan26': int, 'boites_total': int}
 
 AMELI_FILE = os.path.join(BASE_DIR, 'ventes france stats ameli.xlsx')
+if not os.path.exists(AMELI_FILE):
+    print(f'ERREUR : fichier Ameli introuvable → {AMELI_FILE}')
+    sys.exit(1)
 wb_ameli = openpyxl.load_workbook(AMELI_FILE, read_only=True, data_only=True)
 
 for shname in wb_ameli.sheetnames:
@@ -158,6 +163,9 @@ print(f"Total CIP13 in Ameli: {len(ameli)}")
 print("\nLoading TOP rotations data...")
 
 TOP_FILE = os.path.join(BASE_DIR, 'TOP rotations France 2026.xlsx')
+if not os.path.exists(TOP_FILE):
+    print(f'ERREUR : fichier TOP rotations introuvable → {TOP_FILE}')
+    sys.exit(1)
 sheets_cats = {
     'TOP Froid': 'froid',
     'TOP Med010': 'nr',

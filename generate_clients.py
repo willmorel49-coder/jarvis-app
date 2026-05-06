@@ -2,12 +2,13 @@
 """
 Generate crm/clients-data.js from CRM INTEGRAL PHARMA.csv
 """
-import csv, re, os, json
+import csv, re, os, sys, json
 from datetime import datetime
+from pathlib import Path
 
-BASE = '/Users/williammorel/JARVIS/APP'
-SRC  = os.path.join(BASE, 'CRM INTEGRAL PHARMA.csv')
-OUT  = os.path.join(BASE, 'crm', 'clients-data.js')
+BASE = Path(__file__).parent
+SRC  = str(BASE / 'CRM INTEGRAL PHARMA.csv')
+OUT  = str(BASE / 'crm' / 'clients-data.js')
 
 def parse_euros(val):
     if not val: return 0
@@ -17,13 +18,23 @@ def parse_euros(val):
 def js_str(s):
     return str(s or '').strip().replace('\\','\\\\').replace('"','\\"')
 
+if not os.path.exists(SRC):
+    print(f'ERREUR : fichier source introuvable → {SRC}')
+    sys.exit(1)
+
 # Try multiple encodings
+raw = None
 for enc in ('utf-8-sig', 'latin-1', 'cp1252'):
     try:
         with open(SRC, encoding=enc, errors='replace') as f:
             raw = f.read()
         break
-    except: continue
+    except Exception:
+        continue
+
+if raw is None:
+    print(f'ERREUR : impossible de lire {SRC}')
+    sys.exit(1)
 
 lines_raw = raw.splitlines()
 print(f"Total lines: {len(lines_raw)}")
@@ -80,7 +91,7 @@ for row in reader:
         'cip': js_str(cip), 'nom': nom, 'adresse': adresse,
         'cp': cp, 'ville': ville, 'email': email, 'tel': tel,
         'potentielGx': potentiel_gx, 'ca2023': ca2023,
-        'prochaineVisite': prochain_rdv or 'null',
+        'prochaineVisite': prochain_rdv if prochain_rdv else None,
         'commentaire': commentaire,
         'pelgraz': pelgraz, 'pelmeg': pelmeg,
         'ecodage': ecodage, 'gros1': gros1, 'gros2': gros2,
@@ -99,7 +110,7 @@ out_lines = [
     'const CLIENTS = [',
 ]
 for c in clients:
-    pv = f'"{c["prochaineVisite"]}"' if c['prochaineVisite'] and c['prochaineVisite'] != 'null' else 'null'
+    pv = f'"{c["prochaineVisite"]}"' if c['prochaineVisite'] is not None else 'null'
     out_lines.append(
         f'  {{cip:"{c["cip"]}",nom:"{c["nom"]}",adresse:"{c["adresse"]}",'
         f'cp:"{c["cp"]}",ville:"{c["ville"]}",email:"{c["email"]}",tel:"{c["tel"]}",'
@@ -110,6 +121,7 @@ for c in clients:
     )
 out_lines.append('];')
 
+os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write('\n'.join(out_lines) + '\n')
 

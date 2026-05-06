@@ -9,10 +9,11 @@ Sources:
 Output: crm/benchmark-data.js
 """
 import warnings; warnings.filterwarnings('ignore')
-import openpyxl, re, os
+import openpyxl, re, os, sys
 from datetime import datetime
+from pathlib import Path
 
-BASE = '/Users/williammorel/JARVIS/APP'
+BASE = str(Path(__file__).parent)
 OUT  = os.path.join(BASE, 'crm', 'benchmark-data.js')
 N_PHARMA = 19000
 
@@ -32,7 +33,11 @@ print("Loading TOP rotations France 2026.xlsx...")
 sheet_cats = {'TOP Froid':'froid','TOP Med010':'nr','TOP inf 4,8':'pp','TOP median':'mi','TOP sup 480':'ch'}
 records = {}  # norm_designation → record dict
 
-wb = openpyxl.load_workbook(os.path.join(BASE,'TOP rotations France 2026.xlsx'), read_only=True, data_only=True)
+_top_file = os.path.join(BASE, 'TOP rotations France 2026.xlsx')
+if not os.path.exists(_top_file):
+    print(f'ERREUR : fichier introuvable → {_top_file}')
+    sys.exit(1)
+wb = openpyxl.load_workbook(_top_file, read_only=True, data_only=True)
 for sname, cat in sheet_cats.items():
     if sname not in wb.sheetnames:
         print(f"  WARNING: sheet {sname} not found"); continue
@@ -65,9 +70,14 @@ cat_map = {'Petit prix':'pp','Intermédiaire':'mi','NR':'nr','Non remboursé':'n
 sheet_cat_ip = {'TOP PETITS PRIX':'pp','TOP INTERMEDIAIRE':'mi','TOP NR':'nr','BIOSIMILAIRES':'biosim'}
 cip_to_prix = {}  # cip13 → prix info
 
-wb2 = openpyxl.load_workbook(os.path.join(BASE,'TOP IP DÉCROISSANT.xlsx'), read_only=True, data_only=True)
+_ip_file = os.path.join(BASE, 'TOP IP DÉCROISSANT.xlsx')
 matched_from_ip = 0
-for sname, cat_default in sheet_cat_ip.items():
+if not os.path.exists(_ip_file):
+    print(f'AVERTISSEMENT : fichier introuvable → {_ip_file} (les prix IP seront absents)')
+    wb2 = None
+else:
+    wb2 = openpyxl.load_workbook(_ip_file, read_only=True, data_only=True)
+for sname, cat_default in (sheet_cat_ip.items() if wb2 is not None else {}.items()):
     if sname not in wb2.sheetnames:
         print(f"  WARNING: sheet {sname} not found"); continue
     ws2 = wb2[sname]
@@ -99,7 +109,8 @@ for sname, cat_default in sheet_cat_ip.items():
             records[key]['is_froid'] = is_froid or records[key]['is_froid']
             matched_from_ip += 1
 
-wb2.close()
+if wb2 is not None:
+    wb2.close()
 print(f"  Produits matchés par CIP direct: {matched_from_ip}")
 
 # ── 3. WML bridge name→CIP13 + prix réels IP ─────────────────────────────────
