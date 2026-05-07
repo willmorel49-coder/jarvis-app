@@ -6209,7 +6209,7 @@ function grpRenderModal(grpId) {
               const ca = ci?.ca2023 ? `CA ${fmt(ci.ca2023)}` : '';
               return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .12s"
                 onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"
-                onclick="grpAddMember('${grpId}',${ph.id});grpRenderModal('${grpId}')">
+                onclick="grpAddMember('${grpId}','${ph.id}');grpRenderModal('${grpId}')">
                 <div style="width:36px;height:36px;border-radius:10px;background:${ph.color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">
                   ${ph.name.charAt(0).toUpperCase()}
                 </div>
@@ -6498,7 +6498,7 @@ function renderGrpPharmacies(grp) {
               <td style="padding:12px;text-align:right;font-size:13px;font-weight:600;color:var(--text)">${ca}</td>
               <td style="padding:12px;text-align:right;font-size:13px;color:${ci?.potentielGx > 0 ? 'var(--blue)' : 'var(--text3)'}">${gx}</td>
               <td style="padding:12px;text-align:center">
-                <button onclick="grpConfirmRemove('${grp.id}',${ph.id})"
+                <button onclick="grpConfirmRemove('${grp.id}','${ph.id}')"
                   style="padding:4px 10px;border-radius:6px;border:1px solid var(--rose);background:transparent;color:var(--rose);font-size:11px;font-weight:600;cursor:pointer">
                   Retirer
                 </button>
