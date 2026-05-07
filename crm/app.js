@@ -3017,6 +3017,73 @@ function simRefreshSuggestions() {
   if (clearBtn) clearBtn.style.display = simSearchQuery ? '' : 'none';
 }
 
+function simReconduire() {
+  if (!state.sim.pharmacyId) return;
+  const phSales = getSales({ pharmacyId: state.sim.pharmacyId });
+  if (!phSales.length) { showToast('Aucune donnée pour cette pharmacie', 'error'); return; }
+  const { year, month } = getCurrentPeriod(phSales);
+  const lastSales = year ? getSales({ pharmacyId: state.sim.pharmacyId, year, month }) : phSales;
+
+  const aggMap = {};
+  for (const s of lastSales) {
+    const k = (s.artDesignation || '').trim().toUpperCase();
+    if (!k) continue;
+    if (!aggMap[k]) aggMap[k] = { designation: s.artDesignation, artCode: s.artCode, puNet: s.puNet, qte: 0, cat: classifyProduct(s) };
+    aggMap[k].qte += s.qte;
+    if (s.puNet > 0) aggMap[k].puNet = s.puNet;
+  }
+
+  const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const items = Object.values(aggMap)
+    .filter(r => r.qte > 0 && r.puNet > 0)
+    .map(r => {
+      const bench = typeof BENCHMARK !== 'undefined' ? BENCHMARK.find(b => nn(b.designation) === nn(r.designation)) : null;
+      return {
+        designation: r.designation,
+        puNet: r.puNet,
+        qty: Math.max(1, Math.round(r.qte)),
+        cat: r.cat,
+        froid: bench?.is_froid || false,
+        hasAmeli: bench?.has_ameli || false,
+        rot: bench?.rot_pharma_jan26 || null,
+      };
+    })
+    .sort((a, b) => (b.qty * b.puNet) - (a.qty * a.puNet));
+
+  state.sim.items = items;
+  showToast(`${items.length} produits chargés depuis ${monthName(month)} ${year}`, 'success');
+  renderSimulator();
+}
+
+function simExportCSV() {
+  if (!state.sim.items.length) { showToast('Panier vide', 'error'); return; }
+  const { caTotal } = simCalc();
+  const pharmaName = state.sim.pharmacyId
+    ? (state.pharmacies.find(p => p.id === state.sim.pharmacyId)?.name || 'Pharmacie')
+    : 'Simulation';
+  const header = ['Désignation','Famille','Qté','PU Net HT','Total HT'];
+  const rows = state.sim.items.map(it => {
+    const cat = CATS[it.cat] || CATS.mi;
+    return [
+      `"${(it.designation||'').replace(/"/g,'""')}"`,
+      cat.label,
+      it.qty,
+      it.puNet.toFixed(4),
+      (it.qty * it.puNet).toFixed(2),
+    ].join(';');
+  });
+  rows.push(`"TOTAL";;;;;${caTotal.toFixed(2)}`);
+  const csv = [header.join(';'), ...rows].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${state.sim.name.replace(/\s+/g,'_')}_${pharmaName.replace(/\s+/g,'_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${state.sim.items.length} lignes`, 'success');
+}
+
 function renderSimulator() {
   const container = document.getElementById('simul-content');
   if (!container) return;
@@ -3133,8 +3200,10 @@ function renderSimulator() {
           oninput="state.sim.name=this.value"
           placeholder="Nom de la simulation"
           style="flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:13px">
+        ${state.sim.pharmacyId ? `<button class="btn btn-ghost" onclick="simReconduire()" title="Recharger les produits de la dernière commande de cette pharmacie" style="color:var(--mint);border-color:rgba(0,229,160,.3)">♻️ Reconduire</button>` : ''}
         <button class="btn btn-primary" onclick="saveSimulation()">💾 Sauvegarder</button>
         <button class="btn btn-ghost" onclick="printSimulation()">🖨 Imprimer</button>
+        <button class="btn btn-ghost" onclick="simExportCSV()" title="Exporter le panier en CSV">⬇ CSV</button>
         <button class="btn btn-ghost" onclick="state.sim.items=[];renderSimulator()" style="color:var(--rose)">🗑 Vider</button>
       </div>
     </div>
