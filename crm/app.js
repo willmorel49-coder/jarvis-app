@@ -3288,6 +3288,115 @@ const GROUPEMENTS = [
 
 let grpActif = 'opso';
 let grpOnglet = 'tableau-de-bord';
+let grpSearchModal = '';
+
+// Membres du groupement : { grpId: [pharmacyId, ...] } — persisté localStorage
+function grpLoadMembers() {
+  try { return JSON.parse(localStorage.getItem('grp_members') || '{}'); } catch { return {}; }
+}
+function grpSaveMembers(members) {
+  localStorage.setItem('grp_members', JSON.stringify(members));
+}
+function grpGetMembers(grpId) {
+  return grpLoadMembers()[grpId] || [];
+}
+function grpAddMember(grpId, pharmacyId) {
+  const all = grpLoadMembers();
+  if (!all[grpId]) all[grpId] = [];
+  if (!all[grpId].includes(pharmacyId)) all[grpId].push(pharmacyId);
+  grpSaveMembers(all);
+}
+function grpRemoveMember(grpId, pharmacyId) {
+  const all = grpLoadMembers();
+  if (all[grpId]) all[grpId] = all[grpId].filter(id => id !== pharmacyId);
+  grpSaveMembers(all);
+  renderGroupements();
+}
+function grpToggleModal(grpId) {
+  const el = document.getElementById('grp-modal');
+  if (el) { el.remove(); return; }
+  grpSearchModal = '';
+  grpRenderModal(grpId);
+}
+function grpRenderModal(grpId) {
+  const grp = GROUPEMENTS.find(g => g.id === grpId);
+  const members = grpGetMembers(grpId);
+  const q = grpSearchModal.toLowerCase();
+
+  const candidates = state.pharmacies.filter(ph => {
+    if (members.includes(ph.id)) return false;
+    if (!q) return true;
+    const clientInfo = typeof CLIENTS !== 'undefined'
+      ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
+      : null;
+    const ville = clientInfo?.ville || '';
+    return ph.name.toLowerCase().includes(q) || ville.toLowerCase().includes(q);
+  });
+
+  const existing = document.getElementById('grp-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'grp-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:20px;width:100%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden">
+      <!-- Header modal -->
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:var(--text)">Ajouter une pharmacie</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${grp.nom} — ${members.length} membre(s) actuel(s)</div>
+        </div>
+        <button onclick="document.getElementById('grp-modal').remove()"
+          style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2)">✕</button>
+      </div>
+      <!-- Search -->
+      <div style="padding:12px 24px;border-bottom:1px solid var(--border1);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:8px;border:1.5px solid var(--border2);border-radius:10px;padding:8px 12px;background:var(--bg2)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="Rechercher par nom ou ville…" value="${grpSearchModal}"
+            oninput="grpSearchModal=this.value;grpRenderModal('${grpId}')"
+            style="border:none;background:transparent;outline:none;flex:1;font-size:13px;color:var(--text)"
+            autofocus>
+        </div>
+      </div>
+      <!-- Liste -->
+      <div style="overflow-y:auto;flex:1;padding:8px 12px">
+        ${candidates.length === 0
+          ? `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">${q ? 'Aucun résultat' : 'Toutes les pharmacies sont déjà membres'}</div>`
+          : candidates.map(ph => {
+              const ci = typeof CLIENTS !== 'undefined'
+                ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
+                : null;
+              const ville = ci?.ville || '';
+              const ca = ci?.ca2023 ? `CA ${fmt(ci.ca2023)}` : '';
+              return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .12s"
+                onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"
+                onclick="grpAddMember('${grpId}',${ph.id});grpRenderModal('${grpId}')">
+                <div style="width:36px;height:36px;border-radius:10px;background:${ph.color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">
+                  ${ph.name.charAt(0).toUpperCase()}
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph.name}</div>
+                  <div style="font-size:11px;color:var(--text3)">${[ville, ca].filter(Boolean).join(' · ')}</div>
+                </div>
+                <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3);font-size:12px">+</div>
+              </div>`;
+            }).join('')
+        }
+      </div>
+      <!-- Footer -->
+      <div style="padding:14px 24px;border-top:1px solid var(--border1);display:flex;justify-content:flex-end;flex-shrink:0">
+        <button onclick="document.getElementById('grp-modal').remove();renderGroupements()"
+          style="padding:9px 22px;border-radius:10px;background:${grp.couleur};color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">
+          Terminé
+        </button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) { modal.remove(); renderGroupements(); } });
+  document.body.appendChild(modal);
+  modal.querySelector('input')?.focus();
+}
 
 function renderGroupements() {
   const container = document.getElementById('groupements-content');
@@ -3357,9 +3466,18 @@ function renderGroupementBody(grp, onglet) {
 }
 
 function renderGrpDashboard(grp) {
+  const memberIds = grpGetMembers(grp.id);
+  const members   = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
+  const totalCA   = members.reduce((s, ph) => {
+    const ci = typeof CLIENTS !== 'undefined'
+      ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
+      : null;
+    return s + (ci?.ca2023 || 0);
+  }, 0);
+
   const kpis = [
-    { label: 'Pharmacies',    value: '—',  icon: '🏪', sub: 'membres actifs' },
-    { label: 'CA Groupement', value: '—',  icon: '💰', sub: 'cumul période' },
+    { label: 'Pharmacies',    value: members.length || '—', icon: '🏪', sub: 'membres actifs' },
+    { label: 'CA cumulé',     value: totalCA > 0 ? fmt(totalCA) : '—', icon: '💰', sub: 'CA 2023 membres' },
     { label: 'Croissance',    value: '—',  icon: '📈', sub: 'vs période préc.' },
     { label: 'Taux adhésion', value: '—',  icon: '✅', sub: 'sur les offres IP' },
   ];
@@ -3389,16 +3507,71 @@ function renderGrpDashboard(grp) {
 }
 
 function renderGrpPharmacies(grp) {
+  const memberIds = grpGetMembers(grp.id);
+  const members = memberIds
+    .map(id => state.pharmacies.find(p => p.id === id))
+    .filter(Boolean);
+
+  const rowsHtml = members.length === 0
+    ? `<div style="padding:48px;text-align:center;color:var(--text3)">
+        <div style="font-size:40px;margin-bottom:12px">🏪</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune pharmacie</div>
+        <div style="font-size:12px">Cliquez sur <strong>+ Ajouter</strong> pour associer des pharmacies à ce groupement.</div>
+       </div>`
+    : `<table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border2)">
+            <th style="padding:10px 16px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Pharmacie</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Ville</th>
+            <th style="padding:10px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">CA 2023</th>
+            <th style="padding:10px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Pot. Gx</th>
+            <th style="padding:10px 12px;text-align:center;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${members.map(ph => {
+            const ci = typeof CLIENTS !== 'undefined'
+              ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
+              : null;
+            const ville = ci?.ville || '—';
+            const ca = ci?.ca2023 ? fmt(ci.ca2023) : '—';
+            const gx = ci?.potentielGx > 0 ? fmt(ci.potentielGx) : '—';
+            return `<tr style="border-bottom:1px solid var(--border1);transition:background .12s"
+              onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+              <td style="padding:12px 16px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:32px;height:32px;border-radius:8px;background:${ph.color};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0">
+                    ${ph.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;color:var(--text)">${ph.name}</div>
+                    ${ci?.tel ? `<div style="font-size:11px;color:var(--text3)">${ci.tel}</div>` : ''}
+                  </div>
+                </div>
+              </td>
+              <td style="padding:12px;font-size:13px;color:var(--text2)">${ville}</td>
+              <td style="padding:12px;text-align:right;font-size:13px;font-weight:600;color:var(--text)">${ca}</td>
+              <td style="padding:12px;text-align:right;font-size:13px;color:${ci?.potentielGx > 0 ? 'var(--blue)' : 'var(--text3)'}">${gx}</td>
+              <td style="padding:12px;text-align:center">
+                <button onclick="if(confirm('Retirer ${ph.name.replace(/'/g,'\\'')} du groupement ?')){grpRemoveMember('${grp.id}',${ph.id})}"
+                  style="padding:4px 10px;border-radius:6px;border:1px solid var(--rose);background:transparent;color:var(--rose);font-size:11px;font-weight:600;cursor:pointer">
+                  Retirer
+                </button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+
   return `<div class="card">
     <div class="card-header">
-      <div class="card-title">Pharmacies — ${grp.nom}</div>
-      <button class="btn btn-primary" style="font-size:12px" onclick="alert('Fonctionnalité à venir')">+ Ajouter</button>
+      <div>
+        <div class="card-title">Pharmacies membres — ${grp.nom}</div>
+        <div class="card-subtitle">${members.length} pharmacie${members.length > 1 ? 's' : ''} dans ce groupement</div>
+      </div>
+      <button class="btn btn-primary" style="font-size:12px" onclick="grpToggleModal('${grp.id}')">+ Ajouter</button>
     </div>
-    <div style="padding:48px;text-align:center;color:var(--text3)">
-      <div style="font-size:40px;margin-bottom:12px">🏪</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune pharmacie enregistrée</div>
-      <div style="font-size:12px">Les pharmacies membres du groupement apparaîtront ici.</div>
-    </div>
+    <div style="overflow-x:auto">${rowsHtml}</div>
   </div>`;
 }
 
