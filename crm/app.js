@@ -7329,16 +7329,50 @@ function gsSearch(q) {
   res.innerHTML = html;
 }
 
+function showLoginForm() {
+  document.getElementById('login-form').style.display  = '';
+  document.getElementById('reset-form').style.display  = 'none';
+  document.getElementById('newpass-form').style.display = 'none';
+}
+function showResetForm() {
+  document.getElementById('login-form').style.display  = 'none';
+  document.getElementById('reset-form').style.display  = '';
+  document.getElementById('newpass-form').style.display = 'none';
+  document.getElementById('reset-email').focus();
+}
+function showNewPassForm() {
+  document.getElementById('login-form').style.display  = 'none';
+  document.getElementById('reset-form').style.display  = 'none';
+  document.getElementById('newpass-form').style.display = '';
+  document.getElementById('newpass-input').focus();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const loginScreen = document.getElementById('login-screen');
   const appEl       = document.getElementById('app');
 
-  // Réagit aux changements de session : déconnexion depuis un autre onglet, token révoqué, etc.
-  sb.auth.onAuthStateChange((event) => {
+  // Détection lien recovery Supabase (#type=recovery dans le hash)
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  if (hashParams.get('type') === 'recovery') {
+    const accessToken  = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+    if (accessToken) {
+      await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' });
+    }
+    showNewPassForm();
+    // Nettoyer le hash sans rechargement
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+
+  sb.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT') {
       state.user = null;
       appEl.classList.remove('visible');
       loginScreen.style.display = 'flex';
+      showLoginForm();
+    } else if (event === 'PASSWORD_RECOVERY') {
+      loginScreen.style.display = 'flex';
+      showNewPassForm();
     }
   });
 
@@ -7376,6 +7410,62 @@ document.addEventListener('DOMContentLoaded', async () => {
       err.classList.add('show');
       btn.disabled    = false;
       btn.textContent = 'Se connecter →';
+    }
+  });
+
+  document.getElementById('reset-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = document.getElementById('reset-email').value.trim();
+    const msg   = document.getElementById('reset-msg');
+    const btn   = e.target.querySelector('button[type=submit]');
+
+    btn.disabled    = true;
+    btn.textContent = 'Envoi…';
+
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://willmorel49-coder.github.io/jarvis-app/crm/'
+    });
+
+    if (error) {
+      msg.textContent  = 'Erreur : ' + error.message;
+      msg.style.color  = 'var(--rose)';
+    } else {
+      msg.textContent  = 'Email envoyé ! Vérifiez votre boîte mail.';
+      msg.style.color  = 'var(--mint)';
+    }
+    msg.style.display = 'block';
+    btn.disabled      = false;
+    btn.textContent   = 'Envoyer le lien →';
+  });
+
+  document.getElementById('newpass-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const newPassword = document.getElementById('newpass-input').value;
+    const errEl       = document.getElementById('newpass-error');
+    const btn         = e.target.querySelector('button[type=submit]');
+
+    if (newPassword.length < 6) {
+      errEl.textContent  = 'Le mot de passe doit faire au moins 6 caractères.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Enregistrement…';
+
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+
+    if (error) {
+      errEl.textContent   = 'Erreur : ' + error.message;
+      errEl.style.display = 'block';
+      btn.disabled        = false;
+      btn.textContent     = 'Enregistrer →';
+    } else {
+      await sb.auth.signOut();
+      showLoginForm();
+      document.getElementById('login-error').textContent  = 'Mot de passe mis à jour — connectez-vous.';
+      document.getElementById('login-error').style.color  = 'var(--mint)';
+      document.getElementById('login-error').classList.add('show');
     }
   });
 });
