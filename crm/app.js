@@ -629,6 +629,35 @@ function renderDashboard() {
     .filter(c => c.nb > 0)
     .sort((a,b) => b.ca - a.ca);
 
+  // ── Top switch opportunités secteur ───────────
+  const topSwitchSecteur = (() => {
+    if (typeof BENCHMARK === 'undefined' || !salesCur.length) return [];
+    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const prodMap = {};
+    for (const s of salesCur) {
+      const k = nn(s.artDesignation);
+      if (!k) continue;
+      if (!prodMap[k]) prodMap[k] = { designation: s.artDesignation, ca: 0, qte: 0, puNet: s.puNet };
+      prodMap[k].ca  += s.mntNetHt;
+      prodMap[k].qte += s.qte;
+      if (s.puNet > 0) prodMap[k].puNet = s.puNet;
+    }
+    const opps = [];
+    for (const [k, prod] of Object.entries(prodMap)) {
+      const match = BENCHMARK.find(b => nn(b.designation) === k);
+      if (match && match.prix_ip > 0 && prod.puNet > 0 && match.prix_ip < prod.puNet * 0.99) {
+        opps.push({
+          designation: prod.designation,
+          gainTotal: (prod.puNet - match.prix_ip) * prod.qte,
+          gainUnit: prod.puNet - match.prix_ip,
+          cat: match.categorie,
+          qte: prod.qte,
+        });
+      }
+    }
+    return opps.sort((a, b) => b.gainTotal - a.gainTotal).slice(0, 5);
+  })();
+
   // ── HTML ─────────────────────────────────────
   const curLabel  = `${monthName(curM)} ${curY}`;
   const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
@@ -751,6 +780,35 @@ function renderDashboard() {
           <tbody>${compRowsHtml}</tbody>
         </table>
       </div>
+    </div>` : ''}
+
+    <!-- Row 2c : Top switch opportunités secteur -->
+    ${topSwitchSecteur.length ? `
+    <div class="card fade-up" style="margin-bottom:24px;border-left:3px solid var(--mint)">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🔄 Top opportunités switch — secteur</div>
+          <div class="card-subtitle">Produits commandés hors IP ce mois — gain immédiat si basculés vers Intégral Pharma</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:22px;font-weight:900;color:var(--mint)">+${fmt(topSwitchSecteur.reduce((s,o)=>s+o.gainTotal,0))}</div>
+          <div style="font-size:11px;color:var(--text3)">gain total secteur/mois</div>
+        </div>
+      </div>
+      ${topSwitchSecteur.map(o => {
+        const cat = CATS[o.cat] || CATS.mi;
+        return `<div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--border1)">
+          <span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.designation}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${o.qte.toFixed(0)} unités · ${fmtP(o.gainUnit)}/u d'écart</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:18px;font-weight:800;color:var(--mint)">+${fmt(o.gainTotal)}</div>
+            <div style="font-size:10px;color:var(--text3)">gain/mois</div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>` : ''}
 
     <!-- Row 3 : Pipeline conversion -->
