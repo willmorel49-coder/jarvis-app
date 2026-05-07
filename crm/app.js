@@ -2582,6 +2582,18 @@ function renderProduits() {
       .slice(0, 8);
   })();
 
+  // ── Momentum CA par produit (M vs M-1) ───────
+  const prevMomMap = {};
+  const curMomMap  = {};
+  for (const s of acPrev) {
+    const k = (s.artDesignation || '').trim().toUpperCase();
+    if (k) prevMomMap[k] = (prevMomMap[k] || 0) + s.mntNetHt;
+  }
+  for (const s of acCur) {
+    const k = (s.artDesignation || '').trim().toUpperCase();
+    if (k) curMomMap[k]  = (curMomMap[k]  || 0) + s.mntNetHt;
+  }
+
   // ── Table complète produits ────────────────────
   const prodTableMap = {};
   for (const s of sales) {
@@ -2596,7 +2608,13 @@ function renderProduits() {
     prodTableMap[k].marge  += (s.mntNetHt - s.puNet * s.qte);
     prodTableMap[k].pharmas.add(s.pharmacyId);
   }
-  let prodTableAll = Object.values(prodTableMap).map(p => ({ ...p, pharmaCount: p.pharmas.size }));
+  let prodTableAll = Object.values(prodTableMap).map(p => {
+    const nk = p.label.trim().toUpperCase();
+    const curCa  = curMomMap[nk]  || 0;
+    const prevCa = prevMomMap[nk] || 0;
+    const momPct = (prevCa > 0 && curCa > 0) ? (curCa - prevCa) / prevCa * 100 : null;
+    return { ...p, pharmaCount: p.pharmas.size, momPct };
+  });
   if (prodFamille !== 'tous') {
     if (prodFamille === 'froid') prodTableAll = prodTableAll.filter(p => p.froid);
     else prodTableAll = prodTableAll.filter(p => p.cat === prodFamille);
@@ -2760,6 +2778,7 @@ function renderProduits() {
               <th style="text-align:right;cursor:pointer" onclick="prodTableSort='qte';prodTableSortAsc=prodTableSort==='qte'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Qtés${sortIcon('qte')}</th>
               <th style="text-align:right;cursor:pointer" onclick="prodTableSort='pharmaCount';prodTableSortAsc=prodTableSort==='pharmaCount'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Pharmas${sortIcon('pharmaCount')}</th>
               <th style="text-align:right">PU moyen</th>
+              <th style="text-align:right;cursor:pointer;white-space:nowrap" onclick="prodTableSort='momPct';prodTableSortAsc=prodTableSort==='momPct'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Tendance${sortIcon('momPct')}</th>
             </tr>
           </thead>
           <tbody>
@@ -2768,6 +2787,9 @@ function renderProduits() {
               const rank = (prodTablePage - 1) * PROD_TABLE_PER_PAGE + i + 1;
               const puMoyen = p.qte > 0 ? p.ca / p.qte : 0;
               const escapedLabel = (p.label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+              const momBadge = p.momPct !== null
+                ? `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:${p.momPct >= 0 ? 'rgba(0,229,160,.12)' : 'rgba(255,77,109,.12)'};color:${p.momPct >= 0 ? 'var(--mint)' : 'var(--rose)'}">${p.momPct >= 0 ? '▲' : '▼'} ${Math.abs(p.momPct).toFixed(1)}%</span>`
+                : `<span style="color:var(--text3);font-size:10px">—</span>`;
               return `<tr onclick="showProductBreakdown('${escapedLabel}')" style="cursor:pointer" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
                 <td style="font-size:12px">
                   <span style="color:var(--text3);font-size:11px;margin-right:6px">${rank}</span>
@@ -2778,6 +2800,7 @@ function renderProduits() {
                 <td class="td-num" style="text-align:right">${fmtNum(Math.round(p.qte))}</td>
                 <td class="td-num" style="text-align:right">${p.pharmaCount}</td>
                 <td class="td-num" style="text-align:right;color:var(--text3)">${fmtP(puMoyen)}</td>
+                <td style="text-align:right;white-space:nowrap">${momBadge}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -2894,11 +2917,23 @@ function prodExportCSV() {
     data = data.filter(p => p.label.toLowerCase().includes(q2));
   }
   data.sort((a, b) => b.ca - a.ca);
+  // Compute momentum for CSV
+  const allSalesRawCsv = getSales();
+  const { year: csvY, month: csvM } = getCurrentPeriod(allSalesRawCsv);
+  const { year: csvPY, month: csvPM } = getPrevPeriod(csvY, csvM);
+  const csvCur  = csvY  ? getSales({ year: csvY,  month: csvM  }) : [];
+  const csvPrev = csvPY ? getSales({ year: csvPY, month: csvPM }) : [];
+  const csvCurMap = {}, csvPrevMap = {};
+  for (const s of csvCur)  { const k = (s.artDesignation||'').trim().toUpperCase(); if (k) csvCurMap[k]  = (csvCurMap[k]  || 0) + s.mntNetHt; }
+  for (const s of csvPrev) { const k = (s.artDesignation||'').trim().toUpperCase(); if (k) csvPrevMap[k] = (csvPrevMap[k] || 0) + s.mntNetHt; }
   const pharmaLabel = prodPharmaFilter === 'tous' ? 'Toutes' : (state.pharmacies.find(p => p.id === prodPharmaFilter)?.name || '');
-  const header = ['Désignation','Famille','CA HT','Qtés','Nb Pharmacies','PU Moyen HT'];
+  const header = ['Désignation','Famille','CA HT','Qtés','Nb Pharmacies','PU Moyen HT','Tendance M/M-1'];
   const rows = data.map(p => {
     const cat = CATS[p.cat] || CATS.mi;
     const pu = p.qte > 0 ? p.ca / p.qte : 0;
+    const nk = p.label.trim().toUpperCase();
+    const cCa = csvCurMap[nk] || 0, pCa = csvPrevMap[nk] || 0;
+    const mom = (cCa > 0 && pCa > 0) ? ((cCa - pCa) / pCa * 100).toFixed(1) + '%' : '';
     return [
       `"${p.label.replace(/"/g,'""')}"`,
       cat.label,
@@ -2906,6 +2941,7 @@ function prodExportCSV() {
       String(Math.round(p.qte)),
       p.pharmas.size,
       String(pu.toFixed(4)).replace('.',','),
+      mom,
     ];
   });
   const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
