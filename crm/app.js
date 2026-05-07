@@ -6122,6 +6122,9 @@ const GROUPEMENTS = [
 
 let grpActif = 'opso';
 let grpOnglet = 'tableau-de-bord';
+let grpProspectSearch = '';
+let grpProspectAlliance = '';
+let grpProspectExpanded = null;
 let grpSearchModal = '';
 
 // Membres du groupement : { grpId: [pharmacyId, ...] } — persisté localStorage
@@ -6244,6 +6247,7 @@ function renderGroupements() {
     { key: 'commandes',       label: 'Commandes',        icon: '📦' },
     { key: 'objectifs',       label: 'Objectifs',        icon: '🎯' },
     { key: 'documents',       label: 'Documents',        icon: '📄' },
+    { key: 'prospects',       label: 'Prospects',        icon: '🎯' },
   ];
 
   const tabsHtml = grpTabs.map(t => {
@@ -6296,6 +6300,7 @@ function renderGroupementBody(grp, onglet) {
   if (onglet === 'commandes')       return renderGrpCommandes(grp);
   if (onglet === 'objectifs')       return renderGrpObjectifs(grp);
   if (onglet === 'documents')       return renderGrpDocuments(grp);
+  if (onglet === 'prospects')       return renderGrpProspects();
   return '';
 }
 
@@ -6652,6 +6657,201 @@ function renderGrpDocuments(grp) {
   </div>`;
 }
 
+
+// ── Onglet Prospects groupements ──────────────────────────────
+
+function renderGrpProspects() {
+  const data = typeof GRP_PROSPECTS !== 'undefined' ? GRP_PROSPECTS : [];
+  const opso = data.find(g => g.statut === 'accord');
+  const prospects = data.filter(g => g.statut !== 'accord');
+
+  // Filtre + search
+  const q = grpProspectSearch.toLowerCase();
+  const filtered = prospects.filter(g => {
+    const matchQ = !q || g.nom.toLowerCase().includes(q)
+      || (g.dirs || []).some(d => d.nom.toLowerCase().includes(q))
+      || (g.alliance || '').toLowerCase().includes(q);
+    const matchA = !grpProspectAlliance || g.alliance === grpProspectAlliance;
+    return matchQ && matchA;
+  });
+
+  // Alliances uniques pour filtres
+  const alliances = [...new Set(prospects.map(g => g.alliance).filter(Boolean))].sort();
+
+  // Helper: chip alliance
+  function allianceBadge(alliance) {
+    if (!alliance) return '';
+    const colors = {
+      'EVECIAL GROUP': '#F59E0B', 'APSAGIR': '#10B981', 'HYGIE31': '#8B5CF6',
+      'ASTERA': '#EC4899', 'OCP Phoenix': '#EF4444', 'WELCOOP': '#0EA5E9',
+      'CPCSC': '#64748B', 'Federgy': '#1D4ED8',
+    };
+    const c = colors[alliance] || '#6366F1';
+    return `<span style="display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:${c}22;color:${c};white-space:nowrap">${alliance}</span>`;
+  }
+
+  // Card OPSO Santé focus
+  const opsoCard = opso ? (() => {
+    const dirs = (opso.dirs || []).slice(0, 4);
+    const dirsHtml = dirs.map(d => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">👤</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff">${d.nom}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.55)">${d.fn}</div>
+        </div>
+      </div>`).join('');
+
+    const contactHtml = [
+      opso.telDir   ? `<a href="tel:${opso.telDir}"   style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.8);font-size:12px;text-decoration:none">📞 ${opso.telDir}</a>` : '',
+      opso.emailDir ? `<a href="mailto:${opso.emailDir}" style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.8);font-size:12px;text-decoration:none">✉ ${opso.emailDir}</a>` : '',
+      opso.site     ? `<a href="${opso.site}" target="_blank" style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.8);font-size:12px;text-decoration:none">🌐 Site web</a>` : '',
+    ].filter(Boolean).join('');
+
+    return `
+    <div style="background:linear-gradient(135deg,#1e1b4b 0%,#2d2a7a 40%,#4338CA 100%);border-radius:20px;padding:24px 28px;margin-bottom:24px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:-40px;right:-30px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.04)"></div>
+      <div style="position:absolute;bottom:-20px;left:40%;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.03)"></div>
+      <div style="position:relative">
+        <!-- Badge accord signé -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.25);border:1px solid rgba(16,185,129,.4);font-size:11px;font-weight:700;color:#34D399;letter-spacing:.5px">
+            ✓ ACCORD SIGNÉ — PREMIER CLIENT
+          </span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          <!-- Gauche: identité -->
+          <div>
+            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">Groupement</div>
+            <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;margin-bottom:4px">Bretagne Pharma</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:16px">Groupe OPSO Santé · Normandie Pharma</div>
+            ${opso.nbAdherents ? `<div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:6px">🏪 ${opso.nbAdherents} pharmacies adhérentes</div>` : ''}
+            ${opso.alliance ? `<div style="margin-bottom:12px">${allianceBadge(opso.alliance)}</div>` : ''}
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${contactHtml}</div>
+          </div>
+          <!-- Droite: décideurs -->
+          <div>
+            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">Interlocuteurs clés</div>
+            ${dirsHtml || '<div style="color:rgba(255,255,255,.4);font-size:13px">Aucun décideur identifié</div>'}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  })() : '';
+
+  // Filtres alliance
+  const filtersHtml = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+      <button onclick="grpProspectAlliance='';renderGroupements()"
+        style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid ${!grpProspectAlliance ? 'var(--blue)' : 'var(--border2)'};background:${!grpProspectAlliance ? 'rgba(0,87,255,.1)' : 'var(--bg2)'};color:${!grpProspectAlliance ? 'var(--blue)' : 'var(--text3)'};cursor:pointer">
+        Tous (${prospects.length})
+      </button>
+      ${alliances.map(a => {
+        const colors = {'EVECIAL GROUP':'#F59E0B','APSAGIR':'#10B981','HYGIE31':'#8B5CF6','ASTERA':'#EC4899','OCP Phoenix':'#EF4444','WELCOOP':'#0EA5E9','CPCSC':'#64748B','Federgy':'#1D4ED8'};
+        const c = colors[a] || '#6366F1';
+        const cnt = prospects.filter(g => g.alliance === a).length;
+        const active = grpProspectAlliance === a;
+        return `<button onclick="grpProspectAlliance='${a}';renderGroupements()"
+          style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid ${active ? c : 'var(--border2)'};background:${active ? c + '18' : 'var(--bg2)'};color:${active ? c : 'var(--text3)'};cursor:pointer">
+          ${a} (${cnt})
+        </button>`;
+      }).join('')}
+    </div>`;
+
+  // Table prospects
+  const rowsHtml = filtered.map(g => {
+    const dir1 = (g.dirs || [])[0];
+    const dir2 = (g.dirs || [])[1];
+    const expanded = grpProspectExpanded === g.nom;
+    const extraDirs = (g.dirs || []).slice(2);
+
+    const expandedHtml = expanded ? `
+      <tr>
+        <td colspan="8" style="padding:0">
+          <div style="background:var(--bg);border-top:1px solid var(--border2);padding:16px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+            ${extraDirs.length ? `<div>
+              <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Autres décideurs</div>
+              ${extraDirs.map(d => `<div style="font-size:12px;color:var(--text);margin-bottom:4px"><span style="font-weight:600">${d.nom}</span> <span style="color:var(--text3);font-size:11px">${d.fn}</span></div>`).join('')}
+            </div>` : ''}
+            ${g.email ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Email groupement</div><a href="mailto:${g.email}" style="font-size:12px;color:var(--blue)">${g.email}</a></div>` : ''}
+            ${g.cotisation ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Cotisation</div><div style="font-size:12px;color:var(--text)">${g.cotisation}</div></div>` : ''}
+            ${g.siren ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">SIREN</div><div style="font-size:12px;color:var(--text)">${g.siren}</div></div>` : ''}
+            ${g.site ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Site web</div><a href="${g.site}" target="_blank" style="font-size:12px;color:var(--blue)">${g.site}</a></div>` : ''}
+            ${g.adresse ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Adresse</div><div style="font-size:12px;color:var(--text)">${g.adresse}</div></div>` : ''}
+          </div>
+        </td>
+      </tr>` : '';
+
+    return `
+      <tr style="border-bottom:1px solid var(--border);cursor:pointer;background:${expanded ? 'var(--bg)' : ''}"
+          onclick="grpProspectExpanded=grpProspectExpanded==='${g.nom.replace(/'/g,"\\'")}' ? null : '${g.nom.replace(/'/g,"\\'")}';renderGroupements()">
+        <td style="padding:10px 14px">
+          <div style="font-size:13px;font-weight:700;color:var(--text)">${g.nom}</div>
+          ${g.alliance ? `<div style="margin-top:3px">${allianceBadge(g.alliance)}</div>` : ''}
+        </td>
+        <td style="padding:10px 12px">
+          ${dir1 ? `<div style="font-size:12px;font-weight:600;color:var(--text)">${dir1.nom}</div><div style="font-size:11px;color:var(--text3)">${dir1.fn}</div>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
+        </td>
+        <td style="padding:10px 12px">
+          ${dir2 ? `<div style="font-size:12px;font-weight:600;color:var(--text)">${dir2.nom}</div><div style="font-size:11px;color:var(--text3)">${dir2.fn}</div>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
+        </td>
+        <td style="padding:10px 12px;white-space:nowrap">
+          ${g.telDir ? `<a href="tel:${g.telDir}" onclick="event.stopPropagation()" style="font-size:12px;color:var(--mint);text-decoration:none;font-weight:600">${g.telDir}</a>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
+        </td>
+        <td style="padding:10px 12px">
+          ${g.emailDir ? `<a href="mailto:${g.emailDir}" onclick="event.stopPropagation()" style="font-size:12px;color:var(--blue);text-decoration:none">${g.emailDir}</a>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
+        </td>
+        <td style="padding:10px 12px;text-align:center">
+          ${g.nbAdherents != null ? `<span style="font-size:13px;font-weight:700;color:var(--text)">${g.nbAdherents}</span>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
+        </td>
+        <td style="padding:10px 12px;text-align:center">
+          ${g.nbLabos != null ? `<span style="font-size:12px;color:var(--text2)">${g.nbLabos}</span>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
+        </td>
+        <td style="padding:10px 12px;text-align:center">
+          <span style="font-size:10px;color:var(--text3)">${expanded ? '▲' : '▼'}</span>
+        </td>
+      </tr>
+      ${expandedHtml}`;
+  }).join('');
+
+  return `
+  ${opsoCard}
+
+  <div class="card">
+    <div class="card-header" style="flex-wrap:wrap;gap:12px">
+      <div>
+        <div class="card-title">Prospects groupements</div>
+        <div class="card-subtitle">${filtered.length} groupement${filtered.length > 1 ? 's' : ''} · ${filtered.filter(g => g.dirs && g.dirs.length > 0).length} avec décideurs identifiés</div>
+      </div>
+      <input type="text" placeholder="Rechercher groupement, décideur…" value="${grpProspectSearch}"
+        oninput="grpProspectSearch=this.value;renderGroupements()"
+        style="padding:7px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);font-size:13px;color:var(--text);min-width:220px;outline:none"
+        onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border2)'">
+    </div>
+
+    ${filtersHtml}
+
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border2)">
+            <th style="padding:8px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3)">Groupement</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3)">Décideur 1</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3)">Décideur 2</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--mint)">Tél direct</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--blue)">Email direct</th>
+            <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text3)">Adhérents</th>
+            <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text3)">Labos</th>
+            <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text3)"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml || '<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--text3)">Aucun résultat</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
 
 function proposerCommande(pharmacyId) {
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
