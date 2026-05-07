@@ -3484,6 +3484,40 @@ function renderObjectifs() {
 function renderAdmin() {
   const hasLocalData = !!(localStorage.getItem('ip_crm_pharmacies'));
 
+  // Top produits sur les 6 derniers mois
+  const allSalesRaw = getSales();
+  const adminTopProds = (() => {
+    if (!allSalesRaw.length) return null;
+    const { year: curY, month: curM } = getCurrentPeriod(allSalesRaw);
+    const periods = [];
+    for (let i = 5; i >= 0; i--) {
+      let m = curM - i, y = curY;
+      if (m <= 0) { m += 12; y--; }
+      periods.push({ year: y, month: m });
+    }
+    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const totalMap = {};
+    for (const { year, month } of periods) {
+      const ps = getSales({ year, month });
+      for (const s of ps) {
+        const k = nn(s.artDesignation);
+        if (!k) continue;
+        if (!totalMap[k]) totalMap[k] = { label: s.artDesignation, total: 0 };
+        totalMap[k].total += s.mntNetHt;
+      }
+    }
+    const top8 = Object.entries(totalMap).sort((a, b) => b[1].total - a[1].total).slice(0, 8).map(([k, v]) => v.label);
+    const datasets = top8.map(label => {
+      const data = periods.map(({ year, month }) => {
+        const ps = getSales({ year, month });
+        return +ps.filter(s => nn(s.artDesignation) === nn(label)).reduce((a, s) => a + s.mntNetHt, 0).toFixed(2);
+      });
+      return { label: label.slice(0, 30), data };
+    });
+    const labels = periods.map(p => monthName(p.month).slice(0,3) + ' ' + String(p.year).slice(2));
+    return { labels, datasets };
+  })();
+
   // Build import history sorted by date desc
   const sortedImports = [...state.imports].sort((a,b) => new Date(b.importedAt) - new Date(a.importedAt));
   const importHistoryHtml = sortedImports.length ? `
@@ -3575,6 +3609,18 @@ function renderAdmin() {
         </div>
       </div>
 
+      <!-- Top produits 6 mois -->
+      ${adminTopProds ? `
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Top produits — 6 derniers mois</div>
+            <div class="card-subtitle">CA des 8 meilleures références sur 6 mois glissants</div>
+          </div>
+        </div>
+        <div class="card-body"><div style="height:240px"><canvas id="admin-top-prods-chart"></canvas></div></div>
+      </div>` : ''}
+
       <!-- Pharmacies gestion -->
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
@@ -3648,6 +3694,42 @@ function renderAdmin() {
       </div>` : ''}
     </div>
   `;
+
+  // Draw top products line chart
+  if (adminTopProds) {
+    setTimeout(() => {
+      const cvs = document.getElementById('admin-top-prods-chart');
+      if (!cvs) return;
+      const palette = ['#0057FF','#00E5A0','#FFB020','#FF4D6D','#9B5CFF','#06B6D4','#84CC16','#EC4899'];
+      new Chart(cvs, {
+        type: 'line',
+        data: {
+          labels: adminTopProds.labels,
+          datasets: adminTopProds.datasets.map((ds, i) => ({
+            label: ds.label,
+            data: ds.data,
+            borderColor: palette[i % palette.length],
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 3,
+            tension: 0.3,
+          })),
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#888', font: { size: 10 }, boxWidth: 12, padding: 8 } },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } },
+          },
+          scales: {
+            x: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+            y: { ticks: { color: '#888', font: { size: 11 }, callback: v => fmt(v) }, grid: { color: 'rgba(255,255,255,.05)' } },
+          },
+        },
+      });
+    }, 50);
+  }
 }
 
 function showEditPharmacyModal(pharmacyId) {
