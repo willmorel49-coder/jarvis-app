@@ -6096,6 +6096,7 @@ function emptyState(icon, title, sub) {
 async function initApp() {
   if (!state.user) return;
   await load();
+  await grpSyncFromStorage();
 
   document.getElementById('sidebar-user-name').textContent = state.user.name;
   document.getElementById('sidebar-user-role').textContent = state.user.role;
@@ -6127,12 +6128,17 @@ let grpProspectAlliance = '';
 let grpProspectExpanded = null;
 let grpSearchModal = '';
 
-// Membres du groupement : { grpId: [pharmacyId, ...] } — persisté localStorage
+// Membres du groupement : { grpId: [pharmacyId, ...] } — localStorage + sync Supabase Storage
+const GRP_CONFIG_PATH = 'grp_config.json';
+
 function grpLoadMembers() {
   try { return JSON.parse(localStorage.getItem('grp_members') || '{}'); } catch { return {}; }
 }
 function grpSaveMembers(members) {
   localStorage.setItem('grp_members', JSON.stringify(members));
+  // Sync silencieux vers Supabase Storage
+  const blob = new Blob([JSON.stringify(members)], { type: 'application/json' });
+  sb.storage.from(STORAGE_BUCKET).upload(GRP_CONFIG_PATH, blob, { upsert: true }).catch(() => {});
 }
 function grpGetMembers(grpId) {
   return grpLoadMembers()[grpId] || [];
@@ -6148,6 +6154,16 @@ function grpRemoveMember(grpId, pharmacyId) {
   if (all[grpId]) all[grpId] = all[grpId].filter(id => id !== pharmacyId);
   grpSaveMembers(all);
   renderGroupements();
+}
+async function grpSyncFromStorage() {
+  try {
+    const { data, error } = await sb.storage.from(STORAGE_BUCKET).download(GRP_CONFIG_PATH);
+    if (error || !data) return;
+    const text = await data.text();
+    const remote = JSON.parse(text);
+    // Fusionner : remote a priorité sur localStorage
+    localStorage.setItem('grp_members', JSON.stringify(remote));
+  } catch {}
 }
 function grpToggleModal(grpId) {
   const el = document.getElementById('grp-modal');
