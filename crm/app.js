@@ -1213,54 +1213,114 @@ function renderPharmacies() {
   `;
 }
 
+let prospectFilter = 'tous'; // 'tous' | 'pelgraz' | 'ca' | 'gx'
+
 function renderProspects(search = '') {
   if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
   const activeNames = new Set(state.pharmacies.map(p => p.name.toUpperCase().trim()));
 
+  // Prospect scoring: potentielGx * 0.5 + ca2023 * 0.3 + pelgraz * 500
+  const score = c => (c.potentielGx || 0) * 0.5 + (c.ca2023 || 0) * 0.3 + parseInt(c.pelgraz || 0, 10) * 500;
+
   let prospects = CLIENTS.filter(c => {
     if (!c.nom) return false;
     if (activeNames.has(c.nom.toUpperCase().trim())) return false;
+    if (prospectFilter === 'pelgraz') return c.pelgraz && c.pelgraz !== '0' && parseInt(c.pelgraz, 10) > 0;
+    if (prospectFilter === 'ca')      return c.ca2023 > 5000;
+    if (prospectFilter === 'gx')      return c.potentielGx > 1000;
     if (search) {
       const q = search.toLowerCase();
       return c.nom.toLowerCase().includes(q) || (c.ville || '').toLowerCase().includes(q) || (c.cp || '').includes(q);
     }
     return true;
-  }).sort((a, b) => (b.potentielGx || 0) - (a.potentielGx || 0));
+  });
+
+  if (search && prospectFilter === 'tous') {
+    const q = search.toLowerCase();
+    prospects = prospects.filter(c => c.nom.toLowerCase().includes(q) || (c.ville || '').toLowerCase().includes(q) || (c.cp || '').includes(q));
+  }
+
+  prospects = prospects.sort((a, b) => score(b) - score(a));
 
   if (!prospects.length) return '';
 
-  const rows = prospects.slice(0, 20).map(c => {
-    const gxBadge = c.potentielGx > 0
-      ? `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:var(--blue-bg);color:var(--blue);font-weight:600">Gx ${fmt(c.potentielGx)}</span>`
+  const maxScore = Math.max(...prospects.slice(0, 50).map(score), 1);
+
+  const filterTabs = [
+    { key: 'tous',    label: `Tous (${CLIENTS.filter(c => c.nom && !activeNames.has(c.nom.toUpperCase().trim())).length})`, color: '#64748B' },
+    { key: 'pelgraz', label: 'Pelgraz', color: '#9B5CFF' },
+    { key: 'gx',      label: 'Gx potentiel', color: '#0057FF' },
+    { key: 'ca',      label: 'CA > 5k', color: '#00E5A0' },
+  ].map(t => {
+    const active = prospectFilter === t.key;
+    return `<button onclick="prospectFilter='${t.key}';renderPharmacies()"
+      style="padding:4px 12px;border-radius:16px;font-size:11px;font-weight:600;border:1.5px solid ${active ? t.color : 'var(--border2)'};background:${active ? t.color + '18' : 'transparent'};color:${active ? t.color : 'var(--text2)'};cursor:pointer;transition:all .15s;white-space:nowrap">
+      ${t.label}
+    </button>`;
+  }).join('');
+
+  const rows = prospects.slice(0, 30).map(c => {
+    const sc = score(c);
+    const scPct = maxScore > 0 ? Math.round(sc / maxScore * 100) : 0;
+    const scColor = scPct >= 70 ? '#10B981' : scPct >= 40 ? '#F59E0B' : '#64748B';
+
+    const hasPelgraz  = c.pelgraz && c.pelgraz !== '0' && parseInt(c.pelgraz, 10) > 0;
+    const hasPelmeg   = c.pelmeg  && c.pelmeg  !== '0' && parseInt(c.pelmeg, 10) > 0;
+    const hasEcodage  = c.ecodage && c.ecodage !== '0' && parseInt(c.ecodage, 10) > 0;
+
+    const badges = [
+      c.ca2023 > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--mint);font-weight:600">CA ${fmt(c.ca2023)}</span>` : '',
+      c.potentielGx > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,87,255,.1);color:var(--blue);font-weight:600">Gx ${fmt(c.potentielGx)}</span>` : '',
+      hasPelgraz ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(155,92,255,.1);color:#9B5CFF;font-weight:600">Pelgraz ×${c.pelgraz}</span>` : '',
+      hasPelmeg  ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(155,92,255,.08);color:#9B5CFF;font-weight:600">Pelmeg ×${c.pelmeg}</span>` : '',
+      hasEcodage ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(255,176,32,.1);color:var(--amber);font-weight:600">Ecodage ×${c.ecodage}</span>` : '',
+    ].filter(Boolean).join('');
+
+    const emailBtn = c.email ? `<a href="mailto:${c.email}" title="${c.email}"
+      style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:11px;color:var(--text2);text-decoration:none;cursor:pointer">
+      ✉ Mail
+    </a>` : '';
+    const telBtn = c.tel ? `<a href="tel:${c.tel}" title="${c.tel}"
+      style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:11px;color:var(--text2);text-decoration:none;cursor:pointer">
+      📞 Tel
+    </a>` : '';
+    const commentHtml = c.commentaire && c.commentaire.length > 2
+      ? `<div style="font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px" title="${c.commentaire}">${c.commentaire}</div>`
       : '';
-    const pelgrazBadge = c.pelgraz && c.pelgraz !== '0'
-      ? `<span title="Cibles Pelgraz" style="font-size:10px;padding:2px 7px;border-radius:12px;background:var(--purple-bg);color:var(--purple)">Pelgraz ×${c.pelgraz}</span>`
-      : '';
-    const ca23 = c.ca2023 > 0 ? `<span style="font-size:11px;color:var(--text3)">CA 2023: ${fmt(c.ca2023)}</span>` : '';
-    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border)">
-      <div style="width:36px;height:36px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🏥</div>
+
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border1)">
+      <!-- Score indicator -->
+      <div style="width:40px;height:40px;border-radius:12px;background:${scColor}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
+        <span style="font-size:12px;font-weight:800;color:${scColor}">${scPct}</span>
+        <svg style="position:absolute;inset:0;width:40px;height:40px;transform:rotate(-90deg)" viewBox="0 0 36 36">
+          <path d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32" fill="none" stroke="${scColor}33" stroke-width="3"/>
+          <path d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32" fill="none" stroke="${scColor}" stroke-width="3" stroke-dasharray="${scPct} 100" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <!-- Info -->
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">${c.nom}</div>
-        <div style="font-size:11px;color:var(--text3)">${c.cp} ${c.ville}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${c.nom}</div>
+        <div style="font-size:11px;color:var(--text3)">${[c.cp, c.ville].filter(Boolean).join(' ')}${c.gros1 ? ` · ${c.gros1}` : ''}</div>
+        ${commentHtml}
       </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-        ${gxBadge}${pelgrazBadge}${ca23}
-        <span style="font-size:10px;padding:2px 8px;border-radius:12px;background:var(--bg3);color:var(--text3);border:1px solid var(--border2)">Prospect</span>
-      </div>
+      <!-- Badges -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap;max-width:280px;justify-content:flex-end">${badges}</div>
+      <!-- Actions -->
+      <div style="display:flex;gap:5px;flex-shrink:0">${emailBtn}${telBtn}</div>
     </div>`;
   }).join('');
 
   return `
     <div class="card fade-in" style="margin-top:20px">
-      <div class="card-header">
+      <div class="card-header" style="flex-wrap:wrap;gap:8px">
         <div>
-          <div class="card-title">Prospects secteur (${prospects.length})</div>
-          <div class="card-subtitle">Pharmacies du secteur sans commande importée · triées par potentiel Gx</div>
+          <div class="card-title">Prospects secteur</div>
+          <div class="card-subtitle">Pharmacies sans commande importée · score = potentiel Gx + CA + cibles</div>
         </div>
-        <span class="badge" style="background:var(--blue-bg);color:var(--blue)">${prospects.length} prospects</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${filterTabs}</div>
       </div>
       ${rows}
-      ${prospects.length > 20 ? `<div style="padding:12px 20px;font-size:12px;color:var(--text3);text-align:center">${prospects.length - 20} autres prospects — utilisez la recherche pour filtrer</div>` : ''}
+      ${prospects.length > 30 ? `<div style="padding:12px 20px;font-size:12px;color:var(--text3);text-align:center">${prospects.length - 30} autres prospects — affinez avec la recherche ou les filtres</div>` : ''}
     </div>`;
 }
 
