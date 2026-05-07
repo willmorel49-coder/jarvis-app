@@ -6445,6 +6445,12 @@ function renderGrpDashboard(grp) {
   </div>` : ''}`;
 }
 
+function grpConfirmRemove(grpId, phId) {
+  const ph = state.pharmacies.find(p => String(p.id) === String(phId));
+  const name = ph ? ph.name : 'ce membre';
+  if (confirm('Retirer ' + name + ' du groupement ?')) grpRemoveMember(grpId, phId);
+}
+
 function renderGrpPharmacies(grp) {
   const memberIds = grpGetMembers(grp.id);
   const members = memberIds
@@ -6492,7 +6498,7 @@ function renderGrpPharmacies(grp) {
               <td style="padding:12px;text-align:right;font-size:13px;font-weight:600;color:var(--text)">${ca}</td>
               <td style="padding:12px;text-align:right;font-size:13px;color:${ci?.potentielGx > 0 ? 'var(--blue)' : 'var(--text3)'}">${gx}</td>
               <td style="padding:12px;text-align:center">
-                <button onclick="if(confirm('Retirer ${ph.name.replace(/'/g,'\\'')} du groupement ?')){grpRemoveMember('${grp.id}',${ph.id})}"
+                <button onclick="grpConfirmRemove('${grp.id}',${ph.id})"
                   style="padding:4px 10px;border-radius:6px;border:1px solid var(--rose);background:transparent;color:var(--rose);font-size:11px;font-weight:600;cursor:pointer">
                   Retirer
                 </button>
