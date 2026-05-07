@@ -1452,6 +1452,34 @@ function showPharmaDetail(pharmacyId) {
         <div class="card-body"><div class="chart-wrap"><canvas id="chart-pharma-month"></canvas></div></div>
       </div>` : ''}
 
+      <!-- Notes de visite -->
+      ${(() => {
+        const notesKey = `visit_notes_${pharma.id}`;
+        let notes;
+        try { notes = JSON.parse(localStorage.getItem(notesKey) || '[]'); } catch { notes = []; }
+        const notesHtml = notes.length
+          ? notes.slice(0, 5).map(n => `
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border1)">
+                <div style="flex-shrink:0;font-size:11px;color:var(--text3);white-space:nowrap;margin-top:2px">${n.date}</div>
+                <div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">${n.text.replace(/</g,'&lt;')}</div>
+                <button onclick="deleteVisitNote('${pharma.id}',${n.id})" style="background:none;border:none;cursor:pointer;color:var(--text4);font-size:14px;padding:0;flex-shrink:0">✕</button>
+              </div>`).join('')
+          : `<div style="padding:16px 20px;font-size:12px;color:var(--text3)">Aucune note de visite enregistrée.</div>`;
+        return `<div class="card fade-up" style="margin-bottom:20px">
+          <div class="card-header">
+            <div class="card-title">Notes de visite</div>
+            <span style="font-size:11px;color:var(--text3)">${notes.length} note${notes.length > 1 ? 's' : ''}</span>
+          </div>
+          ${notesHtml}
+          <div style="padding:12px 20px;border-top:1px solid var(--border1);display:flex;gap:8px">
+            <textarea id="visit-note-input-${pharma.id}" placeholder="Ajouter une note de visite…"
+              style="flex:1;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);resize:none;height:60px;font-family:inherit"
+              onkeydown="if(event.ctrlKey&&event.key==='Enter')saveVisitNote('${pharma.id}')"></textarea>
+            <button onclick="saveVisitNote('${pharma.id}')" class="btn btn-primary" style="font-size:12px;align-self:flex-end;padding:8px 14px">Ajouter</button>
+          </div>
+        </div>`;
+      })()}
+
       <!-- Imports -->
       ${imports.length ? `
       <div class="card fade-up">
@@ -2154,6 +2182,43 @@ let benchSearch = '';
 let benchSortCol = 'ip_qty';
 let benchSortAsc = false;
 
+function benchExportCSV() {
+  if (typeof BENCHMARK === 'undefined') return;
+  let data = [...BENCHMARK];
+  if (benchCat === 'froid')          data = data.filter(d => isFroidBench(d));
+  else if (benchCat === 'generique') data = data.filter(d => isGenerique(d));
+  else if (benchCat === 'biosim')    data = data.filter(d => isBiosim(d));
+  else if (benchCat === 'nr')        data = data.filter(d => isNonRembourse(d));
+  else if (benchCat !== 'tous')      data = data.filter(d => d.categorie === benchCat);
+  if (benchSearch) {
+    const q = benchSearch.toLowerCase();
+    data = data.filter(d => d.designation.toLowerCase().includes(q) || (d.cip13||'').includes(q));
+  }
+  data.sort((a, b) => { const av = a[benchSortCol]??0, bv = b[benchSortCol]??0; return benchSortAsc ? av-bv : bv-av; });
+  const header = ['Rang Qtés','Produit','CIP13','Catégorie','Qtés IP','CA IP','Prix IP','Rotation Jan26','YoY Jan','Remb. Ameli','Ameli Jan26'];
+  const rows = data.map(d => [
+    d.ip_rank_qty,
+    `"${(d.designation||'').replace(/"/g,'""')}"`,
+    d.cip13||'',
+    d.categorie||'',
+    d.ip_qty,
+    String(d.ip_ca.toFixed(2)).replace('.',','),
+    d.prix_ip > 0 ? String(d.prix_ip.toFixed(4)).replace('.',',') : '',
+    d.has_ameli && d.rot_pharma_jan26 != null ? String(d.rot_pharma_jan26.toFixed(2)).replace('.',',') : '',
+    d.yoy_jan != null ? String(d.yoy_jan.toFixed(1)).replace('.',',') : '',
+    d.has_ameli ? 'Oui' : 'Non',
+    d.has_ameli && d.ameli_jan26 != null ? d.ameli_jan26 : '',
+  ]);
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `benchmark_ip_${benchCat}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${data.length} produits`, 'success');
+}
+
 function renderBenchmark() {
   if (typeof BENCHMARK === 'undefined') {
     document.getElementById('bench-content').innerHTML = emptyState('📊', 'Données non chargées', 'benchmark-data.js manquant');
@@ -2350,6 +2415,7 @@ function renderBenchmark() {
             <input type="text" placeholder="Rechercher un produit..." value="${benchSearch}"
               oninput="benchSearch=this.value;renderBenchmark()" />
           </div>
+          <button onclick="benchExportCSV()" style="padding:7px 12px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">⬇ CSV</button>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px 4px">${chipsHtml}</div>
         <div style="overflow-x:auto">
@@ -4017,6 +4083,31 @@ function renderGrpDocuments(grp) {
   </div>`;
 }
 
+
+// ── NOTES DE VISITE ───────────────────────────
+function saveVisitNote(pharmacyId) {
+  const input = document.getElementById(`visit-note-input-${pharmacyId}`);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  const key = `visit_notes_${pharmacyId}`;
+  let notes;
+  try { notes = JSON.parse(localStorage.getItem(key) || '[]'); } catch { notes = []; }
+  notes.unshift({
+    id: Date.now(),
+    date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
+    text,
+  });
+  localStorage.setItem(key, JSON.stringify(notes.slice(0, 50)));
+  showPharmaDetail(pharmacyId);
+}
+function deleteVisitNote(pharmacyId, noteId) {
+  const key = `visit_notes_${pharmacyId}`;
+  let notes;
+  try { notes = JSON.parse(localStorage.getItem(key) || '[]'); } catch { notes = []; }
+  localStorage.setItem(key, JSON.stringify(notes.filter(n => n.id !== noteId)));
+  showPharmaDetail(pharmacyId);
+}
 
 // ── FICHE VISITE ──────────────────────────────
 function showFicheVisite(pharmacyId) {
