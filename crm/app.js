@@ -2648,6 +2648,24 @@ function renderProduits() {
       .slice(0, 8);
   })();
 
+  // ── Déclinants MoM ───────────────────────────
+  const declineRows = (() => {
+    if (!acCur.length || !acPrev.length) return [];
+    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const curMap = {}, prevMap = {};
+    for (const s of acCur)  { const k = nn(s.artDesignation); if (!curMap[k])  curMap[k]  = { label: s.artDesignation, cat: classifyProduct(s), ca: 0 }; curMap[k].ca  += s.mntNetHt; }
+    for (const s of acPrev) { const k = nn(s.artDesignation); if (!prevMap[k]) prevMap[k] = { ca: 0 }; prevMap[k].ca += s.mntNetHt; }
+    return Object.entries(prevMap)
+      .filter(([k, v]) => v.ca > 50 && curMap[k]?.ca > 0)
+      .map(([k, v]) => {
+        const cur = curMap[k] || { label: k, cat: 'mi', ca: 0 };
+        return { label: cur.label, cat: cur.cat, prev: v.ca, ca: cur.ca, delta: cur.ca - v.ca, pct: (cur.ca - v.ca) / v.ca * 100 };
+      })
+      .filter(r => r.pct < -10)
+      .sort((a, b) => a.delta - b.delta)
+      .slice(0, 8);
+  })();
+
   // ── Momentum CA par produit (M vs M-1) ───────
   const prevMomMap = {};
   const curMomMap  = {};
@@ -2792,6 +2810,32 @@ function renderProduits() {
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:14px;font-weight:800;color:var(--mint)">+${fmt(r.delta)}</div>
             <div style="font-size:10px;color:var(--mint);font-weight:700">▲ ${r.pct.toFixed(0)}%</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    ${declineRows.length ? `
+    <div class="card fade-up" style="margin-bottom:24px;border-left:3px solid var(--rose)">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Produits en déclin</div>
+          <div class="card-subtitle">${monthName(acPM)} ${acPY} → ${monthName(acM)} ${acY} · CA ≥ 50 € · baisse &gt; 10%</div>
+        </div>
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(255,77,109,.12);color:var(--rose);font-weight:700">${declineRows.length} produit${declineRows.length > 1 ? 's' : ''}</span>
+      </div>
+      ${declineRows.map((r, i) => {
+        const cat = CATS[r.cat] || CATS.mi;
+        return `<div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid var(--border1)">
+          <div style="font-size:12px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.label}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px"><span style="font-weight:700;color:var(--rose)">${fmt(r.ca)}</span> vs ${fmt(r.prev)}</div>
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon} ${cat.label}</span>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:14px;font-weight:800;color:var(--rose)">${fmt(r.delta)}</div>
+            <div style="font-size:10px;color:var(--rose);font-weight:700">▼ ${Math.abs(r.pct).toFixed(0)}%</div>
           </div>
         </div>`;
       }).join('')}
