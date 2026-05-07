@@ -3653,20 +3653,120 @@ function renderGrpDashboard(grp) {
       <div style="font-size:11px;color:var(--text3)">${k.sub}</div>
     </div>`).join('');
 
-  return `
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px">
-    ${kpiHtml}
-  </div>
-  <div class="card">
+  // Données de ventes des membres
+  const allSales   = getSales();
+  const { year: curY, month: curM } = getCurrentPeriod(allSales.length ? allSales : []);
+  const { year: prevY, month: prevM } = curY ? getPrevPeriod(curY, curM) : { year: null, month: null };
+
+  const memberSalesCur  = allSales.filter(s => memberIds.includes(s.pharmacyId) && s.year === curY  && s.month === curM);
+  const memberSalesPrev = allSales.filter(s => memberIds.includes(s.pharmacyId) && s.year === prevY && s.month === prevM);
+  const caCur  = sumCA(memberSalesCur);
+  const caPrev = sumCA(memberSalesPrev);
+
+  const curLabel  = curY  ? `${monthName(curM)} ${curY}`   : 'En cours';
+  const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
+
+  // Top produits groupement
+  const byProd = {};
+  for (const s of memberSalesCur) {
+    const k = (s.artDesignation || '').trim().toUpperCase();
+    if (!k) continue;
+    if (!byProd[k]) byProd[k] = { label: s.artDesignation, ca: 0, qte: 0, cat: classifyProduct(s) };
+    byProd[k].ca  += s.mntNetHt;
+    byProd[k].qte += s.qte;
+  }
+  const topProds = Object.values(byProd).sort((a,b) => b.ca - a.ca).slice(0, 8);
+
+  // KPIs enrichis
+  const kpisEnriched = [
+    { label: 'Pharmacies', value: members.length || '—', icon: '🏪', sub: 'membres' },
+    { label: 'CA Groupement', value: caCur > 0 ? fmt(caCur) : (totalCA > 0 ? fmt(totalCA) : '—'), icon: '💰', sub: caCur > 0 ? curLabel : 'CA 2023 estimé' },
+    { label: 'vs M-1', value: caPrev > 0 ? (() => { const d = (caCur-caPrev)/caPrev*100; return `${d>=0?'+':''}${d.toFixed(1)}%`; })() : '—', icon: '📈', sub: prevLabel },
+    { label: 'Panier moyen', value: (members.length > 0 && caCur > 0) ? fmt(caCur / members.length) : '—', icon: '🛒', sub: 'par pharmacie' },
+  ];
+
+  const kpiHtmlEnriched = kpisEnriched.map(k => `
+    <div class="card" style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:22px;line-height:1;margin-bottom:4px">${k.icon}</div>
+      <div style="font-size:26px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${k.value}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text)">${k.label}</div>
+      <div style="font-size:11px;color:var(--text3)">${k.sub}</div>
+    </div>`).join('');
+
+  // M vs M-1 par membre
+  const membersCompHtml = members.length ? `
+  <div class="card" style="margin-top:16px">
     <div class="card-header">
-      <div class="card-title">Activité récente — ${grp.nom}</div>
+      <div>
+        <div class="card-title">Performances membres — ${curLabel}</div>
+        <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
+      </div>
     </div>
-    <div style="padding:48px;text-align:center;color:var(--text3)">
-      <div style="font-size:40px;margin-bottom:12px">🚧</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px">En construction</div>
-      <div style="font-size:12px">Importez des données via l'onglet <strong>Commandes</strong> pour alimenter ce tableau de bord.</div>
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="border-bottom:2px solid var(--border2)">
+        <th style="padding:9px 16px;text-align:left;font-size:11px;color:var(--text3);font-weight:700">Pharmacie</th>
+        <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700">${prevLabel}</th>
+        <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700">${curLabel}</th>
+        <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700">Évol.</th>
+      </tr></thead>
+      <tbody>
+        ${members.map(ph => {
+          const c = sumCA(memberSalesCur.filter(s => s.pharmacyId === ph.id));
+          const p = sumCA(memberSalesPrev.filter(s => s.pharmacyId === ph.id));
+          return `<tr style="border-bottom:1px solid var(--border1)">
+            <td style="padding:10px 16px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
+                <span style="font-size:13px;font-weight:600">${ph.name}</span>
+              </div>
+            </td>
+            <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2)">${p > 0 ? fmt(p) : '—'}</td>
+            <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700">${c > 0 ? fmt(c) : '—'}</td>
+            <td style="padding:10px 12px;text-align:right">${deltaBadge(c, p)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>` : '';
+
+  // Top produits groupement
+  const topProdsHtml = topProds.length ? `
+  <div class="card" style="margin-top:16px">
+    <div class="card-header">
+      <div class="card-title">Top produits groupement — ${curLabel}</div>
+      <div class="card-subtitle">${Object.keys(byProd).length} références</div>
     </div>
-  </div>`;
+    ${topProds.map((p, i) => {
+      const cat = CATS[p.cat] || CATS.mi;
+      const maxCa = topProds[0].ca;
+      return `<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border1)">
+        <div style="font-size:11px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
+          <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border1)">
+            <div style="height:100%;border-radius:2px;background:${cat.color};width:${(p.ca/maxCa*100).toFixed(0)}%"></div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:12px;font-weight:700">${fmt(p.ca)}</div>
+          <div style="font-size:10px;color:var(--text3)">${p.qte.toFixed(0)} u</div>
+        </div>
+        <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
+      </div>`;
+    }).join('')}
+  </div>` : '';
+
+  return `
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:0">
+    ${kpiHtmlEnriched}
+  </div>
+  ${membersCompHtml}
+  ${topProdsHtml}
+  ${!members.length ? `<div class="card" style="margin-top:16px;padding:48px;text-align:center;color:var(--text3)">
+    <div style="font-size:40px;margin-bottom:12px">🏪</div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucun membre</div>
+    <div style="font-size:12px">Ajoutez des pharmacies via l'onglet <strong>Pharmacies</strong>.</div>
+  </div>` : ''}`;
 }
 
 function renderGrpPharmacies(grp) {
