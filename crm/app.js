@@ -5985,7 +5985,39 @@ function gsSearch(q) {
     ? CLIENTS.filter(c => (c.nom||'').toLowerCase().includes(ql) || (c.ville||'').toLowerCase().includes(ql) || (c.cip||'').includes(ql)).slice(0, 3)
     : [];
 
-  const total = offiHits.length + benchHits.length + pharmaHits.length + clientHits.length;
+  // Search sales (current period products)
+  const salesHits = (() => {
+    const allS = getSales();
+    if (!allS.length) return [];
+    const { year: curY, month: curM } = getCurrentPeriod(allS);
+    const curSales = getSales({ year: curY, month: curM });
+    const byProd = {};
+    for (const s of curSales) {
+      const k = (s.artDesignation||'').trim().toUpperCase();
+      if (!k || !k.toLowerCase().includes(ql)) continue;
+      if (!byProd[k]) byProd[k] = { label: s.artDesignation, ca: 0, qte: 0, cat: classifyProduct(s) };
+      byProd[k].ca  += s.mntNetHt;
+      byProd[k].qte += s.qte;
+    }
+    return Object.values(byProd).sort((a, b) => b.ca - a.ca).slice(0, 3);
+  })();
+
+  // Search visit notes
+  const noteHits = [];
+  for (const ph of (state.pharmacies || [])) {
+    const key = `visit_notes_${ph.id}`;
+    let notes = [];
+    try { notes = JSON.parse(localStorage.getItem(key) || '[]'); } catch {}
+    for (const n of notes) {
+      if ((n.text||'').toLowerCase().includes(ql)) {
+        noteHits.push({ ph, note: n });
+        if (noteHits.length >= 3) break;
+      }
+    }
+    if (noteHits.length >= 3) break;
+  }
+
+  const total = offiHits.length + benchHits.length + pharmaHits.length + clientHits.length + noteHits.length + salesHits.length;
   if (total === 0) {
     res.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Aucun résultat pour "${globalSearchQuery}"</div>`;
     return;
@@ -5997,6 +6029,23 @@ function gsSearch(q) {
   };
 
   let html = '';
+
+  if (salesHits.length) {
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:1px">Mes ventes — mois courant (${salesHits.length})</div>`;
+    html += salesHits.map(p => {
+      const cat = CATS[p.cat] || CATS.mi;
+      return `<div onclick="document.getElementById('global-search-modal').remove();prodTableQuery='${(p.label||'').replace(/'/g,"\\'").slice(0,30)}';navigate('produits');setTimeout(()=>renderProduits(),100)"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:8px;background:${cat.color}18;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${cat.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(p.label)}</div>
+          <div style="font-size:11px;color:var(--text3)">${cat.label} · ${fmt(p.ca)} · ${fmtNum(Math.round(p.qte))} unités</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+      </div>`;
+    }).join('');
+  }
 
   if (offiHits.length) {
     const um = u => univMeta(u || 'Non classé');
@@ -6057,6 +6106,21 @@ function gsSearch(q) {
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:var(--text)">${highlight(c.nom || '—')}</div>
           <div style="font-size:11px;color:var(--text3)">${highlight(c.ville || '—')}${c.cip ? ' · CIP ' + highlight(c.cip) : ''}${c.ca2023 ? ' · ' + fmt(c.ca2023) : ''}</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+      </div>`).join('');
+  }
+
+  if (noteHits.length) {
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Notes de visite (${noteHits.length})</div>`;
+    html += noteHits.map(({ ph, note }) => `
+      <div onclick="document.getElementById('global-search-modal').remove();showPharmaDetail('${ph.id}')"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,77,109,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📝</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${ph.name} <span style="font-weight:400;color:var(--text3);font-size:11px">· ${note.date}</span></div>
+          <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(note.text)}</div>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
       </div>`).join('');
