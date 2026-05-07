@@ -131,6 +131,14 @@
         <div id="topbar-date" style="font-size:12px;color:var(--text3);font-weight:500"></div>
       </div>
       <div class="topbar-actions">
+        <button onclick="showGlobalSearch()" title="Recherche globale (⌘K)"
+          style="display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;transition:all .15s"
+          onmouseover="this.style.background='var(--bg)';this.style.borderColor='var(--blue)';this.style.color='var(--text)'"
+          onmouseout="this.style.background='var(--bg2)';this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Recherche
+          <span style="font-size:10px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-family:monospace;color:var(--text3)">⌘K</span>
+        </button>
         <button class="btn btn-primary" onclick="navigate('import')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Importer

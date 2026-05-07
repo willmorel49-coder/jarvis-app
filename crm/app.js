@@ -3296,7 +3296,7 @@ function renderOffilog() {
   }).join('');
 
   // ── Product cards ─────────────────────────────
-  const cardsHtml = page.length ? page.map(p => {
+  const cardsHtml = page.length ? page.map((p, i) => {
     const um  = univMeta(p.univers || 'Non classé');
     const rm  = roleMeta(p.role);
     const hasIP    = p.prix_offilog   != null && p.prix_offilog   > 0;
@@ -3360,7 +3360,8 @@ function renderOffilog() {
     // Initial marque pour placeholder
     const brandInitial = (p.marque || p.produit || '?').charAt(0).toUpperCase();
 
-    return `<div style="background:var(--bg);border-radius:16px;border:1px solid var(--border1);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:default"
+    return `<div style="background:var(--bg);border-radius:16px;border:1px solid var(--border1);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer"
+      onclick="showOffiDetail(${startIdx + i})"
       onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,.12)';this.style.transform='translateY(-2px)'"
       onmouseout="this.style.boxShadow='';this.style.transform=''">
       <!-- Zone photo uniforme 140px — toujours présente -->
@@ -3444,14 +3445,14 @@ function renderOffilog() {
         </tr>
       </thead>
       <tbody>
-        ${page.map(p => {
+        ${page.map((p, i) => {
           const prixRef  = p.prix_live || p.prix_offilog;
           const minConc  = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie].filter(x => x > 0).concat([Infinity]));
           const deltaRef = (prixRef && minConc < Infinity) ? minConc - prixRef : null;
           const deltaColor = deltaRef == null ? '' : deltaRef > 0.05 ? '#10B981' : deltaRef < -0.05 ? '#EF4444' : '#6B7280';
           const margeColor = p.marge_pct == null ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
           const img = p.img ? `<img src="${p.img}" style="width:28px;height:28px;object-fit:contain;border-radius:4px;margin-right:8px;vertical-align:middle" onerror="this.style.display='none'">` : '';
-          return `<tr style="border-bottom:1px solid var(--border1);transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+          return `<tr style="border-bottom:1px solid var(--border1);transition:background .12s;cursor:pointer" onclick="showOffiDetail(${startIdx + i})" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
             <td style="padding:8px 12px;max-width:260px">
               <div style="display:flex;align-items:center">
                 ${img}
@@ -3574,6 +3575,153 @@ function renderOffilog() {
   }
 
   ${pagHtml}`;
+}
+
+// ── OFFILOG DETAIL MODAL ─────────────────────
+function showOffiDetail(idx) {
+  const p = offiCurrentData[idx];
+  if (!p) return;
+
+  const um = univMeta(p.univers || 'Non classé');
+  const rm = roleMeta(p.role);
+  const prixIP = p.prix_live || p.prix_offilog;
+
+  // Benchmark match (Ameli data)
+  let bm = null;
+  if (typeof BENCHMARK !== 'undefined') {
+    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    if (p.ean) bm = BENCHMARK.find(b => b.cip13 === p.ean);
+    if (!bm) bm = BENCHMARK.find(b => nn(b.designation) === nn(p.produit));
+  }
+
+  // Our sales for this product
+  const nn2 = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const prodSales = getSales().filter(s => nn2(s.artDesignation) === nn2(p.produit));
+  const salesTotCa  = prodSales.reduce((a, s) => a + s.mntNetHt, 0);
+  const salesTotQte = prodSales.reduce((a, s) => a + s.qte, 0);
+
+  // Price comparison
+  const pricesRaw = [
+    { label: 'Prix Offilog (Excel)', value: p.prix_offilog, color: OFFILOG_ORANGE },
+    { label: 'Prix Live ●',          value: p.prix_live,      color: '#15803d' },
+    { label: '🏥 Ma Pharmacie',      value: p.prix_pharmacie, color: '#00E5A0' },
+    { label: 'Drakkars',             value: p.prix_drakkars,  color: 'var(--text2)' },
+    { label: 'Cap3000',              value: p.prix_cap3000,   color: 'var(--text2)' },
+    { label: 'Prix public maxi',     value: p.prix_maxi,      color: 'var(--text3)' },
+  ].filter(r => r.value != null && r.value > 0);
+
+  const compVals = [p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie].filter(v => v > 0);
+  const minComp  = compVals.length ? Math.min(...compVals) : null;
+  const deltaComp = (prixIP && minComp) ? minComp - prixIP : null;
+
+  const priceRowsHtml = pricesRaw.map(pr => {
+    const dv = (prixIP && pr.value && Math.abs(pr.value - prixIP) > 0.005) ? pr.value - prixIP : null;
+    const dvHtml = dv != null
+      ? `<span style="font-size:10px;margin-left:8px;color:${dv > 0 ? '#10B981' : '#EF4444'};font-weight:700">${dv > 0 ? '+' : ''}${fmtP(dv)}</span>`
+      : '';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border1)">
+      <span style="font-size:12px;color:var(--text3)">${pr.label}</span>
+      <div style="text-align:right"><span style="font-size:15px;font-weight:700;color:${pr.color}">${fmtP(pr.value)}</span>${dvHtml}</div>
+    </div>`;
+  }).join('');
+
+  const imgHtml = p.img
+    ? `<img src="${p.img}" alt="" style="max-width:100%;max-height:200px;object-fit:contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div style="display:none;font-size:56px;align-items:center;justify-content:center;width:100%;height:200px">${um.icon}</div>`
+    : `<div style="font-size:56px;text-align:center;line-height:1">${um.icon}</div>`;
+
+  const navPrev = idx > 0
+    ? `<button onclick="document.getElementById('offi-dm').remove();showOffiDetail(${idx - 1})" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:12px;color:var(--text2)">← Préc.</button>`
+    : `<button disabled style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text3);opacity:.4">← Préc.</button>`;
+  const navNext = idx < offiCurrentData.length - 1
+    ? `<button onclick="document.getElementById('offi-dm').remove();showOffiDetail(${idx + 1})" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:12px;color:var(--text2)">Suiv. →</button>`
+    : `<button disabled style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text3);opacity:.4">Suiv. →</button>`;
+
+  const ventesHtml = prodSales.length ? `
+    <div style="margin-top:16px;padding:12px;background:rgba(0,229,160,.06);border-radius:12px;border:1px solid rgba(0,229,160,.2)">
+      <div style="font-size:11px;font-weight:700;color:var(--mint);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nos ventes</div>
+      <div style="display:flex;gap:16px">
+        <div><div style="font-size:18px;font-weight:800;color:var(--mint)">${fmt(salesTotCa)}</div><div style="font-size:10px;color:var(--text3)">CA HT</div></div>
+        <div><div style="font-size:18px;font-weight:800;color:var(--text2)">${fmtNum(Math.round(salesTotQte))}</div><div style="font-size:10px;color:var(--text3)">Unités</div></div>
+      </div>
+    </div>` : '';
+
+  const ameliHtml = bm ? `
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border1)">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Benchmark Ameli</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${bm.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--blue)">${fmtNum(bm.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Unités IP</div></div>` : ''}
+        ${bm.ip_ca ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--mint)">${fmt(bm.ip_ca)}</div><div style="font-size:10px;color:var(--text3)">CA IP</div></div>` : ''}
+        ${bm.rot_pharma_jan26 ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--amber)">${bm.rot_pharma_jan26.toFixed(1)}</div><div style="font-size:10px;color:var(--text3)">Rot. janv.</div></div>` : ''}
+        ${bm.ip_rank_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--text2)">#${bm.ip_rank_qty}</div><div style="font-size:10px;color:var(--text3)">Rang IP</div></div>` : ''}
+      </div>
+    </div>` : '';
+
+  const existing = document.getElementById('offi-dm');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'offi-dm';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:24px;width:100%;max-width:800px;max-height:90vh;overflow:hidden;box-shadow:0 32px 100px rgba(0,0,0,.4);display:flex;flex-direction:column">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border1);flex-shrink:0">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:1px">${p.univers || '—'}</span>
+          ${p.dans_offilog ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${OFFILOG_ORANGE}22;color:${OFFILOG_ORANGE};font-weight:700;border:1px solid ${OFFILOG_ORANGE}44">IP</span>` : ''}
+          ${p.rang_vente != null ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:800">🏆 #${p.rang_vente}</span>` : ''}
+          ${p.saison && p.saison !== 'Toute année' ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#fef9c3;color:#92400e;font-weight:600">${p.saison === 'Printemps/Été' ? '☀️ P/É' : '❄️ A/H'}</span>` : ''}
+        </div>
+        <button onclick="document.getElementById('offi-dm').remove()"
+          style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+      </div>
+      <!-- Body -->
+      <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+        <!-- Left: photo + identity -->
+        <div style="flex:0 0 260px;padding:20px;border-right:1px solid var(--border1);overflow-y:auto;display:flex;flex-direction:column;gap:0">
+          <div style="border-radius:16px;background:${um.bg};min-height:180px;display:flex;align-items:center;justify-content:center;padding:16px;margin-bottom:14px">
+            ${imgHtml}
+          </div>
+          <div style="font-size:10px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">${p.marque || '—'}</div>
+          <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.4;margin-bottom:10px">${p.produit}</div>
+          ${p.ean ? `<div style="font-size:11px;color:var(--text3);margin-bottom:8px">EAN : <span style="font-family:monospace;color:var(--text2);font-size:12px">${p.ean}</span></div>` : ''}
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+            <span style="font-size:10px;padding:3px 8px;border-radius:8px;background:${rm.bg};color:${rm.color};font-weight:700">${rm.icon} ${p.role || '—'}</span>
+          </div>
+          ${ventesHtml}
+          ${ameliHtml}
+          <div style="display:flex;gap:6px;margin-top:auto;padding-top:16px">${navPrev}${navNext}</div>
+        </div>
+        <!-- Right: prices + benchmark -->
+        <div style="flex:1;padding:20px 24px;overflow-y:auto">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Comparaison des prix</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px">${fmtNum(pricesRaw.length)} source${pricesRaw.length > 1 ? 's' : ''} disponible${pricesRaw.length > 1 ? 's' : ''}</div>
+          ${priceRowsHtml || '<div style="color:var(--text3);font-size:13px;padding:20px 0">Aucun prix disponible</div>'}
+          ${deltaComp != null ? `<div style="margin-top:14px;padding:12px 16px;border-radius:12px;background:${deltaComp > 0 ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};border:1px solid ${deltaComp > 0 ? 'rgba(16,185,129,.3)' : 'rgba(239,68,68,.3)'}">
+            <span style="font-size:12px;font-weight:700;color:${deltaComp > 0 ? '#065f46' : '#991b1b'}">
+              ${deltaComp > 0 ? `✅ IP moins cher de ${fmtP(deltaComp)} vs concurrent le moins cher` : `⚠️ IP plus cher de ${fmtP(Math.abs(deltaComp))} vs concurrent le moins cher`}
+            </span>
+          </div>` : ''}
+          ${p.marge_pct != null ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border1)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="font-size:12px;color:var(--text3)">Marge pharmacie estimée</span>
+              <span style="font-size:18px;font-weight:800;color:${p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444'}">${p.marge_pct.toFixed(1)}%</span>
+            </div>
+            <div style="height:8px;border-radius:4px;background:var(--border1);overflow:hidden">
+              <div style="height:100%;width:${Math.min(100, p.marge_pct)}%;background:${p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444'};border-radius:4px"></div>
+            </div>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function escH(e) {
+    if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escH); }
+    if (e.key === 'ArrowRight' && idx < offiCurrentData.length - 1) { modal.remove(); document.removeEventListener('keydown', escH); showOffiDetail(idx + 1); }
+    if (e.key === 'ArrowLeft'  && idx > 0) { modal.remove(); document.removeEventListener('keydown', escH); showOffiDetail(idx - 1); }
+  });
+  document.body.appendChild(modal);
 }
 
 // ── EMPTY STATE ───────────────────────────────
@@ -4320,6 +4468,148 @@ function showFicheVisite(pharmacyId) {
 }
 
 // ── BOOT ──────────────────────────────────────
+// ── GLOBAL SEARCH (Cmd+K) ────────────────────
+let globalSearchQuery = '';
+
+function showGlobalSearch() {
+  const existing = document.getElementById('global-search-modal');
+  if (existing) { existing.remove(); return; }
+
+  globalSearchQuery = '';
+  const modal = document.createElement('div');
+  modal.id = 'global-search-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:80px 16px 16px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:20px;width:100%;max-width:620px;box-shadow:0 32px 100px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;max-height:75vh">
+      <!-- Search input -->
+      <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border1);flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="gs-input" type="text" placeholder="Rechercher produit, pharmacie, marque, EAN…"
+          style="flex:1;border:none;background:transparent;outline:none;font-size:16px;color:var(--text);font-family:inherit"
+          oninput="gsSearch(this.value)" autocomplete="off" spellcheck="false">
+        <span style="font-size:10px;color:var(--text3);background:var(--bg2);padding:2px 7px;border-radius:5px;font-family:monospace;flex-shrink:0">ESC</span>
+      </div>
+      <!-- Results -->
+      <div id="gs-results" style="overflow-y:auto;flex:1;padding:8px 8px 12px">
+        <div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Tapez au moins 2 caractères…</div>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function gsEsc(e) {
+    if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', gsEsc); }
+  });
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('gs-input')?.focus(), 50);
+}
+
+function gsSearch(q) {
+  globalSearchQuery = q.trim();
+  const res = document.getElementById('gs-results');
+  if (!res) return;
+  if (globalSearchQuery.length < 2) {
+    res.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Tapez au moins 2 caractères…</div>`;
+    return;
+  }
+  const ql = globalSearchQuery.toLowerCase();
+
+  // Search OFFILOG
+  const offiHits = typeof OFFILOG !== 'undefined'
+    ? OFFILOG.filter(p => (p.produit||'').toLowerCase().includes(ql) || (p.marque||'').toLowerCase().includes(ql) || (p.ean||'').includes(ql) || (p.univers||'').toLowerCase().includes(ql)).slice(0, 5)
+    : [];
+
+  // Search BENCHMARK
+  const benchHits = typeof BENCHMARK !== 'undefined'
+    ? BENCHMARK.filter(b => (b.designation||'').toLowerCase().includes(ql) || (b.cip13||'').includes(ql) || (b.categorie||'').toLowerCase().includes(ql)).slice(0, 4)
+    : [];
+
+  // Search pharmacies
+  const pharmaHits = (state.pharmacies || []).filter(p => p.name.toLowerCase().includes(ql)).slice(0, 4);
+
+  // Search CLIENTS (static data)
+  const clientHits = typeof CLIENTS !== 'undefined'
+    ? CLIENTS.filter(c => (c.nom||'').toLowerCase().includes(ql) || (c.ville||'').toLowerCase().includes(ql) || (c.cip||'').includes(ql)).slice(0, 3)
+    : [];
+
+  const total = offiHits.length + benchHits.length + pharmaHits.length + clientHits.length;
+  if (total === 0) {
+    res.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Aucun résultat pour "${globalSearchQuery}"</div>`;
+    return;
+  }
+
+  const highlight = str => {
+    const re = new RegExp(`(${globalSearchQuery.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    return (str||'').replace(re, '<mark style="background:#fef08a;color:#713f12;border-radius:2px;padding:0 1px">$1</mark>');
+  };
+
+  let html = '';
+
+  if (offiHits.length) {
+    const um = u => univMeta(u || 'Non classé');
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:${OFFILOG_ORANGE};text-transform:uppercase;letter-spacing:1px">Catalogue Parapharmacie (${offiHits.length})</div>`;
+    html += offiHits.map((p, i) => {
+      const m = um(p.univers);
+      const idxInData = typeof offiCurrentData !== 'undefined' ? offiCurrentData.indexOf(p) : -1;
+      return `<div onclick="document.getElementById('global-search-modal').remove();offiQuery='${p.produit.replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,30)}';navigate('offilog');setTimeout(()=>renderOffilog(),100)"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:8px;background:${m.bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${m.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(p.produit)}</div>
+          <div style="font-size:11px;color:var(--text3)">${highlight(p.marque || '—')} · ${p.univers || '—'}${p.prix_live || p.prix_offilog ? ' · ' + fmtP(p.prix_live || p.prix_offilog) : ''}</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+      </div>`;
+    }).join('');
+  }
+
+  if (benchHits.length) {
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Benchmark Ameli (${benchHits.length})</div>`;
+    html += benchHits.map(b => `
+      <div onclick="document.getElementById('global-search-modal').remove();benchSearch='${(b.designation||'').replace(/'/g,"\\'").slice(0,30)}';navigate('benchmark');setTimeout(()=>renderBenchmark(),100)"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(0,87,255,.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">💊</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(b.designation)}</div>
+          <div style="font-size:11px;color:var(--text3)">${highlight(b.categorie||'—')}${b.cip13 ? ' · ' + highlight(b.cip13) : ''}${b.ip_ca ? ' · ' + fmt(b.ip_ca) : ''}</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+      </div>`).join('');
+  }
+
+  if (pharmaHits.length) {
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Pharmacies avec données (${pharmaHits.length})</div>`;
+    html += pharmaHits.map(ph => `
+      <div onclick="document.getElementById('global-search-modal').remove();showPharmaDetail('${ph.id}')"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:8px;background:${ph.color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">${ph.name.charAt(0).toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${highlight(ph.name)}</div>
+          <div style="font-size:11px;color:var(--text3)">Pharmacie · données importées</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+      </div>`).join('');
+  }
+
+  if (clientHits.length) {
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Clients (${clientHits.length})</div>`;
+    html += clientHits.map(c => `
+      <div onclick="document.getElementById('global-search-modal').remove();navigate('pharmacies')"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,176,32,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏪</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${highlight(c.nom || '—')}</div>
+          <div style="font-size:11px;color:var(--text3)">${highlight(c.ville || '—')}${c.cip ? ' · CIP ' + highlight(c.cip) : ''}${c.ca2023 ? ' · ' + fmt(c.ca2023) : ''}</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+      </div>`).join('');
+  }
+
+  res.innerHTML = html;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const loginScreen = document.getElementById('login-screen');
   const appEl       = document.getElementById('app');
@@ -4338,6 +4628,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     appEl.classList.add('visible');
     await initApp();
   }
+
+  // Global Cmd+K / Ctrl+K search shortcut
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      showGlobalSearch();
+    }
+  });
 
   document.getElementById('login-form').addEventListener('submit', async e => {
     e.preventDefault();
