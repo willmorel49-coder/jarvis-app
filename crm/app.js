@@ -744,6 +744,31 @@ function renderDashboard() {
       </div>
     </div>
 
+    <!-- Import coverage banner -->
+    ${(() => {
+      if (!state.pharmacies.length) return '';
+      const imported = new Set(salesCur.map(s => s.pharmacyId));
+      const missing = state.pharmacies.filter(ph => !imported.has(ph.id));
+      const pct = Math.round((state.pharmacies.length - missing.length) / state.pharmacies.length * 100);
+      const barColor = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
+      return `<div style="background:var(--bg);border:1px solid var(--border1);border-radius:16px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:12px;font-weight:700;color:var(--text2)">Couverture import ${curLabel}</span>
+            <span style="font-size:14px;font-weight:800;color:${barColor}">${pct}%</span>
+          </div>
+          <div style="height:6px;border-radius:3px;background:var(--border1);overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .5s"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:5px">${state.pharmacies.length - missing.length}/${state.pharmacies.length} pharmacies importées</div>
+        </div>
+        ${missing.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          ${missing.map(ph => `<span onclick="showPharmaDetail('${ph.id}')" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(239,68,68,.08);color:#EF4444;border:1px solid rgba(239,68,68,.2);cursor:pointer;white-space:nowrap" title="Cliquer pour voir la fiche">${ph.name}</span>`).join('')}
+          <button onclick="navigate('import')" style="font-size:11px;padding:4px 12px;border-radius:20px;background:var(--bg2);border:1px solid var(--border2);cursor:pointer;color:var(--text2);font-weight:600;white-space:nowrap">↑ Importer</button>
+        </div>` : `<span style="font-size:22px">✅</span>`}
+      </div>`;
+    })()}
+
     <!-- Row 2 : Alertes commerciales -->
     <div class="card fade-up" style="margin-bottom:24px">
       <div class="card-header">
@@ -3017,6 +3042,14 @@ function simRefreshSuggestions() {
   if (clearBtn) clearBtn.style.display = simSearchQuery ? '' : 'none';
 }
 
+function simAddOffilog(produit, puNet) {
+  if (!puNet || puNet <= 0) { showToast('Prix non disponible pour ce produit', 'error'); return; }
+  const already = state.sim.items.find(it => it.designation.toLowerCase() === produit.toLowerCase());
+  if (already) { already.qty += 1; showToast(`${produit.slice(0,40)} (+1)`, 'info'); return; }
+  state.sim.items.push({ designation: produit, code: '', cat: 'nr', froid: false, puNet, puBrut: puNet * 1.05, qty: 1 });
+  showToast(`${produit.slice(0,40)} ajouté au simulateur`, 'success');
+}
+
 function simReconduire() {
   if (!state.sim.pharmacyId) return;
   const phSales = getSales({ pharmacyId: state.sim.pharmacyId });
@@ -3321,6 +3354,7 @@ function univMeta(u) {
 }
 let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiPageNum = 1, offiView = 'cards';
 let offiCurrentData = [];
+let offiDetailProduct = null; // currently shown in detail modal
 
 const ROLE_META = {
   'Héros':           { color: '#FFD700', bg: '#FFD70022', icon: '⭐' },
@@ -3754,6 +3788,7 @@ function renderOffilog() {
 function showOffiDetail(idx) {
   const p = offiCurrentData[idx];
   if (!p) return;
+  offiDetailProduct = p;
 
   const um = univMeta(p.univers || 'Non classé');
   const rm = roleMeta(p.role);
@@ -3864,7 +3899,11 @@ function showOffiDetail(idx) {
           </div>
           ${ventesHtml}
           ${ameliHtml}
-          <div style="display:flex;gap:6px;margin-top:auto;padding-top:16px">${navPrev}${navNext}</div>
+          ${prixIP ? `<button onclick="simAddOffilog(offiDetailProduct.produit,${prixIP});this.textContent='✓ Ajouté!';this.style.background='rgba(0,229,160,.12)';this.style.color='var(--mint)';this.style.borderColor='rgba(0,229,160,.4)'"
+            style="width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);transition:all .15s;margin-bottom:10px">
+            🛒 Ajouter au simulateur
+          </button>` : ''}
+          <div style="display:flex;gap:6px;margin-top:auto;padding-top:0">${navPrev}${navNext}</div>
         </div>
         <!-- Right: prices + benchmark -->
         <div style="flex:1;padding:20px 24px;overflow-y:auto">
