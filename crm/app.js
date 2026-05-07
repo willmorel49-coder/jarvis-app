@@ -1625,6 +1625,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             return `<option value="${p}" ${sel ? 'selected' : ''}>${monthName(+m)} ${y}</option>`;
           }).join('')}
         </select>` : `<span style="font-size:12px;color:var(--text3)">${monthName(curM)} ${curY}</span>`}
+        <button class="btn btn-ghost" onclick="prodPharmaFilter='${pharma.id}';navigate('produits')" style="font-size:12px">📊 Produits</button>
         <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px">📋 Fiche visite</button>
         <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px">✉ Email</button>
         <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
@@ -2013,9 +2014,11 @@ let prodSearch  = '';
 let prodFamille = 'tous';
 let prodSortCol = 'ca';
 let prodSortAsc = false;
+let prodPharmaFilter = 'tous'; // 'tous' or pharmacyId
 
 function renderProduits() {
-  const sales = getSales();
+  const rawSales = getSales();
+  const sales = prodPharmaFilter === 'tous' ? rawSales : rawSales.filter(s => s.pharmacyId === prodPharmaFilter);
 
   // ── KPIs par famille ─────────────────────────
   const familyKpis = Object.keys(CATS).map(k => {
@@ -2149,9 +2152,16 @@ function renderProduits() {
       <div class="card-header" style="flex-wrap:wrap;gap:12px">
         <div>
           <div class="card-title">${chartTitle}</div>
-          <div class="card-subtitle">CA HT vs Marge · cliquez une famille pour zoomer</div>
+          <div class="card-subtitle">CA HT vs Marge · cliquez une famille pour zoomer${prodPharmaFilter !== 'tous' ? ' · ' + (state.pharmacies.find(p=>p.id===prodPharmaFilter)?.name||'') : ''}</div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">${chipsHtml}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <select onchange="prodPharmaFilter=this.value;renderProduits()"
+            style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
+            <option value="tous">Toutes les pharmacies</option>
+            ${state.pharmacies.map(ph => `<option value="${ph.id}" ${prodPharmaFilter===ph.id?'selected':''}>${ph.name}</option>`).join('')}
+          </select>
+          ${chipsHtml}
+        </div>
       </div>
       <div class="card-body">
         ${chartProds.length
@@ -2165,7 +2175,7 @@ function renderProduits() {
       <div class="card-header">
         <div>
           <div class="card-title">Évolution mensuelle du CA</div>
-          <div class="card-subtitle">${trendMonths.length} période${trendMonths.length > 1 ? 's' : ''} · toutes pharmacies confondues</div>
+          <div class="card-subtitle">${trendMonths.length} période${trendMonths.length > 1 ? 's' : ''} · ${prodPharmaFilter === 'tous' ? 'toutes pharmacies' : (state.pharmacies.find(p=>p.id===prodPharmaFilter)?.name||'')}</div>
         </div>
       </div>
       <div class="card-body">
