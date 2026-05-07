@@ -3672,6 +3672,7 @@ function catGetList() {
     if (catCatFilter === 'biosim')    return isBiosim(b);
     if (catCatFilter === 'nr')        return isNonRembourse(b);
     if (catCatFilter === 'ameli')     return b.has_ameli;
+    if (catCatFilter === 'offres')    return b.offre_ip > 0;
     if (catCatFilter !== 'tous')      return b.categorie === catCatFilter;
     return true;
   });
@@ -3697,6 +3698,35 @@ function catAddToSim(i) {
 }
 
 function catGoPage(p) { catPageNum = p; renderCatalogue(); }
+
+function catExportCSV() {
+  const data = catGetList();
+  if (!data.length) { showToast('Aucun produit à exporter', 'error'); return; }
+  const header = ['Produit','CIP13','Catégorie','Qtés IP','CA IP','Prix IP','Prix HT','Offre IP','Remb. Ameli','Biosimilaire','Générique','Froid'];
+  const rows = data.map(b => [
+    `"${(b.designation||'').replace(/"/g,'""')}"`,
+    b.cip13||'',
+    b.categorie||'',
+    b.ip_qty,
+    String((b.ip_ca||0).toFixed(2)).replace('.',','),
+    b.prix_ip > 0 ? String(b.prix_ip.toFixed(4)).replace('.',',') : '',
+    b.prix_ht > 0 ? String(b.prix_ht.toFixed(4)).replace('.',',') : '',
+    b.offre_ip > 0 ? String(b.offre_ip.toFixed(4)).replace('.',',') : '',
+    b.has_ameli ? 'Oui' : 'Non',
+    isBiosim(b) ? 'Oui' : 'Non',
+    isGenerique(b) ? 'Oui' : 'Non',
+    isFroidBench(b) ? 'Oui' : 'Non',
+  ]);
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  const tag = catCatFilter !== 'tous' ? `_${catCatFilter}` : '';
+  a.download = `catalogue_ip${tag}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${data.length} produits`, 'success');
+}
 
 function renderCatalogue() {
   const container = document.getElementById('cat-content');
@@ -3729,6 +3759,7 @@ function renderCatalogue() {
     { key: 'nr',        label: '🔴 Non remboursés' },
     { key: 'froid',     label: '❄️ Froid' },
     { key: 'ameli',     label: '🏥 Ameli' },
+    { key: 'offres',    label: '🎁 Offres en cours' },
   ];
   const tabsHtml = tabDefs.map(t => {
     const active = catCatFilter === t.key;
@@ -3828,7 +3859,10 @@ function renderCatalogue() {
         <div class="card-title">
           ${catCurrentData.length < BENCHMARK.length ? `${fmtNum(catCurrentData.length)} résultats` : `${fmtNum(BENCHMARK.length)} produits`}
         </div>
-        <div style="font-size:12px;color:var(--text3)">Page ${catPageNum} / ${totalPages}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:12px;color:var(--text3)">Page ${catPageNum} / ${totalPages}</span>
+          <button onclick="catExportCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV</button>
+        </div>
       </div>
       ${prodsHtml}
       ${pagHtml}
