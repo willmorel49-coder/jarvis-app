@@ -1776,6 +1776,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <button class="btn btn-ghost" onclick="prodPharmaFilter='${pharma.id}';navigate('produits')" style="font-size:12px">📊 Produits</button>
         <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px">📋 Fiche visite</button>
         <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px">✉ Email</button>
+        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;color:var(--mint);border-color:rgba(0,229,160,.3)">🛒 Commander</button>
         <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
         <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
       </div>
@@ -5994,6 +5995,86 @@ function renderGrpDocuments(grp) {
   </div>`;
 }
 
+
+function proposerCommande(pharmacyId) {
+  const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!pharma) return;
+
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  if (!allPhSales.length) { showToast('Aucune donnée pour cette pharmacie', 'error'); return; }
+
+  const { year, month } = getCurrentPeriod(allPhSales);
+  const lastSales = getSales({ pharmacyId: pharma.id, year, month });
+  if (!lastSales.length) { showToast('Aucune vente pour la période en cours', 'error'); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'proposer-cmd-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--bg1);border:1px solid var(--border2);border-radius:20px;max-width:480px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+      <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px">🛒 Proposer une commande</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">${pharma.name} · basé sur ${monthName(month)} ${year}</div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">Facteur de croissance</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${[100,105,110,115,120].map(pct => `
+            <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.background='');this.style.background='var(--blue)';this.style.color='#fff';document.getElementById('growth-input').value=${pct}"
+              style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:${pct===100?'var(--blue)':'transparent'};color:${pct===100?'#fff':'var(--text2)'};cursor:pointer;font-size:12px;font-weight:600">${pct === 100 ? 'Identique' : '+' + (pct-100) + '%'}</button>`).join('')}
+        </div>
+        <input type="number" id="growth-input" value="100" min="50" max="200" step="1"
+          style="margin-top:10px;width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+        <button onclick="document.getElementById('proposer-cmd-modal').remove()" style="padding:8px 18px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">Annuler</button>
+        <button onclick="confirmerCommande('${pharma.id}',${year},${month})" style="padding:8px 18px;border-radius:10px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-size:13px;font-weight:700">Créer la simulation →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function confirmerCommande(pharmacyId, year, month) {
+  const factor = parseFloat(document.getElementById('growth-input')?.value || '100') / 100;
+  document.getElementById('proposer-cmd-modal')?.remove();
+
+  const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!pharma) return;
+
+  const sales = getSales({ pharmacyId: pharma.id, year, month });
+  const aggMap = {};
+  for (const s of sales) {
+    const k = (s.artDesignation || '').trim().toUpperCase();
+    if (!k) continue;
+    if (!aggMap[k]) aggMap[k] = { designation: s.artDesignation, artCode: s.artCode, puNet: s.puNet, qte: 0, cat: classifyProduct(s) };
+    aggMap[k].qte += s.qte;
+    if (s.puNet > 0) aggMap[k].puNet = s.puNet;
+  }
+
+  const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  state.sim.pharmacyId = pharma.id;
+  state.sim.name = `${pharma.name} — ${monthName(month)} ${year}${factor !== 1 ? ' ×'+factor.toFixed(2) : ''}`;
+  state.sim.items = Object.values(aggMap)
+    .filter(r => r.qte > 0 && r.puNet > 0)
+    .map(r => {
+      const bench = typeof BENCHMARK !== 'undefined' ? BENCHMARK.find(b => nn(b.designation) === nn(r.designation)) : null;
+      const puNet = bench?.prix_ip > 0 ? bench.prix_ip : r.puNet;
+      return {
+        designation: r.designation,
+        code: r.artCode || (bench?.cip13 || ''),
+        cat: r.cat,
+        froid: bench?.is_froid || false,
+        hasAmeli: bench?.has_ameli || false,
+        rot: bench?.rot_pharma_jan26 || null,
+        puNet,
+        puBrut: puNet * 1.05,
+        qty: Math.max(1, Math.round(r.qte * factor)),
+      };
+    })
+    .sort((a, b) => (b.qty * b.puNet) - (a.qty * a.puNet));
+
+  showToast(`${state.sim.items.length} produits chargés dans le simulateur`, 'success');
+  navigate('simulateur');
+}
 
 function filterPharmaHistTable(q) {
   const tbody = document.getElementById('pharma-hist-tbody');
