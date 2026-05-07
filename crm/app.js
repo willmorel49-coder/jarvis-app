@@ -2853,34 +2853,26 @@ function showProductBreakdown(productName) {
             </div>
           </div>`).join('')}
 
-        <!-- Évolution mensuelle si dispo -->
+        <!-- Évolution mensuelle Chart.js -->
         ${monthKeys.length > 1 ? `
         <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border1)">
-          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Évolution mensuelle</div>
-          ${monthKeys.map(k => {
-            const [y, m] = k.split('-');
-            const v = byMonth[k];
-            const pct = (v / Math.max(...Object.values(byMonth)) * 100).toFixed(0);
-            return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-              <span style="font-size:11px;color:var(--text3);min-width:70px">${monthName(+m)} ${y}</span>
-              <div style="flex:1;height:5px;border-radius:3px;background:var(--border1);overflow:hidden">
-                <div style="height:100%;width:${pct}%;background:var(--blue);border-radius:3px"></div>
-              </div>
-              <span style="font-size:12px;font-weight:600;min-width:60px;text-align:right">${fmt(v)}</span>
-            </div>`;
-          }).join('')}
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Évolution mensuelle (CA)</div>
+          <div style="position:relative;height:160px"><canvas id="prod-breakdown-chart"></canvas></div>
         </div>` : ''}
 
         <!-- Benchmark data -->
         ${bench ? `
         <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border1)">
-          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Données marché (Ameli/IP)</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Données marché (Ameli / IP)</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:10px">
             ${bench.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--blue)">${fmtNum(bench.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Qté IP</div></div>` : ''}
             ${bench.ip_ca ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--mint)">${fmt(bench.ip_ca)}</div><div style="font-size:10px;color:var(--text3)">CA IP</div></div>` : ''}
             ${bench.rot_pharma_jan26 ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--amber)">${bench.rot_pharma_jan26.toFixed(1)}</div><div style="font-size:10px;color:var(--text3)">Rot./pharma</div></div>` : ''}
             ${bench.prix_ip ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--blue)">${fmtP(bench.prix_ip)}</div><div style="font-size:10px;color:var(--text3)">Prix IP</div></div>` : ''}
+            ${bench.yoy_jan != null ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:${bench.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'}">${bench.yoy_jan >= 0 ? '+' : ''}${bench.yoy_jan.toFixed(1)}%</div><div style="font-size:10px;color:var(--text3)">YoY jan.</div></div>` : ''}
+            ${bench.has_ameli && bench.ameli_total ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--text)">${fmtNum(bench.ameli_total)}</div><div style="font-size:10px;color:var(--text3)">Boîtes Ameli total</div></div>` : ''}
           </div>
+          ${bench.offre_ip ? `<div style="padding:10px 14px;background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2);border-radius:10px;font-size:12px;font-weight:600;color:var(--blue)">🎁 Offre IP : ${bench.offre_ip}</div>` : ''}
         </div>` : ''}
       </div>
     </div>`;
@@ -2889,6 +2881,41 @@ function showProductBreakdown(productName) {
     if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escB); }
   });
   document.body.appendChild(modal);
+
+  // Draw Chart.js line chart for monthly evolution
+  if (monthKeys.length > 1) {
+    setTimeout(() => {
+      const cvs = document.getElementById('prod-breakdown-chart');
+      if (!cvs) return;
+      const labels = monthKeys.map(k => { const [y, m] = k.split('-'); return monthName(+m).slice(0,3) + ' ' + y; });
+      const vals   = monthKeys.map(k => +(byMonth[k] || 0).toFixed(2));
+      new Chart(cvs, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data: vals,
+            borderColor: '#0057FF',
+            backgroundColor: 'rgba(0,87,255,.08)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#0057FF',
+            fill: true,
+            tension: 0.35,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y) } } },
+          scales: {
+            x: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+            y: { ticks: { color: '#888', font: { size: 10 }, callback: v => fmt(v) }, grid: { color: 'rgba(255,255,255,.05)' } },
+          },
+        },
+      });
+    }, 50);
+  }
 }
 
 // ── IMPORT ────────────────────────────────────
