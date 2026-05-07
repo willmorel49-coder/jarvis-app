@@ -1840,6 +1840,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   const pharmaByMonth = caByMonth(allPhSales);
   const imports = state.imports.filter(i => i.pharmacyId === pharma.id).sort((a,b) => new Date(b.importedAt) - new Date(a.importedAt));
 
+  // ── YTD pharmacie ──────────────────────────────
+  const pharmaYTD = curY ? allPhSales.filter(s => s.year === curY && s.month <= curM).reduce((a,s) => a + s.mntNetHt, 0) : 0;
+  const pharmaYTDprev = curY ? allPhSales.filter(s => s.year === curY - 1 && s.month <= curM).reduce((a,s) => a + s.mntNetHt, 0) : 0;
+
   // ── HTML recommandations switch ───────────────
   const switchHtml = switchOpps.slice(0, 6).map(o => {
     const cat = CATS[o.cat] || CATS.mi;
@@ -2081,6 +2085,39 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </div>
         </div>
         ${addHtml}
+      </div>` : ''}
+
+      <!-- YTD pharmacie -->
+      ${pharmaYTD > 0 ? `
+      <div class="card fade-up" style="margin-bottom:20px">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Cumul Jan–${monthName(curM)} ${curY}</div>
+            <div class="card-subtitle">${pharmaYTDprev > 0 ? `vs même période ${curY-1}` : 'Année en cours'}</div>
+          </div>
+          ${pharmaYTDprev > 0 ? deltaBadge(pharmaYTD, pharmaYTDprev) : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:${pharmaYTDprev > 0 ? '1fr 1fr 1fr' : '1fr 1fr'};gap:0;border-top:1px solid var(--border1)">
+          <div style="padding:16px 20px;text-align:center;${pharmaYTDprev > 0 ? 'border-right:1px solid var(--border1);' : ''}">
+            <div style="font-size:24px;font-weight:900;color:var(--blue);letter-spacing:-1px">${fmt(pharmaYTD)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">CA Jan–${monthName(curM)} ${curY}</div>
+          </div>
+          ${pharmaYTDprev > 0 ? `
+          <div style="padding:16px 20px;text-align:center;border-right:1px solid var(--border1)">
+            <div style="font-size:24px;font-weight:900;color:var(--text2);letter-spacing:-1px">${fmt(pharmaYTDprev)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">CA Jan–${monthName(curM)} ${curY-1}</div>
+          </div>
+          <div style="padding:16px 20px;text-align:center">
+            <div style="font-size:24px;font-weight:900;color:${pharmaYTD>=pharmaYTDprev?'var(--mint)':'var(--rose)'};letter-spacing:-1px">
+              ${((pharmaYTD-pharmaYTDprev)/pharmaYTDprev*100).toFixed(1)}%
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Évolution YoY</div>
+          </div>` : `
+          <div style="padding:16px 20px;text-align:center">
+            <div style="font-size:24px;font-weight:900;color:var(--text2);letter-spacing:-1px">${curM > 1 ? fmt(pharmaYTD / curM) : '—'}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">CA moyen / mois</div>
+          </div>`}
+        </div>
       </div>` : ''}
 
       <!-- Évolution mensuelle -->
