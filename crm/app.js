@@ -658,6 +658,29 @@ function renderDashboard() {
     return opps.sort((a, b) => b.gainTotal - a.gainTotal).slice(0, 5);
   })();
 
+  // ── Produits perdus / nouvelles références ───
+  const prodLostNew = (() => {
+    if (!salesPrev.length || !salesCur.length) return { lost: [], gained: [] };
+    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const prevMap = {};
+    for (const s of salesPrev) {
+      const k = nn(s.artDesignation);
+      if (!k) continue;
+      if (!prevMap[k]) prevMap[k] = { label: s.artDesignation, ca: 0 };
+      prevMap[k].ca += s.mntNetHt;
+    }
+    const curMap = {};
+    for (const s of salesCur) {
+      const k = nn(s.artDesignation);
+      if (!k) continue;
+      if (!curMap[k]) curMap[k] = { label: s.artDesignation, ca: 0 };
+      curMap[k].ca += s.mntNetHt;
+    }
+    const lost   = Object.entries(prevMap).filter(([k]) => !curMap[k]).map(([, v]) => v).sort((a,b) => b.ca - a.ca).slice(0, 8);
+    const gained = Object.entries(curMap).filter(([k]) => !prevMap[k]).map(([, v]) => v).sort((a,b) => b.ca - a.ca).slice(0, 8);
+    return { lost, gained };
+  })();
+
   // ── HTML ─────────────────────────────────────
   const curLabel  = `${monthName(curM)} ${curY}`;
   const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
@@ -912,6 +935,41 @@ function renderDashboard() {
           </div>
         </div>`;
       }).join('')}
+    </div>` : ''}
+
+    <!-- Row 2e : Produits perdus / nouvelles références -->
+    ${(prodLostNew.lost.length || prodLostNew.gained.length) ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Références perdues &amp; nouvelles ce mois</div>
+          <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          ${prodLostNew.lost.length ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,77,109,.1);color:var(--rose)">${prodLostNew.lost.length} perdus</span>` : ''}
+          ${prodLostNew.gained.length ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,229,160,.1);color:var(--mint)">${prodLostNew.gained.length} nouveaux</span>` : ''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border1)">
+        <!-- Perdus -->
+        <div style="border-right:1px solid var(--border1)">
+          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border1)">Perdus depuis ${prevLabel}</div>
+          ${prodLostNew.lost.length ? prodLostNew.lost.map(p => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px" onclick="showProductBreakdown('${(p.label||'').replace(/'/g,"&#39;")}');" style="cursor:pointer">
+              <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;cursor:pointer">${p.label}</div>
+              <div style="font-size:12px;font-weight:700;color:var(--rose);flex-shrink:0">${fmt(p.ca)}</div>
+            </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucun produit perdu</div>`}
+        </div>
+        <!-- Nouveaux -->
+        <div>
+          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border1)">Nouveaux en ${curLabel}</div>
+          ${prodLostNew.gained.length ? prodLostNew.gained.map(p => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px">
+              <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${p.label}</div>
+              <div style="font-size:12px;font-weight:700;color:var(--mint);flex-shrink:0">${fmt(p.ca)}</div>
+            </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucune nouvelle référence</div>`}
+        </div>
+      </div>
     </div>` : ''}
 
     <!-- Row 3 : Pipeline conversion -->
