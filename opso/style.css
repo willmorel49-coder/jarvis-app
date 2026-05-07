@@ -45,7 +45,7 @@
 
   /* ── Layout ── */
   --sidebar-w: 252px;
-  --topbar-h: 60px;
+  --topbar-h: 64px;
 
   /* ── Mapping compatibilité variables app.js ── */
   --bg:     #f5f6f7;
@@ -271,10 +271,10 @@ body {
 .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 
 .sidebar-brand {
-  display: flex; align-items: center; gap: 10px;
-  padding: 4px 20px 20px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 20px 24px;
   border-bottom: 1px solid rgba(255,255,255,0.15);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .sidebar-logo {
@@ -285,8 +285,8 @@ body {
 }
 
 .sidebar-brand-text { font-family: 'Varela Round', sans-serif; line-height: 1.2; }
-.sidebar-brand-name { font-size: 15px; font-weight: 400; color: #fff; letter-spacing: -0.2px; }
-.sidebar-brand-sub  { font-size: 11px; color: rgba(255,255,255,0.65); font-weight: 600; }
+.sidebar-brand-name { font-size: 16px; font-weight: 400; color: #fff; letter-spacing: -0.3px; }
+.sidebar-brand-sub  { font-size: 11px; color: rgba(255,255,255,0.60); font-weight: 500; margin-top: 1px; }
 
 .nav-section { padding: 0 12px; margin-bottom: 8px; }
 .nav-label {
@@ -297,11 +297,11 @@ body {
 
 .nav-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 12px; border-radius: var(--radius-sm);
-  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8);
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.82);
   cursor: pointer; transition: var(--t);
-  border: 1px solid transparent; margin-bottom: 2px;
-  position: relative;
+  border: 1px solid transparent; margin-bottom: 3px;
+  position: relative; letter-spacing: -0.1px;
 }
 .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; opacity: 0.85; }
 .nav-item:hover { background: rgba(255,255,255,0.15); color: #fff; }
@@ -317,6 +317,10 @@ body {
   position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
   width: 3px; height: 20px; border-radius: 0 3px 3px 0;
   background: white;
+}
+.nav-divider {
+  height: 1px; background: rgba(255,255,255,0.10);
+  margin: 8px 12px 8px;
 }
 .nav-label-text { font-size: 13px; }
 .nav-item .nav-badge {
@@ -342,7 +346,7 @@ body {
   padding: 10px 12px; border-radius: var(--radius-sm);
   cursor: pointer; transition: var(--t);
 }
-.sidebar-user:hover { background: rgba(255,255,255,0.15); }
+.sidebar-user:hover { background: rgba(0,0,0,0.12); border-radius: var(--radius-sm); }
 .sidebar-avatar {
   width: 32px; height: 32px; border-radius: 50%;
   background: rgba(255,255,255,0.25);
@@ -368,11 +372,11 @@ body {
 }
 .topbar-title {
   font-family: 'Varela Round', sans-serif;
-  font-size: 18px; font-weight: 400; color: var(--opso-text); letter-spacing: -0.2px;
+  font-size: 19px; font-weight: 400; color: var(--opso-text); letter-spacing: -0.2px;
 }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 
-.page-content { flex: 1; overflow-y: auto; padding: 24px; background: var(--opso-gray-pale); }
+.page-content { flex: 1; overflow-y: auto; padding: 28px 32px; background: var(--opso-gray-pale); }
 .content      { flex: 1; overflow-y: auto; padding: 24px; background: var(--opso-gray-pale); }
 .page { display: none; }
 .page.active { display: block; }
@@ -497,18 +501,18 @@ body {
 .kpi-hero::after { background: none; }
 .kpi-hero::before { background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%); }
 .kpi-hero .kpi-label { color: rgba(255,255,255,0.70); }
-.kpi-hero .kpi-value { color: #fff; font-size: 38px; letter-spacing: -2px; }
+.kpi-hero .kpi-value { color: #fff; font-size: 32px; letter-spacing: -2px; }
 .kpi-hero .kpi-icon { background: rgba(255,255,255,0.15); }
 
 /* Dashboard welcome banner */
 .dash-banner {
   background: linear-gradient(135deg, #064e20 0%, #0d8530 50%, #11a63c 100%);
   border-radius: var(--radius-lg);
-  padding: 24px 32px;
+  padding: 28px 36px;
   color: #fff;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   position: relative; overflow: hidden;
-  box-shadow: 0 8px 32px rgba(17,166,60,.3);
+  box-shadow: 0 8px 32px rgba(17,166,60,.3), 0 2px 8px rgba(17,166,60,.15);
 }
 .dash-banner::after {
   content: '';
@@ -519,7 +523,7 @@ body {
 }
 .dash-banner-title {
   font-family: 'Varela Round', sans-serif;
-  font-size: 22px; font-weight: 400; letter-spacing: -0.4px;
+  font-size: 24px; font-weight: 400; letter-spacing: -0.5px;
   margin-bottom: 6px;
 }
 .dash-banner-sub { font-size: 14px; color: rgba(255,255,255,0.75); }
@@ -530,7 +534,7 @@ body {
 .card {
   background: var(--opso-white);
   border-radius: var(--radius-md);
-  padding: 24px;
+  padding: 28px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--opso-border);
   margin-bottom: 20px;
@@ -544,9 +548,9 @@ body {
 
 .card-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 24px;
+  padding: 20px 28px;
   border-bottom: 1px solid var(--opso-border);
-  margin: -24px -24px 20px;
+  margin: -24px -24px 24px;
 }
 .card-title {
   font-family: 'Varela Round', sans-serif;
@@ -710,7 +714,7 @@ tbody tr:hover { background: var(--opso-green-pale2); }
 /* ══════════════════════════════════════
    SECTION TITLE
 ══════════════════════════════════════ */
-.section-title { font-family: 'Varela Round', sans-serif; font-size: 20px; font-weight: 400; letter-spacing: -0.4px; color: var(--opso-text); margin-bottom: 4px; }
+.section-title { font-family: 'Varela Round', sans-serif; font-size: 24px; font-weight: 400; letter-spacing: -0.6px; color: var(--opso-text); margin-bottom: 4px; }
 .section-sub { font-size: 13px; color: var(--opso-gray); margin-bottom: 24px; }
 
 /* ══════════════════════════════════════
@@ -1108,7 +1112,7 @@ label {
   .nav-item.active::before { display: none; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .grid-2 { grid-template-columns: 1fr; }
-  .page-content { padding: 24px 20px; }
+  .page-content { padding: 20px 16px; }
   .content { padding: 24px 20px; }
 }
 @media (max-width: 600px) {
