@@ -1047,6 +1047,7 @@ function renderDashboard() {
 // ── PHARMACIES ────────────────────────────────
 let pharmaSearch  = '';
 let pharmaFilter  = 'all'; // 'all' | 'up' | 'flat' | 'down'
+let pharmaDetailOverridePeriod = null; // {year, month} or null → use auto-detected
 
 function renderPharmacies() {
   const allSalesRaw = getSales();
@@ -1324,15 +1325,21 @@ function renderProspects(search = '') {
     </div>`;
 }
 
-function showPharmaDetail(pharmacyId) {
+function showPharmaDetail(pharmacyId, overridePeriod) {
+  if (overridePeriod !== undefined) pharmaDetailOverridePeriod = overridePeriod;
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
   if (!pharma) return;
 
   const allPhSales = getSales({ pharmacyId: pharma.id });
-  const { year: curY, month: curM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const autoP = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const curY = pharmaDetailOverridePeriod?.year  ?? autoP.year;
+  const curM = pharmaDetailOverridePeriod?.month ?? autoP.month;
   const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
   const salesCur  = curY  ? getSales({ pharmacyId: pharma.id, year: curY, month: curM  }) : [];
   const salesPrev = prevY ? getSales({ pharmacyId: pharma.id, year: prevY, month: prevM }) : [];
+
+  // Available periods for this pharmacy
+  const availPeriods = [...new Set(allPhSales.map(s => `${s.year}-${String(s.month).padStart(2,'0')}`))].sort().reverse();
 
   const caCur    = sumCA(salesCur);
   const caPrev   = sumCA(salesPrev);
@@ -1446,10 +1453,18 @@ function showPharmaDetail(pharmacyId) {
 
       <!-- Header -->
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="renderPharmacies()">← Retour</button>
+        <button class="btn btn-ghost" onclick="pharmaDetailOverridePeriod=null;renderPharmacies()">← Retour</button>
         <div style="width:12px;height:12px;border-radius:50%;background:${pharma.color}"></div>
         <span class="section-title" style="margin:0;flex:1">${pharma.name}</span>
         ${clientInfo?.ville ? `<span style="font-size:12px;color:var(--text3)">${clientInfo.cp} ${clientInfo.ville}</span>` : ''}
+        ${availPeriods.length > 1 ? `<select onchange="showPharmaDetail('${pharma.id}',this.value==='auto'?null:{year:+this.value.split('-')[0],month:+this.value.split('-')[1]})"
+          style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
+          ${availPeriods.map(p => {
+            const [y, m] = p.split('-');
+            const sel = +y === curY && +m === curM;
+            return `<option value="${p}" ${sel ? 'selected' : ''}>${monthName(+m)} ${y}</option>`;
+          }).join('')}
+        </select>` : `<span style="font-size:12px;color:var(--text3)">${monthName(curM)} ${curY}</span>`}
         <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px">📋 Fiche visite</button>
         <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
         <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
