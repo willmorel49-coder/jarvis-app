@@ -2553,7 +2553,7 @@ function renderProduits() {
     if (!k) continue;
     if (!prodTableMap[k]) prodTableMap[k] = {
       label: s.artDesignation, ca: 0, qte: 0, marge: 0,
-      cat: classifyProduct(s), pharmas: new Set(),
+      cat: classifyProduct(s), froid: isFroid(s), pharmas: new Set(),
     };
     prodTableMap[k].ca     += s.mntNetHt;
     prodTableMap[k].qte    += s.qte;
@@ -2561,6 +2561,10 @@ function renderProduits() {
     prodTableMap[k].pharmas.add(s.pharmacyId);
   }
   let prodTableAll = Object.values(prodTableMap).map(p => ({ ...p, pharmaCount: p.pharmas.size }));
+  if (prodFamille !== 'tous') {
+    if (prodFamille === 'froid') prodTableAll = prodTableAll.filter(p => p.froid);
+    else prodTableAll = prodTableAll.filter(p => p.cat === prodFamille);
+  }
   if (prodTableQuery) {
     const q2 = prodTableQuery.toLowerCase();
     prodTableAll = prodTableAll.filter(p => p.label.toLowerCase().includes(q2));
