@@ -1830,7 +1830,8 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         const rows = top.map((p, i) => {
           const cat = CATS[p.cat] || CATS.mi;
           const pct = (p.ca / caCur * 100).toFixed(1);
-          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border1)">
+          const escapedLabel = (p.label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          return `<div onclick="showProductBreakdown('${escapedLabel}')" style="display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border1);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
             <div style="font-size:11px;font-weight:800;color:var(--text3);width:18px;flex-shrink:0;text-align:right">${i+1}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
@@ -1854,6 +1855,55 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             <span style="font-size:12px;color:var(--text3)">${top.length} / ${Object.keys(byProd).length}</span>
           </div>
           ${rows}
+        </div>`;
+      })() : ''}
+
+      <!-- Tendance produits M vs M-1 -->
+      ${salesCur.length && salesPrev.length ? (() => {
+        const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g,' ');
+        const mapProd = (sales) => {
+          const m = {};
+          for (const s of sales) {
+            const k = nn(s.artDesignation);
+            if (!k) continue;
+            if (!m[k]) m[k] = { label: s.artDesignation, ca: 0, cat: classifyProduct(s) };
+            m[k].ca += s.mntNetHt;
+          }
+          return m;
+        };
+        const mapCur  = mapProd(salesCur);
+        const mapPrev = mapProd(salesPrev);
+        const diffs = Object.keys({ ...mapCur, ...mapPrev }).map(k => ({
+          label: mapCur[k]?.label || mapPrev[k]?.label,
+          cat:   mapCur[k]?.cat  || mapPrev[k]?.cat || 'mi',
+          cur:   mapCur[k]?.ca  || 0,
+          prev:  mapPrev[k]?.ca || 0,
+          delta: (mapCur[k]?.ca || 0) - (mapPrev[k]?.ca || 0),
+        })).filter(d => d.cur > 0 || d.prev > 0);
+        const gainers  = diffs.filter(d => d.delta > 0  && d.prev > 0).sort((a,b) => b.delta - a.delta).slice(0,4);
+        const losers   = diffs.filter(d => d.delta < 0  && d.prev > 0).sort((a,b) => a.delta - b.delta).slice(0,4);
+        const newProds = diffs.filter(d => d.prev === 0 && d.cur > 0).sort((a,b) => b.cur - a.cur).slice(0,3);
+        if (!gainers.length && !losers.length) return '';
+        const row = (d, color, arrow) => {
+          const cat = CATS[d.cat] || CATS.mi;
+          const pct = d.prev > 0 ? ((d.delta / d.prev) * 100).toFixed(0) : '';
+          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 20px;border-bottom:1px solid var(--border1)">
+            <span style="font-size:14px">${arrow}</span>
+            <div style="flex:1;min-width:0;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.label}</div>
+            <span style="font-size:10px;padding:1px 5px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:600;flex-shrink:0">${cat.icon}</span>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:12px;font-weight:700;color:${color}">${d.delta > 0 ? '+' : ''}${fmt(d.delta)}</div>
+              ${pct ? `<div style="font-size:10px;color:${color}">${d.delta > 0 ? '+' : ''}${pct}%</div>` : ''}
+            </div>
+          </div>`;
+        };
+        return `<div class="card fade-up" style="margin-bottom:20px">
+          <div class="card-header">
+            <div class="card-title">Tendance produits ${prevLabel} → ${curLabel}</div>
+          </div>
+          ${gainers.length ? `<div style="padding:6px 20px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mint)">En hausse</div>${gainers.map(d => row(d,'var(--mint)','↑')).join('')}` : ''}
+          ${losers.length  ? `<div style="padding:6px 20px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--rose)">En baisse</div>${losers.map(d => row(d,'var(--rose)','↓')).join('')}` : ''}
+          ${newProds.length ? `<div style="padding:6px 20px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--amber)">Nouveaux ce mois</div>${newProds.map(d => row(d,'var(--amber)','★')).join('')}` : ''}
         </div>`;
       })() : ''}
 
