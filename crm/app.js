@@ -2368,7 +2368,8 @@ function renderProduits() {
               const cat = CATS[p.cat] || CATS.mi;
               const rank = (prodTablePage - 1) * PROD_TABLE_PER_PAGE + i + 1;
               const puMoyen = p.qte > 0 ? p.ca / p.qte : 0;
-              return `<tr>
+              const escapedLabel = (p.label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+              return `<tr onclick="showProductBreakdown('${escapedLabel}')" style="cursor:pointer" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
                 <td style="font-size:12px">
                   <span style="color:var(--text3);font-size:11px;margin-right:6px">${rank}</span>
                   ${p.label}
@@ -3338,7 +3339,7 @@ function benchExportCSV() {
   else if (benchCat !== 'tous')      data = data.filter(d => d.categorie === benchCat);
   if (benchSearch) {
     const q = benchSearch.toLowerCase();
-    data = data.filter(d => d.designation.toLowerCase().includes(q) || (d.cip13||'').includes(q));
+    data = data.filter(d => d.designation.toLowerCase().includes(q) || (d.cip13||'').includes(q) || (d.atc2||'').toLowerCase().includes(q));
   }
   data.sort((a, b) => { const av = a[benchSortCol]??0, bv = b[benchSortCol]??0; return benchSortAsc ? av-bv : bv-av; });
   const header = ['Rang Qtés','Produit','CIP13','Catégorie','Qtés IP','CA IP','Prix IP','Rotation Jan26','YoY Jan','Remb. Ameli','Ameli Jan26'];
@@ -3394,7 +3395,7 @@ function renderBenchmark() {
   else if (benchCat !== 'tous')      data = data.filter(d => d.categorie === benchCat);
   if (benchSearch) {
     const q = benchSearch.toLowerCase();
-    data = data.filter(d => d.designation.toLowerCase().includes(q) || (d.cip13||'').includes(q));
+    data = data.filter(d => d.designation.toLowerCase().includes(q) || (d.cip13||'').includes(q) || (d.atc2||'').toLowerCase().includes(q));
   }
   if (benchCrossFilter === 'vendus')     data = data.filter(d => salesMap[nnBench(d.designation)]?.ca > 0);
   if (benchCrossFilter === 'non_vendus') data = data.filter(d => !salesMap[nnBench(d.designation)]?.ca);
