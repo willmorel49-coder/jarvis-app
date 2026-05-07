@@ -1301,6 +1301,7 @@ function printRapportMensuel() {
 // ── PHARMACIES ────────────────────────────────
 let pharmaSearch  = '';
 let pharmaFilter  = 'all'; // 'all' | 'up' | 'flat' | 'down'
+let pharmaSort    = 'ca';  // 'ca' | 'delta' | 'name'
 let pharmaDetailOverridePeriod = null; // {year, month} or null → use auto-detected
 
 function renderPharmacies() {
@@ -1343,8 +1344,10 @@ function renderPharmacies() {
     });
   }
 
-  // Tri CA courant décroissant
-  enriched.sort((a, b) => b.caCur - a.caCur);
+  // Tri
+  if (pharmaSort === 'name')  enriched.sort((a, b) => a.ph.name.localeCompare(b.ph.name));
+  else if (pharmaSort === 'delta') enriched.sort((a, b) => (b.g ?? -Infinity) - (a.g ?? -Infinity));
+  else enriched.sort((a, b) => b.caCur - a.caCur);
 
   const maxCA = Math.max(...enriched.map(e => e.caCur), 1);
 
@@ -1480,7 +1483,15 @@ function renderPharmacies() {
           </div>
         </div>
       </div>
-      <div style="padding:12px 24px 0">${filterBarHtml}</div>
+      <div style="padding:12px 24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        ${filterBarHtml}
+        <div style="display:flex;gap:4px;align-items:center">
+          <span style="font-size:11px;color:var(--text3);margin-right:4px">Trier par</span>
+          ${[['ca','CA'],['delta','Delta'],['name','Nom']].map(([k,l]) =>
+            `<button onclick="pharmaSort='${k}';renderPharmacies()" style="padding:4px 10px;border-radius:8px;border:1px solid ${pharmaSort===k?'var(--blue)':'var(--border2)'};background:${pharmaSort===k?'rgba(0,87,255,.1)':'transparent'};color:${pharmaSort===k?'var(--blue)':'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600">${l}</button>`
+          ).join('')}
+        </div>
+      </div>
       ${listHtml}
     </div>
 
