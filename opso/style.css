@@ -59,6 +59,7 @@
   --border:  rgba(0,0,0,0.07);
   --border2: rgba(0,0,0,0.12);
   --border3: rgba(0,0,0,0.05);
+  --border1: rgba(0,0,0,0.07);  /* alias border pour compat app.js */
 
   /* ── Surfaces ── */
   --glass:  rgba(255,255,255,0.85);
@@ -147,6 +148,26 @@ body {
   0%, 100% { transform: scale(1); opacity: .10; }
   50%       { transform: scale(1.4) translate(-4px, 4px); opacity: .06; }
 }
+
+@keyframes skeleton-wave {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+.skeleton-line { height: 14px; margin-bottom: 10px; }
+.skeleton-line.short { width: 60%; }
+.skeleton-line.medium { width: 80%; }
+.skeleton-circle { border-radius: 50%; }
+
 .fade-up { animation: fadeUp 0.3s ease forwards; }
 .fade-in { animation: fadeIn 0.3s ease; }
 
@@ -245,6 +266,10 @@ body {
   overflow-y: auto;
 }
 
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
 .sidebar-brand {
   display: flex; align-items: center; gap: 10px;
   padding: 4px 20px 20px;
@@ -298,6 +323,14 @@ body {
   margin-left: auto; background: rgba(255,255,255,0.25);
   color: #fff; font-size: 10px; font-weight: 700;
   padding: 2px 7px; border-radius: 10px;
+  transition: transform 0.2s ease;
+}
+.nav-item .nav-badge.pulse {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
 }
 
 .sidebar-footer {
@@ -467,6 +500,30 @@ body {
 .kpi-hero .kpi-value { color: #fff; font-size: 38px; letter-spacing: -2px; }
 .kpi-hero .kpi-icon { background: rgba(255,255,255,0.15); }
 
+/* Dashboard welcome banner */
+.dash-banner {
+  background: linear-gradient(135deg, #064e20 0%, #0d8530 50%, #11a63c 100%);
+  border-radius: var(--radius-lg);
+  padding: 24px 32px;
+  color: #fff;
+  margin-bottom: 24px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(17,166,60,.3);
+}
+.dash-banner::after {
+  content: '';
+  position: absolute; bottom: -30px; right: -30px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.dash-banner-title {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 22px; font-weight: 400; letter-spacing: -0.4px;
+  margin-bottom: 6px;
+}
+.dash-banner-sub { font-size: 14px; color: rgba(255,255,255,0.75); }
+
 /* ══════════════════════════════════════
    CARDS / PANELS
 ══════════════════════════════════════ */
@@ -634,6 +691,23 @@ tbody tr:hover { background: var(--opso-green-pale2); }
 .tab:hover:not(.active) { color: var(--opso-text); background: rgba(0,0,0,.03); }
 
 /* ══════════════════════════════════════
+   PAGE HEADER
+══════════════════════════════════════ */
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 28px; padding-bottom: 18px;
+  border-bottom: 2px solid var(--opso-border);
+}
+.page-header-left {}
+.page-header-title {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 22px; font-weight: 400; letter-spacing: -0.4px;
+  color: var(--opso-text); margin-bottom: 4px;
+}
+.page-header-sub { font-size: 13px; color: var(--opso-gray); line-height: 1.5; }
+.page-header-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+/* ══════════════════════════════════════
    SECTION TITLE
 ══════════════════════════════════════ */
 .section-title { font-family: 'Varela Round', sans-serif; font-size: 20px; font-weight: 400; letter-spacing: -0.4px; color: var(--opso-text); margin-bottom: 4px; }
@@ -762,6 +836,44 @@ label {
 #toast.info    { background: var(--opso-green-pale); border: 1px solid rgba(17,166,60,.25); color: var(--opso-green); }
 
 /* ══════════════════════════════════════
+   APP LOADING OVERLAY
+══════════════════════════════════════ */
+#app-loading {
+  position: fixed; inset: 0; z-index: 9998;
+  background: var(--opso-gray-pale);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 20px;
+  transition: opacity 0.4s ease;
+}
+#app-loading.hidden {
+  opacity: 0; pointer-events: none;
+}
+
+.app-loading-logo {
+  width: 64px; height: 64px; border-radius: 18px;
+  background: var(--blue-g);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 32px var(--blue-glow);
+  animation: breath 2s ease-in-out infinite;
+}
+
+.app-loading-text {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 15px; color: var(--opso-gray);
+  letter-spacing: -0.2px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.app-loading-spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid var(--opso-green-pale);
+  border-top-color: var(--opso-green);
+  animation: spin 0.8s linear infinite;
+}
+
+/* ══════════════════════════════════════
    PHARMA LIST
 ══════════════════════════════════════ */
 .pharma-item {
@@ -827,7 +939,13 @@ label {
    EMPTY STATE
 ══════════════════════════════════════ */
 .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 20px; text-align: center; }
-.empty-icon { font-size: 48px; margin-bottom: 16px; opacity: .3; }
+.empty-icon {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--opso-green-pale);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 32px;
+}
 .empty-title { font-family: 'Varela Round', sans-serif; font-size: 18px; font-weight: 400; color: var(--opso-gray); margin-bottom: 8px; }
 .empty-sub { font-size: 14px; color: var(--opso-gray-light); max-width: 280px; line-height: 1.6; }
 
@@ -857,6 +975,10 @@ label {
 .alert-item .alert-body { display: flex; flex-direction: column; gap: 2px; }
 .alert-title { font-size: 13px; font-weight: 600; color: var(--opso-text); }
 .alert-sub { font-size: 12px; color: var(--opso-gray); margin-top: 2px; }
+.alert-up     .alert-icon { background: var(--opso-green-pale); color: var(--opso-green-dark); }
+.alert-down   .alert-icon { background: var(--rose-bg); color: var(--rose); }
+.alert-absent .alert-icon { background: var(--amber-bg); color: var(--amber); }
+.alert-new    .alert-icon { background: var(--mint-bg); color: var(--mint); }
 
 /* ══════════════════════════════════════
    FILTER CHIPS BAR
@@ -984,7 +1106,7 @@ label {
   .nav-item { justify-content: center; padding: 12px; }
   .nav-item .nav-icon { width: auto; }
   .nav-item.active::before { display: none; }
-  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .grid-2 { grid-template-columns: 1fr; }
   .page-content { padding: 24px 20px; }
   .content { padding: 24px 20px; }
