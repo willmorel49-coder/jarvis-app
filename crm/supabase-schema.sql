@@ -44,11 +44,15 @@ create table if not exists sales (
   art_designation text,
   art_code        text,
   art_id          text,
+  art_famille     text,
   qte             decimal(12,4) default 0,
   pu_brut         decimal(12,4) default 0,
   pu_net          decimal(12,4) default 0,
   mnt_net_ht      decimal(12,4) default 0
 );
+
+-- Migration : ajouter art_famille si absente (installations existantes)
+alter table sales add column if not exists art_famille text;
 
 -- ── ROW LEVEL SECURITY ────────────────────────
 
