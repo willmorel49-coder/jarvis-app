@@ -2964,16 +2964,20 @@ function roleBadge(role) {
 function offiGetList() {
   if (typeof OFFILOG === 'undefined') return [];
   const q = offiQuery.toLowerCase().trim();
-  return OFFILOG.filter(p => {
+  let list = OFFILOG.filter(p => {
     if (q && !p.produit.toLowerCase().includes(q) &&
         !(p.ean || '').includes(q) &&
         !(p.marque || '').toLowerCase().includes(q)) return false;
+    if (offiRole === 'bestsellers') return p.rang_vente != null;
     if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
     if (offiRole !== 'tous' && offiRole !== 'offilog' && p.role !== offiRole) return false;
     if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
     if (offiMarque !== 'tous' && p.marque !== offiMarque) return false;
     return true;
   });
+  // Trier par rang_vente si filtre best-sellers actif
+  if (offiRole === 'bestsellers') list.sort((a, b) => (a.rang_vente || 999) - (b.rang_vente || 999));
+  return list;
 }
 
 function offiGoPage(p) { offiPageNum = p; renderOffilog(); }
@@ -3029,8 +3033,10 @@ function renderOffilog() {
     }).join('');
 
   // ── Role chips ────────────────────────────────
+  const nBest     = OFFILOG.filter(p => p.rang_vente != null).length;
   const roleTabs = [
     { key: 'tous',            label: 'Tous',             icon: '✦', color: '#64748B' },
+    { key: 'bestsellers',     label: `Top ventes (${nBest})`, icon: '🏆', color: '#F59E0B' },
     { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
     { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
     { key: 'Héros / Soutien', label: 'Héros/Soutien',    icon: '⭐', color: '#FBBF24' },
@@ -3082,6 +3088,9 @@ function renderOffilog() {
     const liveBadge = hasLive
       ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#dcfce7;color:#15803d;font-weight:700">● Live</span>`
       : '';
+    const bestBadge = p.rang_vente != null
+      ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:800">🏆 #${p.rang_vente}</span>`
+      : '';
 
     const competHtml = (hasDrak || hasCap) ? `
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border1)">
@@ -3099,7 +3108,7 @@ function renderOffilog() {
               style="max-height:130px;max-width:100%;object-fit:contain;padding:8px;transition:transform .3s"
               onerror="this.closest('div').innerHTML='<div style=\\'height:140px;background:linear-gradient(135deg,${um.bg},${um.color}22);display:flex;align-items:center;justify-content:center;font-size:32px\\'>${um.icon}</div>'"
               onmouseover="this.style.transform='scale(1.07)'" onmouseout="this.style.transform=''">
-            <div style="position:absolute;top:8px;left:8px;display:flex;gap:4px">${ipBadge}${liveBadge}${saisonBadge}</div>
+            <div style="position:absolute;top:8px;left:8px;display:flex;gap:4px">${bestBadge}${ipBadge}${liveBadge}${saisonBadge}</div>
           </div>`
         : `<div style="height:4px;background:linear-gradient(90deg,${um.color},${um.color}88)"></div>`
       }
@@ -3107,7 +3116,7 @@ function renderOffilog() {
         <!-- Brand + badges (seulement si pas d'image, sinon déjà dans l'image) -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:6px">
           <span style="font-size:10px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.marque || '—'}</span>
-          ${!hasImg ? `<div style="display:flex;gap:4px;flex-shrink:0">${ipBadge}${liveBadge}${saisonBadge}</div>` : ''}
+          ${!hasImg ? `<div style="display:flex;gap:4px;flex-shrink:0">${bestBadge}${ipBadge}${liveBadge}${saisonBadge}</div>` : ''}
         </div>
         <!-- Nom produit -->
         <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;margin-bottom:8px">${p.produit}</div>
