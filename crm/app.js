@@ -1307,6 +1307,7 @@ function showPharmaDetail(pharmacyId) {
         <div style="width:12px;height:12px;border-radius:50%;background:${pharma.color}"></div>
         <span class="section-title" style="margin:0;flex:1">${pharma.name}</span>
         ${clientInfo?.ville ? `<span style="font-size:12px;color:var(--text3)">${clientInfo.cp} ${clientInfo.ville}</span>` : ''}
+        <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px">📋 Fiche visite</button>
         <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
         <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
       </div>
@@ -4016,6 +4017,158 @@ function renderGrpDocuments(grp) {
   </div>`;
 }
 
+
+// ── FICHE VISITE ──────────────────────────────
+function showFicheVisite(pharmacyId) {
+  const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!pharma) return;
+
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  const { year: curY, month: curM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
+  const salesCur  = curY  ? getSales({ pharmacyId: pharma.id, year: curY, month: curM  }) : [];
+  const salesPrev = prevY ? getSales({ pharmacyId: pharma.id, year: prevY, month: prevM }) : [];
+  const caCur  = sumCA(salesCur);
+  const caPrev = sumCA(salesPrev);
+  const curLabel  = curY  ? `${monthName(curM)} ${curY}` : '—';
+  const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
+
+  const clientInfo = typeof CLIENTS !== 'undefined'
+    ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === pharma.name.toUpperCase().trim())
+    : null;
+
+  // Top 5 produits
+  const byProd = {};
+  for (const s of salesCur) {
+    const k = (s.artDesignation || '').trim().toUpperCase();
+    if (!k) continue;
+    if (!byProd[k]) byProd[k] = { label: s.artDesignation, ca: 0, qte: 0, cat: classifyProduct(s) };
+    byProd[k].ca  += s.mntNetHt;
+    byProd[k].qte += s.qte;
+  }
+  const top5 = Object.values(byProd).sort((a,b) => b.ca - a.ca).slice(0, 5);
+
+  // Switch opps (top 3)
+  const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const switchOpps = [];
+  if (typeof BENCHMARK !== 'undefined') {
+    for (const [k, prod] of Object.entries(byProd)) {
+      const match = BENCHMARK.find(b => nn(b.designation) === k);
+      if (match && match.prix_ip > 0 && prod.ca / prod.qte > 0 && match.prix_ip < (prod.ca / prod.qte) * 0.99) {
+        switchOpps.push({
+          designation: prod.label,
+          gainMois: (prod.ca / prod.qte - match.prix_ip) * prod.qte,
+        });
+      }
+    }
+    switchOpps.sort((a, b) => b.gainMois - a.gainMois);
+  }
+
+  // Add opps (top 3)
+  const ourNorms = new Set(Object.keys(byProd));
+  const addOpps = typeof BENCHMARK !== 'undefined'
+    ? BENCHMARK.filter(b => b.rot_pharma_jan26 > 2 && b.prix_ip > 0 && !ourNorms.has(nn(b.designation)))
+        .sort((a, b) => b.rot_pharma_jan26 - a.rot_pharma_jan26).slice(0, 3)
+    : [];
+
+  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const modal = document.createElement('div');
+  modal.id = 'fiche-visite-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px';
+  modal.innerHTML = `
+    <div style="background:#fff;color:#1a1a2e;border-radius:20px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3)">
+      <!-- Print header -->
+      <div style="background:linear-gradient(135deg,#1E3A8A,#2563EB);padding:24px 28px;border-radius:20px 20px 0 0;color:#fff">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:11px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">Fiche de visite</div>
+            <div style="font-size:22px;font-weight:900;letter-spacing:-.3px">${pharma.name}</div>
+            ${clientInfo?.ville ? `<div style="font-size:12px;opacity:.7;margin-top:2px">${clientInfo.cp} ${clientInfo.ville} ${clientInfo.tel ? '· ' + clientInfo.tel : ''}</div>` : ''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;opacity:.6">Intégral Pharma</div>
+            <div style="font-size:12px;font-weight:600;margin-top:2px">${today}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:24px 28px">
+        <!-- KPIs -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+          <div style="padding:14px 16px;background:#f0f4ff;border-radius:12px;text-align:center">
+            <div style="font-size:20px;font-weight:900;color:#1E3A8A">${fmt(caCur)}</div>
+            <div style="font-size:11px;color:#475569;margin-top:2px">CA ${curLabel}</div>
+          </div>
+          <div style="padding:14px 16px;background:${caCur >= caPrev ? '#f0fdf4' : '#fff5f5'};border-radius:12px;text-align:center">
+            <div style="font-size:20px;font-weight:900;color:${caCur >= caPrev ? '#15803d' : '#dc2626'}">
+              ${caPrev > 0 ? `${caCur >= caPrev ? '+' : ''}${((caCur - caPrev)/caPrev*100).toFixed(1)}%` : '—'}
+            </div>
+            <div style="font-size:11px;color:#475569;margin-top:2px">vs ${prevLabel}</div>
+          </div>
+          <div style="padding:14px 16px;background:#fefce8;border-radius:12px;text-align:center">
+            <div style="font-size:20px;font-weight:900;color:#92400e">${Object.keys(byProd).length}</div>
+            <div style="font-size:11px;color:#475569;margin-top:2px">Références</div>
+          </div>
+        </div>
+
+        <!-- Top 5 produits -->
+        ${top5.length ? `
+        <div style="margin-bottom:20px">
+          <div style="font-size:13px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">Top produits — ${curLabel}</div>
+          ${top5.map((p, i) => {
+            const cat = CATS[p.cat] || CATS.mi;
+            const pct = caCur > 0 ? (p.ca / caCur * 100).toFixed(1) : '0';
+            return `<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid #f1f5f9">
+              <div style="width:20px;font-size:12px;font-weight:800;color:#94a3b8;text-align:right;flex-shrink:0">${i+1}</div>
+              <div style="flex:1;font-size:12px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
+              <div style="font-size:11px;color:#64748b;flex-shrink:0">${p.qte.toFixed(0)} u</div>
+              <div style="font-size:13px;font-weight:700;color:#1E3A8A;flex-shrink:0">${fmt(p.ca)}</div>
+              <div style="font-size:10px;color:#94a3b8;flex-shrink:0">${pct}%</div>
+              <span style="font-size:10px;padding:1px 6px;border-radius:6px;background:${cat.color}18;color:${cat.color};font-weight:700">${cat.icon}</span>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
+        <!-- Opportunités switch -->
+        ${switchOpps.length ? `
+        <div style="margin-bottom:20px">
+          <div style="font-size:13px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">🔄 Switches à proposer</div>
+          ${switchOpps.slice(0,3).map(o => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9">
+              <div style="font-size:12px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.designation}</div>
+              <div style="font-size:12px;font-weight:800;color:#16a34a;white-space:nowrap;margin-left:12px">+${fmt(o.gainMois)}/mois</div>
+            </div>`).join('')}
+        </div>` : ''}
+
+        <!-- Opportunités ajout -->
+        ${addOpps.length ? `
+        <div style="margin-bottom:20px">
+          <div style="font-size:13px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">➕ Produits à référencer</div>
+          ${addOpps.map(b => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9">
+              <div style="font-size:12px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.designation}</div>
+              <div style="font-size:11px;color:#64748b;white-space:nowrap;margin-left:12px">${b.rot_pharma_jan26.toFixed(1)} boîtes/pharma · ${fmt(b.prix_ip)}</div>
+            </div>`).join('')}
+        </div>` : ''}
+
+        <!-- Notes -->
+        <div style="margin-bottom:8px">
+          <div style="font-size:13px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">Notes de visite</div>
+          <div style="border:1.5px dashed #cbd5e1;border-radius:8px;min-height:80px;padding:10px;font-size:12px;color:#94a3b8">_____________________</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="padding:16px 28px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="window.print()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #2563EB;background:#eff6ff;color:#1d4ed8;font-size:13px;font-weight:700;cursor:pointer">🖨 Imprimer</button>
+        <button onclick="document.getElementById('fiche-visite-modal').remove()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#475569;font-size:13px;font-weight:700;cursor:pointer">Fermer</button>
+      </div>
+    </div>`;
+
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
 
 // ── BOOT ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
