@@ -3217,6 +3217,76 @@ function renderObjectifs() {
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">${curMonthCards}</div>
       </div>` : ''}
 
+      <!-- Cumul annuel -->
+      ${(() => {
+        const ytdMonths = [];
+        for (let m = 1; m <= curM; m++) ytdMonths.push({ year: curY, month: m });
+        const ytdRows = state.pharmacies.map(ph => {
+          const actualYTD  = ytdMonths.reduce((s, { year, month }) => s + getSales({ pharmacyId: ph.id, year, month }).reduce((a, x) => a + x.mntNetHt, 0), 0);
+          const targetYTD  = ytdMonths.reduce((s, { year, month }) => s + (objectives[`${ph.id}_${year}_${month}`] || 0), 0);
+          const pct = targetYTD > 0 ? actualYTD / targetYTD * 100 : null;
+          return { ph, actualYTD, targetYTD, pct };
+        }).filter(r => r.actualYTD > 0 || r.targetYTD > 0);
+
+        const totalActYTD = ytdRows.reduce((s, r) => s + r.actualYTD, 0);
+        const totalObjYTD = ytdRows.reduce((s, r) => s + r.targetYTD, 0);
+        const totalPct    = totalObjYTD > 0 ? totalActYTD / totalObjYTD * 100 : null;
+        if (!ytdRows.length) return '';
+
+        return `<div class="card fade-up" style="margin-bottom:24px">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Cumul annuel — Jan ${curY} → ${monthName(curM)} ${curY}</div>
+              <div class="card-subtitle">CA réalisé vs objectif pour chaque pharmacie</div>
+            </div>
+            ${totalPct !== null ? `
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:900;color:${totalPct >= 100 ? 'var(--mint)' : totalPct >= 70 ? 'var(--amber)' : 'var(--rose)'}">${totalPct.toFixed(1)}%</div>
+              <div style="font-size:11px;color:var(--text3)">Secteur YTD</div>
+            </div>` : ''}
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr style="border-bottom:2px solid var(--border2)">
+                <th style="padding:8px 16px;font-size:11px;color:var(--text3);font-weight:700;text-align:left">Pharmacie</th>
+                <th style="padding:8px 12px;font-size:11px;color:var(--text3);font-weight:700;text-align:right">Réalisé YTD</th>
+                <th style="padding:8px 12px;font-size:11px;color:var(--text3);font-weight:700;text-align:right">Objectif YTD</th>
+                <th style="padding:8px 12px;font-size:11px;color:var(--text3);font-weight:700;text-align:right">Atteinte</th>
+                <th style="padding:8px 16px;font-size:11px;color:var(--text3);font-weight:700;text-align:left">Barre</th>
+              </tr></thead>
+              <tbody>
+                ${ytdRows.map(r => {
+                  const color = r.pct === null ? 'var(--text3)' : r.pct >= 100 ? 'var(--mint)' : r.pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+                  return `<tr style="border-bottom:1px solid var(--border)">
+                    <td style="padding:10px 16px">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${r.ph.color};flex-shrink:0"></span>
+                        <span style="font-size:13px;font-weight:600">${r.ph.name}</span>
+                      </div>
+                    </td>
+                    <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:var(--blue)">${fmt(r.actualYTD)}</td>
+                    <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text3)">${r.targetYTD > 0 ? fmt(r.targetYTD) : '—'}</td>
+                    <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:${color}">${r.pct !== null ? r.pct.toFixed(1) + '%' : '—'}</td>
+                    <td style="padding:10px 16px;width:120px">
+                      <div style="height:6px;border-radius:3px;background:var(--border1)">
+                        <div style="height:100%;width:${r.pct !== null ? Math.min(r.pct,100).toFixed(0) : 0}%;background:${color};border-radius:3px"></div>
+                      </div>
+                    </td>
+                  </tr>`;
+                }).join('')}
+                <tr style="background:var(--glass2);font-weight:700;border-top:2px solid var(--border2)">
+                  <td style="padding:10px 16px;font-size:13px;font-weight:800">Total secteur</td>
+                  <td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:800;color:var(--blue)">${fmt(totalActYTD)}</td>
+                  <td style="padding:10px 12px;text-align:right;font-size:13px;color:var(--text3)">${totalObjYTD > 0 ? fmt(totalObjYTD) : '—'}</td>
+                  <td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:800;color:${totalPct !== null ? (totalPct >= 100 ? 'var(--mint)' : totalPct >= 70 ? 'var(--amber)' : 'var(--rose)') : 'var(--text3)'}">${totalPct !== null ? totalPct.toFixed(1)+'%' : '—'}</td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+      })()}
+
       <!-- 6-month table -->
       <div class="card fade-up">
         <div class="card-header">
