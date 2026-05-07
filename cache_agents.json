@@ -1,0 +1,597 @@
+{
+  "Alphega Pharmacie": {
+    "decideurs": [
+      {
+        "nom": "Nathalie Bailly",
+        "fonction": "Présidente",
+        "source": "lemoniteurdespharmacies.fr / Revue Pharma 2025"
+      },
+      {
+        "nom": "Sarah Guatel",
+        "fonction": "Directrice générale",
+        "source": "CP Alliance Healthcare 10/07/2025"
+      }
+    ]
+  },
+  "Anton & Willem": {
+    "decideurs": [
+      {
+        "nom": "Georges Duarte",
+        "fonction": "Fondateur / Dirigeant",
+        "source": "choisirmongroupement.com – interview fondateur"
+      }
+    ]
+  },
+  "Aprium Pharmacie": {
+    "decideurs": [
+      {
+        "nom": "Emmanuel Schoffler",
+        "fonction": "Président",
+        "source": "Panorama QdP 2025"
+      }
+    ]
+  },
+  "Aptiphar": {
+    "decideurs": [
+      {
+        "nom": "Eric Thiébaut",
+        "fonction": "Dirigeant (A-E-P-K EURL / Apti'Phar, Cachan)",
+        "source": "pappers.fr / societe.com A-E-P-K EURL 454042755"
+      }
+    ]
+  },
+  "Bretagne Pharma": {
+    "decideurs": [
+      {
+        "nom": "Frédéric Legendre",
+        "fonction": "Président co-fondateur (Groupe OPSO Santé / Normandie Pharma / Bretagne Pharma)",
+        "source": "lemoniteurdespharmacies.fr / societe.com Groupe OPSO Santé 880430152"
+      },
+      {
+        "nom": "Olivier Ferran",
+        "fonction": "Directeur général",
+        "source": "lemoniteurdespharmacies.fr / Groupe OPSO Santé"
+      },
+      {
+        "nom": "Julien Aubert",
+        "fonction": "Directeur général",
+        "source": "lemoniteurdespharmacies.fr / Groupe OPSO Santé"
+      },
+      {
+        "nom": "Antoine Beaujouan",
+        "fonction": "Directeur général",
+        "source": "lemoniteurdespharmacies.fr / Groupe OPSO Santé"
+      }
+    ]
+  },
+  "Bretagne Santé Référence": {
+    "decideurs": [
+      {
+        "nom": "Sébastien Temple",
+        "fonction": "Président",
+        "source": "pappers.fr / societe.com BSR Bretagne Santé Référence 528624661"
+      },
+      {
+        "nom": "Martin Doucet",
+        "fonction": "Directeur général",
+        "source": "pappers.fr / societe.com BSR 528624661"
+      },
+      {
+        "nom": "Servanne Thebault",
+        "fonction": "Directrice générale",
+        "source": "pappers.fr / societe.com BSR 528624661"
+      }
+    ]
+  },
+  "Cali Pharma": {
+    "decideurs": [
+      {
+        "nom": "Christelle Meurillon",
+        "fonction": "Présidente du CA",
+        "source": "manageo.fr CALIPHARMA 518188214"
+      },
+      {
+        "nom": "Guy Biard",
+        "fonction": "Gérant / Directeur",
+        "source": "manageo.fr CALIPHARMA 518188214"
+      }
+    ]
+  },
+  "Cap’Unipharm": {
+    "decideurs": [
+      {
+        "nom": "Christian Labussière",
+        "fonction": "Président du CA",
+        "source": "rubypayeur.com / site Cap'Unipharm"
+      },
+      {
+        "nom": "Isabelle Debord",
+        "fonction": "Directrice générale",
+        "source": "rubypayeur.com / site Cap'Unipharm"
+      },
+      {
+        "nom": "Fabrice Molia",
+        "fonction": "DG Adjoint / Responsable pharmacien",
+        "source": "rubypayeur.com"
+      },
+      {
+        "nom": "Patrice Sallet",
+        "fonction": "Vice-Président",
+        "source": "rubypayeur.com"
+      }
+    ]
+  },
+  "Centrale des Pharmaciens - Astera": {
+    "decideurs": [
+      {
+        "nom": "Armand Pinton",
+        "fonction": "Président (groupe Astera)",
+        "source": "societe.com / Centrale des Pharmaciens 508409737"
+      },
+      {
+        "nom": "Olivier Bronchain",
+        "fonction": "Directeur général (groupe Astera)",
+        "source": "societe.com / Astera"
+      },
+      {
+        "nom": "Mohammed Samir Lachachi",
+        "fonction": "Directeur général (Centrale des Pharmaciens)",
+        "source": "societe.com 508409737"
+      },
+      {
+        "nom": "Maminiaina Alain Razafindratsita",
+        "fonction": "Directeur général délégué",
+        "source": "societe.com 508409737"
+      }
+    ]
+  },
+  "Cofisanté": {
+    "decideurs": [
+      {
+        "nom": "Bruno Métairie",
+        "fonction": "Président (Pharmarket/Cofisanté SAS)",
+        "source": "workinpharma.fr / Cofisanté"
+      }
+    ]
+  },
+  "Directlabo": {
+    "decideurs": [
+      {
+        "nom": "Yves Morvan",
+        "fonction": "Président du CA",
+        "source": "societe.com / Groupe DL Santé 438561367"
+      },
+      {
+        "nom": "Hervé Cebula",
+        "fonction": "Directeur général délégué",
+        "source": "societe.com / Groupe DL Santé 438561367"
+      }
+    ]
+  },
+  "Escale Santé": {
+    "decideurs": [
+      {
+        "nom": "Sarah Guatel",
+        "fonction": "ex-DG (now Alphega DG since 2025), groupe Univers Pharmacie",
+        "source": "lequotidiendupharmacien.fr"
+      }
+    ]
+  },
+  "ExpansionPharma": {
+    "decideurs": [
+      {
+        "nom": "Joëlle Denis",
+        "fonction": "Co-dirigeante (HumanPharma / ExpansionPharma)",
+        "source": "humanpharma.eu"
+      },
+      {
+        "nom": "Olivier Groffy",
+        "fonction": "Co-dirigeant (HumanPharma / ExpansionPharma)",
+        "source": "humanpharma.eu"
+      }
+    ]
+  },
+  "Forum Santé": {
+    "decideurs": [
+      {
+        "nom": "Daniel Buchinger",
+        "fonction": "Président (Groupe Univers Santé, dont Forum Santé)",
+        "source": "pharmonaturel.com / lemoniteurdespharmacies.fr"
+      }
+    ]
+  },
+  "G1000-Pharma": {
+    "decideurs": [
+      {
+        "nom": "Alexandre Mergui",
+        "fonction": "Représentant / Dirigeant actuel",
+        "source": "societe.com / G 1000 PHARMA 530190990"
+      },
+      {
+        "nom": "Romain Von Olleschik",
+        "fonction": "ex-Président",
+        "source": "societe.com / G 1000 PHARMA 530190990"
+      }
+    ]
+  },
+  "Gripamel Pro Santé": {
+    "decideurs": [
+      {
+        "nom": "Guillaume Humeau",
+        "fonction": "Président (GIE des Pharmaciens de Maine et Loire)",
+        "source": "manageo.fr / GIE pharmaciens Maine et Loire 480991645"
+      }
+    ]
+  },
+  "Groupe Univers Pharmacie": {
+    "decideurs": [
+      {
+        "nom": "Daniel Buchinger",
+        "fonction": "Président Fondateur",
+        "source": "lemoniteurdespharmacies.fr / societe.com Univers Pharmacie 444735484"
+      }
+    ]
+  },
+  "HPI Totum": {
+    "decideurs": [
+      {
+        "nom": "Mélanie Sarot",
+        "fonction": "Présidente (depuis oct 2024)",
+        "source": "revuepharma.fr juin 2024 / pappers.fr 503543951"
+      },
+      {
+        "nom": "Sébastien de Larminat",
+        "fonction": "Directeur général (depuis 2018)",
+        "source": "lemoniteurdespharmacies.fr / societe.com 503543951"
+      }
+    ]
+  },
+  "Leadersanté": {
+    "decideurs": [
+      {
+        "nom": "Antoine Souied",
+        "fonction": "Président (co-fondateur)",
+        "source": "societe.com Leader Santé Groupe 532353075 / Quotidien du Pharmacien"
+      },
+      {
+        "nom": "Alexis Berreby",
+        "fonction": "Co-fondateur",
+        "source": "choisirmongroupement.com / linkedin.com"
+      },
+      {
+        "nom": "Samuel Tordjman",
+        "fonction": "Co-fondateur",
+        "source": "Quotidien du Pharmacien / Moniteur des Pharmacies"
+      }
+    ]
+  },
+  "Les Nouvelles Pharmacies": {
+    "decideurs": [
+      {
+        "nom": "Grégory Bales",
+        "fonction": "Gérant / Dirigeant (Biscarrosse)",
+        "source": "b-reputation.com / societe.com Les Nouvelles Pharmacies 508475548"
+      }
+    ]
+  },
+  "Les Pharmaciens Associés": {
+    "decideurs": [
+      {
+        "nom": "Gérard Clément",
+        "fonction": "Président du CA",
+        "source": "societe.com / Astera LPA"
+      },
+      {
+        "nom": "Patrick Rémond",
+        "fonction": "Directeur des réseaux",
+        "source": "societe.com / Astera LPA"
+      }
+    ],
+    "nom_actuel": "Santalis"
+  },
+  "Les Pharmaciens Unis": {
+    "decideurs": [
+      {
+        "nom": "N/A",
+        "fonction": "Groupement belge (Liège) — en faillite depuis juillet 2021. Hors périmètre France.",
+        "source": "rtbf.be / todayinliege.be / data.be 0402.352.931"
+      }
+    ]
+  },
+  "Les pharmaciens d’Armor": {
+    "decideurs": [
+      {
+        "nom": "Annie Speicher",
+        "fonction": "Présidente (GIE UPA - Union Pharmaceutique d'Armor)",
+        "source": "rubypayeur.com / societe.com UPA 418334058 — GIE fondé 1964, Trémeven (29)"
+      }
+    ]
+  },
+  "Népenthès": {
+    "decideurs": [
+      {
+        "nom": "Christian Grenier",
+        "fonction": "Président Fondateur",
+        "source": "medcost.fr / pappers.fr NEPENTHES C 439740150"
+      },
+      {
+        "nom": "Camille Yammine",
+        "fonction": "Directeur",
+        "source": "pappers.fr NEPENTHES C 439740150 — NOTE: groupement en liquidation judiciaire"
+      }
+    ]
+  },
+  "OmnesPharma": {
+    "decideurs": [
+      {
+        "nom": "Florent Bleicher",
+        "fonction": "Président / Contact dirigeant",
+        "source": "omnespharma.fr / societe.com Omnes Pharma 750400103"
+      }
+    ]
+  },
+  "OriginSanté": {
+    "decideurs": [
+      {
+        "nom": "MARSL INVEST",
+        "fonction": "Président (SAS, depuis juillet 2024)",
+        "source": "societe.com OriginSanté 453243396"
+      },
+      {
+        "nom": "Arnaud Gull",
+        "fonction": "Directeur général (depuis juillet 2025)",
+        "source": "societe.com OriginSanté 453243396 — renommé Arbitrage Conseil en 2024"
+      }
+    ]
+  },
+  "Oté Pharma": {
+    "decideurs": [
+      {
+        "nom": "INVESTAS CONSEIL",
+        "fonction": "Président (SAS OTE PHARMA, Saint-Leu La Réunion)",
+        "source": "manageo.fr / societe.com SRA OTE PHARMA 492923149"
+      }
+    ]
+  },
+  "PHR Référence": {
+    "decideurs": [
+      {
+        "nom": "Christina Tzikas",
+        "fonction": "Présidente (depuis 2023)",
+        "source": "pappers.fr / societe.com Groupe PHR 381291475"
+      },
+      {
+        "nom": "Emmanuel Benhamou",
+        "fonction": "Directeur général",
+        "source": "linkedin.com / pappers.fr Groupe PHR 381291475"
+      }
+    ]
+  },
+  "Pharm & Price": {
+    "decideurs": [
+      {
+        "nom": "Yves Morvan",
+        "fonction": "PDG (Directlabo / Pharm & Price — Groupe DL Santé)",
+        "source": "lemoniteurdespharmacies.fr / societe.com Groupe DL Santé 438561367"
+      }
+    ]
+  },
+  "Pharm O’naturel": {
+    "decideurs": [
+      {
+        "nom": "Jérémy Buchinger",
+        "fonction": "Président (depuis déc 2023)",
+        "source": "societe.com Pharm O'naturel 520877952"
+      },
+      {
+        "nom": "Denis Fragne",
+        "fonction": "Directeur général délégué",
+        "source": "societe.com Pharm O'naturel 520877952"
+      },
+      {
+        "nom": "Sophie Gaudin",
+        "fonction": "Fondatrice",
+        "source": "pharmonaturel.com / Quotidien du Pharmacien"
+      }
+    ]
+  },
+  "Pharm'Indep": {
+    "decideurs": [
+      {
+        "nom": "Ingrid Paroielle-Gobert",
+        "fonction": "Présidente (depuis sept 2023)",
+        "source": "societe.com Pharm Indep 530578749"
+      }
+    ]
+  },
+  "PharmaGroupSanté": {
+    "decideurs": [
+      {
+        "nom": "Laurent Filoche",
+        "fonction": "Président UDGPO / Fondateur (Pharmacorp + PharmaGroupSanté)",
+        "source": "lemoniteurdespharmacies.fr / udgpo.com"
+      }
+    ]
+  },
+  "Pharmacie COS": {
+    "decideurs": [
+      {
+        "nom": "Fabienne Dessonet",
+        "fonction": "Directrice générale (Coopérative Objectif Santé)",
+        "source": "societe.com COS 810601294"
+      },
+      {
+        "nom": "Frank Saffar",
+        "fonction": "ex-Président CA / ex-DG",
+        "source": "societe.com COS 810601294"
+      }
+    ]
+  },
+  "Pharmacies Le Gall": {
+    "decideurs": [
+      {
+        "nom": "Christophe Le Gall",
+        "fonction": "Fondateur / ex-Président (renommé Essentiels Pharma oct 2024)",
+        "source": "lemoniteurdespharmacies.fr / legall-sante.com"
+      },
+      {
+        "nom": "Oana Dantec",
+        "fonction": "Directrice générale actuelle",
+        "source": "lemoniteurdespharmacies.fr"
+      }
+    ]
+  },
+  "Réseau P&P": {
+    "decideurs": [
+      {
+        "nom": "Sébastien Rouyer",
+        "fonction": "Directeur général",
+        "source": "Panorama QdP 2025 (corrigé)"
+      },
+      {
+        "nom": "Hanna Vuaillat",
+        "fonction": "Co-fondatrice",
+        "source": "bonnesondes.fr"
+      }
+    ]
+  },
+  "Résonor": {
+    "decideurs": [
+      {
+        "nom": "Olivier Parent",
+        "fonction": "Président",
+        "source": "groupement-resonor.fr"
+      },
+      {
+        "nom": "Grégoire Chouraki",
+        "fonction": "Directeur général",
+        "source": "groupement-resonor.fr"
+      },
+      {
+        "nom": "Jean-Marc Janas",
+        "fonction": "Coordination",
+        "source": "groupement-resonor.fr / email jeanmarc.janas@resonor.fr"
+      }
+    ]
+  },
+  "Simplypharma": {
+    "decideurs": [
+      {
+        "nom": "Gérald Aït Mehdi",
+        "fonction": "Gérant / Manager",
+        "source": "societe.com Simply Pharma 803465780"
+      },
+      {
+        "nom": "Thierry Dardé",
+        "fonction": "Gérant / Manager",
+        "source": "societe.com Simply Pharma 803465780"
+      }
+    ]
+  },
+  "Union des Grandes Pharmacies (UGP)": {
+    "decideurs": [
+      {
+        "nom": "Yves Rivière",
+        "fonction": "Président",
+        "source": "choisirmongroupement.com / workinpharma.fr"
+      },
+      {
+        "nom": "Paul Vincente",
+        "fonction": "Vice-Président",
+        "source": "choisirmongroupement.com"
+      }
+    ]
+  },
+  "Unipharm Loire Océan": {
+    "decideurs": [
+      {
+        "nom": "Flavian Pierre Alban Brassart",
+        "fonction": "Président du CA (depuis 01/09/2024)",
+        "source": "manageo.fr / societe.com 354036501"
+      },
+      {
+        "nom": "Bruno Blanchard",
+        "fonction": "Directeur",
+        "source": "linkedin.com / manageo.fr"
+      }
+    ]
+  },
+  "Well&well les Pharmaciens": {
+    "decideurs": [
+      {
+        "nom": "Anne Valette",
+        "fonction": "Présidente (groupe Astera)",
+        "source": "Panorama QdP 2025"
+      },
+      {
+        "nom": "Gaëlle Madoux",
+        "fonction": "Directrice générale",
+        "source": "Panorama QdP 2025"
+      }
+    ]
+  },
+  "Les Officinales": {
+    "decideurs": [
+      {
+        "nom": "Didier Le Bail",
+        "fonction": "Président",
+        "source": "lesofficinales.fr"
+      }
+    ]
+  },
+  "DéPhie": {
+    "decideurs": [
+      {
+        "nom": "Jean-Cédric Montagut",
+        "fonction": "Président",
+        "source": "dephie.com"
+      },
+      {
+        "nom": "Béatrice Cosson",
+        "fonction": "Dirigeante",
+        "source": "linkedin.com / dephie.com"
+      }
+    ]
+  },
+  "Le Club du Comptoir": {
+    "decideurs": [
+      {
+        "nom": "Ivan Mittler",
+        "fonction": "Président",
+        "source": "lemoniteurdespharmacies.fr"
+      },
+      {
+        "nom": "Charles Romier",
+        "fonction": "Fondateur",
+        "source": "lemoniteurdespharmacies.fr"
+      }
+    ]
+  },
+  "Trentactiv": {
+    "decideurs": []
+  },
+  "Orphie": {
+    "decideurs": []
+  },
+  "Tag Pharma": {
+    "decideurs": [
+      {
+        "nom": "Thierry Gastaldi",
+        "fonction": "Dirigeant",
+        "source": "apsagir.fr (email thierry.gastaldi@gmail.com)"
+      }
+    ]
+  },
+  "Pharma Star": {
+    "decideurs": [
+      {
+        "nom": "Julien Clément",
+        "fonction": "Dirigeant",
+        "source": "apsagir.fr (email julien.clement.pharmastar@gmail.com)"
+      }
+    ]
+  },
+  "Les Pharmaciens de Méditerranée": {
+    "decideurs": []
+  }
+}
