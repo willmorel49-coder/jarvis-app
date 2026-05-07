@@ -683,6 +683,16 @@ function renderDashboard() {
     .filter(r => r.cur > 0 || r.prev > 0)
     .sort((a, b) => b.cur - a.cur);
 
+  // ── YTD (Year-to-date) ────────────────────────
+  // Current year: Jan → curM of curY ; vs same period last year
+  const caYTD = allSalesRaw
+    .filter(s => s.year === curY && s.month <= curM)
+    .reduce((a, s) => a + (s.mntNetHt || 0), 0);
+  const caYTDprev = allSalesRaw
+    .filter(s => s.year === curY - 1 && s.month <= curM)
+    .reduce((a, s) => a + (s.mntNetHt || 0), 0);
+  const hasYTDprev = caYTDprev > 0;
+
   // Objectifs courant mois
   const objData = loadObjectives ? loadObjectives() : {};
   const objRows = state.pharmacies.map(ph => {
@@ -814,6 +824,34 @@ function renderDashboard() {
           </thead>
           <tbody>${compRowsHtml}</tbody>
         </table>
+      </div>
+    </div>` : ''}
+
+    <!-- Row 2c-ytd : Cumul YTD -->
+    ${caYTD > 0 ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Cumul Année en cours — Jan → ${monthName(curM)} ${curY}</div>
+          <div class="card-subtitle">${hasYTDprev ? `Comparaison même période ${curY - 1}` : 'Pas de données année précédente'}</div>
+        </div>
+        ${hasYTDprev ? deltaBadge(caYTD, caYTDprev) : ''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr ${hasYTDprev ? '1fr' : ''};gap:0;border-top:1px solid var(--border)">
+        <div style="padding:18px 24px;${hasYTDprev ? 'border-right:1px solid var(--border);' : ''}text-align:center">
+          <div style="font-size:28px;font-weight:900;color:var(--blue);letter-spacing:-1px">${fmt(caYTD)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">CA Jan–${monthName(curM)} ${curY}</div>
+        </div>
+        ${hasYTDprev ? `<div style="padding:18px 24px;border-right:1px solid var(--border);text-align:center">
+          <div style="font-size:28px;font-weight:900;color:var(--text2);letter-spacing:-1px">${fmt(caYTDprev)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">CA Jan–${monthName(curM)} ${curY - 1}</div>
+        </div>
+        <div style="padding:18px 24px;text-align:center">
+          <div style="font-size:28px;font-weight:900;color:${caYTD >= caYTDprev ? 'var(--mint)' : 'var(--rose)'};letter-spacing:-1px">
+            ${caYTDprev > 0 ? `${caYTD >= caYTDprev ? '+' : ''}${((caYTD - caYTDprev) / caYTDprev * 100).toFixed(1)}%` : '—'}
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">Évolution YoY</div>
+        </div>` : ''}
       </div>
     </div>` : ''}
 
@@ -1360,10 +1398,13 @@ function renderPharmacies() {
           <div class="card-title">Pharmacies (${enriched.length})</div>
           <div class="card-subtitle">${curY ? `Mois courant : ${monthName(curM)} ${curY}` : 'Aucune donnée'}</div>
         </div>
-        <div class="search-wrap" style="width:240px">
-          <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Rechercher..." value="${pharmaSearch}"
-            oninput="pharmaSearch=this.value;renderPharmacies()" />
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="exportPharmaciesCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV</button>
+          <div class="search-wrap" style="width:220px">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Rechercher..." value="${pharmaSearch}"
+              oninput="pharmaSearch=this.value;renderPharmacies()" />
+          </div>
         </div>
       </div>
       <div style="padding:12px 24px 0">${filterBarHtml}</div>
@@ -1372,6 +1413,40 @@ function renderPharmacies() {
 
     ${renderProspects(pharmaSearch)}
   `;
+}
+
+function exportPharmaciesCSV() {
+  const allSalesRaw = getSales();
+  const { year: curY, month: curM } = getCurrentPeriod(allSalesRaw);
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
+  const salesCur  = curY  ? getSales({ year: curY,  month: curM  }) : [];
+  const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
+  const rows = state.pharmacies.map(ph => {
+    const caCur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+    const caPrev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
+    const nRef   = new Set(salesCur.filter(s => s.pharmacyId === ph.id).map(s => s.artCode)).size;
+    const g      = caPrev > 0 ? ((caCur - caPrev) / caPrev * 100) : null;
+    const client = typeof CLIENTS !== 'undefined' ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim()) : null;
+    return [
+      `"${ph.name.replace(/"/g,'""')}"`,
+      client?.cp || '', client?.ville || '',
+      client?.tel || '', client?.email || '',
+      String(caCur.toFixed(2)).replace('.',','),
+      String(caPrev.toFixed(2)).replace('.',','),
+      g !== null ? String(g.toFixed(1)).replace('.',',') : '',
+      nRef,
+    ];
+  }).filter(r => parseFloat(r[5].replace(',','.')) > 0 || parseFloat(r[6].replace(',','.')) > 0);
+  rows.sort((a, b) => parseFloat(b[5].replace(',','.')) - parseFloat(a[5].replace(',','.')));
+  const header = ['Pharmacie','CP','Ville','Tél','Email',`CA ${curY ? monthName(curM)+' '+curY : ''}`,`CA M-1`,`Évolution %`,'Nb Références'];
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `pharmacies_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${rows.length} pharmacies`, 'success');
 }
 
 let prospectFilter = 'tous'; // 'tous' | 'pelgraz' | 'ca' | 'gx'
