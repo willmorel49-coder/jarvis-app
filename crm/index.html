@@ -18,6 +18,8 @@
     <div class="login-logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg></div>
     <div class="login-title">Intégral Pharma</div>
     <div class="login-sub">CRM · Accès sécurisé</div>
+
+    <!-- Formulaire login normal -->
     <form id="login-form">
       <div class="field">
         <label>Email</label>
@@ -29,11 +31,35 @@
       </div>
       <button class="login-btn" type="submit">Se connecter →</button>
       <div id="login-error" class="login-error"></div>
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" onclick="showResetForm()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline">Mot de passe oublié ?</button>
+      </div>
     </form>
-    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--text3);text-align:center;line-height:1.8">
-      Comptes démo :<br>
-      <code style="background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px">demo@integralpharma.fr</code> / <code style="background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px">demo2026</code>
-    </div>
+
+    <!-- Formulaire reset password (envoi email) -->
+    <form id="reset-form" style="display:none">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Entrez votre email pour recevoir un lien de réinitialisation.</div>
+      <div class="field">
+        <label>Email</label>
+        <input id="reset-email" type="email" placeholder="votre@email.com" autocomplete="email" required>
+      </div>
+      <button class="login-btn" type="submit">Envoyer le lien →</button>
+      <div id="reset-msg" style="margin-top:12px;font-size:12px;text-align:center;color:var(--mint);display:none">Email envoyé ! Vérifiez votre boîte mail.</div>
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" onclick="showLoginForm()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline">← Retour connexion</button>
+      </div>
+    </form>
+
+    <!-- Formulaire nouveau mot de passe (après clic lien email) -->
+    <form id="newpass-form" style="display:none">
+      <div style="font-size:13px;color:var(--mint);font-weight:600;margin-bottom:16px">✓ Lien valide — choisissez un nouveau mot de passe</div>
+      <div class="field">
+        <label>Nouveau mot de passe</label>
+        <input id="newpass-input" type="password" placeholder="Min. 6 caractères" minlength="6" required>
+      </div>
+      <button class="login-btn" type="submit">Enregistrer →</button>
+      <div id="newpass-error" class="login-error"></div>
+    </form>
   </div>
 </div>
 
