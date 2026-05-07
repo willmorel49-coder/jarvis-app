@@ -774,6 +774,47 @@ function renderDashboard() {
       </div>
     </div>
 
+    <!-- Row 3b : Top produits secteur -->
+    ${(() => {
+      const byProd = {};
+      for (const s of salesCur) {
+        const k = (s.artDesignation || '').trim().toUpperCase();
+        if (!k) continue;
+        if (!byProd[k]) byProd[k] = { label: s.artDesignation, ca: 0, qte: 0, cat: classifyProduct(s) };
+        byProd[k].ca  += s.mntNetHt;
+        byProd[k].qte += s.qte;
+      }
+      const top = Object.values(byProd).sort((a,b) => b.ca - a.ca).slice(0, 10);
+      if (!top.length) return '';
+      const maxCa = top[0].ca;
+      return `<div class="card fade-up" style="margin-bottom:24px">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Top 10 produits secteur — ${curLabel}</div>
+            <div class="card-subtitle">${Object.keys(byProd).length} références commandées</div>
+          </div>
+        </div>
+        ${top.map((p, i) => {
+          const cat = CATS[p.cat] || CATS.mi;
+          const pct = caCur > 0 ? (p.ca / caCur * 100).toFixed(1) : '0';
+          return `<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border1)">
+            <div style="font-size:12px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
+              <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border1)">
+                <div style="height:100%;border-radius:2px;background:${cat.color};width:${(p.ca/maxCa*100).toFixed(0)}%"></div>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:13px;font-weight:700">${fmt(p.ca)}</div>
+              <div style="font-size:10px;color:var(--text3)">${pct}% · ${p.qte.toFixed(0)} u</div>
+            </div>
+            <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0;min-width:32px;text-align:center">${cat.icon}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    })()}
+
     <!-- Row 4 : Charts -->
     <div class="grid-2 fade-up">
       <div class="card" style="border-radius:var(--r)">
@@ -1303,6 +1344,48 @@ function showPharmaDetail(pharmacyId) {
           ${potentielGx > 0 ? `<div style="margin-top:6px;font-size:11px;color:var(--text3)">Pot. Gx ${fmt(potentielGx)}</div>` : ''}
         </div>
       </div>
+
+      <!-- Top produits du mois -->
+      ${salesCur.length ? (() => {
+        const byProd = {};
+        for (const s of salesCur) {
+          const k = (s.artDesignation || '').trim().toUpperCase();
+          if (!k) continue;
+          if (!byProd[k]) byProd[k] = { label: s.artDesignation, ca: 0, qte: 0, cat: classifyProduct(s) };
+          byProd[k].ca  += s.mntNetHt;
+          byProd[k].qte += s.qte;
+        }
+        const top = Object.values(byProd).sort((a,b) => b.ca - a.ca).slice(0, 10);
+        const maxCa = top[0]?.ca || 1;
+        const rows = top.map((p, i) => {
+          const cat = CATS[p.cat] || CATS.mi;
+          const pct = (p.ca / caCur * 100).toFixed(1);
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border1)">
+            <div style="font-size:11px;font-weight:800;color:var(--text3);width:18px;flex-shrink:0;text-align:right">${i+1}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
+              <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border1)">
+                <div style="height:100%;border-radius:2px;background:${cat.color};width:${(p.ca/maxCa*100).toFixed(0)}%;transition:width .4s"></div>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:12px;font-weight:700;color:var(--text)">${fmt(p.ca)}</div>
+              <div style="font-size:10px;color:var(--text3)">${pct}% · ${p.qte.toFixed(0)} u</div>
+            </div>
+            <span style="font-size:10px;padding:1px 6px;border-radius:6px;background:${cat.color}18;color:${cat.color};font-weight:600;flex-shrink:0">${cat.icon}</span>
+          </div>`;
+        }).join('');
+        return `<div class="card fade-up" style="margin-bottom:20px">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Top produits — ${curLabel}</div>
+              <div class="card-subtitle">${Object.keys(byProd).length} références · classées par CA</div>
+            </div>
+            <span style="font-size:12px;color:var(--text3)">${top.length} / ${Object.keys(byProd).length}</span>
+          </div>
+          ${rows}
+        </div>`;
+      })() : ''}
 
       <!-- Palier progression -->
       <div class="card fade-up" style="margin-bottom:20px">
