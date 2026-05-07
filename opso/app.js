@@ -536,17 +536,13 @@ function renderDashboard() {
 
   if (!allSalesRaw.length) {
     container.innerHTML = `
-      <div class="dash-banner" style="margin-bottom:28px">
-        <div class="dash-banner-title">Bienvenue sur OPSO Santé</div>
-        <div class="dash-banner-sub">Groupement Normandie Pharma · Bretagne Pharma</div>
-      </div>
-      <div class="card" style="text-align:center;padding:64px 40px">
-        <div class="empty-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#11a63c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <div class="cockpit-hero" style="text-align:center;padding:60px 28px;background:linear-gradient(135deg,#064e20 0%,#0d8530 50%,#11a63c 100%);border-radius:var(--radius-lg);margin-bottom:16px;box-shadow:0 8px 32px rgba(17,166,60,.25)">
+        <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         </div>
-        <div class="empty-title">Aucune donnée de vente</div>
-        <div class="empty-sub">Importez vos fichiers Excel mensuels pour voir vos statistiques groupement</div>
-        <button class="btn btn-primary" onclick="navigate('import')" style="margin-top:24px">Importer mes ventes</button>
+        <div style="font-family:'Varela Round',sans-serif;font-size:20px;color:#fff;margin-bottom:10px">Cockpit OPSO Santé</div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.70);margin-bottom:28px">Importez vos fichiers de ventes pour activer le cockpit</div>
+        <button class="btn" onclick="navigate('import')" style="background:rgba(255,255,255,0.20);border:1.5px solid rgba(255,255,255,0.35);color:#fff;font-size:14px;padding:12px 28px;border-radius:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700">Importer mes ventes</button>
       </div>`;
     return;
   }
@@ -567,30 +563,27 @@ function renderDashboard() {
   const curLabel  = `${monthName(curM)} ${curY}`;
   const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
 
-  // Comparaison par pharmacie M vs M-1
-  const compRows = state.pharmacies
-    .map(ph => ({ ph, cur: sumCA(salesCur.filter(s => s.pharmacyId === ph.id)), prev: sumCA(salesPrev.filter(s => s.pharmacyId === ph.id)) }))
-    .filter(r => r.cur > 0 || r.prev > 0)
-    .sort((a, b) => b.cur - a.cur);
-
-  // Pharmacies non importées ce mois
+  // Statut trafic par pharmacie
   const imported = new Set(salesCur.map(s => s.pharmacyId));
-  const missingPh = state.pharmacies.filter(ph => !imported.has(ph.id));
-  const covPct = state.pharmacies.length ? Math.round((state.pharmacies.length - missingPh.length) / state.pharmacies.length * 100) : 0;
+  const allPhRows = state.pharmacies.map(ph => {
+    const cur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+    const prev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
+    const isMissing = !imported.has(ph.id);
+    let status = 'missing';
+    if (!isMissing) {
+      if (prev <= 0) status = 'flat';
+      else {
+        const g = (cur - prev) / prev * 100;
+        status = g >= 5 ? 'up' : g <= -5 ? 'down' : 'flat';
+      }
+    }
+    return { ph, cur, prev, status, isMissing };
+  }).sort((a, b) => b.cur - a.cur);
 
-  // Top 5 produits
-  const prodMap = {};
-  for (const s of salesCur) {
-    const k = (s.artDesignation || '').trim();
-    if (!k) continue;
-    if (!prodMap[k]) prodMap[k] = { label: k, ca: 0, qte: 0 };
-    prodMap[k].ca  += s.mntNetHt;
-    prodMap[k].qte += s.qte;
-  }
-  const top5 = Object.values(prodMap).sort((a, b) => b.ca - a.ca).slice(0, 5);
-  const maxTop5 = top5.length ? top5[0].ca : 1;
+  const missingCount = allPhRows.filter(r => r.isMissing).length;
+  const covPct = state.pharmacies.length ? Math.round((state.pharmacies.length - missingCount) / state.pharmacies.length * 100) : 0;
 
-  // Alertes commerciales simples
+  // Alertes commerciales
   const alerts = [];
   for (const pid of phActifsPrev) {
     const ph = state.pharmacies.find(p => p.id === pid);
@@ -606,92 +599,68 @@ function renderDashboard() {
   }
   alerts.sort((a, b) => ({ down:0, absent:1, up:2 }[a.type]??9) - ({ down:0, absent:1, up:2 }[b.type]??9));
 
-  const userName = (state.user?.name || 'OPSO Santé').split(' ')[0];
+  // Top 5 produits
+  const prodMap = {};
+  for (const s of salesCur) {
+    const k = (s.artDesignation || '').trim();
+    if (!k) continue;
+    if (!prodMap[k]) prodMap[k] = { label: k, ca: 0, qte: 0 };
+    prodMap[k].ca  += s.mntNetHt;
+    prodMap[k].qte += s.qte;
+  }
+  const top5 = Object.values(prodMap).sort((a, b) => b.ca - a.ca).slice(0, 5);
+
+  const evolutionPct = caPrev > 0 ? ((caCur - caPrev) / caPrev * 100) : null;
+  const isGrowing = evolutionPct !== null && evolutionPct > 0;
 
   container.innerHTML = `
-    <div class="dash-banner fade-up">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-        <div>
-          <div class="dash-banner-title">Bonjour, ${userName}</div>
-          <div class="dash-banner-sub">Groupement OPSO Santé · ${curLabel}</div>
-        </div>
-        <button onclick="navigate('import')" style="padding:10px 22px;border-radius:10px;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.30);color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,0.28)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'">+ Importer mes ventes</button>
+    <div class="cockpit-hero fade-up">
+      <div class="cockpit-hero-eyebrow">Groupement OPSO Santé · ${curLabel}</div>
+      <div class="cockpit-hero-value">${fmt(caCur)}</div>
+      <div class="cockpit-hero-meta">
+        ${evolutionPct !== null ? `<span class="cockpit-hero-delta ${isGrowing ? 'positive' : 'negative'}">${isGrowing ? '▲' : '▼'} ${Math.abs(evolutionPct).toFixed(1)}% vs ${prevLabel}</span>` : ''}
+        <span class="cockpit-hero-coverage ${covPct === 100 ? 'ok' : 'warn'}">${covPct === 100 ? `✓ ${nPhCur}/${state.pharmacies.length} importées` : `⚠ ${missingCount} manquante${missingCount > 1 ? 's' : ''}`}</span>
       </div>
     </div>
 
-    <div class="kpi-grid fade-up" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:24px">
-      <div class="kpi-card kpi-hero" style="min-height:0">
-        <div class="kpi-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        </div>
-        <div class="kpi-value">${fmt(caCur)}</div>
-        <div class="kpi-label">CA Groupement</div>
-        <div style="margin-top:12px">${deltaBadge(caCur, caPrev)}</div>
+    <div class="cockpit-mini-grid fade-up">
+      <div class="cockpit-mini">
+        <div class="cockpit-mini-val">${nPhCur}<span class="cockpit-mini-total">/${state.pharmacies.length}</span></div>
+        <div class="cockpit-mini-label">Actives</div>
       </div>
-      <div class="kpi-card kc-g">
-        <div class="kpi-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        </div>
-        <div class="kpi-value" style="color:var(--mint)">${nPhCur}<span style="font-size:16px;color:var(--text3);font-family:'Nunito',sans-serif">/${state.pharmacies.length}</span></div>
-        <div class="kpi-label">Pharmacies actives</div>
-        <div style="margin-top:10px">${deltaBadge(nPhCur, nPhPrev)}</div>
+      <div class="cockpit-mini">
+        <div class="cockpit-mini-val">${fmtNum(Math.round(panierCur / 100) / 10)}k</div>
+        <div class="cockpit-mini-label">Panier moy.</div>
       </div>
-      <div class="kpi-card kc-a">
-        <div class="kpi-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e8a317" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </div>
-        <div class="kpi-value" style="color:var(--amber)">${fmt(panierCur)}</div>
-        <div class="kpi-label">Panier moyen</div>
-        <div style="margin-top:10px">${deltaBadge(panierCur, panierPrev)}</div>
+      <div class="cockpit-mini ${alerts.length > 0 ? 'cockpit-mini-alert' : ''}">
+        <div class="cockpit-mini-val">${alerts.length}</div>
+        <div class="cockpit-mini-label">Signal${alerts.length !== 1 ? 's' : ''}</div>
       </div>
     </div>
 
-    <div class="card fade-up" style="margin-bottom:24px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Résultats par pharmacie</div>
-          <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
-        </div>
-        ${covPct < 100 ? `<span class="badge badge-warning">Couverture ${covPct}%</span>` : `<span class="badge badge-success">✓ Toutes importées</span>`}
+    <div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
+      <div class="card-header" style="padding:16px 20px">
+        <div class="card-title">Mes pharmacies</div>
+        <button onclick="navigate('pharmacies')" style="font-size:12px;color:var(--opso-green);background:none;border:none;cursor:pointer;font-weight:700">Tout voir →</button>
       </div>
-      <div style="overflow-x:auto">
-        <table class="data-table">
-          <thead><tr>
-            <th>Pharmacie</th>
-            <th style="text-align:right">${prevLabel}</th>
-            <th style="text-align:right">${curLabel}</th>
-            <th style="text-align:right">Évolution</th>
-          </tr></thead>
-          <tbody>
-            ${compRows.map(r => `<tr onclick="showPharmaDetail('${r.ph.id}')" style="cursor:pointer"><td><div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:${r.ph.color};flex-shrink:0"></span><span class="td-name">${r.ph.name}</span></div></td><td class="td-num" style="text-align:right;color:var(--text2)">${r.prev > 0 ? fmt(r.prev) : '<span style="color:var(--text3)">—</span>'}</td><td class="td-num" style="text-align:right">${r.cur > 0 ? fmt(r.cur) : '<span style="color:var(--text3)">—</span>'}</td><td style="text-align:right">${deltaBadge(r.cur, r.prev)}</td></tr>`).join('')}
-            ${missingPh.map(ph => `<tr style="opacity:0.6"><td><div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:${ph.color};flex-shrink:0;opacity:0.4"></span><span style="color:var(--text2);font-size:13px;font-weight:600">${ph.name}</span><span class="badge badge-neutral" style="font-size:10px;margin-left:4px">Non importée</span></div></td><td colspan="3" style="text-align:right"><button onclick="navigate('import')" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">→ Importer</button></td></tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
+      ${allPhRows.map(r => `<div class="pharma-cockpit-row" onclick="showPharmaDetail('${r.ph.id}')"><span class="pharma-cockpit-dot ${r.status}"></span><span class="pharma-cockpit-name">${r.ph.name}</span><span class="pharma-cockpit-ca">${r.cur > 0 ? fmt(r.cur) : r.isMissing ? '<span style="color:var(--text3);font-size:12px">Non importée</span>' : '—'}</span><span class="pharma-cockpit-arrow">›</span></div>`).join('')}
     </div>
 
-    <div class="grid-2" style="margin-bottom:0">
-      <div class="card fade-up" style="margin-bottom:0">
-        <div class="card-header">
-          <div class="card-title">Signaux commerciaux</div>
-          ${alerts.length ? `<span class="badge badge-warning">${alerts.length}</span>` : `<span class="badge badge-success">RAS</span>`}
-        </div>
-        <div class="card-body">
-          <div class="alert-feed">
-            ${alerts.length ? alerts.slice(0,5).map(a => `<div class="alert-item alert-${a.type}"><div class="alert-icon" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;${a.type==='up'?'background:var(--opso-green-pale);color:var(--opso-green)':a.type==='down'?'background:var(--rose-bg);color:var(--rose)':'background:var(--amber-bg);color:var(--amber)'}">${a.type==='up'?'↑':a.type==='down'?'↓':'○'}</div><div class="alert-body"><div class="alert-title">${a.ph.name}</div><div class="alert-sub">${a.type==='absent'?'Absent ce mois · M-1 : '+fmt(a.prev):fmt(a.prev)+' → '+fmt(a.cur)+' ('+(a.g>=0?'+':'')+a.g?.toFixed(0)+'%)'}</div></div></div>`).join('') : `<div class="alert-item"><div class="alert-icon" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--opso-green-pale);color:var(--opso-green);font-size:16px">✓</div><div class="alert-body"><div class="alert-title">Tout va bien</div><div class="alert-sub">Toutes vos pharmacies sont actives</div></div></div>`}
-          </div>
-        </div>
+    ${alerts.length ? `
+    <div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
+      <div class="card-header" style="padding:16px 20px">
+        <div class="card-title">Actions requises</div>
+        <span class="badge badge-warning">${alerts.length}</span>
       </div>
+      ${alerts.slice(0,4).map(a => `<div class="alert-cockpit-row ${a.type}" onclick="showPharmaDetail('${a.ph.id}')"><div class="alert-cockpit-icon">${a.type==='down'?'↓':a.type==='absent'?'○':'↑'}</div><div class="alert-cockpit-info"><div class="alert-cockpit-name">${a.ph.name}</div><div class="alert-cockpit-sub">${a.type==='absent'?'Absent ce mois · M-1 : '+fmt(a.prev):fmt(a.prev)+' → '+fmt(a.cur)+(a.g!==null?' ('+(a.g>=0?'+':'')+a.g.toFixed(0)+'%)':'')}</div></div><div class="alert-cockpit-action">Voir ›</div></div>`).join('')}
+    </div>` : ''}
 
-      <div class="card fade-up" style="margin-bottom:0">
-        <div class="card-header">
-          <div class="card-title">Top 5 produits</div>
-          <div class="card-subtitle">${curLabel}</div>
-        </div>
-        <div class="card-body">
-          ${top5.length ? top5.map((p, i) => `<div class="stat-row"><div class="stat-row-rank">${renderRank(i)}</div><div class="stat-row-info"><div class="stat-row-name" title="${p.label}">${p.label}</div><div class="stat-row-sub">${fmtNum(Math.round(p.qte))} unités</div></div><div style="flex:1;max-width:60px;padding:0 8px"><div class="progress-wrap"><div class="progress-bar" style="width:${Math.round(p.ca/maxTop5*100)}%;background:var(--opso-green)"></div></div></div><div class="stat-row-val">${fmt(p.ca)}</div></div>`).join('') : `<div class="empty"><div class="empty-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#11a63c" stroke-width="1.5"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/></svg></div><div class="empty-title">Aucun produit</div></div>`}
-        </div>
+    <div class="card fade-up" style="margin-bottom:0;padding:0;overflow:hidden">
+      <div class="card-header" style="padding:16px 20px">
+        <div class="card-title">Top produits</div>
+        <div class="card-subtitle">${curLabel}</div>
       </div>
+      ${top5.length ? top5.map((p, i) => `<div class="product-cockpit-row"><span class="product-cockpit-rank ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i+1}</span><span class="product-cockpit-name">${p.label.length>32?p.label.slice(0,32)+'…':p.label}</span><span class="product-cockpit-ca">${fmt(p.ca)}</span></div>`).join('') : `<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Aucun produit ce mois</div>`}
     </div>
   `;
 }
@@ -4060,10 +4029,11 @@ function catAddBenchToSimIdx(idx) {
 function navigate(page) {
   state.currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  updateMobileNav(page);
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
 
   const titles = {
-    dashboard:  'Tableau de bord',
+    dashboard:  'Cockpit',
     pharmacies: 'Mes Pharmacies',
     produits:   'Analyse produits',
     import:     'Importer mes ventes',
@@ -4091,6 +4061,12 @@ function navigate(page) {
     objectifs:   renderObjectifs,
   };
   if (renders[page]) renders[page]();
+}
+
+function updateMobileNav(page) {
+  document.querySelectorAll('.mobile-nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === page);
+  });
 }
 
 function updateNavBadge() {
