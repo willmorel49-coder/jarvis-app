@@ -2035,11 +2035,128 @@ function renderProduits() {
           scales: {
             x: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
             y: { grid: { display: false }, ticks: { color: '#0F172A', font: { size: 11 } } },
+          },
+          onClick(evt, elements) {
+            if (!elements.length) return;
+            const name = sorted[elements[0].index].name;
+            showProductBreakdown(name);
           }
         }
       });
+      ctx.style.cursor = 'pointer';
     }, 50);
   }
+}
+
+// ── PRODUCT BREAKDOWN MODAL ───────────────────
+function showProductBreakdown(productName) {
+  const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const pn = nn(productName);
+  const allS = getSales();
+  const prodSales = allS.filter(s => nn(s.artDesignation) === pn);
+  if (!prodSales.length) return;
+
+  // By pharmacy
+  const byPharma = {};
+  for (const s of prodSales) {
+    const ph = state.pharmacies.find(p => p.id === s.pharmacyId);
+    const k = s.pharmacyId;
+    if (!byPharma[k]) byPharma[k] = { name: ph?.name || 'Inconnu', color: ph?.color || '#555', ca: 0, qte: 0 };
+    byPharma[k].ca  += s.mntNetHt;
+    byPharma[k].qte += s.qte;
+  }
+  const pharmaRows = Object.values(byPharma).sort((a, b) => b.ca - a.ca);
+  const totalCa = pharmaRows.reduce((s, r) => s + r.ca, 0);
+  const maxCa   = pharmaRows[0]?.ca || 1;
+
+  // By month
+  const byMonth = {};
+  for (const s of prodSales) {
+    const k = `${s.year}-${String(s.month).padStart(2,'0')}`;
+    if (!byMonth[k]) byMonth[k] = 0;
+    byMonth[k] += s.mntNetHt;
+  }
+  const monthKeys = Object.keys(byMonth).sort();
+
+  // Benchmark match
+  const bench = typeof BENCHMARK !== 'undefined'
+    ? BENCHMARK.find(b => nn(b.designation) === pn)
+    : null;
+
+  const existing = document.getElementById('prod-breakdown-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'prod-breakdown-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:20px;width:100%;max-width:700px;max-height:88vh;overflow-y:auto;box-shadow:0 32px 100px rgba(0,0,0,.4)">
+      <!-- Header -->
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.3">${productName}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px">${pharmaRows.length} pharmacie${pharmaRows.length > 1 ? 's' : ''} · CA total ${fmt(totalCa)}</div>
+        </div>
+        <button onclick="document.getElementById('prod-breakdown-modal').remove()"
+          style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+      </div>
+      <!-- Body -->
+      <div style="padding:20px 24px">
+        <!-- CA par pharmacie -->
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">CA par pharmacie</div>
+        ${pharmaRows.map(r => `
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="width:8px;height:8px;border-radius:50%;background:${r.color};flex-shrink:0"></span>
+                <span style="font-size:13px;font-weight:600;color:var(--text)">${r.name}</span>
+              </div>
+              <div style="text-align:right">
+                <span style="font-size:13px;font-weight:700;color:var(--text)">${fmt(r.ca)}</span>
+                <span style="font-size:11px;color:var(--text3);margin-left:6px">${fmtNum(Math.round(r.qte))} u</span>
+              </div>
+            </div>
+            <div style="height:6px;border-radius:3px;background:var(--border1);overflow:hidden">
+              <div style="height:100%;width:${(r.ca / maxCa * 100).toFixed(0)}%;background:${r.color};border-radius:3px"></div>
+            </div>
+          </div>`).join('')}
+
+        <!-- Évolution mensuelle si dispo -->
+        ${monthKeys.length > 1 ? `
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border1)">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Évolution mensuelle</div>
+          ${monthKeys.map(k => {
+            const [y, m] = k.split('-');
+            const v = byMonth[k];
+            const pct = (v / Math.max(...Object.values(byMonth)) * 100).toFixed(0);
+            return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+              <span style="font-size:11px;color:var(--text3);min-width:70px">${monthName(+m)} ${y}</span>
+              <div style="flex:1;height:5px;border-radius:3px;background:var(--border1);overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:var(--blue);border-radius:3px"></div>
+              </div>
+              <span style="font-size:12px;font-weight:600;min-width:60px;text-align:right">${fmt(v)}</span>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
+        <!-- Benchmark data -->
+        ${bench ? `
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border1)">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Données marché (Ameli/IP)</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+            ${bench.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--blue)">${fmtNum(bench.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Qté IP</div></div>` : ''}
+            ${bench.ip_ca ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--mint)">${fmt(bench.ip_ca)}</div><div style="font-size:10px;color:var(--text3)">CA IP</div></div>` : ''}
+            ${bench.rot_pharma_jan26 ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--amber)">${bench.rot_pharma_jan26.toFixed(1)}</div><div style="font-size:10px;color:var(--text3)">Rot./pharma</div></div>` : ''}
+            ${bench.prix_ip ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--blue)">${fmtP(bench.prix_ip)}</div><div style="font-size:10px;color:var(--text3)">Prix IP</div></div>` : ''}
+          </div>
+        </div>` : ''}
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function escB(e) {
+    if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escB); }
+  });
+  document.body.appendChild(modal);
 }
 
 // ── IMPORT ────────────────────────────────────
