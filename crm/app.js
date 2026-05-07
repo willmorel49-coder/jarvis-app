@@ -1505,6 +1505,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           }).join('')}
         </select>` : `<span style="font-size:12px;color:var(--text3)">${monthName(curM)} ${curY}</span>`}
         <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px">📋 Fiche visite</button>
+        <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px">✉ Email</button>
         <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
         <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
       </div>
@@ -1791,6 +1792,99 @@ function exportPharmacyCSV(pharmacyId) {
   a.click();
   URL.revokeObjectURL(url);
   showToast(`Export CSV — ${salesData.length} lignes`, 'success');
+}
+
+function generateEmailModal(pharmacyId) {
+  const pharma = state.pharmacies.find(p => p.id === pharmacyId);
+  if (!pharma) return;
+  const client = typeof CLIENTS !== 'undefined'
+    ? CLIENTS.find(c => (c.nom || '').toUpperCase().trim() === pharma.name.toUpperCase().trim())
+    : null;
+
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  const { year: curY, month: curM, prevYear: prevY, prevMonth: prevM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const salesCur  = getSales({ pharmacyId: pharma.id, year: curY, month: curM });
+  const salesPrev = prevY ? getSales({ pharmacyId: pharma.id, year: prevY, month: prevM }) : [];
+  const caCur  = salesCur.reduce((s, x) => s + x.mntNetHt, 0);
+  const caPrev = salesPrev.reduce((s, x) => s + x.mntNetHt, 0);
+  const delta  = caPrev > 0 ? ((caCur - caPrev) / caPrev * 100) : null;
+
+  // Top 3 products
+  const topProds = Object.entries(salesCur.reduce((m, s) => {
+    const k = s.artDesignation || '—';
+    m[k] = (m[k] || 0) + s.mntNetHt;
+    return m;
+  }, {})).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+  const dest = client?.email ? `${client.nom} <${client.email}>` : pharma.name;
+  const moisCur = `${monthName(curM)} ${curY}`;
+  const moisPrev = prevY ? `${monthName(prevM)} ${prevY}` : '—';
+  const deltaStr = delta !== null ? `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%` : '';
+
+  const emailBody = `Bonjour,
+
+Je me permets de vous contacter pour faire un point sur votre activité avec Intégral Pharma.
+
+📊 Vos chiffres — ${moisCur} :
+• CA IP : ${fmt(caCur)}${deltaStr ? ` (${deltaStr} vs ${moisPrev})` : ''}
+• Références commandées : ${salesCur.length}
+
+${topProds.length ? `🏆 Vos top produits ce mois :
+${topProds.map(([name, ca], i) => `${i+1}. ${name} — ${fmt(ca)}`).join('\n')}
+
+` : ''}N'hésitez pas à me contacter pour toute question ou pour planifier une visite.
+
+Cordialement,
+William Morel
+Délégué commercial Intégral Pharma`;
+
+  const existing = document.getElementById('email-gen-modal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'email-gen-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:20px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:0 32px 100px rgba(0,0,0,.4)">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:15px;font-weight:700">Email généré — ${pharma.name}</div>
+        <button onclick="document.getElementById('email-gen-modal').remove()" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
+      </div>
+      <div style="padding:20px 24px">
+        <div style="margin-bottom:12px">
+          <label style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Destinataire</label>
+          <input id="email-dest" value="${dest.replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Objet</label>
+          <input id="email-subject" value="Bilan activité Intégral Pharma — ${moisCur}" style="width:100%;padding:8px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Corps du message</label>
+          <textarea id="email-body" rows="12" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:12px;color:var(--text);box-sizing:border-box;resize:vertical;font-family:inherit;line-height:1.6">${emailBody.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button onclick="copyEmail()" class="btn btn-ghost" style="flex:1;min-width:120px">📋 Copier</button>
+          ${client?.email ? `<button onclick="openEmailClient('${client.email.replace(/'/g,"\\'")}',document.getElementById('email-subject').value,document.getElementById('email-body').value)" class="btn btn-primary" style="flex:1;min-width:120px">📧 Ouvrir dans Mail</button>` : ''}
+          <button onclick="document.getElementById('email-gen-modal').remove()" class="btn btn-ghost" style="flex:1;min-width:120px">Fermer</button>
+        </div>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function copyEmail() {
+  const body = document.getElementById('email-body')?.value || '';
+  navigator.clipboard.writeText(body).then(() => showToast('Email copié dans le presse-papier', 'success'), () => {
+    document.getElementById('email-body')?.select();
+    document.execCommand('copy');
+    showToast('Email copié', 'success');
+  });
+}
+
+function openEmailClient(email, subject, body) {
+  const link = `mailto:${email}?subject=${encodeURIComponent(subject || '')}&body=${encodeURIComponent(body || '')}`;
+  window.location.href = link;
 }
 
 // ── PRODUITS ──────────────────────────────────
