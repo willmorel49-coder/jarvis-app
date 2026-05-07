@@ -4197,10 +4197,18 @@ function showBenchDetail(idx) {
   if (!d) return;
 
   const nnB = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
-  const sv  = (() => {
+  const { sv, svByPharma } = (() => {
     const allS = getSales();
     const matching = allS.filter(s => nnB(s.artDesignation) === nnB(d.designation));
-    return matching.reduce((acc, s) => ({ ca: acc.ca + s.mntNetHt, qte: acc.qte + s.qte }), { ca: 0, qte: 0 });
+    const total = matching.reduce((acc, s) => ({ ca: acc.ca + s.mntNetHt, qte: acc.qte + s.qte }), { ca: 0, qte: 0 });
+    const byPh = {};
+    for (const s of matching) {
+      const ph = state.pharmacies.find(p => p.id === s.pharmacyId);
+      if (!byPh[s.pharmacyId]) byPh[s.pharmacyId] = { name: ph?.name || '?', color: ph?.color || '#888', ca: 0, qte: 0 };
+      byPh[s.pharmacyId].ca  += s.mntNetHt;
+      byPh[s.pharmacyId].qte += s.qte;
+    }
+    return { sv: total, svByPharma: Object.values(byPh).sort((a,b) => b.ca - a.ca) };
   })();
 
   const cat = CATS[d.categorie] || CATS.mi;
@@ -4274,18 +4282,31 @@ function showBenchDetail(idx) {
           </div>
           <!-- Nos ventes -->
           ${sv.ca > 0 ? `<div style="background:rgba(0,229,160,.06);padding:14px 16px;border-radius:12px;border:1px solid rgba(0,229,160,.15)">
-            <div style="font-size:11px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nos ventes</div>
+            <div style="font-size:11px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Nos ventes</div>
             <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-              <span style="font-size:12px;color:var(--text3)">CA réalisé</span>
+              <span style="font-size:12px;color:var(--text3)">CA total réalisé</span>
               <span style="font-size:14px;font-weight:800;color:var(--mint)">${fmt(sv.ca)}</span>
             </div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px">
               <span style="font-size:12px;color:var(--text3)">Quantité vendue</span>
               <span style="font-size:13px;font-weight:700">${fmtNum(Math.round(sv.qte))} u.</span>
             </div>
-            ${d.ip_ca > 0 ? `<div style="display:flex;justify-content:space-between">
+            ${d.ip_ca > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:10px">
               <span style="font-size:12px;color:var(--text3)">Part du CA IP</span>
               <span style="font-size:13px;font-weight:700;color:var(--blue)">${(sv.ca / d.ip_ca * 100).toFixed(2)}%</span>
+            </div>` : ''}
+            ${svByPharma.length > 1 ? `<div style="border-top:1px solid rgba(0,229,160,.2);padding-top:10px;margin-top:4px">
+              <div style="font-size:10px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Répartition par pharmacie</div>
+              ${svByPharma.map(p => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
+                <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0">
+                  <span style="width:7px;height:7px;border-radius:50%;background:${p.color};flex-shrink:0"></span>
+                  <span style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
+                </div>
+                <div style="text-align:right;flex-shrink:0">
+                  <span style="font-size:12px;font-weight:700">${fmt(p.ca)}</span>
+                  <span style="font-size:10px;color:var(--text3);margin-left:4px">${fmtNum(Math.round(p.qte))}u</span>
+                </div>
+              </div>`).join('')}
             </div>` : ''}
           </div>` : `<div style="background:var(--bg2);padding:12px 16px;border-radius:12px;text-align:center;color:var(--text3);font-size:12px">Non vendu dans votre secteur</div>`}
         </div>
