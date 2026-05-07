@@ -120,23 +120,37 @@ def main():
 
     s = make_session()
 
-    # Page 1 pour connaître le total
-    url1 = f'{BEST_URL}?resultsPerPage={PER_PAGE}&page=1'
     print(f'\n  Scraping : {BEST_URL}')
+
+    # Page 1
+    url1 = f'{BEST_URL}?resultsPerPage={PER_PAGE}&page=1'
     prods, total = scrape_page(s, url1, rank_offset=0)
     if not prods:
         print('  → Page vide ou inaccessible')
         sys.exit(1)
 
-    n_pages = max(1, -(-total // PER_PAGE))
-    print(f'  → {total} produits · {n_pages} page(s)')
+    # Calcul pages : si total détecté → ceil(total/PER_PAGE), sinon on scrape jusqu'à page vide
+    if total > 0:
+        n_pages = -(-total // PER_PAGE)
+        print(f'  → {total} produits détectés · {n_pages} page(s)')
+    else:
+        n_pages = None  # inconnu, mode "until empty"
+        print(f'  → Total non détecté — scraping jusqu\'à page vide (mode exhaustif)')
 
-    all_prods = prods
-    for p in range(2, n_pages + 1):
+    all_prods = list(prods)
+    p = 2
+    while True:
+        if n_pages is not None and p > n_pages:
+            break
         url_p = f'{BEST_URL}?resultsPerPage={PER_PAGE}&page={p}'
-        print(f'    Page {p}/{n_pages}…')
+        print(f'    Page {p}{f"/{n_pages}" if n_pages else ""}…  ({len(all_prods)} produits)', end='', flush=True)
         pp, _ = scrape_page(s, url_p, rank_offset=len(all_prods))
+        if not pp:
+            print(f'  → Page vide, fin.')
+            break
         all_prods.extend(pp)
+        print(f'  +{len(pp)}')
+        p += 1
 
     print(f'\n  → {len(all_prods)} produits récupérés (ordre = rang de vente décroissant)')
 
