@@ -1763,6 +1763,26 @@ function renderProduits() {
       </div>
     </div>`).join('');
 
+  // ── Accélération MoM ─────────────────────────
+  const allSalesForAccel = getSales();
+  const { year: acY, month: acM } = getCurrentPeriod(allSalesForAccel);
+  const { year: acPY, month: acPM } = getPrevPeriod(acY, acM);
+  const acCur  = acY  ? getSales({ year: acY,  month: acM  }) : [];
+  const acPrev = acPY ? getSales({ year: acPY, month: acPM }) : [];
+  const accelRows = (() => {
+    if (!acCur.length || !acPrev.length) return [];
+    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const curMap = {}, prevMap = {};
+    for (const s of acCur)  { const k = nn(s.artDesignation); if (!curMap[k])  curMap[k]  = { label: s.artDesignation, cat: classifyProduct(s), ca: 0 }; curMap[k].ca  += s.mntNetHt; }
+    for (const s of acPrev) { const k = nn(s.artDesignation); if (!prevMap[k]) prevMap[k] = { ca: 0 }; prevMap[k].ca += s.mntNetHt; }
+    return Object.entries(curMap)
+      .filter(([k, v]) => v.ca > 50 && prevMap[k]?.ca > 50)
+      .map(([k, v]) => ({ ...v, prev: prevMap[k].ca, delta: v.ca - prevMap[k].ca, pct: (v.ca - prevMap[k].ca) / prevMap[k].ca * 100 }))
+      .filter(r => r.pct > 10)
+      .sort((a, b) => b.delta - a.delta)
+      .slice(0, 8);
+  })();
+
   // ── Tendance mensuelle ────────────────────────
   const allSales = getSales();
   const monthMap = {};
@@ -1822,6 +1842,32 @@ function renderProduits() {
       <div class="card-body">
         <div class="chart-wrap" style="height:240px"><canvas id="chart-trend-line"></canvas></div>
       </div>
+    </div>` : ''}
+
+    ${accelRows.length ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Produits en accélération</div>
+          <div class="card-subtitle">${monthName(acPM)} ${acPY} → ${monthName(acM)} ${acY} · CA ≥ 50 €</div>
+        </div>
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(0,229,160,.12);color:var(--mint);font-weight:700">${accelRows.length} produit${accelRows.length > 1 ? 's' : ''}</span>
+      </div>
+      ${accelRows.map((r, i) => {
+        const cat = CATS[r.cat] || CATS.mi;
+        return `<div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid var(--border1)">
+          <div style="font-size:12px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.label}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(r.prev)} → <span style="font-weight:700;color:var(--mint)">${fmt(r.ca)}</span></div>
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon} ${cat.label}</span>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:14px;font-weight:800;color:var(--mint)">+${fmt(r.delta)}</div>
+            <div style="font-size:10px;color:var(--mint);font-weight:700">▲ ${r.pct.toFixed(0)}%</div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>` : ''}
 
     ${opps.length ? `
