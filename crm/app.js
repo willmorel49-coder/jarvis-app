@@ -1090,6 +1090,59 @@ function renderDashboard() {
         <div class="chart-wrap" style="height:260px"><canvas id="chart-stacked"></canvas></div>
       </div>
     </div>` : ''}
+
+    <!-- Row 6 : Tableau familles de produits M vs M-1 -->
+    ${catRows.length ? `
+    <div class="card fade-up" style="margin-top:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Familles de produits — ${curLabel}</div>
+          <div class="card-subtitle">CA et évolution M vs M-1 par catégorie</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border2)">
+              <th style="padding:10px 16px;text-align:left;font-family:'Syne',sans-serif;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Famille</th>
+              <th style="padding:10px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">${prevLabel}</th>
+              <th style="padding:10px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">${curLabel}</th>
+              <th style="padding:10px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Évol.</th>
+              <th style="padding:10px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">% du CA</th>
+              <th style="padding:10px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Réf.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(() => {
+              const totalCur = sumCA(salesCur);
+              const catPrev = byCategory(salesPrev);
+              return catRows.map(c => {
+                const prevData = catPrev[c.key] || { ca: 0, nb: 0 };
+                const pct = totalCur > 0 ? c.ca / totalCur * 100 : 0;
+                return `<tr style="border-bottom:1px solid var(--border1)">
+                  <td style="padding:10px 16px">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font-size:15px">${c.icon}</span>
+                      <span style="font-size:13px;font-weight:700;color:${c.color}">${c.label}</span>
+                    </div>
+                  </td>
+                  <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text3)">${prevData.ca > 0 ? fmt(prevData.ca) : '—'}</td>
+                  <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700">${fmt(c.ca)}</td>
+                  <td style="padding:10px 12px;text-align:right">${prevData.ca > 0 ? deltaBadge(c.ca, prevData.ca) : '<span style="color:var(--text4);font-size:11px">—</span>'}</td>
+                  <td style="padding:10px 12px;text-align:right">
+                    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
+                      <div style="width:48px;height:5px;border-radius:3px;background:var(--border1);overflow:hidden"><div style="height:100%;width:${pct.toFixed(0)}%;background:${c.color};border-radius:3px"></div></div>
+                      <span style="font-size:12px;font-weight:600;color:${c.color};min-width:36px;text-align:right">${pct.toFixed(1)}%</span>
+                    </div>
+                  </td>
+                  <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2);font-weight:600">${c.nb}</td>
+                </tr>`;
+              }).join('');
+            })()}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
   `;
 
   setTimeout(() => {
