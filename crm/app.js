@@ -2972,8 +2972,9 @@ function offiGetList() {
         !(p.ean || '').includes(q) &&
         !(p.marque || '').toLowerCase().includes(q)) return false;
     if (offiRole === 'bestsellers') return p.rang_vente != null;
+    if (offiRole === 'pharmacie') return p.prix_pharmacie != null && p.prix_pharmacie > 0;
     if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
-    if (offiRole !== 'tous' && offiRole !== 'offilog' && p.role !== offiRole) return false;
+    if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && p.role !== offiRole) return false;
     if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
     if (offiMarque !== 'tous' && p.marque !== offiMarque) return false;
     return true;
@@ -3010,8 +3011,9 @@ function renderOffilog() {
   const nOpps     = OFFILOG.filter(p => p.role === 'Opportunité').length;
   const nDrakkars = OFFILOG.filter(p => p.prix_drakkars != null && p.prix_drakkars > 0).length;
   const nCap3000  = OFFILOG.filter(p => p.prix_cap3000  != null && p.prix_cap3000  > 0).length;
-  const nLive     = OFFILOG.filter(p => p.prix_live     != null && p.prix_live     > 0).length;
+  const nLive     = OFFILOG.filter(p => p.prix_live      != null && p.prix_live      > 0).length;
   const nImg      = OFFILOG.filter(p => p.img && p.img.length > 0).length;
+  const nPharma   = OFFILOG.filter(p => p.prix_pharmacie != null && p.prix_pharmacie > 0).length;
   const margeArr  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
   const margeMoy  = margeArr.length ? margeArr.reduce((a, b) => a + b, 0) / margeArr.length : 0;
   const tauxOff   = nTotal > 0 ? nOff / nTotal * 100 : 0;
@@ -3040,6 +3042,7 @@ function renderOffilog() {
   const roleTabs = [
     { key: 'tous',            label: 'Tous',             icon: '✦', color: '#64748B' },
     { key: 'bestsellers',     label: `Top ventes (${nBest})`, icon: '🏆', color: '#F59E0B' },
+    { key: 'pharmacie',       label: `Ma Pharmacie (${nPharma})`, icon: '🏥', color: '#00E5A0' },
     { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
     { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
     { key: 'Héros / Soutien', label: 'Héros/Soutien',    icon: '⭐', color: '#FBBF24' },
@@ -3059,12 +3062,13 @@ function renderOffilog() {
   const cardsHtml = page.length ? page.map(p => {
     const um  = univMeta(p.univers || 'Non classé');
     const rm  = roleMeta(p.role);
-    const hasIP   = p.prix_offilog != null && p.prix_offilog > 0;
-    const hasLive = p.prix_live    != null && p.prix_live    > 0;
-    const hasMaxi = p.prix_maxi    != null && p.prix_maxi    > 0;
-    const hasDrak = p.prix_drakkars != null && p.prix_drakkars > 0;
-    const hasCap  = p.prix_cap3000  != null && p.prix_cap3000  > 0;
-    const hasImg  = p.img && p.img.length > 0;
+    const hasIP    = p.prix_offilog   != null && p.prix_offilog   > 0;
+    const hasLive  = p.prix_live      != null && p.prix_live      > 0;
+    const hasMaxi  = p.prix_maxi      != null && p.prix_maxi      > 0;
+    const hasDrak  = p.prix_drakkars  != null && p.prix_drakkars  > 0;
+    const hasCap   = p.prix_cap3000   != null && p.prix_cap3000   > 0;
+    const hasPharma= p.prix_pharmacie != null && p.prix_pharmacie > 0;
+    const hasImg   = p.img && p.img.length > 0;
     const hasMarge = p.marge_pct != null;
     const margeColor = !hasMarge ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
     const margePct  = hasMarge ? Math.min(100, p.marge_pct) : 0;
@@ -3072,10 +3076,14 @@ function renderOffilog() {
     // Prix affiché = live en priorité, sinon Excel
     const prixDisplay = hasLive ? p.prix_live : (hasIP ? p.prix_offilog : null);
 
-    // Price delta vs competitors
+    // Price delta vs all competitors incl. pharmacie
     let deltaHtml = '';
-    if (prixDisplay && (hasDrak || hasCap)) {
-      const concPrix = [hasDrak ? p.prix_drakkars : null, hasCap ? p.prix_cap3000 : null].filter(Boolean);
+    if (prixDisplay && (hasDrak || hasCap || hasPharma)) {
+      const concPrix = [
+        hasDrak   ? p.prix_drakkars  : null,
+        hasCap    ? p.prix_cap3000   : null,
+        hasPharma ? p.prix_pharmacie : null,
+      ].filter(Boolean);
       const minConc = Math.min(...concPrix);
       const delta = minConc - prixDisplay;
       if (delta > 0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 6px;border-radius:8px">−${fmtP(delta)} vs conc.</span>`;
@@ -3095,10 +3103,21 @@ function renderOffilog() {
       ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:800">🏆 #${p.rang_vente}</span>`
       : '';
 
-    const competHtml = (hasDrak || hasCap) ? `
+    // Prix pharmacie delta vs prix IP (rouge = pharmacie plus chère que nous = mauvais signe, vert = moins chère = ok)
+    const pharmaDeltaHtml = hasPharma && prixDisplay
+      ? (() => {
+          const d = p.prix_pharmacie - prixDisplay;
+          if (d > 0.05) return `<span style="font-size:9px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 5px;border-radius:6px">+${fmtP(d)}</span>`;
+          if (d < -0.05) return `<span style="font-size:9px;font-weight:700;color:#EF4444;background:#fee2e2;padding:1px 5px;border-radius:6px">${fmtP(d)}</span>`;
+          return `<span style="font-size:9px;font-weight:700;color:#6B7280;background:#F3F4F6;padding:1px 5px;border-radius:6px">≈</span>`;
+        })()
+      : '';
+
+    const competHtml = (hasDrak || hasCap || hasPharma) ? `
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border1)">
-        ${hasDrak ? `<div style="font-size:10px;color:var(--text3)">🛒 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_drakkars)}</span> <span style="opacity:.6">Drakkars</span></div>` : ''}
-        ${hasCap  ? `<div style="font-size:10px;color:var(--text3)">🏪 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_cap3000)}</span> <span style="opacity:.6">Cap3000</span></div>` : ''}
+        ${hasPharma ? `<div style="font-size:10px;color:var(--text3)">🏥 <span style="color:var(--mint);font-weight:700">${fmtP(p.prix_pharmacie)}</span> <span style="opacity:.6">Ma Phcie</span> ${pharmaDeltaHtml}</div>` : ''}
+        ${hasDrak   ? `<div style="font-size:10px;color:var(--text3)">🛒 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_drakkars)}</span> <span style="opacity:.6">Drakkars</span></div>` : ''}
+        ${hasCap    ? `<div style="font-size:10px;color:var(--text3)">🏪 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_cap3000)}</span> <span style="opacity:.6">Cap3000</span></div>` : ''}
       </div>` : '';
 
     // Initial marque pour placeholder
@@ -3206,6 +3225,10 @@ function renderOffilog() {
         <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
           <div style="font-size:22px;font-weight:900;color:#fff">${fmtNum(nLive)}</div>
           <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Prix live ●</div>
+        </div>
+        <div style="background:rgba(0,229,160,.15);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px);border:1px solid rgba(0,229,160,.3)">
+          <div style="font-size:22px;font-weight:900;color:#00E5A0">${fmtNum(nPharma)}</div>
+          <div style="font-size:10px;color:rgba(0,229,160,.8);text-transform:uppercase;letter-spacing:.5px">Ma Pharmacie</div>
         </div>
         <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
           <div style="font-size:22px;font-weight:900;color:#fff">${margeMoy.toFixed(0)}%</div>
