@@ -1738,6 +1738,18 @@ function renderProduits() {
       </div>
     </div>`).join('');
 
+  // ── Tendance mensuelle ────────────────────────
+  const allSales = getSales();
+  const monthMap = {};
+  for (const s of allSales) {
+    const k = `${s.year}-${String(s.month).padStart(2,'0')}`;
+    if (!monthMap[k]) monthMap[k] = { ca: 0, marge: 0 };
+    monthMap[k].ca    += s.mntNetHt;
+    monthMap[k].marge += (s.mntNetHt - s.puNet * s.qte);
+  }
+  const trendMonths = Object.keys(monthMap).sort();
+  const showTrend = trendMonths.length >= 2;
+
   // ── Opportunités HTML ─────────────────────────
   const oppsHtml = opps.map((b, i) => {
     const cat = CATS[b.categorie] || CATS.mi;
@@ -1774,6 +1786,19 @@ function renderProduits() {
       </div>
     </div>`}
 
+    ${showTrend ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Évolution mensuelle du CA</div>
+          <div class="card-subtitle">${trendMonths.length} période${trendMonths.length > 1 ? 's' : ''} · toutes pharmacies confondues</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:240px"><canvas id="chart-trend-line"></canvas></div>
+      </div>
+    </div>` : ''}
+
     ${opps.length ? `
     <div class="card fade-up">
       <div class="card-header">
@@ -1796,6 +1821,48 @@ function renderProduits() {
       </div>
     </div>` : ''}
   `;
+
+  if (showTrend) {
+    setTimeout(() => {
+      const tCtx = document.getElementById('chart-trend-line');
+      if (!tCtx) return;
+      if (state.charts['trend-line']) state.charts['trend-line'].destroy();
+      const monthLabels = trendMonths.map(k => {
+        const [y, m] = k.split('-');
+        return monthName(parseInt(m)) + ' ' + y;
+      });
+      state.charts['trend-line'] = new Chart(tCtx, {
+        type: 'line',
+        data: {
+          labels: monthLabels,
+          datasets: [
+            {
+              label: 'CA HT',
+              data: trendMonths.map(k => +monthMap[k].ca.toFixed(2)),
+              borderColor: '#0057FF',
+              backgroundColor: 'rgba(0,87,255,.08)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.35,
+              pointRadius: 4,
+              pointBackgroundColor: '#0057FF',
+            },
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => ' ' + fmt(c.parsed.y) } },
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
+            y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
+          }
+        }
+      });
+    }, 50);
+  }
 
   if (chartProds.length && sales.length) {
     setTimeout(() => {
@@ -2239,6 +2306,7 @@ let benchCat = 'tous';
 let benchSearch = '';
 let benchSortCol = 'ip_qty';
 let benchSortAsc = false;
+let benchCrossFilter = 'tous'; // 'tous' | 'vendus' | 'non_vendus'
 
 function benchExportCSV() {
   if (typeof BENCHMARK === 'undefined') return;
@@ -2283,6 +2351,20 @@ function renderBenchmark() {
     return;
   }
 
+  // Build cross-reference map: designation (norm) → our CA+Qty
+  const nnBench = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const salesAll = getSales();
+  const salesMap = {};
+  for (const s of salesAll) {
+    const k = nnBench(s.artDesignation);
+    if (!k) continue;
+    if (!salesMap[k]) salesMap[k] = { ca: 0, qte: 0 };
+    salesMap[k].ca  += s.mntNetHt;
+    salesMap[k].qte += s.qte;
+  }
+  const nVendus    = BENCHMARK.filter(d => salesMap[nnBench(d.designation)]?.ca > 0).length;
+  const nNonVendus = BENCHMARK.length - nVendus;
+
   // Filter
   let data = [...BENCHMARK];
   if (benchCat === 'froid')          data = data.filter(d => isFroidBench(d));
@@ -2294,6 +2376,8 @@ function renderBenchmark() {
     const q = benchSearch.toLowerCase();
     data = data.filter(d => d.designation.toLowerCase().includes(q) || (d.cip13||'').includes(q));
   }
+  if (benchCrossFilter === 'vendus')     data = data.filter(d => salesMap[nnBench(d.designation)]?.ca > 0);
+  if (benchCrossFilter === 'non_vendus') data = data.filter(d => !salesMap[nnBench(d.designation)]?.ca);
 
   // Sort
   data.sort((a, b) => {
@@ -2343,6 +2427,12 @@ function renderBenchmark() {
     const prixDisplay = d.prix_ip > 0
       ? `<span style="font-size:11px;color:var(--blue)">${fmtP(d.prix_ip)}</span>`
       : '<span style="color:var(--text4);font-size:11px">—</span>';
+    const sv = salesMap[nnBench(d.designation)];
+    const nosVentesHtml = sv?.ca > 0
+      ? `<div style="text-align:right"><div style="font-size:11px;font-weight:700;color:var(--mint)">${fmt(sv.ca)}</div><div style="font-size:10px;color:var(--text3)">${fmtNum(Math.round(sv.qte))} u.</div></div>`
+      : salesAll.length > 0
+        ? `<span style="font-size:10px;color:var(--text3);background:rgba(239,68,68,.08);padding:2px 6px;border-radius:6px;font-weight:600">Non vendu</span>`
+        : `<span style="color:var(--text4);font-size:11px">—</span>`;
     return `<tr style="transition:background .12s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <td style="color:var(--text3);font-size:12px">${d.ip_rank_qty}</td>
       <td class="td-name" style="font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}${froidTag}</td>
@@ -2353,6 +2443,7 @@ function renderBenchmark() {
       <td class="td-num" style="text-align:right;color:${rotColor}">${d.has_ameli ? d.rot_pharma_jan26.toFixed(1) : '—'}</td>
       <td style="text-align:right">${yoy}</td>
       <td style="text-align:right;font-size:11px;color:var(--text3)">${d.has_ameli ? fmtNum(d.ameli_jan26) : '—'}</td>
+      <td style="padding:6px 10px">${nosVentesHtml}</td>
     </tr>`;
   }).join('');
 
@@ -2475,7 +2566,19 @@ function renderBenchmark() {
           </div>
           <button onclick="benchExportCSV()" style="padding:7px 12px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">⬇ CSV</button>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px 4px">${chipsHtml}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px 4px;align-items:center">
+          ${chipsHtml}
+          ${salesAll.length > 0 ? `<span style="width:1px;height:20px;background:var(--border2);margin:0 4px"></span>
+          ${[
+            { key: 'tous', label: `Tous (${fmtNum(BENCHMARK.length)})`, color: '#64748B' },
+            { key: 'vendus', label: `Nos ventes (${fmtNum(nVendus)})`, color: '#00E5A0' },
+            { key: 'non_vendus', label: `Non vendus (${fmtNum(nNonVendus)})`, color: '#EF4444' },
+          ].map(t => {
+            const active = benchCrossFilter === t.key;
+            return `<button onclick="benchCrossFilter='${t.key}';renderBenchmark()"
+              style="padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid ${active ? t.color : 'var(--border2)'};background:${active ? t.color + '18' : 'transparent'};color:${active ? t.color : 'var(--text2)'};cursor:pointer;transition:all .15s;white-space:nowrap">${t.label}</button>`;
+          }).join('')}` : ''}
+        </div>
         <div style="overflow-x:auto">
           <table class="data-table">
             <thead><tr>
@@ -2488,6 +2591,7 @@ function renderBenchmark() {
               ${thB('rot_pharma_jan26','Rot./pharma/mois')}
               ${thB('yoy_jan','YoY Jan')}
               <th style="text-align:right">France Jan26</th>
+              ${salesAll.length > 0 ? `<th style="text-align:right;color:var(--mint);font-family:Syne,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1">Nos ventes</th>` : ''}
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
