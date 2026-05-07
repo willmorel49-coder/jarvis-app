@@ -252,6 +252,7 @@ async function importMultiPharmaFile(file, month, year) {
         art_designation: r.artDesignation,
         art_code: r.artCode,
         art_id: r.artId || null,
+        art_famille: famille,
         qte:        r.qte,
         pu_brut:    r.puBrut,
         pu_net:     r.puNet,
