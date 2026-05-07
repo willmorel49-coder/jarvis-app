@@ -954,6 +954,179 @@ label {
 .empty-sub { font-size: 14px; color: var(--opso-gray-light); max-width: 280px; line-height: 1.6; }
 
 /* ══════════════════════════════════════
+   COCKPIT — Hero Section
+══════════════════════════════════════ */
+.cockpit-hero {
+  background: linear-gradient(135deg, #064e20 0%, #0d8530 50%, #11a63c 100%);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  margin-bottom: 16px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(17,166,60,.25), 0 2px 8px rgba(17,166,60,.12);
+}
+.cockpit-hero::after {
+  content: '';
+  position: absolute; top: -50px; right: -50px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  pointer-events: none;
+}
+.cockpit-hero-eyebrow {
+  font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.60);
+  text-transform: uppercase; letter-spacing: 0.10em;
+  margin-bottom: 10px;
+}
+.cockpit-hero-value {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 52px; font-weight: 400; color: #fff;
+  letter-spacing: -2.5px; line-height: 1;
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.cockpit-hero-meta {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.cockpit-hero-delta {
+  font-size: 13px; font-weight: 700;
+  padding: 5px 12px; border-radius: 20px;
+  white-space: nowrap;
+}
+.cockpit-hero-delta.positive { background: rgba(255,255,255,0.20); color: #fff; }
+.cockpit-hero-delta.negative { background: rgba(0,0,0,0.18); color: rgba(255,255,255,0.88); }
+.cockpit-hero-coverage {
+  font-size: 12px; font-weight: 600;
+  padding: 5px 11px; border-radius: 20px;
+  white-space: nowrap;
+}
+.cockpit-hero-coverage.ok   { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.85); }
+.cockpit-hero-coverage.warn { background: rgba(232,163,23,0.30); color: #fff; }
+
+/* ══════════════════════════════════════
+   COCKPIT — Mini KPIs
+══════════════════════════════════════ */
+.cockpit-mini-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-bottom: 16px;
+}
+.cockpit-mini {
+  background: var(--opso-white);
+  border-radius: var(--radius-md);
+  padding: 18px 14px; text-align: center;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--opso-border);
+  transition: box-shadow var(--t-base);
+}
+.cockpit-mini:hover { box-shadow: var(--shadow-md); }
+.cockpit-mini-val {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 24px; font-weight: 400; color: var(--opso-text);
+  letter-spacing: -0.5px; line-height: 1; margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.cockpit-mini-total { font-size: 14px; color: var(--text3); letter-spacing: 0; }
+.cockpit-mini-label {
+  font-size: 10px; color: var(--opso-gray); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.cockpit-mini.cockpit-mini-alert { border-color: rgba(232,163,23,0.4); background: rgba(232,163,23,0.04); }
+.cockpit-mini.cockpit-mini-alert .cockpit-mini-val { color: var(--opso-warning); }
+
+/* ══════════════════════════════════════
+   COCKPIT — Pharmacy Rows
+══════════════════════════════════════ */
+.pharma-cockpit-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 15px 20px; cursor: pointer;
+  border-bottom: 1px solid var(--opso-border);
+  transition: background var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+  min-height: 52px;
+}
+.pharma-cockpit-row:last-child { border-bottom: none; }
+.pharma-cockpit-row:hover,
+.pharma-cockpit-row:active { background: var(--opso-green-pale2); }
+.pharma-cockpit-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.pharma-cockpit-dot.up      { background: #11a63c; box-shadow: 0 0 0 3px rgba(17,166,60,0.15); }
+.pharma-cockpit-dot.flat    { background: #e8a317; box-shadow: 0 0 0 3px rgba(232,163,23,0.15); }
+.pharma-cockpit-dot.down    { background: #d04a4a; box-shadow: 0 0 0 3px rgba(208,74,74,0.15); }
+.pharma-cockpit-dot.missing { background: #c8cdd0; }
+.pharma-cockpit-name {
+  flex: 1; font-size: 14px; font-weight: 600; color: var(--opso-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pharma-cockpit-ca {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 14px; color: var(--opso-text);
+  font-variant-numeric: tabular-nums; flex-shrink: 0; margin-right: 4px;
+}
+.pharma-cockpit-arrow {
+  color: var(--opso-border2); font-size: 20px; flex-shrink: 0; line-height: 1;
+}
+
+/* ══════════════════════════════════════
+   COCKPIT — Alert Rows
+══════════════════════════════════════ */
+.alert-cockpit-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px; cursor: pointer;
+  border-bottom: 1px solid var(--opso-border);
+  transition: background var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+  min-height: 52px;
+}
+.alert-cockpit-row:last-child { border-bottom: none; }
+.alert-cockpit-row:hover { background: var(--opso-green-pale2); }
+.alert-cockpit-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; flex-shrink: 0;
+}
+.alert-cockpit-row.down   .alert-cockpit-icon { background: var(--rose-bg);          color: var(--rose); }
+.alert-cockpit-row.absent .alert-cockpit-icon { background: var(--amber-bg);         color: var(--amber); }
+.alert-cockpit-row.up     .alert-cockpit-icon { background: var(--opso-green-pale);  color: var(--opso-green); }
+.alert-cockpit-info { flex: 1; min-width: 0; }
+.alert-cockpit-name { font-size: 13px; font-weight: 700; color: var(--opso-text); }
+.alert-cockpit-sub  { font-size: 12px; color: var(--opso-gray); margin-top: 2px; }
+.alert-cockpit-action {
+  font-size: 12px; font-weight: 700; color: var(--opso-green);
+  flex-shrink: 0; padding: 6px 12px; border-radius: 8px;
+  background: var(--opso-green-pale); border: none; cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════════════
+   COCKPIT — Product Rows
+══════════════════════════════════════ */
+.product-cockpit-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--opso-border);
+}
+.product-cockpit-row:last-child { border-bottom: none; }
+.product-cockpit-rank {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: var(--opso-green-pale); color: var(--opso-green-dark);
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-family: 'Nunito', sans-serif;
+}
+.product-cockpit-rank.r1 { background: linear-gradient(135deg,#FFD700,#FFA500); color: #000; }
+.product-cockpit-rank.r2 { background: linear-gradient(135deg,#C0C0C0,#A0A0A0); color: #000; }
+.product-cockpit-rank.r3 { background: linear-gradient(135deg,#CD7F32,#A0522D); color: #fff; }
+.product-cockpit-name {
+  flex: 1; font-size: 13px; font-weight: 500; color: var(--opso-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.product-cockpit-ca {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 13px; color: var(--opso-text);
+  flex-shrink: 0; font-variant-numeric: tabular-nums;
+}
+
+/* ══════════════════════════════════════
    STAT ROW
 ══════════════════════════════════════ */
 .stat-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--opso-border); }
@@ -1101,7 +1274,88 @@ label {
 .truncate     { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ══════════════════════════════════════
-   RESPONSIVE
+   MOBILE NAVIGATION BAR
+══════════════════════════════════════ */
+.mobile-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--opso-white);
+  border-top: 1.5px solid var(--opso-border);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.07);
+  z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.mobile-nav-items {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+}
+.mobile-nav-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 11px 4px 9px;
+  color: var(--opso-gray); cursor: pointer;
+  transition: color var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  position: relative;
+}
+.mobile-nav-item.active { color: var(--opso-green); }
+.mobile-nav-item.active::before {
+  content: '';
+  position: absolute; top: 0; left: 25%; right: 25%; height: 2px;
+  background: var(--opso-green); border-radius: 0 0 3px 3px;
+}
+.mobile-nav-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px; font-weight: 700; margin-top: 4px;
+  letter-spacing: 0.01em; white-space: nowrap;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — Tablet
+══════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .sim-layout { grid-template-columns: 1fr; }
+  .sim-col-right { position: static; }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — Mobile (< 768px)
+══════════════════════════════════════ */
+@media (max-width: 767px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { display: none !important; }
+  .mobile-nav { display: block; }
+  .page-content {
+    padding: 16px 14px calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .content {
+    padding: 16px 14px calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .topbar { padding: 0 16px; }
+  .topbar-title { font-size: 17px; }
+  .cockpit-hero-value { font-size: 38px; letter-spacing: -1.5px; }
+  .cockpit-mini-val { font-size: 20px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .card { padding: 20px; }
+  .card-header { padding: 16px 20px; margin: -20px -20px 20px; }
+  .modal { padding: 24px 20px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .data-table thead { display: none; }
+  .data-table td { padding: 10px 14px; }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — Small mobile (< 400px)
+══════════════════════════════════════ */
+@media (max-width: 400px) {
+  .cockpit-hero-value { font-size: 32px; }
+  .cockpit-mini-val { font-size: 18px; }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — Sidebar tablet compact (< 900px)
 ══════════════════════════════════════ */
 @media (max-width: 900px) {
   :root { --sidebar-w: 64px; }
@@ -1110,15 +1364,4 @@ label {
   .nav-item { justify-content: center; padding: 12px; }
   .nav-item .nav-icon { width: auto; }
   .nav-item.active::before { display: none; }
-  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .grid-2 { grid-template-columns: 1fr; }
-  .page-content { padding: 20px 16px; }
-  .content { padding: 24px 20px; }
-}
-@media (max-width: 600px) {
-  :root { --sidebar-w: 0px; }
-  .sidebar { display: none; }
-  .kpi-grid { grid-template-columns: 1fr; }
-  .page-content { padding: 16px; }
-  .content { padding: 16px; }
 }
