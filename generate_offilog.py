@@ -28,9 +28,10 @@ BASE      = Path(__file__).parent
 SRC       = BASE / 'OFFILOG' / 'offilog_x_maxipara_3517.xlsx'
 DRAKKARS  = BASE / 'benchmark_drakkars.xlsx'
 CAP3000   = BASE / 'benchmark_cap3000.xlsx'
-LIVE_JSON = BASE / 'offilog_live.json'
-BEST_JSON = BASE / 'bestsellers_offilog.json'
-OUT       = BASE / 'crm' / 'offilog-data.js'
+LIVE_JSON  = BASE / 'offilog_live.json'
+BEST_JSON  = BASE / 'bestsellers_offilog.json'
+IMG_JSON   = BASE / 'images_by_ean.json'   # lookup consolidé toutes sources
+OUT        = BASE / 'crm' / 'offilog-data.js'
 
 
 # ── HELPERS ─────────────────────────────────────────────────────────────────
@@ -236,6 +237,21 @@ else:
     print(f'Fichier Best-sellers non trouvé ({BEST_JSON}) — rang_vente = null')
 
 
+# ── LOAD IMAGES CONSOLIDÉES (optionnel, priorité max) ────────────────────────
+# Lookup EAN/nom_norm → URL image (toutes sources Offilog + Drakkars + Cap3000)
+img_by_ean:  dict = {}
+img_by_norm: dict = {}
+if IMG_JSON.exists():
+    print(f'Enrichissement images consolidées depuis : {IMG_JSON}')
+    with open(IMG_JSON, encoding='utf-8') as _f:
+        _imgs = json.load(_f)
+    img_by_ean  = _imgs.get('by_ean', {})
+    img_by_norm = _imgs.get('by_norm', {})
+    print(f'  → {len(img_by_ean)} images par EAN · {len(img_by_norm)} par nom')
+else:
+    print(f'Fichier images consolidées non trouvé ({IMG_JSON}) — fallback live uniquement')
+
+
 # ── BUILD RECORDS ────────────────────────────────────────────────────────────
 records = []
 for row in rows[1:]:
@@ -282,10 +298,18 @@ for row in rows[1:]:
     if _live_entry is None:
         _live_entry = live_by_norm.get(produit_n)
     prix_live = _live_entry['prix'] if _live_entry else None
-    img       = _live_entry['img']  if _live_entry else ''
     # Si trouvé dans le live, on confirme dans_offilog=True
     if _live_entry:
         dans_off = True
+
+    # ── Image : lookup consolidé (toutes sources) en priorité, live en fallback
+    img = ''
+    if img_by_ean and ean_str:
+        img = img_by_ean.get(ean_str, '')
+    if not img and img_by_norm:
+        img = img_by_norm.get(produit_n, '')
+    if not img and _live_entry:
+        img = _live_entry.get('img', '') or ''
 
     # ── Matching Best-sellers : EAN en priorité, nom en fallback
     rang_vente = None

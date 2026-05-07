@@ -3098,25 +3098,38 @@ function renderOffilog() {
         ${hasCap  ? `<div style="font-size:10px;color:var(--text3)">🏪 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_cap3000)}</span> <span style="opacity:.6">Cap3000</span></div>` : ''}
       </div>` : '';
 
+    // Initial marque pour placeholder
+    const brandInitial = (p.marque || p.produit || '?').charAt(0).toUpperCase();
+
     return `<div style="background:var(--bg);border-radius:16px;border:1px solid var(--border1);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:default"
       onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,.12)';this.style.transform='translateY(-2px)'"
       onmouseout="this.style.boxShadow='';this.style.transform=''">
-      <!-- Image produit ou stripe univers -->
-      ${hasImg
-        ? `<div style="height:140px;background:${um.bg};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
-            <img src="${p.img}" alt="${p.produit.replace(/"/g,'')}" loading="lazy"
-              style="max-height:130px;max-width:100%;object-fit:contain;padding:8px;transition:transform .3s"
-              onerror="this.closest('div').innerHTML='<div style=\\'height:140px;background:linear-gradient(135deg,${um.bg},${um.color}22);display:flex;align-items:center;justify-content:center;font-size:32px\\'>${um.icon}</div>'"
-              onmouseover="this.style.transform='scale(1.07)'" onmouseout="this.style.transform=''">
-            <div style="position:absolute;top:8px;left:8px;display:flex;gap:4px">${bestBadge}${ipBadge}${liveBadge}${saisonBadge}</div>
-          </div>`
-        : `<div style="height:4px;background:linear-gradient(90deg,${um.color},${um.color}88)"></div>`
-      }
-      <div style="padding:14px 14px 12px;flex:1;display:flex;flex-direction:column;gap:0">
-        <!-- Brand + badges (seulement si pas d'image, sinon déjà dans l'image) -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:6px">
+      <!-- Zone photo uniforme 140px — toujours présente -->
+      <div style="height:140px;background:${um.bg};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;flex-shrink:0">
+        ${hasImg
+          ? `<img src="${p.img}" alt="" loading="lazy"
+              style="max-height:128px;max-width:90%;object-fit:contain;transition:transform .3s"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+              onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform=''">
+             <div style="display:none;flex-direction:column;align-items:center;gap:6px;position:absolute;inset:0;justify-content:center">
+               <span style="font-size:36px;line-height:1">${um.icon}</span>
+               <span style="font-size:20px;font-weight:900;color:${um.color};opacity:.5">${brandInitial}</span>
+             </div>`
+          : `<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+               <span style="font-size:38px;line-height:1;filter:drop-shadow(0 2px 6px ${um.color}44)">${um.icon}</span>
+               <span style="font-size:22px;font-weight:900;color:${um.color};opacity:.35;letter-spacing:2px">${brandInitial}</span>
+             </div>`
+        }
+        <!-- Badges en overlay -->
+        <div style="position:absolute;top:7px;left:7px;display:flex;gap:3px;flex-wrap:wrap;max-width:calc(100% - 14px)">${bestBadge}${ipBadge}${liveBadge}</div>
+        ${saisonBadge ? `<div style="position:absolute;top:7px;right:7px">${saisonBadge}</div>` : ''}
+        <!-- Barre couleur univers en bas -->
+        <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,${um.color},${um.color}66)"></div>
+      </div>
+      <div style="padding:12px 13px 11px;flex:1;display:flex;flex-direction:column;gap:0">
+        <!-- Brand -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:6px">
           <span style="font-size:10px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.marque || '—'}</span>
-          ${!hasImg ? `<div style="display:flex;gap:4px;flex-shrink:0">${bestBadge}${ipBadge}${liveBadge}${saisonBadge}</div>` : ''}
         </div>
         <!-- Nom produit -->
         <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;margin-bottom:8px">${p.produit}</div>
