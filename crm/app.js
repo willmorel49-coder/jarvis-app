@@ -1953,6 +1953,26 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
       </div>
 
+      <!-- Info client (CLIENTS data) -->
+      ${clientInfo ? `
+      <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid ${pharma.color}">
+        <div class="card-header" style="padding:12px 16px">
+          <div class="card-title" style="font-size:13px">Informations client</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--border1)">
+          ${clientInfo.adresse ? `<div style="padding:10px 16px;flex:1;min-width:160px;border-right:1px solid var(--border1)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Adresse</div><div style="font-size:12px;font-weight:600">${clientInfo.adresse}</div><div style="font-size:11px;color:var(--text3)">${clientInfo.cp||''} ${clientInfo.ville||''}</div></div>` : ''}
+          ${clientInfo.tel ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border1)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Téléphone</div><a href="tel:${clientInfo.tel}" style="font-size:12px;font-weight:600;color:var(--blue);text-decoration:none">${clientInfo.tel}</a></div>` : ''}
+          ${clientInfo.email ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border1)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Email</div><a href="mailto:${clientInfo.email}" style="font-size:12px;font-weight:600;color:var(--blue);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:180px">${clientInfo.email}</a></div>` : ''}
+          ${clientInfo.ca2023 > 0 ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border1)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">CA 2023 total</div><div style="font-size:12px;font-weight:600">${fmt(clientInfo.ca2023)}</div></div>` : ''}
+          ${clientInfo.gros1 ? `<div style="padding:10px 16px;flex:1;min-width:120px"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Grossiste</div><div style="font-size:12px;font-weight:600">${clientInfo.gros1}${clientInfo.gros2 ? ' · ' + clientInfo.gros2 : ''}</div></div>` : ''}
+        </div>
+        ${clientInfo.commentaire && clientInfo.commentaire.trim() ? `
+        <div style="padding:10px 16px;border-top:1px solid var(--border1);background:rgba(255,176,32,.04)">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Commentaire</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">${clientInfo.commentaire}</div>
+        </div>` : ''}
+      </div>` : ''}
+
       <!-- Top produits du mois -->
       ${salesCur.length ? (() => {
         const byProd = {};
