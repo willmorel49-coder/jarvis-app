@@ -1737,7 +1737,11 @@ function renderProspects(search = '') {
       <!-- Badges -->
       <div style="display:flex;gap:5px;flex-wrap:wrap;max-width:280px;justify-content:flex-end">${badges}</div>
       <!-- Actions -->
-      <div style="display:flex;gap:5px;flex-shrink:0">${emailBtn}${telBtn}</div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        ${emailBtn}${telBtn}
+        <button onclick="addProspectAsPharmacy('${(c.nom||'').replace(/'/g,"&#39;")}')" title="Ajouter comme pharmacie cliente"
+          style="padding:5px 10px;border-radius:8px;border:1.5px solid rgba(0,87,255,.3);background:rgba(0,87,255,.06);color:var(--blue);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">+ Client</button>
+      </div>
     </div>`;
   }).join('');
 
@@ -3891,6 +3895,21 @@ async function addPharmacy() {
   showToast(`Pharmacie "${data.name}" créée`, 'success');
   updateNavBadge();
   renderAdmin();
+}
+
+async function addProspectAsPharmacy(name) {
+  if (!name) return;
+  const existing = state.pharmacies.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (existing) { showToast(`${name} est déjà une pharmacie cliente`, 'info'); return; }
+  if (!confirm(`Ajouter "${name}" comme nouvelle pharmacie cliente ?`)) return;
+  const code  = name.split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 4);
+  const color = PHARMA_COLORS[state.pharmacies.length % PHARMA_COLORS.length];
+  const { data, error } = await sb.from('pharmacies').insert({ name, code, color }).select().single();
+  if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
+  state.pharmacies.push({ id: data.id, name: data.name, code: data.code, color: data.color });
+  showToast(`"${name}" ajoutée — importez un Excel pour commencer`, 'success');
+  updateNavBadge();
+  navigate('import');
 }
 
 async function resetAllData() {
