@@ -3112,6 +3112,7 @@ async function migrateFromLocalStorage() {
 let benchCat = 'tous';
 let benchSearch = '';
 let benchSortCol = 'ip_qty';
+let benchCurrentData = [];
 let benchSortAsc = false;
 let benchCrossFilter = 'tous'; // 'tous' | 'vendus' | 'non_vendus'
 
@@ -3191,6 +3192,7 @@ function renderBenchmark() {
     const av = a[benchSortCol] ?? 0, bv = b[benchSortCol] ?? 0;
     return benchSortAsc ? av - bv : bv - av;
   });
+  benchCurrentData = data.slice(0, 200);
 
   // Stats globales
   const totalIPQty = BENCHMARK.reduce((s, d) => s + d.ip_qty, 0);
@@ -3245,7 +3247,7 @@ function renderBenchmark() {
       : salesAll.length > 0
         ? `<span style="font-size:10px;color:var(--text3);background:rgba(239,68,68,.08);padding:2px 6px;border-radius:6px;font-weight:600">Non vendu</span>`
         : `<span style="color:var(--text4);font-size:11px">—</span>`;
-    return `<tr style="transition:background .12s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+    return `<tr style="transition:background .12s;cursor:pointer" onclick="showBenchDetail(${i})" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <td style="color:var(--text3);font-size:12px">${d.ip_rank_qty}</td>
       <td class="td-name" style="font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}${froidTag}</td>
       <td><span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc}">${d.categorie.toUpperCase()}</span></td>
@@ -3412,6 +3414,184 @@ function renderBenchmark() {
       </div>
     </div>
   `;
+}
+
+// ── BENCHMARK PRODUCT DETAIL MODAL ────────────
+function showBenchDetail(idx) {
+  const d = benchCurrentData[idx];
+  if (!d) return;
+
+  const nnB = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const sv  = (() => {
+    const allS = getSales();
+    const matching = allS.filter(s => nnB(s.artDesignation) === nnB(d.designation));
+    return matching.reduce((acc, s) => ({ ca: acc.ca + s.mntNetHt, qte: acc.qte + s.qte }), { ca: 0, qte: 0 });
+  })();
+
+  const cat = CATS[d.categorie] || CATS.mi;
+  const cc  = cat.color;
+
+  // Ameli monthly chart labels (13 months ending Jan 2026)
+  const ameliLabels = ['Jan25','Fév25','Mar25','Avr25','Mai25','Jun25','Jul25','Aoû25','Sep25','Oct25','Nov25','Déc25','Jan26'];
+
+  const existing = document.getElementById('bench-detail-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'bench-detail-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:20px;width:100%;max-width:720px;max-height:88vh;overflow-y:auto;box-shadow:0 32px 100px rgba(0,0,0,.4)">
+      <!-- Header -->
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;align-items:flex-start;gap:12px;justify-content:space-between">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc};font-weight:700">${d.categorie.toUpperCase()}</span>
+            ${d.is_froid ? `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:#dbeafe;color:#1d4ed8">❄️ Froid</span>` : ''}
+            ${d.has_ameli ? `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(0,229,160,.1);color:var(--mint)">SS Remb.</span>` : ''}
+            ${d.atc2 ? `<span style="font-size:10px;color:var(--text3)">${d.atc2}</span>` : ''}
+          </div>
+          <div style="font-size:16px;font-weight:800;line-height:1.3;color:var(--text)">${d.designation}</div>
+          ${d.cip13 ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">CIP13 : ${d.cip13} · Rang IP #${d.ip_rank_qty}</div>` : ''}
+        </div>
+        <button onclick="document.getElementById('bench-detail-modal').remove()" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;color:var(--text2);flex-shrink:0">✕</button>
+      </div>
+
+      <div style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- Left: Prix & volumes IP -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Données Intégral Pharma</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="background:var(--bg2);padding:10px 12px;border-radius:10px;text-align:center">
+              <div style="font-size:18px;font-weight:800;color:var(--blue)">${d.prix_ip > 0 ? fmtP(d.prix_ip) : '—'}</div>
+              <div style="font-size:10px;color:var(--text3)">Prix IP</div>
+            </div>
+            <div style="background:var(--bg2);padding:10px 12px;border-radius:10px;text-align:center">
+              <div style="font-size:18px;font-weight:800;color:var(--text)">${d.prix_ht > 0 ? fmtP(d.prix_ht) : '—'}</div>
+              <div style="font-size:10px;color:var(--text3)">Prix HT catalogue</div>
+            </div>
+            ${d.offre_ip > 0 ? `<div style="background:rgba(255,176,32,.08);padding:10px 12px;border-radius:10px;text-align:center;border:1px solid rgba(255,176,32,.2)">
+              <div style="font-size:18px;font-weight:800;color:var(--amber)">${fmtP(d.offre_ip)}</div>
+              <div style="font-size:10px;color:var(--text3)">Offre promotionnelle</div>
+            </div>` : ''}
+            ${d.remise_pct > 0 ? `<div style="background:rgba(0,229,160,.06);padding:10px 12px;border-radius:10px;text-align:center">
+              <div style="font-size:18px;font-weight:800;color:var(--mint)">−${d.remise_pct.toFixed(1)}%</div>
+              <div style="font-size:10px;color:var(--text3)">Remise IP</div>
+            </div>` : ''}
+          </div>
+          <div style="background:var(--bg2);padding:14px 16px;border-radius:12px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:12px;color:var(--text3)">Qté totale IP</span>
+              <span style="font-size:13px;font-weight:700">${fmtNum(d.ip_qty)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:12px;color:var(--text3)">CA total IP</span>
+              <span style="font-size:13px;font-weight:700;color:var(--blue)">${fmt(d.ip_ca)}</span>
+            </div>
+            ${d.has_ameli && d.rot_pharma_jan26 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:12px;color:var(--text3)">Rotation/pharma/mois</span>
+              <span style="font-size:13px;font-weight:700;color:var(--amber)">${d.rot_pharma_jan26.toFixed(1)}</span>
+            </div>` : ''}
+            ${d.yoy_jan != null ? `<div style="display:flex;justify-content:space-between">
+              <span style="font-size:12px;color:var(--text3)">Tendance YoY</span>
+              <span style="font-size:13px;font-weight:700;color:${d.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'}">${d.yoy_jan >= 0 ? '+' : ''}${d.yoy_jan.toFixed(1)}%</span>
+            </div>` : ''}
+          </div>
+          <!-- Nos ventes -->
+          ${sv.ca > 0 ? `<div style="background:rgba(0,229,160,.06);padding:14px 16px;border-radius:12px;border:1px solid rgba(0,229,160,.15)">
+            <div style="font-size:11px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nos ventes</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:12px;color:var(--text3)">CA réalisé</span>
+              <span style="font-size:14px;font-weight:800;color:var(--mint)">${fmt(sv.ca)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:12px;color:var(--text3)">Quantité vendue</span>
+              <span style="font-size:13px;font-weight:700">${fmtNum(Math.round(sv.qte))} u.</span>
+            </div>
+            ${d.ip_ca > 0 ? `<div style="display:flex;justify-content:space-between">
+              <span style="font-size:12px;color:var(--text3)">Part du CA IP</span>
+              <span style="font-size:13px;font-weight:700;color:var(--blue)">${(sv.ca / d.ip_ca * 100).toFixed(2)}%</span>
+            </div>` : ''}
+          </div>` : `<div style="background:var(--bg2);padding:12px 16px;border-radius:12px;text-align:center;color:var(--text3);font-size:12px">Non vendu dans votre secteur</div>`}
+        </div>
+
+        <!-- Right: Ameli trend chart -->
+        <div>
+          ${d.has_ameli && d.ameli_months ? `
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Données Ameli nationales — 13 mois</div>
+          <div style="height:180px;margin-bottom:16px"><canvas id="bench-ameli-chart" style="max-width:100%"></canvas></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:var(--bg2);padding:10px 12px;border-radius:10px;text-align:center">
+              <div style="font-size:15px;font-weight:800;color:var(--blue)">${fmtNum(d.ameli_jan26)}</div>
+              <div style="font-size:10px;color:var(--text3)">Dispensations Jan26</div>
+            </div>
+            <div style="background:var(--bg2);padding:10px 12px;border-radius:10px;text-align:center">
+              <div style="font-size:15px;font-weight:800;color:var(--text)">${fmtNum(d.ameli_total)}</div>
+              <div style="font-size:10px;color:var(--text3)">Total 13 mois</div>
+            </div>
+          </div>` : `<div style="background:var(--bg2);border-radius:12px;padding:20px;text-align:center;color:var(--text3);font-size:12px;height:200px;display:flex;align-items:center;justify-content:center">Pas de données Ameli pour ce produit</div>`}
+        </div>
+      </div>
+
+      <!-- Footer actions -->
+      <div style="padding:16px 24px;border-top:1px solid var(--border1);display:flex;gap:10px;flex-wrap:wrap">
+        <button onclick="catAddBenchToSimIdx(${idx})" class="btn btn-primary" style="font-size:12px">+ Ajouter au simulateur</button>
+        <button onclick="document.getElementById('bench-detail-modal').remove()" class="btn btn-ghost" style="font-size:12px">Fermer</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function escBD(e) {
+    if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escBD); }
+    if (e.key === 'ArrowRight') { document.getElementById('bench-detail-modal')?.remove(); document.removeEventListener('keydown', escBD); if (benchCurrentData[idx+1]) setTimeout(() => showBenchDetail(idx+1), 50); }
+    if (e.key === 'ArrowLeft')  { document.getElementById('bench-detail-modal')?.remove(); document.removeEventListener('keydown', escBD); if (idx > 0) setTimeout(() => showBenchDetail(idx-1), 50); }
+  });
+  document.body.appendChild(modal);
+
+  // Draw Ameli chart after DOM mount
+  if (d.has_ameli && d.ameli_months) {
+    setTimeout(() => {
+      const ctx = document.getElementById('bench-ameli-chart');
+      if (!ctx) return;
+      const maxV = Math.max(...d.ameli_months);
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ameliLabels,
+          datasets: [{
+            data: d.ameli_months,
+            backgroundColor: d.ameli_months.map((v, i) => i === 12 ? '#0057FF' : 'rgba(0,87,255,0.25)'),
+            borderColor:     d.ameli_months.map((v, i) => i === 12 ? '#0057FF' : 'rgba(0,87,255,0.4)'),
+            borderWidth: 1.5, borderRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => ' ' + fmtNum(c.parsed.y) + ' disp.' } },
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 9 } } },
+            y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#64748B', font: { size: 9 }, callback: v => fmtNum(v) } },
+          }
+        }
+      });
+    }, 60);
+  }
+}
+
+function catAddBenchToSimIdx(idx) {
+  const b = benchCurrentData[idx];
+  if (!b) return;
+  const already = state.sim.items.find(it => it.designation.toUpperCase() === b.designation.toUpperCase());
+  if (already) { already.qty += 1; showToast(`"${b.designation.slice(0,28)}" (qté +1)`, 'info'); return; }
+  const puNet = b.prix_ip > 0 ? b.prix_ip : (b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0);
+  state.sim.items.push({
+    designation: b.designation, code: b.cip13 || '',
+    cat: b.categorie || 'mi', froid: b.is_froid || false,
+    puNet, puBrut: puNet * 1.05, qty: 1,
+  });
+  showToast(`"${b.designation.slice(0,28)}…" ajouté au simulateur ✓`, 'success');
 }
 
 // ── NAV ───────────────────────────────────────
