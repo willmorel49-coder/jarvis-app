@@ -2090,6 +2090,8 @@ let prodFamille = 'tous';
 let prodSortCol = 'ca';
 let prodSortAsc = false;
 let prodPharmaFilter = 'tous'; // 'tous' or pharmacyId
+let prodTableQuery = '', prodTableSort = 'ca', prodTableSortAsc = false, prodTablePage = 1;
+const PROD_TABLE_PER_PAGE = 50;
 
 function renderProduits() {
   const rawSales = getSales();
@@ -2190,6 +2192,34 @@ function renderProduits() {
       .slice(0, 8);
   })();
 
+  // ── Table complète produits ────────────────────
+  const prodTableMap = {};
+  for (const s of sales) {
+    const k = (s.artDesignation || '').trim().toUpperCase();
+    if (!k) continue;
+    if (!prodTableMap[k]) prodTableMap[k] = {
+      label: s.artDesignation, ca: 0, qte: 0, marge: 0,
+      cat: classifyProduct(s), pharmas: new Set(),
+    };
+    prodTableMap[k].ca     += s.mntNetHt;
+    prodTableMap[k].qte    += s.qte;
+    prodTableMap[k].marge  += (s.mntNetHt - s.puNet * s.qte);
+    prodTableMap[k].pharmas.add(s.pharmacyId);
+  }
+  let prodTableAll = Object.values(prodTableMap).map(p => ({ ...p, pharmaCount: p.pharmas.size }));
+  if (prodTableQuery) {
+    const q2 = prodTableQuery.toLowerCase();
+    prodTableAll = prodTableAll.filter(p => p.label.toLowerCase().includes(q2));
+  }
+  prodTableAll.sort((a, b) => {
+    const av = a[prodTableSort] ?? 0, bv = b[prodTableSort] ?? 0;
+    return prodTableSortAsc ? av - bv : bv - av;
+  });
+  const prodTableTotalPages = Math.max(1, Math.ceil(prodTableAll.length / PROD_TABLE_PER_PAGE));
+  if (prodTablePage > prodTableTotalPages) prodTablePage = prodTableTotalPages;
+  const prodTableSlice = prodTableAll.slice((prodTablePage - 1) * PROD_TABLE_PER_PAGE, prodTablePage * PROD_TABLE_PER_PAGE);
+  const sortIcon = col => prodTableSort === col ? (prodTableSortAsc ? ' ▲' : ' ▼') : '';
+
   // ── Tendance mensuelle ────────────────────────
   const allSales = getSales();
   const monthMap = {};
@@ -2285,7 +2315,7 @@ function renderProduits() {
     </div>` : ''}
 
     ${opps.length ? `
-    <div class="card fade-up">
+    <div class="card fade-up" style="margin-bottom:24px">
       <div class="card-header">
         <div>
           <div class="card-title">Opportunités sous-exploitées</div>
@@ -2304,6 +2334,61 @@ function renderProduits() {
           <tbody>${oppsHtml}</tbody>
         </table>
       </div>
+    </div>` : ''}
+
+    <!-- Table complète tous produits -->
+    ${prodTableAll.length ? `
+    <div class="card fade-up">
+      <div class="card-header" style="flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="card-title">Tous les produits — détail complet</div>
+          <div class="card-subtitle">${prodTableAll.length} références · page ${prodTablePage}/${prodTableTotalPages}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" placeholder="Rechercher…" value="${prodTableQuery}"
+            oninput="prodTableQuery=this.value;prodTablePage=1;renderProduits()"
+            style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);width:160px">
+          <button onclick="prodExportCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="cursor:pointer" onclick="prodTableSort='label';prodTableSortAsc=prodTableSort==='label'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Désignation${sortIcon('label')}</th>
+              <th>Famille</th>
+              <th style="text-align:right;cursor:pointer" onclick="prodTableSort='ca';prodTableSortAsc=prodTableSort==='ca'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">CA HT${sortIcon('ca')}</th>
+              <th style="text-align:right;cursor:pointer" onclick="prodTableSort='qte';prodTableSortAsc=prodTableSort==='qte'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Qtés${sortIcon('qte')}</th>
+              <th style="text-align:right;cursor:pointer" onclick="prodTableSort='pharmaCount';prodTableSortAsc=prodTableSort==='pharmaCount'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Pharmas${sortIcon('pharmaCount')}</th>
+              <th style="text-align:right">PU moyen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${prodTableSlice.map((p, i) => {
+              const cat = CATS[p.cat] || CATS.mi;
+              const rank = (prodTablePage - 1) * PROD_TABLE_PER_PAGE + i + 1;
+              const puMoyen = p.qte > 0 ? p.ca / p.qte : 0;
+              return `<tr>
+                <td style="font-size:12px">
+                  <span style="color:var(--text3);font-size:11px;margin-right:6px">${rank}</span>
+                  ${p.label}
+                </td>
+                <td><span style="font-size:10px;padding:1px 5px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:700">${cat.icon}</span></td>
+                <td class="td-num" style="text-align:right;font-weight:700">${fmt(p.ca)}</td>
+                <td class="td-num" style="text-align:right">${fmtNum(Math.round(p.qte))}</td>
+                <td class="td-num" style="text-align:right">${p.pharmaCount}</td>
+                <td class="td-num" style="text-align:right;color:var(--text3)">${fmtP(puMoyen)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${prodTableTotalPages > 1 ? `
+      <div style="display:flex;justify-content:center;align-items:center;gap:8px;padding:14px">
+        ${prodTablePage > 1 ? `<button onclick="prodTablePage--;renderProduits()" style="padding:5px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12px">← Préc</button>` : ''}
+        <span style="font-size:12px;color:var(--text3)">Page ${prodTablePage} / ${prodTableTotalPages}</span>
+        ${prodTablePage < prodTableTotalPages ? `<button onclick="prodTablePage++;renderProduits()" style="padding:5px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12px">Suiv →</button>` : ''}
+      </div>` : ''}
     </div>` : ''}
   `;
 
@@ -2385,6 +2470,48 @@ function renderProduits() {
       ctx.style.cursor = 'pointer';
     }, 50);
   }
+}
+
+function prodExportCSV() {
+  const rawSales = getSales();
+  const sales = prodPharmaFilter === 'tous' ? rawSales : rawSales.filter(s => s.pharmacyId === prodPharmaFilter);
+  const prodMap = {};
+  for (const s of sales) {
+    const k = (s.artDesignation || '').trim().toUpperCase();
+    if (!k) continue;
+    if (!prodMap[k]) prodMap[k] = { label: s.artDesignation, ca: 0, qte: 0, cat: classifyProduct(s), pharmas: new Set() };
+    prodMap[k].ca  += s.mntNetHt;
+    prodMap[k].qte += s.qte;
+    prodMap[k].pharmas.add(s.pharmacyId);
+  }
+  let data = Object.values(prodMap);
+  if (prodTableQuery) {
+    const q2 = prodTableQuery.toLowerCase();
+    data = data.filter(p => p.label.toLowerCase().includes(q2));
+  }
+  data.sort((a, b) => b.ca - a.ca);
+  const pharmaLabel = prodPharmaFilter === 'tous' ? 'Toutes' : (state.pharmacies.find(p => p.id === prodPharmaFilter)?.name || '');
+  const header = ['Désignation','Famille','CA HT','Qtés','Nb Pharmacies','PU Moyen HT'];
+  const rows = data.map(p => {
+    const cat = CATS[p.cat] || CATS.mi;
+    const pu = p.qte > 0 ? p.ca / p.qte : 0;
+    return [
+      `"${p.label.replace(/"/g,'""')}"`,
+      cat.label,
+      String(p.ca.toFixed(2)).replace('.',','),
+      String(Math.round(p.qte)),
+      p.pharmas.size,
+      String(pu.toFixed(4)).replace('.',','),
+    ];
+  });
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `produits_${pharmaLabel.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${data.length} produits`, 'success');
 }
 
 // ── PRODUCT BREAKDOWN MODAL ───────────────────
