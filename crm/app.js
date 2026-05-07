@@ -3071,6 +3071,35 @@ function offiGoPage(p) { offiPageNum = p; renderOffilog(); }
 function offiSetRole(r) { offiRole = r; offiPageNum = 1; renderOffilog(); }
 function offiSetUnivers(u) { offiUnivers = u; offiPageNum = 1; renderOffilog(); }
 function offiSetMarque(m) { offiMarque = m; offiPageNum = 1; renderOffilog(); }
+function offiExportCSV() {
+  const list = offiGetList();
+  const header = ['Produit','Marque','EAN','Univers','Role','Dans Offilog','Prix IP','Prix Live','Ma Pharmacie','Drakkars','Cap3000','Prix Public','Marge %','Potentiel','Rang Vente'];
+  const rows = list.map(p => [
+    `"${(p.produit||'').replace(/"/g,'""')}"`,
+    `"${(p.marque||'').replace(/"/g,'""')}"`,
+    p.ean||'',
+    `"${(p.univers||'').replace(/"/g,'""')}"`,
+    `"${(p.role||'').replace(/"/g,'""')}"`,
+    p.dans_offilog ? 'Oui' : 'Non',
+    p.prix_offilog != null ? String(p.prix_offilog).replace('.',',') : '',
+    p.prix_live    != null ? String(p.prix_live).replace('.',',') : '',
+    p.prix_pharmacie != null ? String(p.prix_pharmacie).replace('.',',') : '',
+    p.prix_drakkars  != null ? String(p.prix_drakkars).replace('.',',') : '',
+    p.prix_cap3000   != null ? String(p.prix_cap3000).replace('.',',') : '',
+    p.prix_maxi      != null ? String(p.prix_maxi).replace('.',',') : '',
+    p.marge_pct      != null ? String(p.marge_pct.toFixed(1)).replace('.',',') : '',
+    `"${(p.potentiel||'').replace(/"/g,'""')}"`,
+    p.rang_vente != null ? p.rang_vente : '',
+  ]);
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `offilog_${offiRole}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${list.length} produits`, 'success');
+}
 
 function renderOffilog() {
   const container = document.getElementById('offilog-content');
@@ -3395,6 +3424,12 @@ function renderOffilog() {
         <button onclick="offiView='cards';renderOffilog()" style="padding:7px 12px;border:none;background:${offiView==='cards'?OFFILOG_ORANGE:'transparent'};color:${offiView==='cards'?'#fff':'var(--text3)'};cursor:pointer;font-size:14px;line-height:1;transition:all .15s" title="Vue cartes">⊞</button>
         <button onclick="offiView='table';renderOffilog()" style="padding:7px 12px;border:none;background:${offiView==='table'?OFFILOG_ORANGE:'transparent'};color:${offiView==='table'?'#fff':'var(--text3)'};cursor:pointer;font-size:14px;line-height:1;transition:all .15s" title="Vue tableau">☰</button>
       </div>
+      <!-- Export CSV -->
+      <button onclick="offiExportCSV()" title="Exporter la liste filtrée en CSV"
+        style="padding:7px 12px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:all .15s"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='transparent'">
+        ⬇ CSV
+      </button>
       ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous'
         ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiPageNum=1;renderOffilog()"
             style="padding:8px 14px;border-radius:12px;border:1.5px solid var(--rose);background:rgba(239,68,68,.06);color:#EF4444;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
