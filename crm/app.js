@@ -1018,6 +1018,20 @@ function renderDashboard() {
         <div class="chart-wrap" style="height:230px"><canvas id="chart-evolution"></canvas></div>
       </div>
     </div>
+
+    <!-- Row 5 : Stacked par pharmacie -->
+    ${state.pharmacies.length > 1 ? `
+    <div class="card fade-up" style="margin-top:24px;border-radius:var(--r)">
+      <div class="card-header" style="padding:20px 24px 16px">
+        <div>
+          <div class="card-title">Contribution par pharmacie sur l'année</div>
+          <div class="card-subtitle">CA mensuel empilé — toutes périodes importées</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:260px"><canvas id="chart-stacked"></canvas></div>
+      </div>
+    </div>` : ''}
   `;
 
   setTimeout(() => {
@@ -1114,6 +1128,48 @@ function renderDashboard() {
             scales: {
               x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
               y: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
+            }
+          }
+        });
+      }
+    }
+
+    // Stacked bar chart — par pharmacie par mois
+    if (state.pharmacies.length > 1) {
+      const ctxSt = document.getElementById('chart-stacked');
+      if (ctxSt) {
+        if (state.charts['stacked']) state.charts['stacked'].destroy();
+        // Collect all months
+        const allMonths = [...new Set(allSalesRaw.map(s => `${s.year}-${String(s.month).padStart(2,'0')}`))]
+          .sort().slice(-12);
+        const labels = allMonths.map(k => {
+          const [y, m] = k.split('-');
+          return monthName(+m) + ' ' + y.slice(2);
+        });
+        const datasets = state.pharmacies.map(ph => ({
+          label: ph.name,
+          data: allMonths.map(k => {
+            const [y, m] = k.split('-');
+            const s = getSales({ pharmacyId: ph.id, year: +y, month: +m });
+            return +sumCA(s).toFixed(2);
+          }),
+          backgroundColor: ph.color + 'CC',
+          borderColor: ph.color,
+          borderWidth: 1,
+          borderRadius: 3,
+        }));
+        state.charts['stacked'] = new Chart(ctxSt, {
+          type: 'bar',
+          data: { labels, datasets },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#64748B', font: { size: 11 }, boxWidth: 12, padding: 10 } },
+              tooltip: { mode: 'index', callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+            },
+            scales: {
+              x: { stacked: true, grid: { display: false }, ticks: { color: '#64748B', font: { size: 10 } } },
+              y: { stacked: true, grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
             }
           }
         });
