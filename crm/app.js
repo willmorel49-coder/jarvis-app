@@ -2220,11 +2220,19 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             <span style="font-size:11px;color:var(--text3)">${notes.length} note${notes.length > 1 ? 's' : ''}</span>
           </div>
           ${notesHtml}
-          <div style="padding:12px 20px;border-top:1px solid var(--border1);display:flex;gap:8px">
-            <textarea id="visit-note-input-${pharma.id}" placeholder="Ajouter une note de visite…"
-              style="flex:1;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);resize:none;height:60px;font-family:inherit"
-              onkeydown="if(event.ctrlKey&&event.key==='Enter')saveVisitNote('${pharma.id}')"></textarea>
-            <button onclick="saveVisitNote('${pharma.id}')" class="btn btn-primary" style="font-size:12px;align-self:flex-end;padding:8px 14px">Ajouter</button>
+          <div style="padding:10px 20px;border-top:1px solid var(--border1)">
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+              ${['✅ Commande passée','💬 Objection prix','📦 Produit manquant','🔄 Switch proposé','📅 RDV planifié'].map(t =>
+                `<button onclick="document.getElementById('visit-note-input-${pharma.id}').value='${t} — ';document.getElementById('visit-note-input-${pharma.id}').focus()"
+                  style="padding:3px 9px;border-radius:12px;border:1px solid var(--border2);background:var(--bg2);color:var(--text3);font-size:10px;cursor:pointer;white-space:nowrap">${t}</button>`
+              ).join('')}
+            </div>
+            <div style="display:flex;gap:8px">
+              <textarea id="visit-note-input-${pharma.id}" placeholder="Ajouter une note de visite… (Ctrl+Entrée pour valider)"
+                style="flex:1;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);resize:none;height:60px;font-family:inherit"
+                onkeydown="if(event.ctrlKey&&event.key==='Enter')saveVisitNote('${pharma.id}')"></textarea>
+              <button onclick="saveVisitNote('${pharma.id}')" class="btn btn-primary" style="font-size:12px;align-self:flex-end;padding:8px 14px">Ajouter</button>
+            </div>
           </div>
         </div>`;
       })()}
