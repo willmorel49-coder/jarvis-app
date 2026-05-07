@@ -1312,12 +1312,19 @@ function renderPharmacies() {
   const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
 
   // Construire liste enrichie de toutes les pharmacies avec CA et delta
+  const today = new Date(); today.setHours(0,0,0,0);
   let enriched = state.pharmacies.map(ph => {
     const caCur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
     const caPrev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
     const g      = caPrev > 0 ? (caCur - caPrev) / caPrev * 100 : null;
     const status = g === null ? 'new' : g > 20 ? 'up' : g >= -5 ? 'flat' : 'down';
-    return { ph, caCur, caPrev, g, status };
+    // Last import date
+    const phImports = state.imports.filter(i => i.pharmacyId === ph.id);
+    const lastImport = phImports.length
+      ? phImports.reduce((a, b) => new Date(a.importedAt) > new Date(b.importedAt) ? a : b)
+      : null;
+    const lastImportDays = lastImport ? Math.round((today - new Date(lastImport.importedAt)) / 86400000) : null;
+    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays };
   }).filter(e => e.caCur > 0 || e.caPrev > 0);
 
   // Filtre texte
@@ -1358,11 +1365,20 @@ function renderPharmacies() {
 
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
-        const { ph, caCur, caPrev, g, status } = e;
+        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays } = e;
         const chipHtml = status === 'up'   ? '<span class="status-chip status-up">● Croissance</span>'
                        : status === 'flat' ? '<span class="status-chip status-flat">● Stable</span>'
                        : status === 'down' ? '<span class="status-chip status-down">● Baisse</span>'
                        :                    '<span class="status-chip status-flat">● Nouveau</span>';
+        const importFreshness = lastImportDays !== null
+          ? lastImportDays === 0
+            ? `<span style="font-size:10px;color:var(--mint)">Import aujourd'hui</span>`
+            : lastImportDays <= 7
+              ? `<span style="font-size:10px;color:var(--mint)">Import il y a ${lastImportDays}j</span>`
+              : lastImportDays <= 35
+                ? `<span style="font-size:10px;color:var(--text3)">Import il y a ${lastImportDays}j</span>`
+                : `<span style="font-size:10px;color:var(--rose)">Import il y a ${lastImportDays}j</span>`
+          : '';
         return `
           <div class="pharma-item" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
             <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
@@ -1372,6 +1388,7 @@ function renderPharmacies() {
               <div class="pharma-meta" style="display:flex;align-items:center;gap:8px;margin-top:4px">
                 ${chipHtml}
                 ${g !== null ? deltaBadge(caCur, caPrev) : ''}
+                ${importFreshness}
               </div>
             </div>
             <div style="flex:1;max-width:120px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
