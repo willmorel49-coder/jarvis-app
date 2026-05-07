@@ -2206,11 +2206,19 @@ let prodSortCol = 'ca';
 let prodSortAsc = false;
 let prodPharmaFilter = 'tous'; // 'tous' or pharmacyId
 let prodTableQuery = '', prodTableSort = 'ca', prodTableSortAsc = false, prodTablePage = 1;
+let prodPeriodFilter = 'all'; // 'all' or 'YYYY-MM'
 const PROD_TABLE_PER_PAGE = 50;
 
 function renderProduits() {
   const rawSales = getSales();
-  const sales = prodPharmaFilter === 'tous' ? rawSales : rawSales.filter(s => s.pharmacyId === prodPharmaFilter);
+  const allPeriods = [...new Set(rawSales.map(s => `${s.year}-${String(s.month).padStart(2,'0')}`))]
+    .sort().reverse();
+  let filteredByPeriod = rawSales;
+  if (prodPeriodFilter !== 'all') {
+    const [y, m] = prodPeriodFilter.split('-');
+    filteredByPeriod = rawSales.filter(s => s.year === +y && s.month === +m);
+  }
+  const sales = prodPharmaFilter === 'tous' ? filteredByPeriod : filteredByPeriod.filter(s => s.pharmacyId === prodPharmaFilter);
 
   // ── KPIs par famille ─────────────────────────
   const familyKpis = Object.keys(CATS).map(k => {
@@ -2375,6 +2383,11 @@ function renderProduits() {
           <div class="card-subtitle">CA HT vs Marge · cliquez une famille pour zoomer${prodPharmaFilter !== 'tous' ? ' · ' + (state.pharmacies.find(p=>p.id===prodPharmaFilter)?.name||'') : ''}</div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <select onchange="prodPeriodFilter=this.value;prodTablePage=1;renderProduits()"
+            style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
+            <option value="all">Toutes les périodes</option>
+            ${allPeriods.map(p => { const [y,m] = p.split('-'); return `<option value="${p}" ${prodPeriodFilter===p?'selected':''}>${monthName(+m)} ${y}</option>`; }).join('')}
+          </select>
           <select onchange="prodPharmaFilter=this.value;renderProduits()"
             style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
             <option value="tous">Toutes les pharmacies</option>
