@@ -2398,64 +2398,301 @@ async function handleFiles(files) {
   updateNavBadge();
 }
 
+// ── OBJECTIFS ─────────────────────────────────
+const OBJ_KEY = 'ip_crm_objectives_v2';
+
+function loadObjectives() {
+  try { return JSON.parse(localStorage.getItem(OBJ_KEY) || '{}'); } catch { return {}; }
+}
+
+function saveObjectives(obj) {
+  localStorage.setItem(OBJ_KEY, JSON.stringify(obj));
+}
+
+function setObjectiveTarget(pharmacyId, year, month, value) {
+  const obj = loadObjectives();
+  const k = `${pharmacyId}_${year}_${month}`;
+  obj[k] = value > 0 ? value : undefined;
+  if (obj[k] === undefined) delete obj[k];
+  saveObjectives(obj);
+  renderObjectifs();
+}
+
+function renderObjectifs() {
+  const allSales = getSales();
+  const { year: curY, month: curM } = getCurrentPeriod(allSales.length ? allSales : getSales());
+  const objectives = loadObjectives();
+
+  // Build 6-month range
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    let m = curM - i; let y = curY;
+    while (m <= 0) { m += 12; y--; }
+    months.push({ year: y, month: m });
+  }
+
+  // Per-pharmacy data
+  const pharmaData = state.pharmacies.map(ph => {
+    const rows = months.map(({ year, month }) => {
+      const k = `${ph.id}_${year}_${month}`;
+      const target = objectives[k] || 0;
+      const actual = getSales({ pharmacyId: ph.id, year, month }).reduce((s, x) => s + x.mntNetHt, 0);
+      return { year, month, target, actual, pct: target > 0 ? Math.min(actual / target * 100, 120) : null };
+    });
+    return { ph, rows };
+  });
+
+  // Global totals per month
+  const globalRows = months.map(({ year, month }) => {
+    const totalTarget = state.pharmacies.reduce((s, ph) => s + (objectives[`${ph.id}_${year}_${month}`] || 0), 0);
+    const totalActual = getSales({ year, month }).reduce((s, x) => s + x.mntNetHt, 0);
+    return { year, month, target: totalTarget, actual: totalActual, pct: totalTarget > 0 ? Math.min(totalActual / totalTarget * 100, 120) : null };
+  });
+
+  const monthShort = m => ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][m-1];
+
+  const tableHtml = `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:700px">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border2)">
+            <th style="padding:10px 16px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Pharmacie</th>
+            ${months.map(({ year, month }) => `
+              <th style="padding:10px 10px;text-align:center;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">${monthShort(month)} ${String(year).slice(2)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${pharmaData.map(({ ph, rows }) => `
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:12px 16px;min-width:150px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
+                  <span style="font-size:13px;font-weight:600;color:var(--text)">${ph.name}</span>
+                </div>
+              </td>
+              ${rows.map(r => {
+                const isCur = r.year === curY && r.month === curM;
+                const objKey = `${ph.id}_${r.year}_${r.month}`;
+                const color = r.pct === null ? 'var(--text3)' : r.pct >= 100 ? 'var(--mint)' : r.pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+                return `<td style="padding:8px 10px;text-align:center;${isCur?'background:rgba(0,87,255,.04);':''}" title="${r.target > 0 ? fmt(r.actual)+' / obj. '+fmt(r.target) : 'Pas d\'objectif'}">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                    ${r.actual > 0 ? `<span style="font-size:12px;font-weight:700;color:${color}">${fmt(r.actual)}</span>` : `<span style="font-size:11px;color:var(--border2)">—</span>`}
+                    ${r.pct !== null ? `
+                      <div style="width:48px;height:4px;border-radius:2px;background:var(--border1);overflow:hidden">
+                        <div style="height:100%;width:${Math.min(r.pct, 100).toFixed(0)}%;background:${color};border-radius:2px"></div>
+                      </div>
+                      <span style="font-size:10px;color:${color};font-weight:600">${r.pct.toFixed(0)}%</span>` : ''}
+                    <input type="number" min="0" step="500" value="${r.target || ''}" placeholder="Objectif"
+                      onblur="setObjectiveTarget('${ph.id}',${r.year},${r.month},+this.value)"
+                      onkeydown="if(event.key==='Enter')this.blur()"
+                      style="width:64px;padding:3px 4px;border-radius:6px;border:1px solid var(--border2);background:transparent;font-size:10px;color:var(--text3);text-align:center;font-family:inherit">
+                  </div>
+                </td>`;
+              }).join('')}
+            </tr>`).join('')}
+          <!-- Total row -->
+          <tr style="background:var(--glass2);font-weight:700">
+            <td style="padding:12px 16px;font-size:13px;font-weight:700;color:var(--text)">Total secteur</td>
+            ${globalRows.map(r => {
+              const color = r.pct === null ? 'var(--blue)' : r.pct >= 100 ? 'var(--mint)' : r.pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+              return `<td style="padding:12px 10px;text-align:center">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <span style="font-size:13px;font-weight:800;color:${color}">${r.actual > 0 ? fmt(r.actual) : '—'}</span>
+                  ${r.target > 0 ? `<span style="font-size:10px;color:var(--text3)">/ ${fmt(r.target)}</span>` : ''}
+                  ${r.pct !== null ? `<span style="font-size:10px;color:${color};font-weight:700">${r.pct.toFixed(0)}%</span>` : ''}
+                </div>
+              </td>`;
+            }).join('')}
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  // Progress cards for current month
+  const curMonthCards = pharmaData.map(({ ph, rows }) => {
+    const r = rows[rows.length - 1];
+    if (!r.target && !r.actual) return '';
+    const pct = r.pct ?? 0;
+    const color = r.pct === null ? 'var(--blue)' : pct >= 100 ? 'var(--mint)' : pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+    return `<div style="background:var(--glass2);border-radius:16px;padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${ph.color}"></span>
+        <span style="font-size:12px;font-weight:700;color:var(--text)">${ph.name}</span>
+      </div>
+      <div style="font-size:24px;font-weight:900;color:${color};margin-bottom:4px">${fmt(r.actual)}</div>
+      ${r.target > 0 ? `
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">/ objectif ${fmt(r.target)}</div>
+        <div style="height:6px;border-radius:3px;background:var(--border1);overflow:hidden">
+          <div style="height:100%;width:${Math.min(pct,100).toFixed(0)}%;background:${color};border-radius:3px;transition:width .5s ease"></div>
+        </div>
+        <div style="font-size:11px;color:${color};font-weight:700;margin-top:6px">${pct.toFixed(1)}% atteint</div>
+        ${r.actual < r.target ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(r.target - r.actual)} restant</div>` : `<div style="font-size:11px;color:var(--mint);margin-top:2px">Objectif dépassé ✓</div>`}
+      ` : `<div style="font-size:11px;color:var(--text3)">Pas d'objectif défini</div>`}
+    </div>`;
+  }).filter(Boolean).join('');
+
+  document.getElementById('objectifs-content').innerHTML = `
+    <div class="fade-up">
+      <div class="section-title">Objectifs commerciaux</div>
+      <div class="section-sub">Définissez des objectifs mensuels par pharmacie — cliquez sur une cellule pour modifier</div>
+
+      <!-- Current month cards -->
+      ${curMonthCards ? `
+      <div style="margin-bottom:24px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:12px">${monthName(curM)} ${curY} — Mois en cours</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">${curMonthCards}</div>
+      </div>` : ''}
+
+      <!-- 6-month table -->
+      <div class="card fade-up">
+        <div class="card-header">
+          <div class="card-title">Tableau des 6 derniers mois</div>
+          <div class="card-subtitle">Cliquez sur un champ pour définir un objectif</div>
+        </div>
+        ${tableHtml}
+      </div>
+
+      <!-- Legend -->
+      <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--text3)">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--mint)"></span>≥ 100% — Objectif atteint</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--amber)"></span>70–99% — En bonne voie</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--rose)"></span>< 70% — Attention requise</span>
+      </div>
+    </div>`;
+}
+
 // ── ADMIN ─────────────────────────────────────
 function renderAdmin() {
   const hasLocalData = !!(localStorage.getItem('ip_crm_pharmacies'));
+
+  // Build import history sorted by date desc
+  const sortedImports = [...state.imports].sort((a,b) => new Date(b.importedAt) - new Date(a.importedAt));
+  const importHistoryHtml = sortedImports.length ? `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border2)">
+            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pharmacie</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Période</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;max-width:200px">Fichier</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Date import</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Lignes</th>
+            <th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sortedImports.map(imp => {
+            const ph = state.pharmacies.find(p => p.id === imp.pharmacyId);
+            const lineCount = state.sales.filter(s => s.importId === imp.id).length;
+            const d = imp.importedAt ? new Date(imp.importedAt).toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'}) : '—';
+            return `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:10px 12px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:${ph?.color||'#555'};flex-shrink:0"></span>
+                  <span style="font-size:13px;font-weight:600;color:var(--text)">${ph?.name||'—'}</span>
+                </div>
+              </td>
+              <td style="padding:10px 12px;font-size:13px;color:var(--text2)">${monthName(imp.month)} ${imp.year}</td>
+              <td style="padding:10px 12px;font-size:11px;color:var(--text3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${imp.filename||''}">${imp.filename||'—'}</td>
+              <td style="padding:10px 12px;font-size:12px;color:var(--text3);white-space:nowrap">${d}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600;color:var(--blue)">${fmtNum(lineCount)}</td>
+              <td style="padding:10px 12px;text-align:center">
+                <button onclick="deleteImport('${imp.id}')" style="padding:4px 10px;border-radius:6px;background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.2);color:var(--rose);font-size:11px;font-weight:600;cursor:pointer">Supprimer</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>` : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Aucun import pour l'instant</div>`;
+
+  // Pharmacy list with edit buttons
+  const pharmaListHtml = state.pharmacies.length ? state.pharmacies.map(ph => {
+    const phImports = state.imports.filter(i => i.pharmacyId === ph.id);
+    const phSales   = state.sales.filter(s => s.pharmacyId === ph.id);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="width:10px;height:10px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${ph.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${phImports.length} import${phImports.length!==1?'s':''} · ${fmtNum(phSales.length)} lignes</div>
+      </div>
+      <button onclick="showEditPharmacyModal('${ph.id}')" style="padding:4px 10px;border-radius:6px;background:var(--bg2);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer">Renommer</button>
+      <button onclick="deletePharmacy('${ph.id}')" style="padding:4px 10px;border-radius:6px;background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.2);color:var(--rose);font-size:11px;font-weight:600;cursor:pointer">Supprimer</button>
+    </div>`;
+  }).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Aucune pharmacie</div>`;
+
   document.getElementById('admin-content').innerHTML = `
-    <div class="fade-up" style="max-width:700px">
+    <div class="fade-up" style="max-width:860px">
       <div class="section-title">Administration</div>
       <div class="section-sub">Gestion des accès et des données</div>
 
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-header"><div class="card-title">Utilisateurs</div></div>
-        <div class="card-body">
-          <p style="color:var(--text2);font-size:14px;margin:0">
-            Gérer les utilisateurs depuis le
-            <a href="https://supabase.com/dashboard" target="_blank" style="color:var(--blue)">dashboard Supabase</a>
-            → Authentication → Users
-          </p>
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+        <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
+          <div style="font-size:28px;font-weight:800;color:var(--blue)">${state.pharmacies.length}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">Pharmacies</div>
+        </div>
+        <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
+          <div style="font-size:28px;font-weight:800;color:var(--mint)">${state.imports.length}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">Imports</div>
+        </div>
+        <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
+          <div style="font-size:28px;font-weight:800;color:var(--amber)">${fmtNum(state.sales.length)}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">Lignes de vente</div>
         </div>
       </div>
 
+      <!-- Pharmacies gestion -->
       <div class="card" style="margin-bottom:20px">
-        <div class="card-header"><div class="card-title">Créer une pharmacie manuellement</div></div>
-        <div class="card-body">
-          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-            <div style="flex:1;min-width:160px">
-              <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Nom de la pharmacie</label>
-              <input id="admin-pharma-name" type="text" placeholder="Ex : Pharmacie du Centre"
-                style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box">
+        <div class="card-header">
+          <div class="card-title">Pharmacies</div>
+        </div>
+        <div class="card-body" style="padding-bottom:0">
+          ${pharmaListHtml}
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Ajouter une pharmacie</div>
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+              <div style="flex:1;min-width:160px">
+                <input id="admin-pharma-name" type="text" placeholder="Nom de la pharmacie"
+                  style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box">
+              </div>
+              <div style="width:90px">
+                <input id="admin-pharma-code" type="text" maxlength="5" placeholder="Code"
+                  style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box;text-transform:uppercase">
+              </div>
+              <button class="btn btn-primary" onclick="addPharmacy()" style="white-space:nowrap">+ Créer</button>
             </div>
-            <div style="width:90px">
-              <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Code (4 car.)</label>
-              <input id="admin-pharma-code" type="text" maxlength="5" placeholder="PDC"
-                style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box;text-transform:uppercase">
-            </div>
-            <button class="btn btn-primary" onclick="addPharmacy()" style="white-space:nowrap">+ Créer</button>
           </div>
         </div>
       </div>
 
+      <!-- Import history -->
       <div class="card" style="margin-bottom:20px">
-        <div class="card-header"><div class="card-title">Données Supabase</div></div>
+        <div class="card-header">
+          <div class="card-title">Historique des imports</div>
+          <div class="card-subtitle">${sortedImports.length} import${sortedImports.length!==1?'s':''} au total</div>
+        </div>
+        ${importHistoryHtml}
+      </div>
+
+      <!-- Danger zone -->
+      <div class="card" style="margin-bottom:20px;border-color:rgba(255,77,109,.2)">
+        <div class="card-header"><div class="card-title" style="color:var(--rose)">Zone de danger</div></div>
         <div class="card-body">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
-            <div style="background:var(--glass2);border-radius:var(--rs);padding:16px;text-align:center">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800">${state.pharmacies.length}</div>
-              <div style="font-size:12px;color:var(--text2);margin-top:4px">Pharmacies</div>
-            </div>
-            <div style="background:var(--glass2);border-radius:var(--rs);padding:16px;text-align:center">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800">${state.imports.length}</div>
-              <div style="font-size:12px;color:var(--text2);margin-top:4px">Imports</div>
-            </div>
-            <div style="background:var(--glass2);border-radius:var(--rs);padding:16px;text-align:center">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800">${state.sales.length}</div>
-              <div style="font-size:12px;color:var(--text2);margin-top:4px">Lignes de vente</div>
-            </div>
-          </div>
+          <p style="color:var(--text2);font-size:13px;margin:0 0 12px">Ces actions sont irréversibles.</p>
           <button class="btn btn-ghost" onclick="resetAllData()" style="color:var(--rose);border-color:rgba(255,77,109,.3)">
             🗑 Vider toutes les données Supabase
           </button>
+        </div>
+      </div>
+
+      <!-- Supabase users -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><div class="card-title">Utilisateurs Auth</div></div>
+        <div class="card-body">
+          <p style="color:var(--text2);font-size:14px;margin:0">
+            Gérer depuis le
+            <a href="https://supabase.com/dashboard/project/iyvavhnlhxksokkerkos/auth/users" target="_blank" style="color:var(--blue)">dashboard Supabase → Auth → Users</a>
+          </p>
         </div>
       </div>
 
@@ -2477,6 +2714,59 @@ function renderAdmin() {
       </div>` : ''}
     </div>
   `;
+}
+
+function showEditPharmacyModal(pharmacyId) {
+  const ph = state.pharmacies.find(p => p.id === pharmacyId);
+  if (!ph) return;
+  const existing = document.getElementById('edit-pharma-modal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'edit-pharma-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:16px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.4)">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:15px;font-weight:700">Modifier la pharmacie</div>
+        <button onclick="document.getElementById('edit-pharma-modal').remove()" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
+      </div>
+      <div style="padding:20px 24px">
+        <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:6px">Nom</label>
+        <input id="edit-pharma-name" type="text" value="${ph.name.replace(/"/g,'&quot;')}"
+          style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box;margin-bottom:14px">
+        <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:6px">Couleur</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+          ${['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4','#84CC16'].map(c =>
+            `<button onclick="document.querySelectorAll('.color-pick').forEach(b=>b.style.outline='none');this.style.outline='2px solid white';document.getElementById('edit-pharma-color').value='${c}'"
+              class="color-pick"
+              style="width:28px;height:28px;border-radius:50%;background:${c};border:none;cursor:pointer;${ph.color===c?'outline:2px solid white;':''}"></button>`
+          ).join('')}
+          <input type="color" id="edit-pharma-color" value="${ph.color}" style="width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;padding:0">
+        </div>
+        <div style="display:flex;gap:10px">
+          <button onclick="document.getElementById('edit-pharma-modal').remove()" class="btn btn-ghost" style="flex:1">Annuler</button>
+          <button onclick="saveEditPharmacy('${ph.id}')" class="btn btn-primary" style="flex:1">Enregistrer</button>
+        </div>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+async function saveEditPharmacy(pharmacyId) {
+  const nameEl  = document.getElementById('edit-pharma-name');
+  const colorEl = document.getElementById('edit-pharma-color');
+  if (!nameEl) return;
+  const name  = nameEl.value.trim();
+  const color = colorEl?.value || '#3B82F6';
+  if (!name) { showToast('Nom requis', 'error'); return; }
+  const { error } = await sb.from('pharmacies').update({ name, color }).eq('id', pharmacyId);
+  if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
+  const ph = state.pharmacies.find(p => p.id === pharmacyId);
+  if (ph) { ph.name = name; ph.color = color; }
+  document.getElementById('edit-pharma-modal')?.remove();
+  showToast(`Pharmacie "${name}" mise à jour`, 'success');
+  renderAdmin();
 }
 
 async function addPharmacy() {
@@ -2691,8 +2981,13 @@ function renderBenchmark() {
       ? `<span style="font-size:11px;color:var(--blue)">${fmtP(d.prix_ip)}</span>`
       : '<span style="color:var(--text4);font-size:11px">—</span>';
     const sv = salesMap[nnBench(d.designation)];
+    const partIP = (sv?.ca > 0 && d.ip_ca > 0) ? (sv.ca / d.ip_ca * 100) : null;
     const nosVentesHtml = sv?.ca > 0
-      ? `<div style="text-align:right"><div style="font-size:11px;font-weight:700;color:var(--mint)">${fmt(sv.ca)}</div><div style="font-size:10px;color:var(--text3)">${fmtNum(Math.round(sv.qte))} u.</div></div>`
+      ? `<div style="text-align:right">
+          <div style="font-size:11px;font-weight:700;color:var(--mint)">${fmt(sv.ca)}</div>
+          <div style="font-size:10px;color:var(--text3)">${fmtNum(Math.round(sv.qte))} u.</div>
+          ${partIP !== null ? `<div style="font-size:10px;color:var(--blue);font-weight:600">${partIP.toFixed(2)}% du CA IP</div>` : ''}
+        </div>`
       : salesAll.length > 0
         ? `<span style="font-size:10px;color:var(--text3);background:rgba(239,68,68,.08);padding:2px 6px;border-radius:6px;font-weight:600">Non vendu</span>`
         : `<span style="color:var(--text4);font-size:11px">—</span>`;
@@ -2882,6 +3177,7 @@ function navigate(page) {
     simulateur: 'Simulateur de panier',
     offilog:      'Offilog — Parapharmacie',
     groupements:  'Suivi Groupement',
+    objectifs:    'Objectifs commerciaux',
   };
   document.getElementById('topbar-title').textContent = titles[page] || page;
 
@@ -2896,6 +3192,7 @@ function navigate(page) {
     simulateur:  renderSimulator,
     offilog:     renderOffilog,
     groupements: renderGroupements,
+    objectifs:   renderObjectifs,
   };
   if (renders[page]) renders[page]();
 }
