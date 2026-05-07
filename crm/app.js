@@ -2938,7 +2938,7 @@ const UNIVERS_META = {
 function univMeta(u) {
   return UNIVERS_META[u] || { color:'#90A4AE', bg:'#f5f7f9', icon:'📦' };
 }
-let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiPageNum = 1;
+let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiPageNum = 1, offiView = 'cards';
 let offiCurrentData = [];
 
 const ROLE_META = {
@@ -3190,6 +3190,56 @@ function renderOffilog() {
   }).join('')
   : `<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text3)">Aucun produit trouvé pour ces filtres.</div>`;
 
+  // ── Table view ────────────────────────────────
+  const tableHtml = page.length ? `
+  <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border1)">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:var(--bg2);border-bottom:2px solid var(--border2)">
+          <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Produit</th>
+          <th style="padding:10px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Marque</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:700;white-space:nowrap">Prix IP</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#15803d;font-weight:700;white-space:nowrap">Live</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--mint);font-weight:700;white-space:nowrap">Ma Phcie</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Drakkars</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Cap3000</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Marge</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${page.map(p => {
+          const prixRef  = p.prix_live || p.prix_offilog;
+          const minConc  = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie].filter(x => x > 0).concat([Infinity]));
+          const deltaRef = (prixRef && minConc < Infinity) ? minConc - prixRef : null;
+          const deltaColor = deltaRef == null ? '' : deltaRef > 0.05 ? '#10B981' : deltaRef < -0.05 ? '#EF4444' : '#6B7280';
+          const margeColor = p.marge_pct == null ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
+          const img = p.img ? `<img src="${p.img}" style="width:28px;height:28px;object-fit:contain;border-radius:4px;margin-right:8px;vertical-align:middle" onerror="this.style.display='none'">` : '';
+          return `<tr style="border-bottom:1px solid var(--border1);transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+            <td style="padding:8px 12px;max-width:260px">
+              <div style="display:flex;align-items:center">
+                ${img}
+                <div>
+                  <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px" title="${p.produit}">${p.produit}</div>
+                  <div style="font-size:10px;color:var(--text3);margin-top:1px">${p.univers ? p.univers.split(' / ')[0] : '—'}${p.rang_vente ? ` · 🏆 #${p.rang_vente}` : ''}</div>
+                </div>
+              </div>
+            </td>
+            <td style="padding:8px 10px;color:var(--text2);font-size:11px;white-space:nowrap">${p.marque || '—'}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:700;color:${OFFILOG_ORANGE};white-space:nowrap">${p.prix_offilog ? fmtP(p.prix_offilog) : '—'}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:600;color:#15803d;white-space:nowrap">${p.prix_live ? fmtP(p.prix_live) : '—'}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:700;color:var(--mint);white-space:nowrap">${p.prix_pharmacie ? fmtP(p.prix_pharmacie) : '—'}</td>
+            <td style="padding:8px 10px;text-align:right;color:var(--text2);white-space:nowrap">${p.prix_drakkars ? fmtP(p.prix_drakkars) : '—'}</td>
+            <td style="padding:8px 10px;text-align:right;color:var(--text2);white-space:nowrap">${p.prix_cap3000 ? fmtP(p.prix_cap3000) : '—'}</td>
+            <td style="padding:8px 10px;text-align:right;white-space:nowrap">
+              ${p.marge_pct != null ? `<span style="font-weight:700;color:${margeColor}">${p.marge_pct.toFixed(1)}%</span>` : '—'}
+              ${deltaRef != null ? `<div style="font-size:9px;font-weight:700;color:${deltaColor}">${deltaRef > 0 ? '−' : '+'}${fmtP(Math.abs(deltaRef))} conc.</div>` : ''}
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>` : `<div style="padding:60px;text-align:center;color:var(--text3)">Aucun produit trouvé.</div>`;
+
   // ── Pagination ────────────────────────────────
   let pagHtml = '';
   if (totalPages > 1) {
@@ -3257,6 +3307,11 @@ function renderOffilog() {
         <option value="tous">Toutes les marques</option>
         ${marqueSet.map(m => `<option value="${m.replace(/"/g,'&quot;')}" ${offiMarque===m?'selected':''}>${m}</option>`).join('')}
       </select>
+      <!-- Vue toggle cards / table -->
+      <div style="display:flex;border:1.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0">
+        <button onclick="offiView='cards';renderOffilog()" style="padding:7px 12px;border:none;background:${offiView==='cards'?OFFILOG_ORANGE:'transparent'};color:${offiView==='cards'?'#fff':'var(--text3)'};cursor:pointer;font-size:14px;line-height:1;transition:all .15s" title="Vue cartes">⊞</button>
+        <button onclick="offiView='table';renderOffilog()" style="padding:7px 12px;border:none;background:${offiView==='table'?OFFILOG_ORANGE:'transparent'};color:${offiView==='table'?'#fff':'var(--text3)'};cursor:pointer;font-size:14px;line-height:1;transition:all .15s" title="Vue tableau">☰</button>
+      </div>
       ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous'
         ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiPageNum=1;renderOffilog()"
             style="padding:8px 14px;border-radius:12px;border:1.5px solid var(--rose);background:rgba(239,68,68,.06);color:#EF4444;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
@@ -3269,10 +3324,11 @@ function renderOffilog() {
     </div>
   </div>
 
-  <!-- Cards grid -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">
-    ${cardsHtml}
-  </div>
+  <!-- Cards / Table view -->
+  ${offiView === 'table'
+    ? tableHtml
+    : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">${cardsHtml}</div>`
+  }
 
   ${pagHtml}`;
 }
