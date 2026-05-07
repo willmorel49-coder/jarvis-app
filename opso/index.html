@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#11a63c">
+<title>OPSO Santé · Pilotage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo" style="display:flex;align-items:center;justify-content:center;font-size:28px;">🌿</div>
+    <div class="login-title">OPSO Santé</div>
+    <div class="login-sub">Pilotage · Accès sécurisé</div>
+
+    <!-- Formulaire login normal -->
+    <form id="login-form">
+      <div class="field">
+        <label>Email</label>
+        <input id="login-email" type="email" placeholder="votre@email.com" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button class="login-btn" type="submit">Se connecter →</button>
+      <div id="login-error" class="login-error"></div>
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" onclick="showResetForm()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline">Mot de passe oublié ?</button>
+      </div>
+    </form>
+
+    <!-- Formulaire reset password (envoi email) -->
+    <form id="reset-form" style="display:none">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Entrez votre email pour recevoir un lien de réinitialisation.</div>
+      <div class="field">
+        <label>Email</label>
+        <input id="reset-email" type="email" placeholder="votre@email.com" autocomplete="email" required>
+      </div>
+      <button class="login-btn" type="submit">Envoyer le lien →</button>
+      <div id="reset-msg" style="margin-top:12px;font-size:12px;text-align:center;color:var(--mint);display:none">Email envoyé ! Vérifiez votre boîte mail.</div>
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" onclick="showLoginForm()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline">← Retour connexion</button>
+      </div>
+    </form>
+
+    <!-- Formulaire nouveau mot de passe (après clic lien email) -->
+    <form id="newpass-form" style="display:none">
+      <div style="font-size:13px;color:var(--mint);font-weight:600;margin-bottom:16px">✓ Lien valide — choisissez un nouveau mot de passe</div>
+      <div class="field">
+        <label>Nouveau mot de passe</label>
+        <input id="newpass-input" type="password" placeholder="Min. 6 caractères" minlength="6" required>
+      </div>
+      <button class="login-btn" type="submit">Enregistrer →</button>
+      <div id="newpass-error" class="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg></div>
+      <div class="sidebar-brand-text">
+        <div class="sidebar-brand-name">OPSO Santé</div>
+        <div class="sidebar-brand-sub">Pilotage v1.0</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+        <span class="nav-label-text">Dashboard</span>
+      </div>
+      <div class="nav-item" data-page="pharmacies" onclick="navigate('pharmacies')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label-text">Pharmacies</span>
+      </div>
+      <div class="nav-item" data-page="produits" onclick="navigate('produits')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+        <span class="nav-label-text">Produits</span>
+      </div>
+      <div class="nav-item" data-page="objectifs" onclick="navigate('objectifs')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <span class="nav-label-text">Objectifs</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Données</div>
+      <div class="nav-item" data-page="import" onclick="navigate('import')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        <span class="nav-label-text">Import Excel</span>
+        <span class="nav-badge" id="import-badge">0</span>
+      </div>
+      <div class="nav-item" data-page="catalogue" onclick="navigate('catalogue')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span class="nav-label-text">Catalogue IP</span>
+      </div>
+      <div class="nav-item" data-page="benchmark" onclick="navigate('benchmark')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        <span class="nav-label-text">Benchmark</span>
+      </div>
+      <div class="nav-item" data-page="simulateur" onclick="navigate('simulateur')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="nav-label-text">Simulateur</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label" style="color:#FF6B35">Parapharmacie</div>
+      <div class="nav-item" data-page="offilog" onclick="navigate('offilog')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11l-6 7h18l-6-7V3"/></svg>
+        <span class="nav-label-text">Offilog</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label" style="color:#6366F1">Groupements</div>
+      <div class="nav-item" data-page="groupements" onclick="navigate('groupements')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><path d="M2 20v-1a4 4 0 0 1 4-4"/><path d="M22 20v-1a4 4 0 0 0-4-4"/></svg>
+        <span class="nav-label-text">Suivi Groupement</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Paramètres</div>
+      <div class="nav-item" data-page="admin" id="nav-admin" onclick="navigate('admin')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="nav-label-text">Administration</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="logout()">
+        <div class="sidebar-avatar" id="sidebar-avatar">W</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">Utilisateur</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">role</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:rgba(255,255,255,0.5)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="topbar-title" id="topbar-title">Tableau de bord</div>
+        <div id="topbar-date" style="font-size:12px;color:var(--text3);font-weight:500"></div>
+      </div>
+      <div class="topbar-actions">
+        <button onclick="showGlobalSearch()" title="Recherche globale (⌘K)"
+          style="display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;transition:all .15s"
+          onmouseover="this.style.background='var(--bg)';this.style.borderColor='var(--blue)';this.style.color='var(--text)'"
+          onmouseout="this.style.background='var(--bg2)';this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Recherche
+          <span style="font-size:10px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-family:monospace;color:var(--text3)">⌘K</span>
+        </button>
+        <button class="btn btn-primary" onclick="navigate('import')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Importer
+        </button>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div class="page active" id="page-dashboard"><div id="dash-content"></div></div>
+      <div class="page" id="page-pharmacies"><div id="pharma-content"></div></div>
+      <div class="page" id="page-produits"><div id="prod-content"></div></div>
+      <div class="page" id="page-import"><div id="import-content"></div></div>
+      <div class="page" id="page-admin"><div id="admin-content"></div></div>
+      <div class="page" id="page-catalogue"><div id="cat-content"></div></div>
+      <div class="page" id="page-offilog"><div id="offilog-content"></div></div>
+      <div class="page" id="page-benchmark"><div id="bench-content"></div></div>
+      <div class="page" id="page-simulateur"><div id="simul-content"></div></div>
+      <div class="page" id="page-groupements"><div id="groupements-content"></div></div>
+      <div class="page" id="page-objectifs"><div id="objectifs-content"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+
+<!-- LIBS CDN -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  Chart.defaults.color = '#64748B';
+  Chart.defaults.borderColor = 'rgba(0,0,0,0.06)';
+  window.SUPABASE_URL      = 'https://iyvavhnlhxksokkerkos.supabase.co';
+  window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const el = document.getElementById('topbar-date');
+  if (el) {
+    const d = new Date();
+    el.textContent = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+});
+</script>
+<script>
+function showLoginForm() {
+  document.getElementById('login-form').style.display  = '';
+  document.getElementById('reset-form').style.display  = 'none';
+  document.getElementById('newpass-form').style.display = 'none';
+}
+function showResetForm() {
+  document.getElementById('login-form').style.display  = 'none';
+  document.getElementById('reset-form').style.display  = '';
+  document.getElementById('newpass-form').style.display = 'none';
+  document.getElementById('reset-email').focus();
+}
+function showNewPassForm() {
+  document.getElementById('login-form').style.display  = 'none';
+  document.getElementById('reset-form').style.display  = 'none';
+  document.getElementById('newpass-form').style.display = '';
+  document.getElementById('newpass-input').focus();
+}
+</script>
+<script src="../crm/clients-data.js?v=20260507b"></script>
+<script src="../crm/benchmark-data.js?v=20260507b"></script>
+<script src="../crm/offilog-data.js?v=20260507b"></script>
+<script src="../crm/drakkars-data.js?v=20260507b"></script>
+<script src="../crm/cap3000-data.js?v=20260507b"></script>
+<script src="../crm/groupements-data.js?v=20260507b"></script>
+<script src="app.js?v=20260507b"></script>
+</body>
+</html>
