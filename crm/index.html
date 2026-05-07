@@ -215,12 +215,31 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<script src="clients-data.js"></script>
-<script src="benchmark-data.js"></script>
-<script src="offilog-data.js"></script>
-<script src="drakkars-data.js"></script>
-<script src="cap3000-data.js"></script>
-<script src="groupements-data.js"></script>
-<script src="app.js"></script>
+<script>
+function showLoginForm() {
+  document.getElementById('login-form').style.display  = '';
+  document.getElementById('reset-form').style.display  = 'none';
+  document.getElementById('newpass-form').style.display = 'none';
+}
+function showResetForm() {
+  document.getElementById('login-form').style.display  = 'none';
+  document.getElementById('reset-form').style.display  = '';
+  document.getElementById('newpass-form').style.display = 'none';
+  document.getElementById('reset-email').focus();
+}
+function showNewPassForm() {
+  document.getElementById('login-form').style.display  = 'none';
+  document.getElementById('reset-form').style.display  = 'none';
+  document.getElementById('newpass-form').style.display = '';
+  document.getElementById('newpass-input').focus();
+}
+</script>
+<script src="clients-data.js?v=20260507"></script>
+<script src="benchmark-data.js?v=20260507"></script>
+<script src="offilog-data.js?v=20260507"></script>
+<script src="drakkars-data.js?v=20260507"></script>
+<script src="cap3000-data.js?v=20260507"></script>
+<script src="groupements-data.js?v=20260507"></script>
+<script src="app.js?v=20260507"></script>
 </body>
 </html>
