@@ -683,6 +683,15 @@ function renderDashboard() {
     .filter(r => r.cur > 0 || r.prev > 0)
     .sort((a, b) => b.cur - a.cur);
 
+  // Objectifs courant mois
+  const objData = loadObjectives ? loadObjectives() : {};
+  const objRows = state.pharmacies.map(ph => {
+    const k = `${ph.id}_${curY}_${curM}`;
+    const target = objData[k] || 0;
+    const actual = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+    return { ph, target, actual, pct: target > 0 ? actual / target * 100 : null };
+  }).filter(r => r.target > 0 || r.actual > 0);
+
   const compRowsHtml = compRows.map(r =>
     `<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:10px 16px">
@@ -807,7 +816,37 @@ function renderDashboard() {
       </div>
     </div>` : ''}
 
-    <!-- Row 2c : Top switch opportunités secteur -->
+    <!-- Row 2c : Objectifs du mois -->
+    ${objRows.some(r => r.target > 0) ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Objectifs — ${curLabel}</div>
+          <div class="card-subtitle">Progression CA réalisé vs objectif mensuel</div>
+        </div>
+        <button onclick="navigate('objectifs')" style="padding:6px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;font-size:12px;color:var(--text3);cursor:pointer;font-weight:600">Modifier →</button>
+      </div>
+      <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+        ${objRows.filter(r => r.target > 0).map(r => {
+          const pct = r.pct ?? 0;
+          const color = pct >= 100 ? 'var(--mint)' : pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+          return `<div style="background:var(--bg2);border-radius:12px;padding:14px 16px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+              <span style="width:8px;height:8px;border-radius:50%;background:${r.ph.color}"></span>
+              <span style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.ph.name}</span>
+            </div>
+            <div style="font-size:20px;font-weight:800;color:${color};margin-bottom:4px">${fmt(r.actual)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px">/ objectif ${fmt(r.target)}</div>
+            <div style="height:5px;border-radius:3px;background:var(--border1);overflow:hidden">
+              <div style="height:100%;width:${Math.min(pct,100).toFixed(0)}%;background:${color};border-radius:3px"></div>
+            </div>
+            <div style="font-size:11px;color:${color};font-weight:700;margin-top:5px">${pct.toFixed(1)}%${pct >= 100 ? ' ✓' : ''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Row 2d : Top switch opportunités secteur -->
     ${topSwitchSecteur.length ? `
     <div class="card fade-up" style="margin-bottom:24px;border-left:3px solid var(--mint)">
       <div class="card-header">
@@ -3887,7 +3926,7 @@ const UNIVERS_META = {
 function univMeta(u) {
   return UNIVERS_META[u] || { color:'#90A4AE', bg:'#f5f7f9', icon:'📦' };
 }
-let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiPageNum = 1, offiView = 'cards';
+let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiSaison = 'tous', offiPageNum = 1, offiView = 'cards';
 let offiCurrentData = [];
 let offiDetailProduct = null; // currently shown in detail modal
 
@@ -3927,6 +3966,9 @@ function offiGetList() {
     if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && p.role !== offiRole) return false;
     if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
     if (offiMarque !== 'tous' && p.marque !== offiMarque) return false;
+    if (offiSaison === 'pe' && p.saison !== 'Printemps/Été') return false;
+    if (offiSaison === 'ah' && p.saison !== 'Automne/Hiver') return false;
+    if (offiSaison === 'annee' && p.saison !== 'Toute année' && p.saison != null) return false;
     return true;
   });
   // Trier par rang_vente si filtre best-sellers actif
@@ -3938,6 +3980,7 @@ function offiGoPage(p) { offiPageNum = p; renderOffilog(); }
 function offiSetRole(r) { offiRole = r; offiPageNum = 1; renderOffilog(); }
 function offiSetUnivers(u) { offiUnivers = u; offiPageNum = 1; renderOffilog(); }
 function offiSetMarque(m) { offiMarque = m; offiPageNum = 1; renderOffilog(); }
+function offiSetSaison(s) { offiSaison = s; offiPageNum = 1; renderOffilog(); }
 function offiExportCSV() {
   const list = offiGetList();
   const header = ['Produit','Marque','EAN','Univers','Role','Dans Offilog','Prix IP','Prix Live','Ma Pharmacie','Drakkars','Cap3000','Prix Public','Marge %','Potentiel','Rang Vente'];
@@ -4298,8 +4341,14 @@ function renderOffilog() {
         onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='transparent'">
         ⬇ CSV
       </button>
-      ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous'
-        ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiPageNum=1;renderOffilog()"
+      <!-- Saison filter -->
+      <div style="display:flex;border:1.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0">
+        ${[{k:'tous',l:'Toute saison'},{k:'annee',l:'Année'},{k:'pe',l:'☀️ P/É'},{k:'ah',l:'❄️ A/H'}].map(t =>
+          `<button onclick="offiSetSaison('${t.k}')" style="padding:6px 10px;border:none;background:${offiSaison===t.k?'rgba(255,107,53,.15)':'transparent'};color:${offiSaison===t.k?OFFILOG_ORANGE:'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">${t.l}</button>`
+        ).join('')}
+      </div>
+      ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous' || offiSaison !== 'tous'
+        ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiSaison='tous';offiPageNum=1;renderOffilog()"
             style="padding:8px 14px;border-radius:12px;border:1.5px solid var(--rose);background:rgba(239,68,68,.06);color:#EF4444;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
             ✕ Réinitialiser
           </button>` : ''}
