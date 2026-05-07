@@ -31,6 +31,7 @@ CAP3000   = BASE / 'benchmark_cap3000.xlsx'
 LIVE_JSON  = BASE / 'offilog_live.json'
 BEST_JSON  = BASE / 'bestsellers_offilog.json'
 IMG_JSON   = BASE / 'images_by_ean.json'   # lookup consolidé toutes sources
+PHARMA     = BASE / 'benchmark_apothical_pharmacie_montlouis-sur-loire.xlsx'
 OUT        = BASE / 'crm' / 'offilog-data.js'
 
 
@@ -237,6 +238,47 @@ else:
     print(f'Fichier Best-sellers non trouvé ({BEST_JSON}) — rang_vente = null')
 
 
+# ── LOAD PHARMACIE (optionnel) ───────────────────────────────────────────────
+# Prix affiché sur le site Apothical de la pharmacie Montlouis-sur-Loire
+# Matching : nom exact, puis préfixe (premiers mots) en fallback
+pharma_by_norm:   dict = {}   # nom_norm exact → prix
+pharma_by_prefix: dict = {}   # " ".join(premiers 4 mots) → prix
+STOPWORDS = {'de', 'du', 'la', 'le', 'les', 'et', 'en', 'a', 'au', 'aux', 'ml', 'mg', 'g', 'l', 'x'}
+
+def prefix_key(name, n=4):
+    words = [w for w in name.split() if w not in STOPWORDS and not w.isdigit()]
+    return ' '.join(words[:n])
+
+if PHARMA.exists():
+    print(f'Enrichissement prix pharmacie depuis : {PHARMA}')
+    wb6 = openpyxl.load_workbook(PHARMA, read_only=True, data_only=True)
+    ws6 = wb6.active
+    rows6 = list(ws6.iter_rows(values_only=True))
+    wb6.close()
+    hdr6 = rows6[0]
+    col6 = {str(n).strip(): i for i, n in enumerate(hdr6) if n}
+    nom_col6  = col6.get('Nom normalisé')
+    prix_col6 = col6.get('Prix affiché')
+    for r in rows6[1:]:
+        k = str(r[nom_col6]).strip() if nom_col6 is not None and r[nom_col6] else None
+        prix = r[prix_col6] if prix_col6 is not None else None
+        try:
+            prix_f = float(prix) if prix is not None else None
+        except (TypeError, ValueError):
+            prix_f = None
+        if not k:
+            continue
+        if k not in pharma_by_norm:
+            pharma_by_norm[k] = prix_f
+        pk = prefix_key(k)
+        if pk and len(pk) > 4 and pk not in pharma_by_prefix:
+            pharma_by_prefix[pk] = prix_f
+    valides = sum(1 for v in pharma_by_norm.values() if v)
+    print(f'  → {valides} prix pharmacie valides sur {len(pharma_by_norm)} produits | {len(pharma_by_prefix)} clés préfixe')
+else:
+    print(f'Fichier pharmacie non trouvé ({PHARMA}) — prix_pharmacie = null')
+
+
 # ── LOAD IMAGES CONSOLIDÉES (optionnel, priorité max) ────────────────────────
 # Lookup EAN/nom_norm → URL image (toutes sources Offilog + Drakkars + Cap3000)
 img_by_ean:  dict = {}
@@ -318,6 +360,13 @@ for row in rows[1:]:
     if rang_vente is None:
         rang_vente = best_by_norm.get(produit_n)
 
+    # ── Matching Pharmacie : exact, puis préfixe 4 mots
+    prix_pharmacie = pharma_by_norm.get(produit_n)
+    if prix_pharmacie is None:
+        pk = prefix_key(produit_n)
+        if pk and len(pk) > 4:
+            prix_pharmacie = pharma_by_prefix.get(pk)
+
     records.append({
         'rang':           rang,
         'produit':        produit,
@@ -339,6 +388,7 @@ for row in rows[1:]:
         'prix_live':      prix_live,
         'img':            img,
         'rang_vente':     rang_vente,
+        'prix_pharmacie': prix_pharmacie,
     })
 
 print(f'Records valides : {len(records)}')
@@ -346,12 +396,14 @@ avec_drakkars = sum(1 for r in records if r['prix_drakkars'] is not None)
 avec_cap3000  = sum(1 for r in records if r['prix_cap3000']  is not None)
 avec_live     = sum(1 for r in records if r['prix_live']   is not None)
 avec_img      = sum(1 for r in records if r['img'])
-avec_best     = sum(1 for r in records if r['rang_vente'] is not None)
+avec_best     = sum(1 for r in records if r['rang_vente']    is not None)
+avec_pharma   = sum(1 for r in records if r['prix_pharmacie'] is not None)
 print(f'Avec prix Drakkars  : {avec_drakkars}')
 print(f'Avec prix Cap3000   : {avec_cap3000}')
 print(f'Avec prix Live      : {avec_live}')
 print(f'Avec image          : {avec_img}')
 print(f'Best-sellers matchés: {avec_best}')
+print(f'Avec prix pharmacie : {avec_pharma}')
 dans_off_n = sum(1 for r in records if r['dans_offilog'])
 print(f'Dans Offilog : {dans_off_n}')
 
@@ -377,7 +429,8 @@ for r in records:
         f'role:{js_str(r["role"])},prix_drakkars:{js_num(r["prix_drakkars"])},'
         f'prix_cap3000:{js_num(r["prix_cap3000"])},'
         f'prix_live:{js_num(r["prix_live"])},img:{js_str(r["img"] or None)},'
-        f'rang_vente:{js_num(r["rang_vente"])}}},'
+        f'rang_vente:{js_num(r["rang_vente"])},'
+        f'prix_pharmacie:{js_num(r["prix_pharmacie"])}}},'
     )
     lines.append(line)
 
