@@ -1903,6 +1903,65 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <div class="card-body"><div class="chart-wrap"><canvas id="chart-pharma-month"></canvas></div></div>
       </div>` : ''}
 
+      <!-- Historique complet produits -->
+      ${allPhSales.length > 0 ? (() => {
+        const histMap = {};
+        for (const s of allPhSales) {
+          const k = (s.artDesignation || '').trim().toUpperCase();
+          if (!k) continue;
+          const period = `${s.year}-${String(s.month).padStart(2,'0')}`;
+          if (!histMap[k]) histMap[k] = { label: s.artDesignation, ca: 0, qte: 0, cat: classifyProduct(s), periods: new Set() };
+          histMap[k].ca  += s.mntNetHt;
+          histMap[k].qte += s.qte;
+          histMap[k].periods.add(period);
+        }
+        const histList = Object.values(histMap)
+          .map(p => ({ ...p, periodCount: p.periods.size }))
+          .sort((a, b) => b.ca - a.ca)
+          .slice(0, 200);
+        const histRows = histList.map((p, i) => {
+          const cat = CATS[p.cat] || CATS.mi;
+          return `<tr>
+            <td style="font-size:11px;color:var(--text3);text-align:right;padding:7px 8px 7px 16px">${i+1}</td>
+            <td style="font-size:12px;font-weight:600;padding:7px 8px">${p.label}</td>
+            <td style="padding:7px 4px"><span style="font-size:10px;padding:1px 4px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:700">${cat.icon}</span></td>
+            <td style="text-align:right;font-size:12px;font-weight:700;color:var(--blue);padding:7px 8px">${fmt(p.ca)}</td>
+            <td style="text-align:right;font-size:11px;color:var(--text3);padding:7px 8px">${fmtNum(Math.round(p.qte))} u.</td>
+            <td style="text-align:right;font-size:11px;color:var(--text3);padding:7px 16px 7px 8px">${p.periodCount} mois</td>
+          </tr>`;
+        }).join('');
+        return `<div class="card fade-up" style="margin-bottom:20px">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Historique produits complet</div>
+              <div class="card-subtitle">${histList.length} références · toutes périodes</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" placeholder="Rechercher…" id="pharma-hist-search"
+                oninput="filterPharmaHistTable(this.value)"
+                style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);width:140px">
+            </div>
+          </div>
+          <div style="overflow-x:auto;max-height:320px;overflow-y:auto">
+            <table style="width:100%;border-collapse:collapse" id="pharma-hist-table">
+              <thead style="position:sticky;top:0;background:var(--bg2);z-index:1">
+                <tr style="border-bottom:2px solid var(--border2)">
+                  <th style="padding:8px 16px;font-size:10px;color:var(--text3);font-weight:700;text-align:right">#</th>
+                  <th style="padding:8px 8px;font-size:10px;color:var(--text3);font-weight:700;text-align:left">Produit</th>
+                  <th></th>
+                  <th style="padding:8px 8px;font-size:10px;color:var(--text3);font-weight:700;text-align:right">CA Total</th>
+                  <th style="padding:8px 8px;font-size:10px;color:var(--text3);font-weight:700;text-align:right">Qtés</th>
+                  <th style="padding:8px 16px;font-size:10px;color:var(--text3);font-weight:700;text-align:right">Périodes</th>
+                </tr>
+              </thead>
+              <tbody id="pharma-hist-tbody" style="font-size:12px">
+                ${histRows}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+      })() : ''}
+
       <!-- Notes de visite -->
       ${(() => {
         const notesKey = `visit_notes_${pharma.id}`;
@@ -5801,6 +5860,18 @@ function renderGrpDocuments(grp) {
   </div>`;
 }
 
+
+function filterPharmaHistTable(q) {
+  const tbody = document.getElementById('pharma-hist-tbody');
+  if (!tbody) return;
+  const ql = q.toLowerCase().trim();
+  tbody.querySelectorAll('tr').forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (!cells.length) return;
+    const text = cells[1]?.textContent?.toLowerCase() || '';
+    row.style.display = (!ql || text.includes(ql)) ? '' : 'none';
+  });
+}
 
 // ── NOTES DE VISITE ───────────────────────────
 function saveVisitNote(pharmacyId) {
