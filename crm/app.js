@@ -3839,29 +3839,130 @@ function renderGrpPharmacies(grp) {
 }
 
 function renderGrpCommandes(grp) {
-  return `<div class="card">
-    <div class="card-header">
-      <div class="card-title">Commandes groupement — ${grp.nom}</div>
+  const memberIds = grpGetMembers(grp.id);
+  const members   = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
+
+  // Regrouper les imports par période pour les membres
+  const memberImports = state.imports
+    .filter(i => memberIds.includes(i.pharmacyId))
+    .sort((a, b) => {
+      if (b.year !== a.year) return b.year - a.year;
+      return b.month - a.month;
+    });
+
+  if (!memberImports.length) {
+    return `<div class="card">
+      <div class="card-header">
+        <div class="card-title">Commandes groupement — ${grp.nom}</div>
+        <button class="btn btn-ghost" style="font-size:12px" onclick="navigate('import')">↑ Importer Excel</button>
+      </div>
+      <div style="padding:48px;text-align:center;color:var(--text3)">
+        <div style="font-size:40px;margin-bottom:12px">📦</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune commande importée</div>
+        <div style="font-size:12px">Importez des fichiers Excel dans l'onglet Import pour les membres de ce groupement.</div>
+        ${!members.length ? `<div style="margin-top:8px;font-size:12px;color:var(--rose)">⚠ Aucune pharmacie membre — ajoutez-en dans l'onglet Pharmacies</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Grouper par période
+  const byPeriod = {};
+  for (const imp of memberImports) {
+    const k = `${imp.year}-${String(imp.month).padStart(2,'0')}`;
+    if (!byPeriod[k]) byPeriod[k] = { year: imp.year, month: imp.month, imports: [] };
+    byPeriod[k].imports.push(imp);
+  }
+
+  const periodsHtml = Object.entries(byPeriod)
+    .sort(([a],[b]) => b.localeCompare(a))
+    .map(([key, period]) => {
+      const periodSales = getSales({ year: period.year, month: period.month })
+        .filter(s => memberIds.includes(s.pharmacyId));
+      const ca = sumCA(periodSales);
+      const label = `${monthName(period.month)} ${period.year}`;
+
+      const importsRows = period.imports.map(imp => {
+        const ph = state.pharmacies.find(p => p.id === imp.pharmacyId);
+        const phCA = sumCA(getSales({ pharmacyId: imp.pharmacyId, year: imp.year, month: imp.month }));
+        return `<div style="display:flex;align-items:center;gap:12px;padding:8px 20px;border-bottom:1px solid var(--border1)">
+          <div style="width:8px;height:8px;border-radius:50%;background:${ph?.color || '#ccc'};flex-shrink:0"></div>
+          <div style="flex:1;font-size:12px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph?.name || '—'}</div>
+          <div style="font-size:11px;color:var(--text3);white-space:nowrap">${imp.filename}</div>
+          <div style="font-size:13px;font-weight:700;text-align:right;white-space:nowrap">${phCA > 0 ? fmt(phCA) : '—'}</div>
+          ${imp.filePath ? `<button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;color:var(--blue)" onclick="downloadImportFile('${imp.filePath}')">⬇</button>` : '<div style="width:36px"></div>'}
+        </div>`;
+      }).join('');
+
+      return `<div style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--bg2);border-radius:10px;margin-bottom:4px">
+          <div style="font-size:13px;font-weight:700">${label}</div>
+          <div style="font-size:15px;font-weight:900;color:${grp.couleur}">${ca > 0 ? fmt(ca) : '—'}</div>
+        </div>
+        <div style="border:1px solid var(--border1);border-radius:10px;overflow:hidden">${importsRows}</div>
+      </div>`;
+    }).join('');
+
+  return `<div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700">${memberImports.length} import${memberImports.length > 1 ? 's' : ''} · ${Object.keys(byPeriod).length} période${Object.keys(byPeriod).length > 1 ? 's' : ''}</div>
       <button class="btn btn-ghost" style="font-size:12px" onclick="navigate('import')">↑ Importer Excel</button>
     </div>
-    <div style="padding:48px;text-align:center;color:var(--text3)">
-      <div style="font-size:40px;margin-bottom:12px">📦</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune commande</div>
-      <div style="font-size:12px">Importez un fichier Excel de commandes groupement pour commencer le suivi.</div>
-    </div>
+    ${periodsHtml}
   </div>`;
 }
 
 function renderGrpObjectifs(grp) {
+  const memberIds = grpGetMembers(grp.id);
+  const allSales  = getSales();
+  const { year: curY, month: curM } = getCurrentPeriod(allSales.length ? allSales : []);
+  const caCur = sumCA(allSales.filter(s => memberIds.includes(s.pharmacyId) && s.year === curY && s.month === curM));
+
+  // Objectifs stockés en localStorage
+  const objKey = `grp_obj_${grp.id}`;
+  let obj;
+  try { obj = JSON.parse(localStorage.getItem(objKey) || '{}'); } catch { obj = {}; }
+  const objCA = parseFloat(obj.ca) || 0;
+  const pct = objCA > 0 ? Math.min(100, caCur / objCA * 100) : 0;
+  const barColor = pct >= 100 ? '#10B981' : pct >= 75 ? '#F59E0B' : grp.couleur;
+
   return `<div class="card">
     <div class="card-header">
       <div class="card-title">Objectifs — ${grp.nom}</div>
-      <button class="btn btn-primary" style="font-size:12px" onclick="alert('Fonctionnalité à venir')">+ Objectif</button>
     </div>
-    <div style="padding:48px;text-align:center;color:var(--text3)">
-      <div style="font-size:40px;margin-bottom:12px">🎯</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucun objectif défini</div>
-      <div style="font-size:12px">Définissez des objectifs CA, référencements ou visites pour ce groupement.</div>
+    <div style="padding:20px 24px">
+      <div style="margin-bottom:20px">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">Objectif CA mensuel groupement (€)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="grp-obj-ca-${grp.id}" type="number" placeholder="Ex : 15000" value="${objCA || ''}"
+            style="flex:1;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);font-size:14px;color:var(--text);font-weight:600"
+            oninput="this.dataset.changed='1'">
+          <button class="btn btn-primary" style="font-size:12px;white-space:nowrap"
+            onclick="(function(){
+              const v = parseFloat(document.getElementById('grp-obj-ca-${grp.id}').value)||0;
+              const o = (() => { try { return JSON.parse(localStorage.getItem('${objKey}')||'{}'); } catch { return {}; }})();
+              o.ca = v;
+              localStorage.setItem('${objKey}', JSON.stringify(o));
+              renderGroupements();
+            })()">
+            Enregistrer
+          </button>
+        </div>
+      </div>
+      ${objCA > 0 ? `
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:600">Avancement ${monthName(curM)} ${curY}</div>
+          <div style="font-size:16px;font-weight:900;color:${barColor}">${pct.toFixed(1)}%</div>
+        </div>
+        <div style="position:relative;height:12px;border-radius:6px;background:var(--bg3)">
+          <div style="position:absolute;inset:0;border-radius:6px;background:${barColor};width:${pct}%;transition:width .6s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text3)">
+          <span>Réalisé : <strong style="color:var(--text)">${fmt(caCur)}</strong></span>
+          <span>Objectif : <strong style="color:var(--text)">${fmt(objCA)}</strong></span>
+          ${caCur < objCA ? `<span style="color:var(--rose)">Reste : ${fmt(objCA - caCur)}</span>` : `<span style="color:#10B981">✓ Atteint !</span>`}
+        </div>
+      </div>` : ''}
     </div>
   </div>`;
 }
