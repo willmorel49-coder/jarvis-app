@@ -2304,20 +2304,22 @@ function navigate(page) {
     catalogue:  'Catalogue Produits IP',
     benchmark:  'Benchmark Marché',
     simulateur: 'Simulateur de panier',
-    offilog:    'Offilog — Parapharmacie',
+    offilog:      'Offilog — Parapharmacie',
+    groupements:  'Suivi Groupement',
   };
   document.getElementById('topbar-title').textContent = titles[page] || page;
 
   const renders = {
-    dashboard:  renderDashboard,
-    pharmacies: renderPharmacies,
-    produits:   renderProduits,
-    import:     renderImport,
-    admin:      renderAdmin,
-    catalogue:  renderCatalogue,
-    benchmark:  renderBenchmark,
-    simulateur: renderSimulator,
-    offilog:    renderOffilog,
+    dashboard:   renderDashboard,
+    pharmacies:  renderPharmacies,
+    produits:    renderProduits,
+    import:      renderImport,
+    admin:       renderAdmin,
+    catalogue:   renderCatalogue,
+    benchmark:   renderBenchmark,
+    simulateur:  renderSimulator,
+    offilog:     renderOffilog,
+    groupements: renderGroupements,
   };
   if (renders[page]) renders[page]();
 }
@@ -3269,6 +3271,179 @@ async function initApp() {
   updateNavBadge();
   navigate('dashboard');
 }
+
+
+// ── GROUPEMENTS ────────────────────────────────────────────────────────────────
+
+const GROUPEMENTS = [
+  {
+    id: 'opso',
+    nom: 'Opso Santé',
+    couleur: '#6366F1',
+    bg: '#EEF2FF',
+    icon: '🏥',
+    description: 'Groupement de pharmacies indépendantes',
+  },
+];
+
+let grpActif = 'opso';
+let grpOnglet = 'tableau-de-bord';
+
+function renderGroupements() {
+  const container = document.getElementById('groupements-content');
+  if (!container) return;
+
+  const grp = GROUPEMENTS.find(g => g.id === grpActif) || GROUPEMENTS[0];
+
+  const grpTabs = [
+    { key: 'tableau-de-bord', label: 'Tableau de bord', icon: '📊' },
+    { key: 'pharmacies',      label: 'Pharmacies',       icon: '🏪' },
+    { key: 'commandes',       label: 'Commandes',        icon: '📦' },
+    { key: 'objectifs',       label: 'Objectifs',        icon: '🎯' },
+    { key: 'documents',       label: 'Documents',        icon: '📄' },
+  ];
+
+  const tabsHtml = grpTabs.map(t => {
+    const active = grpOnglet === t.key;
+    return `<button onclick="grpOnglet='${t.key}';renderGroupements()"
+      style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;border:none;
+             background:${active ? grp.couleur : 'transparent'};
+             color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;transition:all .15s;white-space:nowrap">
+      ${t.icon} ${t.label}
+    </button>`;
+  }).join('');
+
+  const bodyHtml = renderGroupementBody(grp, grpOnglet);
+
+  container.innerHTML = `
+  <!-- Header groupement -->
+  <div style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,${grp.couleur} 100%);border-radius:20px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-20px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.04)"></div>
+    <div style="display:flex;align-items:center;gap:16px;position:relative">
+      <div style="width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${grp.icon}</div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:2px;margin-bottom:3px">Groupement</div>
+        <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-.3px">${grp.nom}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px">${grp.description}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sélecteur groupements (si plusieurs) -->
+  ${GROUPEMENTS.length > 1 ? `<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    ${GROUPEMENTS.map(g => `<button onclick="grpActif='${g.id}';grpOnglet='tableau-de-bord';renderGroupements()"
+      style="padding:6px 14px;border-radius:10px;font-size:12px;font-weight:600;border:2px solid ${g.id===grpActif ? g.couleur : 'var(--border2)'};background:${g.id===grpActif ? g.couleur+'18' : 'var(--bg2)'};color:${g.id===grpActif ? g.couleur : 'var(--text2)'};cursor:pointer">
+      ${g.icon} ${g.nom}
+    </button>`).join('')}
+  </div>` : ''}
+
+  <!-- Tabs -->
+  <div style="display:flex;gap:4px;background:var(--bg2);border-radius:14px;padding:4px;margin-bottom:20px;overflow-x:auto;scrollbar-width:none">
+    ${tabsHtml}
+  </div>
+
+  <!-- Contenu -->
+  ${bodyHtml}
+  `;
+}
+
+function renderGroupementBody(grp, onglet) {
+  if (onglet === 'tableau-de-bord') return renderGrpDashboard(grp);
+  if (onglet === 'pharmacies')      return renderGrpPharmacies(grp);
+  if (onglet === 'commandes')       return renderGrpCommandes(grp);
+  if (onglet === 'objectifs')       return renderGrpObjectifs(grp);
+  if (onglet === 'documents')       return renderGrpDocuments(grp);
+  return '';
+}
+
+function renderGrpDashboard(grp) {
+  const kpis = [
+    { label: 'Pharmacies',    value: '—',  icon: '🏪', sub: 'membres actifs' },
+    { label: 'CA Groupement', value: '—',  icon: '💰', sub: 'cumul période' },
+    { label: 'Croissance',    value: '—',  icon: '📈', sub: 'vs période préc.' },
+    { label: 'Taux adhésion', value: '—',  icon: '✅', sub: 'sur les offres IP' },
+  ];
+
+  const kpiHtml = kpis.map(k => `
+    <div class="card" style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:22px;line-height:1;margin-bottom:4px">${k.icon}</div>
+      <div style="font-size:26px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${k.value}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text)">${k.label}</div>
+      <div style="font-size:11px;color:var(--text3)">${k.sub}</div>
+    </div>`).join('');
+
+  return `
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px">
+    ${kpiHtml}
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Activité récente — ${grp.nom}</div>
+    </div>
+    <div style="padding:48px;text-align:center;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">🚧</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">En construction</div>
+      <div style="font-size:12px">Importez des données via l'onglet <strong>Commandes</strong> pour alimenter ce tableau de bord.</div>
+    </div>
+  </div>`;
+}
+
+function renderGrpPharmacies(grp) {
+  return `<div class="card">
+    <div class="card-header">
+      <div class="card-title">Pharmacies — ${grp.nom}</div>
+      <button class="btn btn-primary" style="font-size:12px" onclick="alert('Fonctionnalité à venir')">+ Ajouter</button>
+    </div>
+    <div style="padding:48px;text-align:center;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">🏪</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune pharmacie enregistrée</div>
+      <div style="font-size:12px">Les pharmacies membres du groupement apparaîtront ici.</div>
+    </div>
+  </div>`;
+}
+
+function renderGrpCommandes(grp) {
+  return `<div class="card">
+    <div class="card-header">
+      <div class="card-title">Commandes groupement — ${grp.nom}</div>
+      <button class="btn btn-ghost" style="font-size:12px" onclick="navigate('import')">↑ Importer Excel</button>
+    </div>
+    <div style="padding:48px;text-align:center;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">📦</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune commande</div>
+      <div style="font-size:12px">Importez un fichier Excel de commandes groupement pour commencer le suivi.</div>
+    </div>
+  </div>`;
+}
+
+function renderGrpObjectifs(grp) {
+  return `<div class="card">
+    <div class="card-header">
+      <div class="card-title">Objectifs — ${grp.nom}</div>
+      <button class="btn btn-primary" style="font-size:12px" onclick="alert('Fonctionnalité à venir')">+ Objectif</button>
+    </div>
+    <div style="padding:48px;text-align:center;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">🎯</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucun objectif défini</div>
+      <div style="font-size:12px">Définissez des objectifs CA, référencements ou visites pour ce groupement.</div>
+    </div>
+  </div>`;
+}
+
+function renderGrpDocuments(grp) {
+  return `<div class="card">
+    <div class="card-header">
+      <div class="card-title">Documents — ${grp.nom}</div>
+      <button class="btn btn-ghost" style="font-size:12px" onclick="alert('Fonctionnalité à venir')">↑ Déposer</button>
+    </div>
+    <div style="padding:48px;text-align:center;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">📄</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucun document</div>
+      <div style="font-size:12px">Conditions tarifaires, accords de référencement, présentations — centralisez tout ici.</div>
+    </div>
+  </div>`;
+}
+
 
 // ── BOOT ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
