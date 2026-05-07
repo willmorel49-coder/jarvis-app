@@ -3236,6 +3236,21 @@ function renderAdmin() {
         </div>
       </div>
 
+      <!-- Export complet -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Exports</div>
+            <div class="card-subtitle">Téléchargez vos données</div>
+          </div>
+        </div>
+        <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
+          <button onclick="exportRapportSecteurCSV()" style="padding:8px 16px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600">📊 Rapport secteur CSV</button>
+          <button onclick="exportAllSalesCSV()" style="padding:8px 16px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600">📦 Toutes les ventes CSV</button>
+          <button onclick="printRapportMensuel()" style="padding:8px 16px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600">🖨 Rapport mensuel imprimable</button>
+        </div>
+      </div>
+
       <!-- Pharmacies gestion -->
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
@@ -3362,6 +3377,95 @@ async function saveEditPharmacy(pharmacyId) {
   document.getElementById('edit-pharma-modal')?.remove();
   showToast(`Pharmacie "${name}" mise à jour`, 'success');
   renderAdmin();
+}
+
+function exportAllSalesCSV() {
+  const allSales = getSales();
+  if (!allSales.length) { showToast('Aucune donnée', 'error'); return; }
+  const header = ['Pharmacie','Mois','Annee','Designation','Code Article','ID Article','Famille','Qte','PU Brut HT','PU Net HT','Mnt Net HT'];
+  const rows = allSales.map(s => {
+    const ph = state.pharmacies.find(p => p.id === s.pharmacyId);
+    return [
+      `"${(ph?.name||'').replace(/"/g,'""')}"`,
+      s.month, s.year,
+      `"${(s.artDesignation||'').replace(/"/g,'""')}"`,
+      s.artCode||'', s.artId||'', s.artFamille||'',
+      String((s.qte||0).toFixed(2)).replace('.',','),
+      String((s.puBrut||0).toFixed(4)).replace('.',','),
+      String((s.puNet||0).toFixed(4)).replace('.',','),
+      String((s.mntNetHt||0).toFixed(4)).replace('.',','),
+    ];
+  });
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `toutes_ventes_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${allSales.length} lignes de vente`, 'success');
+}
+
+function exportRapportSecteurCSV() {
+  const allSales = getSales();
+  if (!allSales.length) { showToast('Aucune donnée', 'error'); return; }
+  const { year: curY, month: curM } = getCurrentPeriod(allSales);
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
+  const salesCur  = getSales({ year: curY, month: curM });
+  const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
+  const objectives = loadObjectives ? loadObjectives() : {};
+
+  const lines = [];
+  const sep = ';';
+  const push = (...cols) => lines.push(cols.map(c => (c === null || c === undefined) ? '' : String(c)).join(sep));
+
+  // Section 1 : Global KPIs
+  push('=== KPIs SECTEUR ===');
+  push('Indicateur', 'Valeur', 'Mois courant', 'Mois precedent', 'Delta %');
+  const caCur  = sumCA(salesCur);
+  const caPrev = sumCA(salesPrev);
+  const delta  = caPrev > 0 ? ((caCur - caPrev) / caPrev * 100).toFixed(1) : '';
+  push('CA Total HT', '', String(caCur.toFixed(2)).replace('.',','), String(caPrev.toFixed(2)).replace('.',','), delta);
+  push('Nb Pharmacies actives', '', new Set(salesCur.map(s => s.pharmacyId)).size, new Set(salesPrev.map(s => s.pharmacyId)).size, '');
+  push('Nb References', '', new Set(salesCur.map(s => s.artDesignation)).size, '', '');
+  push('');
+
+  // Section 2 : Per pharmacy
+  push('=== PHARMACIES ===');
+  push('Pharmacie', 'CA M Courant', 'CA M-1', 'Delta %', 'Objectif', 'Atteinte %', 'Nb Ref');
+  state.pharmacies.forEach(ph => {
+    const cur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+    const prev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
+    const d    = prev > 0 ? ((cur - prev) / prev * 100).toFixed(1) : '';
+    const k    = `${ph.id}_${curY}_${curM}`;
+    const obj  = objectives[k] || 0;
+    const att  = obj > 0 ? (cur / obj * 100).toFixed(1) : '';
+    const nRef = new Set(salesCur.filter(s => s.pharmacyId === ph.id).map(s => s.artDesignation)).size;
+    if (cur > 0 || prev > 0) push(ph.name, String(cur.toFixed(2)).replace('.',','), String(prev.toFixed(2)).replace('.',','), d, obj > 0 ? String(obj.toFixed(2)).replace('.',',') : '', att, nRef);
+  });
+  push('');
+
+  // Section 3 : Top 30 produits
+  push('=== TOP 30 PRODUITS ===');
+  push('Rang', 'Produit', 'CA HT', 'Qte', 'Nb Pharmacies');
+  const byProd = {};
+  for (const s of salesCur) {
+    const k = (s.artDesignation||'').trim();
+    if (!k) continue;
+    if (!byProd[k]) byProd[k] = { ca: 0, qte: 0, pharmas: new Set() };
+    byProd[k].ca += s.mntNetHt; byProd[k].qte += s.qte; byProd[k].pharmas.add(s.pharmacyId);
+  }
+  Object.entries(byProd).sort((a,b) => b[1].ca - a[1].ca).slice(0,30).forEach(([name, v], i) =>
+    push(i+1, name, String(v.ca.toFixed(2)).replace('.',','), String(Math.round(v.qte)), v.pharmas.size));
+
+  const csv = lines.join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `rapport_secteur_${monthName(curM)}_${curY}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Rapport secteur exporté', 'success');
 }
 
 async function addPharmacy() {
