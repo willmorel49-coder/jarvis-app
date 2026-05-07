@@ -681,6 +681,28 @@ function renderDashboard() {
     return { lost, gained };
   })();
 
+  // ── Couverture catalogue IP ──────────────────
+  const ipCoverage = (() => {
+    if (typeof BENCHMARK === 'undefined' || !salesCur.length) return null;
+    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const soldNorms = new Set(salesCur.map(s => nn(s.artDesignation)));
+    const total = BENCHMARK.length;
+    const sold  = BENCHMARK.filter(b => soldNorms.has(nn(b.designation))).length;
+    const pct   = total > 0 ? sold / total * 100 : 0;
+    const missed = BENCHMARK
+      .filter(b => b.rot_pharma_jan26 > 0 && !soldNorms.has(nn(b.designation)))
+      .sort((a, b) => b.rot_pharma_jan26 - a.rot_pharma_jan26)
+      .slice(0, 5);
+    const catCov = {};
+    for (const b of BENCHMARK) {
+      const c = b.categorie || 'mi';
+      if (!catCov[c]) catCov[c] = { total: 0, sold: 0 };
+      catCov[c].total++;
+      if (soldNorms.has(nn(b.designation))) catCov[c].sold++;
+    }
+    return { total, sold, pct, missed, catCov };
+  })();
+
   // ── HTML ─────────────────────────────────────
   const curLabel  = `${monthName(curM)} ${curY}`;
   const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
@@ -969,6 +991,50 @@ function renderDashboard() {
               <div style="font-size:12px;font-weight:700;color:var(--mint);flex-shrink:0">${fmt(p.ca)}</div>
             </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucune nouvelle référence</div>`}
         </div>
+      </div>
+    </div>` : ''}
+
+    <!-- Row 2f : Couverture catalogue IP -->
+    ${ipCoverage ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Couverture catalogue IP — ${curLabel}</div>
+          <div class="card-subtitle">Produits du catalogue national vendus ce mois</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:24px;font-weight:900;color:var(--blue)">${ipCoverage.pct.toFixed(1)}%</div>
+          <div style="font-size:11px;color:var(--text3)">${fmtNum(ipCoverage.sold)} / ${fmtNum(ipCoverage.total)} références</div>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px">
+        <div style="height:8px;border-radius:4px;background:var(--border1);overflow:hidden;margin-bottom:16px">
+          <div style="height:100%;width:${Math.min(ipCoverage.pct, 100).toFixed(1)}%;background:var(--blue);border-radius:4px"></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+          ${Object.entries(ipCoverage.catCov).filter(([, v]) => v.total > 0).map(([cat, v]) => {
+            const ci = CATS[cat] || CATS.mi;
+            const p = (v.sold / v.total * 100).toFixed(0);
+            return `<div style="flex:1;min-width:80px;background:var(--bg2);border-radius:10px;padding:8px 12px;text-align:center">
+              <div style="font-size:11px;color:${ci.color};font-weight:700">${ci.icon} ${ci.label}</div>
+              <div style="font-size:17px;font-weight:800;color:var(--text)">${p}%</div>
+              <div style="font-size:10px;color:var(--text3)">${v.sold}/${v.total}</div>
+            </div>`;
+          }).join('')}
+        </div>
+        ${ipCoverage.missed.length ? `
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px">Top opportunités manquantes</div>
+        ${ipCoverage.missed.map((b, i) => {
+          const cat = CATS[b.categorie] || CATS.mi;
+          return `<div style="display:flex;align-items:center;gap:12px;padding:6px 0;${i < ipCoverage.missed.length - 1 ? 'border-bottom:1px solid var(--border1)' : ''}">
+            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
+            <div style="flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.designation}</div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:12px;font-weight:700;color:var(--amber)">${b.rot_pharma_jan26.toFixed(1)}<span style="font-size:10px;color:var(--text3)"> rot.</span></div>
+              <div style="font-size:11px;color:var(--text3)">${fmt(b.prix_ip)}</div>
+            </div>
+          </div>`;
+        }).join('')}` : ''}
       </div>
     </div>` : ''}
 
