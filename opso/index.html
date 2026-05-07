@@ -85,72 +85,39 @@
   <!-- SIDEBAR -->
   <nav class="sidebar" role="navigation" aria-label="Navigation principale">
     <div class="sidebar-brand">
-      <div class="sidebar-logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg></div>
+      <div class="sidebar-logo">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="12" y="3" width="8" height="26" rx="3" fill="white"/>
+          <rect x="3" y="12" width="26" height="8" rx="3" fill="white"/>
+        </svg>
+      </div>
       <div class="sidebar-brand-text">
         <div class="sidebar-brand-name">OPSO Santé</div>
-        <div class="sidebar-brand-sub">Pilotage v1.0</div>
+        <div class="sidebar-brand-sub">Groupement · Pilotage</div>
       </div>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-label">Principal</div>
+    <div class="nav-section" style="margin-bottom:4px">
       <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
         <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
-        <span class="nav-label-text">Dashboard</span>
+        <span class="nav-label-text">Tableau de bord</span>
       </div>
       <div class="nav-item" data-page="pharmacies" onclick="navigate('pharmacies')">
         <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span class="nav-label-text">Pharmacies</span>
+        <span class="nav-label-text">Mes Pharmacies</span>
       </div>
-      <div class="nav-item" data-page="produits" onclick="navigate('produits')">
-        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
-        <span class="nav-label-text">Produits</span>
-      </div>
-      <div class="nav-item" data-page="objectifs" onclick="navigate('objectifs')">
-        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-        <span class="nav-label-text">Objectifs</span>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-label">Données</div>
       <div class="nav-item" data-page="import" onclick="navigate('import')">
         <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-        <span class="nav-label-text">Import Excel</span>
+        <span class="nav-label-text">Importer</span>
         <span class="nav-badge" id="import-badge">0</span>
       </div>
       <div class="nav-item" data-page="catalogue" onclick="navigate('catalogue')">
-        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
         <span class="nav-label-text">Catalogue IP</span>
       </div>
-      <div class="nav-item" data-page="benchmark" onclick="navigate('benchmark')">
-        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        <span class="nav-label-text">Benchmark</span>
-      </div>
-      <div class="nav-item" data-page="simulateur" onclick="navigate('simulateur')">
-        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-        <span class="nav-label-text">Simulateur</span>
-      </div>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-label" style="color:#FF6B35">Parapharmacie</div>
-      <div class="nav-item" data-page="offilog" onclick="navigate('offilog')">
-        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11l-6 7h18l-6-7V3"/></svg>
-        <span class="nav-label-text">Offilog</span>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-label" style="color:#6366F1">Groupements</div>
-      <div class="nav-item" data-page="groupements" onclick="navigate('groupements')">
-        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><path d="M2 20v-1a4 4 0 0 1 4-4"/><path d="M22 20v-1a4 4 0 0 0-4-4"/></svg>
-        <span class="nav-label-text">Suivi Groupement</span>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-label">Paramètres</div>
+    <div class="nav-section" style="margin-top:auto">
       <div class="nav-item" data-page="admin" id="nav-admin" onclick="navigate('admin')">
         <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span class="nav-label-text">Administration</span>
@@ -185,10 +152,7 @@
           Recherche
           <span style="font-size:10px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-family:monospace;color:var(--text3)">⌘K</span>
         </button>
-        <button class="btn btn-primary" onclick="navigate('import')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Importer
-        </button>
+        <button class="btn btn-primary" onclick="navigate('import')">Importer mes ventes</button>
       </div>
     </div>
 
