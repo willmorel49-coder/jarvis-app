@@ -1436,7 +1436,11 @@ function renderPharmacies() {
       ? phImports.reduce((a, b) => new Date(a.importedAt) > new Date(b.importedAt) ? a : b)
       : null;
     const lastImportDays = lastImport ? Math.round((today - new Date(lastImport.importedAt)) / 86400000) : null;
-    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays };
+    const clientInfo = typeof CLIENTS !== 'undefined'
+      ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
+      : null;
+    const prochaineVisite = clientInfo?.prochaineVisite || null;
+    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite };
   }).filter(e => e.caCur > 0 || e.caPrev > 0);
 
   // Filtre texte
@@ -1479,7 +1483,7 @@ function renderPharmacies() {
 
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
-        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays } = e;
+        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite } = e;
         const chipHtml = status === 'up'   ? '<span class="status-chip status-up">● Croissance</span>'
                        : status === 'flat' ? '<span class="status-chip status-flat">● Stable</span>'
                        : status === 'down' ? '<span class="status-chip status-down">● Baisse</span>'
@@ -1493,16 +1497,20 @@ function renderPharmacies() {
                 ? `<span style="font-size:10px;color:var(--text3)">Import il y a ${lastImportDays}j</span>`
                 : `<span style="font-size:10px;color:var(--rose)">Import il y a ${lastImportDays}j</span>`
           : '';
+        const visiteBadge = prochaineVisite && prochaineVisite.trim() && prochaineVisite !== 'null'
+          ? `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.1);padding:1px 6px;border-radius:8px">📅 Visite ${prochaineVisite}</span>`
+          : '';
         return `
           <div class="pharma-item" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
             <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
             <div class="pharma-dot" style="background:${ph.color}"></div>
             <div class="pharma-info">
               <div class="pharma-name">${ph.name}</div>
-              <div class="pharma-meta" style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <div class="pharma-meta" style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
                 ${chipHtml}
                 ${g !== null ? deltaBadge(caCur, caPrev) : ''}
                 ${importFreshness}
+                ${visiteBadge}
               </div>
             </div>
             <div style="flex:1;max-width:120px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
@@ -2848,7 +2856,11 @@ function prodExportCSV() {
     prodMap[k].qte += s.qte;
     prodMap[k].pharmas.add(s.pharmacyId);
   }
-  let data = Object.values(prodMap);
+  let data = Object.values(prodMap).map(p => ({ ...p, froid: isFroid({ artDesignation: p.label }) }));
+  if (prodFamille !== 'tous') {
+    if (prodFamille === 'froid') data = data.filter(p => p.froid);
+    else data = data.filter(p => p.cat === prodFamille);
+  }
   if (prodTableQuery) {
     const q2 = prodTableQuery.toLowerCase();
     data = data.filter(p => p.label.toLowerCase().includes(q2));
