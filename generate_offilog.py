@@ -29,6 +29,7 @@ SRC       = BASE / 'OFFILOG' / 'offilog_x_maxipara_3517.xlsx'
 DRAKKARS  = BASE / 'benchmark_drakkars.xlsx'
 CAP3000   = BASE / 'benchmark_cap3000.xlsx'
 LIVE_JSON = BASE / 'offilog_live.json'
+BEST_JSON = BASE / 'bestsellers_offilog.json'
 OUT       = BASE / 'crm' / 'offilog-data.js'
 
 
@@ -214,6 +215,27 @@ else:
     print(f'Fichier Offilog Live non trouvé ({LIVE_JSON}) — prix_live/img = null')
 
 
+# ── LOAD BESTSELLERS (optionnel) ──────────────────────────────────────────────
+# Classement des meilleures ventes Offilog (rang 1 = meilleure vente)
+best_by_ean:  dict = {}   # ean_str → rang_vente int
+best_by_norm: dict = {}   # nom_norm → rang_vente int
+if BEST_JSON.exists():
+    print(f'Enrichissement Best-sellers depuis : {BEST_JSON}')
+    with open(BEST_JSON, encoding='utf-8') as _f:
+        _best = json.load(_f)
+    for _p in _best.get('products', []):
+        _ean = str(_p.get('ean', '') or '').strip()
+        _rang = _p.get('rang')
+        if _ean and _ean.isdigit() and len(_ean) >= 8 and _rang:
+            best_by_ean[_ean] = int(_rang)
+        _nom_n = norm(str(_p.get('nom', '') or ''))
+        if _nom_n and _rang and _nom_n not in best_by_norm:
+            best_by_norm[_nom_n] = int(_rang)
+    print(f'  → {len(best_by_ean)} best-sellers par EAN')
+else:
+    print(f'Fichier Best-sellers non trouvé ({BEST_JSON}) — rang_vente = null')
+
+
 # ── BUILD RECORDS ────────────────────────────────────────────────────────────
 records = []
 for row in rows[1:]:
@@ -265,6 +287,13 @@ for row in rows[1:]:
     if _live_entry:
         dans_off = True
 
+    # ── Matching Best-sellers : EAN en priorité, nom en fallback
+    rang_vente = None
+    if ean_str:
+        rang_vente = best_by_ean.get(ean_str)
+    if rang_vente is None:
+        rang_vente = best_by_norm.get(produit_n)
+
     records.append({
         'rang':           rang,
         'produit':        produit,
@@ -285,17 +314,20 @@ for row in rows[1:]:
         'prix_cap3000':   prix_cap3000,
         'prix_live':      prix_live,
         'img':            img,
+        'rang_vente':     rang_vente,
     })
 
 print(f'Records valides : {len(records)}')
 avec_drakkars = sum(1 for r in records if r['prix_drakkars'] is not None)
 avec_cap3000  = sum(1 for r in records if r['prix_cap3000']  is not None)
-avec_live     = sum(1 for r in records if r['prix_live']     is not None)
+avec_live     = sum(1 for r in records if r['prix_live']   is not None)
 avec_img      = sum(1 for r in records if r['img'])
+avec_best     = sum(1 for r in records if r['rang_vente'] is not None)
 print(f'Avec prix Drakkars  : {avec_drakkars}')
 print(f'Avec prix Cap3000   : {avec_cap3000}')
 print(f'Avec prix Live      : {avec_live}')
 print(f'Avec image          : {avec_img}')
+print(f'Best-sellers matchés: {avec_best}')
 dans_off_n = sum(1 for r in records if r['dans_offilog'])
 print(f'Dans Offilog : {dans_off_n}')
 
@@ -320,7 +352,8 @@ for r in records:
         f'marge_pct:{js_num(r["marge_pct"])},potentiel:{js_str(r["potentiel"])},'
         f'role:{js_str(r["role"])},prix_drakkars:{js_num(r["prix_drakkars"])},'
         f'prix_cap3000:{js_num(r["prix_cap3000"])},'
-        f'prix_live:{js_num(r["prix_live"])},img:{js_str(r["img"] or None)}}},'
+        f'prix_live:{js_num(r["prix_live"])},img:{js_str(r["img"] or None)},'
+        f'rang_vente:{js_num(r["rang_vente"])}}},'
     )
     lines.append(line)
 
