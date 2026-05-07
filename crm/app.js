@@ -2287,6 +2287,39 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>`;
       })() : ''}
 
+      <!-- Produits IP suggérés -->
+      ${typeof BENCHMARK !== 'undefined' && allPhSales.length ? (() => {
+        const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+        const phNorms = new Set(allPhSales.map(s => nn(s.artDesignation)));
+        const suggestions = BENCHMARK
+          .filter(b => b.rot_pharma_jan26 > 1 && !phNorms.has(nn(b.designation)))
+          .sort((a, b) => b.rot_pharma_jan26 - a.rot_pharma_jan26)
+          .slice(0, 8);
+        if (!suggestions.length) return '';
+        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--blue)">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Produits IP à proposer</div>
+              <div class="card-subtitle">Meilleures rotations nationales non commandées par cette pharmacie</div>
+            </div>
+            <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(0,87,255,.1);color:var(--blue);font-weight:700">${suggestions.length} opportunités</span>
+          </div>
+          ${suggestions.map((b, i) => {
+            const cat = CATS[b.categorie] || CATS.mi;
+            const fd = b.is_froid ? ' ❄️' : '';
+            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border1)">
+              <div style="font-size:13px;font-weight:700;color:var(--text3);width:18px;text-align:right;flex-shrink:0">${i+1}</div>
+              <span style="font-size:10px;padding:1px 5px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.designation}${fd}</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:1px">${b.rot_pharma_jan26.toFixed(1)} rot./pharma/mois · ${fmt(b.prix_ip)} IP HT</div>
+              </div>
+              ${b.offre_ip ? `<span style="flex-shrink:0;font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--mint);font-weight:600">${b.offre_ip}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>`;
+      })() : ''}
+
       <!-- Notes de visite -->
       ${(() => {
         const notesKey = `visit_notes_${pharma.id}`;
