@@ -720,6 +720,7 @@ function renderDashboard() {
           ${deltaBadge(caCur, caPrev)}
           <span style="font-size:11px;color:rgba(255,255,255,0.55)">vs ${prevLabel}</span>
         </div>
+        <button onclick="printRapportMensuel()" style="margin-top:16px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">🖨 Rapport mensuel</button>
       </div>
 
       <!-- Pharmacies actives -->
@@ -1081,6 +1082,126 @@ function renderDashboard() {
       }
     }
   }, 50);
+}
+
+function printRapportMensuel() {
+  const allSalesRaw = getSales();
+  if (!allSalesRaw.length) { showToast('Aucune donnée à exporter', 'error'); return; }
+  const { year: curY, month: curM } = getCurrentPeriod(allSalesRaw);
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
+  const salesCur  = getSales({ year: curY, month: curM });
+  const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
+  const caCur  = sumCA(salesCur);
+  const caPrev = sumCA(salesPrev);
+  const delta  = caPrev > 0 ? ((caCur - caPrev) / caPrev * 100) : null;
+  const curLabel  = `${monthName(curM)} ${curY}`;
+  const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
+  const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Per pharmacy
+  const pharmaRows = state.pharmacies.map(ph => {
+    const cur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+    const prev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
+    const d    = prev > 0 ? ((cur - prev) / prev * 100) : null;
+    return { ph, cur, prev, d };
+  }).filter(r => r.cur > 0 || r.prev > 0).sort((a, b) => b.cur - a.cur);
+
+  // Top products
+  const prodMap = {};
+  for (const s of salesCur) {
+    const k = (s.artDesignation || '').trim();
+    if (!k) continue;
+    if (!prodMap[k]) prodMap[k] = { ca: 0, qte: 0 };
+    prodMap[k].ca  += s.mntNetHt;
+    prodMap[k].qte += s.qte;
+  }
+  const topProds = Object.entries(prodMap).sort((a, b) => b[1].ca - a[1].ca).slice(0, 10);
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+  <title>Rapport mensuel — ${curLabel}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;background:#fff;padding:40px;font-size:13px}
+    h1{font-size:24px;font-weight:900;color:#1E3A8A;margin-bottom:4px}
+    h2{font-size:14px;font-weight:800;color:#1E3A8A;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin:24px 0 14px}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #1E3A8A}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+    .kpi{background:#f0f4ff;border-radius:12px;padding:14px 16px;text-align:center}
+    .kpi-val{font-size:20px;font-weight:900;color:#1E3A8A;margin-bottom:4px}
+    .kpi-lab{font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:.5px}
+    .delta-pos{color:#059669;font-weight:700} .delta-neg{color:#dc2626;font-weight:700}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:#f8fafc;text-align:left;padding:8px 10px;border-bottom:2px solid #e2e8f0;font-size:11px;color:#64748B;text-transform:uppercase;letter-spacing:.4px}
+    td{padding:7px 10px;border-bottom:1px solid #f1f5f9}
+    tr:last-child td{border-bottom:none}
+    .footer{margin-top:40px;font-size:11px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:16px}
+    @media print{body{padding:20px}.no-print{display:none}}
+  </style></head><body>
+  <div class="no-print" style="margin-bottom:20px">
+    <button onclick="window.print()" style="padding:8px 20px;background:#1E3A8A;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">🖨 Imprimer / Enregistrer en PDF</button>
+  </div>
+  <div class="header">
+    <div>
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Intégral Pharma · Rapport mensuel</div>
+      <h1>${curLabel}</h1>
+      <div style="font-size:12px;color:#64748B;margin-top:4px">Généré le ${dateStr}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:28px;font-weight:900;color:#1E3A8A">${fmt(caCur)}</div>
+      <div style="font-size:12px;color:#64748B">CA Total HT</div>
+      ${delta !== null ? `<div class="${delta >= 0 ? 'delta-pos' : 'delta-neg'}" style="margin-top:4px">${delta >= 0 ? '+' : ''}${delta.toFixed(1)}% vs ${prevLabel}</div>` : ''}
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-val">${fmt(caCur)}</div><div class="kpi-lab">CA ${curLabel}</div></div>
+    <div class="kpi"><div class="kpi-val">${fmt(caPrev)}</div><div class="kpi-lab">CA ${prevLabel}</div></div>
+    <div class="kpi"><div class="kpi-val">${salesCur.length > 0 ? fmtNum(new Set(salesCur.map(s => s.pharmacyId)).size) : '0'}</div><div class="kpi-lab">Pharmacies actives</div></div>
+    <div class="kpi"><div class="kpi-val">${salesCur.length > 0 ? fmtNum(new Set(salesCur.map(s => s.artDesignation)).size) : '0'}</div><div class="kpi-lab">Références vendues</div></div>
+  </div>
+
+  <h2>Performance par pharmacie</h2>
+  <table>
+    <thead><tr>
+      <th>Pharmacie</th>
+      <th style="text-align:right">${prevLabel}</th>
+      <th style="text-align:right">${curLabel}</th>
+      <th style="text-align:right">Évolution</th>
+    </tr></thead>
+    <tbody>
+      ${pharmaRows.map(r => `<tr>
+        <td style="font-weight:600">${r.ph.name}</td>
+        <td style="text-align:right;color:#64748B">${r.prev > 0 ? fmt(r.prev) : '—'}</td>
+        <td style="text-align:right;font-weight:700">${r.cur > 0 ? fmt(r.cur) : '—'}</td>
+        <td style="text-align:right" class="${r.d !== null ? (r.d >= 0 ? 'delta-pos' : 'delta-neg') : ''}">${r.d !== null ? (r.d >= 0 ? '+' : '') + r.d.toFixed(1) + '%' : '—'}</td>
+      </tr>`).join('')}
+      <tr style="background:#f0f4ff;font-weight:700">
+        <td>TOTAL SECTEUR</td>
+        <td style="text-align:right">${fmt(caPrev)}</td>
+        <td style="text-align:right">${fmt(caCur)}</td>
+        <td style="text-align:right" class="${delta !== null ? (delta >= 0 ? 'delta-pos' : 'delta-neg') : ''}">${delta !== null ? (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%' : '—'}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Top 10 produits — ${curLabel}</h2>
+  <table>
+    <thead><tr><th>#</th><th>Désignation</th><th style="text-align:right">Qté</th><th style="text-align:right">CA HT</th><th style="text-align:right">Part</th></tr></thead>
+    <tbody>
+      ${topProds.map(([name, d], i) => `<tr>
+        <td style="color:#94a3b8;font-weight:700">${i + 1}</td>
+        <td>${name}</td>
+        <td style="text-align:right">${fmtNum(Math.round(d.qte))}</td>
+        <td style="text-align:right;font-weight:700">${fmt(d.ca)}</td>
+        <td style="text-align:right;color:#64748B">${caCur > 0 ? (d.ca / caCur * 100).toFixed(1) + '%' : '—'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+
+  <div class="footer">Intégral Pharma · Rapport généré automatiquement par JARVIS CRM · ${dateStr}</div>
+  </body></html>`);
+  win.document.close();
 }
 
 // ── PHARMACIES ────────────────────────────────
@@ -4021,6 +4142,15 @@ function univMeta(u) {
   return UNIVERS_META[u] || { color:'#90A4AE', bg:'#f5f7f9', icon:'📦' };
 }
 let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiSaison = 'tous', offiPageNum = 1, offiView = 'cards';
+
+const OFFI_FAV_KEY = 'ip_crm_offi_favs';
+function getOffiFavs() { try { return new Set(JSON.parse(localStorage.getItem(OFFI_FAV_KEY)||'[]')); } catch { return new Set(); } }
+function toggleOffiFav(ean) {
+  const favs = getOffiFavs();
+  if (favs.has(ean)) favs.delete(ean); else favs.add(ean);
+  localStorage.setItem(OFFI_FAV_KEY, JSON.stringify([...favs]));
+  renderOffilog();
+}
 let offiCurrentData = [];
 let offiDetailProduct = null; // currently shown in detail modal
 
@@ -4056,6 +4186,7 @@ function offiGetList() {
         !(p.marque || '').toLowerCase().includes(q)) return false;
     if (offiRole === 'bestsellers') return p.rang_vente != null;
     if (offiRole === 'pharmacie') return p.prix_pharmacie != null && p.prix_pharmacie > 0;
+    if (offiRole === 'favoris') return p.ean && getOffiFavs().has(p.ean);
     if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
     if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && p.role !== offiRole) return false;
     if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
@@ -4155,10 +4286,13 @@ function renderOffilog() {
 
   // ── Role chips ────────────────────────────────
   const nBest     = OFFILOG.filter(p => p.rang_vente != null).length;
+  const offiFavs = getOffiFavs();
+  const nFavs = OFFILOG.filter(p => p.ean && offiFavs.has(p.ean)).length;
   const roleTabs = [
     { key: 'tous',            label: 'Tous',             icon: '✦', color: '#64748B' },
     { key: 'bestsellers',     label: `Top ventes (${nBest})`, icon: '🏆', color: '#F59E0B' },
     { key: 'pharmacie',       label: `Ma Pharmacie (${nPharma})`, icon: '🏥', color: '#00E5A0' },
+    { key: 'favoris',         label: `Favoris (${nFavs})`, icon: '★', color: '#EC4899' },
     { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
     { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
     { key: 'Héros / Soutien', label: 'Héros/Soutien',    icon: '⭐', color: '#FBBF24' },
@@ -4260,8 +4394,13 @@ function renderOffilog() {
              </div>`
         }
         <!-- Badges en overlay -->
-        <div style="position:absolute;top:7px;left:7px;display:flex;gap:3px;flex-wrap:wrap;max-width:calc(100% - 14px)">${bestBadge}${ipBadge}${liveBadge}</div>
-        ${saisonBadge ? `<div style="position:absolute;top:7px;right:7px">${saisonBadge}</div>` : ''}
+        <div style="position:absolute;top:7px;left:7px;display:flex;gap:3px;flex-wrap:wrap;max-width:calc(100% - 50px)">${bestBadge}${ipBadge}${liveBadge}</div>
+        ${saisonBadge ? `<div style="position:absolute;top:7px;right:34px">${saisonBadge}</div>` : ''}
+        <!-- Fav button -->
+        ${p.ean ? `<button onclick="event.stopPropagation();toggleOffiFav('${p.ean}')" title="${offiFavs.has(p.ean)?'Retirer des favoris':'Ajouter aux favoris'}"
+          style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:8px;border:none;background:rgba(0,0,0,.2);backdrop-filter:blur(4px);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;line-height:1;color:${offiFavs.has(p.ean)?'#EC4899':'rgba(255,255,255,.7)'}">
+          ${offiFavs.has(p.ean) ? '★' : '☆'}
+        </button>` : ''}
         <!-- Barre couleur univers en bas -->
         <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,${um.color},${um.color}66)"></div>
       </div>
