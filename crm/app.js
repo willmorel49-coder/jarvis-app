@@ -3866,6 +3866,12 @@ function renderBenchmark() {
   if (benchCrossFilter === 'vendus')     data = data.filter(d => salesMap[nnBench(d.designation)]?.ca > 0);
   if (benchCrossFilter === 'non_vendus') data = data.filter(d => !salesMap[nnBench(d.designation)]?.ca);
 
+  // Inject our sales data for sorting
+  data = data.map(d => {
+    const sv = salesMap[nnBench(d.designation)];
+    return { ...d, notre_ca: sv?.ca || 0, notre_qte: sv?.qte || 0 };
+  });
+
   // Sort
   data.sort((a, b) => {
     const av = a[benchSortCol] ?? 0, bv = b[benchSortCol] ?? 0;
@@ -4084,7 +4090,7 @@ function renderBenchmark() {
               ${thB('rot_pharma_jan26','Rot./pharma/mois')}
               ${thB('yoy_jan','YoY Jan')}
               <th style="text-align:right">France Jan26</th>
-              ${salesAll.length > 0 ? `<th style="text-align:right;color:var(--mint);font-family:Syne,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1">Nos ventes</th>` : ''}
+              ${salesAll.length > 0 ? thB('notre_ca', 'Nos ventes CA') : ''}
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
