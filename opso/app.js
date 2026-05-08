@@ -4911,6 +4911,42 @@ function offiExportCSV() {
   showToast(`Export CSV — ${list.length} produits`, 'success');
 }
 
+// ── OFFILOG LIVE — benchmark lookup ─────────
+let _benchMaps = null;
+function benchMaps() {
+  if (_benchMaps) return _benchMaps;
+  const drakEan = new Map(), drakNom = new Map();
+  const cap3Ean = new Map(), cap3Nom = new Map();
+  const normB = s => (s || '').toLowerCase().normalize('NFD')
+    .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  if (typeof DRAKKARS !== 'undefined') {
+    for (const d of DRAKKARS) {
+      if (d.ean) drakEan.set(String(d.ean), d.prix);
+      if (d.nom_norm) drakNom.set(d.nom_norm, d.prix);
+    }
+  }
+  if (typeof CAP3000 !== 'undefined') {
+    for (const c of CAP3000) {
+      if (c.ean) cap3Ean.set(String(c.ean), c.prix);
+      if (c.nom_norm) cap3Nom.set(c.nom_norm, c.prix);
+    }
+  }
+  _benchMaps = { drakEan, drakNom, cap3Ean, cap3Nom, normB };
+  return _benchMaps;
+}
+function lookupBench(p) {
+  const { drakEan, drakNom, cap3Ean, cap3Nom, normB } = benchMaps();
+  const ean = p.ean ? String(p.ean) : null;
+  const nn  = normB(p.nom);
+  let drakkars = null;
+  if (ean && drakEan.has(ean)) drakkars = drakEan.get(ean);
+  else if (nn && drakNom.has(nn)) drakkars = drakNom.get(nn);
+  let cap3000 = null;
+  if (ean && cap3Ean.has(ean)) cap3000 = cap3Ean.get(ean);
+  else if (nn && cap3Nom.has(nn)) cap3000 = cap3Nom.get(nn);
+  return { drakkars, cap3000 };
+}
+
 // ── OFFILOG LIVE — état ──────────────────────
 let offiLiveSearch = '';
 let offiLiveCat    = 'tous';
@@ -4962,6 +4998,12 @@ function renderOffilog() {
   const cards = page.map(p => {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
     const hasPromo = p.promo && p.prix_b != null;
+    const { drakkars, cap3000 } = lookupBench(p);
+    const benchRow = (drakkars != null || cap3000 != null) ? `
+      <div class="offil-bench-row">
+        ${drakkars != null ? `<span class="offil-bench offil-bench-drak" title="Pharmacie des Drakkars">Drakkars ${fmtP(drakkars)}</span>` : ''}
+        ${cap3000 != null ? `<span class="offil-bench offil-bench-cap" title="Pharmacie Cap 3000">Cap 3000 ${fmtP(cap3000)}</span>` : ''}
+      </div>` : '';
     return `
     <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener">
       <div class="offil-card-img-wrap">
@@ -4978,6 +5020,7 @@ function renderOffilog() {
           </div>
           <span class="offil-card-cat">${p.cat}</span>
         </div>
+        ${benchRow}
       </div>
     </a>`;
   }).join('');
