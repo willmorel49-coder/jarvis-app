@@ -131,13 +131,13 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 | Auth Supabase | 1 compte actif : `demo@integralpharma.fr` / `***RETIRE***` (rôle admin) |
 | Clients | 517 pharmacies · champs : cip, nom, adresse, cp, ville, email, tel, potentielGx, ca2023, prochaineVisite, commentaire, pelgraz, pelmeg, ecodage, gros1, gros2 |
 | Benchmark | 10 500 produits IP · 1 090 matchés Ameli · champs : designation, cip13, categorie, ip_qty, ip_ca, ip_rank_qty, ip_rank_ca, prix_ht, prix_ip, remise_pct, offre_ip, is_froid, has_ameli, ameli_months[13], ameli_jan26, rot_pharma_jan26, ameli_total, yoy_jan, atc2 |
-| Offilog | 3 520 produits · 1 417 Leclerc matchés (EAN) · 1 403 Cap3000 · 1 112 Drakkars — champs : prix_offilog, prix_live, prix_pharmacie, prix_drakkars, prix_cap3000, **prix_leclerc**, img, dans_offilog, role, saison, etc. |
-| Drakkars | 13 393 produits scrapés (~13 393 avec prix, scrape ~4-5h, en cours 2026-05-08) |
-| Cap3000 | 7 826 produits · 7 826 avec prix et EAN — champs : nom, nom_norm, marque, ean, prix_affiche, prix, url |
+| Offilog | 3 520 produits · 1 417 Leclerc matchés (EAN) · 1 403 Cap3000 · 1 113 Drakkars — champs : prix_offilog, prix_live, prix_pharmacie, prix_drakkars, prix_cap3000, **prix_leclerc**, img, dans_offilog, role, saison, etc. |
+| Drakkars | 13 393 produits scrapés · 9 483 avec EAN · 3 876 KB — scrape complet 2026-05-08 |
+| Cap3000 | 7 828 produits · 7 828 avec prix et EAN — champs : nom, nom_norm, marque, ean, prix_affiche, prix, url · scrape frais 2026-05-08 |
 | E.Leclerc | 3 643 prix via API EAN (43% des 8 393 EANs Offilog) → opso/leclerc-data.js + champ prix_leclerc dans offilog-data.js |
 | Offilog Live | 8 393 produits scrapés live → opso/offilog-live-data.js (prix, promo, stock, cat, EAN) |
 | Storage | Bucket `excel-imports` (uploads Excel archivés) |
-| Données générées | clients-data.js : 2026-05-03 · benchmark-data.js : 2026-05-04 · offilog-data.js : 2026-05-08 · cap3000-data.js : 2026-05-08 · leclerc-data.js : 2026-05-08 |
-| Veille concurrentielle | nAlerte CRM : produits Offilog où prix public conc. (Leclerc/Drak/Cap3000) < prix achat IP — visible dashboard + filtre "Alertes prix" dans catalogue Offilog |
+| Données générées | clients-data.js : 2026-05-03 · benchmark-data.js : 2026-05-04 · offilog-data.js : 2026-05-09 · drakkars-data.js : 2026-05-09 · cap3000-data.js : 2026-05-08 · leclerc-data.js : 2026-05-08 |
+| Veille concurrentielle | nAlerte CRM : produits Offilog où prix public conc. (Leclerc/Drak/Cap3000) < prix achat IP — dashboard, catalogue Offilog, fiche pharmacie (showPharmaDetail), fiche de visite (CRM + OPSO) |
 
 **Backlog → voir `tasks/todo.md`**
