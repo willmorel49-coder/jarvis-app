@@ -5012,10 +5012,14 @@ function renderOffilog() {
 
   // ── Stats benchmark (calculé sur tout OFFILOG_LIVE, pas juste la page) ──
   const { leclEan: le, cap3Ean: ce, drakEan: de } = benchMaps();
-  let nAlerte = 0, nBench = 0;
+  let nAlerte = 0, nBench = 0, nLecl = 0, nCap = 0, nDrak = 0;
   for (const p of OFFILOG_LIVE) {
     const e = p.ean ? String(p.ean) : '';
-    const concs = [le.get(e), ce.get(e), de.get(e)].filter(v => v != null && v > 0);
+    const lv = le.get(e), cv = ce.get(e), dv = de.get(e);
+    if (lv != null && lv > 0) nLecl++;
+    if (cv != null && cv > 0) nCap++;
+    if (dv != null && dv > 0) nDrak++;
+    const concs = [lv, cv, dv].filter(v => v != null && v > 0);
     if (concs.length) { nBench++; if (p.prix > 0 && Math.min(...concs) < p.prix) nAlerte++; }
   }
 
@@ -5089,6 +5093,13 @@ function renderOffilog() {
       </select>
       <button onclick="exportOffiLiveCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">⬇ CSV</button>
     </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:11px">
+    <span style="padding:4px 10px;border-radius:20px;background:rgba(0,114,230,.08);border:1px solid rgba(0,114,230,.2);color:#0072e6;font-weight:600">Leclerc ${nLecl}</span>
+    <span style="padding:4px 10px;border-radius:20px;background:rgba(234,88,12,.08);border:1px solid rgba(234,88,12,.2);color:#ea580c;font-weight:600">Cap3000 ${nCap}</span>
+    <span style="padding:4px 10px;border-radius:20px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);color:#6366f1;font-weight:600">Drakkars ${nDrak}</span>
+    ${nAlerte > 0 ? `<span onclick="offiLiveSort='ecart';offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#ef4444;font-weight:700;cursor:pointer">⚠ ${nAlerte} alerte${nAlerte>1?'s':''}</span>` : ''}
   </div>
 
   ${nAlerte > 0 ? `
