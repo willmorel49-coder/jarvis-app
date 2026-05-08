@@ -502,6 +502,15 @@ function caByMonth(salesData) {
   return Object.entries(map).sort((a,b) => a[0].localeCompare(b[0]));
 }
 
+// Convertit "PHARMACIE DE KERMARIO" → "Pharmacie de Kermario"
+const LOWER_WORDS = new Set(['de','du','des','le','la','les','et','en','sur','sous','au','aux','à','d','l']);
+function titleCase(s) {
+  if (!s) return s;
+  return s.toLowerCase().replace(/\b\w+/g, (w, i) =>
+    (i === 0 || !LOWER_WORDS.has(w)) ? w.charAt(0).toUpperCase() + w.slice(1) : w
+  );
+}
+
 // ── RENDER ────────────────────────────────────
 function renderRank(i) {
   const cls = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-n';
@@ -657,7 +666,7 @@ function renderDashboard() {
         <div class="card-title">Mes pharmacies</div>
         <button onclick="navigate('pharmacies')" style="font-size:12px;color:var(--opso-green);background:none;border:none;cursor:pointer;font-weight:700">Tout voir →</button>
       </div>
-      ${allPhRows.map(r => `<div class="pharma-cockpit-row" onclick="showPharmaDetail('${r.ph.id}')"><span class="pharma-cockpit-dot ${r.status}"></span><span class="pharma-cockpit-name">${r.ph.name}</span><span class="pharma-cockpit-ca">${r.cur > 0 ? fmt(r.cur) : r.isMissing ? '<span style="color:var(--text3);font-size:12px">Non importée</span>' : '—'}</span><span class="pharma-cockpit-arrow">›</span></div>`).join('')}
+      ${allPhRows.map(r => `<div class="pharma-cockpit-row" onclick="showPharmaDetail('${r.ph.id}')"><span class="pharma-cockpit-dot ${r.status}"></span><span class="pharma-cockpit-name">${titleCase(r.ph.name)}</span><span class="pharma-cockpit-ca">${r.cur > 0 ? fmt(r.cur) : r.isMissing ? '<span style="color:var(--text3);font-size:12px">Non importée</span>' : '—'}</span><span class="pharma-cockpit-arrow">›</span></div>`).join('')}
     </div>
 
     ${alerts.length ? `
@@ -666,7 +675,7 @@ function renderDashboard() {
         <div class="card-title">Actions requises</div>
         <span class="badge badge-warning">${alerts.length}</span>
       </div>
-      ${alerts.slice(0,4).map(a => `<div class="alert-cockpit-row ${a.type}" onclick="showPharmaDetail('${a.ph.id}')"><div class="alert-cockpit-icon">${a.type==='down'?'↓':a.type==='absent'?'○':'↑'}</div><div class="alert-cockpit-info"><div class="alert-cockpit-name">${a.ph.name}</div><div class="alert-cockpit-sub">${a.type==='absent'?'Absent ce mois · M-1 : '+fmt(a.prev):fmt(a.prev)+' → '+fmt(a.cur)+(a.g!==null?' ('+(a.g>=0?'+':'')+a.g.toFixed(0)+'%)':'')}</div></div><div class="alert-cockpit-action">Voir ›</div></div>`).join('')}
+      ${alerts.slice(0,4).map(a => `<div class="alert-cockpit-row ${a.type}" onclick="showPharmaDetail('${a.ph.id}')"><div class="alert-cockpit-icon">${a.type==='down'?'↓':a.type==='absent'?'○':'↑'}</div><div class="alert-cockpit-info"><div class="alert-cockpit-name">${titleCase(a.ph.name)}</div><div class="alert-cockpit-sub">${a.type==='absent'?'Absent ce mois · M-1 : '+fmt(a.prev):fmt(a.prev)+' → '+fmt(a.cur)+(a.g!==null?' ('+(a.g>=0?'+':'')+a.g.toFixed(0)+'%)':'')}</div></div><div class="alert-cockpit-action">Voir ›</div></div>`).join('')}
     </div>` : ''}
 
     <div class="card fade-up" style="margin-bottom:0;padding:0;overflow:hidden">
@@ -767,7 +776,7 @@ function printRapportMensuel() {
     </tr></thead>
     <tbody>
       ${pharmaRows.map(r => `<tr>
-        <td style="font-weight:600">${r.ph.name}</td>
+        <td style="font-weight:600">${titleCase(r.ph.name)}</td>
         <td style="text-align:right;color:#64748B">${r.prev > 0 ? fmt(r.prev) : '—'}</td>
         <td style="text-align:right;font-weight:700">${r.cur > 0 ? fmt(r.cur) : '—'}</td>
         <td style="text-align:right" class="${r.d !== null ? (r.d >= 0 ? 'delta-pos' : 'delta-neg') : ''}">${r.d !== null ? (r.d >= 0 ? '+' : '') + r.d.toFixed(1) + '%' : '—'}</td>
@@ -820,7 +829,7 @@ function renderPharmacies() {
     const caCur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
     const caPrev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
     const g      = caPrev > 0 ? (caCur - caPrev) / caPrev * 100 : null;
-    const status = g === null ? 'new' : g > 20 ? 'up' : g >= -5 ? 'flat' : 'down';
+    const status = g === null ? (caCur > 0 ? 'flat' : 'missing') : g >= 5 ? 'up' : g <= -5 ? 'down' : 'flat';
     // Last import date
     const phImports = state.imports.filter(i => i.pharmacyId === ph.id);
     const lastImport = phImports.length
@@ -832,7 +841,7 @@ function renderPharmacies() {
       : null;
     const prochaineVisite = clientInfo?.prochaineVisite || null;
     return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite };
-  }).filter(e => e.caCur > 0 || e.caPrev > 0);
+  }); // toutes les pharmacies OPSO, même sans données
 
   // Filtre texte
   if (pharmaSearch) {
@@ -875,15 +884,16 @@ function renderPharmacies() {
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
         const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite } = e;
-        const chipHtml = status === 'up'   ? '<span class="status-chip status-up">● Croissance</span>'
-                       : status === 'flat' ? '<span class="status-chip status-flat">● Stable</span>'
-                       : status === 'down' ? '<span class="status-chip status-down">● Baisse</span>'
-                       :                    '<span class="status-chip status-flat">● Nouveau</span>';
+        const chipHtml = status === 'up'      ? '<span class="status-chip status-up">▲ Croissance</span>'
+                       : status === 'flat'    ? '<span class="status-chip status-flat">● Stable</span>'
+                       : status === 'down'    ? '<span class="status-chip status-down">▼ Baisse</span>'
+                       : status === 'missing' ? '<span class="status-chip status-missing">○ Aucune donnée</span>'
+                       :                       '<span class="status-chip status-flat">● Stable</span>';
         const importFreshness = lastImportDays !== null
           ? lastImportDays === 0
-            ? `<span style="font-size:10px;color:var(--mint)">Import aujourd'hui</span>`
+            ? `<span style="font-size:10px;color:var(--green)">Import aujourd'hui</span>`
             : lastImportDays <= 7
-              ? `<span style="font-size:10px;color:var(--mint)">Import il y a ${lastImportDays}j</span>`
+              ? `<span style="font-size:10px;color:var(--green)">Import il y a ${lastImportDays}j</span>`
               : lastImportDays <= 35
                 ? `<span style="font-size:10px;color:var(--text3)">Import il y a ${lastImportDays}j</span>`
                 : `<span style="font-size:10px;color:var(--rose)">Import il y a ${lastImportDays}j</span>`
@@ -896,7 +906,7 @@ function renderPharmacies() {
             <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
             <div class="pharma-dot" style="background:${ph.color}"></div>
             <div class="pharma-info">
-              <div class="pharma-name">${ph.name}</div>
+              <div class="pharma-name">${titleCase(ph.name)}</div>
               <div class="pharma-meta" style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
                 ${chipHtml}
                 ${g !== null ? deltaBadge(caCur, caPrev) : ''}
@@ -938,7 +948,7 @@ function renderPharmacies() {
       const diff = Math.round((d - today) / 86400000);
       if (diff < 0) return `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(255,77,109,.12);color:var(--rose)">Passé</span>`;
       if (diff === 0) return `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(255,176,32,.15);color:var(--amber);font-weight:700">Aujourd'hui</span>`;
-      if (diff <= 7) return `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(0,229,160,.12);color:var(--mint)">Cette semaine</span>`;
+      if (diff <= 7) return `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(0,229,160,.12);color:var(--green)">Cette semaine</span>`;
       return `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:var(--bg3);color:var(--text3)">Prochain</span>`;
     };
     const upcoming = CLIENTS
@@ -952,7 +962,7 @@ function renderPharmacies() {
       const dot = ph ? `<span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0;display:inline-block"></span>` : '';
       return `
         <div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid var(--border)">
-          <div style="min-width:70px;font-size:12px;font-weight:600;color:var(--blue)">${dateShortFR(date)}</div>
+          <div style="min-width:70px;font-size:12px;font-weight:600;color:var(--green)">${dateShortFR(date)}</div>
           <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
             ${dot}
             <div style="min-width:0">
@@ -998,7 +1008,7 @@ function renderPharmacies() {
         <div style="display:flex;gap:4px;align-items:center">
           <span style="font-size:11px;color:var(--text3);margin-right:4px">Trier par</span>
           ${[['ca','CA'],['delta','Delta'],['name','Nom']].map(([k,l]) =>
-            `<button onclick="pharmaSort='${k}';renderPharmacies()" style="padding:4px 10px;border-radius:8px;border:1px solid ${pharmaSort===k?'var(--blue)':'var(--border2)'};background:${pharmaSort===k?'rgba(0,87,255,.1)':'transparent'};color:${pharmaSort===k?'var(--blue)':'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600">${l}</button>`
+            `<button onclick="pharmaSort='${k}';renderPharmacies()" style="padding:4px 10px;border-radius:8px;border:1px solid ${pharmaSort===k?'var(--green)':'var(--border2)'};background:${pharmaSort===k?'rgba(0,87,255,.1)':'transparent'};color:${pharmaSort===k?'var(--green)':'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600">${l}</button>`
           ).join('')}
         </div>
       </div>
@@ -1098,8 +1108,8 @@ function renderProspects(search = '') {
     const hasEcodage  = c.ecodage && c.ecodage !== '0' && parseInt(c.ecodage, 10) > 0;
 
     const badges = [
-      c.ca2023 > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--mint);font-weight:600">CA ${fmt(c.ca2023)}</span>` : '',
-      c.potentielGx > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,87,255,.1);color:var(--blue);font-weight:600">Gx ${fmt(c.potentielGx)}</span>` : '',
+      c.ca2023 > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--green);font-weight:600">CA ${fmt(c.ca2023)}</span>` : '',
+      c.potentielGx > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,87,255,.1);color:var(--green);font-weight:600">Gx ${fmt(c.potentielGx)}</span>` : '',
       hasPelgraz ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(155,92,255,.1);color:#9B5CFF;font-weight:600">Pelgraz ×${c.pelgraz}</span>` : '',
       hasPelmeg  ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(155,92,255,.08);color:#9B5CFF;font-weight:600">Pelmeg ×${c.pelmeg}</span>` : '',
       hasEcodage ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(255,176,32,.1);color:var(--amber);font-weight:600">Ecodage ×${c.ecodage}</span>` : '',
@@ -1138,7 +1148,7 @@ function renderProspects(search = '') {
       <div style="display:flex;gap:5px;flex-shrink:0">
         ${emailBtn}${telBtn}
         <button onclick="addProspectAsPharmacy('${(c.nom||'').replace(/'/g,"&#39;")}')" title="Ajouter comme pharmacie cliente"
-          style="padding:5px 10px;border-radius:8px;border:1.5px solid rgba(0,87,255,.3);background:rgba(0,87,255,.06);color:var(--blue);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">+ Client</button>
+          style="padding:5px 10px;border-radius:8px;border:1.5px solid rgba(0,87,255,.3);background:rgba(0,87,255,.06);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">+ Client</button>
       </div>
     </div>`;
   }).join('');
@@ -1254,12 +1264,12 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.designation}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:3px">
           Grossiste actuel : <span style="color:var(--rose);font-weight:700;text-decoration:line-through">${fmt(o.prixActuel)}/u</span>
-          → IP : <span style="color:var(--mint);font-weight:700">${fmt(o.prixIP)}/u</span>
+          → IP : <span style="color:var(--green);font-weight:700">${fmt(o.prixIP)}/u</span>
           <span style="margin-left:8px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color};font-size:10px">${cat.label}</span>
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:18px;font-weight:800;color:var(--mint)">+${fmt(o.gainMois)}</div>
+        <div style="font-size:18px;font-weight:800;color:var(--green)">+${fmt(o.gainMois)}</div>
         <div style="font-size:10px;color:var(--text3)">économie/mois</div>
       </div>
     </div>`;
@@ -1278,7 +1288,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:18px;font-weight:800;color:var(--blue)">+${fmt(b.caEstime)}</div>
+        <div style="font-size:18px;font-weight:800;color:var(--green)">+${fmt(b.caEstime)}</div>
         <div style="font-size:10px;color:var(--text3)">CA potentiel/mois</div>
       </div>
     </div>`;
@@ -1291,7 +1301,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="pharmaDetailOverridePeriod=null;renderPharmacies()">← Retour</button>
         <div style="width:12px;height:12px;border-radius:50%;background:${pharma.color}"></div>
-        <span class="section-title" style="margin:0;flex:1">${pharma.name}</span>
+        <span class="section-title" style="margin:0;flex:1">${titleCase(pharma.name)}</span>
         ${clientInfo?.ville ? `<span style="font-size:12px;color:var(--text3)">${clientInfo.cp} ${clientInfo.ville}</span>` : ''}
         ${availPeriods.length > 1 ? `<select onchange="showPharmaDetail('${pharma.id}',this.value==='auto'?null:{year:+this.value.split('-')[0],month:+this.value.split('-')[1]})"
           style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
@@ -1304,7 +1314,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <button class="btn btn-ghost" onclick="prodPharmaFilter='${pharma.id}';navigate('produits')" style="font-size:12px">📊 Produits</button>
         <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px">📋 Fiche visite</button>
         <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px">✉ Email</button>
-        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;color:var(--mint);border-color:rgba(0,229,160,.3)">🛒 Commander</button>
+        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;color:var(--green);border-color:rgba(0,229,160,.3)">🛒 Commander</button>
         <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
         <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
       </div>
@@ -1326,12 +1336,12 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         <div class="kpi-card kc-b">
           <div class="kpi-icon">💊</div>
-          <div class="kpi-value" style="color:var(--blue)">${nRefCur}</div>
+          <div class="kpi-value" style="color:var(--green)">${nRefCur}</div>
           <div class="kpi-label">Références</div>
         </div>
         <div class="kpi-card kc-g">
           <div class="kpi-icon">📈</div>
-          <div class="kpi-value" style="color:var(--mint)">${fmt(margeCur)}</div>
+          <div class="kpi-value" style="color:var(--green)">${fmt(margeCur)}</div>
           <div class="kpi-label">Marge brute</div>
           <div style="margin-top:6px;font-size:11px;color:var(--text3)">${mpctCur.toFixed(1)}%</div>
         </div>
@@ -1351,8 +1361,8 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--border)">
           ${clientInfo.adresse ? `<div style="padding:10px 16px;flex:1;min-width:160px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Adresse</div><div style="font-size:12px;font-weight:600">${clientInfo.adresse}</div><div style="font-size:11px;color:var(--text3)">${clientInfo.cp||''} ${clientInfo.ville||''}</div></div>` : ''}
-          ${clientInfo.tel ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Téléphone</div><a href="tel:${clientInfo.tel}" style="font-size:12px;font-weight:600;color:var(--blue);text-decoration:none">${clientInfo.tel}</a></div>` : ''}
-          ${clientInfo.email ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Email</div><a href="mailto:${clientInfo.email}" style="font-size:12px;font-weight:600;color:var(--blue);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:180px">${clientInfo.email}</a></div>` : ''}
+          ${clientInfo.tel ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Téléphone</div><a href="tel:${clientInfo.tel}" style="font-size:12px;font-weight:600;color:var(--green);text-decoration:none">${clientInfo.tel}</a></div>` : ''}
+          ${clientInfo.email ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Email</div><a href="mailto:${clientInfo.email}" style="font-size:12px;font-weight:600;color:var(--green);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:180px">${clientInfo.email}</a></div>` : ''}
           ${clientInfo.ca2023 > 0 ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">CA 2023 total</div><div style="font-size:12px;font-weight:600">${fmt(clientInfo.ca2023)}</div></div>` : ''}
           ${clientInfo.gros1 ? `<div style="padding:10px 16px;flex:1;min-width:120px"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Grossiste</div><div style="font-size:12px;font-weight:600">${clientInfo.gros1}${clientInfo.gros2 ? ' · ' + clientInfo.gros2 : ''}</div></div>` : ''}
         </div>
@@ -1449,7 +1459,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div class="card-header">
             <div class="card-title">Tendance produits ${prevLabel} → ${curLabel}</div>
           </div>
-          ${gainers.length ? `<div style="padding:6px 20px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mint)">En hausse</div>${gainers.map(d => row(d,'var(--mint)','↑')).join('')}` : ''}
+          ${gainers.length ? `<div style="padding:6px 20px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green)">En hausse</div>${gainers.map(d => row(d,'var(--green)','↑')).join('')}` : ''}
           ${losers.length  ? `<div style="padding:6px 20px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--rose)">En baisse</div>${losers.map(d => row(d,'var(--rose)','↓')).join('')}` : ''}
           ${newProds.length ? `<div style="padding:6px 20px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--amber)">Nouveaux ce mois</div>${newProds.map(d => row(d,'var(--amber)','★')).join('')}` : ''}
         </div>`;
@@ -1460,17 +1470,17 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <div style="padding:16px 20px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div style="font-size:13px;font-weight:700">Progression CA mensuel</div>
-            <div style="font-size:12px;color:${palierSuivant ? 'var(--blue)' : 'var(--mint)'}">
+            <div style="font-size:12px;color:${palierSuivant ? 'var(--green)' : 'var(--green)'}">
               ${palierSuivant ? `Il manque <strong>${fmt(palierSuivant - caCur)}</strong> pour le palier suivant` : '🎯 Palier maximum atteint'}
             </div>
           </div>
           <div style="position:relative;height:10px;border-radius:5px;background:var(--bg3);margin-bottom:14px">
-            <div style="position:absolute;inset:0;border-radius:5px;background:linear-gradient(90deg,var(--blue),var(--mint));width:${progressPct}%;transition:width .6s"></div>
+            <div style="position:absolute;inset:0;border-radius:5px;background:linear-gradient(90deg,var(--green),var(--green));width:${progressPct}%;transition:width .6s"></div>
           </div>
           <div style="display:flex;justify-content:space-between">
             ${PALIERS.map(p => `<div style="text-align:center">
-              <div style="font-size:10px;font-weight:700;color:${caCur >= p ? 'var(--mint)' : 'var(--text3)'}">${p === 0 ? 'Départ' : fmt(p)}</div>
-              <div style="width:8px;height:8px;border-radius:50%;background:${caCur >= p ? 'var(--mint)' : 'var(--border2)'};margin:4px auto 0"></div>
+              <div style="font-size:10px;font-weight:700;color:${caCur >= p ? 'var(--green)' : 'var(--text3)'}">${p === 0 ? 'Départ' : fmt(p)}</div>
+              <div style="width:8px;height:8px;border-radius:50%;background:${caCur >= p ? 'var(--green)' : 'var(--border2)'};margin:4px auto 0"></div>
             </div>`).join('')}
           </div>
         </div>
@@ -1478,14 +1488,14 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
       <!-- Switch opportunities -->
       ${switchOpps.length ? `
-      <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--mint)">
+      <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green)">
         <div class="card-header">
           <div>
             <div class="card-title">🔄 Opportunités Switch</div>
             <div class="card-subtitle">Ces produits sont commandés ailleurs — IP est moins cher</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:22px;font-weight:900;color:var(--mint)">+${fmt(totalGainSwitch)}</div>
+            <div style="font-size:22px;font-weight:900;color:var(--green)">+${fmt(totalGainSwitch)}</div>
             <div style="font-size:11px;color:var(--text3)">économie immédiate/mois</div>
           </div>
         </div>
@@ -1495,14 +1505,14 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
       <!-- Ajout opportunities -->
       ${addOpps.length ? `
-      <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--blue)">
+      <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green)">
         <div class="card-header">
           <div>
             <div class="card-title">➕ Opportunités Ajout</div>
             <div class="card-subtitle">Top rotations nationales absentes de vos commandes IP</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:22px;font-weight:900;color:var(--blue)">+${fmt(totalGainAjout)}</div>
+            <div style="font-size:22px;font-weight:900;color:var(--green)">+${fmt(totalGainAjout)}</div>
             <div style="font-size:11px;color:var(--text3)">CA potentiel/mois</div>
           </div>
         </div>
@@ -1521,7 +1531,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         <div style="display:grid;grid-template-columns:${pharmaYTDprev > 0 ? '1fr 1fr 1fr' : '1fr 1fr'};gap:0;border-top:1px solid var(--border)">
           <div style="padding:16px 20px;text-align:center;${pharmaYTDprev > 0 ? 'border-right:1px solid var(--border);' : ''}">
-            <div style="font-size:24px;font-weight:900;color:var(--blue);letter-spacing:-1px">${fmt(pharmaYTD)}</div>
+            <div style="font-size:24px;font-weight:900;color:var(--green);letter-spacing:-1px">${fmt(pharmaYTD)}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:4px">CA Jan–${monthName(curM)} ${curY}</div>
           </div>
           ${pharmaYTDprev > 0 ? `
@@ -1530,7 +1540,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             <div style="font-size:11px;color:var(--text3);margin-top:4px">CA Jan–${monthName(curM)} ${curY-1}</div>
           </div>
           <div style="padding:16px 20px;text-align:center">
-            <div style="font-size:24px;font-weight:900;color:${pharmaYTD>=pharmaYTDprev?'var(--mint)':'var(--rose)'};letter-spacing:-1px">
+            <div style="font-size:24px;font-weight:900;color:${pharmaYTD>=pharmaYTDprev?'var(--green)':'var(--rose)'};letter-spacing:-1px">
               ${((pharmaYTD-pharmaYTDprev)/pharmaYTDprev*100).toFixed(1)}%
             </div>
             <div style="font-size:11px;color:var(--text3);margin-top:4px">Évolution YoY</div>
@@ -1574,7 +1584,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             <td style="font-size:11px;color:var(--text3);text-align:right;padding:7px 8px 7px 16px">${i+1}</td>
             <td style="font-size:12px;font-weight:600;padding:7px 8px">${p.label}</td>
             <td style="padding:7px 4px"><span style="font-size:10px;padding:1px 4px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:700">${cat.icon}</span></td>
-            <td style="text-align:right;font-size:12px;font-weight:700;color:var(--blue);padding:7px 8px">${fmt(p.ca)}</td>
+            <td style="text-align:right;font-size:12px;font-weight:700;color:var(--green);padding:7px 8px">${fmt(p.ca)}</td>
             <td style="text-align:right;font-size:11px;color:var(--text3);padding:7px 8px">${fmtNum(Math.round(p.qte))} u.</td>
             <td style="text-align:right;font-size:11px;color:var(--text3);padding:7px 16px 7px 8px">${p.periodCount} mois</td>
           </tr>`;
@@ -1620,13 +1630,13 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           .sort((a, b) => b.rot_pharma_jan26 - a.rot_pharma_jan26)
           .slice(0, 8);
         if (!suggestions.length) return '';
-        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--blue)">
+        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green)">
           <div class="card-header">
             <div>
               <div class="card-title">Produits IP à proposer</div>
               <div class="card-subtitle">Meilleures rotations nationales non commandées par cette pharmacie</div>
             </div>
-            <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(0,87,255,.1);color:var(--blue);font-weight:700">${suggestions.length} opportunités</span>
+            <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(0,87,255,.1);color:var(--green);font-weight:700">${suggestions.length} opportunités</span>
           </div>
           ${suggestions.map((b, i) => {
             const cat = CATS[b.categorie] || CATS.mi;
@@ -1638,7 +1648,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
                 <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.designation}${fd}</div>
                 <div style="font-size:11px;color:var(--text3);margin-top:1px">${b.rot_pharma_jan26.toFixed(1)} rot./pharma/mois · ${fmt(b.prix_ip)} IP HT</div>
               </div>
-              ${b.offre_ip ? `<span style="flex-shrink:0;font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--mint);font-weight:600">${b.offre_ip}</span>` : ''}
+              ${b.offre_ip ? `<span style="flex-shrink:0;font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--green);font-weight:600">${b.offre_ip}</span>` : ''}
             </div>`;
           }).join('')}
         </div>`;
@@ -1692,7 +1702,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
               <td class="td-num">${imp.month ? monthName(imp.month)+' '+imp.year : '—'}</td>
               <td style="color:var(--text3);font-size:12px">${new Date(imp.importedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}</td>
               <td style="display:flex;gap:6px;align-items:center">
-                ${imp.filePath ? `<button class="btn btn-ghost" style="color:var(--blue);border-color:rgba(0,87,255,.3);padding:4px 10px;font-size:12px" onclick="downloadImportFile('${imp.filePath}')" title="Télécharger le fichier Excel original">⬇</button>` : ''}
+                ${imp.filePath ? `<button class="btn btn-ghost" style="color:var(--green);border-color:rgba(0,87,255,.3);padding:4px 10px;font-size:12px" onclick="downloadImportFile('${imp.filePath}')" title="Télécharger le fichier Excel original">⬇</button>` : ''}
                 <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3);padding:4px 10px;font-size:12px" onclick="deleteImport('${imp.id}','${pharmacyId}')">🗑</button>
               </td>
             </tr>`).join('')}</tbody>
@@ -1979,8 +1989,8 @@ function renderProduits() {
       <div style="font-size:20px;font-weight:800;color:var(--text1)">${fmt(f.ca)}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">CA HT</div>
       <div style="display:flex;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border2)">
-        <div><div style="font-size:13px;font-weight:700;color:var(--mint)">${fmt(f.marge)}</div><div style="font-size:10px;color:var(--text3)">Marge</div></div>
-        <div><div style="font-size:13px;font-weight:700;color:${f.taux > 15 ? 'var(--mint)' : 'var(--amber)'}">${f.taux.toFixed(1)}%</div><div style="font-size:10px;color:var(--text3)">Taux</div></div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--green)">${fmt(f.marge)}</div><div style="font-size:10px;color:var(--text3)">Marge</div></div>
+        <div><div style="font-size:13px;font-weight:700;color:${f.taux > 15 ? 'var(--green)' : 'var(--amber)'}">${f.taux.toFixed(1)}%</div><div style="font-size:10px;color:var(--text3)">Taux</div></div>
         <div><div style="font-size:13px;font-weight:700;color:var(--text2)">${f.nb}</div><div style="font-size:10px;color:var(--text3)">Réfs</div></div>
       </div>
     </div>`).join('');
@@ -2095,7 +2105,7 @@ function renderProduits() {
       <td><span style="font-size:11px;padding:2px 7px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span></td>
       <td class="td-num" style="text-align:right">${b.rot_pharma_jan26.toFixed(1)}</td>
       <td class="td-num" style="text-align:right">${fmt(b.prix_ip)}</td>
-      <td class="td-num" style="text-align:right">${b.yoy_jan !== null ? `<span style="color:${b.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'}">${b.yoy_jan >= 0 ? '▲' : '▼'} ${Math.abs(b.yoy_jan).toFixed(1)}%</span>` : '—'}</td>
+      <td class="td-num" style="text-align:right">${b.yoy_jan !== null ? `<span style="color:${b.yoy_jan >= 0 ? 'var(--green)' : 'var(--rose)'}">${b.yoy_jan >= 0 ? '▲' : '▼'} ${Math.abs(b.yoy_jan).toFixed(1)}%</span>` : '—'}</td>
     </tr>`;
   }).join('');
 
@@ -2121,7 +2131,7 @@ function renderProduits() {
           <select onchange="prodPharmaFilter=this.value;renderProduits()"
             style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
             <option value="tous">Toutes les pharmacies</option>
-            ${state.pharmacies.map(ph => `<option value="${ph.id}" ${prodPharmaFilter===ph.id?'selected':''}>${ph.name}</option>`).join('')}
+            ${state.pharmacies.map(ph => `<option value="${ph.id}" ${prodPharmaFilter===ph.id?'selected':''}>${titleCase(ph.name)}</option>`).join('')}
           </select>
           ${chipsHtml}
         </div>
@@ -2153,7 +2163,7 @@ function renderProduits() {
           <div class="card-title">Produits en accélération</div>
           <div class="card-subtitle">${monthName(acPM)} ${acPY} → ${monthName(acM)} ${acY} · CA ≥ 50 €</div>
         </div>
-        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(0,229,160,.12);color:var(--mint);font-weight:700">${accelRows.length} produit${accelRows.length > 1 ? 's' : ''}</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(0,229,160,.12);color:var(--green);font-weight:700">${accelRows.length} produit${accelRows.length > 1 ? 's' : ''}</span>
       </div>
       ${accelRows.map((r, i) => {
         const cat = CATS[r.cat] || CATS.mi;
@@ -2161,12 +2171,12 @@ function renderProduits() {
           <div style="font-size:12px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.label}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(r.prev)} → <span style="font-weight:700;color:var(--mint)">${fmt(r.ca)}</span></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(r.prev)} → <span style="font-weight:700;color:var(--green)">${fmt(r.ca)}</span></div>
           </div>
           <span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon} ${cat.label}</span>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:14px;font-weight:800;color:var(--mint)">+${fmt(r.delta)}</div>
-            <div style="font-size:10px;color:var(--mint);font-weight:700">▲ ${r.pct.toFixed(0)}%</div>
+            <div style="font-size:14px;font-weight:800;color:var(--green)">+${fmt(r.delta)}</div>
+            <div style="font-size:10px;color:var(--green);font-weight:700">▲ ${r.pct.toFixed(0)}%</div>
           </div>
         </div>`;
       }).join('')}
@@ -2205,7 +2215,7 @@ function renderProduits() {
           <div class="card-title">Opportunités sous-exploitées</div>
           <div class="card-subtitle">Produits IP à forte rotation nationale absents de votre portefeuille</div>
         </div>
-        <span class="badge badge-blue" style="background:rgba(0,87,255,.12);color:var(--blue)">${opps.length} produits</span>
+        <span class="badge badge-blue" style="background:rgba(0,87,255,.12);color:var(--green)">${opps.length} produits</span>
       </div>
       <div style="overflow-x:auto">
         <table class="data-table">
@@ -2255,7 +2265,7 @@ function renderProduits() {
               const puMoyen = p.qte > 0 ? p.ca / p.qte : 0;
               const escapedLabel = (p.label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
               const momBadge = p.momPct !== null
-                ? `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:${p.momPct >= 0 ? 'rgba(0,229,160,.12)' : 'rgba(255,77,109,.12)'};color:${p.momPct >= 0 ? 'var(--mint)' : 'var(--rose)'}">${p.momPct >= 0 ? '▲' : '▼'} ${Math.abs(p.momPct).toFixed(1)}%</span>`
+                ? `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:${p.momPct >= 0 ? 'rgba(0,229,160,.12)' : 'rgba(255,77,109,.12)'};color:${p.momPct >= 0 ? 'var(--green)' : 'var(--rose)'}">${p.momPct >= 0 ? '▲' : '▼'} ${Math.abs(p.momPct).toFixed(1)}%</span>`
                 : `<span style="color:var(--text3);font-size:10px">—</span>`;
               return `<tr onclick="showProductBreakdown('${escapedLabel}')" style="cursor:pointer" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
                 <td style="font-size:12px">
@@ -2506,14 +2516,14 @@ function showProductBreakdown(productName) {
         <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
           <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Données marché (Ameli / IP)</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:10px">
-            ${bench.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--blue)">${fmtNum(bench.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Qté IP</div></div>` : ''}
-            ${bench.ip_ca ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--mint)">${fmt(bench.ip_ca)}</div><div style="font-size:10px;color:var(--text3)">CA IP</div></div>` : ''}
+            ${bench.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--green)">${fmtNum(bench.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Qté IP</div></div>` : ''}
+            ${bench.ip_ca ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--green)">${fmt(bench.ip_ca)}</div><div style="font-size:10px;color:var(--text3)">CA IP</div></div>` : ''}
             ${bench.rot_pharma_jan26 ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--amber)">${bench.rot_pharma_jan26.toFixed(1)}</div><div style="font-size:10px;color:var(--text3)">Rot./pharma</div></div>` : ''}
-            ${bench.prix_ip ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--blue)">${fmtP(bench.prix_ip)}</div><div style="font-size:10px;color:var(--text3)">Prix IP</div></div>` : ''}
-            ${bench.yoy_jan != null ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:${bench.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'}">${bench.yoy_jan >= 0 ? '+' : ''}${bench.yoy_jan.toFixed(1)}%</div><div style="font-size:10px;color:var(--text3)">YoY jan.</div></div>` : ''}
+            ${bench.prix_ip ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--green)">${fmtP(bench.prix_ip)}</div><div style="font-size:10px;color:var(--text3)">Prix IP</div></div>` : ''}
+            ${bench.yoy_jan != null ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:${bench.yoy_jan >= 0 ? 'var(--green)' : 'var(--rose)'}">${bench.yoy_jan >= 0 ? '+' : ''}${bench.yoy_jan.toFixed(1)}%</div><div style="font-size:10px;color:var(--text3)">YoY jan.</div></div>` : ''}
             ${bench.has_ameli && bench.ameli_total ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--text)">${fmtNum(bench.ameli_total)}</div><div style="font-size:10px;color:var(--text3)">Boîtes Ameli total</div></div>` : ''}
           </div>
-          ${bench.offre_ip ? `<div style="padding:10px 14px;background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2);border-radius:10px;font-size:12px;font-weight:600;color:var(--blue)">🎁 Offre IP : ${bench.offre_ip}</div>` : ''}
+          ${bench.offre_ip ? `<div style="padding:10px 14px;background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2);border-radius:10px;font-size:12px;font-weight:600;color:var(--green)">🎁 Offre IP : ${bench.offre_ip}</div>` : ''}
         </div>` : ''}
       </div>
     </div>`;
@@ -2576,7 +2586,7 @@ function renderImport() {
   );
   const coveredCount = state.pharmacies.filter(p => coveredPharmaIds.has(p.id)).length;
   const coveragePct = totalPharmas > 0 ? Math.round(coveredCount / totalPharmas * 100) : 0;
-  const coverageColor = coveragePct >= 80 ? 'var(--mint)' : coveragePct >= 50 ? 'var(--amber)' : 'var(--rose)';
+  const coverageColor = coveragePct >= 80 ? 'var(--green)' : coveragePct >= 50 ? 'var(--amber)' : 'var(--rose)';
 
   const lastImport = recentImports[0];
   const lastImportDate = lastImport
@@ -2604,13 +2614,13 @@ function renderImport() {
           ${state.pharmacies.map(ph => `
             <tr>
               <td style="padding:8px 12px;font-size:13px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
-                <span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>${ph.name}
+                <span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>${titleCase(ph.name)}
               </td>
               ${last6Months.map(p => {
                 const has = state.imports.some(i => i.pharmacyId === ph.id && i.year === p.year && i.month === p.month);
                 return `<td style="text-align:center;padding:8px 12px;border-bottom:1px solid var(--border)">
                   ${has
-                    ? `<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--mint);box-shadow:0 0 6px var(--mint)" title="Importé"></span>`
+                    ? `<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)" title="Importé"></span>`
                     : `<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2)" title="Manquant"></span>`}
                 </td>`;
               }).join('')}
@@ -2622,12 +2632,12 @@ function renderImport() {
   const missingPharmas = state.pharmacies.filter(p => !coveredPharmaIds.has(p.id));
   const alertesHtml = totalPharmas > 0 ? (
     missingPharmas.length === 0
-      ? `<div style="padding:14px 20px;background:rgba(0,229,160,.08);border-radius:var(--rs);border:1px solid rgba(0,229,160,.2);font-size:13px;color:var(--mint)">✅ Toutes les pharmacies sont couvertes ce mois</div>`
+      ? `<div style="padding:14px 20px;background:rgba(0,229,160,.08);border-radius:var(--rs);border:1px solid rgba(0,229,160,.2);font-size:13px;color:var(--green)">✅ Toutes les pharmacies sont couvertes ce mois</div>`
       : `<div class="alert-feed">${missingPharmas.map(ph => `
           <div class="alert-item">
             <div class="alert-icon" style="background:rgba(255,77,109,.1);color:var(--rose)">⚠</div>
             <div class="alert-body">
-              <div class="alert-title">${ph.name}</div>
+              <div class="alert-title">${titleCase(ph.name)}</div>
               <div class="alert-sub">Aucun import pour ${monthName(curM)} ${curY}</div>
             </div>
           </div>`).join('')}
@@ -2716,7 +2726,7 @@ function renderImport() {
                 <td class="td-num">${imp.month ? monthName(imp.month)+' '+imp.year : '—'}</td>
                 <td style="color:var(--text3);font-size:12px">${new Date(imp.importedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}</td>
                 <td style="display:flex;gap:5px;align-items:center">
-                  ${imp.filePath ? `<button class="btn btn-ghost" style="color:var(--blue);border-color:rgba(0,87,255,.3);padding:3px 8px;font-size:11px" onclick="downloadImportFile('${imp.filePath}')" title="Télécharger Excel original">⬇</button>` : ''}
+                  ${imp.filePath ? `<button class="btn btn-ghost" style="color:var(--green);border-color:rgba(0,87,255,.3);padding:3px 8px;font-size:11px" onclick="downloadImportFile('${imp.filePath}')" title="Télécharger Excel original">⬇</button>` : ''}
                   <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(220,38,38,.2);padding:3px 10px;font-size:11px" onclick="deleteImportFromHistory('${imp.id}','${imp.pharmacyId}')">🗑</button>
                 </td>
               </tr>`;
@@ -2867,13 +2877,13 @@ function renderObjectifs() {
               <td style="padding:12px 16px;min-width:150px">
                 <div style="display:flex;align-items:center;gap:8px">
                   <span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
-                  <span style="font-size:13px;font-weight:600;color:var(--text)">${ph.name}</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--text)">${titleCase(ph.name)}</span>
                 </div>
               </td>
               ${rows.map(r => {
                 const isCur = r.year === curY && r.month === curM;
                 const objKey = `${ph.id}_${r.year}_${r.month}`;
-                const color = r.pct === null ? 'var(--text3)' : r.pct >= 100 ? 'var(--mint)' : r.pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+                const color = r.pct === null ? 'var(--text3)' : r.pct >= 100 ? 'var(--green)' : r.pct >= 70 ? 'var(--amber)' : 'var(--rose)';
                 return `<td style="padding:8px 10px;text-align:center;${isCur?'background:rgba(0,87,255,.04);':''}" title="${r.target > 0 ? fmt(r.actual)+' / obj. '+fmt(r.target) : 'Pas d\'objectif'}">
                   <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
                     ${r.actual > 0 ? `<span style="font-size:12px;font-weight:700;color:${color}">${fmt(r.actual)}</span>` : `<span style="font-size:11px;color:var(--border2)">—</span>`}
@@ -2894,7 +2904,7 @@ function renderObjectifs() {
           <tr style="background:var(--glass2);font-weight:700">
             <td style="padding:12px 16px;font-size:13px;font-weight:700;color:var(--text)">Total secteur</td>
             ${globalRows.map(r => {
-              const color = r.pct === null ? 'var(--blue)' : r.pct >= 100 ? 'var(--mint)' : r.pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+              const color = r.pct === null ? 'var(--green)' : r.pct >= 100 ? 'var(--green)' : r.pct >= 70 ? 'var(--amber)' : 'var(--rose)';
               return `<td style="padding:12px 10px;text-align:center">
                 <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
                   <span style="font-size:13px;font-weight:800;color:${color}">${r.actual > 0 ? fmt(r.actual) : '—'}</span>
@@ -2913,11 +2923,11 @@ function renderObjectifs() {
     const r = rows[rows.length - 1];
     if (!r.target && !r.actual) return '';
     const pct = r.pct ?? 0;
-    const color = r.pct === null ? 'var(--blue)' : pct >= 100 ? 'var(--mint)' : pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+    const color = r.pct === null ? 'var(--green)' : pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--rose)';
     return `<div style="background:var(--glass2);border-radius:16px;padding:16px 20px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <span style="width:8px;height:8px;border-radius:50%;background:${ph.color}"></span>
-        <span style="font-size:12px;font-weight:700;color:var(--text)">${ph.name}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text)">${titleCase(ph.name)}</span>
       </div>
       <div style="font-size:24px;font-weight:900;color:${color};margin-bottom:4px">${fmt(r.actual)}</div>
       ${r.target > 0 ? `
@@ -2926,7 +2936,7 @@ function renderObjectifs() {
           <div style="height:100%;width:${Math.min(pct,100).toFixed(0)}%;background:${color};border-radius:3px;transition:width .5s ease"></div>
         </div>
         <div style="font-size:11px;color:${color};font-weight:700;margin-top:6px">${pct.toFixed(1)}% atteint</div>
-        ${r.actual < r.target ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(r.target - r.actual)} restant</div>` : `<div style="font-size:11px;color:var(--mint);margin-top:2px">Objectif dépassé ✓</div>`}
+        ${r.actual < r.target ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(r.target - r.actual)} restant</div>` : `<div style="font-size:11px;color:var(--green);margin-top:2px">Objectif dépassé ✓</div>`}
       ` : `<div style="font-size:11px;color:var(--text3)">Pas d'objectif défini</div>`}
     </div>`;
   }).filter(Boolean).join('');
@@ -2967,7 +2977,7 @@ function renderObjectifs() {
             </div>
             ${totalPct !== null ? `
             <div style="text-align:right">
-              <div style="font-size:22px;font-weight:900;color:${totalPct >= 100 ? 'var(--mint)' : totalPct >= 70 ? 'var(--amber)' : 'var(--rose)'}">${totalPct.toFixed(1)}%</div>
+              <div style="font-size:22px;font-weight:900;color:${totalPct >= 100 ? 'var(--green)' : totalPct >= 70 ? 'var(--amber)' : 'var(--rose)'}">${totalPct.toFixed(1)}%</div>
               <div style="font-size:11px;color:var(--text3)">Secteur YTD</div>
             </div>` : ''}
           </div>
@@ -2982,15 +2992,15 @@ function renderObjectifs() {
               </tr></thead>
               <tbody>
                 ${ytdRows.map(r => {
-                  const color = r.pct === null ? 'var(--text3)' : r.pct >= 100 ? 'var(--mint)' : r.pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+                  const color = r.pct === null ? 'var(--text3)' : r.pct >= 100 ? 'var(--green)' : r.pct >= 70 ? 'var(--amber)' : 'var(--rose)';
                   return `<tr style="border-bottom:1px solid var(--border)">
                     <td style="padding:10px 16px">
                       <div style="display:flex;align-items:center;gap:8px">
                         <span style="width:8px;height:8px;border-radius:50%;background:${r.ph.color};flex-shrink:0"></span>
-                        <span style="font-size:13px;font-weight:600">${r.ph.name}</span>
+                        <span style="font-size:13px;font-weight:600">${titleCase(r.ph.name)}</span>
                       </div>
                     </td>
-                    <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:var(--blue)">${fmt(r.actualYTD)}</td>
+                    <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:var(--green)">${fmt(r.actualYTD)}</td>
                     <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text3)">${r.targetYTD > 0 ? fmt(r.targetYTD) : '—'}</td>
                     <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:${color}">${r.pct !== null ? r.pct.toFixed(1) + '%' : '—'}</td>
                     <td style="padding:10px 16px;width:120px">
@@ -3002,9 +3012,9 @@ function renderObjectifs() {
                 }).join('')}
                 <tr style="background:var(--glass2);font-weight:700;border-top:2px solid var(--border2)">
                   <td style="padding:10px 16px;font-size:13px;font-weight:800">Total secteur</td>
-                  <td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:800;color:var(--blue)">${fmt(totalActYTD)}</td>
+                  <td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:800;color:var(--green)">${fmt(totalActYTD)}</td>
                   <td style="padding:10px 12px;text-align:right;font-size:13px;color:var(--text3)">${totalObjYTD > 0 ? fmt(totalObjYTD) : '—'}</td>
-                  <td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:800;color:${totalPct !== null ? (totalPct >= 100 ? 'var(--mint)' : totalPct >= 70 ? 'var(--amber)' : 'var(--rose)') : 'var(--text3)'}">${totalPct !== null ? totalPct.toFixed(1)+'%' : '—'}</td>
+                  <td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:800;color:${totalPct !== null ? (totalPct >= 100 ? 'var(--green)' : totalPct >= 70 ? 'var(--amber)' : 'var(--rose)') : 'var(--text3)'}">${totalPct !== null ? totalPct.toFixed(1)+'%' : '—'}</td>
                   <td></td>
                 </tr>
               </tbody>
@@ -3024,7 +3034,7 @@ function renderObjectifs() {
 
       <!-- Legend -->
       <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--text3)">
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--mint)"></span>≥ 100% — Objectif atteint</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green)"></span>≥ 100% — Objectif atteint</span>
         <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--amber)"></span>70–99% — En bonne voie</span>
         <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--rose)"></span>< 70% — Attention requise</span>
       </div>
@@ -3099,7 +3109,7 @@ function renderAdmin() {
               <td style="padding:10px 12px;font-size:13px;color:var(--text2)">${monthName(imp.month)} ${imp.year}</td>
               <td style="padding:10px 12px;font-size:11px;color:var(--text3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${imp.filename||''}">${imp.filename||'—'}</td>
               <td style="padding:10px 12px;font-size:12px;color:var(--text3);white-space:nowrap">${d}</td>
-              <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600;color:var(--blue)">${fmtNum(lineCount)}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600;color:var(--green)">${fmtNum(lineCount)}</td>
               <td style="padding:10px 12px;text-align:center">
                 <button onclick="deleteImport('${imp.id}')" style="padding:4px 10px;border-radius:6px;background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.2);color:var(--rose);font-size:11px;font-weight:600;cursor:pointer">Supprimer</button>
               </td>
@@ -3116,7 +3126,7 @@ function renderAdmin() {
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
       <span style="width:10px;height:10px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">${ph.name}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${titleCase(ph.name)}</div>
         <div style="font-size:11px;color:var(--text3)">${phImports.length} import${phImports.length!==1?'s':''} · ${fmtNum(phSales.length)} lignes</div>
       </div>
       <button onclick="showEditPharmacyModal('${ph.id}')" style="padding:4px 10px;border-radius:6px;background:var(--bg2);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer">Renommer</button>
@@ -3132,11 +3142,11 @@ function renderAdmin() {
       <!-- Stats row -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
         <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
-          <div style="font-size:28px;font-weight:800;color:var(--blue)">${state.pharmacies.length}</div>
+          <div style="font-size:28px;font-weight:800;color:var(--green)">${state.pharmacies.length}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px">Pharmacies</div>
         </div>
         <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
-          <div style="font-size:28px;font-weight:800;color:var(--mint)">${state.imports.length}</div>
+          <div style="font-size:28px;font-weight:800;color:var(--green)">${state.imports.length}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px">Imports</div>
         </div>
         <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
@@ -3222,7 +3232,7 @@ function renderAdmin() {
         <div class="card-body">
           <p style="color:var(--text2);font-size:14px;margin:0">
             Gérer depuis le
-            <a href="https://supabase.com/dashboard/project/iyvavhnlhxksokkerkos/auth/users" target="_blank" style="color:var(--blue)">dashboard Supabase → Auth → Users</a>
+            <a href="https://supabase.com/dashboard/project/iyvavhnlhxksokkerkos/auth/users" target="_blank" style="color:var(--green)">dashboard Supabase → Auth → Users</a>
           </p>
         </div>
       </div>
@@ -3635,37 +3645,37 @@ function renderBenchmark() {
   const chipsHtml = cats.map(c => {
     const active = benchCat === c.key;
     return `<button onclick="benchCat='${c.key}';renderBenchmark()"
-      onmouseover="if(!${active})this.style.background='var(--bg3)';this.style.borderColor='var(--blue)'"
+      onmouseover="if(!${active})this.style.background='var(--bg3)';this.style.borderColor='var(--green)'"
       onmouseout="if(!${active}){this.style.background='transparent';this.style.borderColor='var(--border2)'}"
-      style="padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};
-      background:${active ? 'var(--blue-bg)' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
+      style="padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--green)' : 'var(--border2)'};
+      background:${active ? 'var(--blue-bg)' : 'transparent'};color:${active ? 'var(--green)' : 'var(--text2)'};
       cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:all .15s
     ">${c.label}</button>`;
   }).join('');
 
   function thB(col, label, align='right') {
     const active = benchSortCol === col;
-    const arrow = active ? `<span style="color:var(--blue);margin-left:3px">${benchSortAsc ? '↑' : '↓'}</span>` : '';
-    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--blue)':'var(--text2)'};font-family:'Varela Round',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
+    const arrow = active ? `<span style="color:var(--green);margin-left:3px">${benchSortAsc ? '↑' : '↓'}</span>` : '';
+    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--green)':'var(--text2)'};font-family:'Varela Round',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
   }
 
   const rowsHtml = data.slice(0, 200).map((d, i) => {
-    const rotColor = d.rot_pharma_jan26 > 10 ? 'var(--mint)' : d.rot_pharma_jan26 > 1 ? 'var(--amber)' : 'var(--text3)';
+    const rotColor = d.rot_pharma_jan26 > 10 ? 'var(--green)' : d.rot_pharma_jan26 > 1 ? 'var(--amber)' : 'var(--text3)';
     const cc = (CATS[d.categorie] || CATS.mi).color;
     const froidTag = isFroidBench(d) ? ' <span title="Thermosensible" style="font-size:11px">❄️</span>' : '';
     const yoy = d.yoy_jan != null
-      ? `<span style="font-size:11px;font-weight:600;color:${d.yoy_jan > 5 ? 'var(--mint)' : d.yoy_jan < -5 ? 'var(--rose)' : 'var(--text3)'}">${d.yoy_jan > 0 ? '▲' : '▼'} ${Math.abs(d.yoy_jan).toFixed(0)}%</span>`
+      ? `<span style="font-size:11px;font-weight:600;color:${d.yoy_jan > 5 ? 'var(--green)' : d.yoy_jan < -5 ? 'var(--rose)' : 'var(--text3)'}">${d.yoy_jan > 0 ? '▲' : '▼'} ${Math.abs(d.yoy_jan).toFixed(0)}%</span>`
       : '<span style="color:var(--text4);font-size:11px">—</span>';
     const prixDisplay = d.prix_ip > 0
-      ? `<span style="font-size:11px;color:var(--blue)">${fmtP(d.prix_ip)}</span>`
+      ? `<span style="font-size:11px;color:var(--green)">${fmtP(d.prix_ip)}</span>`
       : '<span style="color:var(--text4);font-size:11px">—</span>';
     const sv = salesMap[nnBench(d.designation)];
     const partIP = (sv?.ca > 0 && d.ip_ca > 0) ? (sv.ca / d.ip_ca * 100) : null;
     const nosVentesHtml = sv?.ca > 0
       ? `<div style="text-align:right">
-          <div style="font-size:11px;font-weight:700;color:var(--mint)">${fmt(sv.ca)}</div>
+          <div style="font-size:11px;font-weight:700;color:var(--green)">${fmt(sv.ca)}</div>
           <div style="font-size:10px;color:var(--text3)">${fmtNum(Math.round(sv.qte))} u.</div>
-          ${partIP !== null ? `<div style="font-size:10px;color:var(--blue);font-weight:600">${partIP.toFixed(2)}% du CA IP</div>` : ''}
+          ${partIP !== null ? `<div style="font-size:10px;color:var(--green);font-weight:600">${partIP.toFixed(2)}% du CA IP</div>` : ''}
         </div>`
       : salesAll.length > 0
         ? `<span style="font-size:10px;color:var(--text3);background:rgba(239,68,68,.08);padding:2px 6px;border-radius:6px;font-weight:600">Non vendu</span>`
@@ -3725,7 +3735,7 @@ function renderBenchmark() {
           </div>
           <div style="display:flex;justify-content:space-between;font-size:12px">
             <span style="color:var(--text3)">YoY moy.</span>
-            <span style="font-weight:600;color:${yoyAvg != null ? (yoyAvg > 0 ? 'var(--mint)' : 'var(--rose)') : 'var(--text3)'}">${yoyAvg != null ? (yoyAvg > 0 ? '+' : '') + yoyAvg.toFixed(1) + '%' : '—'}</span>
+            <span style="font-weight:600;color:${yoyAvg != null ? (yoyAvg > 0 ? 'var(--green)' : 'var(--rose)') : 'var(--text3)'}">${yoyAvg != null ? (yoyAvg > 0 ? '+' : '') + yoyAvg.toFixed(1) + '%' : '—'}</span>
           </div>
         </div>
       </div>`;
@@ -3738,8 +3748,8 @@ function renderBenchmark() {
   const top3yoyDown = [...yoyAll].sort((a,b) => a.yoy_jan - b.yoy_jan).slice(0,3);
 
   const insightFeed = [
-    ...top3rot.map(d => `<div class="alert-item"><div class="alert-icon" style="background:rgba(0,229,160,.1);color:var(--mint)">↑</div><div class="alert-body"><div class="alert-title">Top rotation : ${d.designation}</div><div class="alert-sub">${d.rot_pharma_jan26.toFixed(1)} boîtes/pharma/mois</div></div></div>`),
-    ...top3yoyUp.map(d => `<div class="alert-item"><div class="alert-icon" style="background:rgba(0,229,160,.1);color:var(--mint)">▲</div><div class="alert-body"><div class="alert-title">Plus forte croissance : ${d.designation}</div><div class="alert-sub">+${d.yoy_jan.toFixed(1)}% YoY</div></div></div>`),
+    ...top3rot.map(d => `<div class="alert-item"><div class="alert-icon" style="background:rgba(0,229,160,.1);color:var(--green)">↑</div><div class="alert-body"><div class="alert-title">Top rotation : ${d.designation}</div><div class="alert-sub">${d.rot_pharma_jan26.toFixed(1)} boîtes/pharma/mois</div></div></div>`),
+    ...top3yoyUp.map(d => `<div class="alert-item"><div class="alert-icon" style="background:rgba(0,229,160,.1);color:var(--green)">▲</div><div class="alert-body"><div class="alert-title">Plus forte croissance : ${d.designation}</div><div class="alert-sub">+${d.yoy_jan.toFixed(1)}% YoY</div></div></div>`),
     ...top3yoyDown.map(d => `<div class="alert-item"><div class="alert-icon" style="background:rgba(255,77,109,.1);color:var(--rose)">▼</div><div class="alert-body"><div class="alert-title">Plus forte baisse : ${d.designation}</div><div class="alert-sub">${d.yoy_jan.toFixed(1)}% YoY</div></div></div>`),
   ].join('');
 
@@ -3762,8 +3772,8 @@ function renderBenchmark() {
           <div class="kpi-label">Rotation moy./pharma/mois</div>
         </div>
         <div class="kpi-card" style="background:var(--glass2);box-shadow:0 2px 12px rgba(0,0,0,.06)">
-          <div class="kpi-icon" style="color:var(--mint)">📈</div>
-          <div class="kpi-value" style="color:var(--mint)">${fmtNum(croissantCount)}</div>
+          <div class="kpi-icon" style="color:var(--green)">📈</div>
+          <div class="kpi-value" style="color:var(--green)">${fmtNum(croissantCount)}</div>
           <div class="kpi-label">Produits marché croissant</div>
         </div>
       </div>
@@ -3879,7 +3889,7 @@ function showBenchDetail(idx) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
             <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc};font-weight:700">${d.categorie.toUpperCase()}</span>
             ${d.is_froid ? `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:#dbeafe;color:#1d4ed8">❄️ Froid</span>` : ''}
-            ${d.has_ameli ? `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(0,229,160,.1);color:var(--mint)">SS Remb.</span>` : ''}
+            ${d.has_ameli ? `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(0,229,160,.1);color:var(--green)">SS Remb.</span>` : ''}
             ${d.atc2 ? `<span style="font-size:10px;color:var(--text3)">${d.atc2}</span>` : ''}
           </div>
           <div style="font-size:16px;font-weight:800;line-height:1.3;color:var(--text)">${d.designation}</div>
@@ -3894,7 +3904,7 @@ function showBenchDetail(idx) {
           <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Données Intégral Pharma</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
             <div style="background:var(--bg2);padding:10px 12px;border-radius:10px;text-align:center">
-              <div style="font-size:18px;font-weight:800;color:var(--blue)">${d.prix_ip > 0 ? fmtP(d.prix_ip) : '—'}</div>
+              <div style="font-size:18px;font-weight:800;color:var(--green)">${d.prix_ip > 0 ? fmtP(d.prix_ip) : '—'}</div>
               <div style="font-size:10px;color:var(--text3)">Prix IP</div>
             </div>
             <div style="background:var(--bg2);padding:10px 12px;border-radius:10px;text-align:center">
@@ -3906,7 +3916,7 @@ function showBenchDetail(idx) {
               <div style="font-size:10px;color:var(--text3)">Offre promotionnelle</div>
             </div>` : ''}
             ${d.remise_pct > 0 ? `<div style="background:rgba(0,229,160,.06);padding:10px 12px;border-radius:10px;text-align:center">
-              <div style="font-size:18px;font-weight:800;color:var(--mint)">−${d.remise_pct.toFixed(1)}%</div>
+              <div style="font-size:18px;font-weight:800;color:var(--green)">−${d.remise_pct.toFixed(1)}%</div>
               <div style="font-size:10px;color:var(--text3)">Remise IP</div>
             </div>` : ''}
           </div>
@@ -3917,7 +3927,7 @@ function showBenchDetail(idx) {
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:8px">
               <span style="font-size:12px;color:var(--text3)">CA total IP</span>
-              <span style="font-size:13px;font-weight:700;color:var(--blue)">${fmt(d.ip_ca)}</span>
+              <span style="font-size:13px;font-weight:700;color:var(--green)">${fmt(d.ip_ca)}</span>
             </div>
             ${d.has_ameli && d.rot_pharma_jan26 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px">
               <span style="font-size:12px;color:var(--text3)">Rotation/pharma/mois</span>
@@ -3925,15 +3935,15 @@ function showBenchDetail(idx) {
             </div>` : ''}
             ${d.yoy_jan != null ? `<div style="display:flex;justify-content:space-between">
               <span style="font-size:12px;color:var(--text3)">Tendance YoY</span>
-              <span style="font-size:13px;font-weight:700;color:${d.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'}">${d.yoy_jan >= 0 ? '+' : ''}${d.yoy_jan.toFixed(1)}%</span>
+              <span style="font-size:13px;font-weight:700;color:${d.yoy_jan >= 0 ? 'var(--green)' : 'var(--rose)'}">${d.yoy_jan >= 0 ? '+' : ''}${d.yoy_jan.toFixed(1)}%</span>
             </div>` : ''}
           </div>
           <!-- Nos ventes -->
           ${sv.ca > 0 ? `<div style="background:rgba(0,229,160,.06);padding:14px 16px;border-radius:12px;border:1px solid rgba(0,229,160,.15)">
-            <div style="font-size:11px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Nos ventes</div>
+            <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Nos ventes</div>
             <div style="display:flex;justify-content:space-between;margin-bottom:6px">
               <span style="font-size:12px;color:var(--text3)">CA total réalisé</span>
-              <span style="font-size:14px;font-weight:800;color:var(--mint)">${fmt(sv.ca)}</span>
+              <span style="font-size:14px;font-weight:800;color:var(--green)">${fmt(sv.ca)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:10px">
               <span style="font-size:12px;color:var(--text3)">Quantité vendue</span>
@@ -3941,10 +3951,10 @@ function showBenchDetail(idx) {
             </div>
             ${d.ip_ca > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:10px">
               <span style="font-size:12px;color:var(--text3)">Part du CA IP</span>
-              <span style="font-size:13px;font-weight:700;color:var(--blue)">${(sv.ca / d.ip_ca * 100).toFixed(2)}%</span>
+              <span style="font-size:13px;font-weight:700;color:var(--green)">${(sv.ca / d.ip_ca * 100).toFixed(2)}%</span>
             </div>` : ''}
             ${svByPharma.length > 1 ? `<div style="border-top:1px solid rgba(0,229,160,.2);padding-top:10px;margin-top:4px">
-              <div style="font-size:10px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Répartition par pharmacie</div>
+              <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Répartition par pharmacie</div>
               ${svByPharma.map(p => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
                 <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0">
                   <span style="width:7px;height:7px;border-radius:50%;background:${p.color};flex-shrink:0"></span>
@@ -3966,7 +3976,7 @@ function showBenchDetail(idx) {
           <div style="height:180px;margin-bottom:16px"><canvas id="bench-ameli-chart" style="max-width:100%"></canvas></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <div style="background:var(--bg2);padding:10px 12px;border-radius:10px;text-align:center">
-              <div style="font-size:15px;font-weight:800;color:var(--blue)">${fmtNum(d.ameli_jan26)}</div>
+              <div style="font-size:15px;font-weight:800;color:var(--green)">${fmtNum(d.ameli_jan26)}</div>
               <div style="font-size:10px;color:var(--text3)">Dispensations Jan26</div>
             </div>
             <div style="background:var(--bg2);padding:10px 12px;border-radius:10px;text-align:center">
@@ -4205,9 +4215,9 @@ function renderCatalogue() {
   const tabsHtml = tabDefs.map(t => {
     const active = catCatFilter === t.key;
     return `<button onclick="catCatFilter='${t.key}';catPageNum=1;renderCatalogue()"
-      onmouseover="if(!${active}){this.style.background='var(--blue-bg)';this.style.color='var(--blue)';this.style.borderColor='var(--blue)'}"
+      onmouseover="if(!${active}){this.style.background='var(--blue-bg)';this.style.color='var(--green)';this.style.borderColor='var(--green)'}"
       onmouseout="if(!${active}){this.style.background='transparent';this.style.color='var(--text2)';this.style.borderColor='var(--border2)'}"
-      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};background:${active ? 'var(--blue)' : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap;transition:all .15s;${active ? 'box-shadow:0 2px 8px rgba(37,99,235,.25)' : ''}">${t.label}</button>`;
+      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ${active ? 'var(--green)' : 'var(--border2)'};background:${active ? 'var(--green)' : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap;transition:all .15s;${active ? 'box-shadow:0 2px 8px rgba(37,99,235,.25)' : ''}">${t.label}</button>`;
   }).join('');
 
   // ── Products ─────────────────────────────────
@@ -4215,7 +4225,7 @@ function renderCatalogue() {
     const globalIdx = startIdx + i;
     const cat    = CATS[b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi')] || CATS.mi;
     const froid  = isFroidBench(b) ? '❄️ ' : '';
-    const ameliTag   = b.has_ameli ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.12);color:var(--mint);border-radius:4px">🏥 SS</span>` : '';
+    const ameliTag   = b.has_ameli ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.12);color:var(--green);border-radius:4px">🏥 SS</span>` : '';
     const genTag     = isGenerique(b) ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.08);color:#059669;border-radius:4px;border:1px solid rgba(5,150,105,.2)">💊 GEN</span>` : '';
     const biosimTag  = isBiosim(b) ? `<span style="font-size:10px;padding:1px 5px;background:rgba(155,92,255,.1);color:#9B5CFF;border-radius:4px;border:1px solid rgba(155,92,255,.2)">🧬 BIOSIM</span>` : '';
     const nrTag      = (!b.has_ameli && !isGenerique(b) && !isBiosim(b)) ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,107,53,.08);color:#FF6B35;border-radius:4px;border:1px solid rgba(255,107,53,.2)">🔴 NR</span>` : '';
@@ -4223,13 +4233,13 @@ function renderCatalogue() {
     const cipTag     = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
     const offreTag   = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
     const prix = b.prix_ip > 0
-      ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--blue)">${fmtP(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
+      ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--green)">${fmtP(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
       : b.prix_ht > 0
         ? `<div style="font-size:14px;color:var(--text2)">${fmtP(b.prix_ht)}</div>`
         : `<div style="font-size:12px;color:var(--text3)">N/D</div>`;
     const inSim = state.sim.items.some(it => it.designation === b.designation);
     const addBtn = `<button onclick="catAddToSim(${globalIdx})"
-      style="padding:5px 12px;border-radius:8px;border:1px solid ${inSim ? 'var(--mint)' : 'var(--blue)'};background:${inSim ? 'rgba(5,150,105,.1)' : 'var(--blue)'};color:${inSim ? 'var(--mint)' : '#fff'};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:72px;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      style="padding:5px 12px;border-radius:8px;border:1px solid ${inSim ? 'var(--green)' : 'var(--green)'};background:${inSim ? 'rgba(5,150,105,.1)' : 'var(--green)'};color:${inSim ? 'var(--green)' : '#fff'};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:72px;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
       ${inSim ? '✓ Ajouté' : '+ Sim'}
     </button>`;
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
@@ -4260,7 +4270,7 @@ function renderCatalogue() {
   // ── Simulateur shortcut ──────────────────────
   const simCount = state.sim.items.length;
   const simBar = simCount > 0
-    ? `<div class="card fade-up" style="margin-bottom:16px;background:linear-gradient(90deg,var(--blue-bg),transparent);border:1px solid rgba(37,99,235,.2);border-left:3px solid var(--blue)">
+    ? `<div class="card fade-up" style="margin-bottom:16px;background:linear-gradient(90deg,var(--blue-bg),transparent);border:1px solid rgba(37,99,235,.2);border-left:3px solid var(--green)">
         <div class="card-body" style="display:flex;align-items:center;gap:16px;padding:12px 16px">
           <span style="font-size:20px">🛒</span>
           <div style="flex:1;font-size:13px;font-weight:600">${simCount} produit${simCount > 1 ? 's' : ''} dans le simulateur</div>
@@ -4273,8 +4283,8 @@ function renderCatalogue() {
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px">
       <div class="card kpi-card fade-up"><div class="kpi-label">Produits IP</div><div class="kpi-value">${fmtNum(BENCHMARK.length)}</div></div>
-      <div class="card kpi-card fade-up"><div class="kpi-label">Avec prix IP</div><div class="kpi-value" style="color:var(--blue)">${fmtNum(nPrix)}</div></div>
-      <div class="card kpi-card fade-up"><div class="kpi-label">Remboursés SS</div><div class="kpi-value" style="color:var(--mint)">${fmtNum(nAmeli)}</div></div>
+      <div class="card kpi-card fade-up"><div class="kpi-label">Avec prix IP</div><div class="kpi-value" style="color:var(--green)">${fmtNum(nPrix)}</div></div>
+      <div class="card kpi-card fade-up"><div class="kpi-label">Remboursés SS</div><div class="kpi-value" style="color:var(--green)">${fmtNum(nAmeli)}</div></div>
       <div class="card kpi-card fade-up"><div class="kpi-label">Thermosensibles</div><div class="kpi-value" style="color:var(--amber)">${fmtNum(nFroid)}</div></div>
     </div>
 
@@ -4473,7 +4483,7 @@ function buildSuggestHtml() {
     ${suggestions.map((p, i) => {
       const cat   = CATS[p.cat] || CATS.mi;
       const froid = p.froid ? '❄️ ' : '';
-      const rot   = p.hasAmeli && p.rot ? `<span style="font-size:11px;color:var(--mint)">↻ ${p.rot.toFixed(1)}/mois</span>` : '';
+      const rot   = p.hasAmeli && p.rot ? `<span style="font-size:11px;color:var(--green)">↻ ${p.rot.toFixed(1)}/mois</span>` : '';
       return `<div class="sim-suggest-item" onclick="simAddProduct(${i})">
         <div style="flex:1;min-width:0">
           <div class="sim-suggest-name">${froid}${p.designation}</div>
@@ -4483,7 +4493,7 @@ function buildSuggestHtml() {
           </div>
         </div>
         <span style="font-size:12px;color:var(--text2);white-space:nowrap">${fmt(p.puNet)} / u</span>
-        <span style="font-size:18px;color:var(--blue);font-weight:700">+</span>
+        <span style="font-size:18px;color:var(--green);font-weight:700">+</span>
       </div>`;
     }).join('')}
   </div>`;
@@ -4602,7 +4612,7 @@ function renderSimulator() {
           </div>
           <div class="sim-mini-kpi">
             <div class="sim-mini-label">CA simulé</div>
-            <div class="sim-mini-val" style="color:var(--blue)">${fmt(caTotal)}</div>
+            <div class="sim-mini-val" style="color:var(--green)">${fmt(caTotal)}</div>
           </div>
           <div class="sim-mini-kpi">
             <div class="sim-mini-label">Évolution</div>
@@ -4614,7 +4624,7 @@ function renderSimulator() {
           </div>
           <div class="sim-mini-kpi">
             <div class="sim-mini-label">Refs simulées</div>
-            <div class="sim-mini-val" style="color:var(--blue)">${state.sim.items.length}</div>
+            <div class="sim-mini-val" style="color:var(--green)">${state.sim.items.length}</div>
           </div>
           <div class="sim-mini-kpi">
             <div class="sim-mini-label">Qté actuelle</div>
@@ -4687,7 +4697,7 @@ function renderSimulator() {
           oninput="state.sim.name=this.value"
           placeholder="Nom de la simulation"
           style="flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:13px">
-        ${state.sim.pharmacyId ? `<button class="btn btn-ghost" onclick="simReconduire()" title="Recharger les produits de la dernière commande de cette pharmacie" style="color:var(--mint);border-color:rgba(0,229,160,.3)">♻️ Reconduire</button>` : ''}
+        ${state.sim.pharmacyId ? `<button class="btn btn-ghost" onclick="simReconduire()" title="Recharger les produits de la dernière commande de cette pharmacie" style="color:var(--green);border-color:rgba(0,229,160,.3)">♻️ Reconduire</button>` : ''}
         <button class="btn btn-primary" onclick="saveSimulation()">💾 Sauvegarder</button>
         <button class="btn btn-ghost" onclick="printSimulation()">🖨 Imprimer</button>
         <button class="btn btn-ghost" onclick="simExportCSV()" title="Exporter le panier en CSV">⬇ CSV</button>
@@ -4720,7 +4730,7 @@ function renderSimulator() {
         <div class="card">
           <div class="card-header">
             <div class="card-title">Panier (${state.sim.items.length} réf.)</div>
-            ${state.sim.items.length ? `<span style="font-size:13px;font-weight:600;color:var(--blue)">${fmt(caTotal)}</span>` : ''}
+            ${state.sim.items.length ? `<span style="font-size:13px;font-weight:600;color:var(--green)">${fmt(caTotal)}</span>` : ''}
           </div>
           <div>${itemsHtml}</div>
         </div>
@@ -5065,9 +5075,9 @@ function showOffiDetail(idx) {
 
   const ventesHtml = prodSales.length ? `
     <div style="margin-top:16px;padding:12px;background:rgba(0,229,160,.06);border-radius:12px;border:1px solid rgba(0,229,160,.2)">
-      <div style="font-size:11px;font-weight:700;color:var(--mint);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nos ventes</div>
+      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nos ventes</div>
       <div style="display:flex;gap:16px">
-        <div><div style="font-size:18px;font-weight:800;color:var(--mint)">${fmt(salesTotCa)}</div><div style="font-size:10px;color:var(--text3)">CA HT</div></div>
+        <div><div style="font-size:18px;font-weight:800;color:var(--green)">${fmt(salesTotCa)}</div><div style="font-size:10px;color:var(--text3)">CA HT</div></div>
         <div><div style="font-size:18px;font-weight:800;color:var(--text2)">${fmtNum(Math.round(salesTotQte))}</div><div style="font-size:10px;color:var(--text3)">Unités</div></div>
       </div>
     </div>` : '';
@@ -5076,8 +5086,8 @@ function showOffiDetail(idx) {
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Benchmark Ameli</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${bm.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--blue)">${fmtNum(bm.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Unités IP</div></div>` : ''}
-        ${bm.ip_ca ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--mint)">${fmt(bm.ip_ca)}</div><div style="font-size:10px;color:var(--text3)">CA IP</div></div>` : ''}
+        ${bm.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--green)">${fmtNum(bm.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Unités IP</div></div>` : ''}
+        ${bm.ip_ca ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--green)">${fmt(bm.ip_ca)}</div><div style="font-size:10px;color:var(--text3)">CA IP</div></div>` : ''}
         ${bm.rot_pharma_jan26 ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--amber)">${bm.rot_pharma_jan26.toFixed(1)}</div><div style="font-size:10px;color:var(--text3)">Rot. janv.</div></div>` : ''}
         ${bm.ip_rank_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--text2)">#${bm.ip_rank_qty}</div><div style="font-size:10px;color:var(--text3)">Rang IP</div></div>` : ''}
       </div>
@@ -5117,7 +5127,7 @@ function showOffiDetail(idx) {
           </div>
           ${ventesHtml}
           ${ameliHtml}
-          ${prixIP ? `<button onclick="simAddOffilog(offiDetailProduct.produit,${prixIP});this.textContent='✓ Ajouté!';this.style.background='rgba(0,229,160,.12)';this.style.color='var(--mint)';this.style.borderColor='rgba(0,229,160,.4)'"
+          ${prixIP ? `<button onclick="simAddOffilog(offiDetailProduct.produit,${prixIP});this.textContent='✓ Ajouté!';this.style.background='rgba(0,229,160,.12)';this.style.color='var(--green)';this.style.borderColor='rgba(0,229,160,.4)'"
             style="width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);transition:all .15s;margin-bottom:10px">
             🛒 Ajouter au simulateur
           </button>` : ''}
@@ -5362,7 +5372,7 @@ function grpRenderModal(grpId) {
                   ${ph.name.charAt(0).toUpperCase()}
                 </div>
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph.name}</div>
+                  <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(ph.name)}</div>
                   <div style="font-size:11px;color:var(--text3)">${[ville, ca].filter(Boolean).join(' · ')}</div>
                 </div>
                 <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3);font-size:12px">+</div>
@@ -5541,7 +5551,7 @@ function renderGrpDashboard(grp) {
             <td style="padding:10px 16px">
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
-                <span style="font-size:13px;font-weight:600">${ph.name}</span>
+                <span style="font-size:13px;font-weight:600">${titleCase(ph.name)}</span>
               </div>
             </td>
             <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2)">${p > 0 ? fmt(p) : '—'}</td>
@@ -5637,14 +5647,14 @@ function renderGrpPharmacies(grp) {
                     ${ph.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div style="font-size:13px;font-weight:700;color:var(--text)">${ph.name}</div>
+                    <div style="font-size:13px;font-weight:700;color:var(--text)">${titleCase(ph.name)}</div>
                     ${ci?.tel ? `<div style="font-size:11px;color:var(--text3)">${ci.tel}</div>` : ''}
                   </div>
                 </div>
               </td>
               <td style="padding:12px;font-size:13px;color:var(--text2)">${ville}</td>
               <td style="padding:12px;text-align:right;font-size:13px;font-weight:600;color:var(--text)">${ca}</td>
-              <td style="padding:12px;text-align:right;font-size:13px;color:${ci?.potentielGx > 0 ? 'var(--blue)' : 'var(--text3)'}">${gx}</td>
+              <td style="padding:12px;text-align:right;font-size:13px;color:${ci?.potentielGx > 0 ? 'var(--green)' : 'var(--text3)'}">${gx}</td>
               <td style="padding:12px;text-align:center">
                 <button onclick="grpConfirmRemove('${grp.id}','${ph.id}')"
                   style="padding:4px 10px;border-radius:6px;border:1px solid var(--rose);background:transparent;color:var(--rose);font-size:11px;font-weight:600;cursor:pointer">
@@ -5719,7 +5729,7 @@ function renderGrpCommandes(grp) {
           <div style="flex:1;font-size:12px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph?.name || '—'}</div>
           <div style="font-size:11px;color:var(--text3);white-space:nowrap">${imp.filename}</div>
           <div style="font-size:13px;font-weight:700;text-align:right;white-space:nowrap">${phCA > 0 ? fmt(phCA) : '—'}</div>
-          ${imp.filePath ? `<button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;color:var(--blue)" onclick="downloadImportFile('${imp.filePath}')">⬇</button>` : '<div style="width:36px"></div>'}
+          ${imp.filePath ? `<button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;color:var(--green)" onclick="downloadImportFile('${imp.filePath}')">⬇</button>` : '<div style="width:36px"></div>'}
         </div>`;
       }).join('');
 
@@ -5897,7 +5907,7 @@ function renderGrpProspects() {
   const filtersHtml = `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
       <button onclick="grpProspectAlliance='';renderGroupements()"
-        style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid ${!grpProspectAlliance ? 'var(--blue)' : 'var(--border2)'};background:${!grpProspectAlliance ? 'rgba(0,87,255,.1)' : 'var(--bg2)'};color:${!grpProspectAlliance ? 'var(--blue)' : 'var(--text3)'};cursor:pointer">
+        style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid ${!grpProspectAlliance ? 'var(--green)' : 'var(--border2)'};background:${!grpProspectAlliance ? 'rgba(0,87,255,.1)' : 'var(--bg2)'};color:${!grpProspectAlliance ? 'var(--green)' : 'var(--text3)'};cursor:pointer">
         Tous (${prospects.length})
       </button>
       ${alliances.map(a => {
@@ -5927,10 +5937,10 @@ function renderGrpProspects() {
               <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Autres décideurs</div>
               ${extraDirs.map(d => `<div style="font-size:12px;color:var(--text);margin-bottom:4px"><span style="font-weight:600">${d.nom}</span> <span style="color:var(--text3);font-size:11px">${d.fn}</span></div>`).join('')}
             </div>` : ''}
-            ${g.email ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Email groupement</div><a href="mailto:${g.email}" style="font-size:12px;color:var(--blue)">${g.email}</a></div>` : ''}
+            ${g.email ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Email groupement</div><a href="mailto:${g.email}" style="font-size:12px;color:var(--green)">${g.email}</a></div>` : ''}
             ${g.cotisation ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Cotisation</div><div style="font-size:12px;color:var(--text)">${g.cotisation}</div></div>` : ''}
             ${g.siren ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">SIREN</div><div style="font-size:12px;color:var(--text)">${g.siren}</div></div>` : ''}
-            ${g.site ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Site web</div><a href="${g.site}" target="_blank" style="font-size:12px;color:var(--blue)">${g.site}</a></div>` : ''}
+            ${g.site ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Site web</div><a href="${g.site}" target="_blank" style="font-size:12px;color:var(--green)">${g.site}</a></div>` : ''}
             ${g.adresse ? `<div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Adresse</div><div style="font-size:12px;color:var(--text)">${g.adresse}</div></div>` : ''}
           </div>
         </td>
@@ -5950,10 +5960,10 @@ function renderGrpProspects() {
           ${dir2 ? `<div style="font-size:12px;font-weight:600;color:var(--text)">${dir2.nom}</div><div style="font-size:11px;color:var(--text3)">${dir2.fn}</div>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
         </td>
         <td style="padding:10px 12px;white-space:nowrap">
-          ${g.telDir ? `<a href="tel:${g.telDir}" onclick="event.stopPropagation()" style="font-size:12px;color:var(--mint);text-decoration:none;font-weight:600">${g.telDir}</a>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
+          ${g.telDir ? `<a href="tel:${g.telDir}" onclick="event.stopPropagation()" style="font-size:12px;color:var(--green);text-decoration:none;font-weight:600">${g.telDir}</a>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
         </td>
         <td style="padding:10px 12px">
-          ${g.emailDir ? `<a href="mailto:${g.emailDir}" onclick="event.stopPropagation()" style="font-size:12px;color:var(--blue);text-decoration:none">${g.emailDir}</a>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
+          ${g.emailDir ? `<a href="mailto:${g.emailDir}" onclick="event.stopPropagation()" style="font-size:12px;color:var(--green);text-decoration:none">${g.emailDir}</a>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
         </td>
         <td style="padding:10px 12px;text-align:center">
           ${g.nbAdherents != null ? `<span style="font-size:13px;font-weight:700;color:var(--text)">${g.nbAdherents}</span>` : '<span style="color:var(--text4);font-size:11px">—</span>'}
@@ -5980,7 +5990,7 @@ function renderGrpProspects() {
       <input type="text" placeholder="Rechercher groupement, décideur…" value="${grpProspectSearch}"
         oninput="grpProspectSearch=this.value;renderGroupements()"
         style="padding:7px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);font-size:13px;color:var(--text);min-width:220px;outline:none"
-        onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border2)'">
+        onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'">
     </div>
 
     ${filtersHtml}
@@ -5992,8 +6002,8 @@ function renderGrpProspects() {
             <th style="padding:8px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3)">Groupement</th>
             <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3)">Décideur 1</th>
             <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3)">Décideur 2</th>
-            <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--mint)">Tél direct</th>
-            <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--blue)">Email direct</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--green)">Tél direct</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--green)">Email direct</th>
             <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text3)">Adhérents</th>
             <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text3)">Labos</th>
             <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text3)"></th>
@@ -6029,15 +6039,15 @@ function proposerCommande(pharmacyId) {
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">Facteur de croissance</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           ${[100,105,110,115,120].map(pct => `
-            <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.background='');this.style.background='var(--blue)';this.style.color='#fff';document.getElementById('growth-input').value=${pct}"
-              style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:${pct===100?'var(--blue)':'transparent'};color:${pct===100?'#fff':'var(--text2)'};cursor:pointer;font-size:12px;font-weight:600">${pct === 100 ? 'Identique' : '+' + (pct-100) + '%'}</button>`).join('')}
+            <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.background='');this.style.background='var(--green)';this.style.color='#fff';document.getElementById('growth-input').value=${pct}"
+              style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:${pct===100?'var(--green)':'transparent'};color:${pct===100?'#fff':'var(--text2)'};cursor:pointer;font-size:12px;font-weight:600">${pct === 100 ? 'Identique' : '+' + (pct-100) + '%'}</button>`).join('')}
         </div>
         <input type="number" id="growth-input" value="100" min="50" max="200" step="1"
           style="margin-top:10px;width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box">
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
         <button onclick="document.getElementById('proposer-cmd-modal').remove()" style="padding:8px 18px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">Annuler</button>
-        <button onclick="confirmerCommande('${pharma.id}',${year},${month})" style="padding:8px 18px;border-radius:10px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-size:13px;font-weight:700">Créer la simulation →</button>
+        <button onclick="confirmerCommande('${pharma.id}',${year},${month})" style="padding:8px 18px;border-radius:10px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:13px;font-weight:700">Créer la simulation →</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -6385,7 +6395,7 @@ function gsSearch(q) {
   let html = '';
 
   if (salesHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:1px">Mes ventes — mois courant (${salesHits.length})</div>`;
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px">Mes ventes — mois courant (${salesHits.length})</div>`;
     html += salesHits.map(p => {
       const cat = CATS[p.cat] || CATS.mi;
       return `<div onclick="document.getElementById('global-search-modal').remove();prodTableQuery='${(p.label||'').replace(/'/g,"\\'").slice(0,30)}';navigate('produits');setTimeout(()=>renderProduits(),100)"
@@ -6421,7 +6431,7 @@ function gsSearch(q) {
   }
 
   if (benchHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Benchmark Ameli (${benchHits.length})</div>`;
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Benchmark Ameli (${benchHits.length})</div>`;
     html += benchHits.map(b => `
       <div onclick="document.getElementById('global-search-modal').remove();benchSearch='${(b.designation||'').replace(/'/g,"\\'").slice(0,30)}';navigate('benchmark');setTimeout(()=>renderBenchmark(),100)"
         style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
@@ -6436,14 +6446,14 @@ function gsSearch(q) {
   }
 
   if (pharmaHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Pharmacies avec données (${pharmaHits.length})</div>`;
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Pharmacies avec données (${pharmaHits.length})</div>`;
     html += pharmaHits.map(ph => `
       <div onclick="document.getElementById('global-search-modal').remove();showPharmaDetail('${ph.id}')"
         style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
         onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
         <div style="width:36px;height:36px;border-radius:8px;background:${ph.color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">${ph.name.charAt(0).toUpperCase()}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${highlight(ph.name)}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${highlight(titleCase(ph.name))}</div>
           <div style="font-size:11px;color:var(--text3)">Pharmacie · données importées</div>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
@@ -6473,7 +6483,7 @@ function gsSearch(q) {
         onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
         <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,77,109,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📝</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:700;color:var(--text)">${ph.name} <span style="font-weight:400;color:var(--text3);font-size:11px">· ${note.date}</span></div>
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${titleCase(ph.name)} <span style="font-weight:400;color:var(--text3);font-size:11px">· ${note.date}</span></div>
           <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(note.text)}</div>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
@@ -6589,7 +6599,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       msg.style.color  = 'var(--rose)';
     } else {
       msg.textContent  = 'Email envoyé ! Vérifiez votre boîte mail.';
-      msg.style.color  = 'var(--mint)';
+      msg.style.color  = 'var(--green)';
     }
     msg.style.display = 'block';
     btn.disabled      = false;
@@ -6622,7 +6632,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await sb.auth.signOut();
       showLoginForm();
       document.getElementById('login-error').textContent  = 'Mot de passe mis à jour — connectez-vous.';
-      document.getElementById('login-error').style.color  = 'var(--mint)';
+      document.getElementById('login-error').style.color  = 'var(--green)';
       document.getElementById('login-error').classList.add('show');
     }
   });
