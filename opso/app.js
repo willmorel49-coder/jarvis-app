@@ -5009,12 +5009,17 @@ function renderOffilog() {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
     const hasPromo = p.promo && p.prix_b != null;
     const { drakkars, cap3000, leclerc } = lookupBench(p);
+    // Best price indicator
+    const compPrices = [drakkars, cap3000, leclerc].filter(v => v != null && v > 0);
+    const minComp = compPrices.length ? Math.min(...compPrices) : null;
+    const bestBadge = (minComp != null && p.prix > 0 && minComp < p.prix)
+      ? `<div class="offil-best-price">⬇ -${fmtP(p.prix - minComp)} vs concurrents</div>` : '';
     const benchRow = (drakkars != null || cap3000 != null || leclerc != null) ? `
       <div class="offil-bench-row">
         ${drakkars != null ? `<span class="offil-bench offil-bench-drak" title="Pharmacie des Drakkars">Drakkars ${fmtP(drakkars)}</span>` : ''}
         ${cap3000 != null ? `<span class="offil-bench offil-bench-cap" title="Pharmacie Cap 3000">Cap 3000 ${fmtP(cap3000)}</span>` : ''}
         ${leclerc != null ? `<span class="offil-bench offil-bench-lecl" title="E.Leclerc">Leclerc ${fmtP(leclerc)}</span>` : ''}
-      </div>` : '';
+      </div>${bestBadge}` : '';
     return `
     <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener">
       <div class="offil-card-img-wrap">
@@ -5050,12 +5055,15 @@ function renderOffilog() {
       <input class="offil-search" type="text" placeholder="Rechercher produit, marque, EAN…" value="${offiLiveSearch.replace(/"/g,'&quot;')}" oninput="offiLiveSearch=this.value;offiLivePage=1;renderOffilog()">
       ${offiLiveSearch ? `<button onclick="offiLiveSearch='';renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:0 4px">×</button>` : ''}
     </div>
-    <select class="offil-sort" onchange="offiLiveSort=this.value;offiLivePage=1;renderOffilog()">
-      <option value="alpha" ${offiLiveSort==='alpha'?'selected':''}>A → Z</option>
-      <option value="marque" ${offiLiveSort==='marque'?'selected':''}>Marque</option>
-      <option value="prix_asc" ${offiLiveSort==='prix_asc'?'selected':''}>Prix ↑</option>
-      <option value="prix_desc" ${offiLiveSort==='prix_desc'?'selected':''}>Prix ↓</option>
-    </select>
+    <div style="display:flex;gap:6px;align-items:center">
+      <select class="offil-sort" onchange="offiLiveSort=this.value;offiLivePage=1;renderOffilog()">
+        <option value="alpha" ${offiLiveSort==='alpha'?'selected':''}>A → Z</option>
+        <option value="marque" ${offiLiveSort==='marque'?'selected':''}>Marque</option>
+        <option value="prix_asc" ${offiLiveSort==='prix_asc'?'selected':''}>Prix ↑</option>
+        <option value="prix_desc" ${offiLiveSort==='prix_desc'?'selected':''}>Prix ↓</option>
+      </select>
+      <button onclick="exportOffiLiveCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">⬇ CSV</button>
+    </div>
   </div>
 
   <div class="offil-cats">${catChips}</div>
@@ -5066,9 +5074,72 @@ function renderOffilog() {
 }
 
 
+function exportOffiLiveCSV() {
+  const q = offiLiveSearch.trim().toLowerCase();
+  let list = OFFILOG_LIVE.filter(p => {
+    if (offiLiveCat !== 'tous' && p.cat !== offiLiveCat) return false;
+    if (q) {
+      const h = (p.nom + ' ' + p.marque + ' ' + p.ean).toLowerCase();
+      return q.split(' ').every(w => h.includes(w));
+    }
+    return true;
+  });
+  const { leclEan, cap3Ean, drakEan } = benchMaps();
+  const fmtV = v => v != null ? String(v).replace('.',',') : '';
+  const header = ['Nom','Marque','EAN','Catégorie','Prix Offilog','Prix barré','Promo','Drakkars','Cap3000','Leclerc'];
+  const rows = list.map(p => {
+    const e = p.ean ? String(p.ean) : '';
+    return [
+      `"${(p.nom||'').replace(/"/g,'""')}"`,
+      `"${(p.marque||'').replace(/"/g,'""')}"`,
+      e, `"${p.cat||''}"`,
+      fmtV(p.prix), fmtV(p.prix_b), p.promo ? 'Oui' : 'Non',
+      fmtV(drakEan.get(e) ?? null),
+      fmtV(cap3Ean.get(e) ?? null),
+      fmtV(leclEan.get(e) ?? null),
+    ];
+  });
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `Offilog_Live_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${list.length} produits`, 'success');
+}
+
 // ── CA & COMMANDES (WML) ─────────────────────
 let wmlPharma = null; // null = groupement, tircode = pharmacie sélectionnée
 let wmlMonth  = 'all'; // 'all' ou index 0-3
+
+function exportWmlCSV(tircode) {
+  const fmtC = v => (v||0).toFixed(2).replace('.',',');
+  let rows, filename, header;
+  if (tircode != null) {
+    const ph = WML_DATA.find(d => d.tc === tircode);
+    if (!ph) return;
+    header = ['Produit','EAN','CA HT','Marge €','Tx marge %','Qté'];
+    rows = ph.pr.map(([nom, ca, mg, qt, ean]) => [
+      `"${nom.replace(/"/g,'""')}"`, ean||'', fmtC(ca), fmtC(mg),
+      ca > 0 ? fmtC(mg/ca*100) : '0', qt,
+    ]);
+    filename = `WML_${titleCase(ph.nom).replace(/\s+/g,'_')}_2026.csv`;
+  } else {
+    header = ['Pharmacie','TIRCODE','CA HT','Marge €','Tx marge %','Qté'];
+    rows = WML_DATA.sort((a,b)=>b.ca-a.ca).map(d => {
+      const tx = d.ca > 0 ? (d.mg/d.ca*100) : 0;
+      return [`"${titleCase(d.nom).replace(/"/g,'""')}"`, d.tc, fmtC(d.ca), fmtC(d.mg), fmtC(tx), d.qt];
+    });
+    filename = 'WML_Groupement_2026.csv';
+  }
+  const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Export CSV — ${rows.length} lignes`, 'success');
+}
 
 function renderWml() {
   const container = document.getElementById('wml-content');
@@ -5140,25 +5211,47 @@ function renderWml() {
       </tr>`;
     }).join('');
 
-    // Top 25 produits
+    // Top 25 produits avec benchmark prix concurrents
+    const bm = benchMaps();
     const prodRows = ph.pr.slice(0,25).map(([nom, ca, mg, qt, ean], i) => {
       const tm = ca > 0 ? (mg/ca*100) : 0;
+      const puNet = qt > 0 ? (ca/qt) : null;
+      let concPrix = null, concLabel = '';
+      if (ean) {
+        const e = String(ean);
+        const prices = [
+          bm.leclEan.has(e) ? [bm.leclEan.get(e), 'Leclerc'] : null,
+          bm.cap3Ean.has(e) ? [bm.cap3Ean.get(e), 'Cap3000'] : null,
+          bm.drakEan.has(e) ? [bm.drakEan.get(e), 'Drakkars'] : null,
+        ].filter(Boolean);
+        if (prices.length) {
+          const best = prices.sort((a,b)=>a[0]-b[0])[0];
+          concPrix = best[0]; concLabel = best[1];
+        }
+      }
+      const concCell = concPrix
+        ? `<span style="font-size:11px;font-weight:700;color:#0072e6">${fmtD(concPrix)}</span><br><span style="font-size:9px;color:var(--text3)">${concLabel}</span>`
+        : '<span style="font-size:10px;color:var(--text3)">—</span>';
       return `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:7px 10px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
-        <td style="padding:7px 12px;font-size:12px;font-weight:500;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</td>
+        <td style="padding:7px 12px;font-size:12px;font-weight:500;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</td>
         <td style="padding:7px 10px;font-size:10px;color:var(--text3)">${ean||'—'}</td>
         <td style="padding:7px 12px;text-align:right;font-size:12px">${fmtD(ca)}</td>
         <td style="padding:7px 12px;text-align:right;font-size:12px;color:${mg>0?'var(--green)':'var(--text3)'}">${fmtD(mg)}</td>
         <td style="padding:7px 12px;text-align:right;font-size:11px;color:var(--text3)">${tm > 0 ? fmtP(tm) : '—'}</td>
         <td style="padding:7px 12px;text-align:right;font-size:11px;color:var(--text3)">${qt}</td>
+        <td style="padding:7px 12px;text-align:right;line-height:1.3">${concCell}</td>
       </tr>`;
     }).join('');
 
     container.innerHTML = `
     <div style="padding:0 0 24px">
-      <button onclick="wmlPharma=null;renderWml()" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;padding:6px 14px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12px;font-weight:600">
-        ← Retour groupement
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button onclick="wmlPharma=null;renderWml()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12px;font-weight:600">
+          ← Retour groupement
+        </button>
+        <button onclick="exportWmlCSV(${ph.tc})" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV produits</button>
+      </div>
       <div class="wml-kpi-row">
         <div class="wml-kpi"><div class="wml-kpi-label">CA net HT</div><div class="wml-kpi-val">${fmt(ca_tot)}</div></div>
         <div class="wml-kpi"><div class="wml-kpi-label">Marge (remise obtenue)</div><div class="wml-kpi-val" style="color:var(--green)">${fmtD(mg_tot)}</div></div>
@@ -5216,6 +5309,7 @@ function renderWml() {
               <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Marge €</th>
               <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx</th>
               <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Qté</th>
+              <th style="padding:6px 12px;text-align:right;font-size:10px;color:#0072e6">Prix marché</th>
             </tr></thead>
             <tbody>${prodRows}</tbody>
           </table>
@@ -5307,6 +5401,9 @@ function renderWml() {
 
     container.innerHTML = `
     <div style="padding:0 0 24px">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button onclick="exportWmlCSV(null)" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV groupement</button>
+      </div>
       <div class="wml-kpi-row">
         <div class="wml-kpi"><div class="wml-kpi-label">CA net HT groupement</div><div class="wml-kpi-val">${fmt(tot_ca)}</div></div>
         <div class="wml-kpi"><div class="wml-kpi-label">Marge totale</div><div class="wml-kpi-val" style="color:var(--green)">${fmtD(tot_mg)}</div></div>
@@ -5388,17 +5485,25 @@ function showOffiDetail(idx) {
   const salesTotCa  = prodSales.reduce((a, s) => a + s.mntNetHt, 0);
   const salesTotQte = prodSales.reduce((a, s) => a + s.qte, 0);
 
+  // Leclerc lookup by EAN
+  let prix_leclerc = null;
+  if (p.ean && typeof LECLERC_PRICES !== 'undefined') {
+    const lm = benchMaps().leclEan;
+    prix_leclerc = lm.get(String(p.ean)) ?? null;
+  }
+
   // Price comparison
   const pricesRaw = [
-    { label: 'Prix Offilog (Excel)', value: p.prix_offilog, color: OFFILOG_ORANGE },
-    { label: 'Prix Live ●',          value: p.prix_live,      color: '#15803d' },
-    { label: '🏥 Ma Pharmacie',      value: p.prix_pharmacie, color: '#00E5A0' },
-    { label: 'Drakkars',             value: p.prix_drakkars,  color: 'var(--text2)' },
-    { label: 'Cap3000',              value: p.prix_cap3000,   color: 'var(--text2)' },
-    { label: 'Prix public maxi',     value: p.prix_maxi,      color: 'var(--text3)' },
+    { label: 'Prix Offilog (Excel)', value: p.prix_offilog,   color: OFFILOG_ORANGE },
+    { label: 'Prix Live ●',          value: p.prix_live,       color: '#15803d' },
+    { label: '🏥 Ma Pharmacie',      value: p.prix_pharmacie,  color: '#00E5A0' },
+    { label: 'Drakkars',             value: p.prix_drakkars,   color: 'var(--text2)' },
+    { label: 'Cap3000',              value: p.prix_cap3000,    color: 'var(--text2)' },
+    { label: 'E.Leclerc',            value: prix_leclerc,      color: '#0072e6' },
+    { label: 'Prix public maxi',     value: p.prix_maxi,       color: 'var(--text3)' },
   ].filter(r => r.value != null && r.value > 0);
 
-  const compVals = [p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie].filter(v => v > 0);
+  const compVals = [p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie, prix_leclerc].filter(v => v != null && v > 0);
   const minComp  = compVals.length ? Math.min(...compVals) : null;
   const deltaComp = (prixIP && minComp) ? minComp - prixIP : null;
 
