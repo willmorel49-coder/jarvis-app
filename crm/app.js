@@ -5556,7 +5556,7 @@ const UNIVERS_META = {
 function univMeta(u) {
   return UNIVERS_META[u] || { color:'#90A4AE', bg:'#f5f7f9', icon:'📦' };
 }
-let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiSaison = 'tous', offiPageNum = 1, offiView = 'cards';
+let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiSaison = 'tous', offiPageNum = 1, offiView = 'cards', offiSort = 'alpha';
 
 const OFFI_FAV_KEY = 'ip_crm_offi_favs';
 function getOffiFavs() { try { return new Set(JSON.parse(localStorage.getItem(OFFI_FAV_KEY)||'[]')); } catch { return new Set(); } }
@@ -5618,11 +5618,20 @@ function offiGetList() {
     return true;
   });
   if (offiRole === 'bestsellers') list.sort((a, b) => (a.rang_vente || 999) - (b.rang_vente || 999));
-  if (offiRole === 'alerte') list.sort((a, b) => {
+  else if (offiRole === 'alerte') list.sort((a, b) => {
     const minC = p => Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
     const ref  = p => p.prix_live || p.prix_offilog || 0;
     return (minC(a) - ref(a)) - (minC(b) - ref(b));
   });
+  else if (offiSort === 'prix_asc')  list.sort((a, b) => ((a.prix_live || a.prix_offilog) || 0) - ((b.prix_live || b.prix_offilog) || 0));
+  else if (offiSort === 'prix_desc') list.sort((a, b) => ((b.prix_live || b.prix_offilog) || 0) - ((a.prix_live || a.prix_offilog) || 0));
+  else if (offiSort === 'marge_desc') list.sort((a, b) => (b.marge_pct || 0) - (a.marge_pct || 0));
+  else if (offiSort === 'ecart') list.sort((a, b) => {
+    const minC = p => Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
+    const ref  = p => p.prix_live || p.prix_offilog || 0;
+    return (minC(a) - ref(a)) - (minC(b) - ref(b));
+  });
+  else list.sort((a, b) => (a.produit || '').localeCompare(b.produit || '', 'fr'));
   return list;
 }
 
@@ -6011,6 +6020,15 @@ function renderOffilog() {
         <option value="tous">Toutes les marques</option>
         ${marqueSet.map(m => `<option value="${m.replace(/"/g,'&quot;')}" ${offiMarque===m?'selected':''}>${m}</option>`).join('')}
       </select>
+      <!-- Sort -->
+      <select onchange="offiSort=this.value;offiPageNum=1;renderOffilog()"
+        style="padding:8px 12px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
+        <option value="alpha"     ${offiSort==='alpha'?'selected':''}>A → Z</option>
+        <option value="prix_asc"  ${offiSort==='prix_asc'?'selected':''}>Prix ↑</option>
+        <option value="prix_desc" ${offiSort==='prix_desc'?'selected':''}>Prix ↓</option>
+        <option value="marge_desc"${offiSort==='marge_desc'?'selected':''}>Marge ↓</option>
+        <option value="ecart"     ${offiSort==='ecart'?'selected':''}>⚠ Écart conc.</option>
+      </select>
       <!-- Vue toggle cards / table -->
       <div style="display:flex;border:1.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0">
         <button onclick="offiView='cards';renderOffilog()" style="padding:7px 12px;border:none;background:${offiView==='cards'?OFFILOG_ORANGE:'transparent'};color:${offiView==='cards'?'#fff':'var(--text3)'};cursor:pointer;font-size:14px;line-height:1;transition:all .15s" title="Vue cartes">⊞</button>
@@ -6028,8 +6046,8 @@ function renderOffilog() {
           `<button onclick="offiSetSaison('${t.k}')" style="padding:6px 10px;border:none;background:${offiSaison===t.k?'rgba(255,107,53,.15)':'transparent'};color:${offiSaison===t.k?OFFILOG_ORANGE:'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">${t.l}</button>`
         ).join('')}
       </div>
-      ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous' || offiSaison !== 'tous'
-        ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiSaison='tous';offiPageNum=1;renderOffilog()"
+      ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous' || offiSaison !== 'tous' || offiSort !== 'alpha'
+        ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiSaison='tous';offiSort='alpha';offiPageNum=1;renderOffilog()"
             style="padding:8px 14px;border-radius:12px;border:1.5px solid var(--rose);background:rgba(239,68,68,.06);color:#EF4444;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
             ✕ Réinitialiser
           </button>` : ''}
