@@ -703,6 +703,27 @@ function renderDashboard() {
     return { total, sold, pct, missed, catCov };
   })();
 
+  // ── Veille concurrentielle parapharmacie ─────
+  const veilleConcurrence = (() => {
+    if (typeof OFFILOG === 'undefined' || !OFFILOG.length) return null;
+    let nDrak = 0, nCap = 0, nLecl = 0, nAlert = 0;
+    const topAlertes = [];
+    for (const p of OFFILOG) {
+      if (p.prix_drakkars > 0) nDrak++;
+      if (p.prix_cap3000 > 0) nCap++;
+      if (p.prix_leclerc > 0) nLecl++;
+      const pRef = p.prix_live || p.prix_offilog;
+      if (pRef && pRef > 0) {
+        const concs = [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0);
+        if (concs.length) {
+          const minC = Math.min(...concs);
+          if (minC < pRef) { nAlert++; if (topAlertes.length < 5) topAlertes.push({ p, minC, pRef }); }
+        }
+      }
+    }
+    return { nDrak, nCap, nLecl, nAlert, topAlertes, total: OFFILOG.length };
+  })();
+
   // ── HTML ─────────────────────────────────────
   const curLabel  = `${monthName(curM)} ${curY}`;
   const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
@@ -1035,6 +1056,58 @@ function renderDashboard() {
             </div>
           </div>`;
         }).join('')}` : ''}
+      </div>
+    </div>` : ''}
+
+    <!-- Row 2g : Veille concurrentielle parapharmacie -->
+    ${veilleConcurrence ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Veille concurrentielle · Parapharmacie</div>
+          <div class="card-subtitle">Prix publics concurrents vs prix achat IP · ${fmtNum(veilleConcurrence.total)} références</div>
+        </div>
+        ${veilleConcurrence.nAlert > 0 ? `
+        <div style="text-align:right">
+          <div style="font-size:24px;font-weight:900;color:#EF4444">${fmtNum(veilleConcurrence.nAlert)}</div>
+          <div style="font-size:11px;color:var(--text3)">Prix pub. conc. < Prix achat IP</div>
+        </div>` : `
+        <div style="text-align:right">
+          <div style="font-size:20px;font-weight:900;color:#10B981">✓</div>
+          <div style="font-size:11px;color:var(--text3)">Aucune alerte</div>
+        </div>`}
+      </div>
+      <div style="padding:0 20px 16px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <div style="flex:1;min-width:90px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);border-radius:10px;padding:10px 14px;text-align:center">
+            <div style="font-size:18px;font-weight:900;color:#6366f1">${fmtNum(veilleConcurrence.nDrak)}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">Drakkars</div>
+          </div>
+          <div style="flex:1;min-width:90px;background:rgba(234,88,12,.06);border:1px solid rgba(234,88,12,.2);border-radius:10px;padding:10px 14px;text-align:center">
+            <div style="font-size:18px;font-weight:900;color:#ea580c">${fmtNum(veilleConcurrence.nCap)}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">Cap3000</div>
+          </div>
+          <div style="flex:1;min-width:90px;background:rgba(0,114,230,.06);border:1px solid rgba(0,114,230,.2);border-radius:10px;padding:10px 14px;text-align:center">
+            <div style="font-size:18px;font-weight:900;color:#0072e6">${fmtNum(veilleConcurrence.nLecl)}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">E.Leclerc</div>
+          </div>
+          ${veilleConcurrence.nAlert > 0 ? `
+          <div onclick="navigate('offilog');setTimeout(()=>{offiRole='alerte';offiPageNum=1;renderOffilog();},120)" style="flex:1;min-width:90px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px 14px;text-align:center;cursor:pointer" title="Voir les produits en alerte">
+            <div style="font-size:18px;font-weight:900;color:#EF4444">${fmtNum(veilleConcurrence.nAlert)}</div>
+            <div style="font-size:10px;color:#EF4444;margin-top:2px;font-weight:700">⚠ Alertes</div>
+          </div>` : ''}
+        </div>
+        ${veilleConcurrence.topAlertes.length ? `
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px">Top produits en alerte</div>
+        ${veilleConcurrence.topAlertes.map((a, i) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 0;${i < veilleConcurrence.topAlertes.length-1?'border-bottom:1px solid var(--border1)':''}">
+          <div style="flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.produit}</div>
+          <div style="text-align:right;flex-shrink:0">
+            <span style="font-size:11px;color:var(--text3)">IP ${fmtP(a.pRef)}</span>
+            <span style="margin:0 6px;color:var(--text3)">vs</span>
+            <span style="font-size:12px;font-weight:700;color:#EF4444">${fmtP(a.minC)} conc.</span>
+          </div>
+        </div>`).join('')}` : ''}
       </div>
     </div>` : ''}
 
