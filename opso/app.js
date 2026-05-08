@@ -5440,7 +5440,7 @@ function opsoAdherentNoms() {
 
 function filterToOpsoScope() {
   const allowed = opsoAdherentNoms();
-  if (!allowed) return; // listing non chargé — pas de filtre
+  if (!allowed) return;
   state.pharmacies = state.pharmacies.filter(p => allowed.has(normPhName(p.name)));
   const ids = new Set(state.pharmacies.map(p => p.id));
   state.imports = state.imports.filter(i => ids.has(i.pharmacyId));
@@ -5448,22 +5448,39 @@ function filterToOpsoScope() {
 }
 
 // ── SYNC PHARMACIES OPSO ──────────────────────
-// Crée dans Supabase les pharmacies du listing OPSO qui n'existent pas encore
+// Crée en batch dans Supabase les pharmacies du listing OPSO manquantes
 async function syncOpsoPharmacies() {
   if (typeof OPSO_ADHERENTS === 'undefined' || !OPSO_ADHERENTS.length) return;
-  const existingNoms = new Set(state.pharmacies.map(p => normPhName(p.name)));
-  const missing = OPSO_ADHERENTS.filter(a => !existingNoms.has(normPhName(a.nom)));
-  if (!missing.length) return;
 
-  for (const a of missing) {
-    const color = PHARMA_COLORS[state.pharmacies.length % PHARMA_COLORS.length];
-    const { data: inserted, error } = await sb.from('pharmacies')
-      .insert({ name: a.nom, code: a.cip, color })
-      .select().single();
-    if (!error && inserted) {
-      state.pharmacies.push({ id: inserted.id, name: inserted.name, code: inserted.code, color: inserted.color });
-    }
+  // Recharge depuis Supabase pour avoir l'état réel (pas filtré)
+  const { data: allPharmas } = await sb.from('pharmacies').select('id,name,code,color');
+  const existingNoms = new Set((allPharmas || []).map(p => normPhName(p.name)));
+
+  const missing = OPSO_ADHERENTS.filter(a => !existingNoms.has(normPhName(a.nom)));
+  if (!missing.length) {
+    // Toutes présentes — synchronise juste state.pharmacies depuis Supabase
+    state.pharmacies = (allPharmas || [])
+      .filter(p => existingNoms.has(normPhName(p.name)) && opsoAdherentNoms()?.has(normPhName(p.name)))
+      .map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
+    state.pharmacies.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    return;
   }
+
+  // Batch insert de toutes les pharmacies manquantes en un seul appel
+  const toInsert = missing.map((a, i) => ({
+    name: a.nom,
+    code: a.cip,
+    color: PHARMA_COLORS[(state.pharmacies.length + i) % PHARMA_COLORS.length],
+  }));
+
+  await sb.from('pharmacies').insert(toInsert);
+
+  // Recharge l'état complet depuis Supabase après insertion
+  const { data: refreshed } = await sb.from('pharmacies').select('id,name,code,color');
+  const allowed = opsoAdherentNoms();
+  state.pharmacies = (refreshed || [])
+    .filter(p => allowed?.has(normPhName(p.name)))
+    .map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
   state.pharmacies.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 }
 
