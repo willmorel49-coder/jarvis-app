@@ -5157,9 +5157,9 @@ function exportOffiLiveCSV() {
     }
     return true;
   });
-  const { leclEan, cap3Ean, drakEan } = benchMaps();
+  const { leclEan, cap3Ean, drakEan, pharmEan } = benchMaps();
   const fmtV = v => v != null ? String(v).replace('.',',') : '';
-  const header = ['Nom','Marque','EAN','Catégorie','Prix Offilog','Prix barré','Promo','Drakkars','Cap3000','Leclerc'];
+  const header = ['Nom','Marque','EAN','Catégorie','Prix Offilog','Prix barré','Promo','Ma Pharmacie','Drakkars','Cap3000','Leclerc'];
   const rows = list.map(p => {
     const e = p.ean ? String(p.ean) : '';
     return [
@@ -5167,6 +5167,7 @@ function exportOffiLiveCSV() {
       `"${(p.marque||'').replace(/"/g,'""')}"`,
       e, `"${p.cat||''}"`,
       fmtV(p.prix), fmtV(p.prix_b), p.promo ? 'Oui' : 'Non',
+      fmtV(pharmEan.get(e) ?? null),
       fmtV(drakEan.get(e) ?? null),
       fmtV(cap3Ean.get(e) ?? null),
       fmtV(leclEan.get(e) ?? null),
