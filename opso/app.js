@@ -4958,11 +4958,18 @@ function benchMaps() {
       if (l.ean) leclEan.set(String(l.ean), l.prix);
     }
   }
-  _benchMaps = { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, normB };
+  const pharmEan = new Map();
+  if (typeof OFFILOG !== 'undefined') {
+    for (const p of OFFILOG) {
+      if (p.ean && p.prix_pharmacie != null && p.prix_pharmacie > 0)
+        pharmEan.set(String(p.ean), p.prix_pharmacie);
+    }
+  }
+  _benchMaps = { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, pharmEan, normB };
   return _benchMaps;
 }
 function lookupBench(p) {
-  const { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, normB } = benchMaps();
+  const { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, pharmEan, normB } = benchMaps();
   const ean = p.ean ? String(p.ean) : null;
   const nn  = normB(p.nom);
   let drakkars = null;
@@ -4973,7 +4980,9 @@ function lookupBench(p) {
   else if (nn && cap3Nom.has(nn)) cap3000 = cap3Nom.get(nn);
   let leclerc = null;
   if (ean && leclEan.has(ean)) leclerc = leclEan.get(ean);
-  return { drakkars, cap3000, leclerc };
+  let maPharmie = null;
+  if (ean && pharmEan.has(ean)) maPharmie = pharmEan.get(ean);
+  return { drakkars, cap3000, leclerc, maPharmie };
 }
 
 // ── OFFILOG LIVE — état ──────────────────────
@@ -5026,13 +5035,15 @@ function renderOffilog() {
 
   // ── Stats benchmark (calculé sur tout OFFILOG_LIVE, pas juste la page) ──
   const { leclEan: le, cap3Ean: ce, drakEan: de } = benchMaps();
-  let nAlerte = 0, nBench = 0, nLecl = 0, nCap = 0, nDrak = 0;
+  const pe = benchMaps().pharmEan;
+  let nAlerte = 0, nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPharma = 0;
   for (const p of OFFILOG_LIVE) {
     const e = p.ean ? String(p.ean) : '';
-    const lv = le.get(e), cv = ce.get(e), dv = de.get(e);
+    const lv = le.get(e), cv = ce.get(e), dv = de.get(e), pv = pe.get(e);
     if (lv != null && lv > 0) nLecl++;
     if (cv != null && cv > 0) nCap++;
     if (dv != null && dv > 0) nDrak++;
+    if (pv != null && pv > 0) nPharma++;
     const concs = [lv, cv, dv].filter(v => v != null && v > 0);
     if (concs.length) { nBench++; if (p.prix > 0 && Math.min(...concs) < p.prix) nAlerte++; }
   }
@@ -5050,14 +5061,15 @@ function renderOffilog() {
   const cards = page.map(p => {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
     const hasPromo = p.promo && p.prix_b != null;
-    const { drakkars, cap3000, leclerc } = lookupBench(p);
+    const { drakkars, cap3000, leclerc, maPharmie } = lookupBench(p);
     // Best price indicator
     const compPrices = [drakkars, cap3000, leclerc].filter(v => v != null && v > 0);
     const minComp = compPrices.length ? Math.min(...compPrices) : null;
     const bestBadge = (minComp != null && p.prix > 0 && minComp < p.prix)
       ? `<div class="offil-best-price" title="Prix public concurrent inférieur au prix achat offilog">⚠ Prix pub. conc. -${fmtP(p.prix - minComp)}</div>` : '';
-    const benchRow = (drakkars != null || cap3000 != null || leclerc != null) ? `
+    const benchRow = (drakkars != null || cap3000 != null || leclerc != null || maPharmie != null) ? `
       <div class="offil-bench-row">
+        ${maPharmie != null ? `<span class="offil-bench" style="border-color:rgba(0,229,160,.25);color:#00E5A0;background:rgba(0,229,160,.06)" title="Ma Pharmacie (prix scrappé)">🏥 ${fmtP(maPharmie)}</span>` : ''}
         ${drakkars != null ? `<span class="offil-bench offil-bench-drak" title="Pharmacie des Drakkars">Drakkars ${fmtP(drakkars)}</span>` : ''}
         ${cap3000 != null ? `<span class="offil-bench offil-bench-cap" title="Pharmacie Cap 3000">Cap 3000 ${fmtP(cap3000)}</span>` : ''}
         ${leclerc != null ? `<span class="offil-bench offil-bench-lecl" title="E.Leclerc">Leclerc ${fmtP(leclerc)}</span>` : ''}
@@ -5110,6 +5122,7 @@ function renderOffilog() {
   </div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:11px">
+    ${nPharma > 0 ? `<span style="padding:4px 10px;border-radius:20px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);color:#00E5A0;font-weight:600">🏥 Ma Phcie ${nPharma}</span>` : ''}
     <span style="padding:4px 10px;border-radius:20px;background:rgba(0,114,230,.08);border:1px solid rgba(0,114,230,.2);color:#0072e6;font-weight:600">Leclerc ${nLecl}</span>
     <span style="padding:4px 10px;border-radius:20px;background:rgba(234,88,12,.08);border:1px solid rgba(234,88,12,.2);color:#ea580c;font-weight:600">Cap3000 ${nCap}</span>
     <span style="padding:4px 10px;border-radius:20px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);color:#6366f1;font-weight:600">Drakkars ${nDrak}</span>
