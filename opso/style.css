@@ -1466,6 +1466,28 @@ label {
 .offil-pag-btn:hover { border-color: var(--green); color: var(--green); }
 .offil-pag-info { font-size: 12px; color: var(--text3); }
 
+.offil-bench-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.offil-bench {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text3);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  transition: color .15s;
+}
+.offil-bench-drak { border-color: rgba(99,102,241,.25); color: #6366f1; background: rgba(99,102,241,.06); }
+.offil-bench-cap  { border-color: rgba(234,88,12,.25);  color: #ea580c; background: rgba(234,88,12,.06);  }
+
 /* ══════════════════════════════════════
    RESPONSIVE — Small mobile (< 400px)
 ══════════════════════════════════════ */
