@@ -659,6 +659,20 @@ function renderDashboard() {
         <div class="cockpit-mini-val">${alerts.length}</div>
         <div class="cockpit-mini-label">Signal${alerts.length !== 1 ? 's' : ''}</div>
       </div>
+      ${(() => {
+        if (typeof OFFILOG_LIVE === 'undefined' || !OFFILOG_LIVE.length) return '';
+        const bm = benchMaps();
+        let nAl = 0;
+        for (const p of OFFILOG_LIVE) {
+          const e = p.ean ? String(p.ean) : '';
+          const concs = [bm.leclEan.get(e), bm.cap3Ean.get(e), bm.drakEan.get(e)].filter(v => v != null && v > 0);
+          if (concs.length && p.prix > 0 && Math.min(...concs) < p.prix) nAl++;
+        }
+        return `<div class="cockpit-mini ${nAl > 0 ? 'cockpit-mini-alert' : ''}" onclick="navigate('offilog');setTimeout(()=>{offiLiveSort='ecart';offiLivePage=1;renderOffilog();},80)" style="${nAl > 0 ? 'cursor:pointer' : ''}">
+          <div class="cockpit-mini-val" style="${nAl > 0 ? 'color:#ef4444' : ''}">${nAl}</div>
+          <div class="cockpit-mini-label">Alertes prix</div>
+        </div>`;
+      })()}
     </div>
 
     <div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
