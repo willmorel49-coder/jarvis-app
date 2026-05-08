@@ -4065,6 +4065,7 @@ function navigate(page) {
     benchmark:  'Benchmark',
     simulateur: 'Simulateur',
     offilog:    'Prix Offilog Live',
+    wml:        'CA & Commandes',
     groupements:'Groupements',
     objectifs:  'Objectifs',
   };
@@ -4080,6 +4081,7 @@ function navigate(page) {
     benchmark:   renderBenchmark,
     simulateur:  renderSimulator,
     offilog:     renderOffilog,
+    wml:         renderWml,
     groupements: renderGroupements,
     objectifs:   renderObjectifs,
   };
@@ -5052,6 +5054,304 @@ function renderOffilog() {
   <div class="offil-grid">${cards}</div>
 
   ${pagHtml}`;
+}
+
+
+// ── CA & COMMANDES (WML) ─────────────────────
+let wmlPharma = null; // null = groupement, tircode = pharmacie sélectionnée
+let wmlMonth  = 'all'; // 'all' ou index 0-3
+
+function renderWml() {
+  const container = document.getElementById('wml-content');
+  if (!container) return;
+
+  if (typeof WML_DATA === 'undefined' || !WML_DATA.length) {
+    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Données WML non chargées.</div>`;
+    return;
+  }
+
+  const fmt  = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
+  const fmtD = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(v||0);
+  const fmtP = v => (v||0).toFixed(1) + ' %';
+  const MONTH_LABELS = ['Jan 2026', 'Fév 2026', 'Mar 2026', 'Avr 2026'];
+  const AFM_LABELS = { REMBSS:'Remb. SS', MED010:'Médicament OTC', DM_20:'Dispositif médical', PARA:'Parapharmacie', DM:'DM', MED021:'Médicament autre', AUTRE:'Autre' };
+
+  const ph = wmlPharma ? WML_DATA.find(d => d.tc === wmlPharma) : null;
+
+  if (ph) {
+    // ── VUE PHARMACIE ──────────────────────
+    const ca_tot = ph.ca;
+    const mg_tot = ph.mg;
+    const tx_mg  = ca_tot > 0 ? (mg_tot / ca_tot * 100) : 0;
+
+    // Barres mensuelles mini
+    const maxCA = Math.max(...ph.ca_m);
+    const moisBars = ph.ca_m.map((v, i) => {
+      const pct = maxCA > 0 ? (v / maxCA * 100) : 0;
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="font-size:10px;color:var(--text3)">${fmtD(v)}</div>
+        <div style="width:100%;height:56px;background:var(--bg3);border-radius:4px;position:relative;overflow:hidden">
+          <div style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:var(--green);border-radius:4px;transition:height .4s"></div>
+        </div>
+        <div style="font-size:10px;font-weight:600;color:var(--text2)">${MONTH_LABELS[i]}</div>
+      </div>`;
+    }).join('');
+
+    // AFM breakdown
+    const afmRows = Object.entries(ph.afm).sort((a,b) => b[1][0]-a[1][0]).map(([code, [ca,mg,qt]]) => {
+      const pct = ca_tot > 0 ? (ca/ca_tot*100) : 0;
+      const tm  = ca > 0 ? (mg/ca*100) : 0;
+      return `<tr>
+        <td style="padding:8px 12px;font-size:12px;font-weight:600">${AFM_LABELS[code]||code}</td>
+        <td style="padding:8px 12px;text-align:right;font-size:12px">${fmtD(ca)}</td>
+        <td style="padding:8px 12px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;min-width:40px">
+              <div style="width:${pct.toFixed(1)}%;height:100%;background:var(--green);border-radius:3px"></div>
+            </div>
+            <span style="font-size:10px;color:var(--text3);min-width:32px">${pct.toFixed(0)}%</span>
+          </div>
+        </td>
+        <td style="padding:8px 12px;text-align:right;font-size:12px;color:${mg>0?'var(--green)':'var(--text3)'}">${fmtD(mg)}</td>
+        <td style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">${tm > 0 ? fmtP(tm) : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    // Tranches
+    const TRANCHE_LABELS = { t1:'< 3 %', t2:'3 – 5 %', t3:'5 – 8 %', t4:'≥ 8 %' };
+    const trancheRows = Object.entries(ph.tr).map(([t, [n, ca, mg]]) => {
+      const pct = ca_tot > 0 ? (ca/ca_tot*100) : 0;
+      const tm  = ca > 0 ? (mg/ca*100) : 0;
+      return `<tr>
+        <td style="padding:8px 12px;font-size:12px;font-weight:600">${TRANCHE_LABELS[t]}</td>
+        <td style="padding:8px 12px;text-align:right;font-size:12px;color:var(--text2)">${n} lignes</td>
+        <td style="padding:8px 12px;text-align:right;font-size:12px">${fmtD(ca)}</td>
+        <td style="padding:8px 12px;text-align:right;font-size:12px;color:${mg>0?'var(--green)':'var(--text3)'}">${fmtD(mg)}</td>
+        <td style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">${tm > 0 ? fmtP(tm) : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    // Top 25 produits
+    const prodRows = ph.pr.slice(0,25).map(([nom, ca, mg, qt, ean], i) => {
+      const tm = ca > 0 ? (mg/ca*100) : 0;
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px 10px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
+        <td style="padding:7px 12px;font-size:12px;font-weight:500;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</td>
+        <td style="padding:7px 10px;font-size:10px;color:var(--text3)">${ean||'—'}</td>
+        <td style="padding:7px 12px;text-align:right;font-size:12px">${fmtD(ca)}</td>
+        <td style="padding:7px 12px;text-align:right;font-size:12px;color:${mg>0?'var(--green)':'var(--text3)'}">${fmtD(mg)}</td>
+        <td style="padding:7px 12px;text-align:right;font-size:11px;color:var(--text3)">${tm > 0 ? fmtP(tm) : '—'}</td>
+        <td style="padding:7px 12px;text-align:right;font-size:11px;color:var(--text3)">${qt}</td>
+      </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+    <div style="padding:0 0 24px">
+      <button onclick="wmlPharma=null;renderWml()" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;padding:6px 14px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12px;font-weight:600">
+        ← Retour groupement
+      </button>
+      <div class="wml-kpi-row">
+        <div class="wml-kpi"><div class="wml-kpi-label">CA net HT</div><div class="wml-kpi-val">${fmt(ca_tot)}</div></div>
+        <div class="wml-kpi"><div class="wml-kpi-label">Marge (remise obtenue)</div><div class="wml-kpi-val" style="color:var(--green)">${fmtD(mg_tot)}</div></div>
+        <div class="wml-kpi"><div class="wml-kpi-label">Taux de marge</div><div class="wml-kpi-val">${fmtP(tx_mg)}</div></div>
+        <div class="wml-kpi"><div class="wml-kpi-label">Mois couverts</div><div class="wml-kpi-val" style="font-size:18px">${ph.ca_m.filter(v=>v>0).length} / 4</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">CA mensuel Jan – Avr 2026</div></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;padding:0 16px 16px">${moisBars}</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Par segment (AFMCODE)</div></div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr style="border-bottom:2px solid var(--border2)">
+                <th style="padding:6px 12px;text-align:left;font-size:10px;color:var(--text3)">Segment</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">CA HT</th>
+                <th style="padding:6px 12px;font-size:10px;color:var(--text3)">Part</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Marge €</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx</th>
+              </tr></thead>
+              <tbody>${afmRows}</tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Marge pondérée par tranche de remise</div></div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr style="border-bottom:2px solid var(--border2)">
+                <th style="padding:6px 12px;text-align:left;font-size:10px;color:var(--text3)">Tranche</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Lignes</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">CA HT</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Marge €</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx marge</th>
+              </tr></thead>
+              <tbody>${trancheRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">Top 25 produits (par CA)</div></div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="border-bottom:2px solid var(--border2)">
+              <th style="padding:6px 10px;text-align:center;font-size:10px;color:var(--text3)">#</th>
+              <th style="padding:6px 12px;text-align:left;font-size:10px;color:var(--text3)">Produit</th>
+              <th style="padding:6px 10px;font-size:10px;color:var(--text3)">EAN</th>
+              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">CA HT</th>
+              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Marge €</th>
+              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx</th>
+              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Qté</th>
+            </tr></thead>
+            <tbody>${prodRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+
+  } else {
+    // ── VUE GROUPEMENT ──────────────────────
+    const tot_ca = WML_DATA.reduce((s,d)=>s+d.ca,0);
+    const tot_mg = WML_DATA.reduce((s,d)=>s+d.mg,0);
+    const tot_qt = WML_DATA.reduce((s,d)=>s+d.qt,0);
+    const tx_mg_grp = tot_ca > 0 ? (tot_mg/tot_ca*100) : 0;
+
+    // CA groupement par mois
+    const ca_grp_m = [0,1,2,3].map(i => WML_DATA.reduce((s,d)=>s+(d.ca_m[i]||0),0));
+    const mg_grp_m = [0,1,2,3].map(i => WML_DATA.reduce((s,d)=>s+(d.mg_m[i]||0),0));
+    const maxGrp = Math.max(...ca_grp_m);
+    const grpBars = ca_grp_m.map((v, i) => {
+      const pct = maxGrp > 0 ? (v/maxGrp*100) : 0;
+      const mg = mg_grp_m[i];
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="font-size:10px;color:var(--green);font-weight:600">${fmtD(mg)}</div>
+        <div style="font-size:11px;color:var(--text2);font-weight:700">${fmt(v)}</div>
+        <div style="width:100%;height:64px;background:var(--bg3);border-radius:4px;position:relative;overflow:hidden">
+          <div style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:var(--green);border-radius:4px;opacity:.85;transition:height .4s"></div>
+        </div>
+        <div style="font-size:10px;font-weight:600;color:var(--text2)">${MONTH_LABELS[i]}</div>
+      </div>`;
+    }).join('');
+
+    // Table pharmacies
+    const sorted = [...WML_DATA].sort((a,b) => b.ca - a.ca);
+    const maxPhCA = sorted[0]?.ca || 1;
+
+    const pharmaRows = sorted.map((d, i) => {
+      const tx = d.ca > 0 ? (d.mg/d.ca*100) : 0;
+      const pct = (d.ca/maxPhCA*100).toFixed(1);
+      const actifs = d.ca_m.filter(v=>v>0).length;
+      return `<tr class="wml-pharma-row" onclick="wmlPharma=${d.tc};renderWml()" style="cursor:pointer;border-bottom:1px solid var(--border)">
+        <td style="padding:9px 12px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
+        <td style="padding:9px 14px;font-size:13px;font-weight:600;white-space:nowrap">${titleCase(d.nom)}</td>
+        <td style="padding:9px 16px;min-width:140px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px">
+              <div style="width:${pct}%;height:100%;background:var(--green);border-radius:3px"></div>
+            </div>
+            <span style="font-size:12px;font-weight:700;color:var(--text);min-width:80px;text-align:right">${fmt(d.ca)}</span>
+          </div>
+        </td>
+        <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--green);font-weight:600">${fmtD(d.mg)}</td>
+        <td style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">${tx > 0 ? fmtP(tx) : '—'}</td>
+        <td style="padding:9px 12px;text-align:center">
+          <div style="display:flex;justify-content:center;gap:2px">
+            ${d.ca_m.map((v,j) => `<div style="width:10px;height:16px;border-radius:2px;background:${v>0?'var(--green)':'var(--bg3)'}"></div>`).join('')}
+          </div>
+        </td>
+        <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--text3)">${actifs}/4</td>
+        <td style="padding:9px 12px;text-align:right;color:var(--text3);font-size:16px">›</td>
+      </tr>`;
+    }).join('');
+
+    // AFM groupement
+    const afmGrp = {};
+    WML_DATA.forEach(d => {
+      Object.entries(d.afm).forEach(([code,[ca,mg,qt]]) => {
+        if (!afmGrp[code]) afmGrp[code] = [0,0,0];
+        afmGrp[code][0] += ca; afmGrp[code][1] += mg; afmGrp[code][2] += qt;
+      });
+    });
+    const afmRows = Object.entries(afmGrp).sort((a,b)=>b[1][0]-a[1][0]).map(([code,[ca,mg,qt]]) => {
+      const pct = tot_ca > 0 ? (ca/tot_ca*100) : 0;
+      const tm  = ca > 0 ? (mg/ca*100) : 0;
+      return `<tr>
+        <td style="padding:8px 12px;font-size:12px;font-weight:600">${AFM_LABELS[code]||code}</td>
+        <td style="padding:8px 12px;text-align:right;font-size:12px">${fmt(ca)}</td>
+        <td style="padding:8px 12px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;min-width:60px">
+              <div style="width:${pct.toFixed(1)}%;height:100%;background:var(--green);border-radius:3px"></div>
+            </div>
+            <span style="font-size:11px;color:var(--text3)">${pct.toFixed(0)}%</span>
+          </div>
+        </td>
+        <td style="padding:8px 12px;text-align:right;font-size:12px;color:var(--green);font-weight:600">${fmtD(mg)}</td>
+        <td style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">${tm > 0 ? fmtP(tm) : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+    <div style="padding:0 0 24px">
+      <div class="wml-kpi-row">
+        <div class="wml-kpi"><div class="wml-kpi-label">CA net HT groupement</div><div class="wml-kpi-val">${fmt(tot_ca)}</div></div>
+        <div class="wml-kpi"><div class="wml-kpi-label">Marge totale</div><div class="wml-kpi-val" style="color:var(--green)">${fmtD(tot_mg)}</div></div>
+        <div class="wml-kpi"><div class="wml-kpi-label">Taux de marge moyen</div><div class="wml-kpi-val">${fmtP(tx_mg_grp)}</div></div>
+        <div class="wml-kpi"><div class="wml-kpi-label">Pharmacies actives</div><div class="wml-kpi-val" style="font-size:22px">${WML_DATA.length}</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">CA groupement Jan – Avr 2026</div><div class="card-subtitle">Marge (remise obtenue) en vert</div></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;padding:0 16px 16px">${grpBars}</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Par segment</div></div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr style="border-bottom:2px solid var(--border2)">
+                <th style="padding:6px 12px;text-align:left;font-size:10px;color:var(--text3)">Segment</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">CA</th>
+                <th style="padding:6px 12px;font-size:10px;color:var(--text3)">Part</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Marge</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx</th>
+              </tr></thead>
+              <tbody>${afmRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Toutes les pharmacies · Jan – Avr 2026</div>
+            <div class="card-subtitle">Cliquer sur une pharmacie pour voir le détail</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="border-bottom:2px solid var(--border2)">
+              <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">#</th>
+              <th style="padding:7px 14px;text-align:left;font-size:10px;color:var(--text3)">Pharmacie</th>
+              <th style="padding:7px 16px;font-size:10px;color:var(--text3)">CA net HT</th>
+              <th style="padding:7px 12px;text-align:right;font-size:10px;color:var(--text3)">Marge €</th>
+              <th style="padding:7px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx marge</th>
+              <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Activité</th>
+              <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Mois</th>
+              <th></th>
+            </tr></thead>
+            <tbody>${pharmaRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }
 }
 
 
