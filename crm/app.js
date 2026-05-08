@@ -2299,6 +2299,55 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
       </div>` : ''}
 
+      <!-- Alertes prix parapharmacie dans la fiche pharmacie -->
+      ${(() => {
+        if (typeof OFFILOG === 'undefined' || !salesCur.length) return '';
+        const nnk = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+        const byProdOff = {};
+        for (const s of salesCur) {
+          const k = nnk(s.artDesignation);
+          if (k) byProdOff[k] = s.artDesignation;
+        }
+        const alertRows = [];
+        for (const [k, label] of Object.entries(byProdOff)) {
+          const op = OFFILOG.find(p => nnk(p.produit) === k);
+          if (!op) continue;
+          const pRef = op.prix_live || op.prix_offilog;
+          if (!pRef || pRef <= 0) continue;
+          const concMap = [
+            op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars', '#6366f1'] : null,
+            op.prix_cap3000  > 0 ? [op.prix_cap3000,  'Cap3000',  '#ea580c'] : null,
+            op.prix_leclerc  > 0 ? [op.prix_leclerc,  'Leclerc',  '#0072e6'] : null,
+          ].filter(Boolean);
+          if (!concMap.length) continue;
+          const best = concMap.sort((a, b) => a[0] - b[0])[0];
+          if (best[0] < pRef) alertRows.push({ label, pRef, concPrix: best[0], concSrc: best[1], concColor: best[2], ecart: best[0] - pRef });
+        }
+        alertRows.sort((a, b) => a.ecart - b.ecart);
+        const top = alertRows.slice(0, 5);
+        if (!top.length) return '';
+        const rows = top.map(a => `
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 20px;border-bottom:1px solid var(--border1)">
+            <span style="font-size:16px;flex-shrink:0">⚠</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.label}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px">IP : ${fmtP(a.pRef)} · <span style="color:${a.concColor};font-weight:600">${a.concSrc} ${fmtP(a.concPrix)}</span></div>
+            </div>
+            <span style="padding:2px 8px;border-radius:8px;background:rgba(239,68,68,.1);color:#EF4444;font-size:11px;font-weight:700;flex-shrink:0">${fmtP(a.ecart)}</span>
+          </div>`).join('');
+        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid #EF4444">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="color:#EF4444">⚠ Alertes prix parapharmacie</div>
+              <div class="card-subtitle">Produits achetés chez IP vendus moins cher par un concurrent — ${alertRows.length} alerte${alertRows.length > 1 ? 's' : ''}</div>
+            </div>
+            <button onclick="navigate('offilog');setTimeout(()=>{offiRole='alerte';offiPageNum=1;renderOffilog();},80)" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.06);color:#EF4444;cursor:pointer;font-weight:600">Voir catalogue ⚠</button>
+          </div>
+          ${rows}
+          ${alertRows.length > 5 ? `<div style="padding:10px 20px;font-size:11px;color:var(--text3)">+${alertRows.length - 5} autres alertes — voir l'onglet Offilog</div>` : ''}
+        </div>`;
+      })()}
+
       <!-- Évolution mensuelle -->
       ${pharmaByMonth.length > 1 ? `
       <div class="card fade-up" style="margin-bottom:20px">
