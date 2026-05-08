@@ -1005,7 +1005,6 @@ function renderPharmacies() {
       ${listHtml}
     </div>
 
-    ${renderProspects(pharmaSearch)}
   `;
 }
 
@@ -5448,6 +5447,26 @@ function filterToOpsoScope() {
   state.sales   = state.sales.filter(s => ids.has(s.pharmacyId));
 }
 
+// ── SYNC PHARMACIES OPSO ──────────────────────
+// Crée dans Supabase les pharmacies du listing OPSO qui n'existent pas encore
+async function syncOpsoPharmacies() {
+  if (typeof OPSO_ADHERENTS === 'undefined' || !OPSO_ADHERENTS.length) return;
+  const existingNoms = new Set(state.pharmacies.map(p => normPhName(p.name)));
+  const missing = OPSO_ADHERENTS.filter(a => !existingNoms.has(normPhName(a.nom)));
+  if (!missing.length) return;
+
+  for (const a of missing) {
+    const color = PHARMA_COLORS[state.pharmacies.length % PHARMA_COLORS.length];
+    const { data: inserted, error } = await sb.from('pharmacies')
+      .insert({ name: a.nom, code: a.cip, color })
+      .select().single();
+    if (!error && inserted) {
+      state.pharmacies.push({ id: inserted.id, name: inserted.name, code: inserted.code, color: inserted.color });
+    }
+  }
+  state.pharmacies.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+}
+
 // ── INIT ──────────────────────────────────────
 async function initApp() {
   if (!state.user) return;
@@ -5455,6 +5474,7 @@ async function initApp() {
   await load();
   await grpSyncFromStorage();
   filterToOpsoScope();
+  await syncOpsoPharmacies();
 
   document.getElementById('sidebar-user-name').textContent = state.user.name;
   document.getElementById('sidebar-user-role').textContent = state.user.role;

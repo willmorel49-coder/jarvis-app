@@ -1,6 +1,6 @@
 // Listing adhérents OPSO Santé 2026 — généré depuis Excel 12/01/2026
 // Source : 2026 - Listing adhérents Groupe Opso Santé 2026_MAJ 12_01_2026-2.xlsx
-// 127 pharmacies (BP + NP + OPSO)
+// 129 pharmacies (BP + NP + OPSO)
 const OPSO_ADHERENTS = [
   {cip:'2004572',nom:'PHARMACIE DE KERMARIO',cp:'56340',ville:'CARNAC',uga:'56AUR',peri:'BP'},
   {cip:'2007776',nom:'PHARMACIE DU DAUPHIN',cp:'14600',ville:'HONFLEUR',uga:'14HON',peri:'NP'},
@@ -72,6 +72,8 @@ const OPSO_ADHERENTS = [
   {cip:'2109801',nom:'PHARMACIE DE MONTGERMONT',cp:'35760',ville:'MONTGERMONT',uga:'35',peri:'BP'},
   {cip:'2196669',nom:'PHARMACIE DE LA FRENAYE',cp:'76170',ville:'LA FRENAYE',uga:'76',peri:'NP'},
   {cip:'2246777',nom:'PHARMACIE ANATOLE FRANCE',cp:'35000',ville:'RENNES',uga:'35',peri:'BP'},
+  {cip:'2258410',nom:'PHARMACIE DE LA VALLEE',cp:'76600',ville:'LE HAVRE',uga:'76',peri:'NP'},
+  {cip:'2038359',nom:'PHARMACIE DE L\'ETOILE',cp:'76500',ville:'ELBEUF',uga:'76',peri:'NP'},
   {cip:'2256738',nom:'PHARMACIE DE LA PREFECTURE',cp:'76000',ville:'ROUEN',uga:'76',peri:'NP'},
   {cip:'2160056',nom:'PHARMACIE KRANZLIN',cp:'61700',ville:'DOMFRONT',uga:'61',peri:'NP'},
   {cip:'2251593',nom:'PHARMACIE DE L\'OCEAN',cp:'56520',ville:'GUIDEL',uga:'56',peri:'BP'},
