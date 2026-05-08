@@ -4919,6 +4919,7 @@ function benchMaps() {
   if (_benchMaps) return _benchMaps;
   const drakEan = new Map(), drakNom = new Map();
   const cap3Ean = new Map(), cap3Nom = new Map();
+  const leclEan = new Map();
   const normB = s => (s || '').toLowerCase().normalize('NFD')
     .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
   if (typeof DRAKKARS !== 'undefined') {
@@ -4933,11 +4934,16 @@ function benchMaps() {
       if (c.nom_norm) cap3Nom.set(c.nom_norm, c.prix);
     }
   }
-  _benchMaps = { drakEan, drakNom, cap3Ean, cap3Nom, normB };
+  if (typeof LECLERC_PRICES !== 'undefined') {
+    for (const l of LECLERC_PRICES) {
+      if (l.ean) leclEan.set(String(l.ean), l.prix);
+    }
+  }
+  _benchMaps = { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, normB };
   return _benchMaps;
 }
 function lookupBench(p) {
-  const { drakEan, drakNom, cap3Ean, cap3Nom, normB } = benchMaps();
+  const { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, normB } = benchMaps();
   const ean = p.ean ? String(p.ean) : null;
   const nn  = normB(p.nom);
   let drakkars = null;
@@ -4946,7 +4952,9 @@ function lookupBench(p) {
   let cap3000 = null;
   if (ean && cap3Ean.has(ean)) cap3000 = cap3Ean.get(ean);
   else if (nn && cap3Nom.has(nn)) cap3000 = cap3Nom.get(nn);
-  return { drakkars, cap3000 };
+  let leclerc = null;
+  if (ean && leclEan.has(ean)) leclerc = leclEan.get(ean);
+  return { drakkars, cap3000, leclerc };
 }
 
 // ── OFFILOG LIVE — état ──────────────────────
@@ -5000,11 +5008,12 @@ function renderOffilog() {
   const cards = page.map(p => {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
     const hasPromo = p.promo && p.prix_b != null;
-    const { drakkars, cap3000 } = lookupBench(p);
-    const benchRow = (drakkars != null || cap3000 != null) ? `
+    const { drakkars, cap3000, leclerc } = lookupBench(p);
+    const benchRow = (drakkars != null || cap3000 != null || leclerc != null) ? `
       <div class="offil-bench-row">
         ${drakkars != null ? `<span class="offil-bench offil-bench-drak" title="Pharmacie des Drakkars">Drakkars ${fmtP(drakkars)}</span>` : ''}
         ${cap3000 != null ? `<span class="offil-bench offil-bench-cap" title="Pharmacie Cap 3000">Cap 3000 ${fmtP(cap3000)}</span>` : ''}
+        ${leclerc != null ? `<span class="offil-bench offil-bench-lecl" title="E.Leclerc">Leclerc ${fmtP(leclerc)}</span>` : ''}
       </div>` : '';
     return `
     <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener">
