@@ -137,7 +137,7 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes pulse {
@@ -168,7 +168,7 @@ body {
 .skeleton-line.medium { width: 80%; }
 .skeleton-circle { border-radius: 50%; }
 
-.fade-up { animation: fadeUp 0.3s ease forwards; }
+.fade-up { animation: fadeUp 0.35s ease both; }
 .fade-in { animation: fadeIn 0.3s ease; }
 
 /* ══════════════════════════════════════
@@ -392,12 +392,18 @@ body {
   transition: var(--t); white-space: nowrap;
   letter-spacing: -0.1px;
 }
-.btn-primary {
-  background: var(--blue-g); color: #fff; border-color: transparent;
+.btn-primary,
+button[class*="btn-primary"] {
+  background: var(--opso-green);
+  background: var(--blue-g);
+  color: #fff;
+  border: none;
+  border-color: transparent;
   box-shadow: 0 2px 8px var(--blue-glow);
   text-shadow: 0 1px 2px rgba(0,0,0,.2);
 }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 14px var(--blue-glow); filter: brightness(1.05); }
+.btn-primary:hover,
+button[class*="btn-primary"]:hover { background: var(--opso-green-dark); transform: translateY(-1px); box-shadow: 0 4px 14px var(--blue-glow); filter: brightness(1.05); }
 .btn-primary:active { transform: none; filter: brightness(0.94); }
 .btn-secondary {
   background: var(--opso-white); color: var(--opso-text);
@@ -665,9 +671,10 @@ tbody tr:hover { background: var(--opso-green-pale2); }
   padding: 3px 10px; border-radius: 20px;
   font-size: 11px; font-weight: 600;
 }
-.status-up   { background: var(--opso-green-pale); color: var(--opso-green-dark); }
-.status-flat { background: var(--amber-bg); color: var(--amber); }
-.status-down { background: var(--rose-bg); color: var(--rose); }
+.status-up      { background: #e6f7ec; color: #0d8530; }
+.status-flat    { background: var(--bg3); color: var(--text2); }
+.status-down    { background: #fef2f2; color: #d04a4a; }
+.status-missing { background: var(--bg3); color: var(--text3); font-style: italic; }
 
 /* ══════════════════════════════════════
    TABS / NAVIGATION SECONDAIRE
@@ -958,7 +965,7 @@ label {
 ══════════════════════════════════════ */
 .cockpit-hero {
   background: linear-gradient(135deg, #064e20 0%, #0d8530 50%, #11a63c 100%);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg) !important;
   padding: 32px 28px;
   margin-bottom: 16px;
   position: relative; overflow: hidden;
@@ -978,7 +985,7 @@ label {
 }
 .cockpit-hero-value {
   font-family: 'Varela Round', sans-serif;
-  font-size: 52px; font-weight: 400; color: #fff;
+  font-size: 48px; font-weight: 400; color: #fff;
   letter-spacing: -2.5px; line-height: 1;
   margin-bottom: 16px;
   font-variant-numeric: tabular-nums;
@@ -1038,12 +1045,16 @@ label {
   display: flex; align-items: center; gap: 12px;
   padding: 15px 20px; cursor: pointer;
   border-bottom: 1px solid var(--opso-border);
-  transition: background var(--t-fast);
+  transition: background var(--t-base), border-left-color var(--t-base);
   -webkit-tap-highlight-color: transparent;
   min-height: 52px;
+  border-left: 3px solid transparent;
 }
 .pharma-cockpit-row:last-child { border-bottom: none; }
-.pharma-cockpit-row:hover,
+.pharma-cockpit-row:hover {
+  background: var(--opso-green-pale);
+  border-left: 3px solid var(--opso-green);
+}
 .pharma-cockpit-row:active { background: var(--opso-green-pale2); }
 .pharma-cockpit-dot {
   width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
@@ -1344,6 +1355,10 @@ label {
   .kpi-grid { grid-template-columns: 1fr 1fr !important; }
   .data-table thead { display: none; }
   .data-table td { padding: 10px 14px; }
+  .offil-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .offil-header { flex-direction: column; }
+  .offil-sort { width: 100%; }
+  .offil-cats { gap: 6px; }
 }
 
 /* ══════════════════════════════════════
@@ -1457,6 +1472,8 @@ label {
 @media (max-width: 400px) {
   .cockpit-hero-value { font-size: 32px; }
   .cockpit-mini-val { font-size: 18px; }
+  .offil-grid { grid-template-columns: 1fr; }
+  .offil-prix-live { font-size: 16px; }
 }
 
 /* ══════════════════════════════════════
