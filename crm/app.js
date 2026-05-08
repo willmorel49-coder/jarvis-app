@@ -7407,13 +7407,15 @@ function gsSearch(q) {
     html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:${OFFILOG_ORANGE};text-transform:uppercase;letter-spacing:1px">Catalogue Parapharmacie (${offiHits.length})</div>`;
     html += offiHits.map((p, i) => {
       const m = um(p.univers);
-      const idxInData = typeof offiCurrentData !== 'undefined' ? offiCurrentData.indexOf(p) : -1;
+      const pRef = p.prix_live || p.prix_offilog;
+      const minC = pRef ? Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity])) : Infinity;
+      const isAlert = pRef && minC < pRef && minC < Infinity;
       return `<div onclick="document.getElementById('global-search-modal').remove();offiQuery='${p.produit.replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,30)}';navigate('offilog');setTimeout(()=>renderOffilog(),100)"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s${isAlert?';border-left:2px solid #EF4444':''}"
         onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
         <div style="width:36px;height:36px;border-radius:8px;background:${m.bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${m.icon}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(p.produit)}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(p.produit)}${isAlert ? ' <span style="font-size:10px;color:#EF4444;background:rgba(239,68,68,.08);padding:1px 5px;border-radius:6px">⚠</span>' : ''}</div>
           <div style="font-size:11px;color:var(--text3)">${highlight(p.marque || '—')} · ${p.univers || '—'}${p.prix_live || p.prix_offilog ? ' · ' + fmtP(p.prix_live || p.prix_offilog) : ''}</div>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
