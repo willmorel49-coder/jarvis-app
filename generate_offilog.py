@@ -32,6 +32,7 @@ LIVE_JSON  = BASE / 'offilog_live.json'
 BEST_JSON  = BASE / 'bestsellers_offilog.json'
 IMG_JSON   = BASE / 'images_by_ean.json'   # lookup consolidé toutes sources
 PHARMA     = BASE / 'benchmark_apothical_pharmacie_montlouis-sur-loire.xlsx'
+LECLERC_JSON = BASE / 'leclerc_prices.json'
 OUT        = BASE / 'crm' / 'offilog-data.js'
 
 
@@ -217,6 +218,19 @@ else:
     print(f'Fichier Offilog Live non trouvé ({LIVE_JSON}) — prix_live/img = null')
 
 
+# ── LOAD LECLERC (optionnel) ────────────────────────────────────────────────
+leclerc_by_ean: dict = {}
+if LECLERC_JSON.exists():
+    print(f'Enrichissement Leclerc depuis : {LECLERC_JSON}')
+    with open(LECLERC_JSON, encoding='utf-8') as _f:
+        _lecl = json.load(_f)
+    for _ean, _p in _lecl.get('prices', {}).items():
+        leclerc_by_ean[str(_ean)] = float(_p['prix'])
+    print(f'  → {len(leclerc_by_ean)} produits Leclerc par EAN')
+else:
+    print(f'Fichier Leclerc non trouvé ({LECLERC_JSON}) — prix_leclerc = null')
+
+
 # ── LOAD BESTSELLERS (optionnel) ──────────────────────────────────────────────
 # Classement des meilleures ventes Offilog (rang 1 = meilleure vente)
 best_by_ean:  dict = {}   # ean_str → rang_vente int
@@ -367,6 +381,9 @@ for row in rows[1:]:
         if pk and len(pk) > 4:
             prix_pharmacie = pharma_by_prefix.get(pk)
 
+    # ── Matching Leclerc : EAN uniquement
+    prix_leclerc = leclerc_by_ean.get(ean_str) if ean_str else None
+
     records.append({
         'rang':           rang,
         'produit':        produit,
@@ -389,6 +406,7 @@ for row in rows[1:]:
         'img':            img,
         'rang_vente':     rang_vente,
         'prix_pharmacie': prix_pharmacie,
+        'prix_leclerc':   prix_leclerc,
     })
 
 print(f'Records valides : {len(records)}')
@@ -398,8 +416,10 @@ avec_live     = sum(1 for r in records if r['prix_live']   is not None)
 avec_img      = sum(1 for r in records if r['img'])
 avec_best     = sum(1 for r in records if r['rang_vente']    is not None)
 avec_pharma   = sum(1 for r in records if r['prix_pharmacie'] is not None)
+avec_leclerc  = sum(1 for r in records if r['prix_leclerc']  is not None)
 print(f'Avec prix Drakkars  : {avec_drakkars}')
 print(f'Avec prix Cap3000   : {avec_cap3000}')
+print(f'Avec prix E.Leclerc : {avec_leclerc}')
 print(f'Avec prix Live      : {avec_live}')
 print(f'Avec image          : {avec_img}')
 print(f'Best-sellers matchés: {avec_best}')
@@ -413,7 +433,7 @@ today = datetime.now().strftime('%Y-%m-%d')
 lines = [
     f'// Intégral Pharma — Offilog × Maxipara × Drakkars × Cap3000 × Live',
     f'// Généré le {today}',
-    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_live} prix live | {avec_img} images | {avec_drakkars} Drakkars | {avec_cap3000} Cap3000',
+    f'// {len(records)} produits | {dans_off_n} dans Offilog | {avec_live} prix live | {avec_img} images | {avec_drakkars} Drakkars | {avec_cap3000} Cap3000 | {avec_leclerc} Leclerc',
     f'const OFFILOG = [',
 ]
 
@@ -430,7 +450,8 @@ for r in records:
         f'prix_cap3000:{js_num(r["prix_cap3000"])},'
         f'prix_live:{js_num(r["prix_live"])},img:{js_str(r["img"] or None)},'
         f'rang_vente:{js_num(r["rang_vente"])},'
-        f'prix_pharmacie:{js_num(r["prix_pharmacie"])}}},'
+        f'prix_pharmacie:{js_num(r["prix_pharmacie"])},'
+        f'prix_leclerc:{js_num(r["prix_leclerc"])}}},'
     )
     lines.append(line)
 

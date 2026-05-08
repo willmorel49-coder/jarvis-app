@@ -5542,7 +5542,7 @@ function offiSetMarque(m) { offiMarque = m; offiPageNum = 1; renderOffilog(); }
 function offiSetSaison(s) { offiSaison = s; offiPageNum = 1; renderOffilog(); }
 function offiExportCSV() {
   const list = offiGetList();
-  const header = ['Produit','Marque','EAN','Univers','Role','Dans Offilog','Prix IP','Prix Live','Ma Pharmacie','Drakkars','Cap3000','Prix Public','Marge %','Potentiel','Rang Vente'];
+  const header = ['Produit','Marque','EAN','Univers','Role','Dans Offilog','Prix IP','Prix Live','Ma Pharmacie','Drakkars','Cap3000','E.Leclerc','Prix Public','Marge %','Potentiel','Rang Vente'];
   const rows = list.map(p => [
     `"${(p.produit||'').replace(/"/g,'""')}"`,
     `"${(p.marque||'').replace(/"/g,'""')}"`,
@@ -5555,6 +5555,7 @@ function offiExportCSV() {
     p.prix_pharmacie != null ? String(p.prix_pharmacie).replace('.',',') : '',
     p.prix_drakkars  != null ? String(p.prix_drakkars).replace('.',',') : '',
     p.prix_cap3000   != null ? String(p.prix_cap3000).replace('.',',') : '',
+    p.prix_leclerc   != null ? String(p.prix_leclerc).replace('.',',') : '',
     p.prix_maxi      != null ? String(p.prix_maxi).replace('.',',') : '',
     p.marge_pct      != null ? String(p.marge_pct.toFixed(1)).replace('.',',') : '',
     `"${(p.potentiel||'').replace(/"/g,'""')}"`,
@@ -5961,15 +5962,16 @@ function showOffiDetail(idx) {
 
   // Price comparison
   const pricesRaw = [
-    { label: 'Prix Offilog (Excel)', value: p.prix_offilog, color: OFFILOG_ORANGE },
-    { label: 'Prix Live ●',          value: p.prix_live,      color: '#15803d' },
-    { label: '🏥 Ma Pharmacie',      value: p.prix_pharmacie, color: '#00E5A0' },
-    { label: 'Drakkars',             value: p.prix_drakkars,  color: 'var(--text2)' },
-    { label: 'Cap3000',              value: p.prix_cap3000,   color: 'var(--text2)' },
-    { label: 'Prix public maxi',     value: p.prix_maxi,      color: 'var(--text3)' },
+    { label: 'Prix Offilog (Excel)', value: p.prix_offilog,   color: OFFILOG_ORANGE },
+    { label: 'Prix Live ●',          value: p.prix_live,       color: '#15803d' },
+    { label: '🏥 Ma Pharmacie',      value: p.prix_pharmacie,  color: '#00E5A0' },
+    { label: 'Drakkars',             value: p.prix_drakkars,   color: 'var(--text2)' },
+    { label: 'Cap3000',              value: p.prix_cap3000,    color: 'var(--text2)' },
+    { label: 'E.Leclerc',            value: p.prix_leclerc,    color: '#0072e6' },
+    { label: 'Prix public maxi',     value: p.prix_maxi,       color: 'var(--text3)' },
   ].filter(r => r.value != null && r.value > 0);
 
-  const compVals = [p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie].filter(v => v > 0);
+  const compVals = [p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie, p.prix_leclerc].filter(v => v != null && v > 0);
   const minComp  = compVals.length ? Math.min(...compVals) : null;
   const deltaComp = (prixIP && minComp) ? minComp - prixIP : null;
 
