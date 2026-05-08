@@ -7178,6 +7178,28 @@ function showFicheVisite(pharmacyId) {
         .sort((a, b) => b.rot_pharma_jan26 - a.rot_pharma_jan26).slice(0, 3)
     : [];
 
+  // Alertes parapharmacie — produits achetés par cette pharmacie qui ont un concurrent moins cher
+  const offiAlertes = (() => {
+    if (typeof OFFILOG === 'undefined') return [];
+    const nnk = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const results = [];
+    for (const [k, prod] of Object.entries(byProd)) {
+      const op = OFFILOG.find(p => nnk(p.produit) === k);
+      if (!op) continue;
+      const pRef = op.prix_live || op.prix_offilog;
+      if (!pRef || pRef <= 0) continue;
+      const concMap = [
+        op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars'] : null,
+        op.prix_cap3000  > 0 ? [op.prix_cap3000,  'Cap3000']  : null,
+        op.prix_leclerc  > 0 ? [op.prix_leclerc,  'Leclerc']  : null,
+      ].filter(Boolean);
+      if (!concMap.length) continue;
+      const best = concMap.sort((a, b) => a[0] - b[0])[0];
+      if (best[0] < pRef) results.push({ label: prod.label, pRef, concPrix: best[0], concSrc: best[1], ecart: best[0] - pRef });
+    }
+    return results.sort((a, b) => a.ecart - b.ecart).slice(0, 5);
+  })();
+
   const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
   const modal = document.createElement('div');
@@ -7256,6 +7278,19 @@ function showFicheVisite(pharmacyId) {
             <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9">
               <div style="font-size:12px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.designation}</div>
               <div style="font-size:11px;color:#64748b;white-space:nowrap;margin-left:12px">${b.rot_pharma_jan26.toFixed(1)} boîtes/pharma · ${fmt(b.prix_ip)}</div>
+            </div>`).join('')}
+        </div>` : ''}
+
+        <!-- Alertes parapharmacie -->
+        ${offiAlertes.length ? `
+        <div style="margin-bottom:20px">
+          <div style="font-size:13px;font-weight:800;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #fecaca">⚠ Alertes prix parapharmacie</div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:8px">Prix public concurrent &lt; Prix achat IP pour ces références</div>
+          ${offiAlertes.map(a => `
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f1f5f9">
+              <div style="flex:1;font-size:12px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.label}</div>
+              <div style="font-size:11px;color:#64748b;flex-shrink:0">IP ${fmtP(a.pRef)} → ${a.concSrc} ${fmtP(a.concPrix)}</div>
+              <div style="font-size:12px;font-weight:800;color:#dc2626;white-space:nowrap;flex-shrink:0">${fmtP(a.ecart)}</div>
             </div>`).join('')}
         </div>` : ''}
 
