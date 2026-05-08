@@ -1524,6 +1524,7 @@ label {
 }
 .offil-bench-drak { border-color: rgba(99,102,241,.25); color: #6366f1; background: rgba(99,102,241,.06); }
 .offil-bench-cap  { border-color: rgba(234,88,12,.25);  color: #ea580c; background: rgba(234,88,12,.06);  }
+.offil-bench-lecl { border-color: rgba(0,114,230,.25);  color: #0072e6; background: rgba(0,114,230,.06);  }
 
 /* ══════════════════════════════════════
    RESPONSIVE — Small mobile (< 400px)
