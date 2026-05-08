@@ -212,7 +212,15 @@ async function importMultiPharmaFile(file, month, year) {
   let totalLines = 0;
   const importedPharmas = [];
 
+  const opsoAllowed = opsoAdherentNoms();
+
   for (const group of pharmacyGroups) {
+    // Vérifier que la pharmacie est dans le listing OPSO avant tout traitement
+    if (opsoAllowed && !opsoAllowed.has(normPhName(group.name))) {
+      console.log(`[OPSO] Pharmacie ignorée (hors listing) : ${group.name}`);
+      continue;
+    }
+
     // Find or create pharmacy
     let pharma = state.pharmacies.find(p => p.name.toLowerCase() === group.name.toLowerCase());
     if (!pharma) {
@@ -296,7 +304,13 @@ async function importFile(file) {
   catch(e) { return { ok: false, error: 'Erreur lecture fichier' }; }
   if (!rows.length) return { ok: false, error: 'Fichier vide' };
 
-  // 1. Find or create pharmacy in Supabase
+  // 1. Vérifier que la pharmacie est dans le listing OPSO
+  const opsoAllowedSingle = opsoAdherentNoms();
+  if (opsoAllowedSingle && !opsoAllowedSingle.has(normPhName(name))) {
+    return { ok: false, error: `Pharmacie "${name}" non reconnue dans le listing OPSO Santé. Vérifiez le nom du fichier ou contactez votre administrateur.` };
+  }
+
+  // 2. Find or create pharmacy in Supabase
   let pharma = state.pharmacies.find(p => p.name.toLowerCase() === name.toLowerCase());
   if (!pharma) {
     const { data: inserted, error: phErr } = await sb.from('pharmacies').insert({ name, code, color }).select().single();
@@ -5411,12 +5425,27 @@ function emptyState(icon, title, sub) {
 }
 
 // ── OPSO SCOPE FILTER ─────────────────────────
+
+// Normalise un nom de pharmacie pour la comparaison (insensible à la casse, accents, ponctuation)
+function normPhName(s) {
+  return (s || '').toUpperCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Retourne le Set des noms normalisés des adhérents OPSO (depuis opso-adherents.js)
+function opsoAdherentNoms() {
+  if (typeof OPSO_ADHERENTS === 'undefined' || !OPSO_ADHERENTS.length) return null;
+  return new Set(OPSO_ADHERENTS.map(a => normPhName(a.nom)));
+}
+
 function filterToOpsoScope() {
-  const memberIds = grpGetMembers('opso');
-  if (memberIds.length === 0) return; // pas encore configuré
-  state.pharmacies = state.pharmacies.filter(p => memberIds.includes(p.id));
-  state.imports    = state.imports.filter(i => memberIds.includes(i.pharmacyId));
-  state.sales      = state.sales.filter(s => memberIds.includes(s.pharmacyId));
+  const allowed = opsoAdherentNoms();
+  if (!allowed) return; // listing non chargé — pas de filtre
+  state.pharmacies = state.pharmacies.filter(p => allowed.has(normPhName(p.name)));
+  const ids = new Set(state.pharmacies.map(p => p.id));
+  state.imports = state.imports.filter(i => ids.has(i.pharmacyId));
+  state.sales   = state.sales.filter(s => ids.has(s.pharmacyId));
 }
 
 // ── INIT ──────────────────────────────────────
