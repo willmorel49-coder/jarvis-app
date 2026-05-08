@@ -709,9 +709,9 @@ function renderDashboard() {
     let nDrak = 0, nCap = 0, nLecl = 0, nAlert = 0;
     const topAlertes = [];
     for (const p of OFFILOG) {
-      if (p.prix_drakkars > 0) nDrak++;
-      if (p.prix_cap3000 > 0) nCap++;
-      if (p.prix_leclerc > 0) nLecl++;
+      if (p.prix_drakkars != null && p.prix_drakkars > 0) nDrak++;
+      if (p.prix_cap3000  != null && p.prix_cap3000  > 0) nCap++;
+      if (p.prix_leclerc  != null && p.prix_leclerc  > 0) nLecl++;
       const pRef = p.prix_live || p.prix_offilog;
       if (pRef && pRef > 0) {
         const concs = [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0);
