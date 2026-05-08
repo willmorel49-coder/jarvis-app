@@ -1012,7 +1012,7 @@ label {
    COCKPIT — Mini KPIs
 ══════════════════════════════════════ */
 .cockpit-mini-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 10px; margin-bottom: 16px;
 }
 .cockpit-mini {
