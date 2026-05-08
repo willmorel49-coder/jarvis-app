@@ -5062,11 +5062,16 @@ function renderOffilog() {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
     const hasPromo = p.promo && p.prix_b != null;
     const { drakkars, cap3000, leclerc, maPharmie } = lookupBench(p);
-    // Best price indicator
-    const compPrices = [drakkars, cap3000, leclerc].filter(v => v != null && v > 0);
-    const minComp = compPrices.length ? Math.min(...compPrices) : null;
+    // Best price indicator — find cheapest competitor and name it
+    const compMap = [
+      drakkars != null && drakkars > 0 ? [drakkars, 'Drakkars'] : null,
+      cap3000   != null && cap3000   > 0 ? [cap3000,   'Cap3000']  : null,
+      leclerc   != null && leclerc   > 0 ? [leclerc,   'Leclerc']  : null,
+    ].filter(Boolean);
+    const bestComp = compMap.length ? compMap.sort((a, b) => a[0] - b[0])[0] : null;
+    const minComp  = bestComp ? bestComp[0] : null;
     const bestBadge = (minComp != null && p.prix > 0 && minComp < p.prix)
-      ? `<div class="offil-best-price" title="Prix public concurrent inférieur au prix achat offilog">⚠ Prix pub. conc. -${fmtP(p.prix - minComp)}</div>` : '';
+      ? `<div class="offil-best-price" title="Prix public ${bestComp[1]} inférieur au prix achat offilog">⚠ ${bestComp[1]} −${fmtP(p.prix - minComp)}</div>` : '';
     const benchRow = (drakkars != null || cap3000 != null || leclerc != null || maPharmie != null) ? `
       <div class="offil-bench-row">
         ${maPharmie != null ? `<span class="offil-bench" style="border-color:rgba(0,229,160,.25);color:#00E5A0;background:rgba(0,229,160,.06)" title="Ma Pharmacie (prix scrappé)">🏥 ${fmtP(maPharmie)}</span>` : ''}
@@ -5159,18 +5164,24 @@ function exportOffiLiveCSV() {
   });
   const { leclEan, cap3Ean, drakEan, pharmEan } = benchMaps();
   const fmtV = v => v != null ? String(v).replace('.',',') : '';
-  const header = ['Nom','Marque','EAN','Catégorie','Prix Offilog','Prix barré','Promo','Ma Pharmacie','Drakkars','Cap3000','Leclerc'];
+  const header = ['Nom','Marque','EAN','Catégorie','Prix Offilog','Prix barré','Promo','Ma Pharmacie','Drakkars','Cap3000','Leclerc','Alerte','Conc. min','Écart €'];
   const rows = list.map(p => {
     const e = p.ean ? String(p.ean) : '';
+    const dv = drakEan.get(e) ?? null;
+    const cv = cap3Ean.get(e) ?? null;
+    const lv = leclEan.get(e) ?? null;
+    const concs = [dv, cv, lv].filter(v => v != null && v > 0);
+    const minC  = concs.length ? Math.min(...concs) : null;
+    const alerte = (minC != null && p.prix > 0 && minC < p.prix) ? 'OUI' : '';
+    const ecart  = (minC != null && p.prix > 0) ? String((minC - p.prix).toFixed(2)).replace('.',',') : '';
     return [
       `"${(p.nom||'').replace(/"/g,'""')}"`,
       `"${(p.marque||'').replace(/"/g,'""')}"`,
       e, `"${p.cat||''}"`,
       fmtV(p.prix), fmtV(p.prix_b), p.promo ? 'Oui' : 'Non',
       fmtV(pharmEan.get(e) ?? null),
-      fmtV(drakEan.get(e) ?? null),
-      fmtV(cap3Ean.get(e) ?? null),
-      fmtV(leclEan.get(e) ?? null),
+      fmtV(dv), fmtV(cv), fmtV(lv),
+      alerte, fmtV(minC), ecart,
     ];
   });
   const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
