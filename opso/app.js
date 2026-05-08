@@ -5527,11 +5527,10 @@ function showOffiDetail(idx) {
   const salesTotCa  = prodSales.reduce((a, s) => a + s.mntNetHt, 0);
   const salesTotQte = prodSales.reduce((a, s) => a + s.qte, 0);
 
-  // Leclerc lookup by EAN
-  let prix_leclerc = null;
-  if (p.ean && typeof LECLERC_PRICES !== 'undefined') {
-    const lm = benchMaps().leclEan;
-    prix_leclerc = lm.get(String(p.ean)) ?? null;
+  // Leclerc: prefer pre-computed field, fallback to live lookup
+  let prix_leclerc = p.prix_leclerc ?? null;
+  if (prix_leclerc == null && p.ean && typeof LECLERC_PRICES !== 'undefined') {
+    prix_leclerc = benchMaps().leclEan.get(String(p.ean)) ?? null;
   }
 
   // Price comparison
