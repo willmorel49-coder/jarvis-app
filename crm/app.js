@@ -707,21 +707,27 @@ function renderDashboard() {
   const veilleConcurrence = (() => {
     if (typeof OFFILOG === 'undefined' || !OFFILOG.length) return null;
     let nDrak = 0, nCap = 0, nLecl = 0, nAlert = 0;
-    const topAlertes = [];
+    const allAlertes = [];
     for (const p of OFFILOG) {
       if (p.prix_drakkars != null && p.prix_drakkars > 0) nDrak++;
       if (p.prix_cap3000  != null && p.prix_cap3000  > 0) nCap++;
       if (p.prix_leclerc  != null && p.prix_leclerc  > 0) nLecl++;
       const pRef = p.prix_live || p.prix_offilog;
       if (pRef && pRef > 0) {
-        const concs = [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0);
-        if (concs.length) {
-          const minC = Math.min(...concs);
-          if (minC < pRef) { nAlert++; if (topAlertes.length < 5) topAlertes.push({ p, minC, pRef }); }
+        const concMap = [
+          p.prix_drakkars > 0 ? [p.prix_drakkars, 'Drakkars'] : null,
+          p.prix_cap3000  > 0 ? [p.prix_cap3000,  'Cap3000']  : null,
+          p.prix_leclerc  > 0 ? [p.prix_leclerc,  'Leclerc']  : null,
+        ].filter(Boolean);
+        if (concMap.length) {
+          const best = concMap.sort((a, b) => a[0] - b[0])[0];
+          const minC = best[0]; const src = best[1];
+          if (minC < pRef) { nAlert++; allAlertes.push({ p, minC, pRef, src, ecart: minC - pRef }); }
         }
       }
     }
-    return { nDrak, nCap, nLecl, nAlert, topAlertes, total: OFFILOG.length };
+    allAlertes.sort((a, b) => a.ecart - b.ecart);
+    return { nDrak, nCap, nLecl, nAlert, topAlertes: allAlertes.slice(0, 5), total: OFFILOG.length };
   })();
 
   // ── HTML ─────────────────────────────────────
@@ -1101,11 +1107,13 @@ function renderDashboard() {
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px">Top produits en alerte</div>
         ${veilleConcurrence.topAlertes.map((a, i) => `
         <div style="display:flex;align-items:center;gap:12px;padding:6px 0;${i < veilleConcurrence.topAlertes.length-1?'border-bottom:1px solid var(--border1)':''}">
-          <div style="flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.produit}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.produit}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:1px">${a.src} · IP ${fmtP(a.pRef)}</div>
+          </div>
           <div style="text-align:right;flex-shrink:0">
-            <span style="font-size:11px;color:var(--text3)">IP ${fmtP(a.pRef)}</span>
-            <span style="margin:0 6px;color:var(--text3)">vs</span>
-            <span style="font-size:12px;font-weight:700;color:#EF4444">${fmtP(a.minC)} conc.</span>
+            <div style="font-size:12px;font-weight:700;color:#EF4444">${fmtP(a.minC)}</div>
+            <div style="font-size:10px;font-weight:700;color:#EF4444;background:rgba(239,68,68,.08);padding:1px 6px;border-radius:6px;margin-top:2px">${fmtP(a.ecart)}</div>
           </div>
         </div>`).join('')}` : ''}
       </div>
@@ -5609,8 +5617,12 @@ function offiGetList() {
     if (offiSaison === 'annee' && p.saison !== 'Toute année' && p.saison != null) return false;
     return true;
   });
-  // Trier par rang_vente si filtre best-sellers actif
   if (offiRole === 'bestsellers') list.sort((a, b) => (a.rang_vente || 999) - (b.rang_vente || 999));
+  if (offiRole === 'alerte') list.sort((a, b) => {
+    const minC = p => Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
+    const ref  = p => p.prix_live || p.prix_offilog || 0;
+    return (minC(a) - ref(a)) - (minC(b) - ref(b));
+  });
   return list;
 }
 
@@ -5750,7 +5762,7 @@ function renderOffilog() {
     const prixDisplay = hasLive ? p.prix_live : (hasIP ? p.prix_offilog : null);
 
     // Price delta vs all competitors incl. pharmacie
-    let deltaHtml = '';
+    let deltaHtml = '', isAlertCard = false;
     if (prixDisplay && (hasDrak || hasCap || hasLecl || hasPharma)) {
       const concPrix = [
         hasDrak   ? p.prix_drakkars  : null,
@@ -5761,7 +5773,7 @@ function renderOffilog() {
       const minConc = Math.min(...concPrix);
       const delta = minConc - prixDisplay;
       if (delta > 0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 6px;border-radius:8px">−${fmtP(delta)} vs conc.</span>`;
-      else if (delta < -0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#EF4444;background:#fee2e2;padding:1px 6px;border-radius:8px">+${fmtP(Math.abs(delta))} vs conc.</span>`;
+      else if (delta < -0.01) { isAlertCard = true; deltaHtml = `<span style="font-size:10px;font-weight:700;color:#EF4444;background:#fee2e2;padding:1px 6px;border-radius:8px">⚠ Conc. −${fmtP(Math.abs(delta))}</span>`; }
     }
 
     const saisonBadge = p.saison && p.saison !== 'Toute année'
@@ -5798,10 +5810,10 @@ function renderOffilog() {
     // Initial marque pour placeholder
     const brandInitial = (p.marque || p.produit || '?').charAt(0).toUpperCase();
 
-    return `<div style="background:var(--bg);border-radius:16px;border:1px solid var(--border1);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer"
+    return `<div style="background:var(--bg);border-radius:16px;border:1px solid ${isAlertCard?'rgba(239,68,68,.4)':'var(--border1)'};overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer${isAlertCard?';box-shadow:0 0 0 1px rgba(239,68,68,.15)':''}"
       onclick="showOffiDetail(${startIdx + i})"
       onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,.12)';this.style.transform='translateY(-2px)'"
-      onmouseout="this.style.boxShadow='';this.style.transform=''">
+      onmouseout="this.style.boxShadow='${isAlertCard?'0 0 0 1px rgba(239,68,68,.15)':''}';this.style.transform=''">
       <!-- Zone photo uniforme 140px — toujours présente -->
       <div style="height:140px;background:${um.bg};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;flex-shrink:0">
         ${hasImg
