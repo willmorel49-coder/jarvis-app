@@ -4989,6 +4989,16 @@ function renderOffilog() {
   if (offiLiveSort === 'prix_asc')  list.sort((a,b) => (a.prix||0) - (b.prix||0));
   if (offiLiveSort === 'prix_desc') list.sort((a,b) => (b.prix||0) - (a.prix||0));
   if (offiLiveSort === 'marque')  list.sort((a,b) => (a.marque||'').localeCompare(b.marque||'', 'fr'));
+  if (offiLiveSort === 'ecart') {
+    const { leclEan, cap3Ean, drakEan } = benchMaps();
+    list.sort((a,b) => {
+      const minP = p => { const e = p.ean ? String(p.ean) : ''; const vs = [leclEan.get(e),cap3Ean.get(e),drakEan.get(e)].filter(v=>v!=null&&v>0); return vs.length ? Math.min(...vs) : null; };
+      const da = minP(a); const db = minP(b);
+      const ea = (a.prix > 0 && da != null) ? da - a.prix : Infinity;
+      const eb = (b.prix > 0 && db != null) ? db - b.prix : Infinity;
+      return ea - eb; // plus petit écart (plus négatif = IP plus cher) en premier
+    });
+  }
 
   // ── Pagination ──
   const totalPages = Math.max(1, Math.ceil(list.length / OFFIL_PAGE));
@@ -5013,7 +5023,7 @@ function renderOffilog() {
     const compPrices = [drakkars, cap3000, leclerc].filter(v => v != null && v > 0);
     const minComp = compPrices.length ? Math.min(...compPrices) : null;
     const bestBadge = (minComp != null && p.prix > 0 && minComp < p.prix)
-      ? `<div class="offil-best-price">⬇ -${fmtP(p.prix - minComp)} vs concurrents</div>` : '';
+      ? `<div class="offil-best-price" title="Prix public concurrent inférieur au prix achat offilog">⚠ Prix pub. conc. -${fmtP(p.prix - minComp)}</div>` : '';
     const benchRow = (drakkars != null || cap3000 != null || leclerc != null) ? `
       <div class="offil-bench-row">
         ${drakkars != null ? `<span class="offil-bench offil-bench-drak" title="Pharmacie des Drakkars">Drakkars ${fmtP(drakkars)}</span>` : ''}
@@ -5061,6 +5071,7 @@ function renderOffilog() {
         <option value="marque" ${offiLiveSort==='marque'?'selected':''}>Marque</option>
         <option value="prix_asc" ${offiLiveSort==='prix_asc'?'selected':''}>Prix ↑</option>
         <option value="prix_desc" ${offiLiveSort==='prix_desc'?'selected':''}>Prix ↓</option>
+        <option value="ecart" ${offiLiveSort==='ecart'?'selected':''}>⚠ Conc. moins cher</option>
       </select>
       <button onclick="exportOffiLiveCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">⬇ CSV</button>
     </div>
@@ -5229,18 +5240,24 @@ function renderWml() {
           concPrix = best[0]; concLabel = best[1];
         }
       }
+      const margeBrute = (puNet != null && concPrix != null) ? concPrix - puNet : null;
+      const margeBruteColor = margeBrute == null ? 'var(--text3)' : margeBrute > 0 ? 'var(--green)' : '#ef4444';
       const concCell = concPrix
-        ? `<span style="font-size:11px;font-weight:700;color:#0072e6">${fmtD(concPrix)}</span><br><span style="font-size:9px;color:var(--text3)">${concLabel}</span>`
+        ? `<span style="font-size:11px;font-weight:700;color:#0072e6">${fmtD(concPrix)}</span><span style="font-size:9px;color:var(--text3);margin-left:3px">${concLabel}</span>`
         : '<span style="font-size:10px;color:var(--text3)">—</span>';
-      return `<tr style="border-bottom:1px solid var(--border)">
+      const margeCell = margeBrute != null
+        ? `<span style="font-size:12px;font-weight:700;color:${margeBruteColor}">${margeBrute >= 0 ? '+' : ''}${fmtD(margeBrute)}</span>`
+        : '<span style="font-size:10px;color:var(--text3)">—</span>';
+      return `<tr style="border-bottom:1px solid var(--border)${margeBrute != null && margeBrute < 0 ? ';background:rgba(239,68,68,.04)' : ''}">
         <td style="padding:7px 10px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
-        <td style="padding:7px 12px;font-size:12px;font-weight:500;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</td>
+        <td style="padding:7px 12px;font-size:12px;font-weight:500;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</td>
         <td style="padding:7px 10px;font-size:10px;color:var(--text3)">${ean||'—'}</td>
         <td style="padding:7px 12px;text-align:right;font-size:12px">${fmtD(ca)}</td>
         <td style="padding:7px 12px;text-align:right;font-size:12px;color:${mg>0?'var(--green)':'var(--text3)'}">${fmtD(mg)}</td>
         <td style="padding:7px 12px;text-align:right;font-size:11px;color:var(--text3)">${tm > 0 ? fmtP(tm) : '—'}</td>
         <td style="padding:7px 12px;text-align:right;font-size:11px;color:var(--text3)">${qt}</td>
         <td style="padding:7px 12px;text-align:right;line-height:1.3">${concCell}</td>
+        <td style="padding:7px 12px;text-align:right">${margeCell}</td>
       </tr>`;
     }).join('');
 
@@ -5309,7 +5326,8 @@ function renderWml() {
               <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Marge €</th>
               <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx</th>
               <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Qté</th>
-              <th style="padding:6px 12px;text-align:right;font-size:10px;color:#0072e6">Prix marché</th>
+              <th style="padding:6px 12px;text-align:right;font-size:10px;color:#0072e6" title="Prix public consommateur chez les concurrents">Prix public conc.</th>
+              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--green)" title="Marge brute potentielle = Prix public conc. - Prix achat HT">Marge pot./u.</th>
             </tr></thead>
             <tbody>${prodRows}</tbody>
           </table>
