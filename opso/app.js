@@ -5178,11 +5178,29 @@ function exportWmlCSV(tircode) {
   if (tircode != null) {
     const ph = WML_DATA.find(d => d.tc === tircode);
     if (!ph) return;
-    header = ['Produit','EAN','CA HT','Marge €','Tx marge %','Qté'];
-    rows = ph.pr.map(([nom, ca, mg, qt, ean]) => [
-      `"${nom.replace(/"/g,'""')}"`, ean||'', fmtC(ca), fmtC(mg),
-      ca > 0 ? fmtC(mg/ca*100) : '0', qt,
-    ]);
+    const bm = benchMaps();
+    header = ['Produit','EAN','CA HT','Marge €','Tx marge %','Qté','PU Net HT','Prix pub conc.','Source conc.','Marge brute pot.'];
+    rows = ph.pr.map(([nom, ca, mg, qt, ean]) => {
+      const puNet = qt > 0 ? ca/qt : null;
+      let concPrix = null, concLabel = '';
+      if (ean) {
+        const e = String(ean);
+        const prices = [
+          bm.leclEan.has(e) ? [bm.leclEan.get(e), 'Leclerc'] : null,
+          bm.cap3Ean.has(e) ? [bm.cap3Ean.get(e), 'Cap3000'] : null,
+          bm.drakEan.has(e) ? [bm.drakEan.get(e), 'Drakkars'] : null,
+        ].filter(Boolean);
+        if (prices.length) { const best = prices.sort((a,b)=>a[0]-b[0])[0]; concPrix = best[0]; concLabel = best[1]; }
+      }
+      const margeBrute = (puNet != null && concPrix != null) ? concPrix - puNet : null;
+      return [
+        `"${nom.replace(/"/g,'""')}"`, ean||'', fmtC(ca), fmtC(mg),
+        ca > 0 ? fmtC(mg/ca*100) : '0', qt,
+        puNet != null ? fmtC(puNet) : '',
+        concPrix != null ? fmtC(concPrix) : '', concLabel,
+        margeBrute != null ? fmtC(margeBrute) : '',
+      ];
+    });
     filename = `WML_${titleCase(ph.nom).replace(/\s+/g,'_')}_2026.csv`;
   } else {
     header = ['Pharmacie','TIRCODE','CA HT','Marge €','Tx marge %','Qté'];
