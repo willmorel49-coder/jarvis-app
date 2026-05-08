@@ -4885,24 +4885,29 @@ function offiSetMarque(m) { offiMarque = m; offiPageNum = 1; renderOffilog(); }
 function offiSetSaison(s) { offiSaison = s; offiPageNum = 1; renderOffilog(); }
 function offiExportCSV() {
   const list = offiGetList();
-  const header = ['Produit','Marque','EAN','Univers','Role','Dans Offilog','Prix IP','Prix Live','Ma Pharmacie','Drakkars','Cap3000','Prix Public','Marge %','Potentiel','Rang Vente'];
-  const rows = list.map(p => [
-    `"${(p.produit||'').replace(/"/g,'""')}"`,
-    `"${(p.marque||'').replace(/"/g,'""')}"`,
-    p.ean||'',
-    `"${(p.univers||'').replace(/"/g,'""')}"`,
-    `"${(p.role||'').replace(/"/g,'""')}"`,
-    p.dans_offilog ? 'Oui' : 'Non',
-    p.prix_offilog != null ? String(p.prix_offilog).replace('.',',') : '',
-    p.prix_live    != null ? String(p.prix_live).replace('.',',') : '',
-    p.prix_pharmacie != null ? String(p.prix_pharmacie).replace('.',',') : '',
-    p.prix_drakkars  != null ? String(p.prix_drakkars).replace('.',',') : '',
-    p.prix_cap3000   != null ? String(p.prix_cap3000).replace('.',',') : '',
-    p.prix_maxi      != null ? String(p.prix_maxi).replace('.',',') : '',
-    p.marge_pct      != null ? String(p.marge_pct.toFixed(1)).replace('.',',') : '',
-    `"${(p.potentiel||'').replace(/"/g,'""')}"`,
-    p.rang_vente != null ? p.rang_vente : '',
-  ]);
+  const lm = benchMaps().leclEan;
+  const header = ['Produit','Marque','EAN','Univers','Role','Dans Offilog','Prix IP','Prix Live','Ma Pharmacie','Drakkars','Cap3000','E.Leclerc','Prix Public','Marge %','Potentiel','Rang Vente'];
+  const rows = list.map(p => {
+    const leclerc = (p.ean && lm.has(String(p.ean))) ? lm.get(String(p.ean)) : null;
+    return [
+      `"${(p.produit||'').replace(/"/g,'""')}"`,
+      `"${(p.marque||'').replace(/"/g,'""')}"`,
+      p.ean||'',
+      `"${(p.univers||'').replace(/"/g,'""')}"`,
+      `"${(p.role||'').replace(/"/g,'""')}"`,
+      p.dans_offilog ? 'Oui' : 'Non',
+      p.prix_offilog != null ? String(p.prix_offilog).replace('.',',') : '',
+      p.prix_live    != null ? String(p.prix_live).replace('.',',') : '',
+      p.prix_pharmacie != null ? String(p.prix_pharmacie).replace('.',',') : '',
+      p.prix_drakkars  != null ? String(p.prix_drakkars).replace('.',',') : '',
+      p.prix_cap3000   != null ? String(p.prix_cap3000).replace('.',',') : '',
+      leclerc          != null ? String(leclerc).replace('.',',') : '',
+      p.prix_maxi      != null ? String(p.prix_maxi).replace('.',',') : '',
+      p.marge_pct      != null ? String(p.marge_pct.toFixed(1)).replace('.',',') : '',
+      `"${(p.potentiel||'').replace(/"/g,'""')}"`,
+      p.rang_vente != null ? p.rang_vente : '',
+    ];
+  });
   const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
   const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -5005,6 +5010,15 @@ function renderOffilog() {
   if (offiLivePage > totalPages) offiLivePage = 1;
   const page = list.slice((offiLivePage-1)*OFFIL_PAGE, offiLivePage*OFFIL_PAGE);
 
+  // ── Stats benchmark (calculé sur tout OFFILOG_LIVE, pas juste la page) ──
+  const { leclEan: le, cap3Ean: ce, drakEan: de } = benchMaps();
+  let nAlerte = 0, nBench = 0;
+  for (const p of OFFILOG_LIVE) {
+    const e = p.ean ? String(p.ean) : '';
+    const concs = [le.get(e), ce.get(e), de.get(e)].filter(v => v != null && v > 0);
+    if (concs.length) { nBench++; if (p.prix > 0 && Math.min(...concs) < p.prix) nAlerte++; }
+  }
+
   // ── Catégories ──
   const cats = ['tous', ...Array.from(new Set(OFFILOG_LIVE.map(p => p.cat))).sort()];
 
@@ -5076,6 +5090,16 @@ function renderOffilog() {
       <button onclick="exportOffiLiveCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">⬇ CSV</button>
     </div>
   </div>
+
+  ${nAlerte > 0 ? `
+  <div onclick="offiLiveSort='ecart';offiLivePage=1;renderOffilog()" style="margin-bottom:12px;padding:10px 16px;border-radius:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);cursor:pointer;display:flex;align-items:center;gap:10px">
+    <span style="font-size:18px">⚠️</span>
+    <div>
+      <span style="font-size:13px;font-weight:700;color:#ef4444">${nAlerte} produit${nAlerte>1?'s':''}</span>
+      <span style="font-size:12px;color:var(--text2)"> avec prix public concurrent inférieur au prix achat offilog</span>
+    </div>
+    <span style="margin-left:auto;font-size:11px;color:#ef4444;font-weight:600">Voir →</span>
+  </div>` : ''}
 
   <div class="offil-cats">${catChips}</div>
 
