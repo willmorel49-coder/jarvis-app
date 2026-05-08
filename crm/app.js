@@ -5521,8 +5521,14 @@ function offiGetList() {
     if (offiRole === 'bestsellers') return p.rang_vente != null;
     if (offiRole === 'pharmacie') return p.prix_pharmacie != null && p.prix_pharmacie > 0;
     if (offiRole === 'favoris') return p.ean && getOffiFavs().has(p.ean);
+    if (offiRole === 'alerte') {
+      const pRef = p.prix_live || p.prix_offilog;
+      if (!pRef) return false;
+      const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
+      return compMin < pRef && compMin < Infinity;
+    }
     if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
-    if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && p.role !== offiRole) return false;
+    if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && offiRole !== 'alerte' && p.role !== offiRole) return false;
     if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
     if (offiMarque !== 'tous' && p.marque !== offiMarque) return false;
     if (offiSaison === 'pe' && p.saison !== 'Printemps/Été') return false;
@@ -5593,6 +5599,13 @@ function renderOffilog() {
   const nOpps     = OFFILOG.filter(p => p.role === 'Opportunité').length;
   const nDrakkars = OFFILOG.filter(p => p.prix_drakkars != null && p.prix_drakkars > 0).length;
   const nCap3000  = OFFILOG.filter(p => p.prix_cap3000  != null && p.prix_cap3000  > 0).length;
+  const nLeclerc  = OFFILOG.filter(p => p.prix_leclerc  != null && p.prix_leclerc  > 0).length;
+  const nAlerte   = OFFILOG.filter(p => {
+    const pRef = p.prix_live || p.prix_offilog;
+    if (!pRef) return false;
+    const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
+    return compMin < pRef && compMin < Infinity;
+  }).length;
   const nLive     = OFFILOG.filter(p => p.prix_live      != null && p.prix_live      > 0).length;
   const nImg      = OFFILOG.filter(p => p.img && p.img.length > 0).length;
   const nPharma   = OFFILOG.filter(p => p.prix_pharmacie != null && p.prix_pharmacie > 0).length;
@@ -5627,6 +5640,7 @@ function renderOffilog() {
     { key: 'tous',            label: 'Tous',             icon: '✦', color: '#64748B' },
     { key: 'bestsellers',     label: `Top ventes (${nBest})`, icon: '🏆', color: '#F59E0B' },
     { key: 'pharmacie',       label: `Ma Pharmacie (${nPharma})`, icon: '🏥', color: '#00E5A0' },
+    { key: 'alerte',          label: `Alertes prix (${nAlerte})`, icon: '⚠', color: '#EF4444' },
     { key: 'favoris',         label: `Favoris (${nFavs})`, icon: '★', color: '#EC4899' },
     { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
     { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
@@ -5652,6 +5666,7 @@ function renderOffilog() {
     const hasMaxi  = p.prix_maxi      != null && p.prix_maxi      > 0;
     const hasDrak  = p.prix_drakkars  != null && p.prix_drakkars  > 0;
     const hasCap   = p.prix_cap3000   != null && p.prix_cap3000   > 0;
+    const hasLecl  = p.prix_leclerc   != null && p.prix_leclerc   > 0;
     const hasPharma= p.prix_pharmacie != null && p.prix_pharmacie > 0;
     const hasImg   = p.img && p.img.length > 0;
     const hasMarge = p.marge_pct != null;
@@ -5663,10 +5678,11 @@ function renderOffilog() {
 
     // Price delta vs all competitors incl. pharmacie
     let deltaHtml = '';
-    if (prixDisplay && (hasDrak || hasCap || hasPharma)) {
+    if (prixDisplay && (hasDrak || hasCap || hasLecl || hasPharma)) {
       const concPrix = [
         hasDrak   ? p.prix_drakkars  : null,
         hasCap    ? p.prix_cap3000   : null,
+        hasLecl   ? p.prix_leclerc   : null,
         hasPharma ? p.prix_pharmacie : null,
       ].filter(Boolean);
       const minConc = Math.min(...concPrix);
@@ -5698,11 +5714,12 @@ function renderOffilog() {
         })()
       : '';
 
-    const competHtml = (hasDrak || hasCap || hasPharma) ? `
+    const competHtml = (hasDrak || hasCap || hasLecl || hasPharma) ? `
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border1)">
         ${hasPharma ? `<div style="font-size:10px;color:var(--text3)">🏥 <span style="color:var(--mint);font-weight:700">${fmtP(p.prix_pharmacie)}</span> <span style="opacity:.6">Ma Phcie</span> ${pharmaDeltaHtml}</div>` : ''}
         ${hasDrak   ? `<div style="font-size:10px;color:var(--text3)">🛒 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_drakkars)}</span> <span style="opacity:.6">Drakkars</span></div>` : ''}
         ${hasCap    ? `<div style="font-size:10px;color:var(--text3)">🏪 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_cap3000)}</span> <span style="opacity:.6">Cap3000</span></div>` : ''}
+        ${hasLecl   ? `<div style="font-size:10px;color:var(--text3)">🔵 <span style="color:#0072e6;font-weight:600">${fmtP(p.prix_leclerc)}</span> <span style="opacity:.6">Leclerc</span></div>` : ''}
       </div>` : '';
 
     // Initial marque pour placeholder
@@ -5794,13 +5811,14 @@ function renderOffilog() {
           <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--mint);font-weight:700;white-space:nowrap">Ma Phcie</th>
           <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Drakkars</th>
           <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Cap3000</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#0072e6;font-weight:700;white-space:nowrap">Leclerc</th>
           <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Marge</th>
         </tr>
       </thead>
       <tbody>
         ${page.map((p, i) => {
           const prixRef  = p.prix_live || p.prix_offilog;
-          const minConc  = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie].filter(x => x > 0).concat([Infinity]));
+          const minConc  = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(x => x != null && x > 0).concat([Infinity]));
           const deltaRef = (prixRef && minConc < Infinity) ? minConc - prixRef : null;
           const deltaColor = deltaRef == null ? '' : deltaRef > 0.05 ? '#10B981' : deltaRef < -0.05 ? '#EF4444' : '#6B7280';
           const margeColor = p.marge_pct == null ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
@@ -5821,6 +5839,7 @@ function renderOffilog() {
             <td style="padding:8px 10px;text-align:right;font-weight:700;color:var(--mint);white-space:nowrap">${p.prix_pharmacie ? fmtP(p.prix_pharmacie) : '—'}</td>
             <td style="padding:8px 10px;text-align:right;color:var(--text2);white-space:nowrap">${p.prix_drakkars ? fmtP(p.prix_drakkars) : '—'}</td>
             <td style="padding:8px 10px;text-align:right;color:var(--text2);white-space:nowrap">${p.prix_cap3000 ? fmtP(p.prix_cap3000) : '—'}</td>
+            <td style="padding:8px 10px;text-align:right;color:#0072e6;font-weight:${p.prix_leclerc ? '600' : '400'};white-space:nowrap">${p.prix_leclerc ? fmtP(p.prix_leclerc) : '—'}</td>
             <td style="padding:8px 10px;text-align:right;white-space:nowrap">
               ${p.marge_pct != null ? `<span style="font-weight:700;color:${margeColor}">${p.marge_pct.toFixed(1)}%</span>` : '—'}
               ${deltaRef != null ? `<div style="font-size:9px;font-weight:700;color:${deltaColor}">${deltaRef > 0 ? '−' : '+'}${fmtP(Math.abs(deltaRef))} conc.</div>` : ''}
@@ -5871,6 +5890,15 @@ function renderOffilog() {
           <div style="font-size:22px;font-weight:900;color:#00E5A0">${fmtNum(nPharma)}</div>
           <div style="font-size:10px;color:rgba(0,229,160,.8);text-transform:uppercase;letter-spacing:.5px">Ma Pharmacie</div>
         </div>
+        <div style="background:rgba(0,114,230,.15);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px);border:1px solid rgba(0,114,230,.3)">
+          <div style="font-size:22px;font-weight:900;color:#0072e6">${fmtNum(nLeclerc)}</div>
+          <div style="font-size:10px;color:rgba(0,114,230,.8);text-transform:uppercase;letter-spacing:.5px">E.Leclerc</div>
+        </div>
+        ${nAlerte > 0 ? `
+        <div style="background:rgba(239,68,68,.15);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px);border:1px solid rgba(239,68,68,.3);cursor:pointer" onclick="offiRole='alerte';offiPageNum=1;renderOffilog()" title="Produits dont le prix public concurrent est inférieur au prix IP">
+          <div style="font-size:22px;font-weight:900;color:#EF4444">${fmtNum(nAlerte)}</div>
+          <div style="font-size:10px;color:rgba(239,68,68,.8);text-transform:uppercase;letter-spacing:.5px">⚠ Alertes</div>
+        </div>` : ''}
         <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
           <div style="font-size:22px;font-weight:900;color:#fff">${margeMoy.toFixed(0)}%</div>
           <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Marge moy.</div>
