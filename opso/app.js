@@ -4951,11 +4951,11 @@ function renderOffilog() {
 
   const cards = page.map(p => {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
-    const hasPromo = p.promo && p.prix_barre != null;
+    const hasPromo = p.promo && p.prix_b != null;
     return `
-    <a class="offil-card" href="${p.url}" target="_blank" rel="noopener">
+    <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener">
       <div class="offil-card-img-wrap">
-        ${p.img ? `<img class="offil-card-img" src="${p.img}" alt="" loading="lazy" onerror="this.style.display='none'">` : '<div class="offil-card-img-placeholder"></div>'}
+        ${p.img ? `<img class="offil-card-img" src="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.img}" alt="" loading="lazy" onerror="this.style.display='none'">` : '<div class="offil-card-img-placeholder"></div>'}
         ${hasPromo ? '<span class="offil-promo-badge">PROMO</span>' : ''}
       </div>
       <div class="offil-card-body">
@@ -4963,7 +4963,7 @@ function renderOffilog() {
         <div class="offil-card-nom">${p.nom}</div>
         <div class="offil-card-footer">
           <div class="offil-card-prix">
-            ${hasPromo ? `<span class="offil-prix-barre">${fmtP(p.prix_barre)}</span>` : ''}
+            ${hasPromo ? `<span class="offil-prix-barre">${fmtP(p.prix_b)}</span>` : ''}
             <span class="offil-prix-live">${fmtP(p.prix)}</span>
           </div>
           <span class="offil-card-cat">${p.cat}</span>
