@@ -7556,6 +7556,41 @@ function confirmerCommande(pharmacyId, year, month) {
   navigate('simulateur');
 }
 
+function simFromWmlMissed(pharmacyId) {
+  const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!pharma) return;
+  const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const nnSim = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const wmlEntry = wmlVis.find(d => nnSim(d.nom) === nnSim(pharma.name));
+  if (!wmlEntry || !wmlEntry.pr || !wmlEntry.pr.length) {
+    showToast('Aucune donnée WML pour cette pharmacie', 'error'); return;
+  }
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  const directNames = new Set(allPhSales.map(s => nnSim(s.artDesignation)));
+  const missed = wmlEntry.pr.filter(([nom]) => nom && !directNames.has(nnSim(nom)));
+  if (!missed.length) { showToast('Tous les produits WML sont déjà commandés en direct', 'info'); return; }
+  state.sim.pharmacyId = pharma.id;
+  state.sim.name = `WML manquants → ${pharma.name}`;
+  state.sim.items = missed.map(([nom, ca, mg, qt, ean]) => {
+    const offi = typeof OFFILOG !== 'undefined' ? OFFILOG.find(p => nnSim(p.produit) === nnSim(nom)) : null;
+    const puNet = offi && offi.prix_offilog > 0 ? offi.prix_offilog : (qt > 0 ? ca / qt : 0);
+    const bench = typeof BENCHMARK !== 'undefined' ? BENCHMARK.find(b => nnSim(b.designation) === nnSim(nom)) : null;
+    return {
+      designation: nom,
+      code: bench?.cip13 || '',
+      cat: bench ? (bench.categorie || 'nr') : 'nr',
+      froid: bench?.is_froid || false,
+      puNet: puNet > 0 ? puNet : (ca && qt ? ca/qt : 1),
+      puBrut: (puNet > 0 ? puNet : 1) * 1.05,
+      qty: Math.max(1, Math.round((qt || 4) / 4)),
+    };
+  }).filter(it => it.puNet > 0);
+  document.getElementById('fiche-visite-modal')?.remove();
+  navigate('simulateur');
+  setTimeout(() => renderSimulator(), 80);
+  showToast(`${state.sim.items.length} produits WML chargés dans le simulateur`, 'success');
+}
+
 function filterPharmaHistTable(q) {
   const tbody = document.getElementById('pharma-hist-tbody');
   if (!tbody) return;
@@ -7768,6 +7803,7 @@ function showFicheVisite(pharmacyId) {
                 <span style="font-weight:700;color:#d97706;margin-left:8px;white-space:nowrap">\${fmt(ca)} · \${Math.round(qt)} u</span>
               </div>\`).join('')}
               \${missedFv.length > 4 ? \`<div style="font-size:10px;color:#92400e;margin-top:4px">+\${missedFv.length-4} autres</div>\` : ''}
+              <button onclick="simFromWmlMissed('${pharma.id}')" style="margin-top:8px;width:100%;padding:7px;border-radius:8px;border:none;background:#d97706;color:#fff;cursor:pointer;font-size:12px;font-weight:700">🛒 Simuler commande WML</button>
             </div>\`;
           })()}
         </div>` : ''}
