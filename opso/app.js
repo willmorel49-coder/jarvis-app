@@ -771,6 +771,51 @@ function renderDashboard() {
     })()}
 
     ${(() => {
+      const wmlVis4 = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+      if (!wmlVis4.length) return '';
+      const nnU = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+      const wmlMap4 = new Map(wmlVis4.map(d => [nnU(d.nom), d]));
+      const rows = state.pharmacies.map(ph => {
+        const wmlE = wmlMap4.get(nnU(ph.name));
+        if (!wmlE || !wmlE.ca) return null;
+        const wmlAvg = wmlE.ca / 4; // moyenne mensuelle Jan-Apr
+        const directCur = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+        const pot = Math.max(0, wmlAvg - directCur);
+        const ratio = wmlAvg > 0 ? directCur / wmlAvg : 0;
+        return { ph, wmlAvg, directCur, pot, ratio };
+      }).filter(r => r && r.pot > 50).sort((a,b) => b.pot - a.pot).slice(0, 5);
+      if (!rows.length) return '';
+      const fmtW = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
+      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
+        <div class="card-header" style="padding:16px 20px">
+          <div>
+            <div class="card-title">Potentiel WML → Direct</div>
+            <div class="card-subtitle">Pharmacies achetant via groupement avec marge de progression directe</div>
+          </div>
+        </div>
+        ${rows.map(r => {
+          const pct = Math.min(100, Math.round(r.ratio * 100));
+          return `<div style="display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="showPharmaDetail('${r.ph.id}')">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(r.ph.name)}</div>
+                <div style="font-size:11px;color:var(--amber);font-weight:700;flex-shrink:0;margin-left:8px">+${fmtW(r.pot)}</div>
+              </div>
+              <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
+                <div style="width:${pct}%;height:100%;background:var(--opso-green);border-radius:3px;transition:width .4s"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:3px">
+                <div style="font-size:10px;color:var(--text3)">Direct ${fmtW(r.directCur)} · WML moy. ${fmtW(r.wmlAvg)}</div>
+                <div style="font-size:10px;color:var(--text3)">${pct}%</div>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--text3);flex-shrink:0">›</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    })()}
+
+    ${(() => {
       const byMonth = caByMonth(allSalesRaw);
       if (byMonth.length < 2) return '';
       const maxCA = Math.max(...byMonth.map(([,v]) => v), 1);
