@@ -1285,6 +1285,56 @@ function renderDashboard() {
         </table>
       </div>
     </div>` : ''}
+
+    <!-- Prochaines visites -->
+    ${(() => {
+      if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
+      const todayV = new Date(); todayV.setHours(0,0,0,0);
+      const parseV = str => {
+        if (!str || str === 'null' || str.trim() === '') return null;
+        const s = str.trim();
+        let m;
+        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+        m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+        return null;
+      };
+      const moV = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+      const dateShortV = d => String(d.getDate()).padStart(2,'0') + ' ' + moV[d.getMonth()];
+      const upcoming = CLIENTS
+        .map(c => ({ c, date: parseV(c.prochaineVisite) }))
+        .filter(x => x.date !== null && x.date >= todayV)
+        .sort((a, b) => a.date - b.date)
+        .slice(0, 5);
+      if (!upcoming.length) return '';
+      const pharmaMap = new Map(state.pharmacies.map(p => [p.name.toUpperCase().trim(), p]));
+      const rows = upcoming.map(({ c, date }) => {
+        const ph = pharmaMap.get((c.nom||'').toUpperCase().trim());
+        const diff = Math.round((date - todayV) / 86400000);
+        const urgBg = diff === 0 ? 'rgba(255,176,32,.15)' : diff <= 7 ? 'rgba(0,229,160,.08)' : 'var(--bg)';
+        const urgCol = diff === 0 ? 'var(--amber)' : diff <= 7 ? 'var(--mint)' : 'var(--text3)';
+        const urgLabel = diff === 0 ? "Aujourd'hui" : diff === 1 ? 'Demain' : diff <= 7 ? 'J+' + diff : dateShortV(date);
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);cursor:pointer" onclick="navigate('pharmacies');setTimeout(()=>renderPharmacies(),80)">
+          <div style="min-width:64px;padding:3px 8px;border-radius:8px;background:${urgBg};text-align:center;font-size:11px;font-weight:700;color:${urgCol}">${urgLabel}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nom||'—'}</div>
+            <div style="font-size:11px;color:var(--text3)">${c.cp||''} ${c.ville||''}</div>
+          </div>
+          ${ph ? `<div style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></div>` : ''}
+        </div>`;
+      }).join('');
+      return `<div class="card fade-up" style="margin-top:24px">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Prochaines visites</div>
+            <div class="card-subtitle">${upcoming.length} visite${upcoming.length>1?'s':''} planifiée${upcoming.length>1?'s':''}</div>
+          </div>
+          <button onclick="navigate('pharmacies')" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-weight:700">Tout voir →</button>
+        </div>
+        ${rows}
+      </div>`;
+    })()}
   `;
 
   setTimeout(() => {
