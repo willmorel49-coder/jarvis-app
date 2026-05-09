@@ -6166,7 +6166,7 @@ function showOffiDetail(idx) {
   const priceRowsHtml = pricesRaw.map(pr => {
     const dv = (prixIP && pr.value && Math.abs(pr.value - prixIP) > 0.005) ? pr.value - prixIP : null;
     const dvHtml = dv != null
-      ? `<span style="font-size:10px;margin-left:8px;color:${dv > 0 ? '#10B981' : '#EF4444'};font-weight:700">${dv > 0 ? '+' : ''}${fmtP(dv)}</span>`
+      ? `<span style="font-size:10px;margin-left:8px;color:${dv > 0 ? '#10B981' : '#F59E0B'};font-weight:700">${dv > 0 ? '+' : ''}${fmtP(dv)}</span>`
       : '';
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border1)">
       <span style="font-size:12px;color:var(--text3)">${pr.label}</span>
