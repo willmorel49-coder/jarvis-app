@@ -706,29 +706,28 @@ function renderDashboard() {
   // ── Veille concurrentielle parapharmacie ─────
   const veilleConcurrence = (() => {
     if (typeof OFFILOG === 'undefined' || !OFFILOG.length) return null;
-    let nDrak = 0, nCap = 0, nLecl = 0, nAlert = 0;
-    const allAlertes = [];
+    let nDrak = 0, nCap = 0, nLecl = 0, nPharma = 0, nWithData = 0;
+    const topItems = [];
     for (const p of OFFILOG) {
-      if (p.prix_drakkars != null && p.prix_drakkars > 0) nDrak++;
-      if (p.prix_cap3000  != null && p.prix_cap3000  > 0) nCap++;
-      if (p.prix_leclerc  != null && p.prix_leclerc  > 0) nLecl++;
-      const pRef = p.prix_maxi;
-      if (pRef && pRef > 0) {
-        const concMap = [
-          p.prix_drakkars  > 0 ? [p.prix_drakkars,  'Drakkars']    : null,
-          p.prix_cap3000   > 0 ? [p.prix_cap3000,   'Cap3000']     : null,
-          p.prix_leclerc   > 0 ? [p.prix_leclerc,   'Leclerc']     : null,
-          p.prix_pharmacie > 0 ? [p.prix_pharmacie, 'Ma Pharmacie'] : null,
-        ].filter(Boolean);
-        if (concMap.length) {
-          const best = concMap.sort((a, b) => a[0] - b[0])[0];
-          const minC = best[0]; const src = best[1];
-          if (minC < pRef) { nAlert++; allAlertes.push({ p, minC, pRef, src, ecart: minC - pRef }); }
-        }
+      if (p.prix_drakkars  != null && p.prix_drakkars  > 0) nDrak++;
+      if (p.prix_cap3000   != null && p.prix_cap3000   > 0) nCap++;
+      if (p.prix_leclerc   != null && p.prix_leclerc   > 0) nLecl++;
+      if (p.prix_pharmacie != null && p.prix_pharmacie > 0) nPharma++;
+      const concMap = [
+        p.prix_drakkars  > 0 ? [p.prix_drakkars,  'Drakkars',  '#6366f1'] : null,
+        p.prix_cap3000   > 0 ? [p.prix_cap3000,   'Cap3000',   '#ea580c'] : null,
+        p.prix_leclerc   > 0 ? [p.prix_leclerc,   'Leclerc',   '#0072e6'] : null,
+        p.prix_pharmacie > 0 ? [p.prix_pharmacie, 'Apothical', '#00E5A0'] : null,
+        p.prix_maxi      > 0 ? [p.prix_maxi,      'Maxipara',  '#FFB020'] : null,
+      ].filter(Boolean);
+      if (concMap.length) {
+        nWithData++;
+        const sorted = concMap.slice().sort((a, b) => a[0] - b[0]);
+        topItems.push({ p, concMap: sorted, nSrc: concMap.length });
       }
     }
-    allAlertes.sort((a, b) => a.ecart - b.ecart);
-    return { nDrak, nCap, nLecl, nAlert, topAlertes: allAlertes.slice(0, 5), total: OFFILOG.length };
+    const topVeille = topItems.sort((a, b) => b.nSrc - a.nSrc).slice(0, 5);
+    return { nDrak, nCap, nLecl, nPharma, nWithData, topVeille, total: OFFILOG.length };
   })();
 
   // ── HTML ─────────────────────────────────────
@@ -1066,56 +1065,46 @@ function renderDashboard() {
       </div>
     </div>` : ''}
 
-    <!-- Row 2g : Veille concurrentielle parapharmacie -->
+    <!-- Row 2g : Veille prix parapharmacie -->
     ${veilleConcurrence ? `
     <div class="card fade-up" style="margin-bottom:24px">
       <div class="card-header">
         <div>
-          <div class="card-title">Veille concurrentielle · Parapharmacie</div>
-          <div class="card-subtitle">Prix publics concurrents vs prix achat IP · ${fmtNum(veilleConcurrence.total)} références</div>
+          <div class="card-title">Veille prix · Parapharmacie</div>
+          <div class="card-subtitle">Prix de vente concurrents · ${fmtNum(veilleConcurrence.nWithData)} références couvertes sur ${fmtNum(veilleConcurrence.total)}</div>
         </div>
-        ${veilleConcurrence.nAlert > 0 ? `
-        <div style="text-align:right">
-          <div style="font-size:24px;font-weight:900;color:#EF4444">${fmtNum(veilleConcurrence.nAlert)}</div>
-          <div style="font-size:11px;color:var(--text3)">Prix pub. conc. < Prix achat IP</div>
-        </div>` : `
-        <div style="text-align:right">
-          <div style="font-size:20px;font-weight:900;color:#10B981">✓</div>
-          <div style="font-size:11px;color:var(--text3)">Aucune alerte</div>
-        </div>`}
+        <button onclick="navigate('offilog')" style="font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-weight:600">Voir catalogue →</button>
       </div>
       <div style="padding:0 20px 16px">
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-          <div style="flex:1;min-width:90px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);border-radius:10px;padding:10px 14px;text-align:center">
+          <div style="flex:1;min-width:80px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);border-radius:10px;padding:10px 14px;text-align:center">
             <div style="font-size:18px;font-weight:900;color:#6366f1">${fmtNum(veilleConcurrence.nDrak)}</div>
             <div style="font-size:10px;color:var(--text3);margin-top:2px">Drakkars</div>
           </div>
-          <div style="flex:1;min-width:90px;background:rgba(234,88,12,.06);border:1px solid rgba(234,88,12,.2);border-radius:10px;padding:10px 14px;text-align:center">
+          <div style="flex:1;min-width:80px;background:rgba(234,88,12,.06);border:1px solid rgba(234,88,12,.2);border-radius:10px;padding:10px 14px;text-align:center">
             <div style="font-size:18px;font-weight:900;color:#ea580c">${fmtNum(veilleConcurrence.nCap)}</div>
             <div style="font-size:10px;color:var(--text3);margin-top:2px">Cap3000</div>
           </div>
-          <div style="flex:1;min-width:90px;background:rgba(0,114,230,.06);border:1px solid rgba(0,114,230,.2);border-radius:10px;padding:10px 14px;text-align:center">
+          <div style="flex:1;min-width:80px;background:rgba(0,114,230,.06);border:1px solid rgba(0,114,230,.2);border-radius:10px;padding:10px 14px;text-align:center">
             <div style="font-size:18px;font-weight:900;color:#0072e6">${fmtNum(veilleConcurrence.nLecl)}</div>
             <div style="font-size:10px;color:var(--text3);margin-top:2px">E.Leclerc</div>
           </div>
-          ${veilleConcurrence.nAlert > 0 ? `
-          <div onclick="navigate('offilog');setTimeout(()=>{offiRole='alerte';offiPageNum=1;renderOffilog();},120)" style="flex:1;min-width:90px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px 14px;text-align:center;cursor:pointer" title="Voir les produits en alerte">
-            <div style="font-size:18px;font-weight:900;color:#EF4444">${fmtNum(veilleConcurrence.nAlert)}</div>
-            <div style="font-size:10px;color:#EF4444;margin-top:2px;font-weight:700">⚠ Alertes</div>
-          </div>` : ''}
+          <div style="flex:1;min-width:80px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:10px;padding:10px 14px;text-align:center">
+            <div style="font-size:18px;font-weight:900;color:var(--mint)">${fmtNum(veilleConcurrence.nPharma)}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">Apothical</div>
+          </div>
         </div>
-        ${veilleConcurrence.topAlertes.length ? `
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px">Top produits en alerte</div>
-        ${veilleConcurrence.topAlertes.map((a, i) => `
-        <div style="display:flex;align-items:center;gap:12px;padding:6px 0;${i < veilleConcurrence.topAlertes.length-1?'border-bottom:1px solid var(--border1)':''}">
+        ${veilleConcurrence.topVeille.length ? `
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px">Exemples de prix concurrents</div>
+        ${veilleConcurrence.topVeille.map((item, i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;${i < veilleConcurrence.topVeille.length-1?'border-bottom:1px solid var(--border1)':''}">
           <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.produit}</div>
-            <div style="font-size:10px;color:var(--text3);margin-top:1px">${a.src} · IP ${fmtP(a.pRef)}</div>
+            <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.p.produit}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
+              ${item.concMap.map(([prix, src, col]) => `<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:${col}18;color:${col};font-weight:600">${src} ${fmtP(prix)}</span>`).join('')}
+            </div>
           </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:12px;font-weight:700;color:#EF4444">${fmtP(a.minC)}</div>
-            <div style="font-size:10px;font-weight:700;color:#EF4444;background:rgba(239,68,68,.08);padding:1px 6px;border-radius:6px;margin-top:2px">${fmtP(a.ecart)}</div>
-          </div>
+          ${item.p.prix_offilog ? `<div style="font-size:11px;color:var(--text3);white-space:nowrap">Achat IP ${fmtP(item.p.prix_offilog)}</div>` : ''}
         </div>`).join('')}` : ''}
       </div>
     </div>` : ''}
@@ -2300,7 +2289,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
       </div>` : ''}
 
-      <!-- Alertes prix parapharmacie dans la fiche pharmacie -->
+      <!-- Veille prix parapharmacie dans la fiche pharmacie -->
       ${(() => {
         if (typeof OFFILOG === 'undefined' || !salesCur.length) return '';
         const nnk = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
@@ -2309,44 +2298,40 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           const k = nnk(s.artDesignation);
           if (k) byProdOff[k] = s.artDesignation;
         }
-        const alertRows = [];
+        const veilleRows = [];
         for (const [k, label] of Object.entries(byProdOff)) {
           const op = OFFILOG.find(p => nnk(p.produit) === k);
           if (!op) continue;
-          const pRef = op.prix_maxi;
-          if (!pRef || pRef <= 0) continue;
           const concMap = [
-            op.prix_drakkars  > 0 ? [op.prix_drakkars,  'Drakkars',    '#6366f1'] : null,
-            op.prix_cap3000   > 0 ? [op.prix_cap3000,   'Cap3000',     '#ea580c'] : null,
-            op.prix_leclerc   > 0 ? [op.prix_leclerc,   'Leclerc',     '#0072e6'] : null,
-            op.prix_pharmacie > 0 ? [op.prix_pharmacie, 'Ma Pharmacie','#00E5A0'] : null,
+            op.prix_drakkars  > 0 ? [op.prix_drakkars,  'Drakkars',  '#6366f1'] : null,
+            op.prix_cap3000   > 0 ? [op.prix_cap3000,   'Cap3000',   '#ea580c'] : null,
+            op.prix_leclerc   > 0 ? [op.prix_leclerc,   'Leclerc',   '#0072e6'] : null,
+            op.prix_pharmacie > 0 ? [op.prix_pharmacie, 'Apothical', '#00E5A0'] : null,
+            op.prix_maxi      > 0 ? [op.prix_maxi,      'Maxipara',  '#FFB020'] : null,
           ].filter(Boolean);
           if (!concMap.length) continue;
-          const best = concMap.sort((a, b) => a[0] - b[0])[0];
-          if (best[0] < pRef) alertRows.push({ label, pRef, concPrix: best[0], concSrc: best[1], concColor: best[2], ecart: best[0] - pRef });
+          const sorted = concMap.slice().sort((a, b) => a[0] - b[0]);
+          veilleRows.push({ label, sorted, prixAchat: op.prix_offilog || op.prix_live });
         }
-        alertRows.sort((a, b) => a.ecart - b.ecart);
-        const top = alertRows.slice(0, 5);
+        const top = veilleRows.slice(0, 6);
         if (!top.length) return '';
         const rows = top.map(a => `
-          <div style="display:flex;align-items:center;gap:10px;padding:9px 20px;border-bottom:1px solid var(--border1)">
-            <span style="font-size:16px;flex-shrink:0">⚠</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.label}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:1px">IP : ${fmtP(a.pRef)} · <span style="color:${a.concColor};font-weight:600">${a.concSrc} ${fmtP(a.concPrix)}</span></div>
+          <div style="padding:9px 20px;border-bottom:1px solid var(--border1)">
+            <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${a.label}${a.prixAchat ? `<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:8px">achat IP ${fmtP(a.prixAchat)}</span>` : ''}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${a.sorted.map(([prix, src, col]) => `<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${col}18;color:${col};font-weight:600">${src} ${fmtP(prix)}</span>`).join('')}
             </div>
-            <span style="padding:2px 8px;border-radius:8px;background:rgba(239,68,68,.1);color:#EF4444;font-size:11px;font-weight:700;flex-shrink:0">${fmtP(a.ecart)}</span>
           </div>`).join('');
-        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid #EF4444">
+        return `<div class="card fade-up" style="margin-bottom:20px">
           <div class="card-header">
             <div>
-              <div class="card-title" style="color:#EF4444">⚠ Alertes prix parapharmacie</div>
-              <div class="card-subtitle">Produits achetés chez IP vendus moins cher par un concurrent — ${alertRows.length} alerte${alertRows.length > 1 ? 's' : ''}</div>
+              <div class="card-title">Prix parapharmacie concurrents</div>
+              <div class="card-subtitle">Prix de vente constatés sur les produits achetés ce mois · ${veilleRows.length} référence${veilleRows.length > 1 ? 's' : ''} avec données</div>
             </div>
-            <button onclick="navigate('offilog');setTimeout(()=>{offiRole='alerte';offiPageNum=1;renderOffilog();},80)" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.06);color:#EF4444;cursor:pointer;font-weight:600">Voir catalogue ⚠</button>
+            <button onclick="navigate('offilog')" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-weight:600">Catalogue →</button>
           </div>
           ${rows}
-          ${alertRows.length > 5 ? `<div style="padding:10px 20px;font-size:11px;color:var(--text3)">+${alertRows.length - 5} autres alertes — voir l'onglet Offilog</div>` : ''}
+          ${veilleRows.length > 6 ? `<div style="padding:10px 20px;font-size:11px;color:var(--text3)">+${veilleRows.length - 6} autres — voir l'onglet Offilog</div>` : ''}
         </div>`;
       })()}
 
@@ -5653,14 +5638,11 @@ function offiGetList() {
     if (offiRole === 'bestsellers') return p.rang_vente != null;
     if (offiRole === 'pharmacie') return p.prix_pharmacie != null && p.prix_pharmacie > 0;
     if (offiRole === 'favoris') return p.ean && getOffiFavs().has(p.ean);
-    if (offiRole === 'alerte') {
-      const pRef = p.prix_maxi;
-      if (!pRef) return false;
-      const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(v => v != null && v > 0).concat([Infinity]));
-      return compMin < pRef && compMin < Infinity;
+    if (offiRole === 'concurrence') {
+      return [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0);
     }
     if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
-    if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && offiRole !== 'alerte' && p.role !== offiRole) return false;
+    if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && offiRole !== 'concurrence' && p.role !== offiRole) return false;
     if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
     if (offiMarque !== 'tous' && p.marque !== offiMarque) return false;
     if (offiSaison === 'pe' && p.saison !== 'Printemps/Été') return false;
@@ -5669,10 +5651,10 @@ function offiGetList() {
     return true;
   });
   if (offiRole === 'bestsellers') list.sort((a, b) => (a.rang_vente || 999) - (b.rang_vente || 999));
-  else if (offiRole === 'alerte') list.sort((a, b) => {
-    const minC = p => Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(v => v != null && v > 0).concat([Infinity]));
-    const ref  = p => p.prix_live || p.prix_offilog || 0;
-    return (minC(a) - ref(a)) - (minC(b) - ref(b));
+  else if (offiRole === 'concurrence') list.sort((a, b) => {
+    const nSrcA = [a.prix_drakkars, a.prix_cap3000, a.prix_leclerc, a.prix_pharmacie, a.prix_maxi].filter(v => v != null && v > 0).length;
+    const nSrcB = [b.prix_drakkars, b.prix_cap3000, b.prix_leclerc, b.prix_pharmacie, b.prix_maxi].filter(v => v != null && v > 0).length;
+    return nSrcB - nSrcA;
   });
   else if (offiSort === 'prix_asc')  list.sort((a, b) => ((a.prix_live || a.prix_offilog) || 0) - ((b.prix_live || b.prix_offilog) || 0));
   else if (offiSort === 'prix_desc') list.sort((a, b) => ((b.prix_live || b.prix_offilog) || 0) - ((a.prix_live || a.prix_offilog) || 0));
@@ -5745,12 +5727,9 @@ function renderOffilog() {
   const nDrakkars = OFFILOG.filter(p => p.prix_drakkars != null && p.prix_drakkars > 0).length;
   const nCap3000  = OFFILOG.filter(p => p.prix_cap3000  != null && p.prix_cap3000  > 0).length;
   const nLeclerc  = OFFILOG.filter(p => p.prix_leclerc  != null && p.prix_leclerc  > 0).length;
-  const nAlerte   = OFFILOG.filter(p => {
-    const pRef = p.prix_maxi;
-    if (!pRef) return false;
-    const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(v => v != null && v > 0).concat([Infinity]));
-    return compMin < pRef && compMin < Infinity;
-  }).length;
+  const nAlerte   = OFFILOG.filter(p =>
+    [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0)
+  ).length;
   const nLive     = OFFILOG.filter(p => p.prix_live      != null && p.prix_live      > 0).length;
   const nImg      = OFFILOG.filter(p => p.img && p.img.length > 0).length;
   const nPharma   = OFFILOG.filter(p => p.prix_pharmacie != null && p.prix_pharmacie > 0).length;
@@ -5785,7 +5764,7 @@ function renderOffilog() {
     { key: 'tous',            label: 'Tous',             icon: '✦', color: '#64748B' },
     { key: 'bestsellers',     label: `Top ventes (${nBest})`, icon: '🏆', color: '#F59E0B' },
     { key: 'pharmacie',       label: `Ma Pharmacie (${nPharma})`, icon: '🏥', color: '#00E5A0' },
-    { key: 'alerte',          label: `Alertes prix (${nAlerte})`, icon: '⚠', color: '#EF4444' },
+    { key: 'concurrence',     label: `Avec prix conc. (${nAlerte})`, icon: '🔍', color: '#0057FF' },
     { key: 'favoris',         label: `Favoris (${nFavs})`, icon: '★', color: '#EC4899' },
     { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
     { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
@@ -7229,7 +7208,7 @@ function showFicheVisite(pharmacyId) {
         .sort((a, b) => b.rot_pharma_jan26 - a.rot_pharma_jan26).slice(0, 3)
     : [];
 
-  // Alertes parapharmacie — produits achetés par cette pharmacie qui ont un concurrent moins cher
+  // Veille prix parapharmacie — produits achetés par cette pharmacie avec données concurrents
   const offiAlertes = (() => {
     if (typeof OFFILOG === 'undefined') return [];
     const nnk = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
@@ -7237,19 +7216,18 @@ function showFicheVisite(pharmacyId) {
     for (const [k, prod] of Object.entries(byProd)) {
       const op = OFFILOG.find(p => nnk(p.produit) === k);
       if (!op) continue;
-      const pRef = op.prix_maxi;
-      if (!pRef || pRef <= 0) continue;
       const concMap = [
-        op.prix_drakkars  > 0 ? [op.prix_drakkars,  'Drakkars']    : null,
-        op.prix_cap3000   > 0 ? [op.prix_cap3000,   'Cap3000']     : null,
-        op.prix_leclerc   > 0 ? [op.prix_leclerc,   'Leclerc']     : null,
-        op.prix_pharmacie > 0 ? [op.prix_pharmacie, 'Ma Pharmacie'] : null,
+        op.prix_drakkars  > 0 ? [op.prix_drakkars,  'Drakkars',  '#6366f1'] : null,
+        op.prix_cap3000   > 0 ? [op.prix_cap3000,   'Cap3000',   '#ea580c'] : null,
+        op.prix_leclerc   > 0 ? [op.prix_leclerc,   'Leclerc',   '#0072e6'] : null,
+        op.prix_pharmacie > 0 ? [op.prix_pharmacie, 'Apothical', '#00E5A0'] : null,
+        op.prix_maxi      > 0 ? [op.prix_maxi,      'Maxipara',  '#FFB020'] : null,
       ].filter(Boolean);
       if (!concMap.length) continue;
-      const best = concMap.sort((a, b) => a[0] - b[0])[0];
-      if (best[0] < pRef) results.push({ label: prod.label, pRef, concPrix: best[0], concSrc: best[1], ecart: best[0] - pRef });
+      const sorted = concMap.slice().sort((a, b) => a[0] - b[0]);
+      results.push({ label: prod.label, sorted, prixAchat: op.prix_offilog || op.prix_live });
     }
-    return results.sort((a, b) => a.ecart - b.ecart).slice(0, 5);
+    return results.slice(0, 5);
   })();
 
   const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -7333,16 +7311,17 @@ function showFicheVisite(pharmacyId) {
             </div>`).join('')}
         </div>` : ''}
 
-        <!-- Alertes parapharmacie -->
+        <!-- Prix parapharmacie concurrents -->
         ${offiAlertes.length ? `
         <div style="margin-bottom:20px">
-          <div style="font-size:13px;font-weight:800;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #fecaca">⚠ Alertes prix parapharmacie</div>
-          <div style="font-size:11px;color:#64748b;margin-bottom:8px">Prix public concurrent &lt; Prix achat IP pour ces références</div>
+          <div style="font-size:13px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">Prix parapharmacie concurrents</div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:8px">Prix de vente constatés — Drakkars · Cap3000 · Leclerc · Apothical · Maxipara</div>
           ${offiAlertes.map(a => `
-            <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f1f5f9">
-              <div style="flex:1;font-size:12px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.label}</div>
-              <div style="font-size:11px;color:#64748b;flex-shrink:0">IP ${fmtP(a.pRef)} → ${a.concSrc} ${fmtP(a.concPrix)}</div>
-              <div style="font-size:12px;font-weight:800;color:#dc2626;white-space:nowrap;flex-shrink:0">${fmtP(a.ecart)}</div>
+            <div style="padding:7px 0;border-bottom:1px solid #f1f5f9">
+              <div style="font-size:12px;font-weight:600;color:#1e293b;margin-bottom:3px">${a.label}${a.prixAchat ? `<span style="font-size:10px;color:#94a3b8;font-weight:400;margin-left:6px">achat IP ${fmtP(a.prixAchat)}</span>` : ''}</div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap">
+                ${a.sorted.map(([prix, src, col]) => `<span style="font-size:10px;padding:1px 7px;border-radius:6px;background:${col}18;color:${col};font-weight:600">${src} ${fmtP(prix)}</span>`).join('')}
+              </div>
             </div>`).join('')}
         </div>` : ''}
 
@@ -7494,15 +7473,13 @@ function gsSearch(q) {
     html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:${OFFILOG_ORANGE};text-transform:uppercase;letter-spacing:1px">Catalogue Parapharmacie (${offiHits.length})</div>`;
     html += offiHits.map((p, i) => {
       const m = um(p.univers);
-      const pRef = p.prix_maxi;
-      const minC = pRef ? Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(v => v != null && v > 0).concat([Infinity])) : Infinity;
-      const isAlert = pRef && minC < pRef && minC < Infinity;
+      const hasConcData = [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0);
       return `<div onclick="document.getElementById('global-search-modal').remove();offiQuery='${p.produit.replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,30)}';navigate('offilog');setTimeout(()=>renderOffilog(),100)"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s${isAlert?';border-left:2px solid #EF4444':''}"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
         onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
         <div style="width:36px;height:36px;border-radius:8px;background:${m.bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${m.icon}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(p.produit)}${isAlert ? ' <span style="font-size:10px;color:#EF4444;background:rgba(239,68,68,.08);padding:1px 5px;border-radius:6px">⚠</span>' : ''}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(p.produit)}${hasConcData ? ' <span style="font-size:10px;color:var(--blue);background:rgba(0,87,255,.08);padding:1px 5px;border-radius:6px">prix</span>' : ''}</div>
           <div style="font-size:11px;color:var(--text3)">${highlight(p.marque || '—')} · ${p.univers || '—'}${p.prix_live || p.prix_offilog ? ' · ' + fmtP(p.prix_live || p.prix_offilog) : ''}</div>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
