@@ -706,13 +706,14 @@ function renderDashboard() {
   // ── Veille concurrentielle parapharmacie ─────
   const veilleConcurrence = (() => {
     if (typeof OFFILOG === 'undefined' || !OFFILOG.length) return null;
-    let nDrak = 0, nCap = 0, nLecl = 0, nPharma = 0, nWithData = 0;
+    let nDrak = 0, nCap = 0, nLecl = 0, nPharma = 0, nMaxi = 0, nWithData = 0;
     const topItems = [];
     for (const p of OFFILOG) {
       if (p.prix_drakkars  != null && p.prix_drakkars  > 0) nDrak++;
       if (p.prix_cap3000   != null && p.prix_cap3000   > 0) nCap++;
       if (p.prix_leclerc   != null && p.prix_leclerc   > 0) nLecl++;
       if (p.prix_pharmacie != null && p.prix_pharmacie > 0) nPharma++;
+      if (p.prix_maxi      != null && p.prix_maxi      > 0) nMaxi++;
       const concMap = [
         p.prix_drakkars  > 0 ? [p.prix_drakkars,  'Drakkars',  '#6366f1'] : null,
         p.prix_cap3000   > 0 ? [p.prix_cap3000,   'Cap3000',   '#ea580c'] : null,
@@ -727,7 +728,7 @@ function renderDashboard() {
       }
     }
     const topVeille = topItems.sort((a, b) => b.nSrc - a.nSrc).slice(0, 5);
-    return { nDrak, nCap, nLecl, nPharma, nWithData, topVeille, total: OFFILOG.length };
+    return { nDrak, nCap, nLecl, nPharma, nMaxi, nWithData, topVeille, total: OFFILOG.length };
   })();
 
   // ── HTML ─────────────────────────────────────
@@ -1092,6 +1093,10 @@ function renderDashboard() {
           <div style="flex:1;min-width:80px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:10px;padding:10px 14px;text-align:center">
             <div style="font-size:18px;font-weight:900;color:var(--mint)">${fmtNum(veilleConcurrence.nPharma)}</div>
             <div style="font-size:10px;color:var(--text3);margin-top:2px">Apothical</div>
+          </div>
+          <div style="flex:1;min-width:80px;background:rgba(255,176,32,.06);border:1px solid rgba(255,176,32,.2);border-radius:10px;padding:10px 14px;text-align:center">
+            <div style="font-size:18px;font-weight:900;color:#FFB020">${fmtNum(veilleConcurrence.nMaxi)}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">Maxipara</div>
           </div>
         </div>
         ${veilleConcurrence.topVeille.length ? `
@@ -5933,10 +5938,11 @@ function renderOffilog() {
           <th style="padding:10px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Marque</th>
           <th style="padding:10px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:700;white-space:nowrap">Prix IP</th>
           <th style="padding:10px 10px;text-align:right;font-size:11px;color:#15803d;font-weight:700;white-space:nowrap">Live</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--mint);font-weight:700;white-space:nowrap">Ma Phcie</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Drakkars</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Cap3000</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#00E5A0;font-weight:700;white-space:nowrap">Apothical</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#6366f1;font-weight:700;white-space:nowrap">Drakkars</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#ea580c;font-weight:700;white-space:nowrap">Cap3000</th>
           <th style="padding:10px 10px;text-align:right;font-size:11px;color:#0072e6;font-weight:700;white-space:nowrap">Leclerc</th>
+          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#FFB020;font-weight:700;white-space:nowrap">Maxipara</th>
           <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Marge</th>
         </tr>
       </thead>
@@ -5945,7 +5951,7 @@ function renderOffilog() {
           const prixRef  = p.prix_live || p.prix_offilog;
           const minConc  = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(x => x != null && x > 0).concat([Infinity]));
           const deltaRef = (prixRef && minConc < Infinity) ? minConc - prixRef : null;
-          const deltaColor = deltaRef == null ? '' : deltaRef > 0.05 ? '#10B981' : deltaRef < -0.05 ? '#EF4444' : '#6B7280';
+          const deltaColor = deltaRef == null ? '' : deltaRef > 0.05 ? '#10B981' : deltaRef < -0.05 ? '#F59E0B' : '#6B7280';
           const margeColor = p.marge_pct == null ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
           const img = p.img ? `<img src="${p.img}" style="width:28px;height:28px;object-fit:contain;border-radius:4px;margin-right:8px;vertical-align:middle" onerror="this.style.display='none'">` : '';
           return `<tr style="border-bottom:1px solid var(--border1);transition:background .12s;cursor:pointer" onclick="showOffiDetail(${startIdx + i})" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
@@ -5961,10 +5967,11 @@ function renderOffilog() {
             <td style="padding:8px 10px;color:var(--text2);font-size:11px;white-space:nowrap">${p.marque || '—'}</td>
             <td style="padding:8px 10px;text-align:right;font-weight:700;color:${OFFILOG_ORANGE};white-space:nowrap">${p.prix_offilog ? fmtP(p.prix_offilog) : '—'}</td>
             <td style="padding:8px 10px;text-align:right;font-weight:600;color:#15803d;white-space:nowrap">${p.prix_live ? fmtP(p.prix_live) : '—'}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:700;color:var(--mint);white-space:nowrap">${p.prix_pharmacie ? fmtP(p.prix_pharmacie) : '—'}</td>
-            <td style="padding:8px 10px;text-align:right;color:var(--text2);white-space:nowrap">${p.prix_drakkars ? fmtP(p.prix_drakkars) : '—'}</td>
-            <td style="padding:8px 10px;text-align:right;color:var(--text2);white-space:nowrap">${p.prix_cap3000 ? fmtP(p.prix_cap3000) : '—'}</td>
-            <td style="padding:8px 10px;text-align:right;color:#0072e6;font-weight:${p.prix_leclerc ? '600' : '400'};white-space:nowrap">${p.prix_leclerc ? fmtP(p.prix_leclerc) : '—'}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_pharmacie ? '700' : '400'};color:${p.prix_pharmacie ? '#00E5A0' : 'var(--text3)'};white-space:nowrap">${p.prix_pharmacie ? fmtP(p.prix_pharmacie) : '<span style="color:var(--text3)">—</span>'}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_drakkars ? '600' : '400'};color:${p.prix_drakkars ? '#6366f1' : 'var(--text3)'};white-space:nowrap">${p.prix_drakkars ? fmtP(p.prix_drakkars) : '<span style="color:var(--text3)">—</span>'}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_cap3000 ? '600' : '400'};color:${p.prix_cap3000 ? '#ea580c' : 'var(--text3)'};white-space:nowrap">${p.prix_cap3000 ? fmtP(p.prix_cap3000) : '<span style="color:var(--text3)">—</span>'}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_leclerc ? '600' : '400'};color:${p.prix_leclerc ? '#0072e6' : 'var(--text3)'};white-space:nowrap">${p.prix_leclerc ? fmtP(p.prix_leclerc) : '<span style="color:var(--text3)">—</span>'}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_maxi ? '600' : '400'};color:${p.prix_maxi ? '#FFB020' : 'var(--text3)'};white-space:nowrap">${p.prix_maxi ? fmtP(p.prix_maxi) : '<span style="color:var(--text3)">—</span>'}</td>
             <td style="padding:8px 10px;text-align:right;white-space:nowrap">
               ${p.marge_pct != null ? `<span style="font-weight:700;color:${margeColor}">${p.marge_pct.toFixed(1)}%</span>` : '—'}
               ${deltaRef != null ? `<div style="font-size:9px;font-weight:700;color:${deltaColor}">${deltaRef > 0 ? '−' : '+'}${fmtP(Math.abs(deltaRef))} conc.</div>` : ''}
@@ -6126,16 +6133,35 @@ function showOffiDetail(idx) {
   const pricesRaw = [
     { label: 'Prix Offilog (Excel)', value: p.prix_offilog,   color: OFFILOG_ORANGE },
     { label: 'Prix Live ●',          value: p.prix_live,       color: '#15803d' },
-    { label: '🏥 Ma Pharmacie',      value: p.prix_pharmacie,  color: '#00E5A0' },
-    { label: 'Drakkars',             value: p.prix_drakkars,   color: 'var(--text2)' },
-    { label: 'Cap3000',              value: p.prix_cap3000,    color: 'var(--text2)' },
+    { label: '🏥 Apothical',         value: p.prix_pharmacie,  color: '#00E5A0' },
+    { label: 'Drakkars',             value: p.prix_drakkars,   color: '#6366f1' },
+    { label: 'Cap3000',              value: p.prix_cap3000,    color: '#ea580c' },
     { label: 'E.Leclerc',            value: p.prix_leclerc,    color: '#0072e6' },
-    { label: 'Prix public maxi',     value: p.prix_maxi,       color: 'var(--text3)' },
+    { label: 'Maxipara',             value: p.prix_maxi,       color: '#FFB020' },
   ].filter(r => r.value != null && r.value > 0);
 
-  const compVals = [p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie, p.prix_leclerc].filter(v => v != null && v > 0);
+  const compVals = [p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie, p.prix_leclerc, p.prix_maxi].filter(v => v != null && v > 0);
   const minComp  = compVals.length ? Math.min(...compVals) : null;
   const deltaComp = (prixIP && minComp) ? minComp - prixIP : null;
+
+  // Badges concurrents colorés
+  const concBadges = [
+    p.prix_drakkars  > 0 ? { nom: 'Drakkars',  prix: p.prix_drakkars,  col: '#6366f1' } : null,
+    p.prix_cap3000   > 0 ? { nom: 'Cap3000',   prix: p.prix_cap3000,   col: '#ea580c' } : null,
+    p.prix_leclerc   > 0 ? { nom: 'Leclerc',   prix: p.prix_leclerc,   col: '#0072e6' } : null,
+    p.prix_pharmacie > 0 ? { nom: 'Apothical', prix: p.prix_pharmacie, col: '#00E5A0' } : null,
+    p.prix_maxi      > 0 ? { nom: 'Maxipara',  prix: p.prix_maxi,      col: '#FFB020' } : null,
+  ].filter(Boolean);
+  const concBadgesHtml = concBadges.length ? `
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border1)">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Prix publics concurrents</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${concBadges.map(b => `<div style="display:flex;flex-direction:column;align-items:center;padding:8px 12px;border-radius:10px;background:${b.col}15;border:1px solid ${b.col}40;min-width:72px;text-align:center">
+          <span style="font-size:13px;font-weight:800;color:${b.col}">${fmtP(b.prix)}</span>
+          <span style="font-size:9px;color:${b.col};opacity:.8;margin-top:2px;font-weight:600">${b.nom}</span>
+        </div>`).join('')}
+      </div>
+    </div>` : '';
 
   const priceRowsHtml = pricesRaw.map(pr => {
     const dv = (prixIP && pr.value && Math.abs(pr.value - prixIP) > 0.005) ? pr.value - prixIP : null;
@@ -6225,6 +6251,7 @@ function showOffiDetail(idx) {
           <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Comparaison des prix</div>
           <div style="font-size:11px;color:var(--text3);margin-bottom:14px">${fmtNum(pricesRaw.length)} source${pricesRaw.length > 1 ? 's' : ''} disponible${pricesRaw.length > 1 ? 's' : ''}</div>
           ${priceRowsHtml || '<div style="color:var(--text3);font-size:13px;padding:20px 0">Aucun prix disponible</div>'}
+          ${concBadgesHtml}
           ${deltaComp != null ? `<div style="margin-top:14px;padding:12px 16px;border-radius:12px;background:${deltaComp > 0 ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};border:1px solid ${deltaComp > 0 ? 'rgba(16,185,129,.3)' : 'rgba(239,68,68,.3)'}">
             <span style="font-size:12px;font-weight:700;color:${deltaComp > 0 ? '#065f46' : '#991b1b'}">
               ${deltaComp > 0 ? `✅ IP moins cher de ${fmtP(deltaComp)} vs concurrent le moins cher` : `⚠️ IP plus cher de ${fmtP(Math.abs(deltaComp))} vs concurrent le moins cher`}
