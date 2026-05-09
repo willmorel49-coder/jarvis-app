@@ -840,6 +840,54 @@ function renderDashboard() {
       </div>`;
     })()}
 
+    ${(() => {
+      if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
+      const today2 = new Date(); today2.setHours(0,0,0,0);
+      const parseDate2 = str => {
+        if (!str || str === 'null' || str.trim() === '') return null;
+        const s = str.trim();
+        let m;
+        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+        m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+        return null;
+      };
+      const dateShortFR2 = d => {
+        const mo = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+        return String(d.getDate()).padStart(2,'0') + ' ' + mo[d.getMonth()];
+      };
+      const upcoming2 = CLIENTS
+        .map(c => ({ c, date: parseDate2(c.prochaineVisite) }))
+        .filter(x => x.date !== null && x.date >= today2)
+        .sort((a, b) => a.date - b.date)
+        .slice(0, 5);
+      if (!upcoming2.length) return '';
+      const pharmaMap2 = new Map(state.pharmacies.map(p => [p.name.toUpperCase().trim(), p]));
+      const rows2 = upcoming2.map(({ c, date }) => {
+        const ph2 = pharmaMap2.get((c.nom||'').toUpperCase().trim());
+        const diff = Math.round((date - today2) / 86400000);
+        const urgBg = diff === 0 ? 'rgba(255,176,32,.15)' : diff <= 7 ? 'rgba(0,229,160,.08)' : 'var(--bg3)';
+        const urgCol = diff === 0 ? 'var(--amber)' : diff <= 7 ? 'var(--opso-green)' : 'var(--text3)';
+        const urgLabel = diff === 0 ? "Aujourd'hui" : diff <= 7 ? 'J+' + diff : dateShortFR2(date);
+        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="navigate(\'pharmacies\');setTimeout(()=>{ pharmaSearch=\''+encodeURIComponent(c.nom||'')+'\'+'\';renderPharmacies(); },80)">' +
+          '<div style="min-width:52px;padding:3px 8px;border-radius:8px;background:' + urgBg + ';text-align:center;font-size:11px;font-weight:700;color:' + urgCol + '">' + urgLabel + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (c.nom||'—') + '</div>' +
+            '<div style="font-size:10px;color:var(--text3)">' + (c.ville||'') + '</div>' +
+          '</div>' +
+          (ph2 ? '<div style="width:6px;height:6px;border-radius:50%;background:' + ph2.color + ';flex-shrink:0"></div>' : '') +
+        '</div>';
+      }).join('');
+      return '<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">' +
+        '<div class="card-header" style="padding:16px 20px">' +
+          '<div class="card-title">Prochaines visites</div>' +
+          '<div class="card-subtitle">' + upcoming2.length + ' visite' + (upcoming2.length>1?'s':'') + ' planifiée' + (upcoming2.length>1?'s':'') + '</div>' +
+        '</div>' +
+        rows2 +
+      '</div>';
+    })()}
+
     <div class="card fade-up" style="margin-bottom:0;padding:0;overflow:hidden">
       <div class="card-header" style="padding:16px 20px">
         <div class="card-title">Top produits</div>
