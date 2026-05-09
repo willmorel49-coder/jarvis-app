@@ -1586,6 +1586,43 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>`;
       })()}
 
+      <!-- WML produits non commandés en direct -->
+      ${(() => {
+        const wmlVis2 = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+        const nnD = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+        const wmlE = wmlVis2.find(d => nnD(d.nom) === nnD(pharma.name));
+        if (!wmlE || !allPhSales.length) return '';
+        const directNames = new Set(allPhSales.map(s => nnD(s.artDesignation)));
+        const missed = (wmlE.pr||[]).filter(([nom]) => nom && !directNames.has(nnD(nom)));
+        if (!missed.length) return '';
+        const missedHtml = missed.slice(0, 8).map(([nom, ca, mg, qt]) => {
+          const txP = ca > 0 ? (mg/ca*100) : 0;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border)">
+            <div style="font-size:14px;color:var(--amber)">→</div>
+            <div style="flex:1;min-width:0;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:12px;font-weight:700;color:var(--green)">${fmt(ca)}</div>
+              <div style="font-size:10px;color:var(--text3)">${txP.toFixed(1)}% · ${Math.round(qt)} u</div>
+            </div>
+          </div>`;
+        }).join('');
+        const totCA = missed.reduce((s,[,ca])=>s+ca,0);
+        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--amber)">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📦 WML non commandés en direct</div>
+              <div class="card-subtitle">${missed.length} produit${missed.length>1?'s':''} achetés via WML sans commande directe à IP</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:20px;font-weight:900;color:var(--amber)">${fmt(totCA)}</div>
+              <div style="font-size:11px;color:var(--text3)">CA WML potentiel</div>
+            </div>
+          </div>
+          ${missedHtml}
+          ${missed.length > 8 ? `<div style="padding:10px 20px;font-size:12px;color:var(--text3)">+${missed.length-8} autres produits</div>` : ''}
+        </div>`;
+      })()}
+
       <!-- Top produits du mois -->
       ${salesCur.length ? (() => {
         const byProd = {};
