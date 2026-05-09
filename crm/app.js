@@ -4638,6 +4638,17 @@ function renderBenchmark() {
   const nVendus    = BENCHMARK.filter(d => salesMap[nnBench(d.designation)]?.ca > 0).length;
   const nNonVendus = BENCHMARK.length - nVendus;
 
+  // WML popularity map: nom normalisé → nb pharmacies OPSO achetant via WML
+  const wmlBenchMapCRM = new Map();
+  for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
+    const seen = new Set();
+    for (const pr of (d.pr || [])) {
+      const nom = Array.isArray(pr) ? pr[0] : pr;
+      const k = nnBench(nom);
+      if (k && !seen.has(k)) { seen.add(k); wmlBenchMapCRM.set(k, (wmlBenchMapCRM.get(k)||0)+1); }
+    }
+  }
+
   // Filter
   let data = [...BENCHMARK];
   if (benchCat === 'froid')          data = data.filter(d => isFroidBench(d));
@@ -4651,6 +4662,7 @@ function renderBenchmark() {
   }
   if (benchCrossFilter === 'vendus')     data = data.filter(d => salesMap[nnBench(d.designation)]?.ca > 0);
   if (benchCrossFilter === 'non_vendus') data = data.filter(d => !salesMap[nnBench(d.designation)]?.ca);
+  if (benchCrossFilter === 'wml')        data = data.filter(d => wmlBenchMapCRM.has(nnBench(d.designation)));
 
   // Inject our sales data for sorting
   data = data.map(d => {
@@ -4729,6 +4741,7 @@ function renderBenchmark() {
       <td style="text-align:right">${yoy}</td>
       <td style="text-align:right;font-size:11px;color:var(--text3)">${d.has_ameli ? fmtNum(d.ameli_jan26) : '—'}</td>
       <td style="padding:6px 10px">${nosVentesHtml}</td>
+      ${wmlBenchMapCRM.size > 0 ? `<td style="text-align:center">${wmlBenchMapCRM.get(nnBench(d.designation)) > 0 ? `<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--mint);font-weight:700">📦 ×${wmlBenchMapCRM.get(nnBench(d.designation))}</span>` : ''}</td>` : ''}
     </tr>`;
   }).join('');
 
@@ -4858,6 +4871,7 @@ function renderBenchmark() {
             { key: 'tous', label: `Tous (${fmtNum(BENCHMARK.length)})`, color: '#64748B' },
             { key: 'vendus', label: `Nos ventes (${fmtNum(nVendus)})`, color: '#00E5A0' },
             { key: 'non_vendus', label: `Non vendus (${fmtNum(nNonVendus)})`, color: '#EF4444' },
+            ...(wmlBenchMapCRM.size > 0 ? [{ key: 'wml', label: `WML OPSO (${fmtNum(BENCHMARK.filter(d => wmlBenchMapCRM.has(nnBench(d.designation))).length)})`, color: '#00E5A0' }] : []),
           ].map(t => {
             const active = benchCrossFilter === t.key;
             return `<button onclick="benchCrossFilter='${t.key}';renderBenchmark()"
@@ -4877,6 +4891,7 @@ function renderBenchmark() {
               ${thB('yoy_jan','YoY Jan')}
               <th style="text-align:right">France Jan26</th>
               ${salesAll.length > 0 ? thB('notre_ca', 'Nos ventes CA') : ''}
+              ${wmlBenchMapCRM.size > 0 ? '<th style="text-align:center;color:var(--mint);font-size:11px" title="Nb pharmacies OPSO achetant via WML">WML OPSO</th>' : ''}
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
