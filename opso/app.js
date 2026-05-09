@@ -928,6 +928,10 @@ function renderPharmacies() {
   const salesCur  = curY  ? getSales({ year: curY,  month: curM  }) : [];
   const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
 
+  // WML map pour badge rapide
+  const wmlVisPharm = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const wmlNnMap = new Map(wmlVisPharm.map(d => [(d.nom||'').trim().toUpperCase().replace(/\s+/g,' '), d]));
+
   // Construire liste enrichie de toutes les pharmacies avec CA et delta
   const today = new Date(); today.setHours(0,0,0,0);
   let enriched = state.pharmacies.map(ph => {
@@ -945,7 +949,8 @@ function renderPharmacies() {
       ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
       : null;
     const prochaineVisite = clientInfo?.prochaineVisite || null;
-    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite };
+    const wmlEntry = wmlNnMap.get(ph.name.trim().toUpperCase().replace(/\s+/g,' '));
+    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry };
   }); // toutes les pharmacies OPSO, même sans données
 
   // Filtre texte
@@ -988,7 +993,7 @@ function renderPharmacies() {
 
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
-        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite } = e;
+        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry } = e;
         const chipHtml = status === 'up'      ? '<span class="status-chip status-up">▲ Croissance</span>'
                        : status === 'flat'    ? '<span class="status-chip status-flat">● Stable</span>'
                        : status === 'down'    ? '<span class="status-chip status-down">▼ Baisse</span>'
@@ -1006,6 +1011,9 @@ function renderPharmacies() {
         const visiteBadge = prochaineVisite && prochaineVisite.trim() && prochaineVisite !== 'null'
           ? `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.1);padding:1px 6px;border-radius:8px">📅 Visite ${prochaineVisite}</span>`
           : '';
+        const wmlBadge = wmlEntry
+          ? `<span style="font-size:10px;color:var(--green);background:rgba(17,166,60,.1);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>`
+          : '';
         return `
           <div class="pharma-item" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
             <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
@@ -1017,6 +1025,7 @@ function renderPharmacies() {
                 ${g !== null ? deltaBadge(caCur, caPrev) : ''}
                 ${importFreshness}
                 ${visiteBadge}
+                ${wmlBadge}
               </div>
             </div>
             <div style="flex:1;max-width:120px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
