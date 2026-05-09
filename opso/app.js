@@ -908,6 +908,52 @@ function renderDashboard() {
       '</div>';
     })()}
 
+    ${(() => {
+      if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
+      const today3 = new Date(); today3.setHours(0,0,0,0);
+      const parseDate3 = str => {
+        if (!str || str === 'null' || str.trim() === '') return null;
+        const s = str.trim();
+        let m;
+        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+        m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+        return null;
+      };
+      const dateShortFR3 = d => {
+        const mo = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+        return String(d.getDate()).padStart(2,'0') + ' ' + mo[d.getMonth()];
+      };
+      const overdue = CLIENTS
+        .map(c => ({ c, date: parseDate3(c.prochaineVisite) }))
+        .filter(x => x.date !== null && x.date < today3)
+        .sort((a, b) => a.date - b.date)
+        .slice(0, 5);
+      if (!overdue.length) return '';
+      const pharmaMap3 = new Map(state.pharmacies.map(p => [p.name.toUpperCase().trim(), p]));
+      const rows3 = overdue.map(({ c, date }) => {
+        const ph3 = pharmaMap3.get((c.nom||'').toUpperCase().trim());
+        const daysLate = Math.round((today3 - date) / 86400000);
+        const label = daysLate === 1 ? 'Hier' : daysLate <= 7 ? 'J-' + daysLate : dateShortFR3(date);
+        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="navigate('pharmacies');setTimeout(()=>{ pharmaSearch=''+encodeURIComponent(c.nom||'')+'';renderPharmacies(); },80)">' +
+          '<div style="min-width:52px;padding:3px 8px;border-radius:8px;background:rgba(255,77,109,.15);text-align:center;font-size:11px;font-weight:700;color:var(--rose)">' + label + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (c.nom||'—') + '</div>' +
+            '<div style="font-size:10px;color:var(--text3)">' + (c.ville||'') + '</div>' +
+          '</div>' +
+          (ph3 ? '<div style="width:6px;height:6px;border-radius:50%;background:' + ph3.color + ';flex-shrink:0"></div>' : '') +
+        '</div>';
+      }).join('');
+      return '<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden;border:1px solid rgba(255,77,109,.2)">' +
+        '<div class="card-header" style="padding:16px 20px">' +
+          '<div class="card-title" style="color:var(--rose)">⚠ Visites en retard</div>' +
+          '<div class="card-subtitle">' + overdue.length + ' pharmacie' + (overdue.length>1?'s':'') + ' à rappeler</div>' +
+        '</div>' +
+        rows3 +
+      '</div>';
+    })()}
+
     <div class="card fade-up" style="margin-bottom:0;padding:0;overflow:hidden">
       <div class="card-header" style="padding:16px 20px">
         <div class="card-title">Top produits</div>
