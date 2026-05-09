@@ -712,7 +712,7 @@ function renderDashboard() {
       if (p.prix_drakkars != null && p.prix_drakkars > 0) nDrak++;
       if (p.prix_cap3000  != null && p.prix_cap3000  > 0) nCap++;
       if (p.prix_leclerc  != null && p.prix_leclerc  > 0) nLecl++;
-      const pRef = p.prix_live || p.prix_offilog;
+      const pRef = p.prix_maxi;
       if (pRef && pRef > 0) {
         const concMap = [
           p.prix_drakkars > 0 ? [p.prix_drakkars, 'Drakkars'] : null,
@@ -2312,7 +2312,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         for (const [k, label] of Object.entries(byProdOff)) {
           const op = OFFILOG.find(p => nnk(p.produit) === k);
           if (!op) continue;
-          const pRef = op.prix_live || op.prix_offilog;
+          const pRef = op.prix_maxi;
           if (!pRef || pRef <= 0) continue;
           const concMap = [
             op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars', '#6366f1'] : null,
@@ -5652,7 +5652,7 @@ function offiGetList() {
     if (offiRole === 'pharmacie') return p.prix_pharmacie != null && p.prix_pharmacie > 0;
     if (offiRole === 'favoris') return p.ean && getOffiFavs().has(p.ean);
     if (offiRole === 'alerte') {
-      const pRef = p.prix_live || p.prix_offilog;
+      const pRef = p.prix_maxi;
       if (!pRef) return false;
       const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
       return compMin < pRef && compMin < Infinity;
@@ -5744,7 +5744,7 @@ function renderOffilog() {
   const nCap3000  = OFFILOG.filter(p => p.prix_cap3000  != null && p.prix_cap3000  > 0).length;
   const nLeclerc  = OFFILOG.filter(p => p.prix_leclerc  != null && p.prix_leclerc  > 0).length;
   const nAlerte   = OFFILOG.filter(p => {
-    const pRef = p.prix_live || p.prix_offilog;
+    const pRef = p.prix_maxi;
     if (!pRef) return false;
     const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
     return compMin < pRef && compMin < Infinity;
@@ -7235,7 +7235,7 @@ function showFicheVisite(pharmacyId) {
     for (const [k, prod] of Object.entries(byProd)) {
       const op = OFFILOG.find(p => nnk(p.produit) === k);
       if (!op) continue;
-      const pRef = op.prix_live || op.prix_offilog;
+      const pRef = op.prix_maxi;
       if (!pRef || pRef <= 0) continue;
       const concMap = [
         op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars'] : null,
@@ -7491,7 +7491,7 @@ function gsSearch(q) {
     html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:${OFFILOG_ORANGE};text-transform:uppercase;letter-spacing:1px">Catalogue Parapharmacie (${offiHits.length})</div>`;
     html += offiHits.map((p, i) => {
       const m = um(p.univers);
-      const pRef = p.prix_live || p.prix_offilog;
+      const pRef = p.prix_maxi;
       const minC = pRef ? Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity])) : Infinity;
       const isAlert = pRef && minC < pRef && minC < Infinity;
       return `<div onclick="document.getElementById('global-search-modal').remove();offiQuery='${p.produit.replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,30)}';navigate('offilog');setTimeout(()=>renderOffilog(),100)"

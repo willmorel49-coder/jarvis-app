@@ -29,9 +29,20 @@ async function load() {
     sb.from('imports').select('*').order('imported_at', { ascending: false }),
     sb.from('sales').select('*'),
   ]);
-  state.pharmacies = (pharmacies || []).map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
-  state.imports    = (imports    || []).map(i => ({ id: i.id, pharmacyId: i.pharmacy_id, month: i.month, year: i.year, filename: i.filename, importedAt: i.imported_at, filePath: i.file_path || null }));
-  state.sales      = (sales      || []).map(s => ({
+  const allPharmas = (pharmacies || []).map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
+  if (typeof OPSO_ADHERENTS !== 'undefined' && OPSO_ADHERENTS.length) {
+    const opsoNames = new Set(OPSO_ADHERENTS.map(a => a.nom.trim().toUpperCase()));
+    state.pharmacies = allPharmas.filter(p => opsoNames.has((p.name || '').trim().toUpperCase()));
+  } else {
+    state.pharmacies = allPharmas;
+  }
+  const opsoPhIds = new Set(state.pharmacies.map(p => p.id));
+  state.imports    = (imports || [])
+    .filter(i => opsoPhIds.has(i.pharmacy_id))
+    .map(i => ({ id: i.id, pharmacyId: i.pharmacy_id, month: i.month, year: i.year, filename: i.filename, importedAt: i.imported_at, filePath: i.file_path || null }));
+  state.sales      = (sales || [])
+    .filter(s => opsoPhIds.has(s.pharmacy_id))
+    .map(s => ({
     id: s.id, importId: s.import_id, pharmacyId: s.pharmacy_id,
     month: s.month, year: s.year,
     artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
@@ -662,11 +673,16 @@ function renderDashboard() {
       ${(() => {
         if (typeof OFFILOG_LIVE === 'undefined' || !OFFILOG_LIVE.length) return '';
         const bm = benchMaps();
+        const offiMaxi = typeof OFFILOG !== 'undefined'
+          ? new Map(OFFILOG.filter(p => p.ean && p.prix_maxi > 0).map(p => [String(p.ean), p.prix_maxi]))
+          : new Map();
         let nAl = 0;
         for (const p of OFFILOG_LIVE) {
           const e = p.ean ? String(p.ean) : '';
+          const pRef = offiMaxi.get(e);
+          if (!pRef) continue;
           const concs = [bm.leclEan.get(e), bm.cap3Ean.get(e), bm.drakEan.get(e)].filter(v => v != null && v > 0);
-          if (concs.length && p.prix > 0 && Math.min(...concs) < p.prix) nAl++;
+          if (concs.length && Math.min(...concs) < pRef) nAl++;
         }
         return `<div class="cockpit-mini ${nAl > 0 ? 'cockpit-mini-alert' : ''}" onclick="navigate('offilog');setTimeout(()=>{offiLiveSort='ecart';offiLivePage=1;renderOffilog();},80)" style="${nAl > 0 ? 'cursor:pointer' : ''}">
           <div class="cockpit-mini-val" style="${nAl > 0 ? 'color:#ef4444' : ''}">${nAl}</div>
@@ -1579,7 +1595,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         for (const [k, label] of Object.entries(byProdOff)) {
           const op = OFFILOG.find(p => nnk(p.produit) === k);
           if (!op) continue;
-          const pRef = op.prix_live || op.prix_offilog;
+          const pRef = op.prix_maxi;
           if (!pRef || pRef <= 0) continue;
           const concMap = [
             op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars', '#6366f1'] : null,
@@ -5068,12 +5084,16 @@ function renderOffilog() {
   if (offiLiveSort === 'marque')  list.sort((a,b) => (a.marque||'').localeCompare(b.marque||'', 'fr'));
   if (offiLiveSort === 'ecart') {
     const { leclEan, cap3Ean, drakEan } = benchMaps();
+    const maxi = typeof OFFILOG !== 'undefined'
+      ? new Map(OFFILOG.filter(p => p.ean && p.prix_maxi > 0).map(p => [String(p.ean), p.prix_maxi]))
+      : new Map();
     list.sort((a,b) => {
       const minP = p => { const e = p.ean ? String(p.ean) : ''; const vs = [leclEan.get(e),cap3Ean.get(e),drakEan.get(e)].filter(v=>v!=null&&v>0); return vs.length ? Math.min(...vs) : null; };
       const da = minP(a); const db = minP(b);
-      const ea = (a.prix > 0 && da != null) ? da - a.prix : Infinity;
-      const eb = (b.prix > 0 && db != null) ? db - b.prix : Infinity;
-      return ea - eb; // plus petit écart (plus négatif = IP plus cher) en premier
+      const ra = maxi.get(a.ean ? String(a.ean) : ''); const rb = maxi.get(b.ean ? String(b.ean) : '');
+      const ea = (ra && da != null) ? da - ra : Infinity;
+      const eb = (rb && db != null) ? db - rb : Infinity;
+      return ea - eb;
     });
   }
 
@@ -5085,6 +5105,9 @@ function renderOffilog() {
   // ── Stats benchmark (calculé sur tout OFFILOG_LIVE, pas juste la page) ──
   const { leclEan: le, cap3Ean: ce, drakEan: de } = benchMaps();
   const pe = benchMaps().pharmEan;
+  const offiMaxiMap = typeof OFFILOG !== 'undefined'
+    ? new Map(OFFILOG.filter(p => p.ean && p.prix_maxi > 0).map(p => [String(p.ean), p.prix_maxi]))
+    : new Map();
   let nAlerte = 0, nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPharma = 0;
   for (const p of OFFILOG_LIVE) {
     const e = p.ean ? String(p.ean) : '';
@@ -5094,7 +5117,8 @@ function renderOffilog() {
     if (dv != null && dv > 0) nDrak++;
     if (pv != null && pv > 0) nPharma++;
     const concs = [lv, cv, dv].filter(v => v != null && v > 0);
-    if (concs.length) { nBench++; if (p.prix > 0 && Math.min(...concs) < p.prix) nAlerte++; }
+    const pRef = offiMaxiMap.get(e);
+    if (concs.length) { nBench++; if (pRef && Math.min(...concs) < pRef) nAlerte++; }
   }
 
   // ── Catégories ──
@@ -5119,8 +5143,9 @@ function renderOffilog() {
     ].filter(Boolean);
     const bestComp = compMap.length ? compMap.sort((a, b) => a[0] - b[0])[0] : null;
     const minComp  = bestComp ? bestComp[0] : null;
-    const bestBadge = (minComp != null && p.prix > 0 && minComp < p.prix)
-      ? `<div class="offil-best-price" title="Prix public ${bestComp[1]} inférieur au prix achat offilog">⚠ ${bestComp[1]} −${fmtP(p.prix - minComp)}</div>` : '';
+    const pRefCard = offiMaxiMap.get(p.ean ? String(p.ean) : '');
+    const bestBadge = (minComp != null && pRefCard && minComp < pRefCard)
+      ? `<div class="offil-best-price" title="${bestComp[1]} moins cher que le prix public Offilog">⚠ ${bestComp[1]} −${fmtP(pRefCard - minComp)}</div>` : '';
     const benchRow = (drakkars != null || cap3000 != null || leclerc != null || maPharmie != null) ? `
       <div class="offil-bench-row">
         ${maPharmie != null ? `<span class="offil-bench" style="border-color:rgba(0,229,160,.25);color:#00E5A0;background:rgba(0,229,160,.06)" title="Ma Pharmacie (prix scrappé)">🏥 ${fmtP(maPharmie)}</span>` : ''}
@@ -5221,8 +5246,9 @@ function exportOffiLiveCSV() {
     const lv = leclEan.get(e) ?? null;
     const concs = [dv, cv, lv].filter(v => v != null && v > 0);
     const minC  = concs.length ? Math.min(...concs) : null;
-    const alerte = (minC != null && p.prix > 0 && minC < p.prix) ? 'OUI' : '';
-    const ecart  = (minC != null && p.prix > 0) ? String((minC - p.prix).toFixed(2)).replace('.',',') : '';
+    const pRefCsv = typeof OFFILOG !== 'undefined' ? (() => { const o = OFFILOG.find(x => x.ean && String(x.ean) === e); return o?.prix_maxi || null; })() : null;
+    const alerte = (minC != null && pRefCsv && minC < pRefCsv) ? 'OUI' : '';
+    const ecart  = (minC != null && pRefCsv) ? String((minC - pRefCsv).toFixed(2)).replace('.',',') : '';
     return [
       `"${(p.nom||'').replace(/"/g,'""')}"`,
       `"${(p.marque||'').replace(/"/g,'""')}"`,
@@ -6810,7 +6836,7 @@ function showFicheVisite(pharmacyId) {
     for (const [k, prod] of Object.entries(byProd)) {
       const op = OFFILOG.find(p => nnk(p.produit) === k);
       if (!op) continue;
-      const pRef = op.prix_live || op.prix_offilog;
+      const pRef = op.prix_maxi;
       if (!pRef || pRef <= 0) continue;
       const concMap = [
         op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars'] : null,
