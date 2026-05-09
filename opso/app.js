@@ -5751,6 +5751,7 @@ function renderOffilog() {
     ].filter(Boolean);
     const bestComp = compMap.length ? compMap.sort((a, b) => a[0] - b[0])[0] : null;
     const minComp  = bestComp ? bestComp[0] : null;
+    const isAlerte = minComp != null && p.prix != null && minComp < p.prix;
     const bestBadge = bestComp != null
       ? `<div class="offil-best-price" title="Prix ${bestComp[1]} constaté">${bestComp[1]} ${fmtP(bestComp[0])}</div>` : '';
     const eanStr = p.ean ? String(p.ean) : '';
@@ -5771,8 +5772,9 @@ function renderOffilog() {
         ${leclerc != null ? `<span class="offil-bench offil-bench-lecl" title="E.Leclerc">Leclerc ${fmtP(leclerc)}</span>` : ''}
       </div>${bestBadge}${allConcHtml}` : allConcHtml;
     return `
-    <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener">
+    <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener"${isAlerte ? ' style="border-color:rgba(255,77,109,.45)"' : ''}>
       <div class="offil-card-img-wrap">
+        ${isAlerte ? '<div style="position:absolute;top:6px;left:6px;z-index:2;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(255,77,109,.85);color:#fff">⚠ Alerte</div>' : ''}
         ${p.img ? `<img class="offil-card-img" src="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.img}" alt="" loading="lazy" onerror="this.style.display='none'">` : '<div class="offil-card-img-placeholder"></div>'}
         ${hasPromo ? '<span class="offil-promo-badge">PROMO</span>' : ''}
       </div>
