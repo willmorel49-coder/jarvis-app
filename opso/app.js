@@ -5252,10 +5252,11 @@ let wmlPharma = null; // null = groupement, tircode = pharmacie sélectionnée
 let wmlMonth  = 'all'; // 'all' ou index 0-3
 
 function exportWmlCSV(tircode) {
+  const WML_VISIBLE = getWmlVisible();
   const fmtC = v => (v||0).toFixed(2).replace('.',',');
   let rows, filename, header;
   if (tircode != null) {
-    const ph = WML_DATA.find(d => d.tc === tircode);
+    const ph = WML_VISIBLE.find(d => d.tc === tircode);
     if (!ph) return;
     const bm = benchMaps();
     header = ['Produit','EAN','CA HT','Marge €','Tx marge %','Qté','PU Net HT','Prix pub conc.','Source conc.','Marge brute pot.'];
@@ -5283,7 +5284,7 @@ function exportWmlCSV(tircode) {
     filename = `WML_${titleCase(ph.nom).replace(/\s+/g,'_')}_2026.csv`;
   } else {
     header = ['Pharmacie','TIRCODE','CA HT','Marge €','Tx marge %','Qté'];
-    rows = WML_DATA.sort((a,b)=>b.ca-a.ca).map(d => {
+    rows = WML_VISIBLE.sort((a,b)=>b.ca-a.ca).map(d => {
       const tx = d.ca > 0 ? (d.mg/d.ca*100) : 0;
       return [`"${titleCase(d.nom).replace(/"/g,'""')}"`, d.tc, fmtC(d.ca), fmtC(d.mg), fmtC(tx), d.qt];
     });
@@ -5298,6 +5299,13 @@ function exportWmlCSV(tircode) {
   showToast(`Export CSV — ${rows.length} lignes`, 'success');
 }
 
+function getWmlVisible() {
+  if (typeof WML_DATA === 'undefined' || !WML_DATA.length) return [];
+  if (typeof OPSO_ADHERENTS === 'undefined' || !OPSO_ADHERENTS.length) return [];
+  const opsoSet = new Set(OPSO_ADHERENTS.map(a => String(a.cip)));
+  return WML_DATA.filter(d => opsoSet.has(String(d.tc)));
+}
+
 function renderWml() {
   const container = document.getElementById('wml-content');
   if (!container) return;
@@ -5307,13 +5315,20 @@ function renderWml() {
     return;
   }
 
+  const WML_VISIBLE = getWmlVisible();
+
+  if (!WML_VISIBLE.length) {
+    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Aucune pharmacie OPSO Santé dans les données WML.</div>`;
+    return;
+  }
+
   const fmt  = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
   const fmtD = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(v||0);
   const fmtP = v => (v||0).toFixed(1) + ' %';
   const MONTH_LABELS = ['Jan 2026', 'Fév 2026', 'Mar 2026', 'Avr 2026'];
   const AFM_LABELS = { REMBSS:'Remb. SS', MED010:'Médicament OTC', DM_20:'Dispositif médical', PARA:'Parapharmacie', DM:'DM', MED021:'Médicament autre', AUTRE:'Autre' };
 
-  const ph = wmlPharma ? WML_DATA.find(d => d.tc === wmlPharma) : null;
+  const ph = wmlPharma ? WML_VISIBLE.find(d => d.tc === wmlPharma) : null;
 
   if (ph) {
     // ── VUE PHARMACIE ──────────────────────
@@ -5483,14 +5498,14 @@ function renderWml() {
 
   } else {
     // ── VUE GROUPEMENT ──────────────────────
-    const tot_ca = WML_DATA.reduce((s,d)=>s+d.ca,0);
-    const tot_mg = WML_DATA.reduce((s,d)=>s+d.mg,0);
-    const tot_qt = WML_DATA.reduce((s,d)=>s+d.qt,0);
+    const tot_ca = WML_VISIBLE.reduce((s,d)=>s+d.ca,0);
+    const tot_mg = WML_VISIBLE.reduce((s,d)=>s+d.mg,0);
+    const tot_qt = WML_VISIBLE.reduce((s,d)=>s+d.qt,0);
     const tx_mg_grp = tot_ca > 0 ? (tot_mg/tot_ca*100) : 0;
 
     // CA groupement par mois
-    const ca_grp_m = [0,1,2,3].map(i => WML_DATA.reduce((s,d)=>s+(d.ca_m[i]||0),0));
-    const mg_grp_m = [0,1,2,3].map(i => WML_DATA.reduce((s,d)=>s+(d.mg_m[i]||0),0));
+    const ca_grp_m = [0,1,2,3].map(i => WML_VISIBLE.reduce((s,d)=>s+(d.ca_m[i]||0),0));
+    const mg_grp_m = [0,1,2,3].map(i => WML_VISIBLE.reduce((s,d)=>s+(d.mg_m[i]||0),0));
     const maxGrp = Math.max(...ca_grp_m);
     const grpBars = ca_grp_m.map((v, i) => {
       const pct = maxGrp > 0 ? (v/maxGrp*100) : 0;
@@ -5506,7 +5521,7 @@ function renderWml() {
     }).join('');
 
     // Table pharmacies
-    const sorted = [...WML_DATA].sort((a,b) => b.ca - a.ca);
+    const sorted = [...WML_VISIBLE].sort((a,b) => b.ca - a.ca);
     const maxPhCA = sorted[0]?.ca || 1;
 
     const pharmaRows = sorted.map((d, i) => {
@@ -5538,7 +5553,7 @@ function renderWml() {
 
     // AFM groupement
     const afmGrp = {};
-    WML_DATA.forEach(d => {
+    WML_VISIBLE.forEach(d => {
       Object.entries(d.afm).forEach(([code,[ca,mg,qt]]) => {
         if (!afmGrp[code]) afmGrp[code] = [0,0,0];
         afmGrp[code][0] += ca; afmGrp[code][1] += mg; afmGrp[code][2] += qt;
@@ -5572,7 +5587,7 @@ function renderWml() {
         <div class="wml-kpi"><div class="wml-kpi-label">CA net HT groupement</div><div class="wml-kpi-val">${fmt(tot_ca)}</div></div>
         <div class="wml-kpi"><div class="wml-kpi-label">Marge totale</div><div class="wml-kpi-val" style="color:var(--green)">${fmtD(tot_mg)}</div></div>
         <div class="wml-kpi"><div class="wml-kpi-label">Taux de marge moyen</div><div class="wml-kpi-val">${fmtP(tx_mg_grp)}</div></div>
-        <div class="wml-kpi"><div class="wml-kpi-label">Pharmacies actives</div><div class="wml-kpi-val" style="font-size:22px">${WML_DATA.length}</div></div>
+        <div class="wml-kpi"><div class="wml-kpi-label">Pharmacies actives</div><div class="wml-kpi-val" style="font-size:22px">${WML_VISIBLE.length}</div></div>
       </div>
 
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
