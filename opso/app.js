@@ -1134,7 +1134,7 @@ function printRapportMensuel() {
 
 // ── PHARMACIES ────────────────────────────────
 let pharmaSearch  = '';
-let pharmaFilter  = 'all'; // 'all' | 'up' | 'flat' | 'down'
+let pharmaFilter  = 'all'; // 'all' | 'up' | 'flat' | 'down' | 'visite_retard' | 'visite_semaine' | 'visite_aucune'
 let pharmaSort    = 'ca';  // 'ca' | 'delta' | 'name'
 let pharmaDetailOverridePeriod = null; // {year, month} or null → use auto-detected
 
@@ -1167,8 +1167,18 @@ function renderPharmacies() {
       ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
       : null;
     const prochaineVisite = clientInfo?.prochaineVisite || null;
+    const parsePV = str => {
+      if (!str || str === 'null' || !str.trim()) return null;
+      const sv = str.trim(); let mv;
+      mv = sv.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (mv) return new Date(+mv[3], +mv[2]-1, +mv[1]);
+      mv = sv.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (mv) return new Date(+mv[1], +mv[2]-1, +mv[3]);
+      return null;
+    };
+    const prochaineVisiteDate = parsePV(prochaineVisite);
     const wmlEntry = wmlNnMap.get(ph.name.trim().toUpperCase().replace(/\s+/g,' '));
-    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry };
+    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate, wmlEntry };
   }); // toutes les pharmacies OPSO, même sans données
 
   // Filtre texte
@@ -1179,10 +1189,15 @@ function renderPharmacies() {
 
   // Filtre statut
   if (pharmaFilter !== 'all') {
+    const todayF = new Date(); todayF.setHours(0,0,0,0);
+    const in7 = new Date(todayF); in7.setDate(in7.getDate() + 7);
     enriched = enriched.filter(e => {
       if (pharmaFilter === 'up')   return e.g !== null && e.g > 20;
       if (pharmaFilter === 'flat') return e.g !== null && e.g >= -5 && e.g <= 20;
       if (pharmaFilter === 'down') return e.g !== null && e.g < -5;
+      if (pharmaFilter === 'visite_retard')  return e.prochaineVisiteDate !== null && e.prochaineVisiteDate < todayF;
+      if (pharmaFilter === 'visite_semaine') return e.prochaineVisiteDate !== null && e.prochaineVisiteDate >= todayF && e.prochaineVisiteDate <= in7;
+      if (pharmaFilter === 'visite_aucune')  return !e.prochaineVisiteDate;
       return true;
     });
   }
@@ -1199,11 +1214,16 @@ function renderPharmacies() {
 
   const maxCA = Math.max(...enriched.map(e => e.caCur), 1);
 
+  const nRetard  = enriched.filter(e => { const todayFD = new Date(); todayFD.setHours(0,0,0,0); return e.prochaineVisiteDate && e.prochaineVisiteDate < todayFD; }).length;
+  const nSemaine = enriched.filter(e => { const todayFD = new Date(); todayFD.setHours(0,0,0,0); const in7FD = new Date(todayFD); in7FD.setDate(in7FD.getDate()+7); return e.prochaineVisiteDate && e.prochaineVisiteDate >= todayFD && e.prochaineVisiteDate <= in7FD; }).length;
   const filterDefs = [
-    { key: 'all',  label: 'Toutes' },
-    { key: 'up',   label: 'En croissance' },
-    { key: 'flat', label: 'Stable' },
-    { key: 'down', label: 'En baisse' },
+    { key: 'all',             label: 'Toutes' },
+    { key: 'up',              label: 'En croissance' },
+    { key: 'flat',            label: 'Stable' },
+    { key: 'down',            label: 'En baisse' },
+    { key: 'visite_retard',   label: nRetard  > 0 ? `⚠ Retard (${nRetard})`   : '⚠ Retard'  },
+    { key: 'visite_semaine',  label: nSemaine > 0 ? `📅 Cette semaine (${nSemaine})` : '📅 Cette semaine' },
+    { key: 'visite_aucune',   label: 'Sans visite' },
   ];
 
   const filterBarHtml = `
