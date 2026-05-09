@@ -7580,6 +7580,53 @@ function confirmerCommande(pharmacyId, year, month) {
   navigate('simulateur');
 }
 
+function simFromWmlMissed(pharmacyId) {
+  const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!pharma) return;
+  const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const nnSim = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+  const wmlE = wmlVis.find(d => nnSim(d.nom) === nnSim(pharma.name));
+  if (!wmlE) { showToast('Aucune donnée WML pour cette pharmacie', 'error'); return; }
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  const directNames = new Set(allPhSales.map(s => nnSim(s.artDesignation)));
+  const missed = (wmlE.pr || []).filter(([nom]) => nom && !directNames.has(nnSim(nom))).slice(0, 10);
+  if (!missed.length) { showToast('Aucun produit WML à proposer', 'info'); return; }
+  // Reset simulator for this pharmacy
+  state.sim = { pharmacyId: pharma.id, name: `WML → ${pharma.name}`, items: [] };
+  // Match WML products against OFFILOG catalog
+  for (const [nom, ca, , qt] of missed) {
+    const nk = nnSim(nom);
+    const offiMatch = typeof OFFILOG !== 'undefined'
+      ? OFFILOG.find(p => nnSim(p.produit) === nk)
+      : null;
+    if (offiMatch) {
+      state.sim.items.push({
+        designation: offiMatch.produit,
+        code: offiMatch.cip13 || '',
+        cat: offiMatch.role || 'mi',
+        froid: false,
+        puNet: offiMatch.prix_offilog || offiMatch.prix_live || 0,
+        puBrut: offiMatch.prix_offilog || offiMatch.prix_live || 0,
+        qty: Math.max(1, Math.round(qt / 4) || 1),
+      });
+    } else {
+      // Add without catalog match — let user fill in price
+      state.sim.items.push({
+        designation: nom,
+        code: '',
+        cat: 'mi',
+        froid: false,
+        puNet: qt > 0 && ca > 0 ? ca / qt : 0,
+        puBrut: qt > 0 && ca > 0 ? ca / qt : 0,
+        qty: Math.max(1, Math.round(qt / 4) || 1),
+      });
+    }
+  }
+  navigate('simulateur');
+  setTimeout(() => renderSimulator(), 80);
+  showToast(`${missed.length} produits WML ajoutés au simulateur`, 'success');
+}
+
 function filterPharmaHistTable(q) {
   const tbody = document.getElementById('pharma-hist-tbody');
   if (!tbody) return;
@@ -7795,6 +7842,9 @@ function showFicheVisite(pharmacyId) {
                 <div style="font-size:11px;font-weight:700;color:#d97706;margin-left:8px;white-space:nowrap">${fmt(ca)} · ${Math.round(qt)} u</div>
               </div>`).join('')}
             ${missed.length > 5 ? `<div style="font-size:10px;color:#92400e;margin-top:6px">+${missed.length-5} autres produits</div>` : ''}
+            <div style="margin-top:10px;text-align:right">
+              <button onclick="document.getElementById('fiche-visite-modal').remove();simFromWmlMissed('${pharma.id}')" style="padding:6px 14px;border-radius:8px;border:none;background:#d97706;color:#fff;cursor:pointer;font-size:12px;font-weight:700">🛒 Simuler commande</button>
+            </div>
           </div>`;
         })()}
 
