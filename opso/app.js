@@ -2579,15 +2579,6 @@ function renderProduits() {
       cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
     ">${f.label}</button>`;
   }).join('');
-  const wmlProdsAll = Object.values(prodTableMap).filter(p => wmlOppMap.has(nnP(p.label || '')));
-  const wmlNbProdTable = wmlProdsAll.length;
-  const wmlChipHtml = wmlNbProdTable > 0
-    ? `<button onclick="prodWmlFilter=!prodWmlFilter;prodTablePage=1;renderProduits()" style="
-        padding:5px 14px;border-radius:20px;border:1px solid ${prodWmlFilter ? 'var(--mint)' : 'var(--border2)'};
-        background:${prodWmlFilter ? 'rgba(0,229,160,.18)' : 'transparent'};color:${prodWmlFilter ? 'var(--mint)' : 'var(--text2)'};
-        cursor:pointer;font-size:12px;font-weight:${prodWmlFilter ? '600' : '400'};white-space:nowrap;transition:all .15s
-      ">📦 WML (${wmlNbProdTable})</button>`
-    : '';
 
   // ── Family KPI cards ──────────────────────────
   const familyKpiHtml = familyKpis.map(f => `
@@ -2676,6 +2667,16 @@ function renderProduits() {
     const momPct = (prevCa > 0 && curCa > 0) ? (curCa - prevCa) / prevCa * 100 : null;
     return { ...p, pharmaCount: p.pharmas.size, momPct };
   });
+  // WML chip: must be after prodTableAll is built
+  const wmlProdsAll = prodTableAll.filter(p => wmlOppMap.has(nnP(p.label || '')));
+  const wmlNbProdTable = wmlProdsAll.length;
+  const wmlChipHtml = wmlNbProdTable > 0
+    ? `<button onclick="prodWmlFilter=!prodWmlFilter;prodTablePage=1;renderProduits()" style="
+        padding:5px 14px;border-radius:20px;border:1px solid ${prodWmlFilter ? 'var(--mint)' : 'var(--border2)'};
+        background:${prodWmlFilter ? 'rgba(0,229,160,.18)' : 'transparent'};color:${prodWmlFilter ? 'var(--mint)' : 'var(--text2)'};
+        cursor:pointer;font-size:12px;font-weight:${prodWmlFilter ? '600' : '400'};white-space:nowrap;transition:all .15s
+      ">📦 WML (${wmlNbProdTable})</button>`
+    : '';
   if (prodFamille !== 'tous') {
     if (prodFamille === 'froid') prodTableAll = prodTableAll.filter(p => p.froid);
     else prodTableAll = prodTableAll.filter(p => p.cat === prodFamille);
