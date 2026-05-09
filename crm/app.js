@@ -1697,10 +1697,18 @@ function renderPharmacies() {
     return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate, wmlEntry };
   }).filter(e => e.caCur > 0 || e.caPrev > 0);
 
-  // Filtre texte
+  // Filtre texte (nom + ville/CP depuis CLIENTS)
   if (pharmaSearch) {
-    const q = pharmaSearch.toLowerCase();
-    enriched = enriched.filter(e => e.ph.name.toLowerCase().includes(q));
+    const q = pharmaSearch.toLowerCase().replace(/\s+/g,' ').trim();
+    const clientsMap2 = typeof CLIENTS !== 'undefined'
+      ? new Map(CLIENTS.map(c => [(c.nom||'').toUpperCase().trim(), c]))
+      : new Map();
+    enriched = enriched.filter(e => {
+      if (e.ph.name.toLowerCase().includes(q)) return true;
+      const cli2 = clientsMap2.get(e.ph.name.toUpperCase().trim());
+      if (!cli2) return false;
+      return (cli2.ville||'').toLowerCase().includes(q) || (cli2.cp||'').includes(q);
+    });
   }
 
   // Filtre statut
