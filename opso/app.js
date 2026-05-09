@@ -3953,6 +3953,7 @@ function renderBenchmark() {
   }
   if (benchCrossFilter === 'vendus')     data = data.filter(d => salesMap[nnBench(d.designation)]?.ca > 0);
   if (benchCrossFilter === 'non_vendus') data = data.filter(d => !salesMap[nnBench(d.designation)]?.ca);
+  if (benchCrossFilter === 'wml')        data = data.filter(d => wmlBenchMap.has(nnBench(d.designation)));
 
   // Inject our sales data for sorting
   data = data.map(d => {
@@ -4165,6 +4166,7 @@ function renderBenchmark() {
             { key: 'tous', label: `Tous (${fmtNum(BENCHMARK.length)})`, color: '#64748B' },
             { key: 'vendus', label: `Nos ventes (${fmtNum(nVendus)})`, color: '#00E5A0' },
             { key: 'non_vendus', label: `Non vendus (${fmtNum(nNonVendus)})`, color: '#EF4444' },
+            ...(wmlBenchMap.size > 0 ? [{ key: 'wml', label: `WML OPSO (${fmtNum(BENCHMARK.filter(d => wmlBenchMap.has(nnBench(d.designation))).length)})`, color: '#00E5A0' }] : []),
           ].map(t => {
             const active = benchCrossFilter === t.key;
             return `<button onclick="benchCrossFilter='${t.key}';renderBenchmark()"
