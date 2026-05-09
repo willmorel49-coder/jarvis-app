@@ -1076,6 +1076,11 @@ function renderPharmacies() {
   // Tri
   if (pharmaSort === 'name')  enriched.sort((a, b) => a.ph.name.localeCompare(b.ph.name));
   else if (pharmaSort === 'delta') enriched.sort((a, b) => (b.g ?? -Infinity) - (a.g ?? -Infinity));
+  else if (pharmaSort === 'wml') enriched.sort((a, b) => {
+    const potA = a.wmlEntry ? Math.max(0, a.wmlEntry.ca / 4 - a.caCur) : 0;
+    const potB = b.wmlEntry ? Math.max(0, b.wmlEntry.ca / 4 - b.caCur) : 0;
+    return potB - potA;
+  });
   else enriched.sort((a, b) => b.caCur - a.caCur);
 
   const maxCA = Math.max(...enriched.map(e => e.caCur), 1);
@@ -1225,8 +1230,8 @@ function renderPharmacies() {
         ${filterBarHtml}
         <div style="display:flex;gap:4px;align-items:center">
           <span style="font-size:11px;color:var(--text3);margin-right:4px">Trier par</span>
-          ${[['ca','CA'],['delta','Delta'],['name','Nom']].map(([k,l]) =>
-            `<button onclick="pharmaSort='${k}';renderPharmacies()" style="padding:4px 10px;border-radius:8px;border:1px solid ${pharmaSort===k?'var(--green)':'var(--border2)'};background:${pharmaSort===k?'rgba(0,87,255,.1)':'transparent'};color:${pharmaSort===k?'var(--green)':'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600">${l}</button>`
+          ${[['ca','CA'],['delta','Delta'],['wml','WML'],['name','Nom']].map(([k,l]) =>
+            `<button onclick="pharmaSort='${k}';renderPharmacies()" style="padding:4px 10px;border-radius:8px;border:1px solid ${pharmaSort===k?'var(--green)':'var(--border2)'};background:${pharmaSort===k?'rgba(0,87,255,.1)':'transparent'};color:${pharmaSort===k?'var(--green)':'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600" title="${k==='wml'?'Trier par potentiel WML non capturé':''}">${l}</button>`
           ).join('')}
         </div>
       </div>
