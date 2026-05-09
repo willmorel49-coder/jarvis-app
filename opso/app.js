@@ -6121,10 +6121,26 @@ function renderWml() {
       .sort((a,b) => b.ca - a.ca);
     const maxPhCA = sorted[0]?.ca || 1;
 
+    // Build direct CA map for conversion potential
+    const allSalesWml = getSales();
+    const { year: curYW, month: curMW } = getCurrentPeriod(allSalesWml.length ? allSalesWml : []);
+    const salesCurWml = curYW ? getSales({ year: curYW, month: curMW }) : [];
+    const nnWml = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+    const pharmaNameToId = new Map(state.pharmacies.map(ph => [nnWml(ph.name), ph.id]));
+    const directCaByNom = new Map();
+    for (const [nomNorm, phId] of pharmaNameToId) {
+      const directCa = sumCA(salesCurWml.filter(s => s.pharmacyId === phId));
+      directCaByNom.set(nomNorm, directCa);
+    }
+
     const pharmaRows = sorted.map((d, i) => {
       const tx = d.ca > 0 ? (d.mg/d.ca*100) : 0;
       const pct = (d.ca/maxPhCA*100).toFixed(1);
       const actifs = d.ca_m.filter(v=>v>0).length;
+      const wmlAvgMonth = d.ca / 4;
+      const directCa = directCaByNom.get(nnWml(d.nom)) || 0;
+      const potentiel = Math.max(0, wmlAvgMonth - directCa);
+      const convRatio = wmlAvgMonth > 0 ? Math.round(directCa / wmlAvgMonth * 100) : null;
       const moisActifs = d.ca_m.map((v,i)=>({v,i})).filter(x=>x.v>0);
       let trendBadge = '';
       if (moisActifs.length >= 2) {
@@ -6155,6 +6171,9 @@ function renderWml() {
         </td>
         <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--text3)">${actifs}/4</td>
         <td style="padding:9px 12px;text-align:center">${trendBadge}</td>
+        <td style="padding:9px 12px;text-align:right">
+          ${potentiel > 50 ? `<span style="font-size:11px;font-weight:700;color:var(--amber)">${fmt(potentiel)}</span><div style="font-size:9px;color:var(--text3)">${convRatio !== null ? convRatio + '% conv.' : ''}</div>` : convRatio !== null ? `<span style="font-size:10px;color:var(--green);font-weight:700">✓ ${convRatio}%</span>` : '—'}
+        </td>
         <td style="padding:9px 12px;text-align:right;color:var(--text3);font-size:16px">›</td>
       </tr>`;
     }).join('');
@@ -6347,6 +6366,7 @@ function renderWml() {
               <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Activité</th>
               <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Mois</th>
               <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Tendance</th>
+              <th style="padding:7px 12px;text-align:right;font-size:10px;color:var(--amber)" title="Potentiel de conversion WML → Direct">Pot. Direct</th>
               <th></th>
             </tr></thead>
             <tbody>${pharmaRows}</tbody>
