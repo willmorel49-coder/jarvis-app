@@ -1596,6 +1596,11 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   const sectorCA = sumCA(curY ? getSales({ year: curY, month: curM }) : []);
   const pctOfSector = sectorCA > 0 ? caCur / sectorCA * 100 : 0;
 
+  // ── WML groupement data for this pharmacy ────────
+  const wmlVisDet = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const nnWmlDet = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const wmlEntDet = wmlVisDet.find(d => nnWmlDet(d.nom) === nnWmlDet(pharma.name)) || null;
+
   // ── Infos CLIENTS (potentiel secteur) ─────────
   const clientInfo = typeof CLIENTS !== 'undefined'
     ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === pharma.name.toUpperCase().trim())
@@ -2047,6 +2052,76 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         ${addHtml}
       </div>` : ''}
+
+      <!-- WML groupement card -->
+      ${wmlEntDet ? (() => {
+        const nnWml2 = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+        const directNames2 = new Set(allPhSales.map(s => nnWml2(s.artDesignation)));
+        const missedWml = (wmlEntDet.pr||[]).filter(([nom]) => nom && !directNames2.has(nnWml2(nom)));
+        const missedCaWml = missedWml.reduce((s,[,ca])=>s+(ca||0),0);
+        const wmlAvgMo = wmlEntDet.ca / 4;
+        const convPct = wmlAvgMo > 0 ? Math.min(999, Math.round(caCur / wmlAvgMo * 100)) : null;
+        const months = ['Jan','Fév','Mar','Avr'];
+        const caM = wmlEntDet.ca_m || [];
+        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid #11a63c">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📦 Groupement OPSO — Jan–Avr 2026</div>
+              <div class="card-subtitle">Achats totaux via WML · taux de conversion en commande directe IP</div>
+            </div>
+            ${convPct !== null ? `<div style="text-align:right">
+              <div style="font-size:22px;font-weight:900;color:${convPct>=80?'var(--opso-green)':convPct>=40?'var(--amber)':'var(--rose)'}">${convPct}%</div>
+              <div style="font-size:11px;color:var(--text3)">taux conversion direct</div>
+            </div>` : ''}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border1)">
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid var(--border1)">
+              <div style="font-size:22px;font-weight:900;color:var(--opso-green)">${fmt(wmlEntDet.ca)}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:4px">CA groupement 4 mois</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid var(--border1)">
+              <div style="font-size:22px;font-weight:900;color:var(--text1)">${fmt(wmlAvgMo)}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:4px">CA moyen / mois</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center">
+              <div style="font-size:22px;font-weight:900;color:var(--amber)">${fmt(wmlEntDet.mg)}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:4px">Marge brute</div>
+            </div>
+          </div>
+          ${caM.length ? `<div style="display:flex;gap:6px;padding:12px 20px;border-top:1px solid var(--border1)">
+            ${months.map((mo,i) => {
+              const v = caM[i] || 0;
+              const maxV = Math.max(...caM, 1);
+              const h = Math.round(v / maxV * 40);
+              return `<div style="flex:1;text-align:center">
+                <div style="font-size:10px;font-weight:700;color:${v>0?'var(--opso-green)':'var(--text3)'};margin-bottom:3px">${v>0?fmt(v):'—'}</div>
+                <div style="height:${Math.max(h,2)}px;border-radius:3px;background:${v>0?'var(--opso-green)':'var(--bg3)'};margin:0 4px"></div>
+                <div style="font-size:9px;color:var(--text3);margin-top:3px">${mo}</div>
+              </div>`;
+            }).join('')}
+          </div>` : ''}
+          ${(wmlEntDet.pr||[]).length > 0 ? `<div style="border-top:1px solid var(--border1)">
+            <div style="padding:8px 20px 4px;font-size:10px;font-weight:700;color:var(--opso-green);text-transform:uppercase;letter-spacing:.4px">Top produits groupement</div>
+            ${(wmlEntDet.pr||[]).slice(0,3).map(([nom,ca,,qt],i) => `
+              <div style="display:flex;align-items:center;gap:10px;padding:7px 20px;border-bottom:1px solid var(--border1)">
+                <div style="flex:1;min-width:0;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${nom}</div>
+                <div style="font-size:12px;font-weight:700;color:var(--opso-green);flex-shrink:0">${fmt(ca)}</div>
+                <div style="font-size:10px;color:var(--text3);flex-shrink:0">${Math.round(qt||0)} u</div>
+              </div>`).join('')}
+          </div>` : ''}
+          ${missedWml.length > 0 ? `<div style="margin:0 16px 14px;padding:10px 12px;background:rgba(255,176,32,.07);border-radius:8px;border-left:3px solid var(--amber)">
+            <div style="font-size:10px;font-weight:800;color:var(--amber);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">
+              À proposer en direct — ${missedWml.length} produit${missedWml.length>1?'s':''} · ${fmt(missedCaWml)} CA groupement
+            </div>
+            ${missedWml.slice(0,4).map(([nom,ca,,qt]) => `
+              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,176,32,.2);font-size:11px">
+                <span style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">→ ${nom}</span>
+                <span style="font-weight:700;color:var(--amber);margin-left:8px;white-space:nowrap;flex-shrink:0">${fmt(ca)} · ${Math.round(qt||0)} u</span>
+              </div>`).join('')}
+            ${missedWml.length > 4 ? `<div style="font-size:10px;color:var(--amber);margin-top:4px">+${missedWml.length-4} autres</div>` : ''}
+          </div>` : ''}
+        </div>`;
+      })() : ''}
 
       <!-- YTD pharmacie -->
       ${pharmaYTD > 0 ? `
