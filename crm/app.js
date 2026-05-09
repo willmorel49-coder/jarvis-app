@@ -1878,6 +1878,7 @@ function renderPharmacies() {
               <div class="pharma-ca">${fmt(caCur)}</div>
               <div class="pharma-qte">CA net HT</div>
             </div>
+            <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Fiche de visite" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📋</button>
             <div style="color:var(--text3);font-size:16px">›</div>
           </div>`;
       }).join('')
