@@ -686,6 +686,39 @@ function renderDashboard() {
       })()}
     </div>
 
+    ${(() => {
+      const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+      if (!wmlVis.length) return '';
+      const sorted = [...wmlVis].sort((a,b) => b.ca - a.ca).slice(0, 3);
+      const fmtWml = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
+      const maxCa = sorted[0]?.ca || 1;
+      return `
+  <div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
+    <div class="card-header" style="padding:16px 20px">
+      <div>
+        <div class="card-title">Achats IP — Top pharmacies</div>
+        <div class="card-subtitle">Jan–Avr 2026 · Adhérents OPSO Santé</div>
+      </div>
+      <button onclick="navigate('wml')" style="font-size:12px;color:var(--opso-green);background:none;border:none;cursor:pointer;font-weight:700">Tout voir →</button>
+    </div>
+    <div style="padding:0 12px 14px">
+      ${sorted.map((d, i) => {
+        const pct = (d.ca / maxCa * 100).toFixed(0);
+        return `<div style="padding:8px 8px;display:flex;align-items:center;gap:10px;${i<sorted.length-1?'border-bottom:1px solid var(--border)':''}">
+          <span style="font-size:11px;font-weight:700;color:var(--text3);width:16px;text-align:center">${i+1}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titleCase(d.nom)}</div>
+            <div style="height:4px;background:var(--bg3);border-radius:2px;margin-top:4px">
+              <div style="width:${pct}%;height:100%;background:var(--opso-green);border-radius:2px"></div>
+            </div>
+          </div>
+          <span style="font-size:12px;font-weight:700;color:var(--opso-green);white-space:nowrap">${fmtWml(d.ca)}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+    })()}
+
     <div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
       <div class="card-header" style="padding:16px 20px">
         <div class="card-title">Mes pharmacies</div>
@@ -5138,13 +5171,23 @@ function renderOffilog() {
     const minComp  = bestComp ? bestComp[0] : null;
     const bestBadge = bestComp != null
       ? `<div class="offil-best-price" title="Prix ${bestComp[1]} constaté">${bestComp[1]} ${fmtP(bestComp[0])}</div>` : '';
+    const eanStr = p.ean ? String(p.ean) : '';
+    const bmMaps = benchMaps();
+    const allConcHtml = (() => {
+      const chips = [];
+      if (bmMaps.leclEan.has(eanStr)) chips.push(`<span style="font-size:10px;font-weight:600;color:#0072e6;background:rgba(0,114,230,.1);padding:1px 6px;border-radius:6px">Leclerc ${fmtP(bmMaps.leclEan.get(eanStr))}</span>`);
+      if (bmMaps.cap3Ean.has(eanStr)) chips.push(`<span style="font-size:10px;font-weight:600;color:#ea580c;background:rgba(234,88,12,.1);padding:1px 6px;border-radius:6px">Cap3000 ${fmtP(bmMaps.cap3Ean.get(eanStr))}</span>`);
+      if (bmMaps.drakEan.has(eanStr)) chips.push(`<span style="font-size:10px;font-weight:600;color:#6366f1;background:rgba(99,102,241,.1);padding:1px 6px;border-radius:6px">Drakkars ${fmtP(bmMaps.drakEan.get(eanStr))}</span>`);
+      if (bmMaps.pharmEan.has(eanStr)) chips.push(`<span style="font-size:10px;font-weight:600;color:#00E5A0;background:rgba(0,229,160,.08);padding:1px 6px;border-radius:6px">Apothical ${fmtP(bmMaps.pharmEan.get(eanStr))}</span>`);
+      return chips.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${chips.join('')}</div>` : '';
+    })();
     const benchRow = (drakkars != null || cap3000 != null || leclerc != null || maPharmie != null) ? `
       <div class="offil-bench-row">
         ${maPharmie != null ? `<span class="offil-bench" style="border-color:rgba(0,229,160,.25);color:#00E5A0;background:rgba(0,229,160,.06)" title="Ma Pharmacie (prix scrappé)">🏥 ${fmtP(maPharmie)}</span>` : ''}
         ${drakkars != null ? `<span class="offil-bench offil-bench-drak" title="Pharmacie des Drakkars">Drakkars ${fmtP(drakkars)}</span>` : ''}
         ${cap3000 != null ? `<span class="offil-bench offil-bench-cap" title="Pharmacie Cap 3000">Cap 3000 ${fmtP(cap3000)}</span>` : ''}
         ${leclerc != null ? `<span class="offil-bench offil-bench-lecl" title="E.Leclerc">Leclerc ${fmtP(leclerc)}</span>` : ''}
-      </div>${bestBadge}` : '';
+      </div>${bestBadge}${allConcHtml}` : allConcHtml;
     return `
     <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener">
       <div class="offil-card-img-wrap">
@@ -5266,9 +5309,10 @@ function exportWmlCSV(tircode) {
       if (ean) {
         const e = String(ean);
         const prices = [
-          bm.leclEan.has(e) ? [bm.leclEan.get(e), 'Leclerc'] : null,
-          bm.cap3Ean.has(e) ? [bm.cap3Ean.get(e), 'Cap3000'] : null,
-          bm.drakEan.has(e) ? [bm.drakEan.get(e), 'Drakkars'] : null,
+          bm.leclEan.has(e)  ? [bm.leclEan.get(e),  'Leclerc']  : null,
+          bm.cap3Ean.has(e)  ? [bm.cap3Ean.get(e),  'Cap3000']  : null,
+          bm.drakEan.has(e)  ? [bm.drakEan.get(e),  'Drakkars'] : null,
+          bm.pharmEan.has(e) ? [bm.pharmEan.get(e), 'Apothical']: null,
         ].filter(Boolean);
         if (prices.length) { const best = prices.sort((a,b)=>a[0]-b[0])[0]; concPrix = best[0]; concLabel = best[1]; }
       }
@@ -5528,6 +5572,16 @@ function renderWml() {
       const tx = d.ca > 0 ? (d.mg/d.ca*100) : 0;
       const pct = (d.ca/maxPhCA*100).toFixed(1);
       const actifs = d.ca_m.filter(v=>v>0).length;
+      const moisActifs = d.ca_m.map((v,i)=>({v,i})).filter(x=>x.v>0);
+      let trendBadge = '';
+      if (moisActifs.length >= 2) {
+        const last = moisActifs[moisActifs.length-1].v;
+        const prev = moisActifs[moisActifs.length-2].v;
+        const pctTrend = (last - prev) / prev * 100;
+        if (pctTrend >= 5) trendBadge = `<span style="font-size:10px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 5px;border-radius:6px">▲ ${pctTrend.toFixed(0)}%</span>`;
+        else if (pctTrend <= -5) trendBadge = `<span style="font-size:10px;font-weight:700;color:#EF4444;background:#fee2e2;padding:1px 5px;border-radius:6px">▼ ${Math.abs(pctTrend).toFixed(0)}%</span>`;
+        else trendBadge = `<span style="font-size:10px;font-weight:600;color:#6B7280;background:#F3F4F6;padding:1px 5px;border-radius:6px">≈ stable</span>`;
+      }
       return `<tr class="wml-pharma-row" onclick="wmlPharma=${d.tc};renderWml()" style="cursor:pointer;border-bottom:1px solid var(--border)">
         <td style="padding:9px 12px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
         <td style="padding:9px 14px;font-size:13px;font-weight:600;white-space:nowrap">${titleCase(d.nom)}</td>
@@ -5547,6 +5601,7 @@ function renderWml() {
           </div>
         </td>
         <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--text3)">${actifs}/4</td>
+        <td style="padding:9px 12px;text-align:center">${trendBadge}</td>
         <td style="padding:9px 12px;text-align:right;color:var(--text3);font-size:16px">›</td>
       </tr>`;
     }).join('');
@@ -5582,6 +5637,10 @@ function renderWml() {
     <div style="padding:0 0 24px">
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
         <button onclick="exportWmlCSV(null)" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV groupement</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(17,166,60,.08);border-radius:10px;border:1px solid rgba(17,166,60,.2);margin-bottom:14px">
+        <span style="font-size:14px">📋</span>
+        <div style="font-size:12px;color:var(--text2)"><strong style="color:var(--opso-green)">${WML_VISIBLE.length} pharmacies adhérentes OPSO Santé</strong> — données WML Jan–Avr 2026</div>
       </div>
       <div class="wml-kpi-row">
         <div class="wml-kpi"><div class="wml-kpi-label">CA net HT groupement</div><div class="wml-kpi-val">${fmt(tot_ca)}</div></div>
@@ -5629,6 +5688,7 @@ function renderWml() {
               <th style="padding:7px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx marge</th>
               <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Activité</th>
               <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Mois</th>
+              <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Tendance</th>
               <th></th>
             </tr></thead>
             <tbody>${pharmaRows}</tbody>
