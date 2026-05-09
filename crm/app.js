@@ -5800,8 +5800,8 @@ function renderOffilog() {
     // Prix affiché = live en priorité, sinon Excel
     const prixDisplay = hasLive ? p.prix_live : (hasIP ? p.prix_offilog : null);
 
-    // Price delta vs all competitors incl. pharmacie
-    let deltaHtml = '', isAlertCard = false;
+    // Price delta vs all competitors (informational only)
+    let deltaHtml = '';
     if (prixDisplay && (hasDrak || hasCap || hasLecl || hasPharma)) {
       const concPrix = [
         hasDrak   ? p.prix_drakkars  : null,
@@ -5811,8 +5811,8 @@ function renderOffilog() {
       ].filter(Boolean);
       const minConc = Math.min(...concPrix);
       const delta = minConc - prixDisplay;
-      if (delta > 0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 6px;border-radius:8px">−${fmtP(delta)} vs conc.</span>`;
-      else if (delta < -0.01) { isAlertCard = true; deltaHtml = `<span style="font-size:10px;font-weight:700;color:#EF4444;background:#fee2e2;padding:1px 6px;border-radius:8px">⚠ Conc. −${fmtP(Math.abs(delta))}</span>`; }
+      if (delta > 0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 6px;border-radius:8px">Conc. +${fmtP(delta)}</span>`;
+      else if (delta < -0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#F59E0B;background:#fef3c7;padding:1px 6px;border-radius:8px">Conc. −${fmtP(Math.abs(delta))}</span>`;
     }
 
     const saisonBadge = p.saison && p.saison !== 'Toute année'
@@ -5838,21 +5838,22 @@ function renderOffilog() {
         })()
       : '';
 
-    const competHtml = (hasDrak || hasCap || hasLecl || hasPharma) ? `
+    const competHtml = (hasDrak || hasCap || hasLecl || hasPharma || hasMaxi) ? `
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border1)">
-        ${hasPharma ? `<div style="font-size:10px;color:var(--text3)">🏥 <span style="color:var(--mint);font-weight:700">${fmtP(p.prix_pharmacie)}</span> <span style="opacity:.6">Ma Phcie</span> ${pharmaDeltaHtml}</div>` : ''}
-        ${hasDrak   ? `<div style="font-size:10px;color:var(--text3)">🛒 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_drakkars)}</span> <span style="opacity:.6">Drakkars</span></div>` : ''}
-        ${hasCap    ? `<div style="font-size:10px;color:var(--text3)">🏪 <span style="color:var(--text2);font-weight:600">${fmtP(p.prix_cap3000)}</span> <span style="opacity:.6">Cap3000</span></div>` : ''}
+        ${hasPharma ? `<div style="font-size:10px;color:var(--text3)">🏥 <span style="color:var(--mint);font-weight:700">${fmtP(p.prix_pharmacie)}</span> <span style="opacity:.6">Apothical</span> ${pharmaDeltaHtml}</div>` : ''}
+        ${hasDrak   ? `<div style="font-size:10px;color:var(--text3)">🛒 <span style="color:#6366f1;font-weight:600">${fmtP(p.prix_drakkars)}</span> <span style="opacity:.6">Drakkars</span></div>` : ''}
+        ${hasCap    ? `<div style="font-size:10px;color:var(--text3)">🏪 <span style="color:#ea580c;font-weight:600">${fmtP(p.prix_cap3000)}</span> <span style="opacity:.6">Cap3000</span></div>` : ''}
         ${hasLecl   ? `<div style="font-size:10px;color:var(--text3)">🔵 <span style="color:#0072e6;font-weight:600">${fmtP(p.prix_leclerc)}</span> <span style="opacity:.6">Leclerc</span></div>` : ''}
+        ${hasMaxi   ? `<div style="font-size:10px;color:var(--text3)">🟡 <span style="color:#FFB020;font-weight:600">${fmtP(p.prix_maxi)}</span> <span style="opacity:.6">Maxipara</span></div>` : ''}
       </div>` : '';
 
     // Initial marque pour placeholder
     const brandInitial = (p.marque || p.produit || '?').charAt(0).toUpperCase();
 
-    return `<div style="background:var(--bg);border-radius:16px;border:1px solid ${isAlertCard?'rgba(239,68,68,.4)':'var(--border1)'};overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer${isAlertCard?';box-shadow:0 0 0 1px rgba(239,68,68,.15)':''}"
+    return `<div style="background:var(--bg);border-radius:16px;border:1px solid var(--border1);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer"
       onclick="showOffiDetail(${startIdx + i})"
       onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,.12)';this.style.transform='translateY(-2px)'"
-      onmouseout="this.style.boxShadow='${isAlertCard?'0 0 0 1px rgba(239,68,68,.15)':''}';this.style.transform=''">
+      onmouseout="this.style.boxShadow='';this.style.transform=''">
       <!-- Zone photo uniforme 140px — toujours présente -->
       <div style="height:140px;background:${um.bg};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;flex-shrink:0">
         ${hasImg
@@ -6019,9 +6020,9 @@ function renderOffilog() {
           <div style="font-size:10px;color:rgba(0,114,230,.8);text-transform:uppercase;letter-spacing:.5px">E.Leclerc</div>
         </div>
         ${nAlerte > 0 ? `
-        <div style="background:rgba(239,68,68,.15);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px);border:1px solid rgba(239,68,68,.3);cursor:pointer" onclick="offiRole='alerte';offiPageNum=1;renderOffilog()" title="Produits dont le prix public concurrent est inférieur au prix IP">
-          <div style="font-size:22px;font-weight:900;color:#EF4444">${fmtNum(nAlerte)}</div>
-          <div style="font-size:10px;color:rgba(239,68,68,.8);text-transform:uppercase;letter-spacing:.5px">⚠ Alertes</div>
+        <div style="background:rgba(0,87,255,.15);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px);border:1px solid rgba(0,87,255,.3);cursor:pointer" onclick="offiRole='concurrence';offiPageNum=1;renderOffilog()" title="Produits avec prix concurrents disponibles">
+          <div style="font-size:22px;font-weight:900;color:var(--blue)">${fmtNum(nAlerte)}</div>
+          <div style="font-size:10px;color:rgba(0,87,255,.8);text-transform:uppercase;letter-spacing:.5px">🔍 Prix conc.</div>
         </div>` : ''}
         <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
           <div style="font-size:22px;font-weight:900;color:#fff">${margeMoy.toFixed(0)}%</div>
@@ -6057,7 +6058,7 @@ function renderOffilog() {
         <option value="prix_asc"  ${offiSort==='prix_asc'?'selected':''}>Prix ↑</option>
         <option value="prix_desc" ${offiSort==='prix_desc'?'selected':''}>Prix ↓</option>
         <option value="marge_desc"${offiSort==='marge_desc'?'selected':''}>Marge ↓</option>
-        <option value="ecart"     ${offiSort==='ecart'?'selected':''}>⚠ Écart conc.</option>
+        <option value="ecart"     ${offiSort==='ecart'?'selected':''}>Écart conc.</option>
       </select>
       <!-- Vue toggle cards / table -->
       <div style="display:flex;border:1.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0">
