@@ -5642,12 +5642,13 @@ function offiGetList() {
         !(p.marque || '').toLowerCase().includes(q)) return false;
     if (offiRole === 'bestsellers') return p.rang_vente != null;
     if (offiRole === 'pharmacie') return p.prix_pharmacie != null && p.prix_pharmacie > 0;
+    if (offiRole === 'leclerc') return p.prix_leclerc != null && p.prix_leclerc > 0;
     if (offiRole === 'favoris') return p.ean && getOffiFavs().has(p.ean);
     if (offiRole === 'concurrence') {
       return [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0);
     }
     if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
-    if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && offiRole !== 'concurrence' && p.role !== offiRole) return false;
+    if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && offiRole !== 'leclerc' && offiRole !== 'concurrence' && p.role !== offiRole) return false;
     if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
     if (offiMarque !== 'tous' && p.marque !== offiMarque) return false;
     if (offiSaison === 'pe' && p.saison !== 'Printemps/Été') return false;
@@ -5770,6 +5771,7 @@ function renderOffilog() {
     { key: 'bestsellers',     label: `Top ventes (${nBest})`, icon: '🏆', color: '#F59E0B' },
     { key: 'pharmacie',       label: `Ma Pharmacie (${nPharma})`, icon: '🏥', color: '#00E5A0' },
     { key: 'concurrence',     label: `Avec prix conc. (${nAlerte})`, icon: '🔍', color: '#0057FF' },
+    { key: 'leclerc',         label: `Leclerc (${nLeclerc})`, icon: '🔵', color: '#0072e6' },
     { key: 'favoris',         label: `Favoris (${nFavs})`, icon: '★', color: '#EC4899' },
     { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
     { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
