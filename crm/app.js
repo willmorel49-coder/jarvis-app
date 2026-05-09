@@ -789,6 +789,30 @@ function renderDashboard() {
     </tr>`
   ).join('');
 
+  // ── WML summary for dashboard widget ─────────────────────────────────────
+  const wmlDashData = (() => {
+    const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+    if (!wmlVis.length) return null;
+    const nnW = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+    const wmlMap = new Map(wmlVis.map(d => [nnW(d.nom), d]));
+    const totWmlCa = wmlVis.reduce((s,d) => s+d.ca, 0);
+    const totWmlMg = wmlVis.reduce((s,d) => s+d.mg, 0);
+    let totDirect = 0;
+    const potRows = [];
+    for (const ph of state.pharmacies) {
+      const wE = wmlMap.get(nnW(ph.name));
+      if (!wE || !wE.ca) continue;
+      const wmlAvg = wE.ca / 4;
+      const directCa = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+      totDirect += directCa;
+      const pot = Math.max(0, wmlAvg - directCa);
+      if (pot > 0) potRows.push({ ph, wmlAvg, directCa, pot });
+    }
+    potRows.sort((a,b) => b.pot - a.pot);
+    const convRate = totWmlCa > 0 ? Math.round(totDirect / (totWmlCa/4) * 100) : null;
+    return { totWmlCa, totWmlMg, convRate, potRows: potRows.slice(0,3), nPhWml: wmlVis.length };
+  })();
+
   document.getElementById('dash-content').innerHTML = `
 
     <!-- Row 1 : Hero KPI + 3 secondaires -->
@@ -898,6 +922,51 @@ function renderDashboard() {
           <tbody>${compRowsHtml}</tbody>
         </table>
       </div>
+    </div>` : ''}
+
+    <!-- Row 2b-wml : WML Summary -->
+    ${wmlDashData ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">📦 Achats IP via WML — Jan–Avr 2026</div>
+          <div class="card-subtitle">${wmlDashData.nPhWml} pharmacie${wmlDashData.nPhWml>1?'s':''} OPSO Santé · Taux de conversion direct</div>
+        </div>
+        <button onclick="pharmaSort='wml';navigate('pharmacies')" style="padding:6px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;font-size:12px;color:var(--text3);cursor:pointer;font-weight:600">Trier par potentiel →</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1px solid var(--border)">
+        <div style="padding:16px 20px;border-right:1px solid var(--border);text-align:center">
+          <div style="font-size:22px;font-weight:900;color:#11a63c">${fmt(wmlDashData.totWmlCa)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">CA total acheté via WML</div>
+        </div>
+        <div style="padding:16px 20px;border-right:1px solid var(--border);text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--mint)">${fmt(wmlDashData.totWmlMg)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Remise obtenue</div>
+        </div>
+        <div style="padding:16px 20px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:${wmlDashData.convRate !== null ? (wmlDashData.convRate >= 80 ? 'var(--mint)' : wmlDashData.convRate >= 50 ? 'var(--amber)' : 'var(--rose)') : 'var(--text3)'}">${wmlDashData.convRate !== null ? wmlDashData.convRate + '%' : '—'}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Conversion CA direct / WML</div>
+        </div>
+      </div>
+      ${wmlDashData.potRows.length ? `
+      <div style="padding:0 0 8px">
+        <div style="padding:10px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Top opportunités de conversion</div>
+        ${wmlDashData.potRows.map(r => {
+          const pct = Math.min(100, Math.round(r.directCa / r.wmlAvg * 100));
+          return \`<div style="display:flex;align-items:center;gap:12px;padding:8px 20px;border-top:1px solid var(--border)">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+                <span style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\${r.ph.name}</span>
+                <span style="font-size:11px;color:var(--amber);font-weight:700;flex-shrink:0;margin-left:8px">+\${fmt(r.pot)}</span>
+              </div>
+              <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
+                <div style="width:\${pct}%;height:100%;background:#11a63c;border-radius:2px"></div>
+              </div>
+              <div style="font-size:10px;color:var(--text3);margin-top:3px">Direct \${fmt(r.directCa)} · WML moy. \${fmt(r.wmlAvg)} · \${pct}%</div>
+            </div>
+          </div>\`;
+        }).join('')}
+      </div>` : ''}
     </div>` : ''}
 
     <!-- Row 2c-ytd : Cumul YTD -->
