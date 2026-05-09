@@ -704,6 +704,17 @@ function renderDashboard() {
           <div class="cockpit-mini-label">Conv. WML</div>
         </div>`;
       })()}
+      ${(() => {
+        const objectives = loadObjectives();
+        const totalTarget = state.pharmacies.reduce((s, ph) => s + (objectives[`${ph.id}_${curY}_${curM}`] || 0), 0);
+        if (!totalTarget) return '';
+        const pctObj = Math.round(caCur / totalTarget * 100);
+        const objCol = pctObj >= 100 ? 'var(--green)' : pctObj >= 75 ? 'var(--amber)' : 'var(--rose)';
+        return `<div class="cockpit-mini" onclick="navigate('objectifs')" style="cursor:pointer" title="CA réel vs objectif mensuel global">
+          <div class="cockpit-mini-val" style="color:${objCol}">${pctObj}%</div>
+          <div class="cockpit-mini-label">Objectif</div>
+        </div>`;
+      })()}
     </div>
 
     ${(() => {
