@@ -5001,6 +5001,17 @@ function renderCatalogue() {
       style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};background:${active ? 'var(--blue)' : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap;transition:all .15s;${active ? 'box-shadow:0 2px 8px rgba(37,99,235,.25)' : ''}">${t.label}</button>`;
   }).join('');
 
+  // ── Leclerc lookup depuis OFFILOG (EAN → prix_leclerc) ──────
+  const leclCatMap = new Map();
+  const normCatMap = new Map();
+  if (typeof OFFILOG !== 'undefined') {
+    const nnCat2 = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    for (const p of OFFILOG) {
+      if (p.ean && p.prix_leclerc > 0) leclCatMap.set(String(p.ean), p.prix_leclerc);
+      if (p.produit_norm && p.prix_leclerc > 0) normCatMap.set(nnCat2(p.produit_norm), p.prix_leclerc);
+    }
+  }
+
   // ── Products ─────────────────────────────────
   const prodsHtml = page.length ? page.map((b, i) => {
     const globalIdx = startIdx + i;
@@ -5013,6 +5024,8 @@ function renderCatalogue() {
     const rotTag     = b.rot_pharma_jan26 > 0 ? `<span style="font-size:10px;color:var(--text3)">↻ ${b.rot_pharma_jan26.toFixed(1)}/mois</span>` : '';
     const cipTag     = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
     const offreTag   = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
+    const prixLecl   = b.cip13 ? (leclCatMap.get(String(b.cip13)) || null) : null;
+    const leclTag    = prixLecl != null ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,114,230,.1);color:#0072e6;border-radius:4px;font-weight:700">🛒 Leclerc ${fmtP(prixLecl)}</span>` : '';
     const prix = b.prix_ip > 0
       ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--blue)">${fmtP(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
       : b.prix_ht > 0
@@ -5028,7 +5041,7 @@ function renderCatalogue() {
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${froid}${b.designation}</div>
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap">
           <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
-          ${genTag}${biosimTag}${nrTag}${ameliTag}${offreTag}${rotTag}${cipTag}
+          ${genTag}${biosimTag}${nrTag}${ameliTag}${offreTag}${rotTag}${leclTag}${cipTag}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">${prix}${addBtn}</div>
