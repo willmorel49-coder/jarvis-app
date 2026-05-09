@@ -1189,7 +1189,16 @@ function renderPharmacies() {
     };
     const prochaineVisiteDate = parsePV(prochaineVisite);
     const wmlEntry = wmlNnMap.get(ph.name.trim().toUpperCase().replace(/\s+/g,' '));
-    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate, wmlEntry };
+    let lastNoteDays = null, noteCount = 0;
+    try {
+      const savedNotesOp = JSON.parse(localStorage.getItem(`visit_notes_${ph.id}`) || '[]');
+      noteCount = savedNotesOp.length;
+      if (noteCount > 0) {
+        const maxTsOp = Math.max(...savedNotesOp.map(n => new Date(n.date).getTime()));
+        lastNoteDays = Math.round((today - maxTsOp) / 86400000);
+      }
+    } catch {}
+    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate, wmlEntry, lastNoteDays, noteCount };
   }); // toutes les pharmacies OPSO, même sans données
 
   // Filtre texte (nom + ville/CP depuis CLIENTS)
@@ -1255,7 +1264,7 @@ function renderPharmacies() {
 
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
-        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry } = e;
+        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry, lastNoteDays, noteCount } = e;
         const chipHtml = status === 'up'      ? '<span class="status-chip status-up">▲ Croissance</span>'
                        : status === 'flat'    ? '<span class="status-chip status-flat">● Stable</span>'
                        : status === 'down'    ? '<span class="status-chip status-down">▼ Baisse</span>'
@@ -1307,6 +1316,9 @@ function renderPharmacies() {
                 ${g !== null ? deltaBadge(caCur, caPrev) : ''}
                 ${importFreshness}
                 ${visiteBadge}
+                ${noteCount > 0
+                  ? `<span style="font-size:10px;color:var(--blue);background:rgba(0,87,255,.1);padding:1px 6px;border-radius:8px;font-weight:600" title="${noteCount} note${noteCount>1?'s':''} de visite">📝 ${lastNoteDays === 0 ? 'Auj.' : lastNoteDays !== null ? `J-${lastNoteDays}` : ''} ·${noteCount}</span>`
+                  : ''}
                 ${wmlBadge}
               </div>
             </div>
