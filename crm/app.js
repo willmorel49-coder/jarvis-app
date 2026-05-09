@@ -2847,10 +2847,23 @@ function generateEmailModal(pharmacyId) {
     return m;
   }, {})).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
+  // WML data for this pharmacy
+  const wmlVisEM = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const nnEM = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+  const wmlEnt = wmlVisEM.find(d => nnEM(d.nom) === nnEM(pharma.name));
+
   const dest = client?.email ? `${client.nom} <${client.email}>` : pharma.name;
   const moisCur = `${monthName(curM)} ${curY}`;
   const moisPrev = prevY ? `${monthName(prevM)} ${prevY}` : '—';
   const deltaStr = delta !== null ? `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%` : '';
+
+  const wmlBlock = wmlEnt ? (() => {
+    const nnEM2 = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+    const directNames = new Set(allPhSales.map(s => nnEM2(s.artDesignation)));
+    const missed = (wmlEnt.pr||[]).filter(([nom]) => nom && !directNames.has(nnEM2(nom))).slice(0,3);
+    const missedStr = missed.length ? `\n\n💡 Produits à découvrir en commande directe :\n${missed.map(([nom,,,,],i)=>`${i+1}. ${nom}`).join('\n')}` : '';
+    return `\n📦 Vos achats Intégral Pharma via le groupement OPSO (Jan–Avr 2026) :\n• CA groupement : ${fmt(wmlEnt.ca)} sur 4 mois\n• Marge brute : ${fmt(wmlEnt.mg)}${missedStr}`;
+  })() : '';
 
   const emailBody = `Bonjour,
 
@@ -2860,10 +2873,9 @@ Je me permets de vous contacter pour faire un point sur votre activité avec Int
 • CA IP : ${fmt(caCur)}${deltaStr ? ` (${deltaStr} vs ${moisPrev})` : ''}
 • Références commandées : ${salesCur.length}
 
-${topProds.length ? `🏆 Vos top produits ce mois :
-${topProds.map(([name, ca], i) => `${i+1}. ${name} — ${fmt(ca)}`).join('\n')}
+${topProds.length ? `🏆 Vos top produits ce mois :\n${topProds.map(([name, ca], i) => `${i+1}. ${name} — ${fmt(ca)}`).join('\n')}\n\n` : ''}${wmlBlock}
 
-` : ''}N'hésitez pas à me contacter pour toute question ou pour planifier une visite.
+N'hésitez pas à me contacter pour toute question ou pour planifier une visite.
 
 Cordialement,
 William Morel
