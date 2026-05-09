@@ -5643,12 +5643,16 @@ function offiGetList() {
     if (offiRole === 'bestsellers') return p.rang_vente != null;
     if (offiRole === 'pharmacie') return p.prix_pharmacie != null && p.prix_pharmacie > 0;
     if (offiRole === 'leclerc') return p.prix_leclerc != null && p.prix_leclerc > 0;
+    if (offiRole === 'leclerc_moins') {
+      const ip = p.prix_live || p.prix_offilog;
+      return p.prix_leclerc != null && p.prix_leclerc > 0 && ip != null && p.prix_leclerc < ip;
+    }
     if (offiRole === 'favoris') return p.ean && getOffiFavs().has(p.ean);
     if (offiRole === 'concurrence') {
       return [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0);
     }
     if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
-    if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && offiRole !== 'leclerc' && offiRole !== 'concurrence' && p.role !== offiRole) return false;
+    if (offiRole !== 'tous' && offiRole !== 'offilog' && offiRole !== 'pharmacie' && offiRole !== 'leclerc' && offiRole !== 'leclerc_moins' && offiRole !== 'concurrence' && p.role !== offiRole) return false;
     if (offiUnivers !== 'tous' && p.univers !== offiUnivers) return false;
     if (offiMarque !== 'tous' && p.marque !== offiMarque) return false;
     if (offiSaison === 'pe' && p.saison !== 'Printemps/Été') return false;
@@ -5657,6 +5661,11 @@ function offiGetList() {
     return true;
   });
   if (offiRole === 'bestsellers') list.sort((a, b) => (a.rang_vente || 999) - (b.rang_vente || 999));
+  else if (offiRole === 'leclerc_moins') list.sort((a, b) => {
+    const dA = (a.prix_live || a.prix_offilog || 0) - (a.prix_leclerc || 0);
+    const dB = (b.prix_live || b.prix_offilog || 0) - (b.prix_leclerc || 0);
+    return dB - dA; // plus grand écart en premier
+  });
   else if (offiRole === 'concurrence') list.sort((a, b) => {
     const nSrcA = [a.prix_drakkars, a.prix_cap3000, a.prix_leclerc, a.prix_pharmacie, a.prix_maxi].filter(v => v != null && v > 0).length;
     const nSrcB = [b.prix_drakkars, b.prix_cap3000, b.prix_leclerc, b.prix_pharmacie, b.prix_maxi].filter(v => v != null && v > 0).length;
@@ -5736,7 +5745,8 @@ function renderOffilog() {
   const nAlerte   = OFFILOG.filter(p =>
     [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0)
   ).length;
-  const nLive     = OFFILOG.filter(p => p.prix_live      != null && p.prix_live      > 0).length;
+  const nLive       = OFFILOG.filter(p => p.prix_live      != null && p.prix_live      > 0).length;
+  const nLeclMoins  = OFFILOG.filter(p => { const ip = p.prix_live||p.prix_offilog; return p.prix_leclerc > 0 && ip != null && p.prix_leclerc < ip; }).length;
   const nImg      = OFFILOG.filter(p => p.img && p.img.length > 0).length;
   const nPharma   = OFFILOG.filter(p => p.prix_pharmacie != null && p.prix_pharmacie > 0).length;
   const margeArr  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
@@ -5772,6 +5782,7 @@ function renderOffilog() {
     { key: 'pharmacie',       label: `Ma Pharmacie (${nPharma})`, icon: '🏥', color: '#00E5A0' },
     { key: 'concurrence',     label: `Avec prix conc. (${nAlerte})`, icon: '🔍', color: '#0057FF' },
     { key: 'leclerc',         label: `Leclerc (${nLeclerc})`, icon: '🔵', color: '#0072e6' },
+    { key: 'leclerc_moins',   label: `Leclerc < IP (${nLeclMoins})`, icon: '⚠️', color: '#EF4444' },
     { key: 'favoris',         label: `Favoris (${nFavs})`, icon: '★', color: '#EC4899' },
     { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
     { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
