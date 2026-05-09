@@ -1478,6 +1478,72 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>` : ''}
       </div>` : ''}
 
+      <!-- WML Achats IP (si pharmacie OPSO Santé avec données WML) -->
+      ${(() => {
+        const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+        const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+        const wmlEntry = wmlVis.find(d => nn(d.nom) === nn(pharma.name));
+        if (!wmlEntry) return '';
+        const tx = wmlEntry.ca > 0 ? (wmlEntry.mg / wmlEntry.ca * 100) : 0;
+        const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr'];
+        const maxM = Math.max(...wmlEntry.ca_m.map(v => v || 0), 1);
+        const moisBars = wmlEntry.ca_m.map((v, i) => {
+          const h = v > 0 ? Math.max(6, (v / maxM) * 52) : 4;
+          return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">
+            <div style="font-size:10px;font-weight:700;color:${v>0?'var(--green)':'var(--text4)'}">${v > 0 ? fmt(v) : '—'}</div>
+            <div style="width:100%;background:var(--bg3);border-radius:4px;height:52px;display:flex;align-items:flex-end;overflow:hidden;padding:0 4px">
+              <div style="width:100%;background:${v>0?'var(--green)':'var(--bg3)'};height:${h}px;border-radius:3px;transition:height .3s"></div>
+            </div>
+            <div style="font-size:10px;color:var(--text3)">${MONTHS[i]}</div>
+          </div>`;
+        }).join('');
+        const topProds = (wmlEntry.pr || []).slice(0, 6).map(([nom, ca, mg, qt, ean], i) => {
+          const txProd = ca > 0 ? (mg / ca * 100) : 0;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:800;color:var(--text3);width:18px;flex-shrink:0;text-align:right">${i+1}</div>
+            <div style="flex:1;min-width:0;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:12px;font-weight:700;color:var(--green)">${fmt(ca)}</div>
+              <div style="font-size:10px;color:var(--text3)">${txProd.toFixed(1)}% · ${Math.round(qt)} u</div>
+            </div>
+          </div>`;
+        }).join('');
+        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green)">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📦 Achats Intégral Pharma — WML 2026</div>
+              <div class="card-subtitle">Jan–Avr 2026 · ${(wmlEntry.pr || []).length} références · TIRCODE ${wmlEntry.tc}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:900;color:var(--green)">${fmt(wmlEntry.ca)}</div>
+              <div style="font-size:10px;color:var(--text3)">CA achat HT total</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border)">
+            <div style="padding:14px 20px;border-right:1px solid var(--border);text-align:center">
+              <div style="font-size:20px;font-weight:900;color:var(--green)">${fmt(wmlEntry.mg)}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Marge brute</div>
+            </div>
+            <div style="padding:14px 20px;border-right:1px solid var(--border);text-align:center">
+              <div style="font-size:20px;font-weight:900;color:var(--amber)">${tx.toFixed(1)}%</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Taux marge</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center">
+              <div style="font-size:20px;font-weight:900;color:var(--text)">${fmtNum(Math.round(wmlEntry.qt))}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Unités</div>
+            </div>
+          </div>
+          <div style="padding:16px 20px;border-top:1px solid var(--border)">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:12px">CA mensuel Jan–Avr 2026</div>
+            <div style="display:flex;gap:8px">${moisBars}</div>
+          </div>
+          ${topProds ? `<div style="border-top:1px solid var(--border)">
+            <div style="padding:8px 20px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Top produits achetés</div>
+            ${topProds}
+          </div>` : ''}
+        </div>`;
+      })()}
+
       <!-- Top produits du mois -->
       ${salesCur.length ? (() => {
         const byProd = {};
