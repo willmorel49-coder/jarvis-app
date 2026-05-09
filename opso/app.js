@@ -7266,6 +7266,25 @@ function showFicheVisite(pharmacyId) {
             </div>`).join('')}` : ''}
         </div>` : ''}
 
+        <!-- WML produits non commandés en direct -->
+        ${(() => {
+          if (!wmlEntry || !allPhSales.length) return '';
+          const nnFv = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+          const directNames = new Set(allPhSales.map(s => nnFv(s.artDesignation)));
+          const missed = (wmlEntry.pr||[]).filter(([nom]) => nom && !directNames.has(nnFv(nom)));
+          if (!missed.length) return '';
+          const totCA = missed.reduce((s,[,ca])=>s+ca,0);
+          return `<div style="margin-bottom:20px;padding:14px 16px;background:#fffbeb;border-radius:12px;border-left:3px solid #d97706">
+            <div style="font-size:11px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📦 À proposer — Achats WML non commandés en direct (${fmt(totCA)})</div>
+            ${missed.slice(0,5).map(([nom,ca,,qt]) => `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #fde68a">
+                <div style="font-size:11px;font-weight:600;color:#1e293b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">→ ${nom}</div>
+                <div style="font-size:11px;font-weight:700;color:#d97706;margin-left:8px;white-space:nowrap">${fmt(ca)} · ${Math.round(qt)} u</div>
+              </div>`).join('')}
+            ${missed.length > 5 ? `<div style="font-size:10px;color:#92400e;margin-top:6px">+${missed.length-5} autres produits</div>` : ''}
+          </div>`;
+        })()}
+
         <!-- Top 5 produits -->
         ${top5.length ? `
         <div style="margin-bottom:20px">
