@@ -1183,6 +1183,34 @@ function renderDashboard() {
       </div>
     </div>` : ''}
 
+    <!-- Alertes prix concurrents -->
+    ${veilleConcurrence && veilleConcurrence.nAlertes > 0 ? `
+    <div class="card fade-up" style="margin-bottom:24px;border-left:3px solid #DC2626">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🚨 Alertes prix concurrents</div>
+          <div class="card-subtitle">Produits Offilog vendus moins cher par des concurrents que votre prix d'achat — ${veilleConcurrence.nAlertes} référence${veilleConcurrence.nAlertes>1?'s':''}</div>
+        </div>
+        <button onclick="offiSetRole('alerte_conc');navigate('offilog')" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.08);color:#DC2626;cursor:pointer;font-weight:600;white-space:nowrap">Voir tous →</button>
+      </div>
+      <div>
+        ${veilleConcurrence.topAlertes.map((a, i) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 20px;${i < veilleConcurrence.topAlertes.length-1?'border-bottom:1px solid var(--border1)':''}">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.produit}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
+              ${a.concList.map(([src, prix, col]) => `<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:${col}18;color:${col};font-weight:700">${src} ${fmtP(prix)}</span>`).join('')}
+              <span style="font-size:10px;color:var(--text3);padding:1px 6px;border-radius:6px;background:var(--bg3)">Achat IP ${fmtP(a.ip)}</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:14px;font-weight:900;color:#DC2626">-${fmtP(a.gap)}</div>
+            <div style="font-size:10px;color:var(--text3)">écart</div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
+
     <!-- Row 3 : Pipeline conversion -->
     <div class="card fade-up" style="margin-bottom:24px">
       <div class="card-header">
