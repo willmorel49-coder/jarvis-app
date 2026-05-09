@@ -684,6 +684,26 @@ function renderDashboard() {
           <div class="cockpit-mini-label">Avec prix conc.</div>
         </div>`;
       })()}
+      ${(() => {
+        const wmlV = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+        if (!wmlV.length) return '';
+        const nnW = s => (s||''). trim().toUpperCase().replace(/\s+/g,' ');
+        const wmlMap = new Map(wmlV.map(d => [nnW(d.nom), d]));
+        let totWml = 0, totDirect = 0;
+        for (const ph of state.pharmacies) {
+          const wE = wmlMap.get(nnW(ph.name));
+          if (!wE) continue;
+          totWml += wE.ca / 4;
+          totDirect += sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+        }
+        if (!totWml) return '';
+        const convPct = Math.round(totDirect / totWml * 100);
+        const convCol = convPct >= 80 ? 'var(--green)' : convPct >= 50 ? 'var(--amber)' : 'var(--rose)';
+        return `<div class="cockpit-mini" onclick="navigate('wml');setTimeout(renderWml,80)" style="cursor:pointer" title="CA direct IP / moyenne mensuelle WML">
+          <div class="cockpit-mini-val" style="color:${convCol}">${convPct}%</div>
+          <div class="cockpit-mini-label">Conv. WML</div>
+        </div>`;
+      })()}
     </div>
 
     ${(() => {
