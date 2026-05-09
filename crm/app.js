@@ -715,9 +715,10 @@ function renderDashboard() {
       const pRef = p.prix_maxi;
       if (pRef && pRef > 0) {
         const concMap = [
-          p.prix_drakkars > 0 ? [p.prix_drakkars, 'Drakkars'] : null,
-          p.prix_cap3000  > 0 ? [p.prix_cap3000,  'Cap3000']  : null,
-          p.prix_leclerc  > 0 ? [p.prix_leclerc,  'Leclerc']  : null,
+          p.prix_drakkars  > 0 ? [p.prix_drakkars,  'Drakkars']    : null,
+          p.prix_cap3000   > 0 ? [p.prix_cap3000,   'Cap3000']     : null,
+          p.prix_leclerc   > 0 ? [p.prix_leclerc,   'Leclerc']     : null,
+          p.prix_pharmacie > 0 ? [p.prix_pharmacie, 'Ma Pharmacie'] : null,
         ].filter(Boolean);
         if (concMap.length) {
           const best = concMap.sort((a, b) => a[0] - b[0])[0];
@@ -2315,9 +2316,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           const pRef = op.prix_maxi;
           if (!pRef || pRef <= 0) continue;
           const concMap = [
-            op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars', '#6366f1'] : null,
-            op.prix_cap3000  > 0 ? [op.prix_cap3000,  'Cap3000',  '#ea580c'] : null,
-            op.prix_leclerc  > 0 ? [op.prix_leclerc,  'Leclerc',  '#0072e6'] : null,
+            op.prix_drakkars  > 0 ? [op.prix_drakkars,  'Drakkars',    '#6366f1'] : null,
+            op.prix_cap3000   > 0 ? [op.prix_cap3000,   'Cap3000',     '#ea580c'] : null,
+            op.prix_leclerc   > 0 ? [op.prix_leclerc,   'Leclerc',     '#0072e6'] : null,
+            op.prix_pharmacie > 0 ? [op.prix_pharmacie, 'Ma Pharmacie','#00E5A0'] : null,
           ].filter(Boolean);
           if (!concMap.length) continue;
           const best = concMap.sort((a, b) => a[0] - b[0])[0];
@@ -5654,7 +5656,7 @@ function offiGetList() {
     if (offiRole === 'alerte') {
       const pRef = p.prix_maxi;
       if (!pRef) return false;
-      const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
+      const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(v => v != null && v > 0).concat([Infinity]));
       return compMin < pRef && compMin < Infinity;
     }
     if (offiRole !== 'tous' && offiRole === 'offilog' && !p.dans_offilog) return false;
@@ -5668,7 +5670,7 @@ function offiGetList() {
   });
   if (offiRole === 'bestsellers') list.sort((a, b) => (a.rang_vente || 999) - (b.rang_vente || 999));
   else if (offiRole === 'alerte') list.sort((a, b) => {
-    const minC = p => Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
+    const minC = p => Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(v => v != null && v > 0).concat([Infinity]));
     const ref  = p => p.prix_live || p.prix_offilog || 0;
     return (minC(a) - ref(a)) - (minC(b) - ref(b));
   });
@@ -5676,7 +5678,7 @@ function offiGetList() {
   else if (offiSort === 'prix_desc') list.sort((a, b) => ((b.prix_live || b.prix_offilog) || 0) - ((a.prix_live || a.prix_offilog) || 0));
   else if (offiSort === 'marge_desc') list.sort((a, b) => (b.marge_pct || 0) - (a.marge_pct || 0));
   else if (offiSort === 'ecart') list.sort((a, b) => {
-    const minC = p => Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
+    const minC = p => Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(v => v != null && v > 0).concat([Infinity]));
     const ref  = p => p.prix_live || p.prix_offilog || 0;
     return (minC(a) - ref(a)) - (minC(b) - ref(b));
   });
@@ -5746,7 +5748,7 @@ function renderOffilog() {
   const nAlerte   = OFFILOG.filter(p => {
     const pRef = p.prix_maxi;
     if (!pRef) return false;
-    const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity]));
+    const compMin = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(v => v != null && v > 0).concat([Infinity]));
     return compMin < pRef && compMin < Infinity;
   }).length;
   const nLive     = OFFILOG.filter(p => p.prix_live      != null && p.prix_live      > 0).length;
@@ -7238,9 +7240,10 @@ function showFicheVisite(pharmacyId) {
       const pRef = op.prix_maxi;
       if (!pRef || pRef <= 0) continue;
       const concMap = [
-        op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars'] : null,
-        op.prix_cap3000  > 0 ? [op.prix_cap3000,  'Cap3000']  : null,
-        op.prix_leclerc  > 0 ? [op.prix_leclerc,  'Leclerc']  : null,
+        op.prix_drakkars  > 0 ? [op.prix_drakkars,  'Drakkars']    : null,
+        op.prix_cap3000   > 0 ? [op.prix_cap3000,   'Cap3000']     : null,
+        op.prix_leclerc   > 0 ? [op.prix_leclerc,   'Leclerc']     : null,
+        op.prix_pharmacie > 0 ? [op.prix_pharmacie, 'Ma Pharmacie'] : null,
       ].filter(Boolean);
       if (!concMap.length) continue;
       const best = concMap.sort((a, b) => a[0] - b[0])[0];
@@ -7492,7 +7495,7 @@ function gsSearch(q) {
     html += offiHits.map((p, i) => {
       const m = um(p.univers);
       const pRef = p.prix_maxi;
-      const minC = pRef ? Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc].filter(v => v != null && v > 0).concat([Infinity])) : Infinity;
+      const minC = pRef ? Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(v => v != null && v > 0).concat([Infinity])) : Infinity;
       const isAlert = pRef && minC < pRef && minC < Infinity;
       return `<div onclick="document.getElementById('global-search-modal').remove();offiQuery='${p.produit.replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,30)}';navigate('offilog');setTimeout(()=>renderOffilog(),100)"
         style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s${isAlert?';border-left:2px solid #EF4444':''}"

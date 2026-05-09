@@ -681,7 +681,7 @@ function renderDashboard() {
           const e = p.ean ? String(p.ean) : '';
           const pRef = offiMaxi.get(e);
           if (!pRef) continue;
-          const concs = [bm.leclEan.get(e), bm.cap3Ean.get(e), bm.drakEan.get(e)].filter(v => v != null && v > 0);
+          const concs = [bm.leclEan.get(e), bm.cap3Ean.get(e), bm.drakEan.get(e), bm.pharmEan.get(e)].filter(v => v != null && v > 0);
           if (concs.length && Math.min(...concs) < pRef) nAl++;
         }
         return `<div class="cockpit-mini ${nAl > 0 ? 'cockpit-mini-alert' : ''}" onclick="navigate('offilog');setTimeout(()=>{offiLiveSort='ecart';offiLivePage=1;renderOffilog();},80)" style="${nAl > 0 ? 'cursor:pointer' : ''}">
@@ -1598,9 +1598,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           const pRef = op.prix_maxi;
           if (!pRef || pRef <= 0) continue;
           const concMap = [
-            op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars', '#6366f1'] : null,
-            op.prix_cap3000  > 0 ? [op.prix_cap3000,  'Cap3000',  '#ea580c'] : null,
-            op.prix_leclerc  > 0 ? [op.prix_leclerc,  'Leclerc',  '#0072e6'] : null,
+            op.prix_drakkars  > 0 ? [op.prix_drakkars,  'Drakkars',    '#6366f1'] : null,
+            op.prix_cap3000   > 0 ? [op.prix_cap3000,   'Cap3000',     '#ea580c'] : null,
+            op.prix_leclerc   > 0 ? [op.prix_leclerc,   'Leclerc',     '#0072e6'] : null,
+            op.prix_pharmacie > 0 ? [op.prix_pharmacie, 'Ma Pharmacie','#00E5A0'] : null,
           ].filter(Boolean);
           if (!concMap.length) continue;
           const best = concMap.sort((a, b) => a[0] - b[0])[0];
@@ -5088,7 +5089,8 @@ function renderOffilog() {
       ? new Map(OFFILOG.filter(p => p.ean && p.prix_maxi > 0).map(p => [String(p.ean), p.prix_maxi]))
       : new Map();
     list.sort((a,b) => {
-      const minP = p => { const e = p.ean ? String(p.ean) : ''; const vs = [leclEan.get(e),cap3Ean.get(e),drakEan.get(e)].filter(v=>v!=null&&v>0); return vs.length ? Math.min(...vs) : null; };
+      const { pharmEan: phEan } = benchMaps();
+      const minP = p => { const e = p.ean ? String(p.ean) : ''; const vs = [leclEan.get(e),cap3Ean.get(e),drakEan.get(e),phEan.get(e)].filter(v=>v!=null&&v>0); return vs.length ? Math.min(...vs) : null; };
       const da = minP(a); const db = minP(b);
       const ra = maxi.get(a.ean ? String(a.ean) : ''); const rb = maxi.get(b.ean ? String(b.ean) : '');
       const ea = (ra && da != null) ? da - ra : Infinity;
@@ -5116,7 +5118,7 @@ function renderOffilog() {
     if (cv != null && cv > 0) nCap++;
     if (dv != null && dv > 0) nDrak++;
     if (pv != null && pv > 0) nPharma++;
-    const concs = [lv, cv, dv].filter(v => v != null && v > 0);
+    const concs = [lv, cv, dv, pv].filter(v => v != null && v > 0);
     const pRef = offiMaxiMap.get(e);
     if (concs.length) { nBench++; if (pRef && Math.min(...concs) < pRef) nAlerte++; }
   }
@@ -5137,9 +5139,10 @@ function renderOffilog() {
     const { drakkars, cap3000, leclerc, maPharmie } = lookupBench(p);
     // Best price indicator — find cheapest competitor and name it
     const compMap = [
-      drakkars != null && drakkars > 0 ? [drakkars, 'Drakkars'] : null,
-      cap3000   != null && cap3000   > 0 ? [cap3000,   'Cap3000']  : null,
-      leclerc   != null && leclerc   > 0 ? [leclerc,   'Leclerc']  : null,
+      drakkars != null && drakkars > 0 ? [drakkars,  'Drakkars']    : null,
+      cap3000   != null && cap3000   > 0 ? [cap3000,   'Cap3000']    : null,
+      leclerc   != null && leclerc   > 0 ? [leclerc,   'Leclerc']    : null,
+      maPharmie != null && maPharmie > 0 ? [maPharmie, 'Ma Pharmacie'] : null,
     ].filter(Boolean);
     const bestComp = compMap.length ? compMap.sort((a, b) => a[0] - b[0])[0] : null;
     const minComp  = bestComp ? bestComp[0] : null;
@@ -6839,9 +6842,10 @@ function showFicheVisite(pharmacyId) {
       const pRef = op.prix_maxi;
       if (!pRef || pRef <= 0) continue;
       const concMap = [
-        op.prix_drakkars > 0 ? [op.prix_drakkars, 'Drakkars'] : null,
-        op.prix_cap3000  > 0 ? [op.prix_cap3000,  'Cap3000']  : null,
-        op.prix_leclerc  > 0 ? [op.prix_leclerc,  'Leclerc']  : null,
+        op.prix_drakkars  > 0 ? [op.prix_drakkars,  'Drakkars']    : null,
+        op.prix_cap3000   > 0 ? [op.prix_cap3000,   'Cap3000']     : null,
+        op.prix_leclerc   > 0 ? [op.prix_leclerc,   'Leclerc']     : null,
+        op.prix_pharmacie > 0 ? [op.prix_pharmacie, 'Ma Pharmacie'] : null,
       ].filter(Boolean);
       if (!concMap.length) continue;
       const best = concMap.sort((a, b) => a[0] - b[0])[0];
