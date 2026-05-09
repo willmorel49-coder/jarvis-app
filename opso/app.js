@@ -736,6 +736,31 @@ function renderDashboard() {
       ${alerts.slice(0,4).map(a => `<div class="alert-cockpit-row ${a.type}" onclick="showPharmaDetail('${a.ph.id}')"><div class="alert-cockpit-icon">${a.type==='down'?'↓':a.type==='absent'?'○':'↑'}</div><div class="alert-cockpit-info"><div class="alert-cockpit-name">${titleCase(a.ph.name)}</div><div class="alert-cockpit-sub">${a.type==='absent'?'Absent ce mois · M-1 : '+fmt(a.prev):fmt(a.prev)+' → '+fmt(a.cur)+(a.g!==null?' ('+(a.g>=0?'+':'')+a.g.toFixed(0)+'%)':'')}</div></div><div class="alert-cockpit-action">Voir ›</div></div>`).join('')}
     </div>` : ''}
 
+    ${(() => {
+      const byMonth = caByMonth(allSalesRaw);
+      if (byMonth.length < 2) return '';
+      const maxCA = Math.max(...byMonth.map(([,v]) => v), 1);
+      const rows = byMonth.map(([k, v]) => {
+        const [y, m] = k.split('-');
+        const isCur = +y === curY && +m === curM;
+        const pct = (v / maxCA * 100).toFixed(0);
+        return `<div style="display:flex;align-items:center;gap:10px;padding:7px 16px;${isCur?'background:rgba(17,166,60,.04);':''}border-bottom:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:600;color:${isCur?'var(--opso-green)':'var(--text3)'};width:58px;flex-shrink:0">${monthName(+m)} ${y}</div>
+          <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:${isCur?'var(--opso-green)':'rgba(17,166,60,.4)'};border-radius:4px;transition:width .4s"></div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:${isCur?'var(--opso-green)':'var(--text)'};min-width:72px;text-align:right">${fmt(v)}</div>
+        </div>`;
+      });
+      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
+        <div class="card-header" style="padding:16px 20px">
+          <div class="card-title">Évolution CA mensuelle</div>
+          <div class="card-subtitle">${byMonth.length} période${byMonth.length > 1 ? 's' : ''} importées</div>
+        </div>
+        ${rows.join('')}
+      </div>`;
+    })()}
+
     <div class="card fade-up" style="margin-bottom:0;padding:0;overflow:hidden">
       <div class="card-header" style="padding:16px 20px">
         <div class="card-title">Top produits</div>
