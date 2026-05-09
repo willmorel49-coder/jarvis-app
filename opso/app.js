@@ -5929,6 +5929,17 @@ function renderWml() {
     const mg_tot = ph.mg;
     const tx_mg  = ca_tot > 0 ? (mg_tot / ca_tot * 100) : 0;
 
+    // Direct IP CA comparison
+    const allSalesPhWml = getSales();
+    const { year: curYPh, month: curMPh } = getCurrentPeriod(allSalesPhWml.length ? allSalesPhWml : []);
+    const phFromState = state.pharmacies.find(p => (p.name||'').trim().toUpperCase().replace(/\s+/g,' ') === (ph.nom||'').trim().toUpperCase().replace(/\s+/g,' '));
+    const directCaPhWml = phFromState && curYPh
+      ? sumCA(getSales({ pharmacyId: phFromState.id, year: curYPh, month: curMPh }))
+      : 0;
+    const wmlMonthAvg = ca_tot / 4;
+    const potentielPh = Math.max(0, wmlMonthAvg - directCaPhWml);
+    const convRatioPh = wmlMonthAvg > 0 ? Math.round(directCaPhWml / wmlMonthAvg * 100) : null;
+
     // Barres mensuelles mini
     const maxCA = Math.max(...ph.ca_m);
     const moisBars = ph.ca_m.map((v, i) => {
@@ -6030,6 +6041,36 @@ function renderWml() {
         <div class="wml-kpi"><div class="wml-kpi-label">Taux de marge</div><div class="wml-kpi-val">${fmtP(tx_mg)}</div></div>
         <div class="wml-kpi"><div class="wml-kpi-label">Mois couverts</div><div class="wml-kpi-val" style="font-size:18px">${ph.ca_m.filter(v=>v>0).length} / 4</div></div>
       </div>
+
+      ${wmlMonthAvg > 0 && phFromState ? `
+      <div class="card" style="margin-bottom:16px;border-left:3px solid ${convRatioPh >= 100 ? 'var(--green)' : convRatioPh >= 60 ? 'var(--amber)' : 'var(--rose)'}">
+        <div class="card-header" style="padding-bottom:8px">
+          <div>
+            <div class="card-title">Direct IP vs Achats WML</div>
+            <div class="card-subtitle">Mois courant vs moyenne mensuelle WML (Jan–Avr)</div>
+          </div>
+          ${convRatioPh !== null ? `<div style="font-size:26px;font-weight:900;color:${convRatioPh>=100?'var(--green)':convRatioPh>=60?'var(--amber)':'var(--rose)'}">${convRatioPh}%</div>` : ''}
+        </div>
+        <div style="padding:0 20px 16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+            <div style="text-align:center;padding:10px;background:var(--bg2);border-radius:8px">
+              <div style="font-size:16px;font-weight:900;color:var(--green)">${fmt(directCaPhWml)}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Direct IP ce mois</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:var(--bg2);border-radius:8px">
+              <div style="font-size:16px;font-weight:900;color:var(--text)">${fmt(wmlMonthAvg)}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Moy. WML mensuelle</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:${potentielPh>50?'rgba(255,176,32,.1)':'rgba(0,229,160,.06)'};border-radius:8px">
+              <div style="font-size:16px;font-weight:900;color:${potentielPh>50?'var(--amber)':'var(--green)'}">${potentielPh>50?'+'+fmt(potentielPh):'✓'}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">${potentielPh>50?'Potentiel manquant':'Pleinement converti'}</div>
+            </div>
+          </div>
+          <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.min(100,convRatioPh||0)}%;background:${convRatioPh>=100?'var(--green)':convRatioPh>=60?'var(--amber)':'var(--rose)'};border-radius:4px;transition:width .5s"></div>
+          </div>
+        </div>
+      </div>` : ''}
 
       <div class="card" style="margin-bottom:16px">
         <div class="card-header"><div class="card-title">CA mensuel Jan – Avr 2026</div></div>
