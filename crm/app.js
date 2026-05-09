@@ -6044,6 +6044,11 @@ function offiGetList() {
       const ip = p.prix_live || p.prix_offilog;
       return p.prix_leclerc != null && p.prix_leclerc > 0 && ip != null && p.prix_leclerc < ip;
     }
+    if (offiRole === 'alerte_conc') {
+      const ip = p.prix_live || p.prix_offilog;
+      if (!ip) return false;
+      return [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0 && v < ip);
+    }
     if (offiRole === 'favoris') return p.ean && getOffiFavs().has(p.ean);
     if (offiRole === 'concurrence') {
       return [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0);
@@ -6062,7 +6067,16 @@ function offiGetList() {
     const dA = (a.prix_live || a.prix_offilog || 0) - (a.prix_leclerc || 0);
     const dB = (b.prix_live || b.prix_offilog || 0) - (b.prix_leclerc || 0);
     return dB - dA; // plus grand écart en premier
-  });
+  }
+  else if (offiRole === 'alerte_conc') list.sort((a, b) => {
+    const ipA = a.prix_live || a.prix_offilog || 0;
+    const ipB = b.prix_live || b.prix_offilog || 0;
+    const minCA = Math.min(...[a.prix_drakkars, a.prix_cap3000, a.prix_leclerc, a.prix_pharmacie, a.prix_maxi].filter(v => v > 0), Infinity);
+    const minCB = Math.min(...[b.prix_drakkars, b.prix_cap3000, b.prix_leclerc, b.prix_pharmacie, b.prix_maxi].filter(v => v > 0), Infinity);
+    const gapA = ipA - minCA;
+    const gapB = ipB - minCB;
+    return gapB - gapA;
+  }););
   else if (offiRole === 'concurrence') list.sort((a, b) => {
     const nSrcA = [a.prix_drakkars, a.prix_cap3000, a.prix_leclerc, a.prix_pharmacie, a.prix_maxi].filter(v => v != null && v > 0).length;
     const nSrcB = [b.prix_drakkars, b.prix_cap3000, b.prix_leclerc, b.prix_pharmacie, b.prix_maxi].filter(v => v != null && v > 0).length;
@@ -6144,6 +6158,11 @@ function renderOffilog() {
   ).length;
   const nLive       = OFFILOG.filter(p => p.prix_live      != null && p.prix_live      > 0).length;
   const nLeclMoins  = OFFILOG.filter(p => { const ip = p.prix_live||p.prix_offilog; return p.prix_leclerc > 0 && ip != null && p.prix_leclerc < ip; }).length;
+  const nAlerteConc = OFFILOG.filter(p => {
+    const ip = p.prix_live || p.prix_offilog;
+    if (!ip) return false;
+    return [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0 && v < ip);
+  }).length;
   const nImg      = OFFILOG.filter(p => p.img && p.img.length > 0).length;
   const nPharma   = OFFILOG.filter(p => p.prix_pharmacie != null && p.prix_pharmacie > 0).length;
   const margeArr  = OFFILOG.filter(p => p.marge_pct).map(p => p.marge_pct);
@@ -6180,6 +6199,7 @@ function renderOffilog() {
     { key: 'concurrence',     label: `Avec prix conc. (${nAlerte})`, icon: '🔍', color: '#0057FF' },
     { key: 'leclerc',         label: `Leclerc (${nLeclerc})`, icon: '🔵', color: '#0072e6' },
     { key: 'leclerc_moins',   label: `Leclerc < IP (${nLeclMoins})`, icon: '⚠️', color: '#EF4444' },
+    { key: 'alerte_conc',     label: `Alerte prix (${nAlerteConc})`, icon: '🚨', color: '#DC2626' },
     { key: 'favoris',         label: `Favoris (${nFavs})`, icon: '★', color: '#EC4899' },
     { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
     { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
@@ -6265,7 +6285,11 @@ function renderOffilog() {
     // Initial marque pour placeholder
     const brandInitial = (p.marque || p.produit || '?').charAt(0).toUpperCase();
 
-    return `<div style="background:var(--bg);border-radius:16px;border:1px solid var(--border1);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer"
+    // Alerte: competitor price < IP buy price
+    const prixAchat = prixDisplay;
+    const isAlerte = prixAchat != null && [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0 && v < prixAchat);
+
+    return `<div style="background:var(--bg);border-radius:16px;border:${isAlerte ? '1.5px solid rgba(220,38,38,.6)' : '1px solid var(--border1)'};overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer"
       onclick="showOffiDetail(${startIdx + i})"
       onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,.12)';this.style.transform='translateY(-2px)'"
       onmouseout="this.style.boxShadow='';this.style.transform=''">
@@ -6287,6 +6311,7 @@ function renderOffilog() {
         }
         <!-- Badges en overlay -->
         <div style="position:absolute;top:7px;left:7px;display:flex;gap:3px;flex-wrap:wrap;max-width:calc(100% - 50px)">${bestBadge}${ipBadge}${liveBadge}</div>
+        ${isAlerte ? '<div style="position:absolute;bottom:8px;left:8px;z-index:2;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(220,38,38,.9);color:#fff">🚨 Alerte prix</div>' : ''}
         ${saisonBadge ? `<div style="position:absolute;top:7px;right:34px">${saisonBadge}</div>` : ''}
         <!-- Fav button -->
         ${p.ean ? `<button onclick="event.stopPropagation();toggleOffiFav('${p.ean}')" title="${offiFavs.has(p.ean)?'Retirer des favoris':'Ajouter aux favoris'}"
