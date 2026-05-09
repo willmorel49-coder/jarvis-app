@@ -1651,7 +1651,7 @@ function printRapportMensuel() {
 // ── PHARMACIES ────────────────────────────────
 let pharmaSearch  = '';
 let pharmaFilter  = 'all'; // 'all' | 'up' | 'flat' | 'down' | 'visite_retard' | 'visite_semaine' | 'visite_aucune'
-let pharmaSort    = 'ca';  // 'ca' | 'delta' | 'name'
+let pharmaSort    = 'ca';  // 'ca' | 'delta' | 'name' | 'wml'
 let pharmaDetailOverridePeriod = null; // {year, month} or null → use auto-detected
 
 function renderPharmacies() {
@@ -1661,6 +1661,10 @@ function renderPharmacies() {
 
   const salesCur  = curY  ? getSales({ year: curY,  month: curM  }) : [];
   const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
+
+  // WML map pour badge et tri
+  const wmlVisCRM = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const wmlNnMapCRM = new Map(wmlVisCRM.map(d => [(d.nom||'').trim().toUpperCase().replace(/\s+/g,' '), d]));
 
   // Construire liste enrichie de toutes les pharmacies avec CA et delta
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1689,7 +1693,8 @@ function renderPharmacies() {
       return null;
     };
     const prochaineVisiteDate = parsePVC(prochaineVisite);
-    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate };
+    const wmlEntry = wmlNnMapCRM.get(ph.name.trim().toUpperCase().replace(/\s+/g,' '));
+    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate, wmlEntry };
   }).filter(e => e.caCur > 0 || e.caPrev > 0);
 
   // Filtre texte
@@ -1716,6 +1721,11 @@ function renderPharmacies() {
   // Tri
   if (pharmaSort === 'name')  enriched.sort((a, b) => a.ph.name.localeCompare(b.ph.name));
   else if (pharmaSort === 'delta') enriched.sort((a, b) => (b.g ?? -Infinity) - (a.g ?? -Infinity));
+  else if (pharmaSort === 'wml') enriched.sort((a, b) => {
+    const potA = a.wmlEntry ? Math.max(0, a.wmlEntry.ca / 4 - a.caCur) : 0;
+    const potB = b.wmlEntry ? Math.max(0, b.wmlEntry.ca / 4 - b.caCur) : 0;
+    return potB - potA;
+  });
   else enriched.sort((a, b) => b.caCur - a.caCur);
 
   const maxCA = Math.max(...enriched.map(e => e.caCur), 1);
@@ -1742,7 +1752,7 @@ function renderPharmacies() {
 
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
-        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite } = e;
+        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry } = e;
         const chipHtml = status === 'up'   ? '<span class="status-chip status-up">● Croissance</span>'
                        : status === 'flat' ? '<span class="status-chip status-flat">● Stable</span>'
                        : status === 'down' ? '<span class="status-chip status-down">● Baisse</span>'
@@ -1783,6 +1793,7 @@ function renderPharmacies() {
                 ${g !== null ? deltaBadge(caCur, caPrev) : ''}
                 ${importFreshness}
                 ${visiteBadge}
+                ${wmlEntry ? `<span style="font-size:10px;color:#11a63c;background:rgba(17,166,60,.1);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>` : ''}
               </div>
             </div>
             <div style="flex:1;max-width:120px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
@@ -1878,7 +1889,7 @@ function renderPharmacies() {
         ${filterBarHtml}
         <div style="display:flex;gap:4px;align-items:center">
           <span style="font-size:11px;color:var(--text3);margin-right:4px">Trier par</span>
-          ${[['ca','CA'],['delta','Delta'],['name','Nom']].map(([k,l]) =>
+          ${[['ca','CA'],['delta','Delta'],['wml','WML'],['name','Nom']].map(([k,l]) =>
             `<button onclick="pharmaSort='${k}';renderPharmacies()" style="padding:4px 10px;border-radius:8px;border:1px solid ${pharmaSort===k?'var(--blue)':'var(--border2)'};background:${pharmaSort===k?'rgba(0,87,255,.1)':'transparent'};color:${pharmaSort===k?'var(--blue)':'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600">${l}</button>`
           ).join('')}
         </div>
