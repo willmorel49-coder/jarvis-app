@@ -5468,10 +5468,21 @@ function renderOffilog() {
     return `<button onclick="offiLiveCat='${c.replace(/'/g,"\'")}';offiLivePage=1;renderOffilog()" class="offil-chip${active ? ' active' : ''}">${c === 'tous' ? 'Tous' : c} <span class="offil-chip-count">${n}</span></button>`;
   }).join('');
 
+  // WML cross-reference pour Offilog Live
+  const wmlLiveEanMap = new Map();
+  for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
+    const seen = new Set();
+    for (const [,,,,ean] of (d.pr||[])) {
+      const ke = ean ? String(ean) : null;
+      if (ke && !seen.has(ke)) { seen.add(ke); wmlLiveEanMap.set(ke, (wmlLiveEanMap.get(ke)||0)+1); }
+    }
+  }
+
   const cards = page.map(p => {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
     const hasPromo = p.promo && p.prix_b != null;
     const { drakkars, cap3000, leclerc, maPharmie } = lookupBench(p);
+    const wmlCount = p.ean ? (wmlLiveEanMap.get(String(p.ean)) || 0) : 0;
     // Best price indicator — find cheapest competitor and name it
     const compMap = [
       drakkars != null && drakkars > 0 ? [drakkars,  'Drakkars']    : null,
@@ -5516,6 +5527,7 @@ function renderOffilog() {
           </div>
           <span class="offil-card-cat">${p.cat}</span>
         </div>
+        ${wmlCount > 0 ? `<div style="margin-top:5px"><span style="font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(0,229,160,.12);color:var(--mint);font-weight:700;border:1px solid rgba(0,229,160,.2)">📦 ${wmlCount} pharmacie${wmlCount>1?"s":""} WML</span></div>` : ""}
         ${benchRow}
       </div>
     </a>`;
