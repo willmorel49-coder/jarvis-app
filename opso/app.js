@@ -737,6 +737,40 @@ function renderDashboard() {
     </div>` : ''}
 
     ${(() => {
+      const wmlVis3 = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+      const wmlSignals = wmlVis3.map(d => {
+        const months = d.ca_m.filter(v => v > 0);
+        if (months.length < 2) return null;
+        const last = d.ca_m[d.ca_m.map((v,i)=>({v,i})).filter(x=>x.v>0).slice(-1)[0]?.i];
+        const prev = d.ca_m[d.ca_m.map((v,i)=>({v,i})).filter(x=>x.v>0).slice(-2)[0]?.i];
+        if (!last || !prev) return null;
+        const pct = (last - prev) / prev * 100;
+        if (pct <= -15) return { d, pct, type: 'down' };
+        if (pct >= 25)  return { d, pct, type: 'up' };
+        return null;
+      }).filter(Boolean).sort((a,b) => a.pct - b.pct);
+      if (!wmlSignals.length) return '';
+      const fmtWml2 = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
+      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
+        <div class="card-header" style="padding:16px 20px">
+          <div class="card-title">Signaux WML</div>
+          <div class="card-subtitle">Tendances achats IP Jan–Avr 2026</div>
+        </div>
+        ${wmlSignals.slice(0, 5).map(({ d, pct, type }) => `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="wmlPharma=${d.tc};navigate('wml');setTimeout(renderWml,80)">
+            <div style="width:28px;height:28px;border-radius:8px;background:${type==='down'?'rgba(255,77,109,.12)':'rgba(0,229,160,.12)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:${type==='down'?'var(--rose)':'var(--mint)'}">
+              ${type==='down'?'↓':'↑'}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(d.nom)}</div>
+              <div style="font-size:11px;color:var(--text3)">${type==='down'?'Baisse':'Hausse'} WML ${(pct>=0?'+':'')+pct.toFixed(0)}% · CA total ${fmtWml2(d.ca)}</div>
+            </div>
+            <div style="font-size:13px;color:var(--text3)">›</div>
+          </div>`).join('')}
+      </div>`;
+    })()}
+
+    ${(() => {
       const byMonth = caByMonth(allSalesRaw);
       if (byMonth.length < 2) return '';
       const maxCA = Math.max(...byMonth.map(([,v]) => v), 1);
