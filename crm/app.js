@@ -1985,12 +1985,21 @@ function exportPharmaciesCSV() {
   const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
   const salesCur  = curY  ? getSales({ year: curY,  month: curM  }) : [];
   const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
+  // WML enrichment
+  const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const nnEx = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+  const wmlExMap = new Map(wmlVis.map(d => [nnEx(d.nom), d]));
+  const fmtC2 = v => v != null ? String(v.toFixed(2)).replace('.',',') : '';
   const rows = state.pharmacies.map(ph => {
     const caCur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
     const caPrev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
     const nRef   = new Set(salesCur.filter(s => s.pharmacyId === ph.id).map(s => s.artCode)).size;
     const g      = caPrev > 0 ? ((caCur - caPrev) / caPrev * 100) : null;
     const client = typeof CLIENTS !== 'undefined' ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim()) : null;
+    const wmlE   = wmlExMap.get(nnEx(ph.name));
+    const wmlCa  = wmlE ? wmlE.ca : null;
+    const wmlMg  = wmlE ? wmlE.mg : null;
+    const wmlConv = (wmlCa && wmlCa > 0) ? (caCur / (wmlCa / 4) * 100) : null;
     return [
       `"${ph.name.replace(/"/g,'""')}"`,
       client?.cp || '', client?.ville || '',
@@ -1999,10 +2008,13 @@ function exportPharmaciesCSV() {
       String(caPrev.toFixed(2)).replace('.',','),
       g !== null ? String(g.toFixed(1)).replace('.',',') : '',
       nRef,
+      fmtC2(wmlCa),
+      fmtC2(wmlMg),
+      wmlConv !== null ? String(wmlConv.toFixed(1)).replace('.',',') : '',
     ];
   }).filter(r => parseFloat(r[5].replace(',','.')) > 0 || parseFloat(r[6].replace(',','.')) > 0);
   rows.sort((a, b) => parseFloat(b[5].replace(',','.')) - parseFloat(a[5].replace(',','.')));
-  const header = ['Pharmacie','CP','Ville','Tél','Email',`CA ${curY ? monthName(curM)+' '+curY : ''}`,`CA M-1`,`Évolution %`,'Nb Références'];
+  const header = ['Pharmacie','CP','Ville','Tél','Email',`CA ${curY ? monthName(curM)+' '+curY : ''}`,`CA M-1`,`Évolution %`,'Nb Références','CA WML Jan-Avr','Marge WML','Tx Conversion %'];
   const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
   const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
