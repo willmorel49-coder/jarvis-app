@@ -4371,6 +4371,7 @@ function showToast(msg, type = 'info') {
 
 // ── CATALOGUE ────────────────────────────────
 let catQuery = '', catCatFilter = 'tous', catPageNum = 1;
+let catWmlNames = new Set(); // populated on renderCatalogue
 const CAT_PER_PAGE = 30;
 let catCurrentData = [];
 
@@ -4385,6 +4386,7 @@ function catGetList() {
     if (catCatFilter === 'nr')        return isNonRembourse(b);
     if (catCatFilter === 'ameli')     return b.has_ameli;
     if (catCatFilter === 'offres')    return b.offre_ip > 0;
+    if (catCatFilter === 'wml')       return catWmlNames.has((b.designation||'').trim().toUpperCase().replace(/\s+/g,' '));
     if (catCatFilter !== 'tous')      return b.categorie === catCatFilter;
     return true;
   });
@@ -4455,6 +4457,18 @@ function renderCatalogue() {
   const startIdx = (catPageNum - 1) * CAT_PER_PAGE;
   const page = catCurrentData.slice(startIdx, startIdx + CAT_PER_PAGE);
 
+  // WML cross-ref : combien de pharmacies OPSO achètent chaque produit via WML
+  const nnCat = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+  const wmlPopMap = new Map(); // normalisé nom → nb pharmacies
+  for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
+    const seen = new Set();
+    for (const [nom] of (d.pr||[])) {
+      const k = nnCat(nom);
+      if (k && !seen.has(k)) { seen.add(k); wmlPopMap.set(k, (wmlPopMap.get(k)||0) + 1); }
+    }
+  }
+  catWmlNames = new Set(wmlPopMap.keys()); // mise à jour du filtre module-level
+
   // ── KPIs ─────────────────────────────────────
   const nPrix  = BENCHMARK.filter(b => b.prix_ip > 0).length;
   const nAmeli = BENCHMARK.filter(b => b.has_ameli).length;
@@ -4472,6 +4486,7 @@ function renderCatalogue() {
     { key: 'froid',     label: '❄️ Froid' },
     { key: 'ameli',     label: '🏥 Ameli' },
     { key: 'offres',    label: '🎁 Offres en cours' },
+    { key: 'wml',       label: `📦 Déjà acheté WML (${catWmlNames.size})` },
   ];
   const tabsHtml = tabDefs.map(t => {
     const active = catCatFilter === t.key;
@@ -4493,6 +4508,8 @@ function renderCatalogue() {
     const rotTag     = b.rot_pharma_jan26 > 0 ? `<span style="font-size:10px;color:var(--text3)">↻ ${b.rot_pharma_jan26.toFixed(1)}/mois</span>` : '';
     const cipTag     = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
     const offreTag   = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
+    const wmlPop     = wmlPopMap.get(nnCat(b.designation)) || 0;
+    const wmlTag     = wmlPop > 0 ? `<span style="font-size:10px;padding:1px 6px;background:rgba(0,229,160,.13);color:var(--mint);border-radius:4px;font-weight:700;border:1px solid rgba(0,229,160,.25)" title="${wmlPop} pharmacie(s) OPSO achètent ce produit via WML">📦 ×${wmlPop} WML</span>` : '';
     const prix = b.prix_ip > 0
       ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--green)">${fmtP(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
       : b.prix_ht > 0
@@ -4508,7 +4525,7 @@ function renderCatalogue() {
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${froid}${b.designation}</div>
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap">
           <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
-          ${genTag}${biosimTag}${nrTag}${ameliTag}${offreTag}${rotTag}${cipTag}
+          ${genTag}${biosimTag}${nrTag}${ameliTag}${offreTag}${wmlTag}${rotTag}${cipTag}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">${prix}${addBtn}</div>
