@@ -2494,6 +2494,7 @@ let prodSortAsc = false;
 let prodPharmaFilter = 'tous'; // 'tous' or pharmacyId
 let prodTableQuery = '', prodTableSort = 'ca', prodTableSortAsc = false, prodTablePage = 1;
 let prodPeriodFilter = 'all'; // 'all' or 'YYYY-MM'
+let prodWmlFilter = false;    // filtre: produits présents dans données WML
 const PROD_TABLE_PER_PAGE = 50;
 
 function renderProduits() {
@@ -2578,6 +2579,15 @@ function renderProduits() {
       cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
     ">${f.label}</button>`;
   }).join('');
+  const wmlProdsAll = Object.values(prodTableMap).filter(p => wmlOppMap.has(nnP(p.label || '')));
+  const wmlNbProdTable = wmlProdsAll.length;
+  const wmlChipHtml = wmlNbProdTable > 0
+    ? `<button onclick="prodWmlFilter=!prodWmlFilter;prodTablePage=1;renderProduits()" style="
+        padding:5px 14px;border-radius:20px;border:1px solid ${prodWmlFilter ? 'var(--mint)' : 'var(--border2)'};
+        background:${prodWmlFilter ? 'rgba(0,229,160,.18)' : 'transparent'};color:${prodWmlFilter ? 'var(--mint)' : 'var(--text2)'};
+        cursor:pointer;font-size:12px;font-weight:${prodWmlFilter ? '600' : '400'};white-space:nowrap;transition:all .15s
+      ">📦 WML (${wmlNbProdTable})</button>`
+    : '';
 
   // ── Family KPI cards ──────────────────────────
   const familyKpiHtml = familyKpis.map(f => `
@@ -2674,6 +2684,9 @@ function renderProduits() {
     const q2 = prodTableQuery.toLowerCase();
     prodTableAll = prodTableAll.filter(p => p.label.toLowerCase().includes(q2));
   }
+  if (prodWmlFilter) {
+    prodTableAll = prodTableAll.filter(p => wmlOppMap.has(nnP(p.label || '')));
+  }
   prodTableAll.sort((a, b) => {
     const av = a[prodTableSort] ?? 0, bv = b[prodTableSort] ?? 0;
     return prodTableSortAsc ? av - bv : bv - av;
@@ -2738,6 +2751,7 @@ function renderProduits() {
             ${state.pharmacies.map(ph => `<option value="${ph.id}" ${prodPharmaFilter===ph.id?'selected':''}>${titleCase(ph.name)}</option>`).join('')}
           </select>
           ${chipsHtml}
+          ${wmlChipHtml}
         </div>
       </div>
       <div class="card-body">
@@ -2868,13 +2882,15 @@ function renderProduits() {
               const rank = (prodTablePage - 1) * PROD_TABLE_PER_PAGE + i + 1;
               const puMoyen = p.qte > 0 ? p.ca / p.qte : 0;
               const escapedLabel = (p.label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+              const wmlRowPop = wmlOppMap.get(nnP(p.label || '')) || 0;
+              const wmlRowBadge = wmlRowPop > 0 ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(0,229,160,.12);color:var(--mint);font-weight:700;margin-left:4px;white-space:nowrap">📦×${wmlRowPop}</span>` : '';
               const momBadge = p.momPct !== null
                 ? `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:${p.momPct >= 0 ? 'rgba(0,229,160,.12)' : 'rgba(255,77,109,.12)'};color:${p.momPct >= 0 ? 'var(--green)' : 'var(--rose)'}">${p.momPct >= 0 ? '▲' : '▼'} ${Math.abs(p.momPct).toFixed(1)}%</span>`
                 : `<span style="color:var(--text3);font-size:10px">—</span>`;
               return `<tr onclick="showProductBreakdown('${escapedLabel}')" style="cursor:pointer" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
                 <td style="font-size:12px">
                   <span style="color:var(--text3);font-size:11px;margin-right:6px">${rank}</span>
-                  ${p.label}
+                  ${p.label}${wmlRowBadge}
                 </td>
                 <td><span style="font-size:10px;padding:1px 5px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:700">${cat.icon}</span></td>
                 <td class="td-num" style="text-align:right;font-weight:700">${fmt(p.ca)}</td>
