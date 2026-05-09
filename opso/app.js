@@ -2158,10 +2158,23 @@ function generateEmailModal(pharmacyId) {
     return m;
   }, {})).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
+  // WML missed products
+  const nnEM = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const wmlVisEM = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const wmlEntEM = wmlVisEM.find(d => nnEM(d.nom) === nnEM(pharma.name));
+  const directNamesEM = new Set(allPhSales.map(s => nnEM(s.artDesignation)));
+  const missedEM = wmlEntEM
+    ? (wmlEntEM.pr || []).filter(([nom]) => nom && !directNamesEM.has(nnEM(nom))).slice(0, 5)
+    : [];
+
   const dest = client?.email ? `${client.nom} <${client.email}>` : pharma.name;
   const moisCur = `${monthName(curM)} ${curY}`;
   const moisPrev = prevY ? `${monthName(prevM)} ${prevY}` : '—';
   const deltaStr = delta !== null ? `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%` : '';
+
+  const missedSection = missedEM.length
+    ? `\n💡 Produits que vous achetez via le groupement, disponibles en direct chez IP :\n${missedEM.map(([nom,ca]) => `• ${nom}${ca ? ` — ${fmt(ca)} CA groupement` : ''}`).join('\n')}\n`
+    : '';
 
   const emailBody = `Bonjour,
 
@@ -2174,7 +2187,7 @@ Je me permets de vous contacter pour faire un point sur votre activité avec Int
 ${topProds.length ? `🏆 Vos top produits ce mois :
 ${topProds.map(([name, ca], i) => `${i+1}. ${name} — ${fmt(ca)}`).join('\n')}
 
-` : ''}N'hésitez pas à me contacter pour toute question ou pour planifier une visite.
+` : ''}${missedSection}N'hésitez pas à me contacter pour toute question ou pour planifier une visite.
 
 Cordialement,
 William Morel
@@ -5571,6 +5584,7 @@ function exportOffiLiveCSV() {
 // ── CA & COMMANDES (WML) ─────────────────────
 let wmlPharma = null; // null = groupement, tircode = pharmacie sélectionnée
 let wmlMonth  = 'all'; // 'all' ou index 0-3
+let wmlSearch = ''; // filtre recherche sur la liste groupement
 
 function exportWmlCSV(tircode) {
   const WML_VISIBLE = getWmlVisible();
@@ -5843,8 +5857,11 @@ function renderWml() {
       </div>`;
     }).join('');
 
-    // Table pharmacies
-    const sorted = [...WML_VISIBLE].sort((a,b) => b.ca - a.ca);
+    // Table pharmacies avec filtre recherche
+    const wmlQ = wmlSearch.trim().toUpperCase();
+    const sorted = [...WML_VISIBLE]
+      .filter(d => !wmlQ || (d.nom||'').toUpperCase().includes(wmlQ))
+      .sort((a,b) => b.ca - a.ca);
     const maxPhCA = sorted[0]?.ca || 1;
 
     const pharmaRows = sorted.map((d, i) => {
@@ -6020,11 +6037,14 @@ function renderWml() {
       </div>
 
       <div class="card">
-        <div class="card-header">
+        <div class="card-header" style="flex-wrap:wrap;gap:10px">
           <div>
             <div class="card-title">Toutes les pharmacies · Jan – Avr 2026</div>
-            <div class="card-subtitle">Cliquer sur une pharmacie pour voir le détail</div>
+            <div class="card-subtitle">${sorted.length} pharmacie${sorted.length>1?'s':''} · cliquer pour voir le détail</div>
           </div>
+          <input type="text" placeholder="Rechercher une pharmacie…" value="${wmlSearch}"
+            oninput="wmlSearch=this.value;renderWml()"
+            style="padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);width:220px">
         </div>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">
