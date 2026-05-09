@@ -5511,6 +5511,7 @@ let offiLiveCat    = 'tous';
 let offiLiveSort   = 'alpha';
 let offiLivePage   = 1;
 let offiLiveWml    = false; // filtre: produits achetés par adhérents WML
+let offiLivePromo  = false; // filtre: produits en promotion
 const OFFIL_PAGE   = 60;
 
 function renderOffilog() {
@@ -5536,6 +5537,7 @@ function renderOffilog() {
   let list = OFFILOG_LIVE.filter(p => {
     if (offiLiveCat !== 'tous' && p.cat !== offiLiveCat) return false;
     if (offiLiveWml && !(p.ean && wmlLiveEanMap.has(String(p.ean)))) return false;
+    if (offiLivePromo && !(p.promo && p.prix_b != null)) return false;
     if (q) {
       const haystack = (p.nom + ' ' + p.marque + ' ' + p.ean).toLowerCase();
       return q.split(' ').every(w => haystack.includes(w));
@@ -5575,7 +5577,7 @@ function renderOffilog() {
   const offiMaxiMap = typeof OFFILOG !== 'undefined'
     ? new Map(OFFILOG.filter(p => p.ean && p.prix_maxi > 0).map(p => [String(p.ean), p.prix_maxi]))
     : new Map();
-  let nAlerte = 0, nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPharma = 0, nWml = 0;
+  let nAlerte = 0, nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPharma = 0, nWml = 0, nPromo = 0;
   for (const p of OFFILOG_LIVE) {
     const e = p.ean ? String(p.ean) : '';
     const lv = le.get(e), cv = ce.get(e), dv = de.get(e), pv = pe.get(e);
@@ -5584,6 +5586,7 @@ function renderOffilog() {
     if (dv != null && dv > 0) nDrak++;
     if (pv != null && pv > 0) nPharma++;
     if (e && wmlLiveEanMap.has(e)) nWml++;
+    if (p.promo && p.prix_b != null) nPromo++;
     const concs = [lv, cv, dv, pv].filter(v => v != null && v > 0);
     if (concs.length) { nBench++; nAlerte++; }
   }
@@ -5676,7 +5679,8 @@ function renderOffilog() {
         <option value="ecart" ${offiLiveSort==='ecart'?'selected':''}>⚠ Conc. moins cher</option>
       </select>
       <button onclick="exportOffiLiveCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">⬇ CSV</button>
-      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLiveWml ? 'rgba(0,229,160,.6)' : 'var(--border2)'};background:${offiLiveWml ? 'rgba(0,229,160,.12)' : 'transparent'};color:${offiLiveWml ? 'var(--mint)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">📦 WML</button>
+      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLiveWml ? 'rgba(0,229,160,.6)' : 'var(--border2)'};background:${offiLiveWml ? 'rgba(0,229,160,.12)' : 'transparent'};color:${offiLiveWml ? 'var(--mint)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s
+      <button onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLivePromo ? 'rgba(255,176,32,.6)' : 'var(--border2)'};background:${offiLivePromo ? 'rgba(255,176,32,.12)' : 'transparent'};color:${offiLivePromo ? 'var(--amber)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">🏷 Promos</button>
     </div>
   </div>
 
@@ -5687,6 +5691,7 @@ function renderOffilog() {
     <span style="padding:4px 10px;border-radius:20px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);color:#6366f1;font-weight:600">Drakkars ${nDrak}</span>
     ${nAlerte > 0 ? `<span style="padding:4px 10px;border-radius:20px;background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2);color:var(--blue);font-weight:600">🔍 ${nAlerte} avec prix conc.</span>` : ''}
     ${nWml > 0 ? `<span onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:${offiLiveWml?'rgba(0,229,160,.2)':'rgba(0,229,160,.06)'};border:1px solid ${offiLiveWml?'rgba(0,229,160,.5)':'rgba(0,229,160,.2)'};color:var(--mint);font-weight:600;cursor:pointer">📦 ${nWml} WML</span>` : ''}
+    ${nPromo > 0 ? `<span onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:${offiLivePromo?'rgba(255,176,32,.2)':'rgba(255,176,32,.06)'};border:1px solid ${offiLivePromo?'rgba(255,176,32,.5)':'rgba(255,176,32,.2)'};color:var(--amber);font-weight:600;cursor:pointer">🏷 ${nPromo} promos</span>` : ''}
   </div>
 
   <div class="offil-cats">${catChips}</div>
