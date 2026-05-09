@@ -5436,9 +5436,10 @@ function renderWml() {
       if (ean) {
         const e = String(ean);
         const prices = [
-          bm.leclEan.has(e) ? [bm.leclEan.get(e), 'Leclerc'] : null,
-          bm.cap3Ean.has(e) ? [bm.cap3Ean.get(e), 'Cap3000'] : null,
-          bm.drakEan.has(e) ? [bm.drakEan.get(e), 'Drakkars'] : null,
+          bm.leclEan.has(e)  ? [bm.leclEan.get(e),  'Leclerc']  : null,
+          bm.cap3Ean.has(e)  ? [bm.cap3Ean.get(e),  'Cap3000']  : null,
+          bm.drakEan.has(e)  ? [bm.drakEan.get(e),  'Drakkars'] : null,
+          bm.pharmEan.has(e) ? [bm.pharmEan.get(e), 'Apothical']: null,
         ].filter(Boolean);
         if (prices.length) {
           const best = prices.sort((a,b)=>a[0]-b[0])[0];
@@ -5446,14 +5447,14 @@ function renderWml() {
         }
       }
       const margeBrute = (puNet != null && concPrix != null) ? concPrix - puNet : null;
-      const margeBruteColor = margeBrute == null ? 'var(--text3)' : margeBrute > 0 ? 'var(--green)' : '#ef4444';
+      const margeBruteColor = margeBrute == null ? 'var(--text3)' : margeBrute > 0 ? 'var(--green)' : '#F59E0B';
       const concCell = concPrix
         ? `<span style="font-size:11px;font-weight:700;color:#0072e6">${fmtD(concPrix)}</span><span style="font-size:9px;color:var(--text3);margin-left:3px">${concLabel}</span>`
         : '<span style="font-size:10px;color:var(--text3)">—</span>';
       const margeCell = margeBrute != null
         ? `<span style="font-size:12px;font-weight:700;color:${margeBruteColor}">${margeBrute >= 0 ? '+' : ''}${fmtD(margeBrute)}</span>`
         : '<span style="font-size:10px;color:var(--text3)">—</span>';
-      return `<tr style="border-bottom:1px solid var(--border)${margeBrute != null && margeBrute < 0 ? ';background:rgba(239,68,68,.04)' : ''}">
+      return `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:7px 10px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
         <td style="padding:7px 12px;font-size:12px;font-weight:500;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</td>
         <td style="padding:7px 10px;font-size:10px;color:var(--text3)">${ean||'—'}</td>
