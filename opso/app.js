@@ -1394,7 +1394,7 @@ function renderPharmacies() {
           <button onclick="exportPharmaciesCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV</button>
           <div class="search-wrap" style="width:220px">
             <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Rechercher..." value="${pharmaSearch}"
+            <input type="text" placeholder="Nom, ville ou code postal…" value="${pharmaSearch}"
               oninput="pharmaSearch=this.value;renderPharmacies()" />
           </div>
         </div>
