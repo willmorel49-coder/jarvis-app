@@ -7261,6 +7261,24 @@ function gsSearch(q) {
     return Object.values(byProd).sort((a, b) => b.ca - a.ca).slice(0, 3);
   })();
 
+  // Search WML pharmacies and products
+  const wmlHits = (() => {
+    const vis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+    const pharmaMatches = vis.filter(d => (d.nom||'').toLowerCase().includes(ql)).slice(0, 3);
+    if (pharmaMatches.length) return pharmaMatches;
+    // Search in WML products
+    const prodMatches = [];
+    for (const d of vis) {
+      for (const [nom] of (d.pr||[])) {
+        if ((nom||'').toLowerCase().includes(ql)) {
+          prodMatches.push({ d, prodNom: nom });
+          break;
+        }
+      }
+    }
+    return prodMatches.slice(0, 3);
+  })();
+
   // Search visit notes
   const noteHits = [];
   for (const ph of (state.pharmacies || [])) {
@@ -7276,7 +7294,7 @@ function gsSearch(q) {
     if (noteHits.length >= 3) break;
   }
 
-  const total = offiHits.length + benchHits.length + pharmaHits.length + clientHits.length + noteHits.length + salesHits.length;
+  const total = offiHits.length + benchHits.length + pharmaHits.length + clientHits.length + noteHits.length + salesHits.length + wmlHits.length;
   if (total === 0) {
     res.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Aucun résultat pour "${globalSearchQuery}"</div>`;
     return;
@@ -7368,6 +7386,25 @@ function gsSearch(q) {
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
       </div>`).join('');
+  }
+
+  if (wmlHits.length) {
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Achats WML (${wmlHits.length})</div>`;
+    html += wmlHits.map(item => {
+      const d = item.d || item;
+      const prodNom = item.prodNom;
+      const fmtWmlS = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
+      return `<div onclick="document.getElementById('global-search-modal').remove();wmlPharma=${d.tc};navigate('wml');setTimeout(()=>renderWml(),80)"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(17,166,60,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📦</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${highlight(titleCase(d.nom))}</div>
+          <div style="font-size:11px;color:var(--text3)">${prodNom ? highlight(prodNom) + ' · ' : ''}${fmtWmlS(d.ca)} CA · TIRCODE ${d.tc}</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+      </div>`;
+    }).join('');
   }
 
   if (noteHits.length) {
