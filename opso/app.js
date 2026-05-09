@@ -5392,6 +5392,7 @@ let offiLiveSearch = '';
 let offiLiveCat    = 'tous';
 let offiLiveSort   = 'alpha';
 let offiLivePage   = 1;
+let offiLiveWml    = false; // filtre: produits achetés par adhérents WML
 const OFFIL_PAGE   = 60;
 
 function renderOffilog() {
@@ -5404,9 +5405,19 @@ function renderOffilog() {
   }
 
   // ── Filtrage ──
+  // Build WML EAN map for filtering and badge counts
+  const wmlLiveEanMap = new Map();
+  for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
+    const seen = new Set();
+    for (const [,,,,ean] of (d.pr||[])) {
+      const ke = ean ? String(ean) : null;
+      if (ke && !seen.has(ke)) { seen.add(ke); wmlLiveEanMap.set(ke, (wmlLiveEanMap.get(ke)||0)+1); }
+    }
+  }
   const q = offiLiveSearch.trim().toLowerCase();
   let list = OFFILOG_LIVE.filter(p => {
     if (offiLiveCat !== 'tous' && p.cat !== offiLiveCat) return false;
+    if (offiLiveWml && !(p.ean && wmlLiveEanMap.has(String(p.ean)))) return false;
     if (q) {
       const haystack = (p.nom + ' ' + p.marque + ' ' + p.ean).toLowerCase();
       return q.split(' ').every(w => haystack.includes(w));
@@ -5446,7 +5457,7 @@ function renderOffilog() {
   const offiMaxiMap = typeof OFFILOG !== 'undefined'
     ? new Map(OFFILOG.filter(p => p.ean && p.prix_maxi > 0).map(p => [String(p.ean), p.prix_maxi]))
     : new Map();
-  let nAlerte = 0, nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPharma = 0;
+  let nAlerte = 0, nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPharma = 0, nWml = 0;
   for (const p of OFFILOG_LIVE) {
     const e = p.ean ? String(p.ean) : '';
     const lv = le.get(e), cv = ce.get(e), dv = de.get(e), pv = pe.get(e);
@@ -5454,6 +5465,7 @@ function renderOffilog() {
     if (cv != null && cv > 0) nCap++;
     if (dv != null && dv > 0) nDrak++;
     if (pv != null && pv > 0) nPharma++;
+    if (e && wmlLiveEanMap.has(e)) nWml++;
     const concs = [lv, cv, dv, pv].filter(v => v != null && v > 0);
     if (concs.length) { nBench++; nAlerte++; }
   }
@@ -5467,16 +5479,6 @@ function renderOffilog() {
     const active = c === offiLiveCat;
     return `<button onclick="offiLiveCat='${c.replace(/'/g,"\'")}';offiLivePage=1;renderOffilog()" class="offil-chip${active ? ' active' : ''}">${c === 'tous' ? 'Tous' : c} <span class="offil-chip-count">${n}</span></button>`;
   }).join('');
-
-  // WML cross-reference pour Offilog Live
-  const wmlLiveEanMap = new Map();
-  for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
-    const seen = new Set();
-    for (const [,,,,ean] of (d.pr||[])) {
-      const ke = ean ? String(ean) : null;
-      if (ke && !seen.has(ke)) { seen.add(ke); wmlLiveEanMap.set(ke, (wmlLiveEanMap.get(ke)||0)+1); }
-    }
-  }
 
   const cards = page.map(p => {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
@@ -5556,6 +5558,7 @@ function renderOffilog() {
         <option value="ecart" ${offiLiveSort==='ecart'?'selected':''}>⚠ Conc. moins cher</option>
       </select>
       <button onclick="exportOffiLiveCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">⬇ CSV</button>
+      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLiveWml ? 'rgba(0,229,160,.6)' : 'var(--border2)'};background:${offiLiveWml ? 'rgba(0,229,160,.12)' : 'transparent'};color:${offiLiveWml ? 'var(--mint)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">📦 WML</button>
     </div>
   </div>
 
@@ -5565,6 +5568,7 @@ function renderOffilog() {
     <span style="padding:4px 10px;border-radius:20px;background:rgba(234,88,12,.08);border:1px solid rgba(234,88,12,.2);color:#ea580c;font-weight:600">Cap3000 ${nCap}</span>
     <span style="padding:4px 10px;border-radius:20px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);color:#6366f1;font-weight:600">Drakkars ${nDrak}</span>
     ${nAlerte > 0 ? `<span style="padding:4px 10px;border-radius:20px;background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2);color:var(--blue);font-weight:600">🔍 ${nAlerte} avec prix conc.</span>` : ''}
+    ${nWml > 0 ? `<span onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:${offiLiveWml?'rgba(0,229,160,.2)':'rgba(0,229,160,.06)'};border:1px solid ${offiLiveWml?'rgba(0,229,160,.5)':'rgba(0,229,160,.2)'};color:var(--mint);font-weight:600;cursor:pointer">📦 ${nWml} WML</span>` : ''}
   </div>
 
   <div class="offil-cats">${catChips}</div>
