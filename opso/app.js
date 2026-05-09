@@ -6019,6 +6019,37 @@ function renderWml() {
       </div>
     </div>` : '';
 
+    // Répartition par UGA (si OPSO_ADHERENTS dispo)
+    const ugaBreakdownCard = (() => {
+      if (typeof OPSO_ADHERENTS === 'undefined' || !OPSO_ADHERENTS.length) return '';
+      const nnU = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+      const ugaMap = {};
+      for (const a of OPSO_ADHERENTS) { ugaMap[nnU(a.nom)] = a.uga; }
+      const ugaCA = {};
+      for (const d of WML_VISIBLE) {
+        const uga = ugaMap[nnU(d.nom)] || 'AUTRE';
+        if (!ugaCA[uga]) ugaCA[uga] = 0;
+        ugaCA[uga] += d.ca;
+      }
+      const ugaList = Object.entries(ugaCA).sort((a,b)=>b[1]-a[1]);
+      if (!ugaList.length) return '';
+      const ugaMax = ugaList[0][1];
+      const ugaRows = ugaList.map(([uga, ca]) => {
+        const pct = (ca / ugaMax * 100).toFixed(0);
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--border)">
+          <span style="font-size:11px;font-weight:700;color:var(--text2);min-width:58px">${uga}</span>
+          <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px">
+            <div style="width:${pct}%;height:100%;background:var(--green);border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;min-width:72px;text-align:right">${fmt(ca)}</span>
+        </div>`;
+      }).join('');
+      return `<div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">CA par UGA (zone géographique)</div><div class="card-subtitle">${ugaList.length} zones actives</div></div>
+        ${ugaRows}
+      </div>`;
+    })();
+
     container.innerHTML = `
     <div style="padding:0 0 24px">
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
@@ -6056,6 +6087,8 @@ function renderWml() {
           </div>
         </div>
       </div>
+
+      ${ugaBreakdownCard}
 
       <div class="card">
         <div class="card-header" style="flex-wrap:wrap;gap:10px">
