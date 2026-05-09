@@ -1196,9 +1196,13 @@ let prospectFilter = 'tous'; // 'tous' | 'pelgraz' | 'ca' | 'gx'
 function renderProspects(search = '') {
   if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
   const activeNames = new Set(state.pharmacies.map(p => p.name.toUpperCase().trim()));
+  const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const opsoNames = typeof OPSO_ADHERENTS !== 'undefined'
+    ? new Set(OPSO_ADHERENTS.map(a => nn(a.nom)))
+    : new Set();
 
-  // Prospect scoring: potentielGx * 0.5 + ca2023 * 0.3 + pelgraz * 500
-  const score = c => (c.potentielGx || 0) * 0.5 + (c.ca2023 || 0) * 0.3 + parseInt(c.pelgraz || 0, 10) * 500;
+  // Prospect scoring: potentielGx * 0.5 + ca2023 * 0.3 + pelgraz * 500 + OPSO bonus 200
+  const score = c => (c.potentielGx || 0) * 0.5 + (c.ca2023 || 0) * 0.3 + parseInt(c.pelgraz || 0, 10) * 500 + (opsoNames.has(nn(c.nom)) ? 200 : 0);
 
   let prospects = CLIENTS.filter(c => {
     if (!c.nom) return false;
@@ -1206,6 +1210,7 @@ function renderProspects(search = '') {
     if (prospectFilter === 'pelgraz') return c.pelgraz && c.pelgraz !== '0' && parseInt(c.pelgraz, 10) > 0;
     if (prospectFilter === 'ca')      return c.ca2023 > 5000;
     if (prospectFilter === 'gx')      return c.potentielGx > 1000;
+    if (prospectFilter === 'opso')    return opsoNames.has(nn(c.nom));
     if (search) {
       const q = search.toLowerCase();
       return c.nom.toLowerCase().includes(q) || (c.ville || '').toLowerCase().includes(q) || (c.cp || '').includes(q);
@@ -1226,9 +1231,10 @@ function renderProspects(search = '') {
 
   const filterTabs = [
     { key: 'tous',    label: `Tous (${CLIENTS.filter(c => c.nom && !activeNames.has(c.nom.toUpperCase().trim())).length})`, color: '#64748B' },
+    { key: 'opso',    label: `OPSO Santé (${CLIENTS.filter(c => c.nom && !activeNames.has(c.nom.toUpperCase().trim()) && opsoNames.has(nn(c.nom))).length})`, color: '#00E5A0' },
     { key: 'pelgraz', label: 'Pelgraz', color: '#9B5CFF' },
     { key: 'gx',      label: 'Gx potentiel', color: '#0057FF' },
-    { key: 'ca',      label: 'CA > 5k', color: '#00E5A0' },
+    { key: 'ca',      label: 'CA > 5k', color: '#64748B' },
   ].map(t => {
     const active = prospectFilter === t.key;
     return `<button onclick="prospectFilter='${t.key}';renderPharmacies()"
@@ -1245,8 +1251,10 @@ function renderProspects(search = '') {
     const hasPelgraz  = c.pelgraz && c.pelgraz !== '0' && parseInt(c.pelgraz, 10) > 0;
     const hasPelmeg   = c.pelmeg  && c.pelmeg  !== '0' && parseInt(c.pelmeg, 10) > 0;
     const hasEcodage  = c.ecodage && c.ecodage !== '0' && parseInt(c.ecodage, 10) > 0;
+    const isOpso      = opsoNames.has(nn(c.nom));
 
     const badges = [
+      isOpso ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,229,160,.15);color:var(--mint);font-weight:700;border:1px solid rgba(0,229,160,.3)">🏥 OPSO Santé</span>` : '',
       c.ca2023 > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--green);font-weight:600">CA ${fmt(c.ca2023)}</span>` : '',
       c.potentielGx > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,87,255,.1);color:var(--green);font-weight:600">Gx ${fmt(c.potentielGx)}</span>` : '',
       hasPelgraz ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(155,92,255,.1);color:#9B5CFF;font-weight:600">Pelgraz ×${c.pelgraz}</span>` : '',
