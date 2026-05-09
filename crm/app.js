@@ -1335,6 +1335,53 @@ function renderDashboard() {
         ${rows}
       </div>`;
     })()}
+
+    <!-- Visites en retard -->
+    ${(() => {
+      if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
+      const todayOD = new Date(); todayOD.setHours(0,0,0,0);
+      const parseOD = str => {
+        if (!str || str === 'null' || str.trim() === '') return null;
+        const s = str.trim(); let m;
+        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+        m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+        return null;
+      };
+      const moOD = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+      const dateShortOD = d => String(d.getDate()).padStart(2,'0') + ' ' + moOD[d.getMonth()];
+      const overdue = CLIENTS
+        .map(c => ({ c, date: parseOD(c.prochaineVisite) }))
+        .filter(x => x.date !== null && x.date < todayOD)
+        .sort((a, b) => a.date - b.date)
+        .slice(0, 5);
+      if (!overdue.length) return '';
+      const pharmaMapOD = new Map(state.pharmacies.map(p => [p.name.toUpperCase().trim(), p]));
+      const rowsOD = overdue.map(({ c, date }) => {
+        const phOD = pharmaMapOD.get((c.nom||'').toUpperCase().trim());
+        const daysLate = Math.round((todayOD - date) / 86400000);
+        const label = daysLate === 1 ? 'Hier' : daysLate <= 7 ? 'J-' + daysLate : dateShortOD(date);
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);cursor:pointer" onclick="navigate('pharmacies');setTimeout(()=>{pharmaFilter='visite_retard';renderPharmacies();},80)">
+          <div style="min-width:64px;padding:3px 8px;border-radius:8px;background:rgba(255,77,109,.1);text-align:center;font-size:11px;font-weight:700;color:var(--rose)">${label}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nom||'—'}</div>
+            <div style="font-size:11px;color:var(--text3)">${c.cp||''} ${c.ville||''}</div>
+          </div>
+          ${phOD ? `<div style="width:8px;height:8px;border-radius:50%;background:${phOD.color};flex-shrink:0"></div>` : ''}
+        </div>`;
+      }).join('');
+      return `<div class="card fade-up" style="margin-top:24px;border:1px solid rgba(255,77,109,.2)">
+        <div class="card-header">
+          <div>
+            <div class="card-title" style="color:var(--rose)">⚠ Visites en retard</div>
+            <div class="card-subtitle">${overdue.length} pharmacie${overdue.length>1?'s':''} à rappeler</div>
+          </div>
+          <button onclick="navigate('pharmacies');setTimeout(()=>{pharmaFilter='visite_retard';renderPharmacies();},80)" style="font-size:12px;color:var(--rose);background:none;border:none;cursor:pointer;font-weight:700">Voir toutes →</button>
+        </div>
+        ${rowsOD}
+      </div>`;
+    })()}
   `;
 
   setTimeout(() => {
