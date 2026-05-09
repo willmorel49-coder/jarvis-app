@@ -7551,6 +7551,11 @@ function showFicheVisite(pharmacyId) {
 
   const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
+  // Load saved visit notes for fiche
+  let savedNotesFiche = [];
+  try { savedNotesFiche = JSON.parse(localStorage.getItem(`visit_notes_${pharma.id}`) || '[]'); } catch {}
+  savedNotesFiche = savedNotesFiche.slice(0, 5);
+
   // WML lookup for this pharmacy
   const nnWmlFv = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
   const wmlVisFv = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
@@ -7705,7 +7710,15 @@ function showFicheVisite(pharmacyId) {
         <!-- Notes -->
         <div style="margin-bottom:8px">
           <div style="font-size:13px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">Notes de visite</div>
-          <div style="border:1.5px dashed #cbd5e1;border-radius:8px;min-height:80px;padding:10px;font-size:12px;color:#94a3b8">_____________________</div>
+          ${savedNotesFiche.length ? `
+          <div style="margin-bottom:10px">
+            ${savedNotesFiche.map(n => `
+              <div style="padding:6px 10px;margin-bottom:4px;background:#f8fafc;border-radius:7px;border-left:3px solid #0057FF">
+                <div style="font-size:9px;color:#94a3b8;margin-bottom:2px">${n.date}</div>
+                <div style="font-size:11px;color:#1e293b;white-space:pre-wrap">${(n.text||'').replace(/</g,'&lt;')}</div>
+              </div>`).join('')}
+          </div>` : ''}
+          <div style="border:1.5px dashed #cbd5e1;border-radius:8px;min-height:60px;padding:10px;font-size:12px;color:#94a3b8">Note de cette visite : ___________</div>
         </div>
       </div>
 
