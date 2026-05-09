@@ -7435,6 +7435,11 @@ function showFicheVisite(pharmacyId) {
 
   const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
+  // WML lookup for this pharmacy
+  const nnWmlFv = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const wmlVisFv = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const wmlEntryFv = wmlVisFv.find(d => nnWmlFv(d.nom) === nnWmlFv(pharma.name)) || null;
+
   const modal = document.createElement('div');
   modal.id = 'fiche-visite-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px';
@@ -7473,6 +7478,59 @@ function showFicheVisite(pharmacyId) {
             <div style="font-size:11px;color:#475569;margin-top:2px">Références</div>
           </div>
         </div>
+
+        <!-- WML Achats IP -->
+        ${wmlEntryFv ? `
+        <div style="margin-bottom:20px;padding:14px 16px;background:#f0fdf4;border-radius:12px;border-left:3px solid #11a63c">
+          <div style="font-size:11px;font-weight:800;color:#0d8530;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📦 Achats Intégral Pharma — WML Jan–Avr 2026</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+            <div style="text-align:center;padding:8px;background:#fff;border-radius:8px">
+              <div style="font-size:16px;font-weight:900;color:#0d8530">${fmt(wmlEntryFv.ca)}</div>
+              <div style="font-size:10px;color:#64748b">CA total</div>
+            </div>
+            <div style="text-align:center;padding:8px;background:#fff;border-radius:8px">
+              <div style="font-size:16px;font-weight:900;color:#0d8530">${fmt(wmlEntryFv.mg)}</div>
+              <div style="font-size:10px;color:#64748b">Marge brute</div>
+            </div>
+            <div style="text-align:center;padding:8px;background:#fff;border-radius:8px">
+              <div style="font-size:16px;font-weight:900;color:#d97706">${wmlEntryFv.ca > 0 ? (wmlEntryFv.mg/wmlEntryFv.ca*100).toFixed(1) : '0'}%</div>
+              <div style="font-size:10px;color:#64748b">Taux marge</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            ${(wmlEntryFv.ca_m||[]).map((v,i) => {
+              const mo = ['Jan','Fév','Mar','Avr'][i] || '';
+              return \`<div style="flex:1;text-align:center">
+                <div style="font-size:10px;font-weight:700;color:\${v>0?'#0d8530':'#94a3b8'};margin-bottom:3px">\${v>0?fmt(v):'—'}</div>
+                <div style="height:6px;border-radius:3px;background:\${v>0?'#11a63c':'#e2e8f0'}"></div>
+                <div style="font-size:9px;color:#94a3b8;margin-top:2px">\${mo}</div>
+              </div>\`;
+            }).join('')}
+          </div>
+          ${(wmlEntryFv.pr||[]).length > 0 ? `
+          <div style="font-size:10px;font-weight:700;color:#0d8530;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Top produits achetés</div>
+          ${(wmlEntryFv.pr||[]).slice(0,3).map(([nom,ca,mg,qt],i) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #d1fae5">
+              <div style="font-size:11px;font-weight:600;color:#1e293b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${nom}</div>
+              <div style="font-size:11px;font-weight:700;color:#0d8530;margin-left:8px;flex-shrink:0">${fmt(ca)}</div>
+            </div>`).join('')}
+          ` : ''}
+          ${(() => {
+            const nnFv2 = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+            const directNamesFv = new Set(allPhSales.map(s => nnFv2(s.artDesignation)));
+            const missedFv = (wmlEntryFv.pr||[]).filter(([nom]) => nom && !directNamesFv.has(nnFv2(nom)));
+            if (!missedFv.length) return '';
+            const totCaFv = missedFv.reduce((s,[,ca])=>s+ca,0);
+            return \`<div style="margin-top:10px;padding:10px;background:#fffbeb;border-radius:8px;border-left:2px solid #d97706">
+              <div style="font-size:10px;font-weight:800;color:#92400e;text-transform:uppercase;margin-bottom:6px">À proposer (WML non commandés · \${fmt(totCaFv)})</div>
+              \${missedFv.slice(0,4).map(([nom,ca,,qt]) => \`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #fde68a;font-size:11px">
+                <span style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">→ \${nom}</span>
+                <span style="font-weight:700;color:#d97706;margin-left:8px;white-space:nowrap">\${fmt(ca)} · \${Math.round(qt)} u</span>
+              </div>\`).join('')}
+              \${missedFv.length > 4 ? \`<div style="font-size:10px;color:#92400e;margin-top:4px">+\${missedFv.length-4} autres</div>\` : ''}
+            </div>\`;
+          })()}
+        </div>` : ''}
 
         <!-- Top 5 produits -->
         ${top5.length ? `
