@@ -5789,6 +5789,75 @@ function renderWml() {
       </tr>`;
     }).join('');
 
+    // Agrégation top produits groupement
+    const grpProdMap = {};
+    const bm = benchMaps();
+    for (const d of WML_VISIBLE) {
+      for (const [nom, ca, mg, qt, ean] of (d.pr||[])) {
+        const k = (nom||'').trim().toUpperCase().replace(/\s+/g,' ');
+        if (!k) continue;
+        if (!grpProdMap[k]) grpProdMap[k] = { label: nom, ca:0, mg:0, qt:0, ean, nPharma:0 };
+        grpProdMap[k].ca += ca; grpProdMap[k].mg += mg; grpProdMap[k].qt += qt; grpProdMap[k].nPharma++;
+      }
+    }
+    const grpProds = Object.values(grpProdMap).sort((a,b)=>b.ca-a.ca).slice(0,30);
+    const grpProdMaxCa = grpProds[0]?.ca || 1;
+    const grpProdRows = grpProds.map((p, i) => {
+      const tm = p.ca > 0 ? (p.mg/p.ca*100) : 0;
+      const eanStr = p.ean ? String(p.ean) : '';
+      const concEntries = [
+        bm.leclEan.has(eanStr)  ? [bm.leclEan.get(eanStr),  'Lec']  : null,
+        bm.cap3Ean.has(eanStr)  ? [bm.cap3Ean.get(eanStr),  'Cap']  : null,
+        bm.drakEan.has(eanStr)  ? [bm.drakEan.get(eanStr),  'Drk']  : null,
+        bm.pharmEan.has(eanStr) ? [bm.pharmEan.get(eanStr), 'Apo']  : null,
+      ].filter(Boolean);
+      const puNet = p.qt > 0 ? (p.ca/p.qt) : null;
+      const concPrix = concEntries.length ? concEntries.sort((a,b)=>a[0]-b[0])[0] : null;
+      const margePot = (puNet != null && concPrix) ? concPrix[0] - puNet : null;
+      const pct = (p.ca/grpProdMaxCa*100).toFixed(0);
+      const margColor = margePot == null ? 'var(--text3)' : margePot > 0 ? 'var(--green)' : 'var(--amber)';
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px 10px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
+        <td style="padding:7px 14px;font-size:12px;font-weight:600;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</td>
+        <td style="padding:7px 12px;min-width:120px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="flex:1;height:4px;background:var(--bg3);border-radius:2px">
+              <div style="width:${pct}%;height:100%;background:var(--green);border-radius:2px"></div>
+            </div>
+            <span style="font-size:11px;font-weight:700;min-width:58px;text-align:right">${fmt(p.ca)}</span>
+          </div>
+        </td>
+        <td style="padding:7px 12px;text-align:right;font-size:11px;color:var(--green);font-weight:600">${fmtD(p.mg)}</td>
+        <td style="padding:7px 10px;text-align:center;font-size:11px">
+          <span style="background:rgba(0,87,255,.08);color:#6699ff;padding:2px 6px;border-radius:6px;font-weight:600">${p.nPharma}</span>
+        </td>
+        <td style="padding:7px 12px;text-align:right;font-size:11px;color:${margColor};font-weight:700">${margePot != null ? (margePot >= 0 ? '+' : '')+fmtD(margePot) : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    const grpProdCard = grpProds.length ? `
+    <div class="card" style="margin-top:16px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Top 30 produits — Groupement OPSO Santé</div>
+          <div class="card-subtitle">${Object.keys(grpProdMap).length} références distinctes · Jan–Avr 2026</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:2px solid var(--border2)">
+            <th style="padding:6px 10px;text-align:center;font-size:10px;color:var(--text3)">#</th>
+            <th style="padding:6px 14px;text-align:left;font-size:10px;color:var(--text3)">Produit</th>
+            <th style="padding:6px 12px;font-size:10px;color:var(--text3)">CA HT</th>
+            <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--green)">Marge €</th>
+            <th style="padding:6px 10px;text-align:center;font-size:10px;color:#6699ff">Pharmacies</th>
+            <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--green)" title="Marge brute pot. = prix public conc. – prix achat pharmacien">Marge pot./u.</th>
+          </tr></thead>
+          <tbody>${grpProdRows}</tbody>
+        </table>
+      </div>
+    </div>` : '';
+
     container.innerHTML = `
     <div style="padding:0 0 24px">
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
@@ -5851,6 +5920,7 @@ function renderWml() {
           </table>
         </div>
       </div>
+      ${grpProdCard}
     </div>`;
   }
 }
