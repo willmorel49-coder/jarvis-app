@@ -3893,6 +3893,16 @@ function renderBenchmark() {
     salesMap[k].ca  += s.mntNetHt;
     salesMap[k].qte += s.qte;
   }
+
+  // WML popularity map: nom normalisé → nb pharmacies OPSO qui achètent via WML
+  const wmlBenchMap = new Map();
+  for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
+    const seen = new Set();
+    for (const [nom] of (d.pr||[])) {
+      const k = nnBench(nom);
+      if (k && !seen.has(k)) { seen.add(k); wmlBenchMap.set(k, (wmlBenchMap.get(k)||0)+1); }
+    }
+  }
   const nVendus    = BENCHMARK.filter(d => salesMap[nnBench(d.designation)]?.ca > 0).length;
   const nNonVendus = BENCHMARK.length - nVendus;
 
@@ -3966,6 +3976,7 @@ function renderBenchmark() {
       ? `<span style="font-size:11px;color:var(--green)">${fmtP(d.prix_ip)}</span>`
       : '<span style="color:var(--text4);font-size:11px">—</span>';
     const sv = salesMap[nnBench(d.designation)];
+    const wmlPop = wmlBenchMap.get(nnBench(d.designation)) || 0;
     const partIP = (sv?.ca > 0 && d.ip_ca > 0) ? (sv.ca / d.ip_ca * 100) : null;
     const nosVentesHtml = sv?.ca > 0
       ? `<div style="text-align:right">
@@ -3976,6 +3987,9 @@ function renderBenchmark() {
       : salesAll.length > 0
         ? `<span style="font-size:10px;color:var(--text3);background:rgba(239,68,68,.08);padding:2px 6px;border-radius:6px;font-weight:600">Non vendu</span>`
         : `<span style="color:var(--text4);font-size:11px">—</span>`;
+    const wmlCell = wmlPop > 0
+      ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(0,229,160,.12);color:var(--mint);font-weight:700">×${wmlPop}</span>`
+      : '<span style="color:var(--text4);font-size:11px">—</span>';
     return `<tr style="transition:background .12s;cursor:pointer" onclick="showBenchDetail(${i})" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <td style="color:var(--text3);font-size:12px">${d.ip_rank_qty}</td>
       <td class="td-name" style="font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}${froidTag}</td>
@@ -3986,6 +4000,7 @@ function renderBenchmark() {
       <td class="td-num" style="text-align:right;color:${rotColor}">${d.has_ameli ? d.rot_pharma_jan26.toFixed(1) : '—'}</td>
       <td style="text-align:right">${yoy}</td>
       <td style="text-align:right;font-size:11px;color:var(--text3)">${d.has_ameli ? fmtNum(d.ameli_jan26) : '—'}</td>
+      ${wmlBenchMap.size > 0 ? `<td style="text-align:center">${wmlCell}</td>` : ''}
       <td style="padding:6px 10px">${nosVentesHtml}</td>
     </tr>`;
   }).join('');
@@ -4134,6 +4149,7 @@ function renderBenchmark() {
               ${thB('rot_pharma_jan26','Rot./pharma/mois')}
               ${thB('yoy_jan','YoY Jan')}
               <th style="text-align:right">France Jan26</th>
+              ${wmlBenchMap.size > 0 ? '<th style="text-align:center;color:var(--mint);font-size:11px" title="Nb pharmacies OPSO achetant ce produit via WML">WML OPSO</th>' : ''}
               ${salesAll.length > 0 ? thB('notre_ca', 'Nos ventes CA') : ''}
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
