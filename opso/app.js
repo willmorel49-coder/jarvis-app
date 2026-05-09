@@ -2281,11 +2281,24 @@ function renderProduits() {
     : `Top 10 produits — ${selCat.label}`;
 
   // ── Opportunités sous-exploitées ─────────────
-  const ourNorms = new Set(topProducts(sales, 1000).map(p => p.name.trim().toUpperCase().replace(/\s+/g,' ')));
+  const nnP = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+  const ourNorms = new Set(topProducts(sales, 1000).map(p => nnP(p.name)));
+  // WML popularity for opportunities
+  const wmlOppMap = new Map();
+  for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
+    const seen = new Set();
+    for (const [nom] of (d.pr||[])) { const k=nnP(nom); if(k&&!seen.has(k)){seen.add(k);wmlOppMap.set(k,(wmlOppMap.get(k)||0)+1);} }
+  }
   const opps = sales.length && typeof BENCHMARK !== 'undefined'
     ? BENCHMARK
-        .filter(b => b.rot_pharma_jan26 > 3 && !ourNorms.has(b.designation.trim().toUpperCase().replace(/\s+/g,' ')))
-        .sort((a, b) => b.rot_pharma_jan26 - a.rot_pharma_jan26)
+        .filter(b => b.rot_pharma_jan26 > 3 && !ourNorms.has(nnP(b.designation)))
+        .sort((a, b) => {
+          // Produits WML mais pas en direct = priorité maximale
+          const wa = wmlOppMap.has(nnP(a.designation)) ? 1 : 0;
+          const wb = wmlOppMap.has(nnP(b.designation)) ? 1 : 0;
+          if (wb !== wa) return wb - wa;
+          return b.rot_pharma_jan26 - a.rot_pharma_jan26;
+        })
         .slice(0, 10)
     : [];
 
@@ -2429,9 +2442,13 @@ function renderProduits() {
   const oppsHtml = opps.map((b, i) => {
     const cat = CATS[b.categorie] || CATS.mi;
     const fd = b.is_froid ? ' <span style="font-size:11px">❄️</span>' : '';
-    return `<tr>
+    const wmlPopP = wmlOppMap.get(nnP(b.designation)) || 0;
+    const wmlBadge = wmlPopP > 0
+      ? `<span style="margin-left:6px;font-size:10px;padding:1px 6px;border-radius:6px;background:rgba(0,229,160,.15);color:var(--mint);font-weight:700;border:1px solid rgba(0,229,160,.25)">📦 ×${wmlPopP} WML</span>`
+      : '';
+    return `<tr style="${wmlPopP > 0 ? 'background:rgba(0,229,160,.04)' : ''}">
       <td>${renderRank(i)}</td>
-      <td class="td-name">${b.designation}${fd}</td>
+      <td class="td-name">${b.designation}${fd}${wmlBadge}</td>
       <td><span style="font-size:11px;padding:2px 7px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span></td>
       <td class="td-num" style="text-align:right">${b.rot_pharma_jan26.toFixed(1)}</td>
       <td class="td-num" style="text-align:right">${fmt(b.prix_ip)}</td>
