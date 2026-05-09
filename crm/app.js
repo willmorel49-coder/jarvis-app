@@ -1800,6 +1800,7 @@ function renderPharmacies() {
       if (pharmaFilter === 'visite_retard')  return e.prochaineVisiteDate !== null && e.prochaineVisiteDate < todayFC;
       if (pharmaFilter === 'visite_semaine') return e.prochaineVisiteDate !== null && e.prochaineVisiteDate >= todayFC && e.prochaineVisiteDate <= in7C;
       if (pharmaFilter === 'visite_aucune')  return !e.prochaineVisiteDate;
+      if (pharmaFilter === 'sans_note') return e.noteCount === 0;
       return true;
     });
   }
@@ -1807,6 +1808,12 @@ function renderPharmacies() {
   // Tri
   if (pharmaSort === 'name')  enriched.sort((a, b) => a.ph.name.localeCompare(b.ph.name));
   else if (pharmaSort === 'delta') enriched.sort((a, b) => (b.g ?? -Infinity) - (a.g ?? -Infinity));
+  else if (pharmaSort === 'note') enriched.sort((a, b) => {
+    if (a.noteCount === 0 && b.noteCount === 0) return b.caCur - a.caCur;
+    if (a.noteCount === 0) return 1;
+    if (b.noteCount === 0) return -1;
+    return (b.lastNoteDays ?? 9999) - (a.lastNoteDays ?? 9999);
+  });
   else if (pharmaSort === 'wml') enriched.sort((a, b) => {
     const potA = a.wmlEntry ? Math.max(0, a.wmlEntry.ca / 4 - a.caCur) : 0;
     const potB = b.wmlEntry ? Math.max(0, b.wmlEntry.ca / 4 - b.caCur) : 0;
@@ -1826,6 +1833,7 @@ function renderPharmacies() {
     { key: 'visite_retard',   label: nRetardC  > 0 ? `⚠ Retard (${nRetardC})`        : '⚠ Retard' },
     { key: 'visite_semaine',  label: nSemaineC > 0 ? `📅 Cette semaine (${nSemaineC})` : '📅 Cette semaine' },
     { key: 'visite_aucune',   label: 'Sans visite' },
+    { key: 'sans_note',       label: '📝 Sans note' },
   ];
 
   const filterBarHtml = `
@@ -1979,7 +1987,7 @@ function renderPharmacies() {
         ${filterBarHtml}
         <div style="display:flex;gap:4px;align-items:center">
           <span style="font-size:11px;color:var(--text3);margin-right:4px">Trier par</span>
-          ${[['ca','CA'],['delta','Delta'],['wml','WML'],['name','Nom']].map(([k,l]) =>
+          ${[['ca','CA'],['delta','Delta'],['wml','WML'],['note','Notes'],['name','Nom']].map(([k,l]) =>
             `<button onclick="pharmaSort='${k}';renderPharmacies()" style="padding:4px 10px;border-radius:8px;border:1px solid ${pharmaSort===k?'var(--blue)':'var(--border2)'};background:${pharmaSort===k?'rgba(0,87,255,.1)':'transparent'};color:${pharmaSort===k?'var(--blue)':'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600">${l}</button>`
           ).join('')}
         </div>
