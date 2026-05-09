@@ -1231,9 +1231,29 @@ function renderPharmacies() {
                 ? `<span style="font-size:10px;color:var(--text3)">Import il y a ${lastImportDays}j</span>`
                 : `<span style="font-size:10px;color:var(--rose)">Import il y a ${lastImportDays}j</span>`
           : '';
-        const visiteBadge = prochaineVisite && prochaineVisite.trim() && prochaineVisite !== 'null'
-          ? `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.1);padding:1px 6px;border-radius:8px">📅 Visite ${prochaineVisite}</span>`
-          : '';
+        const visiteBadge = (() => {
+          if (!prochaineVisite || !prochaineVisite.trim() || prochaineVisite === 'null') return '';
+          const s = prochaineVisite.trim();
+          let d = null;
+          let m;
+          m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (m) d = new Date(+m[3], +m[2]-1, +m[1]);
+          m = !d && s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (m) d = new Date(+m[1], +m[2]-1, +m[3]);
+          if (!d) return `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.1);padding:1px 6px;border-radius:8px">📅 ${s}</span>`;
+          const today4 = new Date(); today4.setHours(0,0,0,0);
+          const diff = Math.round((d - today4) / 86400000);
+          if (diff < 0) {
+            const late = Math.abs(diff);
+            return `<span style="font-size:10px;color:var(--rose);background:rgba(255,77,109,.12);padding:1px 6px;border-radius:8px;font-weight:700">⚠ Retard ${late}j</span>`;
+          } else if (diff === 0) {
+            return `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.18);padding:1px 6px;border-radius:8px;font-weight:700">📅 Aujourd'hui</span>`;
+          } else if (diff <= 7) {
+            return `<span style="font-size:10px;color:var(--mint);background:rgba(0,229,160,.1);padding:1px 6px;border-radius:8px;font-weight:700">📅 J+${diff}</span>`;
+          } else {
+            return `<span style="font-size:10px;color:var(--text3);background:var(--bg3);padding:1px 6px;border-radius:8px">📅 ${s}</span>`;
+          }
+        })();
         const wmlBadge = wmlEntry
           ? `<span style="font-size:10px;color:var(--green);background:rgba(17,166,60,.1);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>`
           : '';
