@@ -1763,7 +1763,16 @@ function renderPharmacies() {
     };
     const prochaineVisiteDate = parsePVC(prochaineVisite);
     const wmlEntry = wmlNnMapCRM.get(ph.name.trim().toUpperCase().replace(/\s+/g,' '));
-    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate, wmlEntry };
+    let lastNoteDays = null, noteCount = 0;
+    try {
+      const savedNotes = JSON.parse(localStorage.getItem(`visit_notes_${ph.id}`) || '[]');
+      noteCount = savedNotes.length;
+      if (noteCount > 0) {
+        const maxTs = Math.max(...savedNotes.map(n => new Date(n.date).getTime()));
+        lastNoteDays = Math.round((today - maxTs) / 86400000);
+      }
+    } catch {}
+    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate, wmlEntry, lastNoteDays, noteCount };
   }).filter(e => e.caCur > 0 || e.caPrev > 0);
 
   // Filtre texte (nom + ville/CP depuis CLIENTS)
@@ -1870,6 +1879,9 @@ function renderPharmacies() {
                 ${g !== null ? deltaBadge(caCur, caPrev) : ''}
                 ${importFreshness}
                 ${visiteBadge}
+                ${noteCount > 0
+                  ? `<span style="font-size:10px;color:var(--blue);background:rgba(0,87,255,.1);padding:1px 6px;border-radius:8px;font-weight:600" title="${noteCount} note${noteCount>1?'s':''} de visite">📝 ${lastNoteDays === 0 ? 'Auj.' : lastNoteDays !== null ? `J-${lastNoteDays}` : ''} ·${noteCount}</span>`
+                  : ''}
                 ${wmlEntry ? `<span style="font-size:10px;color:#11a63c;background:rgba(17,166,60,.1);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>` : ''}
               </div>
             </div>
