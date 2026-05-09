@@ -862,6 +862,53 @@ function printRapportMensuel() {
     </tbody>
   </table>
 
+  ${(() => {
+    const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+    if (!wmlVis.length) return '';
+    const sortedWml = [...wmlVis].sort((a, b) => b.ca - a.ca);
+    const fmtW = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
+    const fmtP = v => (v||0).toFixed(1) + ' %';
+    const totCa = sortedWml.reduce((s,d) => s+d.ca, 0);
+    const totMg = sortedWml.reduce((s,d) => s+d.mg, 0);
+    const txMoy = totCa > 0 ? (totMg/totCa*100) : 0;
+    return `<h2 style="page-break-before:always">Achats Intégral Pharma — Jan–Avr 2026 (WML)</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div class="kpi"><div class="kpi-val">${fmtW(totCa)}</div><div class="kpi-lab">CA total acheté</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:#059669">${fmtW(totMg)}</div><div class="kpi-lab">Marge (remise obtenue)</div></div>
+      <div class="kpi"><div class="kpi-val">${fmtP(txMoy)}</div><div class="kpi-lab">Taux de remise moyen</div></div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Pharmacie</th>
+        <th style="text-align:right">CA HT</th>
+        <th style="text-align:right">Marge €</th>
+        <th style="text-align:right">Tx remise</th>
+        <th style="text-align:right">Mois actifs</th>
+      </tr></thead>
+      <tbody>
+        ${sortedWml.map(d => {
+          const tx = d.ca > 0 ? (d.mg/d.ca*100) : 0;
+          const actifs = d.ca_m.filter(v=>v>0).length;
+          const moisActifs = d.ca_m.map((v,i)=>['J','F','M','A'][i]+(v>0?'✓':'○')).join(' ');
+          return `<tr>
+            <td style="font-weight:600">${d.nom ? d.nom.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ') : '—'}</td>
+            <td style="text-align:right;font-weight:700">${fmtW(d.ca)}</td>
+            <td style="text-align:right;color:#059669">${fmtW(d.mg)}</td>
+            <td style="text-align:right">${tx > 0 ? fmtP(tx) : '—'}</td>
+            <td style="text-align:right;color:#64748B;font-size:11px">${moisActifs}</td>
+          </tr>`;
+        }).join('')}
+        <tr style="background:#f0f4ff;font-weight:700">
+          <td>TOTAL GROUPEMENT</td>
+          <td style="text-align:right">${fmtW(totCa)}</td>
+          <td style="text-align:right;color:#059669">${fmtW(totMg)}</td>
+          <td style="text-align:right">${fmtP(txMoy)}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>`;
+  })()}
+
   <div class="footer">Intégral Pharma · Rapport généré automatiquement par JARVIS CRM · ${dateStr}</div>
   </body></html>`);
   win.document.close();
