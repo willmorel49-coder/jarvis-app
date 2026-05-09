@@ -1689,9 +1689,22 @@ function renderPharmacies() {
                 ? `<span style="font-size:10px;color:var(--text3)">Import il y a ${lastImportDays}j</span>`
                 : `<span style="font-size:10px;color:var(--rose)">Import il y a ${lastImportDays}j</span>`
           : '';
-        const visiteBadge = prochaineVisite && prochaineVisite.trim() && prochaineVisite !== 'null'
-          ? `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.1);padding:1px 6px;border-radius:8px">📅 Visite ${prochaineVisite}</span>`
-          : '';
+        const visiteBadge = (() => {
+          if (!prochaineVisite || !prochaineVisite.trim() || prochaineVisite === 'null') return '';
+          const scv = prochaineVisite.trim();
+          let dcv = null; let mcv;
+          mcv = scv.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (mcv) dcv = new Date(+mcv[3], +mcv[2]-1, +mcv[1]);
+          mcv = !dcv && scv.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (mcv) dcv = new Date(+mcv[1], +mcv[2]-1, +mcv[3]);
+          if (!dcv) return `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.1);padding:1px 6px;border-radius:8px">📅 ${scv}</span>`;
+          const todayCv = new Date(); todayCv.setHours(0,0,0,0);
+          const diffCv = Math.round((dcv - todayCv) / 86400000);
+          if (diffCv < 0) return `<span style="font-size:10px;color:var(--rose);background:rgba(255,77,109,.12);padding:1px 6px;border-radius:8px;font-weight:700">⚠ Retard ${Math.abs(diffCv)}j</span>`;
+          if (diffCv === 0) return `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.18);padding:1px 6px;border-radius:8px;font-weight:700">📅 Aujourd'hui</span>`;
+          if (diffCv <= 7) return `<span style="font-size:10px;color:var(--mint);background:rgba(0,229,160,.1);padding:1px 6px;border-radius:8px;font-weight:700">📅 J+${diffCv}</span>`;
+          return `<span style="font-size:10px;color:var(--text3);background:var(--bg3);padding:1px 6px;border-radius:8px">📅 ${scv}</span>`;
+        })();
         return `
           <div class="pharma-item" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
             <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
