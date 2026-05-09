@@ -1378,6 +1378,12 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
     : null;
   const potentielGx = clientInfo?.potentielGx || 0;
 
+  // ── Infos OPSO Adhérent ────────────────────────
+  const nnOA = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const opsoAdh = typeof OPSO_ADHERENTS !== 'undefined'
+    ? OPSO_ADHERENTS.find(a => nnOA(a.nom) === nnOA(pharma.name))
+    : null;
+
   // ── Palier de progression ─────────────────────
   const PALIERS = [0, 1500, 5000, 10000];
   let palierActuel = 0, palierSuivant = null;
@@ -1552,6 +1558,21 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Commentaire</div>
           <div style="font-size:12px;color:var(--text2);line-height:1.5">${clientInfo.commentaire}</div>
         </div>` : ''}
+      </div>` : ''}
+
+      <!-- Badge OPSO adhérent -->
+      ${opsoAdh ? `
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(0,229,160,.06);border-radius:10px;border:1px solid rgba(0,229,160,.2);margin-bottom:16px;flex-wrap:wrap" class="fade-up">
+        <span style="font-size:13px">🏥</span>
+        <span style="font-size:12px;font-weight:700;color:var(--mint)">Adhérent OPSO Santé</span>
+        <span style="font-size:11px;color:var(--text3)">·</span>
+        <span style="font-size:11px;color:var(--text3)">CIP ${opsoAdh.cip}</span>
+        <span style="font-size:11px;color:var(--text3)">·</span>
+        <span style="font-size:11px;color:var(--text3)">UGA <strong style="color:var(--text2)">${opsoAdh.uga}</strong></span>
+        <span style="font-size:11px;color:var(--text3)">·</span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:6px;background:${opsoAdh.peri==='BP'?'rgba(0,87,255,.12)':'rgba(255,176,32,.12)'};color:${opsoAdh.peri==='BP'?'var(--blue)':'var(--amber)'};font-weight:700">${opsoAdh.peri}</span>
+        <span style="font-size:11px;color:var(--text3)">·</span>
+        <span style="font-size:11px;color:var(--text3)">${opsoAdh.cp} ${opsoAdh.ville}</span>
       </div>` : ''}
 
       <!-- WML Achats IP (si pharmacie OPSO Santé avec données WML) -->
@@ -6064,6 +6085,32 @@ function renderWml() {
         </div>
       </div>
       ${grpProdCard}
+
+      ${(() => {
+        if (typeof OPSO_ADHERENTS === 'undefined' || !OPSO_ADHERENTS.length) return '';
+        const nnA = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+        const wmlNoms = new Set(WML_VISIBLE.map(d => nnA(d.nom)));
+        const absents = OPSO_ADHERENTS.filter(a => !wmlNoms.has(nnA(a.nom)));
+        if (!absents.length) return `<div style="padding:14px 16px;background:rgba(0,229,160,.06);border-radius:10px;border:1px solid rgba(0,229,160,.2);margin-top:16px;font-size:12px;color:var(--mint);font-weight:700">✓ Tous les ${OPSO_ADHERENTS.length} adhérents sont présents dans les données WML</div>`;
+        const ugaGroups = {};
+        for (const a of absents) { if (!ugaGroups[a.uga]) ugaGroups[a.uga] = []; ugaGroups[a.uga].push(a); }
+        const ugaHtml = Object.entries(ugaGroups).sort((a,b)=>a[0].localeCompare(b[0])).map(([uga, list]) =>
+          `<div style="padding:8px 14px;border-bottom:1px solid var(--border)">
+            <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">${uga}</span>
+            <span style="margin-left:8px;font-size:12px;color:var(--text2)">${list.map(a=>a.nom.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ')).join(' · ')}</span>
+          </div>`
+        ).join('');
+        return `<div class="card" style="margin-top:16px;border-left:3px solid var(--amber)">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Adhérents sans données WML</div>
+              <div class="card-subtitle">${absents.length} pharmacie${absents.length>1?'s':''} OPSO absente${absents.length>1?'s':''} des imports Jan–Avr 2026</div>
+            </div>
+            <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(255,176,32,.12);color:var(--amber);font-weight:700">${absents.length} / ${OPSO_ADHERENTS.length}</span>
+          </div>
+          ${ugaHtml}
+        </div>`;
+      })()}
     </div>`;
   }
 }
