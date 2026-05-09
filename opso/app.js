@@ -5633,6 +5633,7 @@ let offiLiveSort   = 'alpha';
 let offiLivePage   = 1;
 let offiLiveWml    = false; // filtre: produits achetés par adhérents WML
 let offiLivePromo  = false; // filtre: produits en promotion
+let offiLiveAlerte = false; // filtre: concurrent moins cher que prix Offilog
 const OFFIL_PAGE   = 60;
 
 function renderOffilog() {
@@ -5659,6 +5660,14 @@ function renderOffilog() {
     if (offiLiveCat !== 'tous' && p.cat !== offiLiveCat) return false;
     if (offiLiveWml && !(p.ean && wmlLiveEanMap.has(String(p.ean)))) return false;
     if (offiLivePromo && !(p.promo && p.prix_b != null)) return false;
+    if (offiLiveAlerte) {
+      const ean2 = p.ean ? String(p.ean) : '';
+      const bm2 = benchMaps();
+      const concVals = [bm2.leclEan.get(ean2), bm2.cap3Ean.get(ean2), bm2.drakEan.get(ean2), bm2.pharmEan.get(ean2)].filter(v => v != null && v > 0);
+      if (!concVals.length) return false;
+      const minConc = Math.min(...concVals);
+      if (!(minConc < (p.prix || Infinity))) return false;
+    }
     if (q) {
       const haystack = (p.nom + ' ' + p.marque + ' ' + p.ean).toLowerCase();
       return q.split(' ').every(w => haystack.includes(w));
@@ -5709,7 +5718,11 @@ function renderOffilog() {
     if (e && wmlLiveEanMap.has(e)) nWml++;
     if (p.promo && p.prix_b != null) nPromo++;
     const concs = [lv, cv, dv, pv].filter(v => v != null && v > 0);
-    if (concs.length) { nBench++; nAlerte++; }
+    if (concs.length) {
+      nBench++;
+      const minConc = Math.min(...concs);
+      if (minConc < (p.prix || Infinity)) nAlerte++;
+    }
   }
 
   // ── Catégories ──
@@ -5800,7 +5813,8 @@ function renderOffilog() {
         <option value="ecart" ${offiLiveSort==='ecart'?'selected':''}>⚠ Conc. moins cher</option>
       </select>
       <button onclick="exportOffiLiveCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">⬇ CSV</button>
-      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLiveWml ? 'rgba(0,229,160,.6)' : 'var(--border2)'};background:${offiLiveWml ? 'rgba(0,229,160,.12)' : 'transparent'};color:${offiLiveWml ? 'var(--mint)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s
+      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLiveWml ? 'rgba(0,229,160,.6)' : 'var(--border2)'};background:${offiLiveWml ? 'rgba(0,229,160,.12)' : 'transparent'};color:${offiLiveWml ? 'var(--mint)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">📦 WML</button>
+      <button onclick="offiLiveAlerte=!offiLiveAlerte;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLiveAlerte ? 'rgba(255,77,109,.6)' : 'var(--border2)'};background:${offiLiveAlerte ? 'rgba(255,77,109,.12)' : 'transparent'};color:${offiLiveAlerte ? 'var(--rose)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">⚠ Alerte</button>
       <button onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLivePromo ? 'rgba(255,176,32,.6)' : 'var(--border2)'};background:${offiLivePromo ? 'rgba(255,176,32,.12)' : 'transparent'};color:${offiLivePromo ? 'var(--amber)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">🏷 Promos</button>
     </div>
   </div>
@@ -5810,7 +5824,7 @@ function renderOffilog() {
     <span style="padding:4px 10px;border-radius:20px;background:rgba(0,114,230,.08);border:1px solid rgba(0,114,230,.2);color:#0072e6;font-weight:600">Leclerc ${nLecl}</span>
     <span style="padding:4px 10px;border-radius:20px;background:rgba(234,88,12,.08);border:1px solid rgba(234,88,12,.2);color:#ea580c;font-weight:600">Cap3000 ${nCap}</span>
     <span style="padding:4px 10px;border-radius:20px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);color:#6366f1;font-weight:600">Drakkars ${nDrak}</span>
-    ${nAlerte > 0 ? `<span style="padding:4px 10px;border-radius:20px;background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2);color:var(--blue);font-weight:600">🔍 ${nAlerte} avec prix conc.</span>` : ''}
+    ${nAlerte > 0 ? `<span onclick="offiLiveAlerte=!offiLiveAlerte;offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:${offiLiveAlerte?'rgba(255,77,109,.18)':'rgba(255,77,109,.08)'};border:1px solid ${offiLiveAlerte?'rgba(255,77,109,.5)':'rgba(255,77,109,.2)'};color:var(--rose);font-weight:600;cursor:pointer">⚠ ${nAlerte} alerte${nAlerte>1?'s':''}</span>` : ''}
     ${nWml > 0 ? `<span onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:${offiLiveWml?'rgba(0,229,160,.2)':'rgba(0,229,160,.06)'};border:1px solid ${offiLiveWml?'rgba(0,229,160,.5)':'rgba(0,229,160,.2)'};color:var(--mint);font-weight:600;cursor:pointer">📦 ${nWml} WML</span>` : ''}
     ${nPromo > 0 ? `<span onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:${offiLivePromo?'rgba(255,176,32,.2)':'rgba(255,176,32,.06)'};border:1px solid ${offiLivePromo?'rgba(255,176,32,.5)':'rgba(255,176,32,.2)'};color:var(--amber);font-weight:600;cursor:pointer">🏷 ${nPromo} promos</span>` : ''}
   </div>
