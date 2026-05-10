@@ -597,6 +597,41 @@ function renderDashboard() {
     </div>` : '';
 
   container.innerHTML = importBanner + renderGrpDashboard(grp);
+
+  // ── Chart.js : graphique évolution mensuelle ──
+  setTimeout(() => {
+    const cvs = document.getElementById('chart-evol-mensuelle');
+    if (!cvs || !window._wmlEvolData) return;
+    if (window._wmlEvolChartInst instanceof Chart) window._wmlEvolChartInst.destroy();
+    const { labels, datasets } = window._wmlEvolData;
+    window._wmlEvolChartInst = new Chart(cvs, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: datasets.map(d => ({
+          label:           d.label,
+          data:            d.data,
+          backgroundColor: d.color + 'CC',
+          borderColor:     d.color,
+          borderWidth:     1,
+          borderRadius:    4,
+          stack:           'grp',
+        })),
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 11 }, boxWidth: 10, padding: 12 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('fr-FR', {maximumFractionDigits:0})} €` } },
+        },
+        scales: {
+          x: { stacked: true, grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#94A3B8', font: { size: 11 } } },
+          y: { stacked: true, grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#94A3B8', font: { size: 11 }, callback: v => v >= 1000 ? Math.round(v/1000) + 'k €' : v + ' €' } },
+        },
+      },
+    });
+  }, 50);
 }
 
 function _renderDashboardLegacy() {
@@ -7781,7 +7816,70 @@ function renderGrpDashboard(grp) {
     </div>
   </div>` : '';
 
-  return `${kpiRow}${catTable}${topsRow}${membresTable}${allProdsTable}`;
+  // ── Section 0 : Évolution mensuelle toutes pharma ──
+  const allPhSales = allSales.filter(s => memberIds.includes(s.pharmacyId));
+  const monthKeys = [...new Set(allPhSales.map(s => `${s.year}_${String(s.month).padStart(2,'0')}`))]
+    .sort()
+    .map(k => { const [y,m] = k.split('_'); return { month: parseInt(m), year: parseInt(y) }; });
+
+  const evolByPh = members.map(ph => ({
+    ph,
+    monthly: monthKeys.map(({month, year}) =>
+      sumCA(allPhSales.filter(s => s.pharmacyId === ph.id && s.month === month && s.year === year))
+    ),
+  }));
+
+  window._wmlEvolData = {
+    labels:   monthKeys.map(({month, year}) => monthName(month) + ' ' + year),
+    datasets: evolByPh.map(({ph, monthly}) => ({ label: titleCase(ph.name), data: monthly, color: ph.color || grp.couleur })),
+  };
+
+  const evolTotals = monthKeys.map((_, i) => evolByPh.reduce((s, {monthly}) => s + (monthly[i]||0), 0));
+  const grandTotalEvol = evolTotals.reduce((a,b) => a+b, 0);
+
+  const evolSection = monthKeys.length ? `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Évolution mensuelle — CA par pharmacie</div>
+        <div class="card-subtitle">${monthKeys.map(({month,year}) => monthName(month)+' '+year).join(' · ')}</div>
+      </div>
+    </div>
+    <div style="position:relative;height:260px;padding:16px 16px 0">
+      <canvas id="chart-evol-mensuelle"></canvas>
+    </div>
+    <div style="overflow-x:auto;padding:8px 16px 16px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="border-bottom:2px solid var(--border2)">
+          <th style="padding:7px 16px;text-align:left;font-size:11px;color:var(--text3)">Pharmacie</th>
+          ${monthKeys.map(({month}) => `<th style="padding:7px 10px;text-align:right;font-size:11px;color:var(--text3)">${monthName(month)}</th>`).join('')}
+          <th style="padding:7px 12px;text-align:right;font-size:11px;color:var(--text3)">Total</th>
+        </tr></thead>
+        <tbody>
+          ${evolByPh.map(({ph, monthly}) => {
+            const tot = monthly.reduce((a,b)=>a+b,0);
+            return `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:8px 16px">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:${ph.color||grp.couleur};flex-shrink:0"></span>
+                  <span style="font-size:12px;font-weight:600">${titleCase(ph.name)}</span>
+                </div>
+              </td>
+              ${monthly.map(v=>`<td style="padding:8px 10px;text-align:right;font-size:12px;color:${v>0?'var(--text)':'var(--text3)'}">${v>0?fmt(v):'—'}</td>`).join('')}
+              <td style="padding:8px 12px;text-align:right;font-size:13px;font-weight:700;color:${grp.couleur}">${fmt(tot)}</td>
+            </tr>`;
+          }).join('')}
+          <tr style="border-top:2px solid var(--border2);background:var(--bg2)">
+            <td style="padding:8px 16px;font-size:12px;font-weight:700;color:var(--text3)">TOTAL</td>
+            ${evolTotals.map(v=>`<td style="padding:8px 10px;text-align:right;font-size:12px;font-weight:700">${fmt(v)}</td>`).join('')}
+            <td style="padding:8px 12px;text-align:right;font-size:14px;font-weight:900;color:${grp.couleur}">${fmt(grandTotalEvol)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>` : '';
+
+  return `${kpiRow}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}`;
 }
 
 function grpConfirmRemove(grpId, phId) {
