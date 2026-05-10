@@ -1398,6 +1398,7 @@ function markVisitDone(pharmacyId) {
     '</div>' +
   '</div>';
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function mvEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', mvEsc); } });
   document.body.appendChild(modal);
   setTimeout(() => document.getElementById('mv-note')?.focus(), 50);
 }
@@ -1429,6 +1430,7 @@ function showNextVisitPicker(pharmacyId) {
       </div>
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function nvEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', nvEsc); } });
   document.body.appendChild(modal);
   setTimeout(() => document.getElementById('nv-date-input')?.focus(), 50);
 }
@@ -8375,6 +8377,7 @@ function showFicheVisite(pharmacyId) {
     </div>`;
 
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function fvEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', fvEsc); } });
   document.body.appendChild(modal);
 }
 

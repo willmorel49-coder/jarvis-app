@@ -1547,7 +1547,7 @@ function renderDashboard() {
         const urgBg = diff === 0 ? 'rgba(255,176,32,.15)' : diff <= 7 ? 'rgba(0,229,160,.08)' : 'var(--bg)';
         const urgCol = diff === 0 ? 'var(--amber)' : diff <= 7 ? 'var(--mint)' : 'var(--text3)';
         const urgLabel = diff === 0 ? "Aujourd'hui" : diff === 1 ? 'Demain' : diff <= 7 ? 'J+' + diff : dateShortV(date);
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);cursor:pointer" onclick="navigate('pharmacies');setTimeout(()=>renderPharmacies(),80)">
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);cursor:pointer" onclick="${ph ? `showPharmaDetail('${ph.id}')` : `navigate('pharmacies')`}">
           <div style="min-width:64px;padding:3px 8px;border-radius:8px;background:${urgBg};text-align:center;font-size:11px;font-weight:700;color:${urgCol}">${urgLabel}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nom||'—'}</div>
@@ -1594,7 +1594,7 @@ function renderDashboard() {
         const phOD = pharmaMapOD.get((c.nom||'').toUpperCase().trim());
         const daysLate = Math.round((todayOD - date) / 86400000);
         const label = daysLate === 1 ? 'Hier' : daysLate <= 7 ? 'J-' + daysLate : dateShortOD(date);
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);cursor:pointer" onclick="navigate('pharmacies');setTimeout(()=>{pharmaFilter='visite_retard';renderPharmacies();},80)">
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);cursor:pointer" onclick="${phOD ? `showPharmaDetail('${phOD.id}')` : `navigate('pharmacies');setTimeout(()=>{pharmaFilter='visite_retard';renderPharmacies();},80)`}">
           <div style="min-width:64px;padding:3px 8px;border-radius:8px;background:rgba(255,77,109,.1);text-align:center;font-size:11px;font-weight:700;color:var(--rose)">${label}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nom||'—'}</div>
@@ -1927,6 +1927,7 @@ function markVisitDone(pharmacyId) {
       </div>
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function mvEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', mvEsc); } });
   document.body.appendChild(modal);
   setTimeout(() => document.getElementById('mv-note')?.focus(), 50);
 }
@@ -1958,6 +1959,7 @@ function showNextVisitPicker(pharmacyId) {
       </div>
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function nvEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', nvEsc); } });
   document.body.appendChild(modal);
   setTimeout(() => document.getElementById('nv-date-input')?.focus(), 50);
 }
@@ -7837,6 +7839,7 @@ function proposerCommande(pharmacyId) {
     </div>`;
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function pcEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', pcEsc); } });
 }
 
 function confirmerCommande(pharmacyId, year, month) {
@@ -8212,6 +8215,7 @@ function showFicheVisite(pharmacyId) {
     </div>`;
 
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function fvEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', fvEsc); } });
   document.body.appendChild(modal);
 }
 
