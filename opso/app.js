@@ -5184,6 +5184,18 @@ let catQuery = '', catCatFilter = 'tous', catPageNum = 1;
 let catWmlNames = new Set(); // populated on renderCatalogue
 const CAT_PER_PAGE = 30;
 let catCurrentData = [];
+let _catLeclMap = null;
+
+function getCatLeclMap() {
+  if (_catLeclMap) return _catLeclMap;
+  _catLeclMap = new Map();
+  if (typeof OFFILOG !== 'undefined') {
+    for (const p of OFFILOG) {
+      if (p.ean && p.prix_leclerc > 0) _catLeclMap.set(String(p.ean), p.prix_leclerc);
+    }
+  }
+  return _catLeclMap;
+}
 
 function catGetList() {
   if (typeof BENCHMARK === 'undefined') return [];
@@ -5197,6 +5209,11 @@ function catGetList() {
     if (catCatFilter === 'ameli')     return b.has_ameli;
     if (catCatFilter === 'offres')    return b.offre_ip > 0;
     if (catCatFilter === 'wml')       return catWmlNames.has((b.designation||'').trim().toUpperCase().replace(/\s+/g,' '));
+    if (catCatFilter === 'leclerc') {
+      const lm = getCatLeclMap();
+      const lp = b.cip13 ? lm.get(String(b.cip13)) : null;
+      return lp != null && lp > 0 && b.prix_ip > 0 && lp < b.prix_ip;
+    }
     if (catCatFilter !== 'tous')      return b.categorie === catCatFilter;
     return true;
   });
@@ -5296,6 +5313,7 @@ function renderCatalogue() {
     { key: 'froid',     label: '❄️ Froid' },
     { key: 'ameli',     label: '🏥 Ameli' },
     { key: 'offres',    label: '🎁 Offres en cours' },
+    { key: 'leclerc',   label: '🛒 Leclerc moins cher' },
     { key: 'wml',       label: `📦 Déjà acheté WML (${catWmlNames.size})` },
   ];
   const tabsHtml = tabDefs.map(t => {
@@ -5320,6 +5338,8 @@ function renderCatalogue() {
     const offreTag   = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
     const wmlPop     = wmlPopMap.get(nnCat(b.designation)) || 0;
     const wmlTag     = wmlPop > 0 ? `<span style="font-size:10px;padding:1px 6px;background:rgba(0,229,160,.13);color:var(--mint);border-radius:4px;font-weight:700;border:1px solid rgba(0,229,160,.25)" title="${wmlPop} pharmacie(s) OPSO achètent ce produit via WML">📦 ×${wmlPop} WML</span>` : '';
+    const prixLecl   = b.cip13 ? (getCatLeclMap().get(String(b.cip13)) || null) : null;
+    const leclTag    = prixLecl != null ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,114,230,.1);color:#0072e6;border-radius:4px;font-weight:700">🛒 ${fmtP(prixLecl)}</span>` : '';
     const prix = b.prix_ip > 0
       ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--green)">${fmtP(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
       : b.prix_ht > 0
@@ -5335,7 +5355,7 @@ function renderCatalogue() {
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${froid}${b.designation}</div>
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap">
           <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
-          ${genTag}${biosimTag}${nrTag}${ameliTag}${offreTag}${wmlTag}${rotTag}${cipTag}
+          ${genTag}${biosimTag}${nrTag}${ameliTag}${offreTag}${leclTag}${wmlTag}${rotTag}${cipTag}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">${prix}${addBtn}</div>
