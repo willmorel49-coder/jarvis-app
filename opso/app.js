@@ -6118,11 +6118,21 @@ function benchMaps() {
         pharmEan.set(String(p.ean), p.prix_pharmacie);
     }
   }
-  _benchMaps = { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, pharmEan, normB };
+  // prix_ip BENCHMARK — prix net IP réel (après remises/offres), matchés par nom normalisé
+  const benchIpNom = new Map();
+  if (typeof BENCHMARK !== 'undefined') {
+    for (const b of BENCHMARK) {
+      if (b.prix_ip > 0) {
+        const nk = normB(b.designation);
+        if (nk && !benchIpNom.has(nk)) benchIpNom.set(nk, b.prix_ip);
+      }
+    }
+  }
+  _benchMaps = { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, pharmEan, benchIpNom, normB };
   return _benchMaps;
 }
 function lookupBench(p) {
-  const { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, pharmEan, normB } = benchMaps();
+  const { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, pharmEan, benchIpNom, normB } = benchMaps();
   const ean = p.ean ? String(p.ean) : null;
   const nn  = normB(p.nom);
   let drakkars = null;
@@ -6135,7 +6145,9 @@ function lookupBench(p) {
   if (ean && leclEan.has(ean)) leclerc = leclEan.get(ean);
   let maPharmie = null;
   if (ean && pharmEan.has(ean)) maPharmie = pharmEan.get(ean);
-  return { drakkars, cap3000, leclerc, maPharmie };
+  // prix IP réel (benchmark)
+  const prixIp = (nn && benchIpNom.has(nn)) ? benchIpNom.get(nn) : null;
+  return { drakkars, cap3000, leclerc, maPharmie, prixIp };
 }
 
 // ── OFFILOG LIVE — état ──────────────────────
@@ -6214,7 +6226,7 @@ function renderOffilog() {
   const page = list.slice((offiLivePage-1)*OFFIL_PAGE, offiLivePage*OFFIL_PAGE);
 
   // ── Stats benchmark (calculé sur tout OFFILOG_LIVE, pas juste la page) ──
-  const { leclEan: le, cap3Ean: ce, drakEan: de } = benchMaps();
+  const { leclEan: le, cap3Ean: ce, drakEan: de, benchIpNom: bIpNom, normB: nrmB } = benchMaps();
   const pe = benchMaps().pharmEan;
   const offiMaxiMap = typeof OFFILOG !== 'undefined'
     ? new Map(OFFILOG.filter(p => p.ean && p.prix_maxi > 0).map(p => [String(p.ean), p.prix_maxi]))
@@ -6233,7 +6245,10 @@ function renderOffilog() {
     if (concs.length) {
       nBench++;
       const minConc = Math.min(...concs);
-      if (minConc < (p.prix || Infinity)) nAlerte++;
+      // Comparer au prix IP réel si disponible, sinon au tarif catalogue
+      const ipv = bIpNom && nrmB ? bIpNom.get(nrmB(p.nom)) : null;
+      const refPrix = ipv != null ? ipv : (p.prix || Infinity);
+      if (minConc < refPrix) nAlerte++;
     }
   }
 
@@ -6250,8 +6265,10 @@ function renderOffilog() {
   const cards = page.map(p => {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
     const hasPromo = p.promo && p.prix_b != null;
-    const { drakkars, cap3000, leclerc, maPharmie } = lookupBench(p);
+    const { drakkars, cap3000, leclerc, maPharmie, prixIp } = lookupBench(p);
     const wmlCount = p.ean ? (wmlLiveEanMap.get(String(p.ean)) || 0) : 0;
+    // Prix de référence : prix IP réel si disponible, sinon tarif catalogue Offilog
+    const prixRef = prixIp != null ? prixIp : p.prix;
     // Best price indicator — find cheapest competitor and name it
     const compMap = [
       drakkars != null && drakkars > 0 ? [drakkars,  'Drakkars']    : null,
@@ -6261,7 +6278,8 @@ function renderOffilog() {
     ].filter(Boolean);
     const bestComp = compMap.length ? compMap.sort((a, b) => a[0] - b[0])[0] : null;
     const minComp  = bestComp ? bestComp[0] : null;
-    const isAlerte = minComp != null && p.prix != null && minComp < p.prix;
+    // Alerte : concurrent moins cher que notre prix IP réel (ou catalogue si pas de prix IP)
+    const isAlerte = minComp != null && prixRef != null && minComp < prixRef;
     const bestBadge = bestComp != null
       ? `<div class="offil-best-price" title="Prix ${bestComp[1]} constaté">${bestComp[1]} ${fmtP(bestComp[0])}</div>` : '';
     const eanStr = p.ean ? String(p.ean) : '';
@@ -6293,8 +6311,13 @@ function renderOffilog() {
         <div class="offil-card-nom">${p.nom}</div>
         <div class="offil-card-footer">
           <div class="offil-card-prix">
-            ${hasPromo ? `<span class="offil-prix-barre">${fmtP(p.prix_b)}</span>` : ''}
-            <span class="offil-prix-live">${fmtP(p.prix)}</span>
+            ${prixIp != null
+              ? `<span class="offil-prix-barre" title="Tarif catalogue Offilog">${fmtP(p.prix)}</span>
+                 <span class="offil-prix-live" style="color:var(--opso-green-dark)">${fmtP(prixIp)}</span>
+                 <span style="font-size:9px;color:var(--opso-green);font-weight:700;letter-spacing:.03em">PRIX IP HT</span>`
+              : `${hasPromo ? `<span class="offil-prix-barre">${fmtP(p.prix_b)}</span>` : ''}
+                 <span class="offil-prix-live">${fmtP(p.prix)}</span>`
+            }
           </div>
           <span class="offil-card-cat">${p.cat}</span>
         </div>
