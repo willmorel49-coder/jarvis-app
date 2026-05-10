@@ -580,14 +580,8 @@ function renderDashboard() {
   const container = document.getElementById('dash-content');
   const grp = GROUPEMENTS.find(g => g.id === grpActif) || GROUPEMENTS[0];
 
-  // ── Header groupement ──
-  let memberIds = grpGetMembers(grp.id);
-  if (!memberIds.length) memberIds = state.pharmacies.map(p => p.id);
-  // IDs localStorage obsolètes → fallback
-  const _membersCheck = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
-  if (!_membersCheck.length && state.pharmacies.length) memberIds = state.pharmacies.map(p => p.id);
-  const allSales   = getSales();
-  const hasSales   = allSales.some(s => memberIds.includes(s.pharmacyId));
+  const allSales = getSales();
+  const hasSales = allSales.length > 0;
 
   const importBanner = !hasSales ? `
     <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-radius:12px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);margin-bottom:20px">
@@ -7513,14 +7507,10 @@ function renderGroupementBody(grp, onglet) {
 }
 
 function renderGrpDashboard(grp) {
-  let memberIds = grpGetMembers(grp.id);
-  if (!memberIds.length) memberIds = state.pharmacies.map(p => p.id);
-  let members = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
-  // IDs localStorage obsolètes (ne matchent plus les static_cip actuels) → fallback complet
-  if (!members.length && state.pharmacies.length) {
-    memberIds = state.pharmacies.map(p => p.id);
-    members = [...state.pharmacies];
-  }
+  // Toujours utiliser toutes les pharmacies connues — le config groupement localStorage
+  // peut être partiel (Supabase UUIDs obsolètes) et masquer des pharmacies actives.
+  const memberIds = state.pharmacies.map(p => p.id);
+  const members   = [...state.pharmacies];
 
   if (!members.length) return `
     <div class="card" style="padding:48px;text-align:center;color:var(--text3)">
