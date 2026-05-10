@@ -8155,6 +8155,21 @@ function gsSearch(q) {
       </div>`).join('');
   }
 
+  if (wmlProdHits.length) {
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:#11a63c;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Produits WML groupement (${wmlProdHits.length})</div>`;
+    html += wmlProdHits.map(h => `
+      <div onclick="document.getElementById('global-search-modal').remove();navigate('wml');setTimeout(renderWml,80)"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(17,166,60,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📦</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(h.nom)}</div>
+          <div style="font-size:11px;color:var(--text3)">${h.pharmaName} · ${fmt(h.ca)}</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+      </div>`).join('');
+  }
+
   res.innerHTML = html;
 }
 
