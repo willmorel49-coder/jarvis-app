@@ -5568,6 +5568,18 @@ function showToast(msg, type = 'info') {
 let catQuery = '', catCatFilter = 'tous', catPageNum = 1;
 const CAT_PER_PAGE = 30;
 let catCurrentData = [];
+let _catLeclMap = null;
+
+function getCatLeclMap() {
+  if (_catLeclMap) return _catLeclMap;
+  _catLeclMap = new Map();
+  if (typeof OFFILOG !== 'undefined') {
+    for (const p of OFFILOG) {
+      if (p.ean && p.prix_leclerc > 0) _catLeclMap.set(String(p.ean), p.prix_leclerc);
+    }
+  }
+  return _catLeclMap;
+}
 
 function catGetList() {
   if (typeof BENCHMARK === 'undefined') return [];
@@ -5580,6 +5592,11 @@ function catGetList() {
     if (catCatFilter === 'nr')        return isNonRembourse(b);
     if (catCatFilter === 'ameli')     return b.has_ameli;
     if (catCatFilter === 'offres')    return b.offre_ip > 0;
+    if (catCatFilter === 'leclerc') {
+      const lm = getCatLeclMap();
+      const lp = b.cip13 ? lm.get(String(b.cip13)) : null;
+      return lp != null && lp > 0 && b.prix_ip > 0 && lp < b.prix_ip;
+    }
     if (catCatFilter !== 'tous')      return b.categorie === catCatFilter;
     return true;
   });
@@ -5667,6 +5684,7 @@ function renderCatalogue() {
     { key: 'froid',     label: '❄️ Froid' },
     { key: 'ameli',     label: '🏥 Ameli' },
     { key: 'offres',    label: '🎁 Offres en cours' },
+    { key: 'leclerc',   label: '🛒 Leclerc moins cher' },
   ];
   const tabsHtml = tabDefs.map(t => {
     const active = catCatFilter === t.key;
@@ -5677,15 +5695,7 @@ function renderCatalogue() {
   }).join('');
 
   // ── Leclerc lookup depuis OFFILOG (EAN → prix_leclerc) ──────
-  const leclCatMap = new Map();
-  const normCatMap = new Map();
-  if (typeof OFFILOG !== 'undefined') {
-    const nnCat2 = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
-    for (const p of OFFILOG) {
-      if (p.ean && p.prix_leclerc > 0) leclCatMap.set(String(p.ean), p.prix_leclerc);
-      if (p.produit_norm && p.prix_leclerc > 0) normCatMap.set(nnCat2(p.produit_norm), p.prix_leclerc);
-    }
-  }
+  const leclCatMap = getCatLeclMap();
 
   // ── Products ─────────────────────────────────
   const prodsHtml = page.length ? page.map((b, i) => {
