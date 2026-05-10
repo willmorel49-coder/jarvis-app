@@ -3193,7 +3193,8 @@ function generateEmailModal(pharmacyId) {
     : null;
 
   const allPhSales = getSales({ pharmacyId: pharma.id });
-  const { year: curY, month: curM, prevYear: prevY, prevMonth: prevM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const { year: curY, month: curM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
   const salesCur  = getSales({ pharmacyId: pharma.id, year: curY, month: curM });
   const salesPrev = prevY ? getSales({ pharmacyId: pharma.id, year: prevY, month: prevM }) : [];
   const caCur  = salesCur.reduce((s, x) => s + x.mntNetHt, 0);
