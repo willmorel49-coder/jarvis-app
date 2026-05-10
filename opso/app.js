@@ -7198,6 +7198,7 @@ async function initApp() {
   await grpSyncFromStorage();
   filterToOpsoScope();
   await syncOpsoPharmacies();
+  mergeWmlStaticSales();
 
   document.getElementById('sidebar-user-name').textContent = state.user.name;
   document.getElementById('sidebar-user-role').textContent = state.user.role;
@@ -7207,6 +7208,44 @@ async function initApp() {
   updateNavBadge();
   navigate('dashboard');
   if (loadingEl) { loadingEl.style.opacity = '0'; setTimeout(() => { loadingEl.style.display = 'none'; }, 400); }
+}
+
+// Fusionne WML_STATIC_SALES (depuis wml-sales-data.js) dans state.sales.
+// Résout pharmacyCode (CIP) → pharmacyId (UUID Supabase).
+// N'ajoute que les mois/pharmacies absents de Supabase pour éviter les doublons.
+function mergeWmlStaticSales() {
+  if (typeof WML_STATIC_SALES === 'undefined' || !WML_STATIC_SALES.length) return;
+
+  // Map CIP → Supabase UUID
+  const codeToId = new Map(state.pharmacies.map(p => [String(p.code || ''), p.id]));
+
+  // Set des (pharmacyId, month, year) déjà dans Supabase → pas de doublon
+  const existingPeriods = new Set(state.sales.map(s => `${s.pharmacyId}_${s.month}_${s.year}`));
+
+  let added = 0;
+  for (const s of WML_STATIC_SALES) {
+    const phId = codeToId.get(String(s.pharmacyCode || ''));
+    if (!phId) continue;
+    const key = `${phId}_${s.month}_${s.year}`;
+    if (existingPeriods.has(key)) continue; // déjà dans Supabase pour cette période
+    state.sales.push({
+      id:             s.id,
+      importId:       null,
+      pharmacyId:     phId,
+      month:          s.month,
+      year:           s.year,
+      artDesignation: s.artDesignation,
+      artCode:        s.artCode,
+      artId:          s.artId,
+      artFamille:     s.artFamille,
+      qte:            s.qte,
+      puBrut:         s.puBrut,
+      puNet:          s.puNet,
+      mntNetHt:       s.mntNetHt,
+    });
+    added++;
+  }
+  if (added) console.log(`[WML Static] ${added} lignes fusionnées dans state.sales`);
 }
 
 
