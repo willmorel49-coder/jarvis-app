@@ -565,21 +565,31 @@ function getPrevPeriod(year, month) {
 }
 
 function renderDashboard() {
+  const container = document.getElementById('dash-content');
+  const grp = GROUPEMENTS.find(g => g.id === grpActif) || GROUPEMENTS[0];
+
+  // ── Header groupement ──
+  const memberIds  = grpGetMembers(grp.id);
+  const allSales   = getSales();
+  const hasSales   = allSales.some(s => memberIds.includes(s.pharmacyId));
+
+  const importBanner = !hasSales ? `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-radius:12px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);margin-bottom:20px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${grp.couleur}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Aucune donnée de ventes importée</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Importez les Excel de ventes pour activer les KPIs marge, catégories et RFA</div>
+      </div>
+      <button onclick="navigate('import')" style="padding:6px 14px;border-radius:8px;border:1.5px solid ${grp.couleur};background:transparent;color:${grp.couleur};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Importer →</button>
+    </div>` : '';
+
+  container.innerHTML = importBanner + renderGrpDashboard(grp);
+}
+
+function _renderDashboardLegacy() {
   const allSalesRaw = getSales();
   const container = document.getElementById('dash-content');
-
-  if (!allSalesRaw.length) {
-    container.innerHTML = `
-      <div class="cockpit-hero" style="text-align:center;padding:60px 28px;background:linear-gradient(135deg,#064e20 0%,#0d8530 50%,#11a63c 100%);border-radius:var(--radius-lg);margin-bottom:16px;box-shadow:0 8px 32px rgba(17,166,60,.25)">
-        <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        </div>
-        <div style="font-family:'Varela Round',sans-serif;font-size:20px;color:#fff;margin-bottom:10px">Cockpit OPSO Santé</div>
-        <div style="font-size:14px;color:rgba(255,255,255,0.70);margin-bottom:28px">Importez vos fichiers de ventes pour activer le cockpit</div>
-        <button class="btn" onclick="navigate('import')" style="background:rgba(255,255,255,0.20);border:1.5px solid rgba(255,255,255,0.35);color:#fff;font-size:14px;padding:12px 28px;border-radius:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700">Importer mes ventes</button>
-      </div>`;
-    return;
-  }
+  if (!allSalesRaw.length) return;
 
   const { year: curY, month: curM } = getCurrentPeriod(allSalesRaw);
   const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
