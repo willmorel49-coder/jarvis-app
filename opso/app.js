@@ -596,7 +596,7 @@ function renderDashboard() {
       <button onclick="navigate('import')" style="padding:6px 14px;border-radius:8px;border:1.5px solid ${grp.couleur};background:transparent;color:${grp.couleur};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Importer →</button>
     </div>` : '';
 
-  container.innerHTML = importBanner + renderGrpDashboard(grp);
+  container.innerHTML = renderGrpDashboard(grp);
 
   // ── Chart.js : graphique évolution mensuelle ──
   setTimeout(() => {
@@ -7302,7 +7302,7 @@ const GROUPEMENTS = [
   {
     id: 'opso',
     nom: 'Opso Santé',
-    couleur: '#6366F1',
+    couleur: '#11a63c',
     bg: '#EEF2FF',
     icon: '🏥',
     description: 'Groupement de pharmacies indépendantes',
@@ -7589,22 +7589,22 @@ function renderGrpDashboard(grp) {
 
   const kpiRow = `
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:16px">
-    <div class="card" style="padding:16px 20px">
+    <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur}">
       <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">CA Groupement</div>
       <div style="font-size:24px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${caCur > 0 ? fmt(caCur) : '—'}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:4px">${curLabel} · ${evolTxt} vs ${prevLabel}</div>
     </div>
-    <div class="card" style="padding:16px 20px">
+    <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur}">
       <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Marge €</div>
       <div style="font-size:24px;font-weight:900;color:var(--mint);letter-spacing:-.5px">${margeCur > 0 ? fmt(margeCur) : '—'}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:4px">Taux marge : <strong style="color:var(--mint)">${txMarge.toFixed(1)}%</strong></div>
     </div>
-    <div class="card" style="padding:16px 20px">
+    <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur}">
       <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Pharmacies actives</div>
       <div style="font-size:24px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${phActives}<span style="font-size:14px;color:var(--text3)">/${members.length}</span></div>
       <div style="font-size:11px;color:var(--text3);margin-top:4px">${nRefs} références vendues</div>
     </div>
-    <div class="card" style="padding:16px 20px;cursor:pointer" onclick="(function(){
+    <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur};cursor:pointer" onclick="(function(){
       const v=prompt('Taux RFA (%) — actuel : ${rfaTaux}%','${rfaTaux}');
       if(v===null)return;
       const n=parseFloat(v);
@@ -7879,7 +7879,23 @@ function renderGrpDashboard(grp) {
     </div>
   </div>` : '';
 
-  return `${kpiRow}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}`;
+  const opsoHeader = `
+<div style="background:linear-gradient(135deg,#0d8530 0%,#11a63c 100%);border-radius:16px;padding:24px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;overflow:hidden">
+  <div style="position:absolute;top:-40%;right:-5%;width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 70%);pointer-events:none"></div>
+  <div style="position:relative">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="white"/><rect x="3" y="12" width="26" height="8" rx="3" fill="white"/></svg>
+      <span style="font-family:'Varela Round',sans-serif;font-size:18px;color:#fff;letter-spacing:-.3px">OPSO Santé · Cockpit Groupement</span>
+    </div>
+    <div style="font-size:13px;color:rgba(255,255,255,.75);font-weight:400">${phActives} pharmacies actives · Portefeuille William Morel · Normandie</div>
+  </div>
+  <div style="text-align:right;position:relative;flex-shrink:0">
+    <div style="font-family:'Varela Round',sans-serif;font-size:28px;color:#fff;font-weight:400;letter-spacing:-.5px">${caCur > 0 ? fmt(caCur) : '—'}</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">CA Net HT · ${curLabel}</div>
+  </div>
+</div>`;
+
+  return `${opsoHeader}${kpiRow}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}`;
 }
 
 function grpConfirmRemove(grpId, phId) {
