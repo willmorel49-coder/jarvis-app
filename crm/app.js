@@ -936,6 +936,7 @@ function renderDashboard() {
               '<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + a.ph.name + '</div>' +
               '<div style="font-size:11px;color:' + a.color + ';font-weight:600">' + a.label + (tel ? ' · ' + tel : '') + '</div>' +
             '</div>' +
+            '<button onclick="markVisitDone(\'' + a.ph.id + '\')" style="padding:4px 10px;border-radius:8px;border:none;background:rgba(0,229,160,.15);color:var(--mint);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;margin-right:4px">✅ Visité</button>' +
             '<button onclick="showPharmaDetail(\'' + a.ph.id + '\')" style="padding:4px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;white-space:nowrap">Ouvrir ›</button>' +
           '</div>';
         }).join('') +
@@ -1882,6 +1883,53 @@ function printRapportMensuel() {
 // ── PHARMACIES ────────────────────────────────
 let pharmaSearch  = '';
 let pharmaFilter  = 'all'; // 'all' | 'up' | 'flat' | 'down' | 'visite_retard' | 'visite_semaine' | 'visite_aucune'
+
+
+function markVisitDone(pharmacyId) {
+  document.getElementById('mark-visit-modal')?.remove();
+  const ph = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!ph) return;
+  const modal = document.createElement('div');
+  modal.id = 'mark-visit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:16px;padding:22px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+      <div style="font-size:14px;font-weight:800;margin-bottom:3px">✅ Visite — ${ph.name}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px">${new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'long'})}</div>
+      <textarea id="mv-note" placeholder="Note de visite (optionnelle)…" rows="3"
+        style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;margin-bottom:12px;outline:none"></textarea>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Prochaine visite</div>
+      <div id="mv-paliers" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+        ${[['1 semaine',7],['2 semaines',14],['1 mois',30],['6 semaines',42]].map(([lbl,days]) => {
+          const d = new Date(); d.setDate(d.getDate() + days);
+          const iso = d.toISOString().slice(0,10);
+          return '<button onclick="document.querySelectorAll(\'#mv-paliers button\').forEach(b=>b.style.background=\'var(--bg2)\');this.style.background=\'rgba(0,87,255,.15)\';document.getElementById(\'mv-nv-date\').value=\'' + iso + '\'" style="padding:7px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">' + lbl + '</button>';
+        }).join('')}
+      </div>
+      <input id="mv-nv-date" type="date" placeholder="Ou date personnalisée"
+        style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;box-sizing:border-box;margin-bottom:14px;outline:none">
+      <div style="display:flex;gap:8px">
+        <button onclick="
+          const note = document.getElementById('mv-note').value.trim();
+          const nv = document.getElementById('mv-nv-date').value;
+          if (note) {
+            const key = 'visit_notes_' + '${pharmacyId}';
+            let notes; try { notes = JSON.parse(localStorage.getItem(key) || '[]'); } catch { notes = []; }
+            notes.unshift({ id: Date.now(), date: new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}), text: note });
+            localStorage.setItem(key, JSON.stringify(notes.slice(0,50)));
+          }
+          if (nv) setNextVisit('${pharmacyId}', nv);
+          document.getElementById('mark-visit-modal').remove();
+          renderDashboard();
+          showToast('Visite enregistrée ✓', 'success');
+        " style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Enregistrer</button>
+        <button onclick="document.getElementById('mark-visit-modal').remove()" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer">✕</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('mv-note')?.focus(), 50);
+}
 
 function showNextVisitPicker(pharmacyId) {
   document.getElementById('next-visit-picker-modal')?.remove();
