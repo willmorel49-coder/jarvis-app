@@ -224,22 +224,34 @@ async function importMultiPharmaFile(file, month, year) {
   const importedPharmas = [];
 
   const opsoAllowed = opsoAdherentNoms();
+  const opsoCIPs    = new Set((typeof OPSO_ADHERENTS !== 'undefined' ? OPSO_ADHERENTS : []).map(a => String(a.cip || '')).filter(Boolean));
 
   for (const group of pharmacyGroups) {
-    // Vérifier que la pharmacie est dans le listing OPSO avant tout traitement
-    if (opsoAllowed && !opsoAllowed.has(normPhName(group.name))) {
-      console.log(`[OPSO] Pharmacie ignorée (hors listing) : ${group.name}`);
-      continue;
+    // Vérifier listing OPSO : par nom normalisé OU par code CIP (TIRCODE)
+    if (opsoAllowed) {
+      const nameOk = opsoAllowed.has(normPhName(group.name));
+      const cipOk  = group.code && opsoCIPs.has(String(group.code));
+      if (!nameOk && !cipOk) {
+        console.log(`[OPSO] Pharmacie ignorée (hors listing) : ${group.name} [${group.code}]`);
+        continue;
+      }
+      // Si le nom du fichier WML ne correspond pas mais le CIP oui → utiliser le nom canonique OPSO
+      if (!nameOk && cipOk) {
+        const adh = OPSO_ADHERENTS.find(a => String(a.cip) === String(group.code));
+        if (adh) group.name = adh.nom;
+      }
     }
 
-    // Find or create pharmacy
-    let pharma = state.pharmacies.find(p => p.name.toLowerCase() === group.name.toLowerCase());
+    // Find or create pharmacy — recherche par nom normalisé OU par code CIP
+    let pharma = state.pharmacies.find(p =>
+      normPhName(p.name) === normPhName(group.name) ||
+      (group.code && p.code === String(group.code))
+    );
     if (!pharma) {
-      // Generate display code from initials
-      const code = group.name.replace(/^pharmacie\s+/i,'').split(/\s+/).map(w=>w[0]||'').join('').toUpperCase().slice(0,4) || group.code.slice(-4);
+      const code  = String(group.code || '').slice(-6) || group.name.replace(/^pharmacie\s+/i,'').split(/\s+/).map(w=>w[0]||'').join('').toUpperCase().slice(0,4);
       const color = PHARMA_COLORS[state.pharmacies.length % PHARMA_COLORS.length];
       const { data: inserted, error: phErr } = await sb.from('pharmacies').insert({ name: group.name, code, color }).select().single();
-      if (phErr) continue; // skip this pharmacy if error
+      if (phErr) continue;
       pharma = { id: inserted.id, name: inserted.name, code: inserted.code, color: inserted.color };
       state.pharmacies.push(pharma);
     }
@@ -7412,14 +7424,16 @@ function renderGroupementBody(grp, onglet) {
 }
 
 function renderGrpDashboard(grp) {
-  const memberIds = grpGetMembers(grp.id);
-  const members   = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
+  let memberIds = grpGetMembers(grp.id);
+  // Si aucun membre configuré manuellement, utiliser toutes les pharmacies OPSO
+  if (!memberIds.length) memberIds = state.pharmacies.map(p => p.id);
+  const members = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
 
   if (!members.length) return `
     <div class="card" style="padding:48px;text-align:center;color:var(--text3)">
       <div style="font-size:40px;margin-bottom:12px">🏪</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucun membre</div>
-      <div style="font-size:12px">Ajoutez des pharmacies via l'onglet <strong>Pharmacies</strong>.</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune pharmacie</div>
+      <div style="font-size:12px">Importez un fichier WML pour démarrer.</div>
     </div>`;
 
   // ── Période ──────────────────────────────────────
