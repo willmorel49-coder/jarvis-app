@@ -2782,7 +2782,8 @@ function generateEmailModal(pharmacyId) {
     : null;
 
   const allPhSales = getSales({ pharmacyId: pharma.id });
-  const { year: curY, month: curM, prevYear: prevY, prevMonth: prevM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const { year: curY, month: curM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
   const salesCur  = getSales({ pharmacyId: pharma.id, year: curY, month: curM });
   const salesPrev = prevY ? getSales({ pharmacyId: pharma.id, year: prevY, month: prevM }) : [];
   const caCur  = salesCur.reduce((s, x) => s + x.mntNetHt, 0);
@@ -2864,6 +2865,7 @@ Délégué commercial Intégral Pharma`;
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+  document.addEventListener('keydown', function emEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', emEsc); } });
 }
 
 function copyEmail() {
@@ -4343,6 +4345,7 @@ function showEditPharmacyModal(pharmacyId) {
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+  document.addEventListener('keydown', function epEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', epEsc); } });
 }
 
 async function saveEditPharmacy(pharmacyId) {
@@ -7325,6 +7328,7 @@ function grpRenderModal(grpId) {
   modal.addEventListener('click', e => { if (e.target === modal) { modal.remove(); renderGroupements(); } });
   document.body.appendChild(modal);
   modal.querySelector('input')?.focus();
+  document.addEventListener('keydown', function grpEsc(e) { if (e.key === 'Escape') { modal.remove(); renderGroupements(); document.removeEventListener('keydown', grpEsc); } });
 }
 
 function renderGroupements() {
@@ -7986,6 +7990,7 @@ function proposerCommande(pharmacyId) {
     </div>`;
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', function pcEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', pcEsc); } });
 }
 
 function confirmerCommande(pharmacyId, year, month) {

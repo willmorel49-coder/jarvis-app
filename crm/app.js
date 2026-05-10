@@ -1131,7 +1131,7 @@ function renderDashboard() {
         <div style="border-right:1px solid var(--border1)">
           <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border1)">Perdus depuis ${prevLabel}</div>
           ${prodLostNew.lost.length ? prodLostNew.lost.map(p => `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px" onclick="showProductBreakdown('${(p.label||'').replace(/'/g,"&#39;")}');" style="cursor:pointer">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px;cursor:pointer" onclick="showProductBreakdown('${(p.label||'').replace(/'/g,"&#39;")}');">
               <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;cursor:pointer">${p.label}</div>
               <div style="font-size:12px;font-weight:700;color:var(--rose);flex-shrink:0">${fmt(p.ca)}</div>
             </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucun produit perdu</div>`}
@@ -2099,7 +2099,7 @@ function renderPharmacies() {
 
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
-        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry } = e;
+        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry, noteCount, lastNoteDays } = e;
         const chipHtml = status === 'up'   ? '<span class="status-chip status-up">● Croissance</span>'
                        : status === 'flat' ? '<span class="status-chip status-flat">● Stable</span>'
                        : status === 'down' ? '<span class="status-chip status-down">● Baisse</span>'
@@ -3263,6 +3263,7 @@ Délégué commercial Intégral Pharma`;
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+  document.addEventListener('keydown', function emEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', emEsc); } });
 }
 
 function copyEmail() {
@@ -4739,6 +4740,7 @@ function showEditPharmacyModal(pharmacyId) {
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+  document.addEventListener('keydown', function epEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', epEsc); } });
 }
 
 async function saveEditPharmacy(pharmacyId) {
@@ -7178,6 +7180,7 @@ function grpRenderModal(grpId) {
   modal.addEventListener('click', e => { if (e.target === modal) { modal.remove(); renderGroupements(); } });
   document.body.appendChild(modal);
   modal.querySelector('input')?.focus();
+  document.addEventListener('keydown', function grpEsc(e) { if (e.key === 'Escape') { modal.remove(); renderGroupements(); document.removeEventListener('keydown', grpEsc); } });
 }
 
 function renderGroupements() {
