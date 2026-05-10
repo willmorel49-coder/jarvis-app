@@ -3847,7 +3847,8 @@ function setObjectiveTarget(pharmacyId, year, month, value) {
 
 function renderObjectifs() {
   const allSales = getSales();
-  const { year: curY, month: curM } = getCurrentPeriod(allSales.length ? allSales : getSales());
+  let { year: curY, month: curM } = getCurrentPeriod(allSales.length ? allSales : getSales());
+  if (!curY) { curY = new Date().getFullYear(); curM = new Date().getMonth() + 1; }
   const objectives = loadObjectives();
 
   // Build 6-month range
