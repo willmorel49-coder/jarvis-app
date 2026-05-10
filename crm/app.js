@@ -1267,6 +1267,47 @@ function renderDashboard() {
       </div>
     </div>` : ''}
 
+
+    <!-- Row 2c : Journal des visites -->
+    ${(() => {
+      const allNotes = [];
+      for (const ph of state.pharmacies) {
+        let notes = [];
+        try { notes = JSON.parse(localStorage.getItem('visit_notes_' + ph.id) || '[]'); } catch {}
+        for (const n of notes) {
+          if (n.id && n.text) allNotes.push({ ph, id: n.id, date: n.date, text: n.text });
+        }
+      }
+      allNotes.sort((a, b) => b.id - a.id);
+      const recent = allNotes.slice(0, 6);
+      if (!recent.length) return '';
+      const rows = recent.map(n => {
+        const daysAgo = Math.round((Date.now() - n.id) / 86400000);
+        const dayLabel = daysAgo === 0 ? "Auj." : daysAgo === 1 ? 'Hier' : 'J-' + daysAgo;
+        const txt = n.text.length > 90 ? n.text.slice(0, 90) + '…' : n.text;
+        return '<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)">' +
+          '<div style="width:8px;height:8px;border-radius:50%;background:' + n.ph.color + ';flex-shrink:0;margin-top:5px"></div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">' +
+              '<span style="font-size:12px;font-weight:700">' + n.ph.name + '</span>' +
+              '<span style="font-size:10px;color:var(--text3);background:var(--bg3);padding:1px 7px;border-radius:6px">' + dayLabel + '</span>' +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + txt + '</div>' +
+          '</div>' +
+          '<button onclick="showPharmaDetail(\'' + n.ph.id + '\')" style="padding:3px 9px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:10px;font-weight:600;color:var(--text2);cursor:pointer;flex-shrink:0">Ouvrir ›</button>' +
+        '</div>';
+      }).join('');
+      return '<div class="card fade-up" style="margin-bottom:24px">' +
+        '<div class="card-header">' +
+          '<div>' +
+            '<div class="card-title">🗒️ Journal des visites</div>' +
+            '<div class="card-subtitle">Dernières notes saisies — toutes pharmacies</div>' +
+          '</div>' +
+        '</div>' +
+        rows +
+      '</div>';
+    })()}
+
     <!-- Row 3 : Pipeline conversion -->
     <div class="card fade-up" style="margin-bottom:24px">
       <div class="card-header">
