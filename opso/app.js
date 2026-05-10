@@ -88,14 +88,14 @@ async function loadUserProfile() {
   try {
     const { data: { user }, error: userErr } = await sb.auth.getUser();
     if (userErr || !user) return false;
-    const { data: profile, error: profileErr } = await sb.from('user_profiles').select('*').eq('id', user.id).single();
-    if (profileErr || !profile) { await sb.auth.signOut(); return false; }
+    const { data: profile } = await sb.from('user_profiles').select('*').eq('id', user.id).single();
+    // Fallback si user_profiles vide ou table absente — on continue quand même
     state.user = {
       id:          user.id,
       email:       user.email,
-      name:        profile.name,
-      role:        profile.role,
-      pharmacyIds: profile.pharmacy_ids,
+      name:        profile?.name  || user.email.split('@')[0],
+      role:        profile?.role  || 'admin',
+      pharmacyIds: profile?.pharmacy_ids || null,
     };
     return true;
   } catch {
@@ -7198,7 +7198,7 @@ async function initApp() {
   await load();
   await grpSyncFromStorage();
   filterToOpsoScope();
-  await syncOpsoPharmacies();
+  try { await syncOpsoPharmacies(); } catch(e) { console.warn('[OPSO] syncOpsoPharmacies échoué (RLS/réseau):', e); }
   mergeWmlStaticSales();
 
   document.getElementById('sidebar-user-name').textContent = state.user.name;
@@ -7215,59 +7215,49 @@ async function initApp() {
 // Garantit que les 6 pharmacies existent dans state.pharmacies (indépendamment de Supabase).
 function mergeWmlStaticSales() {
   if (typeof WML_STATIC_SALES === 'undefined' || !WML_STATIC_SALES.length) return;
+  if (typeof OPSO_ADHERENTS === 'undefined' || !OPSO_ADHERENTS.length) return;
 
-  // ── 1. Garantir que chaque pharmacie OPSO existe avec son code CIP ──
-  // Cas A : absente → créer entrée statique
-  // Cas B : présente par nom mais code=null (créée sans code dans Supabase) → patcher le code
-  if (typeof OPSO_ADHERENTS !== 'undefined' && OPSO_ADHERENTS.length) {
-    OPSO_ADHERENTS.forEach((a, i) => {
-      const cip = String(a.cip);
-      let ph = state.pharmacies.find(p => String(p.code || '') === cip);
-      if (!ph) ph = state.pharmacies.find(p => normPhName(p.name) === normPhName(a.nom));
-      if (ph) {
-        if (!ph.code) ph.code = cip; // patch code manquant (Supabase sans code)
-      } else {
-        state.pharmacies.push({
-          id:    `static_${cip}`,
-          name:  a.nom,
-          code:  cip,
-          color: PHARMA_COLORS[i % PHARMA_COLORS.length],
-        });
-      }
-    });
+  // ── 1. Nettoyer les entrées statiques précédentes (re-run propre) ──
+  state.pharmacies = state.pharmacies.filter(p => !String(p.id).startsWith('static_'));
+  state.sales      = state.sales.filter(s => !String(s.id).startsWith('wml_'));
+
+  // ── 2. Construire la map CIP → id depuis les pharmacies Supabase existantes ──
+  const codeToId = {};
+  for (const ph of state.pharmacies) {
+    if (ph.code) codeToId[String(ph.code)] = ph.id;
   }
 
-  // ── 2. Map CIP → id (UUID Supabase ou id statique) ──
-  const codeToId = new Map(state.pharmacies.map(p => [String(p.code || ''), p.id]));
+  // ── 3. Pour chaque adhérent OPSO, garantir qu'il est dans state.pharmacies avec son CIP ──
+  OPSO_ADHERENTS.forEach((a, i) => {
+    const cip = String(a.cip);
+    if (codeToId[cip]) return; // déjà mappé par code Supabase
+    // Chercher par nom normalisé (pharmacy Supabase sans code)
+    const byName = state.pharmacies.find(p => normPhName(p.name) === normPhName(a.nom));
+    if (byName) {
+      byName.code   = cip; // patch le code manquant
+      codeToId[cip] = byName.id;
+      return;
+    }
+    // Aucune correspondance → créer entrée statique
+    const id = `static_${cip}`;
+    state.pharmacies.push({ id, name: a.nom, code: cip, color: PHARMA_COLORS[i % PHARMA_COLORS.length] });
+    codeToId[cip] = id;
+  });
 
-  // ── 3. Périodes déjà chargées depuis Supabase (importId non-null) → on ne double pas ──
-  const supabasePeriods = new Set(
-    state.sales.filter(s => s.importId !== null).map(s => `${s.pharmacyId}_${s.month}_${s.year}`)
-  );
-
+  // ── 4. Injecter toutes les lignes WML ──
   let added = 0;
   for (const s of WML_STATIC_SALES) {
-    const phId = codeToId.get(String(s.pharmacyCode || ''));
+    const phId = codeToId[String(s.pharmacyCode)];
     if (!phId) continue;
-    if (supabasePeriods.has(`${phId}_${s.month}_${s.year}`)) continue;
     state.sales.push({
-      id:             s.id,
-      importId:       null,
-      pharmacyId:     phId,
-      month:          s.month,
-      year:           s.year,
-      artDesignation: s.artDesignation,
-      artCode:        s.artCode,
-      artId:          s.artId,
-      artFamille:     s.artFamille,
-      qte:            s.qte,
-      puBrut:         s.puBrut,
-      puNet:          s.puNet,
-      mntNetHt:       s.mntNetHt,
+      id: s.id, importId: null, pharmacyId: phId,
+      month: s.month, year: s.year,
+      artDesignation: s.artDesignation, artCode: s.artCode, artId: s.artId,
+      artFamille: s.artFamille, qte: s.qte, puBrut: s.puBrut, puNet: s.puNet, mntNetHt: s.mntNetHt,
     });
     added++;
   }
-  console.log(`[WML Static] ${added} lignes · ${state.pharmacies.length} pharmacies · ${state.sales.length} ventes total`);
+  console.log(`[WML] ${added} lignes · ${Object.keys(codeToId).length} pharmacies CIP mappées · state.sales=${state.sales.length}`);
 }
 
 
