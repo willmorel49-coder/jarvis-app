@@ -1146,6 +1146,13 @@ function printRapportMensuel() {
 // ── PHARMACIES ────────────────────────────────
 let pharmaSearch  = '';
 let pharmaFilter  = 'all'; // 'all' | 'up' | 'flat' | 'down' | 'visite_retard' | 'visite_semaine' | 'visite_aucune'
+function setNextVisit(pharmacyId, dateStr) {
+  if (dateStr) localStorage.setItem(`next_visit_${pharmacyId}`, dateStr);
+  else localStorage.removeItem(`next_visit_${pharmacyId}`);
+  renderPharmacies();
+  showToast(dateStr ? `Visite planifiée : ${dateStr}` : 'Date de visite effacée', 'success');
+}
+
 let pharmaSort    = 'ca';  // 'ca' | 'delta' | 'name'
 let pharmaDetailOverridePeriod = null; // {year, month} or null → use auto-detected
 
@@ -1177,7 +1184,8 @@ function renderPharmacies() {
     const clientInfo = typeof CLIENTS !== 'undefined'
       ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
       : null;
-    const prochaineVisite = clientInfo?.prochaineVisite || null;
+    const visitOverride = localStorage.getItem(`next_visit_${ph.id}`);
+    const prochaineVisite = visitOverride || clientInfo?.prochaineVisite || null;
     const parsePV = str => {
       if (!str || str === 'null' || !str.trim()) return null;
       const sv = str.trim(); let mv;
@@ -1752,6 +1760,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px">✉ Email</button>
         <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;color:var(--green);border-color:rgba(0,229,160,.3)">🛒 Commander</button>
         <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
+        <button class="btn btn-ghost" onclick="(()=>{const d=prompt('Prochaine visite (JJ/MM/AAAA ou vide pour effacer)','');if(d!==null)setNextVisit('${pharma.id}',d.trim());})()" style="font-size:12px" title="Planifier prochaine visite">📅</button>
         <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
       </div>
 
