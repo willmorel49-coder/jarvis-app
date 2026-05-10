@@ -750,6 +750,58 @@ function renderDashboard() {
   </div>`;
     })()}
 
+    \${(() => {
+      const todayPJ = new Date(); todayPJ.setHours(0,0,0,0);
+      const parsePJ = str => {
+        if (!str || str === 'null' || !str.trim()) return null;
+        const s = str.trim();
+        let m;
+        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+        m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+        return null;
+      };
+      const actionsPJ = [];
+      for (const r of allPhRows) {
+        const ph = r.ph;
+        const visitOverride = localStorage.getItem('next_visit_' + ph.id);
+        const clientInfo = typeof CLIENTS !== 'undefined' ? CLIENTS.find(c => (c.nom||'').toUpperCase().trim() === ph.name.toUpperCase().trim()) : null;
+        const dateStr = visitOverride || clientInfo?.prochaineVisite || null;
+        const d = parsePJ(dateStr);
+        if (d) {
+          const diff = Math.round((d - todayPJ) / 86400000);
+          if (diff === 0) actionsPJ.push({ ph, type: 'today', label: "Visite aujourd'hui", color: 'var(--amber)', priority: 0 });
+          else if (diff < 0) actionsPJ.push({ ph, type: 'overdue', label: diff === -1 ? 'Retard : hier' : 'Retard J-' + Math.abs(diff), color: 'var(--rose)', priority: 1 });
+          else if (diff <= 2) actionsPJ.push({ ph, type: 'soon', label: 'Visite dans ' + diff + ' jour' + (diff>1?'s':''), color: 'var(--opso-green)', priority: 2 });
+        }
+        if (r.prev > 0 && r.cur > 0 && (r.cur - r.prev) / r.prev * 100 <= -20 && !actionsPJ.find(a => a.ph.id === ph.id)) {
+          actionsPJ.push({ ph, type: 'drop', label: 'Baisse ' + ((r.cur-r.prev)/r.prev*100).toFixed(0) + '% ce mois', color: 'var(--rose)', priority: 3 });
+        }
+      }
+      actionsPJ.sort((a, b) => a.priority - b.priority);
+      if (!actionsPJ.length) return '';
+      return '<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden;border-left:3px solid var(--amber)">' +
+        '<div class="card-header" style="padding:16px 20px">' +
+          '<div>' +
+            '<div class="card-title">\uD83D\uDCC5 Plan du jour</div>' +
+            '<div class="card-subtitle">' + actionsPJ.length + ' action' + (actionsPJ.length>1?'s':'') + ' \u00e0 mener</div>' +
+          '</div>' +
+        '</div>' +
+        actionsPJ.slice(0, 6).map((a, i) => {
+          const tel = typeof CLIENTS !== 'undefined' ? (CLIENTS.find(c => (c.nom||'').toUpperCase().trim() === a.ph.name.toUpperCase().trim())?.tel || '') : '';
+          return '<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;' + (i < Math.min(actionsPJ.length,6)-1 ? 'border-bottom:1px solid var(--border);' : '') + '">' +
+            '<div style="width:8px;height:8px;border-radius:50%;background:' + a.color + ';flex-shrink:0"></div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + titleCase(a.ph.name) + '</div>' +
+              '<div style="font-size:11px;color:' + a.color + ';font-weight:600">' + a.label + (tel ? ' \u00b7 ' + tel : '') + '</div>' +
+            '</div>' +
+            '<button onclick="showPharmaDetail(\'' + a.ph.id + '\')" style="padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;white-space:nowrap">Ouvrir \u203a</button>' +
+          '</div>';
+        }).join('') +
+        '</div>';
+    })()}
+
     <div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
       <div class="card-header" style="padding:16px 20px">
         <div class="card-title">Mes pharmacies</div>
