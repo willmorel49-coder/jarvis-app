@@ -1061,7 +1061,7 @@ function renderDashboard() {
       const bm = benchMaps();
       const alertes = [];
       for (const p of OFFILOG_LIVE) {
-        const ip = p.prix_live || p.prix_offilog;
+        const ip = p.prix;
         if (!ip || ip <= 0) continue;
         const e = p.ean ? String(p.ean) : '';
         const concList = [
@@ -1088,7 +1088,7 @@ function renderDashboard() {
         </div>
         ${top.map((a, i) => `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;${i < top.length-1?'border-bottom:1px solid var(--border)':''}">
           <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.produit || a.p.label || '—'}</div>
+            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.nom || '—'}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
               ${a.concList.map(([src, prix, col]) => `<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:${col}18;color:${col};font-weight:700">${src} ${fmtPx(prix)}</span>`).join('')}
               <span style="font-size:10px;color:var(--text3);padding:1px 6px;border-radius:6px;background:var(--bg3)">Achat IP ${fmtPx(a.ip)}</span>
