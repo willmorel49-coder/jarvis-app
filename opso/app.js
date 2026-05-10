@@ -581,7 +581,8 @@ function renderDashboard() {
   const grp = GROUPEMENTS.find(g => g.id === grpActif) || GROUPEMENTS[0];
 
   // ── Header groupement ──
-  const memberIds  = grpGetMembers(grp.id);
+  let memberIds = grpGetMembers(grp.id);
+  if (!memberIds.length) memberIds = state.pharmacies.map(p => p.id);
   const allSales   = getSales();
   const hasSales   = allSales.some(s => memberIds.includes(s.pharmacyId));
 
@@ -7210,24 +7211,45 @@ async function initApp() {
   if (loadingEl) { loadingEl.style.opacity = '0'; setTimeout(() => { loadingEl.style.display = 'none'; }, 400); }
 }
 
-// Fusionne WML_STATIC_SALES (depuis wml-sales-data.js) dans state.sales.
-// Résout pharmacyCode (CIP) → pharmacyId (UUID Supabase).
-// N'ajoute que les mois/pharmacies absents de Supabase pour éviter les doublons.
+// Fusionne WML_STATIC_SALES dans state.sales.
+// Garantit que les 6 pharmacies existent dans state.pharmacies (indépendamment de Supabase).
 function mergeWmlStaticSales() {
   if (typeof WML_STATIC_SALES === 'undefined' || !WML_STATIC_SALES.length) return;
 
-  // Map CIP → Supabase UUID
+  // ── 1. Garantir que chaque pharmacie OPSO existe avec son code CIP ──
+  // Cas A : absente → créer entrée statique
+  // Cas B : présente par nom mais code=null (créée sans code dans Supabase) → patcher le code
+  if (typeof OPSO_ADHERENTS !== 'undefined' && OPSO_ADHERENTS.length) {
+    OPSO_ADHERENTS.forEach((a, i) => {
+      const cip = String(a.cip);
+      let ph = state.pharmacies.find(p => String(p.code || '') === cip);
+      if (!ph) ph = state.pharmacies.find(p => normPhName(p.name) === normPhName(a.nom));
+      if (ph) {
+        if (!ph.code) ph.code = cip; // patch code manquant (Supabase sans code)
+      } else {
+        state.pharmacies.push({
+          id:    `static_${cip}`,
+          name:  a.nom,
+          code:  cip,
+          color: PHARMA_COLORS[i % PHARMA_COLORS.length],
+        });
+      }
+    });
+  }
+
+  // ── 2. Map CIP → id (UUID Supabase ou id statique) ──
   const codeToId = new Map(state.pharmacies.map(p => [String(p.code || ''), p.id]));
 
-  // Set des (pharmacyId, month, year) déjà dans Supabase → pas de doublon
-  const existingPeriods = new Set(state.sales.map(s => `${s.pharmacyId}_${s.month}_${s.year}`));
+  // ── 3. Périodes déjà chargées depuis Supabase (importId non-null) → on ne double pas ──
+  const supabasePeriods = new Set(
+    state.sales.filter(s => s.importId !== null).map(s => `${s.pharmacyId}_${s.month}_${s.year}`)
+  );
 
   let added = 0;
   for (const s of WML_STATIC_SALES) {
     const phId = codeToId.get(String(s.pharmacyCode || ''));
     if (!phId) continue;
-    const key = `${phId}_${s.month}_${s.year}`;
-    if (existingPeriods.has(key)) continue; // déjà dans Supabase pour cette période
+    if (supabasePeriods.has(`${phId}_${s.month}_${s.year}`)) continue;
     state.sales.push({
       id:             s.id,
       importId:       null,
@@ -7245,7 +7267,7 @@ function mergeWmlStaticSales() {
     });
     added++;
   }
-  if (added) console.log(`[WML Static] ${added} lignes fusionnées dans state.sales`);
+  console.log(`[WML Static] ${added} lignes · ${state.pharmacies.length} pharmacies · ${state.sales.length} ventes total`);
 }
 
 
