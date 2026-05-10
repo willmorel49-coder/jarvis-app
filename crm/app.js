@@ -6368,7 +6368,7 @@ function offiGetList() {
     const dA = (a.prix_live || a.prix_offilog || 0) - (a.prix_leclerc || 0);
     const dB = (b.prix_live || b.prix_offilog || 0) - (b.prix_leclerc || 0);
     return dB - dA; // plus grand écart en premier
-  }
+  });
   else if (offiRole === 'alerte_conc') list.sort((a, b) => {
     const ipA = a.prix_live || a.prix_offilog || 0;
     const ipB = b.prix_live || b.prix_offilog || 0;
@@ -6377,7 +6377,7 @@ function offiGetList() {
     const gapA = ipA - minCA;
     const gapB = ipB - minCB;
     return gapB - gapA;
-  }););
+  });
   else if (offiRole === 'concurrence') list.sort((a, b) => {
     const nSrcA = [a.prix_drakkars, a.prix_cap3000, a.prix_leclerc, a.prix_pharmacie, a.prix_maxi].filter(v => v != null && v > 0).length;
     const nSrcB = [b.prix_drakkars, b.prix_cap3000, b.prix_leclerc, b.prix_pharmacie, b.prix_maxi].filter(v => v != null && v > 0).length;
