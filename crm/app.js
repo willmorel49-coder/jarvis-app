@@ -8115,6 +8115,7 @@ function showFicheVisite(pharmacyId) {
 
       <!-- Actions -->
       <div style="padding:16px 28px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="copyFicheResume('${pharmacyId}')" style="padding:9px 20px;border-radius:10px;border:1.5px solid #059669;background:#ecfdf5;color:#047857;font-size:13px;font-weight:700;cursor:pointer">📋 Copier résumé</button>
         <button onclick="window.print()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #2563EB;background:#eff6ff;color:#1d4ed8;font-size:13px;font-weight:700;cursor:pointer">🖨 Imprimer</button>
         <button onclick="document.getElementById('fiche-visite-modal').remove()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#475569;font-size:13px;font-weight:700;cursor:pointer">Fermer</button>
       </div>
@@ -8122,6 +8123,68 @@ function showFicheVisite(pharmacyId) {
 
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+}
+
+
+function copyFicheResume(pharmacyId) {
+  const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!pharma) return;
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  const { year: curY, month: curM } = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
+  const salesCur  = curY  ? getSales({ pharmacyId: pharma.id, year: curY, month: curM  }) : [];
+  const salesPrev = prevY ? getSales({ pharmacyId: pharma.id, year: prevY, month: prevM }) : [];
+  const caCur  = sumCA(salesCur);
+  const caPrev = sumCA(salesPrev);
+  const curLabel  = curY  ? monthName(curM) + ' ' + curY  : '—';
+  const prevLabel = prevY ? monthName(prevM) + ' ' + prevY : '—';
+  const byProd = {};
+  for (const s of salesCur) {
+    const k = (s.artDesignation || '').trim().toUpperCase();
+    if (!k) continue;
+    if (!byProd[k]) byProd[k] = { label: s.artDesignation, ca: 0, qte: 0 };
+    byProd[k].ca  += s.mntNetHt;
+    byProd[k].qte += s.qte;
+  }
+  const top5 = Object.values(byProd).sort((a, b) => b.ca - a.ca).slice(0, 5);
+  const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const ourNorms = new Set(Object.keys(byProd));
+  const addOpps = typeof BENCHMARK !== 'undefined'
+    ? BENCHMARK.filter(b => b.rot_pharma_jan26 > 2 && b.prix_ip > 0 && !ourNorms.has(nn(b.designation)))
+        .sort((a, b) => b.rot_pharma_jan26 - a.rot_pharma_jan26).slice(0, 3)
+    : [];
+  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const delta = caPrev > 0 ? ((caCur - caPrev) / caPrev * 100).toFixed(0) : null;
+  const deltaStr = delta ? (delta >= 0 ? ' (+' + delta + '%)' : ' (' + delta + '%)') : '';
+  let lines = [
+    '📋 Compte-rendu — ' + pharma.name,
+    '📅 ' + today,
+    '',
+    'CA ' + curLabel + ' : ' + fmt(caCur) + deltaStr,
+    caPrev > 0 ? 'CA ' + prevLabel + ' : ' + fmt(caPrev) : null,
+  ].filter(l => l !== null);
+  if (top5.length) {
+    lines.push('');
+    lines.push('🏆 Top produits :');
+    top5.forEach((p, i) => lines.push((i + 1) + '. ' + p.label + ' — ' + fmt(p.ca)));
+  }
+  if (addOpps.length) {
+    lines.push('');
+    lines.push('💡 À proposer :');
+    addOpps.forEach(b => lines.push('• ' + b.designation + ' (' + b.rot_pharma_jan26.toFixed(1) + ' rot./ph)'));
+  }
+  const text = lines.join('\n');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('Résumé copié — prêt à coller', 'success'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('Résumé copié', 'success');
+  }
 }
 
 // ── BOOT ──────────────────────────────────────
