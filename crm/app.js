@@ -7557,7 +7557,8 @@ function renderGrpCommandes(grp) {
 function renderGrpObjectifs(grp) {
   const memberIds = grpGetMembers(grp.id);
   const allSales  = getSales();
-  const { year: curY, month: curM } = getCurrentPeriod(allSales.length ? allSales : []);
+  let { year: curY, month: curM } = getCurrentPeriod(allSales);
+  if (!curY) { curY = new Date().getFullYear(); curM = new Date().getMonth() + 1; }
   const caCur = sumCA(allSales.filter(s => memberIds.includes(s.pharmacyId) && s.year === curY && s.month === curM));
 
   // Objectifs stockés en localStorage
