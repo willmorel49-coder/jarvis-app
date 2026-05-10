@@ -4492,6 +4492,16 @@ function renderBenchmark() {
   const nVendus    = BENCHMARK.filter(d => salesMap[nnBench(d.designation)]?.ca > 0).length;
   const nNonVendus = BENCHMARK.length - nVendus;
 
+  // Per-product pharmacy count map
+  const pharmPerProd = new Map();
+  for (const s of salesAll) {
+    const k = nnBench(s.artDesignation);
+    if (!k || !s.pharmacyId) continue;
+    if (!pharmPerProd.has(k)) pharmPerProd.set(k, new Set());
+    pharmPerProd.get(k).add(s.pharmacyId);
+  }
+  const nTotalPharma = state.pharmacies.length || 1;
+
   // Filter
   let data = [...BENCHMARK];
   if (benchCat === 'froid')          data = data.filter(d => isFroidBench(d));
@@ -4565,11 +4575,17 @@ function renderBenchmark() {
     const sv = salesMap[nnBench(d.designation)];
     const wmlPop = wmlBenchMap.get(nnBench(d.designation)) || 0;
     const partIP = (sv?.ca > 0 && d.ip_ca > 0) ? (sv.ca / d.ip_ca * 100) : null;
+    const pharmSetB = pharmPerProd.get(nnBench(d.designation));
+    const nPharmaB = pharmSetB ? pharmSetB.size : 0;
+    const penetBadge = nPharmaB > 0
+      ? `<div style="font-size:10px;color:${nPharmaB === nTotalPharma ? 'var(--green)' : nPharmaB >= 2 ? 'var(--amber)' : 'var(--text3)'};font-weight:600">${nPharmaB}/${nTotalPharma} pharma</div>`
+      : '';
     const nosVentesHtml = sv?.ca > 0
       ? `<div style="text-align:right">
           <div style="font-size:11px;font-weight:700;color:var(--green)">${fmt(sv.ca)}</div>
           <div style="font-size:10px;color:var(--text3)">${fmtNum(Math.round(sv.qte))} u.</div>
           ${partIP !== null ? `<div style="font-size:10px;color:var(--green);font-weight:600">${partIP.toFixed(2)}% du CA IP</div>` : ''}
+          ${penetBadge}
         </div>`
       : salesAll.length > 0
         ? `<span style="font-size:10px;color:var(--text3);background:rgba(239,68,68,.08);padding:2px 6px;border-radius:6px;font-weight:600">Non vendu</span>`
