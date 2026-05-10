@@ -1357,6 +1357,38 @@ function printRapportMensuel() {
 // ── PHARMACIES ────────────────────────────────
 let pharmaSearch  = '';
 let pharmaFilter  = 'all'; // 'all' | 'up' | 'flat' | 'down' | 'visite_retard' | 'visite_semaine' | 'visite_aucune'
+
+function showNextVisitPicker(pharmacyId) {
+  document.getElementById('next-visit-picker-modal')?.remove();
+  const ph = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!ph) return;
+  const existing = localStorage.getItem('next_visit_' + pharmacyId);
+  let isoVal = '';
+  if (existing) {
+    const m = existing.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) isoVal = m[3] + '-' + m[2] + '-' + m[1];
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(existing)) isoVal = existing;
+  }
+  const modal = document.createElement('div');
+  modal.id = 'next-visit-picker-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:16px;padding:24px;width:100%;max-width:340px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px">📅 Prochaine visite</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px">${ph.name}</div>
+      <input id="nv-date-input" type="date" value="${isoVal}"
+        style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;margin-bottom:14px;outline:none">
+      <div style="display:flex;gap:8px">
+        <button onclick="const v=document.getElementById('nv-date-input').value;if(v){setNextVisit('${pharmacyId}',v);document.getElementById('next-visit-picker-modal').remove();}" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--opso-green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Planifier</button>
+        <button onclick="setNextVisit('${pharmacyId}','');document.getElementById('next-visit-picker-modal').remove();" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--rose);font-size:13px;font-weight:600;cursor:pointer">Effacer</button>
+        <button onclick="document.getElementById('next-visit-picker-modal').remove()" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer">✕</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('nv-date-input')?.focus(), 50);
+}
+
 function setNextVisit(pharmacyId, dateStr) {
   if (dateStr) localStorage.setItem(`next_visit_${pharmacyId}`, dateStr);
   else localStorage.removeItem(`next_visit_${pharmacyId}`);
@@ -1971,7 +2003,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px">✉ Email</button>
         <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;color:var(--green);border-color:rgba(0,229,160,.3)">🛒 Commander</button>
         <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
-        <button class="btn btn-ghost" onclick="(()=>{const d=prompt('Prochaine visite (JJ/MM/AAAA ou vide pour effacer)','');if(d!==null)setNextVisit('${pharma.id}',d.trim());})()" style="font-size:12px" title="Planifier prochaine visite">📅</button>
+        <button class="btn btn-ghost" onclick="showNextVisitPicker('${pharma.id}')" style="font-size:12px" title="Planifier prochaine visite">📅</button>
         <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
       </div>
 
