@@ -4390,6 +4390,26 @@ function benchExportCSV() {
   showToast(`Export CSV — ${data.length} produits`, 'success');
 }
 
+
+function benchSparkline(months, width=60, height=18) {
+  if (!months || !months.length) return '';
+  const vals = months.slice(-12);
+  const mx = Math.max(...vals, 1);
+  const bw = Math.floor(width / vals.length) - 1;
+  const last4avg = vals.slice(-4).reduce((a,b)=>a+b,0)/4;
+  const first4avg = vals.slice(0,4).reduce((a,b)=>a+b,0)/4;
+  const growing = last4avg >= first4avg;
+  const col = growing ? '#00E5A0' : '#FF4D6D';
+  const bars = vals.map((v,i) => {
+    const h = Math.max(1, Math.round(v / mx * height));
+    const x = i * (bw + 1);
+    const y = height - h;
+    const opacity = 0.35 + (i / vals.length) * 0.65;
+    return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" fill="'+col+'" opacity="'+opacity.toFixed(2)+'"/>';
+  }).join('');
+  return '<svg width="'+width+'" height="'+height+'" viewBox="0 0 '+width+' '+height+'" style="display:block">'+bars+'</svg>';
+}
+
 function renderBenchmark() {
   if (typeof BENCHMARK === 'undefined') {
     document.getElementById('bench-content').innerHTML = emptyState('📊', 'Données non chargées', 'benchmark-data.js manquant');
@@ -4517,6 +4537,7 @@ function renderBenchmark() {
       <td style="text-align:right;font-size:11px;color:var(--text3)">${d.has_ameli ? fmtNum(d.ameli_jan26) : '—'}</td>
       ${wmlBenchMap.size > 0 ? `<td style="text-align:center">${wmlCell}</td>` : ''}
       <td style="padding:6px 10px">${nosVentesHtml}</td>
+      <td style="padding:4px 8px">${d.has_ameli && d.ameli_months ? benchSparkline(d.ameli_months) : ''}</td>
     </tr>`;
   }).join('');
 
@@ -4667,6 +4688,7 @@ function renderBenchmark() {
               <th style="text-align:right">France Jan26</th>
               ${wmlBenchMap.size > 0 ? '<th style="text-align:center;color:var(--mint);font-size:11px" title="Nb pharmacies OPSO achetant ce produit via WML">WML OPSO</th>' : ''}
               ${salesAll.length > 0 ? thB('notre_ca', 'Nos ventes CA') : ''}
+              <th style="text-align:center;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px" title="Tendance Ameli 12 mois">Tendance</th>
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
