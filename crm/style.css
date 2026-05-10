@@ -820,3 +820,23 @@ body {
 }
 .cat-pag-btn:hover { background: var(--bg3); color: var(--text1); }
 .cat-pag-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* ── PRINT (fiche de visite) ───────────── */
+@media print {
+  body > *:not(#fiche-visite-modal) { display: none !important; }
+  #fiche-visite-modal {
+    position: static !important;
+    background: none !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+  #fiche-visite-modal > div {
+    box-shadow: none !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+  #fiche-visite-modal button { display: none !important; }
+}
