@@ -29,6 +29,9 @@
   --opso-white:       #ffffff;
   --opso-warning:     #e8a317;
   --opso-danger:      #d04a4a;
+  --opso-accent:      #dddf4b;  /* Pantone accent lime, charte NP page 26 */
+  --opso-accent-pale: #f9fac4;
+  --opso-accent-dark: #8a8c10;
 
   /* ── Ombres teintées vert foncé (charte officielle) ── */
   --shadow-sm: 0 1px 2px rgba(20, 30, 25, 0.04);
@@ -356,6 +359,13 @@ body {
 .sidebar-user-info { flex: 1; min-width: 0; }
 .sidebar-user-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar-user-role { font-size: 11px; color: rgba(255,255,255,0.65); font-weight: 600; text-transform: capitalize; }
+
+.sidebar-tagline {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 10px; color: rgba(255,255,255,0.45);
+  text-align: center; letter-spacing: 0.06em;
+  padding: 6px 12px 2px; font-style: italic;
+}
 
 /* ══════════════════════════════════════
    MAIN LAYOUT

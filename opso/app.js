@@ -7590,18 +7590,18 @@ function renderGrpDashboard(grp) {
   const kpiRow = `
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:16px">
     <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur}">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">CA Groupement</div>
-      <div style="font-size:24px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${caCur > 0 ? fmt(caCur) : '—'}</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">CA Groupement</div>
+      <div style="font-family:'Varela Round',sans-serif;font-size:24px;color:${grp.couleur};letter-spacing:-.5px">${caCur > 0 ? fmt(caCur) : '—'}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:4px">${curLabel} · ${evolTxt} vs ${prevLabel}</div>
     </div>
     <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur}">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Marge €</div>
-      <div style="font-size:24px;font-weight:900;color:var(--mint);letter-spacing:-.5px">${margeCur > 0 ? fmt(margeCur) : '—'}</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Marge €</div>
+      <div style="font-family:'Varela Round',sans-serif;font-size:24px;color:var(--mint);letter-spacing:-.5px">${margeCur > 0 ? fmt(margeCur) : '—'}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:4px">Taux marge : <strong style="color:var(--mint)">${txMarge.toFixed(1)}%</strong></div>
     </div>
     <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur}">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Pharmacies actives</div>
-      <div style="font-size:24px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${phActives}<span style="font-size:14px;color:var(--text3)">/${members.length}</span></div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Pharmacies actives</div>
+      <div style="font-family:'Varela Round',sans-serif;font-size:24px;color:${grp.couleur};letter-spacing:-.5px">${phActives}<span style="font-size:14px;color:var(--text3)">/${members.length}</span></div>
       <div style="font-size:11px;color:var(--text3);margin-top:4px">${nRefs} références vendues</div>
     </div>
     <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur};cursor:pointer" onclick="(function(){
@@ -7610,8 +7610,8 @@ function renderGrpDashboard(grp) {
       const n=parseFloat(v);
       if(!isNaN(n)&&n>=0&&n<=20){localStorage.setItem('${rfaKey}',n);navigate('groupements','dashboard');}
     })()">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">RFA estimée <span style="font-size:9px;font-weight:400;opacity:.6">(modifier)</span></div>
-      <div style="font-size:24px;font-weight:900;color:var(--amber);letter-spacing:-.5px">${rfaEst > 0 ? fmt(rfaEst) : '—'}</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">RFA estimée <span style="font-size:9px;font-weight:400;opacity:.6">(modifier)</span></div>
+      <div style="font-family:'Varela Round',sans-serif;font-size:24px;color:var(--amber);letter-spacing:-.5px">${rfaEst > 0 ? fmt(rfaEst) : '—'}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:4px">Taux ${rfaTaux}% · ${fmt(rfaPerPh)}/pharma</div>
     </div>
   </div>`;
@@ -7625,13 +7625,13 @@ function renderGrpDashboard(grp) {
     </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="border-bottom:2px solid var(--border2)">
-          <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--text3)">Catégorie</th>
-          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">CA Net</th>
-          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Marge €</th>
-          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Tx marge</th>
-          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">% CA</th>
-          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Réfs</th>
+        <thead><tr style="background:var(--opso-green-pale);border-bottom:2px solid var(--opso-border)">
+          <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Catégorie</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">CA Net</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Marge €</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Tx marge</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">% CA</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Réfs</th>
         </tr></thead>
         <tbody>
           ${catStats.map(c => `<tr style="border-bottom:1px solid var(--border)">
@@ -7739,13 +7739,13 @@ function renderGrpDashboard(grp) {
     </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="border-bottom:2px solid var(--border2)">
-          <th style="padding:9px 16px;text-align:left;font-size:11px;color:var(--text3)">Pharmacie</th>
-          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">${prevLabel}</th>
-          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">${curLabel}</th>
-          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">Évol.</th>
-          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">Marge €</th>
-          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">Tx marge</th>
+        <thead><tr style="background:var(--opso-green-pale);border-bottom:2px solid var(--opso-border)">
+          <th style="padding:9px 16px;text-align:left;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Pharmacie</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">${prevLabel}</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">${curLabel}</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Évol.</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Marge €</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Tx marge</th>
         </tr></thead>
         <tbody>
           ${members.map(ph => {
@@ -7784,15 +7784,15 @@ function renderGrpDashboard(grp) {
     </div>
     <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
       <table style="width:100%;border-collapse:collapse">
-        <thead style="position:sticky;top:0;z-index:2;background:var(--bg2)">
-          <tr style="border-bottom:2px solid var(--border2)">
-            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">#</th>
-            <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--text3)">Produit</th>
-            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">CA Net</th>
-            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Qté</th>
-            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Marge €</th>
-            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Tx marge</th>
-            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text3)">Cat.</th>
+        <thead style="position:sticky;top:0;z-index:2;background:var(--opso-green-pale)">
+          <tr style="border-bottom:2px solid var(--opso-border)">
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">#</th>
+            <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Produit</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">CA Net</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Qté</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Marge €</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Tx marge</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Cat.</th>
           </tr>
         </thead>
         <tbody>
@@ -7850,10 +7850,10 @@ function renderGrpDashboard(grp) {
     </div>
     <div style="overflow-x:auto;padding:8px 16px 16px">
       <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="border-bottom:2px solid var(--border2)">
-          <th style="padding:7px 16px;text-align:left;font-size:11px;color:var(--text3)">Pharmacie</th>
-          ${monthKeys.map(({month}) => `<th style="padding:7px 10px;text-align:right;font-size:11px;color:var(--text3)">${monthName(month)}</th>`).join('')}
-          <th style="padding:7px 12px;text-align:right;font-size:11px;color:var(--text3)">Total</th>
+        <thead><tr style="background:var(--opso-green-pale);border-bottom:2px solid var(--opso-border)">
+          <th style="padding:7px 16px;text-align:left;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Pharmacie</th>
+          ${monthKeys.map(({month}) => `<th style="padding:7px 10px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">${monthName(month)}</th>`).join('')}
+          <th style="padding:7px 12px;text-align:right;font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Total</th>
         </tr></thead>
         <tbody>
           ${evolByPh.map(({ph, monthly}) => {
