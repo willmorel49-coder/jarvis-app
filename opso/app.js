@@ -583,6 +583,9 @@ function renderDashboard() {
   // ── Header groupement ──
   let memberIds = grpGetMembers(grp.id);
   if (!memberIds.length) memberIds = state.pharmacies.map(p => p.id);
+  // IDs localStorage obsolètes → fallback
+  const _membersCheck = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
+  if (!_membersCheck.length && state.pharmacies.length) memberIds = state.pharmacies.map(p => p.id);
   const allSales   = getSales();
   const hasSales   = allSales.some(s => memberIds.includes(s.pharmacyId));
 
@@ -7511,9 +7514,13 @@ function renderGroupementBody(grp, onglet) {
 
 function renderGrpDashboard(grp) {
   let memberIds = grpGetMembers(grp.id);
-  // Si aucun membre configuré manuellement, utiliser toutes les pharmacies OPSO
   if (!memberIds.length) memberIds = state.pharmacies.map(p => p.id);
-  const members = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
+  let members = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
+  // IDs localStorage obsolètes (ne matchent plus les static_cip actuels) → fallback complet
+  if (!members.length && state.pharmacies.length) {
+    memberIds = state.pharmacies.map(p => p.id);
+    members = [...state.pharmacies];
+  }
 
   if (!members.length) return `
     <div class="card" style="padding:48px;text-align:center;color:var(--text3)">
