@@ -992,7 +992,7 @@ function renderDashboard() {
         const urgBg = diff === 0 ? 'rgba(255,176,32,.15)' : diff <= 7 ? 'rgba(0,229,160,.08)' : 'var(--bg3)';
         const urgCol = diff === 0 ? 'var(--amber)' : diff <= 7 ? 'var(--opso-green)' : 'var(--text3)';
         const urgLabel = diff === 0 ? "Aujourd'hui" : diff <= 7 ? 'J+' + diff : dateShortFR2(date);
-        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="navigate(\'pharmacies\');setTimeout(()=>{ pharmaSearch=\''+encodeURIComponent(c.nom||'')+'\'+'\';renderPharmacies(); },80)">' +
+        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="' + (ph2 ? 'showPharmaDetail(\'' + ph2.id + '\')' : 'navigate(\'pharmacies\')') + '">' +
           '<div style="min-width:52px;padding:3px 8px;border-radius:8px;background:' + urgBg + ';text-align:center;font-size:11px;font-weight:700;color:' + urgCol + '">' + urgLabel + '</div>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (c.nom||'—') + '</div>' +
@@ -1038,7 +1038,7 @@ function renderDashboard() {
         const ph3 = pharmaMap3.get((c.nom||'').toUpperCase().trim());
         const daysLate = Math.round((today3 - date) / 86400000);
         const label = daysLate === 1 ? 'Hier' : daysLate <= 7 ? 'J-' + daysLate : dateShortFR3(date);
-        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="navigate(\'pharmacies\');setTimeout(()=>{ pharmaSearch=\'' + encodeURIComponent(c.nom||'') + '\';renderPharmacies(); },80)">' +
+        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="' + (ph3 ? 'showPharmaDetail(\'' + ph3.id + '\')' : 'navigate(\'pharmacies\')') + '">' +
           '<div style="min-width:52px;padding:3px 8px;border-radius:8px;background:rgba(255,77,109,.15);text-align:center;font-size:11px;font-weight:700;color:var(--rose)">' + label + '</div>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (c.nom||'—') + '</div>' +
