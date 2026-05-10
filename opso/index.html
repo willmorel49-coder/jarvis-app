@@ -13,21 +13,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260508e">
+<link rel="stylesheet" href="style.css?v=20260510f">
 </head>
 <body>
 
 <!-- ══════════ LOGIN ══════════ -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">
-      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="12" y="3" width="8" height="26" rx="3" fill="white"/>
-        <rect x="3" y="12" width="26" height="8" rx="3" fill="white"/>
-      </svg>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+      <div class="login-logo" style="margin-bottom:0;width:48px;height:48px">
+        <svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="white"/><rect x="3" y="12" width="26" height="8" rx="3" fill="white"/></svg>
+      </div>
+      <div>
+        <div style="font-family:'Varela Round',sans-serif;font-size:20px;color:#2a2d2f;letter-spacing:-.3px">OPSO Santé</div>
+        <div style="font-size:11px;color:#9aa0a3;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Normandie · Pilotage groupement</div>
+      </div>
     </div>
-    <div class="login-title">OPSO Santé</div>
-    <div class="login-sub">Pilotage · Accès sécurisé</div>
+    <div class="login-title" style="font-size:24px;margin-bottom:4px">Bienvenue</div>
+    <div class="login-sub">Accédez à votre tableau de bord groupement.</div>
 
     <!-- Formulaire login normal -->
     <form id="login-form">
@@ -74,7 +77,10 @@
       <div id="newpass-error" class="login-error"></div>
     </form>
     <div style="text-align:center;margin-top:32px;padding-top:20px;border-top:1px solid var(--opso-border)">
-      <span style="font-size:11px;color:var(--text3)">Intégral Pharma — Pilotage OPSO Santé v1.0</span>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="12" height="12" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="#11a63c"/><rect x="3" y="12" width="26" height="8" rx="3" fill="#11a63c"/></svg>
+        <span style="font-size:11px;color:#9aa0a3">Intégral Pharma × OPSO Santé · 2026</span>
+      </div>
     </div>
   </div>
 </div>
@@ -86,14 +92,14 @@
   <nav class="sidebar" role="navigation" aria-label="Navigation principale">
     <div class="sidebar-brand">
       <div class="sidebar-logo">
-        <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
           <rect x="12" y="3" width="8" height="26" rx="3" fill="white"/>
           <rect x="3" y="12" width="26" height="8" rx="3" fill="white"/>
         </svg>
       </div>
       <div class="sidebar-brand-text">
         <div class="sidebar-brand-name">OPSO Santé</div>
-        <div class="sidebar-brand-sub">Groupement · Pilotage</div>
+        <div class="sidebar-brand-sub">Normandie · 6 pharmacies</div>
       </div>
     </div>
 
@@ -148,8 +154,13 @@
   <div class="main" role="main">
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:16px">
-        <div class="topbar-title" id="topbar-title">Tableau de bord</div>
-        <div id="topbar-date" style="font-size:12px;color:var(--text3);font-weight:500"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:6px;height:24px;border-radius:3px;background:linear-gradient(180deg,#0d8530,#11a63c);flex-shrink:0"></div>
+          <div>
+            <div class="topbar-title" id="topbar-title">Tableau de bord</div>
+            <div id="topbar-date" style="font-size:11px;color:var(--text3);font-weight:500;margin-top:1px"></div>
+          </div>
+        </div>
       </div>
       <div class="topbar-actions">
         <button onclick="showGlobalSearch()" title="Recherche globale (⌘K)"
@@ -162,7 +173,7 @@
         </button>
         <button class="btn btn-primary" onclick="navigate('import')" style="background:#11a63c;color:#fff;border-color:#11a63c">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-          Importer
+          ＋ Importer
         </button>
       </div>
     </div>
@@ -196,6 +207,7 @@
     </svg>
   </div>
   <div class="app-loading-text">OPSO Santé</div>
+  <div style="font-size:12px;opacity:.6;margin-top:-8px">Groupement Normandie</div>
   <div class="app-loading-spinner"></div>
 </div>
 
@@ -274,6 +286,6 @@ function showNewPassForm() {
 <script src="opso-adherents.js?v=20260508"></script>
 <script src="offilog-live-data.js?v=20260508"></script>
 <script src="wml-sales-data.js?v=20260510b"></script>
-<script src="app.js?v=20260510e"></script>
+<script src="app.js?v=20260510f"></script>
 </body>
 </html>
