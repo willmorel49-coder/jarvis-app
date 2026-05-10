@@ -728,7 +728,18 @@ function renderDashboard() {
       }
     }
     const topVeille = topItems.sort((a, b) => b.nSrc - a.nSrc).slice(0, 5);
-    return { nDrak, nCap, nLecl, nPharma, nMaxi, nWithData, topVeille, total: OFFILOG.length };
+    // Alertes : concurrent moins cher que le prix achat IP
+    const alertItems = [];
+    for (const { p, concMap } of topItems) {
+      const ip = p.prix_offilog || p.prix_live;
+      if (!ip || ip <= 0) continue;
+      const below = concMap.filter(([prix]) => prix < ip);
+      if (!below.length) continue;
+      const minBelow = below.sort((a, b) => a[0] - b[0]);
+      alertItems.push({ p, concList: minBelow.map(([prix, src, col]) => [src, prix, col]), ip, gap: ip - minBelow[0][0] });
+    }
+    alertItems.sort((a, b) => b.gap - a.gap);
+    return { nDrak, nCap, nLecl, nPharma, nMaxi, nWithData, topVeille, total: OFFILOG.length, nAlertes: alertItems.length, topAlertes: alertItems.slice(0, 5) };
   })();
 
   // ── HTML ─────────────────────────────────────
