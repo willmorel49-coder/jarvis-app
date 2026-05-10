@@ -7404,142 +7404,309 @@ function renderGroupementBody(grp, onglet) {
 function renderGrpDashboard(grp) {
   const memberIds = grpGetMembers(grp.id);
   const members   = memberIds.map(id => state.pharmacies.find(p => p.id === id)).filter(Boolean);
-  const totalCA   = members.reduce((s, ph) => {
-    const ci = typeof CLIENTS !== 'undefined'
-      ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
-      : null;
-    return s + (ci?.ca2023 || 0);
-  }, 0);
 
-  const kpis = [
-    { label: 'Pharmacies',    value: members.length || '—', icon: '🏪', sub: 'membres actifs' },
-    { label: 'CA cumulé',     value: totalCA > 0 ? fmt(totalCA) : '—', icon: '💰', sub: 'CA 2023 membres' },
-    { label: 'Croissance',    value: '—',  icon: '📈', sub: 'vs période préc.' },
-    { label: 'Taux adhésion', value: '—',  icon: '✅', sub: 'sur les offres IP' },
-  ];
+  if (!members.length) return `
+    <div class="card" style="padding:48px;text-align:center;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">🏪</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucun membre</div>
+      <div style="font-size:12px">Ajoutez des pharmacies via l'onglet <strong>Pharmacies</strong>.</div>
+    </div>`;
 
-  const kpiHtml = kpis.map(k => `
-    <div class="card" style="display:flex;flex-direction:column;gap:4px">
-      <div style="font-size:22px;line-height:1;margin-bottom:4px">${k.icon}</div>
-      <div style="font-size:26px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${k.value}</div>
-      <div style="font-size:12px;font-weight:700;color:var(--text)">${k.label}</div>
-      <div style="font-size:11px;color:var(--text3)">${k.sub}</div>
-    </div>`).join('');
-
-  // Données de ventes des membres
-  const allSales   = getSales();
-  const { year: curY, month: curM } = getCurrentPeriod(allSales.length ? allSales : []);
-  const { year: prevY, month: prevM } = curY ? getPrevPeriod(curY, curM) : { year: null, month: null };
+  // ── Période ──────────────────────────────────────
+  const allSales = getSales();
+  let { year: curY, month: curM } = getCurrentPeriod(allSales.length ? allSales : []);
+  if (!curY) { curY = new Date().getFullYear(); curM = new Date().getMonth() + 1; }
+  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
+  const curLabel  = `${monthName(curM)} ${curY}`;
+  const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
 
   const memberSalesCur  = allSales.filter(s => memberIds.includes(s.pharmacyId) && s.year === curY  && s.month === curM);
   const memberSalesPrev = allSales.filter(s => memberIds.includes(s.pharmacyId) && s.year === prevY && s.month === prevM);
-  const caCur  = sumCA(memberSalesCur);
-  const caPrev = sumCA(memberSalesPrev);
 
-  const curLabel  = curY  ? `${monthName(curM)} ${curY}`   : 'En cours';
-  const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
+  // ── KPIs globaux ─────────────────────────────────
+  const caCur     = sumCA(memberSalesCur);
+  const caPrev    = sumCA(memberSalesPrev);
+  const margeCur  = sumMarge(memberSalesCur);
+  const caBrutCur = sumCaBrut(memberSalesCur);
+  const txMarge   = caBrutCur > 0 ? margeCur / caBrutCur * 100 : 0;
+  const evolPct   = caPrev > 0 ? (caCur - caPrev) / caPrev * 100 : null;
+  const nRefs     = new Set(memberSalesCur.map(s => (s.artDesignation || '').trim().toUpperCase())).size;
+  const phActives = new Set(memberSalesCur.map(s => s.pharmacyId)).size;
 
-  // Top produits groupement
+  // ── RFA ──────────────────────────────────────────
+  const rfaKey   = `grp_rfa_${grp.id}`;
+  const rfaTaux  = parseFloat(localStorage.getItem(rfaKey)) || 2.0;
+  const rfaEst   = caCur * rfaTaux / 100;
+  const rfaPerPh = phActives > 0 ? rfaEst / phActives : 0;
+
+  // ── Agrégation produits ───────────────────────────
   const byProd = {};
   for (const s of memberSalesCur) {
     const k = (s.artDesignation || '').trim().toUpperCase();
     if (!k) continue;
-    if (!byProd[k]) byProd[k] = { label: s.artDesignation, ca: 0, qte: 0, cat: classifyProduct(s) };
-    byProd[k].ca  += s.mntNetHt;
-    byProd[k].qte += s.qte;
+    if (!byProd[k]) byProd[k] = { label: s.artDesignation, ca: 0, qte: 0, mg: 0, cat: classifyProduct(s), froid: isFroid(s) };
+    byProd[k].ca  += (s.mntNetHt || 0);
+    byProd[k].qte += (s.qte || 0);
+    byProd[k].mg  += Math.max(0, ((s.puBrut || 0) - (s.puNet || 0)) * (s.qte || 0));
   }
-  const topProds = Object.values(byProd).sort((a,b) => b.ca - a.ca).slice(0, 8);
+  const allProdsSorted = Object.values(byProd).sort((a, b) => b.ca - a.ca);
+  const topValeur = allProdsSorted.slice(0, 10);
+  const topVolume = [...Object.values(byProd)].sort((a, b) => b.qte - a.qte).slice(0, 10);
 
-  // KPIs enrichis
-  const kpisEnriched = [
-    { label: 'Pharmacies', value: members.length || '—', icon: '🏪', sub: 'membres' },
-    { label: 'CA Groupement', value: caCur > 0 ? fmt(caCur) : (totalCA > 0 ? fmt(totalCA) : '—'), icon: '💰', sub: caCur > 0 ? curLabel : 'CA 2023 estimé' },
-    { label: 'vs M-1', value: caPrev > 0 ? (() => { const d = (caCur-caPrev)/caPrev*100; return `${d>=0?'+':''}${d.toFixed(1)}%`; })() : '—', icon: '📈', sub: prevLabel },
-    { label: 'Panier moyen', value: (members.length > 0 && caCur > 0) ? fmt(caCur / members.length) : '—', icon: '🛒', sub: 'par pharmacie' },
-  ];
+  // ── Répartition par catégorie ─────────────────────
+  const catStats = Object.entries(CATS).map(([key, cat]) => {
+    const s  = memberSalesCur.filter(x => classifyProduct(x) === key);
+    const ca = sumCA(s), mg = sumMarge(s), b = sumCaBrut(s);
+    return {
+      key, cat, ca, mg,
+      tx:    b > 0 ? mg / b * 100 : 0,
+      refs:  new Set(s.map(x => (x.artDesignation || '').trim().toUpperCase())).size,
+      pctCA: caCur > 0 ? ca / caCur * 100 : 0,
+    };
+  }).filter(c => c.ca > 0).sort((a, b) => b.ca - a.ca);
 
-  const kpiHtmlEnriched = kpisEnriched.map(k => `
-    <div class="card" style="display:flex;flex-direction:column;gap:4px">
-      <div style="font-size:22px;line-height:1;margin-bottom:4px">${k.icon}</div>
-      <div style="font-size:26px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${k.value}</div>
-      <div style="font-size:12px;font-weight:700;color:var(--text)">${k.label}</div>
-      <div style="font-size:11px;color:var(--text3)">${k.sub}</div>
-    </div>`).join('');
+  const froidSales = memberSalesCur.filter(s => isFroid(s));
+  const froidCA    = sumCA(froidSales);
+  const froidMg    = sumMarge(froidSales);
+  const froidBrut  = sumCaBrut(froidSales);
+  const froidTx    = froidBrut > 0 ? froidMg / froidBrut * 100 : 0;
+  const froidRefs  = new Set(froidSales.map(s => (s.artDesignation || '').trim().toUpperCase())).size;
 
-  // M vs M-1 par membre
-  const membersCompHtml = members.length ? `
-  <div class="card" style="margin-top:16px">
+  // ── Section 1 : KPI row ───────────────────────────
+  const evolTxt = evolPct !== null
+    ? `<span style="color:${evolPct >= 0 ? 'var(--mint)' : 'var(--rose)'};font-weight:700">${evolPct >= 0 ? '+' : ''}${evolPct.toFixed(1)}%</span>`
+    : '<span style="color:var(--text3)">—</span>';
+
+  const kpiRow = `
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:16px">
+    <div class="card" style="padding:16px 20px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">CA Groupement</div>
+      <div style="font-size:24px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${caCur > 0 ? fmt(caCur) : '—'}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${curLabel} · ${evolTxt} vs ${prevLabel}</div>
+    </div>
+    <div class="card" style="padding:16px 20px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Marge €</div>
+      <div style="font-size:24px;font-weight:900;color:var(--mint);letter-spacing:-.5px">${margeCur > 0 ? fmt(margeCur) : '—'}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Taux marge : <strong style="color:var(--mint)">${txMarge.toFixed(1)}%</strong></div>
+    </div>
+    <div class="card" style="padding:16px 20px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Pharmacies actives</div>
+      <div style="font-size:24px;font-weight:900;color:${grp.couleur};letter-spacing:-.5px">${phActives}<span style="font-size:14px;color:var(--text3)">/${members.length}</span></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${nRefs} références vendues</div>
+    </div>
+    <div class="card" style="padding:16px 20px;cursor:pointer" onclick="(function(){
+      const v=prompt('Taux RFA (%) — actuel : ${rfaTaux}%','${rfaTaux}');
+      if(v===null)return;
+      const n=parseFloat(v);
+      if(!isNaN(n)&&n>=0&&n<=20){localStorage.setItem('${rfaKey}',n);navigate('groupements','dashboard');}
+    })()">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">RFA estimée <span style="font-size:9px;font-weight:400;opacity:.6">(modifier)</span></div>
+      <div style="font-size:24px;font-weight:900;color:var(--amber);letter-spacing:-.5px">${rfaEst > 0 ? fmt(rfaEst) : '—'}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Taux ${rfaTaux}% · ${fmt(rfaPerPh)}/pharma</div>
+    </div>
+  </div>`;
+
+  // ── Section 2 : Répartition par catégorie ─────────
+  const catTable = catStats.length ? `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-title">Répartition par catégorie</div>
+      <div class="card-subtitle">${curLabel}</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="border-bottom:2px solid var(--border2)">
+          <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--text3)">Catégorie</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">CA Net</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Marge €</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Tx marge</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">% CA</th>
+          <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Réfs</th>
+        </tr></thead>
+        <tbody>
+          ${catStats.map(c => `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:9px 16px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${c.cat.color};flex-shrink:0"></span>
+                <span style="font-size:13px;font-weight:600">${c.cat.icon} ${c.cat.label}</span>
+              </div>
+            </td>
+            <td style="padding:9px 12px;text-align:right;font-size:13px;font-weight:700">${fmt(c.ca)}</td>
+            <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--mint)">${fmt(c.mg)}</td>
+            <td style="padding:9px 12px;text-align:right;font-size:12px;font-weight:600;color:${c.tx >= 15 ? 'var(--mint)' : c.tx >= 8 ? 'var(--amber)' : 'var(--rose)'}">${c.tx.toFixed(1)}%</td>
+            <td style="padding:9px 12px;text-align:right">
+              <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+                <div style="width:50px;height:4px;border-radius:2px;background:var(--border)">
+                  <div style="height:100%;border-radius:2px;background:${c.cat.color};width:${Math.min(100, c.pctCA).toFixed(0)}%"></div>
+                </div>
+                <span style="font-size:11px;color:var(--text2)">${c.pctCA.toFixed(0)}%</span>
+              </div>
+            </td>
+            <td style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">${c.refs}</td>
+          </tr>`).join('')}
+          ${froidCA > 0 ? `<tr style="border-top:2px solid var(--border2)">
+            <td style="padding:9px 16px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#60CFFF;flex-shrink:0"></span>
+                <span style="font-size:12px;font-weight:600;color:var(--text2)">❄ Froid (transversal)</span>
+              </div>
+            </td>
+            <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--text2)">${fmt(froidCA)}</td>
+            <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--mint)">${fmt(froidMg)}</td>
+            <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--text2)">${froidTx.toFixed(1)}%</td>
+            <td style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">${(caCur > 0 ? froidCA / caCur * 100 : 0).toFixed(0)}%</td>
+            <td style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">${froidRefs}</td>
+          </tr>` : ''}
+        </tbody>
+      </table>
+    </div>
+  </div>` : '';
+
+  // ── Section 3 : Top 10 valeur + Top 10 volume ────
+  const maxCaVal  = topValeur.length ? topValeur[0].ca   : 1;
+  const maxQteVol = topVolume.length ? topVolume[0].qte  : 1;
+
+  const topValeurHtml = topValeur.length ? topValeur.map((p, i) => {
+    const cat = CATS[p.cat] || CATS.mi;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:800;color:var(--text3);width:16px;text-align:right;flex-shrink:0">${i + 1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
+        <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border)">
+          <div style="height:100%;border-radius:2px;background:${cat.color};width:${(p.ca / maxCaVal * 100).toFixed(0)}%"></div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:60px">
+        <div style="font-size:11px;font-weight:700">${fmt(p.ca)}</div>
+        <div style="font-size:9px;color:var(--text3)">${p.qte.toFixed(0)} u</div>
+      </div>
+    </div>`;
+  }).join('') : '<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">Aucune donnée</div>';
+
+  const topVolumeHtml = topVolume.length ? topVolume.map((p, i) => {
+    const cat = CATS[p.cat] || CATS.mi;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:800;color:var(--text3);width:16px;text-align:right;flex-shrink:0">${i + 1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
+        <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border)">
+          <div style="height:100%;border-radius:2px;background:${cat.color};width:${(p.qte / maxQteVol * 100).toFixed(0)}%"></div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:50px">
+        <div style="font-size:11px;font-weight:700">${p.qte.toFixed(0)} u</div>
+        <div style="font-size:9px;color:var(--text3)">${fmt(p.ca)}</div>
+      </div>
+    </div>`;
+  }).join('') : '<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">Aucune donnée</div>';
+
+  const topsRow = `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Top 10 — Valeur CA</div>
+        <div class="card-subtitle">${curLabel}</div>
+      </div>
+      ${topValeurHtml}
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Top 10 — Volume</div>
+        <div class="card-subtitle">${curLabel}</div>
+      </div>
+      ${topVolumeHtml}
+    </div>
+  </div>`;
+
+  // ── Section 4 : Performances membres (enrichi marge) ──
+  const membresTable = `
+  <div class="card" style="margin-bottom:16px">
     <div class="card-header">
       <div>
-        <div class="card-title">Performances membres — ${curLabel}</div>
+        <div class="card-title">Performances membres</div>
         <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
       </div>
     </div>
-    <table style="width:100%;border-collapse:collapse">
-      <thead><tr style="border-bottom:2px solid var(--border2)">
-        <th style="padding:9px 16px;text-align:left;font-size:11px;color:var(--text3);font-weight:700">Pharmacie</th>
-        <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700">${prevLabel}</th>
-        <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700">${curLabel}</th>
-        <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700">Évol.</th>
-      </tr></thead>
-      <tbody>
-        ${members.map(ph => {
-          const c = sumCA(memberSalesCur.filter(s => s.pharmacyId === ph.id));
-          const p = sumCA(memberSalesPrev.filter(s => s.pharmacyId === ph.id));
-          return `<tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:10px 16px">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
-                <span style="font-size:13px;font-weight:600">${titleCase(ph.name)}</span>
-              </div>
-            </td>
-            <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2)">${p > 0 ? fmt(p) : '—'}</td>
-            <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700">${c > 0 ? fmt(c) : '—'}</td>
-            <td style="padding:10px 12px;text-align:right">${deltaBadge(c, p)}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-  </div>` : '';
-
-  // Top produits groupement
-  const topProdsHtml = topProds.length ? `
-  <div class="card" style="margin-top:16px">
-    <div class="card-header">
-      <div class="card-title">Top produits groupement — ${curLabel}</div>
-      <div class="card-subtitle">${Object.keys(byProd).length} références</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="border-bottom:2px solid var(--border2)">
+          <th style="padding:9px 16px;text-align:left;font-size:11px;color:var(--text3)">Pharmacie</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">${prevLabel}</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">${curLabel}</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">Évol.</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">Marge €</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">Tx marge</th>
+        </tr></thead>
+        <tbody>
+          ${members.map(ph => {
+            const sc = memberSalesCur.filter(s => s.pharmacyId === ph.id);
+            const sp = memberSalesPrev.filter(s => s.pharmacyId === ph.id);
+            const c  = sumCA(sc), p = sumCA(sp);
+            const mg = sumMarge(sc), b = sumCaBrut(sc);
+            const tx = b > 0 ? mg / b * 100 : 0;
+            return `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:10px 16px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:${ph.color || grp.couleur};flex-shrink:0"></span>
+                  <span style="font-size:13px;font-weight:600">${titleCase(ph.name)}</span>
+                </div>
+              </td>
+              <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2)">${p > 0 ? fmt(p) : '—'}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700">${c > 0 ? fmt(c) : '—'}</td>
+              <td style="padding:10px 12px;text-align:right">${deltaBadge(c, p)}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--mint)">${mg > 0 ? fmt(mg) : '—'}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:12px;font-weight:600;color:${tx >= 15 ? 'var(--mint)' : tx >= 8 ? 'var(--amber)' : 'var(--rose)'}">${tx > 0 ? tx.toFixed(1) + '%' : '—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
     </div>
-    ${topProds.map((p, i) => {
-      const cat = CATS[p.cat] || CATS.mi;
-      const maxCa = topProds[0].ca;
-      return `<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border)">
-        <div style="font-size:11px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
-          <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border)">
-            <div style="height:100%;border-radius:2px;background:${cat.color};width:${(p.ca/maxCa*100).toFixed(0)}%"></div>
-          </div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:12px;font-weight:700">${fmt(p.ca)}</div>
-          <div style="font-size:10px;color:var(--text3)">${p.qte.toFixed(0)} u</div>
-        </div>
-        <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
-      </div>`;
-    }).join('')}
+  </div>`;
+
+  // ── Section 5 : Tous les produits ────────────────
+  const allProdsTable = allProdsSorted.length ? `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Tous les produits groupement</div>
+        <div class="card-subtitle">${allProdsSorted.length} références · ${curLabel}</div>
+      </div>
+    </div>
+    <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead style="position:sticky;top:0;z-index:2;background:var(--bg2)">
+          <tr style="border-bottom:2px solid var(--border2)">
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">#</th>
+            <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--text3)">Produit</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">CA Net</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Qté</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Marge €</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3)">Tx marge</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text3)">Cat.</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${allProdsSorted.map((p, i) => {
+            const cat = CATS[p.cat] || CATS.mi;
+            const txP = p.mg > 0 && p.ca > 0 ? p.mg / (p.ca + p.mg) * 100 : 0;
+            return `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:7px 12px;font-size:10px;color:var(--text3);text-align:right">${i + 1}</td>
+              <td style="padding:7px 16px;font-size:12px;font-weight:600;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.froid ? '❄ ' : ''}${p.label}</td>
+              <td style="padding:7px 12px;text-align:right;font-size:12px;font-weight:700">${fmt(p.ca)}</td>
+              <td style="padding:7px 12px;text-align:right;font-size:11px;color:var(--text2)">${p.qte.toFixed(0)}</td>
+              <td style="padding:7px 12px;text-align:right;font-size:11px;color:var(--mint)">${p.mg > 0 ? fmt(p.mg) : '—'}</td>
+              <td style="padding:7px 12px;text-align:right;font-size:11px;font-weight:600;color:${txP >= 15 ? 'var(--mint)' : txP >= 8 ? 'var(--amber)' : 'var(--rose)'}">${txP > 0 ? txP.toFixed(1) + '%' : '—'}</td>
+              <td style="padding:7px 12px">
+                <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${cat.color}18;color:${cat.color};font-weight:700">${cat.icon}</span>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
   </div>` : '';
 
-  return `
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:0">
-    ${kpiHtmlEnriched}
-  </div>
-  ${membersCompHtml}
-  ${topProdsHtml}
-  ${!members.length ? `<div class="card" style="margin-top:16px;padding:48px;text-align:center;color:var(--text3)">
-    <div style="font-size:40px;margin-bottom:12px">🏪</div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucun membre</div>
-    <div style="font-size:12px">Ajoutez des pharmacies via l'onglet <strong>Pharmacies</strong>.</div>
-  </div>` : ''}`;
+  return `${kpiRow}${catTable}${topsRow}${membresTable}${allProdsTable}`;
 }
 
 function grpConfirmRemove(grpId, phId) {
