@@ -750,7 +750,7 @@ function renderDashboard() {
   </div>`;
     })()}
 
-    \${(() => {
+    ${(() => {
       const todayPJ = new Date(); todayPJ.setHours(0,0,0,0);
       const parsePJ = str => {
         if (!str || str === 'null' || !str.trim()) return null;
@@ -899,14 +899,14 @@ function renderDashboard() {
       </div>`;
     })()}
 
-    \${(() => {
+    ${(() => {
       const compR = allPhRows.filter(r => r.cur > 0 || r.prev > 0);
       if (compR.length < 2 || !prevY) return '';
-      return \`<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
+      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
         <div class="card-header" style="padding:16px 20px">
           <div>
             <div class="card-title">Comparaison M vs M-1 par pharmacie</div>
-            <div class="card-subtitle">\${prevLabel} \u2192 \${curLabel}</div>
+            <div class="card-subtitle">${prevLabel} \u2192 ${curLabel}</div>
           </div>
         </div>
         <div style="overflow-x:auto">
@@ -914,30 +914,30 @@ function renderDashboard() {
             <thead>
               <tr style="border-bottom:2px solid var(--border2)">
                 <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Pharmacie</th>
-                <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">\${prevLabel}</th>
-                <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">\${curLabel}</th>
+                <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">${prevLabel}</th>
+                <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">${curLabel}</th>
                 <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">\u00c9volution</th>
               </tr>
             </thead>
             <tbody>
-              \${compR.map(r => \`<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="showPharmaDetail('\${r.ph.id}')" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+              ${compR.map(r => `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="showPharmaDetail('${r.ph.id}')" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
                 <td style="padding:10px 16px">
                   <div style="display:flex;align-items:center;gap:8px">
-                    <span style="width:8px;height:8px;border-radius:50%;background:\${r.ph.color};flex-shrink:0"></span>
-                    <span style="font-size:13px;font-weight:600">\${titleCase(r.ph.name)}</span>
+                    <span style="width:8px;height:8px;border-radius:50%;background:${r.ph.color};flex-shrink:0"></span>
+                    <span style="font-size:13px;font-weight:600">${titleCase(r.ph.name)}</span>
                   </div>
                 </td>
-                <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2)">\${r.prev > 0 ? fmt(r.prev) : '\u2014'}</td>
-                <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700">\${r.cur > 0 ? fmt(r.cur) : '\u2014'}</td>
-                <td style="padding:10px 12px;text-align:right">\${deltaBadge(r.cur, r.prev)}</td>
-              </tr>\`).join('')}
+                <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2)">${r.prev > 0 ? fmt(r.prev) : '\u2014'}</td>
+                <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700">${r.cur > 0 ? fmt(r.cur) : '\u2014'}</td>
+                <td style="padding:10px 12px;text-align:right">${deltaBadge(r.cur, r.prev)}</td>
+              </tr>`).join('')}
             </tbody>
           </table>
         </div>
-      </div>\`;
+      </div>`;
     })()}
 
-    \${(() => {
+    ${(() => {
       const byMonth = caByMonth(allSalesRaw);
       if (byMonth.length < 2) return '';
       const maxCA = Math.max(...byMonth.map(([,v]) => v), 1);
@@ -1056,7 +1056,7 @@ function renderDashboard() {
       '</div>';
     })()}
 
-    \${(() => {
+    ${(() => {
       if (typeof OFFILOG_LIVE === 'undefined' || !OFFILOG_LIVE.length) return '';
       const bm = benchMaps();
       const alertes = [];
@@ -1078,28 +1078,28 @@ function renderDashboard() {
       const top = alertes.slice(0, 5);
       if (!top.length) return '';
       const fmtPx = v => v != null ? new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(v) : '—';
-      return \`<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden;border-left:3px solid #DC2626">
+      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden;border-left:3px solid #DC2626">
         <div class="card-header" style="padding:16px 20px">
           <div>
             <div class="card-title">\uD83D\uDEA8 Alertes prix concurrents</div>
-            <div class="card-subtitle">Concurrents moins chers que votre prix d\u2019achat &mdash; \${alertes.length} r\u00e9f\u00e9rence\${alertes.length>1?'s':''}</div>
+            <div class="card-subtitle">Concurrents moins chers que votre prix d\u2019achat &mdash; ${alertes.length} r\u00e9f\u00e9rence${alertes.length>1?'s':''}</div>
           </div>
           <button onclick="offiLiveAlerte=true;offiLivePage=1;navigate('offilog');setTimeout(()=>renderOffilog(),80)" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.08);color:#DC2626;cursor:pointer;font-weight:600;white-space:nowrap">Voir tous \u2192</button>
         </div>
-        \${top.map((a, i) => \`<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;\${i < top.length-1?'border-bottom:1px solid var(--border)':''}">
+        ${top.map((a, i) => `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;${i < top.length-1?'border-bottom:1px solid var(--border)':''}">
           <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${a.p.produit || a.p.label || '—'}</div>
+            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.produit || a.p.label || '—'}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
-              \${a.concList.map(([src, prix, col]) => \`<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:\${col}18;color:\${col};font-weight:700">\${src} \${fmtPx(prix)}</span>\`).join('')}
-              <span style="font-size:10px;color:var(--text3);padding:1px 6px;border-radius:6px;background:var(--bg3)">Achat IP \${fmtPx(a.ip)}</span>
+              ${a.concList.map(([src, prix, col]) => `<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:${col}18;color:${col};font-weight:700">${src} ${fmtPx(prix)}</span>`).join('')}
+              <span style="font-size:10px;color:var(--text3);padding:1px 6px;border-radius:6px;background:var(--bg3)">Achat IP ${fmtPx(a.ip)}</span>
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:14px;font-weight:900;color:#DC2626">-\${fmtPx(a.gap)}</div>
+            <div style="font-size:14px;font-weight:900;color:#DC2626">-${fmtPx(a.gap)}</div>
             <div style="font-size:10px;color:var(--text3)">\u00e9cart</div>
           </div>
-        </div>\`).join('')}
-      </div>\`;
+        </div>`).join('')}
+      </div>`;
     })()}
 
 

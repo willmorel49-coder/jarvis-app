@@ -887,7 +887,7 @@ function renderDashboard() {
     })()}
 
     <!-- Plan du jour -->
-    \${(() => {
+    ${(() => {
       const todayPJ = new Date(); todayPJ.setHours(0,0,0,0);
       const parsePJ = str => {
         if (!str || str === 'null' || !str.trim()) return null;
@@ -1010,18 +1010,18 @@ function renderDashboard() {
         <div style="padding:10px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Top opportunités de conversion</div>
         ${wmlDashData.potRows.map(r => {
           const pct = Math.min(100, Math.round(r.directCa / r.wmlAvg * 100));
-          return \`<div style="display:flex;align-items:center;gap:12px;padding:8px 20px;border-top:1px solid var(--border)">
+          return `<div style="display:flex;align-items:center;gap:12px;padding:8px 20px;border-top:1px solid var(--border)">
             <div style="flex:1;min-width:0">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
-                <span style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\${r.ph.name}</span>
-                <span style="font-size:11px;color:var(--amber);font-weight:700;flex-shrink:0;margin-left:8px">+\${fmt(r.pot)}</span>
+                <span style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.ph.name}</span>
+                <span style="font-size:11px;color:var(--amber);font-weight:700;flex-shrink:0;margin-left:8px">+${fmt(r.pot)}</span>
               </div>
               <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
-                <div style="width:\${pct}%;height:100%;background:#11a63c;border-radius:2px"></div>
+                <div style="width:${pct}%;height:100%;background:#11a63c;border-radius:2px"></div>
               </div>
-              <div style="font-size:10px;color:var(--text3);margin-top:3px">Direct \${fmt(r.directCa)} · WML moy. \${fmt(r.wmlAvg)} · \${pct}%</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:3px">Direct ${fmt(r.directCa)} · WML moy. ${fmt(r.wmlAvg)} · ${pct}%</div>
             </div>
-          </div>\`;
+          </div>`;
         }).join('')}
       </div>` : ''}
     </div>` : ''}
@@ -8104,11 +8104,11 @@ function showFicheVisite(pharmacyId) {
           <div style="display:flex;gap:6px;margin-bottom:10px">
             ${(wmlEntryFv.ca_m||[]).map((v,i) => {
               const mo = ['Jan','Fév','Mar','Avr'][i] || '';
-              return \`<div style="flex:1;text-align:center">
-                <div style="font-size:10px;font-weight:700;color:\${v>0?'#0d8530':'#94a3b8'};margin-bottom:3px">\${v>0?fmt(v):'—'}</div>
-                <div style="height:6px;border-radius:3px;background:\${v>0?'#11a63c':'#e2e8f0'}"></div>
-                <div style="font-size:9px;color:#94a3b8;margin-top:2px">\${mo}</div>
-              </div>\`;
+              return `<div style="flex:1;text-align:center">
+                <div style="font-size:10px;font-weight:700;color:${v>0?'#0d8530':'#94a3b8'};margin-bottom:3px">${v>0?fmt(v):'—'}</div>
+                <div style="height:6px;border-radius:3px;background:${v>0?'#11a63c':'#e2e8f0'}"></div>
+                <div style="font-size:9px;color:#94a3b8;margin-top:2px">${mo}</div>
+              </div>`;
             }).join('')}
           </div>
           ${(wmlEntryFv.pr||[]).length > 0 ? `
@@ -8125,15 +8125,15 @@ function showFicheVisite(pharmacyId) {
             const missedFv = (wmlEntryFv.pr||[]).filter(([nom]) => nom && !directNamesFv.has(nnFv2(nom)));
             if (!missedFv.length) return '';
             const totCaFv = missedFv.reduce((s,[,ca])=>s+ca,0);
-            return \`<div style="margin-top:10px;padding:10px;background:#fffbeb;border-radius:8px;border-left:2px solid #d97706">
-              <div style="font-size:10px;font-weight:800;color:#92400e;text-transform:uppercase;margin-bottom:6px">À proposer (WML non commandés · \${fmt(totCaFv)})</div>
-              \${missedFv.slice(0,4).map(([nom,ca,,qt]) => \`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #fde68a;font-size:11px">
-                <span style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">→ \${nom}</span>
-                <span style="font-weight:700;color:#d97706;margin-left:8px;white-space:nowrap">\${fmt(ca)} · \${Math.round(qt)} u</span>
-              </div>\`).join('')}
-              \${missedFv.length > 4 ? \`<div style="font-size:10px;color:#92400e;margin-top:4px">+\${missedFv.length-4} autres</div>\` : ''}
+            return `<div style="margin-top:10px;padding:10px;background:#fffbeb;border-radius:8px;border-left:2px solid #d97706">
+              <div style="font-size:10px;font-weight:800;color:#92400e;text-transform:uppercase;margin-bottom:6px">À proposer (WML non commandés · ${fmt(totCaFv)})</div>
+              ${missedFv.slice(0,4).map(([nom,ca,,qt]) => `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #fde68a;font-size:11px">
+                <span style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">→ ${nom}</span>
+                <span style="font-weight:700;color:#d97706;margin-left:8px;white-space:nowrap">${fmt(ca)} · ${Math.round(qt)} u</span>
+              </div>`).join('')}
+              ${missedFv.length > 4 ? `<div style="font-size:10px;color:#92400e;margin-top:4px">+${missedFv.length-4} autres</div>` : ''}
               <button onclick="simFromWmlMissed('${pharma.id}')" style="margin-top:8px;width:100%;padding:7px;border-radius:8px;border:none;background:#d97706;color:#fff;cursor:pointer;font-size:12px;font-weight:700">🛒 Simuler commande WML</button>
-            </div>\`;
+            </div>`;
           })()}
         </div>` : ''}
 
