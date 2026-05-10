@@ -1268,6 +1268,43 @@ function renderDashboard() {
     </div>` : ''}
 
 
+
+    <!-- Offres IP en cours -->
+    ${(() => {
+      if (typeof BENCHMARK === 'undefined') return '';
+      const offres = BENCHMARK
+        .filter(b => b.offre_ip > 0)
+        .sort((a, b) => (b.ip_ca || 0) - (a.ip_ca || 0))
+        .slice(0, 6);
+      if (!offres.length) return '';
+      const rows = offres.map((b, i) => {
+        const remiseTxt = b.remise_pct > 0 ? '-' + b.remise_pct.toFixed(0) + '%' : '';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;${i < offres.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(b.designation || '').length > 55 ? b.designation.slice(0, 55) + '…' : b.designation}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
+              <span style="font-size:10px;color:var(--text3);padding:1px 6px;border-radius:6px;background:var(--bg3)">${b.categorie || '—'}</span>
+              ${b.prix_ip > 0 ? `<span style="font-size:10px;color:var(--text3);padding:1px 6px;border-radius:6px;background:var(--bg3);text-decoration:line-through">${fmtP(b.prix_ip)}</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:15px;font-weight:900;color:var(--amber)">${fmtP(b.offre_ip)}</div>
+            ${remiseTxt ? `<div style="font-size:10px;background:rgba(255,176,32,.1);color:var(--amber);border-radius:6px;padding:1px 6px;font-weight:700">${remiseTxt}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+      return `<div class="card fade-up" style="margin-bottom:24px;border-left:3px solid var(--amber)">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🎁 Offres IP en cours</div>
+            <div class="card-subtitle">${offres.length} produit${offres.length > 1 ? 's' : ''} avec remise Intégral Pharma — à mettre en avant</div>
+          </div>
+          <button onclick="catCatFilter='offres';catPageNum=1;navigate('catalogue')" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,176,32,.3);background:rgba(255,176,32,.08);color:var(--amber);cursor:pointer;font-weight:600;white-space:nowrap">Voir catalogue →</button>
+        </div>
+        ${rows}
+      </div>`;
+    })()}
+
     <!-- Row 2c : Journal des visites -->
     ${(() => {
       const allNotes = [];
