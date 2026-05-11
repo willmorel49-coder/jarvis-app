@@ -1421,7 +1421,7 @@ label {
   /* ── Touch targets ── */
   .btn { min-height: 44px; }
   input, select, textarea { min-height: 44px; font-size: 16px !important; }
-  .nav-item-list-row, .wml-row, [onclick] { min-height: 44px; }
+  .nav-item-list-row, .wml-row { min-height: 44px; }
 
   /* ── Offilog grid ── */
   .offil-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
