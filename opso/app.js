@@ -24,11 +24,19 @@ let state = {
 
 // ── STORAGE ──────────────────────────────────
 async function load() {
-  const [{ data: pharmacies }, { data: imports }, { data: sales }] = await Promise.all([
-    sb.from('pharmacies').select('*').order('name'),
-    sb.from('imports').select('*').order('imported_at', { ascending: false }),
-    sb.from('sales').select('*'),
-  ]);
+  let pharmacies = [], imports = [], sales = [];
+  try {
+    const [r1, r2, r3] = await Promise.all([
+      sb.from('pharmacies').select('*').order('name'),
+      sb.from('imports').select('*').order('imported_at', { ascending: false }),
+      sb.from('sales').select('id,import_id,pharmacy_id,month,year,art_designation,art_code,art_id,art_famille,qte,pu_brut,pu_net,mnt_net_ht').limit(20000),
+    ]);
+    pharmacies = r1.data || [];
+    imports    = r2.data || [];
+    sales      = r3.data || [];
+  } catch(e) {
+    console.warn('[OPSO] Supabase load failed, continuing with static data:', e);
+  }
   const allPharmas = (pharmacies || []).map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
   if (typeof OPSO_ADHERENTS !== 'undefined' && OPSO_ADHERENTS.length) {
     const opsoNames = new Set(OPSO_ADHERENTS.map(a => a.nom.trim().toUpperCase()));
@@ -431,24 +439,61 @@ function isNonRembourse(b) {
   return !b.has_ameli;
 }
 
+// Catégorie effective pour un produit BENCHMARK : NR si pas de remboursement SS
+function effectiveCatBench(b) {
+  const c = b.categorie;
+  if (c === 'biosim' || c === 'generique') return c;
+  if (!b.has_ameli) return 'nr';
+  return c || 'mi';
+}
+
+// Set lazily construit : noms normalisés des produits BENCHMARK non remboursés
+let _benchNrSet = null;
+function getBenchNrSet() {
+  if (_benchNrSet) return _benchNrSet;
+  _benchNrSet = new Set();
+  if (typeof BENCHMARK !== 'undefined') {
+    for (const b of BENCHMARK) {
+      if (!b.has_ameli && b.categorie !== 'biosim' && b.categorie !== 'generique') {
+        _benchNrSet.add((b.designation || '').trim().toUpperCase().replace(/\s+/g, ' '));
+      }
+    }
+  }
+  return _benchNrSet;
+}
+
 function classifyProduct(sale) {
   // froid n'est plus une catégorie standalone → indicateur ❄️ seulement
-  if (sale.artFamille && CATS[sale.artFamille] && sale.artFamille !== 'froid') return sale.artFamille;
-  const name = (sale.artDesignation || '').toUpperCase();
+  if (sale.artFamille && CATS[sale.artFamille] && sale.artFamille !== 'froid') {
+    const af = sale.artFamille;
+    // Pour les catégories prix (mi/ch/pp), vérifier si NR via BENCHMARK
+    if (af === 'mi' || af === 'ch' || af === 'pp') {
+      const k = (sale.artDesignation || '').trim().toUpperCase().replace(/\s+/g, ' ');
+      if (getBenchNrSet().has(k)) return 'nr';
+    }
+    return af;
+  }
+  const name = (sale.artDesignation || '').toUpperCase().trim().replace(/\s+/g, ' ');
   if (/BIOSIM|BIOSIMILAIRE/i.test(name))   return 'biosim';
   if (/\bGNR\b|GÉNÉR|GENERI/i.test(name)) return 'generique';
   if (/\bNR\b/.test(name))                return 'nr';
+  if (getBenchNrSet().has(name))           return 'nr';
   const p = sale.puNet || 0;
   return p > 468 ? 'ch' : p > 4.33 ? 'mi' : 'pp';
 }
 
-function classifyFromWMLRow(sf, nature, afm, puNet) {
+function classifyFromWMLRow(sf, nature, afm, puNet, designation) {
   const n = (nature || '').toLowerCase();
   const a = (afm || '').toLowerCase();
   // froid = indicateur transversal → on classe sur la nature thérapeutique ou le prix
   if (n.includes('biosimilaire')) return 'biosim';
   if (n.includes('generique'))    return 'generique';
   if (a === 'para' || a === 'dm' || a === 'dm_20') return 'nr';
+  // Cross-ref BENCHMARK pour les produits NR pharmaceutiques (Mounjaro, Wegovy…)
+  if (designation) {
+    const k = (designation).trim().toUpperCase().replace(/\s+/g, ' ');
+    if (getBenchNrSet().has(k)) return 'nr';
+  }
   if (puNet > 468) return 'ch';
   if (puNet > 4.33) return 'mi';
   return 'pp';
@@ -2065,7 +2110,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
   // ── HTML recommandations ajout ────────────────
   const addHtml = addOpps.map(b => {
-    const cat = CATS[b.categorie] || CATS.mi;
+    const cat = CATS[effectiveCatBench(b)] || CATS.mi;
     return `<div style="display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid var(--border)">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.designation}${b.is_froid?' ❄️':''}</div>
@@ -2662,7 +2707,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(0,87,255,.1);color:var(--green);font-weight:700">${suggestions.length} opportunités</span>
           </div>
           ${suggestions.map((b, i) => {
-            const cat = CATS[b.categorie] || CATS.mi;
+            const cat = CATS[effectiveCatBench(b)] || CATS.mi;
             const fd = b.is_froid ? ' ❄️' : '';
             return `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border)">
               <div style="font-size:13px;font-weight:700;color:var(--text3);width:18px;text-align:right;flex-shrink:0">${i+1}</div>
@@ -3162,7 +3207,7 @@ function renderProduits() {
 
   // ── Opportunités HTML ─────────────────────────
   const oppsHtml = opps.map((b, i) => {
-    const cat = CATS[b.categorie] || CATS.mi;
+    const cat = CATS[effectiveCatBench(b)] || CATS.mi;
     const fd = b.is_froid ? ' <span style="font-size:11px">❄️</span>' : '';
     const wmlPopP = wmlOppMap.get(nnP(b.designation)) || 0;
     const wmlBadge = wmlPopP > 0
@@ -5172,7 +5217,7 @@ function catAddBenchToSimIdx(idx) {
   const puNet = b.prix_ip > 0 ? b.prix_ip : (b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0);
   state.sim.items.push({
     designation: b.designation, code: b.cip13 || '',
-    cat: b.categorie || 'mi', froid: b.is_froid || false,
+    cat: effectiveCatBench(b), froid: b.is_froid || false,
     puNet, puBrut: puNet * 1.05, qty: 1,
   });
   showToast(`"${b.designation.slice(0,28)}…" ajouté au simulateur ✓`, 'success');
@@ -5277,16 +5322,8 @@ function catGetList() {
     if (catCatFilter === 'froid')     return isFroidBench(b);
     if (catCatFilter === 'generique') return isGenerique(b);
     if (catCatFilter === 'biosim')    return isBiosim(b);
-    if (catCatFilter === 'nr')        return isNonRembourse(b);
-    if (catCatFilter === 'ameli')     return b.has_ameli;
-    if (catCatFilter === 'offres')    return b.offre_ip > 0;
-    if (catCatFilter === 'wml')       return catWmlNames.has((b.designation||'').trim().toUpperCase().replace(/\s+/g,' '));
-    if (catCatFilter === 'leclerc') {
-      const lm = getCatLeclMap();
-      const lp = b.cip13 ? lm.get(String(b.cip13)) : null;
-      return lp != null && lp > 0 && b.prix_ip > 0 && lp < b.prix_ip;
-    }
-    if (catCatFilter !== 'tous')      return b.categorie === catCatFilter;
+    if (catCatFilter === 'nr')        return effectiveCatBench(b) === 'nr';
+    if (catCatFilter !== 'tous')      return effectiveCatBench(b) === catCatFilter;
     return true;
   });
 }
@@ -5302,7 +5339,7 @@ function catAddToSim(i) {
   state.sim.items.push({
     designation: b.designation,
     code:        b.cip13 || '',
-    cat:         b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi'),
+    cat:         effectiveCatBench(b),
     froid:       isFroidBench(b),
     puNet,
     puBrut,
@@ -5410,7 +5447,7 @@ function renderCatalogue() {
   // ── Products ─────────────────────────────────
   const prodsHtml = page.length ? page.map((b, i) => {
     const globalIdx = startIdx + i;
-    const cat    = CATS[b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi')] || CATS.mi;
+    const cat    = CATS[effectiveCatBench(b)] || CATS.mi;
     const froid  = isFroidBench(b) ? '❄️ ' : '';
     const ameliTag   = b.has_ameli ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.12);color:var(--green);border-radius:4px">🏥 SS</span>` : '';
     const genTag     = isGenerique(b) ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,229,160,.08);color:#059669;border-radius:4px;border:1px solid rgba(5,150,105,.2)">💊 GEN</span>` : '';
@@ -5526,7 +5563,7 @@ function simProductList() {
     return BENCHMARK.map(b => ({
       designation: b.designation,
       code:        b.cip13 || '',
-      cat:         b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi'),
+      cat:         effectiveCatBench(b),
       froid:       isFroidBench(b),
       puBrut:      b.prix_ht > 0 ? b.prix_ht : (b.prix_ip > 0 ? b.prix_ip / (1 - 0.039) : 0),
       puNet:       b.prix_ip > 0 ? b.prix_ip : (b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0),
@@ -7283,20 +7320,26 @@ async function syncOpsoPharmacies() {
 async function initApp() {
   if (!state.user) return;
   const loadingEl = document.getElementById('app-loading');
-  await load();
-  await grpSyncFromStorage();
-  filterToOpsoScope();
-  try { await syncOpsoPharmacies(); } catch(e) { console.warn('[OPSO] syncOpsoPharmacies échoué (RLS/réseau):', e); }
-  mergeWmlStaticSales();
+  const hideLoader = () => { if (loadingEl) { loadingEl.style.opacity = '0'; setTimeout(() => { loadingEl.style.display = 'none'; }, 400); } };
+  try {
+    await load();
+    try { await grpSyncFromStorage(); } catch(e) { console.warn('[OPSO] grpSync échoué:', e); }
+    filterToOpsoScope();
+    try { await syncOpsoPharmacies(); } catch(e) { console.warn('[OPSO] syncOpsoPharmacies échoué (RLS/réseau):', e); }
+    mergeWmlStaticSales();
 
-  document.getElementById('sidebar-user-name').textContent = state.user.name;
-  document.getElementById('sidebar-user-role').textContent = state.user.role;
-  document.getElementById('sidebar-avatar').textContent = state.user.name.charAt(0);
-  document.getElementById('nav-admin').style.display = state.user.role === 'admin' ? 'flex' : 'none';
+    document.getElementById('sidebar-user-name').textContent = state.user.name;
+    document.getElementById('sidebar-user-role').textContent = state.user.role;
+    document.getElementById('sidebar-avatar').textContent = state.user.name.charAt(0);
+    document.getElementById('nav-admin').style.display = state.user.role === 'admin' ? 'flex' : 'none';
 
-  updateNavBadge();
-  navigate('dashboard');
-  if (loadingEl) { loadingEl.style.opacity = '0'; setTimeout(() => { loadingEl.style.display = 'none'; }, 400); }
+    updateNavBadge();
+    navigate('dashboard');
+  } catch(e) {
+    console.error('[OPSO] initApp échoué:', e);
+  } finally {
+    hideLoader();
+  }
 }
 
 // Fusionne WML_STATIC_SALES dans state.sales.
