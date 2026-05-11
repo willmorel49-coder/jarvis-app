@@ -5357,6 +5357,20 @@ function renderCatalogue() {
   }
   catWmlNames = new Set(wmlPopMap.keys()); // mise à jour du filtre module-level
 
+  // WML prix réels : artDesignation normalisé → puNet le plus récent
+  const wmlPriceMap = new Map();
+  if (typeof WML_STATIC_SALES !== 'undefined') {
+    const bestPeriod = new Map();
+    for (const s of WML_STATIC_SALES) {
+      if (!s.artDesignation || !s.puNet || s.puNet <= 0) continue;
+      const k = nnCat(s.artDesignation);
+      const period = (s.year || 2026) * 100 + (s.month || 1);
+      const cur = bestPeriod.get(k);
+      if (!cur || period > cur.period) bestPeriod.set(k, { period, puNet: s.puNet });
+    }
+    for (const [k, v] of bestPeriod) wmlPriceMap.set(k, v.puNet);
+  }
+
   // ── KPIs ─────────────────────────────────────
   const nPrix  = BENCHMARK.filter(b => b.prix_ip > 0).length;
   const nAmeli = BENCHMARK.filter(b => b.has_ameli).length;
@@ -5401,11 +5415,18 @@ function renderCatalogue() {
     const wmlTag     = wmlPop > 0 ? `<span style="font-size:10px;padding:1px 6px;background:rgba(0,229,160,.13);color:var(--mint);border-radius:4px;font-weight:700;border:1px solid rgba(0,229,160,.25)" title="${wmlPop} pharmacie(s) OPSO achètent ce produit via WML">📦 ×${wmlPop} WML</span>` : '';
     const prixLecl   = b.cip13 ? (getCatLeclMap().get(String(b.cip13)) || null) : null;
     const leclTag    = prixLecl != null ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,114,230,.1);color:#0072e6;border-radius:4px;font-weight:700">🛒 ${fmtP(prixLecl)}</span>` : '';
-    const prix = b.prix_ip > 0
-      ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--green)">${fmtP(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
-      : b.prix_ht > 0
-        ? `<div style="font-size:14px;color:var(--text2)">${fmtP(b.prix_ht)}</div>`
-        : `<div style="font-size:12px;color:var(--text3)">N/D</div>`;
+    const wmlPuNet = wmlPriceMap.get(nnCat(b.designation));
+    const prix = wmlPuNet != null && wmlPuNet > 0
+      ? `<div style="text-align:right">
+          <div style="font-size:14px;font-weight:700;color:var(--opso-green)">${fmtP(wmlPuNet)}</div>
+          <div style="font-size:9px;color:var(--opso-green);font-weight:700;letter-spacing:.03em;text-transform:uppercase">Prix réel IP HT</div>
+          ${b.prix_ip > 0 && Math.abs(wmlPuNet - b.prix_ip) > 0.005 ? `<div style="font-size:10px;color:var(--text3);text-decoration:line-through">${fmtP(b.prix_ip)}</div>` : ''}
+         </div>`
+      : b.prix_ip > 0
+        ? `<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--green)">${fmtP(b.prix_ip)}</div>${b.remise_pct > 0 ? `<div style="font-size:10px;color:var(--text3)">−${b.remise_pct.toFixed(1)}%</div>` : ''}</div>`
+        : b.prix_ht > 0
+          ? `<div style="font-size:14px;color:var(--text2)">${fmtP(b.prix_ht)}</div>`
+          : `<div style="font-size:12px;color:var(--text3)">N/D</div>`;
     const inSim = state.sim.items.some(it => it.designation === b.designation);
     const addBtn = `<button onclick="catAddToSim(${globalIdx})"
       style="padding:5px 12px;border-radius:8px;border:1px solid ${inSim ? 'var(--green)' : 'var(--green)'};background:${inSim ? 'rgba(5,150,105,.1)' : 'var(--green)'};color:${inSim ? 'var(--green)' : '#fff'};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:72px;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
