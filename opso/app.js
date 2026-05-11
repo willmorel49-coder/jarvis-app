@@ -5242,10 +5242,21 @@ function showToast(msg, type = 'info') {
 
 // ── CATALOGUE ────────────────────────────────
 let catQuery = '', catCatFilter = 'tous', catPageNum = 1;
-let catWmlNames = new Set(); // populated on renderCatalogue
+let catWmlNames    = new Set(); // populated on renderCatalogue
+let catWmlPriceMap = new Map(); // artDesignation normalisé → puNet WML réel
 const CAT_PER_PAGE = 30;
 let catCurrentData = [];
 let _catLeclMap = null;
+
+const normCat = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+
+// Remise IP selon tranche de prix HT catalogue
+function calcRemiseIP(puBrut) {
+  if (!puBrut || puBrut <= 0) return puBrut || 0;
+  if (puBrut > 468)  return puBrut - 19.50;
+  if (puBrut > 4.33) return puBrut * (1 - 0.039);
+  return Math.max(0, puBrut - 0.18);
+}
 
 function getCatLeclMap() {
   if (_catLeclMap) return _catLeclMap;
@@ -5285,14 +5296,16 @@ function catAddToSim(i) {
   if (!b) return;
   const already = state.sim.items.find(it => it.designation === b.designation);
   if (already) { showToast('Déjà dans le simulateur', 'info'); return; }
-  const puNet = b.prix_ip > 0 ? b.prix_ip : (b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0);
+  const puBrut = b.prix_ht > 0 ? b.prix_ht : (b.prix_ip > 0 ? b.prix_ip / (1 - 0.039) : 0);
+  const wmlPuNet = catWmlPriceMap.get(normCat(b.designation));
+  const puNet = (wmlPuNet != null && wmlPuNet > 0) ? wmlPuNet : calcRemiseIP(puBrut);
   state.sim.items.push({
     designation: b.designation,
     code:        b.cip13 || '',
     cat:         b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi'),
     froid:       isFroidBench(b),
     puNet,
-    puBrut:      puNet * 1.05,
+    puBrut,
     qty:         1,
   });
   showToast(`"${b.designation.slice(0, 28)}…" ajouté au simulateur ✓`, 'success');
@@ -5346,30 +5359,29 @@ function renderCatalogue() {
   const page = catCurrentData.slice(startIdx, startIdx + CAT_PER_PAGE);
 
   // WML cross-ref : combien de pharmacies OPSO achètent chaque produit via WML
-  const nnCat = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
   const wmlPopMap = new Map(); // normalisé nom → nb pharmacies
   for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
     const seen = new Set();
     for (const [nom] of (d.pr||[])) {
-      const k = nnCat(nom);
+      const k = normCat(nom);
       if (k && !seen.has(k)) { seen.add(k); wmlPopMap.set(k, (wmlPopMap.get(k)||0) + 1); }
     }
   }
   catWmlNames = new Set(wmlPopMap.keys()); // mise à jour du filtre module-level
 
   // WML prix réels : artDesignation normalisé → puNet le plus récent
-  const wmlPriceMap = new Map();
-  if (typeof WML_STATIC_SALES !== 'undefined') {
+  if (catWmlPriceMap.size === 0 && typeof WML_STATIC_SALES !== 'undefined') {
     const bestPeriod = new Map();
     for (const s of WML_STATIC_SALES) {
       if (!s.artDesignation || !s.puNet || s.puNet <= 0) continue;
-      const k = nnCat(s.artDesignation);
+      const k = normCat(s.artDesignation);
       const period = (s.year || 2026) * 100 + (s.month || 1);
       const cur = bestPeriod.get(k);
       if (!cur || period > cur.period) bestPeriod.set(k, { period, puNet: s.puNet });
     }
-    for (const [k, v] of bestPeriod) wmlPriceMap.set(k, v.puNet);
+    for (const [k, v] of bestPeriod) catWmlPriceMap.set(k, v.puNet);
   }
+  const wmlPriceMap = catWmlPriceMap;
 
   // ── KPIs ─────────────────────────────────────
   const nPrix  = BENCHMARK.filter(b => b.prix_ip > 0).length;
@@ -5386,10 +5398,6 @@ function renderCatalogue() {
     { key: 'generique', label: '💊 Génériques' },
     { key: 'nr',        label: '🔴 Non remboursés' },
     { key: 'froid',     label: '❄️ Froid' },
-    { key: 'ameli',     label: '🏥 Ameli' },
-    { key: 'offres',    label: '🎁 Offres en cours' },
-    { key: 'leclerc',   label: '🛒 Leclerc moins cher' },
-    { key: 'wml',       label: `📦 Déjà acheté WML (${catWmlNames.size})` },
   ];
   const tabsHtml = tabDefs.map(t => {
     const active = catCatFilter === t.key;
@@ -5411,11 +5419,11 @@ function renderCatalogue() {
     const rotTag     = b.rot_pharma_jan26 > 0 ? `<span style="font-size:10px;color:var(--text3)">↻ ${b.rot_pharma_jan26.toFixed(1)}/mois</span>` : '';
     const cipTag     = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
     const offreTag   = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
-    const wmlPop     = wmlPopMap.get(nnCat(b.designation)) || 0;
+    const wmlPop     = wmlPopMap.get(normCat(b.designation)) || 0;
     const wmlTag     = wmlPop > 0 ? `<span style="font-size:10px;padding:1px 6px;background:rgba(0,229,160,.13);color:var(--mint);border-radius:4px;font-weight:700;border:1px solid rgba(0,229,160,.25)" title="${wmlPop} pharmacie(s) OPSO achètent ce produit via WML">📦 ×${wmlPop} WML</span>` : '';
     const prixLecl   = b.cip13 ? (getCatLeclMap().get(String(b.cip13)) || null) : null;
     const leclTag    = prixLecl != null ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,114,230,.1);color:#0072e6;border-radius:4px;font-weight:700">🛒 ${fmtP(prixLecl)}</span>` : '';
-    const wmlPuNet = wmlPriceMap.get(nnCat(b.designation));
+    const wmlPuNet = wmlPriceMap.get(normCat(b.designation));
     const prix = wmlPuNet != null && wmlPuNet > 0
       ? `<div style="text-align:right">
           <div style="font-size:14px;font-weight:700;color:var(--opso-green)">${fmtP(wmlPuNet)}</div>
@@ -5520,6 +5528,7 @@ function simProductList() {
       code:        b.cip13 || '',
       cat:         b.categorie === 'froid' ? 'mi' : (b.categorie || 'mi'),
       froid:       isFroidBench(b),
+      puBrut:      b.prix_ht > 0 ? b.prix_ht : (b.prix_ip > 0 ? b.prix_ip / (1 - 0.039) : 0),
       puNet:       b.prix_ip > 0 ? b.prix_ip : (b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0),
       rot:         b.rot_pharma_jan26 || 0,
       hasAmeli:    b.has_ameli,
@@ -5565,13 +5574,16 @@ function simAddProduct(idx) {
   const list = simSuggestions(simSearchQuery);
   const p    = list[idx];
   if (!p) return;
+  // Prix réel WML si disponible, sinon calcul par tranche IP
+  const wmlPuNet = catWmlPriceMap.get(normCat(p.designation));
+  let puBrut = p.puBrut > 0 ? p.puBrut : (p.puNet > 0 ? p.puNet / (1 - 0.039) : 0);
+  let puNet  = (wmlPuNet != null && wmlPuNet > 0) ? wmlPuNet : calcRemiseIP(puBrut);
   // Si pharmacie sélectionnée : enrichir avec son puNet historique
-  let puNet = p.puNet, puBrut = p.puNet * 1.05; // estimate
   if (state.sim.pharmacyId) {
     const match = state.sales
       .filter(s => s.pharmacyId === state.sim.pharmacyId && (s.artCode === p.code || s.artDesignation === p.designation))
       .sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month));
-    if (match.length) { puNet = match[0].puNet; puBrut = match[0].puBrut; }
+    if (match.length) { puNet = match[0].puNet; puBrut = match[0].puBrut || puBrut; }
   }
   state.sim.items.push({
     designation: p.designation, code: p.code, cat: p.cat, froid: p.froid,
