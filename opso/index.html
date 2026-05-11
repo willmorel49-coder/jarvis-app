@@ -128,6 +128,10 @@
         <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
         <span class="nav-label-text">Catalogue IP</span>
       </div>
+      <div class="nav-item" data-page="prioritaires" onclick="navigate('prioritaires')">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="nav-label-text">Prioritaires</span>
+      </div>
     </div>
 
     <div class="nav-section" style="margin-top:auto">
@@ -187,6 +191,7 @@
       <div class="page" id="page-simulateur"><div id="simul-content"></div></div>
       <div class="page" id="page-groupements"><div id="groupements-content"></div></div>
       <div class="page" id="page-objectifs"><div id="objectifs-content"></div></div>
+      <div class="page" id="page-prioritaires"><div id="prioritaires-content"></div></div>
     </div>
   </div>
 </div>
@@ -229,6 +234,10 @@
     <div class="mobile-nav-item" data-page="offilog" onclick="navigate('offilog')">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
       <span class="mobile-nav-label">Offilog</span>
+    </div>
+    <div class="mobile-nav-item" data-page="prioritaires" onclick="navigate('prioritaires')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span class="mobile-nav-label">Priorité</span>
     </div>
   </div>
 </nav>
@@ -285,6 +294,6 @@ function showNewPassForm() {
 <script src="opso-adherents.js?v=20260508"></script>
 <script src="offilog-live-data.js?v=20260508"></script>
 <script src="wml-sales-data.js?v=20260510b"></script>
-<script src="app.js?v=20260511j"></script>
+<script src="app.js?v=20260511k"></script>
 </body>
 </html>
