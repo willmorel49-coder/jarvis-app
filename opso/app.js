@@ -5269,6 +5269,180 @@ function catAddBenchToSimIdx(idx) {
   showToast(`"${b.designation.slice(0,28)}…" ajouté au simulateur ✓`, 'success');
 }
 
+// ── PRIORITAIRES ──────────────────────────────
+function renderPrioritaires() {
+  const container = document.getElementById('prioritaires-content');
+  if (!container) return;
+
+  const fmt  = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
+
+  const allSales = getSales();
+  const { year: curY, month: curM } = getCurrentPeriod(allSales.length ? allSales : []);
+  const salesCur = curY ? getSales({ year: curY, month: curM }) : [];
+  const curLabel = curY ? `${monthName(curM)} ${curY}` : '—';
+
+  const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const nn = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+  const wmlMap = new Map(wmlVis.map(d => [nn(d.nom), d]));
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const in7   = new Date(today); in7.setDate(in7.getDate() + 7);
+
+  const parsePV = str => {
+    if (!str || !str.trim() || str === 'null') return null;
+    const parts = str.trim().split('/');
+    if (parts.length === 3) {
+      const d = new Date(+parts[2], +parts[1]-1, +parts[0]);
+      return isNaN(d) ? null : d;
+    }
+    return null;
+  };
+
+  const rows = state.pharmacies.map(ph => {
+    const wmlE    = wmlMap.get(nn(ph.name));
+    const wmlAvg  = wmlE ? wmlE.ca / 4 : 0;
+    const directCa = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+    const potentiel = Math.max(0, wmlAvg - directCa);
+    const ratio     = wmlAvg > 0 ? Math.min(directCa / wmlAvg, 1) : (directCa > 0 ? 1 : 0);
+    const score     = potentiel * (1 - ratio) + (wmlAvg * 0.1);
+
+    const clientInfo = typeof CLIENTS !== 'undefined'
+      ? CLIENTS.find(c => c.cip && String(c.cip) === String(ph.code))
+      : null;
+    const nextVisitDate = parsePV(clientInfo?.prochaineVisite);
+
+    let priority, priorityColor, priorityBg;
+    if (ratio < 0.35 && wmlAvg > 800) {
+      priority = '🔴 Urgent'; priorityColor = 'var(--rose)'; priorityBg = 'rgba(255,77,109,.12)';
+    } else if (ratio < 0.65 || potentiel > 1500) {
+      priority = '🟡 À suivre'; priorityColor = 'var(--amber)'; priorityBg = 'rgba(255,176,32,.12)';
+    } else {
+      priority = '🟢 Stable'; priorityColor = 'var(--green)'; priorityBg = 'rgba(0,229,160,.08)';
+    }
+
+    let visitBadge, visitColor = 'var(--text3)';
+    if (!nextVisitDate) {
+      visitBadge = 'Non planifiée'; visitColor = 'var(--text3)';
+    } else {
+      const diff = Math.round((nextVisitDate - today) / 86400000);
+      if (diff < 0)      { visitBadge = `En retard (${Math.abs(diff)}j)`;  visitColor = 'var(--rose)'; }
+      else if (diff <= 7){ visitBadge = 'Cette semaine';                    visitColor = 'var(--amber)'; }
+      else               { visitBadge = `Dans ${diff} j`;                  visitColor = 'var(--text3)'; }
+    }
+
+    return { ph, wmlE, wmlAvg, directCa, potentiel, ratio, score, priority, priorityColor, priorityBg, visitBadge, visitColor, nextVisitDate };
+  })
+  .filter(r => r.wmlAvg > 0 || r.directCa > 0)
+  .sort((a, b) => b.score - a.score);
+
+  const totalPotentiel = rows.reduce((s, r) => s + r.potentiel, 0);
+  const nUrgent = rows.filter(r => r.priority.includes('Urgent')).length;
+  const nSuivi  = rows.filter(r => r.priority.includes('suivre')).length;
+  const nStable = rows.filter(r => r.priority.includes('Stable')).length;
+
+  const rowsHtml = rows.map((r, i) => {
+    const convPct   = r.wmlAvg > 0 ? Math.round(r.ratio * 100) : null;
+    const convColor = convPct === null ? 'var(--text3)' : convPct >= 65 ? 'var(--green)' : convPct >= 35 ? 'var(--amber)' : 'var(--rose)';
+    return `<tr style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s" onclick="showPharmaDetail('${r.ph.id}')" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+      <td style="padding:12px 14px;font-size:14px;font-weight:900;color:var(--text3);text-align:center;width:36px">${i+1}</td>
+      <td style="padding:12px 14px;min-width:160px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${r.ph.color};flex-shrink:0"></span>
+          <div>
+            <div style="font-size:13px;font-weight:700;white-space:nowrap">${titleCase(r.ph.name)}</div>
+            <div style="font-size:10px;font-weight:600;color:${r.visitColor};margin-top:1px">${r.visitBadge}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:12px 12px;text-align:right;white-space:nowrap">
+        <div style="font-size:13px;font-weight:700">${r.wmlAvg > 0 ? fmt(r.wmlAvg) : '—'}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">moy./mois WML</div>
+      </td>
+      <td style="padding:12px 12px;text-align:right;white-space:nowrap">
+        <div style="font-size:13px;font-weight:700;color:var(--opso-green)">${r.directCa > 0 ? fmt(r.directCa) : '—'}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">direct IP ${curLabel}</div>
+      </td>
+      <td style="padding:12px 14px;min-width:90px">
+        ${convPct !== null ? `
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;min-width:50px">
+            <div style="width:${convPct}%;height:100%;background:${convColor};border-radius:3px;transition:width .4s"></div>
+          </div>
+          <div style="font-size:12px;font-weight:800;color:${convColor};min-width:30px;text-align:right">${convPct}%</div>
+        </div>` : '<span style="color:var(--text3);font-size:11px">—</span>'}
+      </td>
+      <td style="padding:12px 12px;text-align:right;white-space:nowrap">
+        <div style="font-size:14px;font-weight:800;color:${r.potentiel > 0 ? 'var(--amber)' : 'var(--text3)'}">${r.potentiel > 100 ? '+'+fmt(r.potentiel) : '—'}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">${r.potentiel > 100 ? 'non converti' : ''}</div>
+      </td>
+      <td style="padding:12px 14px;text-align:center">
+        <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:${r.priorityBg};color:${r.priorityColor}">${r.priority}</span>
+      </td>
+      <td style="padding:12px 12px;text-align:right">
+        <button onclick="event.stopPropagation();showFicheVisite('${r.ph.id}')" style="padding:5px 11px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">📋 Visite</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+  <div style="padding:0 0 40px">
+    <div class="cockpit-mini-grid fade-up" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px">
+      <div class="cockpit-mini">
+        <div class="cockpit-mini-val">${rows.length}</div>
+        <div class="cockpit-mini-label">Pharmacies suivies</div>
+      </div>
+      <div class="cockpit-mini ${nUrgent > 0 ? 'cockpit-mini-alert' : ''}">
+        <div class="cockpit-mini-val" style="color:${nUrgent > 0 ? 'var(--rose)' : 'var(--text3)'}">${nUrgent}</div>
+        <div class="cockpit-mini-label">🔴 Urgentes</div>
+      </div>
+      <div class="cockpit-mini">
+        <div class="cockpit-mini-val" style="color:${nSuivi > 0 ? 'var(--amber)' : 'var(--text3)'}">${nSuivi}</div>
+        <div class="cockpit-mini-label">🟡 À suivre</div>
+      </div>
+      <div class="cockpit-mini">
+        <div class="cockpit-mini-val" style="color:var(--green)">${nStable}</div>
+        <div class="cockpit-mini-label">🟢 Stables</div>
+      </div>
+      <div class="cockpit-mini" style="grid-column:span 2">
+        <div class="cockpit-mini-val" style="font-size:20px">${fmt(totalPotentiel)}</div>
+        <div class="cockpit-mini-label">CA potentiel non converti</div>
+      </div>
+    </div>
+
+    <div class="card fade-up" style="padding:0;overflow:hidden">
+      <div class="card-header" style="padding:16px 20px">
+        <div>
+          <div class="card-title">Pharmacies prioritaires — Visites IP</div>
+          <div class="card-subtitle">Classées par potentiel WML non converti en direct · ${curLabel}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);text-align:right;line-height:1.6">
+          Score = potentiel€ × (1 − taux conv.)<br>
+          <span style="color:var(--rose)">🔴 conv.&lt;35% + WML&gt;800€</span> · <span style="color:var(--amber)">🟡 conv.&lt;65%</span>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:640px">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border2)">
+              <th style="padding:8px 14px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center">#</th>
+              <th style="padding:8px 14px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Pharmacie</th>
+              <th style="padding:8px 12px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">WML moy./mois</th>
+              <th style="padding:8px 12px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">Direct IP</th>
+              <th style="padding:8px 14px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Conversion</th>
+              <th style="padding:8px 12px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">Potentiel</th>
+              <th style="padding:8px 14px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center">Priorité</th>
+              <th style="padding:8px 12px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="8" style="text-align:center;padding:48px;color:var(--text3)">Aucune donnée WML disponible — importez les fichiers WML</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
 // ── NAV ───────────────────────────────────────
 function navigate(page) {
   // Fermer tout modal ouvert avant de naviguer
@@ -5291,8 +5465,9 @@ function navigate(page) {
     simulateur: 'Simulateur',
     offilog:    'Prix Offilog Live',
     wml:        'CA & Commandes',
-    groupements:'Groupements',
-    objectifs:  'Objectifs',
+    groupements:  'Groupements',
+    objectifs:    'Objectifs',
+    prioritaires: '⭐ Prioritaires à visiter',
   };
   document.getElementById('topbar-title').textContent = titles[page] || page;
 
@@ -5307,8 +5482,9 @@ function navigate(page) {
     simulateur:  renderSimulator,
     offilog:     renderOffilog,
     wml:         renderWml,
-    groupements: renderGroupements,
-    objectifs:   renderObjectifs,
+    groupements:  renderGroupements,
+    objectifs:    renderObjectifs,
+    prioritaires: renderPrioritaires,
   };
   if (renders[page]) renders[page]();
   // Scroll to top on every page navigation
