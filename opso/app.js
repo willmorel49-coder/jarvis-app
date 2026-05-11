@@ -9193,12 +9193,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Failsafe : forcer disparition du spinner après 10s quoi qu'il arrive
+  setTimeout(() => {
+    const loadEl = document.getElementById('app-loading');
+    if (loadEl && loadEl.style.display !== 'none') {
+      loadEl.style.opacity = '0';
+      setTimeout(() => { loadEl.style.display = 'none'; }, 400);
+    }
+  }, 10000);
+
   if (await restoreSession()) {
     loginScreen.style.display = 'none';
     appEl.classList.add('visible');
     const loadEl = document.getElementById('app-loading');
     if (loadEl) loadEl.classList.add('hidden');
     await initApp();
+  } else {
+    // Pas de session : s'assurer que le login est visible
+    loginScreen.style.display = 'flex';
   }
 
   // Global Cmd+K / Ctrl+K search shortcut
