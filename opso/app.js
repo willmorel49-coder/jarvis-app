@@ -6352,23 +6352,13 @@ function renderOffilog() {
     const isAlerte = minComp != null && prixRef != null && minComp < prixRef;
     const bestBadge = bestComp != null
       ? `<div class="offil-best-price" title="Prix ${bestComp[1]} constaté">${bestComp[1]} ${fmtP(bestComp[0])}</div>` : '';
-    const eanStr = p.ean ? String(p.ean) : '';
-    const bmMaps = benchMaps();
-    const allConcHtml = (() => {
-      const chips = [];
-      if (bmMaps.leclEan.has(eanStr)) chips.push(`<span style="font-size:10px;font-weight:600;color:#0072e6;background:rgba(0,114,230,.1);padding:1px 6px;border-radius:6px">Leclerc ${fmtP(bmMaps.leclEan.get(eanStr))}</span>`);
-      if (bmMaps.cap3Ean.has(eanStr)) chips.push(`<span style="font-size:10px;font-weight:600;color:#ea580c;background:rgba(234,88,12,.1);padding:1px 6px;border-radius:6px">Cap3000 ${fmtP(bmMaps.cap3Ean.get(eanStr))}</span>`);
-      if (bmMaps.drakEan.has(eanStr)) chips.push(`<span style="font-size:10px;font-weight:600;color:#6366f1;background:rgba(99,102,241,.1);padding:1px 6px;border-radius:6px">Drakkars ${fmtP(bmMaps.drakEan.get(eanStr))}</span>`);
-      if (bmMaps.pharmEan.has(eanStr)) chips.push(`<span style="font-size:10px;font-weight:600;color:#00E5A0;background:rgba(0,229,160,.08);padding:1px 6px;border-radius:6px">Apothical ${fmtP(bmMaps.pharmEan.get(eanStr))}</span>`);
-      return chips.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${chips.join('')}</div>` : '';
-    })();
     const benchRow = (drakkars != null || cap3000 != null || leclerc != null || maPharmie != null) ? `
       <div class="offil-bench-row">
         ${maPharmie != null ? `<span class="offil-bench" style="border-color:rgba(0,229,160,.25);color:#00E5A0;background:rgba(0,229,160,.06)" title="Ma Pharmacie (prix scrappé)">🏥 ${fmtP(maPharmie)}</span>` : ''}
         ${drakkars != null ? `<span class="offil-bench offil-bench-drak" title="Pharmacie des Drakkars">Drakkars ${fmtP(drakkars)}</span>` : ''}
         ${cap3000 != null ? `<span class="offil-bench offil-bench-cap" title="Pharmacie Cap 3000">Cap 3000 ${fmtP(cap3000)}</span>` : ''}
         ${leclerc != null ? `<span class="offil-bench offil-bench-lecl" title="E.Leclerc">Leclerc ${fmtP(leclerc)}</span>` : ''}
-      </div>${bestBadge}${allConcHtml}` : allConcHtml;
+      </div>${bestBadge}` : '';
     return `
     <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener"${isAlerte ? ' style="border-color:rgba(255,77,109,.45)"' : ''}>
       <div class="offil-card-img-wrap">
