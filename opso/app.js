@@ -637,7 +637,7 @@ function renderDashboard() {
         <div style="font-size:13px;font-weight:700;color:var(--text)">Aucune donnée de ventes importée</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">Importez les Excel de ventes pour activer les KPIs marge, catégories et RFA</div>
       </div>
-      <button onclick="navigate('import')" style="padding:6px 14px;border-radius:8px;border:1.5px solid ${grp.couleur};background:transparent;color:${grp.couleur};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Importer →</button>
+      <span style="font-size:11px;color:var(--text3)">Les données sont importées manuellement.</span>
     </div>` : '';
 
   container.innerHTML = renderGrpDashboard(grp);
@@ -817,6 +817,30 @@ function _renderDashboardLegacy() {
           <div class="cockpit-mini-label">Objectif</div>
         </div>`;
       })()}
+      ${(() => {
+        if (!salesCur.length) return '';
+        const catCA = { ch:0, mi:0, pp:0, nr:0, biosim:0, generique:0 };
+        for (const s of salesCur) { const c = classifyProduct(s); if (catCA[c]!=null) catCA[c]+=s.mntNetHt; }
+        const total = Object.values(catCA).reduce((a,b)=>a+b,0);
+        if (!total) return '';
+        const top = Object.entries(catCA).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+        const CMAP = { ch:'#a855f7', mi:'#0284c7', pp:'#22c55e', nr:'#ef4444', biosim:'#f97316', generique:'#06b6d4' };
+        const CLAB = { ch:'CH', mi:'MI', pp:'PP', nr:'NR', biosim:'Bio', generique:'Gén' };
+        const bars = top.slice(0,4).map(([k,v])=>{
+          const pct = (v/total*100).toFixed(0);
+          return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+            <div style="width:28px;font-size:9px;color:var(--text3);text-align:right;flex-shrink:0">${CLAB[k]||k}</div>
+            <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:${CMAP[k]||'var(--green)'};border-radius:3px"></div>
+            </div>
+            <div style="font-size:9px;color:var(--text3);width:22px;text-align:right;flex-shrink:0">${pct}%</div>
+          </div>`;
+        }).join('');
+        return `<div class="cockpit-mini" style="grid-column:span 2;padding:10px 12px">
+          <div class="cockpit-mini-label" style="margin-bottom:6px">Répartition catégories</div>
+          ${bars}
+        </div>`;
+      })()}
     </div>
 
     ${(() => {
@@ -939,7 +963,7 @@ function _renderDashboardLegacy() {
       const fmtWml2 = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
       return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
         <div class="card-header" style="padding:16px 20px">
-          <div class="card-title">Signaux WML</div>
+          <div class="card-title">Signaux achats IP</div>
           <div class="card-subtitle">Tendances achats IP Jan–Avr 2026</div>
         </div>
         ${wmlSignals.slice(0, 5).map(({ d, pct, type }) => `
@@ -2084,6 +2108,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
   const curLabel  = curY  ? `${monthName(curM)} ${curY}`   : '—';
   const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
+  const objTarget = loadObjectives()[`${pharma.id}_${curY}_${curM}`] || 0;
   const pharmaByMonth = caByMonth(allPhSales);
   const imports = state.imports.filter(i => i.pharmacyId === pharma.id).sort((a,b) => new Date(b.importedAt) - new Date(a.importedAt));
 
@@ -2156,7 +2181,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
       </div>
 
       <!-- Row 1 : Hero + KPIs -->
-      <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:20px">
+      <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;margin-bottom:20px">
         <div class="kpi-card" style="background:linear-gradient(135deg,#064e20 0%,#0d8530 50%,#11a63c 100%);box-shadow:0 8px 32px rgba(17,166,60,.35),0 2px 8px rgba(17,166,60,.20);border:none">
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.7);margin-bottom:6px">CA Intégral Pharma — ${curLabel}</div>
           <div style="font-size:38px;font-weight:900;letter-spacing:-2px;font-family:'Varela Round',sans-serif;color:#fff">${fmt(caCur)}</div>
@@ -2186,6 +2211,13 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div class="kpi-value" style="color:var(--amber)">${pctOfSector.toFixed(1)}%</div>
           <div class="kpi-label">Part secteur</div>
           ${potentielGx > 0 ? `<div style="margin-top:6px;font-size:11px;color:var(--text3)">Pot. Gx ${fmt(potentielGx)}</div>` : ''}
+        </div>
+        <div class="kpi-card kc-g" style="cursor:default" id="obj-kpi-card">
+          <div class="kpi-icon">🎯</div>
+          <div class="kpi-value" id="obj-kpi-val" style="color:${objTarget>0?(caCur>=objTarget?'var(--green)':'var(--amber)'):'var(--text3)'}">${objTarget > 0 ? fmt(objTarget) : '—'}</div>
+          <div class="kpi-label">Objectif ${monthName(curM)}</div>
+          ${objTarget > 0 ? `<div style="margin-top:6px;font-size:11px;color:${caCur>=objTarget?'var(--green)':'var(--rose)'};">${caCur >= objTarget ? '✓ Atteint' : Math.round(caCur/objTarget*100)+'% atteint'}</div>` : ''}
+          <button onclick="inlineObjEdit('${pharma.id}',${curY},${curM})" style="margin-top:8px;padding:3px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:10px;font-weight:600">${objTarget > 0 ? '✏ Modifier' : '+ Définir'}</button>
         </div>
       </div>
 
@@ -2850,6 +2882,18 @@ async function deletePharmacy(pharmacyId) {
   showToast(`${pharma?.name} supprimée`, 'success');
   updateNavBadge();
   renderPharmacies();
+}
+
+function inlineObjEdit(pharmacyId, year, month) {
+  const current = loadObjectives()[`${pharmacyId}_${year}_${month}`] || '';
+  const val = prompt(`Objectif mensuel ${monthName(month)} ${year} (€ HT) :`, current);
+  if (val === null) return;
+  const num = parseFloat((val||'').replace(',','.').replace(/\s/g,''));
+  const objs = loadObjectives();
+  const k = `${pharmacyId}_${year}_${month}`;
+  if (num > 0) objs[k] = num; else delete objs[k];
+  saveObjectives(objs);
+  showPharmaDetail(pharmacyId);
 }
 
 function exportPharmacyCSV(pharmacyId) {
@@ -6547,6 +6591,12 @@ function getWmlVisible() {
   return WML_DATA.filter(d => opsoSet.has(String(d.tc)));
 }
 
+function wmlProdFilter(q) {
+  const rows = document.querySelectorAll('#wml-prod-table tr[data-nom]');
+  const lq = (q||'').toLowerCase();
+  rows.forEach(r => { r.style.display = (!lq || r.dataset.nom.includes(lq)) ? '' : 'none'; });
+}
+
 function renderWml() {
   const container = document.getElementById('wml-content');
   if (!container) return;
@@ -6662,7 +6712,7 @@ function renderWml() {
       const margeCell = margeBrute != null
         ? `<span style="font-size:12px;font-weight:700;color:${margeBruteColor}">${margeBrute >= 0 ? '+' : ''}${fmtD(margeBrute)}</span>`
         : '<span style="font-size:10px;color:var(--text3)">—</span>';
-      return `<tr style="border-bottom:1px solid var(--border)">
+      return `<tr data-nom="${nom.toLowerCase()}" style="border-bottom:1px solid var(--border)">
         <td style="padding:7px 10px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
         <td style="padding:7px 12px;font-size:12px;font-weight:500;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</td>
         <td style="padding:7px 10px;font-size:10px;color:var(--text3)">${ean||'—'}</td>
@@ -6689,6 +6739,33 @@ function renderWml() {
         <div class="wml-kpi"><div class="wml-kpi-label">Taux de marge</div><div class="wml-kpi-val">${fmtP(tx_mg)}</div></div>
         <div class="wml-kpi"><div class="wml-kpi-label">Mois couverts</div><div class="wml-kpi-val" style="font-size:18px">${ph.ca_m.filter(v=>v>0).length} / 4</div></div>
       </div>
+
+      ${(() => {
+        const afmEntries = Object.entries(ph.afm || {}).filter(([,v]) => v[1] > 0).sort((a,b) => b[1][1] - a[1][1]);
+        if (!afmEntries.length) return '';
+        const AFM_COLORS = { REMBSS:'#22c55e', MED010:'#0284c7', PARA:'#f97316', DM_20:'#a855f7', DM:'#6366f1', MED021:'#06b6d4', AUTRE:'#94a3b8' };
+        const AFM_LAB = { REMBSS:'Remb. SS', MED010:'OTC', PARA:'Para', DM_20:'DM20', DM:'DM', MED021:'Autre Méd.', AUTRE:'Autre' };
+        const totalAfm = afmEntries.reduce((s,[,v])=>s+v[1],0);
+        const rows = afmEntries.map(([k,[n,ca,mg]])=>{
+          const pct = (ca/totalAfm*100).toFixed(0);
+          const col = AFM_COLORS[k] || '#94a3b8';
+          return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+            <div style="width:72px;font-size:11px;font-weight:600;color:${col};flex-shrink:0">${AFM_LAB[k]||k}</div>
+            <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:${col};border-radius:4px;transition:width .4s"></div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);width:32px;text-align:right;flex-shrink:0">${pct}%</div>
+            <div style="font-size:12px;font-weight:700;width:72px;text-align:right;flex-shrink:0">${fmtD(ca)}</div>
+          </div>`;
+        }).join('');
+        return `<div class="card" style="margin-bottom:16px">
+          <div class="card-header" style="padding:14px 20px">
+            <div><div class="card-title">Répartition par famille</div><div class="card-subtitle">Jan–Avr 2026 · CA HT par catégorie AFM</div></div>
+            <div style="font-size:22px;font-weight:900;color:var(--opso-green)">${fmtD(totalAfm)}</div>
+          </div>
+          <div style="padding:0 20px 12px">${rows}</div>
+        </div>`;
+      })()}
 
       ${wmlMonthAvg > 0 && phFromState ? `
       <div class="card" style="margin-bottom:16px;border-left:3px solid ${convRatioPh >= 100 ? 'var(--green)' : convRatioPh >= 60 ? 'var(--amber)' : 'var(--rose)'}">
@@ -6760,8 +6837,12 @@ function renderWml() {
 
       <div class="card">
         <div class="card-header"><div class="card-title">Top 25 produits (par CA)</div></div>
+        <div style="padding:8px 16px;border-bottom:1px solid var(--border)">
+          <input id="wml-prod-search" type="search" placeholder="Filtrer les produits..." oninput="wmlProdFilter(this.value)"
+            style="width:100%;padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px;outline:none">
+        </div>
         <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse">
+          <table id="wml-prod-table" style="width:100%;border-collapse:collapse">
             <thead><tr style="border-bottom:2px solid var(--border2)">
               <th style="padding:6px 10px;text-align:center;font-size:10px;color:var(--text3)">#</th>
               <th style="padding:6px 12px;text-align:left;font-size:10px;color:var(--text3)">Produit</th>
@@ -8088,7 +8169,6 @@ function renderGrpCommandes(grp) {
     return `<div class="card">
       <div class="card-header">
         <div class="card-title">Commandes groupement — ${grp.nom}</div>
-        <button class="btn btn-ghost" style="font-size:12px" onclick="navigate('import')">↑ Importer Excel</button>
       </div>
       <div style="padding:48px;text-align:center;color:var(--text3)">
         <div style="font-size:40px;margin-bottom:12px">📦</div>
@@ -8139,7 +8219,6 @@ function renderGrpCommandes(grp) {
   return `<div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div style="font-size:14px;font-weight:700">${memberImports.length} import${memberImports.length > 1 ? 's' : ''} · ${Object.keys(byPeriod).length} période${Object.keys(byPeriod).length > 1 ? 's' : ''}</div>
-      <button class="btn btn-ghost" style="font-size:12px" onclick="navigate('import')">↑ Importer Excel</button>
     </div>
     ${periodsHtml}
   </div>`;
