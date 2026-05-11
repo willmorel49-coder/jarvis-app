@@ -1326,17 +1326,18 @@ label {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .mobile-nav-items {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
 }
 .mobile-nav-item {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 11px 4px 9px;
+  padding: 10px 2px 8px;
   color: var(--opso-gray); cursor: pointer;
   transition: color var(--t-fast);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   position: relative;
 }
+.mobile-nav-item svg { width: 20px; height: 20px; }
 .mobile-nav-item.active { color: var(--opso-green); }
 .mobile-nav-item.active::before {
   content: '';
@@ -1345,7 +1346,7 @@ label {
 }
 .mobile-nav-label {
   font-family: 'Nunito', sans-serif;
-  font-size: 10px; font-weight: 700; margin-top: 4px;
+  font-size: 9px; font-weight: 700; margin-top: 4px;
   letter-spacing: 0.01em; white-space: nowrap;
 }
 
@@ -1372,22 +1373,73 @@ label {
   .content {
     padding: 16px 14px calc(76px + env(safe-area-inset-bottom, 0px)) !important;
   }
-  .topbar { padding: 0 16px; }
-  .topbar-title { font-size: 17px; }
+
+  /* ── Topbar ── */
+  .topbar { padding: 0 16px; height: 56px; }
+  .topbar-title { font-size: 16px; font-weight: 700; }
+  .topbar-actions { gap: 8px; }
+  .topbar-actions .btn { padding: 6px 12px; font-size: 12px; }
+
+  /* ── Cockpit ── */
   .cockpit-hero-value { font-size: 38px; letter-spacing: -1.5px; }
   .cockpit-mini-val { font-size: 20px; }
+  .cockpit-mini-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── KPI grid ── */
   .kpi-grid { grid-template-columns: 1fr 1fr !important; }
-  .card { padding: 20px; }
-  .card-header { padding: 16px 20px; margin: -20px -20px 20px; }
-  .modal { padding: 24px 20px; }
+
+  /* ── Cards ── */
+  .card { border-radius: 12px; padding: 16px; }
+  .card-header { padding: 14px 16px; margin: -16px -16px 16px; }
+
+  /* ── Modals ── */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal {
+    border-radius: 20px 20px 0 0;
+    max-height: 90vh; overflow-y: auto;
+    width: 100%; max-width: 100%;
+    padding: 24px 20px;
+  }
+
+  /* ── Grid layout ── */
   .grid-2 { grid-template-columns: 1fr; }
-  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* ── Tables responsive ── */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .data-table tbody tr {
+    display: flex; flex-direction: column;
+    border-bottom: 2px solid var(--opso-border); padding: 10px 0;
+  }
+  .data-table td::before {
+    content: attr(data-label);
+    font-size: 10px; color: var(--opso-gray); font-weight: 700;
+    text-transform: uppercase; display: block; margin-bottom: 2px;
+  }
   .data-table thead { display: none; }
   .data-table td { padding: 10px 14px; }
+
+  /* ── Touch targets ── */
+  .btn { min-height: 44px; }
+  input, select, textarea { min-height: 44px; font-size: 16px !important; }
+  .nav-item-list-row, .wml-row, [onclick] { min-height: 44px; }
+
+  /* ── Offilog grid ── */
   .offil-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .offil-header { flex-direction: column; }
   .offil-sort { width: 100%; }
   .offil-cats { gap: 6px; }
+
+  /* ── Catalogue — filtres chips scrollables ── */
+  .cat-tabs-wrap {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important; padding-bottom: 4px;
+  }
+  .cat-tabs-wrap::-webkit-scrollbar { display: none; }
+
+  /* ── WML KPIs ── */
+  .wml-kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .wml-kpi { padding: 14px; }
+  .wml-kpi-val { font-size: 22px; }
 }
 
 /* ══════════════════════════════════════
@@ -1524,9 +1576,6 @@ label {
   line-height: 1.1;
 }
 .wml-pharma-row:hover { background: var(--green-pale); }
-@media (max-width: 767px) {
-  .wml-kpi-row { grid-template-columns: repeat(2, 1fr); }
-}
 @media (max-width: 480px) {
   .wml-kpi-row { grid-template-columns: 1fr; }
   .wml-kpi-val { font-size: 20px; }

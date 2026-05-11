@@ -8,12 +8,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="description" content="OPSO Santé — Pilotage groupement pharmacies">
 <meta name="theme-color" content="#11a63c">
+<meta name="apple-touch-startup-image" content="">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%2311a63c'/><rect x='76' y='16' width='28' height='148' rx='8' fill='white'/><rect x='16' y='76' width='148' height='28' rx='8' fill='white'/></svg>">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='12' y='3' width='8' height='26' rx='3' fill='%2311a63c'/><rect x='3' y='12' width='26' height='8' rx='3' fill='%2311a63c'/></svg>">
 <title>OPSO Santé · Cockpit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260510g">
+<link rel="stylesheet" href="style.css?v=20260511f">
 </head>
 <body>
 
@@ -216,16 +218,23 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <span class="mobile-nav-label">Pharmacies</span>
     </div>
+    <div class="mobile-nav-item" data-page="wml" onclick="navigate('wml')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span class="mobile-nav-label">CA</span>
+    </div>
     <div class="mobile-nav-item" data-page="catalogue" onclick="navigate('catalogue')">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
       <span class="mobile-nav-label">Catalogue</span>
+    </div>
+    <div class="mobile-nav-item" data-page="offilog" onclick="navigate('offilog')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      <span class="mobile-nav-label">Offilog</span>
     </div>
   </div>
 </nav>
 
 <!-- LIBS CDN -->
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   Chart.defaults.color = '#64686a';
@@ -276,6 +285,6 @@ function showNewPassForm() {
 <script src="opso-adherents.js?v=20260508"></script>
 <script src="offilog-live-data.js?v=20260508"></script>
 <script src="wml-sales-data.js?v=20260510b"></script>
-<script src="app.js?v=20260511e"></script>
+<script src="app.js?v=20260511f"></script>
 </body>
 </html>
