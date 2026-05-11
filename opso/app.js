@@ -9,6 +9,8 @@
 // ── SUPABASE ──────────────────────────────────
 const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
+const isMobile = () => window.innerWidth < 768;
+
 const PHARMA_COLORS = ['#11a63c','#059669','#0284C7','#7C3AED','#e8a317','#d04a4a','#0891B2','#6D28D9','#D97706','#DC2626'];
 
 // ── STATE ────────────────────────────────────
@@ -1711,7 +1713,7 @@ function renderPharmacies() {
           ? `<span style="font-size:10px;color:var(--green);background:rgba(17,166,60,.1);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>`
           : '';
         return `
-          <div class="pharma-item" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
+          <div class="pharma-item pharma-list-row" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
             <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
             <div class="pharma-dot" style="background:${ph.color}"></div>
             <div class="pharma-info">
@@ -5492,7 +5494,8 @@ function renderCatalogue() {
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${froid}${b.designation}</div>
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap">
           <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span>
-          ${genTag}${biosimTag}${nrTag}${ameliTag}${offreTag}${leclTag}${wmlTag}${rotTag}${cipTag}
+          ${genTag}${biosimTag}${nrTag}${ameliTag}${offreTag}
+          ${isMobile() ? '' : `${leclTag}${wmlTag}${rotTag}${cipTag}`}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">${prix}${addBtn}</div>
@@ -5545,7 +5548,7 @@ function renderCatalogue() {
             style="border:none;background:transparent;outline:none;flex:1;font-size:16px;color:var(--text)" autocomplete="off">
           ${catQuery ? `<button onclick="catQuery='';catPageNum=1;renderCatalogue()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px">✕</button>` : ''}
         </div>
-        <div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;scrollbar-width:none;flex-wrap:nowrap">${tabsHtml}</div>
+        <div class="cat-tabs-row" style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;scrollbar-width:none;flex-wrap:nowrap">${tabsHtml}</div>
       </div>
     </div>
 
