@@ -1367,79 +1367,104 @@ label {
   :root { --sidebar-w: 0px; }
   .sidebar { display: none !important; }
   .mobile-nav { display: block; }
-  .page-content {
-    padding: 16px 14px calc(76px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-  .content {
-    padding: 16px 14px calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+
+  /* ── Page padding (espace pour la nav en bas) ── */
+  .page-content, .content {
+    padding: 12px 12px calc(72px + env(safe-area-inset-bottom, 0px)) 12px !important;
   }
 
   /* ── Topbar ── */
-  .topbar { padding: 0 16px; height: 56px; }
-  .topbar-title { font-size: 16px; font-weight: 700; }
-  .topbar-actions { gap: 8px; }
-  .topbar-actions .btn { padding: 6px 12px; font-size: 12px; }
-
-  /* ── Cockpit ── */
-  .cockpit-hero-value { font-size: 38px; letter-spacing: -1.5px; }
-  .cockpit-mini-val { font-size: 20px; }
-  .cockpit-mini-grid { grid-template-columns: repeat(2, 1fr); }
-
-  /* ── KPI grid ── */
-  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .topbar { padding: 0 14px; height: 54px; }
+  .topbar-title { font-size: 15px; font-weight: 700; }
+  /* Cacher le label "Recherche" et le raccourci ⌘K, garder seulement l'icône */
+  .topbar-actions button span:not(svg) { display: none; }
 
   /* ── Cards ── */
-  .card { border-radius: 12px; padding: 16px; }
-  .card-header { padding: 14px 16px; margin: -16px -16px 16px; }
+  .card { padding: 14px; border-radius: 12px; }
+  .card-header { padding: 12px 14px; margin: -14px -14px 14px; }
+  .card-title { font-size: 14px; }
+  .card-subtitle { font-size: 11px; }
 
-  /* ── Modals ── */
-  .modal-overlay { align-items: flex-end; padding: 0; }
+  /* ── KPI grid : 2 colonnes ── */
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+
+  /* ── Grid 2 colonnes → 1 ── */
+  .grid-2 { grid-template-columns: 1fr !important; }
+
+  /* ── Cockpit hero ── */
+  .cockpit-hero-value { font-size: 36px; letter-spacing: -1px; }
+  .cockpit-mini-val { font-size: 18px; }
+  .cockpit-mini-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  .cockpit-mini { padding: 12px; }
+
+  /* ── Buttons ── */
+  .btn { min-height: 40px; font-size: 13px; }
+
+  /* ── Inputs ── */
+  input:not([type=range]), select, textarea {
+    font-size: 16px !important; /* anti-zoom iOS */
+    min-height: 42px;
+  }
+
+  /* ── Modals — bottom sheet style ── */
+  .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
   .modal {
-    border-radius: 20px 20px 0 0;
-    max-height: 90vh; overflow-y: auto;
-    width: 100%; max-width: 100%;
-    padding: 24px 20px;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 20px 16px !important;
   }
 
-  /* ── Grid layout ── */
-  .grid-2 { grid-template-columns: 1fr; }
+  /* ── Tables : scroll horizontal dans un wrapper ── */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-scroll table { min-width: 500px; }
 
-  /* ── Tables responsive ── */
-  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .data-table tbody tr {
-    display: flex; flex-direction: column;
-    border-bottom: 2px solid var(--opso-border); padding: 10px 0;
-  }
-  .data-table td::before {
-    content: attr(data-label);
-    font-size: 10px; color: var(--opso-gray); font-weight: 700;
-    text-transform: uppercase; display: block; margin-bottom: 2px;
-  }
+  /* ── Masquer les colonnes secondaires des tableaux sur mobile ── */
+  .data-table .col-hide-mobile { display: none !important; }
   .data-table thead { display: none; }
-  .data-table td { padding: 10px 14px; }
-
-  /* ── Touch targets ── */
-  .btn { min-height: 44px; }
-  input, select, textarea { min-height: 44px; font-size: 16px !important; }
-  .nav-item-list-row, .wml-row { min-height: 44px; }
-
-  /* ── Offilog grid ── */
-  .offil-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .offil-header { flex-direction: column; }
-  .offil-sort { width: 100%; }
-  .offil-cats { gap: 6px; }
-
-  /* ── Catalogue — filtres chips scrollables ── */
-  .cat-tabs-wrap {
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    flex-wrap: nowrap !important; padding-bottom: 4px;
+  .data-table tbody tr {
+    display: flex; flex-wrap: wrap; align-items: center;
+    padding: 10px 14px; gap: 4px;
+    border-bottom: 1px solid var(--opso-border);
   }
-  .cat-tabs-wrap::-webkit-scrollbar { display: none; }
+  .data-table td { padding: 2px 4px; border: none; }
+  .data-table td:first-child { flex: 1; font-weight: 600; }
 
-  /* ── WML KPIs ── */
-  .wml-kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .wml-kpi { padding: 14px; }
-  .wml-kpi-val { font-size: 22px; }
+  /* ── Offilog ── */
+  .offil-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  .offil-header { flex-direction: column; gap: 8px; }
+  .offil-search-wrap { width: 100%; }
+
+  /* ── Catalogue chips : scroll horizontal ── */
+  .cat-tabs-row {
+    display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    gap: 6px; padding-bottom: 4px; flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .cat-tabs-row::-webkit-scrollbar { display: none; }
+  .cat-tabs-row button { flex-shrink: 0; }
+
+  /* ── WML ── */
+  .wml-kpi-row { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  .wml-kpi { padding: 12px; }
+  .wml-kpi-val { font-size: 20px; }
+
+  /* ── Sim layout ── */
+  .sim-layout { grid-template-columns: 1fr !important; }
+  .sim-col-right { position: static !important; }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — Small mobile (< 400px)
+══════════════════════════════════════ */
+@media (max-width: 400px) {
+  .cockpit-hero-value { font-size: 30px; }
+  .cockpit-mini-val { font-size: 16px; }
+  .offil-grid { grid-template-columns: 1fr !important; }
+  .offil-prix-live { font-size: 15px; }
+  .kpi-grid { grid-template-columns: 1fr !important; }
 }
 
 /* ══════════════════════════════════════
@@ -1608,16 +1633,6 @@ label {
   margin-top: 4px; padding: 2px 6px;
   background: rgba(239,68,68,.08); border-radius: 6px;
   display: inline-block;
-}
-
-/* ══════════════════════════════════════
-   RESPONSIVE — Small mobile (< 400px)
-══════════════════════════════════════ */
-@media (max-width: 400px) {
-  .cockpit-hero-value { font-size: 32px; }
-  .cockpit-mini-val { font-size: 18px; }
-  .offil-grid { grid-template-columns: 1fr; }
-  .offil-prix-live { font-size: 16px; }
 }
 
 /* ══════════════════════════════════════
