@@ -751,6 +751,7 @@ function _renderDashboardLegacy() {
 
   container.innerHTML = `
     <div class="cockpit-hero fade-up">
+      <svg style="position:absolute;top:20px;right:24px;opacity:.15;color:#fff;pointer-events:none" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <div class="cockpit-hero-eyebrow">Groupement OPSO Santé · ${curLabel}</div>
       <div class="cockpit-hero-value">${fmt(caCur)}</div>
       <div class="cockpit-hero-meta">
@@ -1046,7 +1047,10 @@ function _renderDashboardLegacy() {
               </tr>
             </thead>
             <tbody>
-              ${compR.map(r => `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="showPharmaDetail('${r.ph.id}')" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+              ${compR.map(r => {
+                const dlt = r.prev > 0 ? ((r.cur - r.prev) / r.prev) : 0;
+                const bLeft = dlt < -0.1 ? '3px solid var(--rose)' : dlt > 0.2 ? '3px solid var(--opso-green)' : '3px solid transparent';
+                return `<tr style="border-bottom:1px solid var(--border);border-left:${bLeft};cursor:pointer" onclick="showPharmaDetail('${r.ph.id}')" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
                 <td style="padding:10px 16px">
                   <div style="display:flex;align-items:center;gap:8px">
                     <span style="width:8px;height:8px;border-radius:50%;background:${r.ph.color};flex-shrink:0"></span>
@@ -1056,7 +1060,8 @@ function _renderDashboardLegacy() {
                 <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2)">${r.prev > 0 ? fmt(r.prev) : '\u2014'}</td>
                 <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700">${r.cur > 0 ? fmt(r.cur) : '\u2014'}</td>
                 <td style="padding:10px 12px;text-align:right">${deltaBadge(r.cur, r.prev)}</td>
-              </tr>`).join('')}
+              </tr>`;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -1072,11 +1077,11 @@ function _renderDashboardLegacy() {
         const isCur = +y === curY && +m === curM;
         const pct = (v / maxCA * 100).toFixed(0);
         return `<div style="display:flex;align-items:center;gap:10px;padding:7px 16px;${isCur?'background:rgba(17,166,60,.04);':''}border-bottom:1px solid var(--border)">
-          <div style="font-size:11px;font-weight:600;color:${isCur?'var(--opso-green)':'var(--text3)'};width:58px;flex-shrink:0">${monthName(+m)} ${y}</div>
+          <div style="font-size:11px;font-weight:${isCur?'800':'600'};color:${isCur?'var(--opso-green)':'var(--text3)'};width:72px;flex-shrink:0;display:flex;align-items:center;gap:5px">${isCur?'<span style="width:6px;height:6px;border-radius:50%;background:var(--opso-green);box-shadow:0 0 6px var(--opso-green);flex-shrink:0"></span>':''}<span>${monthName(+m)} ${y}</span></div>
           <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
             <div style="width:${pct}%;height:100%;background:${isCur?'var(--opso-green)':'rgba(17,166,60,.4)'};border-radius:4px;transition:width .4s"></div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:${isCur?'var(--opso-green)':'var(--text)'};min-width:72px;text-align:right">${fmt(v)}</div>
+          <div style="font-size:12px;font-weight:${isCur?'800':'700'};color:${isCur?'var(--opso-green)':'var(--text)'};min-width:72px;text-align:right">${fmt(v)}</div>
         </div>`;
       });
       return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
@@ -1309,6 +1314,10 @@ function _renderDashboardLegacy() {
         <div class="card-subtitle">${curLabel}</div>
       </div>
       ${top5.length ? top5.map((p, i) => `<div class="product-cockpit-row"><span class="product-cockpit-rank ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i+1}</span><span class="product-cockpit-name">${p.label.length>32?p.label.slice(0,32)+'…':p.label}</span><span class="product-cockpit-ca">${fmt(p.ca)}</span></div>`).join('') : `<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Aucun produit ce mois</div>`}
+    </div>
+
+    <div style="text-align:center;padding:32px 16px 12px;font-size:11px;color:var(--text3);opacity:.7">
+      <span style="font-weight:700">OPSO Santé</span> × <span style="font-weight:700;color:var(--opso-green)">Intégral Pharma</span> · Pilotage groupement
     </div>
   `;
 }
@@ -2171,13 +2180,15 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             return `<option value="${p}" ${sel ? 'selected' : ''}>${monthName(+m)} ${y}</option>`;
           }).join('')}
         </select>` : `<span style="font-size:12px;color:var(--text3)">${monthName(curM)} ${curY}</span>`}
-        <button class="btn btn-ghost" onclick="prodPharmaFilter='${pharma.id}';navigate('produits')" style="font-size:12px">📊 Produits</button>
-        <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px">📋 Fiche visite</button>
-        <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px">✉ Email</button>
-        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;color:var(--green);border-color:rgba(0,229,160,.3)">🛒 Commander</button>
-        <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
-        <button class="btn btn-ghost" onclick="showNextVisitPicker('${pharma.id}')" style="font-size:12px" title="Planifier prochaine visite">📅</button>
-        <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
+        <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px;font-weight:700" title="Ouvrir la fiche de visite">📋 Fiche visite</button>
+        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;border:none;box-shadow:0 2px 8px rgba(17,166,60,.3);font-weight:700;padding:7px 14px" title="Proposer une commande">🛒 Commander</button>
+        <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px" title="Générer un email">✉ Email</button>
+        <div style="display:flex;gap:6px;border-left:1px solid var(--border);padding-left:10px;margin-left:6px">
+          <button class="btn btn-ghost" onclick="prodPharmaFilter='${pharma.id}';navigate('produits')" style="font-size:12px" title="Voir les produits">📊 Produits</button>
+          <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px" title="Exporter en CSV">⬇ CSV</button>
+          <button class="btn btn-ghost" onclick="showNextVisitPicker('${pharma.id}')" style="font-size:12px" title="Planifier prochaine visite">📅</button>
+          <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')" title="Supprimer la pharmacie">🗑</button>
+        </div>
       </div>
 
       <!-- Row 1 : Hero + KPIs -->
@@ -2214,10 +2225,21 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         <div class="kpi-card kc-g" style="cursor:default" id="obj-kpi-card">
           <div class="kpi-icon">🎯</div>
-          <div class="kpi-value" id="obj-kpi-val" style="color:${objTarget>0?(caCur>=objTarget?'var(--green)':'var(--amber)'):'var(--text3)'}">${objTarget > 0 ? fmt(objTarget) : '—'}</div>
+          <div class="kpi-value" id="obj-kpi-val" style="color:${objTarget>0?(caCur>=objTarget?'var(--green)':(Math.round(caCur/objTarget*100)>=60?'var(--amber)':'var(--rose)')):'var(--text3)'}">${objTarget > 0 ? (caCur >= objTarget ? '✓ ' : '') + fmt(objTarget) : '—'}</div>
           <div class="kpi-label">Objectif ${monthName(curM)}</div>
-          ${objTarget > 0 ? `<div style="margin-top:6px;font-size:11px;color:${caCur>=objTarget?'var(--green)':'var(--rose)'};">${caCur >= objTarget ? '✓ Atteint' : Math.round(caCur/objTarget*100)+'% atteint'}</div>` : ''}
-          <button onclick="inlineObjEdit('${pharma.id}',${curY},${curM})" style="margin-top:8px;padding:3px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:10px;font-weight:600">${objTarget > 0 ? '✏ Modifier' : '+ Définir'}</button>
+          ${objTarget > 0 ? (() => {
+            const pct = Math.round(caCur / objTarget * 100);
+            const col = caCur >= objTarget ? 'var(--green)' : (pct >= 60 ? 'var(--amber)' : 'var(--rose)');
+            return `<div style="margin-top:6px;font-size:11px;color:${col};font-weight:600">${caCur >= objTarget ? '✓ Atteint' : pct + '% atteint'}</div>`;
+          })() : ''}
+          <button onclick="inlineObjEdit('${pharma.id}',${curY},${curM})"
+            style="margin-top:8px;padding:4px 12px;border-radius:8px;
+            border:1px solid ${objTarget > 0 ? 'var(--border2)' : 'var(--green)'};
+            background:${objTarget > 0 ? 'transparent' : 'rgba(0,229,160,.08)'};
+            color:${objTarget > 0 ? 'var(--text2)' : 'var(--green)'};
+            cursor:pointer;font-size:10px;font-weight:700;transition:all .2s">
+            ${objTarget > 0 ? '✏ Modifier' : '+ Définir un objectif'}
+          </button>
         </div>
       </div>
 
@@ -2229,8 +2251,8 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--border)">
           ${clientInfo.adresse ? `<div style="padding:10px 16px;flex:1;min-width:160px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Adresse</div><div style="font-size:12px;font-weight:600">${clientInfo.adresse}</div><div style="font-size:11px;color:var(--text3)">${clientInfo.cp||''} ${clientInfo.ville||''}</div></div>` : ''}
-          ${clientInfo.tel ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Téléphone</div><a href="tel:${clientInfo.tel}" style="font-size:12px;font-weight:600;color:var(--green);text-decoration:none">${clientInfo.tel}</a></div>` : ''}
-          ${clientInfo.email ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Email</div><a href="mailto:${clientInfo.email}" style="font-size:12px;font-weight:600;color:var(--green);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:180px">${clientInfo.email}</a></div>` : ''}
+          ${clientInfo.tel ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Téléphone</div><a href="tel:${clientInfo.tel}" title="Appeler ${titleCase(pharma.name)}" style="font-size:12px;font-weight:600;color:var(--green);text-decoration:none">${clientInfo.tel}</a></div>` : ''}
+          ${clientInfo.email ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Email</div><a href="mailto:${clientInfo.email}" title="Envoyer un email à ${titleCase(pharma.name)}" style="font-size:12px;font-weight:600;color:var(--green);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:180px">${clientInfo.email}</a></div>` : ''}
           ${clientInfo.ca2023 > 0 ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">CA 2023 total</div><div style="font-size:12px;font-weight:600">${fmt(clientInfo.ca2023)}</div></div>` : ''}
           ${clientInfo.gros1 ? `<div style="padding:10px 16px;flex:1;min-width:120px"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Grossiste</div><div style="font-size:12px;font-weight:600">${clientInfo.gros1}${clientInfo.gros2 ? ' · ' + clientInfo.gros2 : ''}</div></div>` : ''}
         </div>
