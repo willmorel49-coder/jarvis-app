@@ -757,7 +757,7 @@ function _renderDashboardLegacy() {
       </div>
     </div>
 
-    <div class="cockpit-mini-grid fade-up">
+    <div class="cockpit-mini-grid fade-up" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
       <div class="cockpit-mini">
         <div class="cockpit-mini-val">${nPhCur}<span class="cockpit-mini-total">/${state.pharmacies.length}</span></div>
         <div class="cockpit-mini-label">Actives</div>
@@ -917,7 +917,7 @@ function _renderDashboardLegacy() {
         <div class="card-title">Actions requises</div>
         <span class="badge badge-warning">${alerts.length}</span>
       </div>
-      ${alerts.slice(0,4).map(a => `<div class="alert-cockpit-row ${a.type}" onclick="showPharmaDetail('${a.ph.id}')"><div class="alert-cockpit-icon">${a.type==='down'?'↓':a.type==='absent'?'○':'↑'}</div><div class="alert-cockpit-info"><div class="alert-cockpit-name">${titleCase(a.ph.name)}</div><div class="alert-cockpit-sub">${a.type==='absent'?'Absent ce mois · M-1 : '+fmt(a.prev):fmt(a.prev)+' → '+fmt(a.cur)+(a.g!==null?' ('+(a.g>=0?'+':'')+a.g.toFixed(0)+'%)':'')}</div></div><div class="alert-cockpit-action">Voir ›</div></div>`).join('')}
+      ${alerts.slice(0,4).map(a => `<div class="alert-cockpit-row ${a.type}" onclick="showPharmaDetail('${a.ph.id}')"><div class="alert-cockpit-icon">${a.type==='down'?'↓':a.type==='absent'?'○':'↑'}</div><div class="alert-cockpit-info"><div class="alert-cockpit-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">${titleCase(a.ph.name)}</div><div class="alert-cockpit-sub">${a.type==='absent'?'Absent ce mois · M-1 : '+fmt(a.prev):fmt(a.prev)+' → '+fmt(a.cur)+(a.g!==null?' ('+(a.g>=0?'+':'')+a.g.toFixed(0)+'%)':'')}</div></div><div class="alert-cockpit-action">Voir ›</div></div>`).join('')}
     </div>` : ''}
 
     ${(() => {
@@ -5225,6 +5225,10 @@ function catAddBenchToSimIdx(idx) {
 
 // ── NAV ───────────────────────────────────────
 function navigate(page) {
+  // Fermer tout modal ouvert avant de naviguer
+  document.querySelectorAll('.modal-overlay, #fiche-visite-modal, #grp-modal').forEach(el => {
+    if (el && el.parentNode) el.remove();
+  });
   state.currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   updateMobileNav(page);
@@ -5261,6 +5265,12 @@ function navigate(page) {
     objectifs:   renderObjectifs,
   };
   if (renders[page]) renders[page]();
+  // Scroll to top on every page navigation
+  const _pc = document.getElementById('page-' + page);
+  if (_pc) _pc.scrollTop = 0;
+  const _pca = document.querySelector('.page.active .page-content, .page-content');
+  if (_pca) _pca.scrollTop = 0;
+  window.scrollTo(0, 0);
 }
 
 function updateMobileNav(page) {
@@ -5532,10 +5542,10 @@ function renderCatalogue() {
           <span class="search-icon">🔍</span>
           <input type="text" placeholder="Rechercher par nom ou CIP13…" value="${catQuery}"
             oninput="catQuery=this.value;catPageNum=1;renderCatalogue()"
-            style="border:none;background:transparent;outline:none;flex:1;font-size:13px;color:var(--text)" autocomplete="off">
+            style="border:none;background:transparent;outline:none;flex:1;font-size:16px;color:var(--text)" autocomplete="off">
           ${catQuery ? `<button onclick="catQuery='';catPageNum=1;renderCatalogue()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px">✕</button>` : ''}
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">${tabsHtml}</div>
+        <div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;scrollbar-width:none;flex-wrap:nowrap">${tabsHtml}</div>
       </div>
     </div>
 
@@ -6398,7 +6408,7 @@ function renderOffilog() {
   <div class="offil-header">
     <div class="offil-search-wrap">
       <svg width="16" height="16" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input class="offil-search" type="text" placeholder="Rechercher produit, marque, EAN…" value="${offiLiveSearch.replace(/"/g,'&quot;')}" oninput="offiLiveSearch=this.value;offiLivePage=1;renderOffilog()">
+      <input class="offil-search" type="text" placeholder="Rechercher produit, marque, EAN…" value="${offiLiveSearch.replace(/"/g,'&quot;')}" oninput="offiLiveSearch=this.value;offiLivePage=1;renderOffilog()" style="font-size:16px">
       ${offiLiveSearch ? `<button onclick="offiLiveSearch='';renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:0 4px">×</button>` : ''}
     </div>
     <div style="display:flex;gap:6px;align-items:center">
@@ -7029,7 +7039,7 @@ function renderWml() {
           </div>
           <input type="text" placeholder="Rechercher une pharmacie…" value="${wmlSearch}"
             oninput="wmlSearch=this.value;renderWml()"
-            style="padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);width:220px">
+            style="padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:16px;color:var(--text);width:220px">
         </div>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">
