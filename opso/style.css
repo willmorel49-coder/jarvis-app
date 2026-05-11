@@ -143,6 +143,10 @@ body {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(232,163,23,0.4); }
   50%       { box-shadow: 0 0 0 8px rgba(232,163,23,0); }
@@ -310,9 +314,9 @@ body {
 .nav-item:hover { background: rgba(255,255,255,0.15); color: #fff; }
 .nav-item:hover .nav-icon { opacity: 1; }
 .nav-item.active {
-  background: rgba(255,255,255,0.20);
+  background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
   border-color: rgba(255,255,255,0.20);
-  color: #fff; font-weight: 600;
+  color: #fff; font-weight: 700;
 }
 .nav-item.active .nav-icon { opacity: 1; }
 .nav-item.active::before {
@@ -403,11 +407,11 @@ body {
    BOUTONS
 ══════════════════════════════════════ */
 .btn {
-  font-family: 'Nunito', sans-serif; font-weight: 600; font-size: 13px;
+  font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 13px;
   padding: 8px 16px; border-radius: var(--radius-sm);
   border: 1px solid transparent; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px;
-  transition: var(--t); white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;
   letter-spacing: -0.1px;
 }
 .btn-primary,
@@ -417,11 +421,11 @@ button[class*="btn-primary"] {
   color: #fff;
   border: none;
   border-color: transparent;
-  box-shadow: 0 2px 8px var(--blue-glow);
+  box-shadow: 0 1px 3px rgba(17,166,60,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
   text-shadow: 0 1px 2px rgba(0,0,0,.2);
 }
 .btn-primary:hover,
-button[class*="btn-primary"]:hover { background: var(--opso-green-dark); transform: translateY(-1px); box-shadow: 0 4px 14px var(--blue-glow); filter: brightness(1.05); }
+button[class*="btn-primary"]:hover { background: var(--opso-green-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(17,166,60,0.35); filter: brightness(1.05); }
 .btn-primary:active { transform: none; filter: brightness(0.94); }
 .btn-secondary {
   background: var(--opso-white); color: var(--opso-text);
@@ -450,13 +454,13 @@ button[class*="btn-primary"]:hover { background: var(--opso-green-dark); transfo
 .kpi-card {
   background: var(--opso-white);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 20px 22px;
   position: relative; overflow: hidden;
-  transition: var(--t); cursor: default;
-  box-shadow: var(--shadow-sm);
+  transition: transform .2s ease, box-shadow .25s ease; cursor: default;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
   border-left: 4px solid var(--opso-green);
 }
-.kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(17,166,60,0.07), 0 2px 6px rgba(0,0,0,0.04); }
 .kpi-card.warning { border-left-color: var(--opso-warning); }
 .kpi-card.danger  { border-left-color: var(--opso-danger); }
 
@@ -497,7 +501,7 @@ button[class*="btn-primary"]:hover { background: var(--opso-green-dark); transfo
 .kpi-value {
   font-family: 'Varela Round', sans-serif;
   font-size: 26px; font-weight: 400;
-  letter-spacing: -0.6px; line-height: 1;
+  letter-spacing: -0.8px; line-height: 1;
   margin-bottom: 7px;
   font-variant-numeric: tabular-nums;
 }
@@ -568,15 +572,16 @@ button[class*="btn-primary"]:hover { background: var(--opso-green-dark); transfo
   background: var(--opso-white);
   border-radius: var(--radius-md);
   padding: 28px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
   border: 1px solid var(--opso-border);
   margin-bottom: 20px;
   animation: fadeIn 0.3s ease;
   overflow: hidden;
-  transition: box-shadow 0.2s ease;
+  transition: transform .2s ease, box-shadow .25s ease;
 }
 .card:hover {
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(17,166,60,0.06), 0 2px 4px rgba(0,0,0,0.04);
 }
 
 .card-header {
@@ -587,7 +592,7 @@ button[class*="btn-primary"]:hover { background: var(--opso-green-dark); transfo
 }
 .card-title {
   font-family: 'Varela Round', sans-serif;
-  font-size: 15px; font-weight: 400; letter-spacing: -0.2px; color: var(--opso-text);
+  font-size: 15px; font-weight: 600; letter-spacing: -0.2px; color: var(--opso-text);
 }
 .card-subtitle { font-size: 12px; color: var(--opso-gray); margin-top: 3px; }
 .card-body { padding: 20px 24px; }
@@ -767,14 +772,14 @@ tbody tr:hover { background: var(--opso-green-pale2) !important; }
   width: 100%; max-width: 540px; max-height: 85vh;
   display: flex; flex-direction: column;
   box-shadow: var(--shadow-lg); overflow: hidden;
-  animation: fadeIn 0.25s ease;
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   border: 1px solid var(--opso-border);
 }
 .modal {
   background: var(--opso-white); border: 1px solid var(--opso-border);
   border-radius: var(--radius-lg); padding: 34px; width: 100%; max-width: 480px;
   box-shadow: 0 24px 80px rgba(0,0,0,.18);
-  animation: fadeUp .25s cubic-bezier(.16,1,.3,1);
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .modal-header {
   padding: 20px 24px 16px;
@@ -838,7 +843,7 @@ label {
   padding: 0; width: auto;
   box-shadow: none;
 }
-.search-wrap input:focus { box-shadow: none; }
+.search-wrap input:focus { box-shadow: none !important; border-color: transparent !important; }
 .search-wrap input::placeholder { color: var(--opso-gray-light); }
 .search-icon { color: var(--opso-gray-light); font-size: 14px; flex-shrink: 0; }
 
@@ -1047,12 +1052,12 @@ label {
 .cockpit-mini {
   background: var(--opso-white);
   border-radius: var(--radius-md);
-  padding: 18px 14px; text-align: center;
-  box-shadow: var(--shadow-sm);
+  padding: 16px 18px; text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
   border: 1px solid var(--opso-border);
-  transition: box-shadow var(--t-base);
+  transition: transform .2s ease, box-shadow .25s ease;
 }
-.cockpit-mini:hover { box-shadow: var(--shadow-md); }
+.cockpit-mini:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(17,166,60,0.06), 0 2px 4px rgba(0,0,0,0.04); }
 .cockpit-mini-val {
   font-family: 'Varela Round', sans-serif;
   font-size: 24px; font-weight: 400; color: var(--opso-text);
@@ -1646,6 +1651,29 @@ label {
   .nav-item .nav-icon { width: auto; }
   .nav-item.active::before { display: none; }
 }
+
+/* ══════════════════════════════════════
+   POLISH GLOBAL — Scrollbars, focus, tables
+══════════════════════════════════════ */
+/* Scrollbars discrètes */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 5px; border: 2px solid var(--opso-white); }
+::-webkit-scrollbar-thumb:hover { background: rgba(17,166,60,0.4); }
+* { scrollbar-color: rgba(0,0,0,0.15) transparent; scrollbar-width: thin; }
+
+/* Focus states accessibles */
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid var(--opso-green);
+  outline-offset: 2px;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--opso-green) !important;
+  box-shadow: 0 0 0 3px var(--opso-green-pale) !important;
+}
+
+/* Transitions hover sur les rangées de tableau */
+table tbody tr { transition: background-color 0.15s ease; }
 
 /* ── PRINT (fiche de visite) ───────────── */
 @media print {
