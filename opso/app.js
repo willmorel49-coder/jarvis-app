@@ -5270,8 +5270,9 @@ function catAddBenchToSimIdx(idx) {
 }
 
 // ── PRIORITAIRES ──────────────────────────────
-// Pharmacie sélectionnée pour l'aperçu PDF Prioritaires
-let prioritairesSelectedTc = null;
+let prioritairesSortBy  = 'ca';   // 'ca' | 'qt' | 'pharma'
+let prioritairesCatFilt = 'tous'; // 'tous' | 'pp' | 'mi' | 'ch' | 'biosim' | 'generique' | 'nr'
+let prioritairesNbLines = 30;     // 20 | 30 | 50
 
 function renderPrioritaires() {
   const container = document.getElementById('prioritaires-content');
@@ -5279,6 +5280,7 @@ function renderPrioritaires() {
 
   const fmt  = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
   const fmtD = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(v||0);
+  const fmtN = v => new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(v||0);
   const nn   = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
 
   const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
@@ -5287,13 +5289,7 @@ function renderPrioritaires() {
     return;
   }
 
-  // Sélection par défaut : 1ère pharmacie
-  if (!prioritairesSelectedTc || !wmlVis.find(d => d.tc === prioritairesSelectedTc)) {
-    prioritairesSelectedTc = wmlVis[0].tc;
-  }
-  const ph = wmlVis.find(d => d.tc === prioritairesSelectedTc);
-
-  // ── Construire la liste produits du document ───────────────────────────────
+  // ── Agréger TOUS les achats de TOUS les adhérents, toutes périodes ─────────
   const BENCH_MAP = new Map();
   if (typeof BENCHMARK !== 'undefined') {
     for (const b of BENCHMARK) BENCH_MAP.set(nn(b.designation), b);
@@ -5301,147 +5297,180 @@ function renderPrioritaires() {
   const CAT_LABELS = { pp:'Petit prix', mi:'Intermédiaire', ch:'Cher', biosim:'Biosimilaire', generique:'Générique', nr:'Non remboursé', froid:'Froid' };
   const CAT_COLORS = { pp:'#22c55e', mi:'#0284c7', ch:'#a855f7', biosim:'#f97316', generique:'#06b6d4', nr:'#ef4444', froid:'#38bdf8' };
 
-  const produits = (ph.pr || []).map(([nom, ca, mg, qt, ean]) => {
-    const bench = BENCH_MAP.get(nn(nom));
-    const puAchat = qt > 0 ? ca / qt : 0;
-    const puIP    = bench?.prix_ip > 0 ? bench.prix_ip : (puAchat > 0 ? puAchat : null);
-    const cat     = bench ? effectiveCatBench(bench) : (puAchat > 468 ? 'ch' : puAchat > 4.33 ? 'mi' : 'pp');
-    return { nom, ca, mg, qt, ean, bench, puAchat, puIP, cat };
-  }).filter(p => p.ca > 0).sort((a,b) => b.ca - a.ca);
+  const aggMap = new Map();
+  for (const ph of wmlVis) {
+    const seen = new Set();
+    for (const [nom, ca, mg, qt, ean] of (ph.pr || [])) {
+      const k = nn(nom);
+      if (!k || ca <= 0) continue;
+      if (!aggMap.has(k)) {
+        const bench  = BENCH_MAP.get(k);
+        const puEst  = qt > 0 ? ca / qt : 0;
+        const cat    = bench ? effectiveCatBench(bench) : (puEst > 468 ? 'ch' : puEst > 4.33 ? 'mi' : 'pp');
+        const puIP   = bench?.prix_ip > 0 ? bench.prix_ip : (puEst > 0 ? puEst : null);
+        aggMap.set(k, { nom, ca:0, mg:0, qt:0, nPharma:0, ean: ean || bench?.cip13 || null, cat, puIP });
+      }
+      const e = aggMap.get(k);
+      e.ca += ca; e.mg += mg; e.qt += qt;
+      if (!seen.has(k)) { e.nPharma++; seen.add(k); }
+    }
+  }
 
-  const totalCA  = produits.reduce((s,p) => s+p.ca, 0);
-  const totalMg  = produits.reduce((s,p) => s+p.mg, 0);
-  const totalQt  = produits.reduce((s,p) => s+p.qt, 0);
+  // ── Filtrer et trier ───────────────────────────────────────────────────────
+  let liste = [...aggMap.values()];
+  if (prioritairesCatFilt !== 'tous') liste = liste.filter(p => p.cat === prioritairesCatFilt);
+  const sortFns = {
+    ca:     (a,b) => b.ca - a.ca,
+    qt:     (a,b) => b.qt - a.qt,
+    pharma: (a,b) => b.nPharma - a.nPharma,
+  };
+  liste.sort(sortFns[prioritairesSortBy] || sortFns.ca);
 
-  // ── Sélecteur pharmacie ───────────────────────────────────────────────────
-  const selectorHtml = `
-  <div class="card fade-up" style="margin-bottom:20px;padding:16px 20px">
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <div style="font-size:13px;font-weight:700;color:var(--text)">Pharmacie :</div>
-      <select onchange="prioritairesSelectedTc=+this.value;renderPrioritaires()"
-        style="flex:1;min-width:200px;padding:8px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer">
-        ${wmlVis.map(d => `<option value="${d.tc}" ${d.tc===prioritairesSelectedTc?'selected':''}>${titleCase(d.nom)} — ${fmt(d.ca/4)}/mois</option>`).join('')}
-      </select>
-      <button onclick="printPrioritairesPDF(${ph.tc})"
-        style="display:inline-flex;align-items:center;gap:8px;padding:9px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px rgba(17,166,60,.3)">
-        🖨 Imprimer / PDF
-      </button>
-    </div>
-  </div>`;
+  const totalCAAll = liste.reduce((s,p) => s+p.ca, 0);
+  const totalQtAll = liste.reduce((s,p) => s+p.qt, 0);
+  const nProduits  = liste.length;
 
-  // ── Aperçu du document ────────────────────────────────────────────────────
-  const dateStr = new Date().toLocaleDateString('fr-FR', {day:'2-digit',month:'long',year:'numeric'});
-  const prodRowsHtml = produits.slice(0, 40).map((p, i) => {
-    const catLabel = CAT_LABELS[p.cat] || p.cat;
+  // ── UI ────────────────────────────────────────────────────────────────────
+  const tabsDef = [
+    {key:'tous',label:'Tous',n:aggMap.size},
+    ...['pp','mi','ch','biosim','generique','nr'].map(k=>({key:k,label:CAT_LABELS[k],n:[...aggMap.values()].filter(p=>p.cat===k).length})).filter(t=>t.n>0),
+  ];
+  const tabsHtml = tabsDef.map(t =>
+    `<button onclick="prioritairesCatFilt='${t.key}';renderPrioritaires()"
+      style="padding:6px 14px;border-radius:20px;border:1.5px solid ${prioritairesCatFilt===t.key?CAT_COLORS[t.key]||'var(--opso-green)':'var(--border2)'};
+      background:${prioritairesCatFilt===t.key?(CAT_COLORS[t.key]||'#11a63c')+'18':'transparent'};
+      color:${prioritairesCatFilt===t.key?CAT_COLORS[t.key]||'var(--opso-green)':'var(--text3)'};
+      font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">${t.label} <span style="opacity:.6">${t.n}</span></button>`
+  ).join('');
+
+  const sortBtns = [
+    {key:'ca',    label:'CA HT'},
+    {key:'qt',    label:'Volume (unités)'},
+    {key:'pharma',label:'Nb pharmacies'},
+  ].map(b =>
+    `<button onclick="prioritairesSortBy='${b.key}';renderPrioritaires()"
+      style="padding:5px 12px;border-radius:8px;border:1.5px solid ${prioritairesSortBy===b.key?'var(--opso-green)':'var(--border2)'};
+      background:${prioritairesSortBy===b.key?'rgba(17,166,60,.12)':'transparent'};
+      color:${prioritairesSortBy===b.key?'var(--opso-green)':'var(--text3)'};
+      font-size:11px;font-weight:700;cursor:pointer">${b.label}</button>`
+  ).join('');
+
+  const nbBtns = [20,30,50].map(n =>
+    `<button onclick="prioritairesNbLines=${n};renderPrioritaires()"
+      style="padding:5px 10px;border-radius:8px;border:1.5px solid ${prioritairesNbLines===n?'var(--opso-green)':'var(--border2)'};
+      background:${prioritairesNbLines===n?'rgba(17,166,60,.12)':'transparent'};
+      color:${prioritairesNbLines===n?'var(--opso-green)':'var(--text3)'};
+      font-size:11px;font-weight:700;cursor:pointer">Top ${n}</button>`
+  ).join('');
+
+  const page = liste.slice(0, prioritairesNbLines);
+  const maxCA = page[0]?.ca || 1;
+
+  const rowsHtml = page.map((p, i) => {
     const catColor = CAT_COLORS[p.cat] || '#888';
-    return `<tr style="border-bottom:1px solid #e8edf2;${i%2===1?'background:#f9fafb':''}">
-      <td style="padding:7px 10px;font-size:11px;color:#64748b;text-align:center;width:28px">${i+1}</td>
-      <td style="padding:7px 12px;font-size:12px;font-weight:600;color:#1e293b;max-width:220px">${p.nom}</td>
-      <td style="padding:7px 10px;text-align:center">
-        <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${catColor}18;color:${catColor};font-weight:700">${catLabel}</span>
+    const catLabel = CAT_LABELS[p.cat] || p.cat;
+    const pctCA    = (p.ca / maxCA * 100).toFixed(0);
+    const pctTot   = totalCAAll > 0 ? (p.ca / totalCAAll * 100).toFixed(1) : '0';
+    return `<tr style="border-bottom:1px solid var(--border);cursor:default">
+      <td style="padding:9px 12px;font-size:13px;font-weight:900;color:var(--text3);text-align:center;width:32px">${i+1}</td>
+      <td style="padding:9px 14px;max-width:200px">
+        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.nom}</div>
+        <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border)">
+          <div style="width:${pctCA}%;height:100%;background:${catColor};border-radius:2px;transition:width .4s"></div>
+        </div>
       </td>
-      <td style="padding:7px 10px;text-align:right;font-size:12px;color:#475569">${Math.round(p.qt)}</td>
-      <td style="padding:7px 10px;text-align:right;font-size:12px;font-weight:700;color:#1e293b">${fmtD(p.puIP || p.puAchat)}</td>
-      <td style="padding:7px 10px;text-align:right;font-size:13px;font-weight:800;color:#11a63c">${fmt(p.ca)}</td>
+      <td style="padding:9px 10px;text-align:center">
+        <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${catColor}18;color:${catColor};font-weight:700">${catLabel}</span>
+      </td>
+      <td style="padding:9px 10px;text-align:center;font-size:11px;color:${p.nPharma>=3?'var(--opso-green)':'var(--text3)'};font-weight:${p.nPharma>=3?'700':'400'}">
+        ${p.nPharma} pharm.
+      </td>
+      <td style="padding:9px 10px;text-align:right;font-size:12px;color:var(--text2)">${fmtN(p.qt)} u</td>
+      <td style="padding:9px 10px;text-align:right;font-size:11px;color:var(--text3)">${p.puIP ? fmtD(p.puIP) : '—'}</td>
+      <td style="padding:9px 12px;text-align:right">
+        <div style="font-size:13px;font-weight:800;color:var(--opso-green)">${fmt(p.ca)}</div>
+        <div style="font-size:9px;color:var(--text3)">${pctTot}% du total</div>
+      </td>
     </tr>`;
   }).join('');
 
-  const previewHtml = `
-  <div class="card fade-up" style="padding:0;overflow:hidden;border:2px solid rgba(17,166,60,.2)">
-    <!-- Header document -->
-    <div style="background:linear-gradient(135deg,#064e20 0%,#0d8530 60%,#11a63c 100%);padding:24px 32px;color:#fff">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <div style="display:flex;align-items:center;gap:14px">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center">
-            <svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="white"/><rect x="3" y="12" width="26" height="8" rx="3" fill="white"/></svg>
-          </div>
-          <div>
-            <div style="font-size:20px;font-weight:900;letter-spacing:-.5px">OPSO Santé</div>
-            <div style="font-size:11px;opacity:.75;margin-top:1px">Recommandations achats Intégral Pharma</div>
-          </div>
+  container.innerHTML = `
+  <div style="padding:0 0 40px">
+    <!-- Header controls -->
+    <div class="card fade-up" style="margin-bottom:16px;padding:16px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-size:15px;font-weight:800">Sélection produits OPSO Santé</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Agrégé sur ${wmlVis.length} pharmacies adhérentes · Jan–Avr 2026 · ${fmtN(nProduits)} références</div>
         </div>
-        <div style="text-align:right;opacity:.85">
-          <div style="font-size:11px">Délégué : William Morel</div>
-          <div style="font-size:11px;margin-top:2px">Édité le ${dateStr}</div>
-        </div>
+        <button onclick="printPrioritairesPDF()"
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:10px;border:none;
+          background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+          white-space:nowrap;box-shadow:0 4px 14px rgba(17,166,60,.3)">
+          🖨 Générer PDF prospect
+        </button>
       </div>
-      <div style="margin-top:20px;padding:14px 18px;background:rgba(255,255,255,.1);border-radius:10px;border:1px solid rgba(255,255,255,.2)">
-        <div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Pharmacie adhérente</div>
-        <div style="font-size:22px;font-weight:900;letter-spacing:-.5px">${titleCase(ph.nom)}</div>
-        <div style="font-size:11px;opacity:.75;margin-top:3px">TIRCODE ${ph.tc} · Période WML : Janvier – Avril 2026</div>
-      </div>
-    </div>
-
-    <!-- KPIs résumé -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:2px solid #e8edf2">
-      <div style="padding:16px 20px;text-align:center;border-right:1px solid #e8edf2">
-        <div style="font-size:22px;font-weight:900;color:#11a63c">${fmt(totalCA)}</div>
-        <div style="font-size:10px;color:#64748b;margin-top:2px;font-weight:600;text-transform:uppercase">CA total achat HT</div>
-      </div>
-      <div style="padding:16px 20px;text-align:center;border-right:1px solid #e8edf2">
-        <div style="font-size:22px;font-weight:900;color:#0d8530">${fmt(totalMg)}</div>
-        <div style="font-size:10px;color:#64748b;margin-top:2px;font-weight:600;text-transform:uppercase">Marge obtenue</div>
-      </div>
-      <div style="padding:16px 20px;text-align:center">
-        <div style="font-size:22px;font-weight:900;color:#475569">${produits.length}</div>
-        <div style="font-size:10px;color:#64748b;margin-top:2px;font-weight:600;text-transform:uppercase">Références achetées</div>
+      <!-- Catégories -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabsHtml}</div>
+      <!-- Trier par + Nb lignes -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text3);font-weight:600">Trier par :</span>
+        ${sortBtns}
+        <span style="margin-left:8px;font-size:11px;color:var(--text3);font-weight:600">Afficher :</span>
+        ${nbBtns}
       </div>
     </div>
 
-    <!-- Message accroche -->
-    <div style="padding:16px 24px;background:#f0fdf4;border-bottom:1px solid #bbf7d0">
-      <div style="font-size:13px;font-weight:700;color:#064e20;margin-bottom:4px">📋 Vos achats groupement — à commander en direct chez Intégral Pharma</div>
-      <div style="font-size:11px;color:#166534;line-height:1.5">
-        Ci-dessous la liste de vos ${produits.length} références achetées via le groupement OPSO Santé sur la période Jan–Avr 2026,
-        classées par CA décroissant. Commander en direct vous permet de bénéficier des mêmes prix et d'un accompagnement personnalisé.
+    <!-- KPIs -->
+    <div class="cockpit-mini-grid fade-up" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px">
+      <div class="cockpit-mini">
+        <div class="cockpit-mini-val">${fmtN(nProduits)}</div>
+        <div class="cockpit-mini-label">Références</div>
+      </div>
+      <div class="cockpit-mini">
+        <div class="cockpit-mini-val" style="font-size:18px">${fmt(totalCAAll)}</div>
+        <div class="cockpit-mini-label">CA total HT groupement</div>
+      </div>
+      <div class="cockpit-mini">
+        <div class="cockpit-mini-val">${fmtN(totalQtAll)}</div>
+        <div class="cockpit-mini-label">Unités achetées</div>
+      </div>
+      <div class="cockpit-mini">
+        <div class="cockpit-mini-val" style="font-size:18px">${fmt(totalCAAll/4)}</div>
+        <div class="cockpit-mini-label">Moy. mensuelle</div>
       </div>
     </div>
 
-    <!-- Table produits -->
-    <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;min-width:560px">
-        <thead>
-          <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
-            <th style="padding:9px 10px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center">#</th>
-            <th style="padding:9px 12px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Produit</th>
-            <th style="padding:9px 10px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center">Catégorie</th>
-            <th style="padding:9px 10px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">Qté</th>
-            <th style="padding:9px 10px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">PU net IP</th>
-            <th style="padding:9px 10px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">CA HT</th>
-          </tr>
-        </thead>
-        <tbody>${prodRowsHtml}</tbody>
-        <tfoot>
-          <tr style="background:#f0fdf4;border-top:2px solid #11a63c">
-            <td colspan="3" style="padding:10px 12px;font-size:13px;font-weight:800;color:#064e20">TOTAL</td>
-            <td style="padding:10px 10px;text-align:right;font-size:12px;font-weight:700;color:#064e20">${Math.round(totalQt)}</td>
-            <td></td>
-            <td style="padding:10px 10px;text-align:right;font-size:14px;font-weight:900;color:#11a63c">${fmt(totalCA)}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-    ${produits.length > 40 ? `<div style="padding:10px 20px;font-size:11px;color:#64748b;border-top:1px solid #e8edf2">+${produits.length-40} références supplémentaires (incluses dans le PDF complet)</div>` : ''}
-
-    <!-- Footer -->
-    <div style="padding:16px 24px;background:#f8fafc;border-top:2px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="font-size:11px;color:#475569;font-weight:600">OPSO Santé · Groupement pharmacies Normandie · 2026</div>
-      <div style="font-size:11px;color:#11a63c;font-weight:700">Intégral Pharma × OPSO Santé</div>
+    <!-- Table -->
+    <div class="card fade-up" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:580px">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border2)">
+              <th style="padding:9px 12px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center">#</th>
+              <th style="padding:9px 14px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Produit</th>
+              <th style="padding:9px 10px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center">Catégorie</th>
+              <th style="padding:9px 10px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center">Adhérents</th>
+              <th style="padding:9px 10px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">Volume</th>
+              <th style="padding:9px 10px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">PU net IP</th>
+              <th style="padding:9px 12px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:right">CA HT total</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+      ${nProduits > prioritairesNbLines ? `<div style="padding:10px 20px;font-size:11px;color:var(--text3);border-top:1px solid var(--border)">${nProduits - prioritairesNbLines} produits supplémentaires — ajustez "Afficher"</div>` : ''}
     </div>
   </div>`;
-
-  container.innerHTML = selectorHtml + previewHtml;
 }
 
-function printPrioritairesPDF(tc) {
-  const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
-  const ph = wmlVis.find(d => d.tc === tc);
-  if (!ph) return;
-
+function printPrioritairesPDF() {
   const fmt  = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
   const fmtD = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(v||0);
+  const fmtN = v => new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(v||0);
   const nn   = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
 
+  const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
   const BENCH_MAP = new Map();
   if (typeof BENCHMARK !== 'undefined') {
     for (const b of BENCHMARK) BENCH_MAP.set(nn(b.designation), b);
@@ -5449,28 +5478,47 @@ function printPrioritairesPDF(tc) {
   const CAT_LABELS = { pp:'Petit prix', mi:'Intermédiaire', ch:'Cher', biosim:'Biosimilaire', generique:'Générique', nr:'Non remboursé', froid:'Froid' };
   const CAT_COLORS = { pp:'#16a34a', mi:'#0284c7', ch:'#9333ea', biosim:'#ea580c', generique:'#0891b2', nr:'#dc2626', froid:'#0369a1' };
 
-  const produits = (ph.pr || []).map(([nom, ca, mg, qt, ean]) => {
-    const bench   = BENCH_MAP.get(nn(nom));
-    const puAchat = qt > 0 ? ca / qt : 0;
-    const puIP    = bench?.prix_ip > 0 ? bench.prix_ip : (puAchat > 0 ? puAchat : null);
-    const cat     = bench ? effectiveCatBench(bench) : (puAchat > 468 ? 'ch' : puAchat > 4.33 ? 'mi' : 'pp');
-    return { nom, ca, mg, qt, ean, puAchat, puIP, cat };
-  }).filter(p => p.ca > 0).sort((a,b) => b.ca - a.ca);
+  const aggMap = new Map();
+  for (const ph of wmlVis) {
+    const seen = new Set();
+    for (const [nom, ca, mg, qt, ean] of (ph.pr || [])) {
+      const k = nn(nom);
+      if (!k || ca <= 0) continue;
+      if (!aggMap.has(k)) {
+        const bench  = BENCH_MAP.get(k);
+        const puEst  = qt > 0 ? ca / qt : 0;
+        const cat    = bench ? effectiveCatBench(bench) : (puEst > 468 ? 'ch' : puEst > 4.33 ? 'mi' : 'pp');
+        const puIP   = bench?.prix_ip > 0 ? bench.prix_ip : (puEst > 0 ? puEst : null);
+        aggMap.set(k, { nom, ca:0, qt:0, nPharma:0, cat, puIP });
+      }
+      const e = aggMap.get(k);
+      e.ca += ca; e.qt += qt;
+      if (!seen.has(k)) { e.nPharma++; seen.add(k); }
+    }
+  }
 
-  const totalCA = produits.reduce((s,p) => s+p.ca, 0);
-  const totalMg = produits.reduce((s,p) => s+p.mg, 0);
-  const totalQt = produits.reduce((s,p) => s+p.qt, 0);
+  let liste = [...aggMap.values()];
+  if (prioritairesCatFilt !== 'tous') liste = liste.filter(p => p.cat === prioritairesCatFilt);
+  const sortFns = { ca:(a,b)=>b.ca-a.ca, qt:(a,b)=>b.qt-a.qt, pharma:(a,b)=>b.nPharma-a.nPharma };
+  liste.sort(sortFns[prioritairesSortBy] || sortFns.ca);
+  const page = liste.slice(0, prioritairesNbLines);
+
+  const totalCA = page.reduce((s,p) => s+p.ca, 0);
+  const totalQt = page.reduce((s,p) => s+p.qt, 0);
   const dateStr = new Date().toLocaleDateString('fr-FR', {day:'2-digit',month:'long',year:'numeric'});
+  const catTitre = prioritairesCatFilt === 'tous' ? 'Toutes catégories' : (CAT_LABELS[prioritairesCatFilt] || prioritairesCatFilt);
+  const triLabel = {ca:'CA HT décroissant', qt:'Volume décroissant', pharma:'Nb pharmacies décroissant'}[prioritairesSortBy] || 'CA HT';
 
-  const rows = produits.map((p, i) => {
+  const rows = page.map((p, i) => {
     const catColor = CAT_COLORS[p.cat] || '#888';
     const catLabel = CAT_LABELS[p.cat] || p.cat;
     return `<tr class="${i%2===1?'alt':''}">
       <td class="num">${i+1}</td>
       <td class="nom">${p.nom}</td>
       <td class="cat"><span style="color:${catColor};background:${catColor}18;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700">${catLabel}</span></td>
-      <td class="r">${Math.round(p.qt)}</td>
-      <td class="r prix">${fmtD(p.puIP || p.puAchat)}</td>
+      <td class="r">${p.nPharma}</td>
+      <td class="r">${fmtN(p.qt)}</td>
+      <td class="r prix">${p.puIP ? fmtD(p.puIP) : '—'}</td>
       <td class="r ca">${fmt(p.ca)}</td>
     </tr>`;
   }).join('');
@@ -5480,46 +5528,49 @@ function printPrioritairesPDF(tc) {
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>OPSO Santé — ${ph.nom} — Recommandations IP</title>
+<title>OPSO Santé — Top produits prospect</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Arial', sans-serif; color: #1e293b; background: #fff; font-size: 12px; }
-  .header { background: linear-gradient(135deg, #064e20 0%, #0d8530 60%, #11a63c 100%); color: #fff; padding: 28px 36px; }
-  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-  .logo-wrap { display: flex; align-items: center; gap: 12px; }
-  .logo-box { width: 40px; height: 40px; background: rgba(255,255,255,.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-  .brand { font-size: 22px; font-weight: 900; letter-spacing: -.5px; }
-  .brand-sub { font-size: 11px; opacity: .75; margin-top: 2px; }
-  .meta { text-align: right; font-size: 11px; opacity: .8; line-height: 1.6; }
-  .pharma-box { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 10px; padding: 14px 18px; }
-  .pharma-label { font-size: 10px; opacity: .65; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 4px; }
-  .pharma-name { font-size: 20px; font-weight: 900; }
-  .pharma-sub { font-size: 11px; opacity: .7; margin-top: 3px; }
-  .kpis { display: flex; border-bottom: 2px solid #e2e8f0; }
-  .kpi { flex: 1; padding: 14px 16px; text-align: center; border-right: 1px solid #e2e8f0; }
-  .kpi:last-child { border-right: none; }
-  .kpi-val { font-size: 20px; font-weight: 900; color: #11a63c; }
-  .kpi-lab { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; font-weight: 700; }
-  .intro { padding: 12px 20px; background: #f0fdf4; border-bottom: 1px solid #bbf7d0; font-size: 11px; color: #166534; line-height: 1.5; }
-  .intro strong { color: #064e20; display: block; margin-bottom: 3px; font-size: 12px; }
-  table { width: 100%; border-collapse: collapse; }
-  thead tr { background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
-  th { padding: 8px 10px; font-size: 9px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
-  th.r { text-align: right; }
-  td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; }
-  tr.alt td { background: #f9fafb; }
-  .num { text-align: center; color: #94a3b8; font-size: 11px; width: 28px; }
-  .nom { font-weight: 600; color: #1e293b; max-width: 240px; font-size: 11.5px; }
-  .cat { text-align: center; }
-  .r { text-align: right; }
-  .prix { font-size: 12px; color: #475569; }
-  .ca { font-size: 13px; font-weight: 800; color: #11a63c; }
-  tfoot td { padding: 10px; font-weight: 900; background: #f0fdf4; border-top: 2px solid #11a63c; }
-  .footer { padding: 14px 20px; background: #f8fafc; border-top: 2px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #64748b; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:Arial,sans-serif; color:#1e293b; background:#fff; font-size:12px; }
+  .header { background:linear-gradient(135deg,#064e20 0%,#0d8530 60%,#11a63c 100%); color:#fff; padding:28px 36px; }
+  .header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .logo-wrap { display:flex; align-items:center; gap:12px; }
+  .logo-box { width:40px; height:40px; background:rgba(255,255,255,.15); border-radius:10px; display:flex; align-items:center; justify-content:center; }
+  .brand { font-size:22px; font-weight:900; letter-spacing:-.5px; }
+  .brand-sub { font-size:11px; opacity:.75; margin-top:2px; }
+  .meta { text-align:right; font-size:11px; opacity:.8; line-height:1.6; }
+  .prospect-box { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:14px 18px; }
+  .prospect-label { font-size:10px; opacity:.65; text-transform:uppercase; letter-spacing:.8px; margin-bottom:4px; }
+  .prospect-title { font-size:18px; font-weight:900; }
+  .prospect-sub { font-size:11px; opacity:.7; margin-top:3px; }
+  .kpis { display:flex; border-bottom:2px solid #e2e8f0; }
+  .kpi { flex:1; padding:14px 16px; text-align:center; border-right:1px solid #e2e8f0; }
+  .kpi:last-child { border-right:none; }
+  .kpi-val { font-size:20px; font-weight:900; color:#11a63c; }
+  .kpi-lab { font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-top:2px; font-weight:700; }
+  .intro { padding:12px 20px; background:#f0fdf4; border-bottom:1px solid #bbf7d0; font-size:11px; color:#166534; line-height:1.5; }
+  .intro strong { color:#064e20; display:block; margin-bottom:3px; font-size:12px; }
+  table { width:100%; border-collapse:collapse; }
+  thead tr { background:#f8fafc; border-bottom:2px solid #e2e8f0; }
+  th { padding:8px 10px; font-size:9px; color:#64748b; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+  th.r { text-align:right; }
+  td { padding:7px 10px; border-bottom:1px solid #f1f5f9; }
+  tr.alt td { background:#f9fafb; }
+  .num { text-align:center; color:#94a3b8; font-size:11px; width:28px; }
+  .nom { font-weight:600; color:#1e293b; font-size:11.5px; }
+  .cat { text-align:center; }
+  .r { text-align:right; }
+  .prix { color:#475569; }
+  .ca { font-size:13px; font-weight:800; color:#11a63c; }
+  tfoot td { padding:10px; font-weight:900; background:#f0fdf4; border-top:2px solid #11a63c; }
+  .cta { padding:18px 24px; background:linear-gradient(135deg,#f0fdf4,#dcfce7); border-top:2px solid #11a63c; text-align:center; }
+  .cta-title { font-size:15px; font-weight:900; color:#064e20; margin-bottom:6px; }
+  .cta-body { font-size:11px; color:#166534; line-height:1.6; }
+  .footer { padding:12px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; font-size:10px; color:#64748b; }
   @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    @page { margin: 12mm 10mm; size: A4; }
+    body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .header,.cta { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    @page { margin:12mm 10mm; size:A4; }
   }
 </style>
 </head>
@@ -5532,61 +5583,64 @@ function printPrioritairesPDF(tc) {
       </div>
       <div>
         <div class="brand">OPSO Santé</div>
-        <div class="brand-sub">Recommandations achats Intégral Pharma</div>
+        <div class="brand-sub">Groupement pharmacies indépendantes · Normandie</div>
       </div>
     </div>
-    <div class="meta">
-      Délégué : William Morel<br>
-      Édité le ${dateStr}
-    </div>
+    <div class="meta">Délégué IP : William Morel<br>Édité le ${dateStr}</div>
   </div>
-  <div class="pharma-box">
-    <div class="pharma-label">Pharmacie adhérente</div>
-    <div class="pharma-name">${ph.nom}</div>
-    <div class="pharma-sub">TIRCODE ${ph.tc} · Période WML : Janvier – Avril 2026</div>
+  <div class="prospect-box">
+    <div class="prospect-label">Sélection produits</div>
+    <div class="prospect-title">Top ${page.length} produits achetés par nos adhérents chez Intégral Pharma</div>
+    <div class="prospect-sub">${catTitre} · Trié par ${triLabel} · Période Jan–Avr 2026 · ${wmlVis.length} pharmacies adhérentes</div>
   </div>
 </div>
 
 <div class="kpis">
-  <div class="kpi"><div class="kpi-val">${fmt(totalCA)}</div><div class="kpi-lab">CA total achat HT</div></div>
-  <div class="kpi"><div class="kpi-val">${fmt(totalMg)}</div><div class="kpi-lab">Marge obtenue</div></div>
-  <div class="kpi"><div class="kpi-val">${produits.length}</div><div class="kpi-lab">Références</div></div>
-  <div class="kpi"><div class="kpi-val">${fmt(totalCA/4)}</div><div class="kpi-lab">Moy. mensuelle</div></div>
+  <div class="kpi"><div class="kpi-val">${wmlVis.length}</div><div class="kpi-lab">Pharmacies adhérentes</div></div>
+  <div class="kpi"><div class="kpi-val">${fmt(totalCA)}</div><div class="kpi-lab">CA groupement (sélection)</div></div>
+  <div class="kpi"><div class="kpi-val">${fmtN(totalQt)}</div><div class="kpi-lab">Unités achetées</div></div>
+  <div class="kpi"><div class="kpi-val">${fmt(totalCA/4)}</div><div class="kpi-lab">Moyenne mensuelle</div></div>
 </div>
 
 <div class="intro">
-  <strong>📋 Vos achats groupement — à commander en direct chez Intégral Pharma</strong>
-  Liste de vos ${produits.length} références achetées via le groupement OPSO Santé (Jan–Avr 2026), classées par CA décroissant.
-  Commander en direct vous garantit les mêmes tarifs avec un accompagnement dédié.
+  <strong>📋 Ce que nos adhérents OPSO Santé commandent chez Intégral Pharma</strong>
+  Liste des ${page.length} produits les plus achetés par les pharmacies du groupement OPSO Santé, basée sur les achats réels Jan–Avr 2026.
+  Rejoindre OPSO Santé vous donne accès à ces tarifs et à un délégué dédié.
 </div>
 
 <table>
   <thead>
     <tr>
-      <th>#</th>
-      <th>Produit</th>
-      <th>Catégorie</th>
-      <th class="r">Qté</th>
-      <th class="r">PU net IP</th>
-      <th class="r">CA HT</th>
+      <th>#</th><th>Produit</th><th>Catégorie</th>
+      <th class="r">Pharmacies</th><th class="r">Volume (u)</th>
+      <th class="r">PU net IP</th><th class="r">CA HT</th>
     </tr>
   </thead>
   <tbody>${rows}</tbody>
   <tfoot>
     <tr>
-      <td colspan="3" style="color:#064e20;font-size:13px">TOTAL</td>
-      <td class="r" style="color:#064e20">${Math.round(totalQt)}</td>
+      <td colspan="3" style="color:#064e20;font-size:13px">TOTAL sélection</td>
+      <td></td>
+      <td class="r" style="color:#064e20">${fmtN(totalQt)}</td>
       <td></td>
       <td class="r" style="color:#11a63c;font-size:14px">${fmt(totalCA)}</td>
     </tr>
   </tfoot>
 </table>
 
+<div class="cta">
+  <div class="cta-title">Rejoignez OPSO Santé et bénéficiez des mêmes tarifs</div>
+  <div class="cta-body">
+    En adhérant au groupement OPSO Santé, votre pharmacie accède aux tarifs Intégral Pharma négociés,
+    à un délégué commercial dédié et à des outils de pilotage exclusifs.<br>
+    <strong style="color:#064e20">Contact : William Morel · Délégué Intégral Pharma · Normandie</strong>
+  </div>
+</div>
+
 <div class="footer">
   <span>OPSO Santé · Groupement pharmacies Normandie · 2026</span>
   <span style="color:#11a63c;font-weight:700">Intégral Pharma × OPSO Santé</span>
 </div>
-
 <script>window.onload = () => { window.print(); }<\/script>
 </body>
 </html>`);
