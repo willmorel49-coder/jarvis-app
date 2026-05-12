@@ -2182,6 +2182,93 @@ html { scroll-behavior: smooth; }
   .fab-quick.open { transform: none; }
 }
 
+/* ── Notification badges ───────────────────────────── */
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--opso-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(183,56,56,0.4);
+  pointer-events: none;
+  border: 2px solid var(--opso-white);
+  font-family: 'Nunito', sans-serif;
+  z-index: 2;
+}
+.notif-badge.warning {
+  background: var(--opso-warning);
+  box-shadow: 0 2px 6px rgba(184,115,12,0.4);
+}
+.notif-badge.success {
+  background: var(--opso-green);
+  box-shadow: 0 2px 6px rgba(17,166,60,0.4);
+}
+.notif-badge.dot {
+  min-width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--opso-white);
+}
+
+@keyframes notif-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.15); }
+}
+.notif-badge.pulse {
+  animation: notif-pulse 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .notif-badge.pulse { animation: none; }
+}
+
+/* Container relatif pour positionnement */
+.notif-anchor { position: relative; }
+
+/* Mobile nav badges */
+.mobile-nav-item { position: relative; }
+.mobile-nav-item .notif-badge {
+  top: 2px;
+  right: calc(50% - 18px);
+  border-color: rgba(255,255,255,0.92);
+}
+
+/* Sidebar nav badges */
+.nav-item { position: relative; }
+.nav-item .notif-badge {
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  position: absolute;
+  border-color: var(--opso-green-dark);
+}
+
+/* FAB urgent state */
+.fab-quick.has-urgent {
+  box-shadow:
+    0 8px 24px rgba(17,166,60,0.35),
+    0 0 0 0 rgba(183,56,56,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  animation: fab-urgent-pulse 2.5s ease-in-out infinite;
+}
+@keyframes fab-urgent-pulse {
+  0%, 100% { box-shadow: 0 8px 24px rgba(17,166,60,0.35), 0 0 0 0 rgba(183,56,56,0.4), inset 0 1px 0 rgba(255,255,255,0.15); }
+  50%      { box-shadow: 0 8px 24px rgba(17,166,60,0.35), 0 0 0 8px rgba(183,56,56,0), inset 0 1px 0 rgba(255,255,255,0.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fab-quick.has-urgent { animation: none; }
+}
+
 /* ── PRINT (fiche de visite) ───────────── */
 @media print {
   body > *:not(#fiche-visite-modal) { display: none !important; }
