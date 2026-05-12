@@ -1762,6 +1762,163 @@ function loadOffilogLive() {
   return _offilogLivePromise;
 }
 
+// ── Dictée vocale (Web Speech API) ──────────────────────────
+const _SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let _activeRecognition = null;
+
+function isVoiceSupported() {
+  return !!_SpeechRecognition;
+}
+
+function startVoiceDictation(targetInputId, onUpdate, onEnd) {
+  if (!_SpeechRecognition) {
+    if (typeof showToast === 'function') showToast('Dictée vocale non supportée sur ce navigateur', 'error');
+    return null;
+  }
+
+  // Arreter dictee precedente si existe
+  if (_activeRecognition) {
+    try { _activeRecognition.stop(); } catch {}
+    _activeRecognition = null;
+  }
+
+  const recognition = new _SpeechRecognition();
+  recognition.lang = 'fr-FR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  let finalTranscript = '';
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscript += transcript;
+      } else {
+        interim += transcript;
+      }
+    }
+    const fullText = finalTranscript + interim;
+    if (onUpdate) onUpdate(fullText);
+  };
+
+  recognition.onerror = (event) => {
+    if (typeof showToast === 'function') {
+      const msg = event.error === 'no-speech' ? 'Aucun son detecte'
+                : event.error === 'not-allowed' ? 'Microphone refuse — verifie les permissions'
+                : 'Erreur dictee : ' + event.error;
+      showToast(msg, 'error');
+    }
+    if (onEnd) onEnd(finalTranscript);
+    _activeRecognition = null;
+  };
+
+  recognition.onend = () => {
+    if (onEnd) onEnd(finalTranscript);
+    _activeRecognition = null;
+  };
+
+  try {
+    recognition.start();
+    _activeRecognition = recognition;
+    if (typeof trackEvent === 'function') trackEvent('voice_dictation_started', { target: targetInputId });
+    return recognition;
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Impossible de démarrer la dictée', 'error');
+    return null;
+  }
+}
+
+function stopVoiceDictation() {
+  if (_activeRecognition) {
+    try { _activeRecognition.stop(); } catch {}
+    _activeRecognition = null;
+  }
+}
+
+function _toggleVoiceForVisit(pharmacyId) {
+  const btn = document.getElementById('voice-visit-btn-' + pharmacyId);
+  const input = document.getElementById('visit-note-' + pharmacyId);
+  if (!btn || !input) return;
+
+  if (_activeRecognition) {
+    // Arret
+    stopVoiceDictation();
+    btn.style.background = 'var(--bg2)';
+    btn.style.color = 'var(--text2)';
+    btn.style.borderColor = 'var(--border2)';
+    btn.innerHTML = '🎙';
+    return;
+  }
+
+  // Demarrage
+  btn.style.background = 'var(--opso-danger)';
+  btn.style.color = '#fff';
+  btn.style.borderColor = 'var(--opso-danger)';
+  btn.innerHTML = '⏺';
+  btn.setAttribute('data-tooltip', 'Cliquer pour arrêter la dictée');
+
+  const existingText = input.value;
+
+  startVoiceDictation(
+    'visit-note-' + pharmacyId,
+    (transcript) => {
+      input.value = (existingText ? existingText + ' ' : '') + transcript;
+    },
+    (finalTranscript) => {
+      btn.style.background = 'var(--bg2)';
+      btn.style.color = 'var(--text2)';
+      btn.style.borderColor = 'var(--border2)';
+      btn.innerHTML = '🎙';
+      btn.setAttribute('data-tooltip', 'Dictée vocale (français)');
+      if (finalTranscript && typeof showToast === 'function') {
+        showToast('Dictée terminée', 'success');
+      }
+    }
+  );
+}
+
+function _toggleVoiceForNote(pharmacyId) {
+  const btn = document.getElementById('voice-note-btn-' + pharmacyId);
+  const ta = document.getElementById('pharma-note-' + pharmacyId);
+  if (!btn || !ta) return;
+
+  if (_activeRecognition) {
+    stopVoiceDictation();
+    btn.style.background = 'var(--bg2)';
+    btn.style.color = 'var(--text2)';
+    btn.style.borderColor = 'var(--border2)';
+    btn.innerHTML = '🎙 Dictée';
+    return;
+  }
+
+  btn.style.background = 'var(--opso-danger)';
+  btn.style.color = '#fff';
+  btn.style.borderColor = 'var(--opso-danger)';
+  btn.innerHTML = '⏺ Stop';
+
+  const existingText = ta.value;
+
+  startVoiceDictation(
+    'pharma-note-' + pharmacyId,
+    (transcript) => {
+      ta.value = (existingText ? existingText + ' ' : '') + transcript;
+      // Trigger auto-save aussi
+      if (typeof schedulePharmaNoteSave === 'function') schedulePharmaNoteSave(pharmacyId);
+    },
+    (finalTranscript) => {
+      btn.style.background = 'var(--bg2)';
+      btn.style.color = 'var(--text2)';
+      btn.style.borderColor = 'var(--border2)';
+      btn.innerHTML = '🎙 Dictée';
+      if (finalTranscript) {
+        if (typeof showToast === 'function') showToast('Note dictée enregistrée', 'success');
+      }
+    }
+  );
+}
+
 // ── Tracker visites (localStorage) ──────────────────────────
 const VISIT_LOG_KEY = 'opso_visit_log';
 
@@ -2376,6 +2533,16 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             <span id="note-save-status-${pharma.id}" style="font-size:11px;color:var(--text3);min-height:16px"></span>
           </div>
           <div style="padding:14px 20px">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+              <button onclick="_toggleVoiceForNote('${pharma.id}')"
+                id="voice-note-btn-${pharma.id}"
+                type="button"
+                aria-label="Dictée vocale"
+                data-tooltip="Dictée vocale (ajoute au texte)"
+                style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;transition:all .15s">
+                🎙 Dictée
+              </button>
+            </div>
             <textarea id="pharma-note-${pharma.id}"
               placeholder="Personne de contact, particularités commerciales, préférences d'appel, etc."
               oninput="schedulePharmaNoteSave('${pharma.id}')"
@@ -2407,8 +2574,18 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
               </div>
               <div style="flex:1;min-width:200px">
                 <label for="visit-note-${pharma.id}" style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Compte-rendu</label>
-                <input id="visit-note-${pharma.id}" type="text" placeholder="Ex: RDV avec Mme Dupont, négo offre Sanofi, prochain RDV en juin..."
-                  style="width:100%;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px">
+                <div style="display:flex;gap:6px;align-items:stretch">
+                  <input id="visit-note-${pharma.id}" type="text" placeholder="Ex: RDV avec Mme Dupont, négo offre Sanofi, prochain RDV en juin..."
+                    style="flex:1;min-width:0;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px">
+                  <button onclick="_toggleVoiceForVisit('${pharma.id}')"
+                    id="voice-visit-btn-${pharma.id}"
+                    type="button"
+                    aria-label="Dictée vocale"
+                    data-tooltip="Dictée vocale (français)"
+                    style="padding:7px 10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:14px;flex-shrink:0;transition:all .15s">
+                    🎙
+                  </button>
+                </div>
               </div>
               <button class="btn-opso" onclick="submitVisit('${pharma.id}')"
                 style="padding:8px 16px;font-size:12px;white-space:nowrap">
@@ -11062,6 +11239,15 @@ function showNewPassForm() {
   document.getElementById('newpass-input').focus();
 }
 
+// Masquer boutons voice si Web Speech API non supportee
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof isVoiceSupported === 'function' && !isVoiceSupported()) {
+    const style = document.createElement('style');
+    style.textContent = '[id^="voice-visit-btn-"], [id^="voice-note-btn-"] { display: none !important; }';
+    document.head.appendChild(style);
+  }
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
   const loginScreen = document.getElementById('login-screen');
   const appEl       = document.getElementById('app');
@@ -11352,3 +11538,185 @@ async function applyUpdate() {
   scrollArea.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('scroll', onScroll, { passive: true });
 })();
+
+// ── FAB Quick Action ────────────────────────────────────────
+function _ensureFAB() {
+  if (document.getElementById('fab-quick')) return;
+
+  // Backdrop
+  const backdrop = document.createElement('div');
+  backdrop.id = 'fab-backdrop';
+  backdrop.className = 'fab-backdrop';
+  backdrop.onclick = () => _closeFAB();
+  document.body.appendChild(backdrop);
+
+  // Menu
+  const menu = document.createElement('div');
+  menu.id = 'fab-menu';
+  menu.className = 'fab-menu';
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-hidden', 'true');
+  menu.innerHTML = `
+    <button class="fab-menu-item" role="menuitem" onclick="_fabAction('visit')">
+      <span class="fab-menu-label">Enregistrer une visite</span>
+      <span class="fab-menu-item-icon">🗓</span>
+    </button>
+    <button class="fab-menu-item" role="menuitem" onclick="_fabAction('note')">
+      <span class="fab-menu-label">Ajouter une note</span>
+      <span class="fab-menu-item-icon">📝</span>
+    </button>
+    <button class="fab-menu-item" role="menuitem" onclick="_fabAction('search')">
+      <span class="fab-menu-label">Recherche rapide</span>
+      <span class="fab-menu-item-icon">🔍</span>
+    </button>
+    <button class="fab-menu-item" role="menuitem" onclick="_fabAction('calendar')">
+      <span class="fab-menu-label">Voir le calendrier</span>
+      <span class="fab-menu-item-icon">📅</span>
+    </button>
+  `;
+  document.body.appendChild(menu);
+
+  // FAB bouton
+  const fab = document.createElement('button');
+  fab.id = 'fab-quick';
+  fab.className = 'fab-quick';
+  fab.setAttribute('aria-label', 'Actions rapides');
+  fab.setAttribute('aria-expanded', 'false');
+  fab.innerHTML = '+';
+  fab.onclick = () => _toggleFAB();
+  document.body.appendChild(fab);
+}
+
+function _toggleFAB() {
+  const fab = document.getElementById('fab-quick');
+  const menu = document.getElementById('fab-menu');
+  const backdrop = document.getElementById('fab-backdrop');
+  if (!fab || !menu || !backdrop) return;
+  const isOpen = fab.classList.toggle('open');
+  menu.classList.toggle('open', isOpen);
+  backdrop.classList.toggle('open', isOpen);
+  fab.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  menu.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+}
+
+function _closeFAB() {
+  const fab = document.getElementById('fab-quick');
+  const menu = document.getElementById('fab-menu');
+  const backdrop = document.getElementById('fab-backdrop');
+  if (fab) fab.classList.remove('open');
+  if (menu) menu.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
+  if (fab) fab.setAttribute('aria-expanded', 'false');
+  if (menu) menu.setAttribute('aria-hidden', 'true');
+}
+
+function _fabAction(action) {
+  _closeFAB();
+  setTimeout(() => {
+    if (action === 'search') {
+      if (typeof showGlobalSearch === 'function') showGlobalSearch();
+    } else if (action === 'calendar') {
+      if (typeof showCalendarModal === 'function') showCalendarModal();
+    } else if (action === 'visit' || action === 'note') {
+      // Ouvrir un picker simple de pharmacie
+      _showPharmaPicker(action);
+    }
+  }, 200);
+}
+
+function _showPharmaPicker(action) {
+  if (!state?.pharmacies?.length) {
+    if (typeof showToast === 'function') showToast('Aucune pharmacie disponible', 'error');
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'fab-picker-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:480px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">${action === 'visit' ? '🗓 Enregistrer une visite' : '📝 Ajouter une note'}</div>
+          <div class="modal-subtitle">Choisis la pharmacie concernée</div>
+        </div>
+        <button class="modal-close" onclick="closeAccessibleModal(document.getElementById('fab-picker-modal'))" aria-label="Fermer">✕</button>
+      </div>
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
+        <input id="fab-picker-search" type="text" placeholder="Filtrer..."
+          oninput="_fabFilterPharma()"
+          autocomplete="off"
+          style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);font-size:14px;outline:none">
+      </div>
+      <div id="fab-picker-list" style="max-height:50vh;overflow-y:auto">
+        ${state.pharmacies.map(ph => `
+          <div data-name="${(ph.name||'').toLowerCase()}"
+            onclick="_fabPickPharma('${ph.id}','${action}')"
+            class="fab-picker-row"
+            style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s">
+            <span style="width:10px;height:10px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
+            <span style="flex:1;font-size:13px;font-weight:600">${titleCase(ph.name)}</span>
+            <span style="font-size:14px;color:var(--text3)">›</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  if (typeof makeAccessibleModal === 'function') makeAccessibleModal(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
+
+  // Hover effect via inline (CSS class .fab-picker-row hover)
+  setTimeout(() => {
+    document.querySelectorAll('.fab-picker-row').forEach(el => {
+      el.addEventListener('mouseenter', () => el.style.background = 'var(--opso-green-pale2)');
+      el.addEventListener('mouseleave', () => el.style.background = '');
+    });
+  }, 50);
+}
+
+function _fabFilterPharma() {
+  const q = (document.getElementById('fab-picker-search')?.value || '').toLowerCase().trim();
+  document.querySelectorAll('.fab-picker-row').forEach(row => {
+    const name = row.dataset.name || '';
+    row.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
+}
+
+function _fabPickPharma(pharmacyId, action) {
+  closeAccessibleModal(document.getElementById('fab-picker-modal'));
+  setTimeout(() => {
+    if (typeof showPharmaDetail === 'function') showPharmaDetail(pharmacyId);
+    setTimeout(() => {
+      // Focus sur la section concernee
+      const targetId = action === 'visit' ? 'sec-visits' : 'sec-notes';
+      const target = document.getElementById(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Focus l'input correspondant
+        setTimeout(() => {
+          const focusId = action === 'visit' ? ('visit-note-' + pharmacyId) : ('pharma-note-' + pharmacyId);
+          const el = document.getElementById(focusId);
+          if (el) el.focus();
+        }, 400);
+      }
+    }, 200);
+  }, 250);
+}
+
+// Init au load
+document.addEventListener('DOMContentLoaded', () => {
+  // Attendre que l'app soit visible
+  setTimeout(() => {
+    if (document.getElementById('app')?.classList.contains('visible')) {
+      _ensureFAB();
+    }
+    // Reessayer apres login
+    const obs = new MutationObserver(() => {
+      if (document.getElementById('app')?.classList.contains('visible') && !document.getElementById('fab-quick')) {
+        _ensureFAB();
+      }
+    });
+    obs.observe(document.getElementById('app') || document.body, { attributes: true, attributeFilter: ['class'] });
+  }, 500);
+});
