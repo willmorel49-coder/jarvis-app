@@ -613,6 +613,89 @@ function titleCase(s) {
   );
 }
 
+// ── Modal accessibility helper ──────────────────────────────
+const _modalStack = []; // pile pour gerer modales empilees
+
+function makeAccessibleModal(modalEl) {
+  if (!modalEl || modalEl._a11yInstalled) return;
+  modalEl._a11yInstalled = true;
+
+  // Sauver l'element focusable precedent
+  const previousFocus = document.activeElement;
+
+  // Attributs ARIA
+  modalEl.setAttribute('role', modalEl.getAttribute('role') || 'dialog');
+  modalEl.setAttribute('aria-modal', 'true');
+
+  // Si pas de aria-label/labelledby, essayer de derive du titre
+  if (!modalEl.getAttribute('aria-label') && !modalEl.getAttribute('aria-labelledby')) {
+    const title = modalEl.querySelector('h1, h2, h3, .modal-title, .card-title');
+    if (title && title.textContent) {
+      modalEl.setAttribute('aria-label', title.textContent.trim());
+    }
+  }
+
+  // Liste des elements focusables
+  const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  const getFocusables = () => Array.from(modalEl.querySelectorAll(focusableSelector))
+    .filter(el => el.offsetWidth > 0 || el.offsetHeight > 0);
+
+  // Focus initial : premier element focusable
+  setTimeout(() => {
+    const focusables = getFocusables();
+    if (focusables.length) focusables[0].focus();
+    else modalEl.setAttribute('tabindex', '-1'), modalEl.focus();
+  }, 50);
+
+  // Trap focus (Tab/Shift+Tab cycle dans la modale)
+  const trapHandler = (e) => {
+    if (e.key !== 'Tab') return;
+    const focusables = getFocusables();
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last  = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  };
+
+  // Escape pour fermer
+  const escapeHandler = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeAccessibleModal(modalEl);
+    }
+  };
+
+  modalEl.addEventListener('keydown', trapHandler);
+  document.addEventListener('keydown', escapeHandler);
+
+  _modalStack.push({ el: modalEl, previousFocus, trapHandler, escapeHandler });
+}
+
+function closeAccessibleModal(modalEl) {
+  // Trouve l'entree dans la pile
+  const idx = _modalStack.findIndex(e => e.el === modalEl);
+  if (idx === -1) {
+    // Pas trouve : suppose un appel direct, juste retirer
+    if (modalEl && modalEl.parentNode) modalEl.remove();
+    return;
+  }
+  const entry = _modalStack[idx];
+  document.removeEventListener('keydown', entry.escapeHandler);
+  _modalStack.splice(idx, 1);
+
+  if (modalEl && modalEl.parentNode) modalEl.remove();
+
+  // Restitue le focus
+  if (entry.previousFocus && typeof entry.previousFocus.focus === 'function') {
+    setTimeout(() => entry.previousFocus.focus(), 50);
+  }
+}
+
 // ── RENDER ────────────────────────────────────
 function renderRank(i) {
   const cls = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-n';
@@ -1053,6 +1136,11 @@ function renderPharmacies() {
     });
   }
 
+  // Filtre statut prospection
+  if (window._prospectFilter) {
+    enriched = enriched.filter(e => getProspectStage(e.ph.id).id === window._prospectFilter);
+  }
+
   // Tri
   if (pharmaSort === 'name')  enriched.sort((a, b) => a.ph.name.localeCompare(b.ph.name));
   else if (pharmaSort === 'delta') enriched.sort((a, b) => (b.g ?? -Infinity) - (a.g ?? -Infinity));
@@ -1085,11 +1173,16 @@ function renderPharmacies() {
   ];
 
   const filterBarHtml = `
-    <div class="filter-bar">
+    <div class="filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       ${filterDefs.map(f => `
         <button class="filter-chip ${pharmaFilter === f.key ? 'active' : ''}"
           onclick="pharmaFilter='${f.key}';renderPharmacies()">${f.label}</button>`
       ).join('')}
+      <select onchange="window._prospectFilter=this.value;renderPharmacies()"
+        style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px;cursor:pointer">
+        <option value="" ${!window._prospectFilter?'selected':''}>🎯 Tous statuts prospect</option>
+        ${PROSPECT_STAGES.map(s => `<option value="${s.id}" ${window._prospectFilter===s.id?'selected':''}>${s.label}</option>`).join('')}
+      </select>
     </div>`;
 
   const listHtml = enriched.length
@@ -1116,6 +1209,10 @@ function renderPharmacies() {
             priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(17,166,60,.12);color:var(--opso-green);font-weight:700">💡 Pot. WML +${Math.round(pot)}€</span>`;
           }
         }
+        const prospectStage = getProspectStage(ph.id);
+        const prospectBadge = prospectStage.id === 'aucun'
+          ? ''
+          : `<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${prospectStage.bg};color:${prospectStage.color};font-weight:700;white-space:nowrap" title="Statut prospection">${prospectStage.label}</span>`;
         const pct = maxCA ? Math.round(caCur / maxCA * 100) : 0;
         return `
           <div class="pharma-item pharma-list-row" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
@@ -1124,6 +1221,7 @@ function renderPharmacies() {
               <div class="pharma-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <span>${titleCase(ph.name)}</span>
                 ${priorityBadge}
+                ${prospectBadge}
               </div>
               <div style="height:3px;border-radius:2px;background:var(--bg3);margin-top:6px;max-width:200px;overflow:hidden">
                 <div style="height:100%;width:${pct}%;background:${ph.color};border-radius:2px"></div>
@@ -1444,6 +1542,53 @@ function submitVisit(pharmacyId) {
   showPharmaDetail(pharmacyId);
 }
 
+// ── Pipeline prospection (localStorage) ─────────────────────
+const PROSPECT_KEY = 'opso_prospect_status';
+
+const PROSPECT_STAGES = [
+  { id: 'aucun',      label: 'Non contactée',  color: '#9aa0a3', bg: 'rgba(154,160,163,.1)' },
+  { id: 'contact',    label: 'Contactée',       color: '#0284c7', bg: 'rgba(2,132,199,.12)' },
+  { id: 'rdv',        label: 'RDV pris',        color: '#7c3aed', bg: 'rgba(124,58,237,.12)' },
+  { id: 'nego',       label: 'En négociation',  color: '#b8730c', bg: 'rgba(184,115,12,.12)' },
+  { id: 'adherent',   label: 'Adhérent OPSO',   color: '#0a7a2b', bg: 'rgba(17,166,60,.12)' },
+  { id: 'refus',      label: 'Refus / Hors cible', color: '#b73838', bg: 'rgba(183,56,56,.1)' },
+];
+
+function loadProspectStatus() {
+  try { return JSON.parse(localStorage.getItem(PROSPECT_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveProspectStatus(map) {
+  localStorage.setItem(PROSPECT_KEY, JSON.stringify(map));
+}
+
+function getProspectStage(pharmacyId) {
+  const map = loadProspectStatus();
+  const stageId = map[pharmacyId];
+  return PROSPECT_STAGES.find(s => s.id === stageId) || PROSPECT_STAGES[0];
+}
+
+function setProspectStage(pharmacyId, stageId) {
+  const map = loadProspectStatus();
+  if (stageId === 'aucun') {
+    delete map[pharmacyId];
+  } else {
+    map[pharmacyId] = stageId;
+  }
+  saveProspectStatus(map);
+}
+
+function setProspectStageFor(pharmacyId, stageId) {
+  setProspectStage(pharmacyId, stageId);
+  if (typeof showToast === 'function') {
+    const stage = PROSPECT_STAGES.find(s => s.id === stageId);
+    showToast('Statut : ' + (stage?.label || stageId), 'success');
+  }
+  if (typeof announce === 'function') announce('Statut prospection mis à jour');
+  showPharmaDetail(pharmacyId);
+}
+
 function showPharmaDetail(pharmacyId, overridePeriod) {
   if (overridePeriod !== undefined) pharmaDetailOverridePeriod = overridePeriod;
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
@@ -1617,6 +1762,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <a href="#sec-kpi"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📊 KPIs</a>
           <a href="#sec-client" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📍 Infos</a>
           <a href="#sec-visits" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🗓 Visites</a>
+          <a href="#sec-prospect" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🎯 Prospect</a>
           <a href="#sec-ytd"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📈 YTD</a>
           <a href="#sec-wml"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📦 WML</a>
           <a href="#sec-top"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🏆 Top</a>
@@ -1739,6 +1885,34 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
                 </div>
               `).join('')}
             </div>` : ''}
+        </div>`;
+      })()}
+
+      <!-- Statut prospection -->
+      ${(() => {
+        const currentStage = getProspectStage(pharma.id);
+        return `
+        <div id="sec-prospect" class="card fade-up" style="margin-bottom:20px;scroll-margin-top:80px">
+          <div class="card-header" style="padding:16px 20px;border-bottom:1px solid var(--border)">
+            <div>
+              <div class="card-title">🎯 Statut prospection</div>
+              <div class="card-subtitle">Étape actuelle dans le cycle d'adhésion OPSO Santé</div>
+            </div>
+            <div style="display:inline-block;padding:5px 14px;border-radius:14px;background:${currentStage.bg};color:${currentStage.color};font-size:12px;font-weight:800">${currentStage.label}</div>
+          </div>
+          <div style="padding:16px 20px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${PROSPECT_STAGES.map(s => `
+                <button onclick="setProspectStageFor('${pharma.id}','${s.id}')"
+                  style="padding:7px 14px;border-radius:20px;border:1.5px solid ${currentStage.id===s.id?s.color:'var(--border2)'};
+                  background:${currentStage.id===s.id?s.bg:'transparent'};
+                  color:${currentStage.id===s.id?s.color:'var(--text2)'};
+                  font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s">
+                  ${s.label}
+                </button>
+              `).join('')}
+            </div>
+          </div>
         </div>`;
       })()}
 
@@ -5175,7 +5349,7 @@ function announce(msg) {
 function navigate(page) {
   // Fermer tout modal ouvert avant de naviguer
   document.querySelectorAll('.modal-overlay, #fiche-visite-modal, #grp-modal').forEach(el => {
-    if (el && el.parentNode) el.remove();
+    if (el && el.parentNode) closeAccessibleModal(el);
   });
   state.currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
@@ -7471,7 +7645,7 @@ async function grpSyncFromStorage() {
 }
 function grpToggleModal(grpId) {
   const el = document.getElementById('grp-modal');
-  if (el) { el.remove(); return; }
+  if (el) { closeAccessibleModal(el); return; }
   grpSearchModal = '';
   grpRenderModal(grpId);
 }
@@ -7491,7 +7665,7 @@ function grpRenderModal(grpId) {
   });
 
   const existing = document.getElementById('grp-modal');
-  if (existing) existing.remove();
+  if (existing) closeAccessibleModal(existing);
 
   const modal = document.createElement('div');
   modal.id = 'grp-modal';
@@ -7550,10 +7724,10 @@ function grpRenderModal(grpId) {
         </button>
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) { modal.remove(); renderGroupements(); } });
+  modal.addEventListener('click', e => { if (e.target === modal) { closeAccessibleModal(modal); renderGroupements(); } });
   document.body.appendChild(modal);
+  makeAccessibleModal(modal);
   modal.querySelector('input')?.focus();
-  document.addEventListener('keydown', function grpEsc(e) { if (e.key === 'Escape') { modal.remove(); renderGroupements(); document.removeEventListener('keydown', grpEsc); } });
 }
 
 function renderGroupements() {
@@ -8853,9 +9027,9 @@ function showFicheVisite(pharmacyId) {
       </div>
     </div>`;
 
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.addEventListener('keydown', function fvEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', fvEsc); } });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
   document.body.appendChild(modal);
+  makeAccessibleModal(modal);
 }
 
 function printFicheVisite() {
@@ -8975,11 +9149,9 @@ function showGlobalSearch() {
         <div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Tapez au moins 2 caractères…</div>
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.addEventListener('keydown', function gsEsc(e) {
-    if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', gsEsc); }
-  });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
   document.body.appendChild(modal);
+  makeAccessibleModal(modal);
   setTimeout(() => document.getElementById('gs-input')?.focus(), 50);
 }
 
@@ -9358,4 +9530,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('login-error').classList.add('show');
     }
   });
+});
+
+// ── PWA Install Prompt ──────────────────────────────────────
+let _pwaInstallEvent = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _pwaInstallEvent = e;
+  // Ajouter un bouton install discret dans la topbar
+  const topbarActions = document.querySelector('.topbar-actions');
+  if (topbarActions && !document.getElementById('pwa-install-btn')) {
+    const btn = document.createElement('button');
+    btn.id = 'pwa-install-btn';
+    btn.innerHTML = '📲 Installer';
+    btn.title = 'Installer OPSO Santé sur votre appareil';
+    btn.style.cssText = 'padding:6px 12px;border-radius:8px;border:1.5px solid var(--opso-green);background:var(--opso-green-pale);color:var(--opso-green-dark);font-size:12px;font-weight:700;cursor:pointer';
+    btn.onclick = async () => {
+      if (!_pwaInstallEvent) return;
+      _pwaInstallEvent.prompt();
+      const { outcome } = await _pwaInstallEvent.userChoice;
+      if (outcome === 'accepted') btn.remove();
+      _pwaInstallEvent = null;
+    };
+    topbarActions.appendChild(btn);
+  }
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.remove();
+  if (typeof showToast === 'function') showToast('OPSO Santé installé !', 'success');
 });
