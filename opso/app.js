@@ -1907,7 +1907,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           }).join('')}
         </select>` : `<span style="font-size:12px;color:var(--text3)">${monthName(curM)} ${curY}</span>`}
         <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px;font-weight:700" title="Ouvrir la fiche de visite" data-tooltip="Ouvrir la fiche de visite">📋 Fiche visite</button>
-        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;border:none;box-shadow:0 2px 8px rgba(17,166,60,.3);font-weight:700;padding:7px 14px" title="Proposer une commande" data-tooltip="Proposer une commande">🛒 Commander</button>
+        <button class="btn-opso" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;padding:7px 14px" title="Proposer une commande" data-tooltip="Proposer une commande">🛒 Commander</button>
         <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px" title="Générer un email" data-tooltip="Générer un email pour cette pharmacie">✉ Email</button>
         <div style="display:flex;gap:6px;border-left:1px solid var(--border);padding-left:10px;margin-left:6px">
           <button class="btn btn-ghost" onclick="prodPharmaFilter='${pharma.id}';navigate('produits')" style="font-size:12px" title="Voir les produits" data-tooltip="Voir les produits de cette pharmacie">📊 Produits</button>
@@ -2053,8 +2053,8 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
                 <input id="visit-note-${pharma.id}" type="text" placeholder="Ex: RDV avec Mme Dupont, négo offre Sanofi, prochain RDV en juin..."
                   style="width:100%;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px">
               </div>
-              <button onclick="submitVisit('${pharma.id}')"
-                style="padding:8px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 6px rgba(17,166,60,.3)">
+              <button class="btn-opso" onclick="submitVisit('${pharma.id}')"
+                style="padding:8px 16px;font-size:12px;white-space:nowrap">
                 + Ajouter
               </button>
             </div>
@@ -2448,7 +2448,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         <div style="display:grid;grid-template-columns:${pharmaYTDprev > 0 ? '1fr 1fr 1fr' : '1fr 1fr'};gap:0;border-top:1px solid var(--border)">
           <div style="padding:16px 20px;text-align:center;${pharmaYTDprev > 0 ? 'border-right:1px solid var(--border);' : ''}">
-            <div style="font-size:24px;font-weight:900;color:var(--green);letter-spacing:-1px">${fmt(pharmaYTD)}</div>
+            <div style="font-family:'Varela Round',sans-serif;font-size:28px;font-weight:400;color:var(--green);letter-spacing:-1px">${fmt(pharmaYTD)}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:4px">CA Jan–${monthName(curM)} ${curY}</div>
           </div>
           ${pharmaYTDprev > 0 ? `
@@ -4169,15 +4169,15 @@ function renderAdmin() {
       <!-- Stats row -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
         <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
-          <div style="font-size:28px;font-weight:800;color:var(--green)">${state.pharmacies.length}</div>
+          <div style="font-family:'Varela Round',sans-serif;font-size:28px;font-weight:400;color:var(--green);letter-spacing:-1px">${state.pharmacies.length}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px">Pharmacies</div>
         </div>
         <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
-          <div style="font-size:28px;font-weight:800;color:var(--green)">${state.imports.length}</div>
+          <div style="font-family:'Varela Round',sans-serif;font-size:28px;font-weight:400;color:var(--green);letter-spacing:-1px">${state.imports.length}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px">Imports</div>
         </div>
         <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
-          <div style="font-size:28px;font-weight:800;color:var(--amber)">${fmtNum(state.sales.length)}</div>
+          <div style="font-family:'Varela Round',sans-serif;font-size:28px;font-weight:400;color:var(--amber);letter-spacing:-1px">${fmtNum(state.sales.length)}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px">Lignes de vente</div>
         </div>
       </div>
@@ -5369,10 +5369,8 @@ function renderPrioritaires() {
           style="flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px">
         <input id="prio-prospect-note" type="text" placeholder="Note libre (optionnel, ex: 'Suite RDV du 15 mai')"
           style="flex:2;min-width:240px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px">
-        <button onclick="printPrioritairesPDF()"
-          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:10px;border:none;
-          background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;font-size:13px;font-weight:700;cursor:pointer;
-          white-space:nowrap;box-shadow:0 4px 14px rgba(17,166,60,.3)">
+        <button class="btn-opso" onclick="printPrioritairesPDF()"
+          style="padding:10px 22px;font-size:13px;white-space:nowrap">
           🖨 Générer PDF prospect
         </button>
       </div>
@@ -5384,6 +5382,15 @@ function renderPrioritaires() {
         ${sortBtns}
         <span style="margin-left:8px;font-size:11px;color:var(--text3);font-weight:600">Afficher :</span>
         ${nbBtns}
+      </div>
+    </div>
+
+    <!-- Callout : Comment lire ce tableau -->
+    <div class="callout fade-up" style="margin-bottom:16px">
+      <div class="callout-icon">💡</div>
+      <div class="callout-content">
+        <div class="callout-title">Comment lire ce tableau</div>
+        <div>Les références sont classées par CA HT agrégé sur l'ensemble des adhérents. Filtre par <strong>catégorie</strong> (Petit prix, Intermédiaire, Cher…), tri par <strong>CA</strong>, <strong>volume</strong> ou <strong>nombre de pharmacies</strong>. Une barre couleur indique le poids relatif de chaque produit. Génère un PDF prospect avec le nom et la note pour préparer un RDV ciblé.</div>
       </div>
     </div>
 
@@ -6452,7 +6459,7 @@ function renderSimulator() {
         <div class="card kpi-hero" style="margin-bottom:16px">
           <div class="card-body" style="padding:20px">
             <div style="font-size:12px;color:rgba(255,255,255,.65);font-weight:500;margin-bottom:6px">CA HT TOTAL SIMULÉ</div>
-            <div id="sim-total-ca" style="font-size:32px;font-weight:800;color:#fff;letter-spacing:-1px">${fmt(caTotal)}</div>
+            <div id="sim-total-ca" style="font-family:'Varela Round',sans-serif;font-size:32px;font-weight:400;color:#fff;letter-spacing:-1px">${fmt(caTotal)}</div>
             <div style="display:flex;gap:20px;margin-top:16px">
               <div>
                 <div style="font-size:11px;color:rgba(255,255,255,.55)">Marge brute (est.)</div>
@@ -6699,7 +6706,7 @@ function renderOffilog() {
     container.innerHTML = `
       <div class="card" style="padding:60px;text-align:center">
         <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:12px">
-          <span style="display:inline-block;width:18px;height:18px;border:2px solid var(--opso-green);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle"></span>
+          <span class="opso-spinner" style="width:24px;height:24px;margin-right:8px;vertical-align:middle"></span>
           Chargement des données Offilog Live (2,7 Mo)…
         </div>
         <div style="font-size:11px;color:var(--text3)">Première visite uniquement, mise en cache après chargement.</div>
@@ -8168,6 +8175,20 @@ function renderGrpDashboard(grp) {
   </div>
 </div>`;
 
+  // Bandeau stats rapides après le greeting
+  const quickStats = `
+<div class="bg-opso-cross fade-up" style="background:var(--opso-green-pale2);border-radius:14px;padding:14px 20px;margin-bottom:18px;border:1px solid var(--opso-green-pale)">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div>
+      <div style="font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Vue d'ensemble</div>
+      <div style="font-family:'Varela Round',sans-serif;font-size:16px;color:var(--opso-text)">${state.pharmacies.length} pharmacies adhérentes · ${monthName(new Date().getMonth()+1)} ${new Date().getFullYear()}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="pill" style="background:var(--opso-white);color:var(--opso-green-dark)"><span class="pill-dot" style="background:var(--opso-green)"></span>${state.pharmacies.length} actives</span>
+    </div>
+  </div>
+</div>`;
+
   // Toujours utiliser toutes les pharmacies connues — le config groupement localStorage
   // peut être partiel (Supabase UUIDs obsolètes) et masquer des pharmacies actives.
   const memberIds = state.pharmacies.map(p => p.id);
@@ -8278,8 +8299,13 @@ function renderGrpDashboard(grp) {
   const catTable = catStats.length ? `
   <div class="card" style="margin-bottom:16px">
     <div class="card-header">
-      <div class="card-title">Répartition par catégorie</div>
-      <div class="card-subtitle">${curLabel}</div>
+      <div class="section-header-title">
+        <div class="section-header-icon">📊</div>
+        <div class="section-header-text">
+          <h2>Répartition par catégorie</h2>
+          <div class="section-header-sub">${curLabel}</div>
+        </div>
+      </div>
     </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse">
@@ -8390,9 +8416,12 @@ function renderGrpDashboard(grp) {
   const membresTable = `
   <div class="card" style="margin-bottom:16px">
     <div class="card-header">
-      <div>
-        <div class="card-title">Performances membres</div>
-        <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
+      <div class="section-header-title">
+        <div class="section-header-icon">🏆</div>
+        <div class="section-header-text">
+          <h2>Performances membres</h2>
+          <div class="section-header-sub">${prevLabel} → ${curLabel}</div>
+        </div>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -8498,9 +8527,12 @@ function renderGrpDashboard(grp) {
   const evolSection = monthKeys.length ? `
   <div class="card" style="margin-bottom:16px">
     <div class="card-header">
-      <div>
-        <div class="card-title">Évolution mensuelle — CA par pharmacie</div>
-        <div class="card-subtitle">${monthKeys.map(({month,year}) => monthName(month)+' '+year).join(' · ')}</div>
+      <div class="section-header-title">
+        <div class="section-header-icon">📈</div>
+        <div class="section-header-text">
+          <h2>Évolution mensuelle — CA par pharmacie</h2>
+          <div class="section-header-sub">${monthKeys.map(({month,year}) => monthName(month)+' '+year).join(' · ')}</div>
+        </div>
       </div>
     </div>
     <div style="position:relative;height:260px;padding:16px 16px 0">
@@ -8599,30 +8631,28 @@ function renderGrpDashboard(grp) {
     const planifieesHtml = planifiees.length ? planifiees.map(v => {
       const isLate = v.diff < 0;
       const isToday = v.diff === 0;
-      const isSoon = v.diff > 0 && v.diff <= 7;
       const label = isLate ? `J${v.diff} (retard ${Math.abs(v.diff)}j)` : isToday ? "Aujourd'hui" : `Dans ${v.diff} j`;
       const color = isLate ? 'var(--opso-danger)' : isToday ? 'var(--opso-warning)' : 'var(--opso-green-text)';
       const bg = isLate ? 'rgba(183,56,56,.08)' : isToday ? 'rgba(184,115,12,.08)' : 'rgba(17,166,60,.06)';
-      return `<div onclick="showPharmaDetail('${v.ph.id}')"
-        style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;background:${bg};transition:background .15s"
-        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='${bg}'">
-        <span style="width:8px;height:8px;border-radius:50%;background:${v.ph.color};flex-shrink:0"></span>
-        <span style="flex:1;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(v.ph.name)}</span>
-        <span style="font-size:11px;font-weight:700;color:${color};white-space:nowrap">${label}</span>
+      return `<div class="list-item" onclick="showPharmaDetail('${v.ph.id}')" role="button" tabindex="0" style="background:${bg}">
+        <span class="list-item-dot" style="background:${v.ph.color}"></span>
+        <div class="list-item-content">
+          <div class="list-item-title">${titleCase(v.ph.name)}</div>
+        </div>
+        <span class="pill" style="background:${bg};color:${color}">${label}</span>
       </div>`;
     }).join('') : '';
 
     const recentesHtml = recentes.length ? recentes.map(v => {
       const d = v.date.toLocaleDateString('fr-FR', {day:'2-digit', month:'short'});
       const noteShort = v.note && v.note.length > 60 ? v.note.slice(0, 60) + '…' : (v.note || '');
-      return `<div onclick="showPharmaDetail('${v.ph.id}')"
-        style="display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s"
-        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-        <span style="width:8px;height:8px;border-radius:50%;background:${v.ph.color};flex-shrink:0;margin-top:5px"></span>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(v.ph.name)}</span><span style="font-size:11px;color:var(--text3);flex-shrink:0">${d}</span></div>
-          ${noteShort ? `<div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${noteShort.replace(/</g,'&lt;')}</div>` : ''}
+      return `<div class="list-item" onclick="showPharmaDetail('${v.ph.id}')" role="button" tabindex="0">
+        <span class="list-item-dot" style="background:${v.ph.color}"></span>
+        <div class="list-item-content">
+          <div class="list-item-title">${titleCase(v.ph.name)}</div>
+          ${noteShort ? `<div class="list-item-sub">${noteShort.replace(/</g,'&lt;')}</div>` : ''}
         </div>
+        <span class="pill" style="background:var(--opso-green-pale);color:var(--opso-green-dark)">${d}</span>
       </div>`;
     }).join('') : '';
 
@@ -8654,7 +8684,7 @@ function renderGrpDashboard(grp) {
     </div>`;
   })();
 
-  return `${opsoGreeting}${opsoHeader}${kpiRow}${visitesWidget}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}${_opsoFooter()}`;
+  return `${opsoGreeting}${quickStats}${opsoHeader}${kpiRow}${visitesWidget}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}${_opsoFooter()}`;
 }
 
 function grpConfirmRemove(grpId, phId) {
