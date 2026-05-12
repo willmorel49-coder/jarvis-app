@@ -110,6 +110,17 @@
   --t-base: 0.20s ease;
   --t-slow: 0.36s ease;
   --t-ease: 0.44s ease;
+
+  /* ── Tokens espacement (8px grid) ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
 }
 
 /* ══════════════════════════════════════
@@ -584,9 +595,14 @@ button[class*="btn-primary"]:hover { background: var(--opso-green-dark); transfo
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(17,166,60,0.06), 0 2px 4px rgba(0,0,0,0.04);
 }
+.card:focus-within {
+  border-color: rgba(17,166,60,0.3);
+  box-shadow: 0 4px 16px rgba(17,166,60,0.10), 0 2px 4px rgba(0,0,0,0.04);
+}
 
 .card-header {
   display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-4, 16px);
   padding: 18px 20px 14px;
   border-bottom: 1px solid var(--opso-border);
   margin: -24px -24px 24px;
@@ -1776,6 +1792,162 @@ table tbody tr { transition: background-color 0.15s ease; }
   cursor: pointer;
 }
 .update-banner button:hover { background: rgba(255,255,255,0.3); }
+
+/* ── Skeletons (loading states) ─────────────────────────── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-text { height: 12px; width: 100%; margin-bottom: 6px; background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4, #e5e8ea) 50%, var(--bg3) 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s infinite; border-radius: 6px; display: inline-block; }
+.skeleton-text.sm { height: 10px; width: 60%; }
+.skeleton-text.lg { height: 18px; width: 80%; }
+.skeleton-block { height: 80px; width: 100%; background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4, #e5e8ea) 50%, var(--bg3) 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s infinite; border-radius: 6px; display: inline-block; }
+.skeleton-block.sm { height: 40px; }
+.skeleton-block.lg { height: 140px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .skeleton-text,
+  .skeleton-block,
+  .skeleton-circle { animation: skeleton-pulse 2s infinite !important; background: var(--bg3) !important; }
+}
+
+/* ── Badges cohérents (utility complémentaires) ──────────── */
+.badge {
+  gap: 4px;
+  white-space: nowrap;
+  line-height: 1.3;
+  letter-spacing: .02em;
+  border-radius: 999px;
+}
+.badge-info    { background: rgba(2,132,199,0.10); color: #0284c7; }
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ── Micro-interactions ──────────────────────────────────── */
+[onclick],
+button,
+.btn,
+[role="button"] {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.15s ease,
+              box-shadow 0.2s ease,
+              border-color 0.15s ease;
+}
+[onclick]:active,
+button:active,
+.btn:active,
+[role="button"]:active {
+  transform: scale(0.97);
+}
+button:disabled,
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none !important;
+}
+
+/* Feedback visuel sur les liens d'ancre */
+.nav-item.active,
+.mobile-nav-item.active {
+  position: relative;
+}
+
+/* Smooth scroll global */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* ── Tooltips CSS ────────────────────────────────────────── */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(42,45,47,0.95);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 1000;
+  max-width: 240px;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-tooltip]::after { transition: none; }
+}
+
+/* ── Empty states ─────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text3);
+}
+.empty-state-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+.empty-state-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+  font-family: 'Varela Round', sans-serif;
+}
+.empty-state-sub {
+  font-size: 13px;
+  color: var(--text3);
+  max-width: 360px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+.empty-state-action {
+  margin-top: 18px;
+  display: inline-block;
+}
+
+/* ── Section divider ──────────────────────────────────────── */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 28px 0 16px;
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
 
 /* ── PRINT (fiche de visite) ───────────── */
 @media print {
