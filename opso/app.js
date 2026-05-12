@@ -1211,6 +1211,9 @@ function renderPharmacies() {
         const prospectBadge = prospectStage.id === 'aucun'
           ? ''
           : `<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${prospectStage.bg};color:${prospectStage.color};font-weight:700;white-space:nowrap" title="Statut prospection">${prospectStage.label}</span>`;
+        const noteIndicator = getPharmaNote(ph.id)
+          ? '<span style="font-size:14px;opacity:.7" title="Notes présentes">📝</span>'
+          : '';
         const pct = maxCA ? Math.round(caCur / maxCA * 100) : 0;
         return `
           <div class="pharma-item pharma-list-row" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
@@ -1220,6 +1223,7 @@ function renderPharmacies() {
                 <span>${titleCase(ph.name)}</span>
                 ${priorityBadge}
                 ${prospectBadge}
+                ${noteIndicator}
               </div>
               <div style="height:3px;border-radius:2px;background:var(--bg3);margin-top:6px;max-width:200px;overflow:hidden">
                 <div style="height:100%;width:${pct}%;background:${ph.color};border-radius:2px"></div>
@@ -1566,6 +1570,47 @@ function submitVisit(pharmacyId) {
   showPharmaDetail(pharmacyId);
 }
 
+// ── Notes generales pharmacie (localStorage) ────────────────
+const NOTES_KEY = 'opso_pharma_notes';
+
+function loadAllNotes() {
+  try { return JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function getPharmaNote(pharmacyId) {
+  return loadAllNotes()[pharmacyId] || '';
+}
+
+function setPharmaNote(pharmacyId, text) {
+  const all = loadAllNotes();
+  const t = (text || '').trim();
+  if (t) all[pharmacyId] = t;
+  else delete all[pharmacyId];
+  localStorage.setItem(NOTES_KEY, JSON.stringify(all));
+}
+
+let _noteSaveTimers = {};
+function schedulePharmaNoteSave(pharmacyId) {
+  const statusEl = document.getElementById('note-save-status-' + pharmacyId);
+  if (statusEl) statusEl.textContent = '...';
+
+  if (_noteSaveTimers[pharmacyId]) clearTimeout(_noteSaveTimers[pharmacyId]);
+  _noteSaveTimers[pharmacyId] = setTimeout(() => {
+    const ta = document.getElementById('pharma-note-' + pharmacyId);
+    if (!ta) return;
+    setPharmaNote(pharmacyId, ta.value);
+    if (statusEl) {
+      statusEl.textContent = '✓ Sauvegardé';
+      statusEl.style.color = 'var(--opso-green-text)';
+      setTimeout(() => {
+        if (statusEl) { statusEl.textContent = ''; statusEl.style.color = 'var(--text3)'; }
+      }, 1500);
+    }
+    if (typeof trackEvent === 'function') trackEvent('note_updated', { pharmacyId });
+  }, 800);
+}
+
 // ── Event logging local ─────────────────────────────────────
 const EVENTS_KEY = 'opso_events_log';
 const EVENTS_MAX = 500;
@@ -1817,6 +1862,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <div style="display:flex;gap:6px;flex-wrap:nowrap;min-width:max-content">
           <a href="#sec-kpi"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📊 KPIs</a>
           <a href="#sec-client" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📍 Infos</a>
+          <a href="#sec-notes" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📝 Notes</a>
           <a href="#sec-visits" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🗓 Visites</a>
           <a href="#sec-prospect" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🎯 Prospect</a>
           <a href="#sec-ytd"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📈 YTD</a>
@@ -1898,6 +1944,30 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div style="font-size:12px;color:var(--text2);line-height:1.5">${clientInfo.commentaire}</div>
         </div>` : ''}
       </div>` : ''}
+
+      <!-- Notes generales -->
+      ${(() => {
+        const note = getPharmaNote(pharma.id);
+        const hasNote = !!note;
+        return `
+        <div id="sec-notes" class="card fade-up" style="margin-bottom:20px;scroll-margin-top:80px">
+          <div class="card-header" style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div class="card-title">📝 Notes</div>
+              <div class="card-subtitle">${hasNote ? note.length + ' caractères' : 'Personne de contact, particularités, préférences...'}</div>
+            </div>
+            <span id="note-save-status-${pharma.id}" style="font-size:11px;color:var(--text3);min-height:16px"></span>
+          </div>
+          <div style="padding:14px 20px">
+            <textarea id="pharma-note-${pharma.id}"
+              placeholder="Personne de contact, particularités commerciales, préférences d'appel, etc."
+              oninput="schedulePharmaNoteSave('${pharma.id}')"
+              style="width:100%;min-height:90px;max-height:300px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;line-height:1.5;resize:vertical;outline:none"
+              aria-label="Notes pour ${pharma.name}"
+            >${note.replace(/</g,'&lt;')}</textarea>
+          </div>
+        </div>`;
+      })()}
 
       <!-- Journal des visites -->
       ${(() => {
@@ -8364,7 +8434,108 @@ function renderGrpDashboard(grp) {
   </div>
 </div>`;
 
-  return `${opsoHeader}${kpiRow}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}`;
+  // ── Widget : Prochaines visites + visites récentes ──
+  const visitesWidget = (() => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const in7 = new Date(today); in7.setDate(in7.getDate() + 7);
+
+    const parsePV = str => {
+      if (!str || !str.trim() || str === 'null') return null;
+      const parts = str.trim().split('/');
+      if (parts.length === 3) {
+        const d = new Date(+parts[2], +parts[1]-1, +parts[0]);
+        return isNaN(d) ? null : d;
+      }
+      return null;
+    };
+
+    // Visites a planifier (depuis clientInfo.prochaineVisite)
+    const planifiees = state.pharmacies.map(ph => {
+      const clientInfo = typeof CLIENTS !== 'undefined'
+        ? CLIENTS.find(c => c.cip && String(c.cip) === String(ph.code))
+        : null;
+      const date = parsePV(clientInfo?.prochaineVisite);
+      if (!date) return null;
+      const diff = Math.round((date - today) / 86400000);
+      return { ph, date, diff };
+    }).filter(x => x && x.diff <= 7).sort((a,b) => a.diff - b.diff);
+
+    // Visites enregistrees recemment (max 5, depuis visit log)
+    const recentes = [];
+    if (typeof loadVisitLog === 'function') {
+      const log = loadVisitLog();
+      for (const phId of Object.keys(log)) {
+        const ph = state.pharmacies.find(p => p.id === phId);
+        if (!ph) continue;
+        for (const v of (log[phId] || [])) {
+          recentes.push({ ph, date: new Date(v.date), note: v.note });
+        }
+      }
+      recentes.sort((a,b) => b.date - a.date);
+      recentes.splice(5);
+    }
+
+    if (!planifiees.length && !recentes.length) return '';
+
+    const planifieesHtml = planifiees.length ? planifiees.map(v => {
+      const isLate = v.diff < 0;
+      const isToday = v.diff === 0;
+      const isSoon = v.diff > 0 && v.diff <= 7;
+      const label = isLate ? `J${v.diff} (retard ${Math.abs(v.diff)}j)` : isToday ? "Aujourd'hui" : `Dans ${v.diff} j`;
+      const color = isLate ? 'var(--opso-danger)' : isToday ? 'var(--opso-warning)' : 'var(--opso-green-text)';
+      const bg = isLate ? 'rgba(183,56,56,.08)' : isToday ? 'rgba(184,115,12,.08)' : 'rgba(17,166,60,.06)';
+      return `<div onclick="showPharmaDetail('${v.ph.id}')"
+        style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;background:${bg};transition:background .15s"
+        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='${bg}'">
+        <span style="width:8px;height:8px;border-radius:50%;background:${v.ph.color};flex-shrink:0"></span>
+        <span style="flex:1;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(v.ph.name)}</span>
+        <span style="font-size:11px;font-weight:700;color:${color};white-space:nowrap">${label}</span>
+      </div>`;
+    }).join('') : '';
+
+    const recentesHtml = recentes.length ? recentes.map(v => {
+      const d = v.date.toLocaleDateString('fr-FR', {day:'2-digit', month:'short'});
+      const noteShort = v.note && v.note.length > 60 ? v.note.slice(0, 60) + '…' : (v.note || '');
+      return `<div onclick="showPharmaDetail('${v.ph.id}')"
+        style="display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s"
+        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+        <span style="width:8px;height:8px;border-radius:50%;background:${v.ph.color};flex-shrink:0;margin-top:5px"></span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(v.ph.name)}</span><span style="font-size:11px;color:var(--text3);flex-shrink:0">${d}</span></div>
+          ${noteShort ? `<div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${noteShort.replace(/</g,'&lt;')}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('') : '';
+
+    // Layout 2 colonnes si les 2 sections sont presentes
+    const cols = (planifiees.length && recentes.length) ? '1fr 1fr' : '1fr';
+
+    return `
+    <div class="fade-up" style="margin-bottom:20px;display:grid;grid-template-columns:${cols};gap:16px">
+      ${planifiees.length ? `
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="card-header" style="padding:14px 18px;border-bottom:1px solid var(--border)">
+          <div>
+            <div class="card-title" style="font-size:14px">📅 Visites cette semaine</div>
+            <div class="card-subtitle">${planifiees.length} planifiée${planifiees.length>1?'s':''}${planifiees.filter(p=>p.diff<0).length ? ' · '+planifiees.filter(p=>p.diff<0).length+' en retard' : ''}</div>
+          </div>
+        </div>
+        ${planifieesHtml}
+      </div>` : ''}
+      ${recentes.length ? `
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="card-header" style="padding:14px 18px;border-bottom:1px solid var(--border)">
+          <div>
+            <div class="card-title" style="font-size:14px">📋 Dernières visites enregistrées</div>
+            <div class="card-subtitle">${recentes.length} récente${recentes.length>1?'s':''}</div>
+          </div>
+        </div>
+        ${recentesHtml}
+      </div>` : ''}
+    </div>`;
+  })();
+
+  return `${opsoHeader}${kpiRow}${visitesWidget}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}`;
 }
 
 function grpConfirmRemove(grpId, phId) {
