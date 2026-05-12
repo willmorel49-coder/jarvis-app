@@ -613,6 +613,64 @@ function titleCase(s) {
   );
 }
 
+// ── Modale "Raccourcis clavier" ──────────────────────────────
+function showKeyboardShortcuts() {
+  if (document.getElementById('shortcuts-modal')) return;
+
+  const shortcuts = [
+    { keys: ['Cmd', 'K'], action: 'Recherche globale' },
+    { keys: ['?'],         action: 'Afficher ce panneau' },
+    { keys: ['Esc'],       action: 'Fermer une modale' },
+    { keys: ['Tab'],       action: 'Naviguer entre éléments' },
+    { keys: ['Enter', 'Espace'], action: 'Activer un élément focus' },
+    { keys: ['↑', '↓'],   action: 'Naviguer dans une liste' },
+  ];
+
+  const modal = document.createElement('div');
+  modal.id = 'shortcuts-modal';
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(20,30,25,0.45);display:flex;align-items:center;justify-content:center;z-index:9000;padding:16px';
+  modal.innerHTML = `
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" style="background:var(--bg2);border-radius:16px;padding:24px;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.2)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div id="shortcuts-title" style="font-family:'Varela Round',sans-serif;font-size:18px;font-weight:600;color:var(--text)">⌨ Raccourcis clavier</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">Pour aller plus vite dans OPSO Santé</div>
+        </div>
+        <button onclick="closeAccessibleModal(document.getElementById('shortcuts-modal'))"
+          aria-label="Fermer"
+          style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px">✕</button>
+      </div>
+      <div>
+        ${shortcuts.map(s => `
+          <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;gap:4px;min-width:120px">
+              ${s.keys.map(k => `<kbd style="display:inline-block;padding:3px 8px;background:var(--bg3);border:1px solid var(--border2);border-bottom-width:2px;border-radius:5px;font-size:11px;font-family:ui-monospace,monospace;font-weight:700;color:var(--text2);min-width:24px;text-align:center">${k}</kbd>`).join('<span style="color:var(--text3);font-size:11px;align-self:center;margin:0 2px">+</span>')}
+            </div>
+            <div style="flex:1;font-size:13px;color:var(--text)">${s.action}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);text-align:center">
+        Appuie sur <kbd style="display:inline-block;padding:2px 6px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;font-size:10px;font-family:ui-monospace,monospace;font-weight:700">Esc</kbd> ou clique en dehors pour fermer.
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeAccessibleModal(modal);
+  });
+
+  // Equiper d'a11y si helper present
+  if (typeof makeAccessibleModal === 'function') {
+    makeAccessibleModal(modal);
+  }
+
+  if (typeof trackEvent === 'function') trackEvent('shortcuts_viewed', {});
+}
+
 // ── Modal accessibility helper ──────────────────────────────
 const _modalStack = []; // pile pour gerer modales empilees
 
@@ -1239,9 +1297,11 @@ function renderPharmacies() {
             <div style="color:var(--text3);font-size:16px;margin-left:8px">›</div>
           </div>`;
       }).join('')
-    : emptyState('🏥',
-        pharmaSearch ? 'Aucun résultat' : 'Aucune pharmacie',
-        pharmaSearch ? 'Essayez un autre terme' : 'Importez des fichiers Excel pour voir vos pharmacies');
+    : `<div class="empty-state">
+        <div class="empty-state-icon">${pharmaSearch ? '🔍' : '🏥'}</div>
+        <div class="empty-state-title">${pharmaSearch ? 'Aucun résultat' : 'Aucune pharmacie'}</div>
+        <div class="empty-state-sub">${pharmaSearch ? 'Essayez un autre terme de recherche, ou retirez les filtres actifs pour voir toutes les pharmacies.' : 'Importez un fichier Excel WML pour voir apparaître vos pharmacies ici. L\'import se fait via l\'onglet « Imports ».'}</div>
+      </div>`;
 
   const planningHtml = (() => {
     if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
@@ -1846,14 +1906,14 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             return `<option value="${p}" ${sel ? 'selected' : ''}>${monthName(+m)} ${y}</option>`;
           }).join('')}
         </select>` : `<span style="font-size:12px;color:var(--text3)">${monthName(curM)} ${curY}</span>`}
-        <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px;font-weight:700" title="Ouvrir la fiche de visite">📋 Fiche visite</button>
-        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;border:none;box-shadow:0 2px 8px rgba(17,166,60,.3);font-weight:700;padding:7px 14px" title="Proposer une commande">🛒 Commander</button>
-        <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px" title="Générer un email">✉ Email</button>
+        <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px;font-weight:700" title="Ouvrir la fiche de visite" data-tooltip="Ouvrir la fiche de visite">📋 Fiche visite</button>
+        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;border:none;box-shadow:0 2px 8px rgba(17,166,60,.3);font-weight:700;padding:7px 14px" title="Proposer une commande" data-tooltip="Proposer une commande">🛒 Commander</button>
+        <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px" title="Générer un email" data-tooltip="Générer un email pour cette pharmacie">✉ Email</button>
         <div style="display:flex;gap:6px;border-left:1px solid var(--border);padding-left:10px;margin-left:6px">
-          <button class="btn btn-ghost" onclick="prodPharmaFilter='${pharma.id}';navigate('produits')" style="font-size:12px" title="Voir les produits">📊 Produits</button>
-          <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px" title="Exporter en CSV">⬇ CSV</button>
-          <button class="btn btn-ghost" onclick="showNextVisitPicker('${pharma.id}')" style="font-size:12px" title="Planifier prochaine visite">📅</button>
-          <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')" title="Supprimer la pharmacie">🗑</button>
+          <button class="btn btn-ghost" onclick="prodPharmaFilter='${pharma.id}';navigate('produits')" style="font-size:12px" title="Voir les produits" data-tooltip="Voir les produits de cette pharmacie">📊 Produits</button>
+          <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px" title="Exporter en CSV" data-tooltip="Exporter les ventes en CSV">⬇ CSV</button>
+          <button class="btn btn-ghost" onclick="showNextVisitPicker('${pharma.id}')" style="font-size:12px" title="Planifier prochaine visite" data-tooltip="Planifier la prochaine visite">📅</button>
+          <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')" title="Supprimer la pharmacie" data-tooltip="Supprimer la pharmacie">🗑</button>
         </div>
       </div>
 
@@ -5174,7 +5234,13 @@ function renderPrioritaires() {
 
   const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
   if (!wmlVis.length) {
-    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Aucune donnée WML disponible.</div>`;
+    container.innerHTML = `<div class="card">
+      <div class="empty-state">
+        <div class="empty-state-icon">📦</div>
+        <div class="empty-state-title">Aucune donnée WML disponible</div>
+        <div class="empty-state-sub">Les données du groupement WML n'ont pas été chargées. Vérifie que le fichier <code>wml-data.js</code> est bien présent, ou importe un Excel WML pour démarrer.</div>
+      </div>
+    </div>`;
     return;
   }
 
@@ -6632,7 +6698,14 @@ function renderOffilog() {
   }
 
   if (!OFFILOG_LIVE.length) {
-    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Catalogue Offilog non chargé.</div>`;
+    container.innerHTML = `<div class="card">
+      <div class="empty-state">
+        <div class="empty-state-icon">🛒</div>
+        <div class="empty-state-title">Catalogue Offilog non chargé</div>
+        <div class="empty-state-sub">Les données du catalogue Offilog Live n'ont pas pu être chargées. Réessaie de rafraîchir la page, ou contacte l'admin si le problème persiste.</div>
+        <div class="empty-state-action"><button onclick="renderOffilog()" style="padding:8px 18px;border-radius:8px;border:1.5px solid var(--opso-green);background:transparent;color:var(--opso-green-dark);font-size:12px;font-weight:700;cursor:pointer">Réessayer</button></div>
+      </div>
+    </div>`;
     return;
   }
 
@@ -9790,6 +9863,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       showGlobalSearch();
     }
+  });
+
+  // Raccourci : ? pour afficher l'aide
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== '?') return;
+    // Ne pas declencher si on tape dans un input
+    const tag = e.target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
+    e.preventDefault();
+    showKeyboardShortcuts();
   });
 
   // ── Accessibilité clavier : délégué global ──────────────────
