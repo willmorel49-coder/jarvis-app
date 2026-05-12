@@ -36,6 +36,87 @@ function getOpsoChartColorPale(i) {
   return c + '33'; // 20% alpha
 }
 
+// ── Notification badges ──────────────────────────────────────
+function _computeNavBadges() {
+  const badges = {};
+
+  // Visites en retard → badge rouge sur nav "Pharmacies"
+  const parsePV = str => {
+    if (!str || !str.trim() || str === 'null') return null;
+    const parts = str.trim().split('/');
+    if (parts.length === 3) {
+      const d = new Date(+parts[2], +parts[1]-1, +parts[0]);
+      return isNaN(d) ? null : d;
+    }
+    return null;
+  };
+
+  if (typeof CLIENTS !== 'undefined' && state?.pharmacies?.length) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const clientsByName = new Map();
+    for (const c of CLIENTS) {
+      if (c.nom) clientsByName.set((c.nom || '').trim().toUpperCase().replace(/\s+/g,' '), c);
+    }
+    let nLate = 0;
+    for (const ph of state.pharmacies) {
+      const ci = clientsByName.get((ph.name || '').trim().toUpperCase().replace(/\s+/g,' '));
+      const d = parsePV(ci?.prochaineVisite);
+      if (d && d < today) nLate++;
+    }
+    if (nLate > 0) badges.pharmacies = { count: nLate, type: 'warning' };
+  }
+
+  return badges;
+}
+
+function _refreshNavBadges() {
+  const badges = _computeNavBadges();
+
+  // Sidebar nav-items
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    const page = el.dataset.page;
+    el.querySelectorAll('.notif-badge').forEach(b => b.remove());
+    if (badges[page]) {
+      const b = badges[page];
+      const badge = document.createElement('span');
+      badge.className = 'notif-badge' + (b.type === 'warning' ? ' warning' : '') + (b.count > 5 ? ' pulse' : '');
+      badge.textContent = b.count > 99 ? '99+' : String(b.count);
+      badge.setAttribute('aria-label', b.count + ' element' + (b.count > 1 ? 's' : '') + ' a traiter');
+      el.appendChild(badge);
+    }
+  });
+
+  // Mobile nav-items
+  document.querySelectorAll('.mobile-nav-item[data-page]').forEach(el => {
+    const page = el.dataset.page;
+    el.querySelectorAll('.notif-badge').forEach(b => b.remove());
+    if (badges[page]) {
+      const b = badges[page];
+      const badge = document.createElement('span');
+      badge.className = 'notif-badge dot' + (b.type === 'warning' ? ' warning' : '');
+      badge.setAttribute('aria-label', b.count + ' element' + (b.count > 1 ? 's' : ''));
+      el.appendChild(badge);
+    }
+  });
+
+  _refreshFABState();
+}
+
+function _refreshFABState() {
+  const fab = document.getElementById('fab-quick');
+  if (!fab) return;
+  const badges = _computeNavBadges();
+  const hasUrgent = (badges.pharmacies?.count || 0) > 0;
+  fab.classList.toggle('has-urgent', hasUrgent);
+}
+
+// Refresh badges au load et a chaque navigation
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(_refreshNavBadges, 1000);
+  // Refresh toutes les 60 secondes (au cas ou les dates changent)
+  setInterval(_refreshNavBadges, 60000);
+});
+
 // ── STATE ────────────────────────────────────
 let state = {
   user: null,
@@ -6645,6 +6726,7 @@ function navigate(page) {
   if (_pc) _pc.scrollTop = 0;
   const _pca = document.querySelector('.page.active .page-content, .page-content');
   if (_pca) _pca.scrollTop = 0;
+  setTimeout(_refreshNavBadges, 100);
   window.scrollTo(0, 0);
 }
 
@@ -6688,16 +6770,150 @@ function _opsoFooter() {
   </div>`;
 }
 
-// ── TOAST ─────────────────────────────────────
-let toastTimer;
-function showToast(msg, type = 'info') {
-  const t = document.getElementById('toast');
-  const icons = { success: '✓', error: '✗', info: 'ℹ' };
-  t.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
-  t.className = `show ${type}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+// ── TOAST queue manager ──────────────────────────────────────
+const _MAX_TOASTS = 3;
+const _TOAST_DURATION = 3500;
+
+function _ensureToastContainer() {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;max-width:calc(100vw - 32px)';
+    container.setAttribute('role', 'region');
+    container.setAttribute('aria-label', 'Notifications');
+    document.body.appendChild(container);
+
+    // Sur mobile, decaler vers le haut pour ne pas masquer le mobile-nav
+    const mq = window.matchMedia('(max-width: 767px)');
+    const updatePos = () => {
+      container.style.bottom = mq.matches ? '76px' : '24px';
+    };
+    if (mq.addEventListener) mq.addEventListener('change', updatePos);
+    else if (mq.addListener) mq.addListener(updatePos); // Safari < 14 fallback
+    updatePos();
+  }
+  return container;
 }
+
+function showToast(msg, type) {
+  type = type || 'info';
+  const container = _ensureToastContainer();
+
+  // Limiter le nombre de toasts visibles : on retire le plus ancien
+  while (container.children.length >= _MAX_TOASTS) {
+    const oldest = container.children[container.children.length - 1]; // dernier dans column-reverse = plus ancien visuel
+    if (!oldest) break;
+    if (oldest._dismissTimer) clearTimeout(oldest._dismissTimer);
+    oldest.style.opacity = '0';
+    oldest.style.transform = 'translateY(20px) scale(0.95)';
+    container.removeChild(oldest); // retiré du flux pour la boucle, on garde la ref pour cleanup éventuel
+  }
+
+  const toast = document.createElement('div');
+  toast.id = 'toast-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.className = 'toast-item ' + type;
+
+  const colors = {
+    success: { bg: 'linear-gradient(135deg,#0d8530,#11a63c)', stripe: 'rgba(255,255,255,.4)' },
+    error:   { bg: 'linear-gradient(135deg,#8c2828,#b73838)', stripe: 'rgba(255,255,255,.4)' },
+    warning: { bg: 'linear-gradient(135deg,#8a5208,#b8730c)', stripe: 'rgba(255,255,255,.4)' },
+    info:    { bg: 'var(--opso-text)',                       stripe: 'var(--opso-green)' },
+  };
+  const c = colors[type] || colors.info;
+
+  toast.style.cssText = `
+    background: ${c.bg};
+    color: #fff;
+    padding: 12px 16px 12px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.20), 0 2px 6px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+    max-width: 420px;
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  `;
+
+  // Stripe coloré gauche
+  const stripe = document.createElement('span');
+  stripe.style.cssText = `position:absolute;left:0;top:0;bottom:0;width:4px;background:${c.stripe}`;
+  toast.appendChild(stripe);
+
+  // Icone selon type
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  const iconSpan = document.createElement('span');
+  iconSpan.style.cssText = 'font-size:16px;font-weight:800;flex-shrink:0;width:20px;text-align:center';
+  iconSpan.textContent = icons[type] || icons.info;
+  toast.appendChild(iconSpan);
+
+  // Message
+  const msgSpan = document.createElement('span');
+  msgSpan.style.cssText = 'flex:1;min-width:0;line-height:1.4';
+  msgSpan.textContent = msg || '';
+  toast.appendChild(msgSpan);
+
+  // Bouton close
+  const closeBtn = document.createElement('button');
+  closeBtn.setAttribute('aria-label', 'Fermer notification');
+  closeBtn.style.cssText = 'background:transparent;border:none;color:rgba(255,255,255,0.8);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;margin-left:4px;flex-shrink:0;border-radius:4px;opacity:0;transition:opacity 0.2s';
+  closeBtn.textContent = '✕';
+  closeBtn.onclick = () => _dismissToast(toast);
+  toast.appendChild(closeBtn);
+
+  // Show close button on hover + pause timer
+  toast.addEventListener('mouseenter', () => {
+    closeBtn.style.opacity = '1';
+    if (toast._dismissTimer) {
+      clearTimeout(toast._dismissTimer);
+      toast._dismissTimer = null;
+    }
+  });
+  toast.addEventListener('mouseleave', () => {
+    closeBtn.style.opacity = '0';
+    toast._dismissTimer = setTimeout(() => _dismissToast(toast), 1500);
+  });
+
+  // Insert (au début → apparaitra en bas via column-reverse)
+  container.insertBefore(toast, container.firstChild);
+
+  // Trigger animation
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0) scale(1)';
+  });
+
+  // Auto-dismiss
+  toast._dismissTimer = setTimeout(() => _dismissToast(toast), _TOAST_DURATION);
+}
+
+function _dismissToast(toast) {
+  if (!toast || !toast.parentNode) return;
+  if (toast._dismissTimer) { clearTimeout(toast._dismissTimer); toast._dismissTimer = null; }
+  toast.style.opacity = '0';
+  toast.style.transform = 'translateY(20px) scale(0.95)';
+  setTimeout(() => {
+    if (toast && toast.parentNode) toast.remove();
+  }, 280);
+}
+
+// Helper test (dev) : window._testToasts() dans la console
+window._testToasts = function() {
+  showToast('Visite enregistrée — bien noté ✓', 'success');
+  setTimeout(() => showToast('Mail copié — prêt à envoyer ✓', 'success'), 400);
+  setTimeout(() => showToast('Connexion intermittente détectée', 'warning'), 800);
+  setTimeout(() => showToast('Erreur lors du chargement', 'error'), 1200);
+};
 
 // ── CATALOGUE ────────────────────────────────
 let catQuery = '', catCatFilter = 'tous', catPageNum = 1;
