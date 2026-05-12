@@ -2803,3 +2803,196 @@ html { scroll-behavior: smooth; }
   align-items: center;
   gap: 12px;
 }
+
+/* ═══════════════════════════════════════════════════════
+   POLISH PREMIUM — MODALES / TOASTS / LOADING / FORMS
+═══════════════════════════════════════════════════════ */
+
+/* ── Modal overlay premium (renforcement) ──────────── */
+.modal-overlay {
+  background: rgba(20, 30, 25, 0.55);
+  backdrop-filter: blur(6px) saturate(140%);
+  -webkit-backdrop-filter: blur(6px) saturate(140%);
+  z-index: 9000;
+  animation: modal-overlay-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.modal-overlay:not(.open) { animation: none; }
+@keyframes modal-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-box,
+.modal {
+  border-radius: 18px;
+  box-shadow:
+    0 24px 64px rgba(0,0,0,0.18),
+    0 4px 16px rgba(0,0,0,0.06),
+    0 0 0 1px rgba(17,166,60,0.04);
+  animation: modal-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Header modal cohérent (renforcement) */
+.modal-header {
+  padding: 18px 24px;
+  background: linear-gradient(180deg, var(--opso-green-pale2) 0%, transparent 100%);
+  border-radius: 18px 18px 0 0;
+  gap: 16px;
+  align-items: flex-start;
+}
+.modal-title {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+  line-height: 1.25;
+  margin: 0;
+}
+.modal-subtitle {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.15s, color 0.15s;
+}
+.modal-close:hover {
+  background: var(--opso-green-pale);
+  color: var(--opso-green-dark);
+}
+
+.modal-body { padding: 20px 24px; }
+.modal-footer {
+  padding: 16px 24px;
+  background: var(--opso-gray-pale);
+  border-radius: 0 0 18px 18px;
+}
+
+/* Variantes selon taille */
+.modal-sm { max-width: 480px; }
+.modal-lg { max-width: 960px; }
+.modal-xl { max-width: 1200px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-box,
+  .modal { animation: none !important; }
+}
+
+/* ── Toast premium (#toast renforcement) ───────────── */
+#toast {
+  /* recentré bottom + fond foncé premium */
+  left: 50%;
+  right: auto;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(100px);
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--opso-text);
+  color: #fff;
+  border: none;
+  box-shadow:
+    0 10px 32px rgba(0,0,0,0.20),
+    0 2px 6px rgba(0,0,0,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  transition:
+    opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+  z-index: 10000;
+}
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+#toast::before {
+  content: '';
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  background: var(--opso-green);
+  flex-shrink: 0;
+}
+#toast.success {
+  background: linear-gradient(135deg, #0d8530 0%, #11a63c 100%);
+  border: none;
+  color: #fff;
+}
+#toast.success::before { background: rgba(255,255,255,0.4); }
+#toast.error {
+  background: linear-gradient(135deg, #8c2828 0%, #b73838 100%);
+  border: none;
+  color: #fff;
+}
+#toast.error::before { background: rgba(255,255,255,0.4); }
+#toast.warning {
+  background: linear-gradient(135deg, #8a5208 0%, #b8730c 100%);
+  border: none;
+  color: #fff;
+}
+#toast.warning::before { background: rgba(255,255,255,0.4); }
+#toast.info {
+  background: linear-gradient(135deg, #036ea1 0%, #0284c7 100%);
+  border: none;
+  color: #fff;
+}
+#toast.info::before { background: rgba(255,255,255,0.4); }
+
+@media (prefers-reduced-motion: reduce) {
+  #toast { transition: opacity 0.15s linear; }
+  #toast.show { transform: translateX(-50%); }
+}
+
+/* ── App loading splash polish ─────────────────────── */
+#app-loading {
+  gap: 18px;
+}
+#app-loading::after {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255,255,255,0.10) 0%, transparent 60%);
+  pointer-events: none;
+}
+.app-loading-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.78);
+  font-style: italic;
+  margin-top: -8px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Search inputs polish (focus renforcé) ─────────── */
+.search-wrap:focus-within {
+  border-color: var(--opso-green) !important;
+  box-shadow: 0 0 0 3px var(--opso-green-pale) !important;
+}

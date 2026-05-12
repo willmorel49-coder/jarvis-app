@@ -19,7 +19,7 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260512g">
+<link rel="stylesheet" href="style.css?v=20260512h">
 </head>
 <body>
 <a href="#main-content" class="skip-link">Aller au contenu principal</a>
@@ -254,10 +254,24 @@
 <script>
   Chart.defaults.color = '#64686a';
   Chart.defaults.borderColor = 'rgba(0,0,0,0.06)';
-  Chart.defaults.font.family = "'Nunito', sans-serif";
-  Chart.defaults.font.size = 12;
+  Chart.defaults.font.family = "'Nunito', -apple-system, sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.font.weight = '600';
   Chart.defaults.plugins.legend.labels.usePointStyle = true;
-  Chart.defaults.plugins.legend.labels.padding = 16;
+  Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+  Chart.defaults.plugins.legend.labels.padding = 14;
+  Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(42, 45, 47, 0.95)';
+  Chart.defaults.plugins.tooltip.titleColor = '#fff';
+  Chart.defaults.plugins.tooltip.bodyColor = 'rgba(255,255,255,0.92)';
+  Chart.defaults.plugins.tooltip.borderColor = 'rgba(17, 166, 60, 0.4)';
+  Chart.defaults.plugins.tooltip.borderWidth = 1;
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.plugins.tooltip.titleFont = { weight: '700', size: 12 };
+  Chart.defaults.plugins.tooltip.bodyFont = { weight: '600', size: 11 };
+  Chart.defaults.plugins.tooltip.boxPadding = 6;
+  Chart.defaults.scale.grid.color = 'rgba(0,0,0,0.05)';
+  Chart.defaults.scale.ticks.color = '#9aa0a3';
   window.SUPABASE_URL      = 'https://iyvavhnlhxksokkerkos.supabase.co';
   window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
 </script>
@@ -300,7 +314,7 @@ function showNewPassForm() {
 <script defer src="opso-adherents.js?v=20260508"></script>
 <!-- offilog-live-data.js (2,7 Mo) : chargé en lazy via loadOffilogLive() dans app.js -->
 <script defer src="wml-sales-data.js?v=20260510b"></script>
-<script defer src="app.js?v=20260512m"></script>
+<script defer src="app.js?v=20260512n"></script>
 <script>
   // Enregistrement Service Worker (PWA)
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

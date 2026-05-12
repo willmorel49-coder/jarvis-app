@@ -13,6 +13,29 @@ const isMobile = () => window.innerWidth < 768;
 
 const PHARMA_COLORS = ['#11a63c','#059669','#0284C7','#7C3AED','#e8a317','#d04a4a','#0891B2','#6D28D9','#D97706','#DC2626'];
 
+// ── Palette charts OPSO ─────────────────────────────────────
+const OPSO_CHART_PALETTE = [
+  '#11a63c', // opso-green
+  '#0d8530', // opso-green-dark
+  '#dddf4b', // opso-accent lime
+  '#0284c7', // bleu
+  '#7c3aed', // purple
+  '#f97316', // orange
+  '#06b6d4', // cyan
+  '#ec4899', // pink
+  '#84cc16', // lime
+  '#6366f1', // indigo
+];
+
+function getOpsoChartColor(i) {
+  return OPSO_CHART_PALETTE[i % OPSO_CHART_PALETTE.length];
+}
+
+function getOpsoChartColorPale(i) {
+  const c = getOpsoChartColor(i);
+  return c + '33'; // 20% alpha
+}
+
 // ── STATE ────────────────────────────────────
 let state = {
   user: null,
@@ -2681,11 +2704,19 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
       const ctx = document.getElementById('chart-pharma-month');
       if (ctx) {
         if (state.charts['pharma-month']) state.charts['pharma-month'].destroy();
+        const lastIdx = pharmaByMonth.length - 1;
         state.charts['pharma-month'] = new Chart(ctx, {
           type: 'bar',
           data: {
             labels: pharmaByMonth.map(([k]) => { const [y,m] = k.split('-'); return `${monthName(+m)} ${y}`; }),
-            datasets: [{ label: 'CA Net HT', data: pharmaByMonth.map(([,v]) => +v.toFixed(2)), backgroundColor: pharma.color+'33', borderColor: pharma.color, borderWidth: 2, borderRadius: 8 }]
+            datasets: [{
+              label: 'CA Net HT',
+              data: pharmaByMonth.map(([,v]) => +v.toFixed(2)),
+              backgroundColor: pharmaByMonth.map((_, i) => i === lastIdx ? '#dddf4b' : pharma.color + '33'),
+              borderColor:     pharmaByMonth.map((_, i) => i === lastIdx ? '#c8c93f' : pharma.color),
+              borderWidth: 2,
+              borderRadius: 8,
+            }]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
@@ -2940,7 +2971,7 @@ function renderProduits() {
     .slice(0, 10);
 
   const selCat = prodFamille !== 'tous' && prodFamille !== 'froid' ? CATS[prodFamille] : null;
-  const chartColor = selCat ? selCat.color : '#0057FF';
+  const chartColor = selCat ? selCat.color : getOpsoChartColor(0);
   const chartTitle = prodFamille === 'tous' ? 'Top 10 produits — Toutes familles'
     : prodFamille === 'froid' ? 'Top 10 produits ❄️ Froid'
     : `Top 10 produits — ${selCat.label}`;
@@ -3337,13 +3368,13 @@ function renderProduits() {
             {
               label: 'CA HT',
               data: trendMonths.map(k => +monthMap[k].ca.toFixed(2)),
-              borderColor: '#0057FF',
-              backgroundColor: 'rgba(0,87,255,.08)',
+              borderColor: getOpsoChartColor(0),
+              backgroundColor: getOpsoChartColorPale(0),
               borderWidth: 2.5,
               fill: true,
               tension: 0.35,
               pointRadius: 4,
-              pointBackgroundColor: '#0057FF',
+              pointBackgroundColor: getOpsoChartColor(0),
             },
           ]
         },
@@ -3374,7 +3405,7 @@ function renderProduits() {
           labels: sorted.map(p => p.name.length > 38 ? p.name.slice(0, 38) + '…' : p.name),
           datasets: [
             { label: 'CA HT', data: sorted.map(p => +p.ca.toFixed(2)), backgroundColor: chartColor + 'BB', borderColor: chartColor, borderWidth: 2, borderRadius: 5 },
-            { label: 'Marge', data: sorted.map(p => +p.marge.toFixed(2)), backgroundColor: '#00E5A0BB', borderColor: '#00E5A0', borderWidth: 2, borderRadius: 5 },
+            { label: 'Marge', data: sorted.map(p => +p.marge.toFixed(2)), backgroundColor: getOpsoChartColor(2) + 'BB', borderColor: getOpsoChartColor(2), borderWidth: 2, borderRadius: 5 },
           ]
         },
         options: {
@@ -3572,11 +3603,11 @@ function showProductBreakdown(productName) {
           labels,
           datasets: [{
             data: vals,
-            borderColor: '#0057FF',
-            backgroundColor: 'rgba(0,87,255,.08)',
+            borderColor: getOpsoChartColor(0),
+            backgroundColor: getOpsoChartColorPale(0),
             borderWidth: 2,
             pointRadius: 4,
-            pointBackgroundColor: '#0057FF',
+            pointBackgroundColor: getOpsoChartColor(0),
             fill: true,
             tension: 0.35,
           }],
@@ -4163,22 +4194,32 @@ function renderAdmin() {
 
   document.getElementById('admin-content').innerHTML = `
     <div class="fade-up" style="max-width:860px">
-      <div class="section-title">Administration</div>
-      <div class="section-sub">Gestion des accès et des données</div>
+      <div class="section-header">
+        <div class="section-header-title">
+          <div class="section-header-icon">⚙</div>
+          <div class="section-header-text">
+            <h2>Administration</h2>
+            <div class="section-header-sub">Outils internes · ${state.user?.email || 'admin'}</div>
+          </div>
+        </div>
+      </div>
 
       <!-- Stats row -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
-        <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
-          <div style="font-family:'Varela Round',sans-serif;font-size:28px;font-weight:400;color:var(--green);letter-spacing:-1px">${state.pharmacies.length}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px">Pharmacies</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px">
+        <div class="stat-box">
+          <div class="stat-box-label">Pharmacies</div>
+          <div class="stat-box-value">${state.pharmacies.length}</div>
+          <div class="stat-box-sub">Comptes actifs</div>
         </div>
-        <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
-          <div style="font-family:'Varela Round',sans-serif;font-size:28px;font-weight:400;color:var(--green);letter-spacing:-1px">${state.imports.length}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px">Imports</div>
+        <div class="stat-box">
+          <div class="stat-box-label">Imports</div>
+          <div class="stat-box-value">${state.imports.length}</div>
+          <div class="stat-box-sub">Fichiers traités</div>
         </div>
-        <div style="background:var(--glass2);border-radius:16px;padding:20px;text-align:center">
-          <div style="font-family:'Varela Round',sans-serif;font-size:28px;font-weight:400;color:var(--amber);letter-spacing:-1px">${fmtNum(state.sales.length)}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px">Lignes de vente</div>
+        <div class="stat-box">
+          <div class="stat-box-label">Lignes de vente</div>
+          <div class="stat-box-value">${fmtNum(state.sales.length)}</div>
+          <div class="stat-box-sub">Total cumulé</div>
         </div>
       </div>
 
@@ -4191,9 +4232,9 @@ function renderAdmin() {
           </div>
         </div>
         <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
-          <button onclick="exportRapportSecteurCSV()" style="padding:8px 16px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600">📊 Rapport secteur CSV</button>
-          <button onclick="exportAllSalesCSV()" style="padding:8px 16px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600">📦 Toutes les ventes CSV</button>
-          <button onclick="printRapportMensuel()" style="padding:8px 16px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600">🖨 Rapport mensuel imprimable</button>
+          <button class="btn-opso" onclick="exportRapportSecteurCSV()">📊 Rapport secteur CSV</button>
+          <button class="btn-opso" onclick="exportAllSalesCSV()">📦 Toutes les ventes CSV</button>
+          <button class="btn-opso" onclick="printRapportMensuel()">🖨 Rapport mensuel imprimable</button>
         </div>
       </div>
 
@@ -4246,7 +4287,13 @@ function renderAdmin() {
       <div class="card" style="margin-bottom:20px;border-color:rgba(255,77,109,.2)">
         <div class="card-header"><div class="card-title" style="color:var(--rose)">Zone de danger</div></div>
         <div class="card-body">
-          <p style="color:var(--text2);font-size:13px;margin:0 0 12px">Ces actions sont irréversibles.</p>
+          <div class="callout danger" style="margin-bottom:14px">
+            <div class="callout-icon">⚠</div>
+            <div class="callout-content">
+              <div class="callout-title">Zone sensible</div>
+              <div>Les actions ci-dessous sont irréversibles. Procède avec précaution.</div>
+            </div>
+          </div>
           <button class="btn btn-ghost" onclick="resetAllData()" style="color:var(--rose);border-color:rgba(255,77,109,.3)">
             🗑 Vider toutes les données Supabase
           </button>
@@ -4358,7 +4405,6 @@ function renderAdmin() {
     setTimeout(() => {
       const cvs = document.getElementById('admin-top-prods-chart');
       if (!cvs) return;
-      const palette = ['#0057FF','#00E5A0','#FFB020','#FF4D6D','#9B5CFF','#06B6D4','#84CC16','#EC4899'];
       new Chart(cvs, {
         type: 'line',
         data: {
@@ -4366,7 +4412,7 @@ function renderAdmin() {
           datasets: adminTopProds.datasets.map((ds, i) => ({
             label: ds.label,
             data: ds.data,
-            borderColor: palette[i % palette.length],
+            borderColor: getOpsoChartColor(i),
             backgroundColor: 'transparent',
             borderWidth: 2,
             pointRadius: 3,
@@ -5183,8 +5229,8 @@ function showBenchDetail(idx) {
           labels: ameliLabels,
           datasets: [{
             data: d.ameli_months,
-            backgroundColor: d.ameli_months.map((v, i) => i === 12 ? '#0057FF' : 'rgba(0,87,255,0.25)'),
-            borderColor:     d.ameli_months.map((v, i) => i === 12 ? '#0057FF' : 'rgba(0,87,255,0.4)'),
+            backgroundColor: d.ameli_months.map((v, i) => i === 12 ? '#dddf4b' : 'rgba(17,166,60,0.4)'),
+            borderColor:     d.ameli_months.map((v, i) => i === 12 ? '#c8c93f' : 'rgba(17,166,60,0.7)'),
             borderWidth: 1.5, borderRadius: 4,
           }]
         },
