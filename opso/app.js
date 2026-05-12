@@ -942,11 +942,21 @@ function showKeyboardShortcuts() {
 
   const shortcuts = [
     { keys: ['Cmd', 'K'], action: 'Recherche globale' },
+    { keys: ['/'],         action: 'Recherche globale (alternatif)' },
     { keys: ['?'],         action: 'Afficher ce panneau' },
     { keys: ['Esc'],       action: 'Fermer une modale' },
+    { keys: ['G', 'C'],    action: 'Aller au Cockpit' },
+    { keys: ['G', 'P'],    action: 'Aller aux Pharmacies' },
+    { keys: ['G', 'W'],    action: 'Aller à CA & Commandes' },
+    { keys: ['G', 'I'],    action: 'Aller au Catalogue IP' },
+    { keys: ['G', 'O'],    action: 'Aller à Offilog' },
+    { keys: ['G', 'R'],    action: 'Aller aux Prioritaires' },
+    { keys: ['G', 'A'],    action: 'Aller à Admin' },
+    { keys: ['N'],         action: 'Nouvelle note rapide' },
+    { keys: ['V'],         action: 'Nouvelle visite rapide' },
+    { keys: ['B'],         action: 'Briefing du jour' },
     { keys: ['Tab'],       action: 'Naviguer entre éléments' },
-    { keys: ['Enter', 'Espace'], action: 'Activer un élément focus' },
-    { keys: ['↑', '↓'],   action: 'Naviguer dans une liste' },
+    { keys: ['↵'],        action: 'Activer un élément focus' },
   ];
 
   const modal = document.createElement('div');
@@ -2179,6 +2189,44 @@ function trackEvent(type, payload) {
 
 function clearEvents() {
   localStorage.removeItem(EVENTS_KEY);
+}
+
+// ── Settings / Préférences ──────────────────────────────────
+const PREFS_KEY = 'opso_user_prefs';
+
+function loadPrefs() {
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); }
+  catch { return {}; }
+}
+function savePrefs(p) {
+  localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+}
+function getPref(key, defaultValue) {
+  const p = loadPrefs();
+  return key in p ? p[key] : defaultValue;
+}
+function setPref(key, value) {
+  const p = loadPrefs();
+  p[key] = value;
+  savePrefs(p);
+}
+
+function _getStorageStats() {
+  const stats = {};
+  let totalSize = 0;
+  for (const key of Object.keys(localStorage)) {
+    if (!key.startsWith('opso_') && !key.startsWith('ip_')) continue;
+    const v = localStorage.getItem(key) || '';
+    const size = (key.length + v.length) * 2; // approx UTF-16
+    stats[key] = size;
+    totalSize += size;
+  }
+  return { stats, totalSize };
+}
+function _formatBytes(b) {
+  if (b < 1024) return b + ' o';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' Ko';
+  return (b/(1024*1024)).toFixed(2) + ' Mo';
 }
 
 // ── Smart morning summary ──────────────────────────────────
@@ -11053,6 +11101,7 @@ function _gsRenderEmpty() {
     { label: 'Briefing du jour',          sub: 'Visites planifiées et en retard', icon: '☀', onclick: "showMorningBriefing()" },
     { label: 'Voir prochaines visites',  sub: 'Mes pharmacies à visiter', icon: '📅', onclick: "navigate('pharmacies')" },
     { label: 'Exporter calendrier (.ics)', sub: 'Toutes visites planifiées et enregistrées', icon: '⬇', onclick: "exportVisitsToICS()" },
+    { label: 'Préférences',               sub: 'Briefing, données, notifications', icon: '⚙', onclick: "showSettingsModal()" },
     { label: 'Raccourcis clavier',        sub: 'Aide rapide',              icon: '⌨️', onclick: "showKeyboardShortcuts()" },
   ];
   html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Actions rapides</div>`;
@@ -11126,6 +11175,7 @@ function gsSearch(q) {
     { label: 'Générer PDF prospect',    sub: 'Outil de prospection', icon: '🖨️', onclick: "navigate('prioritaires');setTimeout(()=>{const b=document.querySelector('[onclick*=\\\"printPrioritairesPDF\\\"]');if(b)b.scrollIntoView({block:'center'})},150)" },
     { label: 'Voir prochaines visites', sub: 'Mes pharmacies',       icon: '📅', onclick: "navigate('pharmacies')" },
     { label: 'Exporter calendrier (.ics)', sub: 'Toutes visites planifiées et enregistrées', icon: '⬇', onclick: "exportVisitsToICS()" },
+    { label: 'Préférences',             sub: 'Briefing, données, notifications', icon: '⚙', onclick: "showSettingsModal()" },
     { label: 'Imprimer la page',        sub: 'Cmd+P équivalent',     icon: '🖨️', onclick: "window.print()" },
     { label: 'Raccourcis clavier',      sub: 'Aide rapide',          icon: '⌨️', onclick: "showKeyboardShortcuts()" },
   ];
@@ -11477,6 +11527,108 @@ document.addEventListener('DOMContentLoaded', async () => {
     showKeyboardShortcuts();
   });
 
+  // ── Raccourcis clavier GitHub-style ──────────────────────────
+  let _gKeyTimer = null;
+  let _gKeyActive = false;
+
+  function _shouldIgnoreKeyboardShortcut(e) {
+    // Ne pas declencher dans inputs/textareas
+    const tag = e.target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (e.target?.isContentEditable) return true;
+    // Pas de Ctrl/Meta/Alt
+    if (e.ctrlKey || e.metaKey || e.altKey) return true;
+    // Pas si une modale est ouverte (sauf Esc et celles globales)
+    if (document.querySelector('.modal-overlay:not(#shortcuts-modal):not(#briefing-modal)')) return true;
+    return false;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (_shouldIgnoreKeyboardShortcut(e)) return;
+
+    // Sequence "g" + lettre
+    if (_gKeyActive) {
+      e.preventDefault();
+      const map = {
+        'c': 'dashboard',
+        'p': 'pharmacies',
+        'w': 'wml',
+        'i': 'catalogue',
+        'o': 'offilog',
+        'r': 'prioritaires',
+        'a': 'admin',
+      };
+      const target = map[e.key.toLowerCase()];
+      if (target && typeof navigate === 'function') {
+        navigate(target);
+        if (typeof showToast === 'function') {
+          const labels = { dashboard:'Cockpit', pharmacies:'Pharmacies', wml:'CA & Commandes', catalogue:'Catalogue IP', offilog:'Offilog', prioritaires:'Prioritaires', admin:'Admin' };
+          showToast('→ ' + (labels[target] || target), 'info');
+        }
+      }
+      _gKeyActive = false;
+      if (_gKeyTimer) { clearTimeout(_gKeyTimer); _gKeyTimer = null; }
+      _hideGKeyHint();
+      return;
+    }
+
+    // Activation "g"
+    if (e.key === 'g' && !e.shiftKey) {
+      e.preventDefault();
+      _gKeyActive = true;
+      _showGKeyHint();
+      if (_gKeyTimer) clearTimeout(_gKeyTimer);
+      _gKeyTimer = setTimeout(() => {
+        _gKeyActive = false;
+        _hideGKeyHint();
+      }, 1500);
+      return;
+    }
+
+    // Raccourcis simples
+    if (e.key === 'n' && !e.shiftKey) {
+      e.preventDefault();
+      if (typeof _fabAction === 'function') _fabAction('note');
+      else if (typeof showToast === 'function') showToast('Action note non disponible', 'error');
+    } else if (e.key === 'v' && !e.shiftKey) {
+      e.preventDefault();
+      if (typeof _fabAction === 'function') _fabAction('visit');
+    } else if (e.key === '/' && !e.shiftKey) {
+      e.preventDefault();
+      if (typeof showGlobalSearch === 'function') showGlobalSearch();
+    } else if (e.key === 'b' && !e.shiftKey) {
+      e.preventDefault();
+      if (typeof showMorningBriefing === 'function') showMorningBriefing();
+    }
+  });
+
+  function _showGKeyHint() {
+    let hint = document.getElementById('g-key-hint');
+    if (hint) return;
+    hint = document.createElement('div');
+    hint.id = 'g-key-hint';
+    hint.setAttribute('role', 'status');
+    hint.setAttribute('aria-live', 'polite');
+    hint.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--opso-text);color:#fff;padding:10px 18px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.20);font-size:12px;font-weight:700;z-index:10000;display:flex;align-items:center;gap:10px;animation:fadeUp 0.18s ease both';
+    hint.innerHTML = `
+      <span style="font-family:ui-monospace,monospace;background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:5px">g + ?</span>
+      <span style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;font-weight:600">
+        <span><kbd style="background:rgba(255,255,255,0.15);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace">c</kbd> Cockpit</span>
+        <span><kbd style="background:rgba(255,255,255,0.15);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace">p</kbd> Pharma</span>
+        <span><kbd style="background:rgba(255,255,255,0.15);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace">w</kbd> CA</span>
+        <span><kbd style="background:rgba(255,255,255,0.15);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace">i</kbd> Cat</span>
+        <span><kbd style="background:rgba(255,255,255,0.15);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace">o</kbd> Offilog</span>
+        <span><kbd style="background:rgba(255,255,255,0.15);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace">r</kbd> Prio</span>
+      </span>
+    `;
+    document.body.appendChild(hint);
+  }
+
+  function _hideGKeyHint() {
+    const hint = document.getElementById('g-key-hint');
+    if (hint) hint.remove();
+  }
+
   // ── Accessibilité clavier : délégué global ──────────────────
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -11506,8 +11658,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (localStorage.getItem(lastDayKey) !== today) {
         setTimeout(() => {
           const summary = getMorningSummary();
+          const userPrefs = (typeof loadPrefs === 'function') ? loadPrefs() : {};
+          const briefingDisabled = userPrefs.briefingEnabled === false;
+          // Si briefing désactivé : juste un toast leger
           // Si actions importantes : afficher la modale briefing
-          if (summary.today.length > 0 || summary.late.length >= 2) {
+          if (!briefingDisabled && (summary.today.length > 0 || summary.late.length >= 2)) {
             showMorningBriefing();
           } else {
             // Sinon juste un toast léger
@@ -11864,6 +12019,195 @@ function _fabPickPharma(pharmacyId, action) {
       }
     }, 200);
   }, 250);
+}
+
+// ── Settings / Préférences (modale) ─────────────────────────
+function showSettingsModal() {
+  if (document.getElementById('settings-modal')) return;
+
+  const prefs = loadPrefs();
+  const briefingEnabled = prefs.briefingEnabled !== false; // default true
+  const { stats, totalSize } = _getStorageStats();
+  const sortedKeys = Object.keys(stats).sort((a,b) => stats[b] - stats[a]).slice(0, 10);
+
+  // Compter dismissed callouts
+  const dismissed = Object.keys(localStorage).filter(k => k.endsWith('_dismissed')).length;
+
+  // Données utilisateur
+  const visitLog = (() => { try { return JSON.parse(localStorage.getItem('opso_visit_log') || '{}'); } catch { return {}; } })();
+  const nVisits = Object.values(visitLog).reduce((s, arr) => s + (arr?.length || 0), 0);
+  const notes = (() => { try { return JSON.parse(localStorage.getItem('opso_pharma_notes') || '{}'); } catch { return {}; } })();
+  const nNotes = Object.keys(notes).length;
+  const prospects = (() => { try { return JSON.parse(localStorage.getItem('opso_prospect_status') || '{}'); } catch { return {}; } })();
+  const nProspects = Object.keys(prospects).length;
+  const events = (() => { try { return JSON.parse(localStorage.getItem('opso_events_log') || '[]'); } catch { return []; } })();
+
+  const modal = document.createElement('div');
+  modal.id = 'settings-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:600px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">⚙ Préférences</div>
+          <div class="modal-subtitle">Personnalisez votre expérience OPSO Santé</div>
+        </div>
+        <button class="modal-close" onclick="closeAccessibleModal(document.getElementById('settings-modal'))" aria-label="Fermer">✕</button>
+      </div>
+
+      <!-- Section Comportement -->
+      <div style="padding:18px 24px;border-bottom:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Comportement</div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Briefing matinal</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Modale au premier login du jour avec visites planifiées</div>
+          </div>
+          <label style="display:inline-flex;align-items:center;cursor:pointer">
+            <input type="checkbox" id="pref-briefing" ${briefingEnabled ? 'checked' : ''}
+              onchange="setPref('briefingEnabled', this.checked);showToast(this.checked ? 'Briefing matinal activé' : 'Briefing matinal désactivé', 'success')"
+              style="width:36px;height:20px;cursor:pointer;accent-color:var(--opso-green)">
+          </label>
+        </div>
+
+        ${dismissed > 0 ? `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--border);margin-top:8px;padding-top:14px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Bannières d'aide</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${dismissed} bannière${dismissed>1?'s':''} masquée${dismissed>1?'s':''} (callouts d'introduction)</div>
+          </div>
+          <button onclick="_resetDismissedBanners()" class="pill pill-clickable" style="font-size:11px">Réafficher</button>
+        </div>
+        ` : ''}
+      </div>
+
+      <!-- Section Données -->
+      <div style="padding:18px 24px;border-bottom:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Vos données</div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px">
+          <div class="stat-box" style="padding:10px 12px">
+            <div class="stat-box-label" style="font-size:9px">Visites</div>
+            <div class="stat-box-value" style="font-size:18px">${nVisits}</div>
+          </div>
+          <div class="stat-box" style="padding:10px 12px">
+            <div class="stat-box-label" style="font-size:9px">Notes</div>
+            <div class="stat-box-value" style="font-size:18px">${nNotes}</div>
+          </div>
+          <div class="stat-box" style="padding:10px 12px">
+            <div class="stat-box-label" style="font-size:9px">Prospects</div>
+            <div class="stat-box-value" style="font-size:18px">${nProspects}</div>
+          </div>
+          <div class="stat-box" style="padding:10px 12px">
+            <div class="stat-box-label" style="font-size:9px">Activité</div>
+            <div class="stat-box-value" style="font-size:18px">${events.length}</div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">
+          Espace utilisé : <strong>${_formatBytes(totalSize)}</strong> (localStorage navigateur)
+        </div>
+      </div>
+
+      <!-- Section Notifications navigateur -->
+      <div style="padding:18px 24px;border-bottom:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Notifications</div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Notifications navigateur</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">État actuel : <strong id="notif-status">${(typeof Notification !== 'undefined' ? Notification.permission : 'non supporté')}</strong></div>
+          </div>
+          <button onclick="_requestNotifPermission()" class="pill pill-clickable" style="font-size:11px">Autoriser</button>
+        </div>
+      </div>
+
+      <!-- Section Avancé -->
+      <div style="padding:18px 24px;border-bottom:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Avancé</div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button onclick="_exportAllData()" class="pill pill-clickable" style="font-size:12px;justify-content:flex-start;padding:8px 14px">
+            ⬇ Exporter toutes mes données (JSON)
+          </button>
+          <button onclick="_clearLocalDataConfirm()" class="pill pill-clickable" style="font-size:12px;justify-content:flex-start;padding:8px 14px;color:var(--opso-danger);border-color:rgba(183,56,56,.3)">
+            🗑 Effacer toutes les données locales
+          </button>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:14px 24px;background:var(--opso-gray-pale);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text3)">
+        <span style="font-style:italic">OPSO Santé · ${new Date().getFullYear()}</span>
+        <button onclick="closeAccessibleModal(document.getElementById('settings-modal'))" class="btn-opso" style="padding:7px 18px;font-size:12px">Fermer</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  if (typeof makeAccessibleModal === 'function') makeAccessibleModal(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
+
+  if (typeof trackEvent === 'function') trackEvent('settings_opened', {});
+}
+
+function _resetDismissedBanners() {
+  const keys = Object.keys(localStorage).filter(k => k.endsWith('_dismissed'));
+  keys.forEach(k => localStorage.removeItem(k));
+  if (typeof showToast === 'function') showToast(keys.length + ' bannière(s) réaffichée(s)', 'success');
+  // Refresh modale
+  closeAccessibleModal(document.getElementById('settings-modal'));
+  setTimeout(() => showSettingsModal(), 300);
+}
+
+async function _requestNotifPermission() {
+  if (typeof Notification === 'undefined') {
+    if (typeof showToast === 'function') showToast('Notifications non supportées sur ce navigateur', 'error');
+    return;
+  }
+  try {
+    const result = await Notification.requestPermission();
+    if (result === 'granted') {
+      new Notification('OPSO Santé', {
+        body: 'Notifications activées ✓',
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="12" y="3" width="8" height="26" rx="3" fill="%2311a63c"/><rect x="3" y="12" width="26" height="8" rx="3" fill="%2311a63c"/></svg>'
+      });
+      if (typeof showToast === 'function') showToast('Notifications autorisées', 'success');
+    } else {
+      if (typeof showToast === 'function') showToast('Notifications refusées', 'info');
+    }
+    const statusEl = document.getElementById('notif-status');
+    if (statusEl) statusEl.textContent = result;
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Erreur permission notifications', 'error');
+  }
+}
+
+function _exportAllData() {
+  const data = {};
+  for (const key of Object.keys(localStorage)) {
+    if (!key.startsWith('opso_') && !key.startsWith('ip_')) continue;
+    try { data[key] = JSON.parse(localStorage.getItem(key)); }
+    catch { data[key] = localStorage.getItem(key); }
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'opso-data-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  if (typeof showToast === 'function') showToast('Données exportées (JSON)', 'success');
+}
+
+function _clearLocalDataConfirm() {
+  if (!confirm('Effacer toutes les données locales (visites, notes, prospects, activité, préférences) ?\n\nCette action est irréversible. Pense à exporter d\'abord !')) return;
+  if (!confirm('Confirmer une seconde fois : tout sera supprimé.')) return;
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('opso_'));
+  keys.forEach(k => localStorage.removeItem(k));
+  if (typeof showToast === 'function') showToast(keys.length + ' clés effacées', 'success');
+  setTimeout(() => location.reload(), 1200);
 }
 
 // Init au load
