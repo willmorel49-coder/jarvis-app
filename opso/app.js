@@ -1886,6 +1886,161 @@ function clearEvents() {
   localStorage.removeItem(EVENTS_KEY);
 }
 
+// ── Smart morning summary ──────────────────────────────────
+function getMorningSummary() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayISO = today.toISOString().slice(0,10);
+
+  const parsePV = str => {
+    if (!str || !str.trim() || str === 'null') return null;
+    const parts = str.trim().split('/');
+    if (parts.length === 3) {
+      const d = new Date(+parts[2], +parts[1]-1, +parts[0]);
+      return isNaN(d) ? null : d;
+    }
+    return null;
+  };
+
+  // Visites du jour
+  const todayVisits = [];
+  const lateVisits = [];
+
+  if (typeof CLIENTS !== 'undefined' && state?.pharmacies?.length) {
+    const clientsByName = new Map();
+    for (const c of CLIENTS) {
+      if (c.nom) clientsByName.set((c.nom || '').trim().toUpperCase().replace(/\s+/g,' '), c);
+    }
+    for (const ph of state.pharmacies) {
+      const ci = clientsByName.get((ph.name || '').trim().toUpperCase().replace(/\s+/g,' '));
+      const d = parsePV(ci?.prochaineVisite);
+      if (!d) continue;
+      d.setHours(0,0,0,0);
+      if (d.getTime() === today.getTime()) todayVisits.push(ph);
+      else if (d < today) lateVisits.push({ph, daysLate: Math.round((today - d)/86400000)});
+    }
+  }
+
+  // Visites enregistrees aujourd'hui (pour eviter de re-rappeler)
+  let registeredToday = 0;
+  if (typeof loadVisitLog === 'function') {
+    const log = loadVisitLog();
+    for (const phId of Object.keys(log)) {
+      for (const v of (log[phId] || [])) {
+        if (v.date === todayISO) registeredToday++;
+      }
+    }
+  }
+
+  return {
+    today: todayVisits,
+    late: lateVisits,
+    registeredToday,
+    isWeekend: today.getDay() === 0 || today.getDay() === 6,
+  };
+}
+
+function showMorningBriefing() {
+  const summary = getMorningSummary();
+
+  // Construire le contenu
+  let mainTitle, mainSub, mainEmoji, sections = [];
+
+  if (summary.today.length > 0) {
+    mainEmoji = '📅';
+    mainTitle = summary.today.length + ' visite' + (summary.today.length > 1 ? 's' : '') + " prévue" + (summary.today.length > 1 ? 's' : '') + " aujourd'hui";
+    mainSub = "Bonne journée terrain";
+    sections.push({
+      title: "Aujourd'hui",
+      items: summary.today.map(ph => ({
+        ph,
+        icon: '📍',
+        label: titleCase(ph.name),
+        sub: 'Visite planifiée',
+        action: 'Ouvrir fiche',
+        onclick: "showPharmaDetail('" + ph.id + "')"
+      }))
+    });
+  } else if (summary.late.length > 0) {
+    mainEmoji = '⚠';
+    mainTitle = summary.late.length + ' visite' + (summary.late.length > 1 ? 's' : '') + ' en retard';
+    mainSub = 'À replanifier rapidement';
+  } else if (summary.isWeekend) {
+    mainEmoji = '🌿';
+    mainTitle = 'Bon weekend !';
+    mainSub = "Pas de visite planifiée — repose-toi.";
+  } else {
+    mainEmoji = '✓';
+    mainTitle = "Tout est en ordre";
+    mainSub = summary.registeredToday > 0
+      ? summary.registeredToday + " visite" + (summary.registeredToday > 1 ? 's' : '') + " déjà enregistrée" + (summary.registeredToday > 1 ? 's' : '') + " aujourd'hui"
+      : "Aucune visite planifiée pour aujourd'hui.";
+  }
+
+  if (summary.late.length > 0 && summary.today.length > 0) {
+    sections.push({
+      title: 'En retard',
+      items: summary.late.slice(0, 5).map(({ph, daysLate}) => ({
+        ph,
+        icon: '⚠',
+        label: titleCase(ph.name),
+        sub: 'Retard de ' + daysLate + ' jour' + (daysLate > 1 ? 's' : ''),
+        action: 'Replanifier',
+        onclick: "showPharmaDetail('" + ph.id + "')"
+      }))
+    });
+  }
+
+  // Construire HTML modale
+  const sectionsHtml = sections.map(sec => `
+    <div style="border-top:1px solid var(--border);padding:14px 20px">
+      <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">${sec.title}</div>
+      ${sec.items.map(it => `
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+          <span style="width:8px;height:8px;border-radius:50%;background:${it.ph.color};flex-shrink:0"></span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.label}</div>
+            <div style="font-size:11px;color:var(--text3);font-weight:500">${it.sub}</div>
+          </div>
+          <button onclick="closeAccessibleModal(document.getElementById('briefing-modal'));${it.onclick}"
+            class="pill pill-clickable" style="font-size:11px">${it.action} →</button>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'briefing-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:560px">
+      <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,var(--opso-green-pale2),transparent)">
+        <div style="display:flex;align-items:flex-start;gap:14px;flex:1">
+          <div style="font-size:32px;line-height:1">${mainEmoji}</div>
+          <div style="flex:1">
+            <div style="font-family:'Varela Round',sans-serif;font-size:18px;color:var(--opso-text);letter-spacing:-.4px">${mainTitle}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:3px;font-weight:500">${mainSub}</div>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeAccessibleModal(document.getElementById('briefing-modal'))" aria-label="Fermer">✕</button>
+      </div>
+      ${sectionsHtml}
+      <div style="padding:14px 20px;background:var(--opso-gray-pale);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:11px;color:var(--text3);font-style:italic">On prend soin de vous · OPSO Santé</span>
+        <button onclick="closeAccessibleModal(document.getElementById('briefing-modal'))" class="btn-opso" style="padding:7px 18px;font-size:12px">C'est parti</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  if (typeof makeAccessibleModal === 'function') makeAccessibleModal(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
+
+  if (typeof trackEvent === 'function') trackEvent('morning_briefing_shown', {
+    today: summary.today.length,
+    late: summary.late.length
+  });
+}
+
 function exportEventsLog() {
   const events = loadEvents();
   if (!events.length) {
@@ -4160,28 +4315,86 @@ function renderObjectifs() {
     const r = rows[rows.length - 1];
     if (!r.target && !r.actual) return '';
     const pct = r.pct ?? 0;
-    const color = r.pct === null ? 'var(--green)' : pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--rose)';
+    const color = r.pct === null ? 'var(--opso-green)' : pct >= 100 ? 'var(--opso-green)' : pct >= 70 ? 'var(--opso-warning)' : 'var(--opso-danger)';
+    const progressClass = r.pct === null ? '' : pct >= 100 ? '' : pct >= 70 ? 'warning' : 'danger';
+    let statusPill = '';
+    if (r.target > 0) {
+      if (pct >= 100) statusPill = `<span class="pill" style="background:rgba(17,166,60,.12);color:var(--opso-green-dark)">✓ Atteint</span>`;
+      else if (pct >= 70) statusPill = `<span class="pill" style="background:rgba(184,115,12,.12);color:var(--opso-warning)">En cours</span>`;
+      else statusPill = `<span class="pill" style="background:rgba(183,56,56,.10);color:var(--opso-danger)">À risque</span>`;
+    }
     return `<div style="background:var(--glass2);border-radius:16px;padding:16px 20px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <span style="width:8px;height:8px;border-radius:50%;background:${ph.color}"></span>
-        <span style="font-size:12px;font-weight:700;color:var(--text)">${titleCase(ph.name)}</span>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          <span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
+          <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(ph.name)}</span>
+        </div>
+        ${statusPill}
       </div>
       <div style="font-size:24px;font-weight:900;color:${color};margin-bottom:4px">${fmt(r.actual)}</div>
       ${r.target > 0 ? `
         <div style="font-size:11px;color:var(--text3);margin-bottom:10px">/ objectif ${fmt(r.target)}</div>
-        <div style="height:6px;border-radius:3px;background:var(--border);overflow:hidden">
-          <div style="height:100%;width:${Math.min(pct,100).toFixed(0)}%;background:${color};border-radius:3px;transition:width .5s ease"></div>
+        <div class="progress" style="height:6px">
+          <div class="progress-bar ${progressClass}" style="width:${Math.min(pct,100).toFixed(0)}%"></div>
         </div>
         <div style="font-size:11px;color:${color};font-weight:700;margin-top:6px">${pct.toFixed(1)}% atteint</div>
-        ${r.actual < r.target ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(r.target - r.actual)} restant</div>` : `<div style="font-size:11px;color:var(--green);margin-top:2px">Objectif dépassé ✓</div>`}
+        ${r.actual < r.target ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(r.target - r.actual)} restant</div>` : `<div style="font-size:11px;color:var(--opso-green);margin-top:2px">Objectif dépassé ✓</div>`}
       ` : `<div style="font-size:11px;color:var(--text3)">Pas d'objectif défini</div>`}
     </div>`;
   }).filter(Boolean).join('');
 
+  // Sector KPIs for current month
+  const curMonthGlobal = globalRows[globalRows.length - 1];
+  const sectorTotalActual = curMonthGlobal ? curMonthGlobal.actual : 0;
+  const sectorTotalTarget = curMonthGlobal ? curMonthGlobal.target : 0;
+  const sectorPct = sectorTotalTarget > 0 ? (sectorTotalActual / sectorTotalTarget * 100) : null;
+  const nbObjectifsDefinis = Object.values(objectives).filter(v => v > 0).length;
+  const hasAnyObjective = nbObjectifsDefinis > 0;
+
+  // Empty state if no objectives are defined at all
+  const objectivesEmptyHtml = !hasAnyObjective ? `
+    <div class="empty-state">
+      <div class="empty-state-icon">🎯</div>
+      <div class="empty-state-title">Aucun objectif défini</div>
+      <div class="empty-state-sub">Définis des objectifs mensuels par pharmacie depuis leur fiche détaillée pour suivre la performance.</div>
+      <div class="empty-state-action">
+        <button class="pill pill-clickable" onclick="navigate('pharmacies')">Voir les pharmacies →</button>
+      </div>
+    </div>` : '';
+
   document.getElementById('objectifs-content').innerHTML = `
     <div class="fade-up">
-      <div class="section-title">Objectifs commerciaux</div>
-      <div class="section-sub">Définissez des objectifs mensuels par pharmacie — cliquez sur une cellule pour modifier</div>
+      <!-- Section header -->
+      <div class="section-header">
+        <div class="section-header-title">
+          <div class="section-header-icon">🎯</div>
+          <div class="section-header-text">
+            <h2>Objectifs mensuels</h2>
+            <div class="section-header-sub">Définis et suis les objectifs CA pour chaque pharmacie</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sector KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px">
+        <div class="kpi-card-v2 featured">
+          <div class="kpi-label-v2">Réalisé secteur — ${monthName(curM)} ${curY}</div>
+          <div class="kpi-value-v2">${fmt(sectorTotalActual)}</div>
+          <div class="kpi-sub-v2">${sectorTotalTarget > 0 ? 'Objectif ' + fmt(sectorTotalTarget) : 'Pas d&apos;objectif défini'}</div>
+        </div>
+        <div class="stat-box" style="border-left:3px solid ${sectorPct === null ? 'var(--opso-gray)' : sectorPct >= 100 ? 'var(--opso-green)' : sectorPct >= 70 ? 'var(--opso-warning)' : 'var(--opso-danger)'}">
+          <div class="stat-box-label">Atteinte secteur</div>
+          <div class="stat-box-value">${sectorPct !== null ? sectorPct.toFixed(1) + '%' : '—'}</div>
+          <div class="stat-box-sub">${sectorPct === null ? 'Aucun objectif' : sectorPct >= 100 ? 'Objectif atteint' : sectorPct >= 70 ? 'En bonne voie' : 'Attention'}</div>
+        </div>
+        <div class="stat-box" style="border-left:3px solid var(--opso-green-dark)">
+          <div class="stat-box-label">Pharmacies</div>
+          <div class="stat-box-value">${state.pharmacies.length}</div>
+          <div class="stat-box-sub">${nbObjectifsDefinis} objectif${nbObjectifsDefinis>1?'s':''} défini${nbObjectifsDefinis>1?'s':''}</div>
+        </div>
+      </div>
+
+      ${objectivesEmptyHtml}
 
       <!-- Current month cards -->
       ${curMonthCards ? `
@@ -4241,8 +4454,8 @@ function renderObjectifs() {
                     <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text3)">${r.targetYTD > 0 ? fmt(r.targetYTD) : '—'}</td>
                     <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:${color}">${r.pct !== null ? r.pct.toFixed(1) + '%' : '—'}</td>
                     <td style="padding:10px 16px;width:120px">
-                      <div style="height:6px;border-radius:3px;background:var(--border)">
-                        <div style="height:100%;width:${r.pct !== null ? Math.min(r.pct,100).toFixed(0) : 0}%;background:${color};border-radius:3px"></div>
+                      <div class="progress" style="height:6px">
+                        <div class="progress-bar ${r.pct === null ? '' : r.pct >= 100 ? '' : r.pct >= 70 ? 'warning' : 'danger'}" style="width:${r.pct !== null ? Math.min(r.pct,100).toFixed(0) : 0}%"></div>
                       </div>
                     </td>
                   </tr>`;
@@ -4270,10 +4483,10 @@ function renderObjectifs() {
       </div>
 
       <!-- Legend -->
-      <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--text3)">
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green)"></span>≥ 100% — Objectif atteint</span>
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--amber)"></span>70–99% — En bonne voie</span>
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--rose)"></span>< 70% — Attention requise</span>
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="pill" style="background:rgba(17,166,60,.12);color:var(--opso-green-dark)">✓ Atteint (≥ 100%)</span>
+        <span class="pill" style="background:rgba(184,115,12,.12);color:var(--opso-warning)">En cours (70–99%)</span>
+        <span class="pill" style="background:rgba(183,56,56,.10);color:var(--opso-danger)">À risque (&lt; 70%)</span>
       </div>
     </div>`;
 }
@@ -6765,10 +6978,13 @@ function renderSimulator() {
           </div>
         </div>`;
       }).join('')
-    : `<div style="padding:32px;text-align:center;color:var(--text3)">
-        <div style="font-size:32px;margin-bottom:8px">🛒</div>
-        <div style="font-weight:600;color:var(--text2)">Panier vide</div>
-        <div style="font-size:12px;margin-top:4px">Recherchez des produits pour commencer votre simulation</div>
+    : `<div class="empty-state">
+        <div class="empty-state-icon">🛒</div>
+        <div class="empty-state-title">Panier vide</div>
+        <div class="empty-state-sub">Cherche un produit ci-dessus ou va dans le Catalogue IP pour ajouter des références.</div>
+        <div class="empty-state-action">
+          <button class="pill pill-clickable" onclick="navigate('catalogue')">Ouvrir le catalogue →</button>
+        </div>
       </div>`;
 
   // Sauvegardes
@@ -6793,7 +7009,60 @@ function renderSimulator() {
 
   // Suggestions built on-demand via buildSuggestHtml() / simRefreshSuggestions()
 
+  const simIntroDismissed = localStorage.getItem('opso_sim_intro_dismissed') === '1';
+  const simIntroHtml = simIntroDismissed ? '' : `
+    <div class="callout" style="margin-bottom:14px" id="sim-intro-callout">
+      <div class="callout-icon">💡</div>
+      <div class="callout-content">
+        <div class="callout-title">Comment utiliser le simulateur</div>
+        <div>Recherche un produit, ajuste la quantité, puis imprime ou sauvegarde la simulation pour ton client.</div>
+      </div>
+      <button onclick="localStorage.setItem('opso_sim_intro_dismissed','1');document.getElementById('sim-intro-callout').remove()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:4px;align-self:flex-start" title="Masquer">✕</button>
+    </div>`;
+
+  const totalUnits = state.sim.items.reduce((s,i)=>s+(+i.qty||0),0);
+  const margePct = caTotal > 0 ? (margeTotal / caTotal * 100).toFixed(1) + '%' : '—';
+
   container.innerHTML = `
+    <!-- Section header -->
+    <div class="section-header">
+      <div class="section-header-title">
+        <div class="section-header-icon">🧮</div>
+        <div class="section-header-text">
+          <h2>Simulateur</h2>
+          <div class="section-header-sub">Préparez un devis ou une commande personnalisée</div>
+        </div>
+      </div>
+      <div class="section-header-actions">
+        ${state.sim.pharmacyId ? `<button class="pill pill-clickable" onclick="simReconduire()" title="Recharger les produits de la dernière commande de cette pharmacie" style="color:var(--opso-green-dark);border-color:rgba(17,166,60,.3)">♻️ Reconduire</button>` : ''}
+        <button class="btn-opso" onclick="saveSimulation()">💾 Sauvegarder</button>
+        <button class="pill pill-clickable" onclick="printSimulation()">🖨 Imprimer</button>
+        <button class="pill pill-clickable" onclick="simExportCSV()" title="Exporter le panier en CSV">⬇ CSV</button>
+        <button class="pill pill-clickable" onclick="if(state.sim.items.length > 0 && confirm('Vider le panier de '+state.sim.items.length+' produits ?')){state.sim.items=[];renderSimulator();}" style="color:var(--opso-danger);border-color:rgba(183,56,56,.25)">🗑 Vider</button>
+      </div>
+    </div>
+
+    ${simIntroHtml}
+
+    <!-- Hero KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+      <div class="stat-box" style="border-left:3px solid var(--opso-green)">
+        <div class="stat-box-label">CA HT total</div>
+        <div class="stat-box-value">${fmt(caTotal)}</div>
+        <div class="stat-box-sub">${state.sim.items.length} produit${state.sim.items.length>1?'s':''}</div>
+      </div>
+      <div class="stat-box" style="border-left:3px solid var(--opso-warning)">
+        <div class="stat-box-label">Marge brute (est.)</div>
+        <div class="stat-box-value">${fmt(margeTotal)}</div>
+        <div class="stat-box-sub">${margePct}</div>
+      </div>
+      <div class="stat-box" style="border-left:3px solid var(--opso-green-dark)">
+        <div class="stat-box-label">Nb références</div>
+        <div class="stat-box-value">${state.sim.items.length}</div>
+        <div class="stat-box-sub">${totalUnits} unité${totalUnits>1?'s':''}</div>
+      </div>
+    </div>
+
     <!-- Header controls -->
     <div class="card fade-up sim-header-card">
       <div class="card-body" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
@@ -6806,11 +7075,6 @@ function renderSimulator() {
           oninput="state.sim.name=this.value"
           placeholder="Nom de la simulation"
           style="flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:13px">
-        ${state.sim.pharmacyId ? `<button class="btn btn-ghost" onclick="simReconduire()" title="Recharger les produits de la dernière commande de cette pharmacie" style="color:var(--green);border-color:rgba(0,229,160,.3)">♻️ Reconduire</button>` : ''}
-        <button class="btn btn-primary" onclick="saveSimulation()">💾 Sauvegarder</button>
-        <button class="btn btn-ghost" onclick="printSimulation()">🖨 Imprimer</button>
-        <button class="btn btn-ghost" onclick="simExportCSV()" title="Exporter le panier en CSV">⬇ CSV</button>
-        <button class="btn btn-ghost" onclick="if(state.sim.items.length > 0 && confirm('Vider le panier de '+state.sim.items.length+' produits ?')){state.sim.items=[];renderSimulator();}" style="color:var(--rose)">🗑 Vider</button>
       </div>
     </div>
 
@@ -10449,6 +10713,7 @@ function _gsRenderEmpty() {
 
   // 3. Actions rapides (suggestions)
   const quickActions = [
+    { label: 'Briefing du jour',          sub: 'Visites planifiées et en retard', icon: '☀', onclick: "showMorningBriefing()" },
     { label: 'Voir prochaines visites',  sub: 'Mes pharmacies à visiter', icon: '📅', onclick: "navigate('pharmacies')" },
     { label: 'Raccourcis clavier',        sub: 'Aide rapide',              icon: '⌨️', onclick: "showKeyboardShortcuts()" },
   ];
@@ -10519,6 +10784,7 @@ function gsSearch(q) {
 
   // Section Actions rapides filtrables
   const quickActions = [
+    { label: 'Briefing du jour',        sub: 'Visites planifiées et en retard', icon: '☀', onclick: "showMorningBriefing()" },
     { label: 'Générer PDF prospect',    sub: 'Outil de prospection', icon: '🖨️', onclick: "navigate('prioritaires');setTimeout(()=>{const b=document.querySelector('[onclick*=\\\"printPrioritairesPDF\\\"]');if(b)b.scrollIntoView({block:'center'})},150)" },
     { label: 'Voir prochaines visites', sub: 'Mes pharmacies',       icon: '📅', onclick: "navigate('pharmacies')" },
     { label: 'Imprimer la page',        sub: 'Cmd+P équivalent',     icon: '🖨️', onclick: "window.print()" },
@@ -10891,14 +11157,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       const today = new Date().toISOString().slice(0,10);
       if (localStorage.getItem(lastDayKey) !== today) {
         setTimeout(() => {
-          if (typeof showToast === 'function') {
-            const msgs = [
-              'Bienvenue chez OPSO Santé 👋',
-              'Bonne journée à l\'équipe 🌿',
-              'Tableau de bord prêt 📊',
-              'Bon travail à tous 💪',
-            ];
-            showToast(msgs[Math.floor(Math.random() * msgs.length)], 'success');
+          const summary = getMorningSummary();
+          // Si actions importantes : afficher la modale briefing
+          if (summary.today.length > 0 || summary.late.length >= 2) {
+            showMorningBriefing();
+          } else {
+            // Sinon juste un toast léger
+            if (typeof showToast === 'function') {
+              const msgs = [
+                'Bienvenue chez OPSO Santé 👋',
+                'Bonne journée à l\'équipe 🌿',
+                'Tableau de bord prêt 📊',
+                'Bon travail à tous 💪',
+              ];
+              showToast(msgs[Math.floor(Math.random() * msgs.length)], 'success');
+            }
           }
           localStorage.setItem(lastDayKey, today);
         }, 800);
