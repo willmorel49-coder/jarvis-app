@@ -60,6 +60,7 @@ async function load() {
     qte: parseFloat(s.qte)||0, puBrut: parseFloat(s.pu_brut)||0,
     puNet: parseFloat(s.pu_net)||0, mntNetHt: parseFloat(s.mnt_net_ht)||0,
   }));
+  if (typeof _invalidateSalesCache === 'function') _invalidateSalesCache();
 }
 
 // ── STORAGE ──────────────────────────────────
@@ -131,6 +132,7 @@ async function logout() {
   state.pharmacies = [];
   state.imports    = [];
   state.sales      = [];
+  _invalidateSalesCache();
   state.currentPage = 'dashboard';
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-screen').style.display = 'flex';
@@ -273,6 +275,7 @@ async function importMultiPharmaFile(file, month, year) {
         await sb.from('imports').delete().eq('id', oldImp.id);
         state.imports = state.imports.filter(i => i.id !== oldImp.id);
         state.sales   = state.sales.filter(s => s.importId !== oldImp.id);
+        _invalidateSalesCache();
       }
     }
 
@@ -315,6 +318,7 @@ async function importMultiPharmaFile(file, month, year) {
         artFamille: s._famille,
         qte: s.qte, puBrut: s.pu_brut, puNet: s.pu_net, mntNetHt: s.mnt_net_ht,
       })));
+      _invalidateSalesCache();
     }
     if (batchOk) {
       totalLines += salesRows.length;
@@ -359,6 +363,7 @@ async function importFile(file) {
       await sb.from('imports').delete().eq('id', oldImp.id);
       state.imports = state.imports.filter(i => i.id !== oldImp.id);
       state.sales   = state.sales.filter(s => s.importId !== oldImp.id);
+      _invalidateSalesCache();
     }
   }
 
@@ -394,13 +399,40 @@ async function importFile(file) {
       artFamille: s._famille,
       qte: s.qte, puBrut: s.pu_brut, puNet: s.pu_net, mntNetHt: s.mnt_net_ht,
     })));
+    _invalidateSalesCache();
   }
 
   return { ok: true, pharma, month, year, count: salesRows.length };
 }
 
 // ── DATA UTILS ────────────────────────────────
+// ── Cache memoire getSales ──────────────────────────────────
+const _salesCache = new Map();
+let _salesCacheVersion = 0;
+function _invalidateSalesCache() {
+  _salesCache.clear();
+  _salesCacheVersion++;
+}
+function _salesCacheKey(filter) {
+  if (!filter) return '__all__';
+  // Stringify deterministe : tri des clés
+  const keys = Object.keys(filter).sort();
+  return keys.map(k => k + ':' + filter[k]).join('|') || '__all__';
+}
+
 function getSales(filters = {}) {
+  // Le filtre par rôle commercial dépend de state.user → on l'inclut dans la clé
+  const roleKey = (state.user?.role === 'commercial' && state.user.pharmacyIds?.length)
+    ? '__role:' + state.user.pharmacyIds.join(',')
+    : '';
+  const key = _salesCacheKey(filters) + roleKey;
+  if (_salesCache.has(key)) return _salesCache.get(key);
+  const result = _getSalesUncached(filters);
+  _salesCache.set(key, result);
+  return result;
+}
+
+function _getSalesUncached(filters = {}) {
   let data = state.sales;
   if (filters.pharmacyId) data = data.filter(s => s.pharmacyId === filters.pharmacyId);
   if (filters.month)      data = data.filter(s => s.month === filters.month);
@@ -1360,6 +1392,58 @@ function renderProspects(search = '') {
     </div>`;
 }
 
+// ── Tracker visites (localStorage) ──────────────────────────
+const VISIT_LOG_KEY = 'opso_visit_log';
+
+function loadVisitLog() {
+  try { return JSON.parse(localStorage.getItem(VISIT_LOG_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveVisitLog(log) {
+  localStorage.setItem(VISIT_LOG_KEY, JSON.stringify(log));
+}
+
+function getVisitsFor(pharmacyId) {
+  const log = loadVisitLog();
+  return (log[pharmacyId] || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+}
+
+function addVisit(pharmacyId, date, note) {
+  const log = loadVisitLog();
+  if (!log[pharmacyId]) log[pharmacyId] = [];
+  log[pharmacyId].push({
+    id: Date.now() + '_' + Math.random().toString(36).slice(2,8),
+    date: date || new Date().toISOString().slice(0,10),
+    note: (note || '').trim(),
+    createdAt: new Date().toISOString(),
+  });
+  saveVisitLog(log);
+}
+
+function deleteVisit(pharmacyId, visitId) {
+  const log = loadVisitLog();
+  if (!log[pharmacyId]) return;
+  log[pharmacyId] = log[pharmacyId].filter(v => v.id !== visitId);
+  saveVisitLog(log);
+}
+
+function submitVisit(pharmacyId) {
+  const dateEl = document.getElementById('visit-date-' + pharmacyId);
+  const noteEl = document.getElementById('visit-note-' + pharmacyId);
+  if (!dateEl) return;
+  const date = dateEl.value;
+  const note = (noteEl?.value || '').trim();
+  if (!date) {
+    if (typeof showToast === 'function') showToast('Date requise', 'error');
+    return;
+  }
+  addVisit(pharmacyId, date, note);
+  if (typeof showToast === 'function') showToast('Visite ajoutée', 'success');
+  if (typeof announce === 'function') announce('Visite enregistrée');
+  showPharmaDetail(pharmacyId);
+}
+
 function showPharmaDetail(pharmacyId, overridePeriod) {
   if (overridePeriod !== undefined) pharmaDetailOverridePeriod = overridePeriod;
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
@@ -1532,6 +1616,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <div style="display:flex;gap:6px;flex-wrap:nowrap;min-width:max-content">
           <a href="#sec-kpi"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📊 KPIs</a>
           <a href="#sec-client" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📍 Infos</a>
+          <a href="#sec-visits" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🗓 Visites</a>
           <a href="#sec-ytd"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📈 YTD</a>
           <a href="#sec-wml"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📦 WML</a>
           <a href="#sec-top"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🏆 Top</a>
@@ -1611,6 +1696,51 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div style="font-size:12px;color:var(--text2);line-height:1.5">${clientInfo.commentaire}</div>
         </div>` : ''}
       </div>` : ''}
+
+      <!-- Journal des visites -->
+      ${(() => {
+        const visits = getVisitsFor(pharma.id);
+        const todayISO = new Date().toISOString().slice(0,10);
+        return `
+        <div id="sec-visits" class="card fade-up" style="margin-bottom:20px;scroll-margin-top:80px">
+          <div class="card-header" style="padding:16px 20px;border-bottom:1px solid var(--border)">
+            <div>
+              <div class="card-title">🗓 Journal des visites</div>
+              <div class="card-subtitle">${visits.length ? visits.length + ' visite' + (visits.length>1?'s':'') + ' enregistrée' + (visits.length>1?'s':'') : 'Aucune visite enregistrée pour cette pharmacie'}</div>
+            </div>
+          </div>
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg)">
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+              <div style="flex:0 0 auto">
+                <label for="visit-date-${pharma.id}" style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Date</label>
+                <input id="visit-date-${pharma.id}" type="date" value="${todayISO}" max="${todayISO}"
+                  style="padding:7px 10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px">
+              </div>
+              <div style="flex:1;min-width:200px">
+                <label for="visit-note-${pharma.id}" style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Compte-rendu</label>
+                <input id="visit-note-${pharma.id}" type="text" placeholder="Ex: RDV avec Mme Dupont, négo offre Sanofi, prochain RDV en juin..."
+                  style="width:100%;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px">
+              </div>
+              <button onclick="submitVisit('${pharma.id}')"
+                style="padding:8px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 6px rgba(17,166,60,.3)">
+                + Ajouter
+              </button>
+            </div>
+          </div>
+          ${visits.length ? `
+            <div>
+              ${visits.map(v => `
+                <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)">
+                  <div style="font-size:11px;font-weight:700;color:var(--opso-green-text);min-width:80px;flex-shrink:0">${new Date(v.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'2-digit'})}</div>
+                  <div style="flex:1;font-size:12px;color:var(--text2);line-height:1.5">${v.note ? v.note.replace(/</g,'&lt;') : '<span style="color:var(--text3);font-style:italic">(pas de note)</span>'}</div>
+                  <button onclick="if(confirm('Supprimer cette visite ?')){deleteVisit('${pharma.id}','${v.id}');showPharmaDetail('${pharma.id}')}"
+                    style="padding:3px 8px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-size:11px;flex-shrink:0"
+                    title="Supprimer">🗑</button>
+                </div>
+              `).join('')}
+            </div>` : ''}
+        </div>`;
+      })()}
 
       <!-- Badge OPSO adhérent -->
       ${opsoAdh ? `
@@ -2219,6 +2349,7 @@ async function deleteImport(importId, pharmacyId) {
   await deleteImportFile(imp?.filePath);
   state.imports = state.imports.filter(i => i.id !== importId);
   state.sales   = state.sales.filter(s => s.importId !== importId);
+  _invalidateSalesCache();
   showToast('Import supprimé', 'success');
   updateNavBadge();
   showPharmaDetail(pharmacyId);
@@ -2232,6 +2363,7 @@ async function deleteImportFromHistory(importId, pharmacyId) {
   await deleteImportFile(imp?.filePath);
   state.imports = state.imports.filter(i => i.id !== importId);
   state.sales   = state.sales.filter(s => s.importId !== importId);
+  _invalidateSalesCache();
   showToast('Import supprimé', 'success');
   updateNavBadge();
   renderImport();
@@ -2250,6 +2382,7 @@ async function deletePharmacy(pharmacyId) {
   state.pharmacies = state.pharmacies.filter(p => p.id !== pharmacyId);
   state.imports    = state.imports.filter(i => i.pharmacyId !== pharmacyId);
   state.sales      = state.sales.filter(s => s.pharmacyId !== pharmacyId);
+  _invalidateSalesCache();
   showToast(`${pharma?.name} supprimée`, 'success');
   updateNavBadge();
   renderPharmacies();
@@ -4009,6 +4142,7 @@ async function resetAllData() {
   if (!confirm('Supprimer TOUTES les données Supabase ?\nPharmacies, imports et ventes seront effacés définitivement.')) return;
   await sb.from('pharmacies').delete().not('id', 'is', null);
   state.pharmacies = []; state.imports = []; state.sales = [];
+  _invalidateSalesCache();
   showToast('Toutes les données ont été supprimées', 'success');
   updateNavBadge();
   renderAdmin();
@@ -4053,13 +4187,16 @@ async function migrateFromLocalStorage() {
     const BATCH = 500;
     for (let i = 0; i < impSales.length; i += BATCH) {
       const { data: batch, error: sErr } = await sb.from('sales').insert(impSales.slice(i, i + BATCH)).select();
-      if (!sErr && batch) state.sales.push(...batch.map(s => ({
-        id: s.id, importId: s.import_id, pharmacyId: s.pharmacy_id,
-        month: s.month, year: s.year,
-        artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
-        qte: parseFloat(s.qte)||0, puBrut: parseFloat(s.pu_brut)||0,
-        puNet: parseFloat(s.pu_net)||0, mntNetHt: parseFloat(s.mnt_net_ht)||0,
-      })));
+      if (!sErr && batch) {
+        state.sales.push(...batch.map(s => ({
+          id: s.id, importId: s.import_id, pharmacyId: s.pharmacy_id,
+          month: s.month, year: s.year,
+          artDesignation: s.art_designation, artCode: s.art_code, artId: s.art_id,
+          qte: parseFloat(s.qte)||0, puBrut: parseFloat(s.pu_brut)||0,
+          puNet: parseFloat(s.pu_net)||0, mntNetHt: parseFloat(s.mnt_net_ht)||0,
+        })));
+        _invalidateSalesCache();
+      }
     }
   }
 
@@ -7158,6 +7295,7 @@ function filterToOpsoScope() {
   const ids = new Set(state.pharmacies.map(p => p.id));
   state.imports = state.imports.filter(i => ids.has(i.pharmacyId));
   state.sales   = state.sales.filter(s => ids.has(s.pharmacyId));
+  _invalidateSalesCache();
 }
 
 // ── SYNC PHARMACIES OPSO ──────────────────────
@@ -7269,6 +7407,7 @@ function mergeWmlStaticSales() {
     });
     added++;
   }
+  _invalidateSalesCache();
   console.log(`[WML] ${added} lignes · ${Object.keys(codeToId).length} pharmacies CIP mappées · state.sales=${state.sales.length}`);
 }
 
