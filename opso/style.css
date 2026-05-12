@@ -1724,6 +1724,59 @@ table tbody tr { transition: background-color 0.15s ease; }
   white-space: nowrap; border: 0;
 }
 
+/* ── Bandeau offline ─────────────────────────────── */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--opso-warning);
+  color: #fff;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 10000;
+  transform: translateY(-100%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.offline-banner.visible { transform: translateY(0); }
+.offline-banner-icon { display: inline-block; margin-right: 6px; }
+
+/* ── Bandeau update disponible ────────────────────── */
+.update-banner {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  background: var(--opso-green-dark);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px 12px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  z-index: 10000;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+}
+.update-banner.visible { transform: translateX(-50%) translateY(0); }
+.update-banner button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.update-banner button:hover { background: rgba(255,255,255,0.3); }
+
 /* ── PRINT (fiche de visite) ───────────── */
 @media print {
   body > *:not(#fiche-visite-modal) { display: none !important; }
