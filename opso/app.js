@@ -5913,9 +5913,8 @@ function renderCatalogue() {
   const tabsHtml = tabDefs.map(t => {
     const active = catCatFilter === t.key;
     return `<button onclick="catCatFilter='${t.key}';catPageNum=1;renderCatalogue()"
-      onmouseover="if(!${active}){this.style.background='var(--blue-bg)';this.style.color='var(--green)';this.style.borderColor='var(--green)'}"
-      onmouseout="if(!${active}){this.style.background='transparent';this.style.color='var(--text2)';this.style.borderColor='var(--border2)'}"
-      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ${active ? 'var(--green)' : 'var(--border2)'};background:${active ? 'var(--green)' : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};cursor:pointer;white-space:nowrap;transition:all .15s;${active ? 'box-shadow:0 2px 8px rgba(37,99,235,.25)' : ''}">${t.label}</button>`;
+      class="pill pill-clickable${active ? ' pill-active' : ''}"
+      style="font-size:12px;padding:6px 14px;cursor:pointer;white-space:nowrap">${t.label}</button>`;
   }).join('');
 
   // ── Products ─────────────────────────────────
@@ -5947,10 +5946,9 @@ function renderCatalogue() {
           ? `<div style="font-size:14px;color:var(--text2)">${fmtP(b.prix_ht)}</div>`
           : `<div style="font-size:12px;color:var(--text3)">N/D</div>`;
     const inSim = state.sim.items.some(it => it.designation === b.designation);
-    const addBtn = `<button onclick="catAddToSim(${globalIdx})"
-      style="padding:5px 12px;border-radius:8px;border:1px solid ${inSim ? 'var(--green)' : 'var(--green)'};background:${inSim ? 'rgba(5,150,105,.1)' : 'var(--green)'};color:${inSim ? 'var(--green)' : '#fff'};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:72px;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-      ${inSim ? '✓ Ajouté' : '+ Sim'}
-    </button>`;
+    const addBtn = inSim
+      ? `<button onclick="catAddToSim(${globalIdx})" class="pill" style="background:var(--opso-green-pale);color:var(--opso-green-dark);border:1px solid var(--opso-green);padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:72px;justify-content:center">✓ Ajouté</button>`
+      : `<button onclick="catAddToSim(${globalIdx})" class="pill pill-clickable" style="background:var(--opso-green);color:#fff;border:1px solid var(--opso-green);padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:72px;justify-content:center">+ Sim</button>`;
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${froid}${b.designation}</div>
@@ -5963,18 +5961,38 @@ function renderCatalogue() {
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">${prix}${addBtn}</div>
     </div>`;
   }).join('')
-  : `<div style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</div>`;
+  : `<div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-title">Aucun produit trouvé</div>
+      <div class="empty-state-sub">${catQuery ? `Aucun résultat pour « ${catQuery} » dans cette catégorie.` : 'Essaye une autre catégorie ou modifie ta recherche.'}</div>
+      <div class="empty-state-action">
+        <button class="pill pill-clickable" style="font-size:12px;padding:6px 14px" onclick="catCatFilter='tous';catQuery='';catPageNum=1;renderCatalogue()">Voir tous les produits</button>
+      </div>
+    </div>`;
 
   // ── Pagination ───────────────────────────────
   let pagHtml = '';
   if (totalPages > 1) {
     const btns = [];
-    if (catPageNum > 1) { btns.push(`<button class="cat-pag-btn" onclick="catGoPage(1)">«</button>`); btns.push(`<button class="cat-pag-btn" onclick="catGoPage(${catPageNum - 1})">‹</button>`); }
+    const navStyle = 'font-size:12px;padding:6px 12px;cursor:pointer;min-width:34px;justify-content:center';
+    if (catPageNum > 1) {
+      btns.push(`<button class="pill pill-clickable" style="${navStyle}" onclick="catGoPage(1)">«</button>`);
+      btns.push(`<button class="pill pill-clickable" style="${navStyle}" onclick="catGoPage(${catPageNum - 1})">‹</button>`);
+    }
     let ps = Math.max(1, catPageNum - 3), pe = Math.min(totalPages, ps + 6);
     if (pe - ps < 6) ps = Math.max(1, pe - 6);
-    for (let p = ps; p <= pe; p++) btns.push(`<button class="cat-pag-btn${p === catPageNum ? ' active' : ''}" onclick="catGoPage(${p})">${p}</button>`);
-    if (catPageNum < totalPages) { btns.push(`<button class="cat-pag-btn" onclick="catGoPage(${catPageNum + 1})">›</button>`); btns.push(`<button class="cat-pag-btn" onclick="catGoPage(${totalPages})">»</button>`); }
-    pagHtml = `<div style="display:flex;justify-content:center;gap:4px;padding:16px;flex-wrap:wrap">${btns.join('')}</div>`;
+    for (let p = ps; p <= pe; p++) {
+      const active = p === catPageNum;
+      btns.push(`<button class="pill pill-clickable${active ? ' pill-active' : ''}" style="${navStyle}" onclick="catGoPage(${p})">${p}</button>`);
+    }
+    if (catPageNum < totalPages) {
+      btns.push(`<button class="pill pill-clickable" style="${navStyle}" onclick="catGoPage(${catPageNum + 1})">›</button>`);
+      btns.push(`<button class="pill pill-clickable" style="${navStyle}" onclick="catGoPage(${totalPages})">»</button>`);
+    }
+    pagHtml = `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 16px">
+      <div style="font-family:'Varela Round',sans-serif;font-size:13px;font-weight:700;color:var(--opso-text);letter-spacing:.2px">Page ${catPageNum} <span style="color:var(--text3);font-weight:500">/ ${totalPages}</span></div>
+      <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap">${btns.join('')}</div>
+    </div>`;
   }
 
   // ── Simulateur shortcut ──────────────────────
@@ -5989,13 +6007,59 @@ function renderCatalogue() {
       </div>`
     : '';
 
+  // ── Section header premium ───────────────────
+  const sectionHeader = `
+    <div class="section-header">
+      <div class="section-header-title">
+        <div class="section-header-icon">💊</div>
+        <div class="section-header-text">
+          <h2>Catalogue Intégral Pharma</h2>
+          <div class="section-header-sub">${fmtNum(BENCHMARK.length)} produits · prix officiels IP</div>
+        </div>
+      </div>
+      <div class="section-header-actions">
+        <button onclick="catExportCSV()" class="pill pill-clickable" style="font-size:12px;padding:6px 14px;cursor:pointer">⬇ Export CSV</button>
+      </div>
+    </div>`;
+
+  // ── Callout intro dismissable ────────────────
+  const introCallout = (typeof localStorage !== 'undefined' && localStorage.getItem('opso_catalog_intro_dismissed') === '1') ? '' : `
+    <div class="callout" style="margin-bottom:16px;position:relative">
+      <div class="callout-icon">💡</div>
+      <div class="callout-content">
+        <div class="callout-title">Catalogue produits Intégral Pharma</div>
+        <div>Filtre par catégorie pour explorer les ${fmtNum(BENCHMARK.length)} produits. Ajoute au simulateur en un clic pour préparer un devis ou une commande.</div>
+      </div>
+      <button onclick="try{localStorage.setItem('opso_catalog_intro_dismissed','1')}catch(e){};renderCatalogue()" title="Masquer"
+        style="position:absolute;top:8px;right:8px;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:14px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>`;
+
   container.innerHTML = `
+    ${sectionHeader}
+    ${introCallout}
+
     <!-- KPIs -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px">
-      <div class="card kpi-card fade-up"><div class="kpi-label">Produits IP</div><div class="kpi-value">${fmtNum(BENCHMARK.length)}</div></div>
-      <div class="card kpi-card fade-up"><div class="kpi-label">Avec prix IP</div><div class="kpi-value" style="color:var(--green)">${fmtNum(nPrix)}</div></div>
-      <div class="card kpi-card fade-up"><div class="kpi-label">Remboursés SS</div><div class="kpi-value" style="color:var(--green)">${fmtNum(nAmeli)}</div></div>
-      <div class="card kpi-card fade-up"><div class="kpi-label">Thermosensibles</div><div class="kpi-value" style="color:var(--amber)">${fmtNum(nFroid)}</div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">
+      <div class="stat-box">
+        <div class="stat-box-label">Produits IP</div>
+        <div class="stat-box-value">${fmtNum(BENCHMARK.length)}</div>
+        <div class="stat-box-sub">catalogue total</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Avec prix IP</div>
+        <div class="stat-box-value" style="color:var(--opso-green-dark)">${fmtNum(nPrix)}</div>
+        <div class="stat-box-sub">sur ${fmtNum(BENCHMARK.length)}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Remboursés SS</div>
+        <div class="stat-box-value" style="color:var(--opso-green-dark)">${fmtNum(nAmeli)}</div>
+        <div class="stat-box-sub">code Ameli</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Thermosensibles</div>
+        <div class="stat-box-value" style="color:var(--opso-warning)">${fmtNum(nFroid)}</div>
+        <div class="stat-box-sub">chaîne du froid</div>
+      </div>
     </div>
 
     ${simBar}
@@ -6021,8 +6085,7 @@ function renderCatalogue() {
           ${catCurrentData.length < BENCHMARK.length ? `${fmtNum(catCurrentData.length)} résultats` : `${fmtNum(BENCHMARK.length)} produits`}
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:12px;color:var(--text3)">Page ${catPageNum} / ${totalPages}</span>
-          <button onclick="catExportCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV</button>
+          <span style="font-family:'Varela Round',sans-serif;font-size:12px;font-weight:700;color:var(--opso-text)">Page ${catPageNum} <span style="color:var(--text3);font-weight:500">/ ${totalPages}</span></span>
         </div>
       </div>
       ${prodsHtml}
@@ -6834,7 +6897,7 @@ function renderOffilog() {
   const catChips = cats.map(c => {
     const n = c === 'tous' ? OFFILOG_LIVE.length : OFFILOG_LIVE.filter(p => p.cat === c).length;
     const active = c === offiLiveCat;
-    return `<button onclick="offiLiveCat='${c.replace(/'/g,"\'")}';offiLivePage=1;renderOffilog()" class="offil-chip${active ? ' active' : ''}">${c === 'tous' ? 'Tous' : c} <span class="offil-chip-count">${n}</span></button>`;
+    return `<button onclick="offiLiveCat='${c.replace(/'/g,"\'")}';offiLivePage=1;renderOffilog()" class="pill pill-clickable${active ? ' pill-active' : ''}">${c === 'tous' ? 'Tous' : c} <span style="opacity:.7;font-weight:600;margin-left:3px">${n.toLocaleString('fr-FR')}</span></button>`;
   }).join('');
 
   const cards = page.map(p => {
@@ -6865,9 +6928,9 @@ function renderOffilog() {
         ${leclerc != null ? `<span class="offil-bench offil-bench-lecl" title="E.Leclerc">Leclerc ${fmtP(leclerc)}</span>` : ''}
       </div>${bestBadge}` : '';
     return `
-    <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener"${isAlerte ? ' style="border-color:rgba(255,77,109,.45)"' : ''}>
+    <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener"${isAlerte ? ' style="border-color:rgba(183,56,56,.55);border-left:3px solid var(--opso-danger);box-shadow:0 2px 10px rgba(183,56,56,.08)"' : ''}>
       <div class="offil-card-img-wrap">
-        ${isAlerte ? '<div style="position:absolute;top:6px;left:6px;z-index:2;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(255,77,109,.85);color:#fff">⚠ Alerte</div>' : ''}
+        ${isAlerte ? '<span class="pill" style="position:absolute;top:6px;left:6px;z-index:2;background:var(--opso-danger);color:#fff;border-color:var(--opso-danger);font-size:10px;padding:2px 7px">⚠ Alerte</span>' : ''}
         ${p.img ? `<img class="offil-card-img" src="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.img}" alt="" loading="lazy" onerror="this.style.display='none'">` : '<div class="offil-card-img-placeholder"></div>'}
         ${hasPromo ? '<span class="offil-promo-badge">PROMO</span>' : ''}
       </div>
@@ -6893,20 +6956,72 @@ function renderOffilog() {
   }).join('');
 
   const pagHtml = totalPages > 1 ? `
-  <div class="offil-pag">
-    ${offiLivePage > 1 ? `<button class="offil-pag-btn" onclick="offiLivePage--;renderOffilog()">‹ Préc.</button>` : '<span></span>'}
-    <span class="offil-pag-info">Page ${offiLivePage} / ${totalPages} · ${list.length} produits</span>
-    ${offiLivePage < totalPages ? `<button class="offil-pag-btn" onclick="offiLivePage++;renderOffilog()">Suiv. ›</button>` : '<span></span>'}
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px">
+    ${offiLivePage > 1 ? `<button class="pill pill-clickable" onclick="offiLivePage--;renderOffilog()">‹ Préc.</button>` : '<span></span>'}
+    <span style="font-family:'Varela Round',sans-serif;font-weight:700;font-size:13px;color:var(--text2)">Page ${offiLivePage} / ${totalPages} · ${list.length.toLocaleString('fr-FR')} produits</span>
+    ${offiLivePage < totalPages ? `<button class="pill pill-clickable" onclick="offiLivePage++;renderOffilog()">Suiv. ›</button>` : '<span></span>'}
   </div>` : '';
 
+  // ── Filtre actif ? ──
+  const _hasActiveFilter = (offiLiveSearch && offiLiveSearch.length) || offiLiveCat !== 'tous' || offiLiveAlerte || offiLiveWml || offiLivePromo;
+  const _clearChip = _hasActiveFilter ? `
+    <button onclick="offiLiveSearch='';offiLiveCat='tous';offiLiveAlerte=false;offiLiveWml=false;offiLivePromo=false;offiLivePage=1;renderOffilog()"
+      class="pill pill-clickable"
+      style="background:rgba(183,56,56,.1);color:var(--opso-danger);border:1px solid rgba(183,56,56,.3)">
+      ✕ Effacer filtres
+    </button>` : '';
+
   container.innerHTML = `
+  <div class="section-header">
+    <div class="section-header-title">
+      <div class="section-header-icon">🛒</div>
+      <div class="section-header-text">
+        <h2>Prix Offilog Live</h2>
+        <div class="section-header-sub">${OFFILOG_LIVE.length.toLocaleString('fr-FR')} produits parapharmacie · prix scrappés en temps réel</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+    <div class="stat-box">
+      <div class="stat-box-label">Total catalogue</div>
+      <div class="stat-box-value">${OFFILOG_LIVE.length.toLocaleString('fr-FR')}</div>
+      <div class="stat-box-sub">produits Offilog</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-label">Prix Leclerc</div>
+      <div class="stat-box-value">${nLecl.toLocaleString('fr-FR')}</div>
+      <div class="stat-box-sub">EANs matchés</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-label">Prix Drakkars</div>
+      <div class="stat-box-value">${nDrak.toLocaleString('fr-FR')}</div>
+      <div class="stat-box-sub">EANs matchés</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-label">Prix Cap3000</div>
+      <div class="stat-box-value">${nCap.toLocaleString('fr-FR')}</div>
+      <div class="stat-box-sub">EANs matchés</div>
+    </div>
+    ${nPharma > 0 ? `<div class="stat-box">
+      <div class="stat-box-label">Ma Pharmacie</div>
+      <div class="stat-box-value">${nPharma.toLocaleString('fr-FR')}</div>
+      <div class="stat-box-sub">EANs matchés</div>
+    </div>` : ''}
+    <div class="stat-box" ${nAlerte > 0 ? `onclick="offiLiveAlerte=!offiLiveAlerte;offiLivePage=1;renderOffilog()" style="cursor:pointer;border-color:rgba(183,56,56,.35)"` : ''}>
+      <div class="stat-box-label" style="color:var(--opso-danger)">⚠ Alertes prix</div>
+      <div class="stat-box-value" style="color:var(--opso-danger)">${nAlerte.toLocaleString('fr-FR')}</div>
+      <div class="stat-box-sub">conc. < achat IP</div>
+    </div>
+  </div>
+
   <div class="offil-header">
     <div class="offil-search-wrap">
       <svg width="16" height="16" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input class="offil-search" type="text" placeholder="Rechercher produit, marque, EAN…" value="${offiLiveSearch.replace(/"/g,'&quot;')}" oninput="offiLiveSearch=this.value;offiLivePage=1;renderOffilog()" style="font-size:16px">
       ${offiLiveSearch ? `<button onclick="offiLiveSearch='';renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:0 4px">×</button>` : ''}
     </div>
-    <div style="display:flex;gap:6px;align-items:center">
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       <select class="offil-sort" onchange="offiLiveSort=this.value;offiLivePage=1;renderOffilog()">
         <option value="alpha" ${offiLiveSort==='alpha'?'selected':''}>A → Z</option>
         <option value="marque" ${offiLiveSort==='marque'?'selected':''}>Marque</option>
@@ -6914,24 +7029,19 @@ function renderOffilog() {
         <option value="prix_desc" ${offiLiveSort==='prix_desc'?'selected':''}>Prix ↓</option>
         <option value="ecart" ${offiLiveSort==='ecart'?'selected':''}>⚠ Conc. moins cher</option>
       </select>
-      <button onclick="exportOffiLiveCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">⬇ CSV</button>
-      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLiveWml ? 'rgba(0,229,160,.6)' : 'var(--border2)'};background:${offiLiveWml ? 'rgba(0,229,160,.12)' : 'transparent'};color:${offiLiveWml ? 'var(--mint)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">📦 WML</button>
-      <button onclick="offiLiveAlerte=!offiLiveAlerte;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLiveAlerte ? 'rgba(255,77,109,.6)' : 'var(--border2)'};background:${offiLiveAlerte ? 'rgba(255,77,109,.12)' : 'transparent'};color:${offiLiveAlerte ? 'var(--rose)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">⚠ Alerte</button>
-      <button onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${offiLivePromo ? 'rgba(255,176,32,.6)' : 'var(--border2)'};background:${offiLivePromo ? 'rgba(255,176,32,.12)' : 'transparent'};color:${offiLivePromo ? 'var(--amber)' : 'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">🏷 Promos</button>
+      <button onclick="exportOffiLiveCSV()" class="pill pill-clickable pill-outline">⬇ CSV</button>
+      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLiveWml ? 'pill-active' : ''}">📦 WML</button>
+      <button onclick="offiLiveAlerte=!offiLiveAlerte;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLiveAlerte ? 'pill-active' : ''}" ${offiLiveAlerte ? 'style="background:var(--opso-danger);border-color:var(--opso-danger);color:#fff"' : ''}>⚠ Alerte</button>
+      <button onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLivePromo ? 'pill-active' : ''}" ${offiLivePromo ? 'style="background:var(--opso-warning);border-color:var(--opso-warning);color:#fff"' : ''}>🏷 Promos</button>
+      ${_clearChip}
     </div>
   </div>
 
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:11px">
-    ${nPharma > 0 ? `<span style="padding:4px 10px;border-radius:20px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);color:#00E5A0;font-weight:600">🏥 Ma Phcie ${nPharma}</span>` : ''}
-    <span style="padding:4px 10px;border-radius:20px;background:rgba(0,114,230,.08);border:1px solid rgba(0,114,230,.2);color:#0072e6;font-weight:600">Leclerc ${nLecl}</span>
-    <span style="padding:4px 10px;border-radius:20px;background:rgba(234,88,12,.08);border:1px solid rgba(234,88,12,.2);color:#ea580c;font-weight:600">Cap3000 ${nCap}</span>
-    <span style="padding:4px 10px;border-radius:20px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);color:#6366f1;font-weight:600">Drakkars ${nDrak}</span>
-    ${nAlerte > 0 ? `<span onclick="offiLiveAlerte=!offiLiveAlerte;offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:${offiLiveAlerte?'rgba(255,77,109,.18)':'rgba(255,77,109,.08)'};border:1px solid ${offiLiveAlerte?'rgba(255,77,109,.5)':'rgba(255,77,109,.2)'};color:var(--rose);font-weight:600;cursor:pointer">⚠ ${nAlerte} alerte${nAlerte>1?'s':''}</span>` : ''}
-    ${nWml > 0 ? `<span onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:${offiLiveWml?'rgba(0,229,160,.2)':'rgba(0,229,160,.06)'};border:1px solid ${offiLiveWml?'rgba(0,229,160,.5)':'rgba(0,229,160,.2)'};color:var(--mint);font-weight:600;cursor:pointer">📦 ${nWml} WML</span>` : ''}
-    ${nPromo > 0 ? `<span onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" style="padding:4px 10px;border-radius:20px;background:${offiLivePromo?'rgba(255,176,32,.2)':'rgba(255,176,32,.06)'};border:1px solid ${offiLivePromo?'rgba(255,176,32,.5)':'rgba(255,176,32,.2)'};color:var(--amber);font-weight:600;cursor:pointer">🏷 ${nPromo} promos</span>` : ''}
-  </div>
+  <div class="offil-cats" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${catChips}</div>
 
-  <div class="offil-cats">${catChips}</div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:600">
+    ${list.length.toLocaleString('fr-FR')} produit${list.length > 1 ? 's' : ''} ${_hasActiveFilter ? 'filtré' + (list.length > 1 ? 's' : '') + ' / ' + OFFILOG_LIVE.length.toLocaleString('fr-FR') : 'au total'}
+  </div>
 
   <div class="offil-grid">${cards}</div>
 
