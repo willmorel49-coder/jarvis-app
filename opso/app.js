@@ -636,6 +636,168 @@ function titleCase(s) {
   );
 }
 
+// ── Calendrier visites ──────────────────────────────────────
+let _calMonth = null; // {year, month}
+
+function showCalendarModal(monthShift = 0) {
+  // Si premier appel, init au mois courant
+  if (!_calMonth) {
+    const n = new Date();
+    _calMonth = { year: n.getFullYear(), month: n.getMonth() };
+  } else if (monthShift !== 0) {
+    let m = _calMonth.month + monthShift;
+    let y = _calMonth.year;
+    while (m < 0) { m += 12; y--; }
+    while (m > 11) { m -= 12; y++; }
+    _calMonth = { year: y, month: m };
+  }
+
+  const { year, month } = _calMonth;
+
+  // Helper parsePV (DD/MM/YYYY)
+  const parsePV = str => {
+    if (!str || !str.trim() || str === 'null') return null;
+    const parts = str.trim().split('/');
+    if (parts.length === 3) {
+      const d = new Date(+parts[2], +parts[1]-1, +parts[0]);
+      return isNaN(d) ? null : d;
+    }
+    return null;
+  };
+
+  // Construire le map { 'YYYY-MM-DD': [{type:'planned'|'done', ph, note?}, ...] }
+  const dayMap = new Map();
+  const dayKey = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+
+  // Index CLIENTS par nom (matching coherent avec le reste du code)
+  const clientsByName = (typeof CLIENTS !== 'undefined')
+    ? new Map(CLIENTS.map(c => [(c.nom||'').toUpperCase().trim(), c]))
+    : new Map();
+
+  // Visites planifiees (CLIENTS.prochaineVisite)
+  for (const ph of state.pharmacies) {
+    const ci = clientsByName.get((ph.name||'').toUpperCase().trim());
+    const d = parsePV(ci?.prochaineVisite);
+    if (!d) continue;
+    if (d.getFullYear() !== year || d.getMonth() !== month) continue;
+    const k = dayKey(d);
+    if (!dayMap.has(k)) dayMap.set(k, []);
+    dayMap.get(k).push({ type: 'planned', ph });
+  }
+
+  // Visites enregistrees (visit log)
+  if (typeof loadVisitLog === 'function') {
+    const log = loadVisitLog();
+    for (const phId of Object.keys(log)) {
+      const ph = state.pharmacies.find(p => p.id === phId);
+      if (!ph) continue;
+      for (const v of (log[phId] || [])) {
+        const d = new Date(v.date);
+        if (isNaN(d) || d.getFullYear() !== year || d.getMonth() !== month) continue;
+        const k = dayKey(d);
+        if (!dayMap.has(k)) dayMap.set(k, []);
+        dayMap.get(k).push({ type: 'done', ph, note: v.note });
+      }
+    }
+  }
+
+  // Stats
+  const allItems = [...dayMap.values()].flat();
+  const nPlanned = allItems.filter(x => x.type === 'planned').length;
+  const nDone = allItems.filter(x => x.type === 'done').length;
+
+  // Construire la grille (semaines lundi-dimanche)
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startWeekday = (firstDay.getDay() + 6) % 7; // lundi = 0
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= lastDay.getDate(); d++) cells.push(new Date(year, month, d));
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const monthLabel = new Date(year, month).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  const monthLabelCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+  const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+  // Build cells HTML
+  const cellsHtml = cells.map(d => {
+    if (!d) return '<div style="background:transparent;min-height:90px"></div>';
+    const k = dayKey(d);
+    const items = dayMap.get(k) || [];
+    const isToday = d.getTime() === today.getTime();
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+    return `<div style="background:var(--bg2);min-height:90px;padding:6px 8px;${isToday?'box-shadow:inset 0 0 0 2px var(--opso-green);':''}${isWeekend?'background:var(--bg3);':''}position:relative">
+      <div style="font-size:11px;font-weight:${isToday?'800':'700'};color:${isToday?'var(--opso-green-dark)':isWeekend?'var(--text3)':'var(--text2)'};margin-bottom:4px">${d.getDate()}${isToday?" • aujourd'hui":''}</div>
+      ${items.slice(0, 3).map(it => {
+        const isPlanned = it.type === 'planned';
+        return `<div onclick="closeAccessibleModal(document.getElementById('cal-modal'));showPharmaDetail('${it.ph.id}')"
+          title="${it.ph.name} — ${isPlanned?'Visite planifiée':'Visite enregistrée'}${it.note?' : '+(it.note||'').replace(/"/g,'&quot;'):''}"
+          style="display:flex;align-items:center;gap:4px;padding:2px 5px;margin-bottom:2px;border-radius:5px;font-size:10px;font-weight:600;color:${isPlanned?'var(--opso-warning)':'var(--opso-green-dark)'};background:${isPlanned?'rgba(184,115,12,.10)':'rgba(17,166,60,.10)'};cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          <span style="width:5px;height:5px;border-radius:50%;background:${it.ph.color};flex-shrink:0"></span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titleCase(it.ph.name)}</span>
+        </div>`;
+      }).join('')}
+      ${items.length > 3 ? `<div style="font-size:9px;color:var(--text3);padding:1px 5px">+${items.length-3} autres</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Si modale existe deja, la fermer
+  const existing = document.getElementById('cal-modal');
+  if (existing) {
+    if (typeof closeAccessibleModal === 'function') closeAccessibleModal(existing);
+    else existing.remove();
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'cal-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-box modal-lg" style="max-width:880px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">📅 Calendrier des visites</div>
+          <div class="modal-subtitle">${nPlanned} planifiée${nPlanned>1?'s':''} · ${nDone} enregistrée${nDone>1?'s':''} en ${monthLabelCap}</div>
+        </div>
+        <button class="modal-close" onclick="closeAccessibleModal(document.getElementById('cal-modal'))" aria-label="Fermer">✕</button>
+      </div>
+
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <button onclick="showCalendarModal(-1)" class="pill pill-clickable">← Mois précédent</button>
+        <div style="font-family:'Varela Round',sans-serif;font-size:18px;color:var(--opso-text);text-align:center;flex:1">${monthLabelCap}</div>
+        <button onclick="showCalendarModal(1)" class="pill pill-clickable">Mois suivant →</button>
+      </div>
+
+      <div style="padding:20px;background:var(--border)">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          ${DAYS.map(d => `<div style="background:var(--opso-green-pale2);padding:8px;text-align:center;font-size:10px;font-weight:800;color:var(--opso-green-dark);text-transform:uppercase;letter-spacing:.06em">${d}</div>`).join('')}
+          ${cellsHtml}
+        </div>
+      </div>
+
+      <div style="padding:12px 20px;background:var(--opso-gray-pale);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text2)">
+        <div style="display:flex;gap:14px">
+          <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:var(--opso-warning)"></span>Planifiée</span>
+          <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:var(--opso-green-dark)"></span>Enregistrée</span>
+        </div>
+        <button onclick="_calMonth=null;showCalendarModal()" class="pill pill-clickable">Aujourd'hui</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  if (typeof makeAccessibleModal === 'function') makeAccessibleModal(modal);
+
+  // Click outside ferme
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeAccessibleModal(modal);
+  });
+
+  if (typeof trackEvent === 'function') trackEvent('calendar_opened', { year, month });
+}
+
 // ── Modale "Raccourcis clavier" ──────────────────────────────
 function showKeyboardShortcuts() {
   if (document.getElementById('shortcuts-modal')) return;
@@ -1722,6 +1884,23 @@ function trackEvent(type, payload) {
 
 function clearEvents() {
   localStorage.removeItem(EVENTS_KEY);
+}
+
+function exportEventsLog() {
+  const events = loadEvents();
+  if (!events.length) {
+    if (typeof showToast === 'function') showToast('Aucune activité à exporter', 'info');
+    return;
+  }
+  const json = JSON.stringify(events, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'opso-activity-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  if (typeof showToast === 'function') showToast('Journal exporté', 'success');
 }
 
 // ── Pipeline prospection (localStorage) ─────────────────────
@@ -4367,10 +4546,16 @@ function renderAdmin() {
               <div class="card-title">📊 Mon activité</div>
               <div class="card-subtitle">${events.length} action${events.length>1?'s':''} enregistrée${events.length>1?'s':''} · 30 derniers jours</div>
             </div>
-            <button onclick="if(confirm('Effacer l\\'historique d\\'activité ?')){clearEvents();renderAdmin();}"
-              style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;font-weight:600">
-              Effacer l'historique
-            </button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button onclick="exportEventsLog()"
+                style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;font-weight:600">
+                ⬇ Exporter JSON
+              </button>
+              <button onclick="if(confirm('Effacer l\\'historique d\\'activité ?')){clearEvents();renderAdmin();}"
+                style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;font-weight:600">
+                Effacer l'historique
+              </button>
+            </div>
           </div>
           <div style="padding:16px 20px">
             <div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Top 5 actions</div>
@@ -4395,6 +4580,107 @@ function renderAdmin() {
             </div>
             <div style="font-size:10px;color:var(--text3);margin-top:8px">Plus le carré est foncé, plus tu as été actif sur ce créneau.</div>
           </div>
+        </div>`;
+      })()}
+
+      ${(() => {
+        const events = loadEvents();
+        if (!events.length) return '';
+
+        // Tri descendant (plus récent en premier)
+        const sorted = events.slice().sort((a,b) => b.ts - a.ts);
+        // Limiter à 50 dernières
+        const recent = sorted.slice(0, 50);
+
+        // Mapping type → icône + label humain
+        const typeLabels = {
+          'navigate':              { icon: '🧭', label: 'Navigation', color: '#0284c7' },
+          'pharma_view':           { icon: '🏥', label: 'Fiche pharmacie',     color: '#7c3aed' },
+          'pdf_generated':         { icon: '🖨', label: 'PDF généré',           color: 'var(--opso-green-dark)' },
+          'fiche_print':           { icon: '🖨', label: 'Fiche imprimée',       color: 'var(--opso-green-dark)' },
+          'visit_added':           { icon: '🗓', label: 'Visite enregistrée',  color: 'var(--opso-green-dark)' },
+          'prospect_stage_changed':{ icon: '🎯', label: 'Statut prospect',     color: 'var(--opso-warning)' },
+          'objective_set':         { icon: '🎯', label: 'Objectif défini',     color: 'var(--opso-warning)' },
+          'note_updated':          { icon: '📝', label: 'Note mise à jour',    color: '#7c3aed' },
+          'login':                 { icon: '🔓', label: 'Connexion',           color: 'var(--opso-green-dark)' },
+          'shortcuts_viewed':      { icon: '⌨', label: 'Raccourcis affichés', color: 'var(--text3)' },
+          'global_search_opened':  { icon: '🔍', label: 'Recherche ouverte',   color: '#0284c7' },
+          'calendar_opened':       { icon: '📅', label: 'Calendrier ouvert',   color: '#0284c7' },
+        };
+
+        // Helper pour resoudre le contexte d'un payload
+        const resolvePh = (payload) => {
+          if (!payload?.pharmacyId) return null;
+          return state.pharmacies.find(p => p.id === payload.pharmacyId);
+        };
+
+        const formatTs = (ts) => {
+          const d = new Date(ts);
+          const now = new Date();
+          const diffMs = now - d;
+          const diffMin = Math.floor(diffMs / 60000);
+          const diffH = Math.floor(diffMs / 3600000);
+          const diffJ = Math.floor(diffMs / 86400000);
+          if (diffMin < 1) return "à l'instant";
+          if (diffMin < 60) return 'il y a ' + diffMin + ' min';
+          if (diffH < 24)  return 'il y a ' + diffH + ' h';
+          if (diffJ < 7)   return 'il y a ' + diffJ + ' j';
+          return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
+        };
+
+        // Grouper par jour
+        const byDay = new Map();
+        for (const e of recent) {
+          const d = new Date(e.ts);
+          const key = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+          if (!byDay.has(key)) byDay.set(key, []);
+          byDay.get(key).push(e);
+        }
+
+        return `
+        <div class="card fade-up" style="margin-top:24px;padding:0;overflow:hidden">
+          <div class="card-header" style="padding:16px 20px;border-bottom:1px solid var(--border)">
+            <div class="section-header-title">
+              <div class="section-header-icon">📜</div>
+              <div class="section-header-text">
+                <h2>Journal d'activité</h2>
+                <div class="section-header-sub">${recent.length} dernière${recent.length>1?'s':''} action${recent.length>1?'s':''} · ${events.length} au total</div>
+              </div>
+            </div>
+          </div>
+
+          ${[...byDay.entries()].map(([dayLabel, dayEvents]) => `
+            <div>
+              <div style="padding:10px 20px 6px;font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;background:var(--bg);border-bottom:1px solid var(--border)">
+                ${dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)}
+                <span style="float:right;color:var(--text3);font-weight:700">${dayEvents.length} action${dayEvents.length>1?'s':''}</span>
+              </div>
+              ${dayEvents.map(e => {
+                const meta = typeLabels[e.type] || { icon: '•', label: e.type, color: 'var(--text3)' };
+                const ph = resolvePh(e.payload);
+                let detail = '';
+                if (ph) detail = titleCase(ph.name);
+                else if (e.payload?.to) detail = '→ ' + e.payload.to;
+                else if (e.payload?.stageId) detail = 'stage : ' + e.payload.stageId;
+                return `<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border);font-size:12px">
+                  <div style="width:24px;height:24px;border-radius:7px;background:${meta.color}18;color:${meta.color};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${meta.icon}</div>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
+                      <span style="font-weight:700;color:var(--text)">${meta.label}</span>
+                      ${detail ? `<span style="font-weight:600;color:var(--text2)">${detail}</span>` : ''}
+                    </div>
+                    <div style="font-size:10px;color:var(--text3);margin-top:1px">${formatTs(e.ts)}${e.page ? ' · ' + e.page : ''}</div>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          `).join('')}
+
+          ${events.length > recent.length ? `
+            <div style="padding:10px 20px;font-size:11px;color:var(--text3);text-align:center;border-top:1px solid var(--border);background:var(--bg)">
+              +${events.length - recent.length} actions plus anciennes
+            </div>
+          ` : ''}
         </div>`;
       })()}
     </div>
