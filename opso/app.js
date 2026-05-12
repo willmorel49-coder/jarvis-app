@@ -5654,6 +5654,14 @@ function navigate(page) {
   updateMobileNav(page);
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
 
+  // Re-trigger animation on page change
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) {
+    pageEl.style.animation = 'none';
+    void pageEl.offsetWidth; // force reflow
+    pageEl.style.animation = '';
+  }
+
   const titles = {
     dashboard:  'Cockpit',
     pharmacies: 'Mes Pharmacies',
@@ -7160,8 +7168,9 @@ function renderWml() {
       const margeCell = margeBrute != null
         ? `<span style="font-size:12px;font-weight:700;color:${margeBruteColor}">${margeBrute >= 0 ? '+' : ''}${fmtD(margeBrute)}</span>`
         : '<span style="font-size:10px;color:var(--text3)">—</span>';
+      const rankStyle = i===0 ? 'background:#FFD700;color:#5c4500' : i===1 ? 'background:#C0C0C0;color:#3d3d3d' : i===2 ? 'background:#cd7f32;color:#3d2400' : '';
       return `<tr data-nom="${nom.toLowerCase()}" style="border-bottom:1px solid var(--border)">
-        <td style="padding:7px 10px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
+        <td style="padding:7px 10px;text-align:center"><span class="pill" style="${rankStyle};min-width:24px;justify-content:center;font-weight:700">${i+1}</span></td>
         <td style="padding:7px 12px;font-size:12px;font-weight:500;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nom}</td>
         <td style="padding:7px 10px;font-size:10px;color:var(--text3)">${ean||'—'}</td>
         <td style="padding:7px 12px;text-align:right;font-size:12px">${fmtD(ca)}</td>
@@ -7182,10 +7191,10 @@ function renderWml() {
         <button onclick="exportWmlCSV(${ph.tc})" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV produits</button>
       </div>
       <div class="wml-kpi-row">
-        <div class="wml-kpi"><div class="wml-kpi-label">CA net HT</div><div class="wml-kpi-val">${fmt(ca_tot)}</div></div>
-        <div class="wml-kpi"><div class="wml-kpi-label">Marge (remise obtenue)</div><div class="wml-kpi-val" style="color:var(--green)">${fmtD(mg_tot)}</div></div>
-        <div class="wml-kpi"><div class="wml-kpi-label">Taux de marge</div><div class="wml-kpi-val">${fmtP(tx_mg)}</div></div>
-        <div class="wml-kpi"><div class="wml-kpi-label">Mois couverts</div><div class="wml-kpi-val" style="font-size:18px">${ph.ca_m.filter(v=>v>0).length} / 4</div></div>
+        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">CA net HT</div><div class="wml-kpi-val stat-box-value">${fmt(ca_tot)}</div></div>
+        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Marge (remise obtenue)</div><div class="wml-kpi-val stat-box-value" style="color:var(--green)">${fmtD(mg_tot)}</div></div>
+        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Taux de marge</div><div class="wml-kpi-val stat-box-value">${fmtP(tx_mg)}</div></div>
+        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Mois couverts</div><div class="wml-kpi-val stat-box-value" style="font-size:18px">${ph.ca_m.filter(v=>v>0).length} / 4</div></div>
       </div>
 
       ${(() => {
@@ -7208,7 +7217,13 @@ function renderWml() {
         }).join('');
         return `<div class="card" style="margin-bottom:16px">
           <div class="card-header" style="padding:14px 20px">
-            <div><div class="card-title">Répartition par famille</div><div class="card-subtitle">Jan–Avr 2026 · CA HT par catégorie AFM</div></div>
+            <div class="section-header-title">
+              <div class="section-header-icon">🗂</div>
+              <div class="section-header-text">
+                <h2>Répartition par famille</h2>
+                <div class="section-header-sub">Jan–Avr 2026 · CA HT par catégorie AFM</div>
+              </div>
+            </div>
             <div style="font-size:22px;font-weight:900;color:var(--opso-green)">${fmtD(totalAfm)}</div>
           </div>
           <div style="padding:0 20px 12px">${rows}</div>
@@ -7225,6 +7240,14 @@ function renderWml() {
           ${convRatioPh !== null ? `<div style="font-size:26px;font-weight:900;color:${convRatioPh>=100?'var(--green)':convRatioPh>=60?'var(--amber)':'var(--rose)'}">${convRatioPh}%</div>` : ''}
         </div>
         <div style="padding:0 20px 16px">
+          ${convRatioPh !== null ? `
+          <div class="callout ${convRatioPh >= 100 ? '' : convRatioPh >= 60 ? 'warning' : 'danger'}" style="margin-bottom:14px">
+            <div class="callout-icon">${convRatioPh >= 100 ? '✓' : '⚠'}</div>
+            <div class="callout-content">
+              <div class="callout-title">Direct IP : ${convRatioPh}% du WML mensuel moyen</div>
+              <div>${convRatioPh >= 100 ? 'Excellent — cette pharmacie commande au-dessus de sa moyenne WML.' : convRatioPh >= 60 ? 'Marge de progression : on peut encore convertir une partie WML vers le direct.' : 'Potentiel important — la pharmacie achète peu en direct par rapport au groupement.'}</div>
+            </div>
+          </div>` : ''}
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
             <div style="text-align:center;padding:10px;background:var(--bg2);border-radius:8px">
               <div style="font-size:16px;font-weight:900;color:var(--green)">${fmt(directCaPhWml)}</div>
@@ -7246,7 +7269,15 @@ function renderWml() {
       </div>` : ''}
 
       <div class="card" style="margin-bottom:16px">
-        <div class="card-header"><div class="card-title">CA mensuel Jan – Avr 2026</div></div>
+        <div class="card-header">
+          <div class="section-header-title">
+            <div class="section-header-icon">📊</div>
+            <div class="section-header-text">
+              <h2>CA mensuel Jan – Avr 2026</h2>
+              <div class="section-header-sub">Évolution des commandes WML sur 4 mois</div>
+            </div>
+          </div>
+        </div>
         <div style="display:flex;gap:8px;align-items:flex-end;padding:0 16px 16px">${moisBars}</div>
       </div>
 
@@ -7284,23 +7315,31 @@ function renderWml() {
       </div>
 
       <div class="card">
-        <div class="card-header"><div class="card-title">Top 25 produits (par CA)</div></div>
+        <div class="card-header">
+          <div class="section-header-title">
+            <div class="section-header-icon">🏆</div>
+            <div class="section-header-text">
+              <h2>Top 25 produits (par CA)</h2>
+              <div class="section-header-sub">Comparaison avec les prix publics concurrents</div>
+            </div>
+          </div>
+        </div>
         <div style="padding:8px 16px;border-bottom:1px solid var(--border)">
           <input id="wml-prod-search" type="search" placeholder="Filtrer les produits..." oninput="wmlProdFilter(this.value)"
             style="width:100%;padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px;outline:none">
         </div>
         <div style="overflow-x:auto">
           <table id="wml-prod-table" style="width:100%;border-collapse:collapse">
-            <thead><tr style="border-bottom:2px solid var(--border2)">
-              <th style="padding:6px 10px;text-align:center;font-size:10px;color:var(--text3)">#</th>
-              <th style="padding:6px 12px;text-align:left;font-size:10px;color:var(--text3)">Produit</th>
-              <th style="padding:6px 10px;font-size:10px;color:var(--text3)">EAN</th>
-              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">CA HT</th>
-              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Marge €</th>
-              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx</th>
-              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--text3)">Qté</th>
-              <th style="padding:6px 12px;text-align:right;font-size:10px;color:#0072e6" title="Prix public consommateur chez les concurrents">Prix public conc.</th>
-              <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--green)" title="Marge brute potentielle = Prix public conc. - Prix achat HT">Marge pot./u.</th>
+            <thead><tr style="background:var(--opso-green-pale2);border-bottom:2px solid var(--border2)">
+              <th style="padding:9px 10px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">#</th>
+              <th style="padding:9px 12px;text-align:left;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Produit</th>
+              <th style="padding:9px 10px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">EAN</th>
+              <th style="padding:9px 12px;text-align:right;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">CA HT</th>
+              <th style="padding:9px 12px;text-align:right;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Marge €</th>
+              <th style="padding:9px 12px;text-align:right;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Tx</th>
+              <th style="padding:9px 12px;text-align:right;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Qté</th>
+              <th style="padding:9px 12px;text-align:right;font-size:10px;color:#0072e6;font-weight:700;text-transform:uppercase;letter-spacing:.3px" title="Prix public consommateur chez les concurrents">Prix public conc.</th>
+              <th style="padding:9px 12px;text-align:right;font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.3px" title="Marge brute potentielle = Prix public conc. - Prix achat HT">Marge pot./u.</th>
             </tr></thead>
             <tbody>${prodRows}</tbody>
           </table>
@@ -7369,10 +7408,11 @@ function renderWml() {
         else if (pctTrend <= -5) trendBadge = `<span style="font-size:10px;font-weight:700;color:#EF4444;background:#fee2e2;padding:1px 5px;border-radius:6px">▼ ${Math.abs(pctTrend).toFixed(0)}%</span>`;
         else trendBadge = `<span style="font-size:10px;font-weight:600;color:#6B7280;background:#F3F4F6;padding:1px 5px;border-radius:6px">≈ stable</span>`;
       }
-      return `<tr class="wml-pharma-row" onclick="wmlPharma=${d.tc};renderWml()" style="cursor:pointer;border-bottom:1px solid var(--border)">
-        <td style="padding:9px 12px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
-        <td style="padding:9px 14px;font-size:13px;font-weight:600;white-space:nowrap">${titleCase(d.nom)}</td>
-        <td style="padding:9px 16px;min-width:140px">
+      const rankBg = i===0 ? 'background:#FFD700;color:#5c4500' : i===1 ? 'background:#C0C0C0;color:#3d3d3d' : i===2 ? 'background:#cd7f32;color:#3d2400' : '';
+      return `<tr class="wml-pharma-row" onclick="wmlPharma=${d.tc};renderWml()" style="cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s">
+        <td style="padding:11px 12px;text-align:center"><span class="pill" style="${rankBg};min-width:24px;justify-content:center;font-weight:700">${i+1}</span></td>
+        <td style="padding:11px 14px;font-size:13px;font-weight:600;white-space:nowrap">${titleCase(d.nom)}</td>
+        <td style="padding:11px 16px;min-width:140px">
           <div style="display:flex;align-items:center;gap:8px">
             <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px">
               <div style="width:${pct}%;height:100%;background:var(--green);border-radius:3px"></div>
@@ -7380,19 +7420,19 @@ function renderWml() {
             <span style="font-size:12px;font-weight:700;color:var(--text);min-width:80px;text-align:right">${fmt(d.ca)}</span>
           </div>
         </td>
-        <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--green);font-weight:600">${fmtD(d.mg)}</td>
-        <td style="padding:9px 12px;text-align:right;font-size:11px;color:var(--text3)">${tx > 0 ? fmtP(tx) : '—'}</td>
-        <td style="padding:9px 12px;text-align:center">
+        <td style="padding:11px 12px;text-align:right;font-size:12px;color:var(--green);font-weight:600">${fmtD(d.mg)}</td>
+        <td style="padding:11px 12px;text-align:right;font-size:11px;color:var(--text3)">${tx > 0 ? fmtP(tx) : '—'}</td>
+        <td style="padding:11px 12px;text-align:center">
           <div style="display:flex;justify-content:center;gap:2px">
             ${d.ca_m.map((v,j) => `<div style="width:10px;height:16px;border-radius:2px;background:${v>0?'var(--green)':'var(--bg3)'}"></div>`).join('')}
           </div>
         </td>
-        <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--text3)">${actifs}/4</td>
-        <td style="padding:9px 12px;text-align:center">${trendBadge}</td>
-        <td style="padding:9px 12px;text-align:right">
+        <td style="padding:11px 12px;text-align:center;font-size:11px;color:var(--text3)">${actifs}/4</td>
+        <td style="padding:11px 12px;text-align:center">${trendBadge}</td>
+        <td style="padding:11px 12px;text-align:right">
           ${potentiel > 50 ? `<span style="font-size:11px;font-weight:700;color:var(--amber)">${fmt(potentiel)}</span><div style="font-size:9px;color:var(--text3)">${convRatio !== null ? convRatio + '% conv.' : ''}</div>` : convRatio !== null ? `<span style="font-size:10px;color:var(--green);font-weight:700">✓ ${convRatio}%</span>` : '—'}
         </td>
-        <td style="padding:9px 12px;text-align:right;color:var(--text3);font-size:16px">›</td>
+        <td style="padding:11px 12px;text-align:right;color:var(--text3);font-size:18px;font-weight:300">›</td>
       </tr>`;
     }).join('');
 
@@ -7450,8 +7490,9 @@ function renderWml() {
       const margePot = (puNet != null && concPrix) ? concPrix[0] - puNet : null;
       const pct = (p.ca/grpProdMaxCa*100).toFixed(0);
       const margColor = margePot == null ? 'var(--text3)' : margePot > 0 ? 'var(--green)' : 'var(--amber)';
+      const rankStyle = i===0 ? 'background:#FFD700;color:#5c4500' : i===1 ? 'background:#C0C0C0;color:#3d3d3d' : i===2 ? 'background:#cd7f32;color:#3d2400' : '';
       return `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:7px 10px;font-size:11px;color:var(--text3);text-align:center">${i+1}</td>
+        <td style="padding:7px 10px;text-align:center"><span class="pill" style="${rankStyle};min-width:24px;justify-content:center;font-weight:700">${i+1}</span></td>
         <td style="padding:7px 14px;font-size:12px;font-weight:600;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</td>
         <td style="padding:7px 12px;min-width:120px">
           <div style="display:flex;align-items:center;gap:6px">
@@ -7472,20 +7513,23 @@ function renderWml() {
     const grpProdCard = grpProds.length ? `
     <div class="card" style="margin-top:16px">
       <div class="card-header">
-        <div>
-          <div class="card-title">Top 30 produits — Groupement OPSO Santé</div>
-          <div class="card-subtitle">${Object.keys(grpProdMap).length} références distinctes · Jan–Avr 2026</div>
+        <div class="section-header-title">
+          <div class="section-header-icon">🏆</div>
+          <div class="section-header-text">
+            <h2>Top 30 produits — Groupement OPSO Santé</h2>
+            <div class="section-header-sub">${Object.keys(grpProdMap).length} références distinctes · Jan–Avr 2026</div>
+          </div>
         </div>
       </div>
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="border-bottom:2px solid var(--border2)">
-            <th style="padding:6px 10px;text-align:center;font-size:10px;color:var(--text3)">#</th>
-            <th style="padding:6px 14px;text-align:left;font-size:10px;color:var(--text3)">Produit</th>
-            <th style="padding:6px 12px;font-size:10px;color:var(--text3)">CA HT</th>
-            <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--green)">Marge €</th>
-            <th style="padding:6px 10px;text-align:center;font-size:10px;color:#6699ff">Pharmacies</th>
-            <th style="padding:6px 12px;text-align:right;font-size:10px;color:var(--green)" title="Marge brute pot. = prix public conc. – prix achat pharmacien">Marge pot./u.</th>
+          <thead><tr style="background:var(--opso-green-pale2);border-bottom:2px solid var(--border2)">
+            <th style="padding:10px 10px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">#</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Produit</th>
+            <th style="padding:10px 12px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">CA HT</th>
+            <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Marge €</th>
+            <th style="padding:10px 10px;text-align:center;font-size:10px;color:#6699ff;font-weight:700;text-transform:uppercase;letter-spacing:.3px">Pharmacies</th>
+            <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.3px" title="Marge brute pot. = prix public conc. – prix achat pharmacien">Marge pot./u.</th>
           </tr></thead>
           <tbody>${grpProdRows}</tbody>
         </table>
@@ -7528,20 +7572,31 @@ function renderWml() {
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
         <button onclick="exportWmlCSV(null)" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV groupement</button>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(17,166,60,.08);border-radius:10px;border:1px solid rgba(17,166,60,.2);margin-bottom:14px">
-        <span style="font-size:14px">📋</span>
-        <div style="font-size:12px;color:var(--text2)"><strong style="color:var(--opso-green)">${WML_VISIBLE.length} pharmacies adhérentes OPSO Santé</strong> — données WML Jan–Avr 2026</div>
+      <div class="callout" style="margin-bottom:18px">
+        <div class="callout-icon">📦</div>
+        <div class="callout-content">
+          <div class="callout-title">Achats Intégral Pharma via le groupement WML</div>
+          <div>Vue consolidée des commandes effectuées par les ${WML_VISIBLE.length} pharmacies adhérentes via OPSO Santé, période Janvier-Avril 2026. Cliquez sur une pharmacie pour voir le détail produit.</div>
+        </div>
       </div>
       <div class="wml-kpi-row">
-        <div class="wml-kpi"><div class="wml-kpi-label">CA net HT groupement</div><div class="wml-kpi-val">${fmt(tot_ca)}</div></div>
-        <div class="wml-kpi"><div class="wml-kpi-label">Marge totale</div><div class="wml-kpi-val" style="color:var(--green)">${fmtD(tot_mg)}</div></div>
-        <div class="wml-kpi"><div class="wml-kpi-label">Taux de marge moyen</div><div class="wml-kpi-val">${fmtP(tx_mg_grp)}</div></div>
-        <div class="wml-kpi"><div class="wml-kpi-label">Pharmacies actives</div><div class="wml-kpi-val" style="font-size:22px">${WML_VISIBLE.length}</div></div>
+        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">CA net HT groupement</div><div class="wml-kpi-val stat-box-value">${fmt(tot_ca)}</div></div>
+        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Marge totale</div><div class="wml-kpi-val stat-box-value" style="color:var(--green)">${fmtD(tot_mg)}</div></div>
+        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Taux de marge moyen</div><div class="wml-kpi-val stat-box-value">${fmtP(tx_mg_grp)}</div></div>
+        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Pharmacies actives</div><div class="wml-kpi-val stat-box-value" style="font-size:22px">${WML_VISIBLE.length}</div></div>
       </div>
 
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
         <div class="card">
-          <div class="card-header"><div class="card-title">CA groupement Jan – Avr 2026</div><div class="card-subtitle">Marge (remise obtenue) en vert</div></div>
+          <div class="card-header">
+            <div class="section-header-title">
+              <div class="section-header-icon">📊</div>
+              <div class="section-header-text">
+                <h2>CA groupement Jan – Avr 2026</h2>
+                <div class="section-header-sub">Marge (remise obtenue) en vert</div>
+              </div>
+            </div>
+          </div>
           <div style="display:flex;gap:8px;align-items:flex-end;padding:0 16px 16px">${grpBars}</div>
         </div>
         <div class="card">
@@ -7565,9 +7620,12 @@ function renderWml() {
 
       <div class="card">
         <div class="card-header" style="flex-wrap:wrap;gap:10px">
-          <div>
-            <div class="card-title">Toutes les pharmacies · Jan – Avr 2026</div>
-            <div class="card-subtitle">${sorted.length} pharmacie${sorted.length>1?'s':''} · cliquer pour voir le détail</div>
+          <div class="section-header-title">
+            <div class="section-header-icon">🏥</div>
+            <div class="section-header-text">
+              <h2>Toutes les pharmacies · Jan – Avr 2026</h2>
+              <div class="section-header-sub">${sorted.length} pharmacie${sorted.length>1?'s':''} · cliquer pour voir le détail</div>
+            </div>
           </div>
           <input type="text" placeholder="Rechercher une pharmacie…" value="${wmlSearch}"
             oninput="wmlSearch=this.value;renderWml()"
@@ -7575,16 +7633,16 @@ function renderWml() {
         </div>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">
-            <thead><tr style="border-bottom:2px solid var(--border2)">
-              <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">#</th>
-              <th style="padding:7px 14px;text-align:left;font-size:10px;color:var(--text3)">Pharmacie</th>
-              <th style="padding:7px 16px;font-size:10px;color:var(--text3)">CA net HT</th>
-              <th style="padding:7px 12px;text-align:right;font-size:10px;color:var(--text3)">Marge €</th>
-              <th style="padding:7px 12px;text-align:right;font-size:10px;color:var(--text3)">Tx marge</th>
-              <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Activité</th>
-              <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Mois</th>
-              <th style="padding:7px 12px;text-align:center;font-size:10px;color:var(--text3)">Tendance</th>
-              <th style="padding:7px 12px;text-align:right;font-size:10px;color:var(--amber)" title="Potentiel de conversion WML → Direct">Pot. Direct</th>
+            <thead><tr style="background:var(--opso-green-pale2);border-bottom:2px solid var(--border2)">
+              <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">#</th>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Pharmacie</th>
+              <th style="padding:10px 16px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">CA net HT</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Marge €</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Tx marge</th>
+              <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Activité</th>
+              <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Mois</th>
+              <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Tendance</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--amber);font-weight:700;text-transform:uppercase;letter-spacing:.3px" title="Potentiel de conversion WML → Direct">Pot. Direct</th>
               <th></th>
             </tr></thead>
             <tbody>${pharmaRows}</tbody>
@@ -10146,3 +10204,24 @@ async function applyUpdate() {
     location.reload();
   }
 }
+
+// ── Topbar scroll feedback ──────────────────────────────────
+(() => {
+  const topbar = document.querySelector('.topbar');
+  const scrollArea = document.querySelector('.main') || document.body;
+  if (!topbar || !scrollArea) return;
+
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const isScrolled = (scrollArea === document.body ? window.scrollY : scrollArea.scrollTop) > 8;
+      topbar.classList.toggle('scrolled', isScrolled);
+      ticking = false;
+    });
+  };
+
+  scrollArea.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('scroll', onScroll, { passive: true });
+})();
