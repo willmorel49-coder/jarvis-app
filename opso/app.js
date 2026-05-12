@@ -1625,7 +1625,7 @@ function submitVisit(pharmacyId) {
   }
   addVisit(pharmacyId, date, note);
   trackEvent('visit_added', { pharmacyId });
-  if (typeof showToast === 'function') showToast('Visite ajoutée', 'success');
+  if (typeof showToast === 'function') showToast('Visite enregistrée — bien noté ✓', 'success');
   if (typeof announce === 'function') announce('Visite enregistrée');
   showPharmaDetail(pharmacyId);
 }
@@ -2881,10 +2881,10 @@ Délégué commercial Intégral Pharma`;
 
 function copyEmail() {
   const body = document.getElementById('email-body')?.value || '';
-  navigator.clipboard.writeText(body).then(() => showToast('Email copié dans le presse-papier', 'success'), () => {
+  navigator.clipboard.writeText(body).then(() => showToast('Mail copié — prêt à envoyer ✓', 'success'), () => {
     document.getElementById('email-body')?.select();
     document.execCommand('copy');
-    showToast('Email copié', 'success');
+    showToast('Mail copié — prêt à envoyer ✓', 'success');
   });
 }
 
@@ -4441,7 +4441,7 @@ async function saveEditPharmacy(pharmacyId) {
   if (ph) { ph.name = name; ph.color = color; }
   const _epm = document.getElementById('edit-pharma-modal');
   if (_epm) closeAccessibleModal(_epm);
-  showToast(`Pharmacie "${name}" mise à jour`, 'success');
+  showToast(`Pharmacie "${name}" — fiche mise à jour ✓`, 'success');
   renderAdmin();
 }
 
@@ -4573,7 +4573,7 @@ async function resetAllData() {
   await sb.from('pharmacies').delete().not('id', 'is', null);
   state.pharmacies = []; state.imports = []; state.sales = [];
   _invalidateSalesCache();
-  showToast('Toutes les données ont été supprimées', 'success');
+  showToast('Données effacées — on repart à zéro', 'success');
   updateNavBadge();
   renderAdmin();
 }
@@ -5236,7 +5236,12 @@ function renderPrioritaires() {
   if (!wmlVis.length) {
     container.innerHTML = `<div class="card">
       <div class="empty-state">
-        <div class="empty-state-icon">📦</div>
+        <div class="empty-state-icon" style="opacity:.6">
+          <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
+            <rect x="12" y="3" width="8" height="26" rx="3" fill="#11a63c"/>
+            <rect x="3" y="12" width="26" height="8" rx="3" fill="#11a63c"/>
+          </svg>
+        </div>
         <div class="empty-state-title">Aucune donnée WML disponible</div>
         <div class="empty-state-sub">Les données du groupement WML n'ont pas été chargées. Vérifie que le fichier <code>wml-data.js</code> est bien présent, ou importe un Excel WML pour démarrer.</div>
       </div>
@@ -5422,6 +5427,7 @@ function renderPrioritaires() {
       </div>
       ${nProduits > prioritairesNbLines ? `<div style="padding:10px 20px;font-size:11px;color:var(--text3);border-top:1px solid var(--border)">${nProduits - prioritairesNbLines} produits supplémentaires — ajustez "Afficher"</div>` : ''}
     </div>
+    ${_opsoFooter()}
   </div>`;
 }
 
@@ -5602,6 +5608,9 @@ function printPrioritairesPDF() {
   </div>
 </div>
 
+<div style="text-align:center;padding:12px 20px;font-size:11px;color:#11a63c;font-style:italic;font-family:'Varela Round',sans-serif;border-top:1px solid #bbf7d0;background:#f0fdf4">
+  "On prend soin de vous"
+</div>
 <div class="footer">
   <span>OPSO Santé · Groupement pharmacies Normandie · 2026</span>
   <span style="color:#11a63c;font-weight:700">Intégral Pharma × OPSO Santé</span>
@@ -5653,8 +5662,10 @@ function navigate(page) {
     objectifs:    'Objectifs',
     prioritaires: '⭐ Prioritaires à visiter',
   };
-  document.getElementById('topbar-title').textContent = titles[page] || page;
-  announce('Page ' + (titles[page] || page));
+  const pageTitle = titles[page] || page;
+  document.getElementById('topbar-title').textContent = pageTitle;
+  document.title = pageTitle + ' · OPSO Santé';
+  announce('Page ' + pageTitle);
   // Indicateur fraîcheur données
   updateDataFreshnessIndicator();
 
@@ -5711,6 +5722,15 @@ function updateMobileNav(page) {
 function updateNavBadge() {
   const badge = document.getElementById('import-badge');
   if (badge) badge.textContent = state.imports.length;
+}
+
+// ── SIGNATURE OPSO ────────────────────────────
+function _opsoFooter() {
+  return `
+  <div class="opso-footer-signature" style="margin-top:28px;padding:18px 20px;text-align:center;border-top:1px solid var(--border);color:var(--text3);font-size:11px;line-height:1.6">
+    <strong style="color:var(--opso-green-text);font-family:'Varela Round',sans-serif;font-weight:400;font-size:13px">OPSO Santé</strong> <span style="opacity:.5">×</span> <strong style="color:var(--text2)">Intégral Pharma</strong> · Normandie
+    <div style="margin-top:4px;font-style:italic;opacity:.85">« On prend soin de vous »</div>
+  </div>`;
 }
 
 // ── TOAST ─────────────────────────────────────
@@ -6907,7 +6927,7 @@ function renderOffilog() {
 function exportOffiLiveCSV() {
   // Garde lazy : si OFFILOG_LIVE pas encore chargé, on déclenche le chargement puis on relance.
   if (typeof OFFILOG_LIVE === 'undefined') {
-    if (typeof showToast === 'function') showToast('Chargement des données Offilog…', 'info');
+    if (typeof showToast === 'function') showToast('Chargement Offilog en cours, un instant…', 'info');
     loadOffilogLive().then(() => exportOffiLiveCSV()).catch(err => {
       if (typeof showToast === 'function') showToast('Echec chargement : ' + err.message, 'error');
     });
@@ -8122,6 +8142,34 @@ function renderGroupementBody(grp, onglet) {
 }
 
 function renderGrpDashboard(grp) {
+  // Salutation personnalisee selon heure
+  const _userName = (state.user?.user_metadata?.name
+    || state.user?.email?.split('@')[0]?.replace(/\./g,' ')?.replace(/\b\w/g, l => l.toUpperCase())
+    || 'William');
+  const _initiale = _userName.charAt(0).toUpperCase();
+  const _hour = new Date().getHours();
+  const _greetingHello = _hour < 6 ? 'Bonne nuit' : _hour < 12 ? 'Bonjour' : _hour < 18 ? 'Bon après-midi' : 'Bonsoir';
+  const _today = new Date().toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'});
+  const _today1 = _today.charAt(0).toUpperCase() + _today.slice(1);
+  // Choix slogan tournant
+  const _slogans = [
+    'On prend soin de vous',
+    'Proximité et indépendance',
+    'Au service des pharmaciens normands',
+    'Votre groupement, votre identité',
+  ];
+  const _slogan = _slogans[new Date().getDate() % _slogans.length];
+
+  const opsoGreeting = `
+<div class="opso-greeting fade-up" style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:14px 18px;background:linear-gradient(135deg,rgba(13,133,48,.08),rgba(17,166,60,.04));border:1px solid rgba(17,166,60,.18);border-radius:14px">
+  <div class="opso-greeting-avatar" style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Varela Round',sans-serif;font-size:20px;font-weight:700;flex-shrink:0;box-shadow:0 4px 12px rgba(17,166,60,.25)">${_initiale}</div>
+  <div class="opso-greeting-text" style="flex:1;min-width:0">
+    <div class="opso-greeting-hello" style="font-size:12px;color:var(--text3);font-weight:600">${_greetingHello},</div>
+    <div class="opso-greeting-name" style="font-family:'Varela Round',sans-serif;font-size:20px;color:var(--text);font-weight:400;letter-spacing:-.3px;line-height:1.15">${_userName}</div>
+    <div class="opso-greeting-tag" style="font-size:11px;color:var(--text3);margin-top:2px">${_today1} · OPSO Santé · <em style="color:var(--opso-green-text)">${_slogan}</em></div>
+  </div>
+</div>`;
+
   // Toujours utiliser toutes les pharmacies connues — le config groupement localStorage
   // peut être partiel (Supabase UUIDs obsolètes) et masquer des pharmacies actives.
   const memberIds = state.pharmacies.map(p => p.id);
@@ -8608,7 +8656,7 @@ function renderGrpDashboard(grp) {
     </div>`;
   })();
 
-  return `${opsoHeader}${kpiRow}${visitesWidget}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}`;
+  return `${opsoGreeting}${opsoHeader}${kpiRow}${visitesWidget}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}${_opsoFooter()}`;
 }
 
 function grpConfirmRemove(grpId, phId) {
@@ -9898,6 +9946,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (await tryLogin(email, password)) {
       trackEvent('login', {});
+      // Apres login reussi, message du jour une fois par jour
+      const lastDayKey = 'opso_last_welcome';
+      const today = new Date().toISOString().slice(0,10);
+      if (localStorage.getItem(lastDayKey) !== today) {
+        setTimeout(() => {
+          if (typeof showToast === 'function') {
+            const msgs = [
+              'Bienvenue, William 👋',
+              'Heureux de te revoir 👋',
+              'Tableau de bord prêt 📊',
+              'Bonne journée chez OPSO 🌿',
+            ];
+            showToast(msgs[Math.floor(Math.random() * msgs.length)], 'success');
+          }
+          localStorage.setItem(lastDayKey, today);
+        }, 800);
+      }
       err.classList.remove('show');
       loginScreen.style.display = 'none';
       appEl.classList.add('visible');

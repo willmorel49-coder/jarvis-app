@@ -1968,3 +1968,327 @@ html { scroll-behavior: smooth; }
   }
   #fiche-visite-modal button { display: none !important; }
 }
+
+/* ══════════════════════════════════════
+   IDENTITÉ VISUELLE OPSO — RENFORCEMENT
+   ══════════════════════════════════════ */
+
+/* ── Signature OPSO sur cards "hero" ─────────────────── */
+.card-opso {
+  position: relative;
+  border-top: 3px solid var(--opso-green);
+}
+.card-opso::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: var(--opso-accent);
+  border-radius: 0;
+}
+
+/* ── Card "hero" cockpit ──────────────────────────────── */
+.opso-hero-card {
+  background: linear-gradient(135deg, var(--opso-white) 0%, var(--opso-green-pale2) 100%);
+  border: 1px solid var(--opso-green-pale);
+  border-radius: var(--radius-lg, 20px);
+  padding: 24px 28px;
+  position: relative;
+  overflow: hidden;
+}
+.opso-hero-card::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(17,166,60,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Watermark croix OPSO (très subtil) ───────────────── */
+.bg-opso-cross {
+  position: relative;
+}
+.bg-opso-cross::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' opacity='0.04'><rect x='12' y='3' width='8' height='26' rx='3' fill='%2311a63c'/><rect x='3' y='12' width='26' height='8' rx='3' fill='%2311a63c'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% + 40px) calc(100% + 40px);
+  background-size: 240px 240px;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-opso-cross > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Animation pulsation logo OPSO ──────────────────── */
+@keyframes opso-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+.opso-logo-pulse {
+  animation: opso-pulse 3s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .opso-logo-pulse { animation: none; }
+}
+
+/* ── Tagline OPSO signature ──────────────────────────── */
+.opso-tagline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 14px;
+  color: var(--opso-green-dark);
+  font-style: italic;
+  font-weight: 400;
+  padding: 6px 14px;
+  background: var(--opso-green-pale);
+  border-radius: 999px;
+  position: relative;
+}
+.opso-tagline::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--opso-accent);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Variante tagline en pleine largeur, centrée, decorative */
+.opso-tagline-full {
+  text-align: center;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 13px;
+  color: var(--opso-green-dark);
+  font-style: italic;
+  letter-spacing: 0.04em;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.opso-tagline-full::before,
+.opso-tagline-full::after {
+  content: '';
+  flex: 1;
+  max-width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--opso-green-pale), transparent);
+}
+
+/* ── Login OPSO premium (complément) ─────────────────── */
+#login-screen {
+  background: linear-gradient(135deg, var(--opso-green-pale2) 0%, var(--opso-white) 50%, var(--opso-green-pale) 100%);
+  position: relative;
+  overflow: hidden;
+}
+#login-screen::before {
+  content: '';
+  position: absolute;
+  top: -200px; right: -200px;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(17,166,60,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+#login-screen::after {
+  content: '';
+  position: absolute;
+  bottom: -200px; left: -200px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(221,223,75,0.10) 0%, transparent 60%);
+  pointer-events: none;
+}
+.login-card {
+  position: relative;
+  z-index: 1;
+  border-top: 4px solid var(--opso-green);
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.03),
+    0 24px 64px rgba(17,166,60,0.10),
+    0 0 0 1px rgba(17,166,60,0.06);
+}
+.login-card::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 0;
+  width: 72px;
+  height: 4px;
+  background: var(--opso-accent);
+  border-radius: 0;
+  z-index: 2;
+}
+.login-logo {
+  background: linear-gradient(135deg, var(--opso-green) 0%, var(--opso-green-dark) 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(17,166,60,0.25);
+}
+
+/* ── Bouton OPSO primary - signature ─────────────────── */
+.btn-opso {
+  background: linear-gradient(135deg, var(--opso-green-dark) 0%, var(--opso-green) 100%);
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(17,166,60,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-opso::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+.btn-opso:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(17,166,60,0.35);
+}
+.btn-opso:hover::after {
+  transform: translateX(100%);
+}
+.btn-opso:active {
+  transform: scale(0.97);
+}
+
+/* ── Spinner OPSO (croix qui tourne) ─────────────────── */
+@keyframes opso-spin {
+  to { transform: rotate(360deg); }
+}
+.opso-spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  position: relative;
+  animation: opso-spin 1.2s linear infinite;
+}
+.opso-spinner::before,
+.opso-spinner::after {
+  content: '';
+  position: absolute;
+  background: var(--opso-green);
+  border-radius: 3px;
+}
+.opso-spinner::before {
+  top: 0; left: 50%;
+  width: 25%; height: 100%;
+  transform: translateX(-50%);
+}
+.opso-spinner::after {
+  top: 50%; left: 0;
+  width: 100%; height: 25%;
+  transform: translateY(-50%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .opso-spinner { animation-duration: 3s; }
+}
+
+/* ── Greeting personnalisé OPSO ──────────────────────── */
+.opso-greeting {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--opso-green-pale2) 0%, transparent 100%);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  border-left: 3px solid var(--opso-green);
+}
+.opso-greeting-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--opso-green-dark), var(--opso-green));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(17,166,60,0.25);
+}
+.opso-greeting-text { flex: 1; }
+.opso-greeting-hello {
+  font-size: 13px;
+  color: var(--text3);
+  font-weight: 600;
+}
+.opso-greeting-name {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 18px;
+  color: var(--opso-text);
+  letter-spacing: -0.3px;
+  margin-top: 2px;
+}
+.opso-greeting-tag {
+  font-size: 11px;
+  color: var(--opso-green-dark);
+  font-style: italic;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+/* ── Sidebar - enrichissement OPSO ───────────────────── */
+.sidebar {
+  background: linear-gradient(180deg, var(--opso-green-dark) 0%, #064e20 100%);
+  position: relative;
+}
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 1px; height: 100%;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(221,223,75,0.3) 25%,
+    rgba(221,223,75,0.5) 50%,
+    rgba(221,223,75,0.3) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* ── Footer signature OPSO ───────────────────────────── */
+.opso-footer-signature {
+  text-align: center;
+  padding: 24px 16px 12px;
+  font-size: 12px;
+  color: var(--text3);
+  border-top: 1px solid var(--border);
+  margin-top: 28px;
+}
+.opso-footer-signature strong {
+  color: var(--opso-green-dark);
+  font-weight: 700;
+}
+.opso-footer-signature em {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text3);
+}
