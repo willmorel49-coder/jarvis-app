@@ -998,17 +998,16 @@ function markVisitDone(pharmacyId) {
           'localStorage.setItem(key, JSON.stringify(notes.slice(0,50)));' +
         '}' +
         'if (nv) setNextVisit(\'' + pharmacyId + '\', nv);' +
-        'document.getElementById(\'mark-visit-modal\').remove();' +
+        'closeAccessibleModal(document.getElementById(\'mark-visit-modal\'));' +
         'renderDashboard();' +
         'showToast(\'Visite enregistrée ✓\', \'success\');' +
       '" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--opso-green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Enregistrer</button>' +
-      '<button onclick="document.getElementById(\'mark-visit-modal\').remove()" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer">✕</button>' +
+      '<button onclick="closeAccessibleModal(document.getElementById(\'mark-visit-modal\'))" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer">✕</button>' +
     '</div>' +
   '</div>';
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.addEventListener('keydown', function mvEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', mvEsc); } });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
   document.body.appendChild(modal);
-  setTimeout(() => document.getElementById('mv-note')?.focus(), 50);
+  makeAccessibleModal(modal);
 }
 
 function showNextVisitPicker(pharmacyId) {
@@ -1032,15 +1031,14 @@ function showNextVisitPicker(pharmacyId) {
       <input id="nv-date-input" type="date" value="${isoVal}"
         style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:14px;font-family:inherit;box-sizing:border-box;margin-bottom:14px;outline:none">
       <div style="display:flex;gap:8px">
-        <button onclick="const v=document.getElementById('nv-date-input').value;if(v){setNextVisit('${pharmacyId}',v);document.getElementById('next-visit-picker-modal').remove();}" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--opso-green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Planifier</button>
-        <button onclick="setNextVisit('${pharmacyId}','');document.getElementById('next-visit-picker-modal').remove();" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--rose);font-size:13px;font-weight:600;cursor:pointer">Effacer</button>
-        <button onclick="document.getElementById('next-visit-picker-modal').remove()" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer">✕</button>
+        <button onclick="const v=document.getElementById('nv-date-input').value;if(v){setNextVisit('${pharmacyId}',v);closeAccessibleModal(document.getElementById('next-visit-picker-modal'));}" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--opso-green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Planifier</button>
+        <button onclick="setNextVisit('${pharmacyId}','');closeAccessibleModal(document.getElementById('next-visit-picker-modal'));" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--rose);font-size:13px;font-weight:600;cursor:pointer">Effacer</button>
+        <button onclick="closeAccessibleModal(document.getElementById('next-visit-picker-modal'))" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer">✕</button>
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.addEventListener('keydown', function nvEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', nvEsc); } });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
   document.body.appendChild(modal);
-  setTimeout(() => document.getElementById('nv-date-input')?.focus(), 50);
+  makeAccessibleModal(modal);
 }
 
 function setNextVisit(pharmacyId, dateStr) {
@@ -1537,9 +1535,40 @@ function submitVisit(pharmacyId) {
     return;
   }
   addVisit(pharmacyId, date, note);
+  trackEvent('visit_added', { pharmacyId });
   if (typeof showToast === 'function') showToast('Visite ajoutée', 'success');
   if (typeof announce === 'function') announce('Visite enregistrée');
   showPharmaDetail(pharmacyId);
+}
+
+// ── Event logging local ─────────────────────────────────────
+const EVENTS_KEY = 'opso_events_log';
+const EVENTS_MAX = 500;
+
+function loadEvents() {
+  try { return JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function trackEvent(type, payload) {
+  try {
+    const events = loadEvents();
+    events.push({
+      type,
+      payload: payload || null,
+      ts: Date.now(),
+      page: state?.currentPage || null,
+    });
+    // FIFO : ne garde que les EVENTS_MAX derniers
+    while (events.length > EVENTS_MAX) events.shift();
+    localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+  } catch (e) {
+    // silent : si quota localStorage atteint, on n'affecte pas le user
+  }
+}
+
+function clearEvents() {
+  localStorage.removeItem(EVENTS_KEY);
 }
 
 // ── Pipeline prospection (localStorage) ─────────────────────
@@ -1580,6 +1609,7 @@ function setProspectStage(pharmacyId, stageId) {
 }
 
 function setProspectStageFor(pharmacyId, stageId) {
+  trackEvent('prospect_stage_changed', { pharmacyId, stageId });
   setProspectStage(pharmacyId, stageId);
   if (typeof showToast === 'function') {
     const stage = PROSPECT_STAGES.find(s => s.id === stageId);
@@ -1590,6 +1620,7 @@ function setProspectStageFor(pharmacyId, stageId) {
 }
 
 function showPharmaDetail(pharmacyId, overridePeriod) {
+  trackEvent('pharma_view', { pharmacyId });
   if (overridePeriod !== undefined) pharmaDetailOverridePeriod = overridePeriod;
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
   if (!pharma) return;
@@ -2571,6 +2602,7 @@ function inlineObjEdit(pharmacyId, year, month) {
   const k = `${pharmacyId}_${year}_${month}`;
   if (num > 0) objs[k] = num; else delete objs[k];
   saveObjectives(objs);
+  trackEvent('objective_set', { pharmacyId });
   showPharmaDetail(pharmacyId);
 }
 
@@ -2665,7 +2697,7 @@ Délégué commercial Intégral Pharma`;
     <div style="background:var(--bg);border-radius:20px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:0 32px 100px rgba(0,0,0,.4)">
       <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:15px;font-weight:700">Email généré — ${pharma.name}</div>
-        <button onclick="document.getElementById('email-gen-modal').remove()" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
+        <button onclick="closeAccessibleModal(document.getElementById('email-gen-modal'))" aria-label="Fermer" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
       </div>
       <div style="padding:20px 24px">
         <div style="margin-bottom:12px">
@@ -2683,13 +2715,13 @@ Délégué commercial Intégral Pharma`;
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button onclick="copyEmail()" class="btn btn-ghost" style="flex:1;min-width:120px">📋 Copier</button>
           ${client?.email ? `<button onclick="openEmailClient('${client.email.replace(/'/g,"\\'")}',document.getElementById('email-subject').value,document.getElementById('email-body').value)" class="btn btn-primary" style="flex:1;min-width:120px">📧 Ouvrir dans Mail</button>` : ''}
-          <button onclick="document.getElementById('email-gen-modal').remove()" class="btn btn-ghost" style="flex:1;min-width:120px">Fermer</button>
+          <button onclick="closeAccessibleModal(document.getElementById('email-gen-modal'))" class="btn btn-ghost" style="flex:1;min-width:120px">Fermer</button>
         </div>
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
   document.body.appendChild(modal);
-  document.addEventListener('keydown', function emEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', emEsc); } });
+  makeAccessibleModal(modal);
 }
 
 function copyEmail() {
@@ -3321,7 +3353,7 @@ function showProductBreakdown(productName) {
           <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.3">${productName}</div>
           <div style="font-size:12px;color:var(--text3);margin-top:4px">${pharmaRows.length} pharmacie${pharmaRows.length > 1 ? 's' : ''} · CA total ${fmt(totalCa)}</div>
         </div>
-        <button onclick="document.getElementById('prod-breakdown-modal').remove()"
+        <button onclick="closeAccessibleModal(document.getElementById('prod-breakdown-modal'))" aria-label="Fermer"
           style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
       </div>
       <!-- Body -->
@@ -3368,11 +3400,9 @@ function showProductBreakdown(productName) {
         </div>` : ''}
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.addEventListener('keydown', function escB(e) {
-    if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escB); }
-  });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
   document.body.appendChild(modal);
+  makeAccessibleModal(modal);
 
   // Draw Chart.js line chart for monthly evolution
   if (monthKeys.length > 1) {
@@ -4095,6 +4125,76 @@ function renderAdmin() {
           <button class="btn btn-primary" onclick="migrateFromLocalStorage()">⬆ Migrer vers Supabase</button>
         </div>
       </div>` : ''}
+
+      ${(() => {
+        const events = loadEvents();
+        if (!events.length) return '<div class="card" style="padding:24px;text-align:center;color:var(--text3);margin-top:24px">Aucune activité enregistrée</div>';
+
+        // Top types
+        const byType = {};
+        events.forEach(e => { byType[e.type] = (byType[e.type] || 0) + 1; });
+        const topTypes = Object.entries(byType).sort((a,b) => b[1] - a[1]).slice(0, 5);
+
+        // Heatmap jour×heure (7 jours × 24 heures)
+        const now = new Date();
+        const thirtyDaysAgo = now.getTime() - 30 * 86400000;
+        const recentEvents = events.filter(e => e.ts >= thirtyDaysAgo);
+        const heatmap = Array.from({length: 7}, () => Array(24).fill(0));
+        recentEvents.forEach(e => {
+          const d = new Date(e.ts);
+          heatmap[d.getDay()][d.getHours()]++;
+        });
+        const maxHeat = Math.max(1, ...heatmap.flat());
+        const DAYS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+
+        const heatmapHtml = heatmap.map((row, day) => `
+          <div style="display:flex;align-items:center;gap:4px">
+            <div style="width:32px;font-size:10px;color:var(--text3);font-weight:700;text-align:right">${DAYS[day]}</div>
+            ${row.map((v, h) => {
+              const intensity = v / maxHeat;
+              const bg = v === 0 ? 'var(--bg3)' : `rgba(17,166,60,${0.15 + intensity * 0.75})`;
+              return `<div title="${DAYS[day]} ${h}h : ${v} action${v>1?'s':''}" style="width:14px;height:14px;background:${bg};border-radius:2px;flex-shrink:0"></div>`;
+            }).join('')}
+          </div>
+        `).join('');
+
+        return `
+        <div class="card fade-up" style="margin-top:24px">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📊 Mon activité</div>
+              <div class="card-subtitle">${events.length} action${events.length>1?'s':''} enregistrée${events.length>1?'s':''} · 30 derniers jours</div>
+            </div>
+            <button onclick="if(confirm('Effacer l\\'historique d\\'activité ?')){clearEvents();renderAdmin();}"
+              style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;font-weight:600">
+              Effacer l'historique
+            </button>
+          </div>
+          <div style="padding:16px 20px">
+            <div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Top 5 actions</div>
+            <div style="margin-bottom:20px">
+              ${topTypes.map(([type, count]) => {
+                const pct = (count / events.length * 100).toFixed(0);
+                return `<div style="display:flex;align-items:center;gap:10px;padding:5px 0">
+                  <div style="width:140px;font-size:12px;font-weight:600;color:var(--text2)">${type}</div>
+                  <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+                    <div style="width:${pct}%;height:100%;background:var(--opso-green);border-radius:3px"></div>
+                  </div>
+                  <div style="font-size:11px;color:var(--text3);width:60px;text-align:right">${count} (${pct}%)</div>
+                </div>`;
+              }).join('')}
+            </div>
+            <div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Heatmap d'activité</div>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:4px;padding-left:36px">
+                ${Array.from({length:24}, (_, h) => `<div style="width:14px;font-size:9px;color:var(--text3);text-align:center;flex-shrink:0">${h%4===0?h:''}</div>`).join('')}
+              </div>
+              ${heatmapHtml}
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:8px">Plus le carré est foncé, plus tu as été actif sur ce créneau.</div>
+          </div>
+        </div>`;
+      })()}
     </div>
   `;
 
@@ -4147,7 +4247,7 @@ function showEditPharmacyModal(pharmacyId) {
     <div style="background:var(--bg);border-radius:16px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.4)">
       <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:15px;font-weight:700">Modifier la pharmacie</div>
-        <button onclick="document.getElementById('edit-pharma-modal').remove()" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
+        <button onclick="closeAccessibleModal(document.getElementById('edit-pharma-modal'))" aria-label="Fermer" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
       </div>
       <div style="padding:20px 24px">
         <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:6px">Nom</label>
@@ -4163,14 +4263,14 @@ function showEditPharmacyModal(pharmacyId) {
           <input type="color" id="edit-pharma-color" value="${ph.color}" style="width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;padding:0">
         </div>
         <div style="display:flex;gap:10px">
-          <button onclick="document.getElementById('edit-pharma-modal').remove()" class="btn btn-ghost" style="flex:1">Annuler</button>
+          <button onclick="closeAccessibleModal(document.getElementById('edit-pharma-modal'))" class="btn btn-ghost" style="flex:1">Annuler</button>
           <button onclick="saveEditPharmacy('${ph.id}')" class="btn btn-primary" style="flex:1">Enregistrer</button>
         </div>
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
   document.body.appendChild(modal);
-  document.addEventListener('keydown', function epEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', epEsc); } });
+  makeAccessibleModal(modal);
 }
 
 async function saveEditPharmacy(pharmacyId) {
@@ -4184,7 +4284,8 @@ async function saveEditPharmacy(pharmacyId) {
   if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
   const ph = state.pharmacies.find(p => p.id === pharmacyId);
   if (ph) { ph.name = name; ph.color = color; }
-  document.getElementById('edit-pharma-modal')?.remove();
+  const _epm = document.getElementById('edit-pharma-modal');
+  if (_epm) closeAccessibleModal(_epm);
   showToast(`Pharmacie "${name}" mise à jour`, 'success');
   renderAdmin();
 }
@@ -4798,7 +4899,7 @@ function showBenchDetail(idx) {
           <div style="font-size:16px;font-weight:800;line-height:1.3;color:var(--text)">${d.designation}</div>
           ${d.cip13 ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">CIP13 : ${d.cip13} · Rang IP #${d.ip_rank_qty}</div>` : ''}
         </div>
-        <button onclick="document.getElementById('bench-detail-modal').remove()" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;color:var(--text2);flex-shrink:0">✕</button>
+        <button onclick="closeAccessibleModal(document.getElementById('bench-detail-modal'))" aria-label="Fermer" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;color:var(--text2);flex-shrink:0">✕</button>
       </div>
 
       <div style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -4893,16 +4994,27 @@ function showBenchDetail(idx) {
       <!-- Footer actions -->
       <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap">
         <button onclick="catAddBenchToSimIdx(${idx})" class="btn btn-primary" style="font-size:12px">+ Ajouter au simulateur</button>
-        <button onclick="document.getElementById('bench-detail-modal').remove()" class="btn btn-ghost" style="font-size:12px">Fermer</button>
+        <button onclick="closeAccessibleModal(document.getElementById('bench-detail-modal'))" class="btn btn-ghost" style="font-size:12px">Fermer</button>
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.addEventListener('keydown', function escBD(e) {
-    if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escBD); }
-    if (e.key === 'ArrowRight') { document.getElementById('bench-detail-modal')?.remove(); document.removeEventListener('keydown', escBD); if (benchCurrentData[idx+1]) setTimeout(() => showBenchDetail(idx+1), 50); }
-    if (e.key === 'ArrowLeft')  { document.getElementById('bench-detail-modal')?.remove(); document.removeEventListener('keydown', escBD); if (idx > 0) setTimeout(() => showBenchDetail(idx-1), 50); }
-  });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
+  // Navigation arrow keys (Escape gere par makeAccessibleModal)
+  const arrowHandler = (e) => {
+    if (e.key === 'ArrowRight') {
+      const cur = document.getElementById('bench-detail-modal');
+      if (cur) closeAccessibleModal(cur);
+      document.removeEventListener('keydown', arrowHandler);
+      if (benchCurrentData[idx+1]) setTimeout(() => showBenchDetail(idx+1), 50);
+    } else if (e.key === 'ArrowLeft') {
+      const cur = document.getElementById('bench-detail-modal');
+      if (cur) closeAccessibleModal(cur);
+      document.removeEventListener('keydown', arrowHandler);
+      if (idx > 0) setTimeout(() => showBenchDetail(idx-1), 50);
+    }
+  };
+  document.addEventListener('keydown', arrowHandler);
   document.body.appendChild(modal);
+  makeAccessibleModal(modal);
 
   // Draw Ameli chart after DOM mount
   if (d.has_ameli && d.ameli_months) {
@@ -5153,6 +5265,7 @@ function renderPrioritaires() {
 }
 
 function printPrioritairesPDF() {
+  trackEvent('pdf_generated', {});
   const prospectName = (document.getElementById('prio-prospect-name')?.value || '').trim();
   const prospectNote = (document.getElementById('prio-prospect-note')?.value || '').trim();
   const fmt  = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
@@ -5347,6 +5460,7 @@ function announce(msg) {
 }
 
 function navigate(page) {
+  trackEvent('navigate', { to: page });
   // Fermer tout modal ouvert avant de naviguer
   document.querySelectorAll('.modal-overlay, #fiche-visite-modal, #grp-modal').forEach(el => {
     if (el && el.parentNode) closeAccessibleModal(el);
@@ -7387,7 +7501,7 @@ function showOffiDetail(idx) {
           ${p.rang_vente != null ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:800">🏆 #${p.rang_vente}</span>` : ''}
           ${p.saison && p.saison !== 'Toute année' ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#fef9c3;color:#92400e;font-weight:600">${p.saison === 'Printemps/Été' ? '☀️ P/É' : '❄️ A/H'}</span>` : ''}
         </div>
-        <button onclick="document.getElementById('offi-dm').remove()"
+        <button onclick="closeAccessibleModal(document.getElementById('offi-dm'))" aria-label="Fermer"
           style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
       </div>
       <!-- Body -->
@@ -7433,13 +7547,22 @@ function showOffiDetail(idx) {
         </div>
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.addEventListener('keydown', function escH(e) {
-    if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escH); }
-    if (e.key === 'ArrowRight' && idx < offiCurrentData.length - 1) { modal.remove(); document.removeEventListener('keydown', escH); showOffiDetail(idx + 1); }
-    if (e.key === 'ArrowLeft'  && idx > 0) { modal.remove(); document.removeEventListener('keydown', escH); showOffiDetail(idx - 1); }
-  });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
+  // Navigation arrow keys (Escape gere par makeAccessibleModal)
+  const offiArrowH = (e) => {
+    if (e.key === 'ArrowRight' && idx < offiCurrentData.length - 1) {
+      closeAccessibleModal(modal);
+      document.removeEventListener('keydown', offiArrowH);
+      showOffiDetail(idx + 1);
+    } else if (e.key === 'ArrowLeft' && idx > 0) {
+      closeAccessibleModal(modal);
+      document.removeEventListener('keydown', offiArrowH);
+      showOffiDetail(idx - 1);
+    }
+  };
+  document.addEventListener('keydown', offiArrowH);
   document.body.appendChild(modal);
+  makeAccessibleModal(modal);
 }
 
 // ── EMPTY STATE ───────────────────────────────
@@ -8616,7 +8739,8 @@ function proposerCommande(pharmacyId) {
   modal.id = 'proposer-cmd-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px';
   modal.innerHTML = `
-    <div style="background:var(--bg1);border:1px solid var(--border2);border-radius:20px;max-width:480px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+    <div style="position:relative;background:var(--bg1);border:1px solid var(--border2);border-radius:20px;max-width:480px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+      <button onclick="closeAccessibleModal(document.getElementById('proposer-cmd-modal'))" aria-label="Fermer" style="position:absolute;top:12px;right:12px;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%">✕</button>
       <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px">🛒 Proposer une commande</div>
       <div style="font-size:13px;color:var(--text3);margin-bottom:20px">${pharma.name} · basé sur ${monthName(month)} ${year}</div>
       <div style="margin-bottom:16px">
@@ -8630,18 +8754,19 @@ function proposerCommande(pharmacyId) {
           style="margin-top:10px;width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box">
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-        <button onclick="document.getElementById('proposer-cmd-modal').remove()" style="padding:8px 18px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">Annuler</button>
+        <button onclick="closeAccessibleModal(document.getElementById('proposer-cmd-modal'))" style="padding:8px 18px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">Annuler</button>
         <button onclick="confirmerCommande('${pharma.id}',${year},${month})" style="padding:8px 18px;border-radius:10px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:13px;font-weight:700">Créer la simulation →</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.addEventListener('keydown', function pcEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', pcEsc); } });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
+  makeAccessibleModal(modal);
 }
 
 function confirmerCommande(pharmacyId, year, month) {
   const factor = parseFloat(document.getElementById('growth-input')?.value || '100') / 100;
-  document.getElementById('proposer-cmd-modal')?.remove();
+  const _pcm = document.getElementById('proposer-cmd-modal');
+  if (_pcm) closeAccessibleModal(_pcm);
 
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
   if (!pharma) return;
@@ -9033,6 +9158,7 @@ function showFicheVisite(pharmacyId) {
 }
 
 function printFicheVisite() {
+  trackEvent('fiche_print', {});
   // Injecte des styles print temporaires
   const styleId = 'fiche-visite-print-style';
   let style = document.getElementById(styleId);
@@ -9461,6 +9587,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.textContent = 'Connexion…';
 
     if (await tryLogin(email, password)) {
+      trackEvent('login', {});
       err.classList.remove('show');
       loginScreen.style.display = 'none';
       appEl.classList.add('visible');
