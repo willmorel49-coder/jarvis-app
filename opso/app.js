@@ -8142,11 +8142,7 @@ function renderGroupementBody(grp, onglet) {
 }
 
 function renderGrpDashboard(grp) {
-  // Salutation personnalisee selon heure
-  const _userName = (state.user?.user_metadata?.name
-    || state.user?.email?.split('@')[0]?.replace(/\./g,' ')?.replace(/\b\w/g, l => l.toUpperCase())
-    || 'William');
-  const _initiale = _userName.charAt(0).toUpperCase();
+  // Salutation collective OPSO Sante selon heure
   const _hour = new Date().getHours();
   const _greetingHello = _hour < 6 ? 'Bonne nuit' : _hour < 12 ? 'Bonjour' : _hour < 18 ? 'Bon après-midi' : 'Bonsoir';
   const _today = new Date().toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'});
@@ -8162,11 +8158,13 @@ function renderGrpDashboard(grp) {
 
   const opsoGreeting = `
 <div class="opso-greeting fade-up" style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:14px 18px;background:linear-gradient(135deg,rgba(13,133,48,.08),rgba(17,166,60,.04));border:1px solid rgba(17,166,60,.18);border-radius:14px">
-  <div class="opso-greeting-avatar" style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Varela Round',sans-serif;font-size:20px;font-weight:700;flex-shrink:0;box-shadow:0 4px 12px rgba(17,166,60,.25)">${_initiale}</div>
+  <div class="opso-greeting-avatar" style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(17,166,60,.25)">
+    <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="white"/><rect x="3" y="12" width="26" height="8" rx="3" fill="white"/></svg>
+  </div>
   <div class="opso-greeting-text" style="flex:1;min-width:0">
     <div class="opso-greeting-hello" style="font-size:12px;color:var(--text3);font-weight:600">${_greetingHello},</div>
-    <div class="opso-greeting-name" style="font-family:'Varela Round',sans-serif;font-size:20px;color:var(--text);font-weight:400;letter-spacing:-.3px;line-height:1.15">${_userName}</div>
-    <div class="opso-greeting-tag" style="font-size:11px;color:var(--text3);margin-top:2px">${_today1} · OPSO Santé · <em style="color:var(--opso-green-text)">${_slogan}</em></div>
+    <div class="opso-greeting-name" style="font-family:'Varela Round',sans-serif;font-size:20px;color:var(--text);font-weight:400;letter-spacing:-.3px;line-height:1.15">l'équipe OPSO Santé</div>
+    <div class="opso-greeting-tag" style="font-size:11px;color:var(--text3);margin-top:2px">${_today1} · <em style="color:var(--opso-green-text)">${_slogan}</em></div>
   </div>
 </div>`;
 
@@ -9953,10 +9951,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => {
           if (typeof showToast === 'function') {
             const msgs = [
-              'Bienvenue, William 👋',
-              'Heureux de te revoir 👋',
+              'Bienvenue chez OPSO Santé 👋',
+              'Bonne journée à l\'équipe 🌿',
               'Tableau de bord prêt 📊',
-              'Bonne journée chez OPSO 🌿',
+              'Bon travail à tous 💪',
             ];
             showToast(msgs[Math.floor(Math.random() * msgs.length)], 'success');
           }
