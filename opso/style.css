@@ -21,14 +21,15 @@
   --opso-green-dark:  #0d8530;
   --opso-green-pale:  #e6f7ec;
   --opso-green-pale2: #f3fbf6;
+  --opso-green-text:  #0a7a2b;   /* 4.6:1 sur blanc pour texte */
   --opso-gray:        #64686a;
-  --opso-gray-light:  #9aa0a3;
+  --opso-gray-light:  #6b7174;
   --opso-gray-pale:   #f5f6f7;
   --opso-border:      #e5e8ea;
   --opso-text:        #2a2d2f;
   --opso-white:       #ffffff;
-  --opso-warning:     #e8a317;
-  --opso-danger:      #d04a4a;
+  --opso-warning:     #b8730c;   /* 4.5:1 sur blanc */
+  --opso-danger:      #b73838;   /* 4.7:1 sur blanc */
   --opso-accent:      #dddf4b;  /* Pantone accent lime, charte NP page 26 */
   --opso-accent-pale: #f9fac4;
   --opso-accent-dark: #8a8c10;
@@ -57,7 +58,7 @@
   --bg4:    #e5e8ea;
   --text:   #2a2d2f;
   --text2:  #64686a;
-  --text3:  #9aa0a3;
+  --text3:  #6b7174;   /* 5.7:1 sur #f5f6f7 — corrigé pour AA */
   --text4:  #c8cdd0;
   --border:  rgba(0,0,0,0.07);
   --border2: rgba(0,0,0,0.12);
@@ -293,7 +294,7 @@ body {
 
 .sidebar-brand-text { font-family: 'Varela Round', sans-serif; line-height: 1.2; }
 .sidebar-brand-name { font-size: 16px; font-weight: 400; color: #fff; letter-spacing: -0.3px; }
-.sidebar-brand-sub  { font-size: 11px; color: rgba(255,255,255,0.60); font-weight: 500; margin-top: 1px; }
+.sidebar-brand-sub  { font-size: 11px; color: rgba(255,255,255,0.85); font-weight: 500; margin-top: 1px; }
 
 .nav-section { padding: 0 12px; margin-bottom: 8px; }
 .nav-label {
@@ -362,11 +363,11 @@ body {
 }
 .sidebar-user-info { flex: 1; min-width: 0; }
 .sidebar-user-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sidebar-user-role { font-size: 11px; color: rgba(255,255,255,0.65); font-weight: 600; text-transform: capitalize; }
+.sidebar-user-role { font-size: 11px; color: rgba(255,255,255,0.85); font-weight: 600; text-transform: capitalize; }
 
 .sidebar-tagline {
   font-family: 'Varela Round', sans-serif;
-  font-size: 10px; color: rgba(255,255,255,0.45);
+  font-size: 10px; color: rgba(255,255,255,0.75);
   text-align: center; letter-spacing: 0.06em;
   padding: 6px 12px 2px; font-style: italic;
 }
@@ -1365,6 +1366,36 @@ label {
   .sim-col-right { position: static; }
 }
 
+/* ── Accessibilité : mouvement réduit ──────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .nav-item .nav-badge.pulse { animation: none !important; }
+  .fade-up { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .modal-box, .modal { animation: none !important; }
+}
+
+/* ── Skip-link accessibilité ────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  background: var(--opso-green);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  z-index: 9999;
+  font-size: 14px;
+}
+.skip-link:focus,
+.skip-link:focus-visible { left: 8px; outline: 2px solid #fff; outline-offset: 2px; }
+
 /* ══════════════════════════════════════
    RESPONSIVE — Mobile (< 768px)
 ══════════════════════════════════════ */
@@ -1372,6 +1403,15 @@ label {
   :root { --sidebar-w: 0px; }
   .sidebar { display: none !important; }
   .mobile-nav { display: block; }
+
+  /* Cibles tactiles WCAG 2.5.5/2.5.8 */
+  .btn,
+  button:not(.icon-only-small),
+  .nav-item,
+  .mobile-nav-item,
+  .sidebar-user {
+    min-height: 44px;
+  }
 
   /* ── Page padding (espace pour la nav en bas) ── */
   .page-content, .content {
@@ -1403,7 +1443,7 @@ label {
   .cockpit-mini { padding: 12px; }
 
   /* ── Buttons ── */
-  .btn { min-height: 40px; font-size: 13px; }
+  .btn { min-height: 44px; font-size: 13px; }
 
   /* ── Inputs ── */
   input:not([type=range]), select, textarea {

@@ -678,649 +678,7 @@ function renderDashboard() {
   }, 50);
 }
 
-function _renderDashboardLegacy() {
-  const allSalesRaw = getSales();
-  const container = document.getElementById('dash-content');
-  if (!allSalesRaw.length) return;
-
-  const { year: curY, month: curM } = getCurrentPeriod(allSalesRaw);
-  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
-  const salesCur  = getSales({ year: curY, month: curM });
-  const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
-
-  const caCur  = sumCA(salesCur);
-  const caPrev = sumCA(salesPrev);
-  const phActifsCur  = new Set(salesCur.map(s => s.pharmacyId));
-  const phActifsPrev = new Set(salesPrev.map(s => s.pharmacyId));
-  const nPhCur  = phActifsCur.size;
-  const nPhPrev = phActifsPrev.size;
-  const panierCur  = nPhCur  > 0 ? caCur  / nPhCur  : 0;
-  const panierPrev = nPhPrev > 0 ? caPrev / nPhPrev  : 0;
-  const curLabel  = `${monthName(curM)} ${curY}`;
-  const prevLabel = prevY ? `${monthName(prevM)} ${prevY}` : '—';
-
-  // Statut trafic par pharmacie
-  const imported = new Set(salesCur.map(s => s.pharmacyId));
-  const allPhRows = state.pharmacies.map(ph => {
-    const cur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
-    const prev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
-    const isMissing = !imported.has(ph.id);
-    let status = 'missing';
-    if (!isMissing) {
-      if (prev <= 0) status = 'flat';
-      else {
-        const g = (cur - prev) / prev * 100;
-        status = g >= 5 ? 'up' : g <= -5 ? 'down' : 'flat';
-      }
-    }
-    return { ph, cur, prev, status, isMissing };
-  }).sort((a, b) => b.cur - a.cur);
-
-  const missingCount = allPhRows.filter(r => r.isMissing).length;
-  const covPct = state.pharmacies.length ? Math.round((state.pharmacies.length - missingCount) / state.pharmacies.length * 100) : 0;
-
-  // Alertes commerciales
-  const alerts = [];
-  for (const pid of phActifsPrev) {
-    const ph = state.pharmacies.find(p => p.id === pid);
-    if (!ph) continue;
-    const cur  = sumCA(salesCur.filter(s => s.pharmacyId === pid));
-    const prev = sumCA(salesPrev.filter(s => s.pharmacyId === pid));
-    if (!phActifsCur.has(pid)) alerts.push({ type: 'absent', ph, cur, prev, g: null });
-    else if (prev > 0) {
-      const g = (cur - prev) / prev * 100;
-      if (g <= -15) alerts.push({ type: 'down', ph, cur, prev, g });
-      else if (g >= 20) alerts.push({ type: 'up', ph, cur, prev, g });
-    }
-  }
-  alerts.sort((a, b) => ({ down:0, absent:1, up:2 }[a.type]??9) - ({ down:0, absent:1, up:2 }[b.type]??9));
-
-  // Top 5 produits
-  const prodMap = {};
-  for (const s of salesCur) {
-    const k = (s.artDesignation || '').trim();
-    if (!k) continue;
-    if (!prodMap[k]) prodMap[k] = { label: k, ca: 0, qte: 0 };
-    prodMap[k].ca  += s.mntNetHt;
-    prodMap[k].qte += s.qte;
-  }
-  const top5 = Object.values(prodMap).sort((a, b) => b.ca - a.ca).slice(0, 5);
-
-  const evolutionPct = caPrev > 0 ? ((caCur - caPrev) / caPrev * 100) : null;
-  const isGrowing = evolutionPct !== null && evolutionPct > 0;
-
-  container.innerHTML = `
-    <div class="cockpit-hero fade-up">
-      <svg style="position:absolute;top:20px;right:24px;opacity:.15;color:#fff;pointer-events:none" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <div class="cockpit-hero-eyebrow">Groupement OPSO Santé · ${curLabel}</div>
-      <div class="cockpit-hero-value">${fmt(caCur)}</div>
-      <div class="cockpit-hero-meta">
-        ${evolutionPct !== null ? `<span class="cockpit-hero-delta ${isGrowing ? 'positive' : 'negative'}">${isGrowing ? '▲' : '▼'} ${Math.abs(evolutionPct).toFixed(1)}% vs ${prevLabel}</span>` : ''}
-        <span class="cockpit-hero-coverage ${covPct === 100 ? 'ok' : 'warn'}">${covPct === 100 ? `✓ ${nPhCur}/${state.pharmacies.length} importées` : `⚠ ${missingCount} manquante${missingCount > 1 ? 's' : ''}`}</span>
-      </div>
-    </div>
-
-    <div class="cockpit-mini-grid fade-up" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
-      <div class="cockpit-mini">
-        <div class="cockpit-mini-val">${nPhCur}<span class="cockpit-mini-total">/${state.pharmacies.length}</span></div>
-        <div class="cockpit-mini-label">Actives</div>
-      </div>
-      <div class="cockpit-mini">
-        <div class="cockpit-mini-val">${fmtNum(Math.round(panierCur / 100) / 10)}k</div>
-        <div class="cockpit-mini-label">Panier moy.</div>
-      </div>
-      <div class="cockpit-mini ${alerts.length > 0 ? 'cockpit-mini-alert' : ''}">
-        <div class="cockpit-mini-val">${alerts.length}</div>
-        <div class="cockpit-mini-label">Signal${alerts.length !== 1 ? 's' : ''}</div>
-      </div>
-      ${(() => {
-        if (typeof OFFILOG_LIVE === 'undefined' || !OFFILOG_LIVE.length) return '';
-        const bm = benchMaps();
-        let nAl = 0;
-        for (const p of OFFILOG_LIVE) {
-          const e = p.ean ? String(p.ean) : '';
-          const concs = [bm.leclEan.get(e), bm.cap3Ean.get(e), bm.drakEan.get(e), bm.pharmEan.get(e)].filter(v => v != null && v > 0);
-          if (concs.length) nAl++;
-        }
-        return `<div class="cockpit-mini" onclick="navigate('offilog');setTimeout(()=>{offiLivePage=1;renderOffilog();},80)" style="cursor:pointer">
-          <div class="cockpit-mini-val">${nAl}</div>
-          <div class="cockpit-mini-label">Avec prix conc.</div>
-        </div>`;
-      })()}
-      ${(() => {
-        const wmlV = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
-        if (!wmlV.length) return '';
-        const nnW = s => (s||''). trim().toUpperCase().replace(/\s+/g,' ');
-        const wmlMap = new Map(wmlV.map(d => [nnW(d.nom), d]));
-        let totWml = 0, totDirect = 0;
-        for (const ph of state.pharmacies) {
-          const wE = wmlMap.get(nnW(ph.name));
-          if (!wE) continue;
-          totWml += wE.ca / 4;
-          totDirect += sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
-        }
-        if (!totWml) return '';
-        const convPct = Math.round(totDirect / totWml * 100);
-        const convCol = convPct >= 80 ? 'var(--green)' : convPct >= 50 ? 'var(--amber)' : 'var(--rose)';
-        return `<div class="cockpit-mini" onclick="navigate('wml');setTimeout(renderWml,80)" style="cursor:pointer" title="CA direct IP / moyenne mensuelle WML">
-          <div class="cockpit-mini-val" style="color:${convCol}">${convPct}%</div>
-          <div class="cockpit-mini-label">Conv. WML</div>
-        </div>`;
-      })()}
-      ${(() => {
-        const objectives = loadObjectives();
-        const totalTarget = state.pharmacies.reduce((s, ph) => s + (objectives[`${ph.id}_${curY}_${curM}`] || 0), 0);
-        if (!totalTarget) return '';
-        const pctObj = Math.round(caCur / totalTarget * 100);
-        const objCol = pctObj >= 100 ? 'var(--green)' : pctObj >= 75 ? 'var(--amber)' : 'var(--rose)';
-        return `<div class="cockpit-mini" onclick="navigate('objectifs')" style="cursor:pointer" title="CA réel vs objectif mensuel global">
-          <div class="cockpit-mini-val" style="color:${objCol}">${pctObj}%</div>
-          <div class="cockpit-mini-label">Objectif</div>
-        </div>`;
-      })()}
-      ${(() => {
-        if (!salesCur.length) return '';
-        const catCA = { ch:0, mi:0, pp:0, nr:0, biosim:0, generique:0 };
-        for (const s of salesCur) { const c = classifyProduct(s); if (catCA[c]!=null) catCA[c]+=s.mntNetHt; }
-        const total = Object.values(catCA).reduce((a,b)=>a+b,0);
-        if (!total) return '';
-        const top = Object.entries(catCA).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-        const CMAP = { ch:'#a855f7', mi:'#0284c7', pp:'#22c55e', nr:'#ef4444', biosim:'#f97316', generique:'#06b6d4' };
-        const CLAB = { ch:'CH', mi:'MI', pp:'PP', nr:'NR', biosim:'Bio', generique:'Gén' };
-        const bars = top.slice(0,4).map(([k,v])=>{
-          const pct = (v/total*100).toFixed(0);
-          return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
-            <div style="width:28px;font-size:9px;color:var(--text3);text-align:right;flex-shrink:0">${CLAB[k]||k}</div>
-            <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
-              <div style="width:${pct}%;height:100%;background:${CMAP[k]||'var(--green)'};border-radius:3px"></div>
-            </div>
-            <div style="font-size:9px;color:var(--text3);width:22px;text-align:right;flex-shrink:0">${pct}%</div>
-          </div>`;
-        }).join('');
-        return `<div class="cockpit-mini" style="grid-column:span 2;padding:10px 12px">
-          <div class="cockpit-mini-label" style="margin-bottom:6px">Répartition catégories</div>
-          ${bars}
-        </div>`;
-      })()}
-    </div>
-
-    ${(() => {
-      const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
-      if (!wmlVis.length) return '';
-      const sorted = [...wmlVis].sort((a,b) => b.ca - a.ca).slice(0, 3);
-      const fmtWml = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
-      const maxCa = sorted[0]?.ca || 1;
-      return `
-  <div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
-    <div class="card-header" style="padding:16px 20px">
-      <div>
-        <div class="card-title">Achats IP — Top pharmacies</div>
-        <div class="card-subtitle">Jan–Avr 2026 · Adhérents OPSO Santé</div>
-      </div>
-      <button onclick="navigate('wml')" style="font-size:12px;color:var(--opso-green);background:none;border:none;cursor:pointer;font-weight:700">Tout voir →</button>
-    </div>
-    <div style="padding:0 12px 14px">
-      ${sorted.map((d, i) => {
-        const pct = (d.ca / maxCa * 100).toFixed(0);
-        return `<div style="padding:8px 8px;display:flex;align-items:center;gap:10px;${i<sorted.length-1?'border-bottom:1px solid var(--border)':''}">
-          <span style="font-size:11px;font-weight:700;color:var(--text3);width:16px;text-align:center">${i+1}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titleCase(d.nom)}</div>
-            <div style="height:4px;background:var(--bg3);border-radius:2px;margin-top:4px">
-              <div style="width:${pct}%;height:100%;background:var(--opso-green);border-radius:2px"></div>
-            </div>
-          </div>
-          <span style="font-size:12px;font-weight:700;color:var(--opso-green);white-space:nowrap">${fmtWml(d.ca)}</span>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
-    })()}
-
-    ${(() => {
-      const todayPJ = new Date(); todayPJ.setHours(0,0,0,0);
-      const parsePJ = str => {
-        if (!str || str === 'null' || !str.trim()) return null;
-        const s = str.trim();
-        let m;
-        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        if (m) return new Date(+m[3], +m[2]-1, +m[1]);
-        m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (m) return new Date(+m[1], +m[2]-1, +m[3]);
-        return null;
-      };
-      const actionsPJ = [];
-      for (const r of allPhRows) {
-        const ph = r.ph;
-        const visitOverride = localStorage.getItem('next_visit_' + ph.id);
-        const clientInfo = typeof CLIENTS !== 'undefined' ? CLIENTS.find(c => (c.nom||'').toUpperCase().trim() === ph.name.toUpperCase().trim()) : null;
-        const dateStr = visitOverride || clientInfo?.prochaineVisite || null;
-        const d = parsePJ(dateStr);
-        if (d) {
-          const diff = Math.round((d - todayPJ) / 86400000);
-          if (diff === 0) actionsPJ.push({ ph, type: 'today', label: "Visite aujourd'hui", color: 'var(--amber)', priority: 0 });
-          else if (diff < 0) actionsPJ.push({ ph, type: 'overdue', label: diff === -1 ? 'Retard : hier' : 'Retard J-' + Math.abs(diff), color: 'var(--rose)', priority: 1 });
-          else if (diff <= 2) actionsPJ.push({ ph, type: 'soon', label: 'Visite dans ' + diff + ' jour' + (diff>1?'s':''), color: 'var(--opso-green)', priority: 2 });
-        }
-        if (r.prev > 0 && r.cur > 0 && (r.cur - r.prev) / r.prev * 100 <= -20 && !actionsPJ.find(a => a.ph.id === ph.id)) {
-          actionsPJ.push({ ph, type: 'drop', label: 'Baisse ' + ((r.cur-r.prev)/r.prev*100).toFixed(0) + '% ce mois', color: 'var(--rose)', priority: 3 });
-        }
-      }
-      actionsPJ.sort((a, b) => a.priority - b.priority);
-      if (!actionsPJ.length) return '';
-      return '<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden;border-left:3px solid var(--amber)">' +
-        '<div class="card-header" style="padding:16px 20px">' +
-          '<div>' +
-            '<div class="card-title">\uD83D\uDCC5 Plan du jour</div>' +
-            '<div class="card-subtitle">' + actionsPJ.length + ' action' + (actionsPJ.length>1?'s':'') + ' \u00e0 mener</div>' +
-          '</div>' +
-        '</div>' +
-        actionsPJ.slice(0, 6).map((a, i) => {
-          const tel = typeof CLIENTS !== 'undefined' ? (CLIENTS.find(c => (c.nom||'').toUpperCase().trim() === a.ph.name.toUpperCase().trim())?.tel || '') : '';
-          return '<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;' + (i < Math.min(actionsPJ.length,6)-1 ? 'border-bottom:1px solid var(--border);' : '') + '">' +
-            '<div style="width:8px;height:8px;border-radius:50%;background:' + a.color + ';flex-shrink:0"></div>' +
-            '<div style="flex:1;min-width:0">' +
-              '<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + titleCase(a.ph.name) + '</div>' +
-              '<div style="font-size:11px;color:' + a.color + ';font-weight:600">' + a.label + (tel ? ' \u00b7 ' + tel : '') + '</div>' +
-            '</div>' +
-            '<button onclick="markVisitDone(\'' + a.ph.id + '\')" style="padding:4px 10px;border-radius:8px;border:none;background:rgba(17,166,60,.15);color:var(--opso-green);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;margin-right:4px">✅ Visité</button>' +
-            '<button onclick="showPharmaDetail(\'' + a.ph.id + '\')" style="padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;white-space:nowrap">Ouvrir \u203a</button>' +
-          '</div>';
-        }).join('') +
-        '</div>';
-    })()}
-
-    <div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
-      <div class="card-header" style="padding:16px 20px">
-        <div class="card-title">Mes pharmacies</div>
-        <button onclick="navigate('pharmacies')" style="font-size:12px;color:var(--opso-green);background:none;border:none;cursor:pointer;font-weight:700">Tout voir →</button>
-      </div>
-      ${allPhRows.map(r => `<div class="pharma-cockpit-row" onclick="showPharmaDetail('${r.ph.id}')"><span class="pharma-cockpit-dot ${r.status}"></span><span class="pharma-cockpit-name">${titleCase(r.ph.name)}</span><span class="pharma-cockpit-ca">${r.cur > 0 ? fmt(r.cur) : r.isMissing ? '<span style="color:var(--text3);font-size:12px">Non importée</span>' : '—'}</span><span class="pharma-cockpit-arrow">›</span></div>`).join('')}
-    </div>
-
-    ${alerts.length ? `
-    <div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
-      <div class="card-header" style="padding:16px 20px">
-        <div class="card-title">Actions requises</div>
-        <span class="badge badge-warning">${alerts.length}</span>
-      </div>
-      ${alerts.slice(0,4).map(a => `<div class="alert-cockpit-row ${a.type}" onclick="showPharmaDetail('${a.ph.id}')"><div class="alert-cockpit-icon">${a.type==='down'?'↓':a.type==='absent'?'○':'↑'}</div><div class="alert-cockpit-info"><div class="alert-cockpit-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">${titleCase(a.ph.name)}</div><div class="alert-cockpit-sub">${a.type==='absent'?'Absent ce mois · M-1 : '+fmt(a.prev):fmt(a.prev)+' → '+fmt(a.cur)+(a.g!==null?' ('+(a.g>=0?'+':'')+a.g.toFixed(0)+'%)':'')}</div></div><div class="alert-cockpit-action">Voir ›</div></div>`).join('')}
-    </div>` : ''}
-
-    ${(() => {
-      const wmlVis3 = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
-      const wmlSignals = wmlVis3.map(d => {
-        const months = d.ca_m.filter(v => v > 0);
-        if (months.length < 2) return null;
-        const last = d.ca_m[d.ca_m.map((v,i)=>({v,i})).filter(x=>x.v>0).slice(-1)[0]?.i];
-        const prev = d.ca_m[d.ca_m.map((v,i)=>({v,i})).filter(x=>x.v>0).slice(-2)[0]?.i];
-        if (!last || !prev) return null;
-        const pct = (last - prev) / prev * 100;
-        if (pct <= -15) return { d, pct, type: 'down' };
-        if (pct >= 25)  return { d, pct, type: 'up' };
-        return null;
-      }).filter(Boolean).sort((a,b) => a.pct - b.pct);
-      if (!wmlSignals.length) return '';
-      const fmtWml2 = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
-      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
-        <div class="card-header" style="padding:16px 20px">
-          <div class="card-title">Signaux achats IP</div>
-          <div class="card-subtitle">Tendances achats IP Jan–Avr 2026</div>
-        </div>
-        ${wmlSignals.slice(0, 5).map(({ d, pct, type }) => `
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="wmlPharma=${d.tc};navigate('wml');setTimeout(renderWml,80)">
-            <div style="width:28px;height:28px;border-radius:8px;background:${type==='down'?'rgba(255,77,109,.12)':'rgba(0,229,160,.12)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:${type==='down'?'var(--rose)':'var(--mint)'}">
-              ${type==='down'?'↓':'↑'}
-            </div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(d.nom)}</div>
-              <div style="font-size:11px;color:var(--text3)">${type==='down'?'Baisse':'Hausse'} WML ${(pct>=0?'+':'')+pct.toFixed(0)}% · CA total ${fmtWml2(d.ca)}</div>
-            </div>
-            <div style="font-size:13px;color:var(--text3)">›</div>
-          </div>`).join('')}
-      </div>`;
-    })()}
-
-    ${(() => {
-      const wmlVis4 = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
-      if (!wmlVis4.length) return '';
-      const nnU = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
-      const wmlMap4 = new Map(wmlVis4.map(d => [nnU(d.nom), d]));
-      const rows = state.pharmacies.map(ph => {
-        const wmlE = wmlMap4.get(nnU(ph.name));
-        if (!wmlE || !wmlE.ca) return null;
-        const wmlAvg = wmlE.ca / 4; // moyenne mensuelle Jan-Apr
-        const directCur = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
-        const pot = Math.max(0, wmlAvg - directCur);
-        const ratio = wmlAvg > 0 ? directCur / wmlAvg : 0;
-        return { ph, wmlAvg, directCur, pot, ratio };
-      }).filter(r => r && r.pot > 50).sort((a,b) => b.pot - a.pot).slice(0, 5);
-      if (!rows.length) return '';
-      const fmtW = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
-      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
-        <div class="card-header" style="padding:16px 20px">
-          <div>
-            <div class="card-title">Potentiel WML → Direct</div>
-            <div class="card-subtitle">Pharmacies achetant via groupement avec marge de progression directe</div>
-          </div>
-        </div>
-        ${rows.map(r => {
-          const pct = Math.min(100, Math.round(r.ratio * 100));
-          return `<div style="display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="showPharmaDetail('${r.ph.id}')">
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-                <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(r.ph.name)}</div>
-                <div style="font-size:11px;color:var(--amber);font-weight:700;flex-shrink:0;margin-left:8px">+${fmtW(r.pot)}</div>
-              </div>
-              <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
-                <div style="width:${pct}%;height:100%;background:var(--opso-green);border-radius:3px;transition:width .4s"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin-top:3px">
-                <div style="font-size:10px;color:var(--text3)">Direct ${fmtW(r.directCur)} · WML moy. ${fmtW(r.wmlAvg)}</div>
-                <div style="font-size:10px;color:var(--text3)">${pct}%</div>
-              </div>
-            </div>
-            <div style="font-size:12px;color:var(--text3);flex-shrink:0">›</div>
-          </div>`;
-        }).join('')}
-      </div>`;
-    })()}
-
-    ${(() => {
-      const compR = allPhRows.filter(r => r.cur > 0 || r.prev > 0);
-      if (compR.length < 2 || !prevY) return '';
-      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
-        <div class="card-header" style="padding:16px 20px">
-          <div>
-            <div class="card-title">Comparaison M vs M-1 par pharmacie</div>
-            <div class="card-subtitle">${prevLabel} \u2192 ${curLabel}</div>
-          </div>
-        </div>
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse">
-            <thead>
-              <tr style="border-bottom:2px solid var(--border2)">
-                <th style="padding:8px 16px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Pharmacie</th>
-                <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">${prevLabel}</th>
-                <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">${curLabel}</th>
-                <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">\u00c9volution</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${compR.map(r => {
-                const dlt = r.prev > 0 ? ((r.cur - r.prev) / r.prev) : 0;
-                const bLeft = dlt < -0.1 ? '3px solid var(--rose)' : dlt > 0.2 ? '3px solid var(--opso-green)' : '3px solid transparent';
-                return `<tr style="border-bottom:1px solid var(--border);border-left:${bLeft};cursor:pointer" onclick="showPharmaDetail('${r.ph.id}')" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-                <td style="padding:10px 16px">
-                  <div style="display:flex;align-items:center;gap:8px">
-                    <span style="width:8px;height:8px;border-radius:50%;background:${r.ph.color};flex-shrink:0"></span>
-                    <span style="font-size:13px;font-weight:600">${titleCase(r.ph.name)}</span>
-                  </div>
-                </td>
-                <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text2)">${r.prev > 0 ? fmt(r.prev) : '\u2014'}</td>
-                <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700">${r.cur > 0 ? fmt(r.cur) : '\u2014'}</td>
-                <td style="padding:10px 12px;text-align:right">${deltaBadge(r.cur, r.prev)}</td>
-              </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-    })()}
-
-    ${(() => {
-      const byMonth = caByMonth(allSalesRaw);
-      if (byMonth.length < 2) return '';
-      const maxCA = Math.max(...byMonth.map(([,v]) => v), 1);
-      const rows = byMonth.map(([k, v]) => {
-        const [y, m] = k.split('-');
-        const isCur = +y === curY && +m === curM;
-        const pct = (v / maxCA * 100).toFixed(0);
-        return `<div style="display:flex;align-items:center;gap:10px;padding:7px 16px;${isCur?'background:rgba(17,166,60,.04);':''}border-bottom:1px solid var(--border)">
-          <div style="font-size:11px;font-weight:${isCur?'800':'600'};color:${isCur?'var(--opso-green)':'var(--text3)'};width:72px;flex-shrink:0;display:flex;align-items:center;gap:5px">${isCur?'<span style="width:6px;height:6px;border-radius:50%;background:var(--opso-green);box-shadow:0 0 6px var(--opso-green);flex-shrink:0"></span>':''}<span>${monthName(+m)} ${y}</span></div>
-          <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:${isCur?'var(--opso-green)':'rgba(17,166,60,.4)'};border-radius:4px;transition:width .4s"></div>
-          </div>
-          <div style="font-size:12px;font-weight:${isCur?'800':'700'};color:${isCur?'var(--opso-green)':'var(--text)'};min-width:72px;text-align:right">${fmt(v)}</div>
-        </div>`;
-      });
-      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">
-        <div class="card-header" style="padding:16px 20px">
-          <div class="card-title">Évolution CA mensuelle</div>
-          <div class="card-subtitle">${byMonth.length} période${byMonth.length > 1 ? 's' : ''} importées</div>
-        </div>
-        ${rows.join('')}
-      </div>`;
-    })()}
-
-    ${(() => {
-      if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
-      const today2 = new Date(); today2.setHours(0,0,0,0);
-      const parseDate2 = str => {
-        if (!str || str === 'null' || str.trim() === '') return null;
-        const s = str.trim();
-        let m;
-        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        if (m) return new Date(+m[3], +m[2]-1, +m[1]);
-        m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (m) return new Date(+m[1], +m[2]-1, +m[3]);
-        return null;
-      };
-      const dateShortFR2 = d => {
-        const mo = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-        return String(d.getDate()).padStart(2,'0') + ' ' + mo[d.getMonth()];
-      };
-      const upcoming2 = CLIENTS
-        .map(c => ({ c, date: parseDate2(c.prochaineVisite) }))
-        .filter(x => x.date !== null && x.date >= today2)
-        .sort((a, b) => a.date - b.date)
-        .slice(0, 5);
-      if (!upcoming2.length) return '';
-      const pharmaMap2 = new Map(state.pharmacies.map(p => [p.name.toUpperCase().trim(), p]));
-      const rows2 = upcoming2.map(({ c, date }) => {
-        const ph2 = pharmaMap2.get((c.nom||'').toUpperCase().trim());
-        const diff = Math.round((date - today2) / 86400000);
-        const urgBg = diff === 0 ? 'rgba(255,176,32,.15)' : diff <= 7 ? 'rgba(0,229,160,.08)' : 'var(--bg3)';
-        const urgCol = diff === 0 ? 'var(--amber)' : diff <= 7 ? 'var(--opso-green)' : 'var(--text3)';
-        const urgLabel = diff === 0 ? "Aujourd'hui" : diff <= 7 ? 'J+' + diff : dateShortFR2(date);
-        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="' + (ph2 ? 'showPharmaDetail(\'' + ph2.id + '\')' : 'navigate(\'pharmacies\')') + '">' +
-          '<div style="min-width:52px;padding:3px 8px;border-radius:8px;background:' + urgBg + ';text-align:center;font-size:11px;font-weight:700;color:' + urgCol + '">' + urgLabel + '</div>' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (c.nom||'—') + '</div>' +
-            '<div style="font-size:10px;color:var(--text3)">' + (c.ville||'') + '</div>' +
-          '</div>' +
-          (ph2 ? '<div style="width:6px;height:6px;border-radius:50%;background:' + ph2.color + ';flex-shrink:0"></div>' : '') +
-        '</div>';
-      }).join('');
-      return '<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden">' +
-        '<div class="card-header" style="padding:16px 20px">' +
-          '<div class="card-title">Prochaines visites</div>' +
-          '<div class="card-subtitle">' + upcoming2.length + ' visite' + (upcoming2.length>1?'s':'') + ' planifiée' + (upcoming2.length>1?'s':'') + '</div>' +
-        '</div>' +
-        rows2 +
-      '</div>';
-    })()}
-
-    ${(() => {
-      if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
-      const today3 = new Date(); today3.setHours(0,0,0,0);
-      const parseDate3 = str => {
-        if (!str || str === 'null' || str.trim() === '') return null;
-        const s = str.trim();
-        let m;
-        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        if (m) return new Date(+m[3], +m[2]-1, +m[1]);
-        m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (m) return new Date(+m[1], +m[2]-1, +m[3]);
-        return null;
-      };
-      const dateShortFR3 = d => {
-        const mo = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-        return String(d.getDate()).padStart(2,'0') + ' ' + mo[d.getMonth()];
-      };
-      const overdue = CLIENTS
-        .map(c => ({ c, date: parseDate3(c.prochaineVisite) }))
-        .filter(x => x.date !== null && x.date < today3)
-        .sort((a, b) => a.date - b.date)
-        .slice(0, 5);
-      if (!overdue.length) return '';
-      const pharmaMap3 = new Map(state.pharmacies.map(p => [p.name.toUpperCase().trim(), p]));
-      const rows3 = overdue.map(({ c, date }) => {
-        const ph3 = pharmaMap3.get((c.nom||'').toUpperCase().trim());
-        const daysLate = Math.round((today3 - date) / 86400000);
-        const label = daysLate === 1 ? 'Hier' : daysLate <= 7 ? 'J-' + daysLate : dateShortFR3(date);
-        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border);cursor:pointer" onclick="' + (ph3 ? 'showPharmaDetail(\'' + ph3.id + '\')' : 'navigate(\'pharmacies\')') + '">' +
-          '<div style="min-width:52px;padding:3px 8px;border-radius:8px;background:rgba(255,77,109,.15);text-align:center;font-size:11px;font-weight:700;color:var(--rose)">' + label + '</div>' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (c.nom||'—') + '</div>' +
-            '<div style="font-size:10px;color:var(--text3)">' + (c.ville||'') + '</div>' +
-          '</div>' +
-          (ph3 ? '<div style="width:6px;height:6px;border-radius:50%;background:' + ph3.color + ';flex-shrink:0"></div>' : '') +
-        '</div>';
-      }).join('');
-      return '<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden;border:1px solid rgba(255,77,109,.2)">' +
-        '<div class="card-header" style="padding:16px 20px">' +
-          '<div class="card-title" style="color:var(--rose)">⚠ Visites en retard</div>' +
-          '<div class="card-subtitle">' + overdue.length + ' pharmacie' + (overdue.length>1?'s':'') + ' à rappeler</div>' +
-        '</div>' +
-        rows3 +
-      '</div>';
-    })()}
-
-    ${(() => {
-      if (typeof OFFILOG_LIVE === 'undefined' || !OFFILOG_LIVE.length) return '';
-      const bm = benchMaps();
-      const alertes = [];
-      for (const p of OFFILOG_LIVE) {
-        const ip = p.prix;
-        if (!ip || ip <= 0) continue;
-        const e = p.ean ? String(p.ean) : '';
-        const concList = [
-          bm.drakEan.has(e) && bm.drakEan.get(e) > 0 && bm.drakEan.get(e) < ip ? ['Drakkars',  bm.drakEan.get(e),  '#6366f1'] : null,
-          bm.cap3Ean.has(e) && bm.cap3Ean.get(e) > 0 && bm.cap3Ean.get(e) < ip ? ['Cap3000',   bm.cap3Ean.get(e),  '#ea580c'] : null,
-          bm.leclEan.has(e) && bm.leclEan.get(e) > 0 && bm.leclEan.get(e) < ip ? ['Leclerc',   bm.leclEan.get(e),  '#0072e6'] : null,
-          bm.pharmEan.has(e) && bm.pharmEan.get(e) > 0 && bm.pharmEan.get(e) < ip ? ['Apothical', bm.pharmEan.get(e), '#00E5A0'] : null,
-        ].filter(Boolean);
-        if (!concList.length) continue;
-        const gap = ip - Math.min(...concList.map(c => c[1]));
-        alertes.push({ p, ip, concList, gap });
-      }
-      alertes.sort((a, b) => b.gap - a.gap);
-      const top = alertes.slice(0, 5);
-      if (!top.length) return '';
-      const fmtPx = v => v != null ? new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(v) : '—';
-      return `<div class="card fade-up" style="margin-bottom:16px;padding:0;overflow:hidden;border-left:3px solid #DC2626">
-        <div class="card-header" style="padding:16px 20px">
-          <div>
-            <div class="card-title">\uD83D\uDEA8 Alertes prix concurrents</div>
-            <div class="card-subtitle">Concurrents moins chers que votre prix d\u2019achat &mdash; ${alertes.length} r\u00e9f\u00e9rence${alertes.length>1?'s':''}</div>
-          </div>
-          <button onclick="offiLiveAlerte=true;offiLivePage=1;navigate('offilog');setTimeout(()=>renderOffilog(),80)" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.08);color:#DC2626;cursor:pointer;font-weight:600;white-space:nowrap">Voir tous \u2192</button>
-        </div>
-        ${top.map((a, i) => `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;${i < top.length-1?'border-bottom:1px solid var(--border)':''}">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.nom || '—'}</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
-              ${a.concList.map(([src, prix, col]) => `<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:${col}18;color:${col};font-weight:700">${src} ${fmtPx(prix)}</span>`).join('')}
-              <span style="font-size:10px;color:var(--text3);padding:1px 6px;border-radius:6px;background:var(--bg3)">Achat IP ${fmtPx(a.ip)}</span>
-            </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:14px;font-weight:900;color:#DC2626">-${fmtPx(a.gap)}</div>
-            <div style="font-size:10px;color:var(--text3)">\u00e9cart</div>
-          </div>
-        </div>`).join('')}
-      </div>`;
-    })()}
-
-
-    ${(() => {
-      if (typeof BENCHMARK === 'undefined') return '';
-      const offres = BENCHMARK
-        .filter(b => b.offre_ip > 0)
-        .sort((a, b) => (b.ip_ca || 0) - (a.ip_ca || 0))
-        .slice(0, 6);
-      if (!offres.length) return '';
-      const rows = offres.map((b, i) => {
-        const remiseTxt = b.remise_pct > 0 ? '-' + b.remise_pct.toFixed(0) + '%' : '';
-        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;' + (i < offres.length - 1 ? 'border-bottom:1px solid var(--border)' : '') + '">' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + ((b.designation || '').length > 55 ? b.designation.slice(0, 55) + '…' : b.designation) + '</div>' +
-            '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">' +
-              '<span style="font-size:10px;color:var(--text3);padding:1px 6px;border-radius:6px;background:var(--bg3)">' + (b.categorie || '—') + '</span>' +
-              (b.prix_ip > 0 ? '<span style="font-size:10px;color:var(--text3);padding:1px 6px;border-radius:6px;background:var(--bg3);text-decoration:line-through">' + fmtPx(b.prix_ip) + '</span>' : '') +
-            '</div>' +
-          '</div>' +
-          '<div style="text-align:right;flex-shrink:0">' +
-            '<div style="font-size:15px;font-weight:900;color:var(--amber)">' + fmtPx(b.offre_ip) + '</div>' +
-            (remiseTxt ? '<div style="font-size:10px;background:rgba(255,176,32,.1);color:var(--amber);border-radius:6px;padding:1px 6px;font-weight:700">' + remiseTxt + '</div>' : '') +
-          '</div>' +
-        '</div>';
-      }).join('');
-      return '<div class="card fade-up" style="margin-bottom:16px;border-left:3px solid var(--amber)">' +
-        '<div class="card-header">' +
-          '<div>' +
-            '<div class="card-title">🎁 Offres IP en cours</div>' +
-            '<div class="card-subtitle">' + offres.length + ' produit' + (offres.length > 1 ? 's' : '') + ' avec remise Integral Pharma — à mettre en avant</div>' +
-          '</div>' +
-          '<button onclick="catCatFilter=\'offres\';catPageNum=1;navigate(\'catalogue\')" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,176,32,.3);background:rgba(255,176,32,.08);color:var(--amber);cursor:pointer;font-weight:600;white-space:nowrap">Voir catalogue →</button>' +
-        '</div>' +
-        rows +
-      '</div>';
-    })()}
-
-    ${(() => {
-      const allNotes = [];
-      for (const ph of state.pharmacies) {
-        let notes = [];
-        try { notes = JSON.parse(localStorage.getItem('visit_notes_' + ph.id) || '[]'); } catch {}
-        for (const n of notes) {
-          if (n.id && n.text) allNotes.push({ ph, id: n.id, date: n.date, text: n.text });
-        }
-      }
-      allNotes.sort((a, b) => b.id - a.id);
-      const recent = allNotes.slice(0, 5);
-      if (!recent.length) return '';
-      const rows = recent.map(n => {
-        const daysAgo = Math.round((Date.now() - n.id) / 86400000);
-        const dayLabel = daysAgo === 0 ? 'Auj.' : daysAgo === 1 ? 'Hier' : 'J-' + daysAgo;
-        const txt = n.text.length > 90 ? n.text.slice(0, 90) + '…' : n.text;
-        return '<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)">' +
-          '<div style="width:8px;height:8px;border-radius:50%;background:' + n.ph.color + ';flex-shrink:0;margin-top:5px"></div>' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">' +
-              '<span style="font-size:12px;font-weight:700">' + n.ph.name + '</span>' +
-              '<span style="font-size:10px;color:var(--text3);background:var(--bg3);padding:1px 7px;border-radius:6px">' + dayLabel + '</span>' +
-            '</div>' +
-            '<div style="font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + txt + '</div>' +
-          '</div>' +
-          '<button onclick="showPharmaDetail(\'' + n.ph.id + '\')" style="padding:3px 9px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:10px;font-weight:600;color:var(--text2);cursor:pointer;flex-shrink:0">Ouvrir ›</button>' +
-        '</div>';
-      }).join('');
-      return '<div class="card fade-up" style="margin-bottom:16px">' +
-        '<div class="card-header">' +
-          '<div>' +
-            '<div class="card-title">🗒️ Journal des visites</div>' +
-            '<div class="card-subtitle">Dernières notes saisies — toutes pharmacies</div>' +
-          '</div>' +
-        '</div>' +
-        rows +
-      '</div>';
-    })()}
-
-    <div class="card fade-up" style="margin-bottom:0;padding:0;overflow:hidden">
-      <div class="card-header" style="padding:16px 20px">
-        <div class="card-title">Top produits</div>
-        <div class="card-subtitle">${curLabel}</div>
-      </div>
-      ${top5.length ? top5.map((p, i) => `<div class="product-cockpit-row"><span class="product-cockpit-rank ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i+1}</span><span class="product-cockpit-name">${p.label.length>32?p.label.slice(0,32)+'…':p.label}</span><span class="product-cockpit-ca">${fmt(p.ca)}</span></div>`).join('') : `<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Aucun produit ce mois</div>`}
-    </div>
-
-    <div style="text-align:center;padding:32px 16px 12px;font-size:11px;color:var(--text3);opacity:.7">
-      <span style="font-weight:700">OPSO Santé</span> × <span style="font-weight:700;color:var(--opso-green)">Intégral Pharma</span> · Pilotage groupement
-    </div>
-  `;
-}
+// _renderDashboardLegacy supprimée (dead code, voir audit perf 2026-05-12)
 
 
 function printRapportMensuel() {
@@ -5425,6 +4783,12 @@ function renderPrioritaires() {
           <div style="font-size:15px;font-weight:800">Sélection produits OPSO Santé</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px">Agrégé sur ${wmlVis.length} pharmacies adhérentes · Jan–Avr 2026 · ${fmtN(nProduits)} références</div>
         </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <input id="prio-prospect-name" type="text" placeholder="Nom du prospect (optionnel)"
+          style="flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px">
+        <input id="prio-prospect-note" type="text" placeholder="Note libre (optionnel, ex: 'Suite RDV du 15 mai')"
+          style="flex:2;min-width:240px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px">
         <button onclick="printPrioritairesPDF()"
           style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:10px;border:none;
           background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;font-size:13px;font-weight:700;cursor:pointer;
@@ -5487,6 +4851,8 @@ function renderPrioritaires() {
 }
 
 function printPrioritairesPDF() {
+  const prospectName = (document.getElementById('prio-prospect-name')?.value || '').trim();
+  const prospectNote = (document.getElementById('prio-prospect-note')?.value || '').trim();
   const fmt  = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
   const fmtD = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(v||0);
   const fmtN = v => new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(v||0);
@@ -5612,8 +4978,9 @@ function printPrioritairesPDF() {
   </div>
   <div class="prospect-box">
     <div class="prospect-label">Sélection produits</div>
-    <div class="prospect-title">Top ${page.length} produits achetés par nos adhérents chez Intégral Pharma</div>
+    <div class="prospect-title">${prospectName ? `Sélection préparée pour : ${prospectName}` : `Top ${page.length} produits achetés par nos adhérents chez Intégral Pharma`}</div>
     <div class="prospect-sub">${catTitre} · Trié par ${triLabel} · Période Jan–Avr 2026 · ${wmlVis.length} pharmacies adhérentes</div>
+    ${prospectNote ? `<div class="prospect-sub" style="margin-top:6px;font-style:italic;opacity:.9">${prospectNote}</div>` : ''}
   </div>
 </div>
 
@@ -5696,6 +5063,8 @@ function navigate(page) {
     prioritaires: '⭐ Prioritaires à visiter',
   };
   document.getElementById('topbar-title').textContent = titles[page] || page;
+  // Indicateur fraîcheur données
+  updateDataFreshnessIndicator();
 
   const renders = {
     dashboard:   renderDashboard,
@@ -5719,6 +5088,26 @@ function navigate(page) {
   const _pca = document.querySelector('.page.active .page-content, .page-content');
   if (_pca) _pca.scrollTop = 0;
   window.scrollTo(0, 0);
+}
+
+function updateDataFreshnessIndicator() {
+  const titleEl = document.getElementById('topbar-title');
+  if (!titleEl) return;
+  const lastImport = state.imports && state.imports.length
+    ? [...state.imports].sort((a,b) => new Date(b.importedAt||0) - new Date(a.importedAt||0))[0]
+    : null;
+  let freshness = '';
+  if (lastImport && lastImport.importedAt) {
+    const d = new Date(lastImport.importedAt);
+    if (!isNaN(d)) {
+      const dStr = d.toLocaleDateString('fr-FR', {day:'2-digit', month:'short'});
+      freshness = ` <span style="font-size:11px;color:var(--text3);font-weight:500;margin-left:10px">· Données ${dStr}</span>`;
+    }
+  }
+  const baseText = (titleEl.textContent || '').split(' · ')[0];
+  if (freshness) {
+    titleEl.innerHTML = baseText + freshness;
+  }
 }
 
 function updateMobileNav(page) {
@@ -6399,7 +5788,7 @@ function renderSimulator() {
         <button class="btn btn-primary" onclick="saveSimulation()">💾 Sauvegarder</button>
         <button class="btn btn-ghost" onclick="printSimulation()">🖨 Imprimer</button>
         <button class="btn btn-ghost" onclick="simExportCSV()" title="Exporter le panier en CSV">⬇ CSV</button>
-        <button class="btn btn-ghost" onclick="state.sim.items=[];renderSimulator()" style="color:var(--rose)">🗑 Vider</button>
+        <button class="btn btn-ghost" onclick="if(state.sim.items.length > 0 && confirm('Vider le panier de '+state.sim.items.length+' produits ?')){state.sim.items=[];renderSimulator();}" style="color:var(--rose)">🗑 Vider</button>
       </div>
     </div>
 
