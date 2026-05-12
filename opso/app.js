@@ -117,6 +117,141 @@ async function deleteImportFile(filePath) {
   try { await sb.storage.from(STORAGE_BUCKET).remove([filePath]); } catch(e) {}
 }
 
+// ── Export calendrier .ics ──────────────────────────────────
+function _icsEscape(s) {
+  return String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+function _icsDate(d) {
+  // Format YYYYMMDD pour event journee entiere
+  return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+}
+function _icsDateTime(d) {
+  // Format YYYYMMDDTHHmmssZ
+  return d.getUTCFullYear() + String(d.getUTCMonth()+1).padStart(2,'0') + String(d.getUTCDate()).padStart(2,'0')
+       + 'T' + String(d.getUTCHours()).padStart(2,'0') + String(d.getUTCMinutes()).padStart(2,'0') + '00Z';
+}
+
+function exportVisitsToICS() {
+  const parsePV = str => {
+    if (!str || !str.trim() || str === 'null') return null;
+    const parts = str.trim().split('/');
+    if (parts.length === 3) {
+      const d = new Date(+parts[2], +parts[1]-1, +parts[0]);
+      return isNaN(d) ? null : d;
+    }
+    return null;
+  };
+
+  // Collecter toutes les visites planifiees + enregistrees
+  const events = [];
+
+  // Planifiees (depuis CLIENTS.prochaineVisite)
+  if (typeof CLIENTS !== 'undefined' && state?.pharmacies?.length) {
+    const clientsByName = new Map();
+    for (const c of CLIENTS) {
+      if (c.nom) clientsByName.set((c.nom || '').trim().toUpperCase().replace(/\s+/g,' '), c);
+    }
+    for (const ph of state.pharmacies) {
+      const ci = clientsByName.get((ph.name || '').trim().toUpperCase().replace(/\s+/g,' '));
+      const d = parsePV(ci?.prochaineVisite);
+      if (!d) continue;
+      events.push({
+        uid: 'opso-planned-' + ph.id + '-' + _icsDate(d) + '@opsosante.fr',
+        date: d,
+        type: 'planned',
+        ph,
+        adr: ci?.adresse,
+        cp: ci?.cp,
+        ville: ci?.ville,
+        tel: ci?.tel,
+      });
+    }
+  }
+
+  // Enregistrees (depuis loadVisitLog)
+  if (typeof loadVisitLog === 'function') {
+    const log = loadVisitLog();
+    for (const phId of Object.keys(log)) {
+      const ph = state.pharmacies.find(p => p.id === phId);
+      if (!ph) continue;
+      for (const v of (log[phId] || [])) {
+        const d = new Date(v.date);
+        if (isNaN(d)) continue;
+        events.push({
+          uid: 'opso-done-' + ph.id + '-' + v.id + '@opsosante.fr',
+          date: d,
+          type: 'done',
+          ph,
+          note: v.note,
+        });
+      }
+    }
+  }
+
+  if (!events.length) {
+    if (typeof showToast === 'function') showToast('Aucune visite à exporter', 'info');
+    return;
+  }
+
+  // Construire iCal
+  const now = new Date();
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//OPSO Santé//Pilotage groupement//FR',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:OPSO Santé — Visites pharmacies',
+    'X-WR-TIMEZONE:Europe/Paris',
+  ];
+
+  for (const ev of events) {
+    const isPlanned = ev.type === 'planned';
+    const summary = (isPlanned ? '📅 ' : '✓ ') + 'Visite ' + (ev.ph.name || 'pharmacie');
+    const descParts = [];
+    if (ev.adr || ev.cp || ev.ville) {
+      descParts.push('Adresse : ' + [ev.adr, ev.cp, ev.ville].filter(Boolean).join(' '));
+    }
+    if (ev.tel) descParts.push('Téléphone : ' + ev.tel);
+    if (ev.note) descParts.push('Note : ' + ev.note);
+    descParts.push('Source : OPSO Santé');
+
+    lines.push('BEGIN:VEVENT');
+    lines.push('UID:' + ev.uid);
+    lines.push('DTSTAMP:' + _icsDateTime(now));
+    lines.push('DTSTART;VALUE=DATE:' + _icsDate(ev.date));
+    // event journee entiere — DTEND = lendemain
+    const dEnd = new Date(ev.date);
+    dEnd.setDate(dEnd.getDate() + 1);
+    lines.push('DTEND;VALUE=DATE:' + _icsDate(dEnd));
+    lines.push('SUMMARY:' + _icsEscape(summary));
+    lines.push('DESCRIPTION:' + _icsEscape(descParts.join('\n')));
+    if (ev.adr || ev.ville) {
+      lines.push('LOCATION:' + _icsEscape([ev.adr, ev.cp, ev.ville].filter(Boolean).join(' ')));
+    }
+    lines.push('STATUS:' + (isPlanned ? 'TENTATIVE' : 'CONFIRMED'));
+    lines.push('CATEGORIES:OPSO,Visite,' + (isPlanned ? 'Planifiée' : 'Enregistrée'));
+    lines.push('END:VEVENT');
+  }
+
+  lines.push('END:VCALENDAR');
+
+  // Telechargement
+  const ics = lines.join('\r\n');
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'opso-visites-' + new Date().toISOString().slice(0,10) + '.ics';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  if (typeof showToast === 'function') {
+    showToast(events.length + ' visite' + (events.length>1?'s':'') + ' exportée' + (events.length>1?'s':'') + ' (.ics)', 'success');
+  }
+  if (typeof trackEvent === 'function') trackEvent('ics_exported', { count: events.length });
+}
+
 // ── AUTH ─────────────────────────────────────
 async function loadUserProfile() {
   try {
@@ -782,7 +917,10 @@ function showCalendarModal(monthShift = 0) {
           <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:var(--opso-warning)"></span>Planifiée</span>
           <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:var(--opso-green-dark)"></span>Enregistrée</span>
         </div>
-        <button onclick="_calMonth=null;showCalendarModal()" class="pill pill-clickable">Aujourd'hui</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="exportVisitsToICS()" class="pill pill-clickable" data-tooltip="Télécharger toutes les visites au format iCal (.ics)" style="margin-right:8px">⬇ .ics</button>
+          <button onclick="_calMonth=null;showCalendarModal()" class="pill pill-clickable">Aujourd'hui</button>
+        </div>
       </div>
     </div>
   `;
@@ -3368,9 +3506,13 @@ function generateEmailModal(pharmacyId) {
     ? `\n💡 Produits que vous achetez via le groupement, disponibles en direct chez IP :\n${missedEM.map(([nom,ca]) => `• ${nom}${ca ? ` — ${fmt(ca)} CA groupement` : ''}`).join('\n')}\n`
     : '';
 
-  const emailBody = `Bonjour,
+  // Salutation personnalisee + mention pharmacie
+  const greeting = 'Bonjour Madame, Monsieur,';
+  const phLabel = pharma.name ? `la ${pharma.name}` : 'votre officine';
 
-Je me permets de vous contacter pour faire un point sur votre activité avec Intégral Pharma.
+  const emailBody = `${greeting}
+
+Je me permets de vous contacter au sujet de l'activité de ${phLabel} avec Intégral Pharma, pour faire un point sur les derniers chiffres et préparer la suite ensemble.
 
 📊 Vos chiffres — ${moisCur} :
 • CA IP : ${fmt(caCur)}${deltaStr ? ` (${deltaStr} vs ${moisPrev})` : ''}
@@ -3379,11 +3521,14 @@ Je me permets de vous contacter pour faire un point sur votre activité avec Int
 ${topProds.length ? `🏆 Vos top produits ce mois :
 ${topProds.map(([name, ca], i) => `${i+1}. ${name} — ${fmt(ca)}`).join('\n')}
 
-` : ''}${missedSection}N'hésitez pas à me contacter pour toute question ou pour planifier une visite.
+` : ''}${missedSection}N'hésitez pas à me contacter pour toute question ou pour planifier une visite à ${pharma.name || 'votre officine'}.
 
-Cordialement,
+Bien cordialement,
+
 William Morel
-Délégué commercial Intégral Pharma`;
+Délégué commercial — Intégral Pharma
+Partenaire du groupement OPSO Santé
+✉ willmorel49@gmail.com`;
 
   const existing = document.getElementById('email-gen-modal');
   if (existing) existing.remove();
@@ -3677,6 +3822,15 @@ function renderProduits() {
   }).join('');
 
   document.getElementById('prod-content').innerHTML = `
+    <div class="section-header">
+      <div class="section-header-title">
+        <div class="section-header-icon">💊</div>
+        <div class="section-header-text">
+          <h2>Analyse produits</h2>
+          <div class="section-header-sub">Performance par famille, accélérations et opportunités</div>
+        </div>
+      </div>
+    </div>
     ${familyKpis.length ? `
     <div class="kpi-grid fade-up" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:24px">
       ${familyKpiHtml}
@@ -4214,8 +4368,15 @@ function renderImport() {
 
   document.getElementById('import-content').innerHTML = `
     <div class="fade-up">
-      <div class="section-title">Collecte de données</div>
-      <div class="section-sub">Suivi de la couverture de collecte et import des fichiers Excel</div>
+      <div class="section-header">
+        <div class="section-header-title">
+          <div class="section-header-icon">📥</div>
+          <div class="section-header-text">
+            <h2>Collecte de données</h2>
+            <div class="section-header-sub">Suivi de la couverture et import des fichiers Excel</div>
+          </div>
+        </div>
+      </div>
 
       <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
         <div class="kpi-card kc-g">
@@ -5633,6 +5794,15 @@ function renderBenchmark() {
 
   document.getElementById('bench-content').innerHTML = `
     <div class="fade-up">
+      <div class="section-header">
+        <div class="section-header-title">
+          <div class="section-header-icon">📈</div>
+          <div class="section-header-text">
+            <h2>Benchmark Ameli</h2>
+            <div class="section-header-sub">Référentiel produits IP croisé avec rotation nationale</div>
+          </div>
+        </div>
+      </div>
       <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:28px">
         <div class="kpi-card kc-b">
           <div class="kpi-icon">📦</div>
@@ -9810,11 +9980,7 @@ function renderGrpPharmacies(grp) {
     .filter(Boolean);
 
   const rowsHtml = members.length === 0
-    ? `<div style="padding:48px;text-align:center;color:var(--text3)">
-        <div style="font-size:40px;margin-bottom:12px">🏪</div>
-        <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune pharmacie</div>
-        <div style="font-size:12px">Cliquez sur <strong>+ Ajouter</strong> pour associer des pharmacies à ce groupement.</div>
-       </div>`
+    ? emptyState('🏪', 'Aucune pharmacie', 'Cliquez sur + Ajouter pour associer des pharmacies à ce groupement.')
     : `<table style="width:100%;border-collapse:collapse">
         <thead>
           <tr style="border-bottom:2px solid var(--border2)">
@@ -9885,16 +10051,14 @@ function renderGrpCommandes(grp) {
     });
 
   if (!memberImports.length) {
+    const subText = !members.length
+      ? `Importez des fichiers Excel dans l'onglet Import — ⚠ aucune pharmacie membre, ajoutez-en dans l'onglet Pharmacies.`
+      : `Importez des fichiers Excel dans l'onglet Import pour les membres de ce groupement.`;
     return `<div class="card">
       <div class="card-header">
         <div class="card-title">Commandes groupement — ${grp.nom}</div>
       </div>
-      <div style="padding:48px;text-align:center;color:var(--text3)">
-        <div style="font-size:40px;margin-bottom:12px">📦</div>
-        <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune commande importée</div>
-        <div style="font-size:12px">Importez des fichiers Excel dans l'onglet Import pour les membres de ce groupement.</div>
-        ${!members.length ? `<div style="margin-top:8px;font-size:12px;color:var(--rose)">⚠ Aucune pharmacie membre — ajoutez-en dans l'onglet Pharmacies</div>` : ''}
-      </div>
+      ${emptyState('📦', 'Aucune commande importée', subText)}
     </div>`;
   }
 
@@ -10006,11 +10170,7 @@ function renderGrpDocuments(grp) {
       <div class="card-title">Documents — ${grp.nom}</div>
       <button class="btn btn-ghost" style="font-size:12px" onclick="alert('Fonctionnalité à venir')">↑ Déposer</button>
     </div>
-    <div style="padding:48px;text-align:center;color:var(--text3)">
-      <div style="font-size:40px;margin-bottom:12px">📄</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucun document</div>
-      <div style="font-size:12px">Conditions tarifaires, accords de référencement, présentations — centralisez tout ici.</div>
-    </div>
+    ${emptyState('📄', 'Aucun document', 'Conditions tarifaires, accords de référencement, présentations — centralisez tout ici.')}
   </div>`;
 }
 
@@ -10892,6 +11052,7 @@ function _gsRenderEmpty() {
   const quickActions = [
     { label: 'Briefing du jour',          sub: 'Visites planifiées et en retard', icon: '☀', onclick: "showMorningBriefing()" },
     { label: 'Voir prochaines visites',  sub: 'Mes pharmacies à visiter', icon: '📅', onclick: "navigate('pharmacies')" },
+    { label: 'Exporter calendrier (.ics)', sub: 'Toutes visites planifiées et enregistrées', icon: '⬇', onclick: "exportVisitsToICS()" },
     { label: 'Raccourcis clavier',        sub: 'Aide rapide',              icon: '⌨️', onclick: "showKeyboardShortcuts()" },
   ];
   html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Actions rapides</div>`;
@@ -10964,6 +11125,7 @@ function gsSearch(q) {
     { label: 'Briefing du jour',        sub: 'Visites planifiées et en retard', icon: '☀', onclick: "showMorningBriefing()" },
     { label: 'Générer PDF prospect',    sub: 'Outil de prospection', icon: '🖨️', onclick: "navigate('prioritaires');setTimeout(()=>{const b=document.querySelector('[onclick*=\\\"printPrioritairesPDF\\\"]');if(b)b.scrollIntoView({block:'center'})},150)" },
     { label: 'Voir prochaines visites', sub: 'Mes pharmacies',       icon: '📅', onclick: "navigate('pharmacies')" },
+    { label: 'Exporter calendrier (.ics)', sub: 'Toutes visites planifiées et enregistrées', icon: '⬇', onclick: "exportVisitsToICS()" },
     { label: 'Imprimer la page',        sub: 'Cmd+P équivalent',     icon: '🖨️', onclick: "window.print()" },
     { label: 'Raccourcis clavier',      sub: 'Aide rapide',          icon: '⌨️', onclick: "showKeyboardShortcuts()" },
   ];
