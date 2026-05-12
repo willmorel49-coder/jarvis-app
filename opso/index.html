@@ -19,7 +19,7 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260512b">
+<link rel="stylesheet" href="style.css?v=20260512c">
 </head>
 <body>
 <a href="#main-content" class="skip-link">Aller au contenu principal</a>
@@ -298,14 +298,31 @@ function showNewPassForm() {
 <script src="leclerc-data.js?v=20260508"></script>
 <script src="wml-data.js?v=20260508"></script>
 <script defer src="opso-adherents.js?v=20260508"></script>
-<script defer src="offilog-live-data.js?v=20260508"></script>
+<!-- offilog-live-data.js (2,7 Mo) : chargé en lazy via loadOffilogLive() dans app.js -->
 <script defer src="wml-sales-data.js?v=20260510b"></script>
-<script defer src="app.js?v=20260512e"></script>
+<script defer src="app.js?v=20260512f"></script>
 <script>
   // Enregistrement Service Worker (PWA)
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW failed:', err));
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        // Detecter nouvelle version
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Une nouvelle version est prete
+              if (typeof showUpdateBanner === 'function') showUpdateBanner();
+            }
+          });
+        });
+      }).catch(err => console.warn('SW failed:', err));
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // Le nouveau SW a pris le controle, recharger
+        window.location.reload();
+      });
     });
   }
 </script>
