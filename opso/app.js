@@ -8898,7 +8898,176 @@ function renderGrpDashboard(grp) {
     </div>`;
   })();
 
-  return `${opsoGreeting}${quickStats}${opsoHeader}${kpiRow}${visitesWidget}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}${_opsoFooter()}`;
+  // ── Widget : Insights & suggestions intelligentes ──
+  const insightsWidget = (() => {
+    const insights = [];
+
+    const parsePV = str => {
+      if (!str || !str.trim() || str === 'null') return null;
+      const parts = str.trim().split('/');
+      if (parts.length === 3) {
+        const d = new Date(+parts[2], +parts[1]-1, +parts[0]);
+        return isNaN(d) ? null : d;
+      }
+      return null;
+    };
+
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // 1. Visites en retard
+    const phasesRetard = state.pharmacies.filter(ph => {
+      const ci = typeof CLIENTS !== 'undefined' ? CLIENTS.find(c => c.cip && String(c.cip) === String(ph.code)) : null;
+      const d = parsePV(ci?.prochaineVisite);
+      return d && d < today;
+    });
+    if (phasesRetard.length > 0) {
+      insights.push({
+        icon: '📅',
+        type: 'warning',
+        title: phasesRetard.length + ' visite' + (phasesRetard.length > 1 ? 's' : '') + ' en retard',
+        desc: 'Replanifie tes visites pour rester au contact des adhérents.',
+        action: 'Voir pharmacies',
+        onclick: "navigate('pharmacies');setTimeout(()=>{window._pharmaFilter='visite_retard';renderPharmacies()},80)"
+      });
+    }
+
+    // 2. Pharmacies sans note
+    if (typeof loadAllNotes === 'function') {
+      const notes = loadAllNotes();
+      const sansNote = state.pharmacies.filter(ph => !notes[ph.id]).length;
+      if (sansNote >= 3) {
+        insights.push({
+          icon: '📝',
+          type: 'info',
+          title: sansNote + ' pharmacies sans note',
+          desc: 'Renseigne les contacts, horaires et préférences pour gagner en efficacité terrain.',
+          action: 'Aller aux pharmacies',
+          onclick: "navigate('pharmacies')"
+        });
+      }
+    }
+
+    // 3. Pharmacies sans statut prospection
+    if (typeof loadProspectStatus === 'function') {
+      const prospectMap = loadProspectStatus();
+      const sansStatut = state.pharmacies.filter(ph => !prospectMap[ph.id]).length;
+      if (sansStatut >= state.pharmacies.length * 0.5 && state.pharmacies.length > 4) {
+        insights.push({
+          icon: '🎯',
+          type: 'info',
+          title: sansStatut + ' pharmacies sans statut prospection',
+          desc: 'Classe tes pharmacies par stage (Contactée, RDV, Négo…) pour mieux suivre.',
+          action: 'Voir pharmacies',
+          onclick: "navigate('pharmacies')"
+        });
+      }
+    }
+
+    // 4. Potentiel WML important non converti
+    const wmlVis2 = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+    const nnk = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
+    const wmlMap2 = new Map(wmlVis2.map(d => [nnk(d.nom), d]));
+    let totalPotentiel = 0;
+    for (const ph of state.pharmacies) {
+      const w = wmlMap2.get(nnk(ph.name));
+      if (!w) continue;
+      const wmlAvg = w.ca / 4;
+      const directCa = sumCA(memberSalesCur.filter(s => s.pharmacyId === ph.id));
+      totalPotentiel += Math.max(0, wmlAvg - directCa);
+    }
+    if (totalPotentiel > 1000) {
+      insights.push({
+        icon: '💡',
+        type: 'success',
+        title: '+' + Math.round(totalPotentiel).toLocaleString('fr-FR') + '€/mois de potentiel WML→Direct',
+        desc: 'Ces pharmacies achètent via le groupement — propose-leur de commander en direct chez IP.',
+        action: 'Voir Prioritaires',
+        onclick: "navigate('prioritaires')"
+      });
+    }
+
+    // 5. Donnees du mois manquantes
+    const importedThisMonth = new Set(memberSalesCur.map(s => s.pharmacyId));
+    const missingData = state.pharmacies.filter(ph => !importedThisMonth.has(ph.id));
+    if (missingData.length > 0 && missingData.length < state.pharmacies.length) {
+      insights.push({
+        icon: '📊',
+        type: 'warning',
+        title: missingData.length + ' pharmacie' + (missingData.length > 1 ? 's' : '') + ' sans données ' + monthName(curM),
+        desc: 'Importe les ventes manquantes pour compléter le cockpit du mois.',
+        action: null,
+        onclick: null
+      });
+    }
+
+    // 6. Felicitations objectifs atteints
+    if (typeof loadObjectives === 'function') {
+      const objs = loadObjectives();
+      let atteints = 0;
+      for (const ph of state.pharmacies) {
+        const k = ph.id + '_' + curY + '_' + curM;
+        const target = objs[k] || 0;
+        if (target > 0) {
+          const ca = sumCA(memberSalesCur.filter(s => s.pharmacyId === ph.id));
+          if (ca >= target) atteints++;
+        }
+      }
+      if (atteints > 0) {
+        insights.push({
+          icon: '🎉',
+          type: 'success',
+          title: atteints + ' objectif' + (atteints > 1 ? 's' : '') + ' atteint' + (atteints > 1 ? 's' : '') + ' ' + monthName(curM),
+          desc: 'Bravo à ces pharmacies qui ont dépassé leur cible mensuelle.',
+          action: null,
+          onclick: null
+        });
+      }
+    }
+
+    if (!insights.length) return '';
+
+    const typeColors = {
+      success: { bg: 'rgba(17,166,60,.06)', border: 'var(--opso-green)', icon: 'var(--opso-green-dark)' },
+      warning: { bg: 'rgba(184,115,12,.06)', border: 'var(--opso-warning)', icon: 'var(--opso-warning)' },
+      info:    { bg: 'rgba(2,132,199,.06)', border: '#0284c7', icon: '#0284c7' },
+    };
+
+    return `
+    <div class="card fade-up" style="margin-bottom:20px;padding:0;overflow:hidden">
+      <div class="card-header" style="padding:14px 18px;border-bottom:1px solid var(--border)">
+        <div class="section-header-title">
+          <div class="section-header-icon">💡</div>
+          <div class="section-header-text">
+            <h2>Insights & suggestions</h2>
+            <div class="section-header-sub">${insights.length} action${insights.length>1?'s':''} à considérer cette semaine</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(--border)">
+        ${insights.map(ins => {
+          const c = typeColors[ins.type] || typeColors.info;
+          return `<div style="background:var(--bg2);padding:14px 18px;border-left:3px solid ${c.border}">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <div style="font-size:20px;color:${c.icon};line-height:1;flex-shrink:0">${ins.icon}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.3">${ins.title}</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5">${ins.desc}</div>
+                ${ins.action && ins.onclick ? `
+                  <button onclick="${ins.onclick}"
+                    class="pill pill-clickable"
+                    style="margin-top:8px;font-size:11px;padding:4px 10px">
+                    ${ins.action} →
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  })();
+
+  return `${opsoGreeting}${quickStats}${opsoHeader}${kpiRow}${visitesWidget}${insightsWidget}${evolSection}${catTable}${topsRow}${membresTable}${allProdsTable}${_opsoFooter()}`;
 }
 
 function grpConfirmRemove(grpId, phId) {
@@ -9839,47 +10008,282 @@ function copyFicheResume(pharmacyId) {
 }
 
 // ── BOOT ──────────────────────────────────────
-// ── GLOBAL SEARCH (Cmd+K) ────────────────────
+// ── GLOBAL SEARCH (Cmd+K) ─ Premium Command Palette ────────────────────
 let globalSearchQuery = '';
+let _gsSelected = 0;
+
+function _gsClose() {
+  const m = document.getElementById('global-search-modal');
+  if (!m) return;
+  if (typeof closeAccessibleModal === 'function') closeAccessibleModal(m);
+  else m.remove();
+}
+
+function _gsUpdateSelection() {
+  const items = document.querySelectorAll('.gs-item');
+  items.forEach((el, i) => {
+    if (i === _gsSelected) {
+      el.style.background = 'var(--opso-green-pale)';
+      el.scrollIntoView({ block: 'nearest' });
+    } else {
+      el.style.background = '';
+    }
+  });
+}
 
 function showGlobalSearch() {
   const existing = document.getElementById('global-search-modal');
   if (existing) { existing.remove(); return; }
 
   globalSearchQuery = '';
+  _gsSelected = 0;
   const modal = document.createElement('div');
   modal.id = 'global-search-modal';
+  modal.className = 'modal-overlay';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:80px 16px 16px;backdrop-filter:blur(4px)';
   modal.innerHTML = `
-    <div style="background:var(--bg);border-radius:20px;width:100%;max-width:620px;box-shadow:0 32px 100px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;max-height:75vh">
+    <div class="modal-box" style="background:var(--bg);width:100%;max-width:620px;border-radius:16px;box-shadow:0 32px 100px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;max-height:80vh">
       <!-- Search input -->
-      <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input id="gs-input" type="text" placeholder="Rechercher produit, pharmacie, marque, EAN…"
+        <input id="gs-input" type="text" placeholder="Rechercher pharmacie, produit, action, page…"
           style="flex:1;border:none;background:transparent;outline:none;font-size:16px;color:var(--text);font-family:inherit"
           oninput="gsSearch(this.value)" autocomplete="off" spellcheck="false">
-        <span style="font-size:10px;color:var(--text3);background:var(--bg2);padding:2px 7px;border-radius:5px;font-family:monospace;flex-shrink:0">ESC</span>
+        <kbd style="background:var(--bg3);border:1px solid var(--border2);border-bottom-width:2px;border-radius:5px;padding:2px 6px;font-size:10px;font-weight:700;color:var(--text3);font-family:ui-monospace,monospace">esc</kbd>
       </div>
       <!-- Results -->
-      <div id="gs-results" style="overflow-y:auto;flex:1;padding:8px 8px 12px">
-        <div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Tapez au moins 2 caractères…</div>
+      <div id="gs-results" style="overflow-y:auto;flex:1;padding:4px 0 8px"></div>
+      <!-- Footer with shortcuts -->
+      <div style="padding:8px 16px;background:var(--opso-gray-pale,var(--bg2));border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text3);flex-shrink:0">
+        <span>
+          <kbd style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;margin-right:4px;font-family:ui-monospace,monospace;font-size:10px">↑↓</kbd>naviguer
+          <kbd style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;margin:0 4px 0 8px;font-family:ui-monospace,monospace;font-size:10px">↵</kbd>ouvrir
+        </span>
+        <span style="font-style:italic;font-weight:600">OPSO Santé</span>
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
+  modal.addEventListener('click', e => { if (e.target === modal) _gsClose(); });
   document.body.appendChild(modal);
-  makeAccessibleModal(modal);
-  setTimeout(() => document.getElementById('gs-input')?.focus(), 50);
+  if (typeof makeAccessibleModal === 'function') makeAccessibleModal(modal);
+
+  // Render état initial (récents + suggestions)
+  gsSearch('');
+
+  setTimeout(() => {
+    const input = document.getElementById('gs-input');
+    if (!input) return;
+    input.focus();
+    // Clavier : ↑↓ Enter
+    input.addEventListener('keydown', (e) => {
+      const items = document.querySelectorAll('.gs-item');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _gsSelected = Math.min(_gsSelected + 1, items.length - 1);
+        _gsUpdateSelection();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _gsSelected = Math.max(_gsSelected - 1, 0);
+        _gsUpdateSelection();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const sel = document.querySelector(`.gs-item[data-idx="${_gsSelected}"]`);
+        if (sel) sel.click();
+      }
+    });
+  }, 50);
+
+  if (typeof trackEvent === 'function') trackEvent('global_search_opened', {});
+}
+
+// État vide : pages + récents + actions de bienvenue
+function _gsRenderEmpty() {
+  let html = '';
+  let idx = 0;
+
+  // 1. Pages — navigation rapide
+  const pages = [
+    { id: 'dashboard',    label: 'Cockpit',             icon: '📊', sub: "Vue d'ensemble" },
+    { id: 'pharmacies',   label: 'Mes pharmacies',      icon: '🏥', sub: 'Liste et fiches' },
+    { id: 'wml',          label: 'CA & Commandes',      icon: '📦', sub: 'Achats WML' },
+    { id: 'produits',     label: 'Catalogue IP',        icon: '💊', sub: 'Mes ventes par produit' },
+    { id: 'offilog',      label: 'Prix Offilog Live',   icon: '🛒', sub: 'Comparatifs concurrents' },
+    { id: 'benchmark',    label: 'Benchmark Ameli',     icon: '📈', sub: 'Marché national' },
+    { id: 'prioritaires', label: 'Prioritaires',        icon: '⭐', sub: 'Outil prospection' },
+  ];
+  html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Pages</div>`;
+  html += pages.map(p => {
+    const i = idx++;
+    return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();navigate('${p.id}')"
+      style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background-color .1s"
+      onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+      <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${p.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
+        <div style="font-size:11px;color:var(--text3);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.sub}</div>
+      </div>
+      <span style="font-size:14px;color:var(--text3)">›</span>
+    </div>`;
+  }).join('');
+
+  // 2. Pharmacies récemment consultées
+  if (typeof loadEvents === 'function' && state && state.pharmacies) {
+    const events = loadEvents().filter(e => e.type === 'pharma_view').slice(-15).reverse();
+    const seen = new Set();
+    const recent = [];
+    for (const e of events) {
+      const phId = e.payload?.pharmacyId;
+      if (!phId || seen.has(phId)) continue;
+      seen.add(phId);
+      const ph = state.pharmacies.find(p => p.id === phId);
+      if (ph) recent.push(ph);
+      if (recent.length >= 4) break;
+    }
+    if (recent.length) {
+      html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Récemment consultées</div>`;
+      html += recent.map(ph => {
+        const i = idx++;
+        return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();showPharmaDetail('${ph.id}')"
+          style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background-color .1s"
+          onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+          <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <span style="width:10px;height:10px;border-radius:50%;background:${ph.color};display:inline-block"></span>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(ph.name)}</div>
+            <div style="font-size:11px;color:var(--text3);font-weight:500">Récent</div>
+          </div>
+          <span style="font-size:14px;color:var(--text3)">›</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // 3. Actions rapides (suggestions)
+  const quickActions = [
+    { label: 'Voir prochaines visites',  sub: 'Mes pharmacies à visiter', icon: '📅', onclick: "navigate('pharmacies')" },
+    { label: 'Raccourcis clavier',        sub: 'Aide rapide',              icon: '⌨️', onclick: "showKeyboardShortcuts()" },
+  ];
+  html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Actions rapides</div>`;
+  html += quickActions.map(a => {
+    const i = idx++;
+    return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();${a.onclick}"
+      style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background-color .1s"
+      onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+      <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${a.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.label}</div>
+        <div style="font-size:11px;color:var(--text3);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.sub}</div>
+      </div>
+      <span style="font-size:14px;color:var(--text3)">›</span>
+    </div>`;
+  }).join('');
+
+  return html;
 }
 
 function gsSearch(q) {
-  globalSearchQuery = q.trim();
+  globalSearchQuery = (q || '').trim();
   const res = document.getElementById('gs-results');
   if (!res) return;
-  if (globalSearchQuery.length < 2) {
-    res.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Tapez au moins 2 caractères…</div>`;
+
+  // État vide : montrer pages + récents + actions
+  if (globalSearchQuery.length === 0) {
+    res.innerHTML = _gsRenderEmpty();
+    _gsSelected = 0;
+    _gsUpdateSelection();
     return;
   }
+
+  // Recherche courte (1 char) : on filtre uniquement les pages + actions
   const ql = globalSearchQuery.toLowerCase();
+  let _gsIdx = 0;
+  const sectionsHtml = [];
+
+  // Section Pages (toujours filtrable)
+  const pages = [
+    { id: 'dashboard',    label: 'Cockpit',             icon: '📊', sub: "Vue d'ensemble" },
+    { id: 'pharmacies',   label: 'Mes pharmacies',      icon: '🏥', sub: 'Liste et fiches' },
+    { id: 'wml',          label: 'CA & Commandes',      icon: '📦', sub: 'Achats WML' },
+    { id: 'produits',     label: 'Catalogue IP',        icon: '💊', sub: 'Mes ventes par produit' },
+    { id: 'offilog',      label: 'Prix Offilog Live',   icon: '🛒', sub: 'Comparatifs concurrents' },
+    { id: 'benchmark',    label: 'Benchmark Ameli',     icon: '📈', sub: 'Marché national' },
+    { id: 'prioritaires', label: 'Prioritaires',        icon: '⭐', sub: 'Outil prospection' },
+  ];
+  const pagesMatch = pages.filter(p => p.label.toLowerCase().includes(ql) || (p.sub||'').toLowerCase().includes(ql));
+  if (pagesMatch.length) {
+    let html = `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Pages</div>`;
+    html += pagesMatch.map(p => {
+      const i = _gsIdx++;
+      return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();navigate('${p.id}')"
+        style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background-color .1s"
+        onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${p.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${p.label}</div>
+          <div style="font-size:11px;color:var(--text3);font-weight:500">${p.sub}</div>
+        </div>
+        <span style="font-size:14px;color:var(--text3)">›</span>
+      </div>`;
+    }).join('');
+    sectionsHtml.push(html);
+  }
+
+  // Section Actions rapides filtrables
+  const quickActions = [
+    { label: 'Générer PDF prospect',    sub: 'Outil de prospection', icon: '🖨️', onclick: "navigate('prioritaires');setTimeout(()=>{const b=document.querySelector('[onclick*=\\\"printPrioritairesPDF\\\"]');if(b)b.scrollIntoView({block:'center'})},150)" },
+    { label: 'Voir prochaines visites', sub: 'Mes pharmacies',       icon: '📅', onclick: "navigate('pharmacies')" },
+    { label: 'Imprimer la page',        sub: 'Cmd+P équivalent',     icon: '🖨️', onclick: "window.print()" },
+    { label: 'Raccourcis clavier',      sub: 'Aide rapide',          icon: '⌨️', onclick: "showKeyboardShortcuts()" },
+  ];
+  const actionsMatch = quickActions.filter(a => a.label.toLowerCase().includes(ql) || a.sub.toLowerCase().includes(ql));
+  if (actionsMatch.length) {
+    let html = `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Actions rapides</div>`;
+    html += actionsMatch.map(a => {
+      const i = _gsIdx++;
+      return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();${a.onclick}"
+        style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background-color .1s"
+        onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${a.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${a.label}</div>
+          <div style="font-size:11px;color:var(--text3);font-weight:500">${a.sub}</div>
+        </div>
+        <span style="font-size:14px;color:var(--text3)">›</span>
+      </div>`;
+    }).join('');
+    sectionsHtml.push(html);
+  }
+
+  // Si query trop courte → on ne fait pas la recherche full (perf)
+  if (globalSearchQuery.length < 2) {
+    if (sectionsHtml.length) {
+      res.innerHTML = sectionsHtml.join('');
+    } else {
+      res.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Tapez au moins 2 caractères pour rechercher dans le catalogue…</div>`;
+    }
+    _gsSelected = 0;
+    _gsUpdateSelection();
+    return;
+  }
+
+  // Préfixer le compteur d'index pour la recherche full
+  window._gsStartIdx = _gsIdx;
+  // Fallback : on conserve la fonction de recherche full (catalogue, ventes, WML, notes)
+  const fullHtml = _gsBuildFullSearch(ql, _gsIdx);
+  res.innerHTML = sectionsHtml.join('') + fullHtml;
+
+  _gsSelected = 0;
+  _gsUpdateSelection();
+}
+
+// Fonction de recherche complète (OFFILOG, BENCHMARK, ventes, WML, etc.)
+// Conserve la richesse d'origine, en ré-utilisant la classe .gs-item et le compteur idx
+function _gsBuildFullSearch(ql, startIdx) {
+  let idx = startIdx;
+  globalSearchQuery = ql; // pour highlight()
 
   // Search OFFILOG
   const offiHits = typeof OFFILOG !== 'undefined'
@@ -9951,8 +10355,8 @@ function gsSearch(q) {
 
   const total = offiHits.length + benchHits.length + pharmaHits.length + clientHits.length + noteHits.length + salesHits.length + wmlHits.length;
   if (total === 0) {
-    res.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Aucun résultat pour "${globalSearchQuery}"</div>`;
-    return;
+    // Si pas de résultats catalogue, on retourne juste un message bas
+    return `<div style="padding:24px 16px;text-align:center;color:var(--text3);font-size:12px;font-style:italic">Aucun produit ni pharmacie ne correspond à "${globalSearchQuery}"</div>`;
   }
 
   const highlight = str => {
@@ -9960,124 +10364,132 @@ function gsSearch(q) {
     return (str||'').replace(re, '<mark style="background:#fef08a;color:#713f12;border-radius:2px;padding:0 1px">$1</mark>');
   };
 
+  // Style commun pour les items issus du catalogue (item premium command palette)
+  const itemCss = 'display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background-color .1s';
+
   let html = '';
 
+  if (pharmaHits.length) {
+    html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Pharmacies</div>`;
+    html += pharmaHits.map(ph => {
+      const i = idx++;
+      return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();showPharmaDetail('${ph.id}')"
+        style="${itemCss}" onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="width:10px;height:10px;border-radius:50%;background:${ph.color};display:inline-block"></span>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(titleCase(ph.name))}</div>
+          <div style="font-size:11px;color:var(--text3);font-weight:500">Pharmacie · données importées</div>
+        </div>
+        <span style="font-size:14px;color:var(--text3)">›</span>
+      </div>`;
+    }).join('');
+  }
+
   if (salesHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px">Mes ventes — mois courant (${salesHits.length})</div>`;
+    html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Mes ventes — mois courant</div>`;
     html += salesHits.map(p => {
       const cat = CATS[p.cat] || CATS.mi;
-      return `<div onclick="document.getElementById('global-search-modal').remove();prodTableQuery='${(p.label||'').replace(/'/g,"\\'").slice(0,30)}';navigate('produits');setTimeout(()=>renderProduits(),100)"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
-        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        <div style="width:36px;height:36px;border-radius:8px;background:${cat.color}18;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${cat.icon}</div>
+      const i = idx++;
+      return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();prodTableQuery='${(p.label||'').replace(/'/g,"\\'").slice(0,30)}';navigate('produits');setTimeout(()=>renderProduits(),100)"
+        style="${itemCss}" onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${cat.icon}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(p.label)}</div>
-          <div style="font-size:11px;color:var(--text3)">${cat.label} · ${fmt(p.ca)} · ${fmtNum(Math.round(p.qte))} unités</div>
+          <div style="font-size:11px;color:var(--text3);font-weight:500">${cat.label} · ${fmt(p.ca)} · ${fmtNum(Math.round(p.qte))} unités</div>
         </div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+        <span style="font-size:14px;color:var(--text3)">›</span>
       </div>`;
     }).join('');
   }
 
   if (offiHits.length) {
     const um = u => univMeta(u || 'Non classé');
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:${OFFILOG_ORANGE};text-transform:uppercase;letter-spacing:1px">Catalogue Parapharmacie (${offiHits.length})</div>`;
-    html += offiHits.map((p, i) => {
+    html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Catalogue Parapharmacie</div>`;
+    html += offiHits.map(p => {
       const m = um(p.univers);
-      const idxInData = typeof offiCurrentData !== 'undefined' ? offiCurrentData.indexOf(p) : -1;
-      return `<div onclick="document.getElementById('global-search-modal').remove();offiQuery='${p.produit.replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,30)}';navigate('offilog');setTimeout(()=>renderOffilog(),100)"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
-        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        <div style="width:36px;height:36px;border-radius:8px;background:${m.bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${m.icon}</div>
+      const i = idx++;
+      return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();offiQuery='${p.produit.replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,30)}';navigate('offilog');setTimeout(()=>renderOffilog(),100)"
+        style="${itemCss}" onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${m.icon}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(p.produit)}</div>
-          <div style="font-size:11px;color:var(--text3)">${highlight(p.marque || '—')} · ${p.univers || '—'}${p.prix_live || p.prix_offilog ? ' · ' + fmtP(p.prix_live || p.prix_offilog) : ''}</div>
+          <div style="font-size:11px;color:var(--text3);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(p.marque || '—')} · ${p.univers || '—'}${p.prix_live || p.prix_offilog ? ' · ' + fmtP(p.prix_live || p.prix_offilog) : ''}</div>
         </div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+        <span style="font-size:14px;color:var(--text3)">›</span>
       </div>`;
     }).join('');
   }
 
   if (benchHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Benchmark Ameli (${benchHits.length})</div>`;
-    html += benchHits.map(b => `
-      <div onclick="document.getElementById('global-search-modal').remove();benchSearch='${(b.designation||'').replace(/'/g,"\\'").slice(0,30)}';navigate('benchmark');setTimeout(()=>renderBenchmark(),100)"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
-        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        <div style="width:36px;height:36px;border-radius:8px;background:rgba(0,87,255,.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">💊</div>
+    html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Benchmark Ameli</div>`;
+    html += benchHits.map(b => {
+      const i = idx++;
+      return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();benchSearch='${(b.designation||'').replace(/'/g,"\\'").slice(0,30)}';navigate('benchmark');setTimeout(()=>renderBenchmark(),100)"
+        style="${itemCss}" onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">💊</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(b.designation)}</div>
-          <div style="font-size:11px;color:var(--text3)">${highlight(b.categorie||'—')}${b.cip13 ? ' · ' + highlight(b.cip13) : ''}${b.ip_ca ? ' · ' + fmt(b.ip_ca) : ''}</div>
+          <div style="font-size:11px;color:var(--text3);font-weight:500">${highlight(b.categorie||'—')}${b.cip13 ? ' · ' + highlight(b.cip13) : ''}${b.ip_ca ? ' · ' + fmt(b.ip_ca) : ''}</div>
         </div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
-      </div>`).join('');
-  }
-
-  if (pharmaHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Pharmacies avec données (${pharmaHits.length})</div>`;
-    html += pharmaHits.map(ph => `
-      <div onclick="document.getElementById('global-search-modal').remove();showPharmaDetail('${ph.id}')"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
-        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        <div style="width:36px;height:36px;border-radius:8px;background:${ph.color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">${ph.name.charAt(0).toUpperCase()}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${highlight(titleCase(ph.name))}</div>
-          <div style="font-size:11px;color:var(--text3)">Pharmacie · données importées</div>
-        </div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
-      </div>`).join('');
+        <span style="font-size:14px;color:var(--text3)">›</span>
+      </div>`;
+    }).join('');
   }
 
   if (clientHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Clients (${clientHits.length})</div>`;
-    html += clientHits.map(c => `
-      <div onclick="document.getElementById('global-search-modal').remove();navigate('pharmacies')"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
-        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,176,32,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏪</div>
+    html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Clients</div>`;
+    html += clientHits.map(c => {
+      const i = idx++;
+      return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();navigate('pharmacies')"
+        style="${itemCss}" onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🏪</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${highlight(c.nom || '—')}</div>
-          <div style="font-size:11px;color:var(--text3)">${highlight(c.ville || '—')}${c.cip ? ' · CIP ' + highlight(c.cip) : ''}${c.ca2023 ? ' · ' + fmt(c.ca2023) : ''}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(c.nom || '—')}</div>
+          <div style="font-size:11px;color:var(--text3);font-weight:500">${highlight(c.ville || '—')}${c.cip ? ' · CIP ' + highlight(c.cip) : ''}${c.ca2023 ? ' · ' + fmt(c.ca2023) : ''}</div>
         </div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
-      </div>`).join('');
+        <span style="font-size:14px;color:var(--text3)">›</span>
+      </div>`;
+    }).join('');
   }
 
   if (wmlHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Achats WML (${wmlHits.length})</div>`;
+    html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Achats WML</div>`;
     html += wmlHits.map(item => {
       const d = item.d || item;
       const prodNom = item.prodNom;
       const fmtWmlS = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
-      return `<div onclick="document.getElementById('global-search-modal').remove();wmlPharma=${d.tc};navigate('wml');setTimeout(()=>renderWml(),80)"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
-        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        <div style="width:36px;height:36px;border-radius:8px;background:rgba(17,166,60,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📦</div>
+      const i = idx++;
+      return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();wmlPharma=${d.tc};navigate('wml');setTimeout(()=>renderWml(),80)"
+        style="${itemCss}" onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">📦</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${highlight(titleCase(d.nom))}</div>
-          <div style="font-size:11px;color:var(--text3)">${prodNom ? highlight(prodNom) + ' · ' : ''}${fmtWmlS(d.ca)} CA · TIRCODE ${d.tc}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(titleCase(d.nom))}</div>
+          <div style="font-size:11px;color:var(--text3);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prodNom ? highlight(prodNom) + ' · ' : ''}${fmtWmlS(d.ca)} CA · TIRCODE ${d.tc}</div>
         </div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+        <span style="font-size:14px;color:var(--text3)">›</span>
       </div>`;
     }).join('');
   }
 
   if (noteHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Notes de visite (${noteHits.length})</div>`;
-    html += noteHits.map(({ ph, note }) => `
-      <div onclick="document.getElementById('global-search-modal').remove();showPharmaDetail('${ph.id}')"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
-        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,77,109,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📝</div>
+    html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Notes de visite</div>`;
+    html += noteHits.map(({ ph, note }) => {
+      const i = idx++;
+      return `<div class="gs-item" data-idx="${i}" onclick="_gsClose();showPharmaDetail('${ph.id}')"
+        style="${itemCss}" onmouseover="_gsSelected=${i};_gsUpdateSelection()">
+        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">📝</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:700;color:var(--text)">${titleCase(ph.name)} <span style="font-weight:400;color:var(--text3);font-size:11px">· ${note.date}</span></div>
-          <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(note.text)}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${titleCase(ph.name)} <span style="font-weight:400;color:var(--text3);font-size:11px">· ${note.date}</span></div>
+          <div style="font-size:11px;color:var(--text3);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(note.text)}</div>
         </div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
-      </div>`).join('');
+        <span style="font-size:14px;color:var(--text3)">›</span>
+      </div>`;
+    }).join('');
   }
 
-  res.innerHTML = html;
+  return html;
 }
 
 function showLoginForm() {
