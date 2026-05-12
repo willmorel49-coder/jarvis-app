@@ -1488,6 +1488,31 @@ function renderProspects(search = '') {
     </div>`;
 }
 
+// ── Lazy load offilog-live-data.js ──────────────────────────
+// Le fichier offilog-live-data.js (~2,65 Mo) n'est utile que :
+//   1) dans renderOffilog() (onglet Offilog)
+//   2) dans exportOffiLiveCSV()
+// → chargé à la demande pour ne pas bloquer le boot du Cockpit.
+let _offilogLivePromise = null;
+
+function loadOffilogLive() {
+  if (typeof OFFILOG_LIVE !== 'undefined') return Promise.resolve();
+  if (_offilogLivePromise) return _offilogLivePromise;
+
+  _offilogLivePromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'offilog-live-data.js?v=20260512lazy';
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => {
+      _offilogLivePromise = null; // permet retry
+      reject(new Error('Echec chargement offilog-live-data.js'));
+    };
+    document.head.appendChild(s);
+  });
+  return _offilogLivePromise;
+}
+
 // ── Tracker visites (localStorage) ──────────────────────────
 const VISIT_LOG_KEY = 'opso_visit_log';
 
@@ -6513,7 +6538,30 @@ function renderOffilog() {
   const container = document.getElementById('offilog-content');
   if (!container) return;
 
-  if (typeof OFFILOG_LIVE === 'undefined' || !OFFILOG_LIVE.length) {
+  // ── Lazy load offilog-live-data.js si pas encore chargé ──
+  if (typeof OFFILOG_LIVE === 'undefined') {
+    container.innerHTML = `
+      <div class="card" style="padding:60px;text-align:center">
+        <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:12px">
+          <span style="display:inline-block;width:18px;height:18px;border:2px solid var(--opso-green);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle"></span>
+          Chargement des données Offilog Live (2,7 Mo)…
+        </div>
+        <div style="font-size:11px;color:var(--text3)">Première visite uniquement, mise en cache après chargement.</div>
+      </div>
+    `;
+    loadOffilogLive()
+      .then(() => renderOffilog())
+      .catch(err => {
+        container.innerHTML = `<div class="card" style="padding:40px;text-align:center;color:var(--rose)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px">⚠ Impossible de charger les données Offilog</div>
+          <div style="font-size:11px;color:var(--text3)">${err.message}</div>
+          <button onclick="renderOffilog()" style="margin-top:14px;padding:7px 16px;border-radius:8px;border:1.5px solid var(--opso-green);background:transparent;color:var(--opso-green-dark);font-size:12px;font-weight:700;cursor:pointer">Réessayer</button>
+        </div>`;
+      });
+    return;
+  }
+
+  if (!OFFILOG_LIVE.length) {
     container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Catalogue Offilog non chargé.</div>`;
     return;
   }
@@ -6714,6 +6762,14 @@ function renderOffilog() {
 
 
 function exportOffiLiveCSV() {
+  // Garde lazy : si OFFILOG_LIVE pas encore chargé, on déclenche le chargement puis on relance.
+  if (typeof OFFILOG_LIVE === 'undefined') {
+    if (typeof showToast === 'function') showToast('Chargement des données Offilog…', 'info');
+    loadOffilogLive().then(() => exportOffiLiveCSV()).catch(err => {
+      if (typeof showToast === 'function') showToast('Echec chargement : ' + err.message, 'error');
+    });
+    return;
+  }
   const q = offiLiveSearch.trim().toLowerCase();
   let list = OFFILOG_LIVE.filter(p => {
     if (offiLiveCat !== 'tous' && p.cat !== offiLiveCat) return false;
@@ -9687,3 +9743,59 @@ window.addEventListener('appinstalled', () => {
   if (btn) btn.remove();
   if (typeof showToast === 'function') showToast('OPSO Santé installé !', 'success');
 });
+
+// ── PWA : detection online/offline ───────────────────────────
+function _ensureOfflineBanner() {
+  let banner = document.getElementById('offline-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'offline-banner';
+    banner.className = 'offline-banner';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
+    banner.innerHTML = '<span class="offline-banner-icon">📡</span> Hors ligne — certaines données peuvent être obsolètes';
+    document.body.appendChild(banner);
+  }
+  return banner;
+}
+
+window.addEventListener('online', () => {
+  const b = document.getElementById('offline-banner');
+  if (b) b.classList.remove('visible');
+  if (typeof showToast === 'function') showToast('Connexion rétablie', 'success');
+});
+
+window.addEventListener('offline', () => {
+  _ensureOfflineBanner().classList.add('visible');
+});
+
+// Au chargement initial : verifier si offline
+if (!navigator.onLine) {
+  setTimeout(() => _ensureOfflineBanner().classList.add('visible'), 100);
+}
+
+// ── PWA : notification de mise à jour du SW ──────────────────
+function showUpdateBanner() {
+  if (document.getElementById('update-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'update-banner';
+  banner.className = 'update-banner';
+  banner.setAttribute('role', 'status');
+  banner.innerHTML = `
+    <span>✨ Nouvelle version disponible</span>
+    <button onclick="applyUpdate()">Recharger</button>
+    <button onclick="this.parentNode.classList.remove('visible')" aria-label="Ignorer" style="background:transparent;font-size:18px;padding:4px 8px">✕</button>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.classList.add('visible'), 50);
+}
+
+async function applyUpdate() {
+  if (!('serviceWorker' in navigator)) { location.reload(); return; }
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (reg && reg.waiting) {
+    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    location.reload();
+  }
+}
