@@ -173,6 +173,12 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <button onclick="showCalendarModal()"
+          data-tooltip="Calendrier des visites"
+          aria-label="Ouvrir le calendrier des visites"
+          style="background:rgba(17,166,60,0.08);border:1px solid var(--opso-green-pale);color:var(--opso-green-dark);cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px">
+          📅 Calendrier
+        </button>
         <button onclick="showGlobalSearch()" title="Recherche globale (⌘K)"
           style="display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;transition:all .15s"
           onmouseover="this.style.background='var(--bg)';this.style.borderColor='var(--blue)';this.style.color='var(--text)'"
@@ -314,7 +320,7 @@ function showNewPassForm() {
 <script defer src="opso-adherents.js?v=20260508"></script>
 <!-- offilog-live-data.js (2,7 Mo) : chargé en lazy via loadOffilogLive() dans app.js -->
 <script defer src="wml-sales-data.js?v=20260510b"></script>
-<script defer src="app.js?v=20260513a"></script>
+<script defer src="app.js?v=20260513b"></script>
 <script>
   // Enregistrement Service Worker (PWA)
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
