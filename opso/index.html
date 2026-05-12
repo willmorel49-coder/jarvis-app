@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%2311a63c'/><rect x='76' y='16' width='28' height='148' rx='8' fill='white'/><rect x='16' y='76' width='148' height='28' rx='8' fill='white'/></svg>">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='12' y='3' width='8' height='26' rx='3' fill='%2311a63c'/><rect x='3' y='12' width='26' height='8' rx='3' fill='%2311a63c'/></svg>">
 <title>OPSO Santé · Cockpit</title>
+<link rel="manifest" href="./manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://esm.sh" crossorigin>
@@ -299,6 +300,14 @@ function showNewPassForm() {
 <script defer src="opso-adherents.js?v=20260508"></script>
 <script defer src="offilog-live-data.js?v=20260508"></script>
 <script defer src="wml-sales-data.js?v=20260510b"></script>
-<script defer src="app.js?v=20260512c"></script>
+<script defer src="app.js?v=20260512d"></script>
+<script>
+  // Enregistrement Service Worker (PWA)
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW failed:', err));
+    });
+  }
+</script>
 </body>
 </html>
