@@ -1062,71 +1062,49 @@ function renderPharmacies() {
 
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
-        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry, lastNoteDays, noteCount } = e;
-        const chipHtml = status === 'up'      ? '<span class="status-chip status-up">▲ Croissance</span>'
-                       : status === 'flat'    ? '<span class="status-chip status-flat">● Stable</span>'
-                       : status === 'down'    ? '<span class="status-chip status-down">▼ Baisse</span>'
-                       : status === 'missing' ? '<span class="status-chip status-missing">○ Aucune donnée</span>'
-                       :                       '<span class="status-chip status-flat">● Stable</span>';
-        const importFreshness = lastImportDays !== null
-          ? lastImportDays === 0
-            ? `<span style="font-size:10px;color:var(--green)">Import aujourd'hui</span>`
-            : lastImportDays <= 7
-              ? `<span style="font-size:10px;color:var(--green)">Import il y a ${lastImportDays}j</span>`
-              : lastImportDays <= 35
-                ? `<span style="font-size:10px;color:var(--text3)">Import il y a ${lastImportDays}j</span>`
-                : `<span style="font-size:10px;color:var(--rose)">Import il y a ${lastImportDays}j</span>`
-          : '';
-        const visiteBadge = (() => {
-          if (!prochaineVisite || !prochaineVisite.trim() || prochaineVisite === 'null') return '';
-          const s = prochaineVisite.trim();
-          let d = null;
-          let m;
-          m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-          if (m) d = new Date(+m[3], +m[2]-1, +m[1]);
-          m = !d && s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-          if (m) d = new Date(+m[1], +m[2]-1, +m[3]);
-          if (!d) return `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.1);padding:1px 6px;border-radius:8px">📅 ${s}</span>`;
+        const { ph, caCur, caPrev, g, lastImportDays, prochaineVisiteDate, wmlEntry } = e;
+        // Badge prioritaire UNIQUE : visite urgente > import vieux > potentiel WML
+        let priorityBadge = '';
+        if (prochaineVisiteDate) {
           const today4 = new Date(); today4.setHours(0,0,0,0);
-          const diff = Math.round((d - today4) / 86400000);
-          if (diff < 0) {
-            const late = Math.abs(diff);
-            return `<span style="font-size:10px;color:var(--rose);background:rgba(255,77,109,.12);padding:1px 6px;border-radius:8px;font-weight:700">⚠ Retard ${late}j</span>`;
-          } else if (diff === 0) {
-            return `<span style="font-size:10px;color:var(--amber);background:rgba(255,176,32,.18);padding:1px 6px;border-radius:8px;font-weight:700">📅 Aujourd'hui</span>`;
-          } else if (diff <= 7) {
-            return `<span style="font-size:10px;color:var(--mint);background:rgba(0,229,160,.1);padding:1px 6px;border-radius:8px;font-weight:700">📅 J+${diff}</span>`;
-          } else {
-            return `<span style="font-size:10px;color:var(--text3);background:var(--bg3);padding:1px 6px;border-radius:8px">📅 ${s}</span>`;
+          const daysLeft = Math.round((prochaineVisiteDate - today4) / 86400000);
+          if (daysLeft < 0) {
+            priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(255,77,109,.12);color:var(--rose);font-weight:700">⚠ Visite J${daysLeft}</span>`;
+          } else if (daysLeft <= 7) {
+            priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(255,176,32,.14);color:var(--amber);font-weight:700">📅 Visite J+${daysLeft}</span>`;
           }
-        })();
-        const wmlBadge = wmlEntry
-          ? `<span style="font-size:10px;color:var(--green);background:rgba(17,166,60,.1);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>`
-          : '';
+        }
+        if (!priorityBadge && lastImportDays !== null && lastImportDays > 45) {
+          priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(255,176,32,.14);color:var(--amber);font-weight:700">📂 Import ${lastImportDays}j</span>`;
+        }
+        if (!priorityBadge && wmlEntry) {
+          const wmlAvg = wmlEntry.ca / 4;
+          const pot = Math.max(0, wmlAvg - caCur);
+          if (pot > 500) {
+            priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(17,166,60,.12);color:var(--opso-green);font-weight:700">💡 Pot. WML +${Math.round(pot)}€</span>`;
+          }
+        }
+        const pct = maxCA ? Math.round(caCur / maxCA * 100) : 0;
         return `
           <div class="pharma-item pharma-list-row" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
-            <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
             <div class="pharma-dot" style="background:${ph.color}"></div>
             <div class="pharma-info">
-              <div class="pharma-name">${titleCase(ph.name)}</div>
-              <div class="pharma-meta" style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
-                ${chipHtml}
-                ${g !== null ? deltaBadge(caCur, caPrev) : ''}
-                ${importFreshness}
-                ${visiteBadge}
-                ${noteCount > 0
-                  ? `<span style="font-size:10px;color:var(--blue);background:rgba(0,87,255,.1);padding:1px 6px;border-radius:8px;font-weight:600" title="${noteCount} note${noteCount>1?'s':''} de visite">📝 ${lastNoteDays === 0 ? 'Auj.' : lastNoteDays !== null ? `J-${lastNoteDays}` : ''} ·${noteCount}</span>`
-                  : ''}
-                ${wmlBadge}
+              <div class="pharma-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span>${titleCase(ph.name)}</span>
+                ${priorityBadge}
+              </div>
+              <div style="height:3px;border-radius:2px;background:var(--bg3);margin-top:6px;max-width:200px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${ph.color};border-radius:2px"></div>
               </div>
             </div>
-            <div style="flex:1;max-width:120px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
             <div class="pharma-stats">
               <div class="pharma-ca">${fmt(caCur)}</div>
-              <div class="pharma-qte">CA net HT</div>
+              <div class="pharma-qte" style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+                <span>CA net HT</span>
+                ${g !== null ? deltaBadge(caCur, caPrev) : ''}
+              </div>
             </div>
-            <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Fiche de visite" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📋</button>
-            <div style="color:var(--text3);font-size:16px">›</div>
+            <div style="color:var(--text3);font-size:16px;margin-left:8px">›</div>
           </div>`;
       }).join('')
     : emptyState('🏥',
@@ -1549,8 +1527,21 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
       </div>
 
+      <!-- Sticky anchor nav -->
+      <nav aria-label="Sections fiche pharmacie" style="position:sticky;top:var(--topbar-h,64px);z-index:5;background:var(--bg);padding:8px 0;margin-bottom:16px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <div style="display:flex;gap:6px;flex-wrap:nowrap;min-width:max-content">
+          <a href="#sec-kpi"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📊 KPIs</a>
+          <a href="#sec-client" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📍 Infos</a>
+          <a href="#sec-ytd"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📈 YTD</a>
+          <a href="#sec-wml"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📦 WML</a>
+          <a href="#sec-top"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🏆 Top</a>
+          <a href="#sec-switch" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🔄 Opps</a>
+          <a href="#sec-hist"   style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🗂 Historique</a>
+        </div>
+      </nav>
+
       <!-- Row 1 : Hero + KPIs -->
-      <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;margin-bottom:20px">
+      <div id="sec-kpi" class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;margin-bottom:20px;scroll-margin-top:80px">
         <div class="kpi-card" style="background:linear-gradient(135deg,#064e20 0%,#0d8530 50%,#11a63c 100%);box-shadow:0 8px 32px rgba(17,166,60,.35),0 2px 8px rgba(17,166,60,.20);border:none">
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.7);margin-bottom:6px">CA Intégral Pharma — ${curLabel}</div>
           <div style="font-size:38px;font-weight:900;letter-spacing:-2px;font-family:'Varela Round',sans-serif;color:#fff">${fmt(caCur)}</div>
@@ -1603,7 +1594,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
       <!-- Info client (CLIENTS data) -->
       ${clientInfo ? `
-      <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid ${pharma.color}">
+      <div id="sec-client" class="card fade-up" style="margin-bottom:20px;border-left:3px solid ${pharma.color};scroll-margin-top:80px">
         <div class="card-header" style="padding:12px 16px">
           <div class="card-title" style="font-size:13px">Informations client</div>
         </div>
@@ -1666,7 +1657,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             </div>
           </div>`;
         }).join('');
-        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green)">
+        return `<div id="sec-wml" class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green);scroll-margin-top:80px">
           <div class="card-header">
             <div>
               <div class="card-title">📦 Achats Intégral Pharma — WML 2026</div>
@@ -1770,7 +1761,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             <span style="font-size:10px;padding:1px 6px;border-radius:6px;background:${cat.color}18;color:${cat.color};font-weight:600;flex-shrink:0">${cat.icon}</span>
           </div>`;
         }).join('');
-        return `<div class="card fade-up" style="margin-bottom:20px">
+        return `<div id="sec-top" class="card fade-up" style="margin-bottom:20px;scroll-margin-top:80px">
           <div class="card-header">
             <div>
               <div class="card-title">Top produits — ${curLabel}</div>
@@ -1854,7 +1845,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
       <!-- Switch opportunities -->
       ${switchOpps.length ? `
-      <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green)">
+      <div id="sec-switch" class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green);scroll-margin-top:80px">
         <div class="card-header">
           <div>
             <div class="card-title">🔄 Opportunités Switch</div>
@@ -1957,7 +1948,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
       <!-- YTD pharmacie -->
       ${pharmaYTD > 0 ? `
-      <div class="card fade-up" style="margin-bottom:20px">
+      <div id="sec-ytd" class="card fade-up" style="margin-bottom:20px;scroll-margin-top:80px">
         <div class="card-header">
           <div>
             <div class="card-title">Cumul Jan–${monthName(curM)} ${curY}</div>
@@ -2071,7 +2062,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             <td style="text-align:right;font-size:11px;color:var(--text3);padding:7px 16px 7px 8px">${p.periodCount} mois</td>
           </tr>`;
         }).join('');
-        return `<div class="card fade-up" style="margin-bottom:20px">
+        return `<div id="sec-hist" class="card fade-up" style="margin-bottom:20px;scroll-margin-top:80px">
           <div class="card-header">
             <div>
               <div class="card-title">Historique produits complet</div>
@@ -5037,6 +5028,13 @@ function printPrioritairesPDF() {
 }
 
 // ── NAV ───────────────────────────────────────
+function announce(msg) {
+  const el = document.getElementById('aria-announcer');
+  if (!el) return;
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
 function navigate(page) {
   // Fermer tout modal ouvert avant de naviguer
   document.querySelectorAll('.modal-overlay, #fiche-visite-modal, #grp-modal').forEach(el => {
@@ -5044,6 +5042,13 @@ function navigate(page) {
   });
   state.currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(el => {
+    if (el.dataset.page === page) {
+      el.setAttribute('aria-current', 'page');
+    } else {
+      el.removeAttribute('aria-current');
+    }
+  });
   updateMobileNav(page);
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
 
@@ -5063,6 +5068,7 @@ function navigate(page) {
     prioritaires: '⭐ Prioritaires à visiter',
   };
   document.getElementById('topbar-title').textContent = titles[page] || page;
+  announce('Page ' + (titles[page] || page));
   // Indicateur fraîcheur données
   updateDataFreshnessIndicator();
 
@@ -8703,7 +8709,7 @@ function showFicheVisite(pharmacyId) {
       <!-- Actions -->
       <div style="padding:16px 28px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end">
         <button onclick="copyFicheResume('${pharmacyId}')" style="padding:9px 20px;border-radius:10px;border:1.5px solid #059669;background:#ecfdf5;color:#047857;font-size:13px;font-weight:700;cursor:pointer">📋 Copier résumé</button>
-        <button onclick="window.print()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #11a63c;background:#e6f7ec;color:#0d8530;font-size:13px;font-weight:700;cursor:pointer">🖨 Imprimer</button>
+        <button onclick="printFicheVisite()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #11a63c;background:#e6f7ec;color:#0d8530;font-size:13px;font-weight:700;cursor:pointer">🖨 Imprimer</button>
         <button onclick="document.getElementById('fiche-visite-modal').remove()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#475569;font-size:13px;font-weight:700;cursor:pointer">Fermer</button>
       </div>
     </div>`;
@@ -8713,6 +8719,34 @@ function showFicheVisite(pharmacyId) {
   document.body.appendChild(modal);
 }
 
+function printFicheVisite() {
+  // Injecte des styles print temporaires
+  const styleId = 'fiche-visite-print-style';
+  let style = document.getElementById(styleId);
+  if (!style) {
+    style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @media print {
+        body > *:not(#fiche-visite-modal) { display: none !important; }
+        #fiche-visite-modal {
+          position: static !important;
+          background: white !important;
+          padding: 20px !important;
+          width: 100% !important;
+          max-width: none !important;
+          max-height: none !important;
+          overflow: visible !important;
+          box-shadow: none !important;
+        }
+        #fiche-visite-modal .modal-close,
+        #fiche-visite-modal button { display: none !important; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  window.print();
+}
 
 function copyFicheResume(pharmacyId) {
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
@@ -9091,6 +9125,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
       showGlobalSearch();
+    }
+  });
+
+  // ── Accessibilité clavier : délégué global ──────────────────
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const target = e.target;
+    if (!target || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.tagName === 'BUTTON' || target.tagName === 'A') return;
+    if (target.hasAttribute('onclick') || target.dataset.action) {
+      e.preventDefault();
+      target.click();
     }
   });
 
