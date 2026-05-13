@@ -2289,6 +2289,123 @@ html { scroll-behavior: smooth; }
   #fiche-visite-modal button { display: none !important; }
 }
 
+/* ── PRINT global (Cockpit + Fiche pharmacie) ────────── */
+@media print {
+  body.print-mode {
+    background: #fff !important;
+    color: #1e293b !important;
+    font-family: 'Arial', sans-serif !important;
+    font-size: 11px !important;
+  }
+  body.print-mode *, body.print-mode *::before, body.print-mode *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+  body.print-mode #login-screen,
+  body.print-mode .sidebar,
+  body.print-mode .topbar,
+  body.print-mode .mobile-nav,
+  body.print-mode .fab-quick,
+  body.print-mode .fab-menu,
+  body.print-mode .fab-backdrop,
+  body.print-mode .modal-overlay,
+  body.print-mode #toast-container,
+  body.print-mode .skip-link,
+  body.print-mode #app-loading,
+  body.print-mode .offline-banner,
+  body.print-mode .update-banner,
+  body.print-mode #aria-announcer,
+  body.print-mode .topbar-actions,
+  body.print-mode .opso-greeting,
+  body.print-mode .section-header-actions,
+  body.print-mode .pill-clickable,
+  body.print-mode button:not(.print-keep),
+  body.print-mode .btn,
+  body.print-mode .btn-opso {
+    display: none !important;
+  }
+  body.print-mode #app { display: block !important; }
+  body.print-mode .main { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  body.print-mode .page { padding: 0 !important; margin: 0 !important; transform: none !important; opacity: 1 !important; }
+  body.print-mode .page:not(.active) { display: none !important; }
+  body.print-mode .page.active::before {
+    content: 'OPSO Santé · Pilotage groupement · Normandie';
+    display: block;
+    background: linear-gradient(135deg, #064e20 0%, #0d8530 60%, #11a63c 100%) !important;
+    color: #fff !important;
+    padding: 14px 20px;
+    font-family: 'Arial', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 14px;
+  }
+  body.print-mode .page.active::after {
+    content: '"On prend soin de vous" · OPSO Santé × Intégral Pharma · Normandie';
+    display: block;
+    margin-top: 20px;
+    padding: 10px 20px;
+    border-top: 2px solid #11a63c;
+    font-size: 9px;
+    font-style: italic;
+    color: #64748b;
+    text-align: center;
+  }
+  body.print-mode .card {
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    page-break-inside: avoid;
+    margin-bottom: 10px !important;
+  }
+  body.print-mode .card-header {
+    padding: 10px 14px !important;
+    background: #f0fdf4 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  body.print-mode .card-title,
+  body.print-mode .section-header-text h2 {
+    font-family: 'Arial', sans-serif !important;
+    font-size: 13px !important;
+    color: #064e20 !important;
+    font-weight: 700 !important;
+  }
+  body.print-mode .kpi-value,
+  body.print-mode .kpi-value-v2,
+  body.print-mode .stat-box-value {
+    font-size: 18px !important;
+    color: #11a63c !important;
+  }
+  body.print-mode .pill,
+  body.print-mode .badge {
+    display: inline-block !important;
+    padding: 2px 8px !important;
+    border: 1px solid currentColor !important;
+    border-radius: 10px !important;
+    font-size: 9px !important;
+    background: transparent !important;
+  }
+  body.print-mode canvas { max-height: 180px !important; }
+  body.print-mode table { width: 100% !important; border-collapse: collapse !important; font-size: 10px !important; }
+  body.print-mode thead tr { background: #f0fdf4 !important; border-bottom: 1px solid #11a63c !important; }
+  body.print-mode th { padding: 5px 8px !important; font-size: 9px !important; color: #064e20 !important; }
+  body.print-mode td { padding: 4px 8px !important; border-bottom: 1px solid #f1f5f9 !important; }
+  body.print-mode tr { page-break-inside: avoid; }
+  body.print-mode .callout {
+    background: #f0fdf4 !important;
+    border-left: 3px solid #11a63c !important;
+    padding: 8px 14px !important;
+    page-break-inside: avoid;
+  }
+  body.print-mode .progress { height: 5px !important; background: #e2e8f0 !important; }
+  body.print-mode .progress-bar { background: #11a63c !important; }
+  @page { margin: 12mm 10mm 14mm 10mm; size: A4; }
+}
+
 /* ══════════════════════════════════════
    IDENTITÉ VISUELLE OPSO — RENFORCEMENT
    ══════════════════════════════════════ */
