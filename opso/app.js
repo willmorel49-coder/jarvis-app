@@ -1777,13 +1777,82 @@ function renderPharmacies() {
       </div>`;
   })();
 
+  // ── Section "Adhérents OPSO non actifs" depuis OPSO_LISTING_2026 ──
+  const adherentsHtml = (() => {
+    if (typeof OPSO_LISTING_2026 === 'undefined' || !OPSO_LISTING_2026.length) return '';
+    const activeCips = new Set(state.pharmacies.map(p => String(p.code||'').trim()).filter(Boolean));
+    const activeNames = new Set(state.pharmacies.map(p => (p.name||'').trim().toUpperCase().replace(/\s+/g,' ')));
+    const prospects = OPSO_LISTING_2026.filter(adh => {
+      const cip = String(adh.cip||'').trim();
+      const nomNorm = (adh.nom||'').trim().toUpperCase().replace(/\s+/g,' ');
+      return cip && !activeCips.has(cip) && !activeNames.has(nomNorm);
+    });
+    if (!prospects.length) return '';
+
+    // Filtre texte
+    const q = (pharmaSearch || '').toLowerCase().replace(/\s+/g,' ').trim();
+    const filtered = q ? prospects.filter(a =>
+      (a.nom||'').toLowerCase().includes(q) ||
+      (a.ville||'').toLowerCase().includes(q) ||
+      (a.cp||'').includes(q) ||
+      (a.titulaire||'').toLowerCase().includes(q)
+    ) : prospects;
+
+    if (!filtered.length && q) return '';
+
+    // Trier par ville puis nom
+    filtered.sort((a, b) => (a.ville||'').localeCompare(b.ville||'') || (a.nom||'').localeCompare(b.nom||''));
+
+    const rows = filtered.map(a => `
+      <div class="pharma-list-row" onclick="showProspectInfo('${a.cip}')"
+        style="display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--bg2);transition:background .15s"
+        onmouseenter="this.style.background='var(--opso-green-pale2)'"
+        onmouseleave="this.style.background='var(--bg2)'">
+        <div style="width:8px;height:8px;border-radius:50%;background:#9aa0a3;flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span>${titleCase(a.nom)}</span>
+            <span class="pill" style="background:var(--bg3);color:var(--text2);font-size:10px;padding:2px 7px">Adhérent ${a.annee||''}</span>
+            ${a.perimetre ? `<span class="pill" style="background:rgba(2,132,199,.10);color:#0284c7;font-size:10px;padding:2px 7px">${a.perimetre}</span>` : ''}
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${a.cp||''} ${a.ville||''} ${a.titulaire?'· '+a.titulaire:''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--text3)">CIP ${a.cip}</div>
+        </div>
+        <div style="color:var(--text3);font-size:16px">›</div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="card fade-in" style="margin-top:24px">
+        <div class="card-header">
+          <div class="section-header-title">
+            <div class="section-header-icon" style="background:var(--bg3);color:var(--text2)">🎯</div>
+            <div class="section-header-text">
+              <h2>Adhérents OPSO à activer en direct</h2>
+              <div class="section-header-sub">${filtered.length} pharmacie${filtered.length>1?'s':''} adhérente${filtered.length>1?'s':''} OPSO Santé qui ne commandent pas (encore) directement chez Intégral Pharma</div>
+            </div>
+          </div>
+        </div>
+        <div class="callout" style="margin:14px 18px">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <div class="callout-title">Potentiel de conversion direct</div>
+            <div>Ces ${filtered.length} pharmacies ont adhéré au groupement OPSO Santé mais n'ont pas (encore) de commande directe enregistrée chez Intégral Pharma. Idéal pour cibler vos visites de prospection.</div>
+          </div>
+        </div>
+        ${rows}
+      </div>`;
+  })();
+
   document.getElementById('pharma-content').innerHTML = `
     ${planningHtml}
     <div class="card fade-in">
       <div class="card-header">
         <div>
-          <div class="card-title">Pharmacies (${enriched.length})</div>
-          <div class="card-subtitle">${curY ? `Mois courant : ${monthName(curM)} ${curY}` : 'Aucune donnée'}</div>
+          <div class="card-title">Pharmacies actives (${enriched.length})</div>
+          <div class="card-subtitle">${curY ? `Commandent en direct · ${monthName(curM)} ${curY}` : 'Aucune donnée'}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <button onclick="exportPharmaciesCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV</button>
@@ -1805,8 +1874,75 @@ function renderPharmacies() {
       </div>
       ${listHtml}
     </div>
-
+    ${adherentsHtml}
   `;
+}
+
+function showProspectInfo(cip) {
+  if (typeof OPSO_LISTING_2026 === 'undefined') return;
+  const a = OPSO_LISTING_2026.find(x => String(x.cip) === String(cip));
+  if (!a) return;
+  if (typeof trackEvent === 'function') trackEvent('prospect_info_opened', { cip });
+
+  const existing = document.getElementById('prospect-info-modal');
+  if (existing) { try { closeAccessibleModal(existing); } catch { existing.remove(); } }
+
+  const modal = document.createElement('div');
+  modal.id = 'prospect-info-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:540px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">${titleCase(a.nom)}</div>
+          <div class="modal-subtitle">Adhérent OPSO Santé ${a.annee||''} ${a.perimetre?'· '+a.perimetre:''}</div>
+        </div>
+        <button class="modal-close" onclick="closeAccessibleModal(document.getElementById('prospect-info-modal'))" aria-label="Fermer">✕</button>
+      </div>
+      <div class="callout" style="margin:14px 20px 0">
+        <div class="callout-icon">🎯</div>
+        <div class="callout-content">
+          <div class="callout-title">Pharmacie à activer en direct</div>
+          <div>Cette pharmacie adhère au groupement OPSO Santé mais n'a pas (encore) de commande directe enregistrée chez Intégral Pharma.</div>
+        </div>
+      </div>
+      <div style="padding:18px 24px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+          <div class="stat-box" style="padding:10px 12px">
+            <div class="stat-box-label" style="font-size:9px">Code CIP</div>
+            <div style="font-size:14px;font-weight:700;font-family:ui-monospace,monospace">${a.cip}</div>
+          </div>
+          ${a.uga ? `<div class="stat-box" style="padding:10px 12px">
+            <div class="stat-box-label" style="font-size:9px">UGA</div>
+            <div style="font-size:14px;font-weight:700">${a.uga}</div>
+          </div>` : ''}
+          ${a.annee ? `<div class="stat-box" style="padding:10px 12px">
+            <div class="stat-box-label" style="font-size:9px">Année adhésion</div>
+            <div style="font-size:14px;font-weight:700">${a.annee}</div>
+          </div>` : ''}
+          ${a.perimetre ? `<div class="stat-box" style="padding:10px 12px">
+            <div class="stat-box-label" style="font-size:9px">Périmètre</div>
+            <div style="font-size:14px;font-weight:700">${a.perimetre}</div>
+          </div>` : ''}
+        </div>
+        ${a.titulaire || a.adresse || a.tel || a.email ? `
+        <div style="margin-top:16px;padding:14px 16px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Coordonnées</div>
+          ${a.titulaire ? `<div style="font-size:13px;margin-bottom:6px"><strong style="color:var(--text3);font-weight:600">Titulaire :</strong> ${a.titulaire}</div>` : ''}
+          ${a.adresse ? `<div style="font-size:13px;margin-bottom:6px"><strong style="color:var(--text3);font-weight:600">Adresse :</strong> ${a.adresse}${a.cp||a.ville?', '+(a.cp||'')+' '+(a.ville||''):''}</div>` : ''}
+          ${a.tel ? `<div style="font-size:13px;margin-bottom:6px"><strong style="color:var(--text3);font-weight:600">Tél :</strong> <a href="tel:${a.tel}" style="color:var(--opso-green-dark);text-decoration:none">${a.tel}</a></div>` : ''}
+          ${a.email ? `<div style="font-size:13px"><strong style="color:var(--text3);font-weight:600">Email :</strong> <a href="mailto:${a.email}" style="color:var(--opso-green-dark);text-decoration:none">${a.email}</a></div>` : ''}
+        </div>` : ''}
+      </div>
+      <div class="modal-footer">
+        ${a.tel ? `<a href="tel:${a.tel}" class="pill pill-clickable">📞 Appeler</a>` : ''}
+        ${a.email ? `<a href="mailto:${a.email}" class="pill pill-clickable">✉ Email</a>` : ''}
+        <button onclick="closeAccessibleModal(document.getElementById('prospect-info-modal'))" class="btn-opso" style="padding:7px 18px;font-size:12px">Fermer</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  if (typeof makeAccessibleModal === 'function') makeAccessibleModal(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeAccessibleModal(modal); });
 }
 
 function exportPharmaciesCSV() {
