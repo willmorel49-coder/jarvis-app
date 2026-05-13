@@ -1392,7 +1392,7 @@ function printRapportMensuel() {
     const totCa = sortedWml.reduce((s,d) => s+d.ca, 0);
     const totMg = sortedWml.reduce((s,d) => s+d.mg, 0);
     const txMoy = totCa > 0 ? (totMg/totCa*100) : 0;
-    return `<h2 style="page-break-before:always">Achats Intégral Pharma — Jan–Avr 2026 (WML)</h2>
+    return `<h2 style="page-break-before:always">Achats Intégral Pharma — Jan–Avr 2026</h2>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
       <div class="kpi"><div class="kpi-val">${fmtW(totCa)}</div><div class="kpi-lab">CA total acheté</div></div>
       <div class="kpi"><div class="kpi-val" style="color:#059669">${fmtW(totMg)}</div><div class="kpi-lab">Marge (remise obtenue)</div></div>
@@ -1676,7 +1676,7 @@ function renderPharmacies() {
           const wmlAvg = wmlEntry.ca / 4;
           const pot = Math.max(0, wmlAvg - caCur);
           if (pot > 500) {
-            priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(17,166,60,.12);color:var(--opso-green);font-weight:700">💡 Pot. WML +${Math.round(pot)}€</span>`;
+            priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(17,166,60,.12);color:var(--opso-green);font-weight:700">💡 Pot. groupement +${Math.round(pot)}€</span>`;
           }
         }
         const prospectStage = getProspectStage(ph.id);
@@ -1714,7 +1714,7 @@ function renderPharmacies() {
     : `<div class="empty-state">
         <div class="empty-state-icon">${pharmaSearch ? '🔍' : '🏥'}</div>
         <div class="empty-state-title">${pharmaSearch ? 'Aucun résultat' : 'Aucune pharmacie'}</div>
-        <div class="empty-state-sub">${pharmaSearch ? 'Essayez un autre terme de recherche, ou retirez les filtres actifs pour voir toutes les pharmacies.' : 'Importez un fichier Excel WML pour voir apparaître vos pharmacies ici. L\'import se fait via l\'onglet « Imports ».'}</div>
+        <div class="empty-state-sub">${pharmaSearch ? 'Essayez un autre terme de recherche, ou retirez les filtres actifs pour voir toutes les pharmacies.' : 'Importez un fichier Excel de ventes pour voir apparaître vos pharmacies ici.'}</div>
       </div>`;
 
   const planningHtml = (() => {
@@ -1798,8 +1798,8 @@ function renderPharmacies() {
         ${filterBarHtml}
         <div style="display:flex;gap:4px;align-items:center">
           <span style="font-size:11px;color:var(--text3);margin-right:4px">Trier par</span>
-          ${[['ca','CA'],['delta','Delta'],['wml','WML'],['note','Notes'],['name','Nom']].map(([k,l]) =>
-            `<button onclick="pharmaSort='${k}';renderPharmacies()" style="padding:4px 10px;border-radius:8px;border:1px solid ${pharmaSort===k?'var(--green)':'var(--border2)'};background:${pharmaSort===k?'rgba(0,87,255,.1)':'transparent'};color:${pharmaSort===k?'var(--green)':'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600" title="${k==='wml'?'Trier par potentiel WML non capturé':''}">${l}</button>`
+          ${[['ca','CA'],['delta','Delta'],['wml','Groupement'],['note','Notes'],['name','Nom']].map(([k,l]) =>
+            `<button onclick="pharmaSort='${k}';renderPharmacies()" style="padding:4px 10px;border-radius:8px;border:1px solid ${pharmaSort===k?'var(--green)':'var(--border2)'};background:${pharmaSort===k?'rgba(0,87,255,.1)':'transparent'};color:${pharmaSort===k?'var(--green)':'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600" title="${k==='wml'?'Trier par potentiel groupement non capturé':''}">${l}</button>`
           ).join('')}
         </div>
       </div>
@@ -2707,7 +2707,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <a href="#sec-visits" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🗓 Visites</a>
           <a href="#sec-prospect" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🎯 Prospect</a>
           <a href="#sec-ytd"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📈 YTD</a>
-          <a href="#sec-wml"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📦 WML</a>
+          <a href="#sec-wml"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">📦 Groupement</a>
           <a href="#sec-top"    style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🏆 Top</a>
           <a href="#sec-switch" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🔄 Opps</a>
           <a href="#sec-hist"   style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);text-decoration:none;white-space:nowrap">🗂 Historique</a>
@@ -2951,7 +2951,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         return `<div id="sec-wml" class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green);scroll-margin-top:80px">
           <div class="card-header">
             <div>
-              <div class="card-title">📦 Achats Intégral Pharma — WML 2026</div>
+              <div class="card-title">📦 Achats via le groupement — 2026</div>
               <div class="card-subtitle">Jan–Avr 2026 · ${(wmlEntry.pr || []).length} références · TIRCODE ${wmlEntry.tc}</div>
             </div>
             <div style="text-align:right">
@@ -3008,12 +3008,12 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--amber)">
           <div class="card-header">
             <div>
-              <div class="card-title">📦 WML non commandés en direct</div>
-              <div class="card-subtitle">${missed.length} produit${missed.length>1?'s':''} achetés via WML sans commande directe à IP</div>
+              <div class="card-title">📦 Achats groupement à convertir en direct</div>
+              <div class="card-subtitle">${missed.length} produit${missed.length>1?'s':''} achetés via le groupement sans commande directe à IP</div>
             </div>
             <div style="text-align:right">
               <div style="font-size:20px;font-weight:900;color:var(--amber)">${fmt(totCA)}</div>
-              <div style="font-size:11px;color:var(--text3)">CA WML potentiel</div>
+              <div style="font-size:11px;color:var(--text3)">CA potentiel à récupérer</div>
             </div>
           </div>
           ${missedHtml}
@@ -3181,7 +3181,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div class="card-header">
             <div>
               <div class="card-title">📦 Groupement OPSO — Jan–Avr 2026</div>
-              <div class="card-subtitle">Achats totaux via WML · taux de conversion en commande directe IP</div>
+              <div class="card-subtitle">Achats totaux via le groupement · taux de conversion en commande directe IP</div>
             </div>
             ${convPct !== null ? `<div style="text-align:right">
               <div style="font-size:22px;font-weight:900;color:${convPct>=80?'var(--opso-green)':convPct>=40?'var(--amber)':'var(--rose)'}">${convPct}%</div>
@@ -3650,14 +3650,13 @@ Je me permets de vous contacter au sujet de l'activité de ${phLabel} avec Inté
 ${topProds.length ? `🏆 Vos top produits ce mois :
 ${topProds.map(([name, ca], i) => `${i+1}. ${name} — ${fmt(ca)}`).join('\n')}
 
-` : ''}${missedSection}N'hésitez pas à me contacter pour toute question ou pour planifier une visite à ${pharma.name || 'votre officine'}.
+` : ''}${missedSection}N'hésitez pas à nous contacter pour toute question ou pour planifier une visite à ${pharma.name || 'votre officine'}.
 
 Bien cordialement,
 
-William Morel
-Délégué commercial — Intégral Pharma
-Partenaire du groupement OPSO Santé
-✉ willmorel49@gmail.com`;
+L'équipe OPSO Santé
+Groupement pharmacies indépendantes — Normandie
+"On prend soin de vous"`;
 
   const existing = document.getElementById('email-gen-modal');
   if (existing) existing.remove();
@@ -3898,7 +3897,7 @@ function renderProduits() {
         padding:5px 14px;border-radius:20px;border:1px solid ${prodWmlFilter ? 'var(--mint)' : 'var(--border2)'};
         background:${prodWmlFilter ? 'rgba(0,229,160,.18)' : 'transparent'};color:${prodWmlFilter ? 'var(--mint)' : 'var(--text2)'};
         cursor:pointer;font-size:12px;font-weight:${prodWmlFilter ? '600' : '400'};white-space:nowrap;transition:all .15s
-      ">📦 WML (${wmlNbProdTable})</button>`
+      ">📦 Groupement (${wmlNbProdTable})</button>`
     : '';
   if (prodFamille !== 'tous') {
     if (prodFamille === 'froid') prodTableAll = prodTableAll.filter(p => p.froid);
@@ -6016,7 +6015,7 @@ function renderBenchmark() {
               ${thB('rot_pharma_jan26','Rot./pharma/mois')}
               ${thB('yoy_jan','YoY Jan')}
               <th style="text-align:right">France Jan26</th>
-              ${wmlBenchMap.size > 0 ? '<th style="text-align:center;color:var(--mint);font-size:11px" title="Nb pharmacies OPSO achetant ce produit via WML">WML OPSO</th>' : ''}
+              ${wmlBenchMap.size > 0 ? '<th style="text-align:center;color:var(--mint);font-size:11px" title="Nb pharmacies OPSO achetant ce produit via le groupement">Groupement</th>' : ''}
               ${salesAll.length > 0 ? thB('notre_ca', 'Nos ventes CA') : ''}
               <th style="text-align:center;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px" title="Tendance Ameli 12 mois">Tendance</th>
             </tr></thead>
@@ -6263,8 +6262,8 @@ function renderPrioritaires() {
             <rect x="3" y="12" width="26" height="8" rx="3" fill="#11a63c"/>
           </svg>
         </div>
-        <div class="empty-state-title">Aucune donnée WML disponible</div>
-        <div class="empty-state-sub">Les données du groupement WML n'ont pas été chargées. Vérifie que le fichier <code>wml-data.js</code> est bien présent, ou importe un Excel WML pour démarrer.</div>
+        <div class="empty-state-title">Aucune donnée groupement disponible</div>
+        <div class="empty-state-sub">Les données du groupement n'ont pas été chargées. Importe les ventes pour démarrer.</div>
       </div>
     </div>`;
     return;
@@ -6584,7 +6583,7 @@ function printPrioritairesPDF() {
         <div class="brand-sub">Groupement pharmacies indépendantes · Normandie</div>
       </div>
     </div>
-    <div class="meta">Délégué IP : William Morel<br>Édité le ${dateStr}</div>
+    <div class="meta">OPSO Santé · Normandie<br>Édité le ${dateStr}</div>
   </div>
   <div class="prospect-box">
     <div class="prospect-label">Sélection produits</div>
@@ -6630,9 +6629,9 @@ function printPrioritairesPDF() {
 <div class="cta">
   <div class="cta-title">Rejoignez OPSO Santé et bénéficiez des mêmes tarifs</div>
   <div class="cta-body">
-    En adhérant au groupement OPSO Santé, votre pharmacie accède aux tarifs Intégral Pharma négociés,
-    à un délégué commercial dédié et à des outils de pilotage exclusifs.<br>
-    <strong style="color:#064e20">Contact : William Morel · Délégué Intégral Pharma · Normandie</strong>
+    En adhérant au groupement OPSO Santé, votre pharmacie accède aux tarifs Intégral Pharma négociés
+    et à des outils de pilotage exclusifs.<br>
+    <strong style="color:#064e20">OPSO Santé · Groupement pharmacies indépendantes de Normandie</strong>
   </div>
 </div>
 
@@ -7086,7 +7085,7 @@ function renderCatalogue() {
     const cipTag     = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
     const offreTag   = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
     const wmlPop     = wmlPopMap.get(normCat(b.designation)) || 0;
-    const wmlTag     = wmlPop > 0 ? `<span style="font-size:10px;padding:1px 6px;background:rgba(0,229,160,.13);color:var(--mint);border-radius:4px;font-weight:700;border:1px solid rgba(0,229,160,.25)" title="${wmlPop} pharmacie(s) OPSO achètent ce produit via WML">📦 ×${wmlPop} WML</span>` : '';
+    const wmlTag     = wmlPop > 0 ? `<span style="font-size:10px;padding:1px 6px;background:rgba(0,229,160,.13);color:var(--mint);border-radius:4px;font-weight:700;border:1px solid rgba(0,229,160,.25)" title="${wmlPop} pharmacie(s) OPSO achètent ce produit via le groupement">📦 ×${wmlPop}</span>` : '';
     const prixLecl   = b.cip13 ? (getCatLeclMap().get(String(b.cip13)) || null) : null;
     const leclTag    = prixLecl != null ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,114,230,.1);color:#0072e6;border-radius:4px;font-weight:700">🛒 ${fmtP(prixLecl)}</span>` : '';
     const wmlPuNet = wmlPriceMap.get(normCat(b.designation));
@@ -8156,7 +8155,7 @@ function renderOffilog() {
           </div>
           <span class="offil-card-cat">${p.cat}</span>
         </div>
-        ${wmlCount > 0 ? `<div style="margin-top:5px"><span style="font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(0,229,160,.12);color:var(--mint);font-weight:700;border:1px solid rgba(0,229,160,.2)">📦 ${wmlCount} pharmacie${wmlCount>1?"s":""} WML</span></div>` : ""}
+        ${wmlCount > 0 ? `<div style="margin-top:5px"><span style="font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(0,229,160,.12);color:var(--mint);font-weight:700;border:1px solid rgba(0,229,160,.2)">📦 ${wmlCount} pharmacie${wmlCount>1?"s":""} groupement</span></div>` : ""}
         ${benchRow}
       </div>
     </a>`;
@@ -8237,7 +8236,7 @@ function renderOffilog() {
         <option value="ecart" ${offiLiveSort==='ecart'?'selected':''}>⚠ Conc. moins cher</option>
       </select>
       <button onclick="exportOffiLiveCSV()" class="pill pill-clickable pill-outline">⬇ CSV</button>
-      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLiveWml ? 'pill-active' : ''}">📦 WML</button>
+      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLiveWml ? 'pill-active' : ''}">📦 Groupement</button>
       <button onclick="offiLiveAlerte=!offiLiveAlerte;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLiveAlerte ? 'pill-active' : ''}" ${offiLiveAlerte ? 'style="background:var(--opso-danger);border-color:var(--opso-danger);color:#fff"' : ''}>⚠ Alerte</button>
       <button onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLivePromo ? 'pill-active' : ''}" ${offiLivePromo ? 'style="background:var(--opso-warning);border-color:var(--opso-warning);color:#fff"' : ''}>🏷 Promos</button>
       ${_clearChip}
@@ -8375,14 +8374,14 @@ function renderWml() {
   if (!container) return;
 
   if (typeof WML_DATA === 'undefined' || !WML_DATA.length) {
-    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Données WML non chargées.</div>`;
+    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Données groupement non chargées.</div>`;
     return;
   }
 
   const WML_VISIBLE = getWmlVisible();
 
   if (!WML_VISIBLE.length) {
-    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Aucune pharmacie OPSO Santé dans les données WML.</div>`;
+    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Aucune pharmacie OPSO Santé dans les données du groupement.</div>`;
     return;
   }
 
@@ -8551,8 +8550,8 @@ function renderWml() {
       <div class="card" style="margin-bottom:16px;border-left:3px solid ${convRatioPh >= 100 ? 'var(--green)' : convRatioPh >= 60 ? 'var(--amber)' : 'var(--rose)'}">
         <div class="card-header" style="padding-bottom:8px">
           <div>
-            <div class="card-title">Direct IP vs Achats WML</div>
-            <div class="card-subtitle">Mois courant vs moyenne mensuelle WML (Jan–Avr)</div>
+            <div class="card-title">Direct IP vs Achats groupement</div>
+            <div class="card-subtitle">Mois courant vs moyenne mensuelle groupement (Jan–Avr)</div>
           </div>
           ${convRatioPh !== null ? `<div style="font-size:26px;font-weight:900;color:${convRatioPh>=100?'var(--green)':convRatioPh>=60?'var(--amber)':'var(--rose)'}">${convRatioPh}%</div>` : ''}
         </div>
@@ -8561,8 +8560,8 @@ function renderWml() {
           <div class="callout ${convRatioPh >= 100 ? '' : convRatioPh >= 60 ? 'warning' : 'danger'}" style="margin-bottom:14px">
             <div class="callout-icon">${convRatioPh >= 100 ? '✓' : '⚠'}</div>
             <div class="callout-content">
-              <div class="callout-title">Direct IP : ${convRatioPh}% du WML mensuel moyen</div>
-              <div>${convRatioPh >= 100 ? 'Excellent — cette pharmacie commande au-dessus de sa moyenne WML.' : convRatioPh >= 60 ? 'Marge de progression : on peut encore convertir une partie WML vers le direct.' : 'Potentiel important — la pharmacie achète peu en direct par rapport au groupement.'}</div>
+              <div class="callout-title">Direct IP : ${convRatioPh}% des achats groupement mensuels moyens</div>
+              <div>${convRatioPh >= 100 ? 'Excellent — cette pharmacie commande au-dessus de sa moyenne groupement.' : convRatioPh >= 60 ? 'Marge de progression : on peut encore convertir une partie des achats groupement vers le direct.' : 'Potentiel important — la pharmacie achète peu en direct par rapport au groupement.'}</div>
             </div>
           </div>` : ''}
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
@@ -8572,7 +8571,7 @@ function renderWml() {
             </div>
             <div style="text-align:center;padding:10px;background:var(--bg2);border-radius:8px">
               <div style="font-size:16px;font-weight:900;color:var(--text)">${fmt(wmlMonthAvg)}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:2px">Moy. WML mensuelle</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Moy. groupement mensuelle</div>
             </div>
             <div style="text-align:center;padding:10px;background:${potentielPh>50?'rgba(255,176,32,.1)':'rgba(0,229,160,.06)'};border-radius:8px">
               <div style="font-size:16px;font-weight:900;color:${potentielPh>50?'var(--amber)':'var(--green)'}">${potentielPh>50?'+'+fmt(potentielPh):'✓'}</div>
@@ -8591,7 +8590,7 @@ function renderWml() {
             <div class="section-header-icon">📊</div>
             <div class="section-header-text">
               <h2>CA mensuel Jan – Avr 2026</h2>
-              <div class="section-header-sub">Évolution des commandes WML sur 4 mois</div>
+              <div class="section-header-sub">Évolution des commandes groupement sur 4 mois</div>
             </div>
           </div>
         </div>
@@ -8892,7 +8891,7 @@ function renderWml() {
       <div class="callout" style="margin-bottom:18px">
         <div class="callout-icon">📦</div>
         <div class="callout-content">
-          <div class="callout-title">Achats Intégral Pharma via le groupement WML</div>
+          <div class="callout-title">Achats Intégral Pharma via le groupement OPSO Santé</div>
           <div>Vue consolidée des commandes effectuées par les ${WML_VISIBLE.length} pharmacies adhérentes via OPSO Santé, période Janvier-Avril 2026. Cliquez sur une pharmacie pour voir le détail produit.</div>
         </div>
       </div>
@@ -8959,7 +8958,7 @@ function renderWml() {
               <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Activité</th>
               <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Mois</th>
               <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Tendance</th>
-              <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--amber);font-weight:700;text-transform:uppercase;letter-spacing:.3px" title="Potentiel de conversion WML → Direct">Pot. Direct</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--amber);font-weight:700;text-transform:uppercase;letter-spacing:.3px" title="Potentiel de conversion groupement → Direct">Pot. Direct</th>
               <th></th>
             </tr></thead>
             <tbody>${pharmaRows}</tbody>
@@ -8973,7 +8972,7 @@ function renderWml() {
         const nnA = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
         const wmlNoms = new Set(WML_VISIBLE.map(d => nnA(d.nom)));
         const absents = OPSO_ADHERENTS.filter(a => !wmlNoms.has(nnA(a.nom)));
-        if (!absents.length) return `<div style="padding:14px 16px;background:rgba(0,229,160,.06);border-radius:10px;border:1px solid rgba(0,229,160,.2);margin-top:16px;font-size:12px;color:var(--mint);font-weight:700">✓ Tous les ${OPSO_ADHERENTS.length} adhérents sont présents dans les données WML</div>`;
+        if (!absents.length) return `<div style="padding:14px 16px;background:rgba(0,229,160,.06);border-radius:10px;border:1px solid rgba(0,229,160,.2);margin-top:16px;font-size:12px;color:var(--mint);font-weight:700">✓ Tous les ${OPSO_ADHERENTS.length} adhérents sont présents dans les données du groupement</div>`;
         const ugaGroups = {};
         for (const a of absents) { if (!ugaGroups[a.uga]) ugaGroups[a.uga] = []; ugaGroups[a.uga].push(a); }
         const ugaHtml = Object.entries(ugaGroups).sort((a,b)=>a[0].localeCompare(b[0])).map(([uga, list]) =>
@@ -8985,7 +8984,7 @@ function renderWml() {
         return `<div class="card" style="margin-top:16px;border-left:3px solid var(--amber)">
           <div class="card-header">
             <div>
-              <div class="card-title">Adhérents sans données WML</div>
+              <div class="card-title">Adhérents sans données</div>
               <div class="card-subtitle">${absents.length} pharmacie${absents.length>1?'s':''} OPSO absente${absents.length>1?'s':''} des imports Jan–Avr 2026</div>
             </div>
             <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(255,176,32,.12);color:var(--amber);font-weight:700">${absents.length} / ${OPSO_ADHERENTS.length}</span>
@@ -9529,14 +9528,7 @@ function renderGrpDashboard(grp) {
   const _greetingHello = _hour < 6 ? 'Bonne nuit' : _hour < 12 ? 'Bonjour' : _hour < 18 ? 'Bon après-midi' : 'Bonsoir';
   const _today = new Date().toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'});
   const _today1 = _today.charAt(0).toUpperCase() + _today.slice(1);
-  // Choix slogan tournant
-  const _slogans = [
-    'On prend soin de vous',
-    'Proximité et indépendance',
-    'Au service des pharmaciens normands',
-    'Votre groupement, votre identité',
-  ];
-  const _slogan = _slogans[new Date().getDate() % _slogans.length];
+  const _slogan = 'On prend soin de vous';
 
   const opsoGreeting = `
 <div class="opso-greeting fade-up" style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:14px 18px;background:linear-gradient(135deg,rgba(13,133,48,.08),rgba(17,166,60,.04));border:1px solid rgba(17,166,60,.18);border-radius:14px">
@@ -9573,7 +9565,7 @@ function renderGrpDashboard(grp) {
     <div class="card" style="padding:48px;text-align:center;color:var(--text3)">
       <div style="font-size:40px;margin-bottom:12px">🏪</div>
       <div style="font-size:14px;font-weight:600;margin-bottom:6px">Aucune pharmacie</div>
-      <div style="font-size:12px">Importez un fichier WML pour démarrer.</div>
+      <div style="font-size:12px">Importez un fichier de ventes pour démarrer.</div>
     </div>`;
 
   // ── Période ──────────────────────────────────────
@@ -9952,7 +9944,7 @@ function renderGrpDashboard(grp) {
       <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="white"/><rect x="3" y="12" width="26" height="8" rx="3" fill="white"/></svg>
       <span style="font-family:'Varela Round',sans-serif;font-size:18px;color:#fff;letter-spacing:-.3px">OPSO Santé · Cockpit Groupement</span>
     </div>
-    <div style="font-size:13px;color:rgba(255,255,255,.75);font-weight:400">${phActives} pharmacies actives · Portefeuille William Morel · Normandie</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.75);font-weight:400">${phActives} pharmacies adhérentes · OPSO Santé · Normandie</div>
   </div>
   <div style="text-align:right;position:relative;flex-shrink:0">
     <div style="font-family:'Varela Round',sans-serif;font-size:28px;color:#fff;font-weight:400;letter-spacing:-.5px">${caCur > 0 ? fmt(caCur) : '—'}</div>
@@ -10140,7 +10132,7 @@ function renderGrpDashboard(grp) {
       insights.push({
         icon: '💡',
         type: 'success',
-        title: '+' + Math.round(totalPotentiel).toLocaleString('fr-FR') + '€/mois de potentiel WML→Direct',
+        title: '+' + Math.round(totalPotentiel).toLocaleString('fr-FR') + '€/mois de potentiel groupement→Direct',
         desc: 'Ces pharmacies achètent via le groupement — propose-leur de commander en direct chez IP.',
         action: 'Voir Prioritaires',
         onclick: "navigate('prioritaires')"
@@ -10931,7 +10923,7 @@ function showFicheVisite(pharmacyId) {
         <!-- WML Achats IP -->
         ${wmlEntry ? `
         <div style="margin-bottom:20px;padding:14px 16px;background:#f0fdf4;border-radius:12px;border-left:3px solid #11a63c">
-          <div style="font-size:11px;font-weight:800;color:#0d8530;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📦 Achats Intégral Pharma — WML Jan–Avr 2026</div>
+          <div style="font-size:11px;font-weight:800;color:#0d8530;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📦 Achats Intégral Pharma — Jan–Avr 2026</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
             <div style="text-align:center;padding:8px;background:#fff;border-radius:8px">
               <div style="font-size:16px;font-weight:900;color:#0d8530">${fmt(wmlEntry.ca)}</div>
@@ -10972,7 +10964,7 @@ function showFicheVisite(pharmacyId) {
           if (!missed.length) return '';
           const totCA = missed.reduce((s,[,ca])=>s+ca,0);
           return `<div style="margin-bottom:20px;padding:14px 16px;background:#fffbeb;border-radius:12px;border-left:3px solid #d97706">
-            <div style="font-size:11px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📦 À proposer — Achats WML non commandés en direct (${fmt(totCA)})</div>
+            <div style="font-size:11px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📦 À proposer — Achats groupement non commandés en direct (${fmt(totCA)})</div>
             ${missed.slice(0,5).map(([nom,ca,,qt]) => `
               <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #fde68a">
                 <div style="font-size:11px;font-weight:600;color:#1e293b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">→ ${nom}</div>
@@ -11267,7 +11259,7 @@ function _gsRenderEmpty() {
   const pages = [
     { id: 'dashboard',    label: 'Cockpit',             icon: '📊', sub: "Vue d'ensemble" },
     { id: 'pharmacies',   label: 'Mes pharmacies',      icon: '🏥', sub: 'Liste et fiches' },
-    { id: 'wml',          label: 'CA & Commandes',      icon: '📦', sub: 'Achats WML' },
+    { id: 'wml',          label: 'CA & Commandes',      icon: '📦', sub: 'Achats groupement' },
     { id: 'produits',     label: 'Catalogue IP',        icon: '💊', sub: 'Mes ventes par produit' },
     { id: 'offilog',      label: 'Prix Offilog Live',   icon: '🛒', sub: 'Comparatifs concurrents' },
     { id: 'benchmark',    label: 'Benchmark Ameli',     icon: '📈', sub: 'Marché national' },
@@ -11369,7 +11361,7 @@ function gsSearch(q) {
   const pages = [
     { id: 'dashboard',    label: 'Cockpit',             icon: '📊', sub: "Vue d'ensemble" },
     { id: 'pharmacies',   label: 'Mes pharmacies',      icon: '🏥', sub: 'Liste et fiches' },
-    { id: 'wml',          label: 'CA & Commandes',      icon: '📦', sub: 'Achats WML' },
+    { id: 'wml',          label: 'CA & Commandes',      icon: '📦', sub: 'Achats groupement' },
     { id: 'produits',     label: 'Catalogue IP',        icon: '💊', sub: 'Mes ventes par produit' },
     { id: 'offilog',      label: 'Prix Offilog Live',   icon: '🛒', sub: 'Comparatifs concurrents' },
     { id: 'benchmark',    label: 'Benchmark Ameli',     icon: '📈', sub: 'Marché national' },
@@ -11621,7 +11613,7 @@ function _gsBuildFullSearch(ql, startIdx) {
   }
 
   if (wmlHits.length) {
-    html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Achats WML</div>`;
+    html += `<div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Achats groupement</div>`;
     html += wmlHits.map(item => {
       const d = item.d || item;
       const prodNom = item.prodNom;
