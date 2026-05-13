@@ -11067,6 +11067,15 @@ function showFicheVisite(pharmacyId) {
   makeAccessibleModal(modal);
 }
 
+function printCurrentPage() {
+  document.body.classList.add('print-mode');
+  if (typeof trackEvent === 'function') trackEvent('page_print', { page: state?.currentPage || 'unknown' });
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => document.body.classList.remove('print-mode'), 500);
+  }, 100);
+}
+
 function printFicheVisite() {
   trackEvent('fiche_print', {});
   // Injecte des styles print temporaires
