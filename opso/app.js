@@ -8265,7 +8265,7 @@ function renderOffilog() {
   const cards = page.map(p => {
     const fmtP = v => v != null ? v.toFixed(2).replace('.', ',') + ' €' : '—';
     const hasPromo = p.promo && p.prix_b != null;
-    const { drakkars, cap3000, leclerc, maPharmie, pharmazon, prixIp } = lookupBench(p);
+    const { drakkars, cap3000, leclerc, pharmazon, prixIp } = lookupBench(p);
     const wmlCount = p.ean ? (wmlLiveEanMap.get(String(p.ean)) || 0) : 0;
     // Best price indicator — find cheapest competitor and name it
     const compMap = [
