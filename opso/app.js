@@ -8478,14 +8478,14 @@ function renderOffilog() {
   </div>
 
   ${list.length === 0 ? `
-    <div class="offil-empty">
-      <div class="offil-empty-icon">🔍</div>
-      <div class="offil-empty-title">Aucun produit trouvé</div>
-      <div class="offil-empty-sub">${_hasActiveFilter
-        ? `Aucun résultat ne correspond ${offiLiveSearch ? `à "<strong>${offiLiveSearch.replace(/</g,'&lt;')}</strong>"` : 'aux filtres actifs'}. Essayez d'élargir votre recherche ou de retirer un filtre.`
+    <div class="empty-state" style="background:var(--bg2);border:1px dashed var(--border2);border-radius:16px;margin:24px 0">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-title">Aucun produit trouvé</div>
+      <div class="empty-state-sub">${_hasActiveFilter
+        ? `Aucun résultat ne correspond ${offiLiveSearch ? `à <strong style="color:var(--text)">"${offiLiveSearch.replace(/</g,'&lt;')}"</strong>` : 'aux filtres actifs'}. Essayez d'élargir votre recherche ou de retirer un filtre.`
         : 'Le catalogue Offilog Live semble vide.'
       }</div>
-      ${_hasActiveFilter ? `<button class="offil-empty-action" onclick="offiLiveSearch='';offiLiveCat='tous';offiLiveWml=false;offiLivePromo=false;offiLivePage=1;renderOffilog()">Réinitialiser les filtres</button>` : ''}
+      ${_hasActiveFilter ? `<div class="empty-state-action"><button class="empty-state-btn" onclick="offiLiveSearch='';offiLiveCat='tous';offiLiveWml=false;offiLivePromo=false;offiLivePage=1;renderOffilog()">Réinitialiser les filtres</button></div>` : ''}
     </div>
   ` : `<div class="offil-grid">${cards}</div>`}
 
