@@ -8215,13 +8215,15 @@ function renderOffilog() {
   if (offiLiveSort === 'prix_desc') list.sort((a,b) => (b.prix||0) - (a.prix||0));
   if (offiLiveSort === 'marque')  list.sort((a,b) => (a.marque||'').localeCompare(b.marque||'', 'fr'));
   if (offiLiveSort === 'ecart') {
-    const { leclEan, cap3Ean, drakEan } = benchMaps();
     const maxi = typeof OFFILOG !== 'undefined'
       ? new Map(OFFILOG.filter(p => p.ean && p.prix_maxi > 0).map(p => [String(p.ean), p.prix_maxi]))
       : new Map();
     list.sort((a,b) => {
-      const { pharmEan: phEan } = benchMaps();
-      const minP = p => { const e = p.ean ? String(p.ean) : ''; const vs = [leclEan.get(e),cap3Ean.get(e),drakEan.get(e),phEan.get(e)].filter(v=>v!=null&&v>0); return vs.length ? Math.min(...vs) : null; };
+      const minP = p => {
+        const { drakkars, cap3000, leclerc, pharmazon } = lookupBench(p);
+        const vs = [drakkars, cap3000, leclerc, pharmazon].filter(v => v != null && v > 0);
+        return vs.length ? Math.min(...vs) : null;
+      };
       const da = minP(a); const db = minP(b);
       const ra = maxi.get(a.ean ? String(a.ean) : ''); const rb = maxi.get(b.ean ? String(b.ean) : '');
       const ea = (ra && da != null) ? da - ra : Infinity;
@@ -8415,23 +8417,19 @@ function exportOffiLiveCSV() {
     }
     return true;
   });
-  const { leclEan, cap3Ean, drakEan, pharmEan } = benchMaps();
   const fmtV = v => v != null ? String(v).replace('.',',') : '';
-  const header = ['Nom','Marque','EAN','Catégorie','Prix Offilog','Prix barré','Promo','Apothical','Drakkars','Cap3000','Leclerc','Prix conc. min'];
+  const header = ['Nom','Marque','EAN','Catégorie','Prix Offilog','Prix barré','Promo','Drakkars','Cap3000','Leclerc','Pharmazon','Prix conc. min'];
   const rows = list.map(p => {
     const e = p.ean ? String(p.ean) : '';
-    const dv = drakEan.get(e) ?? null;
-    const cv = cap3Ean.get(e) ?? null;
-    const lv = leclEan.get(e) ?? null;
-    const concs = [dv, cv, lv].filter(v => v != null && v > 0);
+    const { drakkars, cap3000, leclerc, pharmazon } = lookupBench(p);
+    const concs = [drakkars, cap3000, leclerc, pharmazon].filter(v => v != null && v > 0);
     const minC  = concs.length ? Math.min(...concs) : null;
     return [
       `"${(p.nom||'').replace(/"/g,'""')}"`,
       `"${(p.marque||'').replace(/"/g,'""')}"`,
       e, `"${p.cat||''}"`,
       fmtV(p.prix), fmtV(p.prix_b), p.promo ? 'Oui' : 'Non',
-      fmtV(pharmEan.get(e) ?? null),
-      fmtV(dv), fmtV(cv), fmtV(lv),
+      fmtV(drakkars), fmtV(cap3000), fmtV(leclerc), fmtV(pharmazon),
       fmtV(minC),
     ];
   });
