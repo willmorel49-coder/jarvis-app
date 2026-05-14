@@ -6,6 +6,35 @@
 
 // ── CONSTANTS ────────────────────────────────
 
+// ── FOCUS PRESERVATION ───────────────────────
+// Les renders détruisent le DOM via innerHTML, ce qui fait perdre le focus
+// des inputs de recherche. Ce handler global réattribue le focus à un input
+// équivalent (même classe + même placeholder) juste après le re-render.
+(function() {
+  if (typeof document === 'undefined') return;
+  document.addEventListener('input', (e) => {
+    const tgt = e.target;
+    if (!tgt || tgt.tagName !== 'INPUT') return;
+    if (['checkbox', 'radio', 'file', 'submit', 'button'].includes(tgt.type)) return;
+    const sel  = tgt.selectionStart;
+    const cls  = tgt.className;
+    const ph   = tgt.placeholder;
+    const name = tgt.name || '';
+    requestAnimationFrame(() => {
+      if (tgt.isConnected) return; // pas de re-render, focus toujours OK
+      const classSel = (cls || '').split(' ').filter(Boolean)
+        .map(c => '.' + (window.CSS && CSS.escape ? CSS.escape(c) : c)).join('');
+      const candidates = Array.from(document.querySelectorAll(`input${classSel}`));
+      const match = candidates.find(el => el.placeholder === ph && (el.name || '') === name)
+                 || candidates[0];
+      if (match) {
+        match.focus();
+        try { match.setSelectionRange(sel, sel); } catch(_) {}
+      }
+    });
+  }, true);
+})();
+
 // ── SUPABASE ──────────────────────────────────
 const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
