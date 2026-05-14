@@ -35,6 +35,40 @@
   }, true);
 })();
 
+// ── KEYBOARD SHORTCUTS ───────────────────────
+// "/" focus la première barre de recherche visible. "Escape" la vide.
+// Skip si l'user tape déjà dans un input/textarea ou si une modale est ouverte.
+(function() {
+  if (typeof document === 'undefined') return;
+  const isTypingTarget = el => el && (
+    el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ||
+    el.isContentEditable || (el.getAttribute && el.getAttribute('contenteditable') === 'true')
+  );
+  const findVisibleSearchInput = () => {
+    const candidates = document.querySelectorAll('input[type="text"][placeholder*="echerche"], input[type="text"][placeholder*="echercher"], input.offil-search, input.opso-search');
+    for (const el of candidates) {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0 && r.top < window.innerHeight && r.bottom > 0) return el;
+    }
+    return null;
+  };
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !isTypingTarget(e.target) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const input = findVisibleSearchInput();
+      if (input) { e.preventDefault(); input.focus(); input.select(); }
+      return;
+    }
+    // Escape sur un input de recherche : vide la valeur et relance la recherche
+    if (e.key === 'Escape' && e.target && e.target.tagName === 'INPUT' && e.target.value) {
+      const placeholder = (e.target.placeholder || '').toLowerCase();
+      if (placeholder.includes('echerche') || placeholder.includes('echercher')) {
+        e.target.value = '';
+        e.target.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+  });
+})();
+
 // ── SUPABASE ──────────────────────────────────
 const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
@@ -8177,6 +8211,42 @@ let offiLiveWml    = false; // filtre: produits achetés par adhérents WML
 let offiLivePromo  = false; // filtre: produits en promotion
 const OFFIL_PAGE   = 60;
 
+// Caches Offilog Live — invalidés au chargement initial uniquement.
+// wmlLiveEanMap : produits achetés par >=1 adhérent (référence pour badges/filtres).
+// _offiLiveStats : stats agrégées (loop sur 8 394 produits + lookupBench × 4 sources).
+let _offiLiveStats = null, _wmlLiveEanMap = null;
+function _buildWmlLiveEanMap() {
+  if (_wmlLiveEanMap) return _wmlLiveEanMap;
+  const map = new Map();
+  for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
+    const seen = new Set();
+    for (const [,,,,ean] of (d.pr||[])) {
+      const ke = ean ? String(ean) : null;
+      if (ke && !seen.has(ke)) { seen.add(ke); map.set(ke, (map.get(ke)||0)+1); }
+    }
+  }
+  _wmlLiveEanMap = map;
+  return map;
+}
+function _offiLiveStatsCache() {
+  if (_offiLiveStats) return _offiLiveStats;
+  const wm = _buildWmlLiveEanMap();
+  let nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPhz = 0, nWml = 0, nPromo = 0;
+  for (const p of OFFILOG_LIVE) {
+    const e = p.ean ? String(p.ean) : '';
+    const { drakkars, cap3000, leclerc, pharmazon } = lookupBench(p);
+    if (leclerc  != null && leclerc  > 0) nLecl++;
+    if (cap3000  != null && cap3000  > 0) nCap++;
+    if (drakkars != null && drakkars > 0) nDrak++;
+    if (pharmazon != null && pharmazon > 0) nPhz++;
+    if (e && wm.has(e)) nWml++;
+    if (p.promo && p.prix_b != null) nPromo++;
+    if ([leclerc, cap3000, drakkars, pharmazon].some(v => v != null && v > 0)) nBench++;
+  }
+  _offiLiveStats = { nBench, nLecl, nCap, nDrak, nPhz, nWml, nPromo };
+  return _offiLiveStats;
+}
+
 function renderOffilog() {
   const container = document.getElementById('offilog-content');
   if (!container) return;
@@ -8217,15 +8287,7 @@ function renderOffilog() {
   }
 
   // ── Filtrage ──
-  // Build WML EAN map for filtering and badge counts
-  const wmlLiveEanMap = new Map();
-  for (const d of (typeof getWmlVisible === 'function' ? getWmlVisible() : [])) {
-    const seen = new Set();
-    for (const [,,,,ean] of (d.pr||[])) {
-      const ke = ean ? String(ean) : null;
-      if (ke && !seen.has(ke)) { seen.add(ke); wmlLiveEanMap.set(ke, (wmlLiveEanMap.get(ke)||0)+1); }
-    }
-  }
+  const wmlLiveEanMap = _buildWmlLiveEanMap();
   const q = offiLiveSearch.trim().toLowerCase();
   let list = OFFILOG_LIVE.filter(p => {
     if (offiLiveCat !== 'tous' && p.cat !== offiLiveCat) return false;
@@ -8267,19 +8329,9 @@ function renderOffilog() {
   const page = list.slice((offiLivePage-1)*OFFIL_PAGE, offiLivePage*OFFIL_PAGE);
 
   // ── Stats benchmark (calculé sur tout OFFILOG_LIVE, pas juste la page) ──
-  // Utilise lookupBench pour rester cohérent avec les badges affichés (fallback EAN paddé + nom normalisé)
-  let nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPhz = 0, nWml = 0, nPromo = 0;
-  for (const p of OFFILOG_LIVE) {
-    const e = p.ean ? String(p.ean) : '';
-    const { drakkars, cap3000, leclerc, pharmazon } = lookupBench(p);
-    if (leclerc  != null && leclerc  > 0) nLecl++;
-    if (cap3000  != null && cap3000  > 0) nCap++;
-    if (drakkars != null && drakkars > 0) nDrak++;
-    if (pharmazon != null && pharmazon > 0) nPhz++;
-    if (e && wmlLiveEanMap.has(e)) nWml++;
-    if (p.promo && p.prix_b != null) nPromo++;
-    if ([leclerc, cap3000, drakkars, pharmazon].some(v => v != null && v > 0)) nBench++;
-  }
+  // Memoize : ces stats dépendent uniquement de OFFILOG_LIVE + benchMaps qui sont
+  // immutables après chargement → ~30 ms gagnés par re-render (typing, sort, filter).
+  const { nBench, nLecl, nCap, nDrak, nPhz, nWml, nPromo } = _offiLiveStatsCache();
 
   // ── Catégories ──
   const cats = ['tous', ...Array.from(new Set(OFFILOG_LIVE.map(p => p.cat))).sort()];
@@ -8340,11 +8392,12 @@ function renderOffilog() {
     </a>`;
   }).join('');
 
+  const _scrollTop = "document.getElementById('offilog-content').scrollIntoView({behavior:'smooth',block:'start'});";
   const pagHtml = totalPages > 1 ? `
   <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px">
-    ${offiLivePage > 1 ? `<button class="pill pill-clickable" onclick="offiLivePage--;renderOffilog()">‹ Préc.</button>` : '<span></span>'}
+    ${offiLivePage > 1 ? `<button class="pill pill-clickable" onclick="offiLivePage--;renderOffilog();${_scrollTop}">‹ Préc.</button>` : '<span></span>'}
     <span style="font-family:'Varela Round',sans-serif;font-weight:700;font-size:13px;color:var(--text2)">Page ${offiLivePage} / ${totalPages} · ${list.length.toLocaleString('fr-FR')} produits</span>
-    ${offiLivePage < totalPages ? `<button class="pill pill-clickable" onclick="offiLivePage++;renderOffilog()">Suiv. ›</button>` : '<span></span>'}
+    ${offiLivePage < totalPages ? `<button class="pill pill-clickable" onclick="offiLivePage++;renderOffilog();${_scrollTop}">Suiv. ›</button>` : '<span></span>'}
   </div>` : '';
 
   // ── Filtre actif ? ──
@@ -8395,34 +8448,46 @@ function renderOffilog() {
     </div>` : ''}
   </div>
 
-  <div class="offil-header">
-    <div class="offil-search-wrap">
-      <svg width="16" height="16" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input class="offil-search" type="text" placeholder="Rechercher produit, marque, EAN…" value="${offiLiveSearch.replace(/"/g,'&quot;')}" oninput="offiLiveSearch=this.value;offiLivePage=1;renderOffilog()" style="font-size:16px">
-      ${offiLiveSearch ? `<button onclick="offiLiveSearch='';renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:0 4px">×</button>` : ''}
+  <div class="offil-sticky" id="offilog-sticky-header">
+    <div class="offil-header">
+      <div class="offil-search-wrap">
+        <svg width="16" height="16" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="offil-search" type="text" placeholder="Rechercher produit, marque, EAN…" value="${offiLiveSearch.replace(/"/g,'&quot;')}" oninput="offiLiveSearch=this.value;offiLivePage=1;renderOffilog()" style="font-size:16px">
+        ${offiLiveSearch ? `<button onclick="offiLiveSearch='';renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:0 4px" aria-label="Effacer la recherche">×</button>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <select class="offil-sort" onchange="offiLiveSort=this.value;offiLivePage=1;renderOffilog()">
+          <option value="alpha" ${offiLiveSort==='alpha'?'selected':''}>A → Z</option>
+          <option value="marque" ${offiLiveSort==='marque'?'selected':''}>Marque</option>
+          <option value="prix_asc" ${offiLiveSort==='prix_asc'?'selected':''}>Prix ↑</option>
+          <option value="prix_desc" ${offiLiveSort==='prix_desc'?'selected':''}>Prix ↓</option>
+          <option value="ecart" ${offiLiveSort==='ecart'?'selected':''}>⚠ Conc. moins cher</option>
+        </select>
+        <button onclick="exportOffiLiveCSV()" class="pill pill-clickable pill-outline">⬇ CSV</button>
+        <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLiveWml ? 'pill-active' : ''}">📦 Groupement</button>
+        <button onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLivePromo ? 'pill-active' : ''}" ${offiLivePromo ? 'style="background:var(--opso-warning);border-color:var(--opso-warning);color:#fff"' : ''}>🏷 Promos</button>
+        ${_clearChip}
+      </div>
     </div>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <select class="offil-sort" onchange="offiLiveSort=this.value;offiLivePage=1;renderOffilog()">
-        <option value="alpha" ${offiLiveSort==='alpha'?'selected':''}>A → Z</option>
-        <option value="marque" ${offiLiveSort==='marque'?'selected':''}>Marque</option>
-        <option value="prix_asc" ${offiLiveSort==='prix_asc'?'selected':''}>Prix ↑</option>
-        <option value="prix_desc" ${offiLiveSort==='prix_desc'?'selected':''}>Prix ↓</option>
-        <option value="ecart" ${offiLiveSort==='ecart'?'selected':''}>⚠ Conc. moins cher</option>
-      </select>
-      <button onclick="exportOffiLiveCSV()" class="pill pill-clickable pill-outline">⬇ CSV</button>
-      <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLiveWml ? 'pill-active' : ''}">📦 Groupement</button>
-      <button onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLivePromo ? 'pill-active' : ''}" ${offiLivePromo ? 'style="background:var(--opso-warning);border-color:var(--opso-warning);color:#fff"' : ''}>🏷 Promos</button>
-      ${_clearChip}
+
+    <div class="offil-cats" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${catChips}</div>
+
+    <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:600">
+      ${list.length.toLocaleString('fr-FR')} produit${list.length > 1 ? 's' : ''} ${_hasActiveFilter ? 'filtré' + (list.length > 1 ? 's' : '') + ' / ' + OFFILOG_LIVE.length.toLocaleString('fr-FR') : 'au total'}
     </div>
   </div>
 
-  <div class="offil-cats" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${catChips}</div>
-
-  <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:600">
-    ${list.length.toLocaleString('fr-FR')} produit${list.length > 1 ? 's' : ''} ${_hasActiveFilter ? 'filtré' + (list.length > 1 ? 's' : '') + ' / ' + OFFILOG_LIVE.length.toLocaleString('fr-FR') : 'au total'}
-  </div>
-
-  <div class="offil-grid">${cards}</div>
+  ${list.length === 0 ? `
+    <div class="offil-empty">
+      <div class="offil-empty-icon">🔍</div>
+      <div class="offil-empty-title">Aucun produit trouvé</div>
+      <div class="offil-empty-sub">${_hasActiveFilter
+        ? `Aucun résultat ne correspond ${offiLiveSearch ? `à "<strong>${offiLiveSearch.replace(/</g,'&lt;')}</strong>"` : 'aux filtres actifs'}. Essayez d'élargir votre recherche ou de retirer un filtre.`
+        : 'Le catalogue Offilog Live semble vide.'
+      }</div>
+      ${_hasActiveFilter ? `<button class="offil-empty-action" onclick="offiLiveSearch='';offiLiveCat='tous';offiLiveWml=false;offiLivePromo=false;offiLivePage=1;renderOffilog()">Réinitialiser les filtres</button>` : ''}
+    </div>
+  ` : `<div class="offil-grid">${cards}</div>`}
 
   ${pagHtml}`;
 }
