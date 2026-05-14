@@ -8049,26 +8049,43 @@ function benchMaps() {
   if (_benchMaps) return _benchMaps;
   const drakEan = new Map(), drakNom = new Map();
   const cap3Ean = new Map(), cap3Nom = new Map();
-  const leclEan = new Map();
+  const leclEan = new Map(), leclNom = new Map();
+  const phzNom  = new Map();
   const normB = s => (s || '').toLowerCase().normalize('NFD')
     .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  // Stocke EAN sous sa forme et sa version paddée à 13 chiffres (UPC-12 → EAN-13)
+  const addEan = (map, ean, val) => {
+    if (!ean) return;
+    const e = String(ean);
+    map.set(e, val);
+    if (e.length < 13) map.set(e.padStart(13, '0'), val);
+  };
   if (typeof DRAKKARS !== 'undefined') {
     for (const d of DRAKKARS) {
-      if (d.ean) drakEan.set(String(d.ean), d.prix);
+      addEan(drakEan, d.ean, d.prix);
       if (d.nom_norm) drakNom.set(d.nom_norm, d.prix);
     }
   }
   if (typeof CAP3000 !== 'undefined') {
     for (const c of CAP3000) {
-      if (c.ean) cap3Ean.set(String(c.ean), c.prix);
+      addEan(cap3Ean, c.ean, c.prix);
       if (c.nom_norm) cap3Nom.set(c.nom_norm, c.prix);
     }
   }
   if (typeof LECLERC_PRICES !== 'undefined') {
     for (const l of LECLERC_PRICES) {
-      if (l.ean) leclEan.set(String(l.ean), l.prix);
+      addEan(leclEan, l.ean, l.prix);
+      if (l.nom) {
+        const k = normB(l.nom);
+        if (k && !leclNom.has(k)) leclNom.set(k, l.prix);
+      }
     }
   }
+  // Pharmazon : index par nom normalisé fourni par generate_pharmazon_data.py
+  if (typeof PHARMAZON_NOM !== 'undefined') {
+    for (const [k, v] of Object.entries(PHARMAZON_NOM)) phzNom.set(k, v);
+  }
+  // Ma Pharmacie (legacy : utilisé par CSV exports + WML/CRM)
   const pharmEan = new Map();
   if (typeof OFFILOG !== 'undefined') {
     for (const p of OFFILOG) {
@@ -8086,28 +8103,37 @@ function benchMaps() {
       }
     }
   }
-  _benchMaps = { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, pharmEan, benchIpNom, normB };
+  _benchMaps = { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, leclNom, phzNom, pharmEan, benchIpNom, normB };
   return _benchMaps;
 }
 function lookupBench(p) {
-  const { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, pharmEan, benchIpNom, normB } = benchMaps();
-  const ean = p.ean ? String(p.ean) : null;
+  const { drakEan, drakNom, cap3Ean, cap3Nom, leclEan, leclNom, phzNom, pharmEan, benchIpNom, normB } = benchMaps();
+  const eRaw = p.ean ? String(p.ean) : null;
+  const ePad = eRaw && eRaw.length < 13 ? eRaw.padStart(13, '0') : eRaw;
   const nn  = normB(p.nom);
+  const ean2 = e => e && (drakEan.get(e) ?? drakEan.get(eRaw));
   let drakkars = null;
-  if (ean && drakEan.has(ean)) drakkars = drakEan.get(ean);
-  else if (nn && drakNom.has(nn)) drakkars = drakNom.get(nn);
+  if (eRaw && drakEan.has(eRaw))      drakkars = drakEan.get(eRaw);
+  else if (ePad && drakEan.has(ePad)) drakkars = drakEan.get(ePad);
+  else if (nn && drakNom.has(nn))     drakkars = drakNom.get(nn);
   let cap3000 = null;
-  if (ean && cap3Ean.has(ean)) cap3000 = cap3Ean.get(ean);
-  else if (nn && cap3Nom.has(nn)) cap3000 = cap3Nom.get(nn);
+  if (eRaw && cap3Ean.has(eRaw))      cap3000 = cap3Ean.get(eRaw);
+  else if (ePad && cap3Ean.has(ePad)) cap3000 = cap3Ean.get(ePad);
+  else if (nn && cap3Nom.has(nn))     cap3000 = cap3Nom.get(nn);
   let leclerc = null;
-  if (ean && leclEan.has(ean)) leclerc = leclEan.get(ean);
-  let maPharmie = null;
-  if (ean && pharmEan.has(ean)) maPharmie = pharmEan.get(ean);
-  // Pharmazon : prix négocié grossiste
+  if (eRaw && leclEan.has(eRaw))      leclerc = leclEan.get(eRaw);
+  else if (ePad && leclEan.has(ePad)) leclerc = leclEan.get(ePad);
+  else if (nn && leclNom.has(nn))     leclerc = leclNom.get(nn);
   let pharmazon = null;
-  if (ean && typeof PHARMAZON_DATA !== 'undefined' && PHARMAZON_DATA[ean]) {
-    pharmazon = PHARMAZON_DATA[ean].prix;
+  if (typeof PHARMAZON_DATA !== 'undefined') {
+    if (eRaw && PHARMAZON_DATA[eRaw])      pharmazon = PHARMAZON_DATA[eRaw].prix;
+    else if (ePad && PHARMAZON_DATA[ePad]) pharmazon = PHARMAZON_DATA[ePad].prix;
+    else if (nn && phzNom.has(nn))         pharmazon = phzNom.get(nn);
   }
+  // Ma Pharmacie : conservé pour compat exports CSV / WML / CRM (plus affiché dans Offilog Live)
+  let maPharmie = null;
+  if (eRaw && pharmEan.has(eRaw))      maPharmie = pharmEan.get(eRaw);
+  else if (ePad && pharmEan.has(ePad)) maPharmie = pharmEan.get(ePad);
   // prix IP réel (benchmark)
   const prixIp = (nn && benchIpNom.has(nn)) ? benchIpNom.get(nn) : null;
   return { drakkars, cap3000, leclerc, maPharmie, pharmazon, prixIp };
@@ -8120,7 +8146,6 @@ let offiLiveSort   = 'alpha';
 let offiLivePage   = 1;
 let offiLiveWml    = false; // filtre: produits achetés par adhérents WML
 let offiLivePromo  = false; // filtre: produits en promotion
-let offiLiveAlerte = false; // filtre: concurrent moins cher que prix Offilog
 const OFFIL_PAGE   = 60;
 
 function renderOffilog() {
@@ -8177,15 +8202,6 @@ function renderOffilog() {
     if (offiLiveCat !== 'tous' && p.cat !== offiLiveCat) return false;
     if (offiLiveWml && !(p.ean && wmlLiveEanMap.has(String(p.ean)))) return false;
     if (offiLivePromo && !(p.promo && p.prix_b != null)) return false;
-    if (offiLiveAlerte) {
-      const ean2 = p.ean ? String(p.ean) : '';
-      const bm2 = benchMaps();
-      const phz2 = (typeof PHARMAZON_DATA !== 'undefined' && ean2 && PHARMAZON_DATA[ean2]) ? PHARMAZON_DATA[ean2].prix : null;
-      const concVals = [bm2.leclEan.get(ean2), bm2.cap3Ean.get(ean2), bm2.drakEan.get(ean2), bm2.pharmEan.get(ean2), phz2].filter(v => v != null && v > 0);
-      if (!concVals.length) return false;
-      const minConc = Math.min(...concVals);
-      if (!(minConc < (p.prix || Infinity))) return false;
-    }
     if (q) {
       const haystack = (p.nom + ' ' + p.marque + ' ' + p.ean).toLowerCase();
       return q.split(' ').every(w => haystack.includes(w));
@@ -8220,33 +8236,18 @@ function renderOffilog() {
   const page = list.slice((offiLivePage-1)*OFFIL_PAGE, offiLivePage*OFFIL_PAGE);
 
   // ── Stats benchmark (calculé sur tout OFFILOG_LIVE, pas juste la page) ──
-  const { leclEan: le, cap3Ean: ce, drakEan: de, benchIpNom: bIpNom, normB: nrmB } = benchMaps();
-  const pe = benchMaps().pharmEan;
-  const offiMaxiMap = typeof OFFILOG !== 'undefined'
-    ? new Map(OFFILOG.filter(p => p.ean && p.prix_maxi > 0).map(p => [String(p.ean), p.prix_maxi]))
-    : new Map();
-  let nAlerte = 0, nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPharma = 0, nPhz = 0, nWml = 0, nPromo = 0;
-  const hasPhz = typeof PHARMAZON_DATA !== 'undefined';
+  // Utilise lookupBench pour rester cohérent avec les badges affichés (fallback EAN paddé + nom normalisé)
+  let nBench = 0, nLecl = 0, nCap = 0, nDrak = 0, nPhz = 0, nWml = 0, nPromo = 0;
   for (const p of OFFILOG_LIVE) {
     const e = p.ean ? String(p.ean) : '';
-    const lv = le.get(e), cv = ce.get(e), dv = de.get(e), pv = pe.get(e);
-    const phz = (hasPhz && e && PHARMAZON_DATA[e]) ? PHARMAZON_DATA[e].prix : null;
-    if (lv != null && lv > 0) nLecl++;
-    if (cv != null && cv > 0) nCap++;
-    if (dv != null && dv > 0) nDrak++;
-    if (pv != null && pv > 0) nPharma++;
-    if (phz != null && phz > 0) nPhz++;
+    const { drakkars, cap3000, leclerc, pharmazon } = lookupBench(p);
+    if (leclerc  != null && leclerc  > 0) nLecl++;
+    if (cap3000  != null && cap3000  > 0) nCap++;
+    if (drakkars != null && drakkars > 0) nDrak++;
+    if (pharmazon != null && pharmazon > 0) nPhz++;
     if (e && wmlLiveEanMap.has(e)) nWml++;
     if (p.promo && p.prix_b != null) nPromo++;
-    const concs = [lv, cv, dv, pv, phz].filter(v => v != null && v > 0);
-    if (concs.length) {
-      nBench++;
-      const minConc = Math.min(...concs);
-      // Comparer au prix IP réel si disponible, sinon au tarif catalogue
-      const ipv = bIpNom && nrmB ? bIpNom.get(nrmB(p.nom)) : null;
-      const refPrix = ipv != null ? ipv : (p.prix || Infinity);
-      if (minConc < refPrix) nAlerte++;
-    }
+    if ([leclerc, cap3000, drakkars, pharmazon].some(v => v != null && v > 0)) nBench++;
   }
 
   // ── Catégories ──
@@ -8264,34 +8265,26 @@ function renderOffilog() {
     const hasPromo = p.promo && p.prix_b != null;
     const { drakkars, cap3000, leclerc, maPharmie, pharmazon, prixIp } = lookupBench(p);
     const wmlCount = p.ean ? (wmlLiveEanMap.get(String(p.ean)) || 0) : 0;
-    // Prix de référence : prix IP réel si disponible, sinon tarif catalogue Offilog
-    const prixRef = prixIp != null ? prixIp : p.prix;
     // Best price indicator — find cheapest competitor and name it
     const compMap = [
-      drakkars  != null && drakkars  > 0 ? [drakkars,  'Drakkars']     : null,
-      cap3000   != null && cap3000   > 0 ? [cap3000,   'Cap3000']      : null,
-      leclerc   != null && leclerc   > 0 ? [leclerc,   'Leclerc']      : null,
-      maPharmie != null && maPharmie > 0 ? [maPharmie, 'Ma Pharmacie'] : null,
-      pharmazon != null && pharmazon > 0 ? [pharmazon, 'Pharmazon']    : null,
+      drakkars  != null && drakkars  > 0 ? [drakkars,  'Drakkars']  : null,
+      cap3000   != null && cap3000   > 0 ? [cap3000,   'Cap3000']   : null,
+      leclerc   != null && leclerc   > 0 ? [leclerc,   'Leclerc']   : null,
+      pharmazon != null && pharmazon > 0 ? [pharmazon, 'Pharmazon'] : null,
     ].filter(Boolean);
     const bestComp = compMap.length ? compMap.sort((a, b) => a[0] - b[0])[0] : null;
-    const minComp  = bestComp ? bestComp[0] : null;
-    // Alerte : concurrent moins cher que notre prix IP réel (ou catalogue si pas de prix IP)
-    const isAlerte = minComp != null && prixRef != null && minComp < prixRef;
     const bestBadge = bestComp != null
       ? `<div class="offil-best-price" title="Prix ${bestComp[1]} constaté">${bestComp[1]} ${fmtP(bestComp[0])}</div>` : '';
-    const benchRow = (drakkars != null || cap3000 != null || leclerc != null || maPharmie != null || pharmazon != null) ? `
+    const benchRow = (drakkars != null || cap3000 != null || leclerc != null || pharmazon != null) ? `
       <div class="offil-bench-row">
-        ${maPharmie != null ? `<span class="offil-bench" style="border-color:rgba(0,229,160,.25);color:#00E5A0;background:rgba(0,229,160,.06)" title="Ma Pharmacie (prix scrappé)">🏥 ${fmtP(maPharmie)}</span>` : ''}
         ${drakkars != null ? `<span class="offil-bench offil-bench-drak" title="Pharmacie des Drakkars">Drakkars ${fmtP(drakkars)}</span>` : ''}
         ${cap3000 != null ? `<span class="offil-bench offil-bench-cap" title="Pharmacie Cap 3000">Cap 3000 ${fmtP(cap3000)}</span>` : ''}
         ${leclerc != null ? `<span class="offil-bench offil-bench-lecl" title="E.Leclerc">Leclerc ${fmtP(leclerc)}</span>` : ''}
         ${pharmazon != null ? `<span class="offil-bench" style="border-color:rgba(124,58,237,.30);color:#7c3aed;background:rgba(124,58,237,.06)" title="Pharmazon (catalogue grossiste)">Pharmazon ${fmtP(pharmazon)}</span>` : ''}
       </div>${bestBadge}` : '';
     return `
-    <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener"${isAlerte ? ' style="border-color:rgba(183,56,56,.55);border-left:3px solid var(--opso-danger);box-shadow:0 2px 10px rgba(183,56,56,.08)"' : ''}>
+    <a class="offil-card" href="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.url}" target="_blank" rel="noopener">
       <div class="offil-card-img-wrap">
-        ${isAlerte ? '<span class="pill" style="position:absolute;top:6px;left:6px;z-index:2;background:var(--opso-danger);color:#fff;border-color:var(--opso-danger);font-size:10px;padding:2px 7px">⚠ Alerte</span>' : ''}
         ${p.img ? `<img class="offil-card-img" src="${(typeof OFFILOG_BASE!=='undefined'?OFFILOG_BASE:'')+p.img}" alt="" loading="lazy" onerror="this.style.display='none'">` : '<div class="offil-card-img-placeholder"></div>'}
         ${hasPromo ? '<span class="offil-promo-badge">PROMO</span>' : ''}
       </div>
@@ -8324,9 +8317,9 @@ function renderOffilog() {
   </div>` : '';
 
   // ── Filtre actif ? ──
-  const _hasActiveFilter = (offiLiveSearch && offiLiveSearch.length) || offiLiveCat !== 'tous' || offiLiveAlerte || offiLiveWml || offiLivePromo;
+  const _hasActiveFilter = (offiLiveSearch && offiLiveSearch.length) || offiLiveCat !== 'tous' || offiLiveWml || offiLivePromo;
   const _clearChip = _hasActiveFilter ? `
-    <button onclick="offiLiveSearch='';offiLiveCat='tous';offiLiveAlerte=false;offiLiveWml=false;offiLivePromo=false;offiLivePage=1;renderOffilog()"
+    <button onclick="offiLiveSearch='';offiLiveCat='tous';offiLiveWml=false;offiLivePromo=false;offiLivePage=1;renderOffilog()"
       class="pill pill-clickable"
       style="background:rgba(183,56,56,.1);color:var(--opso-danger);border:1px solid rgba(183,56,56,.3)">
       ✕ Effacer filtres
@@ -8352,33 +8345,23 @@ function renderOffilog() {
     <div class="stat-box">
       <div class="stat-box-label">Prix Leclerc</div>
       <div class="stat-box-value">${nLecl.toLocaleString('fr-FR')}</div>
-      <div class="stat-box-sub">EANs matchés</div>
+      <div class="stat-box-sub">produits matchés</div>
     </div>
     <div class="stat-box">
       <div class="stat-box-label">Prix Drakkars</div>
       <div class="stat-box-value">${nDrak.toLocaleString('fr-FR')}</div>
-      <div class="stat-box-sub">EANs matchés</div>
+      <div class="stat-box-sub">produits matchés</div>
     </div>
     <div class="stat-box">
       <div class="stat-box-label">Prix Cap3000</div>
       <div class="stat-box-value">${nCap.toLocaleString('fr-FR')}</div>
-      <div class="stat-box-sub">EANs matchés</div>
+      <div class="stat-box-sub">produits matchés</div>
     </div>
     ${nPhz > 0 ? `<div class="stat-box">
       <div class="stat-box-label" style="color:#7c3aed">Prix Pharmazon</div>
       <div class="stat-box-value" style="color:#7c3aed">${nPhz.toLocaleString('fr-FR')}</div>
-      <div class="stat-box-sub">EANs matchés · grossiste</div>
+      <div class="stat-box-sub">produits matchés · grossiste</div>
     </div>` : ''}
-    ${nPharma > 0 ? `<div class="stat-box">
-      <div class="stat-box-label">Ma Pharmacie</div>
-      <div class="stat-box-value">${nPharma.toLocaleString('fr-FR')}</div>
-      <div class="stat-box-sub">EANs matchés</div>
-    </div>` : ''}
-    <div class="stat-box" ${nAlerte > 0 ? `onclick="offiLiveAlerte=!offiLiveAlerte;offiLivePage=1;renderOffilog()" style="cursor:pointer;border-color:rgba(183,56,56,.35)"` : ''}>
-      <div class="stat-box-label" style="color:var(--opso-danger)">⚠ Alertes prix</div>
-      <div class="stat-box-value" style="color:var(--opso-danger)">${nAlerte.toLocaleString('fr-FR')}</div>
-      <div class="stat-box-sub">conc. < achat IP</div>
-    </div>
   </div>
 
   <div class="offil-header">
@@ -8397,7 +8380,6 @@ function renderOffilog() {
       </select>
       <button onclick="exportOffiLiveCSV()" class="pill pill-clickable pill-outline">⬇ CSV</button>
       <button onclick="offiLiveWml=!offiLiveWml;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLiveWml ? 'pill-active' : ''}">📦 Groupement</button>
-      <button onclick="offiLiveAlerte=!offiLiveAlerte;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLiveAlerte ? 'pill-active' : ''}" ${offiLiveAlerte ? 'style="background:var(--opso-danger);border-color:var(--opso-danger);color:#fff"' : ''}>⚠ Alerte</button>
       <button onclick="offiLivePromo=!offiLivePromo;offiLivePage=1;renderOffilog()" class="pill pill-clickable ${offiLivePromo ? 'pill-active' : ''}" ${offiLivePromo ? 'style="background:var(--opso-warning);border-color:var(--opso-warning);color:#fff"' : ''}>🏷 Promos</button>
       ${_clearChip}
     </div>
