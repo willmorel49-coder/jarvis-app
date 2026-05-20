@@ -2234,15 +2234,18 @@ function renderPharmacies() {
     ${planningHtml}
     <div class="card fade-in">
       <div class="card-header">
-        <div>
-          <div class="card-title">Pharmacies (${enriched.length})</div>
-          <div class="card-subtitle">${curY ? `Mois courant : ${monthName(curM)} ${curY}` : 'Aucune donnée'}</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <span class="np-pin np-pin-sm" aria-hidden="true"></span>
+          <div>
+            <div class="card-title">Mes officines (${enriched.length})</div>
+            <div class="card-subtitle">${curY ? `Mois courant · ${monthName(curM)} ${curY}` : 'Aucune donnée'} <span class="np-tagline" style="margin-left:8px">On prend soin de vous</span></div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="exportPharmaciesCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV</button>
-          <div class="search-wrap" style="width:220px">
+          <button onclick="exportPharmaciesCSV()" class="btn btn-ghost" style="padding:6px 12px;font-size:11px">⬇ CSV</button>
+          <div class="search-wrap" style="width:260px">
             <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Nom, ville ou code postal…" value="${pharmaSearch}"
+            <input type="text" placeholder="Rechercher par nom, CIP, ville…" value="${pharmaSearch}"
               oninput="pharmaSearch=this.value;renderPharmacies()" />
           </div>
         </div>
@@ -2556,30 +2559,66 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
     </div>`;
   }).join('');
 
+  // ── Chips groupements NP (Pelgraz / Pelmeg / Ecodage / grossistes) ──
+  const groupChipsHtml = clientInfo ? (() => {
+    const chips = [];
+    const pg = parseInt(clientInfo.pelgraz || 0, 10);
+    const pm = parseInt(clientInfo.pelmeg  || 0, 10);
+    const ec = parseInt(clientInfo.ecodage || 0, 10);
+    if (pg > 0) chips.push(`<span class="np-hero-chip">💊 Pelgraz ×${pg}</span>`);
+    if (pm > 0) chips.push(`<span class="np-hero-chip">💊 Pelmeg ×${pm}</span>`);
+    if (ec > 0) chips.push(`<span class="np-hero-chip">🏷 Ecodage ×${ec}</span>`);
+    if (clientInfo.gros1) chips.push(`<span class="np-hero-chip">📦 ${clientInfo.gros1}${clientInfo.gros2 ? ' · '+clientInfo.gros2 : ''}</span>`);
+    if (clientInfo.cip) chips.push(`<span class="np-hero-chip">CIP ${clientInfo.cip}</span>`);
+    return chips.join('');
+  })() : '';
+
+  // ── Période selector ─────────────────────────────
+  const periodSelectHtml = availPeriods.length > 1
+    ? `<select onchange="showPharmaDetail('${pharma.id}',this.value==='auto'?null:{year:+this.value.split('-')[0],month:+this.value.split('-')[1]})"
+        style="padding:6px 12px;border-radius:14px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.15);font-size:12px;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;backdrop-filter:blur(4px)">
+        ${availPeriods.map(p => {
+          const [y, m] = p.split('-');
+          const sel = +y === curY && +m === curM;
+          return `<option style="color:#1f2937" value="${p}" ${sel ? 'selected' : ''}>${monthName(+m)} ${y}</option>`;
+        }).join('')}
+      </select>`
+    : `<span class="np-hero-chip">${monthName(curM)} ${curY}</span>`;
+
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
 
-      <!-- Header -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="pharmaDetailOverridePeriod=null;renderPharmacies()">← Retour</button>
-        <div style="width:12px;height:12px;border-radius:50%;background:${pharma.color}"></div>
-        <span class="section-title" style="margin:0;flex:1">${pharma.name}</span>
-        ${clientInfo?.ville ? `<span style="font-size:12px;color:var(--text3)">${clientInfo.cp} ${clientInfo.ville}</span>` : ''}
-        ${availPeriods.length > 1 ? `<select onchange="showPharmaDetail('${pharma.id}',this.value==='auto'?null:{year:+this.value.split('-')[0],month:+this.value.split('-')[1]})"
-          style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
-          ${availPeriods.map(p => {
-            const [y, m] = p.split('-');
-            const sel = +y === curY && +m === curM;
-            return `<option value="${p}" ${sel ? 'selected' : ''}>${monthName(+m)} ${y}</option>`;
-          }).join('')}
-        </select>` : `<span style="font-size:12px;color:var(--text3)">${monthName(curM)} ${curY}</span>`}
+      <!-- Bouton retour officines (règle UX Will) -->
+      <div style="margin-bottom:14px">
+        <button class="np-back-btn" onclick="pharmaDetailOverridePeriod=null;renderPharmacies()">Toutes mes officines</button>
+      </div>
+
+      <!-- Hero header Normandie Pharma -->
+      <div class="np-hero">
+        <div class="np-hero-row">
+          <span class="np-pin np-pin-lg np-pin-white" aria-hidden="true"></span>
+          <div style="flex:1;min-width:0">
+            <h1 class="np-hero-title">${pharma.name}</h1>
+            ${clientInfo?.adresse || clientInfo?.ville
+              ? `<div class="np-hero-sub">${clientInfo.adresse || ''}${clientInfo.adresse && (clientInfo.cp || clientInfo.ville) ? ' · ' : ''}${clientInfo.cp || ''} ${clientInfo.ville || ''}</div>`
+              : ''}
+            <div class="np-hero-tagline">On prend soin de vous</div>
+          </div>
+          ${periodSelectHtml}
+        </div>
+        ${groupChipsHtml ? `<div class="np-hero-chips">${groupChipsHtml}</div>` : ''}
+      </div>
+
+      <!-- Actions rapides -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="prodPharmaFilter='${pharma.id}';navigate('produits')" style="font-size:12px">📊 Produits</button>
-        <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px">📋 Fiche visite</button>
-        <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px">✉ Email</button>
-        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px;color:var(--mint);border-color:rgba(0,229,160,.3)">🛒 Commander</button>
+        <button class="btn btn-ghost" onclick="showFicheVisite('${pharma.id}')" style="font-size:12px">📋 Fiche de visite</button>
+        <button class="btn btn-ghost" onclick="generateEmailModal('${pharma.id}')" style="font-size:12px">✉ Email pharmacien</button>
+        <button class="btn btn-ghost" onclick="proposerCommande('${pharma.id}')" style="font-size:12px">🛒 Commander</button>
+        ${clientInfo?.adresse ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((clientInfo.adresse||'')+' '+(clientInfo.cp||'')+' '+(clientInfo.ville||''))}" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:12px;text-decoration:none">🧭 Itinéraire</a>` : ''}
         <button class="btn btn-ghost" onclick="exportPharmacyCSV('${pharma.id}')" style="font-size:12px">⬇ CSV</button>
-        <button class="btn btn-ghost" onclick="showNextVisitPicker('${pharma.id}')" style="font-size:12px" title="Planifier prochaine visite">📅</button>
-        <button class="btn btn-ghost" style="color:var(--rose);border-color:rgba(255,77,109,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
+        <button class="btn btn-ghost" onclick="showNextVisitPicker('${pharma.id}')" style="font-size:12px" title="Planifier prochaine visite">📅 Planifier</button>
+        <button class="btn btn-ghost" style="color:var(--np-pink);border-color:rgba(230,33,118,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
       </div>
 
       <!-- Row 1 : Hero + KPIs -->
@@ -3088,6 +3127,11 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </table>
         </div>
       </div>` : ''}
+
+      <!-- Bouton flottant Nouvelle visite (charte Normandie Pharma) -->
+      <button class="np-fab" onclick="showFicheVisite('${pharma.id}')" aria-label="Nouvelle visite">
+        Nouvelle visite
+      </button>
 
     </div>
   `;
@@ -4723,36 +4767,60 @@ function showEditPharmacyModal(pharmacyId) {
   if (!ph) return;
   const existing = document.getElementById('edit-pharma-modal');
   if (existing) existing.remove();
+
+  // CLIENTS data (CIP, adresse, groupements) si disponible
+  const clientInfoEdit = typeof CLIENTS !== 'undefined'
+    ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === ph.name.toUpperCase().trim())
+    : null;
+
   const modal = document.createElement('div');
   modal.id = 'edit-pharma-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+  modal.className = 'np-modal';
   modal.innerHTML = `
-    <div style="background:var(--bg);border-radius:16px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.4)">
-      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:15px;font-weight:700">Modifier la pharmacie</div>
-        <button onclick="document.getElementById('edit-pharma-modal').remove()" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
+    <div class="np-modal-card">
+      <div class="np-modal-header">
+        <div class="np-modal-title">
+          <span class="np-pin np-pin-sm" aria-hidden="true"></span>
+          Modifier l'officine
+        </div>
+        <button class="np-modal-close" onclick="document.getElementById('edit-pharma-modal').remove()" aria-label="Fermer">✕</button>
       </div>
-      <div style="padding:20px 24px">
-        <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:6px">Nom</label>
-        <input id="edit-pharma-name" type="text" value="${ph.name.replace(/"/g,'&quot;')}"
-          style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);font-size:13px;color:var(--text);box-sizing:border-box;margin-bottom:14px">
-        <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:6px">Couleur</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
-          ${['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4','#84CC16'].map(c =>
-            `<button onclick="document.querySelectorAll('.color-pick').forEach(b=>b.style.outline='none');this.style.outline='2px solid white';document.getElementById('edit-pharma-color').value='${c}'"
-              class="color-pick"
-              style="width:28px;height:28px;border-radius:50%;background:${c};border:none;cursor:pointer;${ph.color===c?'outline:2px solid white;':''}"></button>`
-          ).join('')}
-          <input type="color" id="edit-pharma-color" value="${ph.color}" style="width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;padding:0">
+      <div class="np-modal-body np-modal-grid2">
+        <div class="np-modal-field" style="grid-column:1 / -1">
+          <label>Nom de l'officine</label>
+          <input id="edit-pharma-name" type="text" value="${ph.name.replace(/"/g,'&quot;')}" placeholder="Pharmacie de la République">
         </div>
-        <div style="display:flex;gap:10px">
-          <button onclick="document.getElementById('edit-pharma-modal').remove()" class="btn btn-ghost" style="flex:1">Annuler</button>
-          <button onclick="saveEditPharmacy('${ph.id}')" class="btn btn-primary" style="flex:1">Enregistrer</button>
+        ${clientInfoEdit?.cip ? `
+        <div class="np-modal-field">
+          <label>CIP officine</label>
+          <input type="text" value="${clientInfoEdit.cip}" disabled style="background:var(--np-surface-2);color:var(--np-text-dim)">
+        </div>` : ''}
+        ${clientInfoEdit?.ville ? `
+        <div class="np-modal-field">
+          <label>Ville</label>
+          <input type="text" value="${clientInfoEdit.cp || ''} ${clientInfoEdit.ville || ''}" disabled style="background:var(--np-surface-2);color:var(--np-text-dim)">
+        </div>` : ''}
+        <div class="np-modal-field" style="grid-column:1 / -1">
+          <label>Couleur d'identification</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:6px 0">
+            ${['#11a63c','#0d8a31','#dddf4b','#64686a','#e62176','#3B82F6','#F59E0B','#8B5CF6'].map(c =>
+              `<button onclick="document.querySelectorAll('#edit-pharma-modal .color-pick').forEach(b=>b.style.outline='none');this.style.outline='3px solid var(--np-brand-soft)';this.style.outlineOffset='2px';document.getElementById('edit-pharma-color').value='${c}'"
+                class="color-pick"
+                style="width:32px;height:32px;border-radius:50%;background:${c};border:1px solid rgba(0,0,0,.1);cursor:pointer;${ph.color===c?'outline:3px solid var(--np-brand-soft);outline-offset:2px;':''}" aria-label="Couleur ${c}"></button>`
+            ).join('')}
+            <input type="color" id="edit-pharma-color" value="${ph.color}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--np-border-strong);cursor:pointer;padding:0">
+          </div>
         </div>
+      </div>
+      <div class="np-modal-footer">
+        <button class="np-btn np-btn-danger" onclick="if(confirm('Supprimer définitivement cette officine ?')){document.getElementById('edit-pharma-modal').remove();deletePharmacy('${ph.id}')}">🗑 Supprimer</button>
+        <button class="np-btn np-btn-ghost" onclick="document.getElementById('edit-pharma-modal').remove()">Annuler</button>
+        <button class="np-btn np-btn-primary" onclick="saveEditPharmacy('${ph.id}')">Enregistrer</button>
       </div>
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('edit-pharma-name')?.focus(), 50);
   document.addEventListener('keydown', function epEsc(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', epEsc); } });
 }
 
