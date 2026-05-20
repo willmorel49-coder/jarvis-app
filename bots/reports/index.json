@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-20T21:24:23.875Z",
+  "generatedAt": "2026-05-20T21:30:43.336Z",
   "bots": [
     {
       "id": "token-bot",
@@ -7,35 +7,63 @@
       "botName": "Token Bot",
       "score": 29,
       "issueCount": 70,
-      "generatedAt": "2026-05-20T21:24:23.991Z"
+      "generatedAt": "2026-05-20T21:30:43.448Z"
     },
     {
       "id": "palette-bot",
-      "status": "pending"
+      "status": "ok",
+      "botName": "Palette Bot",
+      "score": 62,
+      "issueCount": 174,
+      "generatedAt": "2026-05-20T21:30:43.533Z"
     },
     {
       "id": "typo-bot",
-      "status": "pending"
+      "status": "ok",
+      "botName": "Typo Bot",
+      "score": 75,
+      "issueCount": 7,
+      "generatedAt": "2026-05-20T21:30:43.601Z"
     },
     {
       "id": "spacing-bot",
-      "status": "pending"
+      "status": "ok",
+      "botName": "Spacing Bot",
+      "score": 54,
+      "issueCount": 3,
+      "generatedAt": "2026-05-20T21:30:43.732Z"
     },
     {
       "id": "component-bot",
-      "status": "pending"
+      "status": "ok",
+      "botName": "Component Bot",
+      "score": 13,
+      "issueCount": 7,
+      "generatedAt": "2026-05-20T21:30:43.806Z"
     },
     {
       "id": "a11y-bot",
-      "status": "pending"
+      "status": "ok",
+      "botName": "A11y Bot",
+      "score": 37,
+      "issueCount": 10,
+      "generatedAt": "2026-05-20T21:30:43.944Z"
     },
     {
       "id": "nav-bot",
-      "status": "pending"
+      "status": "ok",
+      "botName": "Nav Bot",
+      "score": 100,
+      "issueCount": 4,
+      "generatedAt": "2026-05-20T21:30:44.115Z"
     },
     {
       "id": "radius-bot",
-      "status": "pending"
+      "status": "ok",
+      "botName": "Radius Bot",
+      "score": 57,
+      "issueCount": 5,
+      "generatedAt": "2026-05-20T21:30:44.190Z"
     }
   ]
 }

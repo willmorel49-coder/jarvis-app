@@ -1,0 +1,1576 @@
+{
+  "botId": "palette-bot",
+  "botName": "Palette Bot",
+  "generatedAt": "2026-05-20T21:30:43.533Z",
+  "score": 62,
+  "summary": {
+    "totalUniqueColors": 456,
+    "issueCount": 174,
+    "bySurface": {
+      "crm": {
+        "uniqueColors": 278,
+        "totalOccurrences": 807
+      },
+      "catalogue": {
+        "uniqueColors": 51,
+        "totalOccurrences": 82
+      },
+      "opso": {
+        "uniqueColors": 372,
+        "totalOccurrences": 1087
+      }
+    }
+  },
+  "surfaces": [
+    {
+      "key": "crm",
+      "label": "CRM"
+    },
+    {
+      "key": "catalogue",
+      "label": "Catalogue"
+    },
+    {
+      "key": "opso",
+      "label": "OPSO"
+    }
+  ],
+  "findings": [
+    {
+      "color": "#64748b",
+      "total": 72,
+      "surfaces": {
+        "crm": 39,
+        "opso": 33
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#11a63c",
+      "total": 59,
+      "surfaces": {
+        "crm": 12,
+        "opso": 47
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#0d8530",
+      "total": 39,
+      "surfaces": {
+        "crm": 6,
+        "opso": 33
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#10b981",
+      "total": 30,
+      "surfaces": {
+        "crm": 18,
+        "opso": 12
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#94a3b8",
+      "total": 28,
+      "surfaces": {
+        "crm": 11,
+        "catalogue": 1,
+        "opso": 16
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#00e5a0",
+      "total": 28,
+      "surfaces": {
+        "crm": 19,
+        "opso": 9
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#e2e8f0",
+      "total": 28,
+      "surfaces": {
+        "crm": 11,
+        "opso": 17
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#f59e0b",
+      "total": 26,
+      "surfaces": {
+        "crm": 17,
+        "opso": 9
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#ef4444",
+      "total": 26,
+      "surfaces": {
+        "crm": 15,
+        "opso": 11
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,.06)",
+      "total": 21,
+      "surfaces": {
+        "crm": 16,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,0.15)",
+      "total": 21,
+      "surfaces": {
+        "crm": 1,
+        "opso": 20
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#6366f1",
+      "total": 20,
+      "surfaces": {
+        "crm": 13,
+        "opso": 7
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#0072e6",
+      "total": 19,
+      "surfaces": {
+        "crm": 12,
+        "opso": 7
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,.4)",
+      "total": 17,
+      "surfaces": {
+        "crm": 8,
+        "catalogue": 1,
+        "opso": 8
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#0057ff",
+      "total": 16,
+      "surfaces": {
+        "crm": 15,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#ffb020",
+      "total": 16,
+      "surfaces": {
+        "crm": 13,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#9b5cff",
+      "total": 15,
+      "surfaces": {
+        "crm": 9,
+        "opso": 6
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,229,160,.12)",
+      "total": 15,
+      "surfaces": {
+        "crm": 5,
+        "catalogue": 2,
+        "opso": 8
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#064e20",
+      "total": 15,
+      "surfaces": {
+        "opso": 15
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#1a1a2e",
+      "total": 14,
+      "surfaces": {
+        "crm": 7,
+        "opso": 7
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#888",
+      "total": 14,
+      "surfaces": {
+        "crm": 6,
+        "opso": 8
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,229,160,.1)",
+      "total": 14,
+      "surfaces": {
+        "crm": 8,
+        "catalogue": 1,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#059669",
+      "total": 13,
+      "surfaces": {
+        "crm": 5,
+        "opso": 8
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#dc2626",
+      "total": 13,
+      "surfaces": {
+        "crm": 8,
+        "catalogue": 1,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#7c3aed",
+      "total": 13,
+      "surfaces": {
+        "crm": 2,
+        "opso": 11
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#ea580c",
+      "total": 13,
+      "surfaces": {
+        "crm": 9,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.4)",
+      "total": 13,
+      "surfaces": {
+        "crm": 3,
+        "catalogue": 4,
+        "opso": 6
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#1e3a8a",
+      "total": 12,
+      "surfaces": {
+        "crm": 12
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#ff6b35",
+      "total": 12,
+      "surfaces": {
+        "crm": 7,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#f1f5f9",
+      "total": 12,
+      "surfaces": {
+        "crm": 5,
+        "opso": 7
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#92400e",
+      "total": 12,
+      "surfaces": {
+        "crm": 7,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#1e293b",
+      "total": 12,
+      "surfaces": {
+        "crm": 4,
+        "opso": 8
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#0284c7",
+      "total": 12,
+      "surfaces": {
+        "opso": 12
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(0,0,0,0.04)",
+      "total": 12,
+      "surfaces": {
+        "opso": 12
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#d97706",
+      "total": 11,
+      "surfaces": {
+        "crm": 6,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#f0fdf4",
+      "total": 11,
+      "surfaces": {
+        "crm": 2,
+        "opso": 9
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,229,160,.2)",
+      "total": 11,
+      "surfaces": {
+        "crm": 4,
+        "catalogue": 1,
+        "opso": 6
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,.55)",
+      "total": 11,
+      "surfaces": {
+        "crm": 5,
+        "catalogue": 1,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#3b82f6",
+      "total": 10,
+      "surfaces": {
+        "crm": 8,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#ffd700",
+      "total": 10,
+      "surfaces": {
+        "crm": 3,
+        "opso": 7
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#ec4899",
+      "total": 10,
+      "surfaces": {
+        "crm": 6,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,229,160,.06)",
+      "total": 10,
+      "surfaces": {
+        "crm": 4,
+        "opso": 6
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(17,166,60,.12)",
+      "total": 10,
+      "surfaces": {
+        "crm": 1,
+        "opso": 9
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#475569",
+      "total": 9,
+      "surfaces": {
+        "crm": 4,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,176,32,.2)",
+      "total": 9,
+      "surfaces": {
+        "crm": 5,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,87,255,.1)",
+      "total": 9,
+      "surfaces": {
+        "crm": 5,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.05)",
+      "total": 9,
+      "surfaces": {
+        "crm": 4,
+        "catalogue": 1,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.55)",
+      "total": 9,
+      "surfaces": {
+        "crm": 5,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#1d4ed8",
+      "total": 8,
+      "surfaces": {
+        "crm": 5,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#8b5cf6",
+      "total": 8,
+      "surfaces": {
+        "crm": 4,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#f8fafc",
+      "total": 8,
+      "surfaces": {
+        "crm": 3,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,77,109,.12)",
+      "total": 8,
+      "surfaces": {
+        "crm": 4,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,87,255,.3)",
+      "total": 8,
+      "surfaces": {
+        "crm": 4,
+        "catalogue": 1,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,87,255,.08)",
+      "total": 8,
+      "surfaces": {
+        "crm": 5,
+        "catalogue": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.04)",
+      "total": 8,
+      "surfaces": {
+        "crm": 4,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#d04a4a",
+      "total": 8,
+      "surfaces": {
+        "opso": 8
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#a78bfa",
+      "total": 7,
+      "surfaces": {
+        "crm": 1,
+        "catalogue": 6
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#f0f4ff",
+      "total": 7,
+      "surfaces": {
+        "crm": 3,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#15803d",
+      "total": 7,
+      "surfaces": {
+        "crm": 5,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.7)",
+      "total": 7,
+      "surfaces": {
+        "crm": 4,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.1)",
+      "total": 7,
+      "surfaces": {
+        "crm": 5,
+        "catalogue": 1,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,77,109,.1)",
+      "total": 7,
+      "surfaces": {
+        "crm": 5,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,77,109,.2)",
+      "total": 7,
+      "surfaces": {
+        "crm": 4,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.8)",
+      "total": 7,
+      "surfaces": {
+        "crm": 3,
+        "catalogue": 1,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#2563eb",
+      "total": 6,
+      "surfaces": {
+        "crm": 6
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#c0c0c0",
+      "total": 6,
+      "surfaces": {
+        "crm": 1,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#cd7f32",
+      "total": 6,
+      "surfaces": {
+        "crm": 1,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#ff4d6d",
+      "total": 6,
+      "surfaces": {
+        "crm": 4,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#555",
+      "total": 6,
+      "surfaces": {
+        "crm": 3,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#06b6d4",
+      "total": 6,
+      "surfaces": {
+        "crm": 2,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#fbbf24",
+      "total": 6,
+      "surfaces": {
+        "crm": 1,
+        "catalogue": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,0.85)",
+      "total": 6,
+      "surfaces": {
+        "crm": 1,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,0.03)",
+      "total": 6,
+      "surfaces": {
+        "crm": 1,
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,0.12)",
+      "total": 6,
+      "surfaces": {
+        "crm": 2,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,.05)",
+      "total": 6,
+      "surfaces": {
+        "crm": 4,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.9)",
+      "total": 6,
+      "surfaces": {
+        "crm": 3,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,229,160,.15)",
+      "total": 6,
+      "surfaces": {
+        "crm": 3,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,229,160,.08)",
+      "total": 6,
+      "surfaces": {
+        "crm": 3,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,.6)",
+      "total": 6,
+      "surfaces": {
+        "crm": 3,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,77,109,.3)",
+      "total": 6,
+      "surfaces": {
+        "crm": 3,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.5)",
+      "total": 6,
+      "surfaces": {
+        "crm": 3,
+        "catalogue": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#9aa0a3",
+      "total": 6,
+      "surfaces": {
+        "opso": 6
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(17,166,60,0.35)",
+      "total": 6,
+      "surfaces": {
+        "opso": 6
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#34d399",
+      "total": 5,
+      "surfaces": {
+        "crm": 3,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#d1fae5",
+      "total": 5,
+      "surfaces": {
+        "crm": 3,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,.12)",
+      "total": 5,
+      "surfaces": {
+        "crm": 3,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,0.08)",
+      "total": 5,
+      "surfaces": {
+        "crm": 1,
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.6)",
+      "total": 5,
+      "surfaces": {
+        "crm": 4,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,176,32,.1)",
+      "total": 5,
+      "surfaces": {
+        "crm": 3,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,176,32,.08)",
+      "total": 5,
+      "surfaces": {
+        "crm": 3,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,176,32,.12)",
+      "total": 5,
+      "surfaces": {
+        "crm": 2,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.35)",
+      "total": 5,
+      "surfaces": {
+        "catalogue": 5
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#e6f7ec",
+      "total": 5,
+      "surfaces": {
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#b8730c",
+      "total": 5,
+      "surfaces": {
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#b73838",
+      "total": 5,
+      "surfaces": {
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#e8a317",
+      "total": 5,
+      "surfaces": {
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(17,166,60,0.08)",
+      "total": 5,
+      "surfaces": {
+        "opso": 5
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#f7f8fc",
+      "total": 4,
+      "surfaces": {
+        "crm": 3,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#047857",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#ecfdf5",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#0f172a",
+      "total": 4,
+      "surfaces": {
+        "crm": 3,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#84cc16",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#f3e5f5",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#e0f7fa",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#fce4ec",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#90a4ae",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#f5f7f9",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#64748b18",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#fef3c7",
+      "total": 4,
+      "surfaces": {
+        "crm": 3,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#1e1b4b",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#0ea5e9",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#16a34a",
+      "total": 4,
+      "surfaces": {
+        "crm": 1,
+        "catalogue": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,0.07)",
+      "total": 4,
+      "surfaces": {
+        "crm": 1,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(37,99,235,.10)",
+      "total": 4,
+      "surfaces": {
+        "crm": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(37,99,235,.15)",
+      "total": 4,
+      "surfaces": {
+        "crm": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(0,0,0,.04)",
+      "total": 4,
+      "surfaces": {
+        "crm": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(0,0,0,.08)",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(239,68,68,.08)",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(155,92,255,.1)",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,229,160,.3)",
+      "total": 4,
+      "surfaces": {
+        "crm": 3,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,77,109,.08)",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,.5)",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,.3)",
+      "total": 4,
+      "surfaces": {
+        "crm": 2,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.08)",
+      "total": 4,
+      "surfaces": {
+        "crm": 1,
+        "catalogue": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,0.06)",
+      "total": 4,
+      "surfaces": {
+        "crm": 1,
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#f87171",
+      "total": 4,
+      "surfaces": {
+        "catalogue": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#e5e8ea",
+      "total": 4,
+      "surfaces": {
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#dddf4b",
+      "total": 4,
+      "surfaces": {
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(17,166,60,0.25)",
+      "total": 4,
+      "surfaces": {
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(17,166,60,0.06)",
+      "total": 4,
+      "surfaces": {
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(17,166,60,.25)",
+      "total": 4,
+      "surfaces": {
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(17,166,60,0.4)",
+      "total": 4,
+      "surfaces": {
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(0,0,0,0.10)",
+      "total": 4,
+      "surfaces": {
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(255,255,255,0.4)",
+      "total": 4,
+      "surfaces": {
+        "opso": 4
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#f0f2f8",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#fffbeb",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#6d28d9",
+      "total": 3,
+      "surfaces": {
+        "crm": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#cbd5e1",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#ffa500",
+      "total": 3,
+      "surfaces": {
+        "crm": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#a0a0a0",
+      "total": 3,
+      "surfaces": {
+        "crm": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#a0522d",
+      "total": 3,
+      "surfaces": {
+        "crm": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#00c6ff",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#fff0eb",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#fef9c3",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "#6b7280",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,0.05)",
+      "total": 3,
+      "surfaces": {
+        "crm": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,0,0,.10)",
+      "total": 3,
+      "surfaces": {
+        "crm": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(0,0,0,.2)",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(220,38,38,.2)",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(5,150,105,.10)",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,176,32,.15)",
+      "total": 3,
+      "surfaces": {
+        "crm": 2,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,87,255,.12)",
+      "total": 3,
+      "surfaces": {
+        "crm": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(239,68,68,.1)",
+      "total": 3,
+      "surfaces": {
+        "crm": 1,
+        "catalogue": 1,
+        "opso": 1
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(255,255,255,.15)",
+      "total": 3,
+      "surfaces": {
+        "crm": 1,
+        "opso": 2
+      },
+      "sharedAcrossSurfaces": true
+    },
+    {
+      "color": "rgba(0,87,255,.4)",
+      "total": 3,
+      "surfaces": {
+        "catalogue": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#64686a",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#f5f6f7",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#2a2d2f",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#fef5e2",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#fbe8e8",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#f97316",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#5c4500",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#3d3d3d",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "#3d2400",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(17,166,60,.3)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(255,255,255,0.2)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(0,0,0,0.15)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(255,255,255,0.75)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(17,166,60,.15)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(17,166,60,0.10)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(255,255,255,0.92)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(183,56,56,0.4)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(0,0,0,0.20)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    },
+    {
+      "color": "rgba(184,115,12,.12)",
+      "total": 3,
+      "surfaces": {
+        "opso": 3
+      },
+      "sharedAcrossSurfaces": false
+    }
+  ]
+}

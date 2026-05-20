@@ -1,0 +1,236 @@
+{
+  "botId": "spacing-bot",
+  "botName": "Spacing Bot",
+  "generatedAt": "2026-05-20T21:30:43.732Z",
+  "score": 54,
+  "summary": {
+    "avgAdherence": 54,
+    "issueCount": 3,
+    "bySurface": {
+      "crm": {
+        "adherence": 52,
+        "onGrid": 79,
+        "offGrid": 72
+      },
+      "catalogue": {
+        "adherence": 54,
+        "onGrid": 60,
+        "offGrid": 51
+      },
+      "opso": {
+        "adherence": 57,
+        "onGrid": 242,
+        "offGrid": 186
+      }
+    }
+  },
+  "surfaces": [
+    {
+      "key": "crm",
+      "label": "CRM"
+    },
+    {
+      "key": "catalogue",
+      "label": "Catalogue"
+    },
+    {
+      "key": "opso",
+      "label": "OPSO"
+    }
+  ],
+  "findings": [
+    {
+      "type": "spacing-adherence",
+      "surface": "crm",
+      "label": "CRM : adhérence grille 4px = 52%",
+      "adherence": 52,
+      "onGridCount": 79,
+      "offGridCount": 72,
+      "offGridSamples": [
+        {
+          "value": "10px",
+          "count": 19
+        },
+        {
+          "value": "14px",
+          "count": 11
+        },
+        {
+          "value": "2px",
+          "count": 8
+        },
+        {
+          "value": "3px",
+          "count": 7
+        },
+        {
+          "value": "18px",
+          "count": 6
+        },
+        {
+          "value": "9px",
+          "count": 4
+        },
+        {
+          "value": "7px",
+          "count": 4
+        },
+        {
+          "value": "6px",
+          "count": 3
+        },
+        {
+          "value": "11px",
+          "count": 2
+        },
+        {
+          "value": "22px",
+          "count": 2
+        },
+        {
+          "value": "5px",
+          "count": 2
+        },
+        {
+          "value": "13px",
+          "count": 1
+        },
+        {
+          "value": "1px",
+          "count": 1
+        },
+        {
+          "value": "26px",
+          "count": 1
+        },
+        {
+          "value": "34px",
+          "count": 1
+        }
+      ],
+      "severity": "warn"
+    },
+    {
+      "type": "spacing-adherence",
+      "surface": "catalogue",
+      "label": "Catalogue : adhérence grille 4px = 54%",
+      "adherence": 54,
+      "onGridCount": 60,
+      "offGridCount": 51,
+      "offGridSamples": [
+        {
+          "value": "14px",
+          "count": 11
+        },
+        {
+          "value": "10px",
+          "count": 8
+        },
+        {
+          "value": "2px",
+          "count": 8
+        },
+        {
+          "value": "6px",
+          "count": 8
+        },
+        {
+          "value": "5px",
+          "count": 7
+        },
+        {
+          "value": "18px",
+          "count": 3
+        },
+        {
+          "value": "3px",
+          "count": 2
+        },
+        {
+          "value": "1px",
+          "count": 2
+        },
+        {
+          "value": "7px",
+          "count": 1
+        },
+        {
+          "value": "9px",
+          "count": 1
+        }
+      ],
+      "severity": "warn"
+    },
+    {
+      "type": "spacing-adherence",
+      "surface": "opso",
+      "label": "OPSO : adhérence grille 4px = 57%",
+      "adherence": 57,
+      "onGridCount": 242,
+      "offGridCount": 186,
+      "offGridSamples": [
+        {
+          "value": "10px",
+          "count": 41
+        },
+        {
+          "value": "14px",
+          "count": 37
+        },
+        {
+          "value": "2px",
+          "count": 24
+        },
+        {
+          "value": "6px",
+          "count": 22
+        },
+        {
+          "value": "3px",
+          "count": 15
+        },
+        {
+          "value": "18px",
+          "count": 14
+        },
+        {
+          "value": "5px",
+          "count": 9
+        },
+        {
+          "value": "7px",
+          "count": 5
+        },
+        {
+          "value": "22px",
+          "count": 4
+        },
+        {
+          "value": "11px",
+          "count": 3
+        },
+        {
+          "value": "13px",
+          "count": 2
+        },
+        {
+          "value": "9px",
+          "count": 2
+        },
+        {
+          "value": "-14px",
+          "count": 2
+        },
+        {
+          "value": "-10px",
+          "count": 2
+        },
+        {
+          "value": "1px",
+          "count": 1
+        }
+      ],
+      "severity": "warn"
+    }
+  ]
+}

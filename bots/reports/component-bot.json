@@ -1,0 +1,166 @@
+{
+  "botId": "component-bot",
+  "botName": "Component Bot",
+  "generatedAt": "2026-05-20T21:30:43.806Z",
+  "score": 13,
+  "summary": {
+    "totalComponents": 8,
+    "issueCount": 7,
+    "matrix": {
+      ".card": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      ".modal": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      ".badge": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      ".pill": {
+        "crm": false,
+        "catalogue": false,
+        "opso": true
+      },
+      ".btn": {
+        "crm": true,
+        "catalogue": true,
+        "opso": true
+      },
+      ".kpi": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      ".empty": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      ".section-header-title": {
+        "crm": false,
+        "catalogue": false,
+        "opso": true
+      }
+    }
+  },
+  "surfaces": [
+    {
+      "key": "crm",
+      "label": "CRM"
+    },
+    {
+      "key": "catalogue",
+      "label": "Catalogue"
+    },
+    {
+      "key": "opso",
+      "label": "OPSO"
+    }
+  ],
+  "findings": [
+    {
+      "component": ".card",
+      "desc": "Conteneur générique",
+      "type": "partial-coverage",
+      "label": ".card défini dans crm+opso seulement",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "missingFrom": [
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "component": ".modal",
+      "desc": "Fenêtre modale",
+      "type": "partial-coverage",
+      "label": ".modal défini dans crm+opso seulement",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "missingFrom": [
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "component": ".badge",
+      "desc": "Petite pastille statut",
+      "type": "partial-coverage",
+      "label": ".badge défini dans crm+opso seulement",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "missingFrom": [
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "component": ".pill",
+      "desc": "Filtre cliquable arrondi",
+      "type": "partial-coverage",
+      "label": ".pill défini dans opso seulement",
+      "definedIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "component": ".kpi",
+      "desc": "Tuile KPI",
+      "type": "partial-coverage",
+      "label": ".kpi défini dans crm+opso seulement",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "missingFrom": [
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "component": ".empty",
+      "desc": "État vide",
+      "type": "partial-coverage",
+      "label": ".empty défini dans crm+opso seulement",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "missingFrom": [
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "component": ".section-header-title",
+      "desc": "En-tête de section",
+      "type": "partial-coverage",
+      "label": ".section-header-title défini dans opso seulement",
+      "definedIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    }
+  ]
+}

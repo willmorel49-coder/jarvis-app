@@ -1,0 +1,355 @@
+{
+  "botId": "typo-bot",
+  "botName": "Typo Bot",
+  "generatedAt": "2026-05-20T21:30:43.601Z",
+  "score": 75,
+  "summary": {
+    "issueCount": 7,
+    "bySurface": {
+      "crm": {
+        "families": 3,
+        "sizes": 15,
+        "weights": 6,
+        "primaryFamily": "Syne"
+      },
+      "catalogue": {
+        "families": 1,
+        "sizes": 14,
+        "weights": 6,
+        "primaryFamily": "inherit"
+      },
+      "opso": {
+        "families": 5,
+        "sizes": 20,
+        "weights": 5,
+        "primaryFamily": "Varela Round"
+      }
+    }
+  },
+  "surfaces": [
+    {
+      "key": "crm",
+      "label": "CRM"
+    },
+    {
+      "key": "catalogue",
+      "label": "Catalogue"
+    },
+    {
+      "key": "opso",
+      "label": "OPSO"
+    }
+  ],
+  "findings": [
+    {
+      "type": "family-divergence",
+      "label": "Famille de police principale différente entre surfaces",
+      "details": {
+        "crm": "Syne",
+        "catalogue": "inherit",
+        "opso": "Varela Round"
+      },
+      "severity": "info"
+    },
+    {
+      "type": "size-scale-explosion",
+      "surface": "crm",
+      "label": "CRM : 15 tailles distinctes (cible ≤ 12)",
+      "sizes": [
+        {
+          "size": "48px",
+          "count": 2
+        },
+        {
+          "size": "38px",
+          "count": 1
+        },
+        {
+          "size": "30px",
+          "count": 1
+        },
+        {
+          "size": "26px",
+          "count": 1
+        },
+        {
+          "size": "24px",
+          "count": 1
+        },
+        {
+          "size": "22px",
+          "count": 2
+        },
+        {
+          "size": "20px",
+          "count": 3
+        },
+        {
+          "size": "18px",
+          "count": 2
+        },
+        {
+          "size": "16px",
+          "count": 3
+        },
+        {
+          "size": "15px",
+          "count": 3
+        },
+        {
+          "size": "14px",
+          "count": 12
+        },
+        {
+          "size": "13px",
+          "count": 13
+        },
+        {
+          "size": "12px",
+          "count": 10
+        },
+        {
+          "size": "11px",
+          "count": 11
+        },
+        {
+          "size": "10px",
+          "count": 2
+        }
+      ],
+      "severity": "warn"
+    },
+    {
+      "type": "size-scale-explosion",
+      "surface": "catalogue",
+      "label": "Catalogue : 14 tailles distinctes (cible ≤ 12)",
+      "sizes": [
+        {
+          "size": "42px",
+          "count": 1
+        },
+        {
+          "size": "28px",
+          "count": 2
+        },
+        {
+          "size": "26px",
+          "count": 1
+        },
+        {
+          "size": "22px",
+          "count": 5
+        },
+        {
+          "size": "20px",
+          "count": 1
+        },
+        {
+          "size": "18px",
+          "count": 1
+        },
+        {
+          "size": "17px",
+          "count": 1
+        },
+        {
+          "size": "16px",
+          "count": 2
+        },
+        {
+          "size": "15px",
+          "count": 1
+        },
+        {
+          "size": "14px",
+          "count": 5
+        },
+        {
+          "size": "13px",
+          "count": 6
+        },
+        {
+          "size": "12px",
+          "count": 8
+        },
+        {
+          "size": "11px",
+          "count": 17
+        },
+        {
+          "size": "10px",
+          "count": 6
+        }
+      ],
+      "severity": "warn"
+    },
+    {
+      "type": "size-scale-explosion",
+      "surface": "opso",
+      "label": "OPSO : 20 tailles distinctes (cible ≤ 12)",
+      "sizes": [
+        {
+          "size": "48px",
+          "count": 2
+        },
+        {
+          "size": "40px",
+          "count": 1
+        },
+        {
+          "size": "36px",
+          "count": 2
+        },
+        {
+          "size": "32px",
+          "count": 3
+        },
+        {
+          "size": "30px",
+          "count": 1
+        },
+        {
+          "size": "28px",
+          "count": 1
+        },
+        {
+          "size": "26px",
+          "count": 4
+        },
+        {
+          "size": "24px",
+          "count": 5
+        },
+        {
+          "size": "22px",
+          "count": 2
+        },
+        {
+          "size": "20px",
+          "count": 6
+        },
+        {
+          "size": "19px",
+          "count": 1
+        },
+        {
+          "size": "18px",
+          "count": 11
+        },
+        {
+          "size": "16px",
+          "count": 8
+        },
+        {
+          "size": "15px",
+          "count": 7
+        },
+        {
+          "size": "14px",
+          "count": 23
+        },
+        {
+          "size": "13px",
+          "count": 37
+        },
+        {
+          "size": "12px",
+          "count": 23
+        },
+        {
+          "size": "11px",
+          "count": 33
+        },
+        {
+          "size": "10px",
+          "count": 13
+        },
+        {
+          "size": "9px",
+          "count": 5
+        }
+      ],
+      "severity": "warn"
+    },
+    {
+      "type": "non-standard-sizes",
+      "surface": "crm",
+      "label": "CRM : tailles hors échelle standard",
+      "sizes": [
+        {
+          "size": "48px",
+          "count": 2
+        },
+        {
+          "size": "22px",
+          "count": 2
+        },
+        {
+          "size": "30px",
+          "count": 1
+        },
+        {
+          "size": "38px",
+          "count": 1
+        }
+      ],
+      "severity": "info"
+    },
+    {
+      "type": "non-standard-sizes",
+      "surface": "catalogue",
+      "label": "Catalogue : tailles hors échelle standard",
+      "sizes": [
+        {
+          "size": "22px",
+          "count": 5
+        },
+        {
+          "size": "17px",
+          "count": 1
+        },
+        {
+          "size": "42px",
+          "count": 1
+        }
+      ],
+      "severity": "info"
+    },
+    {
+      "type": "non-standard-sizes",
+      "surface": "opso",
+      "label": "OPSO : tailles hors échelle standard",
+      "sizes": [
+        {
+          "size": "9px",
+          "count": 5
+        },
+        {
+          "size": "22px",
+          "count": 2
+        },
+        {
+          "size": "48px",
+          "count": 2
+        },
+        {
+          "size": "36px",
+          "count": 2
+        },
+        {
+          "size": "19px",
+          "count": 1
+        },
+        {
+          "size": "30px",
+          "count": 1
+        },
+        {
+          "size": "40px",
+          "count": 1
+        }
+      ],
+      "severity": "info"
+    }
+  ]
+}

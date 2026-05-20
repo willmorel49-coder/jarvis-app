@@ -1,0 +1,260 @@
+{
+  "botId": "a11y-bot",
+  "botName": "A11y Bot",
+  "generatedAt": "2026-05-20T21:30:43.944Z",
+  "score": 37,
+  "summary": {
+    "checks": 10,
+    "checksUsed": 10,
+    "issueCount": 10,
+    "bySurface": {
+      "crm": {
+        "totalAriaUsages": 2
+      },
+      "catalogue": {
+        "totalAriaUsages": 0
+      },
+      "opso": {
+        "totalAriaUsages": 104
+      }
+    },
+    "matrix": {
+      "aria-label": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 23
+      },
+      "aria-live": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 3
+      },
+      "aria-hidden": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 21
+      },
+      "aria-modal": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 1
+      },
+      "aria-labelledby": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 1
+      },
+      "role": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 29
+      },
+      "tabindex": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 17
+      },
+      "sr-only": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 2
+      },
+      "skip-link": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 5
+      },
+      "alt-attr": {
+        "crm": 2,
+        "catalogue": 0,
+        "opso": 2
+      }
+    }
+  },
+  "surfaces": [
+    {
+      "key": "crm",
+      "label": "CRM"
+    },
+    {
+      "key": "catalogue",
+      "label": "Catalogue"
+    },
+    {
+      "key": "opso",
+      "label": "OPSO"
+    }
+  ],
+  "findings": [
+    {
+      "check": "aria-label",
+      "label": "aria-label",
+      "counts": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 23
+      },
+      "presentIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "check": "aria-live",
+      "label": "aria-live",
+      "counts": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 3
+      },
+      "presentIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "check": "aria-hidden",
+      "label": "aria-hidden",
+      "counts": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 21
+      },
+      "presentIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "check": "aria-modal",
+      "label": "aria-modal",
+      "counts": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 1
+      },
+      "presentIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "check": "aria-labelledby",
+      "label": "aria-labelledby",
+      "counts": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 1
+      },
+      "presentIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "check": "role",
+      "label": "role=",
+      "counts": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 29
+      },
+      "presentIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "check": "tabindex",
+      "label": "tabindex",
+      "counts": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 17
+      },
+      "presentIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "check": "sr-only",
+      "label": ".sr-only",
+      "counts": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 2
+      },
+      "presentIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "check": "skip-link",
+      "label": ".skip-link",
+      "counts": {
+        "crm": 0,
+        "catalogue": 0,
+        "opso": 5
+      },
+      "presentIn": [
+        "opso"
+      ],
+      "missingFrom": [
+        "crm",
+        "catalogue"
+      ],
+      "severity": "warn"
+    },
+    {
+      "check": "alt-attr",
+      "label": "alt= (images)",
+      "counts": {
+        "crm": 2,
+        "catalogue": 0,
+        "opso": 2
+      },
+      "presentIn": [
+        "crm",
+        "opso"
+      ],
+      "missingFrom": [
+        "catalogue"
+      ],
+      "severity": "info"
+    }
+  ]
+}

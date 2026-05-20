@@ -1,0 +1,330 @@
+{
+  "botId": "radius-bot",
+  "botName": "Radius Bot",
+  "generatedAt": "2026-05-20T21:30:44.190Z",
+  "score": 57,
+  "summary": {
+    "totalDistinctRadii": 18,
+    "issueCount": 5,
+    "bySurface": {
+      "crm": {
+        "distinct": 12,
+        "values": [
+          "3px",
+          "4px",
+          "6px",
+          "7px",
+          "8px",
+          "10px",
+          "11px",
+          "12px",
+          "14px",
+          "20px",
+          "24px",
+          "99px"
+        ]
+      },
+      "catalogue": {
+        "distinct": 5,
+        "values": [
+          "2px",
+          "8px",
+          "10px",
+          "12px",
+          "20px"
+        ]
+      },
+      "opso": {
+        "distinct": 18,
+        "values": [
+          "2px",
+          "3px",
+          "4px",
+          "5px",
+          "6px",
+          "7px",
+          "8px",
+          "9px",
+          "10px",
+          "11px",
+          "12px",
+          "14px",
+          "16px",
+          "18px",
+          "20px",
+          "24px",
+          "99px",
+          "999px"
+        ]
+      }
+    },
+    "presenceMatrix": {
+      "4px": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      "24px": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      "14px": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      "10px": {
+        "crm": true,
+        "catalogue": true,
+        "opso": true
+      },
+      "3px": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      "11px": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      "99px": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      "8px": {
+        "crm": true,
+        "catalogue": true,
+        "opso": true
+      },
+      "6px": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      "20px": {
+        "crm": true,
+        "catalogue": true,
+        "opso": true
+      },
+      "12px": {
+        "crm": true,
+        "catalogue": true,
+        "opso": true
+      },
+      "7px": {
+        "crm": true,
+        "catalogue": false,
+        "opso": true
+      },
+      "2px": {
+        "crm": false,
+        "catalogue": true,
+        "opso": true
+      },
+      "18px": {
+        "crm": false,
+        "catalogue": false,
+        "opso": true
+      },
+      "9px": {
+        "crm": false,
+        "catalogue": false,
+        "opso": true
+      },
+      "5px": {
+        "crm": false,
+        "catalogue": false,
+        "opso": true
+      },
+      "999px": {
+        "crm": false,
+        "catalogue": false,
+        "opso": true
+      },
+      "16px": {
+        "crm": false,
+        "catalogue": false,
+        "opso": true
+      }
+    }
+  },
+  "surfaces": [
+    {
+      "key": "crm",
+      "label": "CRM"
+    },
+    {
+      "key": "catalogue",
+      "label": "Catalogue"
+    },
+    {
+      "key": "opso",
+      "label": "OPSO"
+    }
+  ],
+  "findings": [
+    {
+      "type": "scale-explosion",
+      "surface": "crm",
+      "label": "CRM : 12 valeurs de radius distinctes (cible ≤ 6)",
+      "values": [
+        {
+          "value": "3px",
+          "count": 2
+        },
+        {
+          "value": "4px",
+          "count": 4
+        },
+        {
+          "value": "6px",
+          "count": 4
+        },
+        {
+          "value": "7px",
+          "count": 1
+        },
+        {
+          "value": "8px",
+          "count": 2
+        },
+        {
+          "value": "10px",
+          "count": 5
+        },
+        {
+          "value": "11px",
+          "count": 1
+        },
+        {
+          "value": "12px",
+          "count": 1
+        },
+        {
+          "value": "14px",
+          "count": 3
+        },
+        {
+          "value": "20px",
+          "count": 6
+        },
+        {
+          "value": "24px",
+          "count": 1
+        },
+        {
+          "value": "99px",
+          "count": 1
+        }
+      ],
+      "severity": "warn"
+    },
+    {
+      "type": "scale-explosion",
+      "surface": "opso",
+      "label": "OPSO : 18 valeurs de radius distinctes (cible ≤ 6)",
+      "values": [
+        {
+          "value": "2px",
+          "count": 1
+        },
+        {
+          "value": "3px",
+          "count": 8
+        },
+        {
+          "value": "4px",
+          "count": 4
+        },
+        {
+          "value": "5px",
+          "count": 1
+        },
+        {
+          "value": "6px",
+          "count": 11
+        },
+        {
+          "value": "7px",
+          "count": 1
+        },
+        {
+          "value": "8px",
+          "count": 7
+        },
+        {
+          "value": "9px",
+          "count": 3
+        },
+        {
+          "value": "10px",
+          "count": 12
+        },
+        {
+          "value": "11px",
+          "count": 1
+        },
+        {
+          "value": "12px",
+          "count": 10
+        },
+        {
+          "value": "14px",
+          "count": 4
+        },
+        {
+          "value": "16px",
+          "count": 2
+        },
+        {
+          "value": "18px",
+          "count": 6
+        },
+        {
+          "value": "20px",
+          "count": 14
+        },
+        {
+          "value": "24px",
+          "count": 1
+        },
+        {
+          "value": "99px",
+          "count": 1
+        },
+        {
+          "value": "999px",
+          "count": 5
+        }
+      ],
+      "severity": "warn"
+    },
+    {
+      "type": "unique-radius",
+      "radius": "18px",
+      "surface": "opso",
+      "count": 6,
+      "label": "18px utilisé seulement dans OPSO (×6)",
+      "severity": "info"
+    },
+    {
+      "type": "unique-radius",
+      "radius": "9px",
+      "surface": "opso",
+      "count": 3,
+      "label": "9px utilisé seulement dans OPSO (×3)",
+      "severity": "info"
+    },
+    {
+      "type": "unique-radius",
+      "radius": "999px",
+      "surface": "opso",
+      "count": 5,
+      "label": "999px utilisé seulement dans OPSO (×5)",
+      "severity": "info"
+    }
+  ]
+}
