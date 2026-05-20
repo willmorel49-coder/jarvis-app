@@ -1,53 +1,66 @@
 /* ══════════════════════════════════════════════════════════
-   NORMANDIE PHARMA · Vues Pharmacies — Overlay charte
+   INTÉGRAL PHARMA · CRM — Vues Pharmacies
+   DA Intégral Pharma : bleu corporate, DM Sans, navy, radius 20px
    Scope : #page-pharmacies + modale fiche visite + édition
-   Tokens NP officiels · OPSO Santé 2024
+   Réf : /Users/williammorel/JARVIS/APP/DESIGN.md
 ══════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Varela+Round&family=Inter:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap');
-
 :root {
-  /* Couleurs charte NP */
-  --np-brand:       #11a63c;
-  --np-brand-dark:  #0d8a31;
-  --np-brand-light: #1bc04a;
-  --np-brand-soft:  #e6f7eb;
-  --np-brand-faint: #f4fbf6;
-  --np-gray:        #64686a;
-  --np-gray-dark:   #3a3d40;
-  --np-gray-light:  #9ea1a3;
-  --np-lime:        #dddf4b;
-  --np-lime-soft:   #f5f6c2;
-  --np-pink:        #e62176;
+  /* Tokens IP locaux (préfixe np-* conservé pour compat code app.js) */
+  --np-blue:       #0057FF;
+  --np-blue-d:     #0041CC;
+  --np-blue-lt:    #EAF2FF;
+  --np-navy:       #0B1F4D;
+  --np-green:      #14B86A;
+  --np-green-d:    #0E9456;
+  --np-amber:      #FF9F1C;
+  --np-rose:       #F43F5E;
+  --np-purple:     #7C3AED;
 
-  /* Surfaces NP */
-  --np-bg:        #ffffff;
-  --np-surface:   #ffffff;
-  --np-surface-2: #f6f7f5;
-  --np-surface-3: #ebede9;
-  --np-text:      #1f2937;
-  --np-text-dim:  #64686a;
-  --np-text-muted:#9ea1a3;
-  --np-border:        #e5e7eb;
-  --np-border-strong: #d1d5db;
+  /* Aliases legacy (toujours utilisés par certains éléments HTML) */
+  --np-brand:       var(--np-blue);
+  --np-brand-dark:  var(--np-blue-d);
+  --np-brand-light: #3B7AFF;
+  --np-brand-soft:  var(--np-blue-lt);
+  --np-brand-faint: #F2F6FF;
 
-  /* Radius signature */
+  --np-gray:        #64748B;
+  --np-gray-dark:   #0B1F4D;
+  --np-gray-light:  #94A3B8;
+  --np-lime:        #FF9F1C;
+  --np-lime-soft:   #FFF3DC;
+  --np-pink:        #F43F5E;
+  --np-pink-soft:   #FFE4E9;
+  --np-warning:     #FF9F1C;
+
+  /* Surfaces */
+  --np-bg:        #F7FAFF;
+  --np-surface:   #FFFFFF;
+  --np-surface-2: #F7FAFF;
+  --np-surface-3: #EAF2FF;
+  --np-text:      #0B1F4D;
+  --np-text-dim:  #64748B;
+  --np-text-muted:#94A3B8;
+  --np-border:        #E8EEFF;
+  --np-border-strong: #D4DEFF;
+
+  /* Radius IP : plus de biseau, on reste sur 20px standard */
   --np-r-sm: 10px;
   --np-r-md: 14px;
-  --np-r-lg: 18px;
+  --np-r-lg: 20px;
   --np-r-xl: 24px;
-  --np-r-pin: 24px 24px 4px 24px;
+  --np-r-pin: 20px;   /* radius standard, plus de biseau */
 
-  --np-shadow-sm: 0 2px 4px rgba(17,166,60,.06);
-  --np-shadow-md: 0 6px 20px rgba(17,166,60,.10);
-  --np-shadow-lg: 0 16px 40px rgba(17,166,60,.14);
+  --np-shadow-sm: 0 2px 6px rgba(11,31,77,.05);
+  --np-shadow-md: 0 6px 24px rgba(11,31,77,.08);
+  --np-shadow-lg: 0 16px 40px rgba(11,31,77,.14);
 }
 
-/* ── Page Pharmacies : fond clair NP + typo ───────── */
+/* ── Page Pharmacies : fond clair + DM Sans ───────── */
 #page-pharmacies {
-  background: #fff;
+  background: var(--np-bg);
   color: var(--np-text);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
 }
 
 #page-pharmacies .section-title,
@@ -57,11 +70,12 @@
 #page-pharmacies h1,
 #page-pharmacies h2,
 #page-pharmacies h3 {
-  font-family: 'Varela Round', system-ui, sans-serif;
-  letter-spacing: -.2px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -.3px;
 }
 
-/* ── Cards pin biseauté ───────────────────────────── */
+/* ── Cards radius IP standard ─────────────────────── */
 #page-pharmacies .card {
   background: var(--np-surface) !important;
   border: 1px solid var(--np-border) !important;
@@ -75,36 +89,38 @@
 }
 
 #page-pharmacies .card-title {
-  color: var(--np-gray-dark) !important;
-  font-size: 16px !important;
+  color: var(--np-text) !important;
+  font-size: 17px !important;
   font-weight: 700 !important;
 }
 
 #page-pharmacies .card-subtitle {
   color: var(--np-text-dim) !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'DM Sans', sans-serif !important;
   font-size: 12px !important;
 }
 
-/* ── Bouton retour signature NP ───────────────────── */
+/* ── Bouton retour IP ─────────────────────────────── */
 #page-pharmacies .np-back-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px 8px 12px;
-  border-radius: var(--np-r-md);
-  border: 1.5px solid var(--np-brand);
-  background: var(--np-brand-faint);
-  color: var(--np-brand-dark);
-  font-family: 'Varela Round', sans-serif;
+  padding: 9px 18px 9px 14px;
+  min-height: 40px;
+  border-radius: 999px;
+  border: 1.5px solid var(--np-border-strong);
+  background: #fff;
+  color: var(--np-blue-d);
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all .18s;
+  -webkit-tap-highlight-color: transparent;
 }
 #page-pharmacies .np-back-btn:hover {
-  background: var(--np-brand-soft);
-  border-color: var(--np-brand-dark);
+  background: var(--np-blue-lt);
+  border-color: var(--np-blue);
   transform: translateX(-2px);
 }
 #page-pharmacies .np-back-btn::before {
@@ -113,25 +129,26 @@
   font-weight: 700;
 }
 
-/* ── Hero header pharmacie ───────────────────────── */
+/* ── Hero header pharmacie — navy → blue ──────────── */
 #page-pharmacies .np-hero {
-  background: linear-gradient(135deg, var(--np-brand-dark) 0%, var(--np-brand) 55%, var(--np-brand-light) 100%);
+  background: linear-gradient(135deg, var(--np-navy) 0%, #122A6A 45%, var(--np-blue) 100%);
   border-radius: var(--np-r-pin);
   padding: 24px 28px;
   color: #fff;
   margin-bottom: 20px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 12px 36px rgba(17,166,60,.25);
+  box-shadow: 0 14px 40px rgba(0,87,255,.22);
+  animation: npFadeUp .35s cubic-bezier(.16,1,.3,1) both;
 }
 #page-pharmacies .np-hero::after {
   content: '';
   position: absolute;
-  right: -40px;
-  bottom: -40px;
-  width: 220px;
-  height: 220px;
-  background: radial-gradient(circle, rgba(221,223,75,.22), transparent 70%);
+  right: -50px;
+  bottom: -50px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(124,58,237,.30), transparent 70%);
   pointer-events: none;
 }
 #page-pharmacies .np-hero-row {
@@ -143,16 +160,16 @@
   z-index: 1;
 }
 #page-pharmacies .np-hero-title {
-  font-family: 'Varela Round', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -.5px;
+  font-weight: 800;
+  letter-spacing: -.7px;
   margin: 0;
   line-height: 1.1;
 }
 #page-pharmacies .np-hero-sub {
   font-size: 13px;
-  opacity: .92;
+  opacity: .85;
   margin-top: 4px;
 }
 #page-pharmacies .np-hero-chips {
@@ -168,121 +185,136 @@
   align-items: center;
   gap: 5px;
   padding: 4px 12px;
-  border-radius: 20px;
-  background: rgba(255,255,255,.18);
-  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.26);
   color: #fff;
   font-size: 11px;
   font-weight: 600;
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
+/* Tagline IP : sobre, uppercase, plus de Caveat */
 #page-pharmacies .np-hero-tagline {
-  font-family: 'Caveat', cursive;
-  font-size: 22px;
-  color: rgba(255,255,255,.85);
-  margin-top: 6px;
-  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,.70);
+  margin-top: 8px;
+  font-weight: 700;
   position: relative;
   z-index: 1;
 }
 
-/* ── Pin pharma SVG (cercle vert + croix blanche) ── */
+/* ── Pin pharma : remplacé par badge bleu sobre ────
+   (plus de signature pharma croix blanche — c'était NP)
+   On garde la classe pour ne pas casser l'HTML, mais visuel IP
+   ─────────────────────────────────────────────────── */
 #page-pharmacies .np-pin {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--np-brand);
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--np-blue);
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(17,166,60,.30);
+  box-shadow: 0 4px 12px rgba(0,87,255,.28);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: -.3px;
   position: relative;
 }
-#page-pharmacies .np-pin::before,
-#page-pharmacies .np-pin::after {
-  content: '';
-  position: absolute;
-  background: #fff;
-  border-radius: 1.5px;
+/* Initiales IP en pseudo */
+#page-pharmacies .np-pin::before {
+  content: 'IP';
+  position: relative;
 }
-#page-pharmacies .np-pin::before { width: 16px; height: 4px; }
-#page-pharmacies .np-pin::after  { width: 4px;  height: 16px; }
 
-#page-pharmacies .np-pin-lg { width: 56px; height: 56px; }
-#page-pharmacies .np-pin-lg::before { width: 22px; height: 6px; border-radius: 2px; }
-#page-pharmacies .np-pin-lg::after  { width: 6px;  height: 22px; border-radius: 2px; }
+#page-pharmacies .np-pin-lg {
+  width: 54px; height: 54px;
+  border-radius: 14px;
+  font-size: 18px;
+}
 
-#page-pharmacies .np-pin-sm { width: 24px; height: 24px; box-shadow: 0 2px 6px rgba(17,166,60,.25); }
-#page-pharmacies .np-pin-sm::before { width: 10px; height: 2.5px; }
-#page-pharmacies .np-pin-sm::after  { width: 2.5px; height: 10px; }
+#page-pharmacies .np-pin-sm {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  font-size: 11px;
+  box-shadow: 0 2px 6px rgba(0,87,255,.22);
+}
 
 #page-pharmacies .np-pin-white {
   background: rgba(255,255,255,.18);
-  border: 1.5px solid rgba(255,255,255,.45);
+  border: 1.5px solid rgba(255,255,255,.42);
   box-shadow: none;
+  color: #fff;
 }
-#page-pharmacies .np-pin-white::before,
-#page-pharmacies .np-pin-white::after { background: #fff; }
 
-/* ── Liste pharmacies : items pin-card ────────────── */
+/* ── Liste pharmacies : items radius IP ──────────── */
 #page-pharmacies .pharma-item {
   background: #fff !important;
   border: 1px solid var(--np-border) !important;
   border-radius: var(--np-r-pin) !important;
   margin: 8px 16px !important;
   padding: 14px 18px !important;
+  min-height: 56px !important;
   transition: box-shadow .2s, transform .15s, border-color .2s !important;
 }
 #page-pharmacies .pharma-item:hover {
-  border-color: var(--np-brand-light) !important;
-  box-shadow: 0 8px 24px rgba(17,166,60,.12) !important;
+  border-color: var(--np-blue) !important;
+  box-shadow: 0 8px 24px rgba(0,87,255,.10) !important;
   transform: translateY(-1px);
 }
 #page-pharmacies .pharma-name {
-  font-family: 'Varela Round', sans-serif !important;
-  color: var(--np-gray-dark) !important;
-  font-size: 15px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  color: var(--np-text) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
 }
 #page-pharmacies .pharma-ca {
-  font-family: 'Varela Round', sans-serif !important;
-  color: var(--np-brand-dark) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  color: var(--np-text) !important;
+  font-weight: 800 !important;
 }
 #page-pharmacies .pharma-qte {
   color: var(--np-text-dim) !important;
 }
 
-/* Rang : dégradé NP vert pour rangs hors podium */
+/* Rang : palette IP */
 #page-pharmacies .rank-n {
-  background: var(--np-brand-faint) !important;
-  color: var(--np-brand-dark) !important;
-  border: 1px solid var(--np-brand-soft);
+  background: var(--np-blue-lt) !important;
+  color: var(--np-blue-d) !important;
+  border: 1px solid var(--np-border);
   font-weight: 700;
 }
 
-/* ── Filtres pill / chips ─────────────────────────── */
+/* ── Filtres pill / chips IP ──────────────────────── */
 #page-pharmacies .filter-chip {
-  border-radius: 22px !important;
+  border-radius: 999px !important;
   border: 1.5px solid var(--np-border-strong) !important;
   background: #fff !important;
-  color: var(--np-gray) !important;
-  font-family: 'Inter', sans-serif !important;
+  color: var(--np-text-dim) !important;
+  font-family: 'DM Sans', sans-serif !important;
   font-weight: 600 !important;
   font-size: 12px !important;
-  padding: 6px 14px !important;
+  padding: 7px 16px !important;
+  min-height: 36px !important;
   transition: all .15s !important;
 }
 #page-pharmacies .filter-chip:hover {
-  border-color: var(--np-brand) !important;
-  color: var(--np-brand-dark) !important;
-  background: var(--np-brand-faint) !important;
+  border-color: var(--np-blue) !important;
+  color: var(--np-blue-d) !important;
+  background: var(--np-blue-lt) !important;
 }
 #page-pharmacies .filter-chip.active {
-  background: var(--np-brand) !important;
-  border-color: var(--np-brand) !important;
+  background: var(--np-blue) !important;
+  border-color: var(--np-blue) !important;
   color: #fff !important;
-  box-shadow: 0 4px 12px rgba(17,166,60,.25) !important;
+  box-shadow: 0 4px 12px rgba(0,87,255,.22) !important;
 }
 
 /* ── Search input ─────────────────────────────────── */
@@ -290,15 +322,16 @@
   border: 1.5px solid var(--np-border-strong) !important;
   border-radius: var(--np-r-md) !important;
   background: #fff !important;
+  min-height: 44px !important;
   transition: border-color .18s, box-shadow .18s;
 }
 #page-pharmacies .search-wrap:focus-within {
-  border-color: var(--np-brand) !important;
-  box-shadow: 0 0 0 4px var(--np-brand-faint) !important;
+  border-color: var(--np-blue) !important;
+  box-shadow: 0 0 0 4px rgba(0,87,255,.14) !important;
 }
-#page-pharmacies .search-icon { color: var(--np-brand) !important; }
+#page-pharmacies .search-icon { color: var(--np-blue) !important; }
 
-/* ── KPI cards NP ─────────────────────────────────── */
+/* ── KPI cards IP ─────────────────────────────────── */
 #page-pharmacies .kpi-card {
   background: #fff !important;
   border: 1px solid var(--np-border) !important;
@@ -306,110 +339,114 @@
   box-shadow: var(--np-shadow-sm) !important;
 }
 #page-pharmacies .kpi-card .kpi-value {
-  font-family: 'Varela Round', sans-serif !important;
-  color: var(--np-gray-dark) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  color: var(--np-text) !important;
+  font-weight: 800 !important;
+  font-size: 22px !important;
 }
 #page-pharmacies .kpi-card .kpi-label {
-  color: var(--np-text-dim) !important;
-  font-family: 'Inter', sans-serif !important;
+  color: var(--np-text-muted) !important;
+  font-family: 'DM Sans', sans-serif !important;
   text-transform: uppercase;
-  letter-spacing: .5px;
-  font-size: 10px !important;
+  letter-spacing: .8px;
+  font-size: 11px !important;
   font-weight: 700 !important;
 }
 
-/* ── Boutons ──────────────────────────────────────── */
+/* ── Boutons IP ───────────────────────────────────── */
 #page-pharmacies .btn-primary {
-  background: linear-gradient(135deg, var(--np-brand-dark), var(--np-brand)) !important;
+  background: var(--np-blue) !important;
   border: none !important;
   color: #fff !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'DM Sans', sans-serif !important;
   font-weight: 700 !important;
-  border-radius: var(--np-r-md) !important;
-  box-shadow: 0 4px 14px rgba(17,166,60,.30) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 22px rgba(0,87,255,.26), 0 2px 6px rgba(0,87,255,.14) !important;
+  min-height: 44px;
 }
 #page-pharmacies .btn-primary:hover {
-  box-shadow: 0 8px 22px rgba(17,166,60,.40) !important;
-  filter: brightness(1.05);
+  background: var(--np-blue-d) !important;
+  box-shadow: 0 12px 28px rgba(0,87,255,.32) !important;
   transform: translateY(-1px);
 }
 #page-pharmacies .btn-ghost {
   background: #fff !important;
   border: 1.5px solid var(--np-border-strong) !important;
-  color: var(--np-gray-dark) !important;
-  border-radius: var(--np-r-md) !important;
+  color: var(--np-text) !important;
+  border-radius: 999px !important;
   font-weight: 600 !important;
+  min-height: 40px;
 }
 #page-pharmacies .btn-ghost:hover {
-  border-color: var(--np-brand) !important;
-  color: var(--np-brand-dark) !important;
-  background: var(--np-brand-faint) !important;
+  border-color: var(--np-blue) !important;
+  color: var(--np-blue-d) !important;
+  background: var(--np-blue-lt) !important;
 }
 #page-pharmacies .btn-lime {
-  background: var(--np-lime) !important;
-  color: var(--np-gray-dark) !important;
+  background: var(--np-amber) !important;
+  color: #fff !important;
   border: none !important;
   font-weight: 700 !important;
-  border-radius: var(--np-r-md) !important;
+  border-radius: 999px !important;
 }
 
-/* ── Tagline Caveat handwriting ───────────────────── */
+/* ── Tagline neutralisée (plus de Caveat NP) ──────── */
 #page-pharmacies .np-tagline {
-  font-family: 'Caveat', cursive;
-  color: var(--np-brand);
-  font-size: 18px;
-  font-weight: 600;
-  display: inline-block;
+  display: none !important;
 }
 
-/* ── Status chips NP ──────────────────────────────── */
+/* ── Status chips IP ──────────────────────────────── */
 #page-pharmacies .status-chip {
-  border-radius: 14px !important;
-  font-family: 'Inter', sans-serif !important;
-  font-weight: 600 !important;
+  border-radius: 999px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 700 !important;
   font-size: 11px !important;
-  padding: 3px 9px !important;
+  padding: 3px 10px !important;
 }
 #page-pharmacies .status-chip.status-up,
 #page-pharmacies .status-up {
-  background: var(--np-brand-soft) !important;
-  color: var(--np-brand-dark) !important;
+  background: #E6F8EE !important;
+  color: var(--np-green-d) !important;
 }
 #page-pharmacies .status-chip.status-down,
 #page-pharmacies .status-down {
-  background: #fde2ec !important;
+  background: var(--np-pink-soft) !important;
   color: var(--np-pink) !important;
 }
 #page-pharmacies .status-chip.status-flat,
 #page-pharmacies .status-flat {
   background: var(--np-surface-3) !important;
-  color: var(--np-gray) !important;
+  color: var(--np-text-dim) !important;
 }
 
-/* ── Bouton flottant Nouvelle visite ──────────────── */
+/* ── Bouton flottant Nouvelle visite IP ───────────── */
 .np-fab {
   position: fixed;
   bottom: 28px;
   right: 28px;
+  bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
+  right: max(28px, calc(env(safe-area-inset-right) + 16px));
   z-index: 800;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 22px;
-  border-radius: var(--np-r-pin);
+  padding: 14px 24px;
+  min-height: 52px;
+  border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, var(--np-brand-dark), var(--np-brand));
+  background: linear-gradient(135deg, var(--np-blue-d), var(--np-blue));
   color: #fff;
-  font-family: 'Varela Round', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 12px 32px rgba(17,166,60,.40), 0 4px 10px rgba(17,166,60,.20);
+  box-shadow: 0 14px 32px rgba(0,87,255,.40), 0 4px 10px rgba(0,87,255,.20);
   transition: transform .18s, box-shadow .18s;
+  -webkit-tap-highlight-color: transparent;
 }
 .np-fab:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 18px 42px rgba(17,166,60,.50), 0 4px 12px rgba(17,166,60,.25);
+  box-shadow: 0 18px 42px rgba(0,87,255,.46), 0 4px 12px rgba(0,87,255,.25);
 }
 .np-fab::before {
   content: '';
@@ -420,12 +457,13 @@
     linear-gradient(#fff,#fff) center/3px 14px no-repeat;
 }
 
-/* ── Modale édition pharmacie NP ──────────────────── */
+/* ── Modale édition pharmacie IP ──────────────────── */
 .np-modal {
   position: fixed;
   inset: 0;
-  background: rgba(13, 138, 49, .15);
-  backdrop-filter: blur(6px);
+  background: rgba(11,31,77,.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -440,41 +478,43 @@
   max-width: 540px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 32px 80px rgba(17,166,60,.25), 0 0 0 1px var(--np-border);
+  box-shadow: 0 32px 80px rgba(11,31,77,.30), 0 0 0 1px var(--np-border);
   animation: npSlideUp .3s cubic-bezier(.16,1,.3,1);
 }
 .np-modal-header {
-  padding: 20px 24px 14px;
+  padding: 20px 24px 16px;
   border-bottom: 1px solid var(--np-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: linear-gradient(135deg, var(--np-brand-faint), #fff);
+  background: linear-gradient(135deg, var(--np-blue-lt), #fff);
   border-radius: var(--np-r-pin) var(--np-r-pin) 0 0;
 }
 .np-modal-title {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'Varela Round', sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--np-gray-dark);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--np-text);
+  letter-spacing: -.3px;
 }
 .np-modal-close {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 1px solid var(--np-border-strong);
   background: #fff;
-  color: var(--np-gray);
+  color: var(--np-text-dim);
   cursor: pointer;
   font-size: 15px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
 }
 .np-modal-close:hover {
   border-color: var(--np-pink);
@@ -492,22 +532,23 @@
 }
 .np-modal-field { display: flex; flex-direction: column; gap: 6px; }
 .np-modal-field label {
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .5px;
+  letter-spacing: .8px;
   color: var(--np-text-dim);
 }
 .np-modal-field input,
 .np-modal-field select,
 .np-modal-field textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: 11px 14px;
+  min-height: 44px;
   border: 1.5px solid var(--np-border-strong);
   border-radius: var(--np-r-md);
   background: #fff;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   color: var(--np-text);
   box-sizing: border-box;
@@ -517,8 +558,8 @@
 .np-modal-field select:focus,
 .np-modal-field textarea:focus {
   outline: none;
-  border-color: var(--np-brand);
-  box-shadow: 0 0 0 4px var(--np-brand-faint);
+  border-color: var(--np-blue);
+  box-shadow: 0 0 0 4px rgba(0,87,255,.14);
 }
 .np-modal-footer {
   padding: 16px 24px;
@@ -531,27 +572,29 @@
   border-radius: 0 0 var(--np-r-pin) var(--np-r-pin);
 }
 .np-modal-footer .np-btn {
-  padding: 10px 18px;
-  border-radius: var(--np-r-md);
-  font-family: 'Inter', sans-serif;
+  padding: 11px 20px;
+  min-height: 44px;
+  border-radius: 999px;
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: all .15s;
   border: 1.5px solid transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 .np-modal-footer .np-btn-primary {
-  background: linear-gradient(135deg, var(--np-brand-dark), var(--np-brand));
+  background: var(--np-blue);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(17,166,60,.25);
+  box-shadow: 0 8px 22px rgba(0,87,255,.26);
 }
-.np-modal-footer .np-btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.np-modal-footer .np-btn-primary:hover { background: var(--np-blue-d); transform: translateY(-1px); }
 .np-modal-footer .np-btn-ghost {
   background: #fff;
   border-color: var(--np-border-strong);
-  color: var(--np-gray-dark);
+  color: var(--np-text);
 }
-.np-modal-footer .np-btn-ghost:hover { border-color: var(--np-brand); color: var(--np-brand-dark); }
+.np-modal-footer .np-btn-ghost:hover { border-color: var(--np-blue); color: var(--np-blue-d); }
 .np-modal-footer .np-btn-danger {
   background: #fff;
   border-color: var(--np-pink);
@@ -564,6 +607,10 @@
   from { opacity: 0; transform: translateY(20px) scale(.96); }
   to   { opacity: 1; transform: none; }
 }
+@keyframes npFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
 
 /* ── Onglets fiche pharmacie ──────────────────────── */
 #page-pharmacies .np-tabs {
@@ -574,22 +621,24 @@
   flex-wrap: wrap;
 }
 #page-pharmacies .np-tab {
-  padding: 10px 18px;
+  padding: 11px 18px;
+  min-height: 44px;
   background: transparent;
   border: none;
-  font-family: 'Varela Round', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--np-text-dim);
   cursor: pointer;
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
   transition: color .15s, border-color .15s;
+  -webkit-tap-highlight-color: transparent;
 }
-#page-pharmacies .np-tab:hover { color: var(--np-brand-dark); }
+#page-pharmacies .np-tab:hover { color: var(--np-blue-d); }
 #page-pharmacies .np-tab.active {
-  color: var(--np-brand-dark);
-  border-bottom-color: var(--np-brand);
+  color: var(--np-blue-d);
+  border-bottom-color: var(--np-blue);
 }
 
 /* ── Badge "à visiter" / retard ───────────────────── */
@@ -600,10 +649,10 @@
   font-size: 11px;
   font-weight: 700;
   padding: 3px 10px;
-  border-radius: 14px;
-  background: #fde2ec;
+  border-radius: 999px;
+  background: var(--np-pink-soft);
   color: var(--np-pink);
-  border: 1px solid rgba(230,33,118,.2);
+  border: 1px solid rgba(244,63,94,.22);
 }
 #page-pharmacies .np-badge-soon {
   display: inline-flex;
@@ -612,35 +661,35 @@
   font-size: 11px;
   font-weight: 700;
   padding: 3px 10px;
-  border-radius: 14px;
+  border-radius: 999px;
   background: var(--np-lime-soft);
-  color: var(--np-gray-dark);
-  border: 1px solid var(--np-lime);
+  color: #B07300;
+  border: 1px solid rgba(255,159,28,.32);
 }
 
-/* ── Group chips (Pelgraz / Pelmeg / Ecodage / Gros) ──*/
+/* ── Group chips (Pelgraz / Pelmeg / Ecodage / Gros) ── */
 #page-pharmacies .np-group-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   letter-spacing: .2px;
-  background: var(--np-brand-faint);
-  color: var(--np-brand-dark);
-  border: 1px solid var(--np-brand-soft);
+  background: var(--np-blue-lt);
+  color: var(--np-blue-d);
+  border: 1px solid var(--np-border);
 }
 #page-pharmacies .np-group-chip-lime {
   background: var(--np-lime-soft);
-  color: var(--np-gray-dark);
-  border-color: var(--np-lime);
+  color: #B07300;
+  border-color: rgba(255,159,28,.32);
 }
 #page-pharmacies .np-group-chip-gray {
   background: var(--np-surface-3);
-  color: var(--np-gray-dark);
+  color: var(--np-text-dim);
   border-color: var(--np-border-strong);
 }
 
@@ -650,12 +699,17 @@
   border-radius: var(--np-r-pin) !important;
 }
 #fiche-visite-modal .np-fiche-hero {
-  background: linear-gradient(135deg, var(--np-brand-dark), var(--np-brand)) !important;
+  background: linear-gradient(135deg, var(--np-navy), var(--np-blue)) !important;
 }
 
-/* ── Responsive ──────────────────────────────────── */
+/* ── Responsive (mobile-first 430px) ─────────────── */
 @media (max-width: 720px) {
   #page-pharmacies .np-hero { padding: 18px 20px; }
   #page-pharmacies .np-hero-title { font-size: 22px; }
   .np-fab { bottom: 16px; right: 16px; padding: 12px 18px; font-size: 13px; }
+}
+@media (max-width: 430px) {
+  #page-pharmacies .np-hero { padding: 16px 18px; }
+  #page-pharmacies .np-hero-title { font-size: 20px; }
+  #page-pharmacies .pharma-item { margin: 6px 10px !important; padding: 12px 14px !important; }
 }
