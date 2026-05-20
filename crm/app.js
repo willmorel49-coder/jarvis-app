@@ -540,17 +540,14 @@ function renderDashboard() {
           <div class="section-title">Tableau de pilotage</div>
           <div class="section-sub" style="margin-bottom:0">Aucune donnée importée pour le moment</div>
         </div>
-        <span class="tagline">On prend soin de vous</span>
       </div>
       <div class="pin-card fade-up" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 24px;gap:18px">
-        <svg viewBox="0 0 64 64" width="72" height="72" style="color:var(--brand);opacity:.35" aria-hidden="true">
-          <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="currentColor"/>
-          <rect x="20" y="24" width="24" height="8" fill="#fff" rx="1.5"/>
-          <rect x="28" y="16" width="8" height="24" fill="#fff" rx="1.5"/>
-        </svg>
+        <div style="width:72px;height:72px;border-radius:20px;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;color:var(--blue)" aria-hidden="true">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+        </div>
         <div>
-          <div style="font-family:'Varela Round',sans-serif;font-size:20px;color:var(--text);margin-bottom:6px">Bienvenue dans votre officine digitale</div>
-          <div style="font-size:13px;color:var(--text-dim);max-width:380px;line-height:1.6">Importez vos fichiers Excel WML / ventes pour découvrir le pilotage de votre réseau de pharmaciens.</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.4px">Bienvenue sur votre CRM</div>
+          <div style="font-size:13px;color:var(--text2);max-width:380px;line-height:1.6">Importez vos fichiers Excel WML / ventes pour découvrir le pilotage de votre réseau de pharmaciens.</div>
         </div>
         <button class="btn btn-primary" onclick="navigate('import')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -636,8 +633,8 @@ function renderDashboard() {
         const ca = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
         return next ? ca >= p && ca < next : ca >= p;
       }).length,
-      // Palette progressive Normandie Pharma : gris → vert clair → vert brand → vert foncé
-      color: ['#9ea1a3', '#1bc04a', '#11a63c', '#0d8a31'][i],
+      // Palette progressive Intégral Pharma : gris → bleu clair → bleu → navy
+      color: ['#94A3B8', '#3B7AFF', '#0057FF', '#0041CC'][i],
     };
   });
   const pipelineTotal = pipelineCounts.reduce((s, p) => s + p.count, 0);
@@ -846,21 +843,15 @@ function renderDashboard() {
 
   document.getElementById('dash-content').innerHTML = `
 
-    <!-- En-tête bienvenue : section title + tagline -->
+    <!-- En-tête bienvenue : section title -->
     <div class="fade-up" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap">
       <div>
         <div class="section-title">Tableau de pilotage</div>
         <div class="section-sub" style="margin-bottom:0">Réseau d'officines adhérentes — ${curLabel}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <span class="tagline">On prend soin de vous</span>
-        <svg viewBox="0 0 80 24" width="64" height="20" style="color:var(--brand);opacity:.7" aria-hidden="true">
-          <path d="M0 20 Q15 0 30 20 Q45 0 60 20 Q70 24 80 12" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
     </div>
 
-    <!-- Row 1 : Hero KPI + 3 secondaires (charte Normandie Pharma) -->
+    <!-- Row 1 : Hero KPI + 3 secondaires (DA Intégral Pharma) -->
     <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:24px">
 
       <!-- Hero vert brand — KPI principal -->
@@ -874,13 +865,11 @@ function renderDashboard() {
               <span style="font-size:12px;color:rgba(255,255,255,0.78)">vs ${prevLabel}</span>
             </div>
           </div>
-          <svg viewBox="0 0 64 64" width="56" height="56" style="color:rgba(255,255,255,.18);flex-shrink:0" aria-hidden="true">
-            <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="currentColor"/>
-            <rect x="20" y="24" width="24" height="8" fill="#fff" rx="1.5" opacity=".95"/>
-            <rect x="28" y="16" width="8" height="24" fill="#fff" rx="1.5" opacity=".95"/>
+          <svg viewBox="0 0 24 24" width="44" height="44" style="color:rgba(255,255,255,.22);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
           </svg>
         </div>
-        <button onclick="printRapportMensuel()" style="margin-top:18px;padding:7px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;position:relative;z-index:1" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">Imprimer le rapport mensuel</button>
+        <button onclick="printRapportMensuel()" style="margin-top:18px;padding:7px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;position:relative;z-index:1" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">Imprimer le rapport mensuel</button>
       </div>
 
       <!-- Officines actives -->
@@ -1052,7 +1041,7 @@ function renderDashboard() {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1px solid var(--border)">
         <div style="padding:16px 20px;border-right:1px solid var(--border);text-align:center">
-          <div style="font-size:22px;font-weight:900;color:#11a63c">${fmt(wmlDashData.totWmlCa)}</div>
+          <div style="font-size:22px;font-weight:900;color:#14B86A">${fmt(wmlDashData.totWmlCa)}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px">CA total acheté via WML</div>
         </div>
         <div style="padding:16px 20px;border-right:1px solid var(--border);text-align:center">
@@ -1076,7 +1065,7 @@ function renderDashboard() {
                 <span style="font-size:11px;color:var(--amber);font-weight:700;flex-shrink:0;margin-left:8px">+${fmt(r.pot)}</span>
               </div>
               <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
-                <div style="width:${pct}%;height:100%;background:#11a63c;border-radius:2px"></div>
+                <div style="width:${pct}%;height:100%;background:#14B86A;border-radius:2px"></div>
               </div>
               <div style="font-size:10px;color:var(--text3);margin-top:3px">Direct ${fmt(r.directCa)} · WML moy. ${fmt(r.wmlAvg)} · ${pct}%</div>
             </div>
@@ -1700,7 +1689,7 @@ function renderDashboard() {
               legend: { display: false },
               tooltip: {
                 backgroundColor: '#fff',
-                borderColor: '#11a63c',
+                borderColor: '#14B86A',
                 borderWidth: 1,
                 titleColor: '#1f2937',
                 bodyColor: '#1f2937',
@@ -1709,7 +1698,7 @@ function renderDashboard() {
               }
             },
             scales: {
-              x: { grid: { color: 'rgba(17,166,60,.06)' }, ticks: { color: '#64686a', font: { size: 11 }, callback: v => fmt(v) } },
+              x: { grid: { color: 'rgba(20,184,106,.08)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
               y: { grid: { display: false }, ticks: { color: '#1f2937', font: { size: 12, weight: '600' } } },
             }
           }
@@ -1737,10 +1726,10 @@ function renderDashboard() {
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'right', labels: { color: '#64686a', font: { size: 11 }, boxWidth: 12, padding: 10 } },
+              legend: { position: 'right', labels: { color: '#64748B', font: { size: 11 }, boxWidth: 12, padding: 10 } },
               tooltip: {
                 backgroundColor: '#fff',
-                borderColor: '#11a63c',
+                borderColor: '#14B86A',
                 borderWidth: 1,
                 titleColor: '#1f2937',
                 bodyColor: '#1f2937',
@@ -1770,11 +1759,11 @@ function renderDashboard() {
             datasets: [{
               label: 'CA HT',
               data: monthlyData.map(([, v]) => +v.toFixed(2)),
-              borderColor: '#11a63c',
-              backgroundColor: 'rgba(17,166,60,0.10)',
+              borderColor: '#14B86A',
+              backgroundColor: 'rgba(20,184,106,0.12)',
               borderWidth: 2.5,
               pointRadius: 5,
-              pointBackgroundColor: '#11a63c',
+              pointBackgroundColor: '#14B86A',
               pointBorderColor: '#fff',
               pointBorderWidth: 2,
               tension: 0.3,
@@ -1787,7 +1776,7 @@ function renderDashboard() {
               legend: { display: false },
               tooltip: {
                 backgroundColor: '#fff',
-                borderColor: '#11a63c',
+                borderColor: '#14B86A',
                 borderWidth: 1,
                 titleColor: '#1f2937',
                 bodyColor: '#1f2937',
@@ -1796,8 +1785,8 @@ function renderDashboard() {
               },
             },
             scales: {
-              x: { grid: { display: false }, ticks: { color: '#64686a', font: { size: 11 } } },
-              y: { grid: { color: 'rgba(17,166,60,.06)' }, ticks: { color: '#64686a', font: { size: 11 }, callback: v => fmt(v) } },
+              x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
+              y: { grid: { color: 'rgba(20,184,106,.08)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
             }
           }
         });
@@ -1834,11 +1823,11 @@ function renderDashboard() {
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'bottom', labels: { color: '#64686a', font: { size: 11 }, boxWidth: 12, padding: 10 } },
+              legend: { position: 'bottom', labels: { color: '#64748B', font: { size: 11 }, boxWidth: 12, padding: 10 } },
               tooltip: {
                 mode: 'index',
                 backgroundColor: '#fff',
-                borderColor: '#11a63c',
+                borderColor: '#14B86A',
                 borderWidth: 1,
                 titleColor: '#1f2937',
                 bodyColor: '#1f2937',
@@ -1847,8 +1836,8 @@ function renderDashboard() {
               },
             },
             scales: {
-              x: { stacked: true, grid: { display: false }, ticks: { color: '#64686a', font: { size: 10 } } },
-              y: { stacked: true, grid: { color: 'rgba(17,166,60,.06)' }, ticks: { color: '#64686a', font: { size: 11 }, callback: v => fmt(v) } },
+              x: { stacked: true, grid: { display: false }, ticks: { color: '#64748B', font: { size: 10 } } },
+              y: { stacked: true, grid: { color: 'rgba(20,184,106,.08)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
             }
           }
         });
@@ -2240,7 +2229,7 @@ function renderPharmacies() {
                 ${noteCount > 0
                   ? `<span style="font-size:10px;color:var(--blue);background:rgba(0,87,255,.1);padding:1px 6px;border-radius:8px;font-weight:600" title="${noteCount} note${noteCount>1?'s':''} de visite">📝 ${lastNoteDays === 0 ? 'Auj.' : lastNoteDays !== null ? `J-${lastNoteDays}` : ''} ·${noteCount}</span>`
                   : ''}
-                ${wmlEntry ? `<span style="font-size:10px;color:#11a63c;background:rgba(17,166,60,.1);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>` : ''}
+                ${wmlEntry ? `<span style="font-size:10px;color:#14B86A;background:rgba(20,184,106,.12);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>` : ''}
               </div>
             </div>
             <div style="flex:1;max-width:120px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
@@ -2321,10 +2310,9 @@ function renderPharmacies() {
     <div class="card fade-in">
       <div class="card-header">
         <div style="display:flex;align-items:center;gap:14px">
-          <span class="np-pin np-pin-sm" aria-hidden="true"></span>
           <div>
             <div class="card-title">Mes officines (${enriched.length})</div>
-            <div class="card-subtitle">${curY ? `Mois courant · ${monthName(curM)} ${curY}` : 'Aucune donnée'} <span class="np-tagline" style="margin-left:8px">On prend soin de vous</span></div>
+            <div class="card-subtitle">${curY ? `Mois courant · ${monthName(curM)} ${curY}` : 'Aucune donnée'}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
@@ -2662,7 +2650,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   // ── Période selector ─────────────────────────────
   const periodSelectHtml = availPeriods.length > 1
     ? `<select onchange="showPharmaDetail('${pharma.id}',this.value==='auto'?null:{year:+this.value.split('-')[0],month:+this.value.split('-')[1]})"
-        style="padding:6px 12px;border-radius:14px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.15);font-size:12px;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;backdrop-filter:blur(4px)">
+        style="padding:6px 12px;border-radius:14px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.15);font-size:12px;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;backdrop-filter:blur(4px)">
         ${availPeriods.map(p => {
           const [y, m] = p.split('-');
           const sel = +y === curY && +m === curM;
@@ -2679,16 +2667,18 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <button class="np-back-btn" onclick="pharmaDetailOverridePeriod=null;renderPharmacies()">Toutes mes officines</button>
       </div>
 
-      <!-- Hero header Normandie Pharma -->
+      <!-- Hero header Intégral Pharma -->
       <div class="np-hero">
         <div class="np-hero-row">
-          <span class="np-pin np-pin-lg np-pin-white" aria-hidden="true"></span>
+          <div style="width:54px;height:54px;border-radius:14px;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.32);display:flex;align-items:center;justify-content:center;flex-shrink:0" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
           <div style="flex:1;min-width:0">
             <h1 class="np-hero-title">${pharma.name}</h1>
             ${clientInfo?.adresse || clientInfo?.ville
               ? `<div class="np-hero-sub">${clientInfo.adresse || ''}${clientInfo.adresse && (clientInfo.cp || clientInfo.ville) ? ' · ' : ''}${clientInfo.cp || ''} ${clientInfo.ville || ''}</div>`
               : ''}
-            <div class="np-hero-tagline">On prend soin de vous</div>
+            <div class="np-hero-tagline">Fiche pharmacie</div>
           </div>
           ${periodSelectHtml}
         </div>
@@ -2709,9 +2699,9 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
       <!-- Row 1 : Hero + KPIs -->
       <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:20px">
-        <div class="kpi-card" style="background:linear-gradient(135deg,#1E3A8A 0%,#2563EB 60%,#3B82F6 100%);box-shadow:0 8px 32px rgba(37,99,235,.30),0 2px 8px rgba(37,99,235,.15);border:none">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.7);margin-bottom:6px">CA Intégral Pharma — ${curLabel}</div>
-          <div style="font-size:38px;font-weight:900;letter-spacing:-2px;font-family:'Syne',sans-serif;color:#fff">${fmt(caCur)}</div>
+        <div class="kpi-card" style="background:linear-gradient(135deg,#0B1F4D 0%,#0041CC 55%,#0057FF 100%);box-shadow:0 14px 40px rgba(0,87,255,.30),0 4px 12px rgba(0,87,255,.16);border:none;color:#fff">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.78);margin-bottom:6px">CA Intégral Pharma — ${curLabel}</div>
+          <div style="font-size:34px;font-weight:800;letter-spacing:-1px;font-family:'DM Sans',sans-serif;color:#fff">${fmt(caCur)}</div>
           <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
             ${deltaBadge(caCur, caPrev)}
             <span style="font-size:11px;color:var(--text3)">vs ${prevLabel}</span>
@@ -2917,7 +2907,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         const convPct = wmlAvgMo > 0 ? Math.min(999, Math.round(caCur / wmlAvgMo * 100)) : null;
         const months = ['Jan','Fév','Mar','Avr'];
         const caM = wmlEntDet.ca_m || [];
-        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid #11a63c">
+        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid #14B86A">
           <div class="card-header">
             <div>
               <div class="card-title">📦 Groupement OPSO — Jan–Avr 2026</div>
@@ -2930,7 +2920,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border1)">
             <div style="padding:14px 20px;text-align:center;border-right:1px solid var(--border1)">
-              <div style="font-size:22px;font-weight:900;color:#11a63c">${fmt(wmlEntDet.ca)}</div>
+              <div style="font-size:22px;font-weight:900;color:#14B86A">${fmt(wmlEntDet.ca)}</div>
               <div style="font-size:10px;color:var(--text3);margin-top:4px">CA groupement 4 mois</div>
             </div>
             <div style="padding:14px 20px;text-align:center;border-right:1px solid var(--border1)">
@@ -2948,18 +2938,18 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
               const maxV = Math.max(...caM, 1);
               const h = Math.round(v / maxV * 40);
               return `<div style="flex:1;text-align:center">
-                <div style="font-size:10px;font-weight:700;color:${v>0?'#11a63c':'var(--text3)'};margin-bottom:3px">${v>0?fmt(v):'—'}</div>
-                <div style="height:${Math.max(h,2)}px;border-radius:3px;background:${v>0?'#11a63c':'var(--bg3)'};margin:0 4px"></div>
+                <div style="font-size:10px;font-weight:700;color:${v>0?'#14B86A':'var(--text3)'};margin-bottom:3px">${v>0?fmt(v):'—'}</div>
+                <div style="height:${Math.max(h,2)}px;border-radius:3px;background:${v>0?'#14B86A':'var(--bg3)'};margin:0 4px"></div>
                 <div style="font-size:9px;color:var(--text3);margin-top:3px">${mo}</div>
               </div>`;
             }).join('')}
           </div>` : ''}
           ${(wmlEntDet.pr||[]).length > 0 ? `<div style="border-top:1px solid var(--border1)">
-            <div style="padding:8px 20px 4px;font-size:10px;font-weight:700;color:#11a63c;text-transform:uppercase;letter-spacing:.4px">Top produits groupement</div>
+            <div style="padding:8px 20px 4px;font-size:10px;font-weight:700;color:#14B86A;text-transform:uppercase;letter-spacing:.4px">Top produits groupement</div>
             ${(wmlEntDet.pr||[]).slice(0,3).map(([nom,ca,,qt],i) => `
               <div style="display:flex;align-items:center;gap:10px;padding:7px 20px;border-bottom:1px solid var(--border1)">
                 <div style="flex:1;min-width:0;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${nom}</div>
-                <div style="font-size:12px;font-weight:700;color:#11a63c;flex-shrink:0">${fmt(ca)}</div>
+                <div style="font-size:12px;font-weight:700;color:#14B86A;flex-shrink:0">${fmt(ca)}</div>
                 <div style="font-size:10px;color:var(--text3);flex-shrink:0">${Math.round(qt||0)} u</div>
               </div>`).join('')}
           </div>` : ''}
@@ -3214,7 +3204,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
       </div>` : ''}
 
-      <!-- Bouton flottant Nouvelle visite (charte Normandie Pharma) -->
+      <!-- Bouton flottant Nouvelle visite (DA Intégral Pharma) -->
       <button class="np-fab" onclick="showFicheVisite('${pharma.id}')" aria-label="Nouvelle visite">
         Nouvelle visite
       </button>
@@ -4889,7 +4879,7 @@ function showEditPharmacyModal(pharmacyId) {
         <div class="np-modal-field" style="grid-column:1 / -1">
           <label>Couleur d'identification</label>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:6px 0">
-            ${['#11a63c','#0d8a31','#dddf4b','#64686a','#e62176','#3B82F6','#F59E0B','#8B5CF6'].map(c =>
+            ${['#0057FF','#0041CC','#14B86A','#7C3AED','#F43F5E','#FF9F1C','#0B1F4D','#64748B'].map(c =>
               `<button onclick="document.querySelectorAll('#edit-pharma-modal .color-pick').forEach(b=>b.style.outline='none');this.style.outline='3px solid var(--np-brand-soft)';this.style.outlineOffset='2px';document.getElementById('edit-pharma-color').value='${c}'"
                 class="color-pick"
                 style="width:32px;height:32px;border-radius:50%;background:${c};border:1px solid rgba(0,0,0,.1);cursor:pointer;${ph.color===c?'outline:3px solid var(--np-brand-soft);outline-offset:2px;':''}" aria-label="Couleur ${c}"></button>`
@@ -5278,7 +5268,7 @@ function renderBenchmark() {
   function thB(col, label, align='right') {
     const active = benchSortCol === col;
     const arrow = active ? `<span style="color:var(--blue);margin-left:3px">${benchSortAsc ? '↑' : '↓'}</span>` : '';
-    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--blue)':'var(--text2)'};font-family:Syne,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
+    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--blue)':'var(--text2)'};font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
   }
 
   const rowsHtml = data.slice(0, 200).map((d, i) => {
@@ -6602,9 +6592,10 @@ function offiExportCSV() {
   showToast(`Export CSV — ${list.length} produits`, 'success');
 }
 
-// ── Helpers Normandie Pharma (charte verte / Varela Round / Caveat) ──
+// ── Helpers Intégral Pharma (DA bleu corporate / DM Sans) ──
 function npPinSvg(size = 18) {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-7.58 8-12a8 8 0 1 0-16 0c0 4.42 8 12 8 12z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>`;
+  // Icône abstraite "rapport / analytics" (plus de croix pharma / goutte signature NP)
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 14l3-3 3 2 3-5"/></svg>`;
 }
 function npAlertSvg(size = 18) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
@@ -6841,137 +6832,152 @@ function renderOffilog() {
     </div>
   </div>` : `<div class="np-empty"><div class="np-empty-pin">${npPinSvg(22)}</div><div class="np-empty-title">Aucun produit</div><div class="np-empty-sub">Aucune référence ne correspond aux filtres.</div></div>`;
 
-  // ── Pagination ────────────────────────────────
+  // ── Pagination (charte NP) ────────────────────
   let pagHtml = '';
   if (totalPages > 1) {
     const btns = [];
-    if (offiPageNum > 1) { btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(1)">«</button><button class="cat-pag-btn" onclick="offiGoPage(${offiPageNum-1})">‹</button>`); }
+    if (offiPageNum > 1) { btns.push(`<button class="np-pag-btn" onclick="offiGoPage(1)">«</button><button class="np-pag-btn" onclick="offiGoPage(${offiPageNum-1})">‹</button>`); }
     let ps = Math.max(1, offiPageNum - 3), pe = Math.min(totalPages, ps + 6);
     if (pe - ps < 6) ps = Math.max(1, pe - 6);
-    for (let p = ps; p <= pe; p++) btns.push(`<button class="cat-pag-btn${p===offiPageNum?' active':''}" onclick="offiGoPage(${p})">${p}</button>`);
-    if (offiPageNum < totalPages) { btns.push(`<button class="cat-pag-btn" onclick="offiGoPage(${offiPageNum+1})">›</button><button class="cat-pag-btn" onclick="offiGoPage(${totalPages})">»</button>`); }
-    pagHtml = `<div style="display:flex;justify-content:center;gap:4px;padding:24px 0 8px;flex-wrap:wrap">${btns.join('')}</div>`;
+    for (let p = ps; p <= pe; p++) btns.push(`<button class="np-pag-btn${p===offiPageNum?' np-active':''}" onclick="offiGoPage(${p})">${p}</button>`);
+    if (offiPageNum < totalPages) { btns.push(`<button class="np-pag-btn" onclick="offiGoPage(${offiPageNum+1})">›</button><button class="np-pag-btn" onclick="offiGoPage(${totalPages})">»</button>`); }
+    pagHtml = `<div class="np-pagination">${btns.join('')}</div>`;
   }
+
+  // ── Alerts panel (concurrents < prix achat IP) ──────────────
+  const alertes = offiCurrentData.filter(p => {
+    const ip = p.prix_live || p.prix_offilog;
+    if (!ip) return false;
+    return [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi]
+      .some(v => v != null && v > 0 && v < ip);
+  }).slice(0, 6);
+
+  const alertsHtml = (offiRole !== 'alerte_conc' && alertes.length > 0) ? `
+    <div class="np-alerts-card">
+      <div class="np-alerts-header">
+        <div class="np-alerts-icon">${npAlertSvg(20)}</div>
+        <div>
+          <div class="np-alerts-title">Veille concurrentielle</div>
+          <div class="np-alerts-sub">${nAlerteConc} référence${nAlerteConc>1?'s':''} où un concurrent vend en dessous du prix d'achat Intégral Pharma</div>
+        </div>
+        <button class="np-btn" style="margin-left:auto;background:rgba(255,255,255,.22);border:1.5px solid rgba(255,255,255,.4);color:#fff" onclick="offiSetRole('alerte_conc')">Voir toutes →</button>
+      </div>
+      ${alertes.map(p => {
+        const ip = p.prix_live || p.prix_offilog;
+        const concList = [
+          { src: 'Drakkars',  v: p.prix_drakkars  },
+          { src: 'Cap3000',   v: p.prix_cap3000   },
+          { src: 'E.Leclerc', v: p.prix_leclerc   },
+          { src: 'Apothical', v: p.prix_pharmacie },
+          { src: 'Maxipara',  v: p.prix_maxi      },
+        ].filter(x => x.v != null && x.v > 0 && x.v < ip).sort((a,b) => a.v - b.v);
+        const worst = concList[0];
+        const idx = offiCurrentData.indexOf(p);
+        return `<div class="np-alert-item" onclick="showOffiDetail(${idx})" style="cursor:pointer">
+          <div class="np-alert-thumb">${p.img ? `<img src="${p.img}" alt="" onerror="this.style.display='none'">` : npPinSvg(20)}</div>
+          <div class="np-alert-body">
+            <div class="np-al-name">${p.produit}</div>
+            <div class="np-al-meta">${p.marque || ''}${p.marque && worst ? ' · ' : ''}${worst ? `Casse-prix ${worst.src}` : ''}</div>
+          </div>
+          <div class="np-alert-prices">
+            <span class="np-ap-conc">${fmtP(worst.v)}</span>
+            <span class="np-ap-ip">Achat IP ${fmtP(ip)}</span>
+            <span class="np-delta np-delta-neg np-delta-giant">−${fmtP(ip - worst.v)}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  // ── Container final (charte NP) ───────────────
+  const hasFilters = offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous' || offiSaison !== 'tous' || offiSort !== 'alpha';
 
   container.innerHTML = `
-  <style>
-    .offi-search-input { border:none;background:transparent;outline:none;flex:1;font-size:13px;color:var(--text); }
-  </style>
-
-  <!-- Hero banner -->
-  <div style="background:linear-gradient(135deg,#1a0a00 0%,#3d1500 40%,${OFFILOG_ORANGE} 100%);border-radius:20px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden">
-    <div style="position:absolute;top:-30px;right:-20px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04)"></div>
-    <div style="position:absolute;bottom:-40px;right:80px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04)"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;position:relative">
-      <div>
-        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">Intégral Pharma</div>
-        <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.1">Catalogue<br><span style="color:${OFFILOG_ORANGE}">Parapharmacie</span></div>
-        <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:8px">${fmtNum(nTotal)} références · ${universSet.length} univers · ${fmtNum(nImg)} avec photo</div>
-      </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
-          <div style="font-size:22px;font-weight:900;color:#fff">${fmtNum(nOff)}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Offilog</div>
+  <div class="np-scope">
+    <!-- Hero header Intégral Pharma -->
+    <div class="np-hero">
+      <div class="np-hero-inner" style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+        <div>
+          <div class="np-hero-eyebrow">Intégral Pharma · Catalogue parapharmacie</div>
+          <h1 class="np-hero-title">Offilog<br><span class="np-accent">veille concurrentielle</span></h1>
+          <div class="np-hero-tagline">${fmtNum(nTotal)} références · ${universSet.length} univers · ${fmtNum(nImg)} avec photo</div>
         </div>
-        <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
-          <div style="font-size:22px;font-weight:900;color:#fff">${fmtNum(nLive)}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Prix live ●</div>
-        </div>
-        <div style="background:rgba(0,229,160,.15);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px);border:1px solid rgba(0,229,160,.3)">
-          <div style="font-size:22px;font-weight:900;color:#00E5A0">${fmtNum(nPharma)}</div>
-          <div style="font-size:10px;color:rgba(0,229,160,.8);text-transform:uppercase;letter-spacing:.5px">Ma Pharmacie</div>
-        </div>
-        <div style="background:rgba(0,114,230,.15);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px);border:1px solid rgba(0,114,230,.3)">
-          <div style="font-size:22px;font-weight:900;color:#0072e6">${fmtNum(nLeclerc)}</div>
-          <div style="font-size:10px;color:rgba(0,114,230,.8);text-transform:uppercase;letter-spacing:.5px">E.Leclerc</div>
-        </div>
-        ${nAlerte > 0 ? `
-        <div style="background:rgba(0,87,255,.15);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px);border:1px solid rgba(0,87,255,.3);cursor:pointer" onclick="offiRole='concurrence';offiPageNum=1;renderOffilog()" title="Produits avec prix concurrents disponibles">
-          <div style="font-size:22px;font-weight:900;color:var(--blue)">${fmtNum(nAlerte)}</div>
-          <div style="font-size:10px;color:rgba(0,87,255,.8);text-transform:uppercase;letter-spacing:.5px">🔍 Prix conc.</div>
-        </div>` : ''}
-        <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;text-align:center;backdrop-filter:blur(8px)">
-          <div style="font-size:22px;font-weight:900;color:#fff">${margeMoy.toFixed(0)}%</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Marge moy.</div>
+        <div class="np-hero-stats">
+          <div class="np-hero-stat"><div class="np-hs-val">${fmtNum(nOff)}</div><div class="np-hs-lbl">Dans Offilog</div></div>
+          <div class="np-hero-stat np-lime"><div class="np-hs-val">${fmtNum(nLive)}</div><div class="np-hs-lbl">Prix live</div></div>
+          <div class="np-hero-stat"><div class="np-hs-val">${fmtNum(nLeclerc)}</div><div class="np-hs-lbl">E.Leclerc</div></div>
+          ${nAlerteConc > 0 ? `<div class="np-hero-stat np-pink" onclick="offiSetRole('alerte_conc')" title="Alertes prix concurrent < achat IP"><div class="np-hs-val">${fmtNum(nAlerteConc)}</div><div class="np-hs-lbl">Alertes prix</div></div>` : ''}
+          <div class="np-hero-stat"><div class="np-hs-val">${margeMoy.toFixed(0)}%</div><div class="np-hs-lbl">Marge moy.</div></div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Universe navigator -->
-  <div style="overflow-x:auto;padding-bottom:6px;margin-bottom:16px;scrollbar-width:none">
-    <div style="display:flex;gap:8px;width:max-content;padding:2px 2px 4px">${univTiles}</div>
-  </div>
-
-  <!-- Search + role filters -->
-  <div style="background:var(--bg);border:1px solid var(--border1);border-radius:16px;padding:14px 16px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:220px;border:1.5px solid var(--border2);border-radius:12px;padding:8px 12px;background:var(--bg2);transition:border-color .15s" onfocusin="this.style.borderColor='${OFFILOG_ORANGE}'" onfocusout="this.style.borderColor='var(--border2)'">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input class="offi-search-input" type="text" placeholder="Rechercher un produit, une marque, un EAN…" value="${offiQuery}"
-          oninput="offiQuery=this.value;offiPageNum=1;renderOffilog()" autocomplete="off">
-        ${offiQuery ? `<button onclick="offiQuery='';offiPageNum=1;renderOffilog()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;padding:0;line-height:1">✕</button>` : ''}
-      </div>
-      <select onchange="offiSetMarque(this.value)"
-        style="padding:8px 12px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
-        <option value="tous">Toutes les marques</option>
-        ${marqueSet.map(m => `<option value="${m.replace(/"/g,'&quot;')}" ${offiMarque===m?'selected':''}>${m}</option>`).join('')}
-      </select>
-      <!-- Sort -->
-      <select onchange="offiSort=this.value;offiPageNum=1;renderOffilog()"
-        style="padding:8px 12px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
-        <option value="alpha"     ${offiSort==='alpha'?'selected':''}>A → Z</option>
-        <option value="prix_asc"  ${offiSort==='prix_asc'?'selected':''}>Prix ↑</option>
-        <option value="prix_desc" ${offiSort==='prix_desc'?'selected':''}>Prix ↓</option>
-        <option value="marge_desc"${offiSort==='marge_desc'?'selected':''}>Marge ↓</option>
-        <option value="ecart"     ${offiSort==='ecart'?'selected':''}>Écart conc.</option>
-      </select>
-      <!-- Vue toggle cards / table -->
-      <div style="display:flex;border:1.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0">
-        <button onclick="offiView='cards';renderOffilog()" style="padding:7px 12px;border:none;background:${offiView==='cards'?OFFILOG_ORANGE:'transparent'};color:${offiView==='cards'?'#fff':'var(--text3)'};cursor:pointer;font-size:14px;line-height:1;transition:all .15s" title="Vue cartes">⊞</button>
-        <button onclick="offiView='table';renderOffilog()" style="padding:7px 12px;border:none;background:${offiView==='table'?OFFILOG_ORANGE:'transparent'};color:${offiView==='table'?'#fff':'var(--text3)'};cursor:pointer;font-size:14px;line-height:1;transition:all .15s" title="Vue tableau">☰</button>
-      </div>
-      <!-- Export CSV -->
-      <button onclick="offiExportCSV()" title="Exporter la liste filtrée en CSV"
-        style="padding:7px 12px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:all .15s"
-        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='transparent'">
-        ⬇ CSV
-      </button>
-      <!-- Saison filter -->
-      <div style="display:flex;border:1.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0">
-        ${[{k:'tous',l:'Toute saison'},{k:'annee',l:'Année'},{k:'pe',l:'☀️ P/É'},{k:'ah',l:'❄️ A/H'}].map(t =>
-          `<button onclick="offiSetSaison('${t.k}')" style="padding:6px 10px;border:none;background:${offiSaison===t.k?'rgba(255,107,53,.15)':'transparent'};color:${offiSaison===t.k?OFFILOG_ORANGE:'var(--text3)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">${t.l}</button>`
-        ).join('')}
-      </div>
-      ${offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous' || offiSaison !== 'tous' || offiSort !== 'alpha'
-        ? `<button onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiSaison='tous';offiSort='alpha';offiPageNum=1;renderOffilog()"
-            style="padding:8px 14px;border-radius:12px;border:1.5px solid var(--rose);background:rgba(239,68,68,.06);color:#EF4444;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
-            ✕ Réinitialiser
-          </button>` : ''}
+    <!-- KPI grid pin-cards -->
+    <div class="np-kpi-grid">
+      <div class="np-kpi"><div class="np-kpi-icon">${npPinSvg(18)}</div><div class="np-kpi-value">${fmtNum(nTotal)}</div><div class="np-kpi-label">Total références</div></div>
+      <div class="np-kpi np-kpi-pink"><div class="np-kpi-icon">${npAlertSvg(18)}</div><div class="np-kpi-value">${fmtNum(nAlerteConc)}</div><div class="np-kpi-label">En alerte prix</div></div>
+      <div class="np-kpi np-kpi-lime"><div class="np-kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div><div class="np-kpi-value">${fmtNum(nLeclerc)}</div><div class="np-kpi-label">Référencés Leclerc</div></div>
+      <div class="np-kpi np-kpi-gray"><div class="np-kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="np-kpi-value">${fmtNum(nPharma)}</div><div class="np-kpi-label">Pharmacies clientes</div></div>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      ${roleChips}
-      <span style="margin-left:auto;font-size:12px;color:var(--text3)">${fmtNum(offiCurrentData.length)} résultat${offiCurrentData.length>1?'s':''} · page ${offiPageNum}/${totalPages}</span>
+
+    ${alertsHtml}
+
+    <!-- Univers navigator -->
+    <div class="np-univers-strip">
+      <div class="np-univers-row">${univTiles}</div>
     </div>
-  </div>
 
-  <!-- Cards / Table view -->
-  ${offiView === 'table'
-    ? tableHtml
-    : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">${cardsHtml}</div>`
-  }
+    <!-- Search & filter toolbar -->
+    <div class="np-toolbar">
+      <div class="np-toolbar-row">
+        <div class="np-search-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="Rechercher une référence, marque, CIP13/EAN…" value="${offiQuery}"
+            oninput="offiQuery=this.value;offiPageNum=1;renderOffilog()" autocomplete="off">
+          ${offiQuery ? `<button class="np-search-clear" onclick="offiQuery='';offiPageNum=1;renderOffilog()">✕</button>` : ''}
+        </div>
+        <select onchange="offiSetMarque(this.value)">
+          <option value="tous">Toutes marques</option>
+          ${marqueSet.map(m => `<option value="${m.replace(/"/g,'&quot;')}" ${offiMarque===m?'selected':''}>${m}</option>`).join('')}
+        </select>
+        <select onchange="offiSort=this.value;offiPageNum=1;renderOffilog()">
+          <option value="alpha"     ${offiSort==='alpha'?'selected':''}>Tri A → Z</option>
+          <option value="prix_asc"  ${offiSort==='prix_asc'?'selected':''}>Prix croissant</option>
+          <option value="prix_desc" ${offiSort==='prix_desc'?'selected':''}>Prix décroissant</option>
+          <option value="marge_desc"${offiSort==='marge_desc'?'selected':''}>Marge décroissante</option>
+          <option value="ecart"     ${offiSort==='ecart'?'selected':''}>Écart vs concurrent</option>
+        </select>
+        <div class="np-view-toggle">
+          <button class="${offiView==='cards'?'np-active':''}" onclick="offiView='cards';renderOffilog()" title="Vue grille">⊞</button>
+          <button class="${offiView==='table'?'np-active':''}" onclick="offiView='table';renderOffilog()" title="Vue tableau">☰</button>
+        </div>
+        <button class="np-btn np-btn-ghost" onclick="offiExportCSV()" title="Exporter en CSV">⬇ CSV</button>
+        ${hasFilters ? `<button class="np-btn np-btn-danger" onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiSaison='tous';offiSort='alpha';offiPageNum=1;renderOffilog()">✕ Réinitialiser</button>` : ''}
+      </div>
+      <div class="np-toolbar-row">
+        ${roleChips}
+      </div>
+    </div>
 
-  ${pagHtml}`;
+    <div class="np-meta-bar">
+      <div><strong>${fmtNum(offiCurrentData.length)}</strong> référence${offiCurrentData.length>1?'s':''} · page ${offiPageNum} / ${totalPages}</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--np-blue)">Intégral Pharma</div>
+    </div>
+
+    ${offiView === 'table'
+      ? tableHtml
+      : `<div class="np-card-grid">${cardsHtml}</div>`
+    }
+
+    ${pagHtml}
+  </div>`;
 }
 
-// ── OFFILOG DETAIL MODAL ─────────────────────
+// ── OFFILOG DETAIL MODAL (charte Normandie Pharma) ─────
 function showOffiDetail(idx) {
   const p = offiCurrentData[idx];
   if (!p) return;
   offiDetailProduct = p;
 
-  const um = univMeta(p.univers || 'Non classé');
-  const rm = roleMeta(p.role);
   const prixIP = p.prix_live || p.prix_offilog;
 
   // Benchmark match (Ameli data)
@@ -6987,82 +6993,67 @@ function showOffiDetail(idx) {
   const prodSales = getSales().filter(s => nn2(s.artDesignation) === nn2(p.produit));
   const salesTotCa  = prodSales.reduce((a, s) => a + s.mntNetHt, 0);
   const salesTotQte = prodSales.reduce((a, s) => a + s.qte, 0);
+  const pharmaSet = new Set(prodSales.map(s => s.pharmacyId).filter(Boolean));
 
-  // Price comparison
+  // Comparateur prix vertical : achat IP + canaux concurrents
   const pricesRaw = [
-    { label: 'Prix Offilog (Excel)', value: p.prix_offilog,   color: OFFILOG_ORANGE },
-    { label: 'Prix Live ●',          value: p.prix_live,       color: '#15803d' },
-    { label: '🏥 Apothical',         value: p.prix_pharmacie,  color: '#00E5A0' },
-    { label: 'Drakkars',             value: p.prix_drakkars,   color: '#6366f1' },
-    { label: 'Cap3000',              value: p.prix_cap3000,    color: '#ea580c' },
-    { label: 'E.Leclerc',            value: p.prix_leclerc,    color: '#0072e6' },
-    { label: 'Maxipara',             value: p.prix_maxi,       color: '#FFB020' },
+    { label: 'Prix achat IP (Excel)', value: p.prix_offilog,   kind: 'achat' },
+    { label: 'Prix Offilog live',     value: p.prix_live,      kind: 'normal' },
+    { label: 'Apothical (officine)',  value: p.prix_pharmacie, kind: 'normal' },
+    { label: 'Drakkars',              value: p.prix_drakkars,  kind: 'normal' },
+    { label: 'Cap3000',               value: p.prix_cap3000,   kind: 'normal' },
+    { label: 'E.Leclerc',             value: p.prix_leclerc,   kind: 'normal' },
+    { label: 'Maxipara',              value: p.prix_maxi,      kind: 'normal' },
   ].filter(r => r.value != null && r.value > 0);
 
-  const compVals = [p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie, p.prix_leclerc, p.prix_maxi].filter(v => v != null && v > 0);
-  const minComp  = compVals.length ? Math.min(...compVals) : null;
-  const deltaComp = (prixIP && minComp) ? minComp - prixIP : null;
+  const concVals = [p.prix_drakkars, p.prix_cap3000, p.prix_pharmacie, p.prix_leclerc, p.prix_maxi].filter(v => v != null && v > 0);
+  const minConc  = concVals.length ? Math.min(...concVals) : null;
+  const deltaConc = (prixIP && minConc) ? minConc - prixIP : null;
 
-  // Badges concurrents colorés
-  const concBadges = [
-    p.prix_drakkars  > 0 ? { nom: 'Drakkars',  prix: p.prix_drakkars,  col: '#6366f1' } : null,
-    p.prix_cap3000   > 0 ? { nom: 'Cap3000',   prix: p.prix_cap3000,   col: '#ea580c' } : null,
-    p.prix_leclerc   > 0 ? { nom: 'Leclerc',   prix: p.prix_leclerc,   col: '#0072e6' } : null,
-    p.prix_pharmacie > 0 ? { nom: 'Apothical', prix: p.prix_pharmacie, col: '#00E5A0' } : null,
-    p.prix_maxi      > 0 ? { nom: 'Maxipara',  prix: p.prix_maxi,      col: '#FFB020' } : null,
-  ].filter(Boolean);
-  const concBadgesHtml = concBadges.length ? `
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border1)">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Prix publics concurrents</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${concBadges.map(b => `<div style="display:flex;flex-direction:column;align-items:center;padding:8px 12px;border-radius:10px;background:${b.col}15;border:1px solid ${b.col}40;min-width:72px;text-align:center">
-          <span style="font-size:13px;font-weight:800;color:${b.col}">${fmtP(b.prix)}</span>
-          <span style="font-size:9px;color:${b.col};opacity:.8;margin-top:2px;font-weight:600">${b.nom}</span>
-        </div>`).join('')}
-      </div>
-    </div>` : '';
-
+  // Flag best & alerte
   const priceRowsHtml = pricesRaw.map(pr => {
-    const dv = (prixIP && pr.value && Math.abs(pr.value - prixIP) > 0.005) ? pr.value - prixIP : null;
-    const dvHtml = dv != null
-      ? `<span style="font-size:10px;margin-left:8px;color:${dv > 0 ? '#10B981' : '#F59E0B'};font-weight:700">${dv > 0 ? '+' : ''}${fmtP(dv)}</span>`
-      : '';
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border1)">
-      <span style="font-size:12px;color:var(--text3)">${pr.label}</span>
-      <div style="text-align:right"><span style="font-size:15px;font-weight:700;color:${pr.color}">${fmtP(pr.value)}</span>${dvHtml}</div>
+    let cls = '';
+    if (pr.kind === 'achat') cls = 'np-best';
+    else if (pr.value === minConc && minConc !== null && concVals.length > 1) cls = 'np-best';
+    return `<div class="np-modal-price-row ${cls}">
+      <span class="np-mpr-src">${pr.label}${pr.kind === 'achat' ? ' <strong style="color:var(--np-brand)">●</strong>' : ''}</span>
+      <span class="np-mpr-val">${fmtP(pr.value)}</span>
     </div>`;
   }).join('');
 
   const imgHtml = p.img
-    ? `<img src="${p.img}" alt="" style="max-width:100%;max-height:200px;object-fit:contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-       <div style="display:none;font-size:56px;align-items:center;justify-content:center;width:100%;height:200px">${um.icon}</div>`
-    : `<div style="font-size:56px;text-align:center;line-height:1">${um.icon}</div>`;
+    ? `<img src="${p.img}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div style="display:none;align-items:center;justify-content:center;color:var(--np-brand)">${npPinSvg(40)}</div>`
+    : `<div style="color:var(--np-brand)">${npPinSvg(40)}</div>`;
 
   const navPrev = idx > 0
-    ? `<button onclick="document.getElementById('offi-dm').remove();showOffiDetail(${idx - 1})" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:12px;color:var(--text2)">← Préc.</button>`
-    : `<button disabled style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text3);opacity:.4">← Préc.</button>`;
+    ? `<button class="np-btn np-btn-ghost" onclick="document.getElementById('offi-dm').remove();showOffiDetail(${idx - 1})">← Précédent</button>`
+    : `<button class="np-btn np-btn-ghost" disabled style="opacity:.4">← Précédent</button>`;
   const navNext = idx < offiCurrentData.length - 1
-    ? `<button onclick="document.getElementById('offi-dm').remove();showOffiDetail(${idx + 1})" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:12px;color:var(--text2)">Suiv. →</button>`
-    : `<button disabled style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text3);opacity:.4">Suiv. →</button>`;
+    ? `<button class="np-btn np-btn-ghost" onclick="document.getElementById('offi-dm').remove();showOffiDetail(${idx + 1})">Suivant →</button>`
+    : `<button class="np-btn np-btn-ghost" disabled style="opacity:.4">Suivant →</button>`;
 
   const ventesHtml = prodSales.length ? `
-    <div style="margin-top:16px;padding:12px;background:rgba(0,229,160,.06);border-radius:12px;border:1px solid rgba(0,229,160,.2)">
-      <div style="font-size:11px;font-weight:700;color:var(--mint);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nos ventes</div>
-      <div style="display:flex;gap:16px">
-        <div><div style="font-size:18px;font-weight:800;color:var(--mint)">${fmt(salesTotCa)}</div><div style="font-size:10px;color:var(--text3)">CA HT</div></div>
-        <div><div style="font-size:18px;font-weight:800;color:var(--text2)">${fmtNum(Math.round(salesTotQte))}</div><div style="font-size:10px;color:var(--text3)">Unités</div></div>
+    <div style="margin-top:14px;padding:14px 16px;background:var(--np-blue-lt);border-radius:14px;border:1px solid rgba(0,87,255,.18)">
+      <div style="font-size:11px;font-weight:700;color:var(--np-blue-d);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px">Nos ventes officines</div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap">
+        <div><div style="font-family:'DM Sans',sans-serif;font-weight:800;font-size:20px;color:var(--np-blue-d);font-variant-numeric:tabular-nums">${fmt(salesTotCa)}</div><div style="font-size:10px;color:var(--np-text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.6px">CA HT</div></div>
+        <div><div style="font-family:'DM Sans',sans-serif;font-weight:800;font-size:20px;color:var(--np-navy);font-variant-numeric:tabular-nums">${fmtNum(Math.round(salesTotQte))}</div><div style="font-size:10px;color:var(--np-text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.6px">Unités</div></div>
+        ${pharmaSet.size ? `<div><div style="font-family:'DM Sans',sans-serif;font-weight:800;font-size:20px;color:var(--np-navy);font-variant-numeric:tabular-nums">${pharmaSet.size}</div><div style="font-size:10px;color:var(--np-text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.6px">Pharmacies</div></div>` : ''}
       </div>
     </div>` : '';
 
   const ameliHtml = bm ? `
-    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border1)">
-      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Benchmark Ameli</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${bm.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--blue)">${fmtNum(bm.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Unités IP</div></div>` : ''}
-        ${bm.ip_ca ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--mint)">${fmt(bm.ip_ca)}</div><div style="font-size:10px;color:var(--text3)">CA IP</div></div>` : ''}
-        ${bm.rot_pharma_jan26 ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--amber)">${bm.rot_pharma_jan26.toFixed(1)}</div><div style="font-size:10px;color:var(--text3)">Rot. janv.</div></div>` : ''}
-        ${bm.ip_rank_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--text2)">#${bm.ip_rank_qty}</div><div style="font-size:10px;color:var(--text3)">Rang IP</div></div>` : ''}
+    <div style="margin-bottom:18px">
+      <div class="np-modal-section-title">Benchmark Ameli national</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+        ${bm.ip_qty ? `<div style="background:var(--np-surface-2);padding:14px;border-radius:12px"><div style="font-family:'DM Sans',sans-serif;font-weight:800;font-size:20px;color:var(--np-blue);font-variant-numeric:tabular-nums;letter-spacing:-.3px">${fmtNum(bm.ip_qty)}</div><div style="font-size:10px;color:var(--np-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px">Unités IP</div></div>` : ''}
+        ${bm.ip_ca ? `<div style="background:var(--np-surface-2);padding:14px;border-radius:12px"><div style="font-family:'DM Sans',sans-serif;font-weight:800;font-size:20px;color:var(--np-blue);font-variant-numeric:tabular-nums;letter-spacing:-.3px">${fmt(bm.ip_ca)}</div><div style="font-size:10px;color:var(--np-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px">CA IP</div></div>` : ''}
+        ${bm.rot_pharma_jan26 ? `<div style="background:var(--np-surface-2);padding:14px;border-radius:12px"><div style="font-family:'DM Sans',sans-serif;font-weight:800;font-size:20px;color:var(--np-amber);font-variant-numeric:tabular-nums;letter-spacing:-.3px">${bm.rot_pharma_jan26.toFixed(1)}</div><div style="font-size:10px;color:var(--np-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px">Rotation/mois</div></div>` : ''}
+        ${bm.ip_rank_qty ? `<div style="background:var(--np-surface-2);padding:14px;border-radius:12px"><div style="font-family:'DM Sans',sans-serif;font-weight:800;font-size:20px;color:var(--np-navy);font-variant-numeric:tabular-nums;letter-spacing:-.3px">#${bm.ip_rank_qty}</div><div style="font-size:10px;color:var(--np-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px">Rang IP</div></div>` : ''}
       </div>
+      ${bm.has_ameli && bm.ameli_months ? `<div class="np-modal-chart-wrap"><canvas id="offi-ameli-chart"></canvas></div>` : ''}
+      ${bm.atc2 ? `<div style="font-size:11px;color:var(--np-text-dim);margin-top:4px">Classe ATC : <strong style="color:var(--np-navy)">${bm.atc2}</strong></div>` : ''}
     </div>` : '';
 
   const existing = document.getElementById('offi-dm');
@@ -7070,62 +7061,67 @@ function showOffiDetail(idx) {
 
   const modal = document.createElement('div');
   modal.id = 'offi-dm';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+  modal.className = 'np-scope np-modal-overlay';
   modal.innerHTML = `
-    <div style="background:var(--bg);border-radius:24px;width:100%;max-width:800px;max-height:90vh;overflow:hidden;box-shadow:0 32px 100px rgba(0,0,0,.4);display:flex;flex-direction:column">
+    <div class="np-modal">
       <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border1);flex-shrink:0">
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:1px">${p.univers || '—'}</span>
-          ${p.dans_offilog ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${OFFILOG_ORANGE}22;color:${OFFILOG_ORANGE};font-weight:700;border:1px solid ${OFFILOG_ORANGE}44">IP</span>` : ''}
-          ${p.rang_vente != null ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:800">🏆 #${p.rang_vente}</span>` : ''}
-          ${p.saison && p.saison !== 'Toute année' ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#fef9c3;color:#92400e;font-weight:600">${p.saison === 'Printemps/Été' ? '☀️ P/É' : '❄️ A/H'}</span>` : ''}
+      <div class="np-modal-head">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--np-brand)">${p.univers || 'Parapharmacie'}</span>
+            ${p.dans_offilog ? `<span class="np-tag np-tag-ip">IP Offilog</span>` : ''}
+            ${p.rang_vente != null ? `<span class="np-tag np-tag-rank">Top #${p.rang_vente}</span>` : ''}
+            ${p.saison && p.saison !== 'Toute année' ? `<span class="np-tag np-tag-saison">${p.saison === 'Printemps/Été' ? '☀ P/É' : '❄ A/H'}</span>` : ''}
+          </div>
+          <div style="font-family:'DM Sans',sans-serif;font-weight:800;font-size:24px;color:var(--np-navy);line-height:1.2;letter-spacing:-.5px">${p.produit}</div>
         </div>
-        <button onclick="document.getElementById('offi-dm').remove()"
-          style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+        <button class="np-modal-close" onclick="document.getElementById('offi-dm').remove()" title="Fermer (Échap)">✕</button>
       </div>
       <!-- Body -->
-      <div style="display:flex;flex:1;overflow:hidden;min-height:0">
-        <!-- Left: photo + identity -->
-        <div style="flex:0 0 260px;padding:20px;border-right:1px solid var(--border1);overflow-y:auto;display:flex;flex-direction:column;gap:0">
-          <div style="border-radius:16px;background:${um.bg};min-height:180px;display:flex;align-items:center;justify-content:center;padding:16px;margin-bottom:14px">
-            ${imgHtml}
-          </div>
-          <div style="font-size:10px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">${p.marque || '—'}</div>
-          <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.4;margin-bottom:10px">${p.produit}</div>
-          ${p.ean ? `<div style="font-size:11px;color:var(--text3);margin-bottom:8px">EAN : <span style="font-family:monospace;color:var(--text2);font-size:12px">${p.ean}</span></div>` : ''}
-          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
-            <span style="font-size:10px;padding:3px 8px;border-radius:8px;background:${rm.bg};color:${rm.color};font-weight:700">${rm.icon} ${p.role || '—'}</span>
+      <div class="np-modal-body">
+        <!-- Left: hero + ventes -->
+        <div>
+          <div class="np-modal-hero">
+            <div class="np-mh-img">${imgHtml}</div>
+            <div class="np-mh-brand">${p.marque || '—'}</div>
+            <div class="np-mh-name">${p.produit}</div>
+            ${p.ean ? `<div class="np-mh-ean">CIP13/EAN · ${p.ean}</div>` : ''}
           </div>
           ${ventesHtml}
-          ${ameliHtml}
-          ${prixIP ? `<button onclick="simAddOffilog(offiDetailProduct.produit,${prixIP});this.textContent='✓ Ajouté!';this.style.background='rgba(0,229,160,.12)';this.style.color='var(--mint)';this.style.borderColor='rgba(0,229,160,.4)'"
-            style="width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);transition:all .15s;margin-bottom:10px">
-            🛒 Ajouter au simulateur
-          </button>` : ''}
-          <div style="display:flex;gap:6px;margin-top:auto;padding-top:0">${navPrev}${navNext}</div>
         </div>
         <!-- Right: prices + benchmark -->
-        <div style="flex:1;padding:20px 24px;overflow-y:auto">
-          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Comparaison des prix</div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:14px">${fmtNum(pricesRaw.length)} source${pricesRaw.length > 1 ? 's' : ''} disponible${pricesRaw.length > 1 ? 's' : ''}</div>
-          ${priceRowsHtml || '<div style="color:var(--text3);font-size:13px;padding:20px 0">Aucun prix disponible</div>'}
-          ${concBadgesHtml}
-          ${deltaComp != null ? `<div style="margin-top:14px;padding:12px 16px;border-radius:12px;background:${deltaComp > 0 ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};border:1px solid ${deltaComp > 0 ? 'rgba(16,185,129,.3)' : 'rgba(239,68,68,.3)'}">
-            <span style="font-size:12px;font-weight:700;color:${deltaComp > 0 ? '#065f46' : '#991b1b'}">
-              ${deltaComp > 0 ? `✅ IP moins cher de ${fmtP(deltaComp)} vs concurrent le moins cher` : `⚠️ IP plus cher de ${fmtP(Math.abs(deltaComp))} vs concurrent le moins cher`}
-            </span>
-          </div>` : ''}
-          ${p.marge_pct != null ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border1)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <span style="font-size:12px;color:var(--text3)">Marge pharmacie estimée</span>
-              <span style="font-size:18px;font-weight:800;color:${p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444'}">${p.marge_pct.toFixed(1)}%</span>
+        <div>
+          <div class="np-modal-section-title">Comparateur de prix</div>
+          <div class="np-modal-prices">
+            ${priceRowsHtml || '<div style="color:var(--np-text-muted);padding:14px 0">Aucun prix disponible pour cette référence.</div>'}
+          </div>
+          ${deltaConc != null ? `<div style="margin-bottom:18px;padding:14px 18px;border-radius:14px;background:${deltaConc > 0 ? 'var(--np-blue-lt)' : 'var(--np-rose-lt)'};border:1px solid ${deltaConc > 0 ? 'rgba(0,87,255,.25)' : 'rgba(244,63,94,.3)'};display:flex;align-items:center;gap:10px">
+            <div style="color:${deltaConc > 0 ? 'var(--np-blue)' : 'var(--np-rose)'}">${deltaConc > 0 ? npPinSvg(20) : npAlertSvg(20)}</div>
+            <div style="font-size:13px;font-weight:600;color:${deltaConc > 0 ? 'var(--np-blue-d)' : 'var(--np-rose)'}">
+              ${deltaConc > 0
+                ? `Prix d'achat IP <strong>moins cher de ${fmtP(deltaConc)}</strong> vs concurrent le moins cher`
+                : `<strong>Alerte</strong> · concurrent vend ${fmtP(Math.abs(deltaConc))} sous le prix d'achat IP`}
             </div>
-            <div style="height:8px;border-radius:4px;background:var(--border1);overflow:hidden">
-              <div style="height:100%;width:${Math.min(100, p.marge_pct)}%;background:${p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444'};border-radius:4px"></div>
+          </div>` : ''}
+          ${ameliHtml}
+          ${p.marge_pct != null ? `<div>
+            <div class="np-modal-section-title">Marge pharmacien</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="font-size:12px;color:var(--np-text-dim)">Estimation officine</span>
+              <span style="font-family:'DM Sans',sans-serif;font-weight:800;font-size:24px;color:${p.marge_pct >= 40 ? 'var(--np-green-d)' : p.marge_pct >= 20 ? 'var(--np-amber)' : 'var(--np-rose)'};font-variant-numeric:tabular-nums;letter-spacing:-.4px">${p.marge_pct.toFixed(1)}%</span>
+            </div>
+            <div style="height:8px;border-radius:4px;background:var(--np-surface-3);overflow:hidden">
+              <div style="height:100%;width:${Math.min(100, p.marge_pct)}%;background:${p.marge_pct >= 40 ? 'var(--np-green)' : p.marge_pct >= 20 ? 'var(--np-amber)' : 'var(--np-rose)'};border-radius:4px;transition:width .4s"></div>
             </div>
           </div>` : ''}
         </div>
+      </div>
+      <!-- Footer -->
+      <div class="np-modal-foot">
+        ${navPrev}
+        ${prixIP ? `<button class="np-btn np-btn-lime" onclick="simAddOffilog(offiDetailProduct.produit,${prixIP});this.textContent='✓ Ajouté au simulateur'">+ Simulateur</button>` : ''}
+        <button class="np-btn np-btn-primary" onclick="document.getElementById('offi-dm').remove()">Fermer</button>
+        ${navNext}
       </div>
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
@@ -7135,6 +7131,47 @@ function showOffiDetail(idx) {
     if (e.key === 'ArrowLeft'  && idx > 0) { modal.remove(); document.removeEventListener('keydown', escH); showOffiDetail(idx - 1); }
   });
   document.body.appendChild(modal);
+
+  // Draw Ameli chart (bleu Intégral Pharma)
+  if (bm && bm.has_ameli && bm.ameli_months) {
+    setTimeout(() => {
+      const ctx = document.getElementById('offi-ameli-chart');
+      if (!ctx || typeof Chart === 'undefined') return;
+      const labels = ['Jan25','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc','Jan26'];
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: bm.ameli_months,
+            backgroundColor: bm.ameli_months.map((v, i) => i === 12 ? '#0057FF' : 'rgba(0,87,255,.30)'),
+            borderRadius: 6,
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#fff',
+              borderColor: '#0057FF',
+              borderWidth: 1,
+              titleColor: '#0B1F4D',
+              bodyColor: '#0B1F4D',
+              padding: 10,
+              cornerRadius: 10,
+              callbacks: { label: c => ' ' + fmtNum(c.parsed.y) + ' dispensations' },
+            },
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 10, family: 'DM Sans' } } },
+            y: { grid: { color: 'rgba(11,31,77,.04)' }, ticks: { color: '#64748B', font: { size: 10, family: 'DM Sans' }, callback: v => fmtNum(v) } },
+          }
+        }
+      });
+    }, 80);
+  }
 }
 
 // ── EMPTY STATE ───────────────────────────────
@@ -8208,7 +8245,7 @@ function showFicheVisite(pharmacyId) {
 
         <!-- WML Achats IP -->
         ${wmlEntryFv ? `
-        <div style="margin-bottom:20px;padding:14px 16px;background:#f0fdf4;border-radius:12px;border-left:3px solid #11a63c">
+        <div style="margin-bottom:20px;padding:14px 16px;background:#f0fdf4;border-radius:12px;border-left:3px solid #14B86A">
           <div style="font-size:11px;font-weight:800;color:#0d8530;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📦 Achats Intégral Pharma — WML Jan–Avr 2026</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
             <div style="text-align:center;padding:8px;background:#fff;border-radius:8px">
@@ -8229,7 +8266,7 @@ function showFicheVisite(pharmacyId) {
               const mo = ['Jan','Fév','Mar','Avr'][i] || '';
               return `<div style="flex:1;text-align:center">
                 <div style="font-size:10px;font-weight:700;color:${v>0?'#0d8530':'#94a3b8'};margin-bottom:3px">${v>0?fmt(v):'—'}</div>
-                <div style="height:6px;border-radius:3px;background:${v>0?'#11a63c':'#e2e8f0'}"></div>
+                <div style="height:6px;border-radius:3px;background:${v>0?'#14B86A':'#e2e8f0'}"></div>
                 <div style="font-size:9px;color:#94a3b8;margin-top:2px">${mo}</div>
               </div>`;
             }).join('')}
@@ -8609,12 +8646,12 @@ function gsSearch(q) {
   }
 
   if (wmlProdHits.length) {
-    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:#11a63c;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Produits WML groupement (${wmlProdHits.length})</div>`;
+    html += `<div style="padding:8px 12px 4px;font-size:10px;font-weight:700;color:#14B86A;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Produits WML groupement (${wmlProdHits.length})</div>`;
     html += wmlProdHits.map(h => `
       <div onclick="document.getElementById('global-search-modal').remove();navigate('wml');setTimeout(renderWml,80)"
         style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .1s"
         onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        <div style="width:36px;height:36px;border-radius:8px;background:rgba(17,166,60,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📦</div>
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(20,184,106,.14);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📦</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlight(h.nom)}</div>
           <div style="font-size:11px;color:var(--text3)">${h.pharmaName} · ${fmt(h.ca)}</div>
