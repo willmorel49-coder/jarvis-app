@@ -14,14 +14,14 @@ const reportsDir = resolve(here, 'reports');
 mkdirSync(reportsDir, { recursive: true });
 
 const BOTS = [
-  { id: 'token-bot', script: resolve(here, 'token-bot/audit.mjs'), enabled: true },
-  { id: 'palette-bot',   script: null, enabled: false },
-  { id: 'typo-bot',      script: null, enabled: false },
-  { id: 'spacing-bot',   script: null, enabled: false },
-  { id: 'component-bot', script: null, enabled: false },
-  { id: 'a11y-bot',      script: null, enabled: false },
-  { id: 'nav-bot',       script: null, enabled: false },
-  { id: 'radius-bot',    script: null, enabled: false },
+  { id: 'token-bot',     script: resolve(here, 'token-bot/audit.mjs'),     enabled: true },
+  { id: 'palette-bot',   script: resolve(here, 'palette-bot/audit.mjs'),   enabled: true },
+  { id: 'typo-bot',      script: resolve(here, 'typo-bot/audit.mjs'),      enabled: true },
+  { id: 'spacing-bot',   script: resolve(here, 'spacing-bot/audit.mjs'),   enabled: true },
+  { id: 'component-bot', script: resolve(here, 'component-bot/audit.mjs'), enabled: true },
+  { id: 'a11y-bot',      script: resolve(here, 'a11y-bot/audit.mjs'),      enabled: true },
+  { id: 'nav-bot',       script: resolve(here, 'nav-bot/audit.mjs'),       enabled: true },
+  { id: 'radius-bot',    script: resolve(here, 'radius-bot/audit.mjs'),    enabled: true },
 ];
 
 const index = { generatedAt: new Date().toISOString(), bots: [] };

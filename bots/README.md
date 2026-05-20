@@ -14,14 +14,14 @@ Bots d'audit qui scannent les 3 surfaces UI de Jarvis App (CRM, Catalogue, OPSO)
 
 | # | Bot | Statut | Périmètre |
 |---|-----|--------|-----------|
-| 1 | `token-bot` | ✅ pilote | Variables CSS (`--*`) — collisions, manques, doublons |
-| 2 | `palette-bot` | ⏳ | Couleurs hardcodées hors tokens |
-| 3 | `typo-bot` | ⏳ | Familles, tailles, poids |
-| 4 | `spacing-bot` | ⏳ | Padding/margin/gap — grille 8px |
-| 5 | `component-bot` | ⏳ | `.card`, `.modal`, `.kpi`, `.badge`, `.pill`, `.btn` |
-| 6 | `a11y-bot` | ⏳ | ARIA, focus, skip-link, sr-only |
-| 7 | `nav-bot` | ⏳ | Sidebar / bottom-nav / tabs |
-| 8 | `radius-bot` | ⏳ | Échelle d'arrondis |
+| 1 | `token-bot`     | ✅ | Variables CSS (`--*`) — collisions, manques, doublons |
+| 2 | `palette-bot`   | ✅ | Couleurs hardcodées hors tokens |
+| 3 | `typo-bot`      | ✅ | Familles, tailles, poids |
+| 4 | `spacing-bot`   | ✅ | Padding/margin/gap — grille 4px |
+| 5 | `component-bot` | ✅ | `.card`, `.modal`, `.kpi`, `.badge`, `.pill`, `.btn` |
+| 6 | `a11y-bot`      | ✅ | ARIA, focus, skip-link, sr-only |
+| 7 | `nav-bot`       | ✅ | Sidebar / bottom-nav / tabs |
+| 8 | `radius-bot`    | ✅ | Échelle d'arrondis |
 
 ## Usage
 

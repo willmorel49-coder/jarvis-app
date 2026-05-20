@@ -4,32 +4,25 @@ const BOT_LABELS = {
   'token-bot':     { name: 'Token Bot',     icon: '🎨', desc: 'Variables CSS — collisions, manques, coverage' },
   'palette-bot':   { name: 'Palette Bot',   icon: '🌈', desc: 'Couleurs hardcodées hors tokens' },
   'typo-bot':      { name: 'Typo Bot',      icon: '✒️', desc: 'Familles, tailles, poids' },
-  'spacing-bot':   { name: 'Spacing Bot',   icon: '📐', desc: 'Grille 8px, padding/margin/gap' },
+  'spacing-bot':   { name: 'Spacing Bot',   icon: '📐', desc: 'Grille 4px, padding/margin/gap' },
   'component-bot': { name: 'Component Bot', icon: '🧩', desc: 'card, modal, kpi, badge, pill, btn' },
   'a11y-bot':      { name: 'A11y Bot',      icon: '♿', desc: 'ARIA, focus, skip-link, sr-only' },
   'nav-bot':       { name: 'Nav Bot',       icon: '🧭', desc: 'Sidebar, bottom-nav, tabs' },
   'radius-bot':    { name: 'Radius Bot',    icon: '🔘', desc: 'Échelle d\'arrondis' },
 };
 
+const ORDER = ['token-bot', 'palette-bot', 'typo-bot', 'spacing-bot', 'component-bot', 'a11y-bot', 'nav-bot', 'radius-bot'];
+
 const scoreClass = s => s >= 85 ? 'good' : s >= 60 ? 'warn' : 'bad';
 const fmtDate = iso => {
   try { return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }); }
   catch { return iso; }
 };
+const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
-async function loadIndex() {
+async function loadJson(path) {
   try {
-    const r = await fetch('reports/index.json', { cache: 'no-store' });
-    if (!r.ok) throw new Error(r.status);
-    return await r.json();
-  } catch {
-    return null;
-  }
-}
-
-async function loadReport(botId) {
-  try {
-    const r = await fetch(`reports/${botId}.json`, { cache: 'no-store' });
+    const r = await fetch(path, { cache: 'no-store' });
     if (!r.ok) throw new Error(r.status);
     return await r.json();
   } catch {
@@ -49,13 +42,13 @@ function renderCard(entry) {
 
   card.innerHTML = `
     <div class="bot-card-head">
-      <div class="bot-name">${meta.icon} ${meta.name}</div>
+      <div class="bot-name">${meta.icon} ${esc(meta.name)}</div>
       ${scoreHtml}
     </div>
-    <div class="bot-meta">${meta.desc}</div>
+    <div class="bot-meta">${esc(meta.desc)}</div>
     ${entry.status === 'ok' ? `
       <div class="bot-meta" style="margin-top:8px">
-        <strong>${entry.issueCount}</strong> divergence${entry.issueCount > 1 ? 's' : ''}
+        <strong>${entry.issueCount ?? 0}</strong> observation${(entry.issueCount ?? 0) > 1 ? 's' : ''}
         · <span style="opacity:.7">maj ${fmtDate(entry.generatedAt)}</span>
       </div>` : ''}
   `;
@@ -66,8 +59,63 @@ function renderCard(entry) {
   return card;
 }
 
+// ── Renderers spécifiques par bot ──
+
+function renderFindingGeneric(f) {
+  const sev = f.severity === 'warn' ? 'bad' : f.severity === 'info' ? '' : '';
+  const title = f.label || f.type || 'Observation';
+  let body = '';
+
+  // Mapping spécifique du payload pertinent par bot
+  if (f.token) {
+    body = `<div class="finding-token">${esc(f.token)}</div>`;
+    if (f.values && Object.keys(f.values).length) {
+      body += '<div class="finding-values">';
+      for (const [s, v] of Object.entries(f.values)) {
+        body += `<span class="surface">${esc(s)}</span><span class="value">${esc(v)}</span>`;
+      }
+      body += '</div>';
+    }
+  } else if (f.color) {
+    body = `<div class="finding-token" style="display:flex;align-items:center;gap:8px">
+      <span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:${esc(f.color)};border:1px solid rgba(255,255,255,.1)"></span>
+      <code>${esc(f.color)}</code>
+      <span style="color:var(--b-text3);font-size:12px">×${f.total}</span>
+    </div>
+    <div class="finding-values" style="margin-top:6px">
+      ${Object.entries(f.surfaces || {}).map(([s, n]) => `<span class="surface">${esc(s)}</span><span class="value">${n} occ</span>`).join('')}
+    </div>`;
+  } else if (f.surface && f.sizes) {
+    body = `<div class="finding-values">${f.sizes.slice(0, 8).map(x => `<span class="surface">${esc(x.size)}</span><span class="value">×${x.count}</span>`).join('')}</div>`;
+  } else if (f.surface && f.offGridSamples) {
+    body = `<div style="font-size:12px;color:var(--b-text3);margin-top:4px">${f.onGridCount} on-grid · ${f.offGridCount} off-grid</div>
+    <div class="finding-values" style="margin-top:6px">${f.offGridSamples.map(x => `<span class="surface">${esc(x.value)}</span><span class="value">×${x.count}</span>`).join('')}</div>`;
+  } else if (f.component) {
+    body = `<div class="finding-token">${esc(f.component)}</div>
+    <div style="font-size:12px;color:var(--b-text3);margin-top:4px">${esc(f.desc || '')}</div>`;
+    if (f.missingFrom) {
+      body += `<div class="finding-issues"><span class="issue-tag bad">manque dans : ${f.missingFrom.join(', ')}</span></div>`;
+    }
+  } else if (f.check) {
+    body = `<div class="finding-token">${esc(f.label)}</div>
+    <div class="finding-values" style="margin-top:6px">${Object.entries(f.counts || {}).map(([s, n]) => `<span class="surface">${esc(s)}</span><span class="value">${n} occ</span>`).join('')}</div>`;
+  } else if (f.radius) {
+    body = `<div class="finding-token">border-radius: ${esc(f.radius)}</div>
+    <div style="font-size:12px;color:var(--b-text3);margin-top:4px">${esc(f.surface)} ×${f.count}</div>`;
+  } else if (f.details) {
+    body = `<div class="finding-values">${Object.entries(f.details).map(([s, v]) => `<span class="surface">${esc(s)}</span><span class="value">${esc(JSON.stringify(v))}</span>`).join('')}</div>`;
+  }
+
+  return `<div class="finding">
+    <div class="finding-issues">
+      <span class="issue-tag ${sev}">${esc(title)}</span>
+    </div>
+    ${body}
+  </div>`;
+}
+
 async function showDetail(botId) {
-  const report = await loadReport(botId);
+  const report = await loadJson(`reports/${botId}.json`);
   const detail = document.getElementById('detail');
   if (!report) {
     detail.hidden = true;
@@ -78,45 +126,30 @@ async function showDetail(botId) {
 
   const meta = BOT_LABELS[botId] || { name: botId, icon: '🤖' };
   const h2 = document.createElement('h2');
-  h2.textContent = `${meta.icon} ${report.botName} — ${report.findings.length} divergence${report.findings.length > 1 ? 's' : ''}`;
+  h2.textContent = `${meta.icon} ${report.botName} — ${report.findings.length} observation${report.findings.length > 1 ? 's' : ''}`;
   detail.appendChild(h2);
 
   const sub = document.createElement('div');
   sub.className = 'sub';
-  const totals = Object.entries(report.summary.bySurface)
-    .map(([k, v]) => `${k}: ${v.defined} déf · ${v.used} utilisés`)
-    .join('  ·  ');
-  sub.textContent = `${totals}  ·  généré ${fmtDate(report.generatedAt)}`;
+  const summary = report.summary || {};
+  const bySurfaceStr = summary.bySurface
+    ? Object.entries(summary.bySurface).map(([k, v]) => {
+        const vals = Object.entries(v).map(([kk, vv]) => `${kk}: ${vv}`).join(' · ');
+        return `${k} → ${vals}`;
+      }).join(' | ')
+    : '';
+  sub.textContent = `${bySurfaceStr}  ·  généré ${fmtDate(report.generatedAt)}`;
   detail.appendChild(sub);
 
-  for (const f of report.findings.slice(0, 100)) {
-    const row = document.createElement('div');
-    row.className = 'finding';
-    const issues = [];
-    if (f.issues.valueCollision) issues.push({ label: 'Collision de valeurs', bad: true });
-    if (f.issues.partialCoverage) issues.push({ label: 'Coverage partielle' });
-    if (f.issues.usedUndefined.length) issues.push({ label: `Utilisé sans déf : ${f.issues.usedUndefined.join(', ')}`, bad: true });
-    if (f.issues.definedUnused.length) issues.push({ label: `Défini non utilisé : ${f.issues.definedUnused.join(', ')}` });
+  const list = document.createElement('div');
+  list.innerHTML = report.findings.slice(0, 80).map(renderFindingGeneric).join('');
+  detail.appendChild(list);
 
-    row.innerHTML = `
-      <div class="finding-token">${f.token}</div>
-      <div class="finding-issues">
-        ${issues.map(i => `<span class="issue-tag ${i.bad ? 'bad' : ''}">${i.label}</span>`).join('')}
-      </div>
-      ${Object.keys(f.values).length ? `
-        <div class="finding-values">
-          ${Object.entries(f.values).map(([s, v]) =>
-            `<span class="surface">${s}</span><span class="value">${v}</span>`
-          ).join('')}
-        </div>` : ''}
-    `;
-    detail.appendChild(row);
-  }
-  if (report.findings.length > 100) {
+  if (report.findings.length > 80) {
     const more = document.createElement('div');
     more.className = 'sub';
     more.style.marginTop = '12px';
-    more.textContent = `… et ${report.findings.length - 100} autres dans le JSON brut.`;
+    more.textContent = `… et ${report.findings.length - 80} autres dans le JSON brut (bots/reports/${botId}.json).`;
     detail.appendChild(more);
   }
 
@@ -127,11 +160,11 @@ async function init() {
   const grid = document.getElementById('bots-grid');
   const meta = document.getElementById('topbar-meta');
 
-  const index = await loadIndex();
+  const index = await loadJson('reports/index.json');
   if (!index) {
     grid.innerHTML = `<div class="empty">
       Aucun rapport disponible.<br>
-      Lance <code style="background:var(--b-bg2);padding:2px 8px;border-radius:6px">node bots/run-all.mjs</code> pour générer les rapports.
+      Lance <code>node bots/run-all.mjs</code> pour générer les rapports.
     </div>`;
     return;
   }
@@ -139,14 +172,18 @@ async function init() {
   meta.textContent = `Dernier audit : ${fmtDate(index.generatedAt)}`;
   grid.innerHTML = '';
 
-  const order = ['token-bot', 'palette-bot', 'typo-bot', 'spacing-bot', 'component-bot', 'a11y-bot', 'nav-bot', 'radius-bot'];
-  const sorted = [...index.bots].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
-
+  const sorted = [...index.bots].sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
   for (const b of sorted) {
     grid.appendChild(renderCard(b));
   }
 
-  // Ouvre auto le premier bot OK
+  // Score global moyen
+  const okBots = sorted.filter(b => b.status === 'ok');
+  if (okBots.length) {
+    const avg = Math.round(okBots.reduce((a, b) => a + b.score, 0) / okBots.length);
+    meta.textContent += `  ·  score global ${avg}/100`;
+  }
+
   const firstOk = sorted.find(b => b.status === 'ok');
   if (firstOk) showDetail(firstOk.id);
 }
