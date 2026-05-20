@@ -1,0 +1,1449 @@
+{
+  "botId": "token-bot",
+  "botName": "Token Bot",
+  "generatedAt": "2026-05-20T21:24:23.991Z",
+  "score": 29,
+  "summary": {
+    "totalTokens": 99,
+    "issueCount": 70,
+    "bySurface": {
+      "crm": {
+        "defined": 47,
+        "used": 37
+      },
+      "catalogue": {
+        "defined": 0,
+        "used": 12
+      },
+      "opso": {
+        "defined": 90,
+        "used": 63
+      }
+    }
+  },
+  "surfaces": [
+    {
+      "key": "crm",
+      "label": "CRM"
+    },
+    {
+      "key": "catalogue",
+      "label": "Catalogue"
+    },
+    {
+      "key": "opso",
+      "label": "OPSO"
+    }
+  ],
+  "findings": [
+    {
+      "token": "--amber",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "#D97706",
+        "opso": "#e8a317"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--amber-bg",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "#FFFBEB",
+        "opso": "#fef5e2"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--amber-g",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "linear-gradient(135deg, #B45309 0%, #D97706 100%)",
+        "opso": "linear-gradient(135deg, #b45309 0%, #e8a317 100%)"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--amber2",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "#F59E0B",
+        "opso": "#f59e0b"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--bg",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "#F7F8FC",
+        "opso": "#f5f6f7"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--bg1",
+      "definedIn": [],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {},
+      "issues": {
+        "usedUndefined": [
+          "crm",
+          "opso"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--bg2",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "#FFFFFF",
+        "opso": "#ffffff"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--bg3",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "#F0F2F8",
+        "opso": "#eef0f2"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--bg4",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "opso"
+      ],
+      "values": {
+        "crm": "#E8ECF4",
+        "opso": "#e5e8ea"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm"
+        ],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--blue",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "#2563EB",
+        "opso": "#11a63c"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--blue-bg",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "#EFF6FF",
+        "opso": "#e6f7ec"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--blue-g",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%)",
+        "opso": "linear-gradient(135deg, #0d8530 0%, #11a63c 100%)"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--blue-glow",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "rgba(37,99,235,0.20)",
+        "opso": "rgba(17, 166, 60, 0.20)"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--blue-l",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "#60A5FA",
+        "opso": "#4ade80"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--blue2",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm"
+      ],
+      "values": {
+        "crm": "#3B82F6",
+        "opso": "#0d8530"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--border1",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "opso": "rgba(0,0,0,0.07)"
+      },
+      "issues": {
+        "usedUndefined": [
+          "crm"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--border3",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm"
+      ],
+      "values": {
+        "crm": "rgba(0,0,0,0.05)",
+        "opso": "rgba(0,0,0,0.05)"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--danger",
+      "definedIn": [],
+      "usedIn": [
+        "opso"
+      ],
+      "values": {},
+      "issues": {
+        "usedUndefined": [
+          "opso"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--font-body",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "'Nunito', -apple-system, BlinkMacSystemFont, sans-serif"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--font-display",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "'Varela Round', sans-serif"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--glass",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "catalogue"
+      ],
+      "values": {
+        "crm": "rgba(255,255,255,0.85)",
+        "opso": "rgba(255,255,255,0.85)"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--glass2",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "rgba(255,255,255,1)",
+        "opso": "rgba(255,255,255,1)"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--glass3",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "rgba(0,0,0,0.03)",
+        "opso": "rgba(0,0,0,0.03)"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--green",
+      "definedIn": [],
+      "usedIn": [
+        "opso"
+      ],
+      "values": {},
+      "issues": {
+        "usedUndefined": [
+          "opso"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--green-dark",
+      "definedIn": [],
+      "usedIn": [
+        "opso"
+      ],
+      "values": {},
+      "issues": {
+        "usedUndefined": [
+          "opso"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--green-pale",
+      "definedIn": [],
+      "usedIn": [
+        "opso"
+      ],
+      "values": {},
+      "issues": {
+        "usedUndefined": [
+          "opso"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--mint",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "#059669",
+        "opso": "#059669"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--mint-glow",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "rgba(5,150,105,0.18)",
+        "opso": "rgba(5, 150, 105, 0.18)"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--mint2",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "#10B981",
+        "opso": "#10B981"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--opso-accent-dark",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "#8a8c10"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--opso-accent-pale",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "#f9fac4"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--opso-border2",
+      "definedIn": [],
+      "usedIn": [
+        "opso"
+      ],
+      "values": {},
+      "issues": {
+        "usedUndefined": [
+          "opso"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--pill",
+      "definedIn": [],
+      "usedIn": [
+        "catalogue"
+      ],
+      "values": {},
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--purple2",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "#8B5CF6",
+        "opso": "#8B5CF6"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--r",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm"
+      ],
+      "values": {
+        "crm": "16px",
+        "opso": "16px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--radius",
+      "definedIn": [],
+      "usedIn": [
+        "opso"
+      ],
+      "values": {},
+      "issues": {
+        "usedUndefined": [
+          "opso"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--rose",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "#DC2626",
+        "opso": "#d04a4a"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--rose-bg",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "#FEF2F2",
+        "opso": "#fbe8e8"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--rose-g",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "linear-gradient(135deg, #B91C1C 0%, #EF4444 100%)",
+        "opso": "linear-gradient(135deg, #b91c1c 0%, #d04a4a 100%)"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--rose2",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "#EF4444",
+        "opso": "#ef4444"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--rs",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "12px",
+        "opso": "12px"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--rxs",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm"
+      ],
+      "values": {
+        "crm": "8px",
+        "opso": "8px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--rxxs",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "6px",
+        "opso": "6px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--sidebar-w",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "0px",
+        "opso": "64px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--space-1",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "4px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--space-10",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "40px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--space-12",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "48px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--space-2",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "8px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--space-3",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "12px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--space-5",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "20px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--space-6",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "24px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--space-8",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "32px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--t-base",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "0.20s cubic-bezier(0.4, 0, 0.2, 1)",
+        "opso": "0.20s ease"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--t-ease",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "0.44s cubic-bezier(0.16, 1, 0.3, 1)",
+        "opso": "0.44s ease"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--t-fast",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "0.14s cubic-bezier(0.4, 0, 0.2, 1)",
+        "opso": "0.14s ease"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--t-slow",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "crm": "0.36s cubic-bezier(0.4, 0, 0.2, 1)",
+        "opso": "0.36s ease"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm",
+          "opso"
+        ],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--text",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "#0F172A",
+        "opso": "#2a2d2f"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--text-2xl",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "28px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--text-3xl",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "36px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--text-base",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "13px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--text-lg",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "17px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--text-md",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "14px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--text-sm",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "11px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--text-xl",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "22px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--text-xs",
+      "definedIn": [
+        "opso"
+      ],
+      "usedIn": [],
+      "values": {
+        "opso": "10px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "opso"
+        ],
+        "valueCollision": false,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--text1",
+      "definedIn": [],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {},
+      "issues": {
+        "usedUndefined": [
+          "crm",
+          "opso"
+        ],
+        "definedUnused": [],
+        "valueCollision": false,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--text2",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "#64748B",
+        "opso": "#64686a"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--text3",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "catalogue",
+        "opso"
+      ],
+      "values": {
+        "crm": "#94A3B8",
+        "opso": "#6b7174"
+      },
+      "issues": {
+        "usedUndefined": [
+          "catalogue"
+        ],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": true
+      }
+    },
+    {
+      "token": "--text4",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "crm",
+        "opso"
+      ],
+      "values": {
+        "crm": "#CBD5E1",
+        "opso": "#c8cdd0"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    },
+    {
+      "token": "--topbar-h",
+      "definedIn": [
+        "crm",
+        "opso"
+      ],
+      "usedIn": [
+        "opso"
+      ],
+      "values": {
+        "crm": "60px",
+        "opso": "64px"
+      },
+      "issues": {
+        "usedUndefined": [],
+        "definedUnused": [
+          "crm"
+        ],
+        "valueCollision": true,
+        "partialCoverage": false
+      }
+    }
+  ]
+}
