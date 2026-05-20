@@ -535,8 +535,27 @@ function renderDashboard() {
 
   if (!allSalesRaw.length) {
     document.getElementById('dash-content').innerHTML = `
-      <div style="margin-bottom:28px">
-        ${emptyState('📊', 'Aucune donnée', 'Importez des fichiers Excel pour voir votre dashboard')}
+      <div class="fade-up" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+        <div>
+          <div class="section-title">Tableau de pilotage</div>
+          <div class="section-sub" style="margin-bottom:0">Aucune donnée importée pour le moment</div>
+        </div>
+        <span class="tagline">On prend soin de vous</span>
+      </div>
+      <div class="pin-card fade-up" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 24px;gap:18px">
+        <svg viewBox="0 0 64 64" width="72" height="72" style="color:var(--brand);opacity:.35" aria-hidden="true">
+          <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="currentColor"/>
+          <rect x="20" y="24" width="24" height="8" fill="#fff" rx="1.5"/>
+          <rect x="28" y="16" width="8" height="24" fill="#fff" rx="1.5"/>
+        </svg>
+        <div>
+          <div style="font-family:'Varela Round',sans-serif;font-size:20px;color:var(--text);margin-bottom:6px">Bienvenue dans votre officine digitale</div>
+          <div style="font-size:13px;color:var(--text-dim);max-width:380px;line-height:1.6">Importez vos fichiers Excel WML / ventes pour découvrir le pilotage de votre réseau de pharmaciens.</div>
+        </div>
+        <button class="btn btn-primary" onclick="navigate('import')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Importer mes données
+        </button>
       </div>`;
     return;
   }
@@ -617,7 +636,8 @@ function renderDashboard() {
         const ca = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
         return next ? ca >= p && ca < next : ca >= p;
       }).length,
-      color: ['#64748B', '#0057FF', '#00E5A0', '#FFB020'][i],
+      // Palette progressive Normandie Pharma : gris → vert clair → vert brand → vert foncé
+      color: ['#9ea1a3', '#1bc04a', '#11a63c', '#0d8a31'][i],
     };
   });
   const pipelineTotal = pipelineCounts.reduce((s, p) => s + p.count, 0);
@@ -826,48 +846,76 @@ function renderDashboard() {
 
   document.getElementById('dash-content').innerHTML = `
 
-    <!-- Row 1 : Hero KPI + 3 secondaires -->
+    <!-- En-tête bienvenue : section title + tagline -->
+    <div class="fade-up" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap">
+      <div>
+        <div class="section-title">Tableau de pilotage</div>
+        <div class="section-sub" style="margin-bottom:0">Réseau d'officines adhérentes — ${curLabel}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="tagline">On prend soin de vous</span>
+        <svg viewBox="0 0 80 24" width="64" height="20" style="color:var(--brand);opacity:.7" aria-hidden="true">
+          <path d="M0 20 Q15 0 30 20 Q45 0 60 20 Q70 24 80 12" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Row 1 : Hero KPI + 3 secondaires (charte Normandie Pharma) -->
     <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:24px">
 
-      <!-- Hero -->
-      <div class="kpi-card kpi-hero" style="background:linear-gradient(135deg,#1E3A8A 0%,#2563EB 60%,#3B82F6 100%);box-shadow:0 8px 32px rgba(37,99,235,.30),0 2px 8px rgba(37,99,235,.15)">
-        <div class="kpi-icon">💰</div>
-        <div class="kpi-value" style="font-size:38px;font-weight:900;letter-spacing:-2px;font-family:'Syne',sans-serif">${fmt(caCur)}</div>
-        <div class="kpi-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.7)">CA Secteur — ${curLabel}</div>
-        <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
-          ${deltaBadge(caCur, caPrev)}
-          <span style="font-size:11px;color:rgba(255,255,255,0.55)">vs ${prevLabel}</span>
+      <!-- Hero vert brand — KPI principal -->
+      <div class="kpi-card kpi-hero">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:relative;z-index:1">
+          <div style="flex:1;min-width:0">
+            <div class="kpi-label" style="margin-bottom:14px">CA réseau · ${curLabel}</div>
+            <div class="kpi-value" style="margin-bottom:14px">${fmt(caCur)}</div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              ${deltaBadge(caCur, caPrev)}
+              <span style="font-size:12px;color:rgba(255,255,255,0.78)">vs ${prevLabel}</span>
+            </div>
+          </div>
+          <svg viewBox="0 0 64 64" width="56" height="56" style="color:rgba(255,255,255,.18);flex-shrink:0" aria-hidden="true">
+            <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="currentColor"/>
+            <rect x="20" y="24" width="24" height="8" fill="#fff" rx="1.5" opacity=".95"/>
+            <rect x="28" y="16" width="8" height="24" fill="#fff" rx="1.5" opacity=".95"/>
+          </svg>
         </div>
-        <button onclick="printRapportMensuel()" style="margin-top:16px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">🖨 Rapport mensuel</button>
+        <button onclick="printRapportMensuel()" style="margin-top:18px;padding:7px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;position:relative;z-index:1" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">Imprimer le rapport mensuel</button>
       </div>
 
-      <!-- Pharmacies actives -->
-      <div class="kpi-card kc-g" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
-        <div class="kpi-icon">🏥</div>
-        <div class="kpi-value" style="color:var(--mint)">${nPhCur}</div>
-        <div class="kpi-label">Pharmacies actives</div>
+      <!-- Officines actives -->
+      <div class="kpi-card kc-g">
+        <div class="kpi-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <div class="kpi-value">${nPhCur}</div>
+        <div class="kpi-label" style="margin-top:6px">Officines actives</div>
         <div style="margin-top:10px">${deltaBadge(nPhCur, nPhPrev)}</div>
       </div>
 
-      <!-- Panier moyen -->
-      <div class="kpi-card kc-a" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
-        <div class="kpi-icon">🛒</div>
-        <div class="kpi-value" style="color:var(--amber)">${fmt(panierCur)}</div>
-        <div class="kpi-label">Panier moyen</div>
+      <!-- Panier moyen comptoir -->
+      <div class="kpi-card kc-a">
+        <div class="kpi-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        </div>
+        <div class="kpi-value">${fmt(panierCur)}</div>
+        <div class="kpi-label" style="margin-top:6px">Panier moyen / officine</div>
         <div style="margin-top:10px">${deltaBadge(panierCur, panierPrev)}</div>
       </div>
 
-      <!-- Meilleure progression -->
-      <div class="kpi-card kc-p" style="box-shadow:0 2px 12px rgba(0,0,0,.06)">
-        <div class="kpi-icon">🚀</div>
-        <div class="kpi-value" style="color:var(--purple);font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+      <!-- Meilleure progression officine -->
+      <div class="kpi-card kc-p">
+        <div class="kpi-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div class="kpi-value" style="font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
           ${bestPharmaObj ? bestPharmaObj.name.split(' ').slice(-1)[0] : '—'}
         </div>
-        <div class="kpi-label">Meilleure progression</div>
+        <div class="kpi-label" style="margin-top:6px">Meilleure progression</div>
         <div style="margin-top:10px">
           ${bestPharmaObj && bestGrowth > -Infinity
-            ? `<span class="delta-badge ${bestGrowth >= 0 ? 'delta-pos' : 'delta-neg'}">${bestGrowth >= 0 ? '▲' : '▼'} ${Math.abs(bestGrowth).toFixed(1)}%</span>`
-            : '<span class="delta-badge delta-neu">—</span>'}
+            ? `<span class="delta-pill ${bestGrowth >= 0 ? 'up' : 'down'}">${bestGrowth >= 0 ? '▲' : '▼'} ${Math.abs(bestGrowth).toFixed(1)}%</span>`
+            : '<span class="delta-pill neutral">—</span>'}
         </div>
       </div>
     </div>
@@ -1648,10 +1696,21 @@ function renderDashboard() {
           options: {
             indexAxis: 'y',
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + fmt(c.parsed.x) } } },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#fff',
+                borderColor: '#11a63c',
+                borderWidth: 1,
+                titleColor: '#1f2937',
+                bodyColor: '#1f2937',
+                padding: 10,
+                callbacks: { label: c => ' ' + fmt(c.parsed.x) }
+              }
+            },
             scales: {
-              x: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
-              y: { grid: { display: false }, ticks: { color: '#0F172A', font: { size: 12, weight: '600' } } },
+              x: { grid: { color: 'rgba(17,166,60,.06)' }, ticks: { color: '#64686a', font: { size: 11 }, callback: v => fmt(v) } },
+              y: { grid: { display: false }, ticks: { color: '#1f2937', font: { size: 12, weight: '600' } } },
             }
           }
         });
@@ -1678,8 +1737,16 @@ function renderDashboard() {
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'right', labels: { color: '#64748B', font: { size: 11 }, boxWidth: 12, padding: 10 } },
-              tooltip: { callbacks: { label: c => ` ${fmt(c.parsed)} (${totalCA > 0 ? (c.parsed / totalCA * 100).toFixed(1) : 0}%)` } },
+              legend: { position: 'right', labels: { color: '#64686a', font: { size: 11 }, boxWidth: 12, padding: 10 } },
+              tooltip: {
+                backgroundColor: '#fff',
+                borderColor: '#11a63c',
+                borderWidth: 1,
+                titleColor: '#1f2937',
+                bodyColor: '#1f2937',
+                padding: 10,
+                callbacks: { label: c => ` ${fmt(c.parsed)} (${totalCA > 0 ? (c.parsed / totalCA * 100).toFixed(1) : 0}%)` }
+              },
             },
             cutout: '65%',
           }
@@ -1703,11 +1770,13 @@ function renderDashboard() {
             datasets: [{
               label: 'CA HT',
               data: monthlyData.map(([, v]) => +v.toFixed(2)),
-              borderColor: '#0057FF',
-              backgroundColor: 'rgba(0,87,255,0.08)',
+              borderColor: '#11a63c',
+              backgroundColor: 'rgba(17,166,60,0.10)',
               borderWidth: 2.5,
               pointRadius: 5,
-              pointBackgroundColor: '#0057FF',
+              pointBackgroundColor: '#11a63c',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
               tension: 0.3,
               fill: true,
             }]
@@ -1716,11 +1785,19 @@ function renderDashboard() {
             responsive: true, maintainAspectRatio: false,
             plugins: {
               legend: { display: false },
-              tooltip: { callbacks: { label: c => ' ' + fmt(c.parsed.y) } },
+              tooltip: {
+                backgroundColor: '#fff',
+                borderColor: '#11a63c',
+                borderWidth: 1,
+                titleColor: '#1f2937',
+                bodyColor: '#1f2937',
+                padding: 10,
+                callbacks: { label: c => ' ' + fmt(c.parsed.y) }
+              },
             },
             scales: {
-              x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
-              y: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
+              x: { grid: { display: false }, ticks: { color: '#64686a', font: { size: 11 } } },
+              y: { grid: { color: 'rgba(17,166,60,.06)' }, ticks: { color: '#64686a', font: { size: 11 }, callback: v => fmt(v) } },
             }
           }
         });
@@ -1757,12 +1834,21 @@ function renderDashboard() {
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'bottom', labels: { color: '#64748B', font: { size: 11 }, boxWidth: 12, padding: 10 } },
-              tooltip: { mode: 'index', callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+              legend: { position: 'bottom', labels: { color: '#64686a', font: { size: 11 }, boxWidth: 12, padding: 10 } },
+              tooltip: {
+                mode: 'index',
+                backgroundColor: '#fff',
+                borderColor: '#11a63c',
+                borderWidth: 1,
+                titleColor: '#1f2937',
+                bodyColor: '#1f2937',
+                padding: 10,
+                callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}` }
+              },
             },
             scales: {
-              x: { stacked: true, grid: { display: false }, ticks: { color: '#64748B', font: { size: 10 } } },
-              y: { stacked: true, grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
+              x: { stacked: true, grid: { display: false }, ticks: { color: '#64686a', font: { size: 10 } } },
+              y: { stacked: true, grid: { color: 'rgba(17,166,60,.06)' }, ticks: { color: '#64686a', font: { size: 11 }, callback: v => fmt(v) } },
             }
           }
         });
@@ -6516,12 +6602,31 @@ function offiExportCSV() {
   showToast(`Export CSV — ${list.length} produits`, 'success');
 }
 
+// ── Helpers Normandie Pharma (charte verte / Varela Round / Caveat) ──
+function npPinSvg(size = 18) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-7.58 8-12a8 8 0 1 0-16 0c0 4.42 8 12 8 12z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>`;
+}
+function npAlertSvg(size = 18) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+}
+function npSparklineSvg(months, w = 70, h = 22) {
+  if (!months || !months.length) return '';
+  const maxV = Math.max(...months, 1);
+  const barW = w / months.length;
+  const bars = months.map((v, i) => {
+    const bh = Math.max(1, (v / maxV) * (h - 2));
+    return `<rect x="${i * barW + 0.5}" y="${h - bh}" width="${barW - 1}" height="${bh}" rx="1" class="${i === months.length - 1 ? 'np-spark-last' : ''}"/>`;
+  }).join('');
+  return `<svg class="np-sparkline" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${bars}</svg>`;
+}
+function npEscape(s) { return (s || '').toString().replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
 function renderOffilog() {
   const container = document.getElementById('offilog-content');
   if (!container) return;
 
   if (typeof OFFILOG === 'undefined' || !OFFILOG.length) {
-    container.innerHTML = `<div class="card"><div style="text-align:center;padding:60px;color:var(--text3)">Données Offilog non chargées.</div></div>`;
+    container.innerHTML = `<div class="np-scope"><div class="np-empty"><div class="np-empty-pin">${npPinSvg(22)}</div><div class="np-empty-title">Catalogue Offilog non chargé</div><div class="np-empty-sub">Le fichier offilog-data.js est manquant.</div></div></div>`;
     return;
   }
 
@@ -6561,51 +6666,44 @@ function renderOffilog() {
   const universSet = Object.keys(universCount).filter(u => u && u !== 'Non classé').sort((a, b) => universCount[b] - universCount[a]);
   const marqueSet  = [...new Set(OFFILOG.map(p => p.marque).filter(Boolean))].sort();
 
-  // ── Universe tiles ────────────────────────────
-  const univTiles = [{ key: 'tous', label: 'Tout voir', count: nTotal, color: OFFILOG_ORANGE, bg: '#fff0eb', icon: '🛍️' }]
-    .concat(universSet.map(u => { const m = univMeta(u); return { key: u, label: u, count: universCount[u], color: m.color, bg: m.bg, icon: m.icon }; }))
+  // ── Universe tiles (style NP) ─────────────────
+  const univTiles = [{ key: 'tous', label: 'Tout voir', count: nTotal, icon: '◉' }]
+    .concat(universSet.map(u => { const m = univMeta(u); return { key: u, label: u, count: universCount[u], icon: m.icon }; }))
     .map(t => {
-      const active = offiUnivers === t.key || (t.key === 'tous' && offiUnivers === 'tous');
-      return `<button onclick="offiSetUnivers('${t.key === 'tous' ? 'tous' : t.key.replace(/'/g,"\\'")}')"
-        style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;border-radius:14px;border:2px solid ${active ? t.color : 'transparent'};background:${active ? t.bg : 'var(--bg2)'};cursor:pointer;white-space:nowrap;transition:all .18s;flex-shrink:0;min-width:90px">
-        <span style="font-size:20px;line-height:1">${t.icon}</span>
-        <span style="font-size:11px;font-weight:700;color:${active ? t.color : 'var(--text2)'};max-width:90px;overflow:hidden;text-overflow:ellipsis;text-align:center">${t.label.split(' / ')[0].split(' &')[0]}</span>
-        <span style="font-size:10px;font-weight:500;color:${active ? t.color : 'var(--text3)'};opacity:.8">${fmtNum(t.count)}</span>
+      const active = offiUnivers === t.key;
+      return `<button class="np-univers-tile ${active ? 'np-active' : ''}" onclick="offiSetUnivers('${npEscape(t.key)}')">
+        <span class="np-ut-icon">${t.icon}</span>
+        <span class="np-ut-label">${t.label.split(' / ')[0].split(' &')[0]}</span>
+        <span class="np-ut-count">${fmtNum(t.count)}</span>
       </button>`;
     }).join('');
 
-  // ── Role chips ────────────────────────────────
+  // ── Role chips (charte NP) ───────────────────
   const nBest     = OFFILOG.filter(p => p.rang_vente != null).length;
   const offiFavs = getOffiFavs();
   const nFavs = OFFILOG.filter(p => p.ean && offiFavs.has(p.ean)).length;
   const roleTabs = [
-    { key: 'tous',            label: 'Tous',             icon: '✦', color: '#64748B' },
-    { key: 'bestsellers',     label: `Top ventes (${nBest})`, icon: '🏆', color: '#F59E0B' },
-    { key: 'pharmacie',       label: `Ma Pharmacie (${nPharma})`, icon: '🏥', color: '#00E5A0' },
-    { key: 'concurrence',     label: `Avec prix conc. (${nAlerte})`, icon: '🔍', color: '#0057FF' },
-    { key: 'leclerc',         label: `Leclerc (${nLeclerc})`, icon: '🔵', color: '#0072e6' },
-    { key: 'leclerc_moins',   label: `Leclerc < IP (${nLeclMoins})`, icon: '⚠️', color: '#EF4444' },
-    { key: 'alerte_conc',     label: `Alerte prix (${nAlerteConc})`, icon: '🚨', color: '#DC2626' },
-    { key: 'favoris',         label: `Favoris (${nFavs})`, icon: '★', color: '#EC4899' },
-    { key: 'offilog',         label: 'Dans Offilog',     icon: '✓', color: OFFILOG_ORANGE },
-    { key: 'Héros',           label: 'Héros',            icon: '⭐', color: '#F59E0B' },
-    { key: 'Héros / Soutien', label: 'Héros/Soutien',    icon: '⭐', color: '#FBBF24' },
-    { key: 'Soutien fort',    label: 'Soutien fort',     icon: '💪', color: '#3B82F6' },
-    { key: 'Image',           label: 'Image',            icon: '🎨', color: '#9B5CFF' },
-    { key: 'Opportunité',     label: 'Opportunités',     icon: '🎯', color: '#10B981' },
+    { key: 'tous',            label: 'Toutes références',         klass: '' },
+    { key: 'bestsellers',     label: `Top ventes · ${nBest}`,     klass: 'np-lime' },
+    { key: 'pharmacie',       label: `Ma Pharmacie · ${nPharma}`, klass: '' },
+    { key: 'concurrence',     label: `Avec prix concurrents · ${nAlerte}`, klass: '' },
+    { key: 'leclerc',         label: `E.Leclerc · ${nLeclerc}`,   klass: '' },
+    { key: 'leclerc_moins',   label: `Leclerc < IP · ${nLeclMoins}`, klass: 'np-pink' },
+    { key: 'alerte_conc',     label: `Alerte prix · ${nAlerteConc}`, klass: 'np-pink' },
+    { key: 'favoris',         label: `Favoris · ${nFavs}`,        klass: '' },
+    { key: 'offilog',         label: 'Dans Offilog',              klass: '' },
+    { key: 'Héros',           label: 'Héros',                     klass: 'np-lime' },
+    { key: 'Soutien fort',    label: 'Soutien fort',              klass: '' },
+    { key: 'Image',           label: 'Image',                     klass: '' },
+    { key: 'Opportunité',     label: 'Opportunités',              klass: '' },
   ];
   const roleChips = roleTabs.map(t => {
     const active = offiRole === t.key;
-    return `<button onclick="offiSetRole('${t.key.replace(/'/g,"\\'")}')"
-      style="padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid ${active ? t.color : 'var(--border2)'};background:${active ? t.color + '18' : 'transparent'};color:${active ? t.color : 'var(--text2)'};cursor:pointer;transition:all .15s;white-space:nowrap">
-      ${t.icon} ${t.label}
-    </button>`;
+    return `<button class="np-chip ${t.klass} ${active ? 'np-active' : ''}" onclick="offiSetRole('${npEscape(t.key)}')">${t.label}</button>`;
   }).join('');
 
-  // ── Product cards ─────────────────────────────
+  // ── Product cards (charte NP : pin-card biseautée, comparateur vertical) ──
   const cardsHtml = page.length ? page.map((p, i) => {
-    const um  = univMeta(p.univers || 'Non classé');
-    const rm  = roleMeta(p.role);
     const hasIP    = p.prix_offilog   != null && p.prix_offilog   > 0;
     const hasLive  = p.prix_live      != null && p.prix_live      > 0;
     const hasMaxi  = p.prix_maxi      != null && p.prix_maxi      > 0;
@@ -6614,194 +6712,134 @@ function renderOffilog() {
     const hasLecl  = p.prix_leclerc   != null && p.prix_leclerc   > 0;
     const hasPharma= p.prix_pharmacie != null && p.prix_pharmacie > 0;
     const hasImg   = p.img && p.img.length > 0;
-    const hasMarge = p.marge_pct != null;
-    const margeColor = !hasMarge ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
-    const margePct  = hasMarge ? Math.min(100, p.marge_pct) : 0;
 
-    // Prix affiché = live en priorité, sinon Excel
-    const prixDisplay = hasLive ? p.prix_live : (hasIP ? p.prix_offilog : null);
-
-    // Price delta vs all competitors (informational only)
-    let deltaHtml = '';
-    if (prixDisplay && (hasDrak || hasCap || hasLecl || hasPharma)) {
-      const concPrix = [
-        hasDrak   ? p.prix_drakkars  : null,
-        hasCap    ? p.prix_cap3000   : null,
-        hasLecl   ? p.prix_leclerc   : null,
-        hasPharma ? p.prix_pharmacie : null,
-      ].filter(Boolean);
-      const minConc = Math.min(...concPrix);
-      const delta = minConc - prixDisplay;
-      if (delta > 0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 6px;border-radius:8px">Conc. +${fmtP(delta)}</span>`;
-      else if (delta < -0.01) deltaHtml = `<span style="font-size:10px;font-weight:700;color:#F59E0B;background:#fef3c7;padding:1px 6px;border-radius:8px">Conc. −${fmtP(Math.abs(delta))}</span>`;
-    }
-
-    const saisonBadge = p.saison && p.saison !== 'Toute année'
-      ? `<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:#fef9c3;color:#92400e;font-weight:600">${p.saison === 'Printemps/Été' ? '☀️ P/É' : '❄️ A/H'}</span>`
-      : '';
-    const ipBadge = p.dans_offilog
-      ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${OFFILOG_ORANGE}22;color:${OFFILOG_ORANGE};font-weight:700;border:1px solid ${OFFILOG_ORANGE}44">IP</span>`
-      : '';
-    const liveBadge = hasLive
-      ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#dcfce7;color:#15803d;font-weight:700">● Live</span>`
-      : '';
-    const bestBadge = p.rang_vente != null
-      ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:800">🏆 #${p.rang_vente}</span>`
-      : '';
-
-    // Prix pharmacie delta vs prix IP (rouge = pharmacie plus chère que nous = mauvais signe, vert = moins chère = ok)
-    const pharmaDeltaHtml = hasPharma && prixDisplay
-      ? (() => {
-          const d = p.prix_pharmacie - prixDisplay;
-          if (d > 0.05) return `<span style="font-size:9px;font-weight:700;color:#10B981;background:#d1fae5;padding:1px 5px;border-radius:6px">+${fmtP(d)}</span>`;
-          if (d < -0.05) return `<span style="font-size:9px;font-weight:700;color:#EF4444;background:#fee2e2;padding:1px 5px;border-radius:6px">${fmtP(d)}</span>`;
-          return `<span style="font-size:9px;font-weight:700;color:#6B7280;background:#F3F4F6;padding:1px 5px;border-radius:6px">≈</span>`;
-        })()
-      : '';
-
-    const competHtml = (hasDrak || hasCap || hasLecl || hasPharma || hasMaxi) ? `
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border1)">
-        ${hasPharma ? `<div style="font-size:10px;color:var(--text3)">🏥 <span style="color:var(--mint);font-weight:700">${fmtP(p.prix_pharmacie)}</span> <span style="opacity:.6">Apothical</span> ${pharmaDeltaHtml}</div>` : ''}
-        ${hasDrak   ? `<div style="font-size:10px;color:var(--text3)">🛒 <span style="color:#6366f1;font-weight:600">${fmtP(p.prix_drakkars)}</span> <span style="opacity:.6">Drakkars</span></div>` : ''}
-        ${hasCap    ? `<div style="font-size:10px;color:var(--text3)">🏪 <span style="color:#ea580c;font-weight:600">${fmtP(p.prix_cap3000)}</span> <span style="opacity:.6">Cap3000</span></div>` : ''}
-        ${hasLecl   ? `<div style="font-size:10px;color:var(--text3)">🔵 <span style="color:#0072e6;font-weight:600">${fmtP(p.prix_leclerc)}</span> <span style="opacity:.6">Leclerc</span></div>` : ''}
-        ${hasMaxi   ? `<div style="font-size:10px;color:var(--text3)">🟡 <span style="color:#FFB020;font-weight:600">${fmtP(p.prix_maxi)}</span> <span style="opacity:.6">Maxipara</span></div>` : ''}
-      </div>` : '';
-
-    // Initial marque pour placeholder
+    const prixAchat = hasLive ? p.prix_live : (hasIP ? p.prix_offilog : null);
+    const concVals = [
+      hasDrak   ? { src: 'Drakkars',  val: p.prix_drakkars  } : null,
+      hasCap    ? { src: 'Cap3000',   val: p.prix_cap3000   } : null,
+      hasLecl   ? { src: 'E.Leclerc', val: p.prix_leclerc   } : null,
+      hasPharma ? { src: 'Apothical', val: p.prix_pharmacie } : null,
+      hasMaxi   ? { src: 'Maxipara',  val: p.prix_maxi      } : null,
+    ].filter(Boolean);
+    const minConc = concVals.length ? Math.min(...concVals.map(x => x.val)) : null;
+    const isAlerte = prixAchat != null && minConc != null && minConc < prixAchat;
     const brandInitial = (p.marque || p.produit || '?').charAt(0).toUpperCase();
 
-    // Alerte: competitor price < IP buy price
-    const prixAchat = prixDisplay;
-    const isAlerte = prixAchat != null && [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0 && v < prixAchat);
+    // Comparateur prix vertical : IP / concurrents
+    const priceRows = [];
+    if (prixAchat != null) {
+      priceRows.push({ src: 'Prix achat IP', val: prixAchat, kind: 'achat' });
+    }
+    concVals.forEach(c => {
+      priceRows.push({
+        src: c.src,
+        val: c.val,
+        kind: prixAchat != null && c.val < prixAchat ? 'warn' : (c.val === minConc && concVals.length > 1 ? 'best' : 'normal'),
+      });
+    });
 
-    return `<div style="background:var(--bg);border-radius:16px;border:${isAlerte ? '1.5px solid rgba(220,38,38,.6)' : '1px solid var(--border1)'};overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer"
-      onclick="showOffiDetail(${startIdx + i})"
-      onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,.12)';this.style.transform='translateY(-2px)'"
-      onmouseout="this.style.boxShadow='';this.style.transform=''">
-      <!-- Zone photo uniforme 140px — toujours présente -->
-      <div style="height:140px;background:${um.bg};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;flex-shrink:0">
+    const priceRowsHtml = priceRows.length
+      ? `<div class="np-price-table">${priceRows.slice(0, 5).map(r =>
+          `<div class="np-price-row ${r.kind === 'achat' ? 'np-achat' : r.kind === 'best' ? 'np-best' : r.kind === 'warn' ? 'np-warn' : ''}">
+            <span class="np-pr-src">${r.src}</span>
+            <span class="np-pr-val">${fmtP(r.val)}</span>
+          </div>`).join('')}</div>`
+      : '';
+
+    // Delta pill alerte
+    const deltaPill = isAlerte
+      ? `<span class="np-delta np-delta-neg">−${fmtP(prixAchat - minConc)}</span>`
+      : minConc != null && prixAchat != null
+        ? `<span class="np-delta np-delta-pos">+${fmtP(minConc - prixAchat)}</span>`
+        : '';
+
+    const tagsHtml = [
+      p.marque ? `<span class="np-tag np-tag-marque">${p.marque}</span>` : '',
+      p.univers ? `<span class="np-tag np-tag-univers">${(p.univers || '').split(' / ')[0].split(' &')[0]}</span>` : '',
+      p.dans_offilog ? `<span class="np-tag np-tag-ip">IP</span>` : '',
+      p.rang_vente != null ? `<span class="np-tag np-tag-rank">Top #${p.rang_vente}</span>` : '',
+      hasLive ? `<span class="np-tag np-tag-live">Live</span>` : '',
+      p.saison && p.saison !== 'Toute année' ? `<span class="np-tag np-tag-saison">${p.saison === 'Printemps/Été' ? 'P/É' : 'A/H'}</span>` : '',
+    ].filter(Boolean).join('');
+
+    const favOn = p.ean && offiFavs.has(p.ean);
+
+    return `<div class="np-prod-card ${isAlerte ? 'np-alerte' : ''}" onclick="showOffiDetail(${startIdx + i})">
+      <div class="np-prod-photo">
         ${hasImg
-          ? `<img src="${p.img}" alt="" loading="lazy"
-              style="max-height:128px;max-width:90%;object-fit:contain;transition:transform .3s"
-              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-              onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform=''">
-             <div style="display:none;flex-direction:column;align-items:center;gap:6px;position:absolute;inset:0;justify-content:center">
-               <span style="font-size:36px;line-height:1">${um.icon}</span>
-               <span style="font-size:20px;font-weight:900;color:${um.color};opacity:.5">${brandInitial}</span>
-             </div>`
-          : `<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-               <span style="font-size:38px;line-height:1;filter:drop-shadow(0 2px 6px ${um.color}44)">${um.icon}</span>
-               <span style="font-size:22px;font-weight:900;color:${um.color};opacity:.35;letter-spacing:2px">${brandInitial}</span>
-             </div>`
+          ? `<img src="${p.img}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+             <div class="np-placeholder" style="display:none"><span class="np-ph-letter">${brandInitial}</span></div>`
+          : `<div class="np-placeholder"><span class="np-ph-letter">${brandInitial}</span></div>`
         }
-        <!-- Badges en overlay -->
-        <div style="position:absolute;top:7px;left:7px;display:flex;gap:3px;flex-wrap:wrap;max-width:calc(100% - 50px)">${bestBadge}${ipBadge}${liveBadge}</div>
-        ${isAlerte ? '<div style="position:absolute;bottom:8px;left:8px;z-index:2;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(220,38,38,.9);color:#fff">🚨 Alerte prix</div>' : ''}
-        ${saisonBadge ? `<div style="position:absolute;top:7px;right:34px">${saisonBadge}</div>` : ''}
-        <!-- Fav button -->
-        ${p.ean ? `<button onclick="event.stopPropagation();toggleOffiFav('${p.ean}')" title="${offiFavs.has(p.ean)?'Retirer des favoris':'Ajouter aux favoris'}"
-          style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:8px;border:none;background:rgba(0,0,0,.2);backdrop-filter:blur(4px);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;line-height:1;color:${offiFavs.has(p.ean)?'#EC4899':'rgba(255,255,255,.7)'}">
-          ${offiFavs.has(p.ean) ? '★' : '☆'}
-        </button>` : ''}
-        <!-- Barre couleur univers en bas -->
-        <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,${um.color},${um.color}66)"></div>
+        ${isAlerte ? `<div class="np-prod-alert-badge">Alerte prix</div>` : ''}
+        ${p.ean ? `<button class="np-prod-fav ${favOn ? 'np-on' : ''}" onclick="event.stopPropagation();toggleOffiFav('${npEscape(p.ean)}')" title="${favOn ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${favOn ? '★' : '☆'}</button>` : ''}
       </div>
-      <div style="padding:12px 13px 11px;flex:1;display:flex;flex-direction:column;gap:0">
-        <!-- Brand -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:6px">
-          <span style="font-size:10px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.marque || '—'}</span>
-        </div>
-        <!-- Nom produit -->
-        <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;margin-bottom:8px">${p.produit}</div>
-        <!-- Tags -->
-        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
-          <span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${um.bg};color:${um.color};font-weight:600;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis">${um.icon} ${(p.univers||'Non classé').split(' / ')[0].split(' &')[0]}</span>
-          <span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${rm.bg};color:${rm.color};font-weight:600;white-space:nowrap">${rm.icon} ${p.role||'—'}</span>
-        </div>
-        <!-- Prix -->
-        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px">
-          <div>
-            <div style="font-size:10px;color:var(--text3);font-weight:500;margin-bottom:1px">${hasLive ? 'Prix Offilog (live)' : 'Prix IP'}</div>
-            <div style="font-size:20px;font-weight:900;color:${OFFILOG_ORANGE};letter-spacing:-.5px;line-height:1">${prixDisplay ? fmtP(prixDisplay) : '<span style="font-size:13px;color:var(--text3)">N/D</span>'}</div>
-          </div>
-          ${hasMaxi ? `<div style="text-align:right">
-            <div style="font-size:10px;color:var(--text3);margin-bottom:1px">Prix public</div>
-            <div style="font-size:13px;color:var(--text2);font-weight:600">${fmtP(p.prix_maxi)}</div>
-          </div>` : ''}
-        </div>
-        <!-- Margin bar -->
-        ${hasMarge ? `<div style="margin-bottom:6px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-            <span style="font-size:10px;color:var(--text3)">Marge</span>
-            <span style="font-size:11px;font-weight:700;color:${margeColor}">${p.marge_pct.toFixed(1)}%</span>
-          </div>
-          <div style="height:4px;border-radius:2px;background:var(--border1);overflow:hidden">
-            <div style="height:100%;width:${margePct}%;background:${margeColor};border-radius:2px;transition:width .4s"></div>
-          </div>
-        </div>` : ''}
-        <!-- Delta concurrents -->
-        ${deltaHtml ? `<div style="margin-bottom:4px">${deltaHtml}</div>` : ''}
-        <!-- Competitor prices -->
-        ${competHtml}
+      <div class="np-prod-body">
+        <div class="np-prod-tags">${tagsHtml}</div>
+        <div class="np-prod-name">${p.produit}</div>
+        ${p.ean ? `<div class="np-prod-ean">CIP13/EAN · ${p.ean}</div>` : ''}
+        ${priceRowsHtml}
+        ${deltaPill ? `<div style="margin-top:6px">${deltaPill} <span style="font-size:10px;color:var(--np-text-muted);font-family:Inter">${isAlerte ? 'vs achat IP' : 'sous concurrent le moins cher'}</span></div>` : ''}
       </div>
     </div>`;
   }).join('')
-  : `<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text3)">Aucun produit trouvé pour ces filtres.</div>`;
+  : `<div class="np-empty" style="grid-column:1/-1"><div class="np-empty-pin">${npPinSvg(22)}</div><div class="np-empty-title">Aucun produit trouvé</div><div class="np-empty-sub">Affinez votre recherche ou réinitialisez les filtres.</div></div>`;
 
-  // ── Table view ────────────────────────────────
+  // ── Table view (charte NP : table dense Inter, sticky header vert) ──
   const tableHtml = page.length ? `
-  <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border1)">
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead>
-        <tr style="background:var(--bg2);border-bottom:2px solid var(--border2)">
-          <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Produit</th>
-          <th style="padding:10px 10px;text-align:left;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Marque</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:${OFFILOG_ORANGE};font-weight:700;white-space:nowrap">Prix IP</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#15803d;font-weight:700;white-space:nowrap">Live</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#00E5A0;font-weight:700;white-space:nowrap">Apothical</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#6366f1;font-weight:700;white-space:nowrap">Drakkars</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#ea580c;font-weight:700;white-space:nowrap">Cap3000</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#0072e6;font-weight:700;white-space:nowrap">Leclerc</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:#FFB020;font-weight:700;white-space:nowrap">Maxipara</th>
-          <th style="padding:10px 10px;text-align:right;font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Marge</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${page.map((p, i) => {
-          const prixRef  = p.prix_live || p.prix_offilog;
-          const minConc  = Math.min(...[p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie].filter(x => x != null && x > 0).concat([Infinity]));
-          const deltaRef = (prixRef && minConc < Infinity) ? minConc - prixRef : null;
-          const deltaColor = deltaRef == null ? '' : deltaRef > 0.05 ? '#10B981' : deltaRef < -0.05 ? '#F59E0B' : '#6B7280';
-          const margeColor = p.marge_pct == null ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
-          const img = p.img ? `<img src="${p.img}" style="width:28px;height:28px;object-fit:contain;border-radius:4px;margin-right:8px;vertical-align:middle" onerror="this.style.display='none'">` : '';
-          return `<tr style="border-bottom:1px solid var(--border1);transition:background .12s;cursor:pointer" onclick="showOffiDetail(${startIdx + i})" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-            <td style="padding:8px 12px;max-width:260px">
-              <div style="display:flex;align-items:center">
-                ${img}
-                <div>
-                  <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px" title="${p.produit}">${p.produit}</div>
-                  <div style="font-size:10px;color:var(--text3);margin-top:1px">${p.univers ? p.univers.split(' / ')[0] : '—'}${p.rang_vente ? ` · 🏆 #${p.rang_vente}` : ''}</div>
+  <div class="np-table-wrap">
+    <div class="np-table-scroll">
+      <table class="np-table">
+        <thead>
+          <tr>
+            <th>Référence (CIP13/EAN)</th>
+            <th>Marque</th>
+            <th class="np-num">Prix achat IP</th>
+            <th class="np-num">Live</th>
+            <th class="np-num">Apothical</th>
+            <th class="np-num">Drakkars</th>
+            <th class="np-num">Cap3000</th>
+            <th class="np-num">E.Leclerc</th>
+            <th class="np-num">Maxipara</th>
+            <th class="np-num">Marge</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${page.map((p, i) => {
+            const prixRef  = p.prix_live || p.prix_offilog;
+            const concList = [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].filter(x => x != null && x > 0);
+            const minConc  = concList.length ? Math.min(...concList) : null;
+            const isAlerte = prixRef && minConc && minConc < prixRef;
+            const img = p.img ? `<img src="${p.img}" style="width:30px;height:30px;object-fit:contain;border-radius:6px;margin-right:9px;vertical-align:middle;background:#fff;border:1px solid var(--np-border)" onerror="this.style.display='none'">` : '';
+            const cell = v => v ? `<td class="np-num"><strong>${fmtP(v)}</strong></td>` : `<td class="np-num" style="color:var(--np-text-muted)">—</td>`;
+            const cellWarn = v => v && prixRef && v < prixRef
+              ? `<td class="np-num" style="color:var(--np-pink);font-weight:700">${fmtP(v)}</td>`
+              : (v ? `<td class="np-num">${fmtP(v)}</td>` : `<td class="np-num" style="color:var(--np-text-muted)">—</td>`);
+            return `<tr onclick="showOffiDetail(${startIdx + i})" style="${isAlerte ? 'background:#fff8fb' : ''}">
+              <td>
+                <div style="display:flex;align-items:center">
+                  ${img}
+                  <div>
+                    <div class="np-cell-name">${p.produit}${isAlerte ? ' <span style="color:var(--np-pink);font-weight:700">●</span>' : ''}</div>
+                    <div class="np-cell-sub">${p.univers ? p.univers.split(' / ')[0] : '—'}${p.ean ? ' · ' + p.ean : ''}${p.rang_vente ? ' · Top #' + p.rang_vente : ''}</div>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td style="padding:8px 10px;color:var(--text2);font-size:11px;white-space:nowrap">${p.marque || '—'}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:700;color:${OFFILOG_ORANGE};white-space:nowrap">${p.prix_offilog ? fmtP(p.prix_offilog) : '—'}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:600;color:#15803d;white-space:nowrap">${p.prix_live ? fmtP(p.prix_live) : '—'}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_pharmacie ? '700' : '400'};color:${p.prix_pharmacie ? '#00E5A0' : 'var(--text3)'};white-space:nowrap">${p.prix_pharmacie ? fmtP(p.prix_pharmacie) : '<span style="color:var(--text3)">—</span>'}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_drakkars ? '600' : '400'};color:${p.prix_drakkars ? '#6366f1' : 'var(--text3)'};white-space:nowrap">${p.prix_drakkars ? fmtP(p.prix_drakkars) : '<span style="color:var(--text3)">—</span>'}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_cap3000 ? '600' : '400'};color:${p.prix_cap3000 ? '#ea580c' : 'var(--text3)'};white-space:nowrap">${p.prix_cap3000 ? fmtP(p.prix_cap3000) : '<span style="color:var(--text3)">—</span>'}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_leclerc ? '600' : '400'};color:${p.prix_leclerc ? '#0072e6' : 'var(--text3)'};white-space:nowrap">${p.prix_leclerc ? fmtP(p.prix_leclerc) : '<span style="color:var(--text3)">—</span>'}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:${p.prix_maxi ? '600' : '400'};color:${p.prix_maxi ? '#FFB020' : 'var(--text3)'};white-space:nowrap">${p.prix_maxi ? fmtP(p.prix_maxi) : '<span style="color:var(--text3)">—</span>'}</td>
-            <td style="padding:8px 10px;text-align:right;white-space:nowrap">
-              ${p.marge_pct != null ? `<span style="font-weight:700;color:${margeColor}">${p.marge_pct.toFixed(1)}%</span>` : '—'}
-              ${deltaRef != null ? `<div style="font-size:9px;font-weight:700;color:${deltaColor}">${deltaRef > 0 ? '−' : '+'}${fmtP(Math.abs(deltaRef))} conc.</div>` : ''}
-            </td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-  </div>` : `<div style="padding:60px;text-align:center;color:var(--text3)">Aucun produit trouvé.</div>`;
+              </td>
+              <td style="font-size:11.5px;color:var(--np-text-dim);white-space:nowrap">${p.marque || '—'}</td>
+              <td class="np-num np-prix-ip">${prixRef ? fmtP(prixRef) : '—'}</td>
+              <td class="np-num">${p.prix_live ? fmtP(p.prix_live) : '<span style="color:var(--np-text-muted)">—</span>'}</td>
+              ${cellWarn(p.prix_pharmacie)}
+              ${cellWarn(p.prix_drakkars)}
+              ${cellWarn(p.prix_cap3000)}
+              ${cellWarn(p.prix_leclerc)}
+              ${cellWarn(p.prix_maxi)}
+              <td class="np-num">${p.marge_pct != null ? `<strong style="color:${p.marge_pct >= 40 ? 'var(--np-brand)' : p.marge_pct >= 20 ? 'var(--np-warning)' : 'var(--np-pink)'}">${p.marge_pct.toFixed(1)}%</strong>` : '—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>` : `<div class="np-empty"><div class="np-empty-pin">${npPinSvg(22)}</div><div class="np-empty-title">Aucun produit</div><div class="np-empty-sub">Aucune référence ne correspond aux filtres.</div></div>`;
 
   // ── Pagination ────────────────────────────────
   let pagHtml = '';
