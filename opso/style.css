@@ -3343,3 +3343,118 @@ html { scroll-behavior: smooth; }
   border-color: var(--opso-green) !important;
   box-shadow: 0 0 0 3px var(--opso-green-pale) !important;
 }
+
+/* ══════════════════════════════════════════════════════════
+   COMPOSANTS SIGNATURE NORMANDIE PHARMA
+   Pin-card biseautée · Pin pharma SVG · Divider arc ·
+   Tagline handwriting Caveat · Charte officielle 2024
+══════════════════════════════════════════════════════════ */
+
+/* ── Pin-card : carte avec coin biseauté rappelant la forme du pin pharma ── */
+.pin-card {
+  position: relative;
+  background: var(--opso-white);
+  border: 1px solid var(--opso-border);
+  border-radius: 24px 24px 4px 24px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(17, 166, 60, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.pin-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(17, 166, 60, 0.10);
+}
+.pin-card--green {
+  background: linear-gradient(135deg, var(--opso-green-dark) 0%, var(--opso-green) 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 16px rgba(17, 166, 60, 0.22);
+}
+.pin-card--green:hover {
+  box-shadow: 0 10px 28px rgba(17, 166, 60, 0.28);
+}
+.pin-card--green .pin-card-label,
+.pin-card--green .pin-card-sub {
+  color: rgba(255, 255, 255, 0.85);
+}
+.pin-card--green .pin-card-value {
+  color: #fff;
+}
+.pin-card--lime {
+  background: var(--opso-accent);
+  color: #1f2937;
+  border: none;
+  box-shadow: 0 4px 16px rgba(221, 223, 75, 0.30);
+}
+.pin-card--pale {
+  background: var(--opso-green-pale2);
+  border: 1px solid var(--opso-green-pale);
+}
+.pin-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--opso-green-dark);
+  margin-bottom: 6px;
+}
+.pin-card-value {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 26px;
+  letter-spacing: -0.4px;
+  color: var(--opso-text);
+  line-height: 1.1;
+}
+.pin-card-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+/* ── Pin pharma SVG signature (marqueur croix verte) ── */
+.brand-pin {
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.brand-pin--sm { width: 20px; height: 20px; }
+.brand-pin--lg { width: 64px; height: 64px; }
+.brand-pin--xl { width: 96px; height: 96px; }
+
+/* ── Divider décoratif : double vague (rappel "A" de NP) ── */
+.divider-arc {
+  display: block;
+  width: 80px;
+  height: 24px;
+  margin: 24px auto;
+  opacity: 0.7;
+}
+.divider-arc--lg { width: 140px; height: 32px; }
+
+/* ── Tagline handwriting (police Caveat, signature manuscrite) ── */
+.tagline {
+  font-family: 'Caveat', cursive;
+  color: var(--opso-green);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+.tagline--lg { font-size: 32px; }
+.tagline--xl { font-size: 44px; }
+.tagline--dark { color: var(--opso-green-dark); }
+.tagline--white { color: #fff; }
+
+/* ── Animation pin-card subtile fade-up ── */
+@keyframes pinCardIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.pin-card { animation: pinCardIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .pin-card { animation: none; }
+  .pin-card:hover { transform: none; }
+}

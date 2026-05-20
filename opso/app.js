@@ -2875,7 +2875,11 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
       <!-- Header -->
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="pharmaDetailOverridePeriod=null;renderPharmacies()">← Retour</button>
-        <div style="width:12px;height:12px;border-radius:50%;background:${pharma.color}"></div>
+        <svg viewBox="0 0 64 64" class="brand-pin" aria-hidden="true">
+          <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="${pharma.color || '#11a63c'}"/>
+          <rect x="20" y="22" width="24" height="8" fill="#fff" rx="1"/>
+          <rect x="28" y="14" width="8" height="24" fill="#fff" rx="1"/>
+        </svg>
         <span class="section-title" style="margin:0;flex:1">${titleCase(pharma.name)}</span>
         ${clientInfo?.ville ? `<span style="font-size:12px;color:var(--text3)">${clientInfo.cp} ${clientInfo.ville}</span>` : ''}
         ${availPeriods.length > 1 ? `<select onchange="showPharmaDetail('${pharma.id}',this.value==='auto'?null:{year:+this.value.split('-')[0],month:+this.value.split('-')[1]})"
@@ -9765,15 +9769,20 @@ function renderGrpDashboard(grp) {
   const _slogan = 'On prend soin de vous';
 
   const opsoGreeting = `
-<div class="opso-greeting fade-up" style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:14px 18px;background:linear-gradient(135deg,rgba(13,133,48,.08),rgba(17,166,60,.04));border:1px solid rgba(17,166,60,.18);border-radius:14px">
+<div class="opso-greeting fade-up pin-card pin-card--pale" style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:14px 18px">
   <div class="opso-greeting-avatar" style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(17,166,60,.25)">
-    <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="white"/><rect x="3" y="12" width="26" height="8" rx="3" fill="white"/></svg>
+    <svg viewBox="0 0 64 64" class="brand-pin brand-pin--sm" aria-hidden="true">
+      <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="#ffffff" opacity="0.18"/>
+      <rect x="20" y="22" width="24" height="8" fill="#fff" rx="1"/>
+      <rect x="28" y="14" width="8" height="24" fill="#fff" rx="1"/>
+    </svg>
   </div>
   <div class="opso-greeting-text" style="flex:1;min-width:0">
     <div class="opso-greeting-hello" style="font-size:12px;color:var(--text3);font-weight:600">${_greetingHello},</div>
     <div class="opso-greeting-name" style="font-family:'Varela Round',sans-serif;font-size:20px;color:var(--text);font-weight:400;letter-spacing:-.3px;line-height:1.15">l'équipe OPSO Santé</div>
-    <div class="opso-greeting-tag" style="font-size:11px;color:var(--text3);margin-top:2px">${_today1} · <em style="color:var(--opso-green-text)">${_slogan}</em></div>
+    <div class="opso-greeting-tag" style="font-size:11px;color:var(--text3);margin-top:2px">${_today1}</div>
   </div>
+  <div class="tagline tagline--dark" style="font-size:22px;text-align:right;line-height:1;white-space:nowrap">${_slogan}&nbsp;!</div>
 </div>`;
 
   // Bandeau stats rapides après le greeting
@@ -9869,32 +9878,35 @@ function renderGrpDashboard(grp) {
 
   const kpiRow = `
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:16px">
-    <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur}">
-      <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">CA Groupement</div>
-      <div style="font-family:'Varela Round',sans-serif;font-size:24px;color:${grp.couleur};letter-spacing:-.5px">${caCur > 0 ? fmt(caCur) : '—'}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">${curLabel} · ${evolTxt} vs ${prevLabel}</div>
+    <div class="pin-card pin-card--green" style="padding:16px 20px">
+      <div class="pin-card-label">CA Groupement</div>
+      <div class="pin-card-value">${caCur > 0 ? fmt(caCur) : '—'}</div>
+      <div class="pin-card-sub">${curLabel} · ${evolTxt} vs ${prevLabel}</div>
     </div>
-    <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur}">
-      <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Marge €</div>
-      <div style="font-family:'Varela Round',sans-serif;font-size:24px;color:var(--mint);letter-spacing:-.5px">${margeCur > 0 ? fmt(margeCur) : '—'}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Taux marge : <strong style="color:var(--mint)">${txMarge.toFixed(1)}%</strong></div>
+    <div class="pin-card" style="padding:16px 20px">
+      <div class="pin-card-label">Marge €</div>
+      <div class="pin-card-value" style="color:var(--mint)">${margeCur > 0 ? fmt(margeCur) : '—'}</div>
+      <div class="pin-card-sub">Taux marge : <strong style="color:var(--mint)">${txMarge.toFixed(1)}%</strong></div>
     </div>
-    <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur}">
-      <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Pharmacies actives</div>
-      <div style="font-family:'Varela Round',sans-serif;font-size:24px;color:${grp.couleur};letter-spacing:-.5px">${phActives}<span style="font-size:14px;color:var(--text3)">/${members.length}</span></div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">${nRefs} références vendues</div>
+    <div class="pin-card" style="padding:16px 20px">
+      <div class="pin-card-label">Pharmacies actives</div>
+      <div class="pin-card-value" style="color:var(--opso-green-dark)">${phActives}<span style="font-size:14px;color:var(--text3)">/${members.length}</span></div>
+      <div class="pin-card-sub">${nRefs} références vendues</div>
     </div>
-    <div class="card" style="padding:16px 20px;border-left:4px solid ${grp.couleur};cursor:pointer" onclick="(function(){
+    <div class="pin-card" style="padding:16px 20px;cursor:pointer" onclick="(function(){
       const v=prompt('Taux RFA (%) — actuel : ${rfaTaux}%','${rfaTaux}');
       if(v===null)return;
       const n=parseFloat(v);
       if(!isNaN(n)&&n>=0&&n<=20){localStorage.setItem('${rfaKey}',n);navigate('groupements','dashboard');}
     })()">
-      <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">RFA estimée <span style="font-size:9px;font-weight:400;opacity:.6">(modifier)</span></div>
-      <div style="font-family:'Varela Round',sans-serif;font-size:24px;color:var(--amber);letter-spacing:-.5px">${rfaEst > 0 ? fmt(rfaEst) : '—'}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Taux ${rfaTaux}% · ${fmt(rfaPerPh)}/pharma</div>
+      <div class="pin-card-label">RFA estimée <span style="font-size:9px;font-weight:400;opacity:.6">(modifier)</span></div>
+      <div class="pin-card-value" style="color:var(--amber)">${rfaEst > 0 ? fmt(rfaEst) : '—'}</div>
+      <div class="pin-card-sub">Taux ${rfaTaux}% · ${fmt(rfaPerPh)}/pharma</div>
     </div>
-  </div>`;
+  </div>
+  <svg viewBox="0 0 80 24" class="divider-arc" aria-hidden="true">
+    <path d="M0 20 Q15 0 30 20 Q45 0 60 20 Q70 24 80 12" stroke="#11a63c" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>`;
 
   // ── Section 2 : Répartition par catégorie ─────────
   const catTable = catStats.length ? `
