@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bots experts · Parité UX/UI · Jarvis App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="../" class="back">← Jarvis App</a>
+      <h1>🤖 Bots experts <span class="muted">· Parité UX/UI</span></h1>
+      <div class="topbar-meta" id="topbar-meta"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <p>
+        Audit automatisé de la cohérence UX/UI entre les 3 surfaces de l'app :
+        <strong>CRM</strong>, <strong>Catalogue</strong>, <strong>OPSO</strong>.
+        Chaque bot scanne son périmètre et reporte les divergences.
+      </p>
+      <p class="hint">
+        Pour rafraîchir les rapports : <code>node bots/run-all.mjs</code>
+      </p>
+    </section>
+
+    <section id="bots-grid" class="bots-grid">
+      <div class="empty">Chargement…</div>
+    </section>
+
+    <section id="detail" class="detail" hidden></section>
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

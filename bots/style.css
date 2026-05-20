@@ -1,0 +1,180 @@
+/* Bots dashboard — palette neutre (pas alignée sur CRM ni OPSO,
+   pour rester un outil méta) */
+:root {
+  --b-bg: #0f172a;
+  --b-bg2: #1e293b;
+  --b-bg3: #334155;
+  --b-text: #f1f5f9;
+  --b-text2: #cbd5e1;
+  --b-text3: #94a3b8;
+  --b-border: rgba(255,255,255,.08);
+  --b-accent: #6366f1;
+  --b-good: #10b981;
+  --b-warn: #f59e0b;
+  --b-bad: #ef4444;
+  --b-r: 14px;
+  --b-rs: 8px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--b-bg);
+  color: var(--b-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  background: rgba(15, 23, 42, .92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--b-border);
+  z-index: 10;
+}
+.topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.back {
+  color: var(--b-text3);
+  text-decoration: none;
+  font-size: 13px;
+}
+.back:hover { color: var(--b-text); }
+.topbar h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  flex: 1;
+}
+.topbar h1 .muted { color: var(--b-text3); font-weight: 500; }
+.topbar-meta { font-size: 12px; color: var(--b-text3); }
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+.intro {
+  margin-bottom: 28px;
+}
+.intro p { margin: 0 0 8px; color: var(--b-text2); }
+.intro .hint { font-size: 12px; color: var(--b-text3); }
+.intro code {
+  background: var(--b-bg2);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.bots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--b-text3);
+}
+
+.bot-card {
+  background: var(--b-bg2);
+  border: 1px solid var(--b-border);
+  border-radius: var(--b-r);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.bot-card:hover { border-color: var(--b-accent); transform: translateY(-1px); }
+.bot-card.pending { opacity: .5; cursor: default; }
+.bot-card.pending:hover { transform: none; border-color: var(--b-border); }
+
+.bot-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.bot-name { font-weight: 700; font-size: 14px; }
+.bot-score {
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.bot-score.good { background: rgba(16,185,129,.15); color: var(--b-good); }
+.bot-score.warn { background: rgba(245,158,11,.15); color: var(--b-warn); }
+.bot-score.bad  { background: rgba(239,68,68,.15); color: var(--b-bad); }
+.bot-score.pending { background: var(--b-bg3); color: var(--b-text3); font-weight: 500; font-size: 11px; }
+
+.bot-meta {
+  font-size: 12px;
+  color: var(--b-text3);
+}
+.bot-meta strong { color: var(--b-text2); font-weight: 600; }
+
+.detail {
+  margin-top: 32px;
+  background: var(--b-bg2);
+  border: 1px solid var(--b-border);
+  border-radius: var(--b-r);
+  padding: 24px;
+}
+.detail h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.detail .sub { color: var(--b-text3); font-size: 12px; margin-bottom: 18px; }
+
+.finding {
+  border-top: 1px solid var(--b-border);
+  padding: 12px 0;
+}
+.finding-token {
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  color: var(--b-text);
+  font-size: 13px;
+}
+.finding-issues {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.issue-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(245,158,11,.12);
+  color: var(--b-warn);
+  font-weight: 600;
+}
+.issue-tag.bad { background: rgba(239,68,68,.12); color: var(--b-bad); }
+.finding-values {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+.finding-values .surface { color: var(--b-text3); }
+.finding-values .value {
+  font-family: ui-monospace, monospace;
+  color: var(--b-text2);
+  word-break: break-all;
+}
