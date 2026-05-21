@@ -71,6 +71,27 @@ for (const c of used) {
 }
 const score = used.length === 0 ? 0 : Math.round(100 * coverageSum / used.length);
 
+// Propositions : suggestions ARIA structurées (non auto-appliquées — trop contextuel)
+const proposals = [];
+for (const s of surfaces) {
+  const usages = CHECKS.reduce((a, c) => a + data[s][c.id], 0);
+  if (usages === 0) {
+    proposals.push({
+      type: 'a11y-bootstrap',
+      safety: 'manual',
+      surface: s,
+      rationale: `${SURFACES[s].label} : aucune primitive ARIA détectée. Ajouter au minimum : aria-label sur les boutons icône, role="dialog" + aria-modal sur les modales, .sr-only pour le texte d'accessibilité.`,
+    });
+  } else if (usages < 10) {
+    proposals.push({
+      type: 'a11y-strengthen',
+      safety: 'info',
+      surface: s,
+      rationale: `${SURFACES[s].label} : couverture ARIA faible (${usages} usages). Inspirer-toi de l'app la plus couverte pour atteindre la parité.`,
+    });
+  }
+}
+
 const report = {
   botId: BOT_ID,
   botName: BOT_NAME,
@@ -87,6 +108,7 @@ const report = {
   },
   surfaces: surfaces.map(s => ({ key: s, label: SURFACES[s].label })),
   findings,
+  proposals,
 };
 
 const out = writeReport(import.meta.url, BOT_ID, report);

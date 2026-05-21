@@ -108,7 +108,86 @@ const report = {
   },
   surfaces: surfaces.map(s => ({ key: s, label: SURFACES[s].label })),
   findings,
+  proposals: buildProposals(findings, data),
 };
+
+/**
+ * Génère des propositions de correctifs.
+ * Types :
+ *  - 'replace-var-usage' : remplacer var(--cassé) par var(--alt) (safe pour références cassées)
+ *  - 'rename-var-def'    : renommer un --token en collision (manuel recommandé)
+ *  - 'remove-unused-def' : supprimer une définition jamais utilisée (info, non auto)
+ */
+function buildProposals(findings, data) {
+  const proposals = [];
+  // Map de fallback pour les références cassées connues
+  const FALLBACKS = {
+    '--bg1':    '--bg',
+    '--bg5':    '--bg4',
+    '--text1':  '--text',
+    '--border1':'--border',
+  };
+
+  for (const f of findings) {
+    // Fix 1 : token utilisé sans définition → mapper à un fallback connu si dispo
+    if (f.issues.usedUndefined.length) {
+      const fallback = FALLBACKS[f.token];
+      if (fallback) {
+        for (const s of f.issues.usedUndefined) {
+          // S'assurer que le fallback est défini dans cette surface
+          if (data[s].defs.has(fallback) || surfaces.some(other => data[other].defs.has(fallback))) {
+            proposals.push({
+              type: 'replace-var-usage',
+              safety: 'safe',
+              token: f.token,
+              surface: s,
+              search: `var(${f.token})`,
+              replace: `var(${fallback})`,
+              files: [...SURFACES[s].css, ...SURFACES[s].js],
+              rationale: `${f.token} n'est défini nulle part — fallback vers ${fallback} (mêmes sémantique de fond).`,
+            });
+          }
+        }
+      } else {
+        proposals.push({
+          type: 'manual-define',
+          safety: 'manual',
+          token: f.token,
+          surfaces: f.issues.usedUndefined,
+          rationale: `${f.token} est utilisé mais n'a pas de définition. Définir ${f.token} dans :root ou choisir une variable existante.`,
+        });
+      }
+    }
+
+    // Fix 2 : collision de valeurs → renommage suggéré (non auto)
+    if (f.issues.valueCollision) {
+      // Suggérer préfixage par surface dans la surface "atypique"
+      const sortedVals = Object.entries(f.values);
+      const proposal = {
+        type: 'rename-collision',
+        safety: 'manual',
+        token: f.token,
+        values: f.values,
+        suggestion: `Le token ${f.token} a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).`,
+      };
+      proposals.push(proposal);
+    }
+
+    // Fix 3 : déf inutilisée → suggestion de suppression (info)
+    if (f.issues.definedUnused.length) {
+      for (const s of f.issues.definedUnused) {
+        proposals.push({
+          type: 'remove-unused-def',
+          safety: 'info',
+          token: f.token,
+          surface: s,
+          rationale: `${f.token} est défini dans ${s} mais jamais utilisé — candidat à la suppression.`,
+        });
+      }
+    }
+  }
+  return proposals;
+}
 
 // Step 5: écriture
 const here = dirname(fileURLToPath(import.meta.url));
