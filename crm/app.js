@@ -879,13 +879,13 @@ function renderDashboard() {
       const missing = state.pharmacies.filter(ph => !imported.has(ph.id));
       const pct = Math.round((state.pharmacies.length - missing.length) / state.pharmacies.length * 100);
       const barColor = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
-      return `<div style="background:var(--bg);border:1px solid var(--border1);border-radius:16px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <div style="flex:1;min-width:200px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <span style="font-size:12px;font-weight:700;color:var(--text2)">Couverture import ${curLabel}</span>
             <span style="font-size:14px;font-weight:800;color:${barColor}">${pct}%</span>
           </div>
-          <div style="height:6px;border-radius:3px;background:var(--border1);overflow:hidden">
+          <div style="height:6px;border-radius:3px;background:var(--border);overflow:hidden">
             <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .5s"></div>
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:5px">${state.pharmacies.length - missing.length}/${state.pharmacies.length} pharmacies importées</div>
@@ -941,7 +941,7 @@ function renderDashboard() {
         '<div>' +
         actions.slice(0, 8).map((a, i) => {
           const tel = typeof CLIENTS !== 'undefined' ? (CLIENTS.find(c => (c.nom||'').toUpperCase().trim() === a.ph.name.toUpperCase().trim())?.tel || '') : '';
-          return '<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;' + (i < actions.slice(0,8).length-1 ? 'border-bottom:1px solid var(--border1);' : '') + '">' +
+          return '<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;' + (i < actions.slice(0,8).length-1 ? 'border-bottom:1px solid var(--border);' : '') + '">' +
             '<div style="width:8px;height:8px;border-radius:50%;background:' + a.color + ';flex-shrink:0"></div>' +
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + a.ph.name + '</div>' +
@@ -1086,7 +1086,7 @@ function renderDashboard() {
             </div>
             <div style="font-size:20px;font-weight:800;color:${color};margin-bottom:4px">${fmt(r.actual)}</div>
             <div style="font-size:11px;color:var(--text3);margin-bottom:8px">/ objectif ${fmt(r.target)}</div>
-            <div style="height:5px;border-radius:3px;background:var(--border1);overflow:hidden">
+            <div style="height:5px;border-radius:3px;background:var(--border);overflow:hidden">
               <div style="height:100%;width:${Math.min(pct,100).toFixed(0)}%;background:${color};border-radius:3px"></div>
             </div>
             <div style="font-size:11px;color:${color};font-weight:700;margin-top:5px">${pct.toFixed(1)}%${pct >= 100 ? ' ✓' : ''}</div>
@@ -1110,7 +1110,7 @@ function renderDashboard() {
       </div>
       ${topSwitchSecteur.map(o => {
         const cat = CATS[o.cat] || CATS.mi;
-        return `<div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--border1)">
+        return `<div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--border)">
           <span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.designation}</div>
@@ -1137,21 +1137,21 @@ function renderDashboard() {
           ${prodLostNew.gained.length ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,229,160,.1);color:var(--mint)">${prodLostNew.gained.length} nouveaux</span>` : ''}
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border1)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border)">
         <!-- Perdus -->
-        <div style="border-right:1px solid var(--border1)">
-          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border1)">Perdus depuis ${prevLabel}</div>
+        <div style="border-right:1px solid var(--border)">
+          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border)">Perdus depuis ${prevLabel}</div>
           ${prodLostNew.lost.length ? prodLostNew.lost.map(p => `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px;cursor:pointer" onclick="showProductBreakdown('${(p.label||'').replace(/'/g,"&#39;")}');">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);gap:8px;cursor:pointer" onclick="showProductBreakdown('${(p.label||'').replace(/'/g,"&#39;")}');">
               <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;cursor:pointer">${p.label}</div>
               <div style="font-size:12px;font-weight:700;color:var(--rose);flex-shrink:0">${fmt(p.ca)}</div>
             </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucun produit perdu</div>`}
         </div>
         <!-- Nouveaux -->
         <div>
-          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border1)">Nouveaux en ${curLabel}</div>
+          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border)">Nouveaux en ${curLabel}</div>
           ${prodLostNew.gained.length ? prodLostNew.gained.map(p => `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);gap:8px">
               <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${p.label}</div>
               <div style="font-size:12px;font-weight:700;color:var(--mint);flex-shrink:0">${fmt(p.ca)}</div>
             </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucune nouvelle référence</div>`}
@@ -1173,7 +1173,7 @@ function renderDashboard() {
         </div>
       </div>
       <div style="padding:0 20px 16px">
-        <div style="height:8px;border-radius:4px;background:var(--border1);overflow:hidden;margin-bottom:16px">
+        <div style="height:8px;border-radius:4px;background:var(--border);overflow:hidden;margin-bottom:16px">
           <div style="height:100%;width:${Math.min(ipCoverage.pct, 100).toFixed(1)}%;background:var(--blue);border-radius:4px"></div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
@@ -1191,7 +1191,7 @@ function renderDashboard() {
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px">Top opportunités manquantes</div>
         ${ipCoverage.missed.map((b, i) => {
           const cat = CATS[b.categorie] || CATS.mi;
-          return `<div style="display:flex;align-items:center;gap:12px;padding:6px 0;${i < ipCoverage.missed.length - 1 ? 'border-bottom:1px solid var(--border1)' : ''}">
+          return `<div style="display:flex;align-items:center;gap:12px;padding:6px 0;${i < ipCoverage.missed.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
             <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
             <div style="flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.designation}</div>
             <div style="text-align:right;flex-shrink:0">
@@ -1239,7 +1239,7 @@ function renderDashboard() {
         ${veilleConcurrence.topVeille.length ? `
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px">Exemples de prix concurrents</div>
         ${veilleConcurrence.topVeille.map((item, i) => `
-        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;${i < veilleConcurrence.topVeille.length-1?'border-bottom:1px solid var(--border1)':''}">
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;${i < veilleConcurrence.topVeille.length-1?'border-bottom:1px solid var(--border)':''}">
           <div style="flex:1;min-width:0">
             <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.p.produit}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
@@ -1263,7 +1263,7 @@ function renderDashboard() {
       </div>
       <div>
         ${veilleConcurrence.topAlertes.map((a, i) => `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 20px;${i < veilleConcurrence.topAlertes.length-1?'border-bottom:1px solid var(--border1)':''}">
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 20px;${i < veilleConcurrence.topAlertes.length-1?'border-bottom:1px solid var(--border)':''}">
           <div style="flex:1;min-width:0">
             <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.p.produit}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
@@ -1401,11 +1401,11 @@ function renderDashboard() {
         ${top.map((p, i) => {
           const cat = CATS[p.cat] || CATS.mi;
           const pct = caCur > 0 ? (p.ca / caCur * 100).toFixed(1) : '0';
-          return `<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border1)">
+          return `<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border)">
             <div style="font-size:12px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
-              <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border1)">
+              <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border)">
                 <div style="height:100%;border-radius:2px;background:${cat.color};width:${(p.ca/maxCa*100).toFixed(0)}%"></div>
               </div>
             </div>
@@ -1504,7 +1504,7 @@ function renderDashboard() {
               return catRows.map(c => {
                 const prevData = catPrev[c.key] || { ca: 0, nb: 0 };
                 const pct = totalCur > 0 ? c.ca / totalCur * 100 : 0;
-                return `<tr style="border-bottom:1px solid var(--border1)">
+                return `<tr style="border-bottom:1px solid var(--border)">
                   <td style="padding:10px 16px">
                     <div style="display:flex;align-items:center;gap:8px">
                       <span style="font-size:15px">${c.icon}</span>
@@ -1516,7 +1516,7 @@ function renderDashboard() {
                   <td style="padding:10px 12px;text-align:right">${prevData.ca > 0 ? deltaBadge(c.ca, prevData.ca) : '<span style="color:var(--text4);font-size:11px">—</span>'}</td>
                   <td style="padding:10px 12px;text-align:right">
                     <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
-                      <div style="width:48px;height:5px;border-radius:3px;background:var(--border1);overflow:hidden"><div style="height:100%;width:${pct.toFixed(0)}%;background:${c.color};border-radius:3px"></div></div>
+                      <div style="width:48px;height:5px;border-radius:3px;background:var(--border);overflow:hidden"><div style="height:100%;width:${pct.toFixed(0)}%;background:${c.color};border-radius:3px"></div></div>
                       <span style="font-size:12px;font-weight:600;color:${c.color};min-width:36px;text-align:right">${pct.toFixed(1)}%</span>
                     </div>
                   </td>
@@ -1558,7 +1558,7 @@ function renderDashboard() {
         const urgBg = diff === 0 ? 'rgba(255,176,32,.15)' : diff <= 7 ? 'rgba(0,229,160,.08)' : 'var(--bg)';
         const urgCol = diff === 0 ? 'var(--amber)' : diff <= 7 ? 'var(--mint)' : 'var(--text3)';
         const urgLabel = diff === 0 ? "Aujourd'hui" : diff === 1 ? 'Demain' : diff <= 7 ? 'J+' + diff : dateShortV(date);
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);cursor:pointer" onclick="${ph ? `showPharmaDetail('${ph.id}')` : `navigate('pharmacies')`}">
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer" onclick="${ph ? `showPharmaDetail('${ph.id}')` : `navigate('pharmacies')`}">
           <div style="min-width:64px;padding:3px 8px;border-radius:8px;background:${urgBg};text-align:center;font-size:11px;font-weight:700;color:${urgCol}">${urgLabel}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nom||'—'}</div>
@@ -1605,7 +1605,7 @@ function renderDashboard() {
         const phOD = pharmaMapOD.get((c.nom||'').toUpperCase().trim());
         const daysLate = Math.round((todayOD - date) / 86400000);
         const label = daysLate === 1 ? 'Hier' : daysLate <= 7 ? 'J-' + daysLate : dateShortOD(date);
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);cursor:pointer" onclick="${phOD ? `showPharmaDetail('${phOD.id}')` : `navigate('pharmacies');setTimeout(()=>{pharmaFilter='visite_retard';renderPharmacies();},80)`}">
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer" onclick="${phOD ? `showPharmaDetail('${phOD.id}')` : `navigate('pharmacies');setTimeout(()=>{pharmaFilter='visite_retard';renderPharmacies();},80)`}">
           <div style="min-width:64px;padding:3px 8px;border-radius:8px;background:rgba(255,77,109,.1);text-align:center;font-size:11px;font-weight:700;color:var(--rose)">${label}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nom||'—'}</div>
@@ -2384,7 +2384,7 @@ function renderProspects(search = '') {
       ? `<div style="font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px" title="${c.commentaire}">${c.commentaire}</div>`
       : '';
 
-    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border1)">
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border)">
       <!-- Score indicator -->
       <div style="width:40px;height:40px;border-radius:12px;background:${scColor}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
         <span style="font-size:12px;font-weight:800;color:${scColor}">${scPct}</span>
@@ -2622,15 +2622,15 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <div class="card-header" style="padding:12px 16px">
           <div class="card-title" style="font-size:13px">Informations client</div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--border1)">
-          ${clientInfo.adresse ? `<div style="padding:10px 16px;flex:1;min-width:160px;border-right:1px solid var(--border1)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Adresse</div><div style="font-size:12px;font-weight:600">${clientInfo.adresse}</div><div style="font-size:11px;color:var(--text3)">${clientInfo.cp||''} ${clientInfo.ville||''}</div></div>` : ''}
-          ${clientInfo.tel ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border1)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Téléphone</div><a href="tel:${clientInfo.tel}" style="font-size:12px;font-weight:600;color:var(--blue);text-decoration:none">${clientInfo.tel}</a></div>` : ''}
-          ${clientInfo.email ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border1)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Email</div><a href="mailto:${clientInfo.email}" style="font-size:12px;font-weight:600;color:var(--blue);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:180px">${clientInfo.email}</a></div>` : ''}
-          ${clientInfo.ca2023 > 0 ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border1)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">CA 2023 total</div><div style="font-size:12px;font-weight:600">${fmt(clientInfo.ca2023)}</div></div>` : ''}
+        <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--border)">
+          ${clientInfo.adresse ? `<div style="padding:10px 16px;flex:1;min-width:160px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Adresse</div><div style="font-size:12px;font-weight:600">${clientInfo.adresse}</div><div style="font-size:11px;color:var(--text3)">${clientInfo.cp||''} ${clientInfo.ville||''}</div></div>` : ''}
+          ${clientInfo.tel ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Téléphone</div><a href="tel:${clientInfo.tel}" style="font-size:12px;font-weight:600;color:var(--blue);text-decoration:none">${clientInfo.tel}</a></div>` : ''}
+          ${clientInfo.email ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Email</div><a href="mailto:${clientInfo.email}" style="font-size:12px;font-weight:600;color:var(--blue);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:180px">${clientInfo.email}</a></div>` : ''}
+          ${clientInfo.ca2023 > 0 ? `<div style="padding:10px 16px;flex:1;min-width:120px;border-right:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">CA 2023 total</div><div style="font-size:12px;font-weight:600">${fmt(clientInfo.ca2023)}</div></div>` : ''}
           ${clientInfo.gros1 ? `<div style="padding:10px 16px;flex:1;min-width:120px"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Grossiste</div><div style="font-size:12px;font-weight:600">${clientInfo.gros1}${clientInfo.gros2 ? ' · ' + clientInfo.gros2 : ''}</div></div>` : ''}
         </div>
         ${clientInfo.commentaire && clientInfo.commentaire.trim() ? `
-        <div style="padding:10px 16px;border-top:1px solid var(--border1);background:rgba(255,176,32,.04)">
+        <div style="padding:10px 16px;border-top:1px solid var(--border);background:rgba(255,176,32,.04)">
           <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Commentaire</div>
           <div style="font-size:12px;color:var(--text2);line-height:1.5">${clientInfo.commentaire}</div>
         </div>` : ''}
@@ -2652,11 +2652,11 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           const cat = CATS[p.cat] || CATS.mi;
           const pct = (p.ca / caCur * 100).toFixed(1);
           const escapedLabel = (p.label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-          return `<div onclick="showProductBreakdown('${escapedLabel}')" style="display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border1);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+          return `<div onclick="showProductBreakdown('${escapedLabel}')" style="display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
             <div style="font-size:11px;font-weight:800;color:var(--text3);width:18px;flex-shrink:0;text-align:right">${i+1}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
-              <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border1)">
+              <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border)">
                 <div style="height:100%;border-radius:2px;background:${cat.color};width:${(p.ca/maxCa*100).toFixed(0)}%;transition:width .4s"></div>
               </div>
             </div>
@@ -2708,7 +2708,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         const row = (d, color, arrow) => {
           const cat = CATS[d.cat] || CATS.mi;
           const pct = d.prev > 0 ? ((d.delta / d.prev) * 100).toFixed(0) : '';
-          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 20px;border-bottom:1px solid var(--border1)">
+          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 20px;border-bottom:1px solid var(--border)">
             <span style="font-size:14px">${arrow}</span>
             <div style="flex:1;min-width:0;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.label}</div>
             <span style="font-size:10px;padding:1px 5px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:600;flex-shrink:0">${cat.icon}</span>
@@ -2803,13 +2803,13 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
               <div style="font-size:11px;color:var(--text3)">taux conversion direct</div>
             </div>` : ''}
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border1)">
-            <div style="padding:14px 20px;text-align:center;border-right:1px solid var(--border1)">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border)">
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid var(--border)">
               <div style="font-size:22px;font-weight:900;color:#11a63c">${fmt(wmlEntDet.ca)}</div>
               <div style="font-size:10px;color:var(--text3);margin-top:4px">CA groupement 4 mois</div>
             </div>
-            <div style="padding:14px 20px;text-align:center;border-right:1px solid var(--border1)">
-              <div style="font-size:22px;font-weight:900;color:var(--text1)">${fmt(wmlAvgMo)}</div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid var(--border)">
+              <div style="font-size:22px;font-weight:900;color:var(--text)">${fmt(wmlAvgMo)}</div>
               <div style="font-size:10px;color:var(--text3);margin-top:4px">CA moyen / mois</div>
             </div>
             <div style="padding:14px 20px;text-align:center">
@@ -2817,7 +2817,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
               <div style="font-size:10px;color:var(--text3);margin-top:4px">Marge brute</div>
             </div>
           </div>
-          ${caM.length ? `<div style="display:flex;gap:6px;padding:12px 20px;border-top:1px solid var(--border1)">
+          ${caM.length ? `<div style="display:flex;gap:6px;padding:12px 20px;border-top:1px solid var(--border)">
             ${months.map((mo,i) => {
               const v = caM[i] || 0;
               const maxV = Math.max(...caM, 1);
@@ -2829,10 +2829,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
               </div>`;
             }).join('')}
           </div>` : ''}
-          ${(wmlEntDet.pr||[]).length > 0 ? `<div style="border-top:1px solid var(--border1)">
+          ${(wmlEntDet.pr||[]).length > 0 ? `<div style="border-top:1px solid var(--border)">
             <div style="padding:8px 20px 4px;font-size:10px;font-weight:700;color:#11a63c;text-transform:uppercase;letter-spacing:.4px">Top produits groupement</div>
             ${(wmlEntDet.pr||[]).slice(0,3).map(([nom,ca,,qt],i) => `
-              <div style="display:flex;align-items:center;gap:10px;padding:7px 20px;border-bottom:1px solid var(--border1)">
+              <div style="display:flex;align-items:center;gap:10px;padding:7px 20px;border-bottom:1px solid var(--border)">
                 <div style="flex:1;min-width:0;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${nom}</div>
                 <div style="font-size:12px;font-weight:700;color:#11a63c;flex-shrink:0">${fmt(ca)}</div>
                 <div style="font-size:10px;color:var(--text3);flex-shrink:0">${Math.round(qt||0)} u</div>
@@ -2862,13 +2862,13 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </div>
           ${pharmaYTDprev > 0 ? deltaBadge(pharmaYTD, pharmaYTDprev) : ''}
         </div>
-        <div style="display:grid;grid-template-columns:${pharmaYTDprev > 0 ? '1fr 1fr 1fr' : '1fr 1fr'};gap:0;border-top:1px solid var(--border1)">
-          <div style="padding:16px 20px;text-align:center;${pharmaYTDprev > 0 ? 'border-right:1px solid var(--border1);' : ''}">
+        <div style="display:grid;grid-template-columns:${pharmaYTDprev > 0 ? '1fr 1fr 1fr' : '1fr 1fr'};gap:0;border-top:1px solid var(--border)">
+          <div style="padding:16px 20px;text-align:center;${pharmaYTDprev > 0 ? 'border-right:1px solid var(--border);' : ''}">
             <div style="font-size:24px;font-weight:900;color:var(--blue);letter-spacing:-1px">${fmt(pharmaYTD)}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:4px">CA Jan–${monthName(curM)} ${curY}</div>
           </div>
           ${pharmaYTDprev > 0 ? `
-          <div style="padding:16px 20px;text-align:center;border-right:1px solid var(--border1)">
+          <div style="padding:16px 20px;text-align:center;border-right:1px solid var(--border)">
             <div style="font-size:24px;font-weight:900;color:var(--text2);letter-spacing:-1px">${fmt(pharmaYTDprev)}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:4px">CA Jan–${monthName(curM)} ${curY-1}</div>
           </div>
@@ -2912,7 +2912,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         const top = veilleRows.slice(0, 6);
         if (!top.length) return '';
         const rows = top.map(a => `
-          <div style="padding:9px 20px;border-bottom:1px solid var(--border1)">
+          <div style="padding:9px 20px;border-bottom:1px solid var(--border)">
             <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${a.label}${a.prixAchat ? `<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:8px">achat IP ${fmtP(a.prixAchat)}</span>` : ''}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               ${a.sorted.map(([prix, src, col]) => `<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${col}18;color:${col};font-weight:600">${src} ${fmtP(prix)}</span>`).join('')}
@@ -3020,7 +3020,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           ${suggestions.map((b, i) => {
             const cat = CATS[b.categorie] || CATS.mi;
             const fd = b.is_froid ? ' ❄️' : '';
-            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border1)">
+            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border)">
               <div style="font-size:13px;font-weight:700;color:var(--text3);width:18px;text-align:right;flex-shrink:0">${i+1}</div>
               <span style="font-size:10px;padding:1px 5px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
               <div style="flex:1;min-width:0">
@@ -3040,7 +3040,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         try { notes = JSON.parse(localStorage.getItem(notesKey) || '[]'); } catch { notes = []; }
         const notesHtml = notes.length
           ? notes.slice(0, 5).map(n => `
-              <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border1)">
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border)">
                 <div style="flex-shrink:0;font-size:11px;color:var(--text3);white-space:nowrap;margin-top:2px">${n.date}</div>
                 <div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">${n.text.replace(/</g,'&lt;')}</div>
                 <button onclick="deleteVisitNote('${pharma.id}',${n.id})" style="background:none;border:none;cursor:pointer;color:var(--text4);font-size:14px;padding:0;flex-shrink:0">✕</button>
@@ -3052,7 +3052,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             <span style="font-size:11px;color:var(--text3)">${notes.length} note${notes.length > 1 ? 's' : ''}</span>
           </div>
           ${notesHtml}
-          <div style="padding:10px 20px;border-top:1px solid var(--border1)">
+          <div style="padding:10px 20px;border-top:1px solid var(--border)">
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
               ${['✅ Commande passée','💬 Objection prix','📦 Produit manquant','🔄 Switch proposé','📅 RDV planifié'].map(t =>
                 `<button onclick="document.getElementById('visit-note-input-${pharma.id}').value='${t} — ';document.getElementById('visit-note-input-${pharma.id}').focus()"
@@ -3249,7 +3249,7 @@ Délégué commercial Intégral Pharma`;
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
   modal.innerHTML = `
     <div style="background:var(--bg);border-radius:20px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:0 32px 100px rgba(0,0,0,.4)">
-      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;justify-content:space-between;align-items:center">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:15px;font-weight:700">Email généré — ${pharma.name}</div>
         <button onclick="document.getElementById('email-gen-modal').remove()" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
       </div>
@@ -3393,7 +3393,7 @@ function renderProduits() {
         <span style="font-size:18px">${f.icon}</span>
         <span style="font-size:12px;font-weight:700;color:${f.color};text-transform:uppercase;letter-spacing:.5px">${f.label}</span>
       </div>
-      <div style="font-size:20px;font-weight:800;color:var(--text1)">${fmt(f.ca)}</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)">${fmt(f.ca)}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">CA HT</div>
       <div style="display:flex;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border2)">
         <div><div style="font-size:13px;font-weight:700;color:var(--mint)">${fmt(f.marge)}</div><div style="font-size:10px;color:var(--text3)">Marge</div></div>
@@ -3589,7 +3589,7 @@ function renderProduits() {
       </div>
       ${accelRows.map((r, i) => {
         const cat = CATS[r.cat] || CATS.mi;
-        return `<div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid var(--border1)">
+        return `<div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid var(--border)">
           <div style="font-size:12px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.label}</div>
@@ -3615,7 +3615,7 @@ function renderProduits() {
       </div>
       ${declineRows.map((r, i) => {
         const cat = CATS[r.cat] || CATS.mi;
-        return `<div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid var(--border1)">
+        return `<div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid var(--border)">
           <div style="font-size:12px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.label}</div>
@@ -3899,7 +3899,7 @@ function showProductBreakdown(productName) {
   modal.innerHTML = `
     <div style="background:var(--bg);border-radius:20px;width:100%;max-width:700px;max-height:88vh;overflow-y:auto;box-shadow:0 32px 100px rgba(0,0,0,.4)">
       <!-- Header -->
-      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
         <div>
           <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.3">${productName}</div>
           <div style="font-size:12px;color:var(--text3);margin-top:4px">${pharmaRows.length} pharmacie${pharmaRows.length > 1 ? 's' : ''} · CA total ${fmt(totalCa)}</div>
@@ -3923,21 +3923,21 @@ function showProductBreakdown(productName) {
                 <span style="font-size:11px;color:var(--text3);margin-left:6px">${fmtNum(Math.round(r.qte))} u</span>
               </div>
             </div>
-            <div style="height:6px;border-radius:3px;background:var(--border1);overflow:hidden">
+            <div style="height:6px;border-radius:3px;background:var(--border);overflow:hidden">
               <div style="height:100%;width:${(r.ca / maxCa * 100).toFixed(0)}%;background:${r.color};border-radius:3px"></div>
             </div>
           </div>`).join('')}
 
         <!-- Évolution mensuelle Chart.js -->
         ${monthKeys.length > 1 ? `
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border1)">
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
           <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Évolution mensuelle (CA)</div>
           <div style="position:relative;height:160px"><canvas id="prod-breakdown-chart"></canvas></div>
         </div>` : ''}
 
         <!-- Benchmark data -->
         ${bench ? `
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border1)">
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
           <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Données marché (Ameli / IP)</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:10px">
             ${bench.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--blue)">${fmtNum(bench.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Qté IP</div></div>` : ''}
@@ -4313,7 +4313,7 @@ function renderObjectifs() {
                   <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
                     ${r.actual > 0 ? `<span style="font-size:12px;font-weight:700;color:${color}">${fmt(r.actual)}</span>` : `<span style="font-size:11px;color:var(--border2)">—</span>`}
                     ${r.pct !== null ? `
-                      <div style="width:48px;height:4px;border-radius:2px;background:var(--border1);overflow:hidden">
+                      <div style="width:48px;height:4px;border-radius:2px;background:var(--border);overflow:hidden">
                         <div style="height:100%;width:${Math.min(r.pct, 100).toFixed(0)}%;background:${color};border-radius:2px"></div>
                       </div>
                       <span style="font-size:10px;color:${color};font-weight:600">${r.pct.toFixed(0)}%</span>` : ''}
@@ -4357,7 +4357,7 @@ function renderObjectifs() {
       <div style="font-size:24px;font-weight:900;color:${color};margin-bottom:4px">${fmt(r.actual)}</div>
       ${r.target > 0 ? `
         <div style="font-size:11px;color:var(--text3);margin-bottom:10px">/ objectif ${fmt(r.target)}</div>
-        <div style="height:6px;border-radius:3px;background:var(--border1);overflow:hidden">
+        <div style="height:6px;border-radius:3px;background:var(--border);overflow:hidden">
           <div style="height:100%;width:${Math.min(pct,100).toFixed(0)}%;background:${color};border-radius:3px;transition:width .5s ease"></div>
         </div>
         <div style="font-size:11px;color:${color};font-weight:700;margin-top:6px">${pct.toFixed(1)}% atteint</div>
@@ -4429,7 +4429,7 @@ function renderObjectifs() {
                     <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text3)">${r.targetYTD > 0 ? fmt(r.targetYTD) : '—'}</td>
                     <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:${color}">${r.pct !== null ? r.pct.toFixed(1) + '%' : '—'}</td>
                     <td style="padding:10px 16px;width:120px">
-                      <div style="height:6px;border-radius:3px;background:var(--border1)">
+                      <div style="height:6px;border-radius:3px;background:var(--border)">
                         <div style="height:100%;width:${r.pct !== null ? Math.min(r.pct,100).toFixed(0) : 0}%;background:${color};border-radius:3px"></div>
                       </div>
                     </td>
@@ -4728,7 +4728,7 @@ function showEditPharmacyModal(pharmacyId) {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
   modal.innerHTML = `
     <div style="background:var(--bg);border-radius:16px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.4)">
-      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;justify-content:space-between;align-items:center">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:15px;font-weight:700">Modifier la pharmacie</div>
         <button onclick="document.getElementById('edit-pharma-modal').remove()" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:14px;color:var(--text2)">✕</button>
       </div>
@@ -5364,7 +5364,7 @@ function showBenchDetail(idx) {
   modal.innerHTML = `
     <div style="background:var(--bg);border-radius:20px;width:100%;max-width:720px;max-height:88vh;overflow-y:auto;box-shadow:0 32px 100px rgba(0,0,0,.4)">
       <!-- Header -->
-      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;align-items:flex-start;gap:12px;justify-content:space-between">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;justify-content:space-between">
         <div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
             <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc};font-weight:700">${d.categorie.toUpperCase()}</span>
@@ -5468,7 +5468,7 @@ function showBenchDetail(idx) {
       </div>
 
       <!-- Footer actions -->
-      <div style="padding:16px 24px;border-top:1px solid var(--border1);display:flex;gap:10px;flex-wrap:wrap">
+      <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap">
         <button onclick="catAddBenchToSimIdx(${idx})" class="btn btn-primary" style="font-size:12px">+ Ajouter au simulateur</button>
         <button onclick="document.getElementById('bench-detail-modal').remove()" class="btn btn-ghost" style="font-size:12px">Fermer</button>
       </div>
@@ -5738,7 +5738,7 @@ function renderCatalogue() {
       style="padding:5px 12px;border-radius:8px;border:1px solid ${inSim ? 'var(--mint)' : 'var(--blue)'};background:${inSim ? 'rgba(5,150,105,.1)' : 'var(--blue)'};color:${inSim ? 'var(--mint)' : '#fff'};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:72px;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
       ${inSim ? '✓ Ajouté' : '+ Sim'}
     </button>`;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border1);transition:background .15s;cursor:pointer" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${froid}${b.designation}</div>
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap">
@@ -6592,7 +6592,7 @@ function renderOffilog() {
       : '';
 
     const competHtml = (hasDrak || hasCap || hasLecl || hasPharma || hasMaxi) ? `
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border1)">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
         ${hasPharma ? `<div style="font-size:10px;color:var(--text3)">🏥 <span style="color:var(--mint);font-weight:700">${fmtP(p.prix_pharmacie)}</span> <span style="opacity:.6">Apothical</span> ${pharmaDeltaHtml}</div>` : ''}
         ${hasDrak   ? `<div style="font-size:10px;color:var(--text3)">🛒 <span style="color:#6366f1;font-weight:600">${fmtP(p.prix_drakkars)}</span> <span style="opacity:.6">Drakkars</span></div>` : ''}
         ${hasCap    ? `<div style="font-size:10px;color:var(--text3)">🏪 <span style="color:#ea580c;font-weight:600">${fmtP(p.prix_cap3000)}</span> <span style="opacity:.6">Cap3000</span></div>` : ''}
@@ -6607,7 +6607,7 @@ function renderOffilog() {
     const prixAchat = prixDisplay;
     const isAlerte = prixAchat != null && [p.prix_drakkars, p.prix_cap3000, p.prix_leclerc, p.prix_pharmacie, p.prix_maxi].some(v => v != null && v > 0 && v < prixAchat);
 
-    return `<div style="background:var(--bg);border-radius:16px;border:${isAlerte ? '1.5px solid rgba(220,38,38,.6)' : '1px solid var(--border1)'};overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer"
+    return `<div style="background:var(--bg);border-radius:16px;border:${isAlerte ? '1.5px solid rgba(220,38,38,.6)' : '1px solid var(--border)'};overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s;cursor:pointer"
       onclick="showOffiDetail(${startIdx + i})"
       onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,.12)';this.style.transform='translateY(-2px)'"
       onmouseout="this.style.boxShadow='';this.style.transform=''">
@@ -6668,7 +6668,7 @@ function renderOffilog() {
             <span style="font-size:10px;color:var(--text3)">Marge</span>
             <span style="font-size:11px;font-weight:700;color:${margeColor}">${p.marge_pct.toFixed(1)}%</span>
           </div>
-          <div style="height:4px;border-radius:2px;background:var(--border1);overflow:hidden">
+          <div style="height:4px;border-radius:2px;background:var(--border);overflow:hidden">
             <div style="height:100%;width:${margePct}%;background:${margeColor};border-radius:2px;transition:width .4s"></div>
           </div>
         </div>` : ''}
@@ -6683,7 +6683,7 @@ function renderOffilog() {
 
   // ── Table view ────────────────────────────────
   const tableHtml = page.length ? `
-  <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border1)">
+  <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border)">
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead>
         <tr style="background:var(--bg2);border-bottom:2px solid var(--border2)">
@@ -6707,7 +6707,7 @@ function renderOffilog() {
           const deltaColor = deltaRef == null ? '' : deltaRef > 0.05 ? '#10B981' : deltaRef < -0.05 ? '#F59E0B' : '#6B7280';
           const margeColor = p.marge_pct == null ? 'var(--text3)' : p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444';
           const img = p.img ? `<img src="${p.img}" style="width:28px;height:28px;object-fit:contain;border-radius:4px;margin-right:8px;vertical-align:middle" onerror="this.style.display='none'">` : '';
-          return `<tr style="border-bottom:1px solid var(--border1);transition:background .12s;cursor:pointer" onclick="showOffiDetail(${startIdx + i})" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+          return `<tr style="border-bottom:1px solid var(--border);transition:background .12s;cursor:pointer" onclick="showOffiDetail(${startIdx + i})" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
             <td style="padding:8px 12px;max-width:260px">
               <div style="display:flex;align-items:center">
                 ${img}
@@ -6798,7 +6798,7 @@ function renderOffilog() {
   </div>
 
   <!-- Search + role filters -->
-  <div style="background:var(--bg);border:1px solid var(--border1);border-radius:16px;padding:14px 16px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:220px;border:1.5px solid var(--border2);border-radius:12px;padding:8px 12px;background:var(--bg2);transition:border-color .15s" onfocusin="this.style.borderColor='${OFFILOG_ORANGE}'" onfocusout="this.style.borderColor='var(--border2)'">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -6906,7 +6906,7 @@ function showOffiDetail(idx) {
     p.prix_maxi      > 0 ? { nom: 'Maxipara',  prix: p.prix_maxi,      col: '#FFB020' } : null,
   ].filter(Boolean);
   const concBadgesHtml = concBadges.length ? `
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border1)">
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
       <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Prix publics concurrents</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${concBadges.map(b => `<div style="display:flex;flex-direction:column;align-items:center;padding:8px 12px;border-radius:10px;background:${b.col}15;border:1px solid ${b.col}40;min-width:72px;text-align:center">
@@ -6921,7 +6921,7 @@ function showOffiDetail(idx) {
     const dvHtml = dv != null
       ? `<span style="font-size:10px;margin-left:8px;color:${dv > 0 ? '#10B981' : '#F59E0B'};font-weight:700">${dv > 0 ? '+' : ''}${fmtP(dv)}</span>`
       : '';
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border1)">
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:12px;color:var(--text3)">${pr.label}</span>
       <div style="text-align:right"><span style="font-size:15px;font-weight:700;color:${pr.color}">${fmtP(pr.value)}</span>${dvHtml}</div>
     </div>`;
@@ -6949,7 +6949,7 @@ function showOffiDetail(idx) {
     </div>` : '';
 
   const ameliHtml = bm ? `
-    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border1)">
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Benchmark Ameli</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         ${bm.ip_qty ? `<div style="background:var(--bg2);padding:10px;border-radius:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--blue)">${fmtNum(bm.ip_qty)}</div><div style="font-size:10px;color:var(--text3)">Unités IP</div></div>` : ''}
@@ -6968,7 +6968,7 @@ function showOffiDetail(idx) {
   modal.innerHTML = `
     <div style="background:var(--bg);border-radius:24px;width:100%;max-width:800px;max-height:90vh;overflow:hidden;box-shadow:0 32px 100px rgba(0,0,0,.4);display:flex;flex-direction:column">
       <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border1);flex-shrink:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <span style="font-size:11px;font-weight:700;color:${um.color};text-transform:uppercase;letter-spacing:1px">${p.univers || '—'}</span>
           ${p.dans_offilog ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${OFFILOG_ORANGE}22;color:${OFFILOG_ORANGE};font-weight:700;border:1px solid ${OFFILOG_ORANGE}44">IP</span>` : ''}
@@ -6981,7 +6981,7 @@ function showOffiDetail(idx) {
       <!-- Body -->
       <div style="display:flex;flex:1;overflow:hidden;min-height:0">
         <!-- Left: photo + identity -->
-        <div style="flex:0 0 260px;padding:20px;border-right:1px solid var(--border1);overflow-y:auto;display:flex;flex-direction:column;gap:0">
+        <div style="flex:0 0 260px;padding:20px;border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;gap:0">
           <div style="border-radius:16px;background:${um.bg};min-height:180px;display:flex;align-items:center;justify-content:center;padding:16px;margin-bottom:14px">
             ${imgHtml}
           </div>
@@ -7010,12 +7010,12 @@ function showOffiDetail(idx) {
               ${deltaComp > 0 ? `✅ IP moins cher de ${fmtP(deltaComp)} vs concurrent le moins cher` : `⚠️ IP plus cher de ${fmtP(Math.abs(deltaComp))} vs concurrent le moins cher`}
             </span>
           </div>` : ''}
-          ${p.marge_pct != null ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border1)">
+          ${p.marge_pct != null ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
               <span style="font-size:12px;color:var(--text3)">Marge pharmacie estimée</span>
               <span style="font-size:18px;font-weight:800;color:${p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444'}">${p.marge_pct.toFixed(1)}%</span>
             </div>
-            <div style="height:8px;border-radius:4px;background:var(--border1);overflow:hidden">
+            <div style="height:8px;border-radius:4px;background:var(--border);overflow:hidden">
               <div style="height:100%;width:${Math.min(100, p.marge_pct)}%;background:${p.marge_pct >= 40 ? '#10B981' : p.marge_pct >= 20 ? '#F59E0B' : '#EF4444'};border-radius:4px"></div>
             </div>
           </div>` : ''}
@@ -7139,7 +7139,7 @@ function grpRenderModal(grpId) {
   modal.innerHTML = `
     <div style="background:var(--bg);border-radius:20px;width:100%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden">
       <!-- Header modal -->
-      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
         <div>
           <div style="font-size:16px;font-weight:800;color:var(--text)">Ajouter une pharmacie</div>
           <div style="font-size:12px;color:var(--text3);margin-top:2px">${grp.nom} — ${members.length} membre(s) actuel(s)</div>
@@ -7148,7 +7148,7 @@ function grpRenderModal(grpId) {
           style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2)">✕</button>
       </div>
       <!-- Search -->
-      <div style="padding:12px 24px;border-bottom:1px solid var(--border1);flex-shrink:0">
+      <div style="padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
         <div style="display:flex;align-items:center;gap:8px;border:1.5px solid var(--border2);border-radius:10px;padding:8px 12px;background:var(--bg2)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input type="text" placeholder="Rechercher par nom ou ville…" value="${grpSearchModal}"
@@ -7183,7 +7183,7 @@ function grpRenderModal(grpId) {
         }
       </div>
       <!-- Footer -->
-      <div style="padding:14px 24px;border-top:1px solid var(--border1);display:flex;justify-content:flex-end;flex-shrink:0">
+      <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;flex-shrink:0">
         <button onclick="document.getElementById('grp-modal').remove();renderGroupements()"
           style="padding:9px 22px;border-radius:10px;background:${grp.couleur};color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">
           Terminé
@@ -7350,7 +7350,7 @@ function renderGrpDashboard(grp) {
         ${members.map(ph => {
           const c = sumCA(memberSalesCur.filter(s => s.pharmacyId === ph.id));
           const p = sumCA(memberSalesPrev.filter(s => s.pharmacyId === ph.id));
-          return `<tr style="border-bottom:1px solid var(--border1)">
+          return `<tr style="border-bottom:1px solid var(--border)">
             <td style="padding:10px 16px">
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="width:8px;height:8px;border-radius:50%;background:${ph.color};flex-shrink:0"></span>
@@ -7376,11 +7376,11 @@ function renderGrpDashboard(grp) {
     ${topProds.map((p, i) => {
       const cat = CATS[p.cat] || CATS.mi;
       const maxCa = topProds[0].ca;
-      return `<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border1)">
+      return `<div style="display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
-          <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border1)">
+          <div style="margin-top:3px;height:3px;border-radius:2px;background:var(--border)">
             <div style="height:100%;border-radius:2px;background:${cat.color};width:${(p.ca/maxCa*100).toFixed(0)}%"></div>
           </div>
         </div>
@@ -7442,7 +7442,7 @@ function renderGrpPharmacies(grp) {
             const ville = ci?.ville || '—';
             const ca = ci?.ca2023 ? fmt(ci.ca2023) : '—';
             const gx = ci?.potentielGx > 0 ? fmt(ci.potentielGx) : '—';
-            return `<tr style="border-bottom:1px solid var(--border1);transition:background .12s"
+            return `<tr style="border-bottom:1px solid var(--border);transition:background .12s"
               onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
               <td style="padding:12px 16px">
                 <div style="display:flex;align-items:center;gap:10px">
@@ -7527,7 +7527,7 @@ function renderGrpCommandes(grp) {
       const importsRows = period.imports.map(imp => {
         const ph = state.pharmacies.find(p => p.id === imp.pharmacyId);
         const phCA = sumCA(getSales({ pharmacyId: imp.pharmacyId, year: imp.year, month: imp.month }));
-        return `<div style="display:flex;align-items:center;gap:12px;padding:8px 20px;border-bottom:1px solid var(--border1)">
+        return `<div style="display:flex;align-items:center;gap:12px;padding:8px 20px;border-bottom:1px solid var(--border)">
           <div style="width:8px;height:8px;border-radius:50%;background:${ph?.color || '#ccc'};flex-shrink:0"></div>
           <div style="flex:1;font-size:12px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph?.name || '—'}</div>
           <div style="font-size:11px;color:var(--text3);white-space:nowrap">${imp.filename}</div>
@@ -7541,7 +7541,7 @@ function renderGrpCommandes(grp) {
           <div style="font-size:13px;font-weight:700">${label}</div>
           <div style="font-size:15px;font-weight:900;color:${grp.couleur}">${ca > 0 ? fmt(ca) : '—'}</div>
         </div>
-        <div style="border:1px solid var(--border1);border-radius:10px;overflow:hidden">${importsRows}</div>
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">${importsRows}</div>
       </div>`;
     }).join('');
 
@@ -7836,7 +7836,7 @@ function proposerCommande(pharmacyId) {
   modal.id = 'proposer-cmd-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px';
   modal.innerHTML = `
-    <div style="background:var(--bg1);border:1px solid var(--border2);border-radius:20px;max-width:480px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+    <div style="background:var(--bg);border:1px solid var(--border2);border-radius:20px;max-width:480px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
       <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px">🛒 Proposer une commande</div>
       <div style="font-size:13px;color:var(--text3);margin-bottom:20px">${pharma.name} · basé sur ${monthName(month)} ${year}</div>
       <div style="margin-bottom:16px">
@@ -8313,7 +8313,7 @@ function showGlobalSearch() {
   modal.innerHTML = `
     <div style="background:var(--bg);border-radius:20px;width:100%;max-width:620px;box-shadow:0 32px 100px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;max-height:75vh">
       <!-- Search input -->
-      <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border1);flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input id="gs-input" type="text" placeholder="Rechercher produit, pharmacie, marque, EAN…"
           style="flex:1;border:none;background:transparent;outline:none;font-size:16px;color:var(--text);font-family:inherit"

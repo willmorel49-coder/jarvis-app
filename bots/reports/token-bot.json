@@ -1,15 +1,15 @@
 {
   "botId": "token-bot",
   "botName": "Token Bot",
-  "generatedAt": "2026-05-21T08:16:28.799Z",
-  "score": 29,
+  "generatedAt": "2026-05-21T08:19:29.346Z",
+  "score": 31,
   "summary": {
-    "totalTokens": 99,
-    "issueCount": 70,
+    "totalTokens": 97,
+    "issueCount": 67,
     "bySurface": {
       "crm": {
         "defined": 47,
-        "used": 37
+        "used": 34
       },
       "catalogue": {
         "defined": 0,
@@ -17,7 +17,7 @@
       },
       "opso": {
         "defined": 90,
-        "used": 63
+        "used": 61
       }
     }
   },
@@ -141,24 +141,6 @@
         ],
         "definedUnused": [],
         "valueCollision": true,
-        "partialCoverage": true
-      }
-    },
-    {
-      "token": "--bg1",
-      "definedIn": [],
-      "usedIn": [
-        "crm",
-        "opso"
-      ],
-      "values": {},
-      "issues": {
-        "usedUndefined": [
-          "crm",
-          "opso"
-        ],
-        "definedUnused": [],
-        "valueCollision": false,
         "partialCoverage": true
       }
     },
@@ -357,27 +339,6 @@
         ],
         "valueCollision": true,
         "partialCoverage": false
-      }
-    },
-    {
-      "token": "--border1",
-      "definedIn": [
-        "opso"
-      ],
-      "usedIn": [
-        "crm",
-        "opso"
-      ],
-      "values": {
-        "opso": "rgba(0,0,0,0.07)"
-      },
-      "issues": {
-        "usedUndefined": [
-          "crm"
-        ],
-        "definedUnused": [],
-        "valueCollision": false,
-        "partialCoverage": true
       }
     },
     {
@@ -1337,24 +1298,6 @@
       }
     },
     {
-      "token": "--text1",
-      "definedIn": [],
-      "usedIn": [
-        "crm",
-        "opso"
-      ],
-      "values": {},
-      "issues": {
-        "usedUndefined": [
-          "crm",
-          "opso"
-        ],
-        "definedUnused": [],
-        "valueCollision": false,
-        "partialCoverage": true
-      }
-    },
-    {
       "token": "--text2",
       "definedIn": [
         "crm",
@@ -1511,32 +1454,6 @@
       "suggestion": "Le token --bg a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
     },
     {
-      "type": "replace-var-usage",
-      "safety": "safe",
-      "token": "--bg1",
-      "surface": "crm",
-      "search": "var(--bg1)",
-      "replace": "var(--bg)",
-      "files": [
-        "crm/style.css",
-        "crm/app.js"
-      ],
-      "rationale": "--bg1 n'est défini nulle part — fallback vers --bg (mêmes sémantique de fond)."
-    },
-    {
-      "type": "replace-var-usage",
-      "safety": "safe",
-      "token": "--bg1",
-      "surface": "opso",
-      "search": "var(--bg1)",
-      "replace": "var(--bg)",
-      "files": [
-        "opso/style.css",
-        "opso/app.js"
-      ],
-      "rationale": "--bg1 n'est défini nulle part — fallback vers --bg (mêmes sémantique de fond)."
-    },
-    {
       "type": "manual-define",
       "safety": "manual",
       "token": "--bg2",
@@ -1661,19 +1578,6 @@
       "token": "--blue2",
       "surface": "opso",
       "rationale": "--blue2 est défini dans opso mais jamais utilisé — candidat à la suppression."
-    },
-    {
-      "type": "replace-var-usage",
-      "safety": "safe",
-      "token": "--border1",
-      "surface": "crm",
-      "search": "var(--border1)",
-      "replace": "var(--border)",
-      "files": [
-        "crm/style.css",
-        "crm/app.js"
-      ],
-      "rationale": "--border1 n'est défini nulle part — fallback vers --border (mêmes sémantique de fond)."
     },
     {
       "type": "remove-unused-def",
@@ -2168,32 +2072,6 @@
       "token": "--text-xs",
       "surface": "opso",
       "rationale": "--text-xs est défini dans opso mais jamais utilisé — candidat à la suppression."
-    },
-    {
-      "type": "replace-var-usage",
-      "safety": "safe",
-      "token": "--text1",
-      "surface": "crm",
-      "search": "var(--text1)",
-      "replace": "var(--text)",
-      "files": [
-        "crm/style.css",
-        "crm/app.js"
-      ],
-      "rationale": "--text1 n'est défini nulle part — fallback vers --text (mêmes sémantique de fond)."
-    },
-    {
-      "type": "replace-var-usage",
-      "safety": "safe",
-      "token": "--text1",
-      "surface": "opso",
-      "search": "var(--text1)",
-      "replace": "var(--text)",
-      "files": [
-        "opso/style.css",
-        "opso/app.js"
-      ],
-      "rationale": "--text1 n'est défini nulle part — fallback vers --text (mêmes sémantique de fond)."
     },
     {
       "type": "manual-define",

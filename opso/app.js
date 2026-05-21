@@ -3393,7 +3393,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
               <div style="font-size:10px;color:var(--text3);margin-top:4px">CA groupement 4 mois</div>
             </div>
             <div style="padding:14px 20px;text-align:center;border-right:1px solid var(--border1)">
-              <div style="font-size:22px;font-weight:900;color:var(--text1)">${fmt(wmlAvgMo)}</div>
+              <div style="font-size:22px;font-weight:900;color:var(--text)">${fmt(wmlAvgMo)}</div>
               <div style="font-size:10px;color:var(--text3);margin-top:4px">CA moyen / mois</div>
             </div>
             <div style="padding:14px 20px;text-align:center">
@@ -4014,7 +4014,7 @@ function renderProduits() {
         <span style="font-size:18px">${f.icon}</span>
         <span style="font-size:12px;font-weight:700;color:${f.color};text-transform:uppercase;letter-spacing:.5px">${f.label}</span>
       </div>
-      <div style="font-size:20px;font-weight:800;color:var(--text1)">${fmt(f.ca)}</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)">${fmt(f.ca)}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">CA HT</div>
       <div style="display:flex;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border2)">
         <div><div style="font-size:13px;font-weight:700;color:var(--green)">${fmt(f.marge)}</div><div style="font-size:10px;color:var(--text3)">Marge</div></div>
@@ -10706,7 +10706,7 @@ function proposerCommande(pharmacyId) {
   modal.id = 'proposer-cmd-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px';
   modal.innerHTML = `
-    <div style="position:relative;background:var(--bg1);border:1px solid var(--border2);border-radius:20px;max-width:480px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+    <div style="position:relative;background:var(--bg);border:1px solid var(--border2);border-radius:20px;max-width:480px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
       <button onclick="closeAccessibleModal(document.getElementById('proposer-cmd-modal'))" aria-label="Fermer" style="position:absolute;top:12px;right:12px;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%">✕</button>
       <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px">🛒 Proposer une commande</div>
       <div style="font-size:13px;color:var(--text3);margin-bottom:20px">${pharma.name} · basé sur ${monthName(month)} ${year}</div>

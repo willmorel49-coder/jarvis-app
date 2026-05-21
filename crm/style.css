@@ -818,7 +818,7 @@ body {
   font-weight: 500;
   transition: background .15s, color .15s;
 }
-.cat-pag-btn:hover { background: var(--bg3); color: var(--text1); }
+.cat-pag-btn:hover { background: var(--bg3); color: var(--text); }
 .cat-pag-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
 
 /* ── PRINT (fiche de visite) ───────────── */
