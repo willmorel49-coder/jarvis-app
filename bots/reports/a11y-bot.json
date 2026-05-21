@@ -1,7 +1,7 @@
 {
   "botId": "a11y-bot",
   "botName": "A11y Bot",
-  "generatedAt": "2026-05-20T21:30:43.944Z",
+  "generatedAt": "2026-05-21T08:16:29.297Z",
   "score": 37,
   "summary": {
     "checks": 10,
@@ -255,6 +255,20 @@
         "catalogue"
       ],
       "severity": "info"
+    }
+  ],
+  "proposals": [
+    {
+      "type": "a11y-strengthen",
+      "safety": "info",
+      "surface": "crm",
+      "rationale": "CRM : couverture ARIA faible (2 usages). Inspirer-toi de l'app la plus couverte pour atteindre la parité."
+    },
+    {
+      "type": "a11y-bootstrap",
+      "safety": "manual",
+      "surface": "catalogue",
+      "rationale": "Catalogue : aucune primitive ARIA détectée. Ajouter au minimum : aria-label sur les boutons icône, role=\"dialog\" + aria-modal sur les modales, .sr-only pour le texte d'accessibilité."
     }
   ]
 }

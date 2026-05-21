@@ -34,9 +34,28 @@ node bots/run-all.mjs
 
 # Voir le dashboard
 open bots/index.html
+
+# Prévisualiser les correctifs proposés (dry-run)
+node bots/apply-fixes.mjs
+
+# Appliquer les correctifs safe (références cassées uniquement)
+node bots/apply-fixes.mjs --apply
+
+# Filtrer par bot
+node bots/apply-fixes.mjs --bot=token-bot
 ```
 
 Chaque bot écrit son rapport dans `bots/reports/<bot-id>.json`. Le dashboard (`bots/index.html`) charge tous les rapports et affiche un score de parité par bot.
+
+## Mode auto-fix
+
+Chaque rapport peut contenir une section `proposals` avec 3 niveaux de sécurité :
+
+- **`safe`** : remplacement textuel sans ambiguïté (ex: `var(--bg1)` → `var(--bg)` quand `--bg1` n'est défini nulle part). Appliqué par `apply-fixes.mjs --apply`.
+- **`manual`** : décision humaine requise (ex: collision de valeurs `--blue`, renommage de tokens). Listé mais non appliqué.
+- **`info`** : suggestion non bloquante (ex: déf jamais utilisée → suppression).
+
+Token Bot et A11y Bot émettent des proposals. Les autres bots fournissent du diagnostic uniquement (le contexte est trop riche pour de l'auto-fix).
 
 ## Principe : brand par app conservé
 

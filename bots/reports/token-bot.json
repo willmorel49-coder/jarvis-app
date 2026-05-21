@@ -1,7 +1,7 @@
 {
   "botId": "token-bot",
   "botName": "Token Bot",
-  "generatedAt": "2026-05-20T21:30:43.448Z",
+  "generatedAt": "2026-05-21T08:16:28.799Z",
   "score": 29,
   "summary": {
     "totalTokens": 99,
@@ -1444,6 +1444,821 @@
         "valueCollision": true,
         "partialCoverage": false
       }
+    }
+  ],
+  "proposals": [
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--amber",
+      "values": {
+        "crm": "#D97706",
+        "opso": "#e8a317"
+      },
+      "suggestion": "Le token --amber a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--amber-bg",
+      "values": {
+        "crm": "#FFFBEB",
+        "opso": "#fef5e2"
+      },
+      "suggestion": "Le token --amber-bg a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--amber-g",
+      "values": {
+        "crm": "linear-gradient(135deg, #B45309 0%, #D97706 100%)",
+        "opso": "linear-gradient(135deg, #b45309 0%, #e8a317 100%)"
+      },
+      "suggestion": "Le token --amber-g a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--amber2",
+      "surface": "crm",
+      "rationale": "--amber2 est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--amber2",
+      "surface": "opso",
+      "rationale": "--amber2 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--bg",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--bg est utilisé mais n'a pas de définition. Définir --bg dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--bg",
+      "values": {
+        "crm": "#F7F8FC",
+        "opso": "#f5f6f7"
+      },
+      "suggestion": "Le token --bg a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "replace-var-usage",
+      "safety": "safe",
+      "token": "--bg1",
+      "surface": "crm",
+      "search": "var(--bg1)",
+      "replace": "var(--bg)",
+      "files": [
+        "crm/style.css",
+        "crm/app.js"
+      ],
+      "rationale": "--bg1 n'est défini nulle part — fallback vers --bg (mêmes sémantique de fond)."
+    },
+    {
+      "type": "replace-var-usage",
+      "safety": "safe",
+      "token": "--bg1",
+      "surface": "opso",
+      "search": "var(--bg1)",
+      "replace": "var(--bg)",
+      "files": [
+        "opso/style.css",
+        "opso/app.js"
+      ],
+      "rationale": "--bg1 n'est défini nulle part — fallback vers --bg (mêmes sémantique de fond)."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--bg2",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--bg2 est utilisé mais n'a pas de définition. Définir --bg2 dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--bg3",
+      "values": {
+        "crm": "#F0F2F8",
+        "opso": "#eef0f2"
+      },
+      "suggestion": "Le token --bg3 a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--bg4",
+      "values": {
+        "crm": "#E8ECF4",
+        "opso": "#e5e8ea"
+      },
+      "suggestion": "Le token --bg4 a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--bg4",
+      "surface": "crm",
+      "rationale": "--bg4 est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--blue",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--blue est utilisé mais n'a pas de définition. Définir --blue dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--blue",
+      "values": {
+        "crm": "#2563EB",
+        "opso": "#11a63c"
+      },
+      "suggestion": "Le token --blue a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--blue-bg",
+      "values": {
+        "crm": "#EFF6FF",
+        "opso": "#e6f7ec"
+      },
+      "suggestion": "Le token --blue-bg a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--blue-g",
+      "values": {
+        "crm": "linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%)",
+        "opso": "linear-gradient(135deg, #0d8530 0%, #11a63c 100%)"
+      },
+      "suggestion": "Le token --blue-g a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--blue-glow",
+      "values": {
+        "crm": "rgba(37,99,235,0.20)",
+        "opso": "rgba(17, 166, 60, 0.20)"
+      },
+      "suggestion": "Le token --blue-glow a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--blue-l",
+      "values": {
+        "crm": "#60A5FA",
+        "opso": "#4ade80"
+      },
+      "suggestion": "Le token --blue-l a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--blue-l",
+      "surface": "crm",
+      "rationale": "--blue-l est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--blue-l",
+      "surface": "opso",
+      "rationale": "--blue-l est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--blue2",
+      "values": {
+        "crm": "#3B82F6",
+        "opso": "#0d8530"
+      },
+      "suggestion": "Le token --blue2 a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--blue2",
+      "surface": "opso",
+      "rationale": "--blue2 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "replace-var-usage",
+      "safety": "safe",
+      "token": "--border1",
+      "surface": "crm",
+      "search": "var(--border1)",
+      "replace": "var(--border)",
+      "files": [
+        "crm/style.css",
+        "crm/app.js"
+      ],
+      "rationale": "--border1 n'est défini nulle part — fallback vers --border (mêmes sémantique de fond)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--border3",
+      "surface": "opso",
+      "rationale": "--border3 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--danger",
+      "surfaces": [
+        "opso"
+      ],
+      "rationale": "--danger est utilisé mais n'a pas de définition. Définir --danger dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--font-body",
+      "surface": "opso",
+      "rationale": "--font-body est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--font-display",
+      "surface": "opso",
+      "rationale": "--font-display est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--glass",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--glass est utilisé mais n'a pas de définition. Définir --glass dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--glass",
+      "surface": "crm",
+      "rationale": "--glass est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--glass",
+      "surface": "opso",
+      "rationale": "--glass est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--glass2",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--glass2 est utilisé mais n'a pas de définition. Définir --glass2 dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--glass3",
+      "surface": "crm",
+      "rationale": "--glass3 est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--glass3",
+      "surface": "opso",
+      "rationale": "--glass3 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--green",
+      "surfaces": [
+        "opso"
+      ],
+      "rationale": "--green est utilisé mais n'a pas de définition. Définir --green dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--green-dark",
+      "surfaces": [
+        "opso"
+      ],
+      "rationale": "--green-dark est utilisé mais n'a pas de définition. Définir --green-dark dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--green-pale",
+      "surfaces": [
+        "opso"
+      ],
+      "rationale": "--green-pale est utilisé mais n'a pas de définition. Définir --green-pale dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--mint",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--mint est utilisé mais n'a pas de définition. Définir --mint dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--mint-glow",
+      "surface": "crm",
+      "rationale": "--mint-glow est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--mint-glow",
+      "surface": "opso",
+      "rationale": "--mint-glow est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--mint2",
+      "surface": "crm",
+      "rationale": "--mint2 est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--mint2",
+      "surface": "opso",
+      "rationale": "--mint2 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--opso-accent-dark",
+      "surface": "opso",
+      "rationale": "--opso-accent-dark est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--opso-accent-pale",
+      "surface": "opso",
+      "rationale": "--opso-accent-pale est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--opso-border2",
+      "surfaces": [
+        "opso"
+      ],
+      "rationale": "--opso-border2 est utilisé mais n'a pas de définition. Définir --opso-border2 dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--pill",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--pill est utilisé mais n'a pas de définition. Définir --pill dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--purple2",
+      "surface": "crm",
+      "rationale": "--purple2 est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--purple2",
+      "surface": "opso",
+      "rationale": "--purple2 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--r",
+      "surface": "opso",
+      "rationale": "--r est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--radius",
+      "surfaces": [
+        "opso"
+      ],
+      "rationale": "--radius est utilisé mais n'a pas de définition. Définir --radius dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--rose",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--rose est utilisé mais n'a pas de définition. Définir --rose dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--rose",
+      "values": {
+        "crm": "#DC2626",
+        "opso": "#d04a4a"
+      },
+      "suggestion": "Le token --rose a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--rose-bg",
+      "values": {
+        "crm": "#FEF2F2",
+        "opso": "#fbe8e8"
+      },
+      "suggestion": "Le token --rose-bg a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--rose-g",
+      "values": {
+        "crm": "linear-gradient(135deg, #B91C1C 0%, #EF4444 100%)",
+        "opso": "linear-gradient(135deg, #b91c1c 0%, #d04a4a 100%)"
+      },
+      "suggestion": "Le token --rose-g a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--rose2",
+      "surface": "crm",
+      "rationale": "--rose2 est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--rose2",
+      "surface": "opso",
+      "rationale": "--rose2 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--rs",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--rs est utilisé mais n'a pas de définition. Définir --rs dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--rxs",
+      "surface": "opso",
+      "rationale": "--rxs est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--rxxs",
+      "surface": "crm",
+      "rationale": "--rxxs est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--rxxs",
+      "surface": "opso",
+      "rationale": "--rxxs est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--sidebar-w",
+      "values": {
+        "crm": "0px",
+        "opso": "64px"
+      },
+      "suggestion": "Le token --sidebar-w a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--space-1",
+      "surface": "opso",
+      "rationale": "--space-1 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--space-10",
+      "surface": "opso",
+      "rationale": "--space-10 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--space-12",
+      "surface": "opso",
+      "rationale": "--space-12 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--space-2",
+      "surface": "opso",
+      "rationale": "--space-2 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--space-3",
+      "surface": "opso",
+      "rationale": "--space-3 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--space-5",
+      "surface": "opso",
+      "rationale": "--space-5 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--space-6",
+      "surface": "opso",
+      "rationale": "--space-6 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--space-8",
+      "surface": "opso",
+      "rationale": "--space-8 est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--t-base",
+      "values": {
+        "crm": "0.20s cubic-bezier(0.4, 0, 0.2, 1)",
+        "opso": "0.20s ease"
+      },
+      "suggestion": "Le token --t-base a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--t-ease",
+      "values": {
+        "crm": "0.44s cubic-bezier(0.16, 1, 0.3, 1)",
+        "opso": "0.44s ease"
+      },
+      "suggestion": "Le token --t-ease a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--t-ease",
+      "surface": "crm",
+      "rationale": "--t-ease est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--t-ease",
+      "surface": "opso",
+      "rationale": "--t-ease est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--t-fast",
+      "values": {
+        "crm": "0.14s cubic-bezier(0.4, 0, 0.2, 1)",
+        "opso": "0.14s ease"
+      },
+      "suggestion": "Le token --t-fast a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--t-slow",
+      "values": {
+        "crm": "0.36s cubic-bezier(0.4, 0, 0.2, 1)",
+        "opso": "0.36s ease"
+      },
+      "suggestion": "Le token --t-slow a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--t-slow",
+      "surface": "crm",
+      "rationale": "--t-slow est défini dans crm mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--t-slow",
+      "surface": "opso",
+      "rationale": "--t-slow est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--text",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--text est utilisé mais n'a pas de définition. Définir --text dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--text",
+      "values": {
+        "crm": "#0F172A",
+        "opso": "#2a2d2f"
+      },
+      "suggestion": "Le token --text a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--text-2xl",
+      "surface": "opso",
+      "rationale": "--text-2xl est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--text-3xl",
+      "surface": "opso",
+      "rationale": "--text-3xl est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--text-base",
+      "surface": "opso",
+      "rationale": "--text-base est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--text-lg",
+      "surface": "opso",
+      "rationale": "--text-lg est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--text-md",
+      "surface": "opso",
+      "rationale": "--text-md est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--text-sm",
+      "surface": "opso",
+      "rationale": "--text-sm est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--text-xl",
+      "surface": "opso",
+      "rationale": "--text-xl est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--text-xs",
+      "surface": "opso",
+      "rationale": "--text-xs est défini dans opso mais jamais utilisé — candidat à la suppression."
+    },
+    {
+      "type": "replace-var-usage",
+      "safety": "safe",
+      "token": "--text1",
+      "surface": "crm",
+      "search": "var(--text1)",
+      "replace": "var(--text)",
+      "files": [
+        "crm/style.css",
+        "crm/app.js"
+      ],
+      "rationale": "--text1 n'est défini nulle part — fallback vers --text (mêmes sémantique de fond)."
+    },
+    {
+      "type": "replace-var-usage",
+      "safety": "safe",
+      "token": "--text1",
+      "surface": "opso",
+      "search": "var(--text1)",
+      "replace": "var(--text)",
+      "files": [
+        "opso/style.css",
+        "opso/app.js"
+      ],
+      "rationale": "--text1 n'est défini nulle part — fallback vers --text (mêmes sémantique de fond)."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--text2",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--text2 est utilisé mais n'a pas de définition. Définir --text2 dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--text2",
+      "values": {
+        "crm": "#64748B",
+        "opso": "#64686a"
+      },
+      "suggestion": "Le token --text2 a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "manual-define",
+      "safety": "manual",
+      "token": "--text3",
+      "surfaces": [
+        "catalogue"
+      ],
+      "rationale": "--text3 est utilisé mais n'a pas de définition. Définir --text3 dans :root ou choisir une variable existante."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--text3",
+      "values": {
+        "crm": "#94A3B8",
+        "opso": "#6b7174"
+      },
+      "suggestion": "Le token --text3 a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--text4",
+      "values": {
+        "crm": "#CBD5E1",
+        "opso": "#c8cdd0"
+      },
+      "suggestion": "Le token --text4 a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "rename-collision",
+      "safety": "manual",
+      "token": "--topbar-h",
+      "values": {
+        "crm": "60px",
+        "opso": "64px"
+      },
+      "suggestion": "Le token --topbar-h a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue)."
+    },
+    {
+      "type": "remove-unused-def",
+      "safety": "info",
+      "token": "--topbar-h",
+      "surface": "crm",
+      "rationale": "--topbar-h est défini dans crm mais jamais utilisé — candidat à la suppression."
     }
   ]
 }

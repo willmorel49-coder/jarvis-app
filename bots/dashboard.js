@@ -141,6 +141,43 @@ async function showDetail(botId) {
   sub.textContent = `${bySurfaceStr}  ·  généré ${fmtDate(report.generatedAt)}`;
   detail.appendChild(sub);
 
+  // Section proposals (fixes)
+  if (report.proposals && report.proposals.length) {
+    const propWrap = document.createElement('div');
+    propWrap.className = 'proposals';
+    const safe = report.proposals.filter(p => p.safety === 'safe');
+    const manual = report.proposals.filter(p => p.safety === 'manual');
+    propWrap.innerHTML = `
+      <h3 style="margin:20px 0 10px;font-size:14px;color:var(--b-text2)">🔧 Propositions de correctifs</h3>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <span class="issue-tag" style="background:rgba(16,185,129,.15);color:var(--b-good)">${safe.length} safe</span>
+        <span class="issue-tag">${manual.length} manuels</span>
+      </div>
+      ${safe.length ? `
+        <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px">
+          <strong style="color:var(--b-good)">Auto-appliquables :</strong>
+          <code style="background:var(--b-bg);padding:2px 6px;border-radius:4px;margin-left:4px">node bots/apply-fixes.mjs --apply</code>
+        </div>` : ''}
+      ${[...safe, ...manual].slice(0, 20).map(p => `
+        <div class="finding">
+          <div class="finding-issues">
+            <span class="issue-tag ${p.safety === 'safe' ? '' : 'bad'}" style="${p.safety === 'safe' ? 'background:rgba(16,185,129,.15);color:var(--b-good)' : ''}">${esc(p.safety)}</span>
+            <span class="issue-tag">${esc(p.type)}</span>
+            ${p.token ? `<code style="font-size:11px;color:var(--b-text2)">${esc(p.token)}</code>` : ''}
+          </div>
+          <div style="font-size:12px;color:var(--b-text2);margin-top:6px">${esc(p.rationale || p.suggestion || '')}</div>
+          ${p.search && p.replace ? `<div style="font-family:ui-monospace,monospace;font-size:11px;margin-top:6px;color:var(--b-text3)">${esc(p.search)} → ${esc(p.replace)}</div>` : ''}
+        </div>
+      `).join('')}
+    `;
+    detail.appendChild(propWrap);
+  }
+
+  const findingsHeader = document.createElement('h3');
+  findingsHeader.textContent = '🔍 Findings détaillés';
+  findingsHeader.style.cssText = 'margin:24px 0 10px;font-size:14px;color:var(--b-text2)';
+  detail.appendChild(findingsHeader);
+
   const list = document.createElement('div');
   list.innerHTML = report.findings.slice(0, 80).map(renderFindingGeneric).join('');
   detail.appendChild(list);
