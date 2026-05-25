@@ -87,7 +87,7 @@ L'app fusionne avec l'écosystème Google déjà utilisé par Will : Google Maps
 - **Tap pin** : zoom carte 600ms ease-out, sheet morph 350ms spring
 - **Respect** `prefers-reduced-motion` → désactive l'orb spin et les transitions
 
-## §3 Architecture : Carte + Orb + 4 Lentilles
+## §3 Architecture : Carte + Orb + 4 Lentilles + sheet Réglages
 
 ```
 ┌──────────────────────────────────────────┐
@@ -118,6 +118,8 @@ L'app fusionne avec l'écosystème Google déjà utilisé par Will : Google Maps
    Une lentille glisse plein écran par-dessus
    Swipe down → retour carte
 ```
+
+**Vue d'ensemble** : 4 lentilles (Catalogue, Journal, RDV, Pilotage) + 1 sheet (Réglages). Une 5e surface est la **page publique de booking** (`/book/:user/:event_type`) — accessible sans auth, partagée par lien aux pharmaciens.
 
 ### Le hub (carte)
 - **Google Maps JS API** comme moteur de carte (free credit $200/mo cover usage normal)
@@ -184,13 +186,23 @@ Toutes ont :
 - Fiche visite : form épuré (date, durée, pharmacie autocomplete via pins, produits abordés via catalogue, engagements textarea, prochaine visite date picker)
 - Trigger JARVIS : "mes visites", "planifie demain matin", "résumé de la semaine", "fiche visite de la Phie Bocage"
 
-**Lentille 3 · Pilotage**
+**Lentille 3 · RDV (booking natif JARVIS)**
+- Deux faces :
+  - **Face commerciale** (interne, dans l'app) : tableau des bookings reçus + statut (confirmé / annulé / passé) + actions (replanifier, ajouter note), gestion des types d'événements (Visite découverte 30min, Point trimestriel 1h, Audit annuel 90min) avec durée, buffer, jours/heures dispo, lieu, description
+  - **Face publique** (booking page sans auth, voir §4) : URL partageable type `https://willmorel49-coder.github.io/jarvis-app/book/will/visite-decouverte`, créneaux calculés depuis Google Calendar de Will avec respect des buffers et heures travaillées, formulaire pharmacien (nom, CIP officine, email, téléphone, message), confirmation écran + mail
+- Intégration JARVIS :
+  - À l'arrivée d'un booking : push notification soft (badge orb), JARVIS briefe "Phie Lefèvre a réservé pour mardi 10:30, je prépare l'argumentaire prix"
+  - Suggestion intelligente côté pharmacien : JARVIS propose en priorité les créneaux qui optimisent la tournée (proches d'autres RDV déjà calés dans la même zone)
+  - Réconciliation : le booking crée un événement GCal (custom property `jarvis_booking_id`) et un row Supabase `bookings`
+- Trigger JARVIS : "mes RDV reçus", "partage mon lien Visite découverte", "qui a annulé cette semaine ?"
+
+**Lentille 4 · Pilotage**
 - Absorbe : WML ventes, Objectifs, Dashboard KPIs, Suivi commercial
 - Layout : KPI grid hero (CA mois, vs objectif, top pharmacies, top produits) + bar chart 12 mois + table top pharmacies + table top produits
 - Chart.js : palette `#007AFF` primaire, area soft `rgba(0,122,255,.12)`, gridlines très soft `rgba(11,31,77,.04)`, font 'Inter'
 - Trigger JARVIS : "mon CA", "écart vs objectif", "top pharmacies du mois", "ventes WML mai"
 
-**Lentille 4 · Réglages (sheet, pas lentille principale)**
+**Sheet Réglages (pas une lentille)**
 - Absorbe : Admin, Import data, Comptes, Sync Google
 - Accès : tap sur l'orb mini en haut-gauche ou via "JARVIS, réglages"
 - Sections : Profil (avatar, email Supabase), Synchronisations Google (Maps · Calendar, status synced), Import data (upload Excel WML, KML pharmacies), Comptes utilisateurs (admin only)
@@ -208,11 +220,30 @@ Toutes ont :
 
 ### Google Calendar (OAuth + sync)
 - OAuth 2.0 client-side (PKCE flow) avec scope `https://www.googleapis.com/auth/calendar`
-- Token stocké chiffré dans Supabase (table `user_tokens` ou metadata user)
+- Token stocké chiffré dans Supabase (table `user_oauth_tokens`)
 - Lecture : tous les événements du calendar principal (filter par tag "Visite" si Will catégorise)
 - Écriture : créer un événement quand une visite est planifiée dans JARVIS
 - Sync incremental via `syncToken` Google API
 - Réconciliation visites JARVIS ↔ événements GCal : match par titre + date OR via custom property `jarvis_visit_id`
+
+### Booking JARVIS (page publique)
+- Route : `/book/:user/:event_type` (statique HTML + JS) hébergée sur GitHub Pages
+- Aucune auth requise pour le pharmacien
+- Chargement :
+  - Lit la config event type depuis Supabase (durée, buffer, jours/heures dispo, lieu, description)
+  - Lit la free/busy de Will via Google Calendar API (endpoint `freeBusy.query` — utilise un service account ou la session OAuth de Will via Supabase Edge Function pour ne pas exposer la clé)
+  - Calcule les créneaux disponibles côté client (avec respect buffer, lunch break, jours off)
+- Affichage : style JARVIS bout en bout (orb visible, Limpide + Glass), calendrier mois + slots du jour sélectionné, formulaire (nom, CIP officine optionnel, email, tel, message), bouton "Confirmer ↵"
+- Confirmation :
+  - Row `bookings` créé en Supabase (`user_id`, `event_type`, `slot_start`, `slot_end`, `pharmacy_cip`, `lead_name`, `lead_email`, `lead_phone`, `notes`, `status='confirmed'`)
+  - Event ajouté au Google Calendar de Will (via Edge Function avec son refresh token)
+  - Email de confirmation envoyé via **Resend** (free tier 3000 mails/mois) au pharmacien + au commercial
+  - Écran de confirmation animé (orb + tagline "JARVIS · vous êtes calé pour mardi 10:30")
+- Anti-abuse :
+  - Rate limit côté Edge Function (max 5 bookings par email / 24h)
+  - Honeypot champ caché dans le form
+  - Optionnel : Captcha Cloudflare Turnstile (gratuit) si abuse constaté
+- Annulation : lien dans le mail de confirmation, page `/book/cancel/:token` → met le row Supabase en `status='canceled'`, supprime l'event GCal, mail au commercial
 
 ### Import KML / Google Maps "Mes lieux"
 - Will exporte ses adresses depuis Google Takeout (Maps · Mes lieux · KML)
@@ -251,10 +282,12 @@ Toutes ont :
 2. **Phase 2 · Orb + Sheet interactive** : prompt fonctionnel (text-only au début), greeting JARVIS au matin, brief proactif règle-based (pas LLM tout de suite), animations orb
 3. **Phase 3 · Lentille Journal** : Google Calendar OAuth, lecture événements, fiche visite migrée. Drag de sheet vers le haut = ouvre Journal.
 4. **Phase 4 · Lentille Catalogue** : migration Offilog + Benchmark + Alertes, virtual scroll, comparateur prix
-5. **Phase 5 · Lentille Pilotage** : KPIs CA, ventes WML, objectifs, charts
-6. **Phase 6 · IA réelle** : connecter LLM (Anthropic Claude API ou OpenAI) pour les commandes en langage naturel
-7. **Phase 7 · Mode voix** : Web Speech API (reconnaissance + synthèse), mode CarPlay-friendly
-8. **Phase 8 · Import KML** : workflow upload + matching
+5. **Phase 5 · Lentille RDV (interne)** : table `bookings` Supabase, gestion event types, vue côté commercial (interne app)
+6. **Phase 6 · Page booking publique** : route `/book/:user/:event_type`, free/busy GCal, formulaire, Resend mail confirmation, écran orb
+7. **Phase 7 · Lentille Pilotage** : KPIs CA, ventes WML, objectifs, charts
+8. **Phase 8 · IA réelle** : connecter LLM (Anthropic Claude API) pour les commandes en langage naturel + briefing intelligent
+9. **Phase 9 · Mode voix** : Web Speech API (reconnaissance + synthèse), mode CarPlay-friendly
+10. **Phase 10 · Import KML** : workflow upload + matching pharmacies depuis Google Maps "Mes lieux"
 
 Chaque phase = un dispatch d'agents et un commit déployable. Pas de big bang.
 
@@ -265,7 +298,9 @@ Chaque phase = un dispatch d'agents et un commit déployable. Pas de big bang.
 - **Calendar** : Google Calendar API v3, OAuth 2.0 PKCE flow
 - **IA** : Anthropic Claude API (`claude-sonnet-4-6` pour réponses, `claude-haiku-4-5` pour intents rapides). Clé API stockée en variable env Supabase Edge Function (pas en clair côté client)
 - **Voix** : Web Speech API (`SpeechRecognition` + `SpeechSynthesis`)
-- **Auth + DB** : Supabase (inchangé)
+- **Auth + DB** : Supabase (inchangé) + nouvelles tables : `bookings`, `event_types`, `user_oauth_tokens`
+- **Mail transactionnel** : Resend API (free tier 3000 mails/mois) pour confirmations de booking
+- **Edge Functions Supabase** : (1) proxy Claude API, (2) freeBusy GCal pour la page booking, (3) création/suppression event GCal, (4) envoi mails Resend
 - **Hosting** : GitHub Pages (inchangé, push main = déploiement)
 - **Fonts** : Google Fonts (Inter Display + Inter + JetBrains Mono) + fallback SF Pro système Apple
 
@@ -310,7 +345,8 @@ Un commercial qui le voit pour la première fois pense : *"c'est quoi cette app,
 | Architecture features non-spatiales | B — Lentilles | 2026-05-25 |
 | Mood visuel | Limpide ++ avec touches Glass + | 2026-05-25 |
 | Présence JARVIS | B — Orb gradient conic | 2026-05-25 |
-| Nombre de lentilles | 4 + sheet Réglages | 2026-05-25 |
+| Nombre de lentilles | 4 (Catalogue · Journal · RDV · Pilotage) + sheet Réglages | 2026-05-25 |
+| Booking RDV | B — Natif JARVIS (page publique stylée + Supabase + Resend) | 2026-05-25 |
 
 ## Références d'inspiration
 
