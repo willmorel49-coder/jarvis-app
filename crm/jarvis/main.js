@@ -10,11 +10,16 @@ import { computePharmacyStatus } from './pharmacy-status.js';
 // Active le flag dès le chargement du module pour que app.js skip son UI legacy.
 window.__JARVIS_SHELL_ACTIVE__ = true;
 
-// Appelé par le callback Google Maps `&callback=initJarvis`
-window.initJarvis = async function initJarvis() {
-  console.log('[JARVIS] Bootstrap Phase 1');
+let sheetRef = null;
+let shellMounted = false;
 
-  // 1. Conteneur carte
+// Monte le shell (greeting + sheet + container carte) — ne dépend pas de Google Maps.
+// Appelé sur DOMContentLoaded pour que la peau soit visible même si la clé Maps manque.
+function mountShell() {
+  if (shellMounted) return;
+  shellMounted = true;
+  console.log('[JARVIS] Mount shell (greeting + sheet)');
+
   let mapEl = document.getElementById('jarvis-map');
   if (!mapEl) {
     mapEl = document.createElement('div');
@@ -23,12 +28,9 @@ window.initJarvis = async function initJarvis() {
     document.body.appendChild(mapEl);
   }
 
-  // 2. Init Google Maps
-  initMap('jarvis-map');
-
-  // 3. Greeting top
   const pharmacies = readPharmaciesFromAppGlobal();
   const stats = computeStats(pharmacies);
+
   const greeting = createGreeting({
     userName: 'William',
     territoryLabel: 'Manche · Sud',
@@ -36,18 +38,38 @@ window.initJarvis = async function initJarvis() {
   });
   document.body.appendChild(greeting);
 
-  // 4. Sheet bottom
-  const sheet = createSheet(initialBubbleForStats(stats));
-  document.body.appendChild(sheet);
+  sheetRef = createSheet(initialBubbleForStats(stats));
+  document.body.appendChild(sheetRef);
+}
 
-  // 5. Pins
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', mountShell);
+} else {
+  mountShell();
+}
+
+// Appelé par le callback Google Maps `&callback=initJarvis`.
+// Idempotent : si shell déjà monté, on ne refait que la partie carte+pins.
+window.initJarvis = async function initJarvis() {
+  console.log('[JARVIS] Bootstrap Phase 1 — Maps callback');
+  mountShell();
+
+  try {
+    initMap('jarvis-map');
+  } catch (err) {
+    console.warn('[JARVIS] initMap failed, carte indisponible :', err);
+    return;
+  }
+
+  const pharmacies = readPharmaciesFromAppGlobal();
   await whenMapReady();
   await renderPharmacyPins(pharmacies, computeStatusForPharma);
 
-  // 6. Pin click → centre la carte + update sheet bubble
-  setPinClickHandler((pharma) => {
-    updateSheetBubble(sheet, pinClickBubble(pharma));
-  });
+  if (sheetRef) {
+    setPinClickHandler((pharma) => {
+      updateSheetBubble(sheetRef, pinClickBubble(pharma));
+    });
+  }
 
   console.log(`[JARVIS] Phase 1 ready · ${pharmacies.length} pharmacies rendues`);
 };
