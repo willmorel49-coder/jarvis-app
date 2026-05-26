@@ -1,0 +1,161 @@
+/* JARVIS · Composants signature · Phase 1 */
+
+/* ============ ORB ============ */
+.jarvis-orb {
+  display: inline-block;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,.4), transparent 50%),
+    var(--orb-gradient);
+  box-shadow: var(--sh-orb);
+  position: relative;
+  animation: jarvisOrbSpin 8s linear infinite, jarvisOrbPulse 2.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.jarvis-orb::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(from 180deg, transparent, rgba(0,122,255,.25), transparent);
+  animation: jarvisOrbHalo 3s linear infinite;
+  z-index: -1;
+  filter: blur(8px);
+}
+.jarvis-orb--lg { width: 88px; height: 88px; }
+.jarvis-orb--md { width: 36px; height: 36px; }
+.jarvis-orb--sm { width: 22px; height: 22px; animation-duration: 4s, 2.5s; }
+.jarvis-orb--mini { width: 16px; height: 16px; animation-duration: 4s, 2.5s; }
+.jarvis-orb--sm::after, .jarvis-orb--mini::after { display: none; }
+
+@keyframes jarvisOrbSpin { to { transform: rotate(360deg); } }
+@keyframes jarvisOrbHalo { to { transform: rotate(-360deg); } }
+@keyframes jarvisOrbPulse {
+  0%, 100% { box-shadow: var(--sh-orb); }
+  50% { box-shadow: 0 0 0 10px rgba(0,122,255,.04), 0 8px 24px rgba(0,122,255,.35); }
+}
+
+/* ============ GREETING (top de la carte) ============ */
+.jarvis-greeting {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: env(safe-area-inset-top, 12px) 18px 14px;
+  z-index: 30;
+  pointer-events: none;
+}
+.jarvis-greeting > * { pointer-events: auto; }
+.jarvis-greeting-hi {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+  margin: 0 0 2px;
+}
+.jarvis-greeting-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.6px;
+  color: var(--text);
+  line-height: 1.05;
+  margin: 0;
+}
+.jarvis-greeting-sub {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  font-weight: 500;
+  margin: 3px 0 0;
+}
+
+/* ============ SHEET (bottom glass) ============ */
+.jarvis-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  border-top: 1px solid var(--border-glass);
+  box-shadow: var(--sh-glass);
+  z-index: 40;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.jarvis-sheet-handle {
+  width: 32px;
+  height: 4px;
+  background: rgba(11,31,77,.18);
+  border-radius: 2px;
+  margin: 0 auto 12px;
+}
+.jarvis-sheet-bubble {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(0,122,255,.08);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.45;
+}
+.jarvis-sheet-bubble-content { flex: 1; }
+.jarvis-sheet-bubble-content strong { color: var(--blue); font-weight: 700; }
+
+.jarvis-prompt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.jarvis-prompt-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text);
+}
+.jarvis-prompt-input::placeholder { color: var(--text-muted); }
+.jarvis-mic {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--text);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* ============ MAP CONTAINER ============ */
+.jarvis-map {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+.jarvis-map .gm-style-iw-c { border-radius: var(--r-lg) !important; }
+
+/* ============ DESKTOP RESPONSIVE ============ */
+@media (min-width: 769px) {
+  body { background:
+    radial-gradient(ellipse at 20% 20%, rgba(0,122,255,.05), transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(168,85,247,.04), transparent 50%),
+    var(--bg);
+  }
+  .jarvis-greeting { max-width: 480px; left: 50%; transform: translateX(-50%); }
+  .jarvis-map { inset: 0; }
+}
