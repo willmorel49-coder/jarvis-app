@@ -5,8 +5,8 @@
 let mapInstance = null;
 let mapReadyResolvers = [];
 
-const DEFAULT_CENTER = [49.115, -1.088]; // Saint-Lô, Normandie
-const DEFAULT_ZOOM = 9;
+const DEFAULT_CENTER = [47.75, -1.14]; // Barycentre du territoire commercial (Bretagne/Normandie/Loire)
+const DEFAULT_ZOOM = 7;
 
 // Tiles CartoDB Positron : gratuit, style très Apple-Maps clean.
 const TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -54,4 +54,11 @@ export function whenMapReady() {
 export function panTo(lat, lng, zoom = 13) {
   if (!mapInstance) return;
   mapInstance.flyTo([lat, lng], zoom, { duration: 0.6 });
+}
+
+export function fitBoundsToPoints(points, opts = {}) {
+  if (!mapInstance || !points.length) return;
+  const padding = opts.padding || [60, 200]; // top, sides — laisse de la place pour greeting + sheet
+  const bounds = window.L.latLngBounds(points.map((p) => [p.lat, p.lng]));
+  mapInstance.fitBounds(bounds, { padding, maxZoom: 11 });
 }
