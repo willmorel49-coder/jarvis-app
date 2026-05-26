@@ -1,25 +1,27 @@
 // JARVIS · pins.js
-// Rendu des pins pharmacies sur la carte Google Maps.
-// Utilise google.maps.marker.AdvancedMarkerElement avec un SVG inline custom.
+// Rendu des pins pharmacies sur la carte Leaflet via L.marker + L.divIcon.
 
 import { whenMapReady, panTo } from './map.js';
 import { computePharmacyStatus, colorForStatus } from './pharmacy-status.js';
 
 const activeMarkers = [];
 
-function buildPinSvg(color, isAlert) {
-  const pulse = isAlert ? '<animate attributeName="r" values="10;14;10" dur="1.8s" repeatCount="indefinite"/>' : '';
+function buildPinHtml(color, isAlert) {
+  const pulse = isAlert ? ' jarvis-pin-pulse' : '';
   return `
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28" class="jarvis-pin-svg${pulse}">
       <circle cx="14" cy="14" r="10" fill="${color}" stroke="white" stroke-width="3"
-              filter="drop-shadow(0 3px 6px rgba(11,31,77,.3))">${pulse}</circle>
+              filter="drop-shadow(0 3px 6px rgba(11,31,77,.3))"/>
     </svg>`;
 }
 
-function svgToDivIcon(svgString) {
-  const div = document.createElement('div');
-  div.innerHTML = svgString;
-  return div.firstElementChild;
+function buildDivIcon(color, isAlert) {
+  return window.L.divIcon({
+    html: buildPinHtml(color, isAlert),
+    className: 'jarvis-pin-icon',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
 }
 
 export async function renderPharmacyPins(pharmacies, statusComputer) {
@@ -31,22 +33,19 @@ export async function renderPharmacyPins(pharmacies, statusComputer) {
     if (!pharma.lat || !pharma.lng) continue;
     const status = statusComputer ? statusComputer(pharma) : computePharmacyStatus(pharma);
     const color = colorForStatus(status);
-    const svgEl = svgToDivIcon(buildPinSvg(color, status === 'alert'));
+    const icon = buildDivIcon(color, status === 'alert');
 
-    const marker = new google.maps.marker.AdvancedMarkerElement({
-      map,
-      position: { lat: pharma.lat, lng: pharma.lng },
-      content: svgEl,
-      title: pharma.nom,
-    });
+    const marker = window.L.marker([pharma.lat, pharma.lng], { icon, title: pharma.nom })
+      .addTo(map);
 
-    marker.addListener('gmp-click', () => onPinClick(pharma, marker));
+    marker.on('click', () => onPinClick(pharma, marker));
     activeMarkers.push(marker);
   }
 }
 
 export function clearPins() {
-  activeMarkers.forEach((m) => (m.map = null));
+  const map = window.L && activeMarkers[0] ? activeMarkers[0]._map : null;
+  activeMarkers.forEach((m) => m.remove());
   activeMarkers.length = 0;
 }
 

@@ -13,6 +13,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
+  <!-- Leaflet (carte gratuite, pas de clé) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <!-- Styles -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="style-jarvis.css" />
@@ -31,16 +37,10 @@
   <script src="groupements-data.js"></script>
 
   <!-- App.js (data layer préservée, dashboard render désactivé via style.css) -->
-  <script src="app.js?v=20260525p1" defer></script>
+  <script src="app.js?v=20260526p1" defer></script>
 
-  <!-- JARVIS shell Phase 1 -->
-  <script type="module" src="jarvis/main.js?v=20260525p1"></script>
-
-  <!-- Google Maps JS API (callback global appelle window.initJarvis) -->
-  <!-- TODO Will : remplace AIza... par ta clé Google Maps -->
-  <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-REPLACE-ME&libraries=marker&v=weekly&callback=initJarvis&loading=async">
-  </script>
+  <!-- JARVIS shell Phase 1 (Leaflet, init sur DOMContentLoaded) -->
+  <script type="module" src="jarvis/main.js?v=20260526p1"></script>
 </head>
 
 <body>
