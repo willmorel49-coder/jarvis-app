@@ -1,7 +1,7 @@
 // JARVIS · main.js
 // Point d'entrée du shell JARVIS Phase 1. Bootstrap : monte greeting + carte + pins + sheet.
 
-import { initMap, whenMapReady } from './map.js';
+import { initMap, whenMapReady, fitBoundsToPoints } from './map.js';
 import { renderPharmacyPins, setPinClickHandler } from './pins.js';
 import { createSheet, updateSheetBubble } from './sheet.js';
 import { createGreeting } from './greeting.js';
@@ -54,6 +54,7 @@ async function bootJarvis() {
   // 5. Pins
   await whenMapReady();
   await renderPharmacyPins(pharmacies, computeStatusForPharma);
+  fitBoundsToPoints(pharmacies);
 
   // 6. Pin click → update sheet bubble + recentre carte
   setPinClickHandler((pharma) => {
@@ -70,25 +71,17 @@ if (document.readyState === 'loading') {
 }
 
 function readPharmaciesFromAppGlobal() {
-  // Phase 1 : on lit la variable globale CLIENTS exposée par crm/clients-data.js
+  // Lit CLIENTS depuis clients-data.js et matche les coordonnées GPS
+  // depuis pharmacies-geo.js (généré par geocode_pharmacies.py).
   const raw = (typeof window !== 'undefined' && window.CLIENTS) ? window.CLIENTS : [];
-  // Pour cette phase : pas de coordonnées dans clients-data.js. On en ajoute des fictives pour la démo.
-  // Phase 10 : remplacer par les vraies coords du KML Google Maps de Will.
-  return raw.map((p, i) => ({
-    ...p,
-    lat: p.lat ?? estimateLat(p, i),
-    lng: p.lng ?? estimateLng(p, i),
-  }));
-}
-
-// Coordonnées approximatives : 517 pins répartis autour de Saint-Lô tant que le KML n'est pas importé.
-function estimateLat(p, i) {
-  const seed = parseInt(String(p.cip || i).slice(-3), 10) || i;
-  return 49.115 + ((seed % 100) - 50) * 0.012;
-}
-function estimateLng(p, i) {
-  const seed = parseInt(String(p.cip || i).slice(0, 3), 10) || i;
-  return -1.088 + ((seed % 100) - 50) * 0.015;
+  const geo = (typeof window !== 'undefined' && window.PHARMACIES_GEO) ? window.PHARMACIES_GEO : {};
+  return raw
+    .map((p) => {
+      const g = geo[p.cip];
+      if (!g) return null; // pharma sans géocodage : on l'ignore pour le rendu carte
+      return { ...p, lat: g.lat, lng: g.lng, geoScore: g.score };
+    })
+    .filter(Boolean);
 }
 
 function computeStatusForPharma(p) {
@@ -107,7 +100,7 @@ function computeStats(pharmacies) {
 }
 
 function initialBubbleForStats(stats) {
-  return `<strong>JARVIS</strong> · ${stats.total} officines sur ton territoire. Tape un pin pour voir la fiche.`;
+  return `<strong>JARVIS</strong> · ${stats.total} officines géolocalisées sur ton territoire. Tape un pin pour voir la fiche.`;
 }
 
 function pinClickBubble(pharma) {
