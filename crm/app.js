@@ -7185,6 +7185,14 @@ async function initApp() {
   await load();
   await grpSyncFromStorage();
 
+  // Si le shell JARVIS Phase 1+ est actif, on s'arrête après la data load.
+  // Les données sont disponibles via window.CLIENTS / window.OFFILOG etc.
+  // L'UI est gérée par crm/jarvis/main.js (carte + sheet + greeting).
+  if (window.__JARVIS_SHELL_ACTIVE__) {
+    console.log('[JARVIS] data loaded, legacy UI bypass');
+    return;
+  }
+
   document.getElementById('sidebar-user-name').textContent = state.user.name;
   document.getElementById('sidebar-user-role').textContent = state.user.role;
   document.getElementById('sidebar-avatar').textContent = state.user.name.charAt(0);
