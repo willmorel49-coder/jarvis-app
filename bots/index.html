@@ -3,35 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bots experts · Parité UX/UI · Jarvis App</title>
+  <title>Cockpit Parité UX/UI · Jarvis App</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
       <a href="../" class="back">← Jarvis App</a>
-      <h1>🤖 Bots experts <span class="muted">· Parité UX/UI</span></h1>
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span class="brand-name">Cockpit Parité UX/UI</span>
+      </div>
       <div class="topbar-meta" id="topbar-meta"></div>
     </div>
   </header>
 
-  <main class="container">
-    <section class="intro">
-      <p>
-        Audit automatisé de la cohérence UX/UI entre les 3 surfaces de l'app :
-        <strong>CRM</strong>, <strong>Catalogue</strong>, <strong>OPSO</strong>.
-        Chaque bot scanne son périmètre et reporte les divergences.
-      </p>
-      <p class="hint">
-        Pour rafraîchir les rapports : <code>node bots/run-all.mjs</code>
-      </p>
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-grid">
+        <div class="hero-score">
+          <div class="hero-score-label">Score santé global</div>
+          <div class="hero-score-value" id="global-score">—</div>
+          <div class="hero-score-trend" id="global-trend"></div>
+        </div>
+        <div class="hero-trend-chart">
+          <div class="hero-section-label">Évolution</div>
+          <svg id="trend-svg" viewBox="0 0 400 100" preserveAspectRatio="none"></svg>
+          <div class="hero-trend-meta" id="trend-meta"></div>
+        </div>
+        <div class="hero-actions">
+          <div class="hero-section-label">Plan d'action prioritaire</div>
+          <ol class="action-list" id="action-list"></ol>
+          <button class="btn-ghost" id="btn-export">⬇️ Exporter le rapport (.md)</button>
+        </div>
+      </div>
     </section>
 
-    <section id="bots-grid" class="bots-grid">
-      <div class="empty">Chargement…</div>
-    </section>
+    <section class="container">
+      <h2 class="section-title">Bots experts</h2>
+      <p class="section-sub">8 audits automatisés · cliquer pour le détail</p>
+      <div id="bots-grid" class="bots-grid">
+        <div class="empty">Chargement…</div>
+      </div>
 
-    <section id="detail" class="detail" hidden></section>
+      <section id="detail" class="detail" hidden></section>
+    </section>
   </main>
 
   <script src="dashboard.js"></script>
