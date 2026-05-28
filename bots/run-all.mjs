@@ -8,6 +8,9 @@ import { spawnSync } from 'node:child_process';
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { saveSnapshot } from './lib/history.mjs';
+import { writeActionPlan } from './lib/action-plan.mjs';
+import { exportMarkdown } from './lib/export-md.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const reportsDir = resolve(here, 'reports');
@@ -51,4 +54,21 @@ for (const bot of BOTS) {
 }
 
 writeFileSync(resolve(reportsDir, 'index.json'), JSON.stringify(index, null, 2));
-console.log(`\n→ bots/reports/index.json (${index.bots.filter(b => b.status === 'ok').length}/${BOTS.length} bots actifs)`);
+
+// Score global + delta
+const okBots = index.bots.filter(b => b.status === 'ok');
+const global = okBots.length ? Math.round(okBots.reduce((a, b) => a + b.score, 0) / okBots.length) : 0;
+
+// Snapshot historique
+saveSnapshot(index);
+
+// Plan d'action priorisé
+const plan = writeActionPlan();
+
+// Export markdown partageable
+const md = exportMarkdown();
+
+console.log(`\n📊 Score santé global : ${global}/100`);
+console.log(`📋 Plan d'action : ${plan.length} étapes priorisées → bots/reports/action-plan.json`);
+console.log(`📝 Rapport markdown : ${md.path}`);
+console.log(`→ bots/reports/index.json (${okBots.length}/${BOTS.length} bots actifs)`);

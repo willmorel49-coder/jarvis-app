@@ -1,0 +1,140 @@
+{
+  "generatedAt": "2026-05-28T23:58:25.419Z",
+  "actions": [
+    {
+      "bot": "a11y-bot",
+      "title": "Bootstrap a11y sur catalogue",
+      "detail": "Ajouter aria-label, role=dialog+aria-modal sur modales, .sr-only, focus visible. Score actuel 37/100.",
+      "impact": 3,
+      "effort": 2,
+      "kind": "a11y",
+      "score": 15
+    },
+    {
+      "bot": "component-bot",
+      "title": "Aligner les composants canoniques sur les 3 surfaces",
+      "detail": "Score 13/100. Définir une convention .card / .modal / .btn / .kpi / .badge / .pill réutilisée partout.",
+      "impact": 3,
+      "effort": 3,
+      "kind": "design-system",
+      "score": 10
+    },
+    {
+      "bot": "palette-bot",
+      "title": "Extraire les couleurs partagées en tokens",
+      "detail": "174 couleurs hardcodées détectées. Identifier celles utilisées ≥3 fois dans ≥2 surfaces et créer un token commun.",
+      "impact": 2,
+      "effort": 2,
+      "kind": "tokens",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --amber",
+      "detail": "Le token --amber a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --amber-bg",
+      "detail": "Le token --amber-bg a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --amber-g",
+      "detail": "Le token --amber-g a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --bg",
+      "detail": "Le token --bg a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --bg3",
+      "detail": "Le token --bg3 a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --bg4",
+      "detail": "Le token --bg4 a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --blue",
+      "detail": "Le token --blue a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --blue-bg",
+      "detail": "Le token --blue-bg a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --blue-g",
+      "detail": "Le token --blue-g a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --blue-glow",
+      "detail": "Le token --blue-glow a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --blue-l",
+      "detail": "Le token --blue-l a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    },
+    {
+      "bot": "token-bot",
+      "title": "Renommer/préfixer --blue2",
+      "detail": "Le token --blue2 a des valeurs très différentes par surface. Si la collision est intentionnelle (brand par app), aucune action. Sinon, préfixer (ex: --opso-blue / --crm-blue).",
+      "impact": 3,
+      "effort": 3,
+      "kind": "manual",
+      "score": 10
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-21T08:19:29.282Z",
+  "generatedAt": "2026-05-28T23:58:24.404Z",
   "bots": [
     {
       "id": "token-bot",
@@ -7,7 +7,7 @@
       "botName": "Token Bot",
       "score": 31,
       "issueCount": 67,
-      "generatedAt": "2026-05-21T08:19:29.346Z"
+      "generatedAt": "2026-05-28T23:58:24.642Z"
     },
     {
       "id": "palette-bot",
@@ -15,7 +15,7 @@
       "botName": "Palette Bot",
       "score": 62,
       "issueCount": 174,
-      "generatedAt": "2026-05-21T08:19:29.428Z"
+      "generatedAt": "2026-05-28T23:58:24.786Z"
     },
     {
       "id": "typo-bot",
@@ -23,7 +23,7 @@
       "botName": "Typo Bot",
       "score": 75,
       "issueCount": 7,
-      "generatedAt": "2026-05-21T08:19:29.493Z"
+      "generatedAt": "2026-05-28T23:58:24.898Z"
     },
     {
       "id": "spacing-bot",
@@ -31,7 +31,7 @@
       "botName": "Spacing Bot",
       "score": 54,
       "issueCount": 3,
-      "generatedAt": "2026-05-21T08:19:29.560Z"
+      "generatedAt": "2026-05-28T23:58:24.985Z"
     },
     {
       "id": "component-bot",
@@ -39,7 +39,7 @@
       "botName": "Component Bot",
       "score": 13,
       "issueCount": 7,
-      "generatedAt": "2026-05-21T08:19:29.629Z"
+      "generatedAt": "2026-05-28T23:58:25.079Z"
     },
     {
       "id": "a11y-bot",
@@ -47,7 +47,7 @@
       "botName": "A11y Bot",
       "score": 37,
       "issueCount": 10,
-      "generatedAt": "2026-05-21T08:19:29.742Z"
+      "generatedAt": "2026-05-28T23:58:25.190Z"
     },
     {
       "id": "nav-bot",
@@ -55,7 +55,7 @@
       "botName": "Nav Bot",
       "score": 100,
       "issueCount": 4,
-      "generatedAt": "2026-05-21T08:19:29.899Z"
+      "generatedAt": "2026-05-28T23:58:25.325Z"
     },
     {
       "id": "radius-bot",
@@ -63,7 +63,7 @@
       "botName": "Radius Bot",
       "score": 57,
       "issueCount": 5,
-      "generatedAt": "2026-05-21T08:19:29.977Z"
+      "generatedAt": "2026-05-28T23:58:25.401Z"
     }
   ]
 }

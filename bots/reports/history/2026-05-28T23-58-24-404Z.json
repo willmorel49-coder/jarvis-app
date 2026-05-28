@@ -1,0 +1,38 @@
+{
+  "at": "2026-05-28T23:58:24.404Z",
+  "globalScore": 54,
+  "bots": {
+    "token-bot": {
+      "score": 31,
+      "issues": 67
+    },
+    "palette-bot": {
+      "score": 62,
+      "issues": 174
+    },
+    "typo-bot": {
+      "score": 75,
+      "issues": 7
+    },
+    "spacing-bot": {
+      "score": 54,
+      "issues": 3
+    },
+    "component-bot": {
+      "score": 13,
+      "issues": 7
+    },
+    "a11y-bot": {
+      "score": 37,
+      "issues": 10
+    },
+    "nav-bot": {
+      "score": 100,
+      "issues": 4
+    },
+    "radius-bot": {
+      "score": 57,
+      "issues": 5
+    }
+  }
+}
