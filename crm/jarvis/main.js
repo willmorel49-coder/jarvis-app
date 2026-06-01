@@ -32,10 +32,17 @@ let shellMounted = false;
 let allPharmacies = [];
 let currentPharma = null;
 
+const JARVIS_VERSION = '20260601b · 808 clients';
+
 async function bootJarvis() {
   if (shellMounted) return;
   shellMounted = true;
-  console.log('[JARVIS] Bootstrap Phase 2+ (Leaflet · lentilles · voix)');
+  console.log(`[JARVIS] Bootstrap ${JARVIS_VERSION}`);
+  console.log('[JARVIS] data check :',
+    'CLIENTS=' + (window.CLIENTS || []).length,
+    'CATALOGUE_IP=' + (window.CATALOGUE_IP || []).length,
+    'SALES_TOTAL=' + (window.SALES_TOTAL ? window.SALES_TOTAL.ca + '€' : 'absent')
+  );
 
   // 1. Conteneur carte
   let mapEl = document.getElementById('jarvis-map');
