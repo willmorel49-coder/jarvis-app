@@ -167,155 +167,181 @@
     renderVentilation();
   }
 
-  // ───────── VENTILATION TRANCHE × CATÉGORIE ───────────────────────────────
-  const ventState = {
-    metrique: 'CA',
-    axe: 'sousfamille',
-    tranches: 4,
-    catFilter: 'all',
-  };
+  // ───────── VENTILATION TRANCHE × CATÉGORIE (officiel IP) ─────────────────
+  // 3 tranches prix officielles Intégral Pharma + 6 familles produits
+  const ventState = { metrique: 'CA' };
+
+  // Tranches officielles avec règle de remise
+  const TRANCHES_IP = [
+    { key: 'petit', min: 0,      max: 4.33,     label: 'Petit prix',    sub: '0 – 4,33 €',   remiseType: 'fixe', remiseVal: 0.18,  remiseLabel: '0,18 € fixe / unité' },
+    { key: 'inter', min: 4.33,   max: 468,      label: 'Intermédiaire', sub: '4,33 – 468 €', remiseType: 'pct',  remiseVal: 3.9,   remiseLabel: '3,9 % sur CA' },
+    { key: 'haut',  min: 468,    max: Infinity, label: 'Haut prix',     sub: '> 468 €',      remiseType: 'fixe', remiseVal: 19.50, remiseLabel: '19,50 € fixe / unité' },
+  ];
+
+  // Marques de génériques partenaires IP (engagement)
+  const PARTNER_MARQUES = ['TEVA', 'ZENTIVA', 'EG', 'EG LABO', 'ZYDUS', 'BIOGARAN'];
+
+  // Famille produit (6 valeurs métier)
+  function getFamilleIP(p, catalogueMatch) {
+    const sf = (p.sousfamille || '').toLowerCase();
+    if (sf.includes('froid')) return 'Froid';
+    if (catalogueMatch && (catalogueMatch.categorie || '').toLowerCase() === 'nr') return 'Non remboursés';
+    const marque = ((catalogueMatch && catalogueMatch.marque) || '').toUpperCase();
+    if (PARTNER_MARQUES.some(m => marque.includes(m))) return 'Gén. partenaires';
+    const nom = (p.designation || '').toLowerCase();
+    // Détection biosimilaires par mots-clés moléculaires
+    if (/\b(filgrastim|pegfilgrastim|infliximab|adalimumab|etanercept|rituximab|trastuzumab|bevacizumab|epoetin|biosim)\b/i.test(nom)) return 'Biosimilaires';
+    // Détection génériques par mots-clés (mol courante en marque)
+    if (/\b(gé\b|générique)\b/i.test(nom)) return 'Génériques';
+    return 'Princeps';
+  }
 
   function getProductPrixUnit(p) {
     if (!p.qte || p.qte <= 0) return null;
     return p.ca / p.qte;
   }
 
-  function buildTrancheBins(n) {
-    // Bins prédéfinis (cohérents avec le Streamlit) puis adaptatifs
-    if (n === 3) return { bins: [-Infinity, 10, 500, Infinity], labels: ['< 10 €', '10–500 €', '> 500 €'] };
-    if (n === 4) return { bins: [-Infinity, 4.63, 501.47, 1532.5, Infinity], labels: ['< 4,63 €', '4,63–501 €', '501–1500 €', '> 1500 €'] };
-    if (n === 5) return { bins: [-Infinity, 4.63, 50, 501.47, 1500, Infinity], labels: ['< 4,63 €', '4,63–50 €', '50–501 €', '501–1500 €', '> 1500 €'] };
-    if (n === 6) return { bins: [-Infinity, 4.63, 20, 100, 501.47, 1500, Infinity], labels: ['< 4,63 €', '4,63–20 €', '20–100 €', '100–501 €', '501–1500 €', '> 1500 €'] };
-    return { bins: [-Infinity, 4.63, 501.47, 1532.5, Infinity], labels: ['< 4,63 €', '4,63–501 €', '501–1500 €', '> 1500 €'] };
+  function getTrancheIP(prix) {
+    if (prix === null || prix === undefined || prix <= 0) return null;
+    for (const t of TRANCHES_IP) {
+      if (prix > t.min && prix <= t.max) return t;
+    }
+    return null;
   }
 
-  function getTrancheIdx(prix, bins) {
-    if (prix === null || prix === undefined) return -1;
-    for (let i = 0; i < bins.length - 1; i++) {
-      if (prix > bins[i] && prix <= bins[i + 1]) return i;
+  function buildCatalogueIndex() {
+    if (window.__catIpIndex__) return window.__catIpIndex__;
+    const idx = {};
+    for (const p of (window.CATALOGUE_IP || [])) {
+      if (p.ean) idx[p.ean] = p;
     }
-    return -1;
+    window.__catIpIndex__ = idx;
+    return idx;
   }
 
   function computeVentilation() {
     const products = Object.entries(window.SALES_BY_PRODUCT || {}).map(([artcode, p]) => ({ artcode, ...p }));
-    const { bins, labels } = buildTrancheBins(ventState.tranches);
+    const catIdx = buildCatalogueIndex();
+    const FAMILLES = ['Froid', 'Biosimilaires', 'Génériques', 'Gén. partenaires', 'Non remboursés', 'Princeps'];
 
-    // Map vers tranche + catégorie
-    const cells = {}; // {tranche: {cat: {ca, qte, marge, lignes, clients_set}}}
-    const allCats = new Set();
+    // cells[trKey][famille] = {ca, qte, marge, lignes, remise_theo}
+    const cells = {};
+    for (const t of TRANCHES_IP) {
+      cells[t.key] = {};
+      for (const f of FAMILLES) cells[t.key][f] = { ca: 0, qte: 0, marge: 0, lignes: 0, remise_theo: 0 };
+    }
 
     for (const p of products) {
       const prix = getProductPrixUnit(p);
-      const trIdx = getTrancheIdx(prix, bins);
-      if (trIdx < 0) continue;
-      const trLabel = labels[trIdx];
-
-      let cat;
-      if (ventState.axe === 'sousfamille') {
-        cat = p.sousfamille || '(non renseigné)';
-      } else if (ventState.axe === 'segment') {
-        // Segment métier dérivé : Froid si sousfamille=Froid, sinon Ophtalmologie, sinon Cond. Trim, sinon Autre
-        const sf = (p.sousfamille || '').toLowerCase();
-        if (sf.includes('froid')) cat = 'Froid';
-        else if (sf.includes('ophtalmo')) cat = 'Ophtalmologie';
-        else if (sf.includes('cond')) cat = 'Cond. Trimestriel';
-        else if (sf.includes('exclu')) cat = 'Exclu';
-        else cat = 'Autres';
+      const tr = getTrancheIP(prix);
+      if (!tr) continue;
+      const catMatch = catIdx[p.artcode] || null;
+      const famille = getFamilleIP(p, catMatch);
+      const cell = cells[tr.key][famille];
+      cell.ca += p.ca || 0;
+      cell.qte += p.qte || 0;
+      cell.marge += p.marge || 0;
+      cell.lignes += 1;
+      // Remise théorique selon tranche
+      if (tr.remiseType === 'fixe') {
+        cell.remise_theo += tr.remiseVal * (p.qte || 0);
       } else {
-        cat = p.sousfamille || '(non renseigné)';
+        cell.remise_theo += (tr.remiseVal / 100) * (p.ca || 0);
       }
-      allCats.add(cat);
-
-      if (!cells[trLabel]) cells[trLabel] = {};
-      if (!cells[trLabel][cat]) cells[trLabel][cat] = { ca: 0, qte: 0, marge: 0, lignes: 0 };
-      cells[trLabel][cat].ca += p.ca || 0;
-      cells[trLabel][cat].qte += p.qte || 0;
-      cells[trLabel][cat].marge += p.marge || 0;
-      cells[trLabel][cat].lignes += 1;
     }
 
-    // Tri colonnes par CA total desc
-    const catList = Array.from(allCats);
-    catList.sort((a, b) => {
-      const caA = labels.reduce((s, t) => s + ((cells[t] && cells[t][a]) ? cells[t][a].ca : 0), 0);
-      const caB = labels.reduce((s, t) => s + ((cells[t] && cells[t][b]) ? cells[t][b].ca : 0), 0);
-      return caB - caA;
-    });
-
-    return { cells, labels, catList };
+    return { cells, tranches: TRANCHES_IP, familles: FAMILLES };
   }
 
   function renderVentilation() {
     const root = document.getElementById('ventilation-section');
     if (!root) return;
-    const { cells, labels, catList } = computeVentilation();
+    const { cells, tranches, familles } = computeVentilation();
 
-    // Calcul totaux
+    // Totaux
     const colTotals = {};
     const rowTotals = {};
     let grandTotal = 0;
-    for (const tr of labels) {
-      rowTotals[tr] = 0;
-      for (const cat of catList) {
-        const cell = cells[tr] && cells[tr][cat];
-        const val = cell ? cell[metricField(ventState.metrique)] : 0;
-        rowTotals[tr] += val;
-        colTotals[cat] = (colTotals[cat] || 0) + val;
+    for (const t of tranches) {
+      rowTotals[t.key] = 0;
+      for (const f of familles) {
+        const val = cells[t.key][f][metricField(ventState.metrique)] || 0;
+        rowTotals[t.key] += val;
+        colTotals[f] = (colTotals[f] || 0) + val;
         grandTotal += val;
       }
     }
-    // Trouve max cellule pour heatmap
     let maxCellVal = 0;
-    for (const tr of labels) for (const cat of catList) {
-      const v = cells[tr] && cells[tr][cat] ? cells[tr][cat][metricField(ventState.metrique)] : 0;
+    for (const t of tranches) for (const f of familles) {
+      const v = cells[t.key][f][metricField(ventState.metrique)] || 0;
       if (v > maxCellVal) maxCellVal = v;
     }
 
-    const cellsHtml = labels.map(tr => {
-      const rowCells = catList.map(cat => {
-        const cell = cells[tr] && cells[tr][cat];
-        const val = cell ? cell[metricField(ventState.metrique)] : 0;
+    // Couleurs famille
+    const FAMILLE_COLORS = {
+      'Froid': '#00B5D8',
+      'Biosimilaires': '#7C3AED',
+      'Génériques': '#94A3B8',
+      'Gén. partenaires': '#14B86A',
+      'Non remboursés': '#FF9F1C',
+      'Princeps': '#0057FF',
+    };
+
+    // Body rows
+    const bodyRows = tranches.map(t => {
+      const rowCells = familles.map(f => {
+        const cell = cells[t.key][f];
+        const val = cell[metricField(ventState.metrique)] || 0;
         const intensity = maxCellVal > 0 ? val / maxCellVal : 0;
-        const bg = `rgba(0, 87, 255, ${0.04 + intensity * 0.35})`;
+        const fc = FAMILLE_COLORS[f] || '#0057FF';
+        const fcRgb = hexToRgb(fc);
+        const bg = `rgba(${fcRgb.r}, ${fcRgb.g}, ${fcRgb.b}, ${0.04 + intensity * 0.35})`;
         const fmt = formatMetric(val, ventState.metrique);
-        return `<td style="padding:9px 10px;text-align:right;background:${bg};font-variant-numeric:tabular-nums;border-right:1px solid #fff;font-weight:${intensity > 0.5 ? '700' : '500'};color:${intensity > 0.5 ? '#fff' : '#0B1F4D'}">${fmt}</td>`;
+        const sub = val > 0 && ventState.metrique === 'CA' ? `<div style="font-size:9.5px;color:${intensity > 0.5 ? 'rgba(255,255,255,.7)' : '#94A3B8'};font-weight:500">${fmtNum(cell.qte)} u · ${cell.lignes} réf</div>` : '';
+        return `<td style="padding:10px 10px;text-align:right;background:${bg};font-variant-numeric:tabular-nums;border-right:1px solid #fff;font-weight:${intensity > 0.5 ? '700' : '500'};color:${intensity > 0.5 ? '#fff' : '#0B1F4D'}">${fmt}${sub}</td>`;
       }).join('');
-      const totalFmt = formatMetric(rowTotals[tr], ventState.metrique);
-      return `<tr><td style="padding:9px 12px;font-weight:700;color:#0B1F4D;background:#F2F6FF;border-right:2px solid #0057FF">${tr}</td>${rowCells}<td style="padding:9px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${totalFmt}</td></tr>`;
+      const remiseTheoVal = tranches.reduce((s, tr) => 0, 0) + (
+        // Calcul remise théorique pour cette tranche (somme sur toutes familles, hors NR car prix libre)
+        familles.reduce((s, f) => f === 'Non remboursés' ? s : s + (cells[t.key][f].remise_theo || 0), 0)
+      );
+      return `<tr>
+        <td style="padding:11px 14px;font-weight:700;color:#0B1F4D;background:#F2F6FF;border-right:2px solid #0057FF">
+          <div>${t.label}</div>
+          <div style="font-size:10.5px;color:#64748B;font-weight:600">${t.sub}</div>
+          <div style="font-size:10px;color:#0057FF;font-weight:700;margin-top:2px">${t.remiseLabel}</div>
+        </td>
+        ${rowCells}
+        <td style="padding:11px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${formatMetric(rowTotals[t.key], ventState.metrique)}</td>
+      </tr>`;
     }).join('');
 
-    const totalRowHtml = catList.map(cat => `<td style="padding:9px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${formatMetric(colTotals[cat] || 0, ventState.metrique)}</td>`).join('');
+    // Total row
+    const totalRowHtml = familles.map(f => `<td style="padding:11px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${formatMetric(colTotals[f] || 0, ventState.metrique)}</td>`).join('');
+
+    // Remise théorique totale
+    let remiseTheoTotal = 0;
+    for (const t of tranches) for (const f of familles) {
+      if (f === 'Non remboursés') continue;
+      remiseTheoTotal += cells[t.key][f].remise_theo || 0;
+    }
+    const caTotal = tranches.reduce((s, t) => s + familles.reduce((ss, f) => ss + cells[t.key][f].ca, 0), 0);
+    const tauxRemiseTheo = caTotal > 0 ? (remiseTheoTotal / caTotal * 100) : 0;
 
     root.innerHTML = `
-      <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">🎯 Ventilation tranche prix × catégorie</h3>
+      <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">🎯 Ventilation tranche prix × famille produit · grille officielle IP</h3>
 
-      <!-- Sélecteurs -->
-      <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+      <!-- Sélecteur métrique uniquement -->
+      <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between">
         <label style="font-size:12px;color:#64748B;font-weight:700">
-          Métrique
+          Métrique affichée
           <select id="vent-metric" style="margin-left:6px;padding:6px 10px;border-radius:8px;border:1px solid #E8EEFF;font-family:inherit;font-size:13px">
             <option value="CA" ${ventState.metrique==='CA'?'selected':''}>CA HT</option>
             <option value="QTE" ${ventState.metrique==='QTE'?'selected':''}>Quantité</option>
             <option value="LIGNES" ${ventState.metrique==='LIGNES'?'selected':''}>Nb références</option>
+            <option value="REMISE_THEO" ${ventState.metrique==='REMISE_THEO'?'selected':''}>Remise théorique €</option>
           </select>
         </label>
-        <label style="font-size:12px;color:#64748B;font-weight:700">
-          Axe catégorie
-          <select id="vent-axe" style="margin-left:6px;padding:6px 10px;border-radius:8px;border:1px solid #E8EEFF;font-family:inherit;font-size:13px">
-            <option value="sousfamille" ${ventState.axe==='sousfamille'?'selected':''}>Sous-famille</option>
-            <option value="segment" ${ventState.axe==='segment'?'selected':''}>Segment métier</option>
-          </select>
-        </label>
-        <label style="font-size:12px;color:#64748B;font-weight:700">
-          Tranches
-          <select id="vent-tranches" style="margin-left:6px;padding:6px 10px;border-radius:8px;border:1px solid #E8EEFF;font-family:inherit;font-size:13px">
-            <option value="3" ${ventState.tranches===3?'selected':''}>3 tranches</option>
-            <option value="4" ${ventState.tranches===4?'selected':''}>4 tranches</option>
-            <option value="5" ${ventState.tranches===5?'selected':''}>5 tranches</option>
-            <option value="6" ${ventState.tranches===6?'selected':''}>6 tranches</option>
-          </select>
-        </label>
+        <div style="font-size:11px;color:#0B1F4D;background:#EAF2FF;padding:6px 12px;border-radius:8px"><b>Remise théorique cumulée :</b> ${fmtEuro(remiseTheoTotal)} <span style="opacity:.6">(${tauxRemiseTheo.toFixed(1)}% du CA · hors NR)</span></div>
       </div>
 
       <!-- Pivot table -->
@@ -324,15 +350,15 @@
           <table style="width:100%;border-collapse:collapse;font-size:12.5px">
             <thead>
               <tr style="background:#0B1F4D;color:#fff">
-                <th style="padding:11px 12px;text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase">Tranche</th>
-                ${catList.map(c => `<th style="padding:11px 10px;text-align:right;font-size:11px;letter-spacing:.5px;font-weight:700;border-left:1px solid rgba(255,255,255,.1)">${escapeHtml(c)}</th>`).join('')}
+                <th style="padding:11px 14px;text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase">Tranche prix · remise</th>
+                ${familles.map(f => `<th style="padding:11px 10px;text-align:right;font-size:11px;letter-spacing:.5px;font-weight:700;border-left:1px solid rgba(255,255,255,.1)"><div style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${FAMILLE_COLORS[f]};margin-right:6px"></div>${escapeHtml(f)}</th>`).join('')}
                 <th style="padding:11px 10px;text-align:right;font-size:11px;letter-spacing:1px;text-transform:uppercase;background:#1E3A5F">Total</th>
               </tr>
             </thead>
             <tbody>
-              ${cellsHtml}
+              ${bodyRows}
               <tr style="background:#EAF2FF;border-top:2px solid #0057FF">
-                <td style="padding:11px 12px;font-weight:800;color:#0B1F4D;text-transform:uppercase;font-size:11px;letter-spacing:1px">Total</td>
+                <td style="padding:11px 14px;font-weight:800;color:#0B1F4D;text-transform:uppercase;font-size:11px;letter-spacing:1px">Total</td>
                 ${totalRowHtml}
                 <td style="padding:11px 10px;text-align:right;font-weight:800;background:#0057FF;color:#fff;font-variant-numeric:tabular-nums;font-size:14px">${formatMetric(grandTotal, ventState.metrique)}</td>
               </tr>
@@ -341,29 +367,40 @@
         </div>
       </div>
 
-      <div style="font-size:11px;color:#94A3B8;margin-top:8px;text-align:center">
-        💡 Heatmap : intensité bleue ∝ valeur cellule · Tri colonnes par total décroissant · Cross-check : total cellules = total tranche du tableau Abandon
+      <!-- Légende -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-top:14px">
+        ${tranches.map(t => `
+          <div style="background:#fff;border:1px solid #E8EEFF;border-left:4px solid #0057FF;border-radius:10px;padding:10px 14px">
+            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">${t.label}</div>
+            <div style="font-size:13px;color:#0B1F4D;font-weight:700;margin:2px 0">${t.sub}</div>
+            <div style="font-size:11.5px;color:#0057FF;font-weight:700">${t.remiseLabel}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:10px;padding:10px 14px;background:#FFF7ED;border-left:4px solid #FF9F1C;border-radius:10px;font-size:11.5px;color:#7C2D12">
+        ⚠ <b>Non remboursés (NR)</b> : marge variable — pas de remise standard. Le pharmacien achète au prix IP (mark-up ×1,03 sur prix d'achat), puis applique un prix libre selon grossiste / direct labo.
       </div>
     `;
 
-    // Handlers
     const metric = document.getElementById('vent-metric');
-    const axe = document.getElementById('vent-axe');
-    const tranches = document.getElementById('vent-tranches');
     if (metric) metric.addEventListener('change', e => { ventState.metrique = e.target.value; renderVentilation(); });
-    if (axe) axe.addEventListener('change', e => { ventState.axe = e.target.value; renderVentilation(); });
-    if (tranches) tranches.addEventListener('change', e => { ventState.tranches = parseInt(e.target.value, 10); renderVentilation(); });
+  }
+
+  function hexToRgb(hex) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 0, g: 87, b: 255 };
   }
 
   function metricField(m) {
     if (m === 'CA') return 'ca';
     if (m === 'QTE') return 'qte';
     if (m === 'LIGNES') return 'lignes';
+    if (m === 'REMISE_THEO') return 'remise_theo';
     return 'ca';
   }
   function formatMetric(val, metrique) {
-    if (val == null) return '—';
-    if (metrique === 'CA') return fmtEuro(val);
+    if (val == null || val === 0) return metrique === 'CA' || metrique === 'REMISE_THEO' ? '—' : '0';
+    if (metrique === 'CA' || metrique === 'REMISE_THEO') return fmtEuro(val);
     if (metrique === 'QTE') return fmtNum(Math.round(val));
     if (metrique === 'LIGNES') return fmtNum(val);
     return fmtNum(val);
