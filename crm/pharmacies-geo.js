@@ -1,7 +1,7 @@
 // JARVIS · pharmacies-geo.js
 // Géocodage des pharmacies via api-adresse.data.gouv.fr.
 // Généré par geocode_pharmacies.py.
-// 1003 / 1023 pharmacies géocodées (98.0%).
+// 1003 / 1027 pharmacies géocodées (97.7%).
 
 window.PHARMACIES_GEO = {
   "2000034": {
@@ -1710,9 +1710,9 @@ window.PHARMACIES_GEO = {
     "score": 0.608
   },
   "2109508": {
-    "lat": 48.125616,
-    "lng": -1.81708,
-    "score": 0.659
+    "lat": 48.124336,
+    "lng": -1.804432,
+    "score": 0.604
   },
   "2109513": {
     "lat": 48.615373,
