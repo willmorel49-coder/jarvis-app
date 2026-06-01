@@ -415,12 +415,133 @@ function buildPilotage() {
     </div>`).join('')}
   </div>
 
+  <!-- 5b. ÉVOLUTION MENSUELLE -->
+  ${renderEvolutionMensuelle()}
+
+  <!-- 5c. SOUS-FAMILLES PRODUITS -->
+  ${renderSousFamilles()}
+
   <!-- 6. FOOTER -->
   <div class="lens-pilotage-footer">
     <div class="lens-pilotage-footer-dot"></div>
-    <span>CA basé sur STATS 2023 &nbsp;·&nbsp; stock au 01/06/2026 &nbsp;·&nbsp; catalogue IP · ${fmtNum(kpis.catalogueCount)} réf.</span>
+    <span>${renderFooterInfo(kpis)}</span>
   </div>
 
 </div>
   `;
+}
+
+// ─── Sales detail visualisations ───────────────────────────────────────────
+
+function renderEvolutionMensuelle() {
+  const sm = window.SALES_BY_MONTH;
+  if (!sm || !Object.keys(sm).length) return '';
+  const months = Object.keys(sm).sort();
+  const values = months.map(m => sm[m].ca);
+  const max = Math.max(...values, 1);
+  const totalLignes = months.reduce((s, m) => s + sm[m].lignes, 0);
+  const totalCa = values.reduce((s, v) => s + v, 0);
+  const moisLabel = (ym) => {
+    const [y, m] = ym.split('-');
+    const noms = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+    return `${noms[parseInt(m,10)-1] || m}'${y.slice(2)}`;
+  };
+  return `
+    <h3 class="lens-section-title">Évolution mensuelle · CA secteur</h3>
+    <div class="lens-pilotage-monthly">
+      ${months.map((m, i) => {
+        const pct = Math.round((sm[m].ca / max) * 100);
+        return `
+          <div class="lens-pilotage-month-col" title="${m} · ${sm[m].ca.toFixed(0)} € · ${sm[m].lignes} lignes">
+            <div class="lens-pilotage-month-bar-wrap">
+              <div class="lens-pilotage-month-bar" style="height:${pct}%"></div>
+            </div>
+            <div class="lens-pilotage-month-value">${formatEuroShort(sm[m].ca)}</div>
+            <div class="lens-pilotage-month-label">${moisLabel(m)}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div class="lens-pilotage-monthly-foot">
+      <span>${months.length} mois</span>
+      <span>·</span>
+      <span><b>${formatEuroShort(totalCa)}</b> cumulés</span>
+      <span>·</span>
+      <span>${fmtNum(totalLignes)} lignes</span>
+    </div>
+    <style>
+      .lens-pilotage-monthly {
+        display: grid;
+        grid-template-columns: repeat(${months.length}, 1fr);
+        gap: 6px;
+        align-items: end;
+        height: 160px;
+        margin: 8px 0;
+      }
+      .lens-pilotage-month-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+      .lens-pilotage-month-bar-wrap { width: 100%; height: 100px; display: flex; align-items: flex-end; }
+      .lens-pilotage-month-bar {
+        width: 100%;
+        background: linear-gradient(180deg, var(--blue), var(--indigo));
+        border-radius: 6px 6px 0 0;
+        min-height: 4px;
+        transition: opacity .2s;
+      }
+      .lens-pilotage-month-bar:hover { opacity: .8; }
+      .lens-pilotage-month-value {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .lens-pilotage-month-label {
+        font-size: 9px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        font-weight: 700;
+      }
+      .lens-pilotage-monthly-foot {
+        display: flex;
+        gap: 8px;
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-bottom: 20px;
+      }
+      .lens-pilotage-monthly-foot b { color: var(--text); }
+    </style>
+  `;
+}
+
+function renderSousFamilles() {
+  const sf = window.SALES_BY_SOUSFAMILLE;
+  if (!sf || !Object.keys(sf).length) return '';
+  const rows = Object.entries(sf).map(([name, d]) => ({ name, ...d }));
+  const total = rows.reduce((s, r) => s + r.ca, 0);
+  const max = Math.max(...rows.map(r => r.ca), 1);
+  return `
+    <h3 class="lens-section-title">Mix sous-familles · CA réel facturé</h3>
+    <div class="lens-bar-chart">
+      ${rows.map(r => {
+        const pct = Math.round((r.ca / max) * 100);
+        const ratio = total > 0 ? ((r.ca / total) * 100).toFixed(1) : '0';
+        return `
+          <div class="lens-bar-row">
+            <span class="lens-bar-label" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span>
+            <div class="lens-bar-track"><div class="lens-bar-fill" style="width:${pct}%;background:linear-gradient(90deg, var(--blue), var(--violet))"></div></div>
+            <span class="lens-bar-value">${formatEuroShort(r.ca)} <span style="opacity:.6">· ${ratio}%</span></span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderFooterInfo(kpis) {
+  const total = window.SALES_TOTAL;
+  if (total && total.derniere_date) {
+    return `CA STATS détaillé · ${total.premiere_date} → ${total.derniere_date} · ${fmtNum(total.lignes)} lignes · ${fmtNum(total.factures)} factures · catalogue ${fmtNum(kpis.catalogueCount)} réf. · stock 01/06`;
+  }
+  return `CA basé sur STATS · stock au 01/06/2026 · catalogue IP · ${fmtNum(kpis.catalogueCount)} réf.`;
 }
