@@ -15,13 +15,10 @@
         ? urlMode
         : (stored || 'jarvis');
       if (urlMode) localStorage.setItem('jarvis.mode', urlMode);
+      // <html data-mode="..."> est posé au plus tôt — les CSS html[data-mode=X] s'appliquent dès le premier paint.
       document.documentElement.dataset.mode = mode;
       window.__JARVIS_MODE__ = mode;
       window.__JARVIS_SHELL_ACTIVE__ = (mode === 'jarvis');
-      // Pose la classe body au plus tôt — DOMContentLoaded l'ajoute si besoin.
-      document.addEventListener('DOMContentLoaded', () => {
-        document.body.classList.add(mode === 'classic' ? 'classic-mode' : 'jarvis-mode');
-      });
     })();
   </script>
 

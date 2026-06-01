@@ -75,7 +75,7 @@
   --sh-g: 0 2px 8px rgba(20,184,106,.25);
 }
 
-body.classic-mode { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+html[data-mode="classic"] { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -87,7 +87,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
-body.jarvis-mode { overflow: hidden; height: 100vh; }
+html[data-mode="jarvis"] { overflow: hidden; height: 100vh; }
 
 h1, h2, h3, h4 {
   font-family: var(--font-display);
@@ -100,38 +100,38 @@ h1, h2, h3, h4 {
 button, input, textarea, select { font-family: inherit; font-size: inherit; }
 
 /* Mode JARVIS : cache l'ancienne shell + canvas pleine page */
-body.jarvis-mode #login-screen,
-body.jarvis-mode #app,
-body.jarvis-mode .sidebar,
-body.jarvis-mode .topbar,
-body.jarvis-mode .brand-footer,
-body.jarvis-mode #page-dashboard,
-body.jarvis-mode #page-pharmacies,
-body.jarvis-mode #page-offilog,
-body.jarvis-mode #page-benchmark,
-body.jarvis-mode #page-catalogue,
-body.jarvis-mode #page-wml,
-body.jarvis-mode #page-groupements,
-body.jarvis-mode #page-prospects,
-body.jarvis-mode #page-objectifs,
-body.jarvis-mode #page-admin,
-body.jarvis-mode #page-import,
-body.jarvis-mode #page-prioritaires,
-body.jarvis-mode #page-visites,
-body.jarvis-mode #page-simulator,
-body.jarvis-mode #page-simulateur,
-body.jarvis-mode #page-produits,
-body.jarvis-mode #toast { display: none !important; }
+html[data-mode="jarvis"] #login-screen,
+html[data-mode="jarvis"] #app,
+html[data-mode="jarvis"] .sidebar,
+html[data-mode="jarvis"] .topbar,
+html[data-mode="jarvis"] .brand-footer,
+html[data-mode="jarvis"] #page-dashboard,
+html[data-mode="jarvis"] #page-pharmacies,
+html[data-mode="jarvis"] #page-offilog,
+html[data-mode="jarvis"] #page-benchmark,
+html[data-mode="jarvis"] #page-catalogue,
+html[data-mode="jarvis"] #page-wml,
+html[data-mode="jarvis"] #page-groupements,
+html[data-mode="jarvis"] #page-prospects,
+html[data-mode="jarvis"] #page-objectifs,
+html[data-mode="jarvis"] #page-admin,
+html[data-mode="jarvis"] #page-import,
+html[data-mode="jarvis"] #page-prioritaires,
+html[data-mode="jarvis"] #page-visites,
+html[data-mode="jarvis"] #page-simulator,
+html[data-mode="jarvis"] #page-simulateur,
+html[data-mode="jarvis"] #page-produits,
+html[data-mode="jarvis"] #toast { display: none !important; }
 
-body.jarvis-mode main, body.jarvis-mode #main { display: block !important; position: fixed; inset: 0; padding: 0; margin: 0; }
+html[data-mode="jarvis"] main, html[data-mode="jarvis"] #main { display: block !important; position: fixed; inset: 0; padding: 0; margin: 0; }
 
 /* Mode Classique : cache le shell JARVIS */
-body.classic-mode #jarvis-root,
-body.classic-mode .jarvis-greeting,
-body.classic-mode .jarvis-sheet,
-body.classic-mode .jarvis-map,
-body.classic-mode .jarvis-lens,
-body.classic-mode .jarvis-lens-scrim { display: none !important; }
+html[data-mode="classic"] #jarvis-root,
+html[data-mode="classic"] .jarvis-greeting,
+html[data-mode="classic"] .jarvis-sheet,
+html[data-mode="classic"] .jarvis-map,
+html[data-mode="classic"] .jarvis-lens,
+html[data-mode="classic"] .jarvis-lens-scrim { display: none !important; }
 
 /* ============ MODE TOGGLE BUTTON (toujours visible) ============ */
 .mode-toggle {
@@ -158,16 +158,16 @@ body.classic-mode .jarvis-lens-scrim { display: none !important; }
   transition: all .2s;
 }
 .mode-toggle:hover { background: #fff; box-shadow: 0 4px 14px rgba(11,31,77,.12); transform: translateY(-1px); }
-body.jarvis-mode .mode-toggle .mode-toggle-jarvis { display: none; }
-body.jarvis-mode .mode-toggle .mode-toggle-classic { display: inline; }
-body.classic-mode .mode-toggle .mode-toggle-jarvis { display: inline; }
-body.classic-mode .mode-toggle .mode-toggle-classic { display: none; }
+html[data-mode="jarvis"] .mode-toggle .mode-toggle-jarvis { display: none; }
+html[data-mode="jarvis"] .mode-toggle .mode-toggle-classic { display: inline; }
+html[data-mode="classic"] .mode-toggle .mode-toggle-jarvis { display: inline; }
+html[data-mode="classic"] .mode-toggle .mode-toggle-classic { display: none; }
 
 /* En mode JARVIS, le toggle ne doit pas chevaucher le greeting */
-body.jarvis-mode .mode-toggle { top: 12px; right: 12px; }
-body.classic-mode .mode-toggle { top: 12px; right: 280px; }
+html[data-mode="jarvis"] .mode-toggle { top: 12px; right: 12px; }
+html[data-mode="classic"] .mode-toggle { top: 12px; right: 280px; }
 @media (max-width: 768px) {
-  body.classic-mode .mode-toggle { top: 12px; right: 14px; }
+  html[data-mode="classic"] .mode-toggle { top: 12px; right: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
