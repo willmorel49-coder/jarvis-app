@@ -33,6 +33,14 @@ export function createSheet(initialBubbleHtml = '') {
   bubble.insertBefore(createOrb('mini'), bubble.firstChild);
 
   setupSheetDrag(sheet);
+
+  // Recalcule la hauteur "full" en cas de resize fenêtre (orientation, F11, etc.)
+  window.addEventListener('resize', () => {
+    if (sheet.dataset.snap === 'full') {
+      sheet.style.height = SNAP_HEIGHTS.full() + 'px';
+    }
+  });
+
   return sheet;
 }
 
