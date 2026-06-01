@@ -49,7 +49,33 @@
   --font-display: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Legacy aliases (mode classique : ancien shell DM Sans) */
+  --blue-d: #0058cc;
+  --blue-lt: #EAF2FF;
+  --navy: #0B1F4D;
+  --green: #14B86A;
+  --green-d: #0E9456;
+  --amber: #FF9F1C;
+  --rose: #F43F5E;
+  --purple: #7C3AED;
+  --card: #FFFFFF;
+  --text2: var(--text-dim);
+  --text3: var(--text-muted);
+  --surface-2: #F2F6FF;
+  --border-strong: rgba(11,31,77,.18);
+  --r: 20px;
+  --rs: 14px;
+  --rxs: 10px;
+  --pill: 999px;
+  --sh: 0 2px 8px rgba(11,31,77,.06);
+  --sh2: 0 6px 20px rgba(11,31,77,.08);
+  --sh3: 0 12px 40px rgba(11,31,77,.18);
+  --sh-b: 0 2px 8px rgba(0,122,255,.25);
+  --sh-g: 0 2px 8px rgba(20,184,106,.25);
 }
+
+body.classic-mode { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -60,9 +86,8 @@ body {
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
-  overflow: hidden;
-  height: 100vh;
 }
+body.jarvis-mode { overflow: hidden; height: 100vh; }
 
 h1, h2, h3, h4 {
   font-family: var(--font-display);
@@ -74,13 +99,76 @@ h1, h2, h3, h4 {
 
 button, input, textarea, select { font-family: inherit; font-size: inherit; }
 
-/* Cache l'ancienne shell */
-.sidebar, .topbar, #page-dashboard, #page-pharmacies, #page-offilog,
-#page-benchmark, #page-catalogue, #page-wml, #page-groupements,
-#page-prospects, #page-objectifs, #page-admin, #page-import,
-#page-prioritaires, #page-visites, #page-simulator { display: none !important; }
+/* Mode JARVIS : cache l'ancienne shell + canvas pleine page */
+body.jarvis-mode #login-screen,
+body.jarvis-mode #app,
+body.jarvis-mode .sidebar,
+body.jarvis-mode .topbar,
+body.jarvis-mode .brand-footer,
+body.jarvis-mode #page-dashboard,
+body.jarvis-mode #page-pharmacies,
+body.jarvis-mode #page-offilog,
+body.jarvis-mode #page-benchmark,
+body.jarvis-mode #page-catalogue,
+body.jarvis-mode #page-wml,
+body.jarvis-mode #page-groupements,
+body.jarvis-mode #page-prospects,
+body.jarvis-mode #page-objectifs,
+body.jarvis-mode #page-admin,
+body.jarvis-mode #page-import,
+body.jarvis-mode #page-prioritaires,
+body.jarvis-mode #page-visites,
+body.jarvis-mode #page-simulator,
+body.jarvis-mode #page-simulateur,
+body.jarvis-mode #page-produits,
+body.jarvis-mode #toast { display: none !important; }
 
-main, #main { display: block !important; position: fixed; inset: 0; padding: 0; margin: 0; }
+body.jarvis-mode main, body.jarvis-mode #main { display: block !important; position: fixed; inset: 0; padding: 0; margin: 0; }
+
+/* Mode Classique : cache le shell JARVIS */
+body.classic-mode #jarvis-root,
+body.classic-mode .jarvis-greeting,
+body.classic-mode .jarvis-sheet,
+body.classic-mode .jarvis-map,
+body.classic-mode .jarvis-lens,
+body.classic-mode .jarvis-lens-scrim { display: none !important; }
+
+/* ============ MODE TOGGLE BUTTON (toujours visible) ============ */
+.mode-toggle {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top, 10px));
+  right: 16px;
+  z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(11,31,77,.1);
+  box-shadow: 0 2px 8px rgba(11,31,77,.06);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Inter', 'DM Sans', -apple-system, sans-serif;
+  color: #0B1F4D;
+  cursor: pointer;
+  letter-spacing: .5px;
+  transition: all .2s;
+}
+.mode-toggle:hover { background: #fff; box-shadow: 0 4px 14px rgba(11,31,77,.12); transform: translateY(-1px); }
+body.jarvis-mode .mode-toggle .mode-toggle-jarvis { display: none; }
+body.jarvis-mode .mode-toggle .mode-toggle-classic { display: inline; }
+body.classic-mode .mode-toggle .mode-toggle-jarvis { display: inline; }
+body.classic-mode .mode-toggle .mode-toggle-classic { display: none; }
+
+/* En mode JARVIS, le toggle ne doit pas chevaucher le greeting */
+body.jarvis-mode .mode-toggle { top: 12px; right: 12px; }
+body.classic-mode .mode-toggle { top: 12px; right: 280px; }
+@media (max-width: 768px) {
+  body.classic-mode .mode-toggle { top: 12px; right: 14px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
