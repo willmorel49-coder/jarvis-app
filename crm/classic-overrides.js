@@ -386,6 +386,338 @@
     `;
   }
 
+  // ───────── BENCHMARK ────────────────────────────────────────────────────
+  function renderBenchmarkV2() {
+    const root = document.getElementById('bench-content');
+    if (!root) return;
+    const cat = window.CATALOGUE_IP || [];
+    if (!cat.length) { root.innerHTML = `<div style="padding:40px;text-align:center;color:#94A3B8">Catalogue IP non chargé</div>`; return; }
+    // Stats par catégorie
+    const byCat = {};
+    for (const p of cat) {
+      const c = p.categorie || '(non classé)';
+      if (!byCat[c]) byCat[c] = { count: 0, totalRemise: 0, totalPrixHt: 0, totalPrixIp: 0, froidCount: 0 };
+      byCat[c].count++;
+      byCat[c].totalRemise += p.remise_pct || 0;
+      byCat[c].totalPrixHt += p.prix_ht || 0;
+      byCat[c].totalPrixIp += p.prix_ip || 0;
+      if (p.froid) byCat[c].froidCount++;
+    }
+    const cats = Object.entries(byCat).sort((a, b) => b[1].count - a[1].count);
+    // Top 20 produits par remise
+    const topRemise = [...cat].filter(p => p.remise_pct > 0).sort((a, b) => b.remise_pct - a.remise_pct).slice(0, 20);
+
+    root.innerHTML = `
+      <div style="padding:20px;max-width:1280px;margin:0 auto;font-family:'DM Sans',sans-serif">
+        ${sectionHeader('Benchmark catalogue Intégral Pharma', `${fmtNum(cat.length)} produits référencés · prix HT / IP / remises`)}
+
+        <!-- Stats catégories -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:20px">
+          ${cats.map(([name, d]) => {
+            const remMoy = d.count > 0 ? (d.totalRemise / d.count) : 0;
+            const economMoy = d.count > 0 ? ((d.totalPrixHt - d.totalPrixIp) / d.count) : 0;
+            return `
+              <div style="${styleCard()}">
+                <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">${escapeHtml(name)}</div>
+                <div style="font-size:24px;font-weight:800;color:#0B1F4D;margin:4px 0;font-variant-numeric:tabular-nums">${fmtNum(d.count)} <span style="font-size:11px;color:#94A3B8;font-weight:600">réf.</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748B;margin-top:6px">
+                  <span>Remise moy. <b style="color:#14B86A">${remMoy.toFixed(1)}%</b></span>
+                  <span>Économie moy. <b style="color:#0057FF">${economMoy.toFixed(2)}€</b></span>
+                </div>
+                ${d.froidCount > 0 ? `<div style="font-size:10.5px;color:#94A3B8;margin-top:4px">❄️ ${d.froidCount} produits froid</div>` : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:24px 0 12px">Top 20 produits · remises les plus fortes</h3>
+        <div style="${styleCard('padding:0')}">
+          <div style="padding:10px 16px;background:#F2F6FF;font-size:11px;color:#64748B;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:grid;grid-template-columns:30px 1fr 1fr 70px 70px 70px;gap:12px;border-bottom:1px solid #E8EEFF">
+            <span>#</span><span>Produit</span><span>Catégorie</span><span style="text-align:right">Prix HT</span><span style="text-align:right">Prix IP</span><span style="text-align:right">Remise</span>
+          </div>
+          ${topRemise.map((p, i) => `
+            <div style="padding:10px 16px;display:grid;grid-template-columns:30px 1fr 1fr 70px 70px 70px;gap:12px;font-size:12.5px;border-bottom:1px solid #F2F6FF;align-items:center">
+              <span style="color:#94A3B8;font-weight:700">${i + 1}</span>
+              <div>
+                <div style="font-weight:700;color:#0B1F4D">${escapeHtml(p.nom)} ${p.froid ? '❄️' : ''}</div>
+                <div style="font-size:10.5px;color:#94A3B8">${escapeHtml(p.marque || '—')} · ${escapeHtml(p.molecule || '—')}</div>
+              </div>
+              <span style="color:#64748B;font-size:11px">${escapeHtml(p.categorie || '—')}</span>
+              <span style="text-align:right;text-decoration:line-through;color:#94A3B8;font-variant-numeric:tabular-nums">${p.prix_ht ? p.prix_ht.toFixed(2)+' €' : '—'}</span>
+              <span style="text-align:right;font-weight:700;color:#0057FF;font-variant-numeric:tabular-nums">${p.prix_ip ? p.prix_ip.toFixed(2)+' €' : '—'}</span>
+              <span style="text-align:right;font-weight:800;color:#14B86A;font-variant-numeric:tabular-nums">-${p.remise_pct.toFixed(1)}%</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // ───────── SIMULATEUR (calcul gain switch) ──────────────────────────────
+  function renderSimulatorV2() {
+    const root = document.getElementById('simul-content');
+    if (!root) return;
+    const cat = window.CATALOGUE_IP || [];
+    if (!cat.length) { root.innerHTML = `<div style="padding:40px;text-align:center;color:#94A3B8">Catalogue IP non chargé</div>`; return; }
+
+    root.innerHTML = `
+      <div style="padding:20px;max-width:980px;margin:0 auto;font-family:'DM Sans',sans-serif">
+        ${sectionHeader('Simulateur panier · gain switch vers IP', 'Compare ton panier client vs catalogue Intégral Pharma')}
+
+        <div style="${styleCard()};margin-bottom:14px">
+          <label style="display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin-bottom:8px">Recherche produit (EAN ou nom)</label>
+          <input id="sim-search" type="search" placeholder="Ex: Dafalgan, 3400935..."
+            style="width:100%;padding:11px 16px;border-radius:10px;border:1px solid #E8EEFF;font-size:14px;font-family:inherit;color:#0B1F4D">
+          <div id="sim-results" style="margin-top:14px"></div>
+        </div>
+
+        <div style="${styleCard()};margin-bottom:14px">
+          <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">Panier simulé</h3>
+          <div id="sim-cart" style="min-height:40px;color:#94A3B8;font-size:13px">Recherche puis ajoute des produits…</div>
+        </div>
+
+        <div id="sim-summary" style="${styleCard()};display:none">
+          <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">Bilan</h3>
+          <div id="sim-summary-content"></div>
+        </div>
+      </div>
+    `;
+
+    const cart = [];
+    const searchEl = document.getElementById('sim-search');
+    const resultsEl = document.getElementById('sim-results');
+    const cartEl = document.getElementById('sim-cart');
+    const summaryEl = document.getElementById('sim-summary');
+    const summaryContent = document.getElementById('sim-summary-content');
+
+    const renderResults = (query) => {
+      if (!query || query.length < 2) { resultsEl.innerHTML = ''; return; }
+      const q = query.toLowerCase();
+      const matches = cat.filter(p =>
+        (p.nom || '').toLowerCase().includes(q) ||
+        (p.ean || '').includes(q) ||
+        (p.molecule || '').toLowerCase().includes(q)
+      ).slice(0, 8);
+      if (!matches.length) { resultsEl.innerHTML = '<div style="color:#94A3B8;font-size:12px;padding:8px">Aucun résultat</div>'; return; }
+      resultsEl.innerHTML = matches.map(p => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:1px solid #F2F6FF;cursor:pointer" onclick="window.__simAdd && window.__simAdd('${p.ean}')" onmouseover="this.style.background='#F8FAFF'" onmouseout="this.style.background=''">
+          <div>
+            <div style="font-weight:700;color:#0B1F4D;font-size:13px">${escapeHtml(p.nom)}</div>
+            <div style="font-size:10.5px;color:#94A3B8">${escapeHtml(p.marque || '')} · ${escapeHtml(p.molecule || '')} · ${escapeHtml(p.categorie || '')}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700;color:#0057FF;font-size:14px">${p.prix_ip ? p.prix_ip.toFixed(2)+' €' : '—'}</div>
+            ${p.remise_pct ? `<div style="font-size:10.5px;color:#14B86A;font-weight:700">-${p.remise_pct.toFixed(1)}%</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+    };
+
+    const renderCart = () => {
+      if (!cart.length) { cartEl.innerHTML = '<div style="color:#94A3B8;font-size:13px">Recherche puis ajoute des produits…</div>'; summaryEl.style.display = 'none'; return; }
+      cartEl.innerHTML = cart.map((item, i) => `
+        <div style="display:grid;grid-template-columns:1fr 70px 100px 30px;gap:10px;padding:10px 0;border-bottom:1px solid #F2F6FF;align-items:center;font-size:13px">
+          <div>
+            <div style="font-weight:700;color:#0B1F4D">${escapeHtml(item.nom)}</div>
+            <div style="font-size:10.5px;color:#94A3B8">${escapeHtml(item.categorie || '')} · ${item.prix_ht ? item.prix_ht.toFixed(2)+'€ HT → '+item.prix_ip.toFixed(2)+'€ IP' : ''}</div>
+          </div>
+          <input type="number" min="1" value="${item.qte}" data-cart-i="${i}" class="sim-qty" style="padding:6px 10px;border-radius:8px;border:1px solid #E8EEFF;font-size:13px;text-align:right">
+          <span style="text-align:right;font-weight:700;color:#0057FF;font-variant-numeric:tabular-nums">${(item.qte * item.prix_ip).toFixed(2)} €</span>
+          <button data-cart-rm="${i}" style="background:transparent;border:none;color:#F43F5E;font-size:18px;cursor:pointer">×</button>
+        </div>
+      `).join('');
+
+      // Bilan
+      const totalIp = cart.reduce((s, i) => s + i.qte * (i.prix_ip || 0), 0);
+      const totalHt = cart.reduce((s, i) => s + i.qte * (i.prix_ht || 0), 0);
+      const gain = totalHt - totalIp;
+      const gainPct = totalHt > 0 ? (gain / totalHt) * 100 : 0;
+      summaryEl.style.display = 'block';
+      summaryContent.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+          <div style="${styleCard()}"><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Total tarif HT</div><div style="font-size:24px;font-weight:800;color:#94A3B8;text-decoration:line-through;margin:4px 0">${fmtEuro(totalHt)}</div></div>
+          <div style="${styleCard()};border-left:4px solid #0057FF"><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Total IP</div><div style="font-size:24px;font-weight:800;color:#0057FF;margin:4px 0">${fmtEuro(totalIp)}</div></div>
+          <div style="${styleCard()};border-left:4px solid #14B86A;background:#F0FDF4"><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#14B86A;font-weight:800">Économie</div><div style="font-size:24px;font-weight:800;color:#14B86A;margin:4px 0">${fmtEuro(gain)} <span style="font-size:14px">(${gainPct.toFixed(1)}%)</span></div></div>
+        </div>
+      `;
+
+      // Handlers cart
+      document.querySelectorAll('.sim-qty').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const i = parseInt(e.target.dataset.cartI, 10);
+          cart[i].qte = Math.max(1, parseInt(e.target.value, 10) || 1);
+          renderCart();
+        });
+      });
+      document.querySelectorAll('[data-cart-rm]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          cart.splice(parseInt(e.target.dataset.cartRm, 10), 1);
+          renderCart();
+        });
+      });
+    };
+
+    window.__simAdd = (ean) => {
+      const p = cat.find(x => x.ean === ean);
+      if (!p) return;
+      const existing = cart.find(c => c.ean === ean);
+      if (existing) existing.qte++;
+      else cart.push({ ...p, qte: 1 });
+      searchEl.value = '';
+      resultsEl.innerHTML = '';
+      renderCart();
+    };
+
+    searchEl.addEventListener('input', (e) => renderResults(e.target.value.trim()));
+  }
+
+  // ───────── OFFILOG (parapharmacie) ──────────────────────────────────────
+  function renderOffilogV2() {
+    const root = document.getElementById('offilog-content');
+    if (!root) return;
+    const products = window.OFFILOG || [];
+    if (!products.length) { root.innerHTML = `<div style="padding:40px;text-align:center;color:#94A3B8">Offilog non chargé</div>`; return; }
+
+    // Counts par marque (top 10)
+    const byMarque = {};
+    for (const p of products) {
+      const m = p.marque || '(sans marque)';
+      byMarque[m] = (byMarque[m] || 0) + 1;
+    }
+    const topMarques = Object.entries(byMarque).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    // 200 produits + comparateur
+    const sample = products.slice(0, 200);
+
+    root.innerHTML = `
+      <div style="padding:20px;max-width:1280px;margin:0 auto;font-family:'DM Sans',sans-serif">
+        ${sectionHeader('Offilog · Parapharmacie', `${fmtNum(products.length)} références · prix concurrents Leclerc / Drakkars / Cap3000`)}
+
+        <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">Top marques</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+          ${topMarques.map(([m, n]) => `
+            <span style="background:#fff;border:1px solid #E8EEFF;padding:6px 12px;border-radius:999px;font-size:12px;color:#0B1F4D"><b>${escapeHtml(m)}</b> <span style="color:#94A3B8">${n}</span></span>
+          `).join('')}
+        </div>
+
+        <div style="${styleCard()};margin-bottom:14px">
+          <input id="off-search" type="search" placeholder="Recherche EAN / nom / marque…" style="width:100%;padding:9px 14px;border-radius:999px;border:1px solid #E8EEFF;font-size:14px;font-family:inherit;color:#0B1F4D">
+        </div>
+
+        <div id="off-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
+      </div>
+    `;
+
+    const renderOffGrid = (q) => {
+      let list = products;
+      if (q && q.length >= 2) {
+        const qLow = q.toLowerCase();
+        list = list.filter(p =>
+          (p.produit || '').toLowerCase().includes(qLow) ||
+          (p.marque || '').toLowerCase().includes(qLow) ||
+          (p.ean || '').includes(qLow)
+        );
+      } else {
+        list = sample;
+      }
+      list = list.slice(0, 200);
+      document.getElementById('off-grid').innerHTML = list.map(p => `
+        <div style="${styleCard('padding:14px')}">
+          <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#94A3B8;font-weight:700">${escapeHtml(p.marque || '—')}</div>
+          <div style="font-size:13px;font-weight:700;color:#0B1F4D;margin:4px 0 8px;line-height:1.3;min-height:34px">${escapeHtml(p.produit || p.nom || '—')}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;font-variant-numeric:tabular-nums">
+            <div><span style="color:#94A3B8">Achat IP</span><br><b style="color:#0057FF;font-size:14px">${p.prix_offilog ? p.prix_offilog.toFixed(2)+' €' : '—'}</b></div>
+            ${p.prix_leclerc ? `<div><span style="color:#94A3B8">Leclerc</span><br><b style="color:#F43F5E">${p.prix_leclerc.toFixed(2)} €</b></div>` : ''}
+            ${p.prix_drakkars ? `<div><span style="color:#94A3B8">Drakkars</span><br><b>${p.prix_drakkars.toFixed(2)} €</b></div>` : ''}
+            ${p.prix_cap3000 ? `<div><span style="color:#94A3B8">Cap3000</span><br><b>${p.prix_cap3000.toFixed(2)} €</b></div>` : ''}
+          </div>
+        </div>
+      `).join('');
+    };
+    renderOffGrid();
+    document.getElementById('off-search').addEventListener('input', (e) => renderOffGrid(e.target.value.trim()));
+  }
+
+  // ───────── GROUPEMENTS ──────────────────────────────────────────────────
+  function renderGroupementsV2() {
+    const root = document.getElementById('groupements-content');
+    if (!root) return;
+    const all = window.CLIENTS || [];
+    const byGr = {};
+    for (const p of all) {
+      const g = (p.ecodage || '').trim() || '(Indépendant)';
+      if (!byGr[g]) byGr[g] = { count: 0, actifs: 0, ca: 0, pot: 0 };
+      byGr[g].count++;
+      if ((p.ca2023 || 0) > 0) { byGr[g].actifs++; byGr[g].ca += p.ca2023; }
+      byGr[g].pot += p.potentielGx || 0;
+    }
+    const grs = Object.entries(byGr).sort((a, b) => b[1].count - a[1].count);
+
+    root.innerHTML = `
+      <div style="padding:20px;max-width:1280px;margin:0 auto;font-family:'DM Sans',sans-serif">
+        ${sectionHeader('Suivi groupements', `${grs.length} groupements partenaires · ${fmtNum(all.length)} officines`)}
+        <div style="${styleCard('padding:0')}">
+          <div style="padding:10px 16px;background:#F2F6FF;font-size:11px;color:#64748B;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:grid;grid-template-columns:1fr 0.8fr 0.8fr 0.8fr 0.8fr;gap:12px;border-bottom:1px solid #E8EEFF">
+            <span>Groupement</span><span style="text-align:right">Officines</span><span style="text-align:right">Actifs</span><span style="text-align:right">CA</span><span style="text-align:right">Potentiel</span>
+          </div>
+          ${grs.map(([name, d]) => `
+            <div style="padding:11px 16px;display:grid;grid-template-columns:1fr 0.8fr 0.8fr 0.8fr 0.8fr;gap:12px;font-size:13px;border-bottom:1px solid #F2F6FF;align-items:center">
+              <span style="font-weight:700;color:#0B1F4D">${escapeHtml(name)}</span>
+              <span style="text-align:right;font-variant-numeric:tabular-nums">${fmtNum(d.count)}</span>
+              <span style="text-align:right;font-variant-numeric:tabular-nums;color:${d.actifs>0?'#14B86A':'#94A3B8'};font-weight:700">${fmtNum(d.actifs)}</span>
+              <span style="text-align:right;font-variant-numeric:tabular-nums;color:${d.ca>0?'#0057FF':'#94A3B8'};font-weight:${d.ca>0?'700':'400'}">${d.ca>0?fmtEuro(d.ca):'—'}</span>
+              <span style="text-align:right;font-variant-numeric:tabular-nums;color:#64748B">${d.pot>0?fmtEuro(d.pot):'—'}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // ───────── ADMIN (sources + version) ────────────────────────────────────
+  function renderAdminV2() {
+    const root = document.getElementById('admin-content');
+    if (!root) return;
+    const total = window.SALES_TOTAL;
+    root.innerHTML = `
+      <div style="padding:20px;max-width:980px;margin:0 auto;font-family:'DM Sans',sans-serif">
+        ${sectionHeader('Administration', 'Sources de données et état du système')}
+
+        <div style="${styleCard()};margin-bottom:14px;border-left:4px solid #14B86A">
+          <div style="font-size:13px;font-weight:700;color:#0B1F4D;margin-bottom:6px">✓ Données natives chargées en mémoire</div>
+          <div style="font-size:12px;color:#64748B;line-height:1.6">Aucun import manuel nécessaire — tous les Excel sources sont compilés en JS au push.</div>
+        </div>
+
+        ${total ? `
+        <div style="${styleCard()};margin-bottom:14px">
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Période STATS détaillé</div>
+          <div style="font-size:18px;font-weight:800;color:#0B1F4D;margin:4px 0">${total.premiere_date} → ${total.derniere_date}</div>
+          <div style="font-size:12px;color:#64748B">${fmtNum(total.lignes)} lignes · ${fmtNum(total.factures)} factures · ${fmtEuro(total.ca)} CA cumulé · ${total.nb_clients} clients facturés</div>
+        </div>
+        ` : ''}
+
+        <div style="${styleCard('padding:0')}">
+          <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:1fr auto;gap:12px"><div><div style="font-family:monospace;font-size:11px;color:#0057FF;font-weight:700">window.CLIENTS</div><div style="font-size:12px;color:#64748B">clients-data.js (BASE DE DONNÉE IP WM + WML)</div></div><div style="font-size:18px;font-weight:800;color:#0B1F4D">${fmtNum((window.CLIENTS||[]).length)}</div></div>
+          <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:1fr auto;gap:12px"><div><div style="font-family:monospace;font-size:11px;color:#0057FF;font-weight:700">window.PHARMACIES_GEO</div><div style="font-size:12px;color:#64748B">pharmacies-geo.js (api-adresse.data.gouv.fr)</div></div><div style="font-size:18px;font-weight:800;color:#0B1F4D">${fmtNum(Object.keys(window.PHARMACIES_GEO||{}).length)}</div></div>
+          <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:1fr auto;gap:12px"><div><div style="font-family:monospace;font-size:11px;color:#0057FF;font-weight:700">window.CATALOGUE_IP</div><div style="font-size:12px;color:#64748B">catalogue-ip.js (TOP IP DÉCROISSANT.xlsb)</div></div><div style="font-size:18px;font-weight:800;color:#0B1F4D">${fmtNum((window.CATALOGUE_IP||[]).length)}</div></div>
+          <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:1fr auto;gap:12px"><div><div style="font-family:monospace;font-size:11px;color:#0057FF;font-weight:700">window.CLIENT_PRODUCTS</div><div style="font-size:12px;color:#64748B">client-products.js (synthèse par article)</div></div><div style="font-size:18px;font-weight:800;color:#0B1F4D">${fmtNum(Object.keys(window.CLIENT_PRODUCTS||{}).length)}</div></div>
+          <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:1fr auto;gap:12px"><div><div style="font-family:monospace;font-size:11px;color:#0057FF;font-weight:700">window.STOCK</div><div style="font-size:12px;color:#64748B">stock.js (inventaire 01/06/2026)</div></div><div style="font-size:18px;font-weight:800;color:#0B1F4D">${fmtNum(Object.keys(window.STOCK||{}).length)}</div></div>
+          <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:1fr auto;gap:12px"><div><div style="font-family:monospace;font-size:11px;color:#0057FF;font-weight:700">window.SALES_BY_PRODUCT</div><div style="font-size:12px;color:#64748B">sales-detail.js (état détaillé STATS)</div></div><div style="font-size:18px;font-weight:800;color:#0B1F4D">${fmtNum(Object.keys(window.SALES_BY_PRODUCT||{}).length)}</div></div>
+          <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:1fr auto;gap:12px"><div><div style="font-family:monospace;font-size:11px;color:#0057FF;font-weight:700">window.OFFILOG</div><div style="font-size:12px;color:#64748B">offilog-data.js (parapharmacie)</div></div><div style="font-size:18px;font-weight:800;color:#0B1F4D">${fmtNum((window.OFFILOG||[]).length)}</div></div>
+          <div style="padding:14px 18px;display:grid;grid-template-columns:1fr auto;gap:12px"><div><div style="font-family:monospace;font-size:11px;color:#0057FF;font-weight:700">window.BENCHMARK</div><div style="font-size:12px;color:#64748B">benchmark-data.js</div></div><div style="font-size:18px;font-weight:800;color:#0B1F4D">${fmtNum((window.BENCHMARK||[]).length)}</div></div>
+        </div>
+
+        <div style="${styleCard()};margin-top:14px;border-left:4px solid #5856D6">
+          <div style="font-size:13px;font-weight:700;color:#0B1F4D;margin-bottom:6px">Workflow d'actualisation</div>
+          <div style="font-size:12px;color:#64748B;line-height:1.8">
+            <b>1.</b> Mettre à jour les Excel sources dans le dossier projet (STATS/, WML_*.xlsx)<br>
+            <b>2.</b> Lancer le script Python correspondant (<code style="background:#F2F6FF;padding:1px 5px;border-radius:3px">sync_stats_clients.py</code>, <code style="background:#F2F6FF;padding:1px 5px;border-radius:3px">generate_sales_detail.py</code>, <code style="background:#F2F6FF;padding:1px 5px;border-radius:3px">geocode_pharmacies.py</code>)<br>
+            <b>3.</b> <code style="background:#F2F6FF;padding:1px 5px;border-radius:3px">git push</code> → l'app reflète la nouvelle data dans la minute
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   // ───────── Apply overrides ──────────────────────────────────────────────
   function applyOverrides() {
     let applied = 0;
@@ -394,10 +726,15 @@
     if (typeof window.renderCatalogue === 'function')  { window.renderCatalogue  = renderCatalogueV2;  applied++; }
     if (typeof window.renderImport === 'function')     { window.renderImport     = renderImportV2;     applied++; }
     if (typeof window.renderObjectifs === 'function')  { window.renderObjectifs  = renderObjectifsV2;  applied++; }
-    if (applied < 5) {
+    if (typeof window.renderBenchmark === 'function')  { window.renderBenchmark  = renderBenchmarkV2;  applied++; }
+    if (typeof window.renderSimulator === 'function')  { window.renderSimulator  = renderSimulatorV2;  applied++; }
+    if (typeof window.renderOffilog === 'function')    { window.renderOffilog    = renderOffilogV2;    applied++; }
+    if (typeof window.renderGroupements === 'function'){ window.renderGroupements= renderGroupementsV2;applied++; }
+    if (typeof window.renderAdmin === 'function')      { window.renderAdmin      = renderAdminV2;      applied++; }
+    if (applied < 10) {
       setTimeout(applyOverrides, 100);
     } else {
-      console.log('[classic-overrides] ' + applied + ' renders override appliqués (Pharmacies, Produits, Catalogue, Import, Objectifs)');
+      console.log('[classic-overrides] ' + applied + ' renders override appliqués');
     }
   }
 

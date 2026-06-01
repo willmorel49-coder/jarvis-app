@@ -131,6 +131,9 @@
           </div>
         </div>
 
+        <!-- VENTILATION TRANCHE × CATÉGORIE -->
+        <div id="ventilation-section" style="margin-top:32px"></div>
+
         <!-- SOUS-FAMILLES -->
         ${sfList.length ? `
         <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:28px 0 12px">Mix sous-familles · CA réel facturé</h3>
@@ -159,6 +162,211 @@
         </div>
       </div>
     `;
+
+    // Monte la section Ventilation tranche × catégorie
+    renderVentilation();
+  }
+
+  // ───────── VENTILATION TRANCHE × CATÉGORIE ───────────────────────────────
+  const ventState = {
+    metrique: 'CA',
+    axe: 'sousfamille',
+    tranches: 4,
+    catFilter: 'all',
+  };
+
+  function getProductPrixUnit(p) {
+    if (!p.qte || p.qte <= 0) return null;
+    return p.ca / p.qte;
+  }
+
+  function buildTrancheBins(n) {
+    // Bins prédéfinis (cohérents avec le Streamlit) puis adaptatifs
+    if (n === 3) return { bins: [-Infinity, 10, 500, Infinity], labels: ['< 10 €', '10–500 €', '> 500 €'] };
+    if (n === 4) return { bins: [-Infinity, 4.63, 501.47, 1532.5, Infinity], labels: ['< 4,63 €', '4,63–501 €', '501–1500 €', '> 1500 €'] };
+    if (n === 5) return { bins: [-Infinity, 4.63, 50, 501.47, 1500, Infinity], labels: ['< 4,63 €', '4,63–50 €', '50–501 €', '501–1500 €', '> 1500 €'] };
+    if (n === 6) return { bins: [-Infinity, 4.63, 20, 100, 501.47, 1500, Infinity], labels: ['< 4,63 €', '4,63–20 €', '20–100 €', '100–501 €', '501–1500 €', '> 1500 €'] };
+    return { bins: [-Infinity, 4.63, 501.47, 1532.5, Infinity], labels: ['< 4,63 €', '4,63–501 €', '501–1500 €', '> 1500 €'] };
+  }
+
+  function getTrancheIdx(prix, bins) {
+    if (prix === null || prix === undefined) return -1;
+    for (let i = 0; i < bins.length - 1; i++) {
+      if (prix > bins[i] && prix <= bins[i + 1]) return i;
+    }
+    return -1;
+  }
+
+  function computeVentilation() {
+    const products = Object.entries(window.SALES_BY_PRODUCT || {}).map(([artcode, p]) => ({ artcode, ...p }));
+    const { bins, labels } = buildTrancheBins(ventState.tranches);
+
+    // Map vers tranche + catégorie
+    const cells = {}; // {tranche: {cat: {ca, qte, marge, lignes, clients_set}}}
+    const allCats = new Set();
+
+    for (const p of products) {
+      const prix = getProductPrixUnit(p);
+      const trIdx = getTrancheIdx(prix, bins);
+      if (trIdx < 0) continue;
+      const trLabel = labels[trIdx];
+
+      let cat;
+      if (ventState.axe === 'sousfamille') {
+        cat = p.sousfamille || '(non renseigné)';
+      } else if (ventState.axe === 'segment') {
+        // Segment métier dérivé : Froid si sousfamille=Froid, sinon Ophtalmologie, sinon Cond. Trim, sinon Autre
+        const sf = (p.sousfamille || '').toLowerCase();
+        if (sf.includes('froid')) cat = 'Froid';
+        else if (sf.includes('ophtalmo')) cat = 'Ophtalmologie';
+        else if (sf.includes('cond')) cat = 'Cond. Trimestriel';
+        else if (sf.includes('exclu')) cat = 'Exclu';
+        else cat = 'Autres';
+      } else {
+        cat = p.sousfamille || '(non renseigné)';
+      }
+      allCats.add(cat);
+
+      if (!cells[trLabel]) cells[trLabel] = {};
+      if (!cells[trLabel][cat]) cells[trLabel][cat] = { ca: 0, qte: 0, marge: 0, lignes: 0 };
+      cells[trLabel][cat].ca += p.ca || 0;
+      cells[trLabel][cat].qte += p.qte || 0;
+      cells[trLabel][cat].marge += p.marge || 0;
+      cells[trLabel][cat].lignes += 1;
+    }
+
+    // Tri colonnes par CA total desc
+    const catList = Array.from(allCats);
+    catList.sort((a, b) => {
+      const caA = labels.reduce((s, t) => s + ((cells[t] && cells[t][a]) ? cells[t][a].ca : 0), 0);
+      const caB = labels.reduce((s, t) => s + ((cells[t] && cells[t][b]) ? cells[t][b].ca : 0), 0);
+      return caB - caA;
+    });
+
+    return { cells, labels, catList };
+  }
+
+  function renderVentilation() {
+    const root = document.getElementById('ventilation-section');
+    if (!root) return;
+    const { cells, labels, catList } = computeVentilation();
+
+    // Calcul totaux
+    const colTotals = {};
+    const rowTotals = {};
+    let grandTotal = 0;
+    for (const tr of labels) {
+      rowTotals[tr] = 0;
+      for (const cat of catList) {
+        const cell = cells[tr] && cells[tr][cat];
+        const val = cell ? cell[metricField(ventState.metrique)] : 0;
+        rowTotals[tr] += val;
+        colTotals[cat] = (colTotals[cat] || 0) + val;
+        grandTotal += val;
+      }
+    }
+    // Trouve max cellule pour heatmap
+    let maxCellVal = 0;
+    for (const tr of labels) for (const cat of catList) {
+      const v = cells[tr] && cells[tr][cat] ? cells[tr][cat][metricField(ventState.metrique)] : 0;
+      if (v > maxCellVal) maxCellVal = v;
+    }
+
+    const cellsHtml = labels.map(tr => {
+      const rowCells = catList.map(cat => {
+        const cell = cells[tr] && cells[tr][cat];
+        const val = cell ? cell[metricField(ventState.metrique)] : 0;
+        const intensity = maxCellVal > 0 ? val / maxCellVal : 0;
+        const bg = `rgba(0, 87, 255, ${0.04 + intensity * 0.35})`;
+        const fmt = formatMetric(val, ventState.metrique);
+        return `<td style="padding:9px 10px;text-align:right;background:${bg};font-variant-numeric:tabular-nums;border-right:1px solid #fff;font-weight:${intensity > 0.5 ? '700' : '500'};color:${intensity > 0.5 ? '#fff' : '#0B1F4D'}">${fmt}</td>`;
+      }).join('');
+      const totalFmt = formatMetric(rowTotals[tr], ventState.metrique);
+      return `<tr><td style="padding:9px 12px;font-weight:700;color:#0B1F4D;background:#F2F6FF;border-right:2px solid #0057FF">${tr}</td>${rowCells}<td style="padding:9px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${totalFmt}</td></tr>`;
+    }).join('');
+
+    const totalRowHtml = catList.map(cat => `<td style="padding:9px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${formatMetric(colTotals[cat] || 0, ventState.metrique)}</td>`).join('');
+
+    root.innerHTML = `
+      <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">🎯 Ventilation tranche prix × catégorie</h3>
+
+      <!-- Sélecteurs -->
+      <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+        <label style="font-size:12px;color:#64748B;font-weight:700">
+          Métrique
+          <select id="vent-metric" style="margin-left:6px;padding:6px 10px;border-radius:8px;border:1px solid #E8EEFF;font-family:inherit;font-size:13px">
+            <option value="CA" ${ventState.metrique==='CA'?'selected':''}>CA HT</option>
+            <option value="QTE" ${ventState.metrique==='QTE'?'selected':''}>Quantité</option>
+            <option value="LIGNES" ${ventState.metrique==='LIGNES'?'selected':''}>Nb références</option>
+          </select>
+        </label>
+        <label style="font-size:12px;color:#64748B;font-weight:700">
+          Axe catégorie
+          <select id="vent-axe" style="margin-left:6px;padding:6px 10px;border-radius:8px;border:1px solid #E8EEFF;font-family:inherit;font-size:13px">
+            <option value="sousfamille" ${ventState.axe==='sousfamille'?'selected':''}>Sous-famille</option>
+            <option value="segment" ${ventState.axe==='segment'?'selected':''}>Segment métier</option>
+          </select>
+        </label>
+        <label style="font-size:12px;color:#64748B;font-weight:700">
+          Tranches
+          <select id="vent-tranches" style="margin-left:6px;padding:6px 10px;border-radius:8px;border:1px solid #E8EEFF;font-family:inherit;font-size:13px">
+            <option value="3" ${ventState.tranches===3?'selected':''}>3 tranches</option>
+            <option value="4" ${ventState.tranches===4?'selected':''}>4 tranches</option>
+            <option value="5" ${ventState.tranches===5?'selected':''}>5 tranches</option>
+            <option value="6" ${ventState.tranches===6?'selected':''}>6 tranches</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Pivot table -->
+      <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(11,31,77,.04)">
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <thead>
+              <tr style="background:#0B1F4D;color:#fff">
+                <th style="padding:11px 12px;text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase">Tranche</th>
+                ${catList.map(c => `<th style="padding:11px 10px;text-align:right;font-size:11px;letter-spacing:.5px;font-weight:700;border-left:1px solid rgba(255,255,255,.1)">${escapeHtml(c)}</th>`).join('')}
+                <th style="padding:11px 10px;text-align:right;font-size:11px;letter-spacing:1px;text-transform:uppercase;background:#1E3A5F">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${cellsHtml}
+              <tr style="background:#EAF2FF;border-top:2px solid #0057FF">
+                <td style="padding:11px 12px;font-weight:800;color:#0B1F4D;text-transform:uppercase;font-size:11px;letter-spacing:1px">Total</td>
+                ${totalRowHtml}
+                <td style="padding:11px 10px;text-align:right;font-weight:800;background:#0057FF;color:#fff;font-variant-numeric:tabular-nums;font-size:14px">${formatMetric(grandTotal, ventState.metrique)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:#94A3B8;margin-top:8px;text-align:center">
+        💡 Heatmap : intensité bleue ∝ valeur cellule · Tri colonnes par total décroissant · Cross-check : total cellules = total tranche du tableau Abandon
+      </div>
+    `;
+
+    // Handlers
+    const metric = document.getElementById('vent-metric');
+    const axe = document.getElementById('vent-axe');
+    const tranches = document.getElementById('vent-tranches');
+    if (metric) metric.addEventListener('change', e => { ventState.metrique = e.target.value; renderVentilation(); });
+    if (axe) axe.addEventListener('change', e => { ventState.axe = e.target.value; renderVentilation(); });
+    if (tranches) tranches.addEventListener('change', e => { ventState.tranches = parseInt(e.target.value, 10); renderVentilation(); });
+  }
+
+  function metricField(m) {
+    if (m === 'CA') return 'ca';
+    if (m === 'QTE') return 'qte';
+    if (m === 'LIGNES') return 'lignes';
+    return 'ca';
+  }
+  function formatMetric(val, metrique) {
+    if (val == null) return '—';
+    if (metrique === 'CA') return fmtEuro(val);
+    if (metrique === 'QTE') return fmtNum(Math.round(val));
+    if (metrique === 'LIGNES') return fmtNum(val);
+    return fmtNum(val);
   }
 
   function kpiCard(label, value, sub, hero) {
