@@ -178,22 +178,27 @@
     { key: 'haut',  min: 468,    max: Infinity, label: 'Haut prix',     sub: '> 468 €',      remiseType: 'fixe', remiseVal: 19.50, remiseLabel: '19,50 € fixe / unité' },
   ];
 
-  // Marques de génériques partenaires IP (engagement)
-  const PARTNER_MARQUES = ['TEVA', 'ZENTIVA', 'EG', 'EG LABO', 'ZYDUS', 'BIOGARAN'];
+  // Famille produit (6 valeurs métier) — basée sur ARTNATURE + AFMCODE + ARTSOUSFAMILLE
+  // Sources de vérité (depuis stock.js qui contient les vraies valeurs Intégral Pharma) :
+  //   ARTNATURE   ∈ {Referent, Generique, Generique Partenaire, Biosimilaire, #N/A}
+  //   AFMCODE     = REMBSS (remboursé) ou autre (PARA, MED010, MED021, DM, DM_20, HORSMED, AUTRE → NR)
+  //   ARTSOUSFAMILLE = Froid / Ophtalmologie / Cond. Trimestriel / Exclu / #N/A
+  function getFamilleIP(salesProd, stockMatch) {
+    const nature = ((stockMatch && stockMatch.nature) || '').trim();
+    const afmcode = ((stockMatch && stockMatch.marque) || '').trim().toUpperCase(); // "marque" dans stock.js = AFMCODE
+    const sousfamilleStock = ((stockMatch && stockMatch.sousfamille) || '').trim();
+    const sousfamilleSales = ((salesProd && salesProd.sousfamille) || '').trim();
 
-  // Famille produit (6 valeurs métier)
-  function getFamilleIP(p, catalogueMatch) {
-    const sf = (p.sousfamille || '').toLowerCase();
-    if (sf.includes('froid')) return 'Froid';
-    if (catalogueMatch && (catalogueMatch.categorie || '').toLowerCase() === 'nr') return 'Non remboursés';
-    const marque = ((catalogueMatch && catalogueMatch.marque) || '').toUpperCase();
-    if (PARTNER_MARQUES.some(m => marque.includes(m))) return 'Gén. partenaires';
-    const nom = (p.designation || '').toLowerCase();
-    // Détection biosimilaires par mots-clés moléculaires
-    if (/\b(filgrastim|pegfilgrastim|infliximab|adalimumab|etanercept|rituximab|trastuzumab|bevacizumab|epoetin|biosim)\b/i.test(nom)) return 'Biosimilaires';
-    // Détection génériques par mots-clés (mol courante en marque)
-    if (/\b(gé\b|générique)\b/i.test(nom)) return 'Génériques';
-    return 'Princeps';
+    // Ordre de priorité (mutuellement exclusif)
+    if (nature === 'Biosimilaire') return 'Biosimilaires';
+    const sfCombined = (sousfamilleStock + ' ' + sousfamilleSales).toLowerCase();
+    if (sfCombined.includes('froid')) return 'Froid';
+    // Non remboursé : AFMCODE ≠ REMBSS (et présent, sinon on ne sait pas)
+    if (afmcode && afmcode !== 'REMBSS' && afmcode !== '#N/A' && afmcode !== '') return 'Non remboursés';
+    if (nature === 'Generique Partenaire') return 'Gén. partenaires';
+    if (nature === 'Generique') return 'Génériques';
+    if (nature === 'Referent') return 'Princeps';
+    return 'Princeps'; // fallback (incluant #N/A nature qui sont majoritairement princeps remboursés)
   }
 
   function getProductPrixUnit(p) {
@@ -209,22 +214,12 @@
     return null;
   }
 
-  function buildCatalogueIndex() {
-    if (window.__catIpIndex__) return window.__catIpIndex__;
-    const idx = {};
-    for (const p of (window.CATALOGUE_IP || [])) {
-      if (p.ean) idx[p.ean] = p;
-    }
-    window.__catIpIndex__ = idx;
-    return idx;
-  }
-
   function computeVentilation() {
     const products = Object.entries(window.SALES_BY_PRODUCT || {}).map(([artcode, p]) => ({ artcode, ...p }));
-    const catIdx = buildCatalogueIndex();
+    // Index direct sur STOCK (artcode -> {nature, marque/afmcode, sousfamille, ...})
+    const stockIdx = window.STOCK || {};
     const FAMILLES = ['Froid', 'Biosimilaires', 'Génériques', 'Gén. partenaires', 'Non remboursés', 'Princeps'];
 
-    // cells[trKey][famille] = {ca, qte, marge, lignes, remise_theo}
     const cells = {};
     for (const t of TRANCHES_IP) {
       cells[t.key] = {};
@@ -235,8 +230,8 @@
       const prix = getProductPrixUnit(p);
       const tr = getTrancheIP(prix);
       if (!tr) continue;
-      const catMatch = catIdx[p.artcode] || null;
-      const famille = getFamilleIP(p, catMatch);
+      const stockMatch = stockIdx[p.artcode] || null;
+      const famille = getFamilleIP(p, stockMatch);
       const cell = cells[tr.key][famille];
       cell.ca += p.ca || 0;
       cell.qte += p.qte || 0;
