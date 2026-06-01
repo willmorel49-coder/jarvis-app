@@ -16,7 +16,7 @@ export function createGreeting({ userName = 'William', territoryLabel = 'Manche 
     <p class="jarvis-greeting-hi">${hi}, ${escapeHtml(userName)}</p>
     <h1 class="jarvis-greeting-title">${escapeHtml(territoryLabel)}</h1>
     <p class="jarvis-greeting-sub">${sub}</p>
-    <p class="jarvis-greeting-ver" style="font-size:9px;color:#94A3B8;letter-spacing:.5px;margin:2px 0 0;opacity:.6;">v.20260601e · 808 clients</p>
+    <p class="jarvis-greeting-ver" style="font-size:9px;color:#94A3B8;letter-spacing:.5px;margin:2px 0 0;opacity:.6;">v.20260601f · 808 clients</p>
   `;
   return wrap;
 }
