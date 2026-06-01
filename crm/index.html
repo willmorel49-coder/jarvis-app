@@ -61,18 +61,31 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js"></script>
 
   <!-- Données métier (cache-busted à chaque deploy pour éviter stale data) -->
-  <script src="clients-data.js?v=20260601c"></script>
-  <script src="pharmacies-geo.js?v=20260601c"></script>
-  <script src="benchmark-data.js?v=20260601c"></script>
-  <script src="offilog-data.js?v=20260601c"></script>
-  <script src="drakkars-data.js?v=20260601c"></script>
-  <script src="cap3000-data.js?v=20260601c"></script>
-  <script src="groupements-data.js?v=20260601c"></script>
+  <script src="clients-data.js?v=20260601d"></script>
+  <script src="pharmacies-geo.js?v=20260601d"></script>
+  <script src="benchmark-data.js?v=20260601d"></script>
+  <script src="offilog-data.js?v=20260601d"></script>
+  <script src="drakkars-data.js?v=20260601d"></script>
+  <script src="cap3000-data.js?v=20260601d"></script>
+  <script src="groupements-data.js?v=20260601d"></script>
   <!-- Données enrichies STATS (catalogue IP · produits par client · stock · ventes détaillées) -->
-  <script src="catalogue-ip.js?v=20260601c"></script>
-  <script src="client-products.js?v=20260601c"></script>
-  <script src="stock.js?v=20260601c"></script>
-  <script src="sales-detail.js?v=20260601c"></script>
+  <script src="catalogue-ip.js?v=20260601d"></script>
+  <script src="client-products.js?v=20260601d"></script>
+  <script src="stock.js?v=20260601d"></script>
+  <script src="sales-detail.js?v=20260601d"></script>
+
+  <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
+       Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
+       qui n'est PAS accessible via window dans un module strict. -->
+  <script>
+    try { if (typeof CLIENTS    !== 'undefined') window.CLIENTS    = CLIENTS;    } catch(e){}
+    try { if (typeof BENCHMARK  !== 'undefined') window.BENCHMARK  = BENCHMARK;  } catch(e){}
+    try { if (typeof OFFILOG    !== 'undefined') window.OFFILOG    = OFFILOG;    } catch(e){}
+    try { if (typeof DRAKKARS   !== 'undefined') window.DRAKKARS   = DRAKKARS;   } catch(e){}
+    try { if (typeof CAP3000    !== 'undefined') window.CAP3000    = CAP3000;    } catch(e){}
+    try { if (typeof GROUPEMENTS!== 'undefined') window.GROUPEMENTS= GROUPEMENTS;} catch(e){}
+    console.log('[JARVIS BRIDGE] CLIENTS=' + (window.CLIENTS||[]).length + ' OFFILOG=' + (window.OFFILOG||[]).length);
+  </script>
 
   <script>
     Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
@@ -82,8 +95,8 @@
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
   </script>
 
-  <script src="app.js?v=20260601c" defer></script>
-  <script type="module" src="jarvis/main.js?v=20260601c"></script>
+  <script src="app.js?v=20260601d" defer></script>
+  <script type="module" src="jarvis/main.js?v=20260601d"></script>
 </head>
 
 <body>
