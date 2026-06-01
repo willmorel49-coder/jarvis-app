@@ -53,8 +53,26 @@ function attachHandlers(body) {
 
 function getProducts() {
   if (cachedProducts) return cachedProducts;
+  // Priorité : catalogue IP réel (TOP IP DÉCROISSANT.xlsb) puis fallback OFFILOG
+  if (window.CATALOGUE_IP && window.CATALOGUE_IP.length) {
+    cachedProducts = window.CATALOGUE_IP.map((p) => ({
+      ean: p.ean,
+      produit: p.nom,
+      marque: p.marque || '',
+      categorie: p.categorie || '',
+      molecule: p.molecule || '',
+      prix_offilog: p.prix_ip,      // prix achat IP (référence)
+      prix_ht: p.prix_ht,
+      prix_ip: p.prix_ip,
+      remise_pct: p.remise_pct,
+      offre_ip: p.offre_ip,
+      froid: p.froid,
+      // Stock dispo (si stock.js chargé)
+      stock_dispo: (window.STOCK_EAN && window.STOCK && window.STOCK[window.STOCK_EAN[p.ean]]) ? window.STOCK[window.STOCK_EAN[p.ean]].dispo : null,
+    }));
+    return cachedProducts;
+  }
   const raw = (typeof window !== 'undefined' && window.OFFILOG) ? window.OFFILOG : [];
-  // On charge l'intégralité des 3520 produits — le filtre + slice(0,200) dans filterProducts gère la perf
   cachedProducts = raw;
   return cachedProducts;
 }
