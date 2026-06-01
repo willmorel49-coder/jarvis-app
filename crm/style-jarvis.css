@@ -253,6 +253,45 @@
   font-style: italic;
   margin-bottom: 12px;
 }
+.pharma-fiche-products {
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.pharma-fiche-products-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.pharma-fiche-product {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.pharma-fiche-product:last-child { border: none; }
+.pharma-fiche-product-name {
+  color: var(--text-dim);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pharma-fiche-product-meta {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pharma-fiche-product-meta b { color: var(--text); font-weight: 700; }
+
 .pharma-fiche-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .jarvis-link { color: var(--blue); text-decoration: none; font-weight: 600; }
 .jarvis-link:hover { text-decoration: underline; }
