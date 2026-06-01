@@ -21,7 +21,11 @@ import './lens-pilotage.js';
 import './lens-journal.js';
 import './lens-rdv.js';
 
-window.__JARVIS_SHELL_ACTIVE__ = true;
+// Note : __JARVIS_SHELL_ACTIVE__ et __JARVIS_MODE__ sont posés dans crm/index.html (head)
+// On ne boot le shell que si le mode JARVIS est actif.
+if (typeof window.__JARVIS_SHELL_ACTIVE__ === 'undefined') {
+  window.__JARVIS_SHELL_ACTIVE__ = true;
+}
 
 let sheetRef = null;
 let shellMounted = false;
@@ -240,8 +244,16 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bootJarvis);
-} else {
+function startWhenReady() {
+  if (window.__JARVIS_MODE__ === 'classic') {
+    console.log('[JARVIS] Mode classique actif, shell non démarré.');
+    return;
+  }
   bootJarvis();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startWhenReady);
+} else {
+  startWhenReady();
 }
