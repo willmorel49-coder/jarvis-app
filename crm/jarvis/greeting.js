@@ -27,12 +27,15 @@ function greetingForTime() {
   return 'Bonsoir';
 }
 
-function subForStats({ visitsToday = 0, alerts = 0 } = {}) {
+function subForStats({ visitsToday = 0, alerts = 0, clients = 0, prospectsHot = 0, total = 0 } = {}) {
   const parts = [];
   if (visitsToday > 0) parts.push(`${visitsToday} visite${visitsToday > 1 ? 's' : ''} aujourd'hui`);
-  if (alerts > 0) parts.push(`${alerts} alerte${alerts > 1 ? 's' : ''}`);
+  if (alerts > 0) parts.push(`<span style="color:#FF3B30">${alerts} alerte${alerts > 1 ? 's' : ''}</span>`);
+  if (clients > 0) parts.push(`${clients} client${clients > 1 ? 's' : ''}`);
+  if (prospectsHot > 0) parts.push(`<span style="color:#FF9F1C">${prospectsHot} prospect${prospectsHot > 1 ? 's' : ''} à démarcher</span>`);
   if (!parts.length) {
     const today = DAYS_FR[new Date().getDay()];
+    if (total > 0) return `${today} · ${total} officines sur ton territoire`;
     return `${today} · territoire en veille`;
   }
   return parts.join(' · ');
