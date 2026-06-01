@@ -62,6 +62,12 @@ export function renderPharmaFiche(pharma) {
       <!-- TOP PRODUITS -->
       ${renderTopProducts(pharma.cip)}
 
+      <!-- TIMELINE MENSUELLE CLIENT -->
+      ${renderClientTimeline(pharma.cip)}
+
+      <!-- DERNIÈRES FACTURES -->
+      ${renderRecentInvoices(pharma.cip)}
+
       <!-- ACTIONS -->
       <div class="pharma-fiche-actions">
         <a class="jarvis-btn jarvis-btn-primary" href="${gmapsDir}" target="_blank" rel="noopener">Itinéraire ↗</a>
@@ -164,6 +170,108 @@ function renderTopProducts(cip) {
       </div>
       ${rows}
     </div>
+  `;
+}
+
+/* ================================================================
+   TIMELINE MENSUELLE + DERNIÈRES FACTURES (SALES_BY_CLIENT_MONTH / DETAIL)
+   ================================================================ */
+
+function renderClientTimeline(cip) {
+  const monthly = window.SALES_BY_CLIENT_MONTH && window.SALES_BY_CLIENT_MONTH[cip];
+  if (!monthly || !Object.keys(monthly).length) return '';
+  const months = Object.keys(monthly).sort();
+  const values = months.map(m => monthly[m].ca);
+  const max = Math.max(...values, 1);
+  const total = values.reduce((s, v) => s + v, 0);
+  const moisLabel = (ym) => {
+    const noms = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+    return noms[parseInt(ym.split('-')[1], 10) - 1] || ym;
+  };
+  return `
+    <div class="pharma-fiche-timeline">
+      <div class="pharma-fiche-timeline-title">Évolution mensuelle <span class="jarvis-muted">· ${months.length} mois · ${formatEuro(total)}</span></div>
+      <div class="pharma-fiche-timeline-bars">
+        ${months.map(m => {
+          const pct = Math.round((monthly[m].ca / max) * 100);
+          return `
+            <div class="pharma-fiche-timeline-col" title="${m} · ${formatEuro(monthly[m].ca)}">
+              <div class="pharma-fiche-timeline-bar-wrap"><div class="pharma-fiche-timeline-bar" style="height:${Math.max(pct, 4)}%"></div></div>
+              <div class="pharma-fiche-timeline-label">${moisLabel(m)}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+    <style>
+      .pharma-fiche-timeline {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 10px 12px;
+        margin-bottom: 12px;
+      }
+      .pharma-fiche-timeline-title {
+        font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: var(--text); margin-bottom: 10px;
+      }
+      .pharma-fiche-timeline-bars {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
+        gap: 4px;
+        align-items: end;
+        height: 80px;
+      }
+      .pharma-fiche-timeline-col { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+      .pharma-fiche-timeline-bar-wrap { width: 100%; height: 60px; display: flex; align-items: flex-end; }
+      .pharma-fiche-timeline-bar { width: 100%; background: linear-gradient(180deg, var(--blue), var(--indigo)); border-radius: 3px 3px 0 0; min-height: 3px; }
+      .pharma-fiche-timeline-label { font-size: 9px; color: var(--text-dim); font-weight: 700; }
+    </style>
+  `;
+}
+
+function renderRecentInvoices(cip) {
+  const detail = window.SALES_BY_CLIENT_DETAIL && window.SALES_BY_CLIENT_DETAIL[cip];
+  if (!detail || !detail.length) return '';
+  const top5 = detail.slice(0, 5);
+  return `
+    <div class="pharma-fiche-invoices">
+      <div class="pharma-fiche-products-title">Dernières factures <span class="jarvis-muted">· ${detail.length} lignes</span></div>
+      ${top5.map(l => `
+        <div class="pharma-fiche-invoice-row">
+          <span class="pharma-fiche-invoice-date">${formatDate(l.date)}</span>
+          <span class="pharma-fiche-invoice-name">${escapeHtml(l.designation)}</span>
+          <span class="pharma-fiche-invoice-qty">×${l.qte}</span>
+          <span class="pharma-fiche-invoice-ca"><b>${formatEuro(l.ca)}</b></span>
+        </div>
+      `).join('')}
+    </div>
+    <style>
+      .pharma-fiche-invoices {
+        background: var(--surface-glass-strong);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 10px 12px;
+        margin-bottom: 12px;
+      }
+      .pharma-fiche-invoice-row {
+        display: grid;
+        grid-template-columns: 60px 1fr auto auto;
+        gap: 8px;
+        padding: 5px 0;
+        font-size: 11.5px;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+      }
+      .pharma-fiche-invoice-row:last-child { border: none; }
+      .pharma-fiche-invoice-date { font-size: 10px; color: var(--blue); font-weight: 700; }
+      .pharma-fiche-invoice-name {
+        color: var(--text-dim);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .pharma-fiche-invoice-qty { color: var(--text-muted); font-size: 10px; }
+      .pharma-fiche-invoice-ca { font-variant-numeric: tabular-nums; }
+      .pharma-fiche-invoice-ca b { color: var(--text); }
+    </style>
   `;
 }
 
