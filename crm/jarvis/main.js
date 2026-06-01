@@ -229,18 +229,22 @@ function computeStatusForPharma(p) {
 }
 
 function computeStats(pharmacies) {
-  let clients = 0, prospectsHot = 0, prospectsCold = 0, sectorCa = 0;
+  let clientsActifs = 0, clientsPassifs = 0, prospectsHot = 0, prospectsCold = 0, sectorCa = 0;
   for (const p of pharmacies) {
     const ca = p.ca2023 || 0;
-    if (ca > 0) { clients++; sectorCa += ca; }
-    else if ((p.potentielGx || 0) > 0) prospectsHot++;
+    if (ca > 0) { clientsActifs++; sectorCa += ca; continue; }
+    const hasGroupement = !!(p.gros1 || p.gros2 || (p.ecodage && String(p.ecodage).trim()));
+    if (hasGroupement) { clientsPassifs++; continue; }
+    if ((p.potentielGx || 0) > 0) prospectsHot++;
     else prospectsCold++;
   }
   return {
     visitsToday: 0,
     alerts: 0,
     total: pharmacies.length,
-    clients,
+    clients: clientsActifs + clientsPassifs,
+    clientsActifs,
+    clientsPassifs,
     prospectsHot,
     prospectsCold,
     sectorCa,
@@ -258,7 +262,8 @@ function initialBubbleForStats(stats) {
 
 function bubbleForStats(stats) {
   const caStr = stats.sectorCa ? ` · <b>${formatEuroShort(stats.sectorCa)}</b> secteur` : '';
-  return `<strong>JARVIS</strong> · ${stats.clients} client${stats.clients > 1 ? 's' : ''}${caStr} · <span style="color:#FF9F1C;font-weight:700">${stats.prospectsHot} prospect${stats.prospectsHot > 1 ? 's' : ''} à démarcher</span>. Tape un pin, ou demande "secteur", "catalogue"…`;
+  const breakdown = stats.clientsActifs > 0 ? ` (${stats.clientsActifs} actifs)` : '';
+  return `<strong>JARVIS</strong> · ${stats.clients} client${stats.clients > 1 ? 's' : ''}${breakdown}${caStr} · <span style="color:#FF9F1C;font-weight:700">${stats.prospectsHot} à démarcher</span>. Tape un pin, ou demande "secteur", "catalogue"…`;
 }
 
 function formatEuroShort(n) {

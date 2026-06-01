@@ -19,8 +19,8 @@ export function renderPharmaFiche(pharma) {
   // --- Statut
   const status   = getStatusLabel(pharma);
 
-  // --- Chips groupement
-  const groupChips = [pharma.pelgraz, pharma.pelmeg, pharma.ecodage, pharma.gros1, pharma.gros2]
+  // --- Chips groupement (pelgraz/pelmeg = legacy Accord, on les ignore)
+  const groupChips = [pharma.ecodage, pharma.gros1, pharma.gros2]
     .filter(Boolean)
     .map((g) => `<span class="jarvis-chip">${escapeHtml(g)}</span>`)
     .join('');
