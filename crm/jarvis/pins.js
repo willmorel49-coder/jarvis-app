@@ -44,7 +44,6 @@ export async function renderPharmacyPins(pharmacies, statusComputer) {
 }
 
 export function clearPins() {
-  const map = window.L && activeMarkers[0] ? activeMarkers[0]._map : null;
   activeMarkers.forEach((m) => m.remove());
   activeMarkers.length = 0;
 }
