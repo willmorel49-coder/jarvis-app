@@ -8,7 +8,7 @@ import {
   setSheetSnap,
 } from './sheet.js';
 import { createGreeting } from './greeting.js';
-import { computePharmacyStatus } from './pharmacy-status.js';
+import { computePharmacyStatus, isInTerritory, TERRITORY_DEPTS } from './pharmacy-status.js';
 import { setAllOrbsState } from './orb.js';
 import { renderPharmaFiche } from './pharma-fiche.js';
 import { openLens } from './lens.js';
@@ -51,7 +51,7 @@ async function bootJarvis() {
   const stats = computeStats(allPharmacies);
   const greeting = createGreeting({
     userName: 'William',
-    territoryLabel: 'Bretagne · Normandie · Loire',
+    territoryLabel: 'Mon territoire · 8 dpts',
     stats,
   });
   document.body.appendChild(greeting);
@@ -208,9 +208,12 @@ function respond(htmlMsg, opts = {}) {
 }
 
 function readPharmaciesFromAppGlobal() {
+  // Source : CRM Intégral Pharma (window.CLIENTS) + géocodages (window.PHARMACIES_GEO).
+  // Filtre territoire commercial : 8 dpts (14·35·37·44·49·50·53·72).
   const raw = window.CLIENTS || [];
   const geo = window.PHARMACIES_GEO || {};
   return raw
+    .filter(isInTerritory)
     .map((p) => {
       const g = geo[p.cip];
       if (!g) return null;
@@ -220,24 +223,39 @@ function readPharmaciesFromAppGlobal() {
 }
 
 function computeStatusForPharma(p) {
-  if (!p.ca2023 || p.ca2023 === 0) return computePharmacyStatus(p, { isProspect: true });
+  // computePharmacyStatus utilise déjà ca2023 et potentielGx pour décider
+  // active / prospect_hot / prospect_cold (cf pharmacy-status.js).
   return computePharmacyStatus(p, {});
 }
 
 function computeStats(pharmacies) {
+  let clients = 0, prospectsHot = 0, prospectsCold = 0;
+  for (const p of pharmacies) {
+    if ((p.ca2023 || 0) > 0) clients++;
+    else if ((p.potentielGx || 0) > 0) prospectsHot++;
+    else prospectsCold++;
+  }
   return {
     visitsToday: 0,
     alerts: 0,
     total: pharmacies.length,
+    clients,
+    prospectsHot,
+    prospectsCold,
   };
 }
 
 function defaultBubble() {
-  return `<strong>JARVIS</strong> · ${allPharmacies.length} officines géolocalisées. Tape un pin, ou demande "catalogue", "mes visites", "CA"…`;
+  const stats = computeStats(allPharmacies);
+  return bubbleForStats(stats);
 }
 
 function initialBubbleForStats(stats) {
-  return `<strong>JARVIS</strong> · ${stats.total} officines géolocalisées. Tape un pin, ou demande "catalogue", "mes visites", "CA"…`;
+  return bubbleForStats(stats);
+}
+
+function bubbleForStats(stats) {
+  return `<strong>JARVIS</strong> · ${stats.clients} client${stats.clients > 1 ? 's' : ''} · <span style="color:#FF9F1C;font-weight:700">${stats.prospectsHot} prospect${stats.prospectsHot > 1 ? 's' : ''} à démarcher</span>. Tape un pin, ou demande "catalogue", "CA"…`;
 }
 
 function escapeHtml(s) {
