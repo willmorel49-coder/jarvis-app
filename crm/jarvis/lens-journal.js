@@ -41,6 +41,8 @@ function attachHandlers(body) {
 }
 
 function promptAddVisit(body) {
+  // TODO MVP-UX: remplacer window.prompt × 3 par un vrai formulaire inline (modal ou panel) —
+  // actuellement bloquant, moche sur mobile, et n'autocompomplète pas les officines.
   const clients = (window.CLIENTS || []);
   const ville = window.prompt('Officine (nom ou ville, recherche libre) :');
   if (!ville) return;

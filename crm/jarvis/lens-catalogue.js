@@ -54,7 +54,8 @@ function attachHandlers(body) {
 function getProducts() {
   if (cachedProducts) return cachedProducts;
   const raw = (typeof window !== 'undefined' && window.OFFILOG) ? window.OFFILOG : [];
-  cachedProducts = raw.slice(0, 500); // limite premier affichage pour perf
+  // On charge l'intégralité des 3520 produits — le filtre + slice(0,200) dans filterProducts gère la perf
+  cachedProducts = raw;
   return cachedProducts;
 }
 
@@ -62,7 +63,8 @@ function filterProducts(products, { search, alertOnly }) {
   let out = products;
   if (search) {
     out = out.filter((p) => {
-      const hay = `${p.nom || ''} ${p.marque || ''} ${p.ean || ''}`.toLowerCase();
+      // champ correct : p.produit (pas p.nom — inexistant dans OFFILOG)
+      const hay = `${p.produit || ''} ${p.marque || ''} ${p.ean || ''}`.toLowerCase();
       return hay.includes(search);
     });
   }
@@ -73,8 +75,10 @@ function filterProducts(products, { search, alertOnly }) {
 }
 
 function hasAlert(p) {
-  const ip = p.prix_achat_ip || p.prix_ip;
-  if (!ip) return false;
+  // prix_offilog = prix achat HT pharmacien (référence IP)
+  // Alerte si un concurrent (Leclerc / Drakkars / Cap3000) vend < prix achat IP
+  const ip = p.prix_offilog;
+  if (!ip || ip <= 0) return false;
   return [p.prix_leclerc, p.prix_drakkars, p.prix_cap3000]
     .some((px) => typeof px === 'number' && px > 0 && px < ip);
 }
@@ -89,7 +93,7 @@ function renderGrid(products) {
 function renderCard(p) {
   const img = p.img ? `<img src="${escapeAttr(p.img)}" alt="" loading="lazy" />` : `<div class="card-img-placeholder">⌬</div>`;
   const alert = hasAlert(p);
-  const pxIp = formatPrice(p.prix_achat_ip || p.prix_ip);
+  // prix_offilog = prix achat HT (référence) — pas de champ prix_achat_ip dans OFFILOG
   const pxOf = formatPrice(p.prix_offilog);
   const pxLec = formatPrice(p.prix_leclerc);
   const pxDra = formatPrice(p.prix_drakkars);
@@ -99,10 +103,9 @@ function renderCard(p) {
       <div class="card-prod-img">${img}</div>
       <div class="card-prod-body">
         <div class="card-prod-brand">${escapeHtml(p.marque || '')}</div>
-        <h4 class="card-prod-name">${escapeHtml(p.nom || '—')}</h4>
-        ${alert ? `<div class="card-prod-alert">⚠ Concurrent < achat IP</div>` : ''}
+        <h4 class="card-prod-name">${escapeHtml(p.produit || '—')}</h4>
+        ${alert ? `<div class="card-prod-alert">⚠ Concurrent < achat Offilog</div>` : ''}
         <div class="card-prod-prices">
-          <div class="prx"><span>IP</span><b>${pxIp}</b></div>
           <div class="prx"><span>Offilog</span><b>${pxOf}</b></div>
           <div class="prx"><span>Leclerc</span><b>${pxLec}</b></div>
           <div class="prx"><span>Drak</span><b>${pxDra}</b></div>

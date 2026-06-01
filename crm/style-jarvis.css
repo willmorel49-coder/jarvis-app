@@ -676,7 +676,8 @@
 
 /* ============ DESKTOP RESPONSIVE ============ */
 @media (min-width: 769px) {
-  body { background:
+  /* Scoped : ne s'applique qu'en mode JARVIS pour ne pas altérer le fond du mode classique */
+  html[data-mode="jarvis"] body { background:
     radial-gradient(ellipse at 20% 20%, rgba(0,122,255,.05), transparent 50%),
     radial-gradient(ellipse at 80% 80%, rgba(168,85,247,.04), transparent 50%),
     var(--bg);

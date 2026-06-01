@@ -31,7 +31,9 @@ export function startListening({ onResult, onEnd, onError }) {
   };
   recognition.onerror = (event) => {
     listening = false;
-    onError && onError(event.error || new Error('Erreur reconnaissance vocale'));
+    // event.error est une string (ex: "not-allowed", "no-speech", "network") — pas une Error
+    const msg = event.error || 'Erreur reconnaissance vocale';
+    onError && onError(new Error(String(msg)));
   };
   recognition.onend = () => {
     listening = false;
@@ -57,10 +59,28 @@ export function speak(text, opts = {}) {
   utter.rate = opts.rate || 1.05;
   utter.pitch = opts.pitch || 1.0;
   utter.volume = opts.volume ?? 1.0;
-  // Prefer french voice if available
-  const voices = speechSynth.getVoices();
-  const fr = voices.find((v) => v.lang.startsWith('fr')) || voices[0];
-  if (fr) utter.voice = fr;
+
+  // Chrome bug : getVoices() peut retourner [] si la liste n'est pas encore chargée.
+  // On tente d'assigner la voix FR maintenant, et si elle n'est pas dispo on laisse
+  // la voix par défaut (utter.voice = undefined = comportement correct).
+  const trySetVoice = () => {
+    const voices = speechSynth.getVoices();
+    if (voices.length) {
+      const fr = voices.find((v) => v.lang.startsWith('fr')) || null;
+      if (fr) utter.voice = fr;
+    }
+  };
+  trySetVoice();
+  if (!utter.voice && speechSynth.onvoiceschanged !== undefined) {
+    // Voix pas encore chargées — attendre l'événement, puis parler
+    const prev = speechSynth.onvoiceschanged;
+    speechSynth.onvoiceschanged = () => {
+      speechSynth.onvoiceschanged = prev;
+      trySetVoice();
+      speechSynth.speak(utter);
+    };
+    return;
+  }
   speechSynth.speak(utter);
 }
 

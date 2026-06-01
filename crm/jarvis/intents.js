@@ -12,8 +12,9 @@ const INTENT_RULES = [
   { re: /\b(pilotage|ca|chiffre.{0,3}affaire|kpi|stats?|objectif|top)\b/i, action: (ctx) => ctx.openLens('pilotage') },
 
   // Recherche pharmacie sur la carte
+  // Note : "où est" avec accent — la Web Speech API transcrit l'accent correctement sur Chrome/Safari
   {
-    re: /\b(?:trouve|cherche|montre|ou est)\b\s+(.+)/i,
+    re: /\b(?:trouve|cherche|montre|o[uù] est)\b\s+(.+)/i,
     action: (ctx, m) => ctx.searchPharma(m[1]),
   },
 
@@ -22,7 +23,13 @@ const INTENT_RULES = [
 
   // Salutations
   { re: /\b(salut|bonjour|hello|hey)\b/i, action: (ctx) => ctx.respond('Bonjour. Que cherches-tu ?') },
+
+  // Politesse / phrases vides de sens — stopper avant le fallback searchPharma
+  { re: /\b(merci|au revoir|bye|ok|d'accord|super|parfait|cool|nickel|voil[aà])\b/i, action: (ctx) => ctx.respond('Bien noté.') },
 ];
+
+// Mots qui ne sont jamais des noms d'officine — éviter le fallback searchPharma inutile
+const NOISE_WORDS = /^(quoi|comment|pourquoi|qu'est|c'est|ça|je|tu|il|nous|vous|ils|un|une|le|la|les|des|du|de|non|oui|euh|ah|oh|hm|ben|donc|alors|mais)$/i;
 
 export function parseAndRunIntent(text, ctx) {
   const t = (text || '').trim();
@@ -34,7 +41,13 @@ export function parseAndRunIntent(text, ctx) {
       return true;
     }
   }
-  // Fallback : recherche d'une pharmacie
+  // Fallback : recherche d'une pharmacie — mais seulement si le texte ressemble à un nom/ville
+  const words = t.split(/\s+/);
+  const looksLikeNoise = words.length <= 2 && words.every((w) => NOISE_WORDS.test(w));
+  if (looksLikeNoise) {
+    ctx.respond('Je n\'ai pas compris. Essaie « catalogue », « mes visites », « CA » ou le nom d\'une officine.');
+    return false;
+  }
   ctx.searchPharma(t);
   return false;
 }

@@ -1150,7 +1150,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 900px) {
-  :root { --sidebar-w: 68px; }
+  html[data-mode="classic"] { --sidebar-w: 68px; }
   .sidebar-brand-text, .nav-item span.nav-label-text, .nav-label, .sidebar-user-info { display: none; }
   .sidebar-brand { padding: 0 14px 20px; justify-content: center; }
   .nav-item { justify-content: center; padding: 12px; }
@@ -1161,7 +1161,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   .topbar { padding: 0 20px; }
 }
 @media (max-width: 600px) {
-  :root { --sidebar-w: 0px; }
+  html[data-mode="classic"] { --sidebar-w: 0px; }
   .sidebar { display: none; }
   .page-content { padding: 16px; }
   .topbar { padding: 0 16px; }
