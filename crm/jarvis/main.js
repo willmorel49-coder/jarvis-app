@@ -229,9 +229,10 @@ function computeStatusForPharma(p) {
 }
 
 function computeStats(pharmacies) {
-  let clients = 0, prospectsHot = 0, prospectsCold = 0;
+  let clients = 0, prospectsHot = 0, prospectsCold = 0, sectorCa = 0;
   for (const p of pharmacies) {
-    if ((p.ca2023 || 0) > 0) clients++;
+    const ca = p.ca2023 || 0;
+    if (ca > 0) { clients++; sectorCa += ca; }
     else if ((p.potentielGx || 0) > 0) prospectsHot++;
     else prospectsCold++;
   }
@@ -242,6 +243,7 @@ function computeStats(pharmacies) {
     clients,
     prospectsHot,
     prospectsCold,
+    sectorCa,
   };
 }
 
@@ -255,7 +257,16 @@ function initialBubbleForStats(stats) {
 }
 
 function bubbleForStats(stats) {
-  return `<strong>JARVIS</strong> · ${stats.clients} client${stats.clients > 1 ? 's' : ''} · <span style="color:#FF9F1C;font-weight:700">${stats.prospectsHot} prospect${stats.prospectsHot > 1 ? 's' : ''} à démarcher</span>. Tape un pin, ou demande "catalogue", "CA"…`;
+  const caStr = stats.sectorCa ? ` · <b>${formatEuroShort(stats.sectorCa)}</b> secteur` : '';
+  return `<strong>JARVIS</strong> · ${stats.clients} client${stats.clients > 1 ? 's' : ''}${caStr} · <span style="color:#FF9F1C;font-weight:700">${stats.prospectsHot} prospect${stats.prospectsHot > 1 ? 's' : ''} à démarcher</span>. Tape un pin, ou demande "secteur", "catalogue"…`;
+}
+
+function formatEuroShort(n) {
+  if (!n) return '0 €';
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)} M€`;
+  if (abs >= 1000) return `${(n / 1000).toFixed(0)} k€`;
+  return `${Math.round(n)} €`;
 }
 
 function escapeHtml(s) {

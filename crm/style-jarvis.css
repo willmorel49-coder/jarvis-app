@@ -724,3 +724,170 @@
   .jarvis-greeting { max-width: 640px; left: 50%; transform: translateX(-50%); }
   .jarvis-map { inset: 0; }
 }
+
+/* ============================================================
+   LISIBILITÉ GLOBALE — améliorations Phase 2
+   Scope : classes JARVIS existantes uniquement.
+   Ne touche pas aux composants mode classique.
+   ============================================================ */
+
+/* --- TYPOGRAPHIE : hiérarchie plus tranchée ---
+   Greeting title agrandi desktop / sub-title plus lisible */
+@media (min-width: 640px) {
+  .jarvis-greeting-title {
+    font-size: 30px;
+    letter-spacing: -.8px;
+  }
+}
+
+/* Sub-greeting : légèrement plus lisible (12.5 → 13px) */
+.jarvis-greeting-sub {
+  font-size: 13px;
+  color: var(--text-dim);  /* était déjà text-dim, on garde mais on force opacity pleine */
+  opacity: 1;
+}
+
+/* Hi-label plus contrasté */
+.jarvis-greeting-hi {
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+
+/* --- CONTRASTES : text-muted renforcé sur glass ---
+   Les classes utilisant text-muted sur surface-glass peuvent être trop pâles.
+   On rehausse légèrement les labels et métadonnées dans les KPI / table */
+.pharma-fiche-kpi-label,
+.lens-kpi-label,
+.lens-table-head,
+.lens-count,
+.card-prod-brand {
+  color: var(--text-dim);   /* was text-muted — un cran plus lisible */
+  letter-spacing: .9px;
+}
+
+/* Valeurs numériques KPI — léger gain taille pour scanabilité */
+.pharma-fiche-kpi-value {
+  font-size: 19px;
+}
+
+/* --- ESPACEMENTS : cards et sections aérées ---
+   Sections lentilles : plus de respiration entre les blocs */
+.lens-section-title {
+  margin-top: 28px;
+  margin-bottom: 14px;
+}
+
+/* Lens body : un peu plus de padding bas pour que le dernier élément ne colle pas */
+.jarvis-lens-body {
+  padding-bottom: 36px;
+}
+
+/* KPI cards lentilles : padding augmenté */
+.lens-kpi {
+  padding: 16px 18px;
+}
+
+/* Rows tables : légère aération */
+.lens-table-row {
+  padding: 12px 14px;
+}
+
+/* --- HOVER STATES : cards interactives --- */
+.lens-jrn-row {
+  transition: background .15s, box-shadow .15s;
+  cursor: default;
+}
+.lens-jrn-row:hover {
+  background: var(--surface-glass-strong);
+  box-shadow: 0 4px 16px rgba(11,31,77,.07);
+}
+
+.lens-rdv-type {
+  transition: background .15s, box-shadow .15s;
+}
+.lens-rdv-type:hover {
+  background: var(--surface-glass-strong);
+  box-shadow: 0 4px 16px rgba(11,31,77,.07);
+}
+
+.lens-rdv-booking {
+  transition: background .15s;
+}
+.lens-rdv-booking:hover {
+  background: var(--surface-glass-strong);
+}
+
+/* Fiche pharma produits : hover ligne */
+.pharma-fiche-product {
+  transition: background .12s;
+  border-radius: 4px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.pharma-fiche-product:hover {
+  background: var(--surface-glass-strong);
+}
+
+/* Bouton ghost : hover plus visible */
+.jarvis-btn-ghost:hover {
+  background: rgba(0,122,255,.09);
+  border-color: rgba(0,122,255,.25);
+}
+
+/* Lens close button hover */
+.jarvis-lens-close:hover {
+  background: var(--surface-glass-strong);
+  border-color: rgba(0,122,255,.2);
+  color: var(--blue);
+}
+
+/* --- MOBILE < 480px ---
+   Éviter que les KPI 3 cols soient trop étroites */
+@media (max-width: 479px) {
+  .pharma-fiche-kpis--3 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pharma-fiche-kpis--3 .pharma-fiche-kpi:last-child {
+    grid-column: span 2;
+  }
+  .jarvis-greeting-title {
+    font-size: 24px;
+  }
+  .lens-table-row {
+    grid-template-columns: 24px 1.2fr 1fr 64px 64px;
+    font-size: 11.5px;
+    gap: 6px;
+  }
+  .lens-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .lens-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+/* --- SHEET snap medium légèrement plus haute sur grands phones --- */
+@media (min-height: 750px) {
+  .jarvis-sheet[data-snap="medium"] { height: 420px; }
+}
+
+/* --- Amélioration lisibilité note/commentaire --- */
+.pharma-fiche-note {
+  border-left: 3px solid rgba(0,122,255,.25);
+  font-style: normal;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* --- Produits section title : plus de contraste --- */
+.pharma-fiche-products-title {
+  color: var(--text);
+  font-size: 11.5px;
+}
+
+/* --- Lens toolbar search focus ring plus visible --- */
+.lens-search:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px rgba(0,122,255,.1);
+}
