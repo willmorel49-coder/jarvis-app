@@ -42,11 +42,31 @@ export function renderPharmaFiche(pharma) {
         <div class="pharma-fiche-row"><span class="jarvis-muted">Tél</span>${tel}</div>
       </div>
       ${pharma.commentaire ? `<div class="pharma-fiche-note">${escapeHtml(pharma.commentaire)}</div>` : ''}
+      ${renderTopProducts(pharma.cip)}
       <div class="pharma-fiche-actions">
         <a class="jarvis-btn jarvis-btn-primary" href="${gmapsDir}" target="_blank" rel="noopener">Itinéraire ↗</a>
         <a class="jarvis-btn jarvis-btn-ghost" href="${gmapsUrl}" target="_blank" rel="noopener">Voir sur GMaps</a>
         <button class="jarvis-btn jarvis-btn-ghost" id="pharma-fiche-close">↓ Réduire</button>
       </div>
+    </div>
+  `;
+}
+
+function renderTopProducts(cip) {
+  // Affiche les top 5 produits achetés (depuis client-products.js)
+  const products = (window.CLIENT_PRODUCTS && window.CLIENT_PRODUCTS[cip]) ? window.CLIENT_PRODUCTS[cip] : null;
+  if (!products || !products.length) return '';
+  const top5 = products.slice(0, 5);
+  const totalCa = (window.CLIENT_PRODUCTS_TOTAL_CA && window.CLIENT_PRODUCTS_TOTAL_CA[cip]) || products.reduce((s, p) => s + (p.ca || 0), 0);
+  return `
+    <div class="pharma-fiche-products">
+      <div class="pharma-fiche-products-title">Top produits achetés <span class="jarvis-muted">· total ${formatEuro(totalCa)}</span></div>
+      ${top5.map((p) => `
+        <div class="pharma-fiche-product">
+          <span class="pharma-fiche-product-name">${escapeHtml(p.designation)}</span>
+          <span class="pharma-fiche-product-meta">×${p.qte} · <b>${formatEuro(p.ca)}</b></span>
+        </div>
+      `).join('')}
     </div>
   `;
 }
