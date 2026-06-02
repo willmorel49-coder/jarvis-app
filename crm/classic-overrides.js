@@ -1186,6 +1186,12 @@
         <!-- Matrice tranche × famille · ma position cellule par cellule -->
         ${buildTrancheFamilleMatrixHtml(window.SALES_BY_TRANCHE_FAMILLE || {}, myTotal, getOpsMixByTranche(), FAMILLES_ORDER)}
 
+        <!-- ─── CAVALERIE D'ANALYSES COMMERCIALES EXPERTES ─── -->
+        ${typeof window.buildManqueAGagneHtml === 'function' ? window.buildManqueAGagneHtml() : ''}
+        ${typeof window.buildPenetrationCommercialeHtml === 'function' ? window.buildPenetrationCommercialeHtml() : ''}
+        ${typeof window.buildLaboratoiresComparisonHtml === 'function' ? window.buildLaboratoiresComparisonHtml() : ''}
+        ${typeof window.buildTrajectoiresHtml === 'function' ? window.buildTrajectoiresHtml() : ''}
+
         <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:24px 0 10px">Catalogue Intégral Pharma · structure</h3>
         <div style="font-size:11px;color:#94A3B8;margin-bottom:10px">Liste des références catalogue (différent du CA facturé ci-dessus)</div>
 

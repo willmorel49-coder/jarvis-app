@@ -12,7 +12,9 @@ window.SALES_TOTAL = {
   "derniere_date": "2026-05-31",
   "nb_produits": 1951,
   "nb_clients": 48,
-  "nb_sousfamilles": 8
+  "nb_pharmas_actives": 48,
+  "nb_sousfamilles": 8,
+  "nb_labos": 181
 };
 
 window.SALES_BY_MONTH = {
@@ -122,37 +124,43 @@ window.SALES_BY_FAMILLE = {
     "ca": 556351.06,
     "qte": 4391,
     "lignes": 2110,
-    "nb_refs": 192
+    "nb_refs": 192,
+    "nb_pharmas": 46
   },
   "Princeps": {
     "ca": 555395.48,
     "qte": 78346,
     "lignes": 6849,
-    "nb_refs": 1131
+    "nb_refs": 1131,
+    "nb_pharmas": 45
   },
   "Non remboursés": {
     "ca": 64426.44,
     "qte": 7122,
     "lignes": 2276,
-    "nb_refs": 336
+    "nb_refs": 336,
+    "nb_pharmas": 43
   },
   "Biosimilaires": {
     "ca": 29908.89,
     "qte": 213,
     "lignes": 104,
-    "nb_refs": 32
+    "nb_refs": 32,
+    "nb_pharmas": 17
   },
   "Génériques": {
     "ca": 8555.37,
     "qte": 1504,
     "lignes": 359,
-    "nb_refs": 103
+    "nb_refs": 103,
+    "nb_pharmas": 34
   },
   "Gén. partenaires": {
     "ca": 4018.18,
     "qte": 1170,
     "lignes": 274,
-    "nb_refs": 157
+    "nb_refs": 157,
+    "nb_pharmas": 24
   }
 };
 
@@ -239,6 +247,3013 @@ window.SALES_BY_TRANCHE_FAMILLE = {
     "Biosimilaires": {
       "ca": 5453.05,
       "qte": 5
+    }
+  }
+};
+
+window.SALES_BY_LABO = {
+  "LILLY FRANCE": {
+    "ca": 140649.21,
+    "qte": 657,
+    "nb_pharmas": 38,
+    "nb_refs": 15,
+    "familles": {
+      "Froid": 140559.36,
+      "Non remboursés": 89.85
+    }
+  },
+  "ASTELLAS PHARMA": {
+    "ca": 103478.96,
+    "qte": 43,
+    "nb_pharmas": 9,
+    "nb_refs": 5,
+    "familles": {
+      "Princeps": 103478.96
+    }
+  },
+  "NOVO NORDISK": {
+    "ca": 78755.67,
+    "qte": 547,
+    "nb_pharmas": 36,
+    "nb_refs": 15,
+    "familles": {
+      "Froid": 78755.67
+    }
+  },
+  "BAYER HEALTHCAR": {
+    "ca": 48774.05,
+    "qte": 420,
+    "nb_pharmas": 26,
+    "nb_refs": 24,
+    "familles": {
+      "Non remboursés": 1202.52,
+      "Princeps": 590.12,
+      "Froid": 46981.41
+    }
+  },
+  "NOVARTIS PHARMA": {
+    "ca": 44851.6,
+    "qte": 274,
+    "nb_pharmas": 23,
+    "nb_refs": 27,
+    "familles": {
+      "Princeps": 11597.86,
+      "Froid": 33217.13,
+      "Non remboursés": 36.61
+    }
+  },
+  "OPELLA HEALTH F": {
+    "ca": 24211.04,
+    "qte": 30108,
+    "nb_pharmas": 27,
+    "nb_refs": 23,
+    "familles": {
+      "Princeps": 24103.17,
+      "Non remboursés": 107.87
+    }
+  },
+  "CELLTRION HEALT": {
+    "ca": 17733.99,
+    "qte": 50,
+    "nb_pharmas": 10,
+    "nb_refs": 7,
+    "familles": {
+      "Biosimilaires": 17733.99
+    }
+  },
+  "AMGEN SAS": {
+    "ca": 15812.91,
+    "qte": 84,
+    "nb_pharmas": 21,
+    "nb_refs": 7,
+    "familles": {
+      "Froid": 15093.22,
+      "Biosimilaires": 719.69
+    }
+  },
+  "PFIZER": {
+    "ca": 13395.78,
+    "qte": 319,
+    "nb_pharmas": 20,
+    "nb_refs": 22,
+    "familles": {
+      "Princeps": 5035.07,
+      "Froid": 7828.21,
+      "Non remboursés": 216.38,
+      "Biosimilaires": 316.12
+    }
+  },
+  "GLAXOSMITHKLINE": {
+    "ca": 10908.08,
+    "qte": 1670,
+    "nb_pharmas": 27,
+    "nb_refs": 31,
+    "familles": {
+      "Princeps": 7910.35,
+      "Froid": 2997.73
+    }
+  },
+  "SANOFI AVENTI.F": {
+    "ca": 10861.01,
+    "qte": 785,
+    "nb_pharmas": 26,
+    "nb_refs": 37,
+    "familles": {
+      "Princeps": 7587.57,
+      "Froid": 3273.44
+    }
+  },
+  "SANOFI AVENTIS": {
+    "ca": 9535.69,
+    "qte": 332,
+    "nb_pharmas": 18,
+    "nb_refs": 6,
+    "familles": {
+      "Froid": 9535.69
+    }
+  },
+  "JANSSEN CILAG": {
+    "ca": 9193.49,
+    "qte": 36,
+    "nb_pharmas": 11,
+    "nb_refs": 10,
+    "familles": {
+      "Princeps": 8690.34,
+      "Froid": 503.15
+    }
+  },
+  "HORUS": {
+    "ca": 8978.46,
+    "qte": 1050,
+    "nb_pharmas": 25,
+    "nb_refs": 7,
+    "familles": {
+      "Non remboursés": 8978.46
+    }
+  },
+  "THEA": {
+    "ca": 8922.16,
+    "qte": 1064,
+    "nb_pharmas": 21,
+    "nb_refs": 2,
+    "familles": {
+      "Non remboursés": 8922.16
+    }
+  },
+  "THEA PHARMA": {
+    "ca": 7601.01,
+    "qte": 1572,
+    "nb_pharmas": 31,
+    "nb_refs": 23,
+    "familles": {
+      "Non remboursés": 1015.52,
+      "Génériques": 120.54,
+      "Princeps": 6464.95
+    }
+  },
+  "TEVA SANTE": {
+    "ca": 6990.82,
+    "qte": 3935,
+    "nb_pharmas": 27,
+    "nb_refs": 60,
+    "familles": {
+      "Princeps": 5629.28,
+      "Non remboursés": 10.75,
+      "Gén. partenaires": 849.41,
+      "Biosimilaires": 501.38
+    }
+  },
+  "PF MEDICAMENT": {
+    "ca": 6904.36,
+    "qte": 1008,
+    "nb_pharmas": 28,
+    "nb_refs": 18,
+    "familles": {
+      "Génériques": 5029.43,
+      "Princeps": 1802.5,
+      "Non remboursés": 23.71,
+      "Froid": 48.72
+    }
+  },
+  "BIOGARAN": {
+    "ca": 6681.42,
+    "qte": 4506,
+    "nb_pharmas": 30,
+    "nb_refs": 76,
+    "familles": {
+      "Princeps": 5373.23,
+      "Froid": 104.94,
+      "Génériques": 1049.95,
+      "Non remboursés": 153.3
+    }
+  },
+  "BOUCHARA-RECORD": {
+    "ca": 6269.48,
+    "qte": 857,
+    "nb_pharmas": 11,
+    "nb_refs": 24,
+    "familles": {
+      "Princeps": 2883.34,
+      "Froid": 3386.14
+    }
+  },
+  "ALCON LAB": {
+    "ca": 6186.68,
+    "qte": 894,
+    "nb_pharmas": 28,
+    "nb_refs": 4,
+    "familles": {
+      "Non remboursés": 6160.65,
+      "Princeps": 26.03
+    }
+  },
+  "ROCHE": {
+    "ca": 6034.53,
+    "qte": 57,
+    "nb_pharmas": 14,
+    "nb_refs": 6,
+    "familles": {
+      "Princeps": 1801.72,
+      "Froid": 4232.81
+    }
+  },
+  "EG LABO": {
+    "ca": 5889.77,
+    "qte": 832,
+    "nb_pharmas": 28,
+    "nb_refs": 72,
+    "familles": {
+      "Gén. partenaires": 2225.16,
+      "Non remboursés": 893.06,
+      "Princeps": 17.68,
+      "Biosimilaires": 2609.87,
+      "Froid": 144.0
+    }
+  },
+  "UPSA SAS": {
+    "ca": 5042.9,
+    "qte": 6054,
+    "nb_pharmas": 12,
+    "nb_refs": 15,
+    "familles": {
+      "Princeps": 5025.14,
+      "Non remboursés": 17.76
+    }
+  },
+  "MERCK SERONO": {
+    "ca": 4676.51,
+    "qte": 1140,
+    "nb_pharmas": 25,
+    "nb_refs": 43,
+    "familles": {
+      "Princeps": 2781.44,
+      "Froid": 1895.07
+    }
+  },
+  "TEOFARMA": {
+    "ca": 4390.42,
+    "qte": 2639,
+    "nb_pharmas": 25,
+    "nb_refs": 23,
+    "familles": {
+      "Princeps": 4058.32,
+      "Non remboursés": 332.1
+    }
+  },
+  "ASTRAZENECA": {
+    "ca": 3967.59,
+    "qte": 3,
+    "nb_pharmas": 3,
+    "nb_refs": 3,
+    "familles": {
+      "Princeps": 3967.59
+    }
+  },
+  "ZENTIVA FRANCE": {
+    "ca": 3808.98,
+    "qte": 322,
+    "nb_pharmas": 17,
+    "nb_refs": 56,
+    "familles": {
+      "Gén. partenaires": 862.1,
+      "Non remboursés": 7.8,
+      "Biosimilaires": 2939.08
+    }
+  },
+  "SANDOZ": {
+    "ca": 3671.73,
+    "qte": 85,
+    "nb_pharmas": 12,
+    "nb_refs": 14,
+    "familles": {
+      "Génériques": 278.0,
+      "Biosimilaires": 3385.04,
+      "Princeps": 8.69
+    }
+  },
+  "CSP": {
+    "ca": 3353.05,
+    "qte": 1325,
+    "nb_pharmas": 25,
+    "nb_refs": 10,
+    "familles": {
+      "Princeps": 2764.89,
+      "Froid": 540.29,
+      "Non remboursés": 47.87
+    }
+  },
+  "PANPHARMA": {
+    "ca": 3345.65,
+    "qte": 378,
+    "nb_pharmas": 8,
+    "nb_refs": 1,
+    "familles": {
+      "Princeps": 3345.65
+    }
+  },
+  "IBSA PHARMA": {
+    "ca": 3298.93,
+    "qte": 402,
+    "nb_pharmas": 25,
+    "nb_refs": 21,
+    "familles": {
+      "Non remboursés": 1979.42,
+      "Princeps": 645.74,
+      "Froid": 673.77
+    }
+  },
+  "IPSEN PHARMA": {
+    "ca": 3141.38,
+    "qte": 11,
+    "nb_pharmas": 8,
+    "nb_refs": 2,
+    "familles": {
+      "Princeps": 3141.38
+    }
+  },
+  "MENARINI": {
+    "ca": 3097.77,
+    "qte": 534,
+    "nb_pharmas": 18,
+    "nb_refs": 13,
+    "familles": {
+      "Princeps": 2971.92,
+      "Non remboursés": 125.85
+    }
+  },
+  "CHAUVIN": {
+    "ca": 3083.91,
+    "qte": 815,
+    "nb_pharmas": 29,
+    "nb_refs": 19,
+    "familles": {
+      "Princeps": 1941.25,
+      "Génériques": 38.48,
+      "Non remboursés": 1104.18
+    }
+  },
+  "INCYTE BIOS FRA": {
+    "ca": 3055.36,
+    "qte": 4,
+    "nb_pharmas": 3,
+    "nb_refs": 1,
+    "familles": {
+      "Princeps": 3055.36
+    }
+  },
+  "RECKITT B.HEALT": {
+    "ca": 2691.33,
+    "qte": 766,
+    "nb_pharmas": 14,
+    "nb_refs": 4,
+    "familles": {
+      "Princeps": 2464.55,
+      "Non remboursés": 226.78
+    }
+  },
+  "URSAPHARM": {
+    "ca": 2638.54,
+    "qte": 374,
+    "nb_pharmas": 20,
+    "nb_refs": 4,
+    "familles": {
+      "Non remboursés": 2638.54
+    }
+  },
+  "INTER TRADE PHAR": {
+    "ca": 2569.43,
+    "qte": 243,
+    "nb_pharmas": 16,
+    "nb_refs": 27,
+    "familles": {
+      "Non remboursés": 2569.43
+    }
+  },
+  "GALDERMA INTER.": {
+    "ca": 2518.44,
+    "qte": 90,
+    "nb_pharmas": 21,
+    "nb_refs": 11,
+    "familles": {
+      "Princeps": 55.34,
+      "Non remboursés": 1339.45,
+      "Froid": 1123.65
+    }
+  },
+  "J&J SANTE BEAUT": {
+    "ca": 2443.6,
+    "qte": 1094,
+    "nb_pharmas": 17,
+    "nb_refs": 5,
+    "familles": {
+      "Princeps": 2344.83,
+      "Génériques": 98.77
+    }
+  },
+  "BIOCODEX": {
+    "ca": 2367.3,
+    "qte": 390,
+    "nb_pharmas": 25,
+    "nb_refs": 16,
+    "familles": {
+      "Princeps": 2129.9,
+      "Non remboursés": 237.4
+    }
+  },
+  "THERAMEX FRANCE": {
+    "ca": 2287.31,
+    "qte": 626,
+    "nb_pharmas": 21,
+    "nb_refs": 20,
+    "familles": {
+      "Princeps": 1917.06,
+      "Génériques": 106.96,
+      "Non remboursés": 214.9,
+      "Biosimilaires": 48.39
+    }
+  },
+  "ALMIRALL SAS": {
+    "ca": 2260.11,
+    "qte": 216,
+    "nb_pharmas": 16,
+    "nb_refs": 5,
+    "familles": {
+      "Non remboursés": 1892.48,
+      "Princeps": 367.63
+    }
+  },
+  "SUBSTIPHARM": {
+    "ca": 2195.19,
+    "qte": 790,
+    "nb_pharmas": 31,
+    "nb_refs": 17,
+    "familles": {
+      "Princeps": 1525.66,
+      "Non remboursés": 370.37,
+      "Génériques": 299.16
+    }
+  },
+  "GEDEON RICHTER": {
+    "ca": 2088.99,
+    "qte": 85,
+    "nb_pharmas": 16,
+    "nb_refs": 6,
+    "familles": {
+      "Non remboursés": 683.94,
+      "Princeps": 970.51,
+      "Biosimilaires": 434.54
+    }
+  },
+  "BIOPROJECT": {
+    "ca": 1952.65,
+    "qte": 10,
+    "nb_pharmas": 2,
+    "nb_refs": 1,
+    "familles": {
+      "Princeps": 1952.65
+    }
+  },
+  "AGUETTANT": {
+    "ca": 1921.23,
+    "qte": 38,
+    "nb_pharmas": 3,
+    "nb_refs": 2,
+    "familles": {
+      "Non remboursés": 14.7,
+      "Princeps": 1906.53
+    }
+  },
+  "CRINEX": {
+    "ca": 1849.71,
+    "qte": 946,
+    "nb_pharmas": 16,
+    "nb_refs": 4,
+    "familles": {
+      "Princeps": 1849.71
+    }
+  },
+  "MAYOLY-SPINDLER": {
+    "ca": 1804.87,
+    "qte": 603,
+    "nb_pharmas": 21,
+    "nb_refs": 11,
+    "familles": {
+      "Princeps": 1634.16,
+      "Non remboursés": 170.71
+    }
+  },
+  "CHEPLAPHARM FRA": {
+    "ca": 1727.27,
+    "qte": 438,
+    "nb_pharmas": 19,
+    "nb_refs": 22,
+    "familles": {
+      "Princeps": 1663.87,
+      "Non remboursés": 63.4
+    }
+  },
+  "INDIVIOR FRANCE": {
+    "ca": 1668.5,
+    "qte": 229,
+    "nb_pharmas": 3,
+    "nb_refs": 3,
+    "familles": {
+      "Princeps": 1668.5
+    }
+  },
+  "GRIMBERG": {
+    "ca": 1660.3,
+    "qte": 290,
+    "nb_pharmas": 28,
+    "nb_refs": 7,
+    "familles": {
+      "Princeps": 1587.13,
+      "Non remboursés": 73.17
+    }
+  },
+  "VIIV HEALTH. FR": {
+    "ca": 1656.27,
+    "qte": 2,
+    "nb_pharmas": 2,
+    "nb_refs": 2,
+    "familles": {
+      "Princeps": 1656.27
+    }
+  },
+  "FERRING": {
+    "ca": 1627.13,
+    "qte": 27,
+    "nb_pharmas": 14,
+    "nb_refs": 6,
+    "familles": {
+      "Princeps": 1238.43,
+      "Froid": 388.7
+    }
+  },
+  "DELBERT": {
+    "ca": 1578.27,
+    "qte": 202,
+    "nb_pharmas": 15,
+    "nb_refs": 3,
+    "familles": {
+      "Princeps": 1578.27
+    }
+  },
+  "JAZZ PHARMA.FRA": {
+    "ca": 1513.53,
+    "qte": 2,
+    "nb_pharmas": 1,
+    "nb_refs": 1,
+    "familles": {
+      "Princeps": 1513.53
+    }
+  },
+  "LABORATOIRE XO": {
+    "ca": 1499.49,
+    "qte": 218,
+    "nb_pharmas": 15,
+    "nb_refs": 8,
+    "familles": {
+      "Princeps": 1485.47,
+      "Non remboursés": 14.02
+    }
+  },
+  "INTER TRADE PHARMA": {
+    "ca": 1490.17,
+    "qte": 82,
+    "nb_pharmas": 13,
+    "nb_refs": 6,
+    "familles": {
+      "Non remboursés": 1490.17
+    }
+  },
+  "ABBVIE": {
+    "ca": 1465.98,
+    "qte": 262,
+    "nb_pharmas": 21,
+    "nb_refs": 2,
+    "familles": {
+      "Non remboursés": 1431.36,
+      "Princeps": 34.62
+    }
+  },
+  "MSD FRANCE": {
+    "ca": 1457.3,
+    "qte": 34,
+    "nb_pharmas": 13,
+    "nb_refs": 7,
+    "familles": {
+      "Froid": 1274.3,
+      "Princeps": 80.96,
+      "Non remboursés": 102.04
+    }
+  },
+  "MEDAC": {
+    "ca": 1338.1,
+    "qte": 42,
+    "nb_pharmas": 7,
+    "nb_refs": 6,
+    "familles": {
+      "Princeps": 463.62,
+      "Génériques": 32.38,
+      "Froid": 842.1
+    }
+  },
+  "ORGANON FRANCE": {
+    "ca": 1324.03,
+    "qte": 272,
+    "nb_pharmas": 24,
+    "nb_refs": 11,
+    "familles": {
+      "Princeps": 881.85,
+      "Non remboursés": 294.13,
+      "Froid": 148.05
+    }
+  },
+  "MAJORELLE LABO": {
+    "ca": 1259.48,
+    "qte": 263,
+    "nb_pharmas": 18,
+    "nb_refs": 12,
+    "familles": {
+      "Princeps": 339.15,
+      "Génériques": 456.36,
+      "Non remboursés": 163.47,
+      "Froid": 300.5
+    }
+  },
+  "BOEHRINGER INGE": {
+    "ca": 1210.87,
+    "qte": 56,
+    "nb_pharmas": 14,
+    "nb_refs": 5,
+    "familles": {
+      "Princeps": 1184.15,
+      "Non remboursés": 26.72
+    }
+  },
+  "ZAMBON FRANCE": {
+    "ca": 1086.72,
+    "qte": 418,
+    "nb_pharmas": 15,
+    "nb_refs": 6,
+    "familles": {
+      "Princeps": 881.03,
+      "Non remboursés": 205.69
+    }
+  },
+  "THERAVIA": {
+    "ca": 1017.84,
+    "qte": 10,
+    "nb_pharmas": 1,
+    "nb_refs": 2,
+    "familles": {
+      "Princeps": 1017.84
+    }
+  },
+  "SANTEN": {
+    "ca": 987.61,
+    "qte": 98,
+    "nb_pharmas": 12,
+    "nb_refs": 6,
+    "familles": {
+      "Princeps": 798.44,
+      "Froid": 66.6,
+      "Non remboursés": 122.57
+    }
+  },
+  "EURODEP PHARMA": {
+    "ca": 915.51,
+    "qte": 77,
+    "nb_pharmas": 12,
+    "nb_refs": 7,
+    "familles": {
+      "Génériques": 93.61,
+      "Non remboursés": 782.85,
+      "Princeps": 39.05
+    }
+  },
+  "HORUS PHARMA": {
+    "ca": 913.51,
+    "qte": 165,
+    "nb_pharmas": 23,
+    "nb_refs": 12,
+    "familles": {
+      "Princeps": 426.82,
+      "Non remboursés": 404.28,
+      "Froid": 82.41
+    }
+  },
+  "CHIESI": {
+    "ca": 877.21,
+    "qte": 72,
+    "nb_pharmas": 9,
+    "nb_refs": 5,
+    "familles": {
+      "Princeps": 465.28,
+      "Froid": 411.93
+    }
+  },
+  "BAXTER": {
+    "ca": 851.49,
+    "qte": 29,
+    "nb_pharmas": 5,
+    "nb_refs": 3,
+    "familles": {
+      "Princeps": 46.59,
+      "Non remboursés": 804.9
+    }
+  },
+  "NEURAXPHARM FR": {
+    "ca": 838.34,
+    "qte": 615,
+    "nb_pharmas": 14,
+    "nb_refs": 10,
+    "familles": {
+      "Princeps": 838.34
+    }
+  },
+  "COOPER": {
+    "ca": 836.22,
+    "qte": 342,
+    "nb_pharmas": 18,
+    "nb_refs": 14,
+    "familles": {
+      "Princeps": 620.15,
+      "Non remboursés": 216.07
+    }
+  },
+  "ARROW GENERIQUE": {
+    "ca": 832.72,
+    "qte": 331,
+    "nb_pharmas": 20,
+    "nb_refs": 25,
+    "familles": {
+      "Princeps": 572.82,
+      "Génériques": 259.9
+    }
+  },
+  "TAKEDA FRANCE": {
+    "ca": 825.96,
+    "qte": 24,
+    "nb_pharmas": 7,
+    "nb_refs": 2,
+    "familles": {
+      "Princeps": 825.96
+    }
+  },
+  "BROTHIER": {
+    "ca": 821.13,
+    "qte": 46,
+    "nb_pharmas": 7,
+    "nb_refs": 4,
+    "familles": {
+      "Non remboursés": 821.13
+    }
+  },
+  "SERVIER": {
+    "ca": 820.74,
+    "qte": 34,
+    "nb_pharmas": 8,
+    "nb_refs": 9,
+    "familles": {
+      "Princeps": 820.74
+    }
+  },
+  "ETHYPHARM LABOR": {
+    "ca": 816.44,
+    "qte": 139,
+    "nb_pharmas": 9,
+    "nb_refs": 9,
+    "familles": {
+      "Princeps": 816.44
+    }
+  },
+  "BESINS INTERNAT": {
+    "ca": 815.17,
+    "qte": 78,
+    "nb_pharmas": 14,
+    "nb_refs": 10,
+    "familles": {
+      "Génériques": 57.82,
+      "Non remboursés": 376.4,
+      "Princeps": 380.95
+    }
+  }
+};
+
+window.SALES_BY_FAMILLE_PRODUCTS = {
+  "Princeps": [
+    {
+      "artcode": "3011764",
+      "designation": "XTANDI 40MG CPR BT112",
+      "ca": 103214.36,
+      "qte": 39,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "3020207",
+      "designation": "VYNDAQEL 61MG CAPS MOL BT30",
+      "ca": 90929.04,
+      "qte": 13,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "3020354",
+      "designation": "NUBEQA 300MG CPR PELL BT112",
+      "ca": 46496.76,
+      "qte": 15,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "3027765",
+      "designation": "ERLEADA 240MG CPR PEL BT30",
+      "ca": 30090.4,
+      "qte": 13,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "3015616",
+      "designation": "IMBRUVICA 420MG CPR BT30 DU",
+      "ca": 24501.0,
+      "qte": 6,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "2678410",
+      "designation": "ELIQUIS 5MG CPR BT60",
+      "ca": 20033.54,
+      "qte": 382,
+      "nb_pharmas": 13
+    },
+    {
+      "artcode": "3595583",
+      "designation": "DOLIPRANE 1000MG CPR BT8",
+      "ca": 11044.92,
+      "qte": 14014,
+      "nb_pharmas": 12
+    },
+    {
+      "artcode": "4153396",
+      "designation": "DOLIPRANE 1000MG GELU BT8",
+      "ca": 7048.4,
+      "qte": 8980,
+      "nb_pharmas": 12
+    },
+    {
+      "artcode": "3018250",
+      "designation": "IMBRUVICA 280MG CPR BT30 DU",
+      "ca": 5453.6,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3019529",
+      "designation": "BAQSIMI 3MG PDR NAS UNIDOS  1",
+      "ca": 5346.21,
+      "qte": 102,
+      "nb_pharmas": 17
+    },
+    {
+      "artcode": "4194567",
+      "designation": "ELIQUIS 2,5MG CPR BT60",
+      "ca": 4822.97,
+      "qte": 92,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "3003791",
+      "designation": "ENTRESTO 49MG/51MG CPR BT56",
+      "ca": 4773.04,
+      "qte": 44,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "3474419",
+      "designation": "KARDEGIC 75MG PDR SACH 30",
+      "ca": 4638.24,
+      "qte": 3876,
+      "nb_pharmas": 28
+    },
+    {
+      "artcode": "3016726",
+      "designation": "ERLEADA 60MG CPR BT120",
+      "ca": 4628.54,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3135858",
+      "designation": "PYOSTACINE 500MG CPR BT16",
+      "ca": 4235.6,
+      "qte": 266,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "3014419",
+      "designation": "LYNPARZA 100MG CPR BT56X2",
+      "ca": 3784.85,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3443873",
+      "designation": "VENTOLINE 100MCG INH FL200DOS 1",
+      "ca": 3549.52,
+      "qte": 1160,
+      "nb_pharmas": 15
+    },
+    {
+      "artcode": "3098608",
+      "designation": "SPASFON CPR BT30",
+      "ca": 3452.84,
+      "qte": 1973,
+      "nb_pharmas": 18
+    },
+    {
+      "artcode": "3025251",
+      "designation": "NEFOPAM PANP 30MG CPR PEL BT30",
+      "ca": 3345.65,
+      "qte": 378,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "2673826",
+      "designation": "MONOPROST 50MCG/ML COLLY DOS30",
+      "ca": 3069.33,
+      "qte": 415,
+      "nb_pharmas": 11
+    },
+    {
+      "artcode": "3027612",
+      "designation": "OPZELURA 15MG/G CR TB LAM100G1",
+      "ca": 3055.36,
+      "qte": 4,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3018248",
+      "designation": "IMBRUVICA 140MG CPR BT30 DU",
+      "ca": 3042.91,
+      "qte": 2,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3007529",
+      "designation": "IBRANCE 100MG GELU BT21",
+      "ca": 3008.6,
+      "qte": 2,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3003790",
+      "designation": "ENTRESTO 24MG/26MG CPR BT28",
+      "ca": 2815.27,
+      "qte": 51,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3020853",
+      "designation": "RELVAR ELLIPTA 92/22MCG 30DOSX3",
+      "ca": 2705.18,
+      "qte": 36,
+      "nb_pharmas": 12
+    },
+    {
+      "artcode": "3003792",
+      "designation": "ENTRESTO 97MG/103MG CPR BT56",
+      "ca": 2704.6,
+      "qte": 26,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "4960553",
+      "designation": "IZALGI 500MG/25MG GELU BT16",
+      "ca": 2658.75,
+      "qte": 2127,
+      "nb_pharmas": 14
+    },
+    {
+      "artcode": "2238562",
+      "designation": "HELICIDINE 10% S/S SIR FP250ML",
+      "ca": 2450.35,
+      "qte": 1047,
+      "nb_pharmas": 13
+    },
+    {
+      "artcode": "3309525",
+      "designation": "GAVISCON BUV SUSP SACH10ML 24",
+      "ca": 2356.38,
+      "qte": 689,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "3290599",
+      "designation": "DIFFU-K 600MG GELU BT40",
+      "ca": 2302.24,
+      "qte": 1430,
+      "nb_pharmas": 15
+    },
+    {
+      "artcode": "3022842",
+      "designation": "BIKTARVY 50/200/25MG CPR BT30",
+      "ca": 2257.92,
+      "qte": 4,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3412565",
+      "designation": "DECAPEPTYL LP11,25MG F+A 1+NEC",
+      "ca": 2165.96,
+      "qte": 9,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3004329",
+      "designation": "WAKIX 18MG CPR PELLIC FL30",
+      "ca": 1952.65,
+      "qte": 10,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3529422",
+      "designation": "DOLIPRANE 1000MG CPR EFFV TB8",
+      "ca": 1940.3,
+      "qte": 2485,
+      "nb_pharmas": 10
+    },
+    {
+      "artcode": "3020252",
+      "designation": "APOKINON 5MG/ML INJ CART20ML 5",
+      "ca": 1906.53,
+      "qte": 31,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3515495",
+      "designation": "LAMALINE GELU BT16",
+      "ca": 1877.7,
+      "qte": 1707,
+      "nb_pharmas": 12
+    },
+    {
+      "artcode": "3025042",
+      "designation": "QUVIVIQ 50MG CPR BT30",
+      "ca": 1720.19,
+      "qte": 34,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "2761996",
+      "designation": "RELVAR ELLIPTA 92/22MCG 30DOSX1",
+      "ca": 1703.86,
+      "qte": 68,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3015303",
+      "designation": "BIKTARVY 50/200/25MG CPR FL30",
+      "ca": 1693.44,
+      "qte": 3,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "4176687",
+      "designation": "XEPLION 100MG INJ LP SRG 1",
+      "ca": 1689.7,
+      "qte": 10,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3615883",
+      "designation": "DAFALGAN 1000MG CPR BT8",
+      "ca": 1549.92,
+      "qte": 1909,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3018796",
+      "designation": "EPIDYOLEX 100MG/ML BUV FL100ML",
+      "ca": 1513.53,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3014482",
+      "designation": "JULUCA 50MG/25MG CPR FL30",
+      "ca": 1508.68,
+      "qte": 3,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3028029",
+      "designation": "DOVATO 50MG/300MG CPR BT90",
+      "ca": 1508.65,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3007527",
+      "designation": "IBRANCE 75MG GELU BT21",
+      "ca": 1504.3,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3024059",
+      "designation": "RYALTRIS 25MCG/600MCG/DOS F30ML1",
+      "ca": 1455.57,
+      "qte": 162,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3390591",
+      "designation": "COLOPEG BUV PDR SACH 4",
+      "ca": 1455.39,
+      "qte": 242,
+      "nb_pharmas": 24
+    },
+    {
+      "artcode": "3595270",
+      "designation": "CELLCEPT 500MG CPR BT50",
+      "ca": 1346.7,
+      "qte": 30,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3394399",
+      "designation": "SUBUTEX 8MG CPR SUBLING BT7",
+      "ca": 1314.15,
+      "qte": 115,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3186301",
+      "designation": "SPASFON LYOC 80MG LYOT ORAL 10",
+      "ca": 1227.58,
+      "qte": 1096,
+      "nb_pharmas": 13
+    }
+  ],
+  "Non remboursés": [
+    {
+      "artcode": "4200566",
+      "designation": "THEALOSE SOL OPHT FL 15ML T",
+      "ca": 8809.36,
+      "qte": 1052,
+      "nb_pharmas": 20
+    },
+    {
+      "artcode": "3216290",
+      "designation": "SKIACOL 0,5% COLLY FL0,5ML",
+      "ca": 5296.83,
+      "qte": 766,
+      "nb_pharmas": 22
+    },
+    {
+      "artcode": "6042767",
+      "designation": "VISMED MULTI GTT LUBR FL15ML T",
+      "ca": 5237.32,
+      "qte": 608,
+      "nb_pharmas": 19
+    },
+    {
+      "artcode": "3019275",
+      "designation": "SLINDA 4MG CPR PELLIC BT28X3",
+      "ca": 3905.96,
+      "qte": 148,
+      "nb_pharmas": 15
+    },
+    {
+      "artcode": "2110431",
+      "designation": "BD A MICROF ULTRA PRO 4MM STYL100 T - RP 0383017056230",
+      "ca": 1964.24,
+      "qte": 211,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "6223558",
+      "designation": "VISMED GEL MULTI GTT LUBR FL15ML (NEW)",
+      "ca": 1678.14,
+      "qte": 195,
+      "nb_pharmas": 13
+    },
+    {
+      "artcode": "9000008",
+      "designation": "NEOVIS TOT MULTI GTT FL15ML T",
+      "ca": 1600.51,
+      "qte": 185,
+      "nb_pharmas": 19
+    },
+    {
+      "artcode": "6006071",
+      "designation": "OPTIVE  FUSION COLLYRE FL 10 ML",
+      "ca": 1431.36,
+      "qte": 255,
+      "nb_pharmas": 20
+    },
+    {
+      "artcode": "4066958",
+      "designation": "HYLO CONFORT+COLLY HYD F10ML T",
+      "ca": 1217.07,
+      "qte": 173,
+      "nb_pharmas": 16
+    },
+    {
+      "artcode": "9972489",
+      "designation": "FREESTYLE OPTIUM ELECTRODES BT 100",
+      "ca": 1165.52,
+      "qte": 40,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "3098471",
+      "designation": "SPAGULAX MUCILAGE PUR GLE 700G",
+      "ca": 806.34,
+      "qte": 49,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "3284943",
+      "designation": "SCOPODERM TTS 1MG/72H DISP 5",
+      "ca": 804.9,
+      "qte": 27,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3027741",
+      "designation": "PROGIRON 25MG SOL INJ SRG 7",
+      "ca": 773.99,
+      "qte": 16,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "4066912",
+      "designation": "HYLO CONFORT COLLY HYD F10ML T",
+      "ca": 737.41,
+      "qte": 105,
+      "nb_pharmas": 15
+    },
+    {
+      "artcode": "3406435",
+      "designation": "SPAGULAX MUCILAGE PUR GLE S.20",
+      "ca": 719.88,
+      "qte": 127,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "3063219",
+      "designation": "LUMIRELAX 500MG CPR BT20",
+      "ca": 653.24,
+      "qte": 87,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "0386270005120",
+      "designation": "DEXCOM ONE+ CAPTEUR GLYC BT1 T",
+      "ca": 601.79,
+      "qte": 30,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3605152",
+      "designation": "EVRA 203MCG/33,9MCG DISP TRANS 9",
+      "ca": 598.31,
+      "qte": 21,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "5437210",
+      "designation": "SYSTANE BAL GTT OCUL LUB10ML T",
+      "ca": 587.81,
+      "qte": 69,
+      "nb_pharmas": 11
+    },
+    {
+      "artcode": "3546890047246",
+      "designation": "URGO K2 KIT BD 18X25CM/10CM T",
+      "ca": 580.92,
+      "qte": 48,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "7800001",
+      "designation": "HYLO LIPID COLLYRE FL3ML1",
+      "ca": 563.94,
+      "qte": 74,
+      "nb_pharmas": 11
+    },
+    {
+      "artcode": "6311785",
+      "designation": "ELIXYA SOL OPHT HYD FL 10ML T",
+      "ca": 546.48,
+      "qte": 88,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "3002411",
+      "designation": "SOOLANTRA 10MG/G CR TB30G 1",
+      "ca": 538.26,
+      "qte": 21,
+      "nb_pharmas": 10
+    },
+    {
+      "artcode": "3614790001054",
+      "designation": "NEREYA COLLY 0,24% FL10ML",
+      "ca": 530.86,
+      "qte": 85,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "8033638956991",
+      "designation": "SINOVIAL ONE+1AIG SERING2,5ML1",
+      "ca": 526.7,
+      "qte": 11,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "9641315",
+      "designation": "ALGOSTERIL MECHES PLATE 5X40",
+      "ca": 494.08,
+      "qte": 8,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3339756",
+      "designation": "KEAL 1G SUSP BUV SACH5ML 30",
+      "ca": 457.77,
+      "qte": 58,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "3909490",
+      "designation": "QLAIRA CPR BT28 X3",
+      "ca": 452.16,
+      "qte": 16,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "2795653",
+      "designation": "ANXEMIL 200MG CPR BT42",
+      "ca": 446.55,
+      "qte": 46,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "4232919",
+      "designation": "OPTIVE GTT LUBR FL10ML T",
+      "ca": 409.72,
+      "qte": 73,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3005370",
+      "designation": "ANDROGEL 16,2MG/G GEL RECIP 1",
+      "ca": 376.4,
+      "qte": 9,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3567003",
+      "designation": "VANIQA 11,5% CR TB30G",
+      "ca": 366.26,
+      "qte": 9,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3113644",
+      "designation": "VIT B12 GERDA 250MCG CPR FL24",
+      "ca": 333.65,
+      "qte": 60,
+      "nb_pharmas": 10
+    },
+    {
+      "artcode": "2761128",
+      "designation": "EPIDUO 0,1/2,5% GEL M-DOS45G 1",
+      "ca": 327.7,
+      "qte": 13,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "2795676",
+      "designation": "ANXEMIL 200MG CPR BT98",
+      "ca": 312.54,
+      "qte": 18,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "4788864",
+      "designation": "CATIONORM EMUL OPHT UNID 30 T",
+      "ca": 309.06,
+      "qte": 40,
+      "nb_pharmas": 11
+    },
+    {
+      "artcode": "2238220",
+      "designation": "NICOBION 500MG CPR BT30",
+      "ca": 297.7,
+      "qte": 22,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "3529037",
+      "designation": "CERAZETTE 0,075MG CPR BT28X3",
+      "ca": 284.43,
+      "qte": 10,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3589967",
+      "designation": "TRIAFEMI CPR BT21 X3",
+      "ca": 280.98,
+      "qte": 10,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "5202702",
+      "designation": "SYSTANE ULT GTT OCUL LUB10ML T",
+      "ca": 276.01,
+      "qte": 40,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "4200361",
+      "designation": "BLEPHACLEAN COMP STER PAUP 20",
+      "ca": 274.93,
+      "qte": 31,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "3139543",
+      "designation": "DELIPROCT POM RECT TB30G",
+      "ca": 258.63,
+      "qte": 18,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "2110454",
+      "designation": "BD A MICROF ULTRA 5MM STYL100 T - RP 0383017510732",
+      "ca": 258.02,
+      "qte": 29,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "4015630082889",
+      "designation": "ACCU CHEK GUIDE BAND BT 100 T",
+      "ca": 251.31,
+      "qte": 9,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3770027513254",
+      "designation": "SERUM PHY NACL 0,9% L2N FL500ML",
+      "ca": 251.26,
+      "qte": 173,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3401077999575",
+      "designation": "ALGOSTERIL COMP STER 10X10 bte 16",
+      "ca": 241.88,
+      "qte": 8,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "8324006",
+      "designation": "CONTOUR XT NEXT BANDEL BT100 ref 90008074",
+      "ca": 238.86,
+      "qte": 8,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3008113",
+      "designation": "EPIDUO 0,3/2,5% GEL M-DOS30G 1",
+      "ca": 228.26,
+      "qte": 11,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "6240633",
+      "designation": "STERADENT CPR EFFV TABL 90",
+      "ca": 226.78,
+      "qte": 23,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "6328150",
+      "designation": "MEPILEX B FLEX EM 5CMX5CM 10 T ref 581220",
+      "ca": 225.1,
+      "qte": 65,
+      "nb_pharmas": 5
+    }
+  ],
+  "Froid": [
+    {
+      "artcode": "3029291",
+      "designation": "MOUNJARO 5MG KWIKPEN 2,4ML 1",
+      "ca": 48877.5,
+      "qte": 225,
+      "nb_pharmas": 24
+    },
+    {
+      "artcode": "3030312",
+      "designation": "EYLEA 114,3MG/ML INJ SRG 1",
+      "ca": 46981.41,
+      "qte": 116,
+      "nb_pharmas": 16
+    },
+    {
+      "artcode": "3014186",
+      "designation": "SHINGRIX INJ FL+FL 1",
+      "ca": 34697.78,
+      "qte": 206,
+      "nb_pharmas": 16
+    },
+    {
+      "artcode": "3029293",
+      "designation": "MOUNJARO 7,5MG KWIKPEN 2,4ML 1",
+      "ca": 26083.68,
+      "qte": 86,
+      "nb_pharmas": 18
+    },
+    {
+      "artcode": "3029290",
+      "designation": "MOUNJARO 2,5MG KWIKPEN 2,4ML 1",
+      "ca": 24190.32,
+      "qte": 152,
+      "nb_pharmas": 26
+    },
+    {
+      "artcode": "3022697",
+      "designation": "KESIMPTA 20MG INJ STYLO0,4ML 1",
+      "ca": 21312.55,
+      "qte": 20,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "3025866",
+      "designation": "WEGOVY 2,4MG FLEX INJ STYL3ML1",
+      "ca": 20551.73,
+      "qte": 96,
+      "nb_pharmas": 18
+    },
+    {
+      "artcode": "3029294",
+      "designation": "MOUNJARO 10MG KWIKPEN 2,4ML 1",
+      "ca": 19415.76,
+      "qte": 64,
+      "nb_pharmas": 14
+    },
+    {
+      "artcode": "3010935",
+      "designation": "KISQALI 200MG CPR BT63 - RP 3032345",
+      "ca": 16102.03,
+      "qte": 7,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3025864",
+      "designation": "WEGOVY 1MG FLEX INJ STYL3ML 1",
+      "ca": 12727.93,
+      "qte": 82,
+      "nb_pharmas": 14
+    },
+    {
+      "artcode": "2686303",
+      "designation": "BEXSERO INJ SRG0,5ML 1 +AIG",
+      "ca": 12692.52,
+      "qte": 180,
+      "nb_pharmas": 17
+    },
+    {
+      "artcode": "3025862",
+      "designation": "WEGOVY 0,25MG FLEX INJ S1,5ML1",
+      "ca": 11527.84,
+      "qte": 90,
+      "nb_pharmas": 16
+    },
+    {
+      "artcode": "3002858",
+      "designation": "REPATHA 140MG INJ STYLO1ML 1",
+      "ca": 11112.26,
+      "qte": 64,
+      "nb_pharmas": 18
+    },
+    {
+      "artcode": "3026024",
+      "designation": "WEGOVY 1,7MG FLEX INJ STYL3ML1",
+      "ca": 10145.36,
+      "qte": 58,
+      "nb_pharmas": 16
+    },
+    {
+      "artcode": "3029295",
+      "designation": "MOUNJARO 12,5MG KWIKPEN 2,4ML 1",
+      "ca": 8969.94,
+      "qte": 23,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "3000376",
+      "designation": "TRULICITY 1,5MG INJ STY0,5ML 4",
+      "ca": 8933.1,
+      "qte": 125,
+      "nb_pharmas": 12
+    },
+    {
+      "artcode": "3005620",
+      "designation": "GARDASIL 9 INJ SRG0,5ML 1+2AIG",
+      "ca": 8890.36,
+      "qte": 86,
+      "nb_pharmas": 13
+    },
+    {
+      "artcode": "3015110",
+      "designation": "OZEMPIC 1MG INJ STYLO3ML 1",
+      "ca": 7852.38,
+      "qte": 115,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3025863",
+      "designation": "WEGOVY 0,5MG FLEX INJ ST1,5ML1",
+      "ca": 7623.54,
+      "qte": 49,
+      "nb_pharmas": 13
+    },
+    {
+      "artcode": "3029297",
+      "designation": "MOUNJARO 15MG KWIKPEN 2,4ML 1",
+      "ca": 7412.58,
+      "qte": 19,
+      "nb_pharmas": 12
+    },
+    {
+      "artcode": "3013294",
+      "designation": "FASENRA 30MG INJ SRG1ML 1 +NEC",
+      "ca": 7372.68,
+      "qte": 4,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3028114",
+      "designation": "XOLAIR 300MG INJ STYLO2ML 1",
+      "ca": 7005.11,
+      "qte": 19,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3024785",
+      "designation": "PREVENAR 20 INJ SRG0,5ML+AIG 1",
+      "ca": 6794.5,
+      "qte": 135,
+      "nb_pharmas": 11
+    },
+    {
+      "artcode": "2678350",
+      "designation": "EYLEA 40MG/ML INJ SRG 1",
+      "ca": 6698.34,
+      "qte": 21,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3031781",
+      "designation": "WEGOVY 0,5MG FLEX INJ ST 3ML1",
+      "ca": 6663.35,
+      "qte": 43,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "2225393",
+      "designation": "NIMENRIX INJ FL+SRG 1 A/2AIG",
+      "ca": 6125.47,
+      "qte": 176,
+      "nb_pharmas": 10
+    },
+    {
+      "artcode": "2767119",
+      "designation": "LUCENTIS 10MG/ML INJ SRG 1",
+      "ca": 5538.44,
+      "qte": 19,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "3028115",
+      "designation": "XOLAIR 300MG INJ SRG2ML 1+A.27",
+      "ca": 5530.33,
+      "qte": 15,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3018783",
+      "designation": "FASENRA 30MG INJ STYLO1ML 1",
+      "ca": 5529.51,
+      "qte": 3,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3021645",
+      "designation": "TRULICITY 3MG INJ STY0,5ML 4",
+      "ca": 4788.78,
+      "qte": 67,
+      "nb_pharmas": 8
+    },
+    {
+      "artcode": "3003437",
+      "designation": "PRALUENT 75MG INJ STYLO1ML 2",
+      "ca": 4246.0,
+      "qte": 11,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3014143",
+      "designation": "HEMLIBRA 150MG/ML INJ FL0,7ML1",
+      "ca": 4187.53,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3027557",
+      "designation": "ABRYSVO INJ FL+SRG0,5ML 1",
+      "ca": 4034.63,
+      "qte": 23,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3024437",
+      "designation": "VAXNEUVANCE",
+      "ca": 3731.21,
+      "qte": 86,
+      "nb_pharmas": 13
+    },
+    {
+      "artcode": "3687374",
+      "designation": "REPEVAX INJ SRG 1 S/A+1",
+      "ca": 3640.59,
+      "qte": 190,
+      "nb_pharmas": 9
+    },
+    {
+      "artcode": "3019838",
+      "designation": "BEOVU 120MG/ML INJ SRG 1",
+      "ca": 3441.04,
+      "qte": 11,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3021648",
+      "designation": "TRULICITY 4,5MG INJ STY0,5ML 4",
+      "ca": 3146.82,
+      "qte": 44,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3015109",
+      "designation": "OZEMPIC 0,5MG INJ STYLO1,5ML 1",
+      "ca": 3139.95,
+      "qte": 46,
+      "nb_pharmas": 10
+    },
+    {
+      "artcode": "3003439",
+      "designation": "PRALUENT 150MG INJ STYLO1ML 2",
+      "ca": 3089.32,
+      "qte": 8,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "3669092",
+      "designation": "ELIGARD 22,5MG INJ SRG+SRG 1",
+      "ca": 2888.62,
+      "qte": 12,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "2685798",
+      "designation": "TRESIBA 200U/ML INJ STYL.3ML 3",
+      "ca": 2842.39,
+      "qte": 57,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "3007978",
+      "designation": "VAXELIS INJ SRG0,5ML 1 +1AIG",
+      "ca": 2807.13,
+      "qte": 99,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3026259",
+      "designation": "VABYSMO 120MG/ML INJ FL0,24ML1",
+      "ca": 2691.71,
+      "qte": 8,
+      "nb_pharmas": 6
+    },
+    {
+      "artcode": "3028116",
+      "designation": "XOLAIR 150MG INJ STYLO1ML 1",
+      "ca": 2215.76,
+      "qte": 12,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3001667",
+      "designation": "TOUJEO 300U SOLOSTAR STY1,5ML3",
+      "ca": 2206.7,
+      "qte": 71,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "3028990",
+      "designation": "XGEVA 120MG INJ SRG1ML 1",
+      "ca": 2206.4,
+      "qte": 10,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3026863",
+      "designation": "BEYFORTUS 100MG INJ S1ML/2A 1",
+      "ca": 2163.04,
+      "qte": 6,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3004460",
+      "designation": "BENEPALI 50MG INJ STYLO1ML 4",
+      "ca": 2120.0,
+      "qte": 5,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3001851",
+      "designation": "XULTOPHY INJ CART.3ML STYLO 5",
+      "ca": 2038.2,
+      "qte": 15,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3021561",
+      "designation": "PRALUENT 300MG INJ STY2ML1 SBA",
+      "ca": 1930.0,
+      "qte": 5,
+      "nb_pharmas": 4
+    }
+  ],
+  "Génériques": [
+    {
+      "artcode": "3722432",
+      "designation": "PERMIXON 160MG GELU BT180",
+      "ca": 4003.28,
+      "qte": 104,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3344958",
+      "designation": "PERMIXON 160MG GELU BT60",
+      "ca": 653.76,
+      "qte": 51,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3029179",
+      "designation": "FLUDROCORTISONE ACETLAB 50MCG CPR BT60",
+      "ca": 503.49,
+      "qte": 13,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "2667435",
+      "designation": "GLYCER/VASEL/PARAF.PFS CR 250G",
+      "ca": 368.16,
+      "qte": 177,
+      "nb_pharmas": 7
+    },
+    {
+      "artcode": "2740698",
+      "designation": "OPTIMIZETTE 75MCG CPR BT28 X3",
+      "ca": 322.58,
+      "qte": 127,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3026393",
+      "designation": "TERIFLUNOMIDE MYL 14MG CPR B28",
+      "ca": 208.58,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3013362",
+      "designation": "CALCIPOTRIOL/BET.SDZ POM TB60G",
+      "ca": 199.15,
+      "qte": 16,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3488462",
+      "designation": "CROMADOSES 2% COLLY UNIDOS 30",
+      "ca": 120.54,
+      "qte": 42,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3027049",
+      "designation": "DIENOGEST LMJ 2MG CPR BT84",
+      "ca": 117.61,
+      "qte": 4,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3028739",
+      "designation": "EZETIMIB/ATOR.BGA10/40MG CPR90",
+      "ca": 103.29,
+      "qte": 4,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3757695",
+      "designation": "NICORETTE FRUIT 2MG S/S GOM210",
+      "ca": 98.77,
+      "qte": 5,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3023060",
+      "designation": "CLOSALIS 50MCG/0,5MG/G GEL 60G1",
+      "ca": 88.41,
+      "qte": 7,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "2756713",
+      "designation": "LORMETAZEPAM ARW 2MG CPR BT14",
+      "ca": 78.75,
+      "qte": 75,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3028736",
+      "designation": "EZETIMIB/ATOR.BGA10/20MG CPR90",
+      "ca": 77.47,
+      "qte": 3,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3030209",
+      "designation": "OXAZEPAM SSP 10MG CPR BT30",
+      "ca": 74.55,
+      "qte": 105,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3847932",
+      "designation": "LEELOO 0,1MG/0,02MG CPR BT21X3",
+      "ca": 74.32,
+      "qte": 23,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3015281",
+      "designation": "ZOPICLONE ARL 3,75MG CPR BT14",
+      "ca": 69.61,
+      "qte": 76,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3025834",
+      "designation": "CHOLECALC.SSP 50000 BUV A.2ML1",
+      "ca": 66.2,
+      "qte": 90,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3011952",
+      "designation": "CINACALCET BGA 30MG CPR BT28",
+      "ca": 62.15,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3026510",
+      "designation": "AMITRIPTYLINE BGA BUV GTT20ML1  **",
+      "ca": 61.23,
+      "qte": 23,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3002694",
+      "designation": "SODIUM ALGI/BICAR BGR BUV S.24",
+      "ca": 60.31,
+      "qte": 24,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3030211",
+      "designation": "OXAZEPAM SSP 50MG CPR BT20",
+      "ca": 57.72,
+      "qte": 52,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3028185",
+      "designation": "AMOXICILLINE BGR 500MG BUV60ML - RP 3385905",
+      "ca": 52.71,
+      "qte": 35,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3005737",
+      "designation": "CINACALCET MYL 30MG CPR BT28DU",
+      "ca": 50.58,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3025836",
+      "designation": "CHOLECALC.SSP 50000 BUV A.2ML4",
+      "ca": 50.4,
+      "qte": 20,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3019116",
+      "designation": "CANDAZOL 300MG OV BT1",
+      "ca": 41.86,
+      "qte": 23,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "2756707",
+      "designation": "LORMETAZEPAM ARW 1MG CPR BT14",
+      "ca": 39.6,
+      "qte": 55,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3998424",
+      "designation": "CLOPIDOGREL SDZ 75MG CPR BT30",
+      "ca": 39.57,
+      "qte": 6,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3030223",
+      "designation": "TESTOSTERONE DESM250MG/ML INJ1",
+      "ca": 38.61,
+      "qte": 9,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3915668",
+      "designation": "AQUAREST 0,2% GEL OPHT DOS 60",
+      "ca": 38.48,
+      "qte": 8,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3010107",
+      "designation": "FEBUXOSTAT BGA 80MG CPR BT28",
+      "ca": 38.0,
+      "qte": 6,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3030275",
+      "designation": "OXAZEPAM BGA 10MG CPR BT30",
+      "ca": 36.84,
+      "qte": 52,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3024847",
+      "designation": "METOPIMAZINE VNP7,5MG SS DIS16",
+      "ca": 33.27,
+      "qte": 23,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3018005",
+      "designation": "HYDROCHLOROT.ARW 25MG CPR BT90",
+      "ca": 32.63,
+      "qte": 13,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3025499",
+      "designation": "METOTAB 10MG CPR SECAB BT10 DU",
+      "ca": 32.38,
+      "qte": 5,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3001820",
+      "designation": "PREGABALINE MYL 150MG GELU56DU",
+      "ca": 32.34,
+      "qte": 3,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3027549",
+      "designation": "ERYNJA 2MG CPR BT84",
+      "ca": 29.4,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3694552",
+      "designation": "SERTRALINE BGA 50MG GELU BT28",
+      "ca": 29.27,
+      "qte": 9,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3013838",
+      "designation": "DEXTROMET.BGA 1,5MG/ML SS250ML",
+      "ca": 26.33,
+      "qte": 20,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3025835",
+      "designation": "CHOLECALC.SSP 50000 BUV A.2ML2",
+      "ca": 26.18,
+      "qte": 30,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3009167",
+      "designation": "VENLAFAXINE ARG LP150MG GELU30",
+      "ca": 21.28,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3870954",
+      "designation": "CLARELUX 500MCG/G CR TB10G",
+      "ca": 20.6,
+      "qte": 20,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3469909",
+      "designation": "IRBESART/HYD.SDZ 150/12,5 CP90",
+      "ca": 17.96,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "4162811",
+      "designation": "ANTALNOX 550MG CPR BT16",
+      "ca": 17.5,
+      "qte": 10,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3310586",
+      "designation": "PERINDOPRIL BGA 2MG CPR BT90",
+      "ca": 16.98,
+      "qte": 2,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3009485",
+      "designation": "ALFUZOSINE VIA LP 10MG CPR F30",
+      "ca": 14.63,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3872189",
+      "designation": "VENLAFAXINE BGA LP37,5 GEL B30",
+      "ca": 14.44,
+      "qte": 4,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3620849",
+      "designation": "PROGESTAN 200MG CAPS MOL BT15",
+      "ca": 13.48,
+      "qte": 4,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3026667",
+      "designation": "IMENOR GE 10MG CPR 10",
+      "ca": 12.96,
+      "qte": 2,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3015744",
+      "designation": "CHLORHEXIDINE BGA0,12% FL300ML",
+      "ca": 12.09,
+      "qte": 6,
+      "nb_pharmas": 1
+    }
+  ],
+  "Gén. partenaires": [
+    {
+      "artcode": "3949294",
+      "designation": "VALACICLOVIR EG 500MG CPR BT42",
+      "ca": 393.28,
+      "qte": 20,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3638192",
+      "designation": "PARACETAMOL EG 1G CPR BT8",
+      "ca": 190.76,
+      "qte": 251,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3540719",
+      "designation": "AMIODARONE EG 200MG CPR BT30",
+      "ca": 177.6,
+      "qte": 37,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3674609",
+      "designation": "LACTULOSE ZEN 10G SACH15ML 20",
+      "ca": 140.89,
+      "qte": 73,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3017414",
+      "designation": "CINACALCET EG 90MG CPR BT28",
+      "ca": 125.98,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3027272",
+      "designation": "BUDESONIDE TVS 3MG GELU LM F90",
+      "ca": 100.5,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3010206",
+      "designation": "ENTECAVIR EG 0,5MG CPR BT30 DU",
+      "ca": 85.78,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3017348",
+      "designation": "SILODOSINE EG 8MG GELU BT30",
+      "ca": 84.48,
+      "qte": 24,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3017412",
+      "designation": "CINACALCET EG 60MG CPR BT28",
+      "ca": 83.98,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3868118",
+      "designation": "IRBESARTAN EG 300MG CPR BT90",
+      "ca": 81.0,
+      "qte": 10,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3019994",
+      "designation": "PSS ZEN 400G BUV/RECT FL 1",
+      "ca": 79.05,
+      "qte": 4,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3030545",
+      "designation": "ATORVASTATINE TVS 20MG CPR B90",
+      "ca": 77.43,
+      "qte": 11,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3027234",
+      "designation": "METFORMINE EG 500MG CPR BT90",
+      "ca": 75.94,
+      "qte": 32,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3028937",
+      "designation": "DABIGAT.ETEX.ZTV 110MG GELU BT60 D.U",
+      "ca": 69.51,
+      "qte": 7,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3015733",
+      "designation": "FEBUXOSTAT TVS 80MG CPR BT30DU",
+      "ca": 68.78,
+      "qte": 13,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "4997415",
+      "designation": "NAPROXENE S.EG 550MG CPR BT16",
+      "ca": 66.59,
+      "qte": 43,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "2195953",
+      "designation": "DORZOLAMIDE/TIM.EG COLLY 5ML1",
+      "ca": 59.22,
+      "qte": 14,
+      "nb_pharmas": 4
+    },
+    {
+      "artcode": "3838100",
+      "designation": "NICOTINE EG 21MG/24H DISP 28",
+      "ca": 55.23,
+      "qte": 3,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3027239",
+      "designation": "METFORMINE EG 1000MG CPR BT90",
+      "ca": 55.19,
+      "qte": 18,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "4936313",
+      "designation": "NARATRIPTAN EG 2,5MG CPR BT12 - NSFP",
+      "ca": 53.86,
+      "qte": 6,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3026898",
+      "designation": "GANIRELIX EG 0,25MG SRG0,5ML 1",
+      "ca": 47.11,
+      "qte": 3,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3028590",
+      "designation": "EZETIMIB/ATOR.EG 10/20MG CPR90",
+      "ca": 45.36,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3028597",
+      "designation": "EZETIMIB/ATOR.EG 10/40MG CPR90",
+      "ca": 45.36,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3768090",
+      "designation": "ACEBUTOLOL EG 400MG CPR BT90",
+      "ca": 45.15,
+      "qte": 4,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3012779",
+      "designation": "PERIND.TOS/INDAP.TVC10MG C30X3",
+      "ca": 44.07,
+      "qte": 3,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3865829",
+      "designation": "BUDESONIDE TVC 1MG/2ML DOS 20",
+      "ca": 43.64,
+      "qte": 3,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3797996",
+      "designation": "SUMATRIPTAN** TVC 50MG CPR BT6",
+      "ca": 38.72,
+      "qte": 6,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3019349",
+      "designation": "AMOXICILLINE ZYD 1G CPR DISP 6",
+      "ca": 36.0,
+      "qte": 30,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3023952",
+      "designation": "SITAGLIP/METF.EG 50/1000 CPR60",
+      "ca": 34.9,
+      "qte": 5,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3017723",
+      "designation": "SILODOSINE TVC 8MG GELU BT30",
+      "ca": 34.42,
+      "qte": 10,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3029610",
+      "designation": "SITAGLIPTINE ZTK 100MG CPR 30",
+      "ca": 34.2,
+      "qte": 7,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3028814",
+      "designation": "TRAMADOL ZEN LP 50MG CPR BT30",
+      "ca": 33.44,
+      "qte": 10,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3030091",
+      "designation": "SITAGLIP/METF.ZTK 50/1000 CP60",
+      "ca": 33.16,
+      "qte": 5,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "2174922",
+      "designation": "DESLORATADINE ZEN 5MG CPR BT30",
+      "ca": 32.58,
+      "qte": 20,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3936920",
+      "designation": "OLANZAPINE EG 5MG CPR BT28",
+      "ca": 30.58,
+      "qte": 3,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3027655",
+      "designation": "AZELASTINE/FLUTI.EG NAS FL23G",
+      "ca": 30.24,
+      "qte": 5,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3028941",
+      "designation": "DABIGAT.ETEX.ZTV 150MG GELU BT60 D.U",
+      "ca": 29.79,
+      "qte": 3,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3597866",
+      "designation": "FAMOTIDINE EG 40MG CPR BT15",
+      "ca": 26.68,
+      "qte": 4,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3762130",
+      "designation": "LEVODOPA/CAR.**TVC LP200/50 CP30",
+      "ca": 26.1,
+      "qte": 5,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3674319",
+      "designation": "BACLOFENE ZEN 10MG CPR BT30",
+      "ca": 26.05,
+      "qte": 18,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "2773864",
+      "designation": "ESCITALOPRAM TVC 5MG CPR BT28",
+      "ca": 25.13,
+      "qte": 10,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3026517",
+      "designation": "QUETIAPINE TVC LP300MG CPR B60",
+      "ca": 24.73,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3712379",
+      "designation": "RAMIPRIL ZEN 5MG CPR BT90",
+      "ca": 24.48,
+      "qte": 4,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3473058",
+      "designation": "PARACETAMOL EG 500MG CPR BT16",
+      "ca": 23.56,
+      "qte": 31,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3617528",
+      "designation": "DOXYCYCLINE** TVC 100MG CPR BT30",
+      "ca": 23.28,
+      "qte": 6,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3876537",
+      "designation": "VALACICLOVIR ZEN 500MG CPR B10",
+      "ca": 22.9,
+      "qte": 4,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3685719",
+      "designation": "AMISULPRIDE TVC 400MG CPR BT30",
+      "ca": 22.11,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3011014",
+      "designation": "PRAMIPEXOLE ZEN LP2,1MG CPR 30",
+      "ca": 21.7,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3524749",
+      "designation": "ZOPICLONE EG 7,5MG CPR BT14",
+      "ca": 21.57,
+      "qte": 23,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "4933651",
+      "designation": "PANTOPRAZOLE TVS 20MG CPR BT28",
+      "ca": 21.28,
+      "qte": 10,
+      "nb_pharmas": 1
+    }
+  ],
+  "Biosimilaires": [
+    {
+      "artcode": "3022643",
+      "designation": "YUFLYMA 40MG INJ STY0,4ML 2 +T",
+      "ca": 8825.98,
+      "qte": 25,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3019936",
+      "designation": "REMSIMA 120MG INJ STY1ML 2",
+      "ca": 2987.08,
+      "qte": 10,
+      "nb_pharmas": 5
+    },
+    {
+      "artcode": "3022638",
+      "designation": "YUFLYMA 40MG INJ SRG0,4ML 2 +N",
+      "ca": 2500.01,
+      "qte": 7,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3020353",
+      "designation": "GRASUSTEK 6MG INJ SRG.S0,6ML 1",
+      "ca": 2090.48,
+      "qte": 6,
+      "nb_pharmas": 3
+    },
+    {
+      "artcode": "3030225",
+      "designation": "STEQEYMA 90MG INJ SRG1ML 1",
+      "ca": 2067.38,
+      "qte": 2,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3028496",
+      "designation": "UZPRUVO 90MG INJ SRG1ML 1",
+      "ca": 2053.68,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3935441",
+      "designation": "ZARZIO 30MU/0,5ML INJ SRG 1",
+      "ca": 1469.9,
+      "qte": 28,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "2168784",
+      "designation": "OMNITROPE 15MG INJ C.1,5ML 5",
+      "ca": 1331.99,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3024688",
+      "designation": "YUFLYMA 80MG INJ STY0,8ML 1 +T",
+      "ca": 757.5,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3011931",
+      "designation": "MOVYMIA 20MCG/80MCL INJ 2,4ML1",
+      "ca": 534.36,
+      "qte": 3,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3001043",
+      "designation": "ACCOFIL 30MU/0,5ML INJ S.5 +P",
+      "ca": 522.27,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3031792",
+      "designation": "ENOXAPARINE ZEN 4000U/0,4ML S.6",
+      "ca": 515.99,
+      "qte": 23,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "3022642",
+      "designation": "YUFLYMA 40MG INJ STY0,4ML 1 +T",
+      "ca": 512.3,
+      "qte": 3,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3935487",
+      "designation": "ZARZIO 48MU/0,5ML INJ SRG 1",
+      "ca": 425.09,
+      "qte": 5,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3029453",
+      "designation": "AMGEVITA 80MG INJ SRG0,8ML 1",
+      "ca": 378.75,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3024176",
+      "designation": "ENOXAPARINE TVC 4000U/0,4ML S6",
+      "ca": 358.96,
+      "qte": 16,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3016324",
+      "designation": "FULPHILA 6MG INJ SRG0,6ML1+SYS",
+      "ca": 349.26,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3016348",
+      "designation": "PELMEG 6MG INJ SRG0,6ML 1",
+      "ca": 349.26,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3029456",
+      "designation": "AMGEVITA 80MG INJ STY0,8ML 1",
+      "ca": 340.94,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3001221",
+      "designation": "RETACRIT 40000U/1ML INJ S.1 +D",
+      "ca": 316.12,
+      "qte": 2,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "2793915",
+      "designation": "BEMFOLA 150UI/0,25ML INJ STYL1",
+      "ca": 308.77,
+      "qte": 12,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "4981874",
+      "designation": "BINOCRIT 40000UI INJ S1ML 1+A",
+      "ca": 158.06,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3024175",
+      "designation": "ENOXAPARINE TVC 4000U/0,4ML S2",
+      "ca": 142.42,
+      "qte": 19,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3031791",
+      "designation": "ENOXAPARINE ZEN 4000U/0,4ML S.2",
+      "ca": 142.12,
+      "qte": 19,
+      "nb_pharmas": 2
+    },
+    {
+      "artcode": "2793909",
+      "designation": "BEMFOLA 75UI/0,125ML INJ STYL1",
+      "ca": 125.77,
+      "qte": 10,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3031809",
+      "designation": "ENOXAPARINE ZEN 8000U/0,8ML S10",
+      "ca": 96.5,
+      "qte": 2,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3031012",
+      "designation": "STOBOCLO 60MG SOL SC SRG 1",
+      "ca": 83.74,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "2790302",
+      "designation": "OVALEAP 300UI/0,5ML INJ CART.1",
+      "ca": 48.39,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3031800",
+      "designation": "ENOXAPARINE ZEN 6000U/0,6ML S10",
+      "ca": 43.11,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3031787",
+      "designation": "ENOXAPARINE ZEN 2000U/0,2ML S.6",
+      "ca": 33.64,
+      "qte": 3,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3030003",
+      "designation": "ENOXAPARINE EG 4000U/0,4ML S.6",
+      "ca": 21.83,
+      "qte": 1,
+      "nb_pharmas": 1
+    },
+    {
+      "artcode": "3031798",
+      "designation": "ENOXAPARINE ZEN 6000U/0,6ML S.2",
+      "ca": 17.24,
+      "qte": 2,
+      "nb_pharmas": 1
+    }
+  ]
+};
+
+window.SALES_BY_FAMILLE_MONTHLY = {
+  "Princeps": {
+    "2025-10": {
+      "ca": 20436.86,
+      "qte": 2266
+    },
+    "2025-11": {
+      "ca": 43123.59,
+      "qte": 5086
+    },
+    "2025-12": {
+      "ca": 72439.78,
+      "qte": 5294
+    },
+    "2026-01": {
+      "ca": 71911.63,
+      "qte": 10505
+    },
+    "2026-02": {
+      "ca": 62562.2,
+      "qte": 10324
+    },
+    "2026-03": {
+      "ca": 101599.19,
+      "qte": 14943
+    },
+    "2026-04": {
+      "ca": 95607.06,
+      "qte": 15670
+    },
+    "2026-05": {
+      "ca": 87715.17,
+      "qte": 14258
+    }
+  },
+  "Non remboursés": {
+    "2025-10": {
+      "ca": 1291.62,
+      "qte": 215
+    },
+    "2025-11": {
+      "ca": 2555.09,
+      "qte": 302
+    },
+    "2025-12": {
+      "ca": 5476.31,
+      "qte": 634
+    },
+    "2026-01": {
+      "ca": 8723.43,
+      "qte": 1004
+    },
+    "2026-02": {
+      "ca": 9224.05,
+      "qte": 914
+    },
+    "2026-03": {
+      "ca": 11718.52,
+      "qte": 1289
+    },
+    "2026-04": {
+      "ca": 13298.26,
+      "qte": 1451
+    },
+    "2026-05": {
+      "ca": 12139.16,
+      "qte": 1313
+    }
+  },
+  "Froid": {
+    "2025-10": {
+      "ca": 11856.3,
+      "qte": 94
+    },
+    "2025-11": {
+      "ca": 40812.03,
+      "qte": 467
+    },
+    "2025-12": {
+      "ca": 54838.71,
+      "qte": 452
+    },
+    "2026-01": {
+      "ca": 51910.14,
+      "qte": 463
+    },
+    "2026-02": {
+      "ca": 77922.29,
+      "qte": 607
+    },
+    "2026-03": {
+      "ca": 97153.69,
+      "qte": 809
+    },
+    "2026-04": {
+      "ca": 107688.43,
+      "qte": 750
+    },
+    "2026-05": {
+      "ca": 114169.47,
+      "qte": 749
+    }
+  },
+  "Génériques": {
+    "2025-10": {
+      "ca": 21.52,
+      "qte": 10
+    },
+    "2025-11": {
+      "ca": 955.72,
+      "qte": 80
+    },
+    "2025-12": {
+      "ca": 167.53,
+      "qte": 55
+    },
+    "2026-01": {
+      "ca": 1077.79,
+      "qte": 205
+    },
+    "2026-02": {
+      "ca": 980.75,
+      "qte": 314
+    },
+    "2026-03": {
+      "ca": 1698.05,
+      "qte": 247
+    },
+    "2026-04": {
+      "ca": 2079.88,
+      "qte": 332
+    },
+    "2026-05": {
+      "ca": 1574.13,
+      "qte": 261
+    }
+  },
+  "Gén. partenaires": {
+    "2025-10": {
+      "ca": 130.4,
+      "qte": 26
+    },
+    "2025-11": {
+      "ca": 70.6,
+      "qte": 35
+    },
+    "2025-12": {
+      "ca": 312.96,
+      "qte": 93
+    },
+    "2026-01": {
+      "ca": 971.39,
+      "qte": 366
+    },
+    "2026-02": {
+      "ca": 695.21,
+      "qte": 173
+    },
+    "2026-03": {
+      "ca": 616.34,
+      "qte": 130
+    },
+    "2026-04": {
+      "ca": 621.22,
+      "qte": 194
+    },
+    "2026-05": {
+      "ca": 600.06,
+      "qte": 153
+    }
+  },
+  "Biosimilaires": {
+    "2025-10": {
+      "ca": 504.52,
+      "qte": 11
+    },
+    "2025-11": {
+      "ca": 715.24,
+      "qte": 4
+    },
+    "2025-12": {
+      "ca": 2792.29,
+      "qte": 9
+    },
+    "2026-01": {
+      "ca": 4354.24,
+      "qte": 16
+    },
+    "2026-02": {
+      "ca": 2476.08,
+      "qte": 24
+    },
+    "2026-03": {
+      "ca": 4628.53,
+      "qte": 33
+    },
+    "2026-04": {
+      "ca": 6606.05,
+      "qte": 64
+    },
+    "2026-05": {
+      "ca": 7831.94,
+      "qte": 52
     }
   }
 };
