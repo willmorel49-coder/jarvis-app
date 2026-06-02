@@ -221,16 +221,44 @@
     const opsMix = getOpsMixByFamille();
     const opsAgg = window.OPS_AGGREGATE || {};
 
-    // Top opportunités : top produits OPS Nantes que ce client n'achète pas (ou peu)
-    const opportunites = [];
-    for (const code in opsAgg) {
-      if (clientArtCodes.has(code)) continue;
-      const op = opsAgg[code];
-      if (!op.ca || op.ca <= 0) continue;
-      opportunites.push({ code, ...op });
-    }
-    opportunites.sort((a, b) => b.ca - a.ca);
-    const topOpp = opportunites.slice(0, 12);
+    // Index produits client (par artcode) avec ca/qte
+    const clientProdByCode = {};
+    if (topProducts) for (const prod of topProducts) clientProdByCode[prod.artcode] = prod;
+
+    // Top 15 OPS Nantes — ma position sur chacun
+    const opsRanked = Object.entries(opsAgg)
+      .map(([code, p]) => ({ code, ...p }))
+      .filter(o => o.ca > 0)
+      .sort((a, b) => b.ca - a.ca);
+    const top15Ops = opsRanked.slice(0, 15).map(o => {
+      const mine = clientProdByCode[o.code];
+      const myCa = mine ? mine.ca : 0;
+      const myQte = mine ? mine.qte : 0;
+      const pdm = o.ca > 0 ? (myCa / o.ca * 100) : 0;
+      return { ...o, myCa, myQte, pdm, present: !!mine };
+    });
+    const coverageTop15 = top15Ops.filter(t => t.present).length;
+    const pdmMoyenneTop15 = top15Ops.filter(t => t.present).reduce((s, t) => s + t.pdm, 0) / (coverageTop15 || 1);
+
+    // Mes top 15 produits avec part de marché (sur produits où j'ai du CA et OPS aussi)
+    const myTop15 = topProducts
+      ? topProducts
+          .filter(pp => pp.ca > 0)
+          .slice()
+          .sort((a, b) => b.ca - a.ca)
+          .slice(0, 15)
+          .map(pp => {
+            const op = opsAgg[pp.artcode];
+            const opsCa = op ? op.ca : 0;
+            const opsQte = op ? op.qte : 0;
+            const pdm = opsCa > 0 ? (pp.ca / opsCa * 100) : null;
+            const stockMatch = stockIdx[pp.artcode];
+            const fam = familleFromAttrs(stockMatch?.nature, stockMatch?.marque, stockMatch?.sousfamille);
+            return { ...pp, opsCa, opsQte, pdm, fam };
+          })
+      : [];
+    const pdmCalculables = myTop15.filter(p => p.pdm !== null);
+    const pdmMoyenneClient = pdmCalculables.length ? (pdmCalculables.reduce((s, p) => s + p.pdm, 0) / pdmCalculables.length) : 0;
 
     // Logiciel d'officine
     const logiciel = p.logiciel || '';
@@ -308,8 +336,11 @@
         <!-- Mix produit · ce client vs secteur OPS Nantes -->
         ${clientFamTotal > 0 && opsMix.total > 0 ? buildMixVsOpsHtml(clientFamCa, clientFamTotal, opsMix.fams, opsMix.total, FAMILLES) : ''}
 
-        <!-- Top opportunités OPS Nantes -->
-        ${topOpp.length ? buildOpportunitesHtml(topOpp, opsMix.total) : ''}
+        <!-- Top 15 secteur OPS Nantes — ma position -->
+        ${top15Ops.length ? buildTop15OpsHtml(top15Ops, coverageTop15, pdmMoyenneTop15, opsMix.total) : ''}
+
+        <!-- Mes top 15 references avec part de marche -->
+        ${myTop15.length ? buildMyTop15PdmHtml(myTop15, pdmMoyenneClient) : ''}
 
         <!-- 2 colonnes : Top produits + Dernières factures -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;margin-top:14px">
@@ -486,46 +517,124 @@
     `;
   }
 
-  // Top opportunités : produits TOP OPS Nantes absents de ce client
-  function buildOpportunitesHtml(opps, opsTotal) {
+  // Top 15 produits du secteur OPS Nantes — ma position sur chacun
+  function buildTop15OpsHtml(top15, coverage, pdmMoy, opsTotal) {
     const stockIdx = window.STOCK || {};
-    const rows = opps.map((o, i) => {
-      const fam = familleFromAttrs(o.nature, o.afmcode, o.sousfamille);
-      const FAMILLE_COLORS = {
-        'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
-        'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
-      };
+    const FAMILLE_COLORS = {
+      'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
+      'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
+    };
+    const rows = top15.map((t, i) => {
+      const stockMatch = stockIdx[t.code];
+      const fam = familleFromAttrs(t.nature || stockMatch?.nature, t.afmcode || stockMatch?.marque, t.sousfamille || stockMatch?.sousfamille);
       const c = FAMILLE_COLORS[fam] || '#0057FF';
-      const pctOps = opsTotal > 0 ? (o.ca / opsTotal * 100) : 0;
+      const pctOps = opsTotal > 0 ? (t.ca / opsTotal * 100) : 0;
+      const pdmBarW = Math.min(t.pdm * 4, 100); // 25 % PdM = barre pleine
+      const statut = !t.present
+        ? `<span style="background:#FFE5EA;color:#FF4D6D;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase">Absent</span>`
+        : `<span style="background:#E6F7EE;color:#14B86A;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase">Actif</span>`;
       return `
-        <div style="padding:10px 16px;display:grid;grid-template-columns:28px 1fr 130px 110px 90px;gap:10px;align-items:center;font-size:12.5px;border-bottom:1px solid #F2F6FF">
+        <div style="padding:10px 16px;display:grid;grid-template-columns:28px 1fr 110px 100px 100px 110px 70px;gap:10px;align-items:center;font-size:12.5px;border-bottom:1px solid #F2F6FF">
           <span style="color:#94A3B8;font-weight:800;font-size:13px">${i + 1}</span>
           <div style="min-width:0">
-            <div style="font-weight:700;color:#0B1F4D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(o.designation || o.code)}</div>
-            <div style="font-size:10.5px;color:#94A3B8;margin-top:2px">${escapeHtml(o.marque || '—')}</div>
+            <div style="font-weight:700;color:#0B1F4D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(t.designation || t.code)}</div>
+            <div style="font-size:10.5px;color:#94A3B8;margin-top:2px">${escapeHtml(t.marque || '—')}</div>
           </div>
           <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#0B1F4D;font-weight:600;background:${c}15;padding:4px 10px;border-radius:999px;width:fit-content"><span style="width:7px;height:7px;border-radius:50%;background:${c}"></span>${escapeHtml(fam)}</span>
           <div style="text-align:right">
-            <b style="color:#0B1F4D;font-variant-numeric:tabular-nums">${fmtEuro(o.ca)}</b>
+            <b style="color:#0B1F4D;font-variant-numeric:tabular-nums">${fmtEuro(t.ca)}</b>
             <div style="font-size:10px;color:#94A3B8">${pctOps.toFixed(2)}% OPS</div>
           </div>
           <div style="text-align:right">
-            <span style="color:#FF4D6D;font-weight:800;font-size:11px;letter-spacing:.5px;text-transform:uppercase">Absent</span>
-            <div style="font-size:10px;color:#94A3B8">${fmtNum(o.qte || 0)} u secteur</div>
+            <b style="color:${t.present?'#0057FF':'#CBD5E1'};font-variant-numeric:tabular-nums">${t.present?fmtEuro(t.myCa):'—'}</b>
+            <div style="font-size:10px;color:#94A3B8">${t.present?fmtNum(t.myQte)+' u':''}</div>
           </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="flex:1;height:8px;background:#F2F6FF;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pdmBarW}%;background:linear-gradient(90deg,#0057FF,#5856D6);border-radius:4px"></div></div>
+              <span style="font-size:11px;font-weight:800;color:${t.present?'#0057FF':'#CBD5E1'};font-variant-numeric:tabular-nums;min-width:34px;text-align:right">${t.present?t.pdm.toFixed(1)+'%':'—'}</span>
+            </div>
+          </div>
+          ${statut}
         </div>
       `;
     }).join('');
     return `
-      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:18px 0 10px">Top opportunités · produits OPS Nantes absents de ce client</h3>
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:18px 0 10px">Top 15 secteur OPS Nantes · ma position</h3>
       <div style="${styleCard('padding:0')}">
-        <div style="padding:10px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF;display:grid;grid-template-columns:28px 1fr 130px 110px 90px;gap:10px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">
-          <span>#</span><span>Produit</span><span>Famille IP</span><span style="text-align:right">CA OPS</span><span style="text-align:right">Statut</span>
+        <div style="padding:12px 16px;background:linear-gradient(135deg,#F2F6FF,#EAF2FF);border-bottom:1px solid #E8EEFF;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;gap:24px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Couverture top 15</div>
+              <div style="font-size:22px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums">${coverage}<span style="color:#94A3B8;font-size:14px"> / 15</span></div>
+            </div>
+            <div>
+              <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">PdM moyenne (actifs)</div>
+              <div style="font-size:22px;font-weight:800;color:#0057FF;font-variant-numeric:tabular-nums">${pdmMoy.toFixed(2)}<span style="font-size:14px;color:#94A3B8"> %</span></div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#64748B;max-width:280px;text-align:right">Combien des locomotives sectorielles passent par cette pharmacie, et quelle part de leur CA OPS j'y capte.</div>
+        </div>
+        <div style="padding:10px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF;display:grid;grid-template-columns:28px 1fr 110px 100px 100px 110px 70px;gap:10px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">
+          <span>#</span><span>Produit</span><span>Famille</span><span style="text-align:right">CA OPS</span><span style="text-align:right">Mon CA</span><span>Ma PdM</span><span style="text-align:right">Statut</span>
         </div>
         ${rows}
-        <div style="padding:10px 16px;background:#FAFBFF;font-size:11px;color:#64748B;border-top:1px solid #E8EEFF">
-          Ces produits tournent fort à l'OPS Nantes mais ne sont pas commandés ici → leviers prioritaires en visite.
+      </div>
+    `;
+  }
+
+  // Mes top 15 références — part de marché individuelle vs secteur OPS
+  function buildMyTop15PdmHtml(rows, pdmMoy) {
+    const FAMILLE_COLORS = {
+      'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
+      'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
+    };
+    const html = rows.map((r, i) => {
+      const c = FAMILLE_COLORS[r.fam] || '#0057FF';
+      const hasPdm = r.pdm !== null;
+      const pdmBarW = hasPdm ? Math.min(r.pdm * 4, 100) : 0;
+      const score = hasPdm
+        ? (r.pdm > 10 ? { lbl: 'Fidèle', col: '#14B86A' } : r.pdm > 3 ? { lbl: 'Moyen', col: '#FF9F1C' } : { lbl: 'Faible', col: '#FF4D6D' })
+        : { lbl: 'Hors top OPS', col: '#94A3B8' };
+      return `
+        <div style="padding:10px 16px;display:grid;grid-template-columns:28px 1fr 110px 100px 100px 130px 80px;gap:10px;align-items:center;font-size:12.5px;border-bottom:1px solid #F2F6FF">
+          <span style="color:#94A3B8;font-weight:800;font-size:13px">${i + 1}</span>
+          <div style="min-width:0">
+            <div style="font-weight:700;color:#0B1F4D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.designation || r.artcode)}</div>
+            <div style="font-size:10.5px;color:#94A3B8;margin-top:2px">×${fmtNum(r.qte)} u</div>
+          </div>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#0B1F4D;font-weight:600;background:${c}15;padding:4px 10px;border-radius:999px;width:fit-content"><span style="width:7px;height:7px;border-radius:50%;background:${c}"></span>${escapeHtml(r.fam)}</span>
+          <div style="text-align:right">
+            <b style="color:#0057FF;font-variant-numeric:tabular-nums">${fmtEuro(r.ca)}</b>
+          </div>
+          <div style="text-align:right">
+            <b style="color:${hasPdm?'#0B1F4D':'#CBD5E1'};font-variant-numeric:tabular-nums">${hasPdm?fmtEuro(r.opsCa):'—'}</b>
+            <div style="font-size:10px;color:#94A3B8">${hasPdm?fmtNum(r.opsQte)+' u OPS':''}</div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="flex:1;height:8px;background:#F2F6FF;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pdmBarW}%;background:linear-gradient(90deg,${score.col},${c});border-radius:4px"></div></div>
+              <span style="font-size:11px;font-weight:800;color:${score.col};font-variant-numeric:tabular-nums;min-width:34px;text-align:right">${hasPdm?r.pdm.toFixed(1)+'%':'—'}</span>
+            </div>
+          </div>
+          <span style="background:${score.col}15;color:${score.col};padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;text-align:center">${score.lbl}</span>
         </div>
+      `;
+    }).join('');
+    return `
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:18px 0 10px">Mes top 15 références · part de marché vs OPS Nantes</h3>
+      <div style="${styleCard('padding:0')}">
+        <div style="padding:12px 16px;background:linear-gradient(135deg,#F2F6FF,#EAF2FF);border-bottom:1px solid #E8EEFF;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">PdM moyenne sur mes top 15</div>
+            <div style="font-size:22px;font-weight:800;color:#0057FF;font-variant-numeric:tabular-nums">${pdmMoy.toFixed(2)}<span style="font-size:14px;color:#94A3B8"> %</span></div>
+          </div>
+          <div style="font-size:11px;color:#64748B;max-width:300px;text-align:right">PdM = mon CA sur ce produit ÷ CA total OPS Nantes sur ce produit. >10 % = fidèle · 3-10 % = moyen · <3 % = potentiel d'expansion.</div>
+        </div>
+        <div style="padding:10px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF;display:grid;grid-template-columns:28px 1fr 110px 100px 100px 130px 80px;gap:10px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">
+          <span>#</span><span>Produit</span><span>Famille</span><span style="text-align:right">Mon CA</span><span style="text-align:right">CA OPS</span><span>Ma PdM</span><span style="text-align:right">Score</span>
+        </div>
+        ${html}
       </div>
     `;
   }
