@@ -639,6 +639,99 @@
     `;
   }
 
+  // Comparatif Mon secteur (Will) vs OPS Nantes par famille IP — table riche avec indice
+  function buildSectorVsOpsHtml(myFams, myTotal, opsFams, opsTotal, familles) {
+    const FAMILLE_COLORS = {
+      'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
+      'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
+    };
+    const rows = familles.map(f => {
+      const myCa = (myFams[f] && myFams[f].ca) || 0;
+      const myRefs = (myFams[f] && myFams[f].nb_refs) || 0;
+      const opsCa = opsFams[f] || 0;
+      const myPct = myTotal > 0 ? (myCa / myTotal * 100) : 0;
+      const opsPct = opsTotal > 0 ? (opsCa / opsTotal * 100) : 0;
+      const delta = myPct - opsPct;
+      const indice = opsPct > 0 ? (myPct / opsPct * 100) : 0; // 100 = aligné
+      const pdmFam = opsCa > 0 ? (myCa / opsCa * 100) : 0;     // ma part dans cette famille à OPS
+      const c = FAMILLE_COLORS[f] || '#0057FF';
+      const maxPct = Math.max(myPct, opsPct, 5);
+      const myW = (myPct / maxPct) * 100;
+      const opsW = (opsPct / maxPct) * 100;
+      const deltaSign = delta > 0 ? '+' : '';
+      const deltaCol = delta > 2 ? '#14B86A' : delta < -2 ? '#FF4D6D' : '#94A3B8';
+      const indiceLabel = indice >= 110 ? 'Sur-indexé' : indice >= 90 ? 'Aligné' : indice >= 60 ? 'Sous-indexé' : 'Très sous-indexé';
+      const indiceCol = indice >= 110 ? '#14B86A' : indice >= 90 ? '#0057FF' : indice >= 60 ? '#FF9F1C' : '#FF4D6D';
+      return `
+        <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF">
+          <div style="display:grid;grid-template-columns:180px 1fr 110px 110px;gap:14px;align-items:center;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="width:12px;height:12px;border-radius:50%;background:${c}"></span>
+              <div>
+                <div style="font-size:14px;font-weight:800;color:#0B1F4D">${escapeHtml(f)}</div>
+                <div style="font-size:10.5px;color:#94A3B8">${fmtNum(myRefs)} réfs facturées</div>
+              </div>
+            </div>
+            <div>
+              <div style="display:grid;grid-template-columns:60px 1fr 80px;gap:10px;align-items:center;margin-bottom:5px">
+                <span style="font-size:10px;color:#0057FF;font-weight:800;text-transform:uppercase">Moi</span>
+                <div style="height:14px;background:#F2F6FF;border-radius:4px;overflow:hidden"><div style="height:100%;width:${myW}%;background:${c};border-radius:4px"></div></div>
+                <span style="font-size:12px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;text-align:right">${fmtEuro(myCa)}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:60px 1fr 80px;gap:10px;align-items:center">
+                <span style="font-size:10px;color:#64748B;font-weight:800;text-transform:uppercase">OPS</span>
+                <div style="height:10px;background:#F2F6FF;border-radius:4px;overflow:hidden"><div style="height:100%;width:${opsW}%;background:repeating-linear-gradient(90deg,${c}88 0,${c}88 6px,${c}44 6px,${c}44 12px);border-radius:4px"></div></div>
+                <span style="font-size:11px;font-weight:600;color:#64748B;font-variant-numeric:tabular-nums;text-align:right">${fmtEuro(opsCa)}</span>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Mix Moi · OPS</div>
+              <div style="font-size:14px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums">${myPct.toFixed(1)}% <span style="color:#94A3B8;font-size:11px">vs ${opsPct.toFixed(1)}%</span></div>
+              <div style="font-size:11px;font-weight:700;color:${deltaCol};margin-top:2px">${deltaSign}${delta.toFixed(1)} pts</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Indice / 100</div>
+              <div style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:${indiceCol}">${indice ? indice.toFixed(0) : '—'}</div>
+              <div style="font-size:10px;font-weight:700;color:${indiceCol};text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${indiceLabel}</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94A3B8;padding-left:22px">
+            <span>Ma PdM dans cette famille à OPS Nantes : <b style="color:#0B1F4D">${pdmFam.toFixed(2)} %</b></span>
+            <span>Indice 100 = aligné · >110 = sur-représenté · <90 = potentiel d'expansion</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Synthèse opportunités : famille la plus sous-indexée
+    const sousIdx = familles.map(f => {
+      const myCa = (myFams[f] && myFams[f].ca) || 0;
+      const opsCa = opsFams[f] || 0;
+      const myPct = myTotal > 0 ? (myCa / myTotal * 100) : 0;
+      const opsPct = opsTotal > 0 ? (opsCa / opsTotal * 100) : 0;
+      return { f, delta: myPct - opsPct, manqueGagne: Math.max(0, opsPct - myPct) / 100 * myTotal };
+    }).sort((a, b) => a.delta - b.delta);
+    const topSousIdx = sousIdx[0];
+    const topSurIdx = [...sousIdx].sort((a, b) => b.delta - a.delta)[0];
+
+    return `
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:6px 0 10px">Mix produit par famille · Mon secteur vs OPS Nantes</h3>
+      <div style="${styleCard('padding:0')}">
+        <div style="padding:10px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF;display:grid;grid-template-columns:180px 1fr 110px 110px;gap:14px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">
+          <span>Famille IP</span><span>CA absolu · barres comparatives</span><span style="text-align:right">Mix Moi · OPS</span><span style="text-align:right">Indice / 100</span>
+        </div>
+        ${rows}
+        <div style="padding:14px 18px;background:linear-gradient(135deg,#FFF8EC,#FFF);border-top:2px solid #FF9F1C">
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#7C2D12;font-weight:800;margin-bottom:6px">À retenir</div>
+          <div style="font-size:12.5px;color:#0B1F4D;line-height:1.5">
+            ${topSousIdx ? `<div>• <b>${escapeHtml(topSousIdx.f)}</b> : famille la plus sous-indexée vs OPS Nantes <b style="color:#FF4D6D">(${topSousIdx.delta.toFixed(1)} pts)</b> · manque à gagner estimé <b>${fmtEuro(topSousIdx.manqueGagne)}</b>${topSousIdx.delta < 0 ? ' au mix sectoriel' : ''}</div>` : ''}
+            ${topSurIdx && topSurIdx.delta > 0 ? `<div>• <b>${escapeHtml(topSurIdx.f)}</b> : famille où je sur-performe <b style="color:#14B86A">(+${topSurIdx.delta.toFixed(1)} pts)</b> · territoire fidèle</div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function hexToRgbLocal(hex) {
     const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 0, g: 87, b: 255 };
@@ -915,7 +1008,6 @@
     const root = document.getElementById('bench-content');
     if (!root) return;
     const cat = window.CATALOGUE_IP || [];
-    if (!cat.length) { root.innerHTML = `<div style="padding:40px;text-align:center;color:#94A3B8">Catalogue IP non chargé</div>`; return; }
     // Stats par catégorie
     const byCat = {};
     for (const p of cat) {
@@ -928,12 +1020,46 @@
       if (p.froid) byCat[c].froidCount++;
     }
     const cats = Object.entries(byCat).sort((a, b) => b[1].count - a[1].count);
-    // Top 20 produits par remise
     const topRemise = [...cat].filter(p => p.remise_pct > 0).sort((a, b) => b.remise_pct - a.remise_pct).slice(0, 20);
+
+    // Comparatif Mon secteur vs OPS Nantes
+    const myFams = window.SALES_BY_FAMILLE || {};
+    const myTotal = (window.SALES_TOTAL && window.SALES_TOTAL.ca) || 0;
+    const opsMix = getOpsMixByFamille();
+    const opsTotal = opsMix.total;
+    const opsTotalDeclared = (window.OPS_TOTAL && window.OPS_TOTAL.ca) || opsTotal;
+    const poidsWill = opsTotalDeclared > 0 ? (myTotal / opsTotalDeclared * 100) : 0;
+    const FAMILLES_ORDER = ['Froid', 'Biosimilaires', 'Génériques', 'Gén. partenaires', 'Non remboursés', 'Princeps'];
 
     root.innerHTML = `
       <div style="padding:20px;max-width:1280px;margin:0 auto;font-family:'DM Sans',sans-serif">
-        ${sectionHeader('Benchmark catalogue Intégral Pharma', `${fmtNum(cat.length)} produits référencés · prix HT / IP / remises`)}
+        ${sectionHeader('Benchmark Mon secteur vs OPS Nantes', `Comparatif par famille IP · ${fmtNum(cat.length)} produits référencés`)}
+
+        <!-- KPI hero -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px">
+          <div style="${styleCard()};background:linear-gradient(135deg,#0057FF,#5856D6);color:#fff;border:none">
+            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:800">Mon secteur · CA cumulé</div>
+            <div style="font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(myTotal)}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.7)">8 dpts · ${fmtNum((window.SALES_TOTAL||{}).factures||0)} factures</div>
+          </div>
+          <div style="${styleCard()};border-left:4px solid #14B86A">
+            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">OPS Nantes · établissement</div>
+            <div style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:#0B1F4D;margin:4px 0">${fmtEuro(opsTotalDeclared)}</div>
+            <div style="font-size:11px;color:#94A3B8">${fmtNum((window.OPS_TOTAL||{}).nb_produits||0)} références agrégées</div>
+          </div>
+          <div style="${styleCard()};border-left:4px solid #FF9F1C">
+            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Mon poids dans OPS Nantes</div>
+            <div style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:#0B1F4D;margin:4px 0">${poidsWill.toFixed(1)}<span style="font-size:14px;color:#94A3B8"> %</span></div>
+            <div style="font-size:11px;color:#94A3B8">CA Will ÷ CA OPS établissement</div>
+          </div>
+        </div>
+
+        <!-- Comparatif détaillé par famille -->
+        ${buildSectorVsOpsHtml(myFams, myTotal, opsMix.fams, opsTotal, FAMILLES_ORDER)}
+
+        <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:24px 0 10px">Catalogue Intégral Pharma · structure</h3>
+        <div style="font-size:11px;color:#94A3B8;margin-bottom:10px">Liste des références catalogue (différent du CA facturé ci-dessus)</div>
+
 
         <!-- Stats catégories -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:20px">

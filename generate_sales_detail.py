@@ -9,6 +9,8 @@ Agrégats produits :
 - SALES_BY_PRODUCT : { artcode: { designation, sousfamille, ca, marge, qte, nb_clients } }
 - SALES_BY_CLIENT_DETAIL : { cip: [top 30 dernières lignes facture] }
 - SALES_BY_SOUSFAMILLE : { sousfamille: {ca, marge, qte} }
+- SALES_BY_FAMILLE : { famille: {ca, qte, lignes} }  — Froid, Biosimilaires, Génériques,
+                     Gén. partenaires, Non remboursés, Princeps (join stock.js pour nature)
 - SALES_TOTAL : { ca, marge, marge_pct, lignes, factures, premiere_date, derniere_date }
 """
 
@@ -47,6 +49,36 @@ def to_float(v):
         return 0.0
 
 
+def famille_from_attrs(nature, afmcode, sousfamille):
+    """6 familles IP officielles. Mémo : Biosimilaire > Froid > Non remb. > Gen.Part > Gen > Princeps."""
+    n = (nature or '').strip()
+    a = (afmcode or '').strip().upper()
+    sf = (sousfamille or '').lower()
+    if n == 'Biosimilaire': return 'Biosimilaires'
+    if 'froid' in sf: return 'Froid'
+    if a and a != 'REMBSS' and a != '#N/A': return 'Non remboursés'
+    if n == 'Generique Partenaire': return 'Gén. partenaires'
+    if n == 'Generique': return 'Génériques'
+    return 'Princeps'
+
+
+def load_stock_index():
+    """Lit crm/stock.js et retourne {artcode: {nature, marque, sousfamille}}."""
+    import re
+    stock_path = Path('crm/stock.js')
+    if not stock_path.exists():
+        print('[sales] stock.js absent — famille join ignoré (tout en Princeps)')
+        return {}
+    txt = stock_path.read_text(encoding='utf-8')
+    idx = {}
+    # Lignes: "ARTCODE": { nom: "...", ean: "...", marque: "REMBSS", ..., sousfamille: "...", nature: "..." }
+    pat = re.compile(r'"(\d+)":\s*\{[^}]*marque:\s*"([^"]*)"[^}]*sousfamille:\s*"([^"]*)"[^}]*nature:\s*"([^"]*)"')
+    for m in pat.finditer(txt):
+        idx[m.group(1)] = {'marque': m.group(2), 'sousfamille': m.group(3), 'nature': m.group(4)}
+    print(f'[sales] Stock index chargé : {len(idx)} références')
+    return idx
+
+
 def main():
     print(f'[sales] Lecture {SRC}')
     wb = xlrd.open_workbook(SRC)
@@ -58,6 +90,8 @@ def main():
     by_client_month = defaultdict(lambda: defaultdict(lambda: {'ca': 0.0, 'marge': 0.0, 'qte': 0.0}))
     by_product_data = defaultdict(lambda: {'ca': 0.0, 'marge': 0.0, 'qte': 0.0, 'clients': set(), 'designation': '', 'sousfamille': ''})
     by_sousfamille = defaultdict(lambda: {'ca': 0.0, 'marge': 0.0, 'qte': 0.0, 'lignes': 0})
+    by_famille = defaultdict(lambda: {'ca': 0.0, 'qte': 0.0, 'lignes': 0, 'nb_artcodes': set()})
+    stock_idx = load_stock_index()
     by_client_detail = defaultdict(list)
     factures_set = set()
     total_ca = 0.0
@@ -116,6 +150,15 @@ def main():
         by_sousfamille[sousfamille]['qte'] += qte
         by_sousfamille[sousfamille]['lignes'] += 1
 
+        # Famille IP (join stock pour ARTNATURE)
+        afmcode_xls = clean(ws.cell_value(r, 2))  # col 2 = AFMCODE
+        stock = stock_idx.get(artcode, {})
+        fam = famille_from_attrs(stock.get('nature', ''), afmcode_xls or stock.get('marque', ''), sousfamille)
+        by_famille[fam]['ca'] += ca
+        by_famille[fam]['qte'] += qte
+        by_famille[fam]['lignes'] += 1
+        by_famille[fam]['nb_artcodes'].add(artcode)
+
         # Détail client : top N dernières lignes
         by_client_detail[cip].append({
             'date': date_iso,
@@ -170,6 +213,15 @@ def main():
         for sf, d in sorted(by_sousfamille.items(), key=lambda x: -x[1]['ca'])
     }
 
+    familles_out = {
+        f: {'ca': round(d['ca'], 2), 'qte': int(d['qte']), 'lignes': d['lignes'], 'nb_refs': len(d['nb_artcodes'])}
+        for f, d in sorted(by_famille.items(), key=lambda x: -x[1]['ca'])
+    }
+    print(f'[sales] Ventilation famille IP :')
+    for f, d in familles_out.items():
+        pct = d['ca'] / total_ca * 100 if total_ca > 0 else 0
+        print(f'  {f:20s} CA {d["ca"]:>12,.0f} EUR ({pct:5.1f}%) · {d["nb_refs"]} refs')
+
     total_out = {
         'ca': round(total_ca, 2),
         'marge': round(total_marge, 2),
@@ -190,6 +242,7 @@ def main():
         f'window.SALES_TOTAL = {json.dumps(total_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_MONTH = {json.dumps(months_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_SOUSFAMILLE = {json.dumps(sousfamilles_out, ensure_ascii=False, indent=2)};\n\n'
+        f'window.SALES_BY_FAMILLE = {json.dumps(familles_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_PRODUCT = {json.dumps(products_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_CLIENT_MONTH = {json.dumps(client_month_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_CLIENT_DETAIL = {json.dumps(client_detail_out, ensure_ascii=False, indent=2)};\n'
