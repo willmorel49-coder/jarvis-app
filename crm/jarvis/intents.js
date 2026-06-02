@@ -3,6 +3,7 @@
 // Reconnaît les intentions en français et déclenche les actions appropriées.
 
 import { openLens } from './lens.js';
+import { openDevisLens } from './lens-devis.js';
 
 const INTENT_RULES = [
   // Ouverture lentilles
@@ -10,6 +11,7 @@ const INTENT_RULES = [
   { re: /\b(journal|visite|agenda|planning|rdv passe|historique)\b/i, action: (ctx) => ctx.openLens('journal') },
   { re: /\b(rdv|rendez[- ]vous|booking|reservation)\b/i, action: (ctx) => ctx.openLens('rdv') },
   { re: /\b(pilotage|ca|chiffre.{0,3}affaire|kpi|stats?|objectif|top)\b/i, action: (ctx) => ctx.openLens('pilotage') },
+  { re: /\b(devis|panier|facture|simul|cot[ae]r)\b/i, action: () => openDevisLens() },
 
   // Recherche pharmacie sur la carte
   // Note : "où est" avec accent — la Web Speech API transcrit l'accent correctement sur Chrome/Safari
