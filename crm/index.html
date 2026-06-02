@@ -34,12 +34,17 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-  <!-- Styles -->
+  <!-- Styles desktop -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="style-classic.css" />
   <link rel="stylesheet" href="style-jarvis.css" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
+  <!-- Mobile cavalerie (chargee en dernier pour override) -->
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260602j" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260602j" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260602j" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260602j" />
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -61,19 +66,19 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js"></script>
 
   <!-- Données métier (cache-busted à chaque deploy pour éviter stale data) -->
-  <script src="clients-data.js?v=20260602i"></script>
-  <script src="pharmacies-geo.js?v=20260602i"></script>
-  <script src="benchmark-data.js?v=20260602i"></script>
-  <script src="offilog-data.js?v=20260602i"></script>
-  <script src="drakkars-data.js?v=20260602i"></script>
-  <script src="cap3000-data.js?v=20260602i"></script>
-  <script src="groupements-data.js?v=20260602i"></script>
+  <script src="clients-data.js?v=20260602j"></script>
+  <script src="pharmacies-geo.js?v=20260602j"></script>
+  <script src="benchmark-data.js?v=20260602j"></script>
+  <script src="offilog-data.js?v=20260602j"></script>
+  <script src="drakkars-data.js?v=20260602j"></script>
+  <script src="cap3000-data.js?v=20260602j"></script>
+  <script src="groupements-data.js?v=20260602j"></script>
   <!-- Données enrichies STATS (catalogue IP · produits par client · stock · ventes détaillées) -->
-  <script src="catalogue-ip.js?v=20260602i"></script>
-  <script src="client-products.js?v=20260602i"></script>
-  <script src="stock.js?v=20260602i"></script>
-  <script src="sales-detail.js?v=20260602i"></script>
-  <script src="ops-aggregate.js?v=20260602i"></script>
+  <script src="catalogue-ip.js?v=20260602j"></script>
+  <script src="client-products.js?v=20260602j"></script>
+  <script src="stock.js?v=20260602j"></script>
+  <script src="sales-detail.js?v=20260602j"></script>
+  <script src="ops-aggregate.js?v=20260602j"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -96,15 +101,16 @@
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
   </script>
 
-  <script src="app.js?v=20260602i" defer></script>
-  <script src="dashboard-v2.js?v=20260602i" defer></script>
+  <script src="app.js?v=20260602j" defer></script>
+  <script src="dashboard-v2.js?v=20260602j" defer></script>
   <!-- Cavalerie d'analyses commerciales (doivent etre chargees AVANT classic-overrides) -->
-  <script src="benchmark-manque-a-gagne.js?v=20260602i" defer></script>
-  <script src="benchmark-penetration.js?v=20260602i" defer></script>
-  <script src="benchmark-laboratoires.js?v=20260602i" defer></script>
-  <script src="benchmark-trajectoires.js?v=20260602i" defer></script>
-  <script src="classic-overrides.js?v=20260602i" defer></script>
-  <script type="module" src="jarvis/main.js?v=20260602i"></script>
+  <script src="benchmark-manque-a-gagne.js?v=20260602j" defer></script>
+  <script src="benchmark-penetration.js?v=20260602j" defer></script>
+  <script src="benchmark-laboratoires.js?v=20260602j" defer></script>
+  <script src="benchmark-trajectoires.js?v=20260602j" defer></script>
+  <script src="classic-overrides.js?v=20260602j" defer></script>
+  <script src="mobile-shell.js?v=20260602j" defer></script>
+  <script type="module" src="jarvis/main.js?v=20260602j"></script>
 </head>
 
 <body>

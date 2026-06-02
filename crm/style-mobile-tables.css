@@ -1,0 +1,546 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   CRM Intégral Pharma — style-mobile-tables.css
+   Adaptation mobile (≤ 768px) des 4 blocs benchmark cavalry + matrices classic.
+   Stratégie :
+   - Tables HTML très larges     → scroll horizontal + sticky first col + hint
+   - Heatmap 6×8                  → scroll horizontal préservé (jamais stack)
+   - Sparklines SVG               → height 28px, stroke épaissi
+   - Rows CSS Grid produits/labos → card stack (titre + métriques en 2 cols)
+   - KPI hero / bars / chips      → densité réduite mais lisibilité préservée
+   Cible : iPhone (Safari). Aucune dépendance JS.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────────────
+   1. WRAPPERS SCROLLABLES — tables HTML (matrice tranche×famille + top labos)
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+
+  /* Tout wrapper avec overflow-x:auto (matrice tranche×famille, heatmap,
+     top 20 labos) bénéficie du momentum scroll iOS + hint dégradé droit. */
+  div[style*="overflow-x:auto"],
+  div[style*="overflow-x: auto"],
+  div[style*="overflow:auto"],
+  div[style*="overflow: auto"] {
+    -webkit-overflow-scrolling: touch !important;
+    position: relative !important;
+    /* Hint visuel : fade-out à droite pour signaler scroll possible */
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), rgba(0,0,0,0.35) 100%) !important;
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), rgba(0,0,0,0.35) 100%) !important;
+  }
+
+  /* Toute <table> dans une card benchmark : min-width pour conserver lecture */
+  div[style*="overflow"] > table,
+  div[style*="overflow-x"] > table {
+    min-width: 720px !important;
+    font-size: 11px !important;
+  }
+
+  /* Cellules tables : padding réduit, ne pas casser tabular-nums */
+  div[style*="overflow"] table th,
+  div[style*="overflow"] table td {
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+  }
+  div[style*="overflow"] table th {
+    letter-spacing: .5px !important;
+  }
+
+  /* Sticky first column (Tranche · remise / Laboratoire / Famille en heatmap)
+     => garantit qu'on voit toujours le label de la ligne pendant le scroll droite */
+  div[style*="overflow"] table thead th:first-child,
+  div[style*="overflow"] table tbody td:first-child,
+  div[style*="overflow"] table tbody th:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 2 !important;
+    background: #fff !important;
+    box-shadow: 2px 0 4px -2px rgba(11,31,77,.08) !important;
+  }
+
+  /* Header sticky-top (Tranche \ Famille + #) — variante dark sur header bleu */
+  div[style*="overflow"] table thead tr {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 3 !important;
+  }
+
+  /* Lorsque la 1re cellule d'un thead a un background dark (table tranche×famille),
+     on lui force un fond visible — sinon elle reste transparente en sticky */
+  div[style*="overflow"] table thead th:first-child {
+    background: #0B1F4D !important;
+    color: #fff !important;
+  }
+
+  /* Si la table n'a pas de fond dark (top labos sur fond bleu clair) */
+  div[style*="overflow"] table thead tr[style*="F2F6FF"] th:first-child,
+  div[style*="overflow"] table tr[style*="F2F6FF"] th:first-child {
+    background: #F2F6FF !important;
+    color: #64748B !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   2. HEATMAP 6×8 (trajectoires) — wrapper container forcé scrollable
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+
+  /* Pattern signature heatmap : grid-template-columns:160px repeat(N,1fr) 110px */
+  div[style*="grid-template-columns:160px repeat"] {
+    min-width: 720px !important;
+  }
+
+  /* Le parent direct de la heatmap (card blanche border-radius:14px) doit
+     déborder pour permettre le scroll — on cible son overflow */
+  div[style*="border-radius:14px"][style*="overflow:hidden"]:has(> div[style*="grid-template-columns:160px repeat"]) {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Cellules heatmap : padding et font réduits */
+  div[style*="grid-template-columns:160px repeat"] > div {
+    padding: 6px 3px !important;
+    font-size: 10px !important;
+  }
+  div[style*="grid-template-columns:160px repeat"] > div[style*="padding:10px 12px"] {
+    padding: 8px 8px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   3. CARD STACK — rows benchmark grid (manque à gagner, pénétration, labos)
+   ──────────────────────────────────────────────────────────────────────────
+   Stratégie : sur mobile, chaque ligne grid (rang + nom + métriques) devient
+   un bloc flex-column. Le 1er enfant (rang/famille) reste compact en haut,
+   le 2e enfant (nom/désignation) devient le titre, les colonnes suivantes
+   (CA / PdM / opportunité / action) forment une grille 2 cols dessous.
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+
+  /* === MANQUE À GAGNER — Famille (4 cols : 180px 1fr 130px 130px) === */
+  div[style*="grid-template-columns:180px 1fr 130px 130px"] {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-areas:
+      "title  title"
+      "bars   bars"
+      "delta  gap" !important;
+    gap: 10px 12px !important;
+    align-items: start !important;
+  }
+  div[style*="grid-template-columns:180px 1fr 130px 130px"] > *:nth-child(1) {
+    grid-area: title;
+  }
+  div[style*="grid-template-columns:180px 1fr 130px 130px"] > *:nth-child(2) {
+    grid-area: bars;
+  }
+  div[style*="grid-template-columns:180px 1fr 130px 130px"] > *:nth-child(3) {
+    grid-area: delta;
+    text-align: left !important;
+  }
+  div[style*="grid-template-columns:180px 1fr 130px 130px"] > *:nth-child(4) {
+    grid-area: gap;
+    text-align: right !important;
+  }
+
+  /* Header bleu clair de la table → cacher (les valeurs en card sont labellisées) */
+  div[style*="background:#F2F6FF"][style*="grid-template-columns:180px 1fr 130px 130px"] {
+    display: none !important;
+  }
+
+  /* === MANQUE À GAGNER — Tranche (230px 1fr 130px 130px) === */
+  div[style*="grid-template-columns:230px 1fr 130px 130px"] {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-areas:
+      "title  title"
+      "bars   bars"
+      "delta  gap" !important;
+    gap: 10px 12px !important;
+    align-items: start !important;
+  }
+  div[style*="grid-template-columns:230px 1fr 130px 130px"] > *:nth-child(1) { grid-area: title; }
+  div[style*="grid-template-columns:230px 1fr 130px 130px"] > *:nth-child(2) { grid-area: bars; }
+  div[style*="grid-template-columns:230px 1fr 130px 130px"] > *:nth-child(3) { grid-area: delta; text-align: left !important; }
+  div[style*="grid-template-columns:230px 1fr 130px 130px"] > *:nth-child(4) { grid-area: gap; text-align: right !important; }
+  div[style*="background:#F2F6FF"][style*="grid-template-columns:230px 1fr 130px 130px"] {
+    display: none !important;
+  }
+
+  /* === PÉNÉTRATION — Trous de raquette (34px 1fr 140px 110px) === */
+  /* On garde le rang à gauche, on stacke nom + CA en colonne, bouton "Cibler" à droite */
+  div[style*="grid-template-columns:34px 1fr 140px 110px"] {
+    display: grid !important;
+    grid-template-columns: 32px 1fr auto !important;
+    grid-template-areas:
+      "rank  title  cta"
+      "rank  ca     cta" !important;
+    gap: 4px 10px !important;
+    align-items: center !important;
+  }
+  div[style*="grid-template-columns:34px 1fr 140px 110px"] > *:nth-child(1) { grid-area: rank; align-self: start; }
+  div[style*="grid-template-columns:34px 1fr 140px 110px"] > *:nth-child(2) { grid-area: title; min-width: 0 !important; }
+  div[style*="grid-template-columns:34px 1fr 140px 110px"] > *:nth-child(3) {
+    grid-area: ca;
+    text-align: left !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+  div[style*="grid-template-columns:34px 1fr 140px 110px"] > *:nth-child(3) > div {
+    display: inline-block !important;
+    margin-right: 4px !important;
+  }
+  div[style*="grid-template-columns:34px 1fr 140px 110px"] > *:nth-child(4) {
+    grid-area: cta;
+    text-align: right !important;
+  }
+  div[style*="background:#F2F6FF"][style*="grid-template-columns:34px 1fr 140px 110px"] {
+    display: none !important;
+  }
+
+  /* === PÉNÉTRATION — Top 10 OPS (30px 1fr 130px 120px 130px) === */
+  div[style*="grid-template-columns:30px 1fr 130px 120px 130px"] {
+    display: grid !important;
+    grid-template-columns: 28px 1fr !important;
+    grid-template-areas:
+      "rank  title"
+      ".     gauge"
+      ".     metrics" !important;
+    gap: 6px 10px !important;
+    align-items: start !important;
+  }
+  div[style*="grid-template-columns:30px 1fr 130px 120px 130px"] > *:nth-child(1) { grid-area: rank; }
+  div[style*="grid-template-columns:30px 1fr 130px 120px 130px"] > *:nth-child(2) { grid-area: title; min-width: 0 !important; }
+  div[style*="grid-template-columns:30px 1fr 130px 120px 130px"] > *:nth-child(3) { grid-area: gauge; }
+  /* CA + Opportunité : sur une même ligne mini-grid 2 cols */
+  div[style*="grid-template-columns:30px 1fr 130px 120px 130px"] > *:nth-child(4),
+  div[style*="grid-template-columns:30px 1fr 130px 120px 130px"] > *:nth-child(5) {
+    grid-area: metrics;
+    text-align: left !important;
+  }
+  div[style*="grid-template-columns:30px 1fr 130px 120px 130px"] > *:nth-child(4) {
+    grid-column: 2 / 3 !important;
+    grid-row: 3 / 4 !important;
+    align-self: start !important;
+  }
+  div[style*="grid-template-columns:30px 1fr 130px 120px 130px"] > *:nth-child(5) {
+    display: none !important;  /* "Opportunité" affichée moins prioritaire mobile */
+  }
+  div[style*="background:#F2F6FF"][style*="grid-template-columns:30px 1fr 130px 120px 130px"] {
+    display: none !important;
+  }
+
+  /* === LABORATOIRES — Top 10 absents (30px 1fr 150px 130px 150px) === */
+  div[style*="grid-template-columns:30px 1fr 150px 130px 150px"] {
+    display: grid !important;
+    grid-template-columns: 32px 1fr !important;
+    grid-template-areas:
+      "rank   title"
+      "metric metric"
+      "manque manque" !important;
+    gap: 8px 10px !important;
+    align-items: start !important;
+  }
+  div[style*="grid-template-columns:30px 1fr 150px 130px 150px"] > *:nth-child(1) { grid-area: rank; }
+  div[style*="grid-template-columns:30px 1fr 150px 130px 150px"] > *:nth-child(2) { grid-area: title; min-width: 0 !important; }
+  /* Wrap CA OPS + Mon CA dans une 2-col grid */
+  div[style*="grid-template-columns:30px 1fr 150px 130px 150px"] > *:nth-child(3),
+  div[style*="grid-template-columns:30px 1fr 150px 130px 150px"] > *:nth-child(4) {
+    grid-area: metric;
+    text-align: left !important;
+    display: inline-block !important;
+    width: 48% !important;
+    margin-right: 2% !important;
+    vertical-align: top !important;
+  }
+  div[style*="grid-template-columns:30px 1fr 150px 130px 150px"] > *:nth-child(5) {
+    grid-area: manque;
+    text-align: left !important;
+    padding-top: 6px !important;
+    border-top: 1px solid #F2F6FF !important;
+  }
+
+  /* === CLASSIC OVERRIDES — matrice/produits (28px 1fr 110px 100px 100px 130px 80px) === */
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 130px 80px"],
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 110px 70px"] {
+    display: grid !important;
+    grid-template-columns: 28px 1fr auto !important;
+    grid-template-areas:
+      "rank  title  status"
+      ".     ms1    ms2"
+      ".     ms3    ms4" !important;
+    gap: 4px 10px !important;
+    align-items: center !important;
+  }
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 130px 80px"] > *:nth-child(1),
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 110px 70px"] > *:nth-child(1) { grid-area: rank; }
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 130px 80px"] > *:nth-child(2),
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 110px 70px"] > *:nth-child(2) { grid-area: title; min-width: 0 !important; }
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 130px 80px"] > *:nth-child(3),
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 110px 70px"] > *:nth-child(3) { grid-area: ms1; }
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 130px 80px"] > *:nth-child(4),
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 110px 70px"] > *:nth-child(4) { grid-area: ms2; }
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 130px 80px"] > *:nth-child(5),
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 110px 70px"] > *:nth-child(5) { grid-area: ms3; }
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 130px 80px"] > *:nth-child(6),
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 110px 70px"] > *:nth-child(6) { grid-area: ms4; }
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 130px 80px"] > *:nth-child(7),
+  div[style*="grid-template-columns:28px 1fr 110px 100px 100px 110px 70px"] > *:nth-child(7) { grid-area: status; text-align: right !important; }
+
+  /* === TRAJECTOIRES — Card sparkline (1fr 220px) === */
+  div[style*="grid-template-columns:1fr 220px"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  /* Sparkline pleine largeur sous les chiffres */
+  div[style*="grid-template-columns:1fr 220px"] > *:last-child {
+    text-align: left !important;
+    width: 100% !important;
+  }
+
+  /* Headers grid (fond F2F6FF) sans correspondance : cacher proprement
+     car les valeurs sont déjà labellisées dans chaque card */
+  div[style*="background:#F2F6FF"][style*="display:grid"][style*="text-transform:uppercase"] {
+    display: none !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   4. SPARKLINES SVG — height 28px, stroke épaissi pour visibilité
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+
+  /* SVG sparkline inline : largeur fluide, hauteur cappée */
+  svg[width][height][viewBox] {
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 36px !important;
+  }
+
+  /* Sparkline mini (carte headline 110×36) — réduit à 28px max */
+  div[style*="margin-left:auto"] > svg {
+    max-height: 28px !important;
+  }
+
+  /* Stroke épaissi pour visibilité écran tactile */
+  svg polyline[stroke-width="2"] {
+    stroke-width: 2.5 !important;
+  }
+
+  /* Marqueurs début/fin légèrement agrandis pour rester visibles */
+  svg circle[r="2.5"] { r: 3 !important; }
+  svg circle[r="2.8"] { r: 3.2 !important; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   5. KPI HERO GRADIENT CARDS — densité ajustée
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+
+  /* Card KPI hero : value 26→22px, label compact */
+  div[style*="border-radius:14px"][style*="padding:18px 20px"] > div[style*="font-size:26px"] {
+    font-size: 22px !important;
+    letter-spacing: -.3px !important;
+  }
+
+  /* Sub-text "fournisseurs actifs / X / Y labos matchés" */
+  div[style*="border-radius:14px"][style*="padding:18px 20px"] > div[style*="font-size:12px"] {
+    font-size: 11.5px !important;
+  }
+
+  /* Padding interne réduit */
+  div[style*="border-radius:14px"][style*="padding:18px 20px"] {
+    padding: 14px 16px !important;
+  }
+
+  /* Cards container repeat(auto-fit, minmax(220px,1fr)) etc : forcer 2 cols si possible */
+  div[style*="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))"],
+  div[style*="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))"],
+  div[style*="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))"],
+  div[style*="grid-template-columns:repeat(auto-fit,minmax(310px,1fr))"],
+  div[style*="grid-template-columns:repeat(auto-fit,minmax(330px,1fr))"],
+  div[style*="grid-template-columns:repeat(auto-fit,minmax(380px,1fr))"],
+  div[style*="grid-template-columns:repeat(auto-fit,minmax(420px,1fr))"] {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   6. BARS COMPARATIVES — Moi vs OPS / progress bars
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+
+  /* Barre principale 16px → 10px (mais on conserve le repère OPS visible) */
+  div[style*="height:16px"][style*="background:#F2F6FF"] {
+    height: 10px !important;
+  }
+  div[style*="height:16px"][style*="background:#F2F6FF"] > div[style*="height:100%"] {
+    border-radius: 5px !important;
+  }
+  /* Marqueur OPS reste au-dessus de la barre, label OPS lisible */
+  div[style*="height:16px"][style*="background:#F2F6FF"] + div {
+    margin-top: 6px !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   7. BADGES & FILTER CHIPS
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+
+  /* Pills/badges inline-block ou inline-flex : font 10.5px */
+  span[style*="border-radius:999px"][style*="display:inline-block"],
+  span[style*="border-radius:999px"][style*="display:inline-flex"] {
+    font-size: 10px !important;
+    padding: 2px 7px !important;
+    letter-spacing: .4px !important;
+  }
+
+  /* Badge famille rond gros (12-14px) → garder forme mais légèrement réduit */
+  span[style*="width:14px"][style*="border-radius:50%"] {
+    width: 12px !important;
+    height: 12px !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   8. HIÉRARCHIE TYPO DANS CARDS STACKÉES
+   ──────────────────────────────────────────────────────────────────────────
+   Une fois la grid devenue card stack, on doit s'assurer que :
+   - Le NOM (titre) reste lisible et non tronqué
+   - La GROSSE MÉTRIQUE (manque à gagner, CA) garde son impact
+   - Les sub-textes (réfs, %, ville) restent secondaires
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+
+  /* Titre de famille / nom pharmacie / nom labo (font-size:14-14.5px;font-weight:800) */
+  div[style*="font-size:14.5px"][style*="font-weight:800"],
+  div[style*="font-size:14px"][style*="font-weight:800"][style*="#0B1F4D"] {
+    font-size: 14px !important;
+    letter-spacing: -.2px !important;
+  }
+
+  /* Nom pharmacie en trous de raquette : éviter le truncate trop court */
+  div[style*="overflow:hidden"][style*="text-overflow:ellipsis"][style*="white-space:nowrap"] {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    line-height: 1.25 !important;
+  }
+
+  /* Grosses valeurs €/% (font-size:17-20px) — garder impact, juste légère
+     réduction pour tenir en 2 cols */
+  div[style*="font-size:20px"][style*="font-weight:800"] {
+    font-size: 18px !important;
+  }
+  div[style*="font-size:18px"][style*="font-weight:800"] {
+    font-size: 17px !important;
+  }
+  div[style*="font-size:17px"][style*="font-weight:800"] {
+    font-size: 16px !important;
+  }
+  div[style*="font-size:16px"][style*="font-weight:800"] {
+    font-size: 15px !important;
+  }
+
+  /* Labels uppercase (font-size:10-11px;letter-spacing:1.5px) */
+  div[style*="letter-spacing:1.5px"][style*="text-transform:uppercase"],
+  div[style*="letter-spacing:1px"][style*="text-transform:uppercase"] {
+    letter-spacing: .8px !important;
+  }
+
+  /* Titres de section (h3 15px) — garder structure */
+  h3[style*="font-size:15px"] {
+    font-size: 14.5px !important;
+  }
+  /* Sous-titres pétits caps (10.5px tracking 1.5px) — masquer si trop long */
+  span[style*="font-size:10.5px"][style*="letter-spacing:1.5px"][style*="text-transform:uppercase"] {
+    font-size: 9.5px !important;
+    letter-spacing: .5px !important;
+  }
+
+  /* Reco textuelles "→ Priorité haute…" : conserver lisibilité */
+  div[style*="border-left:3px solid"][style*="border-radius:6px"][style*="line-height:1.45"] {
+    font-size: 11.5px !important;
+    padding: 7px 10px !important;
+    margin-top: 8px !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   9. CARTES BENCHMARK (border:1px solid #E8EEFF;border-radius:14px) — padding
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+
+  /* Padding interne 16px 18px → 12px 14px sur card racine */
+  div[style*="padding:16px 18px"][style*="border-bottom:1px solid #F2F6FF"],
+  div[style*="padding:14px 18px"][style*="border-bottom:1px solid #F2F6FF"] {
+    padding: 12px 14px !important;
+  }
+  div[style*="padding:12px 16px"][style*="border-bottom:1px solid #F2F6FF"] {
+    padding: 11px 14px !important;
+  }
+  div[style*="padding:14px 16px"][style*="box-shadow"] {
+    padding: 12px 14px !important;
+  }
+  div[style*="padding:16px 18px"][style*="box-shadow"] {
+    padding: 14px 16px !important;
+  }
+
+  /* Footer note (padding:12px 18px) */
+  div[style*="padding:12px 18px"][style*="border-top:1px solid #E8EEFF"],
+  div[style*="padding:10px 14px"][style*="border-top:1px solid #E8EEFF"],
+  div[style*="padding:10px 16px"][style*="border-top:1px solid #E8EEFF"] {
+    padding: 10px 12px !important;
+    font-size: 10.5px !important;
+    line-height: 1.4 !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   10. BOUTON "Cibler" — taille tactile minimale
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+
+  a[data-cip][data-famille] {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 32px !important;
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   11. CONSERVER LE FONT-VARIANT TABULAR — alignement chiffres
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  [style*="font-variant-numeric:tabular-nums"] {
+    font-variant-numeric: tabular-nums !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   12. PALETTE — assurance pas d'override des couleurs charte CRM
+   #0057FF · #14B86A · #FF9F1C · #FF4D6D · #94A3B8 · #0B1F4D
+   (Aucune règle ici — explicite : on ne touche jamais aux couleurs des
+   styles inline, on ne fait que dimensionner.)
+   ────────────────────────────────────────────────────────────────────────── */
