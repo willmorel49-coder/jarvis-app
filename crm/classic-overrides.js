@@ -894,115 +894,6 @@
     if (cs) cs.addEventListener('input', (e) => { catState.search = e.target.value.trim(); renderCatGrid(); });
   }
 
-  // ───────── IMPORT (transformé en "Sources natives") ─────────────────────
-  function renderImportV2() {
-    const root = document.getElementById('import-content');
-    if (!root) return;
-    const sources = [
-      { name: 'CLIENTS', count: (window.CLIENTS || []).length, src: 'clients-data.js (BASE DE DONNÉE IP WM + WML)' },
-      { name: 'PHARMACIES_GEO', count: Object.keys(window.PHARMACIES_GEO || {}).length, src: 'pharmacies-geo.js (api-adresse.data.gouv.fr)' },
-      { name: 'CATALOGUE_IP', count: (window.CATALOGUE_IP || []).length, src: 'catalogue-ip.js (TOP IP DÉCROISSANT.xlsb)' },
-      { name: 'CLIENT_PRODUCTS', count: Object.keys(window.CLIENT_PRODUCTS || {}).length, src: 'client-products.js (Etat synthèse par article)' },
-      { name: 'STOCK', count: Object.keys(window.STOCK || {}).length, src: 'stock.js (stock 01/06/2026)' },
-      { name: 'SALES_BY_PRODUCT', count: Object.keys(window.SALES_BY_PRODUCT || {}).length, src: 'sales-detail.js (Etat détaillé STATS)' },
-      { name: 'OFFILOG', count: (window.OFFILOG || []).length, src: 'offilog-data.js (parapharmacie)' },
-      { name: 'BENCHMARK', count: (window.BENCHMARK || []).length, src: 'benchmark-data.js' },
-    ];
-    const total = window.SALES_TOTAL;
-    root.innerHTML = `
-      <div style="padding:20px;max-width:980px;margin:0 auto;font-family:'DM Sans',sans-serif">
-        ${sectionHeader('Sources de données natives', 'Plus besoin d\'importer · tout est généré depuis les Excel du dossier projet')}
-
-        <div style="${styleCard()};margin-bottom:16px;border-left:4px solid #14B86A">
-          <div style="font-size:14px;font-weight:700;color:#0B1F4D;margin-bottom:6px">✓ Données chargées automatiquement</div>
-          <div style="font-size:13px;color:#64748B;line-height:1.6">Les fichiers Excel du dossier <code style="background:#F2F6FF;padding:2px 6px;border-radius:4px;font-size:12px">/STATS/</code>, <code style="background:#F2F6FF;padding:2px 6px;border-radius:4px;font-size:12px">/WML_*.xlsx</code>, <code style="background:#F2F6FF;padding:2px 6px;border-radius:4px;font-size:12px">/BASE DE DONNÉE IP WM.xlsx</code> sont transformés en fichiers JS (.js) par des scripts Python. Le navigateur les charge instantanément sans manipulation côté UI.</div>
-        </div>
-
-        ${total ? `
-        <div style="${styleCard()};margin-bottom:16px">
-          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Période couverte STATS détaillé</div>
-          <div style="font-size:18px;font-weight:800;color:#0B1F4D;margin:4px 0">${total.premiere_date} → ${total.derniere_date}</div>
-          <div style="font-size:12px;color:#64748B">${fmtNum(total.lignes)} lignes · ${fmtNum(total.factures)} factures · CA cumulé ${fmtEuro(total.ca)}</div>
-        </div>
-        ` : ''}
-
-        <div style="${styleCard('padding:0')}">
-          ${sources.map(s => `
-            <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center">
-              <div>
-                <div style="font-family:monospace;font-size:11px;color:#0057FF;font-weight:700">window.${s.name}</div>
-                <div style="font-size:12px;color:#64748B;margin-top:2px">${escapeHtml(s.src)}</div>
-              </div>
-              <div style="font-size:18px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums">${fmtNum(s.count)}</div>
-            </div>
-          `).join('')}
-        </div>
-
-        <div style="${styleCard()};margin-top:16px;border-left:4px solid #FF9F1C">
-          <div style="font-size:13px;font-weight:700;color:#0B1F4D;margin-bottom:4px">Pour actualiser les données</div>
-          <div style="font-size:12px;color:#64748B;line-height:1.7">1. Mets à jour les Excel sources dans le dossier projet<br>2. Lance le script Python correspondant (<code>sync_stats_clients.py</code>, <code>generate_sales_detail.py</code>, <code>geocode_pharmacies.py</code>, etc.)<br>3. <code>git push</code> → l'app reflète la nouvelle data dans la minute</div>
-        </div>
-      </div>
-    `;
-  }
-
-  // ───────── OBJECTIFS ────────────────────────────────────────────────────
-  function renderObjectifsV2() {
-    const root = document.getElementById('objectifs-content');
-    if (!root) return;
-    const months = window.SALES_BY_MONTH || {};
-    const sorted = Object.keys(months).sort();
-    if (!sorted.length) { root.innerHTML = `<div style="padding:40px;text-align:center;color:#94A3B8">Pas de données STATS</div>`; return; }
-    const last = sorted[sorted.length - 1];
-    const lastCa = months[last].ca;
-    const objMensuel = 200000; // objectif fictif 200k€/mois — ajustable
-    const objCumul = objMensuel * sorted.length;
-    const cumulCa = sorted.reduce((s, m) => s + months[m].ca, 0);
-    const pctMonth = Math.min(100, (lastCa / objMensuel) * 100);
-    const pctCumul = Math.min(100, (cumulCa / objCumul) * 100);
-
-    root.innerHTML = `
-      <div style="padding:20px;max-width:980px;margin:0 auto;font-family:'DM Sans',sans-serif">
-        ${sectionHeader('Objectifs commerciaux', `Période STATS · ${sorted.length} mois`)}
-
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:20px">
-          <div style="${styleCard()}">
-            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Mois en cours · ${last}</div>
-            <div style="font-size:28px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(lastCa)} <span style="font-size:14px;color:#94A3B8">/ ${fmtEuro(objMensuel)}</span></div>
-            <div style="background:#F2F6FF;border-radius:999px;height:10px;overflow:hidden;margin-top:8px"><div style="background:linear-gradient(90deg,#0057FF,#5856D6);height:100%;width:${pctMonth}%"></div></div>
-            <div style="font-size:11px;color:#64748B;margin-top:6px">${pctMonth.toFixed(0)}% de l'objectif</div>
-          </div>
-          <div style="${styleCard()}">
-            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Cumul ${sorted.length} mois</div>
-            <div style="font-size:28px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(cumulCa)} <span style="font-size:14px;color:#94A3B8">/ ${fmtEuro(objCumul)}</span></div>
-            <div style="background:#F2F6FF;border-radius:999px;height:10px;overflow:hidden;margin-top:8px"><div style="background:linear-gradient(90deg,#14B86A,#0057FF);height:100%;width:${pctCumul}%"></div></div>
-            <div style="font-size:11px;color:#64748B;margin-top:6px">${pctCumul.toFixed(0)}% du cumulé</div>
-          </div>
-        </div>
-
-        <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:24px 0 12px">Détail par mois</h3>
-        <div style="${styleCard('padding:0')}">
-          ${sorted.map(m => {
-            const noms = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
-            const lbl = noms[parseInt(m.split('-')[1], 10) - 1] + ' ' + m.split('-')[0];
-            const pct = Math.min(100, (months[m].ca / objMensuel) * 100);
-            const color = pct >= 100 ? '#14B86A' : pct >= 70 ? '#FF9F1C' : '#F43F5E';
-            return `
-              <div style="padding:12px 18px;display:grid;grid-template-columns:100px 1fr 100px 60px;gap:12px;align-items:center;border-bottom:1px solid #F2F6FF">
-                <span style="font-weight:700;color:#0B1F4D">${lbl}</span>
-                <div style="background:#F2F6FF;border-radius:999px;height:8px;overflow:hidden"><div style="background:${color};height:100%;width:${pct}%"></div></div>
-                <span style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:#0B1F4D">${fmtEuro(months[m].ca)}</span>
-                <span style="text-align:right;font-variant-numeric:tabular-nums;color:${color};font-weight:700;font-size:12px">${pct.toFixed(0)}%</span>
-              </div>
-            `;
-          }).join('')}
-        </div>
-
-        <div style="font-size:11px;color:#94A3B8;margin-top:14px;text-align:center">Objectif mensuel par défaut : ${fmtEuro(objMensuel)} · à ajuster dans dashboard-v2.js si besoin</div>
-      </div>
-    `;
-  }
-
   // ───────── BENCHMARK ────────────────────────────────────────────────────
   function renderBenchmarkV2() {
     const root = document.getElementById('bench-content');
@@ -1368,20 +1259,33 @@
     `;
   }
 
+  // Wrapper navigate : redirige les anciennes routes mortes (import, objectifs) → dashboard
+  function wrapNavigate() {
+    const orig = window.navigate;
+    if (typeof orig !== 'function' || orig.__patched) return;
+    const patched = function (page) {
+      if (page === 'import' || page === 'objectifs') {
+        return orig.call(this, 'dashboard');
+      }
+      return orig.apply(this, arguments);
+    };
+    patched.__patched = true;
+    window.navigate = patched;
+  }
+
   // ───────── Apply overrides ──────────────────────────────────────────────
   function applyOverrides() {
     let applied = 0;
     if (typeof window.renderPharmacies === 'function') { window.renderPharmacies = renderPharmaciesV2; applied++; }
     if (typeof window.renderProduits === 'function')   { window.renderProduits   = renderProduitsV2;   applied++; }
     if (typeof window.renderCatalogue === 'function')  { window.renderCatalogue  = renderCatalogueV2;  applied++; }
-    if (typeof window.renderImport === 'function')     { window.renderImport     = renderImportV2;     applied++; }
-    if (typeof window.renderObjectifs === 'function')  { window.renderObjectifs  = renderObjectifsV2;  applied++; }
     if (typeof window.renderBenchmark === 'function')  { window.renderBenchmark  = renderBenchmarkV2;  applied++; }
     if (typeof window.renderSimulator === 'function')  { window.renderSimulator  = renderSimulatorV2;  applied++; }
     if (typeof window.renderOffilog === 'function')    { window.renderOffilog    = renderOffilogV2;    applied++; }
     if (typeof window.renderGroupements === 'function'){ window.renderGroupements= renderGroupementsV2;applied++; }
     if (typeof window.renderAdmin === 'function')      { window.renderAdmin      = renderAdminV2;      applied++; }
-    if (applied < 10) {
+    wrapNavigate();
+    if (applied < 8) {
       setTimeout(applyOverrides, 100);
     } else {
       console.log('[classic-overrides] ' + applied + ' renders override appliqués');
