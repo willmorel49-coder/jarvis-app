@@ -1,0 +1,640 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   style-mobile-touch.css — CRM Intégral Pharma · Couche FINALE mobile polish
+   ───────────────────────────────────────────────────────────────────────────
+   Rôle : transformer la web-app en sensation d'app NATIVE iOS 2026.
+   Charte respectée : DM Sans/Inter · Bleu CRM #0057FF · Navy #0B1F4D
+   Chargé EN DERNIER → peut overrider style-mobile-shell/layout/tables.
+
+   Doctrine UX (Apple Health / Wallet / Linear / Notion / Instagram) :
+   - Tap targets minimum 44×44 (Apple HIG)
+   - Hover supprimé sur écran tactile, remplacé par scale .97 / .99
+   - Transitions 180–220ms cubic-bezier(.4,0,.2,1) — snappy mais pas brutal
+   - Safe areas iOS via env() partout pour fixed/sticky
+   - Anti-zoom iOS : input font-size 16px minimum
+   - Frosted glass (backdrop-filter) parcimonieux (coût GPU)
+   - Reduced-motion respecté
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Variables touch (utilisables hors media-query) ──────────────────────── */
+:root {
+  --touch-ease: cubic-bezier(.4, 0, .2, 1);
+  --touch-dur-fast: 120ms;
+  --touch-dur: 200ms;
+  --touch-dur-slow: 280ms;
+  --touch-min: 44px;
+  --touch-tap-bg: rgba(0, 87, 255, .08);
+  --touch-focus-ring: 0 0 0 3px rgba(0, 87, 255, .18);
+  --touch-frost-bg: rgba(255, 255, 255, .82);
+  --touch-frost-border: rgba(11, 31, 77, .06);
+  --touch-skel-base: rgba(11, 31, 77, .06);
+  --touch-skel-shine: rgba(255, 255, 255, .65);
+}
+
+/* ─── Tap highlight iOS supprimé GLOBALEMENT ─────────────────────────────── */
+html, body, a, button, input, textarea, select, label,
+[role="button"], [data-action], [onclick] {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Mais on garde la sélection texte sur paragraphes/inputs */
+p, span, td, th, h1, h2, h3, h4, h5, h6, input, textarea {
+  -webkit-touch-callout: default;
+}
+
+/* Smooth scrolling natif (desktop + mobile) */
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* Tabular numerics partout sur les valeurs CRM (alignement parfait) */
+.kpi-value, .kpi-num, .num, .price, .montant, .ca, .pourcent,
+td.num, td.ca, td.qty, td.price, td.montant,
+[data-num], [data-price], [data-ca], [data-qty],
+.metric-value, .metric-num, .stat-value,
+.benchmark-price, .offilog-price, .ip-price, .ext-price {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ZONE TACTILE : ≤ 768px — tout ce qui suit ne touche que mobile
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ───────── A) TOUCH TARGETS (Apple HIG : 44×44 minimum) ───────── */
+  button,
+  a.btn, .btn, .button,
+  [role="button"],
+  [data-action],
+  [onclick],
+  .nav-item,
+  .topbar-actions > *,
+  .chip, .tag, .pill,
+  .icon-btn,
+  select {
+    min-height: var(--touch-min);
+    min-width: var(--touch-min);
+    padding: 10px 14px;
+    touch-action: manipulation; /* tue le double-tap zoom */
+  }
+
+  /* Icon-only buttons (cercles, hamburger, close) gardent leur forme */
+  .icon-btn, .btn-icon, .close-btn,
+  button[aria-label][data-icon-only],
+  .topbar-actions button,
+  .mob-hamburger,
+  .leaflet-control-zoom a {
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Espacement minimum entre éléments tactiles voisins */
+  .nav-item + .nav-item,
+  .chip + .chip,
+  .tag + .tag,
+  .btn + .btn {
+    margin-top: 6px;
+  }
+
+  /* Listes de nav : aération verticale */
+  nav.sidebar .nav-item {
+    margin-bottom: 4px;
+  }
+
+  /* ───────── B) ÉTATS TAP — feedback instantané (hover-less) ───────── */
+  /* Sur écrans tactiles, le hover n'existe pas : on neutralise + remplace */
+  @media (hover: none) {
+    /* Annule les transforms hover qui restent "collés" sur mobile */
+    button:hover,
+    a:hover,
+    .btn:hover,
+    .nav-item:hover,
+    .card:hover,
+    .kpi-card:hover,
+    .pharmacy-card:hover,
+    .product-card:hover,
+    .mode-toggle:hover,
+    tr:hover,
+    .row:hover {
+      transform: none !important;
+      box-shadow: inherit;
+      background: inherit;
+    }
+
+    /* Active state : la VRAIE feedback tactile iOS */
+    button:active,
+    a.btn:active,
+    .btn:active,
+    [role="button"]:active,
+    [data-action]:active,
+    .icon-btn:active,
+    .topbar-actions button:active,
+    .chip:active, .tag:active, .pill:active {
+      transform: scale(.97);
+      opacity: .82;
+      transition: transform 80ms var(--touch-ease), opacity 80ms var(--touch-ease);
+    }
+
+    /* Cards cliquables : feedback plus subtil (scale + translate) */
+    .card:active,
+    .kpi-card:active,
+    .pharmacy-card:active,
+    .product-card:active,
+    [data-clickable]:active,
+    .clickable:active {
+      transform: scale(.99) translateY(1px);
+      transition: transform 100ms var(--touch-ease);
+    }
+
+    /* Nav items : tap-bg léger bleu CRM */
+    .nav-item:active,
+    nav.sidebar .nav-item:active,
+    .menu-item:active {
+      background: var(--touch-tap-bg) !important;
+      transition: background 80ms var(--touch-ease);
+    }
+
+    /* Lignes de tableau cliquables : tap-bg léger */
+    tbody tr:active,
+    tr.clickable:active,
+    .row:active {
+      background: rgba(0, 87, 255, .04) !important;
+      transition: background 80ms var(--touch-ease);
+    }
+  }
+
+  /* ───────── C) SCROLLING natif iOS smooth ───────── */
+  body,
+  .page-content,
+  .scroll, .scrollable,
+  .modal-body, .drawer-body,
+  nav.sidebar,
+  .table-wrap, .table-scroll,
+  .list, .list-scroll,
+  [data-scroll] {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Modals / drawers / popups : containment du bounce iOS */
+  .modal, .modal-body,
+  .drawer, .drawer-body,
+  nav.sidebar,
+  .lens-content,
+  .jarvis-sheet,
+  .popup-content,
+  [role="dialog"] {
+    overscroll-behavior: contain;
+  }
+
+  /* Body en mode drawer ouvert : pas de scroll under */
+  body.drawer-open,
+  body.modal-open,
+  body.lens-open {
+    overscroll-behavior-y: contain;
+  }
+
+  /* ───────── D) SAFE AREAS iOS (compléments) ───────── */
+  /* Footer / bottom bars / fixed bottom */
+  .bottom-bar, .footer-bar, .tabbar,
+  .floating-btn, .fab,
+  .brand-footer {
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Header sticky / topbar */
+  .topbar, .app-header, .header-sticky,
+  [data-sticky-top] {
+    padding-top: max(8px, env(safe-area-inset-top)) !important;
+  }
+
+  /* Fixed left/right rails (orb panel JARVIS, etc.) */
+  [data-fixed-left] {
+    padding-left: max(8px, env(safe-area-inset-left)) !important;
+  }
+  [data-fixed-right] {
+    padding-right: max(8px, env(safe-area-inset-right)) !important;
+  }
+
+  /* ───────── E) FORMS — inputs natifs iOS ───────── */
+  input, textarea, select {
+    font-size: 16px !important; /* anti-zoom iOS Safari */
+    line-height: 1.4;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(11, 31, 77, .12);
+    background: #fff;
+    color: var(--text, #0B1F4D);
+    transition: border-color var(--touch-dur) var(--touch-ease),
+                box-shadow var(--touch-dur) var(--touch-ease);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* Search input : look iOS pill */
+  input[type="search"] {
+    border-radius: 14px;
+    padding-left: 40px;
+    background-position: 12px center;
+    background-repeat: no-repeat;
+  }
+
+  /* Tel / email / number : clavier numérique forcé via type, ici on style */
+  input[type="tel"], input[type="number"] {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .02em;
+  }
+
+  /* Focus state : ring bleu CRM #0057FF */
+  input:focus, textarea:focus, select:focus {
+    outline: none !important;
+    border-color: #0057FF !important;
+    box-shadow: var(--touch-focus-ring) !important;
+  }
+
+  /* Désactive auto-uppercase/auto-capitalize sur les champs techniques
+     (EAN, CIP, références produits, codes) */
+  input[name*="ean"],
+  input[name*="cip"],
+  input[name*="ref"],
+  input[name*="code"],
+  input[name*="login"],
+  input[name*="email"],
+  input[type="email"],
+  input[type="search"],
+  input[type="url"],
+  input[type="tel"] {
+    text-transform: none !important;
+    -webkit-text-transform: none !important;
+  }
+
+  /* Checkbox / radio : zone tactile élargie */
+  input[type="checkbox"], input[type="radio"] {
+    min-width: 22px;
+    min-height: 22px;
+    width: 22px;
+    height: 22px;
+    accent-color: #0057FF;
+  }
+
+  /* Select : flèche custom (pas le look natif iOS dégueu) */
+  select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%230B1F4D' d='M6 8L0 0h12z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  /* ───────── F) TYPOGRAPHIE mobile ───────── */
+  body {
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  p, li, td, .text-body {
+    line-height: 1.5;
+  }
+
+  /* Uppercase labels : meilleure lisibilité petit */
+  .label, .uppercase, .eyebrow,
+  th, .table-header,
+  .kpi-label, .metric-label,
+  [data-uppercase] {
+    letter-spacing: .04em;
+    font-size: 11px;
+  }
+
+  /* Titres : ne pas écraser les hiérarchies, juste arrondir */
+  h1 { font-size: clamp(22px, 6vw, 28px); line-height: 1.2; }
+  h2 { font-size: clamp(19px, 5vw, 22px); line-height: 1.25; }
+  h3 { font-size: clamp(16px, 4.5vw, 18px); line-height: 1.3; }
+
+  /* ───────── G) ANIMATIONS & TRANSITIONS — global iOS ease ───────── */
+  /* Standardise les durées (max 280ms) sur tous les composants animables */
+  .card, .kpi-card, .pharmacy-card, .product-card,
+  .modal, .drawer, .lens-content,
+  .btn, button, .nav-item,
+  .chip, .tag, .pill,
+  .topbar, .sidebar {
+    transition-timing-function: var(--touch-ease);
+    transition-duration: var(--touch-dur);
+  }
+
+  /* Apparition de cards / sections / modals */
+  @keyframes touchFadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes touchFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes touchScaleIn {
+    from { opacity: 0; transform: scale(.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .modal-content,
+  .drawer-content,
+  .lens-content,
+  .jarvis-sheet,
+  [data-anim="fade-up"] {
+    animation: touchFadeUp 240ms var(--touch-ease) both;
+  }
+  [data-anim="fade-in"] {
+    animation: touchFadeIn 200ms var(--touch-ease) both;
+  }
+  [data-anim="scale-in"] {
+    animation: touchScaleIn 200ms var(--touch-ease) both;
+  }
+
+  /* Reduced motion : tout à 0.01ms */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* ───────── H) SKELETONS & LOADERS ───────── */
+  @keyframes touchShimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .skeleton-shimmer,
+  [data-skeleton],
+  .is-loading-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--touch-skel-base) 0%,
+      var(--touch-skel-shine) 50%,
+      var(--touch-skel-base) 100%
+    );
+    background-size: 200% 100%;
+    animation: touchShimmer 1.4s linear infinite;
+    border-radius: 8px;
+    color: transparent !important;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Spinner dots minimal iOS */
+  @keyframes touchDot {
+    0%, 80%, 100% { opacity: .25; transform: scale(.8); }
+    40%           { opacity: 1;   transform: scale(1); }
+  }
+  .loading-dots {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .loading-dots > span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: touchDot 1.2s var(--touch-ease) infinite both;
+  }
+  .loading-dots > span:nth-child(2) { animation-delay: .15s; }
+  .loading-dots > span:nth-child(3) { animation-delay: .30s; }
+
+  /* Spinner circle iOS-style */
+  @keyframes touchSpin { to { transform: rotate(360deg); } }
+  .spinner-ios {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(0, 87, 255, .15);
+    border-top-color: #0057FF;
+    animation: touchSpin .8s linear infinite;
+    display: inline-block;
+  }
+
+  /* ───────── I) TOAST repositionné mobile ───────── */
+  #toast {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 60px) !important;
+    bottom: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: 92% !important;
+    max-width: 92% !important;
+    border-radius: 14px !important;
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    font-weight: 500;
+    background: rgba(255, 255, 255, .92) !important;
+    color: var(--text, #0B1F4D) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    backdrop-filter: saturate(180%) blur(18px);
+    border: 1px solid rgba(11, 31, 77, .08);
+    box-shadow: 0 12px 32px -8px rgba(11, 31, 77, .25);
+    z-index: 10002 !important;
+    animation: touchFadeUp 220ms var(--touch-ease);
+  }
+
+  /* ───────── J) LEAFLET MAP (mode JARVIS mobile) ───────── */
+  .leaflet-control-zoom a {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    font-size: 22px !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, .92) !important;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(11, 31, 77, .08) !important;
+    color: var(--text, #0B1F4D) !important;
+    box-shadow: 0 2px 8px rgba(11, 31, 77, .08);
+  }
+  .leaflet-control-zoom a:active {
+    transform: scale(.94);
+    background: #fff !important;
+  }
+
+  /* Position des controls Leaflet : on évite hamburger (top-left) et mode-toggle (top-right) */
+  .leaflet-top.leaflet-left {
+    top: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 120px) !important;
+    left: calc(env(safe-area-inset-left, 0px) + 12px) !important;
+  }
+  .leaflet-top.leaflet-right {
+    top: calc(env(safe-area-inset-top, 0px) + 70px) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 12px) !important;
+  }
+
+  /* Popups Leaflet : look iOS arrondi */
+  .leaflet-popup-content-wrapper {
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, .96) !important;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 12px 32px -8px rgba(11, 31, 77, .25) !important;
+    border: 1px solid rgba(11, 31, 77, .06);
+  }
+  .leaflet-popup-content {
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 12px 14px;
+  }
+  .leaflet-popup-tip {
+    box-shadow: none !important;
+  }
+
+  /* ───────── K) STICKY ELEMENTS — frosted glass iOS ───────── */
+  html[data-mode="classic"] .topbar,
+  .app-header,
+  [data-sticky-frost] {
+    background: var(--touch-frost-bg) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    backdrop-filter: saturate(180%) blur(16px);
+    border-bottom: 1px solid var(--touch-frost-border);
+  }
+
+  /* Mode-toggle conservé en frosted (déjà fait par shell, on renforce) */
+  .mode-toggle {
+    background: var(--touch-frost-bg) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    backdrop-filter: saturate(180%) blur(16px);
+    box-shadow: 0 2px 10px rgba(11, 31, 77, .1);
+  }
+
+  /* ───────── L) SCROLLBARS cachées (esthétique iOS) ───────── */
+  body,
+  .page-content,
+  .scroll, .scrollable,
+  nav.sidebar,
+  .modal-body, .drawer-body,
+  .table-wrap, .table-scroll,
+  [data-scroll] {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge legacy */
+  }
+  body::-webkit-scrollbar,
+  .page-content::-webkit-scrollbar,
+  .scroll::-webkit-scrollbar,
+  .scrollable::-webkit-scrollbar,
+  nav.sidebar::-webkit-scrollbar,
+  .modal-body::-webkit-scrollbar,
+  .drawer-body::-webkit-scrollbar,
+  .table-wrap::-webkit-scrollbar,
+  .table-scroll::-webkit-scrollbar,
+  [data-scroll]::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* ───────── N) PULL-TO-REFRESH visuel (CSS only) ───────── */
+  /* Pas de vraie fonctionnalité — juste un indicateur si présent dans le DOM */
+  .ptr-indicator {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) - 40px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, .92);
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(11, 31, 77, .15);
+    opacity: 0;
+    transition: top 200ms var(--touch-ease), opacity 200ms var(--touch-ease);
+    z-index: 9997;
+    pointer-events: none;
+  }
+  body.is-pulling .ptr-indicator {
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    opacity: 1;
+  }
+  body.is-refreshing .ptr-indicator {
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    opacity: 1;
+  }
+  body.is-refreshing .ptr-indicator::before {
+    content: "";
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(0, 87, 255, .2);
+    border-top-color: #0057FF;
+    animation: touchSpin .8s linear infinite;
+  }
+
+  /* Overscroll body protect : si on a un container scrollable au lieu du body */
+  html, body {
+    overscroll-behavior-y: none;
+  }
+
+} /* ═══ FIN @media (max-width: 768px) ════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   M) DARK MODE PARTIAL — uniquement toasts / overlays / frosted
+   (PAS de bascule full dark : juste éviter le blanc éclatant la nuit)
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  #toast {
+    background: rgba(28, 32, 44, .92) !important;
+    color: #F1F5FF !important;
+    border-color: rgba(255, 255, 255, .08) !important;
+  }
+
+  .leaflet-control-zoom a {
+    background: rgba(28, 32, 44, .88) !important;
+    color: #F1F5FF !important;
+    border-color: rgba(255, 255, 255, .08) !important;
+  }
+  .leaflet-popup-content-wrapper {
+    background: rgba(28, 32, 44, .94) !important;
+    color: #F1F5FF !important;
+  }
+
+  /* On NE bascule PAS .topbar, .sidebar, .card en dark : on garde le mode
+     classic en clair. Juste ajuster l'opacité du frost. */
+  .mode-toggle {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .25);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL : reduced-motion (s'applique aussi desktop, par sûreté)
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer,
+  [data-skeleton],
+  .is-loading-shimmer,
+  .loading-dots > span,
+  .spinner-ios,
+  .ptr-indicator::before {
+    animation: none !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRINT — neutralise toutes les animations/frost pour PDF/print
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media print {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
