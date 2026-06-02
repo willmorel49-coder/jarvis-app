@@ -47,16 +47,31 @@ def main():
             'qte': qte,
         }
 
-    # Trie par CA decroissant — garde le top 1500 pour ne pas grossir trop le JS
-    sorted_items = sorted(products.items(), key=lambda x: -x[1]['ca'])[:1500]
-    products_top = dict(sorted_items)
+    # Garde TOUT (5113 references) pour la precision d'analyse — taille acceptable
+    sorted_items = sorted(products.items(), key=lambda x: -x[1]['ca'])
+    products_all = dict(sorted_items)
+
+    # Agrege OPS par labo (collection) pour comparaisons croisees
+    ops_by_labo = {}
+    for code, p in products_all.items():
+        labo = (p.get('collection') or '').strip()
+        if not labo or labo == '#N/A': continue
+        if labo not in ops_by_labo:
+            ops_by_labo[labo] = {'ca': 0.0, 'qte': 0, 'nb_refs': 0}
+        ops_by_labo[labo]['ca'] += p['ca']
+        ops_by_labo[labo]['qte'] += p['qte']
+        ops_by_labo[labo]['nb_refs'] += 1
+    ops_by_labo = {k: {'ca': round(v['ca'], 2), 'qte': v['qte'], 'nb_refs': v['nb_refs']}
+                   for k, v in sorted(ops_by_labo.items(), key=lambda x: -x[1]['ca'])}
+    print(f'[ops] {len(ops_by_labo)} labos detectes a OPS Nantes')
 
     out = (
         '// OPS Pharmas agregation · benchmark Etablissement OPS Nantes\n'
         '// Source : STATS/OPS_Pharmas_agregation.xlsx\n'
-        f'// {len(products)} produits agreges (top {len(products_top)} exposes) · CA total {total_ca:,.0f} EUR · QTE {total_qte:,}\n\n'
-        f'window.OPS_TOTAL = {json.dumps({"ca": round(total_ca,2), "qte": total_qte, "nb_produits": len(products)}, ensure_ascii=False, indent=2)};\n\n'
-        f'window.OPS_AGGREGATE = {json.dumps(products_top, ensure_ascii=False, indent=2)};\n'
+        f'// {len(products)} produits agreges (TOUS exposes) · CA total {total_ca:,.0f} EUR · QTE {total_qte:,}\n\n'
+        f'window.OPS_TOTAL = {json.dumps({"ca": round(total_ca,2), "qte": total_qte, "nb_produits": len(products), "nb_labos": len(ops_by_labo)}, ensure_ascii=False, indent=2)};\n\n'
+        f'window.OPS_BY_LABO = {json.dumps(ops_by_labo, ensure_ascii=False, indent=2)};\n\n'
+        f'window.OPS_AGGREGATE = {json.dumps(products_all, ensure_ascii=False, indent=2)};\n'
     )
     OUT.write_text(out, encoding='utf-8')
     sz = OUT.stat().st_size // 1024
