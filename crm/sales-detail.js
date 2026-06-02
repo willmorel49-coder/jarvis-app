@@ -117,6 +117,45 @@ window.SALES_BY_SOUSFAMILLE = {
   }
 };
 
+window.SALES_BY_FAMILLE = {
+  "Froid": {
+    "ca": 556351.06,
+    "qte": 4391,
+    "lignes": 2110,
+    "nb_refs": 192
+  },
+  "Princeps": {
+    "ca": 555395.48,
+    "qte": 78346,
+    "lignes": 6849,
+    "nb_refs": 1131
+  },
+  "Non remboursés": {
+    "ca": 64426.44,
+    "qte": 7122,
+    "lignes": 2276,
+    "nb_refs": 336
+  },
+  "Biosimilaires": {
+    "ca": 29908.89,
+    "qte": 213,
+    "lignes": 104,
+    "nb_refs": 32
+  },
+  "Génériques": {
+    "ca": 8555.37,
+    "qte": 1504,
+    "lignes": 359,
+    "nb_refs": 103
+  },
+  "Gén. partenaires": {
+    "ca": 4018.18,
+    "qte": 1170,
+    "lignes": 274,
+    "nb_refs": 157
+  }
+};
+
 window.SALES_BY_PRODUCT = {
   "3011764": {
     "designation": "XTANDI 40MG CPR BT112",
