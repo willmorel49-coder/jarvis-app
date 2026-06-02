@@ -41,7 +41,6 @@
     const s = computeStats();
     const salesTotal = window.SALES_TOTAL || null;
     const salesMonth = window.SALES_BY_MONTH || {};
-    const salesSF = window.SALES_BY_SOUSFAMILLE || {};
     const salesProd = window.SALES_BY_PRODUCT || {};
     const catIp = (window.CATALOGUE_IP || []).length;
     const stockTotal = window.STOCK ? Object.values(window.STOCK).reduce((sum, r) => sum + (r.dispo || 0), 0) : 0;
@@ -50,9 +49,6 @@
     const months = Object.keys(salesMonth).sort();
     const monthValues = months.map(m => salesMonth[m].ca);
     const monthMax = Math.max(...monthValues, 1);
-
-    // Sous-familles
-    const sfList = Object.entries(salesSF).sort((a, b) => b[1].ca - a[1].ca);
 
     // Top 10 produits
     const topProd = Object.entries(salesProd).sort((a, b) => b[1].ca - a[1].ca).slice(0, 10);
@@ -131,30 +127,8 @@
           </div>
         </div>
 
-        <!-- VENTILATION TRANCHE × CATÉGORIE -->
+        <!-- VENTILATION TRANCHE × CATÉGORIE (officielle IP) -->
         <div id="ventilation-section" style="margin-top:32px"></div>
-
-        <!-- SOUS-FAMILLES -->
-        ${sfList.length ? `
-        <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:28px 0 12px">Mix sous-familles · CA réel facturé</h3>
-        <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:16px 18px">
-          ${(() => {
-            const sfMax = Math.max(...sfList.map(([_, d]) => d.ca), 1);
-            const sfTotal = sfList.reduce((s, [_, d]) => s + d.ca, 0);
-            return sfList.map(([name, d]) => {
-              const pct = Math.round((d.ca / sfMax) * 100);
-              const ratio = sfTotal > 0 ? ((d.ca / sfTotal) * 100).toFixed(1) : '0';
-              return `
-                <div style="display:grid;grid-template-columns:140px 1fr 130px;gap:14px;align-items:center;padding:6px 0;font-size:13px">
-                  <span style="font-weight:700;color:#0B1F4D">${escapeHtml(name)}</span>
-                  <div style="background:#F2F6FF;border-radius:999px;height:10px;overflow:hidden">
-                    <div style="background:linear-gradient(90deg,#0057FF,#A855F7);height:100%;width:${pct}%"></div>
-                  </div>
-                  <span style="font-variant-numeric:tabular-nums;color:#0B1F4D;font-weight:700;text-align:right">${fmtEuro(d.ca)} <span style="opacity:.5">· ${ratio}%</span></span>
-                </div>`;
-            }).join('');
-          })()}
-        </div>` : ''}
 
         <!-- FOOTER -->
         <div style="margin-top:32px;padding:12px;background:#EAF2FF;border-radius:10px;font-size:11px;color:#0B1F4D;text-align:center">
