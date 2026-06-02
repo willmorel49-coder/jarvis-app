@@ -130,6 +130,9 @@
         <!-- VENTILATION TRANCHE × CATÉGORIE (officielle IP) -->
         <div id="ventilation-section" style="margin-top:32px"></div>
 
+        <!-- BENCHMARK OPS NANTES -->
+        <div id="ops-benchmark-section" style="margin-top:32px"></div>
+
         <!-- FOOTER -->
         <div style="margin-top:32px;padding:12px;background:#EAF2FF;border-radius:10px;font-size:11px;color:#0B1F4D;text-align:center">
           Données natives : Etat détaillé STATS · ${salesTotal ? fmtNum(salesTotal.lignes) + ' lignes · ' + fmtNum(salesTotal.factures) + ' factures' : ''} · stock 01/06/2026 · catalogue IP ${fmtNum(catIp)} réf.
@@ -139,6 +142,145 @@
 
     // Monte la section Ventilation tranche × catégorie
     renderVentilation();
+    // Monte la section Benchmark OPS Nantes
+    renderOpsBenchmark();
+  }
+
+  // ───────── BENCHMARK OPS NANTES ──────────────────────────────────────────
+  function renderOpsBenchmark() {
+    const root = document.getElementById('ops-benchmark-section');
+    if (!root) return;
+    const opsTotal = window.OPS_TOTAL;
+    const opsAgg = window.OPS_AGGREGATE || {};
+    const salesProd = window.SALES_BY_PRODUCT || {};
+    if (!opsTotal || !Object.keys(opsAgg).length) return;
+
+    // Mes ventes par EAN (pour matcher avec OPS qui a ARTCODEBARRE)
+    const mineByEan = {};
+    const catIp = window.CATALOGUE_IP || [];
+    const eanByArtcode = {};
+    for (const p of catIp) eanByArtcode[p.ean] = p.ean;
+    for (const [artcode, p] of Object.entries(salesProd)) {
+      const ean = artcode; // dans SALES_BY_PRODUCT artcode = code interne, mais souvent = EAN13 ou son équivalent
+      mineByEan[ean] = p;
+    }
+
+    // Croise OPS avec mes ventes par artcode (qui est aussi le mapping vers OPS_AGGREGATE clé)
+    const matches = [];
+    const opportunities = []; // OPS vend bcp, moi 0
+    let myMatchedCa = 0;
+    for (const [artcode, opsP] of Object.entries(opsAgg)) {
+      const mine = salesProd[artcode];
+      if (mine) {
+        matches.push({
+          artcode,
+          designation: opsP.designation,
+          marque: opsP.marque || opsP.collection || '—',
+          nature: opsP.nature || '',
+          opsCa: opsP.ca,
+          opsQte: opsP.qte,
+          mineCa: mine.ca || 0,
+          mineQte: mine.qte || 0,
+          partMarche: opsP.ca > 0 ? (mine.ca / opsP.ca) * 100 : 0,
+        });
+        myMatchedCa += mine.ca || 0;
+      } else {
+        opportunities.push({
+          artcode,
+          designation: opsP.designation,
+          marque: opsP.marque || opsP.collection || '—',
+          nature: opsP.nature || '',
+          opsCa: opsP.ca,
+          opsQte: opsP.qte,
+        });
+      }
+    }
+    matches.sort((a, b) => b.opsCa - a.opsCa);
+    opportunities.sort((a, b) => b.opsCa - a.opsCa);
+
+    const myTotalCa = (window.SALES_TOTAL && window.SALES_TOTAL.ca) || 0;
+    const partGlobale = opsTotal.ca > 0 ? (myTotalCa / opsTotal.ca) * 100 : 0;
+
+    root.innerHTML = `
+      <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">📍 Benchmark vs Établissement OPS Nantes</h3>
+
+      <!-- 3 KPI hero -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px">
+        <div style="${styleCard()};border-left:4px solid #0057FF">
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Ton CA secteur</div>
+          <div style="font-size:24px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(myTotalCa)}</div>
+          <div style="font-size:11px;color:#94A3B8">Ventes STATS détaillées</div>
+        </div>
+        <div style="${styleCard()};border-left:4px solid #A855F7">
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">OPS Nantes total</div>
+          <div style="font-size:24px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(opsTotal.ca)}</div>
+          <div style="font-size:11px;color:#94A3B8">${fmtNum(opsTotal.nb_produits)} produits · ${fmtNum(opsTotal.qte)} unités</div>
+        </div>
+        <div style="${styleCard()};background:linear-gradient(135deg,#0057FF,#A855F7);color:#fff;border:none">
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.8);font-weight:800">Tes parts de marché</div>
+          <div style="font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;margin:4px 0">${partGlobale.toFixed(1)} %</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.85)">${matches.length} produits en commun · ${opportunities.length} opportunités</div>
+        </div>
+      </div>
+
+      <!-- 2 colonnes : Top où je suis présent vs opportunités -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px">
+
+        <!-- Top produits OPS où je suis présent (parts de marché) -->
+        <div style="${styleCard('padding:0')}">
+          <div style="padding:12px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF">
+            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Top 15 produits — Mes parts de marché</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px">Produits OPS Nantes où tu fais déjà du CA</div>
+          </div>
+          ${matches.slice(0, 15).map((m, i) => `
+            <div style="padding:10px 16px;border-bottom:1px solid #F2F6FF;font-size:12px">
+              <div style="display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center">
+                <span style="color:#94A3B8;font-weight:700">${i + 1}</span>
+                <div>
+                  <div style="font-weight:700;color:#0B1F4D">${escapeHtml(m.designation)}</div>
+                  <div style="font-size:10.5px;color:#94A3B8">${escapeHtml(m.marque)} · ${escapeHtml(m.nature || '—')}</div>
+                </div>
+                <span style="font-weight:800;color:${m.partMarche >= 20 ? '#14B86A' : m.partMarche >= 5 ? '#FF9F1C' : '#F43F5E'};font-variant-numeric:tabular-nums">${m.partMarche.toFixed(1)}%</span>
+              </div>
+              <div style="display:flex;gap:14px;font-size:11px;color:#64748B;margin-top:4px;padding-left:34px">
+                <span>Moi : <b style="color:#0057FF">${fmtEuro(m.mineCa)}</b> (${fmtNum(m.mineQte)} u)</span>
+                <span>OPS : <b style="color:#A855F7">${fmtEuro(m.opsCa)}</b> (${fmtNum(m.opsQte)} u)</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Top opportunités (OPS vend bcp, moi 0) -->
+        <div style="${styleCard('padding:0')}">
+          <div style="padding:12px 16px;background:#FFF7ED;border-bottom:1px solid #FFE4D1">
+            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#FF9F1C;font-weight:800">Top 15 opportunités — Tu vends 0</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px">OPS Nantes les vend mais tu n'as aucune facture dessus</div>
+          </div>
+          ${opportunities.slice(0, 15).map((o, i) => `
+            <div style="padding:10px 16px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;font-size:12px">
+              <span style="color:#94A3B8;font-weight:700">${i + 1}</span>
+              <div>
+                <div style="font-weight:700;color:#0B1F4D">${escapeHtml(o.designation)}</div>
+                <div style="font-size:10.5px;color:#94A3B8">${escapeHtml(o.marque)} · ${escapeHtml(o.nature || '—')}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-weight:800;color:#FF9F1C;font-variant-numeric:tabular-nums">${fmtEuro(o.opsCa)}</div>
+                <div style="font-size:10.5px;color:#94A3B8">${fmtNum(o.opsQte)} u OPS</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+      </div>
+
+      <div style="font-size:11px;color:#94A3B8;margin-top:10px;text-align:center">
+        📍 Établissement OPS Nantes · agrégation tous commerciaux · source STATS/OPS_Pharmas_agregation
+      </div>
+    `;
+  }
+
+  function styleCard(extra) {
+    return `background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px rgba(11,31,77,.04);${extra || ''}`;
   }
 
   // ───────── VENTILATION TRANCHE × CATÉGORIE (officiel IP) ─────────────────
