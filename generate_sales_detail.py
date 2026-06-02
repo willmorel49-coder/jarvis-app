@@ -91,7 +91,14 @@ def main():
     by_product_data = defaultdict(lambda: {'ca': 0.0, 'marge': 0.0, 'qte': 0.0, 'clients': set(), 'designation': '', 'sousfamille': ''})
     by_sousfamille = defaultdict(lambda: {'ca': 0.0, 'marge': 0.0, 'qte': 0.0, 'lignes': 0})
     by_famille = defaultdict(lambda: {'ca': 0.0, 'qte': 0.0, 'lignes': 0, 'nb_artcodes': set()})
+    by_tranche = defaultdict(lambda: {'ca': 0.0, 'qte': 0.0, 'lignes': 0})
+    by_tranche_famille = defaultdict(lambda: defaultdict(lambda: {'ca': 0.0, 'qte': 0.0}))
     stock_idx = load_stock_index()
+
+    def tranche_from_prix(prix):
+        if prix <= 4.33: return 'petit'
+        if prix <= 468: return 'inter'
+        return 'haut'
     by_client_detail = defaultdict(list)
     factures_set = set()
     total_ca = 0.0
@@ -159,6 +166,15 @@ def main():
         by_famille[fam]['lignes'] += 1
         by_famille[fam]['nb_artcodes'].add(artcode)
 
+        # Tranche prix (unitaire ligne par ligne)
+        prix_unit = ca / qte if qte > 0 else 0
+        tr = tranche_from_prix(prix_unit)
+        by_tranche[tr]['ca'] += ca
+        by_tranche[tr]['qte'] += qte
+        by_tranche[tr]['lignes'] += 1
+        by_tranche_famille[tr][fam]['ca'] += ca
+        by_tranche_famille[tr][fam]['qte'] += qte
+
         # Détail client : top N dernières lignes
         by_client_detail[cip].append({
             'date': date_iso,
@@ -222,6 +238,21 @@ def main():
         pct = d['ca'] / total_ca * 100 if total_ca > 0 else 0
         print(f'  {f:20s} CA {d["ca"]:>12,.0f} EUR ({pct:5.1f}%) · {d["nb_refs"]} refs')
 
+    tranches_out = {
+        tr: {'ca': round(d['ca'], 2), 'qte': int(d['qte']), 'lignes': d['lignes']}
+        for tr, d in by_tranche.items()
+    }
+    tranche_famille_out = {
+        tr: {f: {'ca': round(c['ca'], 2), 'qte': int(c['qte'])} for f, c in fams.items()}
+        for tr, fams in by_tranche_famille.items()
+    }
+    print(f'[sales] Ventilation tranche prix :')
+    labels = {'petit': '0-4.33 EUR', 'inter': '4.33-468 EUR', 'haut': '>468 EUR'}
+    for tr in ('petit', 'inter', 'haut'):
+        d = tranches_out.get(tr, {'ca': 0, 'qte': 0})
+        pct = d['ca'] / total_ca * 100 if total_ca > 0 else 0
+        print(f'  {tr:6s} {labels[tr]:18s} CA {d["ca"]:>12,.0f} EUR ({pct:5.1f}%)')
+
     total_out = {
         'ca': round(total_ca, 2),
         'marge': round(total_marge, 2),
@@ -243,6 +274,8 @@ def main():
         f'window.SALES_BY_MONTH = {json.dumps(months_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_SOUSFAMILLE = {json.dumps(sousfamilles_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_FAMILLE = {json.dumps(familles_out, ensure_ascii=False, indent=2)};\n\n'
+        f'window.SALES_BY_TRANCHE = {json.dumps(tranches_out, ensure_ascii=False, indent=2)};\n\n'
+        f'window.SALES_BY_TRANCHE_FAMILLE = {json.dumps(tranche_famille_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_PRODUCT = {json.dumps(products_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_CLIENT_MONTH = {json.dumps(client_month_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_CLIENT_DETAIL = {json.dumps(client_detail_out, ensure_ascii=False, indent=2)};\n'
