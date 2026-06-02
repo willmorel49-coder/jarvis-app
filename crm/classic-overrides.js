@@ -69,6 +69,34 @@
     return __OPS_BY_FAMILLE;
   }
 
+  // Agrégat OPS Nantes par tranche prix + matrice tranche × famille (mémoïsé)
+  let __OPS_BY_TRANCHE = null;
+  function getOpsMixByTranche() {
+    if (__OPS_BY_TRANCHE) return __OPS_BY_TRANCHE;
+    const agg = window.OPS_AGGREGATE || {};
+    const tranches = { petit: 0, inter: 0, haut: 0 };
+    const matrix = {
+      petit: { 'Froid': 0, 'Biosimilaires': 0, 'Génériques': 0, 'Gén. partenaires': 0, 'Non remboursés': 0, 'Princeps': 0 },
+      inter: { 'Froid': 0, 'Biosimilaires': 0, 'Génériques': 0, 'Gén. partenaires': 0, 'Non remboursés': 0, 'Princeps': 0 },
+      haut:  { 'Froid': 0, 'Biosimilaires': 0, 'Génériques': 0, 'Gén. partenaires': 0, 'Non remboursés': 0, 'Princeps': 0 },
+    };
+    let total = 0;
+    for (const code in agg) {
+      const p = agg[code];
+      const qte = p.qte || 0;
+      const ca = p.ca || 0;
+      if (qte <= 0 || ca <= 0) continue;
+      const prixUnit = ca / qte;
+      const tr = trancheFromPrix(prixUnit);
+      const fam = familleFromAttrs(p.nature, p.afmcode, p.sousfamille);
+      tranches[tr] += ca;
+      matrix[tr][fam] += ca;
+      total += ca;
+    }
+    __OPS_BY_TRANCHE = { tranches, matrix, total };
+    return __OPS_BY_TRANCHE;
+  }
+
   // ───────── PHARMACIES ───────────────────────────────────────────────────
   const phState = { search: '', filter: 'all' };
   function renderPharmaciesV2() {
@@ -732,6 +760,210 @@
     `;
   }
 
+  // Comparatif Mon secteur vs OPS Nantes par tranche de prix
+  function buildTrancheVsOpsHtml(myTranche, myTotal, opsBundle) {
+    const opsTranches = opsBundle.tranches;
+    const opsTotal = opsBundle.total;
+    const TRANCHES = [
+      { key: 'petit', label: 'Petit prix', sub: '0 – 4,33 €', remise: 'remise 0,18 € fixe', color: '#0057FF' },
+      { key: 'inter', label: 'Intermédiaire', sub: '4,33 – 468 €', remise: 'remise 3,9 %', color: '#5856D6' },
+      { key: 'haut',  label: 'Haut prix', sub: '> 468 €', remise: 'remise 19,50 € fixe', color: '#FF9F1C' },
+    ];
+    const rows = TRANCHES.map(t => {
+      const myCa = (myTranche[t.key] && myTranche[t.key].ca) || 0;
+      const opsCa = opsTranches[t.key] || 0;
+      const myPct = myTotal > 0 ? (myCa / myTotal * 100) : 0;
+      const opsPct = opsTotal > 0 ? (opsCa / opsTotal * 100) : 0;
+      const delta = myPct - opsPct;
+      const indice = opsPct > 0 ? (myPct / opsPct * 100) : 0;
+      const pdmTranche = opsCa > 0 ? (myCa / opsCa * 100) : 0;
+      const maxPct = Math.max(myPct, opsPct, 5);
+      const myW = (myPct / maxPct) * 100;
+      const opsW = (opsPct / maxPct) * 100;
+      const deltaSign = delta > 0 ? '+' : '';
+      const deltaCol = delta > 2 ? '#14B86A' : delta < -2 ? '#FF4D6D' : '#94A3B8';
+      const indiceCol = indice >= 110 ? '#14B86A' : indice >= 90 ? '#0057FF' : indice >= 60 ? '#FF9F1C' : '#FF4D6D';
+      const indiceLabel = indice >= 110 ? 'Sur-indexé' : indice >= 90 ? 'Aligné' : indice >= 60 ? 'Sous-indexé' : 'Très sous-indexé';
+      return `
+        <div style="padding:14px 18px;border-bottom:1px solid #F2F6FF">
+          <div style="display:grid;grid-template-columns:200px 1fr 110px 110px;gap:14px;align-items:center;margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="width:12px;height:12px;border-radius:50%;background:${t.color}"></span>
+              <div>
+                <div style="font-size:14px;font-weight:800;color:#0B1F4D">${t.label}</div>
+                <div style="font-size:10.5px;color:#94A3B8">${t.sub} · ${t.remise}</div>
+              </div>
+            </div>
+            <div>
+              <div style="display:grid;grid-template-columns:60px 1fr 80px;gap:10px;align-items:center;margin-bottom:5px">
+                <span style="font-size:10px;color:#0057FF;font-weight:800;text-transform:uppercase">Moi</span>
+                <div style="height:14px;background:#F2F6FF;border-radius:4px;overflow:hidden"><div style="height:100%;width:${myW}%;background:${t.color};border-radius:4px"></div></div>
+                <span style="font-size:12px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;text-align:right">${fmtEuro(myCa)}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:60px 1fr 80px;gap:10px;align-items:center">
+                <span style="font-size:10px;color:#64748B;font-weight:800;text-transform:uppercase">OPS</span>
+                <div style="height:10px;background:#F2F6FF;border-radius:4px;overflow:hidden"><div style="height:100%;width:${opsW}%;background:repeating-linear-gradient(90deg,${t.color}88 0,${t.color}88 6px,${t.color}44 6px,${t.color}44 12px);border-radius:4px"></div></div>
+                <span style="font-size:11px;font-weight:600;color:#64748B;font-variant-numeric:tabular-nums;text-align:right">${fmtEuro(opsCa)}</span>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Mix Moi · OPS</div>
+              <div style="font-size:14px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums">${myPct.toFixed(1)}% <span style="color:#94A3B8;font-size:11px">vs ${opsPct.toFixed(1)}%</span></div>
+              <div style="font-size:11px;font-weight:700;color:${deltaCol};margin-top:2px">${deltaSign}${delta.toFixed(1)} pts</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Indice / 100</div>
+              <div style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:${indiceCol}">${indice ? indice.toFixed(0) : '—'}</div>
+              <div style="font-size:10px;font-weight:700;color:${indiceCol};text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${indiceLabel}</div>
+            </div>
+          </div>
+          <div style="font-size:10.5px;color:#94A3B8;padding-left:22px">Ma PdM sur cette tranche à OPS Nantes : <b style="color:#0B1F4D">${pdmTranche.toFixed(2)} %</b></div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:18px 0 10px">Mix par tranche de prix · Mon secteur vs OPS Nantes</h3>
+      <div style="${styleCard('padding:0')}">
+        <div style="padding:10px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF;display:grid;grid-template-columns:200px 1fr 110px 110px;gap:14px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">
+          <span>Tranche prix · remise IP</span><span>CA absolu · barres comparatives</span><span style="text-align:right">Mix Moi · OPS</span><span style="text-align:right">Indice / 100</span>
+        </div>
+        ${rows}
+      </div>
+    `;
+  }
+
+  // Matrice tranche × famille · cellule par cellule (Moi en haut, OPS en bas, indice)
+  function buildTrancheFamilleMatrixHtml(myCells, myTotal, opsBundle, familles) {
+    const FAMILLE_COLORS = {
+      'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
+      'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
+    };
+    const TRANCHES = [
+      { key: 'petit', label: 'Petit prix', sub: '0 – 4,33 €' },
+      { key: 'inter', label: 'Intermédiaire', sub: '4,33 – 468 €' },
+      { key: 'haut',  label: 'Haut prix', sub: '> 468 €' },
+    ];
+    const opsMatrix = opsBundle.matrix;
+    const opsTotal = opsBundle.total;
+    // Trouve le max pour calibrer l'intensité
+    let maxMyPct = 0;
+    for (const tr of TRANCHES) {
+      for (const f of familles) {
+        const v = ((myCells[tr.key] || {})[f] || {}).ca || 0;
+        const pct = myTotal > 0 ? v / myTotal * 100 : 0;
+        if (pct > maxMyPct) maxMyPct = pct;
+      }
+    }
+
+    const rows = TRANCHES.map(tr => {
+      const cells = familles.map(f => {
+        const myCa = ((myCells[tr.key] || {})[f] || {}).ca || 0;
+        const opsCa = (opsMatrix[tr.key] || {})[f] || 0;
+        const myPct = myTotal > 0 ? (myCa / myTotal * 100) : 0;
+        const opsPct = opsTotal > 0 ? (opsCa / opsTotal * 100) : 0;
+        const indice = opsPct > 0 ? (myPct / opsPct * 100) : (myPct > 0 ? 999 : 0);
+        const c = FAMILLE_COLORS[f] || '#0057FF';
+        const intensity = maxMyPct > 0 ? Math.min(myPct / maxMyPct, 1) : 0;
+        const rgb = hexToRgbLocal(c);
+        const bg = myCa > 0 ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${0.04 + intensity * 0.32})` : '#FAFBFF';
+        let badge = '';
+        if (myCa > 0 || opsCa > 0) {
+          if (indice >= 999) badge = `<span style="background:#14B86A;color:#fff;padding:1px 5px;border-radius:8px;font-size:9px;font-weight:800;letter-spacing:.4px">EXCLU</span>`;
+          else if (indice >= 110) badge = `<span style="background:#14B86A;color:#fff;padding:1px 5px;border-radius:8px;font-size:9px;font-weight:800;letter-spacing:.4px">+${(indice-100).toFixed(0)}</span>`;
+          else if (indice >= 90) badge = `<span style="background:#0057FF;color:#fff;padding:1px 5px;border-radius:8px;font-size:9px;font-weight:800;letter-spacing:.4px">OK</span>`;
+          else if (indice >= 60) badge = `<span style="background:#FF9F1C;color:#fff;padding:1px 5px;border-radius:8px;font-size:9px;font-weight:800;letter-spacing:.4px">-${(100-indice).toFixed(0)}</span>`;
+          else if (indice > 0)  badge = `<span style="background:#FF4D6D;color:#fff;padding:1px 5px;border-radius:8px;font-size:9px;font-weight:800;letter-spacing:.4px">-${(100-indice).toFixed(0)}</span>`;
+          else                  badge = `<span style="background:#94A3B8;color:#fff;padding:1px 5px;border-radius:8px;font-size:9px;font-weight:800;letter-spacing:.4px">∅</span>`;
+        }
+        return `
+          <td style="padding:9px 8px;background:${bg};vertical-align:top;border-right:1px solid #fff;min-width:108px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+              <b style="font-size:12px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums">${myCa > 0 ? fmtEuro(myCa) : '—'}</b>
+              ${badge}
+            </div>
+            <div style="font-size:9.5px;color:#64748B;font-variant-numeric:tabular-nums;line-height:1.5">
+              Moi <b style="color:#0057FF">${myPct.toFixed(1)}%</b><br>
+              OPS <b style="color:#64748B">${opsPct.toFixed(1)}%</b>
+            </div>
+          </td>
+        `;
+      }).join('');
+      const rowMyTotal = familles.reduce((s, f) => s + (((myCells[tr.key] || {})[f] || {}).ca || 0), 0);
+      const rowOpsTotal = familles.reduce((s, f) => s + ((opsMatrix[tr.key] || {})[f] || 0), 0);
+      const rowMyPct = myTotal > 0 ? rowMyTotal / myTotal * 100 : 0;
+      const rowOpsPct = opsTotal > 0 ? rowOpsTotal / opsTotal * 100 : 0;
+      return `
+        <tr>
+          <td style="padding:10px 12px;background:#F2F6FF;border-right:2px solid #0057FF;vertical-align:top">
+            <div style="font-weight:800;color:#0B1F4D;font-size:12.5px">${tr.label}</div>
+            <div style="font-size:10px;color:#64748B;font-weight:600">${tr.sub}</div>
+          </td>
+          ${cells}
+          <td style="padding:10px 10px;background:#EAF2FF;text-align:right;vertical-align:top;border-left:2px solid #0057FF">
+            <b style="font-size:13px;color:#0B1F4D;font-variant-numeric:tabular-nums">${fmtEuro(rowMyTotal)}</b>
+            <div style="font-size:9.5px;color:#64748B;font-variant-numeric:tabular-nums;line-height:1.5">
+              Moi <b style="color:#0057FF">${rowMyPct.toFixed(1)}%</b><br>
+              OPS <b style="color:#64748B">${rowOpsPct.toFixed(1)}%</b>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Ligne totaux par colonne
+    const colTotals = familles.map(f => {
+      let myC = 0, opsC = 0;
+      for (const tr of TRANCHES) {
+        myC += ((myCells[tr.key] || {})[f] || {}).ca || 0;
+        opsC += (opsMatrix[tr.key] || {})[f] || 0;
+      }
+      const myPct = myTotal > 0 ? myC / myTotal * 100 : 0;
+      const opsPct = opsTotal > 0 ? opsC / opsTotal * 100 : 0;
+      return `
+        <td style="padding:10px 8px;background:#EAF2FF;text-align:left;vertical-align:top;border-top:2px solid #0057FF">
+          <b style="font-size:12.5px;color:#0B1F4D;font-variant-numeric:tabular-nums">${fmtEuro(myC)}</b>
+          <div style="font-size:9.5px;color:#64748B;font-variant-numeric:tabular-nums;line-height:1.5">
+            Moi <b style="color:#0057FF">${myPct.toFixed(1)}%</b><br>
+            OPS <b style="color:#64748B">${opsPct.toFixed(1)}%</b>
+          </div>
+        </td>
+      `;
+    }).join('');
+
+    return `
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:18px 0 10px">Matrice tranche × famille · Mon secteur vs OPS Nantes</h3>
+      <div style="${styleCard('padding:0;overflow:hidden')}">
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:11.5px;min-width:920px">
+            <thead>
+              <tr style="background:#0B1F4D;color:#fff">
+                <th style="padding:10px 12px;text-align:left;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;font-weight:800">Tranche \\ Famille</th>
+                ${familles.map(f => `<th style="padding:10px 8px;text-align:left;font-size:10.5px;font-weight:700;border-left:1px solid rgba(255,255,255,.1)"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${FAMILLE_COLORS[f]};margin-right:4px;vertical-align:middle"></span>${escapeHtml(f)}</th>`).join('')}
+                <th style="padding:10px 10px;text-align:right;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;background:#1E3A5F">Total tranche</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+              <tr style="background:#EAF2FF">
+                <td style="padding:10px 12px;font-weight:800;color:#0B1F4D;text-transform:uppercase;font-size:10.5px;letter-spacing:1px;border-right:2px solid #0057FF;border-top:2px solid #0057FF">Total famille</td>
+                ${colTotals}
+                <td style="padding:10px 10px;text-align:right;font-weight:800;background:#0057FF;color:#fff;font-variant-numeric:tabular-nums;font-size:14px;border-top:2px solid #0057FF">${fmtEuro(myTotal)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:10px 16px;background:#FAFBFF;font-size:11px;color:#64748B;border-top:1px solid #E8EEFF;display:flex;gap:18px;flex-wrap:wrap">
+          <span>Badge cellule = indice / 100 vs mix OPS</span>
+          <span><b style="color:#14B86A">+X</b> sur-indexé</span>
+          <span><b style="color:#0057FF">OK</b> aligné</span>
+          <span><b style="color:#FF9F1C">-X</b> sous-indexé</span>
+          <span><b style="color:#FF4D6D">-X</b> très sous-indexé</span>
+          <span><b style="color:#94A3B8">∅</b> aucun CA des 2 côtés</span>
+        </div>
+      </div>
+    `;
+  }
+
   function hexToRgbLocal(hex) {
     const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 0, g: 87, b: 255 };
@@ -947,6 +1179,12 @@
 
         <!-- Comparatif détaillé par famille -->
         ${buildSectorVsOpsHtml(myFams, myTotal, opsMix.fams, opsTotal, FAMILLES_ORDER)}
+
+        <!-- Comparatif par tranche de prix -->
+        ${buildTrancheVsOpsHtml(window.SALES_BY_TRANCHE || {}, myTotal, getOpsMixByTranche())}
+
+        <!-- Matrice tranche × famille · ma position cellule par cellule -->
+        ${buildTrancheFamilleMatrixHtml(window.SALES_BY_TRANCHE_FAMILLE || {}, myTotal, getOpsMixByTranche(), FAMILLES_ORDER)}
 
         <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:24px 0 10px">Catalogue Intégral Pharma · structure</h3>
         <div style="font-size:11px;color:#94A3B8;margin-bottom:10px">Liste des références catalogue (différent du CA facturé ci-dessus)</div>
