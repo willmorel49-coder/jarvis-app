@@ -72,9 +72,9 @@ def load_stock_index():
     txt = stock_path.read_text(encoding='utf-8')
     idx = {}
     # Lignes: "ARTCODE": { nom: "...", ean: "...", marque: "REMBSS", ..., sousfamille: "...", nature: "..." }
-    pat = re.compile(r'"(\d+)":\s*\{[^}]*marque:\s*"([^"]*)"[^}]*sousfamille:\s*"([^"]*)"[^}]*nature:\s*"([^"]*)"')
+    pat = re.compile(r'"(\d+)":\s*\{[^}]*marque:\s*"([^"]*)"[^}]*sousfamille:\s*"([^"]*)"[^}]*nature:\s*"([^"]*)"[^}]*collection:\s*"([^"]*)"')
     for m in pat.finditer(txt):
-        idx[m.group(1)] = {'marque': m.group(2), 'sousfamille': m.group(3), 'nature': m.group(4)}
+        idx[m.group(1)] = {'marque': m.group(2), 'sousfamille': m.group(3), 'nature': m.group(4), 'collection': m.group(5)}
     print(f'[sales] Stock index chargé : {len(idx)} références')
     return idx
 
@@ -90,9 +90,13 @@ def main():
     by_client_month = defaultdict(lambda: defaultdict(lambda: {'ca': 0.0, 'marge': 0.0, 'qte': 0.0}))
     by_product_data = defaultdict(lambda: {'ca': 0.0, 'marge': 0.0, 'qte': 0.0, 'clients': set(), 'designation': '', 'sousfamille': ''})
     by_sousfamille = defaultdict(lambda: {'ca': 0.0, 'marge': 0.0, 'qte': 0.0, 'lignes': 0})
-    by_famille = defaultdict(lambda: {'ca': 0.0, 'qte': 0.0, 'lignes': 0, 'nb_artcodes': set()})
+    by_famille = defaultdict(lambda: {'ca': 0.0, 'qte': 0.0, 'lignes': 0, 'nb_artcodes': set(), 'cips': set()})
     by_tranche = defaultdict(lambda: {'ca': 0.0, 'qte': 0.0, 'lignes': 0})
     by_tranche_famille = defaultdict(lambda: defaultdict(lambda: {'ca': 0.0, 'qte': 0.0}))
+    by_labo = defaultdict(lambda: {'ca': 0.0, 'qte': 0.0, 'cips': set(), 'artcodes': set(), 'familles': defaultdict(float)})
+    by_famille_products = defaultdict(lambda: defaultdict(lambda: {'designation': '', 'ca': 0.0, 'qte': 0.0, 'cips': set()}))
+    by_famille_monthly = defaultdict(lambda: defaultdict(lambda: {'ca': 0.0, 'qte': 0.0}))
+    cips_actifs = set()  # tous les CIP ayant au moins une facture
     stock_idx = load_stock_index()
 
     def tranche_from_prix(prix):
@@ -165,6 +169,8 @@ def main():
         by_famille[fam]['qte'] += qte
         by_famille[fam]['lignes'] += 1
         by_famille[fam]['nb_artcodes'].add(artcode)
+        by_famille[fam]['cips'].add(cip)
+        cips_actifs.add(cip)
 
         # Tranche prix (unitaire ligne par ligne)
         prix_unit = ca / qte if qte > 0 else 0
@@ -174,6 +180,26 @@ def main():
         by_tranche[tr]['lignes'] += 1
         by_tranche_famille[tr][fam]['ca'] += ca
         by_tranche_famille[tr][fam]['qte'] += qte
+
+        # Labo (collection) — vient de stock
+        labo = (stock.get('collection') or '').strip()
+        if labo and labo != '#N/A':
+            by_labo[labo]['ca'] += ca
+            by_labo[labo]['qte'] += qte
+            by_labo[labo]['cips'].add(cip)
+            by_labo[labo]['artcodes'].add(artcode)
+            by_labo[labo]['familles'][fam] += ca
+
+        # Top produits par famille (agrégés)
+        bp = by_famille_products[fam][artcode]
+        bp['ca'] += ca
+        bp['qte'] += qte
+        bp['cips'].add(cip)
+        if not bp['designation']: bp['designation'] = designation
+
+        # Famille × mois (pour trajectoires temporelles)
+        by_famille_monthly[fam][month]['ca'] += ca
+        by_famille_monthly[fam][month]['qte'] += qte
 
         # Détail client : top N dernières lignes
         by_client_detail[cip].append({
@@ -230,9 +256,16 @@ def main():
     }
 
     familles_out = {
-        f: {'ca': round(d['ca'], 2), 'qte': int(d['qte']), 'lignes': d['lignes'], 'nb_refs': len(d['nb_artcodes'])}
+        f: {
+            'ca': round(d['ca'], 2),
+            'qte': int(d['qte']),
+            'lignes': d['lignes'],
+            'nb_refs': len(d['nb_artcodes']),
+            'nb_pharmas': len(d['cips']),
+        }
         for f, d in sorted(by_famille.items(), key=lambda x: -x[1]['ca'])
     }
+    nb_pharmas_actives = len(cips_actifs)
     print(f'[sales] Ventilation famille IP :')
     for f, d in familles_out.items():
         pct = d['ca'] / total_ca * 100 if total_ca > 0 else 0
@@ -253,6 +286,40 @@ def main():
         pct = d['ca'] / total_ca * 100 if total_ca > 0 else 0
         print(f'  {tr:6s} {labels[tr]:18s} CA {d["ca"]:>12,.0f} EUR ({pct:5.1f}%)')
 
+    # Labos — tri par CA decroissant, top 80 (assez pour couvrir 99% du CA)
+    labos_sorted = sorted(by_labo.items(), key=lambda x: -x[1]['ca'])[:80]
+    labos_out = {}
+    for labo, d in labos_sorted:
+        labos_out[labo] = {
+            'ca': round(d['ca'], 2),
+            'qte': int(d['qte']),
+            'nb_pharmas': len(d['cips']),
+            'nb_refs': len(d['artcodes']),
+            'familles': {f: round(v, 2) for f, v in d['familles'].items()},
+        }
+    print(f'[sales] {len(by_labo)} labos detectes · top 80 exportes')
+
+    # Top produits par famille (top 50 par famille pour drill-down rich)
+    famille_products_out = {}
+    for fam, prods in by_famille_products.items():
+        top = sorted(prods.items(), key=lambda x: -x[1]['ca'])[:50]
+        famille_products_out[fam] = [
+            {
+                'artcode': artcode,
+                'designation': p['designation'],
+                'ca': round(p['ca'], 2),
+                'qte': int(p['qte']),
+                'nb_pharmas': len(p['cips']),
+            }
+            for artcode, p in top
+        ]
+
+    # Famille × mois pour trajectoires temporelles
+    famille_monthly_out = {
+        fam: {m: {'ca': round(d['ca'], 2), 'qte': int(d['qte'])} for m, d in sorted(months.items())}
+        for fam, months in by_famille_monthly.items()
+    }
+
     total_out = {
         'ca': round(total_ca, 2),
         'marge': round(total_marge, 2),
@@ -263,7 +330,9 @@ def main():
         'derniere_date': max_date,
         'nb_produits': len(by_product_data),
         'nb_clients': len(by_client_detail),
+        'nb_pharmas_actives': nb_pharmas_actives,
         'nb_sousfamilles': len(by_sousfamille),
+        'nb_labos': len(by_labo),
     }
 
     js = (
@@ -276,6 +345,9 @@ def main():
         f'window.SALES_BY_FAMILLE = {json.dumps(familles_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_TRANCHE = {json.dumps(tranches_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_TRANCHE_FAMILLE = {json.dumps(tranche_famille_out, ensure_ascii=False, indent=2)};\n\n'
+        f'window.SALES_BY_LABO = {json.dumps(labos_out, ensure_ascii=False, indent=2)};\n\n'
+        f'window.SALES_BY_FAMILLE_PRODUCTS = {json.dumps(famille_products_out, ensure_ascii=False, indent=2)};\n\n'
+        f'window.SALES_BY_FAMILLE_MONTHLY = {json.dumps(famille_monthly_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_PRODUCT = {json.dumps(products_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_CLIENT_MONTH = {json.dumps(client_month_out, ensure_ascii=False, indent=2)};\n\n'
         f'window.SALES_BY_CLIENT_DETAIL = {json.dumps(client_detail_out, ensure_ascii=False, indent=2)};\n'
