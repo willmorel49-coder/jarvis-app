@@ -35,7 +35,6 @@
     {
       label: 'Système',
       items: [
-        { id: 'admin',          label: 'Administration', icon: 'gear',  tint: 'gray'   },
         { id: '__toggle_mode',  label: 'Mode JARVIS',    icon: 'spark', tint: 'indigo' },
       ],
     },

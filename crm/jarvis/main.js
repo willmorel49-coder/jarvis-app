@@ -20,6 +20,12 @@ import './lens-catalogue.js';
 import './lens-pilotage.js';
 import './lens-journal.js';
 import './lens-rdv.js';
+// Nouveaux modules : widget pilotage accueil + lens devis exportable
+import { showPilotageWidget } from './pilotage-widget.js';
+import { openDevisLens } from './lens-devis.js';
+
+// Expose openDevisLens sur window pour que la fiche pharma (bouton "Préparer un devis") puisse l'appeler
+window.openDevisLens = openDevisLens;
 
 // Note : __JARVIS_SHELL_ACTIVE__ et __JARVIS_MODE__ sont posés dans crm/index.html (head)
 // On ne boot le shell que si le mode JARVIS est actif.
@@ -62,6 +68,9 @@ async function bootJarvis() {
     stats,
   });
   document.body.appendChild(greeting);
+
+  // 2b. Widget pilotage en accueil (CA mois, % objectif, top client, alertes, sparkline 8 mois)
+  showPilotageWidget(document.body, { delay: 600, objectif: 200000 });
 
   // 3. Sheet bottom (avec prompt actif maintenant)
   sheetRef = createSheet(initialBubbleForStats(stats));
