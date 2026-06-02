@@ -1,0 +1,407 @@
+/* ═══════════════════════════════════════════════════════════════
+   style-mobile-shell.css — Mobile shell pour CRM Intégral Pharma
+   Cible : iPhone (Safari) — usage commercial en pharmacie / voiture
+   Scope : <= 768px UNIQUEMENT (pas d'impact desktop)
+   Couvre : sidebar drawer · topbar · login · mode toggle · JARVIS shell · safe areas
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Variables locales (mobile only) — surchargées sous media query */
+:root {
+  --mob-blue: #0057FF;
+  --mob-ink: #0B1F4D;
+  --mob-ink-2: #64748B;
+  --mob-border: #E8EEFF;
+  --mob-overlay: rgba(11, 31, 77, .5);
+  --mob-shadow: 0 24px 60px -10px rgba(11, 31, 77, .35);
+  --mob-ease: cubic-bezier(.4, 0, .2, 1);
+  --mob-dur: 280ms;
+}
+
+/* ═══ Hamburger button (injecté par mobile-shell.js) ═══ */
+.mob-hamburger {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: calc(env(safe-area-inset-left, 0px) + 12px);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--mob-border);
+  background: rgba(255, 255, 255, .92);
+  backdrop-filter: saturate(180%) blur(10px);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  color: var(--mob-ink);
+  display: none; /* affiché uniquement en mobile + mode classic */
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10000;
+  transition: transform .15s var(--mob-ease), background .15s;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 10px -2px rgba(11, 31, 77, .15);
+}
+.mob-hamburger:active { transform: scale(.92); background: #fff; }
+.mob-hamburger svg { display: block; width: 22px; height: 22px; }
+
+/* ═══ Overlay drawer (injecté par JS) ═══ */
+.mob-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--mob-overlay);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--mob-dur) var(--mob-ease);
+  z-index: 9998;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MEDIA QUERY MOBILE (<=768px) — tout le reste vit ici
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Reset zoom iOS sur inputs ── */
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
+  /* mais le bouton hamburger reste 0 (icône) */
+  .mob-hamburger { font-size: 0 !important; }
+
+  /* ────────────────────────────────────────────────
+     A) MODE CLASSIC — sidebar → drawer hamburger
+     ──────────────────────────────────────────────── */
+  html[data-mode="classic"] .mob-hamburger {
+    display: flex;
+  }
+
+  /* App layout : pas de réservation de 240px pour la sidebar */
+  html[data-mode="classic"] #app {
+    grid-template-columns: 1fr !important;
+    display: block !important;
+  }
+
+  /* Sidebar devient drawer */
+  html[data-mode="classic"] nav.sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 80vw !important;
+    max-width: 300px !important;
+    min-width: 0 !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    z-index: 9999;
+    transform: translateX(-100%);
+    transition: transform var(--mob-dur) var(--mob-ease);
+    box-shadow: var(--mob-shadow);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
+    padding-left: calc(env(safe-area-inset-left, 0px) + 12px) !important;
+    will-change: transform;
+  }
+
+  /* État ouvert */
+  body.drawer-open nav.sidebar {
+    transform: translateX(0);
+  }
+  body.drawer-open .mob-drawer-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  body.drawer-open {
+    overflow: hidden !important;
+    touch-action: none;
+  }
+
+  /* Gestion du swipe en cours : on tue la transition pendant le drag */
+  body.drawer-dragging nav.sidebar,
+  body.drawer-dragging .mob-drawer-overlay {
+    transition: none !important;
+  }
+
+  /* Nav items confortables au tap */
+  html[data-mode="classic"] nav.sidebar .nav-item {
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+  html[data-mode="classic"] nav.sidebar .nav-item.active {
+    background: rgba(0, 87, 255, .08);
+    color: var(--mob-blue);
+  }
+  html[data-mode="classic"] nav.sidebar .sidebar-brand {
+    padding: 8px 6px 16px;
+  }
+
+  /* Footer user au tap-friendly */
+  html[data-mode="classic"] nav.sidebar .sidebar-footer {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html[data-mode="classic"] nav.sidebar .sidebar-user {
+    min-height: 56px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  /* Main content : plus de marge gauche pour la sidebar */
+  html[data-mode="classic"] .main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* ────────────────────────────────────────────────
+     B) TOPBAR mobile
+     ──────────────────────────────────────────────── */
+  html[data-mode="classic"] .topbar {
+    height: 52px !important;
+    min-height: 52px !important;
+    padding: 0 12px 0 64px !important; /* 64px = espace hamburger */
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(255, 255, 255, .85) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    backdrop-filter: saturate(180%) blur(14px);
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    box-sizing: content-box;
+  }
+  /* Reset content box pour que padding-top safe-area s'ajoute SANS écraser height */
+  html[data-mode="classic"] .topbar > * {
+    box-sizing: border-box;
+  }
+
+  html[data-mode="classic"] .topbar-title {
+    font-size: 16px !important;
+    font-weight: 700;
+    color: var(--mob-ink);
+    letter-spacing: -.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  html[data-mode="classic"] .topbar-tagline,
+  html[data-mode="classic"] #topbar-date {
+    display: none !important;
+  }
+
+  /* Bouton "Recherche" devient icône loupe pure */
+  html[data-mode="classic"] .topbar-actions button {
+    width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    gap: 0 !important;
+    justify-content: center !important;
+  }
+  /* Masque tout sauf le SVG dans le bouton */
+  html[data-mode="classic"] .topbar-actions button > *:not(svg) {
+    display: none !important;
+  }
+  html[data-mode="classic"] .topbar-actions button svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  /* ────────────────────────────────────────────────
+     C) Mode toggle (top-right)
+     ──────────────────────────────────────────────── */
+  #mode-toggle.mode-toggle,
+  .mode-toggle {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 12px) !important;
+    left: auto !important;
+    bottom: auto !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+    border-radius: 999px !important;
+    z-index: 10001 !important;
+    line-height: 36px !important;
+  }
+
+  /* ────────────────────────────────────────────────
+     D) JARVIS shell mobile (#jarvis-root)
+     ──────────────────────────────────────────────── */
+  html[data-mode="jarvis"] #jarvis-root {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    box-sizing: border-box;
+  }
+
+  /* En JARVIS, le hamburger est masqué (pas de sidebar) */
+  html[data-mode="jarvis"] .mob-hamburger {
+    display: none !important;
+  }
+
+  /* Greeting card : en bas en floating (au lieu du top) */
+  html[data-mode="jarvis"] .greeting-card,
+  html[data-mode="jarvis"] [data-jarvis-greeting],
+  html[data-mode="jarvis"] .jarvis-greeting {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 84px) !important;
+    top: auto !important;
+    max-width: none !important;
+    width: auto !important;
+    border-radius: 18px !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Orb panel : à droite, colonne compacte */
+  html[data-mode="jarvis"] .orb-panel,
+  html[data-mode="jarvis"] [data-jarvis-orbs],
+  html[data-mode="jarvis"] .jarvis-orbs {
+    position: fixed !important;
+    right: calc(env(safe-area-inset-right, 0px) + 10px) !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    left: auto !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: auto !important;
+    max-width: 64px !important;
+    padding: 8px !important;
+    border-radius: 999px !important;
+  }
+  html[data-mode="jarvis"] .orb-panel .orb,
+  html[data-mode="jarvis"] [data-jarvis-orbs] > * {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  /* Recherche en haut, large */
+  html[data-mode="jarvis"] .search-box,
+  html[data-mode="jarvis"] [data-jarvis-search] {
+    width: 90vw !important;
+    max-width: 90vw !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+    top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
+  }
+  html[data-mode="jarvis"] .search-box input,
+  html[data-mode="jarvis"] [data-jarvis-search] input {
+    height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* ────────────────────────────────────────────────
+     E) Login screen
+     ──────────────────────────────────────────────── */
+  #login-screen {
+    padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px);
+    align-items: center;
+    justify-content: center;
+  }
+  #login-screen .login-card {
+    width: 92% !important;
+    max-width: 380px !important;
+    padding: 28px 22px !important;
+    border-radius: 22px !important;
+    box-sizing: border-box;
+  }
+  #login-screen .login-card input {
+    height: 48px !important;
+    min-height: 48px !important;
+    font-size: 16px !important;
+    padding: 0 14px !important;
+    border-radius: 12px !important;
+  }
+  #login-screen .login-card label {
+    font-size: 13px;
+  }
+  #login-screen .login-btn {
+    width: 100% !important;
+    height: 50px !important;
+    min-height: 50px !important;
+    font-size: 15px !important;
+    border-radius: 14px !important;
+    margin-top: 6px;
+  }
+  #login-screen .login-logo {
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+  }
+  #login-screen .login-title {
+    font-size: 22px !important;
+  }
+
+  /* ────────────────────────────────────────────────
+     F) Page-content : padding mobile
+     ──────────────────────────────────────────────── */
+  html[data-mode="classic"] .page-content {
+    padding: 14px 12px !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px) !important;
+  }
+
+  /* Brand footer plus discret en mobile */
+  html[data-mode="classic"] .brand-footer {
+    font-size: 11px !important;
+    padding: 12px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  }
+
+  /* Toast mobile : laisse de la place pour la safe area */
+  #toast {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
+    left: 16px !important;
+    right: 16px !important;
+    max-width: none !important;
+  }
+}
+
+/* ═══ Petits écrans (<= 380px) — densité encore réduite ═══ */
+@media (max-width: 380px) {
+  html[data-mode="classic"] .topbar-title {
+    font-size: 15px !important;
+  }
+  html[data-mode="classic"] nav.sidebar {
+    width: 86vw !important;
+  }
+  #mode-toggle.mode-toggle,
+  .mode-toggle {
+    font-size: 11px !important;
+    padding: 0 10px !important;
+  }
+}
+
+/* ═══ Mode paysage iPhone : compresse encore le topbar ═══ */
+@media (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
+  html[data-mode="classic"] .topbar {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+  html[data-mode="classic"] .mob-hamburger {
+    width: 38px;
+    height: 38px;
+    top: calc(env(safe-area-inset-top, 0px) + 4px);
+  }
+}
+
+/* ═══ Reduced motion : on coupe les transitions ═══ */
+@media (prefers-reduced-motion: reduce) and (max-width: 768px) {
+  nav.sidebar,
+  .mob-drawer-overlay,
+  .mob-hamburger {
+    transition: none !important;
+  }
+}
