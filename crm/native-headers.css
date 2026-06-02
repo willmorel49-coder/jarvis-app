@@ -1,0 +1,261 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   native-headers.css — Pattern "Large Title" iOS pour CRM Intégral Pharma
+   ──────────────────────────────────────────────────────────────────────────
+   Inspiration : Apple Mail · Notes · Réglages iOS.
+   Comportement :
+     - Au repos : un grand titre 34px tout en haut de chaque page.
+     - Au scroll : il shrink, la topbar adopte un compact title + frosted glass.
+   Architecture :
+     - .large-title-block injecté par native-headers.js AVANT le contenu de page.
+     - body.is-compact-header pilote tous les états via CSS.
+     - On masque le sectionHeader interne existant (h2 26px de classic-overrides)
+       pour éviter le doublon visuel.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Cible le mode classique uniquement */
+html[data-mode="classic"] {
+  --lt-title-size: 34px;
+  --lt-title-weight: 800;
+  --lt-title-color: #0B1F4D;
+  --lt-sub-size: 14px;
+  --lt-sub-color: #64748B;
+  --lt-spring: cubic-bezier(.22, 1, .36, 1);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TOPBAR — refonte iOS
+   ══════════════════════════════════════════════════════════════════════════ */
+html[data-mode="classic"] .topbar {
+  /* Hauteur compacte type iOS (44px) + safe-area iOS */
+  height: 52px;
+  min-height: 52px;
+  padding-top: env(safe-area-inset-top, 0);
+  padding-left: 28px;
+  padding-right: 28px;
+
+  position: sticky;
+  top: 0;
+  z-index: 60;
+
+  /* Au repos : transparent, pas de bordure visible. */
+  background: rgba(255, 255, 255, 0);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0);
+  backdrop-filter: saturate(180%) blur(0px);
+  -webkit-backdrop-filter: saturate(180%) blur(0px);
+
+  /* Transitions douces façon iOS */
+  transition:
+    background-color .22s var(--lt-spring),
+    border-color .22s var(--lt-spring),
+    backdrop-filter .22s var(--lt-spring),
+    -webkit-backdrop-filter .22s var(--lt-spring);
+}
+
+/* État compact (scroll > seuil) : frosted glass + hairline */
+html[data-mode="classic"] body.is-compact-header .topbar {
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.12);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Titre compact dans la topbar : invisible au repos, visible au compact */
+html[data-mode="classic"] .topbar-title {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.2px;
+  color: var(--lt-title-color);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity .22s var(--lt-spring),
+    transform .22s var(--lt-spring);
+  pointer-events: none;
+}
+html[data-mode="classic"] body.is-compact-header .topbar-title {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Tagline + date : on planque (incohérent avec Large Title) */
+html[data-mode="classic"] .topbar-tagline,
+html[data-mode="classic"] #topbar-date {
+  display: none !important;
+}
+
+/* Actions trailing — sobres iOS */
+html[data-mode="classic"] .topbar-actions {
+  gap: 8px;
+}
+html[data-mode="classic"] .topbar-actions button {
+  /* Style "icon-pill" cohérent avec iOS */
+  min-height: 36px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGE-CONTENT — léger ajustement
+   ══════════════════════════════════════════════════════════════════════════ */
+html[data-mode="classic"] .page-content {
+  /* Padding-top réduit : le large-title-block apporte son propre espacement */
+  padding-top: 8px;
+  scroll-behavior: smooth;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LARGE-TITLE BLOCK — au top de chaque page
+   ══════════════════════════════════════════════════════════════════════════ */
+html[data-mode="classic"] .large-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 4px 22px;
+  margin-bottom: 8px;
+  /* Pas de border, pas de fond : ça doit "couler" depuis la topbar transparente */
+}
+
+html[data-mode="classic"] .large-title-block .large-title-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--lt-sub-color);
+}
+
+html[data-mode="classic"] .large-title-block .large-title {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: var(--lt-title-size);
+  font-weight: var(--lt-title-weight);
+  line-height: 1.1;
+  letter-spacing: -.8px;
+  color: var(--lt-title-color);
+  margin: 0;
+
+  /* Animation shrink douce au scroll (la classe is-compact-header gère l'opacity) */
+  transform-origin: left top;
+  transition:
+    opacity .22s var(--lt-spring),
+    transform .22s var(--lt-spring);
+}
+
+html[data-mode="classic"] .large-title-block .large-title-subtitle {
+  font-size: var(--lt-sub-size);
+  font-weight: 500;
+  color: var(--lt-sub-color);
+  letter-spacing: -.1px;
+  margin-top: 2px;
+}
+
+/* Actions trailing intégrées dans le block large-title (search, filter, +) */
+html[data-mode="classic"] .large-title-block .large-title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+html[data-mode="classic"] .large-title-block .large-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+html[data-mode="classic"] .large-title-block .lt-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(0, 87, 255, 0.08);
+  color: #0057FF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s var(--lt-spring), transform .15s var(--lt-spring);
+  opacity: .85;
+}
+html[data-mode="classic"] .large-title-block .lt-icon-btn:hover {
+  background: rgba(0, 87, 255, 0.14);
+  opacity: 1;
+}
+html[data-mode="classic"] .large-title-block .lt-icon-btn:active {
+  transform: scale(.94);
+}
+
+/* État compact : le large-title rétrécit (opacité + translation up) */
+html[data-mode="classic"] body.is-compact-header .large-title-block .large-title {
+  opacity: 0;
+  transform: translateY(-6px) scale(.92);
+}
+html[data-mode="classic"] body.is-compact-header .large-title-block .large-title-subtitle {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MASQUAGE DES sectionHeader INTERNES (classic-overrides sectionHeader)
+   ──────────────────────────────────────────────────────────────────────────
+   Le H2 26px généré par sectionHeader() apparaît en tête de plusieurs renders.
+   On masque le PREMIER wrapper de ce pattern dans chaque conteneur de page,
+   pour éviter le doublon visuel avec le large-title.
+   Pattern ciblé :
+     <div style="margin-bottom:20px">
+       <div ...>SUB</div>
+       <h2 style="font-size:26px;...">TITLE</h2>
+     </div>
+   ══════════════════════════════════════════════════════════════════════════ */
+html[data-mode="classic"] #dash-content     > .large-title-block + div > h2[style*="font-size:26px"],
+html[data-mode="classic"] #pharma-content   > .large-title-block + div > h2[style*="font-size:26px"],
+html[data-mode="classic"] #prod-content     > .large-title-block + div > h2[style*="font-size:26px"],
+html[data-mode="classic"] #cat-content      > .large-title-block + div > h2[style*="font-size:26px"],
+html[data-mode="classic"] #bench-content    > .large-title-block + div > h2[style*="font-size:26px"],
+html[data-mode="classic"] #simul-content    > .large-title-block + div > h2[style*="font-size:26px"],
+html[data-mode="classic"] #offilog-content  > .large-title-block + div > h2[style*="font-size:26px"],
+html[data-mode="classic"] #groupements-content > .large-title-block + div > h2[style*="font-size:26px"],
+html[data-mode="classic"] #admin-content    > .large-title-block + div > h2[style*="font-size:26px"] {
+  display: none;
+}
+
+/* On masque aussi le wrapper complet (avec son eyebrow uppercase) */
+html[data-mode="classic"] .large-title-block + div:has(> h2[style*="font-size:26px"]) {
+  display: none;
+}
+
+/* Fallback pour navigateurs sans :has() — masquage par data-attribute posé par JS */
+html[data-mode="classic"] [data-lt-hide-next="true"] + div {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITÉ — focus visibles, reduced motion
+   ══════════════════════════════════════════════════════════════════════════ */
+html[data-mode="classic"] .large-title-block .lt-icon-btn:focus-visible {
+  outline: 2px solid #0057FF;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-mode="classic"] .topbar,
+  html[data-mode="classic"] .topbar-title,
+  html[data-mode="classic"] .large-title-block .large-title,
+  html[data-mode="classic"] .large-title-block .large-title-subtitle {
+    transition: none !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE — adaptation
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 760px) {
+  html[data-mode="classic"] {
+    --lt-title-size: 30px;
+  }
+  html[data-mode="classic"] .topbar {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  html[data-mode="classic"] .large-title-block {
+    padding: 10px 2px 18px;
+  }
+}

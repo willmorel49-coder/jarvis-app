@@ -1,0 +1,438 @@
+/* ============================================================
+   native-shell.css
+   Bottom Tab Bar iOS-native + Sheet "Plus" pour CRM Intégral Pharma
+   Mode "classic" uniquement.
+   Design : Apple Wallet / Apple Health / Apple Mail.
+   ============================================================ */
+
+/* Tokens locaux (fallback si variables globales absentes) */
+:root {
+  --ns-blue: #007AFF;
+  --ns-gray: #8E8E93;
+  --ns-bg-tabbar: rgba(255, 255, 255, 0.85);
+  --ns-bg-sheet: #F2F2F7;
+  --ns-bg-sheet-cell: #FFFFFF;
+  --ns-hairline: rgba(60, 60, 67, 0.18);
+  --ns-hairline-strong: rgba(60, 60, 67, 0.29);
+  --ns-text: #1C1C1E;
+  --ns-text-secondary: #3C3C43;
+  --ns-shadow-float: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --ns-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ns-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ns-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Dark mode adaptation (si app passe en dark) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ns-bg-tabbar: rgba(28, 28, 30, 0.82);
+    --ns-bg-sheet: #1C1C1E;
+    --ns-bg-sheet-cell: #2C2C2E;
+    --ns-hairline: rgba(255, 255, 255, 0.15);
+    --ns-hairline-strong: rgba(255, 255, 255, 0.22);
+    --ns-text: #FFFFFF;
+    --ns-text-secondary: rgba(235, 235, 245, 0.6);
+    --ns-shadow-float: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ============================================================
+   1. Masquage de l'ancienne sidebar en mode classique
+   ============================================================ */
+html[data-mode="classic"] body.ns-active nav.sidebar {
+  display: none !important;
+}
+
+html[data-mode="classic"] body.ns-active .main {
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Padding bottom pour éviter que le contenu passe sous le tab bar */
+html[data-mode="classic"] body.ns-active .page,
+html[data-mode="classic"] body.ns-active .page-content,
+html[data-mode="classic"] body.ns-active .main {
+  padding-bottom: calc(90px + var(--ns-safe-bottom));
+}
+
+@media (max-width: 768px) {
+  html[data-mode="classic"] body.ns-active .page,
+  html[data-mode="classic"] body.ns-active .page-content,
+  html[data-mode="classic"] body.ns-active .main {
+    padding-bottom: calc(70px + var(--ns-safe-bottom));
+  }
+}
+
+/* Hide tab bar et sheet en mode JARVIS */
+html[data-mode="jarvis"] .ns-tabbar,
+html[data-mode="jarvis"] .ns-sheet-root {
+  display: none !important;
+}
+
+/* ============================================================
+   2. Bottom Tab Bar
+   ============================================================ */
+.ns-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  height: calc(49px + var(--ns-safe-bottom));
+  padding-bottom: var(--ns-safe-bottom);
+  background: var(--ns-bg-tabbar);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid var(--ns-hairline);
+  /* Performance */
+  will-change: transform, opacity;
+  transition: opacity 200ms var(--ns-ease-out);
+}
+
+.ns-tabbar[aria-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Desktop : floating pill tab bar centrée */
+@media (min-width: 1024px) {
+  .ns-tabbar {
+    left: 50%;
+    right: auto;
+    bottom: 24px;
+    transform: translateX(-50%);
+    width: 580px;
+    max-width: calc(100vw - 32px);
+    height: 64px;
+    padding-bottom: 0;
+    border-radius: 22px;
+    border: 0.5px solid var(--ns-hairline);
+    box-shadow: var(--ns-shadow-float);
+    background: rgba(255, 255, 255, 0.78);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .ns-tabbar {
+      background: rgba(28, 28, 30, 0.75);
+    }
+  }
+}
+
+/* ----- Tab item ----- */
+.ns-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ns-gray);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 180ms var(--ns-ease-out), opacity 80ms linear;
+  position: relative;
+}
+
+.ns-tab:active {
+  opacity: 0.5;
+  transition: opacity 0ms linear;
+}
+
+.ns-tab[aria-selected="true"] {
+  color: var(--ns-blue);
+}
+
+.ns-tab-icon {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ns-tab-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ns-tab-label {
+  display: block;
+  font-size: 10px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .ns-tab {
+    padding: 8px 12px;
+    border-radius: 14px;
+    gap: 3px;
+  }
+  .ns-tab-label { font-size: 11px; }
+  .ns-tab-icon svg { width: 22px; height: 22px; }
+}
+
+/* ============================================================
+   3. Sheet "Plus" (bottom sheet modal)
+   ============================================================ */
+.ns-sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  pointer-events: none;
+}
+
+.ns-sheet-root.is-open {
+  pointer-events: auto;
+}
+
+.ns-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 280ms var(--ns-ease-out);
+}
+
+.ns-sheet-root.is-open .ns-sheet-backdrop {
+  opacity: 1;
+}
+
+.ns-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--ns-bg-sheet);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 8px 0 calc(16px + var(--ns-safe-bottom));
+  max-height: 85vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateY(100%);
+  transition: transform 320ms var(--ns-spring);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+  will-change: transform;
+}
+
+.ns-sheet-root.is-open .ns-sheet {
+  transform: translateY(0);
+}
+
+/* Pendant le drag manuel, on désactive la transition */
+.ns-sheet.is-dragging {
+  transition: none;
+}
+
+/* Desktop : sheet centré, plus étroit */
+@media (min-width: 1024px) {
+  .ns-sheet {
+    left: 50%;
+    right: auto;
+    bottom: 24px;
+    transform: translate(-50%, calc(100% + 24px));
+    width: 460px;
+    border-radius: 16px;
+    padding-bottom: 16px;
+  }
+  .ns-sheet-root.is-open .ns-sheet {
+    transform: translate(-50%, 0);
+  }
+  .ns-sheet.is-dragging {
+    transition: none;
+  }
+}
+
+/* ----- Handle ----- */
+.ns-sheet-handle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 22px;
+  padding-top: 6px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ns-sheet-handle::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 5px;
+  background: rgba(60, 60, 67, 0.3);
+  border-radius: 3px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ns-sheet-handle::before {
+    background: rgba(235, 235, 245, 0.3);
+  }
+}
+
+/* ----- Title ----- */
+.ns-sheet-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  text-align: center;
+  margin: 4px 0 12px;
+  color: var(--ns-text);
+}
+
+/* ----- Liste groupée style iOS ----- */
+.ns-sheet-group {
+  margin: 0 16px 24px;
+  background: var(--ns-bg-sheet-cell);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ns-sheet-group-label {
+  padding: 0 16px 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ns-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 8px;
+}
+
+.ns-sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: var(--ns-text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms linear;
+  position: relative;
+}
+
+/* Séparateur entre cells (sauf dernière) */
+.ns-sheet-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 50px;
+  right: 0;
+  bottom: 0;
+  height: 0.5px;
+  background: var(--ns-hairline);
+}
+
+.ns-sheet-item:active {
+  background: rgba(60, 60, 67, 0.12);
+}
+
+.ns-sheet-item-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: #FFFFFF;
+}
+
+.ns-sheet-item-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Couleurs des icônes (style iOS Settings) */
+.ns-sheet-item-icon[data-tint="blue"]    { background: #007AFF; }
+.ns-sheet-item-icon[data-tint="green"]   { background: #34C759; }
+.ns-sheet-item-icon[data-tint="purple"]  { background: #AF52DE; }
+.ns-sheet-item-icon[data-tint="orange"]  { background: #FF9500; }
+.ns-sheet-item-icon[data-tint="gray"]    { background: #8E8E93; }
+.ns-sheet-item-icon[data-tint="indigo"]  { background: #5856D6; }
+.ns-sheet-item-icon[data-tint="red"]     { background: #FF3B30; }
+
+.ns-sheet-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ns-sheet-item-chevron {
+  flex-shrink: 0;
+  color: rgba(60, 60, 67, 0.3);
+}
+
+.ns-sheet-item-chevron svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ============================================================
+   4. Adaptation topbar (mode classique + ns-active)
+   ============================================================ */
+html[data-mode="classic"] body.ns-active .topbar {
+  /* La topbar reste en place ; on s'assure juste qu'elle n'est pas
+     décalée par la sidebar absente */
+  left: 0 !important;
+}
+
+/* Sur desktop, restreindre la topbar à un look épuré */
+@media (min-width: 1024px) {
+  html[data-mode="classic"] body.ns-active .topbar {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* ============================================================
+   5. Reduced motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .ns-tabbar,
+  .ns-tab,
+  .ns-sheet,
+  .ns-sheet-backdrop {
+    transition-duration: 0ms !important;
+  }
+}

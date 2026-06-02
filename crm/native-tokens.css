@@ -1,0 +1,509 @@
+/* ============================================================================
+   native-tokens.css — CRM Intégral Pharma
+   Design system iOS-native (Apple HIG 2024+)
+   ----------------------------------------------------------------------------
+   Chargé EN PREMIER. Toutes les variables sont préfixées pour cohabiter avec
+   style.css / style-classic.css / style-jarvis.css existants
+   (ex: --bg, --blue, --navy ne sont PAS touchés).
+   ============================================================================ */
+
+:root {
+  /* ─────────────────────────────────────────────────────────────────────────
+     A) iOS SYSTEM COLORS — light mode reference
+     Source: Apple Human Interface Guidelines · iOS 17/18
+     Utilisation: états système (success, warning, destructive), accents
+     ───────────────────────────────────────────────────────────────────────── */
+  --system-blue:    #007AFF;
+  --system-indigo:  #5856D6;
+  --system-green:   #34C759;
+  --system-orange:  #FF9500;
+  --system-red:     #FF3B30;
+  --system-yellow:  #FFCC00;
+  --system-pink:    #FF2D55;
+  --system-teal:    #5AC8FA;
+  --system-mint:    #00C7BE;
+  --system-cyan:    #32ADE6;
+  --system-purple:  #AF52DE;
+  --system-brown:   #A2845E;
+
+  /* Gray scale iOS (light) */
+  --gray-50:  #F2F2F7;  /* systemGroupedBackground */
+  --gray-100: #E5E5EA;
+  --gray-200: #D1D1D6;
+  --gray-300: #C7C7CC;
+  --gray-400: #AEAEB2;
+  --gray-500: #8E8E93;  /* systemGray */
+  --gray-600: #636366;
+  --gray-700: #48484A;
+  --gray-800: #3A3A3C;
+  --gray-900: #1C1C1E;  /* near-label dark */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     B) SURFACES & BACKGROUNDS iOS (semantic)
+     ───────────────────────────────────────────────────────────────────────── */
+  --bg-base:        #FFFFFF;            /* systemBackground */
+  --bg-grouped:     #F2F2F7;            /* systemGroupedBackground */
+  --bg-elevated:    #FFFFFF;            /* cards/lists au-dessus du grouped */
+
+  --separator:        rgba(60, 60, 67, 0.29);   /* hairline iOS */
+  --separator-opaque: #C6C6C8;
+
+  --label:             #000000;
+  --label-secondary:   rgba(60, 60, 67, 0.60);
+  --label-tertiary:    rgba(60, 60, 67, 0.30);
+  --label-quaternary:  rgba(60, 60, 67, 0.18);
+
+  /* Fills (input bg, segmented control, pill states) */
+  --fill-primary:   rgba(120, 120, 128, 0.20);
+  --fill-secondary: rgba(120, 120, 128, 0.16);
+  --fill-tertiary:  rgba(118, 118, 128, 0.12);
+  --fill-quaternary: rgba(116, 116, 128, 0.08);
+
+  /* Overlays / scrims */
+  --scrim-light:    rgba(0, 0, 0, 0.20);
+  --scrim-medium:   rgba(0, 0, 0, 0.40);
+  --scrim-heavy:    rgba(0, 0, 0, 0.55);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     C) BRAND — Intégral Pharma
+     On garde l'ADN bleu IP mais on l'aligne sur l'usage iOS:
+     --accent pointe sur la marque (pas sur system-blue) pour préserver
+     l'identité. Les états système restent en system-*.
+     ───────────────────────────────────────────────────────────────────────── */
+  --brand-primary:        #0057FF;   /* bleu IP */
+  --brand-primary-hover:  #0049D6;
+  --brand-primary-press:  #003BB0;
+  --brand-primary-tint:   rgba(0, 87, 255, 0.10);   /* fills doux */
+  --brand-primary-soft:   rgba(0, 87, 255, 0.06);
+
+  --brand-accent:         #5856D6;   /* indigo iOS pour actions secondaires */
+  --brand-accent-tint:    rgba(88, 86, 214, 0.10);
+
+  --brand-navy:           #0B1F4D;   /* navy IP (titres, header) */
+
+  /* Couleurs métier "famille produit" — palette IP préservée intacte */
+  --family-froid:    #00B5D8;
+  --family-chaud:    #FF6B35;
+  --family-veterinaire: #34C759;
+  --family-stupefiant:  #AF52DE;
+
+  /* Accent sémantique global de l'app (utilisé par les composants) */
+  --accent:         var(--brand-primary);
+  --accent-hover:   var(--brand-primary-hover);
+  --accent-tint:    var(--brand-primary-tint);
+
+  /* États sémantiques — adossés aux system colors iOS */
+  --success:        var(--system-green);
+  --warning:        var(--system-orange);
+  --danger:         var(--system-red);
+  --info:           var(--system-teal);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     D) TYPOGRAPHY — iOS scale + font stack
+     SF Pro natif sur iOS/Mac, DM Sans en fallback web (existant), system-ui
+     pour Android/Windows. Tabular nums pour les chiffres CRM (CA, stock).
+     ───────────────────────────────────────────────────────────────────────── */
+  --font-system:
+    -apple-system, BlinkMacSystemFont,
+    "SF Pro Display", "SF Pro Text",
+    "DM Sans", system-ui, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  --font-numeric:
+    "SF Pro Display", "SF Pro Text",
+    "DM Sans", system-ui, sans-serif;
+
+  --font-mono:
+    ui-monospace, "SF Mono", Menlo, Monaco,
+    "Cascadia Mono", "Roboto Mono", monospace;
+
+  /* Large Title — 34/41 · 700 · +0.37 */
+  --text-largeTitle-size:     34px;
+  --text-largeTitle-lh:       41px;
+  --text-largeTitle-weight:   700;
+  --text-largeTitle-tracking: 0.37px;
+
+  /* Title 1 — 28/34 · 700 · +0.36 */
+  --text-title1-size:     28px;
+  --text-title1-lh:       34px;
+  --text-title1-weight:   700;
+  --text-title1-tracking: 0.36px;
+
+  /* Title 2 — 22/28 · 700 · +0.35 */
+  --text-title2-size:     22px;
+  --text-title2-lh:       28px;
+  --text-title2-weight:   700;
+  --text-title2-tracking: 0.35px;
+
+  /* Title 3 — 20/25 · 600 · +0.38 */
+  --text-title3-size:     20px;
+  --text-title3-lh:       25px;
+  --text-title3-weight:   600;
+  --text-title3-tracking: 0.38px;
+
+  /* Headline — 17/22 · 600 · −0.41 */
+  --text-headline-size:     17px;
+  --text-headline-lh:       22px;
+  --text-headline-weight:   600;
+  --text-headline-tracking: -0.41px;
+
+  /* Body — 17/22 · 400 · −0.41 */
+  --text-body-size:     17px;
+  --text-body-lh:       22px;
+  --text-body-weight:   400;
+  --text-body-tracking: -0.41px;
+
+  /* Callout — 16/21 · 400 · −0.32 */
+  --text-callout-size:     16px;
+  --text-callout-lh:       21px;
+  --text-callout-weight:   400;
+  --text-callout-tracking: -0.32px;
+
+  /* Subhead — 15/20 · 400 · −0.24 */
+  --text-subhead-size:     15px;
+  --text-subhead-lh:       20px;
+  --text-subhead-weight:   400;
+  --text-subhead-tracking: -0.24px;
+
+  /* Footnote — 13/18 · 400 · −0.08 */
+  --text-footnote-size:     13px;
+  --text-footnote-lh:       18px;
+  --text-footnote-weight:   400;
+  --text-footnote-tracking: -0.08px;
+
+  /* Caption 1 — 12/16 · 400 · 0 */
+  --text-caption1-size:     12px;
+  --text-caption1-lh:       16px;
+  --text-caption1-weight:   400;
+  --text-caption1-tracking: 0px;
+
+  /* Caption 2 — 11/13 · 400 · +0.07 */
+  --text-caption2-size:     11px;
+  --text-caption2-lh:       13px;
+  --text-caption2-weight:   400;
+  --text-caption2-tracking: 0.07px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     E) SPACING — 8pt grid (avec 4px micro-step)
+     ───────────────────────────────────────────────────────────────────────── */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  48px;
+  --space-10: 64px;
+
+  /* Insets natifs iOS (safe areas + paddings standards) */
+  --inset-screen:   16px;   /* gutter horizontal écran (compact) */
+  --inset-screen-lg: 20px;  /* iPad / desktop large */
+  --inset-card:     16px;
+  --inset-list-row: 16px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     F) RADIUS — iOS continuous-corner inspired
+     ───────────────────────────────────────────────────────────────────────── */
+  --radius-1:    4px;    /* chips/tags small */
+  --radius-2:    8px;    /* boutons compacts */
+  --radius-3:    10px;   /* inputs */
+  --radius-4:    12px;   /* cards mobile */
+  --radius-5:    14px;   /* cards desktop (existant) */
+  --radius-6:    16px;   /* sheets / modals */
+  --radius-7:    20px;   /* large cards iPad */
+  --radius-8:    24px;   /* hero cards */
+  --radius-9:    28px;   /* fullscreen overlay */
+  --radius-pill: 999px;  /* pills / chips arrondies */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     G) SHADOWS — multi-layer iOS (très subtiles, jamais "drop bombée")
+     Première couche = hairline ring (0.5px) ; deuxième = soft shadow.
+     ───────────────────────────────────────────────────────────────────────── */
+  --shadow-1:
+    0 0 0 0.5px rgba(0, 0, 0, 0.04),
+    0 1px 2px   rgba(0, 0, 0, 0.06);
+
+  --shadow-2:
+    0 0 0 0.5px rgba(0, 0, 0, 0.05),
+    0 2px 6px   rgba(0, 0, 0, 0.08);
+
+  --shadow-3:
+    0 0 0 0.5px rgba(0, 0, 0, 0.05),
+    0 4px 12px  rgba(0, 0, 0, 0.10),
+    0 8px 28px  rgba(0, 0, 0, 0.08);
+
+  --shadow-4:
+    0 0 0 0.5px rgba(0, 0, 0, 0.06),
+    0 8px 24px  rgba(0, 0, 0, 0.12),
+    0 16px 56px rgba(0, 0, 0, 0.16);
+
+  --shadow-floating:
+    0 12px 32px rgba(0, 0, 0, 0.14),
+    0 4px 12px  rgba(0, 0, 0, 0.08);
+
+  /* Focus ring iOS (a11y) */
+  --ring-focus:
+    0 0 0 4px rgba(0, 122, 255, 0.25);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     H) MOTION — courbes Apple
+     ───────────────────────────────────────────────────────────────────────── */
+  --ease-ios-default: cubic-bezier(.25, .46, .45, .94);  /* smooth Apple */
+  --ease-ios-spring:  cubic-bezier(.34, 1.56, .64, 1);   /* overshoot doux */
+  --ease-ios-snappy:  cubic-bezier(.4, 0, .2, 1);        /* material/Apple */
+  --ease-ios-in:      cubic-bezier(.4, 0, 1, 1);
+  --ease-ios-out:     cubic-bezier(0, 0, .2, 1);
+
+  --duration-instant: 80ms;
+  --duration-fast:    150ms;
+  --duration-base:    250ms;
+  --duration-slow:    400ms;
+  --duration-modal:   500ms;   /* sheet up/down */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     I) Z-INDEX
+     ───────────────────────────────────────────────────────────────────────── */
+  --z-base:           1;
+  --z-sticky:         10;
+  --z-tab-bar:        100;
+  --z-modal-backdrop: 1000;
+  --z-modal:          1001;
+  --z-toast:          2000;
+  --z-tooltip:        3000;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     J) Misc — touch targets, safe areas
+     ───────────────────────────────────────────────────────────────────────── */
+  --hit-target:     44px;   /* HIG minimum tap target */
+  --tab-bar-height: 49px;
+  --nav-bar-height: 44px;
+
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+}
+
+/* ============================================================================
+   K) DARK MODE PREP — inverse les surfaces uniquement.
+   Garde la marque IP. Permet aux composants existants de continuer à utiliser
+   --label, --bg-base, etc. sans rien casser.
+   ============================================================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Surfaces sombres iOS */
+    --bg-base:     #000000;             /* systemBackground dark */
+    --bg-grouped:  #1C1C1E;             /* systemGroupedBackground dark */
+    --bg-elevated: #1C1C1E;             /* card sur fond noir */
+
+    /* Labels inversés */
+    --label:             #FFFFFF;
+    --label-secondary:   rgba(235, 235, 245, 0.60);
+    --label-tertiary:    rgba(235, 235, 245, 0.30);
+    --label-quaternary:  rgba(235, 235, 245, 0.18);
+
+    /* Separators dark */
+    --separator:        rgba(84, 84, 88, 0.65);
+    --separator-opaque: #38383A;
+
+    /* Fills dark */
+    --fill-primary:    rgba(120, 120, 128, 0.36);
+    --fill-secondary:  rgba(120, 120, 128, 0.32);
+    --fill-tertiary:   rgba(118, 118, 128, 0.24);
+    --fill-quaternary: rgba(118, 118, 128, 0.18);
+
+    /* Shadows un peu plus marquées en dark pour rester lisibles */
+    --shadow-1:
+      0 0 0 0.5px rgba(255, 255, 255, 0.06),
+      0 1px 2px   rgba(0, 0, 0, 0.4);
+    --shadow-2:
+      0 0 0 0.5px rgba(255, 255, 255, 0.06),
+      0 2px 6px   rgba(0, 0, 0, 0.5);
+    --shadow-3:
+      0 0 0 0.5px rgba(255, 255, 255, 0.07),
+      0 4px 12px  rgba(0, 0, 0, 0.55),
+      0 8px 28px  rgba(0, 0, 0, 0.45);
+    --shadow-4:
+      0 0 0 0.5px rgba(255, 255, 255, 0.08),
+      0 8px 24px  rgba(0, 0, 0, 0.6),
+      0 16px 56px rgba(0, 0, 0, 0.5);
+
+    /* Brand reste IDENTIQUE — la marque ne se dilue pas en dark */
+    /* --brand-primary, --brand-accent, families: inchangés */
+  }
+}
+
+/* ============================================================================
+   BASE RESETS — iOS native feel
+   Ces resets sont scopés au minimum pour ne pas écraser les layouts existants.
+   ============================================================================ */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-system);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-lh);
+  font-weight: var(--text-body-weight);
+  letter-spacing: var(--text-body-tracking);
+
+  background: var(--bg-grouped);
+  color: var(--label);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+}
+
+/* Tabular numbers globaux pour tout ce qui ressemble à du chiffre CRM */
+.num,
+.tabular,
+[data-numeric],
+.monetary,
+.metric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  font-family: var(--font-numeric);
+}
+
+/* Scrollbars iOS-style — fines, qui disparaissent */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(60, 60, 67, 0.29) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(60, 60, 67, 0.29);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(60, 60, 67, 0.5);
+}
+
+/* Container qui veut cacher complètement les scrollbars (carousels iOS) */
+.scroll-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+/* Sélection texte teintée marque */
+::selection {
+  background: var(--brand-primary-tint);
+  color: var(--label);
+}
+
+/* Focus visible — accessibilité, ring iOS */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-radius: var(--radius-2);
+}
+
+/* ============================================================================
+   TYPOGRAPHY UTILITIES — classes .t-* mappées sur la scale iOS
+   Optionnelles ; les composants peuvent aussi consommer les vars directement.
+   ============================================================================ */
+.t-largeTitle {
+  font-size: var(--text-largeTitle-size);
+  line-height: var(--text-largeTitle-lh);
+  font-weight: var(--text-largeTitle-weight);
+  letter-spacing: var(--text-largeTitle-tracking);
+}
+.t-title1 {
+  font-size: var(--text-title1-size);
+  line-height: var(--text-title1-lh);
+  font-weight: var(--text-title1-weight);
+  letter-spacing: var(--text-title1-tracking);
+}
+.t-title2 {
+  font-size: var(--text-title2-size);
+  line-height: var(--text-title2-lh);
+  font-weight: var(--text-title2-weight);
+  letter-spacing: var(--text-title2-tracking);
+}
+.t-title3 {
+  font-size: var(--text-title3-size);
+  line-height: var(--text-title3-lh);
+  font-weight: var(--text-title3-weight);
+  letter-spacing: var(--text-title3-tracking);
+}
+.t-headline {
+  font-size: var(--text-headline-size);
+  line-height: var(--text-headline-lh);
+  font-weight: var(--text-headline-weight);
+  letter-spacing: var(--text-headline-tracking);
+}
+.t-body {
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-lh);
+  font-weight: var(--text-body-weight);
+  letter-spacing: var(--text-body-tracking);
+}
+.t-callout {
+  font-size: var(--text-callout-size);
+  line-height: var(--text-callout-lh);
+  font-weight: var(--text-callout-weight);
+  letter-spacing: var(--text-callout-tracking);
+}
+.t-subhead {
+  font-size: var(--text-subhead-size);
+  line-height: var(--text-subhead-lh);
+  font-weight: var(--text-subhead-weight);
+  letter-spacing: var(--text-subhead-tracking);
+}
+.t-footnote {
+  font-size: var(--text-footnote-size);
+  line-height: var(--text-footnote-lh);
+  font-weight: var(--text-footnote-weight);
+  letter-spacing: var(--text-footnote-tracking);
+  color: var(--label-secondary);
+}
+.t-caption1 {
+  font-size: var(--text-caption1-size);
+  line-height: var(--text-caption1-lh);
+  font-weight: var(--text-caption1-weight);
+  letter-spacing: var(--text-caption1-tracking);
+  color: var(--label-secondary);
+}
+.t-caption2 {
+  font-size: var(--text-caption2-size);
+  line-height: var(--text-caption2-lh);
+  font-weight: var(--text-caption2-weight);
+  letter-spacing: var(--text-caption2-tracking);
+  color: var(--label-tertiary);
+  text-transform: uppercase;
+}
+
+/* Helpers couleur label */
+.label-secondary  { color: var(--label-secondary); }
+.label-tertiary   { color: var(--label-tertiary); }
+.label-quaternary { color: var(--label-quaternary); }
+
+/* Réduction de motion — respect du système */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
