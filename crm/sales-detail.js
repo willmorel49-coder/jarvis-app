@@ -156,6 +156,93 @@ window.SALES_BY_FAMILLE = {
   }
 };
 
+window.SALES_BY_TRANCHE = {
+  "petit": {
+    "ca": 86355.69,
+    "qte": 73848,
+    "lignes": 5012
+  },
+  "inter": {
+    "ca": 708252.24,
+    "qte": 18699,
+    "lignes": 6773
+  },
+  "haut": {
+    "ca": 424047.49,
+    "qte": 199,
+    "lignes": 187
+  }
+};
+
+window.SALES_BY_TRANCHE_FAMILLE = {
+  "petit": {
+    "Princeps": {
+      "ca": 85287.05,
+      "qte": 71073
+    },
+    "Non remboursés": {
+      "ca": 365.99,
+      "qte": 589
+    },
+    "Génériques": {
+      "ca": 1996.37,
+      "qte": 1243
+    },
+    "Gén. partenaires": {
+      "ca": 1489.1,
+      "qte": 926
+    },
+    "Froid": {
+      "ca": -2429.18,
+      "qte": 18
+    },
+    "Biosimilaires": {
+      "ca": -353.64,
+      "qte": -1
+    }
+  },
+  "inter": {
+    "Princeps": {
+      "ca": 132390.66,
+      "qte": 7155
+    },
+    "Non remboursés": {
+      "ca": 64060.45,
+      "qte": 6533
+    },
+    "Froid": {
+      "ca": 477903.57,
+      "qte": 4297
+    },
+    "Génériques": {
+      "ca": 6559.0,
+      "qte": 261
+    },
+    "Gén. partenaires": {
+      "ca": 2529.08,
+      "qte": 244
+    },
+    "Biosimilaires": {
+      "ca": 24809.48,
+      "qte": 209
+    }
+  },
+  "haut": {
+    "Princeps": {
+      "ca": 337717.77,
+      "qte": 118
+    },
+    "Froid": {
+      "ca": 80876.67,
+      "qte": 76
+    },
+    "Biosimilaires": {
+      "ca": 5453.05,
+      "qte": 5
+    }
+  }
+};
+
 window.SALES_BY_PRODUCT = {
   "3011764": {
     "designation": "XTANDI 40MG CPR BT112",
