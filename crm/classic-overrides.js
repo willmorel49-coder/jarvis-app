@@ -34,6 +34,41 @@
     return `background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px rgba(11,31,77,.04);${extra}`;
   }
 
+  // Logique famille produit (partagée entre client & secteur OPS)
+  function familleFromAttrs(nature, afmcode, sousfamille) {
+    const n = (nature || '').trim();
+    const a = (afmcode || '').trim().toUpperCase();
+    const sf = (sousfamille || '').toLowerCase();
+    if (n === 'Biosimilaire') return 'Biosimilaires';
+    if (sf.includes('froid')) return 'Froid';
+    if (a && a !== 'REMBSS' && a !== '#N/A' && a !== '') return 'Non remboursés';
+    if (n === 'Generique Partenaire') return 'Gén. partenaires';
+    if (n === 'Generique') return 'Génériques';
+    return 'Princeps';
+  }
+  function trancheFromPrix(prix) {
+    if (prix <= 4.33) return 'petit';
+    if (prix <= 468) return 'inter';
+    return 'haut';
+  }
+
+  // Agrégat OPS Nantes par famille (mémoïsé)
+  let __OPS_BY_FAMILLE = null;
+  function getOpsMixByFamille() {
+    if (__OPS_BY_FAMILLE) return __OPS_BY_FAMILLE;
+    const agg = window.OPS_AGGREGATE || {};
+    const fams = { 'Froid': 0, 'Biosimilaires': 0, 'Génériques': 0, 'Gén. partenaires': 0, 'Non remboursés': 0, 'Princeps': 0 };
+    let total = 0;
+    for (const code in agg) {
+      const p = agg[code];
+      const fam = familleFromAttrs(p.nature, p.afmcode, p.sousfamille);
+      fams[fam] = (fams[fam] || 0) + (p.ca || 0);
+      total += p.ca || 0;
+    }
+    __OPS_BY_FAMILLE = { fams, total };
+    return __OPS_BY_FAMILLE;
+  }
+
   // ───────── PHARMACIES ───────────────────────────────────────────────────
   const phState = { search: '', filter: 'all' };
   function renderPharmaciesV2() {
@@ -161,33 +196,41 @@
       ventCells[t.key] = {};
       for (const f of FAMILLES) ventCells[t.key][f] = { ca: 0, qte: 0 };
     }
-    function trancheKey(prix) {
-      if (prix <= 4.33) return 'petit';
-      if (prix <= 468) return 'inter';
-      return 'haut';
-    }
-    function familleProduit(prod, stockMatch) {
-      const nature = ((stockMatch && stockMatch.nature) || '').trim();
-      const afmcode = ((stockMatch && stockMatch.marque) || '').trim().toUpperCase();
-      const sf = ((stockMatch && stockMatch.sousfamille) || '').toLowerCase();
-      if (nature === 'Biosimilaire') return 'Biosimilaires';
-      if (sf.includes('froid')) return 'Froid';
-      if (afmcode && afmcode !== 'REMBSS' && afmcode !== '#N/A' && afmcode !== '') return 'Non remboursés';
-      if (nature === 'Generique Partenaire') return 'Gén. partenaires';
-      if (nature === 'Generique') return 'Génériques';
-      return 'Princeps';
-    }
+    const clientFamCa = { 'Froid': 0, 'Biosimilaires': 0, 'Génériques': 0, 'Gén. partenaires': 0, 'Non remboursés': 0, 'Princeps': 0 };
+    let clientFamTotal = 0;
+    const clientArtCodes = new Set();
     if (topProducts) {
       for (const prod of topProducts) {
         if (!prod.qte || prod.qte <= 0) continue;
+        clientArtCodes.add(prod.artcode);
         const prixUnit = prod.ca / prod.qte;
-        const trKey = trancheKey(prixUnit);
+        const trKey = trancheFromPrix(prixUnit);
         const stockMatch = stockIdx[prod.artcode];
-        const fam = familleProduit(prod, stockMatch);
+        const nature = (stockMatch && stockMatch.nature) || '';
+        const afmcode = (stockMatch && stockMatch.marque) || '';
+        const sf = (stockMatch && stockMatch.sousfamille) || '';
+        const fam = familleFromAttrs(nature, afmcode, sf);
         ventCells[trKey][fam].ca += prod.ca;
         ventCells[trKey][fam].qte += prod.qte;
+        clientFamCa[fam] += prod.ca;
+        clientFamTotal += prod.ca;
       }
     }
+
+    // Comparatif vs secteur OPS Nantes
+    const opsMix = getOpsMixByFamille();
+    const opsAgg = window.OPS_AGGREGATE || {};
+
+    // Top opportunités : top produits OPS Nantes que ce client n'achète pas (ou peu)
+    const opportunites = [];
+    for (const code in opsAgg) {
+      if (clientArtCodes.has(code)) continue;
+      const op = opsAgg[code];
+      if (!op.ca || op.ca <= 0) continue;
+      opportunites.push({ code, ...op });
+    }
+    opportunites.sort((a, b) => b.ca - a.ca);
+    const topOpp = opportunites.slice(0, 12);
 
     // Logiciel d'officine
     const logiciel = p.logiciel || '';
@@ -261,6 +304,12 @@
 
         <!-- Ventilation tranche × famille pour cette pharma -->
         ${topProducts ? buildVentilationHtml(ventCells, TRANCHES, FAMILLES) : ''}
+
+        <!-- Mix produit · ce client vs secteur OPS Nantes -->
+        ${clientFamTotal > 0 && opsMix.total > 0 ? buildMixVsOpsHtml(clientFamCa, clientFamTotal, opsMix.fams, opsMix.total, FAMILLES) : ''}
+
+        <!-- Top opportunités OPS Nantes -->
+        ${topOpp.length ? buildOpportunitesHtml(topOpp, opsMix.total) : ''}
 
         <!-- 2 colonnes : Top produits + Dernières factures -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;margin-top:14px">
@@ -379,6 +428,103 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    `;
+  }
+
+  // Mix famille : ce client vs secteur OPS Nantes — barres jumelées + écart
+  function buildMixVsOpsHtml(clientFams, clientTotal, opsFams, opsTotal, familles) {
+    const FAMILLE_COLORS = {
+      'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
+      'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
+    };
+    const rows = familles.map(f => {
+      const cPct = clientTotal > 0 ? (clientFams[f] || 0) / clientTotal * 100 : 0;
+      const oPct = opsTotal > 0 ? (opsFams[f] || 0) / opsTotal * 100 : 0;
+      const delta = cPct - oPct;
+      const sign = delta > 0 ? '+' : '';
+      const deltaColor = delta > 2 ? '#14B86A' : delta < -2 ? '#FF4D6D' : '#94A3B8';
+      const deltaLabel = delta > 2 ? 'sur-indexé' : delta < -2 ? 'sous-indexé · opportunité' : 'aligné';
+      const c = FAMILLE_COLORS[f] || '#0057FF';
+      const maxPct = Math.max(cPct, oPct, 10);
+      const cW = (cPct / maxPct) * 100;
+      const oW = (oPct / maxPct) * 100;
+      return `
+        <div style="padding:12px 16px;border-bottom:1px solid #F2F6FF">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+            <div style="font-size:13px;font-weight:700;color:#0B1F4D;display:flex;align-items:center;gap:8px">
+              <span style="width:10px;height:10px;border-radius:50%;background:${c}"></span>${escapeHtml(f)}
+            </div>
+            <div style="font-size:11px;font-weight:700;color:${deltaColor};letter-spacing:.5px;text-transform:uppercase">${sign}${delta.toFixed(1)} pts · ${deltaLabel}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr 60px;gap:10px;align-items:center;margin-bottom:5px">
+            <span style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Client</span>
+            <div style="height:14px;background:#F2F6FF;border-radius:4px;overflow:hidden"><div style="height:100%;width:${cW}%;background:${c};border-radius:4px;transition:width .4s"></div></div>
+            <span style="font-size:12px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;text-align:right">${cPct.toFixed(1)}%</span>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr 60px;gap:10px;align-items:center">
+            <span style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">OPS</span>
+            <div style="height:10px;background:#F2F6FF;border-radius:4px;overflow:hidden"><div style="height:100%;width:${oW}%;background:repeating-linear-gradient(90deg,${c}88 0,${c}88 6px,${c}55 6px,${c}55 12px);border-radius:4px;transition:width .4s"></div></div>
+            <span style="font-size:11px;font-weight:600;color:#64748B;font-variant-numeric:tabular-nums;text-align:right">${oPct.toFixed(1)}%</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:18px 0 10px">Mix produit · ce client vs secteur OPS Nantes</h3>
+      <div style="${styleCard('padding:0')}">
+        <div style="padding:10px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF;display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">
+          <span>Famille IP</span><span>Comparatif % CA</span>
+        </div>
+        ${rows}
+        <div style="padding:10px 16px;background:#FAFBFF;font-size:11px;color:#64748B;border-top:1px solid #E8EEFF;display:flex;gap:14px;flex-wrap:wrap">
+          <span><b style="color:#0B1F4D">Sous-indexé</b> = potentiel non capté · piste de visite</span>
+          <span><b style="color:#0B1F4D">Sur-indexé</b> = pharmacie déjà fidèle sur cette famille</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Top opportunités : produits TOP OPS Nantes absents de ce client
+  function buildOpportunitesHtml(opps, opsTotal) {
+    const stockIdx = window.STOCK || {};
+    const rows = opps.map((o, i) => {
+      const fam = familleFromAttrs(o.nature, o.afmcode, o.sousfamille);
+      const FAMILLE_COLORS = {
+        'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
+        'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
+      };
+      const c = FAMILLE_COLORS[fam] || '#0057FF';
+      const pctOps = opsTotal > 0 ? (o.ca / opsTotal * 100) : 0;
+      return `
+        <div style="padding:10px 16px;display:grid;grid-template-columns:28px 1fr 130px 110px 90px;gap:10px;align-items:center;font-size:12.5px;border-bottom:1px solid #F2F6FF">
+          <span style="color:#94A3B8;font-weight:800;font-size:13px">${i + 1}</span>
+          <div style="min-width:0">
+            <div style="font-weight:700;color:#0B1F4D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(o.designation || o.code)}</div>
+            <div style="font-size:10.5px;color:#94A3B8;margin-top:2px">${escapeHtml(o.marque || '—')}</div>
+          </div>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#0B1F4D;font-weight:600;background:${c}15;padding:4px 10px;border-radius:999px;width:fit-content"><span style="width:7px;height:7px;border-radius:50%;background:${c}"></span>${escapeHtml(fam)}</span>
+          <div style="text-align:right">
+            <b style="color:#0B1F4D;font-variant-numeric:tabular-nums">${fmtEuro(o.ca)}</b>
+            <div style="font-size:10px;color:#94A3B8">${pctOps.toFixed(2)}% OPS</div>
+          </div>
+          <div style="text-align:right">
+            <span style="color:#FF4D6D;font-weight:800;font-size:11px;letter-spacing:.5px;text-transform:uppercase">Absent</span>
+            <div style="font-size:10px;color:#94A3B8">${fmtNum(o.qte || 0)} u secteur</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:18px 0 10px">Top opportunités · produits OPS Nantes absents de ce client</h3>
+      <div style="${styleCard('padding:0')}">
+        <div style="padding:10px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF;display:grid;grid-template-columns:28px 1fr 130px 110px 90px;gap:10px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">
+          <span>#</span><span>Produit</span><span>Famille IP</span><span style="text-align:right">CA OPS</span><span style="text-align:right">Statut</span>
+        </div>
+        ${rows}
+        <div style="padding:10px 16px;background:#FAFBFF;font-size:11px;color:#64748B;border-top:1px solid #E8EEFF">
+          Ces produits tournent fort à l'OPS Nantes mais ne sont pas commandés ici → leviers prioritaires en visite.
         </div>
       </div>
     `;
