@@ -91,24 +91,29 @@
       const tbl = document.getElementById('ph-table');
       if (!tbl) return;
       tbl.innerHTML = `
-        <div style="padding:10px 16px;font-size:11px;color:#64748B;background:#F2F6FF;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:grid;grid-template-columns:1.6fr 0.8fr 0.6fr 0.9fr 0.7fr 0.7fr;gap:12px;align-items:center;border-bottom:1px solid #E8EEFF">
-          <span>Officine</span><span>Ville</span><span>CIP</span><span>Statut</span><span style="text-align:right">CA</span><span style="text-align:right">Potentiel</span>
+        <div style="padding:10px 16px;font-size:11px;color:#64748B;background:#F2F6FF;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:grid;grid-template-columns:1.6fr 0.8fr 0.6fr 0.9fr 0.7fr 0.7fr 30px;gap:12px;align-items:center;border-bottom:1px solid #E8EEFF">
+          <span>Officine</span><span>Ville</span><span>CIP</span><span>Statut</span><span style="text-align:right">CA</span><span style="text-align:right">Potentiel</span><span></span>
         </div>
         ${top200.map(p => {
           const s = computeStatusClient(p);
           return `
-            <div style="padding:9px 16px;display:grid;grid-template-columns:1.6fr 0.8fr 0.6fr 0.9fr 0.7fr 0.7fr;gap:12px;align-items:center;font-size:13px;border-bottom:1px solid #F2F6FF">
+            <div data-ph-cip="${escapeHtml(p.cip)}" style="padding:9px 16px;display:grid;grid-template-columns:1.6fr 0.8fr 0.6fr 0.9fr 0.7fr 0.7fr 30px;gap:12px;align-items:center;font-size:13px;border-bottom:1px solid #F2F6FF;cursor:pointer;transition:background .1s" onmouseover="this.style.background='#F8FAFF'" onmouseout="this.style.background=''">
               <span style="font-weight:600;color:#0B1F4D">${escapeHtml(p.nom)}</span>
               <span style="color:#64748B">${escapeHtml(p.ville || '—')}</span>
               <span style="font-family:monospace;font-size:11px;color:#94A3B8">${escapeHtml(p.cip || '—')}</span>
               <span><span style="background:${s.color}22;color:${s.color};padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700">${s.label}</span></span>
               <span style="text-align:right;font-variant-numeric:tabular-nums;font-weight:${(p.ca2023||0)>0?'800':'400'};color:${(p.ca2023||0)>0?'#14B86A':'#94A3B8'}">${(p.ca2023||0)>0?fmtEuro(p.ca2023):'—'}</span>
               <span style="text-align:right;font-variant-numeric:tabular-nums;color:#64748B">${(p.potentielGx||0)>0?fmtEuro(p.potentielGx):'—'}</span>
+              <span style="text-align:right;color:#0057FF;font-size:14px">→</span>
             </div>
           `;
         }).join('')}
         ${list.length > 200 ? `<div style="padding:14px;text-align:center;color:#94A3B8;font-size:12px">+ ${fmtNum(list.length - 200)} autres officines (affine la recherche)</div>` : ''}
       `;
+      // Click handlers on rows
+      tbl.querySelectorAll('[data-ph-cip]').forEach(row => {
+        row.addEventListener('click', () => renderPharmaDetail(row.dataset.phCip));
+      });
     };
     renderTable();
 
@@ -118,6 +123,270 @@
     document.querySelectorAll('[data-ph-filter]').forEach(btn => {
       btn.addEventListener('click', () => { phState.filter = btn.dataset.phFilter; renderPharmaciesV2(); });
     });
+  }
+
+  // ───────── DÉTAIL PHARMACIE (analyse complète) ──────────────────────────
+  function renderPharmaDetail(cip) {
+    const root = document.getElementById('pharma-content');
+    if (!root) return;
+    const all = window.CLIENTS || [];
+    const p = all.find(x => x.cip === cip);
+    if (!p) { root.innerHTML = `<div style="padding:40px;text-align:center;color:#94A3B8">Pharmacie introuvable</div>`; return; }
+
+    const status = computeStatusClient(p);
+    const monthly = window.SALES_BY_CLIENT_MONTH && window.SALES_BY_CLIENT_MONTH[cip];
+    const detail = window.SALES_BY_CLIENT_DETAIL && window.SALES_BY_CLIENT_DETAIL[cip];
+    const topProducts = window.CLIENT_PRODUCTS && window.CLIENT_PRODUCTS[cip];
+    const totalCa = (window.CLIENT_PRODUCTS_TOTAL_CA && window.CLIENT_PRODUCTS_TOTAL_CA[cip]) || (topProducts ? topProducts.reduce((s, pp) => s + (pp.ca || 0), 0) : 0);
+
+    // % du secteur
+    const sectorCa = (window.SALES_TOTAL && window.SALES_TOTAL.ca) || 0;
+    const pctSecteur = sectorCa > 0 ? (totalCa / sectorCa * 100) : 0;
+
+    // Timeline
+    const months = monthly ? Object.keys(monthly).sort() : [];
+    const monthVals = months.map(m => monthly[m].ca);
+    const monthMax = Math.max(...monthVals, 1);
+
+    // Famille produit ventilation pour ce client
+    const stockIdx = window.STOCK || {};
+    const ventCells = {};
+    const TRANCHES = [
+      { key: 'petit', max: 4.33, label: 'Petit prix', sub: '0 – 4,33 €', remise: '0,18 € fixe' },
+      { key: 'inter', max: 468, label: 'Intermédiaire', sub: '4,33 – 468 €', remise: '3,9 %' },
+      { key: 'haut', max: Infinity, label: 'Haut prix', sub: '> 468 €', remise: '19,50 € fixe' },
+    ];
+    const FAMILLES = ['Froid', 'Biosimilaires', 'Génériques', 'Gén. partenaires', 'Non remboursés', 'Princeps'];
+    for (const t of TRANCHES) {
+      ventCells[t.key] = {};
+      for (const f of FAMILLES) ventCells[t.key][f] = { ca: 0, qte: 0 };
+    }
+    function trancheKey(prix) {
+      if (prix <= 4.33) return 'petit';
+      if (prix <= 468) return 'inter';
+      return 'haut';
+    }
+    function familleProduit(prod, stockMatch) {
+      const nature = ((stockMatch && stockMatch.nature) || '').trim();
+      const afmcode = ((stockMatch && stockMatch.marque) || '').trim().toUpperCase();
+      const sf = ((stockMatch && stockMatch.sousfamille) || '').toLowerCase();
+      if (nature === 'Biosimilaire') return 'Biosimilaires';
+      if (sf.includes('froid')) return 'Froid';
+      if (afmcode && afmcode !== 'REMBSS' && afmcode !== '#N/A' && afmcode !== '') return 'Non remboursés';
+      if (nature === 'Generique Partenaire') return 'Gén. partenaires';
+      if (nature === 'Generique') return 'Génériques';
+      return 'Princeps';
+    }
+    if (topProducts) {
+      for (const prod of topProducts) {
+        if (!prod.qte || prod.qte <= 0) continue;
+        const prixUnit = prod.ca / prod.qte;
+        const trKey = trancheKey(prixUnit);
+        const stockMatch = stockIdx[prod.artcode];
+        const fam = familleProduit(prod, stockMatch);
+        ventCells[trKey][fam].ca += prod.ca;
+        ventCells[trKey][fam].qte += prod.qte;
+      }
+    }
+
+    // Logiciel d'officine
+    const logiciel = p.logiciel || '';
+    const enseigne = p.enseigne || '';
+    const structure = p.structure || '';
+    const contact = p.contact || '';
+    const uga = p.uga || '';
+
+    root.innerHTML = `
+      <div style="padding:20px;max-width:1280px;margin:0 auto;font-family:'DM Sans',sans-serif">
+        <!-- HEADER avec bouton retour -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <div style="flex:1;min-width:0">
+            <button id="ph-back" style="background:none;border:none;color:#0057FF;font-size:12px;cursor:pointer;font-weight:700;font-family:inherit;padding:0 0 4px;letter-spacing:.5px">← Retour aux pharmacies</button>
+            <h2 style="font-size:26px;font-weight:800;margin:4px 0 4px;letter-spacing:-.5px;color:#0B1F4D">${escapeHtml(p.nom)}</h2>
+            <div style="font-size:13px;color:#64748B">${escapeHtml(p.adresse || '—')} · ${escapeHtml(p.cp || '')} ${escapeHtml(p.ville || '')}</div>
+          </div>
+          <span style="background:${status.color}22;color:${status.color};padding:6px 14px;border-radius:999px;font-size:13px;font-weight:700">${status.label}</span>
+        </div>
+
+        <!-- 4 KPI hero -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px">
+          <div style="${styleCard()};background:linear-gradient(135deg,#0057FF,#5856D6);color:#fff;border:none">
+            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:800">CA cumulé</div>
+            <div style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(totalCa)}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.7)">${pctSecteur.toFixed(2)}% du secteur</div>
+          </div>
+          ${miniKpi('Potentiel Gx', (p.potentielGx||0) > 0 ? fmtEuro(p.potentielGx) : '—', '#FF9F1C', 'Cible commerciale')}
+          ${miniKpi('Réfs achetées', topProducts ? topProducts.length : 0, '#14B86A', 'Top produits')}
+          ${miniKpi('Factures', detail ? detail.length : 0, '#5856D6', 'Lignes récentes')}
+        </div>
+
+        <!-- Métadonnées + Timeline mensuelle -->
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:14px;margin-bottom:18px">
+
+          <div style="${styleCard()}">
+            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin-bottom:10px">Identité</div>
+            ${row('CIP', p.cip)}
+            ${p.email ? row('Email', `<a href="mailto:${escapeHtml(p.email)}" style="color:#0057FF;text-decoration:none">${escapeHtml(p.email)}</a>`) : ''}
+            ${p.tel ? row('Tél', `<a href="tel:${escapeHtml(p.tel)}" style="color:#0057FF;text-decoration:none">${escapeHtml(p.tel)}</a>`) : ''}
+            ${contact ? row('Contact', contact) : ''}
+            ${enseigne ? row('Enseigne', enseigne) : ''}
+            ${logiciel ? row('Logiciel', logiciel) : ''}
+            ${structure ? row('Structure', structure) : ''}
+            ${uga ? row('UGA', uga) : ''}
+            ${p.ecodage ? row('Groupement', p.ecodage) : ''}
+          </div>
+
+          ${months.length ? `
+          <div style="${styleCard()}">
+            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin-bottom:14px">Évolution mensuelle CA</div>
+            <div style="display:grid;grid-template-columns:repeat(${months.length},1fr);gap:6px;align-items:end;height:120px">
+              ${months.map(m => {
+                const pct = Math.round((monthly[m].ca / monthMax) * 100);
+                const noms = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+                const label = noms[parseInt(m.split('-')[1], 10) - 1] + ' ' + m.slice(2,4);
+                return `
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:4px" title="${m} · ${fmtEuro(monthly[m].ca)} · ${fmtNum(monthly[m].qte)} u">
+                    <div style="width:100%;height:80px;display:flex;align-items:flex-end">
+                      <div style="width:100%;height:${pct}%;min-height:3px;background:linear-gradient(180deg,#0057FF,#5856D6);border-radius:4px 4px 0 0"></div>
+                    </div>
+                    <div style="font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;color:#0B1F4D">${fmtEuro(monthly[m].ca)}</div>
+                    <div style="font-size:9px;color:#94A3B8;text-transform:uppercase">${label}</div>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>
+          ` : '<div style="' + styleCard() + ';color:#94A3B8;font-size:13px;text-align:center">Pas de facture sur la période</div>'}
+
+        </div>
+
+        <!-- Ventilation tranche × famille pour cette pharma -->
+        ${topProducts ? buildVentilationHtml(ventCells, TRANCHES, FAMILLES) : ''}
+
+        <!-- 2 colonnes : Top produits + Dernières factures -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;margin-top:14px">
+
+          ${topProducts && topProducts.length ? `
+          <div style="${styleCard('padding:0')}">
+            <div style="padding:12px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF">
+              <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Top ${Math.min(topProducts.length, 15)} produits achetés</div>
+            </div>
+            ${topProducts.slice(0, 15).map((prod, i) => `
+              <div style="padding:9px 16px;display:grid;grid-template-columns:24px 1fr auto auto;gap:8px;align-items:center;font-size:12px;border-bottom:1px solid #F2F6FF">
+                <span style="color:#94A3B8;font-weight:700">${i + 1}</span>
+                <span style="font-weight:600;color:#0B1F4D">${escapeHtml(prod.designation)}</span>
+                <span style="color:#94A3B8;font-size:11px">×${prod.qte}</span>
+                <b style="color:#0057FF;font-variant-numeric:tabular-nums">${fmtEuro(prod.ca)}</b>
+              </div>
+            `).join('')}
+          </div>
+          ` : ''}
+
+          ${detail && detail.length ? `
+          <div style="${styleCard('padding:0')}">
+            <div style="padding:12px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF">
+              <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">${detail.length} dernières factures</div>
+            </div>
+            ${detail.slice(0, 15).map(l => `
+              <div style="padding:8px 16px;display:grid;grid-template-columns:70px 1fr auto auto;gap:8px;align-items:center;font-size:12px;border-bottom:1px solid #F2F6FF">
+                <span style="color:#0057FF;font-weight:700;font-size:10px">${formatDateShort(l.date)}</span>
+                <span style="color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(l.designation)}</span>
+                <span style="color:#94A3B8;font-size:11px">×${l.qte}</span>
+                <b style="color:#0B1F4D;font-variant-numeric:tabular-nums">${fmtEuro(l.ca)}</b>
+              </div>
+            `).join('')}
+          </div>
+          ` : ''}
+
+        </div>
+
+        ${p.commentaire ? `<div style="${styleCard('background:#FFFBEB;border-left:4px solid #FF9F1C')};margin-top:14px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7C2D12;font-weight:800;margin-bottom:4px">Commentaire CRM</div>${escapeHtml(p.commentaire)}</div>` : ''}
+      </div>
+    `;
+
+    // Back button
+    document.getElementById('ph-back').addEventListener('click', () => renderPharmaciesV2());
+  }
+
+  function row(label, val) {
+    return `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;font-size:12.5px;border-bottom:1px solid #F2F6FF">
+      <span style="color:#94A3B8;text-transform:uppercase;font-size:10px;letter-spacing:1px;font-weight:700">${label}</span>
+      <span style="color:#0B1F4D;font-weight:600;text-align:right">${val}</span>
+    </div>`;
+  }
+
+  function formatDateShort(d) {
+    if (!d) return '—';
+    const dt = new Date(d);
+    if (isNaN(dt)) return d;
+    return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  }
+
+  function buildVentilationHtml(cells, tranches, familles) {
+    const FAMILLE_COLORS = {
+      'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
+      'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
+    };
+    let max = 0;
+    for (const t of tranches) for (const f of familles) {
+      if (cells[t.key][f].ca > max) max = cells[t.key][f].ca;
+    }
+    const colTot = {}, rowTot = {}; let total = 0;
+    for (const t of tranches) {
+      rowTot[t.key] = 0;
+      for (const f of familles) {
+        const v = cells[t.key][f].ca;
+        rowTot[t.key] += v;
+        colTot[f] = (colTot[f] || 0) + v;
+        total += v;
+      }
+    }
+    if (total === 0) return '';
+    const rows = tranches.map(t => {
+      const tds = familles.map(f => {
+        const v = cells[t.key][f].ca;
+        const intensity = max > 0 ? v / max : 0;
+        const c = FAMILLE_COLORS[f] || '#0057FF';
+        const fcRgb = hexToRgbLocal(c);
+        const bg = v > 0 ? `rgba(${fcRgb.r}, ${fcRgb.g}, ${fcRgb.b}, ${0.06 + intensity * 0.35})` : 'transparent';
+        return `<td style="padding:9px 10px;text-align:right;background:${bg};font-variant-numeric:tabular-nums;color:${intensity > 0.5 ? '#fff' : '#0B1F4D'};font-weight:${intensity > 0.4 ? '700' : '500'};border-right:1px solid #fff">${v > 0 ? fmtEuro(v) : '—'}</td>`;
+      }).join('');
+      return `<tr>
+        <td style="padding:10px 14px;font-weight:700;color:#0B1F4D;background:#F2F6FF;border-right:2px solid #0057FF">
+          <div>${t.label}</div>
+          <div style="font-size:10px;color:#64748B;font-weight:600">${t.sub} · ${t.remise}</div>
+        </td>${tds}
+        <td style="padding:10px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${rowTot[t.key] > 0 ? fmtEuro(rowTot[t.key]) : '—'}</td>
+      </tr>`;
+    }).join('');
+    const totalRow = familles.map(f => `<td style="padding:10px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${(colTot[f]||0) > 0 ? fmtEuro(colTot[f]) : '—'}</td>`).join('');
+    return `
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:18px 0 10px">Ventilation tranche × famille (top produits client)</h3>
+      <div style="${styleCard('padding:0;overflow:hidden')}">
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:#0B1F4D;color:#fff">
+                <th style="padding:10px 14px;text-align:left;font-size:10.5px;letter-spacing:1px;text-transform:uppercase">Tranche · remise</th>
+                ${familles.map(f => `<th style="padding:10px 8px;text-align:right;font-size:10.5px;font-weight:700;border-left:1px solid rgba(255,255,255,.1)"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${FAMILLE_COLORS[f]};margin-right:4px"></span>${escapeHtml(f)}</th>`).join('')}
+                <th style="padding:10px 10px;text-align:right;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;background:#1E3A5F">Total</th>
+              </tr>
+            </thead>
+            <tbody>${rows}
+              <tr style="background:#EAF2FF;border-top:2px solid #0057FF">
+                <td style="padding:10px 14px;font-weight:800;color:#0B1F4D;text-transform:uppercase;font-size:10.5px;letter-spacing:1px">Total</td>
+                ${totalRow}
+                <td style="padding:10px 10px;text-align:right;font-weight:800;background:#0057FF;color:#fff;font-variant-numeric:tabular-nums;font-size:13px">${fmtEuro(total)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function hexToRgbLocal(hex) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 0, g: 87, b: 255 };
   }
   function filterBtn(key, label, count) {
     const active = phState.filter === key;
