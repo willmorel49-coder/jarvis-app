@@ -657,10 +657,27 @@
                     <div class="mk-sel-row">
                       <div class="mk-sel-rank">${i+1}</div>
                       <div class="mk-sel-info">
-                        <div class="mk-sel-name">${p.designation}</div>
+                        <div class="mk-sel-name" contenteditable="true"
+                          oninput="window.mkUpdateProduct(${i},'designation',this.textContent)"
+                          title="Cliquer pour modifier le nom">${escapeAttr(p.designation || '')}</div>
                         <div class="mk-sel-meta">${cipFormat(p.cip13)}</div>
                       </div>
-                      <div class="mk-sel-price">${eur(p.prix_ip)}</div>
+                      <div class="mk-sel-prices">
+                        <div class="mk-sel-price-field">
+                          <label>PPHT</label>
+                          <input type="number" step="0.01" min="0" class="mk-input mk-price-input"
+                            value="${p.ppht != null ? p.ppht : ''}"
+                            oninput="window.mkUpdateProduct(${i},'ppht',this.value)"
+                            placeholder="—" />
+                        </div>
+                        <div class="mk-sel-price-field mk-sel-price-ip">
+                          <label>Prix IP</label>
+                          <input type="number" step="0.01" min="0" class="mk-input mk-price-input mk-price-input-ip"
+                            value="${p.prix_ip != null ? p.prix_ip : ''}"
+                            oninput="window.mkUpdateProduct(${i},'prix_ip',this.value)"
+                            placeholder="—" />
+                        </div>
+                      </div>
                       <div class="mk-sel-actions">
                         <button class="mk-btn-icon" title="Monter" onclick="window.mkMoveProduct(${i},-1)" ${i===0?'disabled':''}>↑</button>
                         <button class="mk-btn-icon" title="Descendre" onclick="window.mkMoveProduct(${i},1)" ${i===s.products.length-1?'disabled':''}>↓</button>
@@ -723,6 +740,31 @@
   window.mkUpdateFocusField = function (i, field, val) {
     if (!editingSheet || !editingSheet.products[i]) return;
     editingSheet.products[i][field] = val;
+  };
+
+  // Edition en place des champs produit (designation / ppht / prix_ip).
+  // Recalcule remise_pct si ppht et prix_ip sont coherents.
+  window.mkUpdateProduct = function (i, field, val) {
+    if (!editingSheet || !editingSheet.products[i]) return;
+    const p = editingSheet.products[i];
+    if (field === 'designation') {
+      p.designation = String(val || '').trim();
+    } else if (field === 'ppht' || field === 'prix_ip') {
+      const num = parseFloat(String(val).replace(',', '.'));
+      p[field] = isNaN(num) ? null : num;
+      // Recalcule la remise quand on a les 2 valeurs
+      if (p.ppht > 0 && p.prix_ip > 0) {
+        p.remise_pct = Math.max(0, ((p.ppht - p.prix_ip) / p.ppht) * 100);
+      } else {
+        p.remise_pct = null;
+      }
+      // Aussi expose prix_ht (alias utilise dans certains templates de rendu)
+      if (field === 'ppht') p.prix_ht = p.ppht;
+    }
+    editingSheet.updated_at = new Date().toISOString();
+    // Ne re-render PAS pour ne pas perdre le focus pendant la saisie.
+    // La preview sera repeinte au prochain renderEdit (changement de selection
+    // ou tap apercu) — suffit pour le flow utilisateur.
   };
 
   window.mkToggleProduct = function (cip) {
