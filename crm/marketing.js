@@ -960,10 +960,16 @@
       cleanupTarget = true;
     }
 
+    // html2pdf lazy load (retire du boot pour alleger le chargement)
     if (!window.html2pdf) {
-      alert('Lib html2pdf non chargée. Vérifie l\'inclusion CDN.');
-      if (cleanupTarget) target.parentElement.remove();
-      return;
+      if (typeof window.ensureHtml2Pdf === 'function') {
+        try { await window.ensureHtml2Pdf(); } catch (e) {}
+      }
+      if (!window.html2pdf) {
+        alert('Lib html2pdf non chargée. Vérifie ta connexion internet.');
+        if (cleanupTarget) target.parentElement.remove();
+        return;
+      }
     }
 
     // Laisse aux @font-face le temps de charger (woff2 Google Fonts)
