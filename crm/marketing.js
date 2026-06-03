@@ -75,14 +75,28 @@
   `;
 
   // Presets couleurs (fond carte + accent texte + bandeau)
+  // Categorie 'classic' = palette IP historique
+  // Categorie 'trend'   = tendances design 2026-2027 (Future Dusk, Sage,
+  //                       Cherry Lacquer, Burnt Sienna, Vanilla, Chartreuse…)
   const COLOR_PRESETS = {
-    navy:   { name: 'Marine',   bg: '#DCE5FF', accent: '#1B2A78', headerBg: '#1B2A78', headerFg: '#FFFFFF', priceBg: '#1B2A78', priceFg: '#FFFFFF' },
-    sky:    { name: 'Ciel',     bg: '#BFDDE4', accent: '#0E4F66', headerBg: '#0E4F66', headerFg: '#FFFFFF', priceBg: '#BFDDE4', priceFg: '#0E4F66' },
-    lilac:  { name: 'Lilas',    bg: '#E0CDED', accent: '#5B2E80', headerBg: '#5B2E80', headerFg: '#FFFFFF', priceBg: '#E0CDED', priceFg: '#5B2E80' },
-    mint:   { name: 'Menthe',   bg: '#C8EAD8', accent: '#1F6B45', headerBg: '#1F6B45', headerFg: '#FFFFFF', priceBg: '#C8EAD8', priceFg: '#1F6B45' },
-    amber:  { name: 'Ambre',    bg: '#FFE9B8', accent: '#7A4B00', headerBg: '#7A4B00', headerFg: '#FFFFFF', priceBg: '#FFE9B8', priceFg: '#7A4B00' },
-    rose:   { name: 'Rose',     bg: '#F5C6C6', accent: '#7C2B3A', headerBg: '#7C2B3A', headerFg: '#FFFFFF', priceBg: '#F5C6C6', priceFg: '#7C2B3A' },
-    forest: { name: 'Forêt',    bg: '#BCDABF', accent: '#1C4E2A', headerBg: '#1C4E2A', headerFg: '#FFFFFF', priceBg: '#BCDABF', priceFg: '#1C4E2A' },
+    // ─── Classiques IP ─────────────────────────────────────────────
+    navy:   { name: 'Marine',     category: 'classic', bg: '#DCE5FF', accent: '#1B2A78', headerBg: '#1B2A78', headerFg: '#FFFFFF', priceBg: '#1B2A78', priceFg: '#FFFFFF' },
+    sky:    { name: 'Ciel',       category: 'classic', bg: '#BFDDE4', accent: '#0E4F66', headerBg: '#0E4F66', headerFg: '#FFFFFF', priceBg: '#BFDDE4', priceFg: '#0E4F66' },
+    lilac:  { name: 'Lilas',      category: 'classic', bg: '#E0CDED', accent: '#5B2E80', headerBg: '#5B2E80', headerFg: '#FFFFFF', priceBg: '#E0CDED', priceFg: '#5B2E80' },
+    mint:   { name: 'Menthe',     category: 'classic', bg: '#C8EAD8', accent: '#1F6B45', headerBg: '#1F6B45', headerFg: '#FFFFFF', priceBg: '#C8EAD8', priceFg: '#1F6B45' },
+    amber:  { name: 'Ambre',      category: 'classic', bg: '#FFE9B8', accent: '#7A4B00', headerBg: '#7A4B00', headerFg: '#FFFFFF', priceBg: '#FFE9B8', priceFg: '#7A4B00' },
+    rose:   { name: 'Rose',       category: 'classic', bg: '#F5C6C6', accent: '#7C2B3A', headerBg: '#7C2B3A', headerFg: '#FFFFFF', priceBg: '#F5C6C6', priceFg: '#7C2B3A' },
+    forest: { name: 'Forêt',      category: 'classic', bg: '#BCDABF', accent: '#1C4E2A', headerBg: '#1C4E2A', headerFg: '#FFFFFF', priceBg: '#BCDABF', priceFg: '#1C4E2A' },
+
+    // ─── Tendances 2026-2027 ───────────────────────────────────────
+    dusk:       { name: 'Future Dusk',       category: 'trend', bg: '#D9D0EC', accent: '#2D1B69', headerBg: '#2D1B69', headerFg: '#FFFFFF', priceBg: '#D9D0EC', priceFg: '#2D1B69' },
+    teal:       { name: 'Deep Teal',         category: 'trend', bg: '#B5DEDA', accent: '#0A4A45', headerBg: '#0A4A45', headerFg: '#FFFFFF', priceBg: '#0A4A45', priceFg: '#FFFFFF' },
+    cherry:     { name: 'Cherry Lacquer',    category: 'trend', bg: '#F2C6CB', accent: '#8B0E25', headerBg: '#8B0E25', headerFg: '#FFFFFF', priceBg: '#8B0E25', priceFg: '#FFFFFF' },
+    sienna:     { name: 'Burnt Sienna',      category: 'trend', bg: '#F0D2BD', accent: '#8B3A1B', headerBg: '#8B3A1B', headerFg: '#FFFFFF', priceBg: '#F0D2BD', priceFg: '#8B3A1B' },
+    sage:       { name: 'Sage Eucalyptus',   category: 'trend', bg: '#D0DBC4', accent: '#3D5A3D', headerBg: '#3D5A3D', headerFg: '#FFFFFF', priceBg: '#D0DBC4', priceFg: '#3D5A3D' },
+    vanilla:    { name: 'Vanilla Cream',     category: 'trend', bg: '#F5E8D0', accent: '#6B4E2F', headerBg: '#6B4E2F', headerFg: '#FFFFFF', priceBg: '#F5E8D0', priceFg: '#6B4E2F' },
+    chartreuse: { name: 'Chartreuse',        category: 'trend', bg: '#E8F0B8', accent: '#4F5E0F', headerBg: '#4F5E0F', headerFg: '#FFFFFF', priceBg: '#E8F0B8', priceFg: '#4F5E0F' },
+    slate:      { name: 'Slate Gold',        category: 'trend', bg: '#2A2D3A', accent: '#C9A961', headerBg: '#2A2D3A', headerFg: '#C9A961', priceBg: '#C9A961', priceFg: '#2A2D3A' },
   };
 
   // Thèmes saison — filtres + mois pertinents
@@ -590,12 +604,25 @@
               <label class="mk-label">Titre de la fiche</label>
               <input class="mk-input" id="mk-title" value="${escapeAttr(s.title)}" oninput="window.mkUpdateTitle(this.value)" />
               <label class="mk-label" style="margin-top:14px">Couleur</label>
-              <div class="mk-color-row">
-                ${Object.entries(COLOR_PRESETS).map(([k,v]) => `
-                  <button class="mk-color ${s.color===k?'on':''}" title="${v.name}"
-                    style="background:${v.bg};border-color:${v.accent}"
-                    onclick="window.mkUpdateColor('${k}')"></button>
-                `).join('')}
+              <div class="mk-color-group">
+                <div class="mk-color-group-label">Classiques IP</div>
+                <div class="mk-color-row">
+                  ${Object.entries(COLOR_PRESETS).filter(([,v]) => v.category === 'classic').map(([k,v]) => `
+                    <button class="mk-color ${s.color===k?'on':''}" title="${v.name}"
+                      style="background:${v.bg};border-color:${v.accent}"
+                      onclick="window.mkUpdateColor('${k}')"></button>
+                  `).join('')}
+                </div>
+              </div>
+              <div class="mk-color-group">
+                <div class="mk-color-group-label">Tendances 2026–2027 <span class="mk-color-badge">NEW</span></div>
+                <div class="mk-color-row">
+                  ${Object.entries(COLOR_PRESETS).filter(([,v]) => v.category === 'trend').map(([k,v]) => `
+                    <button class="mk-color ${s.color===k?'on':''}" title="${v.name}"
+                      style="background:${v.bg};border-color:${v.accent}"
+                      onclick="window.mkUpdateColor('${k}')"></button>
+                  `).join('')}
+                </div>
               </div>
               <label class="mk-label" style="margin-top:14px">Template</label>
               <select class="mk-input mk-select" id="sheet-template" onchange="window.mkUpdateTemplate(this.value)">

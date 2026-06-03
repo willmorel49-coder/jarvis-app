@@ -197,6 +197,19 @@
   outline: none; border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(0,87,255,0.1);
 }
+/* Groupes de couleurs (Classiques / Tendances 2026-2027) */
+.mk-color-group { margin-top: 4px; }
+.mk-color-group + .mk-color-group { margin-top: 12px; }
+.mk-color-group-label {
+  font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase;
+  font-weight: 800; color: var(--text2); margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.mk-color-badge {
+  background: var(--blue); color: #fff;
+  padding: 2px 6px; border-radius: 4px;
+  font-size: 9px; letter-spacing: 0.5px; font-weight: 800;
+}
 .mk-color-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .mk-color {
   width: 36px; height: 36px; border-radius: 50%;
