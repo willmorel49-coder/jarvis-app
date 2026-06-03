@@ -1749,3 +1749,66 @@
   color: #fff;
   border-color: #4338CA;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PERFS — CSS containment + transitions cheap (60fps target)
+   Ajoute en derniere couche pour ne pas casser le specificity
+   du design system existant.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Isolation reflow : chaque grosse section ne propage pas son
+   layout aux voisines (top ventes 100 rows, sagitta 80 cards,
+   offilog 40 tiles). Gain : evite recalc style + paint global. */
+.mk-section-stats,
+.mk-section-sagitta,
+.mk-card-offilog {
+  contain: layout style;
+}
+
+/* Containment fort sur les cards individuelles (paint isole).
+   Important : pas content-visibility (Safari iOS quirky), juste
+   layout+paint. */
+.mk-sag-card,
+.mk-off-tile,
+.mk-stats-row,
+.mk-lib-card,
+.mk-ip-card,
+.mk-theme-card {
+  contain: layout paint;
+}
+
+/* will-change : promo composite layer SUR HOVER seulement (sinon
+   creer trop de layers = pire qu'inutile). On l'arme au hover du
+   parent — le browser le recoit avant l'animation. */
+.mk-sag-card:hover,
+.mk-off-tile:hover,
+.mk-ip-card:hover,
+.mk-theme-card:hover,
+.mk-lib-card:hover,
+.mk-stats-pill:hover,
+.mk-sag-pill:hover {
+  will-change: transform;
+}
+
+/* Remplace les `transition: all` (animation de TOUTES les props,
+   y compris box-shadow/color qui coutent cher) par une liste
+   explicite cheap : transform + opacity + couleurs simples.
+   Override defensif (specificity 0,1,0). */
+.mk-off-tile {
+  transition: transform .18s, border-color .18s, box-shadow .18s;
+}
+
+/* Image lazy : reserve un cadre pendant le chargement -> pas de
+   layout shift quand l'image arrive (le HTML donne width/height). */
+.mk-sag-card-thumb img,
+.mk-off-thumb img {
+  background: #F1F5F9;
+}
+
+/* Force le compositor sur les listes scrollables (smooth scroll iOS) */
+.mk-sag-grid,
+.mk-off-grid,
+.mk-stats-list-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
