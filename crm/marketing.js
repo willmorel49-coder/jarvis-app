@@ -1011,11 +1011,17 @@
 
               <label class="mk-label" style="margin-top:14px">Gradient mesh</label>
               <div class="mk-ds-grad-row">
-                ${Object.entries(window.MK_GRADIENTS || {}).map(([id, g]) => `
+                ${Object.entries(window.MK_GRADIENTS || {}).map(([id, g]) => {
+                  const isNone = id === 'none';
+                  const bgStyle = isNone
+                    ? 'background:repeating-linear-gradient(45deg,#fff,#fff 5px,#E5E7EB 5px,#E5E7EB 10px)'
+                    : 'background:' + (g.preview || g.css || '#F2F2F7');
+                  return `
                   <button class="mk-ds-grad ${(s.gradient || 'none') === id ? 'on' : ''}" title="${escapeAttr(g.name)}"
-                    style="background:${g.preview || '#F2F2F7'}"
-                    onclick="window.mkUpdateGradient('${id}')"></button>
-                `).join('')}
+                    style="${bgStyle}"
+                    onclick="window.mkUpdateGradient('${id}')">${isNone ? '<span class="mk-ds-none-mark">∅</span>' : ''}</button>
+                `;
+                }).join('')}
               </div>
 
               <label class="mk-label" style="margin-top:14px">Typographie</label>
@@ -1036,10 +1042,15 @@
 
               <label class="mk-label" style="margin-top:14px">Sticker / badge</label>
               <div class="mk-ds-stk-row">
-                ${Object.entries(window.MK_STICKERS || {}).map(([id, st]) => `
-                  <button class="mk-ds-stk ${(s.sticker || 'none') === id ? 'on' : ''}" title="${escapeAttr(st.name)}"
-                    onclick="window.mkUpdateSticker('${id}')">${st.svg || '<span class="mk-ds-none">∅</span>'}</button>
-                `).join('')}
+                ${Object.entries(window.MK_STICKERS || {}).map(([id, st]) => {
+                  const isNone = id === 'none' || !st.svg;
+                  const placeholder = '<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="26" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-dasharray="4 4"/><path d="M14 14L50 50" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round"/></svg>';
+                  const inner = isNone ? placeholder : st.svg;
+                  return `
+                    <button class="mk-ds-stk ${(s.sticker || 'none') === id ? 'on' : ''}" title="${escapeAttr(st.name)}"
+                      onclick="window.mkUpdateSticker('${id}')">${inner}</button>
+                  `;
+                }).join('')}
               </div>
             </div>
 
@@ -1108,6 +1119,7 @@
                         </div>
                       </div>
                       <div class="mk-sel-actions">
+                        <button class="mk-btn-icon mk-img-search-btn" title="Trouver une image (Open Products / Google)" onclick="window.mkFindImages(${i})">🔍</button>
                         <button class="mk-btn-icon" title="Monter" onclick="window.mkMoveProduct(${i},-1)" ${i===0?'disabled':''}>↑</button>
                         <button class="mk-btn-icon" title="Descendre" onclick="window.mkMoveProduct(${i},1)" ${i===s.products.length-1?'disabled':''}>↓</button>
                         <button class="mk-btn-icon mk-btn-danger" title="Retirer" onclick="window.mkRemoveProduct(${i})">✕</button>
@@ -1812,14 +1824,20 @@
 
     const fontBtn = (id) => {
       const f = fonts[id]; if (!f) return '';
-      const on = (sheet.fontPair || 'inter-pair') === id ? ' on' : '';
-      return `<button class="mk-pv-font${on}" onclick="window.mkPreviewSetFont('${id}')" style="font-family:'${f.heading}',sans-serif"><span class="mk-pv-font-h">Aa</span><span class="mk-pv-font-name">${escapeAttr(f.name)}</span></button>`;
+      const headingFamily = (f.heading && f.heading.family) || 'DM Sans';
+      const on = (sheet.fontPair || 'default') === id ? ' on' : '';
+      return `<button class="mk-pv-font${on}" onclick="window.mkPreviewSetFont('${id}')" style="font-family:'${headingFamily}',sans-serif"><span class="mk-pv-font-h">Aa</span><span class="mk-pv-font-name">${escapeAttr(f.name)}</span></button>`;
     };
 
     const stkBtn = (id) => {
       const on = (sheet.sticker || 'none') === id ? ' on' : '';
-      const svg = id === 'none' ? '<span style="opacity:.4">∅</span>' : (stickers[id] || '');
-      return `<button class="mk-pv-stk${on}" onclick="window.mkPreviewSetSticker('${id}')">${svg}</button>`;
+      const stkObj = stickers[id];
+      const svgRaw = stkObj && stkObj.svg ? stkObj.svg : '';
+      const inner = (id === 'none' || !svgRaw)
+        ? '<svg viewBox="0 0 32 32" width="100%" height="100%"><circle cx="16" cy="16" r="13" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="3 3"/><path d="M8 8L24 24" stroke="#94A3B8" stroke-width="2"/></svg>'
+        : svgRaw;
+      const label = (stkObj && stkObj.name) || 'Aucun';
+      return `<button class="mk-pv-stk${on}" onclick="window.mkPreviewSetSticker('${id}')" title="${escapeAttr(label)}">${inner}</button>`;
     };
 
     const gradIds = ['none'].concat(Object.keys(gradients));
