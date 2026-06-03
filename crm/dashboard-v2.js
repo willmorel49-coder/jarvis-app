@@ -468,6 +468,15 @@
     if (typeof window.renderDashboard === 'function') {
       window.renderDashboard = renderDashboardV2;
       console.log('[dashboard-v2] override renderDashboard appliqué (refonte 5 blocs)');
+      // Race condition : app.js peut avoir deja appele navigate('dashboard')
+      // AVANT notre override → la page est rendue vide. On force un re-render
+      // si on est actuellement sur le dashboard.
+      try {
+        var p = document.getElementById('page-dashboard');
+        if (p && p.classList.contains('active')) {
+          renderDashboardV2();
+        }
+      } catch (e) { /* silencieux */ }
     } else {
       setTimeout(applyOverride, 100);
     }
