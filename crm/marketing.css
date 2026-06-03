@@ -1812,3 +1812,210 @@
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   POLISH 20260605g — Sagitta sort bar, empty states, micro-int.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Sort bar Sagitta — sous les filtres status */
+.mk-sag-sortbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  background: rgba(11, 31, 77, 0.025);
+  border-radius: 12px;
+  border: 1px solid rgba(11, 31, 77, 0.06);
+}
+.mk-sag-sortbar-lbl {
+  font-size: 10px; font-weight: 800; letter-spacing: 1.2px;
+  text-transform: uppercase; color: #64748B;
+  margin-right: 4px;
+}
+.mk-sag-sortpill {
+  padding: 6px 12px; border-radius: 999px;
+  background: #FFFFFF; border: 1.5px solid rgba(11,31,77,0.10);
+  font-size: 12px; font-weight: 700; color: #0B1F4D;
+  cursor: pointer; font-family: inherit;
+  transition: transform .15s, border-color .15s, background .15s, box-shadow .15s;
+}
+.mk-sag-sortpill:hover { border-color: #0057FF; transform: translateY(-1px); }
+.mk-sag-sortpill.on {
+  background: #0057FF; color: #FFFFFF; border-color: #0057FF;
+  box-shadow: 0 4px 12px rgba(0,87,255,0.28);
+}
+.mk-sag-sortbar-meta {
+  margin-left: auto;
+  font-size: 11.5px; color: #475569; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.mk-sag-sortbar-meta b { color: #0057FF; font-weight: 800; }
+@media (max-width: 700px) {
+  .mk-sag-sortbar { padding: 8px; }
+  .mk-sag-sortbar-meta { margin-left: 0; width: 100%; text-align: center; padding-top: 4px; border-top: 1px dashed rgba(11,31,77,0.08); }
+}
+
+/* Empty state premium Sagitta — illustration + reset */
+.mk-sag-empty {
+  background: #FFFFFF;
+  border-radius: 14px;
+  border: 1.5px dashed rgba(11, 31, 77, 0.14);
+  padding: 36px 24px;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: #475569;
+}
+.mk-sag-empty-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, #EAF2FF 0%, #F7FAFF 100%);
+  display: flex; align-items: center; justify-content: center;
+  color: #0057FF;
+  margin-bottom: 4px;
+}
+.mk-sag-empty-title {
+  font-size: 15px; font-weight: 800; color: #0B1F4D;
+  letter-spacing: -0.1px;
+}
+.mk-sag-empty-sub {
+  font-size: 12.5px; color: #64748B; max-width: 340px;
+  line-height: 1.4;
+}
+.mk-sag-empty-reset {
+  margin-top: 8px;
+  padding: 8px 16px; border-radius: 999px;
+  background: #0057FF; color: #FFFFFF; border: none;
+  font: 700 12px 'DM Sans', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,87,255,0.25);
+  transition: transform .15s, background .15s;
+}
+.mk-sag-empty-reset:hover { background: #0047CC; transform: translateY(-1px); }
+
+/* Empty state Catalogue IP / OFFILOG — version "hint engageante" */
+.mk-empty-search {
+  padding: 18px 16px; text-align: center;
+  font-size: 13px; font-weight: 500;
+  color: var(--text2, #64748B);
+  background: linear-gradient(180deg, #F7FAFF 0%, #EEF4FF 100%);
+  border-radius: 12px; margin-top: 12px;
+  border: 1px dashed rgba(11, 31, 77, 0.10);
+  line-height: 1.4;
+}
+
+/* Empty state biblio fiche — plus engageant */
+.mk-empty {
+  padding: 40px 28px; text-align: center;
+  color: var(--text2, #64748B); font-size: 14px;
+  background: linear-gradient(180deg, #F7FAFF 0%, #EEF4FF 100%);
+  border-radius: 14px;
+  border: 1px dashed rgba(11, 31, 77, 0.10);
+  line-height: 1.55;
+}
+
+/* Stagger animation cards Sagitta — entrée douce 30ms par card */
+@keyframes mkSagCardIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.mk-sag-grid > .mk-sag-card {
+  animation: mkSagCardIn 320ms cubic-bezier(.34,1.56,.64,1) both;
+}
+.mk-sag-grid > .mk-sag-card:nth-child(1)  { animation-delay: 0ms; }
+.mk-sag-grid > .mk-sag-card:nth-child(2)  { animation-delay: 30ms; }
+.mk-sag-grid > .mk-sag-card:nth-child(3)  { animation-delay: 60ms; }
+.mk-sag-grid > .mk-sag-card:nth-child(4)  { animation-delay: 90ms; }
+.mk-sag-grid > .mk-sag-card:nth-child(5)  { animation-delay: 120ms; }
+.mk-sag-grid > .mk-sag-card:nth-child(6)  { animation-delay: 150ms; }
+.mk-sag-grid > .mk-sag-card:nth-child(7)  { animation-delay: 180ms; }
+.mk-sag-grid > .mk-sag-card:nth-child(8)  { animation-delay: 210ms; }
+.mk-sag-grid > .mk-sag-card:nth-child(n+9) { animation-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) {
+  .mk-sag-grid > .mk-sag-card { animation: none; }
+}
+
+/* Spacing tokens — magic numbers nettoyés (7px 13px → 8px 12px) */
+.mk-sag-pill { padding: 8px 14px; }
+.mk-stats-pill { padding: 8px 14px; }
+
+/* Hover micro-interactions cohérentes pour tous les pills + boutons */
+.mk-sag-pill { transition: transform .15s, border-color .15s, background .15s, color .15s, box-shadow .15s; }
+.mk-stats-pill { transition: transform .15s, background .15s, border-color .15s, color .15s, box-shadow .15s; }
+.mk-stats-pill:hover { border-color: var(--blue, #0057FF); box-shadow: 0 4px 10px rgba(0,87,255,0.10); }
+
+/* Boutons + et action — feedback active */
+.mk-stats-add:focus-visible,
+.mk-sag-add:focus-visible,
+.mk-sag-card-add:focus-visible {
+  outline: 2px solid #FFC500; outline-offset: 2px;
+}
+
+/* Sticky preview toolbar — sub-bar de séparation visuelle */
+.mk-pv-tb { gap: 6px; }
+.mk-pv-row + .mk-pv-row {
+  border-top: 1px dashed rgba(11, 31, 77, 0.06);
+  padding-top: 6px;
+}
+
+/* Skeleton state Sagitta (avant computeSagittaCompare) */
+.mk-sag-skel {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
+  gap: 14px;
+  padding: 4px 4px 8px;
+}
+.mk-sag-skel-card {
+  background: #FFFFFF; border-radius: 14px;
+  border: 1.5px solid rgba(11,31,77,0.06);
+  height: 360px;
+  position: relative; overflow: hidden;
+}
+.mk-sag-skel-card::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(11,31,77,0.06) 50%, transparent 70%);
+  animation: mkSkelShine 1.4s ease-in-out infinite;
+}
+@keyframes mkSkelShine {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+/* Empty state OFFILOG amélioré (engaging) */
+.mk-card-offilog .mk-empty-search {
+  background: linear-gradient(180deg, #FFFCF5 0%, #FFF7E8 100%);
+  border-color: rgba(180, 83, 9, 0.18);
+  color: #B45309;
+}
+
+/* Modal aperçu — boutons sticker plus larges sur tactile (Safari iOS) */
+@media (hover: none) {
+  .mk-pv-stk { width: 44px; height: 44px; }
+  .mk-pv-grad { width: 44px; height: 30px; }
+  .mk-pv-swatch { width: 30px; height: 30px; }
+}
+
+/* Confetti CSS-only pour 1er produit ajouté à une fiche vide */
+.mk-confetti {
+  position: absolute; inset: 0; pointer-events: none;
+  overflow: hidden;
+}
+.mk-confetti i {
+  position: absolute; top: -10px;
+  width: 8px; height: 14px; border-radius: 2px;
+  animation: mkConfettiFall 1300ms ease-out forwards;
+}
+.mk-confetti i:nth-child(1)  { left: 8%;  background: #0057FF; animation-delay: 0ms; }
+.mk-confetti i:nth-child(2)  { left: 18%; background: #14B86A; animation-delay: 80ms; }
+.mk-confetti i:nth-child(3)  { left: 28%; background: #F59E0B; animation-delay: 40ms; }
+.mk-confetti i:nth-child(4)  { left: 38%; background: #EC4899; animation-delay: 120ms; }
+.mk-confetti i:nth-child(5)  { left: 48%; background: #7C3AED; animation-delay: 60ms; }
+.mk-confetti i:nth-child(6)  { left: 58%; background: #0057FF; animation-delay: 100ms; }
+.mk-confetti i:nth-child(7)  { left: 68%; background: #14B86A; animation-delay: 20ms; }
+.mk-confetti i:nth-child(8)  { left: 78%; background: #F59E0B; animation-delay: 140ms; }
+.mk-confetti i:nth-child(9)  { left: 88%; background: #EC4899; animation-delay: 70ms; }
+.mk-confetti i:nth-child(10) { left: 92%; background: #7C3AED; animation-delay: 160ms; }
+@keyframes mkConfettiFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(260px) rotate(420deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-confetti { display: none; }
+}
