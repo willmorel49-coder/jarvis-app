@@ -1105,83 +1105,92 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   IMAGES PRODUITS dans templates PDF
+   IMAGES PRODUITS dans templates PDF (rendu via proxy weserv)
    ══════════════════════════════════════════════════════════════ */
-/* Tables (offre / memo) — miniature inline */
+/* Tables (offre / memo) — miniature inline carrée nette */
 .mk-cell-thumb {
   display: inline-block; vertical-align: middle;
-  width: 28px; height: 28px;
-  border-radius: 6px; overflow: hidden;
-  background: #F8FAFC; border: 1px solid #E5E7EB;
-  margin-right: 8px;
+  width: 34px; height: 34px;
+  border-radius: 8px; overflow: hidden;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  margin-right: 10px;
   flex-shrink: 0;
+  padding: 2px;
+  box-shadow: 0 1px 2px rgba(11,31,77,0.04);
 }
-.mk-cell-thumb-lg { width: 36px; height: 36px; }
+.mk-cell-thumb-lg { width: 44px; height: 44px; padding: 3px; }
 .mk-cell-thumb img {
   width: 100%; height: 100%; object-fit: contain;
+  display: block;
 }
-.mk-cell-name { display: flex; align-items: center; min-width: 0; }
+.mk-cell-name { display: flex; align-items: center; min-width: 0; gap: 0; }
 .mk-cell-name-text { flex: 1; min-width: 0; }
 
-/* Focus — image grande */
+/* Focus — image grande dans visuel rond carre */
 .mk-focus-img {
   width: 100%; height: 100%; object-fit: contain;
-  border-radius: 14px; background: #F4F6FB;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F4F6FB 100%);
+  padding: 12px; box-sizing: border-box;
+  display: block;
 }
 
-/* Editorial — lead image */
+/* Editorial — lead image (vignette grande devant le nom) */
 .mk-ed-lead-img {
   grid-template-columns: auto auto 1fr auto !important;
 }
 .mk-ed-lead-thumb {
-  width: 84px; height: 84px; border-radius: 12px;
-  background: rgba(255,255,255,0.92); padding: 6px;
+  width: 96px; height: 96px; border-radius: 14px;
+  background: #FFFFFF;
+  padding: 8px; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
   align-self: center;
+  border: 1px solid rgba(11,31,77,0.05);
 }
-.mk-ed-lead-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.mk-ed-lead-thumb img {
+  width: 100%; height: 100%; object-fit: contain; display: block;
+}
 
-.mk-ed-card-img { padding-top: 12px; }
+.mk-ed-card-img { padding-top: 14px; }
 .mk-ed-card-thumb {
-  width: 64px; height: 64px; border-radius: 10px;
-  background: rgba(255,255,255,0.92); padding: 4px;
+  width: 72px; height: 72px; border-radius: 12px;
+  background: #FFFFFF;
+  padding: 5px; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
 }
-.mk-ed-card-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.mk-ed-card-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-/* Bento — image en arrière-plan blur sur tile */
+/* Bento — image en gros plan en haut de tile (style produit propre) */
+.mk-bento-tile-img {
+  padding-top: 14px !important;
+}
 .mk-bento-tile-img .mk-bento-tile-thumb {
-  position: absolute; top: 0; right: 0;
-  width: 70%; height: 70%;
-  opacity: 0.95;
+  position: relative;
+  width: 100%; height: 96px;
+  margin-bottom: 8px;
   display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.92);
+  border-radius: 14px;
+  padding: 6px; box-sizing: border-box;
   z-index: 0;
 }
 .mk-bento-tile-img.mk-bento-tile-big .mk-bento-tile-thumb {
-  width: 55%; height: 55%;
+  height: 180px;
+  padding: 10px;
 }
 .mk-bento-tile-thumb img {
-  width: 100%; height: 100%; object-fit: contain;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.10));
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.10));
 }
 .mk-bento-tile-img > .mk-bento-num,
 .mk-bento-tile-img > .mk-bento-name,
 .mk-bento-tile-img > .mk-bento-cip,
 .mk-bento-tile-img > .mk-bento-price-block {
   position: relative; z-index: 1;
-}
-.mk-bento-tile-img > .mk-bento-name {
-  max-width: 70%;
-  background: linear-gradient(90deg, rgba(255,255,255,0.95) 70%, rgba(255,255,255,0) 100%);
-}
-.mk-bento-tile-img > .mk-bento-price-block {
-  background: rgba(255,255,255,0.85);
-  padding: 6px 10px; border-radius: 8px;
-  backdrop-filter: blur(4px);
-  display: inline-flex; flex-direction: column;
-  align-self: flex-start;
 }
 
 /* ══════════════════════════════════════════════════════════════
