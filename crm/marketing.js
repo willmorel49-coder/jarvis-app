@@ -1134,6 +1134,44 @@
     return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
   }
 
+  // Proxy CORS pour images externes (OFFILOG, Drakkars, Cap3000, Leclerc, etc.)
+  // html2canvas refuse les images cross-origin "tainted" — on les passe via
+  // images.weserv.nl (CDN gratuit, CORS friendly, cache + resize) ce qui
+  // garantit que les images apparaissent dans le PDF ET sont allegees (jpg q88, 600px).
+  function proxyImg(url) {
+    if (!url) return '';
+    const s = String(url);
+    if (s.startsWith('data:')) return s;
+    if (s.indexOf('images.weserv.nl') !== -1) return s;
+    // weserv : passe URL sans protocole
+    const clean = s.replace(/^https?:\/\//, '');
+    return 'https://images.weserv.nl/?url=' + encodeURIComponent(clean) + '&w=600&output=jpg&q=88';
+  }
+
+  // Attend que toutes les <img> d'un container aient charge (load ou error).
+  // Permet a html2canvas de rendre les images proxifees correctement.
+  function waitForImages(root, timeoutMs) {
+    if (!root) return Promise.resolve();
+    const imgs = Array.from(root.querySelectorAll('img'));
+    if (!imgs.length) return Promise.resolve();
+    const pending = imgs.filter(img => !(img.complete && img.naturalWidth > 0));
+    if (!pending.length) return Promise.resolve();
+    return new Promise(resolve => {
+      let done = 0;
+      const finish = () => {
+        done++;
+        if (done >= pending.length) resolve();
+      };
+      pending.forEach(img => {
+        if (img.complete) return finish();
+        img.addEventListener('load', finish, { once: true });
+        img.addEventListener('error', finish, { once: true });
+      });
+      // Garde-fou
+      setTimeout(resolve, timeoutMs || 6000);
+    });
+  }
+
   // ── COMPARATIF SAGITTA NR / LNR vs IP ───────────────────────
   function buildSagittaIndex() {
     // Map CIP13 -> { prix_ip, designation, source }
@@ -1888,7 +1926,7 @@
                 <tr>
                   <td class="mk-cell-cip">${cipFormat(p.cip13)}</td>
                   <td class="mk-cell-name">
-                    ${p.img ? `<span class="mk-cell-thumb"><img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" onerror="this.style.display='none'"/></span>` : ''}
+                    ${p.img ? `<span class="mk-cell-thumb"><img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" onerror="this.style.display='none'"/></span>` : ''}
                     <span class="mk-cell-name-text">${p.designation}</span>
                   </td>
                   <td class="mk-cell-price">${eur(p.prix_ht)}</td>
@@ -1945,7 +1983,7 @@
               ${sheet.products.map(p => `
                 <tr>
                   <td class="mk-memo-desig">
-                    ${p.img ? `<span class="mk-cell-thumb mk-cell-thumb-lg"><img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" onerror="this.style.display='none'"/></span>` : ''}
+                    ${p.img ? `<span class="mk-cell-thumb mk-cell-thumb-lg"><img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" onerror="this.style.display='none'"/></span>` : ''}
                     <span class="mk-cell-name-text">${p.designation || '—'}</span>
                   </td>
                   <td class="mk-memo-marque">${p.marque || extractMarque(p.designation)}</td>
@@ -2003,7 +2041,7 @@
         <div class="mk-focus-list">
           ${sheet.products.slice(0, TEMPLATES.focus.maxProducts).map((p, i) => `
             <div class="mk-focus-card">
-              <div class="mk-focus-visual">${p.img ? `<img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" class="mk-focus-img" onerror="this.outerHTML='${(placeholderSVG(p.designation)+'').replace(/'/g,'&#39;')}'"/>` : placeholderSVG(p.designation)}</div>
+              <div class="mk-focus-visual">${p.img ? `<img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" class="mk-focus-img" onerror="this.outerHTML='${(placeholderSVG(p.designation)+'').replace(/'/g,'&#39;')}'"/>` : placeholderSVG(p.designation)}</div>
               <div class="mk-focus-body">
                 <div class="mk-focus-top">
                   <div class="mk-focus-name">${p.designation || '—'}</div>
@@ -2075,7 +2113,10 @@
     if (document.fonts && document.fonts.ready) {
       try { await document.fonts.ready; } catch (_) { /* fallback */ }
     }
-    await new Promise(r => setTimeout(r, 250));
+    // Attend que toutes les images (proxy weserv compris) soient pretes.
+    // Si erreur ou timeout 8s, on continue : le placeholder fallback gere.
+    await waitForImages(target, 8000);
+    await new Promise(r => setTimeout(r, 150));
 
     const filename = 'IP_' + (sheet.title || 'fiche').replace(/[^a-zA-Z0-9_-]+/g, '_') + '.pdf';
 
@@ -2284,7 +2325,7 @@
         </div>
         ${lead ? `
           <div class="mk-ed-lead ${lead.img ? 'mk-ed-lead-img' : ''}" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.22)' : 'rgba(11,31,77,0.15)'}">
-            ${lead.img ? `<div class="mk-ed-lead-thumb"><img src="${escapeAttr(lead.img)}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
+            ${lead.img ? `<div class="mk-ed-lead-thumb"><img src="${escapeAttr(proxyImg(lead.img))}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
             <div class="mk-ed-lead-num" style="color:${subCol}">N°01</div>
             <div class="mk-ed-lead-name">${escapeAttr(lead.designation)}</div>
             <div class="mk-ed-lead-cip" style="color:${subCol}">${lead.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(lead.cip13))}</div>
@@ -2298,7 +2339,7 @@
           <div class="mk-ed-grid">
             ${rest.map((p, i) => `
               <div class="mk-ed-card ${p.img ? 'mk-ed-card-img' : ''}" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(11,31,77,0.12)'}">
-                ${p.img ? `<div class="mk-ed-card-thumb"><img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
+                ${p.img ? `<div class="mk-ed-card-thumb"><img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
                 <div class="mk-ed-card-num" style="color:${subCol}">N°${padNum(i + 2)}</div>
                 <div class="mk-ed-card-name">${escapeAttr(p.designation)}</div>
                 <div class="mk-ed-card-cip" style="color:${subCol}">${p.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(p.cip13))}</div>
@@ -2358,7 +2399,7 @@
             const big = i === 0;
             return `
               <div class="mk-bento-tile ${big ? 'mk-bento-tile-big' : ''} ${p.img ? 'mk-bento-tile-img' : ''}" style="background:${tileBg};border-color:${tileBorder};grid-area:${cellLayouts[i % cellLayouts.length]}">
-                ${p.img ? `<div class="mk-bento-tile-thumb"><img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
+                ${p.img ? `<div class="mk-bento-tile-thumb"><img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
                 <div class="mk-bento-num" style="opacity:.55">${String(i + 1).padStart(2, '0')}</div>
                 <div class="mk-bento-name" style="font-family:'${font.heading}',sans-serif;font-weight:${font.hw}">${escapeAttr(p.designation)}</div>
                 <div class="mk-bento-cip" style="opacity:.55">${p.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(p.cip13))}</div>
