@@ -216,7 +216,7 @@
                 '<div style="position:absolute;top:-14px;left:calc(' + opsMark + '% - 18px);font-size:9px;color:#0B1F4D;font-weight:800;letter-spacing:.5px;width:40px;text-align:center">OPS</div>' +
               '</div>' +
               '<div style="font-size:10.5px;color:#94A3B8;margin-top:5px">' +
-                fmtNum(r.opsRefs) + ' réfs OPS Nantes · ma PdM produits : ' + fmtPct(r.indiceCouv, 0) +
+                fmtNum(r.opsRefs) + ' réfs OPS Nantes · couverture de mon catalogue : ' + fmtPct(r.indiceCouv, 0) +
                 ' <span style="color:' + couvCol + ';font-weight:700;margin-left:6px">' + couvLabel + '</span>' +
               '</div>' +
             '</div>' +

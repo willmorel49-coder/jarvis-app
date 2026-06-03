@@ -327,21 +327,35 @@
     if (!isClassic()) return;
 
     // Wrap navigate (peut ne pas exister encore au DOMContentLoaded car app.js defer)
-    // → on tente plusieurs fois en cas de course.
+    // → on tente plusieurs fois en cas de course. On n'injecte le large-title
+    // QU'UNE SEULE FOIS, dès que navigate ET renderDashboard sont disponibles,
+    // pour éviter un flicker (re-render répété pendant 3.6 s) sur la page active.
     let tries = 0;
+    let appliedOnce = false;
     const tryWrap = () => {
       tries++;
       const hasNav = typeof window.navigate === 'function';
       const hasRender = typeof window.renderDashboard === 'function';
       if (hasNav) wrapNavigate();
       if (hasRender) wrapRenderers();
-      // Re-injecte pour la page courante (par défaut dashboard)
-      const activePage = document.querySelector('.page.active');
-      const pageId = activePage ? activePage.id.replace(/^page-/, '') : 'dashboard';
-      applyForPage(pageId);
 
-      if ((!hasNav || !hasRender) && tries < 30) {
+      if (hasNav && hasRender && !appliedOnce) {
+        // Tout est prêt → on injecte une seule fois pour la page courante.
+        const activePage = document.querySelector('.page.active');
+        const pageId = activePage ? activePage.id.replace(/^page-/, '') : 'dashboard';
+        applyForPage(pageId);
+        appliedOnce = true;
+        return;
+      }
+
+      if (tries < 30) {
         setTimeout(tryWrap, 120);
+      } else if (!appliedOnce) {
+        // Safety net : timeout atteint sans nav/render — injecte quand même.
+        const activePage = document.querySelector('.page.active');
+        const pageId = activePage ? activePage.id.replace(/^page-/, '') : 'dashboard';
+        applyForPage(pageId);
+        appliedOnce = true;
       }
     };
     tryWrap();
