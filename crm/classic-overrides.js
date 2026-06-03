@@ -1177,6 +1177,9 @@
           </div>
         </div>
 
+        <!-- Vue multi-etablissements : Mon secteur vs OPS / CPR / HP -->
+        ${typeof window.buildMultiBenchHtml === 'function' ? window.buildMultiBenchHtml() : ''}
+
         <!-- Comparatif détaillé par famille -->
         ${buildSectorVsOpsHtml(myFams, myTotal, opsMix.fams, opsTotal, FAMILLES_ORDER)}
 
