@@ -34,24 +34,24 @@
 
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260603l" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260603m" />
   <!-- Styles desktop -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="style-classic.css" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260603l" />
+  <link rel="stylesheet" href="marketing.css?v=20260603m" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260603l" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260603l" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260603l" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260603l" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260603m" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260603m" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260603m" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260603m" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260603l" />
-  <link rel="stylesheet" href="native-headers.css?v=20260603l" />
-  <link rel="stylesheet" href="native-lists.css?v=20260603l" />
-  <link rel="stylesheet" href="native-motion.css?v=20260603l" />
-  <link rel="stylesheet" href="skeleton-loaders.css?v=20260603l" />
+  <link rel="stylesheet" href="native-shell.css?v=20260603m" />
+  <link rel="stylesheet" href="native-headers.css?v=20260603m" />
+  <link rel="stylesheet" href="native-lists.css?v=20260603m" />
+  <link rel="stylesheet" href="native-motion.css?v=20260603m" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260603m" />
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -67,23 +67,31 @@
     </defs>
   </svg>
 
-  <!-- CDN libs critiques (Chart.js : utilisee tot par dashboard) -->
+  <!-- CDN libs critiques (defer = charge en parallele, execute apres DOM ready) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
-  <!-- CDN libs lourdes en async (chargent en parallele sans bloquer le HTML)
-       SheetJS 1.4 MB : utilise uniquement par import Excel (rare)
-       html2pdf 0.6 MB : utilise uniquement par export Marketing -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js" async></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js" async></script>
+  <!-- SheetJS (1.4 MB) : RETIRE (Will n'importe pas d'Excel via l'app).
+       html2pdf (0.6 MB) : lazy load au click Telecharger PDF Marketing. -->
+  <script>
+    window.ensureHtml2Pdf = function () {
+      if (window.html2pdf) return Promise.resolve();
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    };
+  </script>
 
   <!-- Données critiques au boot (~810 KB total) — necessaires au dashboard.
        Les lourds (stock 1.7 MB, catalogue-ip 188 KB, client-products 84 KB,
        benchmark-data 3.6 MB, establishments-aggregate 4 MB, offilog 1.7 MB,
        drakkars 3.8 MB, cap3000 2.4 MB) sont LAZY via perf-boot.js. -->
-  <script src="clients-data.js?v=20260603l"></script>
-  <script src="pharmacies-geo.js?v=20260603l"></script>
-  <script src="groupements-data.js?v=20260603l"></script>
-  <script src="sales-detail.js?v=20260603l"></script>
+  <script src="clients-data.js?v=20260603m"></script>
+  <script src="pharmacies-geo.js?v=20260603m"></script>
+  <script src="groupements-data.js?v=20260603m"></script>
+  <script src="sales-detail.js?v=20260603m"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -111,18 +119,18 @@
     });
   </script>
 
-  <script src="app.js?v=20260603l" defer></script>
-  <script src="dashboard-v2.js?v=20260603l" defer></script>
+  <script src="app.js?v=20260603m" defer></script>
+  <script src="dashboard-v2.js?v=20260603m" defer></script>
   <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
-  <script src="perf-boot.js?v=20260603l" defer></script>
-  <script src="classic-overrides.js?v=20260603l" defer></script>
-  <script src="mobile-shell.js?v=20260603l" defer></script>
+  <script src="perf-boot.js?v=20260603m" defer></script>
+  <script src="classic-overrides.js?v=20260603m" defer></script>
+  <script src="mobile-shell.js?v=20260603m" defer></script>
   <!-- Native UI shell (bottom tab bar + large titles) -->
-  <script src="native-shell.js?v=20260603l" defer></script>
-  <script src="native-headers.js?v=20260603l" defer></script>
-  <script src="native-motion.js?v=20260603l" defer></script>
-  <script src="skeleton-loaders.js?v=20260603l" defer></script>
-  <script src="marketing.js?v=20260603l" defer></script>
+  <script src="native-shell.js?v=20260603m" defer></script>
+  <script src="native-headers.js?v=20260603m" defer></script>
+  <script src="native-motion.js?v=20260603m" defer></script>
+  <script src="skeleton-loaders.js?v=20260603m" defer></script>
+  <script src="marketing.js?v=20260603m" defer></script>
 </head>
 
 <body>
