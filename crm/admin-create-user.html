@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<title>Créer utilisateur — Intégral Pharma</title>
+<style>
+  body { font: 16px -apple-system, system-ui, sans-serif; max-width: 560px; margin: 40px auto; padding: 24px; color: #0B1F4D; }
+  h1 { font-size: 22px; }
+  .card { background: #F2F2F7; border-radius: 14px; padding: 20px; margin: 16px 0; }
+  label { display: block; font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; font-weight: 700; color: #64748B; margin-top: 12px; }
+  input { width: 100%; padding: 10px 14px; font-size: 15px; border: 1px solid #E5E5EA; border-radius: 8px; margin-top: 4px; font-family: inherit; box-sizing: border-box; }
+  button { background: #0057FF; color: white; border: none; padding: 12px 22px; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 20px; font-family: inherit; }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  .result { margin-top: 18px; padding: 14px; border-radius: 10px; display: none; font-size: 14px; line-height: 1.5; }
+  .result.ok { display: block; background: #E6F7EE; color: #14B86A; border: 1px solid #14B86A33; }
+  .result.err { display: block; background: #FFE5EA; color: #FF3B30; border: 1px solid #FF3B3033; }
+  code { font-family: ui-monospace, Menlo, monospace; background: rgba(60,60,67,0.10); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+</style>
+</head><body>
+<h1>Créer un utilisateur Intégral Pharma</h1>
+<p style="color:#64748B">Cette page crée le compte dans Supabase. À utiliser une seule fois puis à supprimer.</p>
+
+<div class="card">
+  <label>Email</label>
+  <input id="email" type="email" value="pauline.guillaumin@integralpharma.fr" autocomplete="off" />
+  <label>Mot de passe</label>
+  <input id="password" type="text" value="laboss" autocomplete="off" />
+  <button id="btn">Créer le compte</button>
+  <div id="result" class="result"></div>
+</div>
+
+<p style="color:#8E8E93;font-size:13px">
+  Si l'email confirmation est activée dans Supabase, Pauline recevra un mail à valider avant de pouvoir se connecter.<br>
+  Si désactivée (default), elle peut se connecter direct avec <code>laboss</code>.
+</p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
+
+  const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const btn = document.getElementById('btn');
+  const result = document.getElementById('result');
+
+  btn.addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    if (!email || !password) {
+      result.className = 'result err';
+      result.textContent = 'Email et mot de passe requis.';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Création…';
+    result.style.display = 'none';
+    try {
+      const { data, error } = await supa.auth.signUp({ email, password });
+      if (error) throw error;
+      result.className = 'result ok';
+      let msg = '✓ Compte créé pour ' + email + '.';
+      if (data.user && !data.user.email_confirmed_at) {
+        msg += ' Un email de confirmation a été envoyé.';
+      } else {
+        msg += ' Pauline peut se connecter immédiatement.';
+      }
+      result.innerHTML = msg + '<br><small style="opacity:.7">User ID : <code>' + (data.user ? data.user.id : '—') + '</code></small>';
+    } catch (e) {
+      result.className = 'result err';
+      result.textContent = '✗ ' + (e.message || 'Erreur inconnue') + (e.status ? ' (HTTP ' + e.status + ')' : '');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Créer le compte';
+    }
+  });
+</script>
+</body></html>
