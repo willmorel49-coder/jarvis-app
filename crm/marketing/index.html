@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marketing · Générateur de documents · Intégral Pharma</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="marketing.css">
+</head>
+<body>
+  <aside class="mk-sidebar no-print" id="mk-sidebar">
+    <header class="mk-header">
+      <a href="../" class="mk-back">← CRM</a>
+      <div class="mk-title">
+        <div class="mk-title-main">Marketing</div>
+        <div class="mk-title-sub">Générateur de documents</div>
+      </div>
+    </header>
+
+    <section class="mk-control">
+      <label class="mk-label">Type de document</label>
+      <div class="mk-segmented" id="mk-template-picker">
+        <button data-template="pharmacy-card" class="active">A · Fiche pharmacie</button>
+        <button data-template="product-argument">B · Argumentaire gamme</button>
+        <button data-template="pharmacy-report">C · Bilan pharmacien</button>
+      </div>
+    </section>
+
+    <section class="mk-control">
+      <label class="mk-label">Cible / Ton</label>
+      <div class="mk-segmented" id="mk-audience-picker">
+        <button data-audience="commercial" class="active">Commercial</button>
+        <button data-audience="pharmacist">Pharmacien</button>
+        <button data-audience="marketing">Marketing</button>
+      </div>
+    </section>
+
+    <section class="mk-control" id="mk-context-zone">
+      <!-- rempli dynamiquement selon le template -->
+    </section>
+
+    <section class="mk-control">
+      <label class="mk-label">Options</label>
+      <label class="mk-check"><input type="checkbox" id="mk-opt-logo" checked> Logo en en-tête</label>
+      <label class="mk-check"><input type="checkbox" id="mk-opt-footer" checked> Pied de page</label>
+      <label class="mk-check"><input type="checkbox" id="mk-opt-color" checked> Accents couleur</label>
+    </section>
+
+    <footer class="mk-footer">
+      <button class="mk-btn mk-btn-primary" id="mk-btn-print">🖨️ Imprimer / PDF</button>
+      <button class="mk-btn" id="mk-btn-open">↗ Ouvrir seul</button>
+      <button class="mk-btn" id="mk-btn-copy">📋 Copier HTML</button>
+    </footer>
+  </aside>
+
+  <main class="mk-stage" id="mk-stage">
+    <div class="mk-paper-wrap">
+      <div class="mk-paper" id="mk-paper">
+        <div class="mk-empty">Sélectionne un client / une gamme dans la sidebar.</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Données — chargées depuis le CRM -->
+  <script src="../clients-data.js"></script>
+  <script src="../benchmark-data.js"></script>
+  <script src="../offilog-data.js"></script>
+  <script src="marketing.js"></script>
+</body>
+</html>
