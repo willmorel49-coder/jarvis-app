@@ -332,7 +332,6 @@
     offre:     { name: 'Offre IP',          maxProducts: 500, defaultCount: 12, perPage: 14 },
     memo:      { name: 'Mémo référentiel',  maxProducts: 500, defaultCount: 20, perPage: 22 },
     focus:     { name: 'Focus produit',     maxProducts: 12,  defaultCount: 1,  perPage: 3  },
-    editorial: { name: 'Editorial (Vogue)', maxProducts: 120, defaultCount: 3,  perPage: 7  },
     bento:     { name: 'Bento (Apple)',     maxProducts: 120, defaultCount: 6,  perPage: 9  },
   };
 
@@ -1034,11 +1033,10 @@
               </div>
               <label class="mk-label" style="margin-top:14px">Template</label>
               <select class="mk-input mk-select" id="sheet-template" onchange="window.mkUpdateTemplate(this.value)">
-                <option value="offre" ${getTemplateId(s)==='offre'?'selected':''}>Offre IP (table)</option>
-                <option value="memo" ${getTemplateId(s)==='memo'?'selected':''}>Mémo référentiel</option>
-                <option value="focus" ${getTemplateId(s)==='focus'?'selected':''}>Focus produit</option>
-                <option value="editorial" ${getTemplateId(s)==='editorial'?'selected':''}>📰 Editorial (Vogue)</option>
-                <option value="bento" ${getTemplateId(s)==='bento'?'selected':''}>🍱 Bento (Apple)</option>
+                <option value="offre" ${getTemplateId(s)==='offre'?'selected':''}>📋 Offre IP (table)</option>
+                <option value="memo" ${getTemplateId(s)==='memo'?'selected':''}>📑 Mémo référentiel</option>
+                <option value="focus" ${getTemplateId(s)==='focus'?'selected':''}>🎯 Focus produit</option>
+                <option value="bento" ${getTemplateId(s)==='bento'?'selected':''}>🧩 Bento (Apple)</option>
               </select>
               <div class="mk-template-hint">${TEMPLATES[getTemplateId(s)].name} · ${s.products.length} produit${s.products.length>1?'s':''} · PDF multi-pages auto</div>
               <label class="mk-label" style="margin-top:14px">Footer</label>
@@ -2050,7 +2048,6 @@
             ${tplBtn('offre',     'Offre',     '📋')}
             ${tplBtn('memo',      'Mémo',      '📑')}
             ${tplBtn('focus',     'Focus',     '🎯')}
-            ${tplBtn('editorial', 'Editorial', '📰')}
             ${tplBtn('bento',     'Bento',     '🧩')}
           </div>
         </div>
@@ -2176,7 +2173,6 @@
     const tpl = getTemplateId(sheet);
     if (tpl === 'memo')      return renderMemoTemplate(sheet, targetId);
     if (tpl === 'focus')     return renderFocusTemplate(sheet, targetId);
-    if (tpl === 'editorial') return renderEditorialTemplate(sheet, targetId);
     if (tpl === 'bento')     return renderBentoTemplate(sheet, targetId);
     return renderOffreTemplate(sheet, targetId);
   }
@@ -2184,22 +2180,28 @@
   // ── TEMPLATE OFFRE IP (existant, factorisé) ─────────────────
   function renderOffreTemplate(sheet, targetId) {
     const cp = COLOR_PRESETS[sheet.color] || COLOR_PRESETS.navy;
+    const font = designFont(sheet);
+    const bg = designBg(sheet);
+    const sticker = designSticker(sheet);
+    const headingFamily = "'" + font.heading + "', 'DM Sans', sans-serif";
+    const bodyFamily = "'" + font.body + "', 'DM Sans', sans-serif";
     return `
-      <div id="${targetId}" class="mk-pdf mk-pdf-offre" style="background:${cp.bg};color:${cp.accent}">
+      <div id="${targetId}" class="mk-pdf mk-pdf-offre" style="background:${bg || cp.bg};color:${cp.accent};font-family:${bodyFamily}">
+        ${sticker ? `<div class="mk-tpl-sticker">${sticker}</div>` : ''}
         <div class="mk-pdf-header">
           <div class="mk-pdf-logo">
             ${renderLogo(72)}
           </div>
           <div class="mk-pdf-title">
             <div class="mk-pdf-eyebrow">OFFRE IP</div>
-            <div class="mk-pdf-h1">${sheet.title || 'Sans titre'}</div>
+            <div class="mk-pdf-h1" style="font-family:${headingFamily};font-weight:${font.hw};${font.italic ? 'font-style:italic' : ''}">${sheet.title || 'Sans titre'}</div>
           </div>
         </div>
 
         <div class="mk-pdf-table-wrap">
           <table class="mk-pdf-table">
             <thead>
-              <tr style="background:${cp.headerBg};color:${cp.headerFg}">
+              <tr style="background:${cp.headerBg};color:${cp.headerFg};font-family:${headingFamily}">
                 <th>CODE CIP</th>
                 <th style="text-align:left">LIBELLÉ</th>
                 <th>PPHT</th>
@@ -2240,12 +2242,19 @@
       if (!isFinite(pct) || pct <= 0) return '—';
       return pct.toFixed(1).replace('.', ',') + ' %';
     }
+    const cp = COLOR_PRESETS[sheet.color] || COLOR_PRESETS.navy;
+    const font = designFont(sheet);
+    const bg = designBg(sheet);
+    const sticker = designSticker(sheet);
+    const headingFamily = "'" + font.heading + "', 'DM Sans', sans-serif";
+    const bodyFamily = "'" + font.body + "', 'DM Sans', sans-serif";
     return `
-      <div id="${targetId}" class="mk-pdf mk-pdf-memo">
-        <div class="mk-memo-header">
+      <div id="${targetId}" class="mk-pdf mk-pdf-memo" style="${bg ? 'background:' + bg + ';' : ''}font-family:${bodyFamily}">
+        ${sticker ? `<div class="mk-tpl-sticker">${sticker}</div>` : ''}
+        <div class="mk-memo-header" style="border-color:${cp.headerBg}">
           <div class="mk-memo-header-left">
-            <div class="mk-memo-eyebrow">MÉMO RÉFÉRENTIEL</div>
-            <div class="mk-memo-h1">${sheet.title || 'Sans titre'}</div>
+            <div class="mk-memo-eyebrow" style="color:${cp.headerBg}">MÉMO RÉFÉRENTIEL</div>
+            <div class="mk-memo-h1" style="font-family:${headingFamily};font-weight:${font.hw};${font.italic ? 'font-style:italic;' : ''}color:${cp.accent}">${sheet.title || 'Sans titre'}</div>
             <div class="mk-memo-sub">${sheet.products.length} référence${sheet.products.length>1?'s':''} · ${new Date().toLocaleDateString('fr-FR', { month:'long', year:'numeric' })}</div>
           </div>
           <div class="mk-memo-logo">${renderLogo(64)}</div>
@@ -2275,7 +2284,7 @@
                   <td class="mk-memo-cip">${cipFormat(p.cip13)}</td>
                   <td class="mk-memo-cond">${p.conditionnement || '—'}</td>
                   <td class="mk-memo-price">${eur(p.prix_ht)}</td>
-                  <td class="mk-memo-price-strong">${eur(p.prix_ip)}</td>
+                  <td class="mk-memo-price-strong" style="background:${cp.priceBg};color:${cp.priceFg}">${eur(p.prix_ip)}</td>
                   <td class="mk-memo-eco">${ecoPct(p)}</td>
                 </tr>
               `).join('')}
@@ -2579,67 +2588,6 @@
     showShareToast(s);
   };
   window.mkDismissShareToast = dismissShareToast;
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // TEMPLATE EDITORIAL — Vogue/magazine layout (gros serif + asymetrique)
-  // ═══════════════════════════════════════════════════════════════════════
-  function renderEditorialTemplate(sheet, targetId) {
-    const s = sheet;
-    const cp = COLOR_PRESETS[s.color] || COLOR_PRESETS.navy;
-    const font = designFont(s);
-    const bg = designBg(s);
-    const sticker = designSticker(s);
-    const fontFamily = "'" + font.heading + "', '" + font.body + "', serif";
-    const products = (s.products || []).slice(0, TEMPLATES.editorial.maxProducts);
-    const lead = products[0];
-    const rest = products.slice(1);
-    function padNum(n) { return n < 10 ? '0' + n : '' + n; }
-    const hasLight = ['noir', 'cosmic', 'midnight', 'ocean', 'forest'].indexOf(s.gradient) >= 0;
-    const textCol = hasLight ? '#FFFFFF' : '#0B1F4D';
-    const subCol = hasLight ? 'rgba(255,255,255,0.78)' : 'rgba(11,31,77,0.65)';
-
-    return `
-      <div id="${targetId}" class="mk-pdf-target mk-pdf-editorial" style="background:${bg || cp.bg};color:${textCol};font-family:${fontFamily}">
-        ${sticker ? `<div class="mk-ed-sticker">${sticker}</div>` : ''}
-        <header class="mk-ed-header">
-          <div class="mk-ed-logo">${renderLogo(56)}</div>
-          <div class="mk-ed-eyebrow" style="color:${subCol}">— OFFRE INTÉGRAL PHARMA —</div>
-        </header>
-        <div class="mk-ed-title-wrap">
-          <h1 class="mk-ed-title" style="font-family:'${font.heading}',serif;font-weight:${font.hw};${font.italic ? 'font-style:italic' : ''}">${escapeAttr(s.title)}</h1>
-        </div>
-        ${lead ? `
-          <div class="mk-ed-lead ${lead.img ? 'mk-ed-lead-img' : ''}" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.22)' : 'rgba(11,31,77,0.15)'}">
-            ${lead.img ? `<div class="mk-ed-lead-thumb"><img src="${escapeAttr(proxyImg(lead.img))}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
-            <div class="mk-ed-lead-num" style="color:${subCol}">N°01</div>
-            <div class="mk-ed-lead-name">${escapeAttr(lead.designation)}</div>
-            <div class="mk-ed-lead-cip" style="color:${subCol}">${lead.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(lead.cip13))}</div>
-            <div class="mk-ed-lead-prices">
-              ${lead.ppht ? `<div class="mk-ed-lead-ppht" style="color:${subCol}">PPHT ${eur(lead.ppht)}</div>` : ''}
-              <div class="mk-ed-lead-ip" style="color:${textCol}">${eur(lead.prix_ip)}</div>
-            </div>
-          </div>
-        ` : ''}
-        ${rest.length ? `
-          <div class="mk-ed-grid">
-            ${rest.map((p, i) => `
-              <div class="mk-ed-card ${p.img ? 'mk-ed-card-img' : ''}" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(11,31,77,0.12)'}">
-                ${p.img ? `<div class="mk-ed-card-thumb"><img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
-                <div class="mk-ed-card-num" style="color:${subCol}">N°${padNum(i + 2)}</div>
-                <div class="mk-ed-card-name">${escapeAttr(p.designation)}</div>
-                <div class="mk-ed-card-cip" style="color:${subCol}">${p.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(p.cip13))}</div>
-                <div class="mk-ed-card-price">${eur(p.prix_ip)}</div>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
-        <footer class="mk-ed-footer" style="color:${subCol};border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(11,31,77,0.12)'}">
-          <span>${escapeAttr(s.footer || 'Tarif en vigueur 2026')}</span>
-          <span>— INTÉGRAL PHARMA —</span>
-        </footer>
-      </div>
-    `;
-  }
 
   // ═══════════════════════════════════════════════════════════════════════
   // TEMPLATE BENTO — Apple Bento Grid asymetrique (2-3 cols, tiles fluides)
