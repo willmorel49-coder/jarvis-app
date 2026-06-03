@@ -399,6 +399,118 @@
   let editingSheet = null;
   let editTab = 'season';    // 'season' | 'cat' | 'custom'
   let productSearch = '';
+  let statsFamille = 'top';  // 'top' | 'Froid' | 'Biosimilaires' | 'Génériques' | 'Gén. partenaires' | 'Non remboursés' | 'Princeps'
+
+  // ── TOP VENTES OPS+CPR+HP par famille IP ───────────────────────────────
+  // Fusion des 3 etablissements par artcode, classement par famille IP.
+  // Permet a Will de voir ce qui cartonne dans le marche pharma (pas que
+  // chez ses pharmas) pour choisir des produits a mettre en fiche marketing.
+  function familleFromAttrsLocal(nature, afmcode, sousfamille) {
+    var n = (nature || '').trim();
+    var a = (afmcode || '').trim().toUpperCase();
+    var sf = (sousfamille || '').toLowerCase();
+    if (n === 'Biosimilaire') return 'Biosimilaires';
+    if (sf.indexOf('froid') >= 0) return 'Froid';
+    if (a && a !== 'REMBSS' && a !== '#N/A') return 'Non remboursés';
+    if (n === 'Generique Partenaire') return 'Gén. partenaires';
+    if (n === 'Generique') return 'Génériques';
+    return 'Princeps';
+  }
+  var FAMILLES_IP = ['Froid', 'Biosimilaires', 'Génériques', 'Gén. partenaires', 'Non remboursés', 'Princeps'];
+  var FAMILLE_TINTS = {
+    'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
+    'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
+  };
+  var __topVentesCache = null;
+  function computeTopVentesOpsCprHp() {
+    if (__topVentesCache) return __topVentesCache;
+    var ops = window.OPS_AGGREGATE || {};
+    var cpr = window.CPR_AGGREGATE || {};
+    var hp  = window.HP_AGGREGATE  || {};
+    var fused = new Map();
+    function add(src) {
+      for (var code in src) {
+        var p = src[code];
+        var ca = p.ca || 0;
+        var qte = p.qte || 0;
+        var existing = fused.get(code);
+        if (!existing) {
+          existing = {
+            artcode: code, ean: p.ean, designation: p.designation,
+            marque: p.marque, nature: p.nature, sousfamille: p.sousfamille,
+            collection: p.collection, afmcode: p.afmcode, ca: 0, qte: 0,
+          };
+          fused.set(code, existing);
+        }
+        existing.ca += ca;
+        existing.qte += qte;
+      }
+    }
+    add(ops); add(cpr); add(hp);
+    var byFam = { 'Froid': [], 'Biosimilaires': [], 'Génériques': [],
+                  'Gén. partenaires': [], 'Non remboursés': [], 'Princeps': [] };
+    var all = [];
+    fused.forEach(function (prod) {
+      var fam = familleFromAttrsLocal(prod.nature, prod.afmcode, prod.sousfamille);
+      prod.famille = fam;
+      byFam[fam].push(prod);
+      all.push(prod);
+    });
+    var sortFn = function (a, b) { return b.ca - a.ca; };
+    for (var f in byFam) byFam[f].sort(sortFn);
+    all.sort(sortFn);
+    __topVentesCache = { byFamille: byFam, top: all };
+    return __topVentesCache;
+  }
+
+  // Ajoute un produit a la fiche en cours (ou cree une nouvelle fiche custom)
+  // depuis la section stats. Va chercher le prix dans CATALOGUE_IP/BENCHMARK
+  // si dispo, sinon laisse vide (Will renseignera manuellement).
+  window.mkAddProductFromStats = function (artcode) {
+    var ventes = computeTopVentesOpsCprHp();
+    var prod = ventes.top.find(function (p) { return p.artcode === artcode; });
+    if (!prod) return;
+    // Cherche prix dans BENCHMARK
+    var bench = (window.BENCHMARK || []).find(function (b) {
+      return b.cip13 === prod.artcode || b.artcode === prod.artcode;
+    });
+    var snap = {
+      artcode: prod.artcode,
+      cip13: prod.ean || prod.artcode,
+      ean: prod.ean,
+      designation: prod.designation,
+      marque: prod.marque,
+      sousfamille: prod.sousfamille,
+      atc2: bench ? bench.atc2 : '',
+      ppht: bench ? bench.prix_ht : null,
+      prix_ht: bench ? bench.prix_ht : null,
+      prix_ip: bench ? bench.prix_ip : null,
+      remise_pct: bench ? bench.remise_pct : null,
+      offre_ip: bench ? bench.offre_ip : null,
+      froid: bench ? bench.froid : prod.famille === 'Froid',
+    };
+    if (!editingSheet) {
+      // Pas d'edition en cours -> cree une fiche custom et arrive sur l'editeur
+      editingSheet = newSheet('custom');
+      editingSheet.title = 'Fiche depuis top ventes';
+      editingSheet.products = [snap];
+    } else {
+      var cap = TEMPLATES[getTemplateId(editingSheet)].maxProducts;
+      if (editingSheet.products.length >= cap) {
+        if (typeof window.showToast === 'function') {
+          window.showToast('Limite ' + cap + ' produits atteinte pour ce template', 'info');
+        }
+        return;
+      }
+      if (editingSheet.products.find(function (p) { return p.artcode === artcode || p.cip13 === snap.cip13; })) return;
+      editingSheet.products.push(snap);
+    }
+    renderEdit();
+  };
+  window.mkSetStatsFamille = function (id) {
+    statsFamille = id;
+    window.renderMarketing();
+  };
 
   // ── OFFRES IP OFFICIELLES (depuis marketing-offers.js) ─────────────────
   function getIpOffers() {
@@ -470,6 +582,65 @@
           </div>
         </div>
         ` : ''}
+
+        ${(window.OPS_AGGREGATE || window.CPR_AGGREGATE || window.HP_AGGREGATE) ? (function() {
+          const ventes = computeTopVentesOpsCprHp();
+          const pills = ['top'].concat(FAMILLES_IP);
+          const list = statsFamille === 'top' ? ventes.top : (ventes.byFamille[statsFamille] || []);
+          const top12 = list.slice(0, 12);
+          const totalCa = top12.reduce(function (s, p) { return s + p.ca; }, 0);
+          return `
+            <div class="mk-section mk-section-stats">
+              <div class="mk-section-head">
+                <div>
+                  <div class="mk-section-title">📊 Top ventes secteur OPS + CPR + HP</div>
+                  <div class="mk-section-sub">Choisis les produits qui cartonnent dans le marché pharma · click <b>+</b> pour ajouter à la fiche</div>
+                </div>
+              </div>
+              <div class="mk-stats-pills">
+                ${pills.map(p => `
+                  <button class="mk-stats-pill ${statsFamille===p?'on':''}"
+                    style="${statsFamille===p && p!=='top' ? 'background:'+FAMILLE_TINTS[p]+';color:#fff;border-color:'+FAMILLE_TINTS[p]+';' : ''}"
+                    onclick="window.mkSetStatsFamille('${p}')">${p === 'top' ? '⭐ Top global' : escapeAttr(p)}</button>
+                `).join('')}
+              </div>
+              <div class="mk-stats-list">
+                ${top12.map((p, i) => {
+                  const famColor = FAMILLE_TINTS[p.famille] || '#0057FF';
+                  return `
+                    <div class="mk-stats-row">
+                      <div class="mk-stats-rank" style="background:${famColor}">${i + 1}</div>
+                      <div class="mk-stats-info">
+                        <div class="mk-stats-name">${escapeAttr(p.designation)}</div>
+                        <div class="mk-stats-meta">
+                          <span style="color:${famColor};font-weight:700">${escapeAttr(p.famille)}</span>
+                          <span>· ${escapeAttr(p.marque || '—')}</span>
+                          <span>· CIP ${escapeAttr(p.artcode)}</span>
+                        </div>
+                      </div>
+                      <div class="mk-stats-kpi">
+                        <div class="mk-stats-ca">${eur(p.ca)}</div>
+                        <div class="mk-stats-qte">${(p.qte || 0).toLocaleString('fr-FR')} u</div>
+                      </div>
+                      <button class="mk-stats-add" onclick="window.mkAddProductFromStats('${escapeAttr(p.artcode)}')" title="Ajouter à une fiche">+</button>
+                    </div>
+                  `;
+                }).join('')}
+                ${list.length === 0 ? `<div class="mk-empty" style="padding:20px;text-align:center;color:#8E8E93">Aucune vente dans cette catégorie</div>` : ''}
+              </div>
+              <div class="mk-stats-footer">${top12.length} produits affichés sur ${list.length} · CA secteur cumulé top 12 : <b>${eur(totalCa)}</b></div>
+            </div>
+          `;
+        })() : `
+          <div class="mk-section mk-section-stats">
+            <div class="mk-section-head">
+              <div>
+                <div class="mk-section-title">📊 Top ventes secteur OPS + CPR + HP</div>
+                <div class="mk-section-sub">Chargement des données ventes…</div>
+              </div>
+            </div>
+          </div>
+        `}
 
         <div class="mk-section">
           <div class="mk-section-head">

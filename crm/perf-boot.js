@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '?v=20260603z';
+  var VERSION = '?v=20260604a';
 
   // Mapping page -> scripts à charger à la demande
   // Note : 'loaded' Set evite les doubles chargements (ex stock.js partage par
@@ -47,11 +47,12 @@
       'benchmark-laboratoires.js',
       'benchmark-trajectoires.js'
     ],
-    // Marketing depend de BENCHMARK (themeProducts/searchProducts) + catalogue
-    // pour le selecteur de produits dans les fiches.
+    // Marketing depend de BENCHMARK + catalogue + establishments (top ventes
+    // OPS+CPR+HP utilises pour la section 'Mes meilleures ventes par categorie').
     marketing: [
       'catalogue-ip.js',
-      'benchmark-data.js'
+      'benchmark-data.js',
+      'establishments-aggregate.js'
     ],
     offilog: [
       'offilog-data.js',
