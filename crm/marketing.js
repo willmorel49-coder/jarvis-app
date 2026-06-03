@@ -150,6 +150,27 @@
     return SEASON_THEMES.find(t => t.months.includes(m)) || SEASON_THEMES[0];
   }
 
+  // Planning prévisionnel : pour chaque mois (relatif 0..11), retourne le
+  // theme actif (1er thème dont months[] contient ce mois). Permet d'anticiper
+  // les operations commerciales saisonnieres a venir.
+  function getMonthPlanning(monthsAhead) {
+    const now = new Date();
+    const out = [];
+    for (let i = 0; i <= monthsAhead; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const month = d.getMonth() + 1; // 1..12
+      const theme = SEASON_THEMES.find(t => t.months.includes(month)) || SEASON_THEMES[0];
+      out.push({
+        offset: i,
+        date: d,
+        monthName: d.toLocaleDateString('fr-FR', { month: 'long' }),
+        monthLabel: d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }),
+        theme: theme,
+      });
+    }
+    return out;
+  }
+
   // ── PERSISTENCE (Supabase si connecte, fallback localStorage) ───────
   let _sheetsCache = null;
   let _supaClient = null;
@@ -343,15 +364,32 @@
   // ── FILTRES PRODUITS ────────────────────────────────────────
   function themeProducts(theme) {
     if (!window.BENCHMARK) return [];
+    // buildSalesByEan defini plus bas (Sagitta module). Hoisting des function
+    // declarations -> accessible. Index OPS+CPR+HP par EAN.
+    const salesIdx = (typeof buildSalesByEan === 'function') ? buildSalesByEan() : null;
     if (theme.id === 'top') {
       return [...window.BENCHMARK]
         .filter(theme.filter)
         .sort((a,b) => (a.ip_rank_qty||999) - (b.ip_rank_qty||999));
     }
-    return window.BENCHMARK
+    const list = window.BENCHMARK
       .filter(b => b.prix_ip > 0)
       .filter(theme.filter)
-      .sort((a,b) => (b.ip_qty||0) - (a.ip_qty||0));
+      .map(b => {
+        const sales = salesIdx ? (salesIdx.get(String(b.cip13)) || { qte: 0, ca: 0 }) : { qte: 0, ca: 0 };
+        // Mutation legere pour passer info volumes au tri (et au rendu hero)
+        b._sec_qte = sales.qte;
+        b._sec_ca = sales.ca;
+        return b;
+      });
+    // Tri principal volume SECTEUR (OPS+CPR+HP) decroissant
+    // -> on identifie les vraies pathologies qui cartonnent dans le marche.
+    // En fallback : ip_qty (ventes IP-only) pour les produits sans match secteur.
+    list.sort((a,b) => {
+      if (b._sec_qte !== a._sec_qte) return b._sec_qte - a._sec_qte;
+      return (b.ip_qty || 0) - (a.ip_qty || 0);
+    });
+    return list;
   }
 
   function snapshotProduct(b) {
@@ -653,23 +691,99 @@
     const sheets = loadSheets();
     const suggested = getCurrentSeasonTheme();
     const ipOffers = getIpOffers();
+    // Top 3 produits pathologies du mois (tries par volume secteur OPS+CPR+HP)
+    const monthProds = themeProducts(suggested);
+    const topMonth = monthProds.slice(0, 3);
+    const totalSecQte = monthProds.reduce((s, b) => s + (b._sec_qte || 0), 0);
+    const totalSecCa  = monthProds.reduce((s, b) => s + (b._sec_ca  || 0), 0);
+    const monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
 
     root.innerHTML = `
       <div class="mk-wrap">
-        <div class="mk-hero">
-          <div class="mk-hero-left">
-            <div class="mk-hero-emoji">${suggested.emoji}</div>
-            <div>
-              <div class="mk-hero-eyebrow">Suggestion du mois</div>
-              <div class="mk-hero-title">${suggested.name}</div>
-              <div class="mk-hero-sub">${themeProducts(suggested).length} produits IP pertinents · prêt à éditer</div>
+        <div class="mk-hero mk-hero-month">
+          <div class="mk-hero-main">
+            <div class="mk-hero-left">
+              <div class="mk-hero-emoji">${suggested.emoji}</div>
+              <div>
+                <div class="mk-hero-eyebrow">Suggestion ${monthName} · pathologies saisonnières</div>
+                <div class="mk-hero-title">${suggested.name}</div>
+                <div class="mk-hero-sub">${monthProds.length} produits IP triés par volumes <b>secteur OPS+CPR+HP</b> décroissants</div>
+              </div>
             </div>
+            <button class="mk-btn mk-btn-primary" onclick="window.mkStartEdit('${suggested.id}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Créer cette fiche
+            </button>
           </div>
-          <button class="mk-btn mk-btn-primary" onclick="window.mkStartEdit('${suggested.id}')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Créer cette fiche
-          </button>
+          ${topMonth.length && totalSecQte > 0 ? `
+            <div class="mk-hero-stats">
+              <div class="mk-hero-stat">
+                <div class="mk-hero-stat-num">${totalSecQte.toLocaleString('fr-FR')}</div>
+                <div class="mk-hero-stat-lbl">unités vendues secteur</div>
+              </div>
+              <div class="mk-hero-stat">
+                <div class="mk-hero-stat-num">${eur(totalSecCa)}</div>
+                <div class="mk-hero-stat-lbl">CA secteur cumulé</div>
+              </div>
+              <div class="mk-hero-top">
+                <div class="mk-hero-top-lbl">Top vendeurs ${monthName}</div>
+                <div class="mk-hero-top-list">
+                  ${topMonth.map((b, i) => `
+                    <div class="mk-hero-top-row">
+                      <span class="mk-hero-top-rank">#${i+1}</span>
+                      <span class="mk-hero-top-name" title="${escapeAttr(b.designation)}">${escapeAttr(b.designation.slice(0, 38))}${b.designation.length > 38 ? '…' : ''}</span>
+                      <span class="mk-hero-top-qte">${(b._sec_qte || 0).toLocaleString('fr-FR')} u</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          ` : ''}
         </div>
+
+        ${(() => {
+          // Planning des operations commerciales mensuelles : mois courant + 11 a venir
+          const planning = getMonthPlanning(12);
+          return `
+            <div class="mk-section-planning">
+              <div class="mk-section-head">
+                <div>
+                  <div class="mk-section-title">📅 Planning des suggestions du mois</div>
+                  <div class="mk-section-sub">Mois courant + 12 prochains · pathologies saisonnières & volumes secteur · anticipe tes opérations commerciales</div>
+                </div>
+              </div>
+              <div class="mk-planning-grid">
+                ${planning.map(m => {
+                  const list = themeProducts(m.theme);
+                  const top1 = list[0];
+                  const totalQte = list.reduce((s, b) => s + (b._sec_qte || 0), 0);
+                  const isNow = m.offset === 0;
+                  const isNext = m.offset === 1;
+                  const cardClass = isNow ? 'mk-month-card-now' : (isNext ? 'mk-month-card-next' : '');
+                  const pinClass = isNow ? '' : (isNext ? 'mk-month-card-pin-next' : '');
+                  const pinTxt = isNow ? 'CE MOIS' : (isNext ? 'MOIS +1' : (m.offset === 12 ? 'N+1' : ''));
+                  return `
+                    <button class="mk-month-card ${cardClass}"
+                      onclick="window.mkStartEdit('${m.theme.id}')"
+                      title="Créer une fiche ${escapeAttr(m.theme.name)} pour ${escapeAttr(m.monthName)}">
+                      <div class="mk-month-card-eyebrow">
+                        <span>${escapeAttr(m.monthLabel)}</span>
+                        ${pinTxt ? `<span class="mk-month-card-pin ${pinClass}">${pinTxt}</span>` : ''}
+                      </div>
+                      <div class="mk-month-card-month">
+                        <span class="mk-month-card-emoji">${m.theme.emoji}</span>
+                        ${escapeAttr(m.monthName)}
+                      </div>
+                      <div class="mk-month-card-theme">${escapeAttr(m.theme.name)}</div>
+                      <div class="mk-month-card-meta">${list.length} produits IP${totalQte > 0 ? ' · ' + totalQte.toLocaleString('fr-FR') + ' u secteur' : ''}</div>
+                      ${top1 ? `<div class="mk-month-card-top"><span class="mk-month-card-top-rank">#1</span>${escapeAttr((top1.designation || '').slice(0, 28))}${(top1.designation || '').length > 28 ? '…' : ''}</div>` : ''}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        })()}
 
         ${ipOffers.length ? `
         <div class="mk-section mk-section-ip">
