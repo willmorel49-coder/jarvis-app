@@ -100,19 +100,25 @@
   };
 
   // Thèmes saison — filtres + mois pertinents
+  // Patterns elargis pour ramener 20-30 produits IP grossiste par theme :
+  // codes ATC2 + listes labos/dosages + termes generiques pour viser TOUT le
+  // catalogue medicament pertinent (pas juste les marques connues).
   const SEASON_THEMES = [
     { id: 'allergies', name: 'Allergies printemps', months: [3,4,5], emoji: '🌿', color: 'mint',
-      filter: b => /CETIRIZIN|LORATADIN|DESLORATADIN|FEXOFEN|EBASTINE|RUPATADINE|BILASTINE|MIZOLAST|AERIUS|TELFAST|XYZALL|WYSTAMM/i.test(b.designation) || b.atc2 === 'R06' },
-    { id: 'solaire', name: 'Solaire & moustiques', months: [5,6,7,8], emoji: '☀️', color: 'amber',
-      filter: b => /SOLAIRE|UVA|UVB|\bSPF\b|APRES-SOLEIL|APRES SOLEIL|COUP DE SOLEIL|MOUSTIQ|REPULSI|INSECT|PIQUR|BIAFINE|PHOTODERM/i.test(b.designation) },
+      filter: b => b.atc2 === 'R06' || b.atc2 === 'D04' || b.atc2 === 'R01'
+        || /CETIRIZIN|LORATADIN|DESLORATADIN|FEXOFEN|EBASTINE|RUPATADINE|BILASTINE|MIZOLAST|AERIUS|TELFAST|XYZALL|WYSTAMM|ZYRTEC|VIRLIX|MEQUITAZ|PRIMALAN|POLARAMINE|CLARITYNE|DEXCHLORPHEN|HYDROXYZIN|ATARAX|KESTIN|XYZA|HISTA/i.test(b.designation) },
+    { id: 'solaire', name: 'Soins solaires & insectes', months: [5,6,7,8], emoji: '☀️', color: 'amber',
+      filter: b => /SOLAIRE|UVA|UVB|\bSPF\b|APRES.SOLEIL|COUP DE SOLEIL|MOUSTIQ|REPULSI|INSECT|PIQUR|BIAFINE|PHOTODERM|ANTHELIOS|CAPITAL SOLEIL|MEXORYL|CICAPLAST|CICALFATE|BEPANTHEN|DEXERYL|HOMEOPLASMIN|OCTOCRYL|TETRALYSAL|DIHYDRAL|HYDROCORT|DERMOCORT|CALMINE|APAISYL|EURAX|FENISTIL|BUTIX|ZINEXOL|DERMOSOIN|BURNESHIELD/i.test(b.designation) },
     { id: 'immunite', name: 'Rentrée immunité', months: [9,10], emoji: '🛡️', color: 'sky',
-      filter: b => /VITAM|MAGNES|PROBIO|DEFENSE|IMMUNI|\bZINC\b|GINSENG|GUARANA|ECHINAC|PROPOLIS|ACEROLA|GELEE ROYALE|OLIGO|BEROCCA|SUPRADYN|ELEVIT|CHOLECALCI/i.test(b.designation) },
+      filter: b => b.atc2 === 'A11' || b.atc2 === 'A12'
+        || /VITAM|MAGNES|PROBIO|DEFENSE|IMMUNI|\bZINC\b|GINSENG|GUARANA|ECHINAC|PROPOLIS|ACEROLA|GELEE ROYALE|OLIGO|BEROCCA|SUPRADYN|ELEVIT|CHOLECALCI|VIT D|VIT C|VITAMINE D|VITAMINE C|ZYMA|UVEDOSE|STERO|ADRIGYL|CACIT|OROCAL|ORTHOSIPHON|FERRO|FERTIL|ALVITYL|JUVAMINE|FORCAPIL|MAGNESIUM|FERVEX|MERCALM|VITASCORBOL|FERROSTRAN|RHODIOLA|ASHWAGAND/i.test(b.designation) },
     { id: 'grippe', name: 'Grippe & vaccins hiver', months: [10,11,12], emoji: '💉', color: 'navy',
-      filter: b => /\bGRIPPE\b|INFLUVAC|VAXIGRIP|EFLUELDA|FLUARIX|OSELTAMIVIR|TAMIFLU|FERVEX/i.test(b.designation) },
+      filter: b => /\bGRIPPE\b|INFLUVAC|VAXIGRIP|EFLUELDA|FLUARIX|OSELTAMIVIR|TAMIFLU|FERVEX|HUMEX|DOLIPRANE|EFFERALGAN|DAFALGAN|CLARADOL|PARACETAMOL|IBUPROFENE|ADVIL|NUROFEN|ANTARENE|UPFEN|IBUFETUM|PROFENID|ASPIRINE|ASPEGIC|KARDEGIC|PYRACETIVITAMINE|RHINADVIL|RHINOFEBRAL|DOLIRHUME|ACTIFED|RHINURIA|EUPHYTOSE/i.test(b.designation) },
     { id: 'rhume', name: 'Rhume & toux', months: [10,11,12,1,2], emoji: '🤧', color: 'lilac',
-      filter: b => /RHUME|\bTOUX\b|RHINO|NASAL|PASTIL|FERVEX|HUMEX|ACTIFED|DOLIRHUME|STREPSIL|\bDRILL\b|ANGINEX|FLUIDIFI|EXPECTOR|VICKS|MAXILASE|HEXTRIL|HEXASPRAY/i.test(b.designation) },
+      filter: b => /RHUME|\bTOUX\b|RHINO|NASAL|PASTIL|FERVEX|HUMEX|ACTIFED|DOLIRHUME|STREPSIL|\bDRILL\b|ANGINEX|FLUIDIFI|EXPECTOR|VICKS|MAXILASE|HEXTRIL|HEXASPRAY|TROPHIRES|CLARIX|TUSSIDANE|TOPLEXIL|HELICIDINE|BRONCHODERMINE|MUCOMYST|EXOMUC|FLUIMUCIL|BRONCHALENE|BISOLVON|MUCANE|SOLACY|STIMUKIL|EUCALYPTOL|MENTHE|EUCALYPT|EUVANOL|RHINEDRINE|PIVALONE|RHINOFLUIMUCIL|STERIMAR|PHYSIOMER|SINUSPAX|EUPHON|PHYTOXIL|VEGEBOM|BALSAMIQUE|PROPOLIS|PASTILLE|GORGE|EREVA|HEXALENT|COLLU|LYSOPAINE|ANGIPAX|SOLUTRICINE|HEXOMEDINE/i.test(b.designation) },
     { id: 'gastro', name: 'Gastro hiver', months: [11,12,1,2], emoji: '🍵', color: 'forest',
-      filter: b => /SMECTA|TIORFAN|LOPERAM|IMODIUM|DIOSMECTIT|ULTRA-LEVURE|SACCHAROMYC|VOGAL|MOTILIUM|ANTIDIARR|\bSRO\b|ADIARIL|DOMPERIDON|METOCLOPRAM/i.test(b.designation) },
+      filter: b => b.atc2 === 'A07'
+        || /SMECTA|TIORFAN|LOPERAM|IMODIUM|DIOSMECTIT|ULTRA.LEVURE|SACCHAROMYC|VOGAL|MOTILIUM|ANTIDIARR|\bSRO\b|ADIARIL|DOMPERIDON|METOCLOPRAM|RACECADOTRIL|TIORFAST|DIARSED|ERCEFURYL|NIFUROXAZ|PANFUREX|LACTEOL|ESTROMINEUR|PHLOROGLUCINOL|SPASFON|MEBEVERINE|DUSPATALIN|BUSCOPAN|PRIMPERAN|MOTILYO|ZOPHREN|PRIMPERAN|VOGALIB|VOGALENE|ESOMEPRAZ|MAALOX|GAVISCON|RENNIE|GELOX|PHOSPHALUGEL|MOPRAL|INEXIUM|EUPANTOL|PARIET|LANSOPRAZ|RANITIDIN|FAMOTIDIN|CIMETIDIN|PEPSANE|XOLAAM|ROCGEL|RIOPAN|TOPAAL|DEBRIDAT|LIBRAX|LISOMUCIL|ANTIDIARRH|CHARBON ACTIF|BACILOR|FLORATIL|ENTEROGERMINA|BACILAC|PROBIOLIFE|ANTI.NAUSEE|REHYDR/i.test(b.designation) },
   ];
 
   // Thèmes catégorie — transverses
@@ -344,7 +350,7 @@
       color: t.color,
       template: 'offre',
       footer: 'Tarif en vigueur ' + new Date().getFullYear(),
-      products: themeProducts(t).slice(0, 25).map(p => p.__off ? snapshotOffilogProduct(p) : snapshotProduct(p)),
+      products: themeProducts(t).slice(0, 25).map(snapshotProduct),
     };
   }
 
@@ -362,21 +368,10 @@
   }
 
   // ── FILTRES PRODUITS ────────────────────────────────────────
-  // Filtre OFFILOG par theme : utilise les memes patterns mais cherche aussi
-  // dans nom + univers + marque. La parapharma saisonniere (solaires, anti-
-  // moustiques, vitamines) explose le BENCHMARK medicament IP-only.
-  function offilogFilterForTheme(themeId, designation, univers) {
-    const txt = ((designation || '') + ' ' + (univers || '')).toLowerCase();
-    if (themeId === 'allergies') return /allerg|cetiriz|loratad|histamin/.test(txt);
-    if (themeId === 'solaire')   return /solair|spf|uva|uvb|sun|apres.soleil|moustiq|repuls|insec|piqur|biafine|photoderm/.test(txt);
-    if (themeId === 'immunite')  return /vitamin|magnes|probio|defense|immuni|\bzinc\b|ginseng|guarana|echinac|propolis|acerola|gelee royale|oligo|berocca|supradyn|elevit|cholecal|complement alimentaire/.test(txt);
-    if (themeId === 'grippe')    return /grippe|vaccin|fervex/.test(txt);
-    if (themeId === 'rhume')     return /rhume|toux|rhino|nasal|pastil|fervex|humex|actifed|dolirhume|strepsil|drill|angin|fluidif|expector|vicks|maxilase|hextril|hexaspray|gorge/.test(txt);
-    if (themeId === 'gastro')    return /gastro|smecta|tiorfan|loperam|imodium|diosmectit|ultra.levure|saccharomyc|vogal|motilium|antidiarr|adiaril|domperidon|metoclopram|diarrh/.test(txt);
-    return false;
-  }
-
   function themeProducts(theme) {
+    // CANAL GROSSISTE IP UNIQUEMENT (BENCHMARK).
+    // OFFILOG = parapharmacie direct labo (autre canal de vente, pas de mix).
+    // Si tu veux faire une fiche OFFILOG, utilise le panel OFFILOG separe.
     if (!window.BENCHMARK) return [];
     const salesIdx = (typeof buildSalesByEan === 'function') ? buildSalesByEan() : null;
     if (theme.id === 'top') {
@@ -384,48 +379,20 @@
         .filter(theme.filter)
         .sort((a,b) => (a.ip_rank_qty||999) - (b.ip_rank_qty||999));
     }
-    // ─── Source 1 : BENCHMARK (medicaments IP) ────────────────────
-    const benchList = window.BENCHMARK
+    const list = window.BENCHMARK
       .filter(b => b.prix_ip > 0)
       .filter(theme.filter)
       .map(b => {
         const sales = salesIdx ? (salesIdx.get(String(b.cip13)) || { qte: 0, ca: 0 }) : { qte: 0, ca: 0 };
         b._sec_qte = sales.qte;
         b._sec_ca = sales.ca;
-        b.__off = false;
         return b;
       });
-    // ─── Source 2 : OFFILOG (parapharmacie saisonnière, images) ──
-    // Cruciale pour themes type 'solaire' qui matchent peu en BENCHMARK
-    // medicament. La parapharma dans OFFILOG explose le catalogue.
-    const offList = (window.OFFILOG || [])
-      .filter(o => o.dans_offilog && o.prix_offilog > 0)
-      .filter(o => offilogFilterForTheme(theme.id, o.produit, o.univers))
-      .map(o => {
-        // Normalisation : on copie en surface avec champs equivalents
-        // BENCHMARK pour permettre le merge + tri
-        const sales = salesIdx ? (salesIdx.get(String(o.ean)) || { qte: 0, ca: 0 }) : { qte: 0, ca: 0 };
-        return Object.assign({}, o, {
-          cip13: String(o.ean || ''),
-          designation: (o.produit || '').replace(/&amp;/g, '&'),
-          prix_ht: Number(o.prix_maxi || 0),
-          prix_ip: Number(o.prix_offilog || 0),
-          ip_qty: Number(o.rang_vente || 0),
-          _sec_qte: sales.qte,
-          _sec_ca: sales.ca,
-          __off: true,
-        });
-      });
-    // Dedup : un OFFILOG ne doit pas doubler un BENCHMARK avec meme cip13
-    const seenCip = new Set(benchList.map(b => String(b.cip13)));
-    const offDedup = offList.filter(o => !seenCip.has(String(o.cip13)));
-    const fused = benchList.concat(offDedup);
-    // Tri : volume secteur DESC, puis ip_qty DESC
-    fused.sort((a,b) => {
+    list.sort((a,b) => {
       if (b._sec_qte !== a._sec_qte) return b._sec_qte - a._sec_qte;
       return (b.ip_qty || 0) - (a.ip_qty || 0);
     });
-    return fused;
+    return list;
   }
 
   function snapshotProduct(b) {
@@ -741,9 +708,9 @@
             <div class="mk-hero-left">
               <div class="mk-hero-emoji">${suggested.emoji}</div>
               <div>
-                <div class="mk-hero-eyebrow">Suggestion ${monthName} · pathologies saisonnières</div>
+                <div class="mk-hero-eyebrow">Suggestion ${monthName} · canal grossiste IP</div>
                 <div class="mk-hero-title">${suggested.name}</div>
-                <div class="mk-hero-sub">${monthProds.length} produits IP triés par volumes <b>secteur OPS+CPR+HP</b> décroissants</div>
+                <div class="mk-hero-sub">${monthProds.length} médicaments catalogue IP triés par volumes <b>secteur OPS+CPR+HP</b> décroissants</div>
               </div>
             </div>
             <button class="mk-btn mk-btn-primary" onclick="window.mkStartEdit('${suggested.id}')">
