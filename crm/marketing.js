@@ -362,8 +362,30 @@
       conditionnement: extractConditionnement(b.designation || ''),
       prix_ht: Number(b.prix_ht || 0),
       prix_ip: Number(b.prix_ip || 0),
+      ppht: Number(b.prix_ht || 0),
       offre_ip: Number(b.offre_ip || 0),
       remise_pct: Number(b.remise_pct || 0),
+      img: '',
+      source: 'ip',
+    };
+  }
+
+  function snapshotOffilogProduct(o) {
+    const offiPrix = Number(o.prix_offilog || 0);
+    const ppht = Number(o.prix_maxi || 0);
+    return {
+      cip13: String(o.ean || ''),     // pas de CIP13, on stocke l'EAN
+      designation: String(o.produit || '').replace(/&amp;/g, '&'),
+      conditionnement: '',
+      prix_ht: ppht,
+      ppht: ppht,
+      prix_ip: offiPrix || ppht,      // par défaut prix_offilog (modifiable)
+      offre_ip: 0,
+      remise_pct: (ppht > 0 && offiPrix > 0) ? Math.max(0, ((ppht - offiPrix) / ppht) * 100) : 0,
+      img: String(o.img || ''),
+      source: 'offilog',
+      marque: String(o.marque || ''),
+      univers: String(o.univers || ''),
     };
   }
 
@@ -380,6 +402,39 @@
       .filter(b => b.prix_ip > 0)
       .filter(b => b.designation.toLowerCase().includes(needle) || (b.cip13||'').includes(needle))
       .slice(0, 30);
+  }
+
+  function getOfflogUniverses() {
+    if (!window.OFFILOG) return [];
+    const set = new Set();
+    window.OFFILOG.forEach(o => {
+      const u = (o.univers || '').trim();
+      if (u && u !== 'Non classé' && u !== '') set.add(u);
+    });
+    return Array.from(set).sort();
+  }
+
+  function searchOffilogProducts(q, univers) {
+    if (!window.OFFILOG) return [];
+    const needle = (q || '').toLowerCase().trim();
+    const uniFilter = univers && univers !== 'all';
+    let list = window.OFFILOG;
+    if (needle.length < 2 && !uniFilter) return [];
+    if (uniFilter) list = list.filter(o => (o.univers || '') === univers);
+    if (needle) {
+      list = list.filter(o =>
+        (o.produit_norm || '').includes(needle) ||
+        (o.marque || '').toLowerCase().includes(needle) ||
+        String(o.ean || '').includes(needle)
+      );
+    }
+    // Priorité : produits avec image + dans offilog
+    list = list.slice().sort((a, b) => {
+      const sa = (a.img ? 2 : 0) + (a.dans_offilog ? 1 : 0);
+      const sb = (b.img ? 2 : 0) + (b.dans_offilog ? 1 : 0);
+      return sb - sa;
+    });
+    return list.slice(0, 40);
   }
 
   // ── FORMATTERS ──────────────────────────────────────────────
@@ -399,6 +454,8 @@
   let editingSheet = null;
   let editTab = 'season';    // 'season' | 'cat' | 'custom'
   let productSearch = '';
+  let offilogSearch = '';
+  let offilogUnivers = 'all';
   let statsFamille = 'top';  // 'top' | 'Froid' | 'Biosimilaires' | 'Génériques' | 'Gén. partenaires' | 'Non remboursés' | 'Princeps'
   let statsTranche = 'all';  // 'all' | 'petit' (≤4.33€) | 'inter' (4.33-468€) | 'haut' (>468€)
   let selectedSheetIds = new Set();  // selection multi-fiches pour export PDF combine
@@ -981,7 +1038,7 @@
             </div>
 
             <div class="mk-card">
-              <div class="mk-card-title">Ajouter des produits</div>
+              <div class="mk-card-title">Catalogue IP <span class="mk-card-sub">médicaments · CIP</span></div>
               <input class="mk-input" placeholder="Rechercher (nom ou CIP)…"
                 value="${escapeAttr(productSearch)}"
                 oninput="window.mkSetSearch(this.value)" />
@@ -1004,6 +1061,8 @@
                 <div class="mk-empty-search">Aucun produit trouvé</div>
               ` : ''}
             </div>
+
+            ${renderOffilogPanel(s)}
           </div>
 
           <!-- COLONNE DROITE : sélection + aperçu mini -->
@@ -1070,6 +1129,101 @@
   function escapeAttr(s) {
     return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
   }
+
+  // ── PANEL OFFILOG (parapharmacie + images) ──────────────────
+  function renderOffilogPanel(s) {
+    if (!window.OFFILOG) {
+      return `
+        <div class="mk-card mk-card-offilog">
+          <div class="mk-card-title">Catalogue OFFILOG <span class="mk-card-sub">parapharmacie · images</span></div>
+          <div class="mk-empty-search">Chargement du catalogue OFFILOG…</div>
+        </div>
+      `;
+    }
+    const results = searchOffilogProducts(offilogSearch, offilogUnivers);
+    const selectedEans = new Set((s.products || []).filter(p => p.source === 'offilog').map(p => p.cip13));
+    const universes = getOfflogUniverses();
+    return `
+      <div class="mk-card mk-card-offilog">
+        <div class="mk-card-title">Catalogue OFFILOG <span class="mk-card-sub">parapharmacie · images</span></div>
+        <input class="mk-input" placeholder="Rechercher (nom, marque, EAN)…"
+          value="${escapeAttr(offilogSearch)}"
+          oninput="window.mkSetOffilogSearch(this.value)" />
+        <div class="mk-off-filters">
+          <button class="mk-off-pill ${offilogUnivers==='all'?'on':''}" onclick="window.mkSetOffilogUnivers('all')">Tous univers</button>
+          ${universes.slice(0, 8).map(u => `
+            <button class="mk-off-pill ${offilogUnivers===u?'on':''}" onclick="window.mkSetOffilogUnivers('${escapeAttr(u).replace(/'/g, '&#39;')}')">${escapeAttr(u)}</button>
+          `).join('')}
+        </div>
+        ${results.length > 0 ? `
+          <div class="mk-off-grid">
+            ${results.map(o => {
+              const isSel = selectedEans.has(String(o.ean));
+              const prix = o.prix_offilog ? eur(o.prix_offilog) : '—';
+              const prixMax = o.prix_maxi ? eur(o.prix_maxi) : '';
+              const name = (o.produit || '').replace(/&amp;/g, '&');
+              const img = o.img ? `<img src="${escapeAttr(o.img)}" alt="" loading="lazy" onerror="this.style.display='none';this.parentNode.classList.add('mk-off-noimg')"/>` : '';
+              return `
+                <button class="mk-off-tile ${isSel?'on':''} ${o.img?'':'mk-off-noimg'}"
+                  onclick="window.mkToggleOffilogProduct('${escapeAttr(String(o.ean))}')"
+                  ${isSel?'disabled':''}
+                  title="${escapeAttr(name)}">
+                  <div class="mk-off-thumb">
+                    ${img || '<span class="mk-off-ph">📦</span>'}
+                    <div class="mk-off-badge">${isSel?'✓':'+'}</div>
+                  </div>
+                  <div class="mk-off-info">
+                    <div class="mk-off-marque">${escapeAttr(o.marque || '—')}</div>
+                    <div class="mk-off-name">${escapeAttr(name)}</div>
+                    <div class="mk-off-prices">
+                      <span class="mk-off-price-off">${prix}</span>
+                      ${prixMax ? `<span class="mk-off-price-max">${prixMax}</span>` : ''}
+                    </div>
+                  </div>
+                </button>
+              `;
+            }).join('')}
+          </div>
+          <div class="mk-off-footer">${results.length} résultat${results.length>1?'s':''} ${offilogSearch ? `· "${escapeAttr(offilogSearch)}"` : ''}</div>
+        ` : (offilogSearch.length >= 2 || offilogUnivers !== 'all') ? `
+          <div class="mk-empty-search">Aucun produit trouvé</div>
+        ` : `
+          <div class="mk-empty-search">Tape 2 lettres ou choisis un univers.</div>
+        `}
+      </div>
+    `;
+  }
+
+  window.mkSetOffilogSearch = function (q) {
+    offilogSearch = q;
+    renderEdit();
+    const el = (getRoot() || document).querySelector('input[placeholder^="Rechercher (nom, marque"]');
+    if (el) { el.focus(); el.setSelectionRange(q.length, q.length); }
+  };
+  window.mkSetOffilogUnivers = function (u) {
+    offilogUnivers = u;
+    renderEdit();
+  };
+  window.mkToggleOffilogProduct = function (ean) {
+    if (!editingSheet || !window.OFFILOG) return;
+    if (editingSheet.products.find(p => p.source === 'offilog' && p.cip13 === ean)) return;
+    const cap = TEMPLATES[getTemplateId(editingSheet)].maxProducts;
+    if (editingSheet.products.length >= cap) {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Limite atteinte : ' + cap + ' produits max', 'info');
+      }
+      return;
+    }
+    const o = window.OFFILOG.find(x => String(x.ean) === String(ean));
+    if (!o) return;
+    const snap = snapshotOffilogProduct(o);
+    if (getTemplateId(editingSheet) === 'focus') {
+      snap.accroche = '';
+      snap.argument = '';
+    }
+    editingSheet.products.push(snap);
+    renderEdit();
+  };
 
   window.mkSetSearch = function (q) {
     productSearch = q;
@@ -1415,7 +1569,10 @@
               ${sheet.products.map(p => `
                 <tr>
                   <td class="mk-cell-cip">${cipFormat(p.cip13)}</td>
-                  <td class="mk-cell-name">${p.designation}</td>
+                  <td class="mk-cell-name">
+                    ${p.img ? `<span class="mk-cell-thumb"><img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" onerror="this.style.display='none'"/></span>` : ''}
+                    <span class="mk-cell-name-text">${p.designation}</span>
+                  </td>
                   <td class="mk-cell-price">${eur(p.prix_ht)}</td>
                   <td class="mk-cell-price-strong" style="background:${cp.priceBg};color:${cp.priceFg}">${eur(p.prix_ip)}</td>
                 </tr>
@@ -1469,8 +1626,11 @@
             <tbody>
               ${sheet.products.map(p => `
                 <tr>
-                  <td class="mk-memo-desig">${p.designation || '—'}</td>
-                  <td class="mk-memo-marque">${extractMarque(p.designation)}</td>
+                  <td class="mk-memo-desig">
+                    ${p.img ? `<span class="mk-cell-thumb mk-cell-thumb-lg"><img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" onerror="this.style.display='none'"/></span>` : ''}
+                    <span class="mk-cell-name-text">${p.designation || '—'}</span>
+                  </td>
+                  <td class="mk-memo-marque">${p.marque || extractMarque(p.designation)}</td>
                   <td class="mk-memo-cip">${cipFormat(p.cip13)}</td>
                   <td class="mk-memo-cond">${p.conditionnement || '—'}</td>
                   <td class="mk-memo-price">${eur(p.prix_ht)}</td>
@@ -1523,9 +1683,9 @@
         </div>
 
         <div class="mk-focus-list">
-          ${sheet.products.slice(0,3).map((p, i) => `
+          ${sheet.products.slice(0, TEMPLATES.focus.maxProducts).map((p, i) => `
             <div class="mk-focus-card">
-              <div class="mk-focus-visual">${placeholderSVG(p.designation)}</div>
+              <div class="mk-focus-visual">${p.img ? `<img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" class="mk-focus-img" onerror="this.outerHTML='${(placeholderSVG(p.designation)+'').replace(/'/g,'&#39;')}'"/>` : placeholderSVG(p.designation)}</div>
               <div class="mk-focus-body">
                 <div class="mk-focus-top">
                   <div class="mk-focus-name">${p.designation || '—'}</div>
@@ -1805,10 +1965,11 @@
           <h1 class="mk-ed-title" style="font-family:'${font.heading}',serif;font-weight:${font.hw};${font.italic ? 'font-style:italic' : ''}">${escapeAttr(s.title)}</h1>
         </div>
         ${lead ? `
-          <div class="mk-ed-lead" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.22)' : 'rgba(11,31,77,0.15)'}">
+          <div class="mk-ed-lead ${lead.img ? 'mk-ed-lead-img' : ''}" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.22)' : 'rgba(11,31,77,0.15)'}">
+            ${lead.img ? `<div class="mk-ed-lead-thumb"><img src="${escapeAttr(lead.img)}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
             <div class="mk-ed-lead-num" style="color:${subCol}">N°01</div>
             <div class="mk-ed-lead-name">${escapeAttr(lead.designation)}</div>
-            <div class="mk-ed-lead-cip" style="color:${subCol}">CIP ${escapeAttr(cipFormat(lead.cip13))}</div>
+            <div class="mk-ed-lead-cip" style="color:${subCol}">${lead.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(lead.cip13))}</div>
             <div class="mk-ed-lead-prices">
               ${lead.ppht ? `<div class="mk-ed-lead-ppht" style="color:${subCol}">PPHT ${eur(lead.ppht)}</div>` : ''}
               <div class="mk-ed-lead-ip" style="color:${textCol}">${eur(lead.prix_ip)}</div>
@@ -1818,10 +1979,11 @@
         ${rest.length ? `
           <div class="mk-ed-grid">
             ${rest.map((p, i) => `
-              <div class="mk-ed-card" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(11,31,77,0.12)'}">
+              <div class="mk-ed-card ${p.img ? 'mk-ed-card-img' : ''}" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(11,31,77,0.12)'}">
+                ${p.img ? `<div class="mk-ed-card-thumb"><img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
                 <div class="mk-ed-card-num" style="color:${subCol}">N°${padNum(i + 2)}</div>
                 <div class="mk-ed-card-name">${escapeAttr(p.designation)}</div>
-                <div class="mk-ed-card-cip" style="color:${subCol}">CIP ${escapeAttr(cipFormat(p.cip13))}</div>
+                <div class="mk-ed-card-cip" style="color:${subCol}">${p.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(p.cip13))}</div>
                 <div class="mk-ed-card-price">${eur(p.prix_ip)}</div>
               </div>
             `).join('')}
@@ -1877,10 +2039,11 @@
           ${products.map((p, i) => {
             const big = i === 0;
             return `
-              <div class="mk-bento-tile ${big ? 'mk-bento-tile-big' : ''}" style="background:${tileBg};border-color:${tileBorder};grid-area:${cellLayouts[i % cellLayouts.length]}">
+              <div class="mk-bento-tile ${big ? 'mk-bento-tile-big' : ''} ${p.img ? 'mk-bento-tile-img' : ''}" style="background:${tileBg};border-color:${tileBorder};grid-area:${cellLayouts[i % cellLayouts.length]}">
+                ${p.img ? `<div class="mk-bento-tile-thumb"><img src="${escapeAttr(p.img)}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
                 <div class="mk-bento-num" style="opacity:.55">${String(i + 1).padStart(2, '0')}</div>
                 <div class="mk-bento-name" style="font-family:'${font.heading}',sans-serif;font-weight:${font.hw}">${escapeAttr(p.designation)}</div>
-                <div class="mk-bento-cip" style="opacity:.55">CIP ${escapeAttr(cipFormat(p.cip13))}</div>
+                <div class="mk-bento-cip" style="opacity:.55">${p.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(p.cip13))}</div>
                 <div class="mk-bento-price-block">
                   ${p.ppht ? `<div class="mk-bento-ppht" style="opacity:.55">PPHT ${eur(p.ppht)}</div>` : ''}
                   <div class="mk-bento-ip">${eur(p.prix_ip)}</div>
