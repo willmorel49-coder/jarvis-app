@@ -509,6 +509,132 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
+   APERÇU LIVE — toolbar d'édition en haut de la modal
+   ══════════════════════════════════════════════════════════════ */
+.mk-pv-tb {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFF 100%);
+  border-bottom: 1.5px solid var(--border);
+  padding: 10px 18px;
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 38vh; overflow-y: auto;
+  box-shadow: 0 6px 18px rgba(11,31,77,0.06);
+  position: relative; z-index: 2;
+}
+.mk-pv-row {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 36px;
+}
+.mk-pv-lbl {
+  font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase;
+  font-weight: 800; color: #64748B;
+  width: 84px; flex-shrink: 0;
+}
+.mk-pv-scroll {
+  display: flex; gap: 6px; align-items: center;
+  overflow-x: auto; padding: 4px 2px;
+  scrollbar-width: thin;
+  flex: 1; min-width: 0;
+}
+.mk-pv-scroll::-webkit-scrollbar { height: 6px; }
+.mk-pv-scroll::-webkit-scrollbar-thumb { background: rgba(11,31,77,0.18); border-radius: 999px; }
+.mk-pv-sep {
+  width: 1px; height: 22px; background: rgba(11,31,77,0.15);
+  margin: 0 4px; flex-shrink: 0;
+}
+
+/* Couleur swatch */
+.mk-pv-swatch {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid rgba(11,31,77,0.08); cursor: pointer; padding: 0;
+  flex-shrink: 0;
+  transition: transform .15s, box-shadow .15s;
+}
+.mk-pv-swatch:hover { transform: scale(1.12); }
+.mk-pv-swatch.on {
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #0057FF;
+  transform: scale(1.08);
+}
+
+/* Template pill */
+.mk-pv-tpl {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 999px;
+  background: #FFFFFF; border: 1.5px solid rgba(11,31,77,0.12);
+  font-size: 12px; font-weight: 700; color: #0B1F4D;
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.mk-pv-tpl-emo { font-size: 13px; }
+.mk-pv-tpl:hover { border-color: #0057FF; transform: translateY(-1px); }
+.mk-pv-tpl.on {
+  background: #0057FF; color: #FFFFFF; border-color: #0057FF;
+  box-shadow: 0 4px 14px rgba(0,87,255,0.32);
+}
+
+/* Gradient swatch */
+.mk-pv-grad {
+  width: 36px; height: 26px; border-radius: 8px;
+  border: 2px solid rgba(11,31,77,0.10); cursor: pointer; padding: 0;
+  flex-shrink: 0;
+  transition: transform .15s;
+}
+.mk-pv-grad:hover { transform: scale(1.08); }
+.mk-pv-grad.on {
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #0057FF;
+}
+
+/* Font pair */
+.mk-pv-font {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 8px;
+  background: #FFFFFF; border: 1.5px solid rgba(11,31,77,0.10);
+  cursor: pointer; flex-shrink: 0;
+  transition: all .15s;
+}
+.mk-pv-font-h { font-size: 16px; font-weight: 900; line-height: 1; color: #0B1F4D; }
+.mk-pv-font-name {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 11px; font-weight: 700; color: #64748B; letter-spacing: .3px;
+}
+.mk-pv-font:hover { border-color: #0057FF; }
+.mk-pv-font.on { border-color: #0057FF; box-shadow: 0 0 0 2px rgba(0,87,255,0.20); }
+
+/* Sticker */
+.mk-pv-stk {
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 2px solid rgba(11,31,77,0.10); cursor: pointer;
+  background: #FFFFFF; padding: 4px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: transform .15s;
+}
+.mk-pv-stk svg { width: 100%; height: 100%; }
+.mk-pv-stk:hover { transform: scale(1.08); }
+.mk-pv-stk.on { border-color: #0057FF; box-shadow: 0 0 0 2px rgba(0,87,255,0.20); }
+
+/* Mobile */
+@media (max-width: 700px) {
+  .mk-pv-tb { padding: 8px 12px; max-height: 44vh; }
+  .mk-pv-lbl { width: 64px; font-size: 9px; }
+  .mk-pv-tpl { padding: 6px 10px; font-size: 11px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AUTO-PAGE-BREAK PDF — gérer >12 produits sur offre/memo
+   html2pdf coupe entre les <tr> grâce à break-inside: avoid
+   ══════════════════════════════════════════════════════════════ */
+.mk-pdf-table tr, .mk-memo-table tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.mk-pdf-table thead, .mk-memo-table thead {
+  display: table-header-group; /* répète l'entête sur chaque page */
+}
+.mk-pdf, .mk-pdf-target { overflow: visible !important; }
+
+/* ══════════════════════════════════════════════════════════════
    PDF — Style de la fiche générée (doit être autonome car html2canvas)
    Format A4 portrait : 794 × 1123 px @ 96dpi
    ══════════════════════════════════════════════════════════════ */
