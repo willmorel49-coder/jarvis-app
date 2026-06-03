@@ -50,25 +50,25 @@
 
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260605e" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260605f" />
   <!-- Styles desktop -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="style-classic.css" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260605e" />
-  <link rel="stylesheet" href="marketing-design-system.css?v=20260605e" />
+  <link rel="stylesheet" href="marketing.css?v=20260605f" />
+  <link rel="stylesheet" href="marketing-design-system.css?v=20260605f" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260605e" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260605e" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260605e" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260605e" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260605f" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260605f" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260605f" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260605f" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260605e" />
-  <link rel="stylesheet" href="native-headers.css?v=20260605e" />
-  <link rel="stylesheet" href="native-lists.css?v=20260605e" />
-  <link rel="stylesheet" href="native-motion.css?v=20260605e" />
-  <link rel="stylesheet" href="skeleton-loaders.css?v=20260605e" />
+  <link rel="stylesheet" href="native-shell.css?v=20260605f" />
+  <link rel="stylesheet" href="native-headers.css?v=20260605f" />
+  <link rel="stylesheet" href="native-lists.css?v=20260605f" />
+  <link rel="stylesheet" href="native-motion.css?v=20260605f" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260605f" />
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -105,10 +105,10 @@
        Les lourds (stock 1.7 MB, catalogue-ip 188 KB, client-products 84 KB,
        benchmark-data 3.6 MB, establishments-aggregate 4 MB, offilog 1.7 MB,
        drakkars 3.8 MB, cap3000 2.4 MB) sont LAZY via perf-boot.js. -->
-  <script src="clients-data.js?v=20260605e"></script>
-  <script src="pharmacies-geo.js?v=20260605e"></script>
-  <script src="groupements-data.js?v=20260605e"></script>
-  <script src="sales-detail.js?v=20260605e"></script>
+  <script src="clients-data.js?v=20260605f"></script>
+  <script src="pharmacies-geo.js?v=20260605f"></script>
+  <script src="groupements-data.js?v=20260605f"></script>
+  <script src="sales-detail.js?v=20260605f"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -136,22 +136,22 @@
     });
   </script>
 
-  <script src="app.js?v=20260605e" defer></script>
-  <script src="dashboard-v2.js?v=20260605e" defer></script>
+  <script src="app.js?v=20260605f" defer></script>
+  <script src="dashboard-v2.js?v=20260605f" defer></script>
   <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
-  <script src="perf-boot.js?v=20260605e" defer></script>
-  <script src="classic-overrides.js?v=20260605e" defer></script>
-  <script src="mobile-shell.js?v=20260605e" defer></script>
+  <script src="perf-boot.js?v=20260605f" defer></script>
+  <script src="classic-overrides.js?v=20260605f" defer></script>
+  <script src="mobile-shell.js?v=20260605f" defer></script>
   <!-- Native UI shell (bottom tab bar uniquement) -->
-  <script src="native-shell.js?v=20260605e" defer></script>
+  <script src="native-shell.js?v=20260605f" defer></script>
   <!-- DESACTIVES temporairement (debug : Will n'a aucune page qui s'affiche)
-       <script src="native-headers.js?v=20260605e" defer></script>
-       <script src="native-motion.js?v=20260605e" defer></script>
-       <script src="skeleton-loaders.js?v=20260605e" defer></script>
+       <script src="native-headers.js?v=20260605f" defer></script>
+       <script src="native-motion.js?v=20260605f" defer></script>
+       <script src="skeleton-loaders.js?v=20260605f" defer></script>
   -->
-  <script src="marketing-offers.js?v=20260605e" defer></script>
-  <script src="marketing-design-system.js?v=20260605e" defer></script>
-  <script src="marketing.js?v=20260605e" defer></script>
+  <script src="marketing-offers.js?v=20260605f" defer></script>
+  <script src="marketing-design-system.js?v=20260605f" defer></script>
+  <script src="marketing.js?v=20260605f" defer></script>
 </head>
 
 <body>

@@ -558,6 +558,8 @@
       remise_pct: bench ? bench.remise_pct : null,
       offre_ip: bench ? bench.offre_ip : null,
       froid: bench ? bench.froid : prod.famille === 'Froid',
+      source: 'ip',
+      img: resolveImage(prod.ean || prod.artcode, prod.designation),
     };
     if (!editingSheet) {
       // Pas d'edition en cours -> cree une fiche custom et arrive sur l'editeur
@@ -1205,15 +1207,72 @@
     return ix;
   }
 
+  // Normalise un nom de produit pour matching tolerant (Sagitta vs OFFILOG)
+  function normName(s) {
+    return String(s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9 ]/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  // Extrait les premiers tokens significatifs (marque + nom court)
+  function nameKey(s) {
+    const n = normName(s);
+    return n.split(' ').slice(0, 4).join(' ');
+  }
+
+  let __imgIdxCache = null;
   function buildOffilogImageIndex() {
-    // Map EAN -> img URL pour visuels Sagitta
-    const ix = new Map();
+    // Index multi-cle pour maximiser les matches d'images :
+    //  - par EAN13 complet
+    //  - par CIP7 (7 derniers chiffres de l'EAN)
+    //  - par nom normalise court (4 premiers tokens)
+    if (__imgIdxCache) return __imgIdxCache;
+    const byEan = new Map();
+    const byCip7 = new Map();
+    const byName = new Map();
     if (window.OFFILOG) {
       window.OFFILOG.forEach(o => {
-        if (o.ean && o.img) ix.set(String(o.ean), o.img);
+        if (!o.img) return;
+        if (o.ean) {
+          const ean = String(o.ean);
+          byEan.set(ean, o.img);
+          // CIP7 = derniers 7 chiffres de l'EAN13 (norme parapharma)
+          if (ean.length >= 7) byCip7.set(ean.slice(-7), o.img);
+          if (ean.length >= 7) byCip7.set(ean.slice(0, 7), o.img);
+        }
+        const key = nameKey(o.produit);
+        if (key && key.length > 6 && !byName.has(key)) byName.set(key, o.img);
       });
     }
-    return ix;
+    __imgIdxCache = { byEan, byCip7, byName };
+    return __imgIdxCache;
+  }
+
+  // Resout l'image pour un produit Sagitta avec fallback multi-cle
+  function resolveImage(cip13, name) {
+    const ix = buildOffilogImageIndex();
+    if (!cip13 && !name) return '';
+    if (cip13) {
+      const direct = ix.byEan.get(String(cip13));
+      if (direct) return direct;
+      const c7tail = ix.byCip7.get(String(cip13).slice(-7));
+      if (c7tail) return c7tail;
+    }
+    if (name) {
+      const key = nameKey(name);
+      if (key.length > 6) {
+        const byN = ix.byName.get(key);
+        if (byN) return byN;
+        // Tente avec 3 tokens seulement (marque + dosage parfois)
+        const shortKey = key.split(' ').slice(0, 3).join(' ');
+        if (shortKey !== key) {
+          const byShort = ix.byName.get(shortKey);
+          if (byShort) return byShort;
+        }
+      }
+    }
+    return '';
   }
 
   // Cumul ventes secteur OPS+CPR+HP indexe par EAN/CIP13 (pour tri volume)
@@ -1243,11 +1302,11 @@
   function computeSagittaCompare() {
     if (!window.SAGITTA_SHORTLIST) return null;
     const ipIdx = buildSagittaIndex();
-    const imgIdx = buildOffilogImageIndex();
     const salesIdx = buildSalesByEan();
     const list = window.SAGITTA_SHORTLIST.map(p => {
       const ip = ipIdx.get(String(p.cip13));
-      const img = imgIdx.get(String(p.cip13)) || '';
+      // Resolution image multi-cle : EAN -> CIP7 -> nom normalise
+      const img = resolveImage(p.cip13, p.name);
       const sales = salesIdx.get(String(p.cip13)) || { qte: 0, ca: 0 };
       const prix_ip = ip ? ip.prix_ip : null;
       const ecart_eur = (prix_ip != null && p.prix_sagitta != null) ? (prix_ip - p.prix_sagitta) : null;
@@ -1476,11 +1535,9 @@
       if (typeof window.showToast === 'function') window.showToast('Produit introuvable dans catalogue IP', 'error');
       return;
     }
-    // Récupère image OFFILOG si dispo
-    if (window.OFFILOG) {
-      const o = window.OFFILOG.find(x => String(x.ean) === String(cip));
-      if (o && o.img) snap.img = o.img;
-    }
+    // Recupere image (EAN/CIP7/nom) depuis l'index OFFILOG multi-source
+    const found = resolveImage(cip, snap.designation);
+    if (found) snap.img = found;
     editingSheet.products.push(snap);
     if (typeof window.showToast === 'function') window.showToast('Ajouté à la fiche ✓', 'success');
     renderEdit();
@@ -1653,6 +1710,8 @@
     const b = window.BENCHMARK.find(b => b.cip13 === cip);
     if (b) {
       const snap = snapshotProduct(b);
+      // Recupere image automatiquement (OFFILOG par EAN/CIP/nom)
+      snap.img = resolveImage(b.cip13, b.designation);
       if (getTemplateId(editingSheet) === 'focus') {
         snap.accroche = '';
         snap.argument = '';
