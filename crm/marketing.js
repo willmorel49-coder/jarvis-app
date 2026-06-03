@@ -1178,13 +1178,39 @@
     return ix;
   }
 
+  // Cumul ventes secteur OPS+CPR+HP indexe par EAN/CIP13 (pour tri volume)
+  let __salesByEanCache = null;
+  function buildSalesByEan() {
+    if (__salesByEanCache) return __salesByEanCache;
+    const ix = new Map();
+    function add(src) {
+      if (!src) return;
+      for (const code in src) {
+        const p = src[code];
+        const ean = String(p.ean || '');
+        if (!ean) continue;
+        const cur = ix.get(ean) || { qte: 0, ca: 0 };
+        cur.qte += (p.qte || 0);
+        cur.ca  += (p.ca  || 0);
+        ix.set(ean, cur);
+      }
+    }
+    add(window.OPS_AGGREGATE);
+    add(window.CPR_AGGREGATE);
+    add(window.HP_AGGREGATE);
+    __salesByEanCache = ix;
+    return ix;
+  }
+
   function computeSagittaCompare() {
     if (!window.SAGITTA_SHORTLIST) return null;
     const ipIdx = buildSagittaIndex();
     const imgIdx = buildOffilogImageIndex();
+    const salesIdx = buildSalesByEan();
     const list = window.SAGITTA_SHORTLIST.map(p => {
       const ip = ipIdx.get(String(p.cip13));
       const img = imgIdx.get(String(p.cip13)) || '';
+      const sales = salesIdx.get(String(p.cip13)) || { qte: 0, ca: 0 };
       const prix_ip = ip ? ip.prix_ip : null;
       const ecart_eur = (prix_ip != null && p.prix_sagitta != null) ? (prix_ip - p.prix_sagitta) : null;
       const ecart_pct = (prix_ip != null && p.prix_sagitta != null && p.prix_sagitta > 0)
@@ -1192,8 +1218,8 @@
       let status;
       if (!ip) status = 'no_ip';
       else if (ecart_eur == null) status = 'no_ip';
-      else if (ecart_eur < -0.05) status = 'ip_win';    // IP moins cher
-      else if (ecart_eur > 0.05) status = 'ip_lose';    // IP plus cher
+      else if (ecart_eur < -0.05) status = 'ip_win';
+      else if (ecart_eur > 0.05) status = 'ip_lose';
       else status = 'tie';
       return Object.assign({}, p, {
         prix_ip: prix_ip,
@@ -1204,19 +1230,17 @@
         ecart_pct: ecart_pct,
         status: status,
         img: img,
+        qte_sector: sales.qte,
+        ca_sector: sales.ca,
       });
     });
-    // Tri : IP gagnant (plus gros ecart négatif) puis tie puis no_ip puis ip_lose
-    const order = { ip_win: 0, tie: 1, no_ip: 2, ip_lose: 3 };
+    // Tri principal : VOLUME secteur OPS+CPR+HP decroissant
+    // (les vrais gros vendeurs en haut, ceux qui rapportent vraiment du CA)
+    // En fallback : ecart absolu pour separer les zero-ventes
     list.sort((a, b) => {
-      const oa = order[a.status], ob = order[b.status];
-      if (oa !== ob) return oa - ob;
-      if (a.status === 'ip_win' || a.status === 'ip_lose') {
-        return (Math.abs(b.ecart_eur || 0) - Math.abs(a.ecart_eur || 0));
-      }
-      return 0;
+      if (b.qte_sector !== a.qte_sector) return b.qte_sector - a.qte_sector;
+      return Math.abs(b.ecart_eur || 0) - Math.abs(a.ecart_eur || 0);
     });
-    // Stats globales
     const stats = {
       total: list.length,
       ip_win: list.filter(p => p.status === 'ip_win').length,
@@ -1224,6 +1248,8 @@
       ip_lose: list.filter(p => p.status === 'ip_lose').length,
       no_ip: list.filter(p => p.status === 'no_ip').length,
       gain_moyen: 0,
+      total_qte: list.reduce((s, p) => s + p.qte_sector, 0),
+      total_ca: list.reduce((s, p) => s + p.ca_sector, 0),
     };
     const wins = list.filter(p => p.status === 'ip_win' && p.ecart_pct != null);
     if (wins.length) {
@@ -1314,47 +1340,57 @@
           </div>
         </div>
 
-        <div class="mk-sag-list">
-          ${top.length === 0 ? '<div class="mk-empty-search">Aucun résultat avec ce filtre.</div>' : top.map(p => {
+        <div class="mk-sag-grid">
+          ${top.length === 0 ? '<div class="mk-empty-search" style="grid-column:1/-1">Aucun résultat avec ce filtre.</div>' : top.map((p, idx) => {
             const ip = p.prix_ip != null ? eur(p.prix_ip) : '—';
             const sag = p.prix_sagitta != null ? eur(p.prix_sagitta) : '—';
-            const ecart = p.ecart_eur != null
-              ? `${p.ecart_eur > 0 ? '+' : ''}${p.ecart_eur.toFixed(2).replace('.', ',')} €${p.ecart_pct != null ? ` · ${p.ecart_pct > 0 ? '+' : ''}${p.ecart_pct.toFixed(1).replace('.', ',')}%` : ''}`
-              : '—';
             const ecartCls = p.status === 'ip_win' ? 'mk-sag-ecart-win' : (p.status === 'ip_lose' ? 'mk-sag-ecart-lose' : '');
+            const ecartTxt = p.ecart_pct != null
+              ? `${p.ecart_pct > 0 ? '+' : ''}${p.ecart_pct.toFixed(0)}%`
+              : '—';
+            const ecartEur = p.ecart_eur != null
+              ? `${p.ecart_eur > 0 ? '+' : ''}${p.ecart_eur.toFixed(2).replace('.', ',')} €`
+              : '';
+            const volQte = p.qte_sector > 0
+              ? p.qte_sector.toLocaleString('fr-FR') + ' u'
+              : '— vente sect.';
+            const rank = idx + 1;
             return `
-              <div class="mk-sag-row mk-sag-row-${p.status}">
-                <div class="mk-sag-thumb">
-                  ${p.img ? `<img src="${escapeAttr(p.img)}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="mk-sag-ph">💊</span>'}
-                </div>
-                <div class="mk-sag-info">
-                  <div class="mk-sag-name">${escapeAttr(p.name)}</div>
-                  <div class="mk-sag-meta">
-                    <span>${escapeAttr(p.labo || '—')}</span>
-                    <span>· CIP ${escapeAttr(p.cip13)}</span>
-                    ${p.categorie ? `<span>· ${escapeAttr(p.categorie)}</span>` : ''}
-                  </div>
+              <div class="mk-sag-card mk-sag-card-${p.status}">
+                <div class="mk-sag-card-thumb">
+                  ${p.img ? `<img src="${escapeAttr(p.img)}" alt="" loading="lazy" onerror="this.style.display='none';this.parentNode.classList.add('mk-sag-card-noimg')"/>` : '<span class="mk-sag-ph">💊</span>'}
+                  <div class="mk-sag-card-rank">#${rank}</div>
+                  ${p.qte_sector > 0 ? `<div class="mk-sag-card-vol" title="Ventes OPS+CPR+HP"><span class="mk-sag-card-vol-num">${volQte}</span><span class="mk-sag-card-vol-ca">${eur(p.ca_sector)}</span></div>` : ''}
                   ${statusBadge(p.status)}
+                  ${p.prix_ip != null
+                    ? `<button class="mk-sag-card-add" title="Ajouter à la fiche" onclick="window.mkAddSagittaProduct('${escapeAttr(p.cip13)}')">+</button>`
+                    : ''}
                 </div>
-                <div class="mk-sag-prices">
-                  <div class="mk-sag-price-block">
-                    <div class="mk-sag-price-lbl">Sagitta</div>
-                    <div class="mk-sag-price-val">${sag}</div>
-                    ${p.prix_barre ? `<div class="mk-sag-price-old">${eur(p.prix_barre)}</div>` : ''}
-                    ${p.remise_pct ? `<div class="mk-sag-price-pct">−${p.remise_pct}%</div>` : ''}
+                <div class="mk-sag-card-body">
+                  <div class="mk-sag-card-name">${escapeAttr(p.name)}</div>
+                  <div class="mk-sag-card-meta">${escapeAttr(p.labo || '—')} · CIP ${escapeAttr(p.cip13)}</div>
+                  <div class="mk-sag-card-prices">
+                    <div class="mk-sag-card-price-blk">
+                      <div class="mk-sag-card-price-lbl">Sagitta</div>
+                      <div class="mk-sag-card-price-val">${sag}</div>
+                      ${p.prix_barre ? `<div class="mk-sag-card-price-old">${eur(p.prix_barre)} · −${p.remise_pct || 0}%</div>` : ''}
+                    </div>
+                    <div class="mk-sag-card-price-blk mk-sag-card-price-ip">
+                      <div class="mk-sag-card-price-lbl">IP</div>
+                      <div class="mk-sag-card-price-val">${ip}</div>
+                      ${p.prix_ip_ht ? `<div class="mk-sag-card-price-old">PPHT ${eur(p.prix_ip_ht)}</div>` : ''}
+                    </div>
                   </div>
-                  <div class="mk-sag-price-block mk-sag-price-ip">
-                    <div class="mk-sag-price-lbl">IP</div>
-                    <div class="mk-sag-price-val">${ip}</div>
+                  <div class="mk-sag-card-ecart ${ecartCls}">
+                    <span class="mk-sag-card-ecart-pct">${ecartTxt}</span>
+                    ${ecartEur ? `<span class="mk-sag-card-ecart-eur">${ecartEur}</span>` : ''}
                   </div>
-                  <div class="mk-sag-ecart ${ecartCls}">${ecart}</div>
                 </div>
-                ${p.prix_ip != null ? `<button class="mk-sag-add" title="Ajouter à une fiche" onclick="window.mkAddSagittaProduct('${escapeAttr(p.cip13)}')">+</button>` : '<div class="mk-sag-add mk-sag-add-disabled" title="Pas chez IP">·</div>'}
               </div>
             `;
           }).join('')}
         </div>
-        ${list.length > 80 ? `<div class="mk-sag-footer">Affichage limité à 80 sur ${list.length} résultats — affine ta recherche</div>` : `<div class="mk-sag-footer">${list.length} produit${list.length>1?'s':''} affiché${list.length>1?'s':''}</div>`}
+        ${list.length > 80 ? `<div class="mk-sag-footer">Affichage limité à 80 sur ${list.length} résultats — affine ta recherche</div>` : `<div class="mk-sag-footer">${list.length} produit${list.length>1?'s':''} · tri par volumes secteur OPS+CPR+HP décroissants</div>`}
       </div>
     `;
   }
