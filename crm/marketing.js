@@ -404,14 +404,19 @@
       .slice(0, 30);
   }
 
+  // Memoize : la liste des univers OFFILOG ne change pas une fois OFFILOG charge,
+  // pas la peine de reconstruire un Set + tri a chaque render (3 520 produits scannes).
+  let __offilogUniversesCache = null;
   function getOfflogUniverses() {
     if (!window.OFFILOG) return [];
+    if (__offilogUniversesCache) return __offilogUniversesCache;
     const set = new Set();
     window.OFFILOG.forEach(o => {
       const u = (o.univers || '').trim();
       if (u && u !== 'Non classé' && u !== '') set.add(u);
     });
-    return Array.from(set).sort();
+    __offilogUniversesCache = Array.from(set).sort();
+    return __offilogUniversesCache;
   }
 
   function searchOffilogProducts(q, univers) {
@@ -461,6 +466,35 @@
   let sagittaStatus = 'all'; // 'all' | 'ip_win' | 'ip_lose' | 'no_ip'
   let sagittaSearch = '';
   let selectedSheetIds = new Set();  // selection multi-fiches pour export PDF combine
+
+  // ── DEBOUNCE pour les inputs de recherche ──────────────────
+  // Sans debounce, chaque keystroke declenchait un renderEdit() complet :
+  // re-render Sagitta (jusqu'a 80 cards + images), OFFILOG grid (jusqu'a 40
+  // tuiles + images), liste produit BENCHMARK (30 lignes). En tapant 8 lettres
+  // -> 8 full re-renders en moins de 500 ms -> input laggy sur iPhone.
+  // 180 ms = compromis "perception instantane" (sous 200 ms) et batching reel.
+  function debounce(fn, wait) {
+    let t = null;
+    return function () {
+      const ctx = this;
+      const args = arguments;
+      if (t) clearTimeout(t);
+      t = setTimeout(function () { t = null; fn.apply(ctx, args); }, wait || 180);
+    };
+  }
+  // Helper : restaure le focus + la position du curseur dans un input apres
+  // un re-render complet du root (innerHTML rebuild). Cible le 1er input
+  // matching selector. Utilise par les setters de recherche debouncees.
+  function restoreFocus(selector, value) {
+    const root = getRoot() || document;
+    const el = root.querySelector(selector);
+    if (!el) return;
+    try {
+      el.focus();
+      const len = (value != null ? String(value) : (el.value || '')).length;
+      if (typeof el.setSelectionRange === 'function') el.setSelectionRange(len, len);
+    } catch (e) { /* old browsers */ }
+  }
 
   // ── TOP VENTES OPS+CPR+HP par famille IP ───────────────────────────────
   // Fusion des 3 etablissements par artcode, classement par famille IP.
@@ -1187,7 +1221,12 @@
   }
 
   // ── COMPARATIF SAGITTA NR / LNR vs IP ───────────────────────
+  // Memoize : CATALOGUE_IP + BENCHMARK ne changent pas en cours de session.
+  // Construire l'index Map(>10500 entries) a chaque computeSagittaCompare etait
+  // un cout substantiel (rappele a chaque keystroke dans la recherche Sagitta).
+  let __sagittaIndexCache = null;
   function buildSagittaIndex() {
+    if (__sagittaIndexCache) return __sagittaIndexCache;
     // Map CIP13 -> { prix_ip, designation, source }
     const ix = new Map();
     if (window.CATALOGUE_IP) {
@@ -1216,6 +1255,7 @@
         }
       });
     }
+    __sagittaIndexCache = ix;
     return ix;
   }
 
@@ -1311,8 +1351,14 @@
     return ix;
   }
 
+  // Memoize : la comparaison Sagitta NE depend QUE de SAGITTA_SHORTLIST + indexes
+  // (CATALOGUE_IP, BENCHMARK, AGGREGATES) tous figes une fois charges. Aucun
+  // filtre interactif n'entre ici (le search/status sont appliques en aval).
+  // Cache la totalite -> renderSagittaCompareSection() devient quasi-gratuit.
+  let __sagittaCompareCache = null;
   function computeSagittaCompare() {
     if (!window.SAGITTA_SHORTLIST) return null;
+    if (__sagittaCompareCache) return __sagittaCompareCache;
     const ipIdx = buildSagittaIndex();
     const salesIdx = buildSalesByEan();
     const list = window.SAGITTA_SHORTLIST.map(p => {
@@ -1364,7 +1410,8 @@
     if (wins.length) {
       stats.gain_moyen = wins.reduce((s, p) => s + Math.abs(p.ecart_pct), 0) / wins.length;
     }
-    return { list, stats };
+    __sagittaCompareCache = { list, stats };
+    return __sagittaCompareCache;
   }
 
   function renderSagittaCompareSection() {
@@ -1467,7 +1514,7 @@
             return `
               <div class="mk-sag-card mk-sag-card-${p.status}">
                 <div class="mk-sag-card-thumb">
-                  ${p.img ? `<img src="${escapeAttr(p.img)}" alt="" loading="lazy" onerror="this.style.display='none';this.parentNode.classList.add('mk-sag-card-noimg')"/>` : '<span class="mk-sag-ph">💊</span>'}
+                  ${p.img ? `<img src="${escapeAttr(p.img)}" alt="" loading="lazy" decoding="async" width="240" height="240" onerror="this.style.display='none';this.parentNode.classList.add('mk-sag-card-noimg')"/>` : '<span class="mk-sag-ph">💊</span>'}
                   <div class="mk-sag-card-rank">#${rank}</div>
                   ${p.qte_sector > 0 ? `<div class="mk-sag-card-vol" title="Ventes OPS+CPR+HP"><span class="mk-sag-card-vol-num">${volQte}</span><span class="mk-sag-card-vol-ca">${eur(p.ca_sector)}</span></div>` : ''}
                   ${statusBadge(p.status)}
@@ -1504,12 +1551,21 @@
     `;
   }
 
-  window.mkSetSagittaStatus = function (s) { sagittaStatus = s; renderEdit(); };
-  window.mkSetSagittaSearch = function (q) {
+  // Sagitta section vit dans renderMarketing() (page d'accueil) — pas renderEdit().
+  // L'appel a renderEdit() etait un no-op silencieux (early-return si pas
+  // d'editingSheet). On route vers renderMarketing() qui est le bon contexte.
+  window.mkSetSagittaStatus = function (s) { sagittaStatus = s; window.renderMarketing(); };
+  // Debounce 180ms : evite un re-render complet sur chaque keystroke
+  // (renderMarketing re-monte la section Top ventes 100 lignes + Sagitta 80 cards).
+  const _doSagittaSearch = debounce(function (q) {
     sagittaSearch = q;
-    renderEdit();
-    const el = (getRoot() || document).querySelector('input.mk-sag-search');
-    if (el) { el.focus(); el.setSelectionRange(q.length, q.length); }
+    window.renderMarketing();
+    restoreFocus('input.mk-sag-search', q);
+  }, 180);
+  window.mkSetSagittaSearch = function (q) {
+    // Maj immediate de la valeur stockee (pour l'apparence de l'input controle)
+    sagittaSearch = q;
+    _doSagittaSearch(q);
   };
   window.mkAddSagittaProduct = function (cip) {
     // Ajoute à la fiche en édition (si présente) sinon prompt création
@@ -1587,7 +1643,7 @@
               const prix = o.prix_offilog ? eur(o.prix_offilog) : '—';
               const prixMax = o.prix_maxi ? eur(o.prix_maxi) : '';
               const name = (o.produit || '').replace(/&amp;/g, '&');
-              const img = o.img ? `<img src="${escapeAttr(o.img)}" alt="" loading="lazy" onerror="this.style.display='none';this.parentNode.classList.add('mk-off-noimg')"/>` : '';
+              const img = o.img ? `<img src="${escapeAttr(o.img)}" alt="" loading="lazy" decoding="async" width="160" height="160" onerror="this.style.display='none';this.parentNode.classList.add('mk-off-noimg')"/>` : '';
               return `
                 <button class="mk-off-tile ${isSel?'on':''} ${o.img?'':'mk-off-noimg'}"
                   onclick="window.mkToggleOffilogProduct('${escapeAttr(String(o.ean))}')"
@@ -1619,11 +1675,16 @@
     `;
   }
 
-  window.mkSetOffilogSearch = function (q) {
+  // Debounce 180ms : la grille OFFILOG (jusqu'a 40 tuiles + images) etait
+  // re-rendue a chaque keystroke -> input laggy.
+  const _doOffilogSearch = debounce(function (q) {
     offilogSearch = q;
     renderEdit();
-    const el = (getRoot() || document).querySelector('input[placeholder^="Rechercher (nom, marque"]');
-    if (el) { el.focus(); el.setSelectionRange(q.length, q.length); }
+    restoreFocus('input[placeholder^="Rechercher (nom, marque"]', q);
+  }, 180);
+  window.mkSetOffilogSearch = function (q) {
+    offilogSearch = q;  // maj immediate pour input controle
+    _doOffilogSearch(q);
   };
   window.mkSetOffilogUnivers = function (u) {
     offilogUnivers = u;
@@ -1650,12 +1711,16 @@
     renderEdit();
   };
 
-  window.mkSetSearch = function (q) {
+  // Debounce 180ms : la liste de resultats BENCHMARK (jusqu'a 30 lignes) etait
+  // re-rendue + le selecteur de produits ajoutes a chaque keystroke.
+  const _doProductSearch = debounce(function (q) {
     productSearch = q;
     renderEdit();
-    // refocus search input
-    const el = (getRoot() || document).querySelector('input[placeholder^="Recherc"]');
-    if (el) { el.focus(); el.setSelectionRange(q.length, q.length); }
+    restoreFocus('input[placeholder^="Recherc"]', q);
+  }, 180);
+  window.mkSetSearch = function (q) {
+    productSearch = q;  // maj immediate pour input controle
+    _doProductSearch(q);
   };
 
   window.mkUpdateTitle = function (v) { editingSheet.title = v; };
@@ -2532,6 +2597,177 @@
     editingSheet.updated_at = new Date().toISOString();
     if (typeof window.mkLoadFontPair === 'function') window.mkLoadFontPair(preset.fontPair);
     renderEdit();
+  };
+
+  // ── RECHERCHE D'IMAGE PRODUIT (Edge Function product-image-search) ──────────
+  // L'utilisateur clique sur la loupe d'une ligne produit. On appelle la
+  // fonction serveur Supabase (cascade OpenProducts par EAN puis Google par nom),
+  // on affiche une grille de vignettes, et SEULEMENT au clic "Utiliser" on
+  // assigne p.img + re-render. Aucune image n'est stockée tant qu'il n'a pas
+  // validé — conforme à la demande.
+  function mkImgEnsureModal() {
+    let modal = document.getElementById('mk-img-search-modal');
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = 'mk-img-search-modal';
+    modal.className = 'mk-img-search-modal';
+    modal.setAttribute('hidden', '');
+    modal.innerHTML = ''
+      + '<div class="mk-img-search-backdrop" onclick="window.mkImgCloseModal()"></div>'
+      + '<div class="mk-img-search-panel" role="dialog" aria-label="Choisir une image produit">'
+      +   '<div class="mk-img-search-head">'
+      +     '<div class="mk-img-search-title">Choisir une image</div>'
+      +     '<button class="mk-img-search-close" onclick="window.mkImgCloseModal()" aria-label="Fermer">✕</button>'
+      +   '</div>'
+      +   '<div class="mk-img-search-sub" id="mk-img-search-sub"></div>'
+      +   '<div class="mk-img-search-body" id="mk-img-search-body">'
+      +     '<div class="mk-img-search-loading">Recherche en cours…</div>'
+      +   '</div>'
+      + '</div>';
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function mkImgRenderState(state, payload) {
+    const body = document.getElementById('mk-img-search-body');
+    const sub = document.getElementById('mk-img-search-sub');
+    if (!body) return;
+    if (state === 'loading') {
+      body.innerHTML = '<div class="mk-img-search-loading">Recherche en cours…</div>';
+      if (sub) sub.textContent = payload && payload.label ? payload.label : '';
+      return;
+    }
+    if (state === 'error') {
+      body.innerHTML = '<div class="mk-img-search-error">'
+        + escapeAttr(payload && payload.message ? payload.message : 'Erreur réseau')
+        + '<div class="mk-img-search-hint">Vérifie que la fonction <code>product-image-search</code> est bien déployée sur Supabase.</div>'
+        + '</div>';
+      return;
+    }
+    if (state === 'empty') {
+      body.innerHTML = '<div class="mk-img-search-empty">Aucune image trouvée. Essaie de modifier le nom du produit puis relance.</div>';
+      return;
+    }
+    // state === 'results'
+    const cands = (payload && payload.candidates) || [];
+    const idx = payload && typeof payload.productIndex === 'number' ? payload.productIndex : -1;
+    body.innerHTML = '<div class="mk-img-search-grid">'
+      + cands.map(function (c, k) {
+          const src = String(c.url || '').replace(/"/g, '&quot;');
+          const srcThumb = 'https://images.weserv.nl/?url='
+            + encodeURIComponent(String(c.url || '').replace(/^https?:\/\//, ''))
+            + '&w=320&output=jpg&q=85';
+          const badge = c.source === 'openproducts'
+            ? '<span class="mk-img-badge mk-img-badge-op">OpenProducts</span>'
+            : (c.source === 'google'
+                ? '<span class="mk-img-badge mk-img-badge-gg">Google</span>'
+                : '<span class="mk-img-badge">' + escapeAttr(c.source || '') + '</span>');
+          const title = c.title ? '<div class="mk-img-card-title" title="' + escapeAttr(c.title) + '">' + escapeAttr(c.title) + '</div>' : '';
+          return '<div class="mk-img-card">'
+            + '<div class="mk-img-card-thumb">'
+            +   '<img loading="lazy" src="' + srcThumb + '" onerror="this.style.opacity=.25;this.title=\'image inaccessible\'" />'
+            +   badge
+            + '</div>'
+            + title
+            + '<button class="mk-img-card-use" onclick="window.mkImgUse(' + idx + ',' + k + ')">Utiliser cette image</button>'
+            + '</div>';
+        }).join('')
+      + '</div>';
+    // Stocke la liste pour mkImgUse
+    window.__mkImgLastCandidates = cands;
+    window.__mkImgLastIndex = idx;
+  }
+
+  window.mkImgCloseModal = function () {
+    const modal = document.getElementById('mk-img-search-modal');
+    if (modal) modal.setAttribute('hidden', '');
+  };
+
+  window.mkImgUse = function (productIndex, candIndex) {
+    if (!editingSheet || !editingSheet.products[productIndex]) return;
+    const cands = window.__mkImgLastCandidates || [];
+    const c = cands[candIndex];
+    if (!c || !c.url) return;
+    editingSheet.products[productIndex].img = c.url;
+    editingSheet.updated_at = new Date().toISOString();
+    window.mkImgCloseModal();
+    renderEdit();
+    if (typeof window.showToast === 'function') {
+      window.showToast('Image associée au produit ✓', 'success');
+    }
+  };
+
+  window.mkFindImages = function (i) {
+    if (!editingSheet || !editingSheet.products[i]) return;
+    const p = editingSheet.products[i];
+    const name = String(p.designation || '').trim();
+    const cip13 = String(p.cip13 || '').trim();
+    // Heuristique EAN : si le code n'est pas un CIP13 FR (13 chars commençant
+    // par 3400) on l'envoie aussi en EAN — utile pour parapharma.
+    const looksLikeCip = /^3400\d{9}$/.test(cip13);
+    const ean = p.ean ? String(p.ean).trim() : (cip13 && !looksLikeCip ? cip13 : '');
+
+    if (!name && !cip13 && !ean) {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Pas assez d\'infos pour chercher (nom/CIP/EAN manquants)', 'info');
+      }
+      return;
+    }
+
+    mkImgEnsureModal();
+    const modal = document.getElementById('mk-img-search-modal');
+    modal.removeAttribute('hidden');
+    mkImgRenderState('loading', { label: name || cip13 || ean });
+
+    const base = (window.SUPABASE_URL || '').replace(/\/+$/, '');
+    if (!base) {
+      mkImgRenderState('error', { message: 'SUPABASE_URL non défini.' });
+      return;
+    }
+    const params = new URLSearchParams();
+    if (ean) params.set('ean', ean);
+    if (cip13) params.set('cip13', cip13);
+    if (name) params.set('name', name);
+    const url = base + '/functions/v1/product-image-search?' + params.toString();
+
+    const headers = { 'Accept': 'application/json' };
+    if (window.SUPABASE_ANON_KEY) {
+      headers['apikey'] = window.SUPABASE_ANON_KEY;
+      headers['Authorization'] = 'Bearer ' + window.SUPABASE_ANON_KEY;
+    }
+
+    // Timeout client 12s
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 12000) : null;
+
+    fetch(url, { method: 'GET', headers: headers, signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) {
+        if (timer) clearTimeout(timer);
+        if (!r.ok) {
+          // 404 = function non déployée
+          if (r.status === 404) {
+            throw new Error('Fonction product-image-search non déployée sur Supabase (404).');
+          }
+          throw new Error('Erreur serveur (' + r.status + ')');
+        }
+        return r.json();
+      })
+      .then(function (data) {
+        const cands = (data && Array.isArray(data.candidates)) ? data.candidates : [];
+        if (!cands.length) {
+          mkImgRenderState('empty');
+          return;
+        }
+        mkImgRenderState('results', { candidates: cands, productIndex: i });
+      })
+      .catch(function (err) {
+        if (timer) clearTimeout(timer);
+        const msg = (err && err.message) ? err.message : 'Erreur réseau';
+        mkImgRenderState('error', { message: msg });
+        if (typeof window.showToast === 'function') {
+          window.showToast('Recherche image : ' + msg, 'error');
+        }
+      });
   };
 
 })();
