@@ -14,35 +14,13 @@
    ============================================================================ */
 
 /* ════════════════════════════════════════════════════════════════════════════
-   1) PAGE BACKGROUND — systemGroupedBackground iOS
-   On passe la zone de contenu en gris iOS pour que les cards blanches
-   "flottent" en mode Inset Grouped. Scope strict mode classique.
+   1) PAGE BACKGROUND — DÉSACTIVÉ (cassait le contraste texte legacy)
+   L'app legacy a un thème dark (--bg #070B14, textes clairs). Forcer un
+   background clair #F2F2F7 ici rendait le contenu invisible (texte clair
+   sur fond clair). On laisse le thème app gérer son background.
+   Les cards iOS auront leur propre fond blanc via les règles section 2+.
    ════════════════════════════════════════════════════════════════════════════ */
-html[data-mode="classic"] body,
-html[data-mode="classic"] .main,
-html[data-mode="classic"] .page-content {
-  background-color: #F2F2F7 !important;
-}
-
-html[data-mode="classic"] .page-content {
-  /* respirations latérales iOS — plus aérées sur desktop */
-  padding: 24px 20px 56px !important;
-  padding-bottom: max(56px, env(safe-area-inset-bottom)) !important;
-}
-
-@media (min-width: 1024px) {
-  html[data-mode="classic"] .page-content {
-    padding: 32px 40px 72px !important;
-    padding-bottom: max(72px, env(safe-area-inset-bottom)) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  html[data-mode="classic"] .page-content {
-    padding: 16px 12px 48px !important;
-    padding-bottom: max(48px, env(safe-area-inset-bottom)) !important;
-  }
-}
+/* (block désactivé volontairement — voir commentaire ci-dessus) */
 
 /* ════════════════════════════════════════════════════════════════════════════
    2) CARDS — pattern styleCard() helper
@@ -378,11 +356,7 @@ html[data-mode="classic"] [style*="border-radius: 999px"] {
    On ne déclenche pas un full dark theme (qui reviendrait au mode JARVIS).
    ════════════════════════════════════════════════════════════════════════════ */
 @media (prefers-color-scheme: dark) {
-  html[data-mode="classic"] body,
-  html[data-mode="classic"] .main,
-  html[data-mode="classic"] .page-content {
-    background-color: #000000 !important;
-  }
+  /* Background page : laissé au thème app legacy */
 
   html[data-mode="classic"] [style*="border:1px solid #E8EEFF"],
   html[data-mode="classic"] [style*="border: 1px solid #E8EEFF"] {

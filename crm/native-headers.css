@@ -222,10 +222,13 @@ html[data-mode="classic"] .large-title-block + div:has(> h2[style*="font-size:26
   display: none;
 }
 
-/* Fallback pour navigateurs sans :has() — masquage par data-attribute posé par JS */
-html[data-mode="classic"] [data-lt-hide-next="true"] + div {
-  display: none;
-}
+/* Fallback pour navigateurs sans :has() — masquage par data-attribute posé par JS.
+   ⚠️ DANGER : `+ div` matche le PREMIER div frère, qui est en général TOUT le
+   contenu de page (les renderXxx wrappent leur sortie dans un seul <div>).
+   On restreint donc strictement au pattern sectionHeader : un div qui contient
+   un h2 de 26px directement. Sans :has(), on ne peut pas le faire en CSS pur
+   → on retire ce fallback (les navigateurs cibles supportent :has() depuis 2022). */
+/* html[data-mode="classic"] [data-lt-hide-next="true"] + div { display: none; } */
 
 /* ══════════════════════════════════════════════════════════════════════════
    ACCESSIBILITÉ — focus visibles, reduced motion
