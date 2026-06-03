@@ -416,6 +416,64 @@
     `);
   }
 
+  // ───────── Greeting heure + date ─────────────────────────────────────────
+  function blockGreeting() {
+    const now = new Date();
+    const h = now.getHours();
+    let salut = 'Bonsoir';
+    if (h >= 5 && h < 12) salut = 'Bonjour';
+    else if (h >= 12 && h < 18) salut = 'Bon après-midi';
+    const dateLabel = now.toLocaleDateString('fr-FR', {
+      weekday: 'long', day: 'numeric', month: 'long'
+    });
+    return `
+      <div style="padding:8px 4px 4px">
+        <div style="font-size:34px;font-weight:800;color:${COLOR.text};letter-spacing:-1px;line-height:1.05">${salut}, William</div>
+        <div style="font-size:15px;color:${COLOR.label};margin-top:6px;font-weight:500;text-transform:capitalize">${dateLabel}</div>
+      </div>
+    `;
+  }
+
+  // ───────── 3 cards d'accès rapide ────────────────────────────────────────
+  function blockQuickAccess(ctx) {
+    const items = [
+      {
+        id: 'pharmacies',
+        label: 'Mes pharmacies',
+        sub: `${fmtNum(ctx.nbPharmasActives)} actives · ${fmtNum(ctx.nbPharmasTotal)} secteur`,
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20.5V8a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v12.5"/><path d="M4 20.5h16"/><path d="M12 20.5V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16.5"/><path d="M15.5 9v4M13.5 11h4"/></svg>',
+        tint: '#0057FF',
+      },
+      {
+        id: 'benchmark',
+        label: 'Analyses',
+        sub: `${ctx.alerts.length} opportunit${ctx.alerts.length > 1 ? 'és' : 'é'} détectée${ctx.alerts.length > 1 ? 's' : ''}`,
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17 9 11.5l3.5 3.5L20 7"/><path d="M15 7h5v5"/></svg>',
+        tint: '#7C3AED',
+      },
+      {
+        id: 'marketing',
+        label: 'Marketing',
+        sub: 'Fiches commerciales PDF',
+        tint: '#14B86A',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5h8l5 5V20a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 5 20V4a.5.5 0 0 1 0-.5z"/><path d="M13 3.5V8a.5.5 0 0 0 .5.5H18"/><path d="M8.5 13h7M8.5 16h7M8.5 10h3"/></svg>',
+      },
+    ];
+    return `
+      <div class="dash-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px">
+        ${items.map(it => `
+          <div class="dash-quick-card" onclick="(window.navigate||function(){})('${it.id}')" style="background:${COLOR.card};border-radius:14px;padding:18px 16px;box-shadow:${COLOR.shadow};cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:transform 180ms,box-shadow 180ms">
+            <div style="width:38px;height:38px;border-radius:10px;background:${it.tint}15;color:${it.tint};display:flex;align-items:center;justify-content:center">${it.icon}</div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:${COLOR.text};letter-spacing:-0.2px">${escapeHtml(it.label)}</div>
+              <div style="font-size:12px;color:${COLOR.label};margin-top:2px;font-weight:500">${escapeHtml(it.sub)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   // ───────── Render principal ──────────────────────────────────────────────
   function renderDashboardV2() {
     const root = document.getElementById('dash-content');
@@ -423,24 +481,23 @@
     const ctx = computeContext();
 
     root.innerHTML = `
-      <div class="dash-root" style="font-family:'DM Sans','SF Pro Display',-apple-system,sans-serif;color:${COLOR.text};padding:16px 16px 90px;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+      <div class="dash-root" style="font-family:'DM Sans','SF Pro Display',-apple-system,sans-serif;color:${COLOR.text};padding:24px 16px 100px;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:18px">
+        ${blockGreeting()}
         ${blockHero(ctx)}
-        ${blockSecondaryKpis(ctx)}
-        ${blockTopClients(ctx)}
-        ${blockMonthly(ctx)}
+        ${blockQuickAccess(ctx)}
         ${blockAlerts(ctx)}
       </div>
       <style>
         .dash-root .dash-row { transition: background-color 120ms ease; }
         @media (hover: hover) and (pointer: fine) {
           .dash-root .dash-row:hover { background-color: rgba(60,60,67,0.04); }
+          .dash-root .dash-quick-card:hover { transform: translateY(-2px); box-shadow: 0 0 0 0.5px rgba(0,0,0,0.06), 0 6px 18px rgba(0,0,0,0.08) !important; }
         }
         .dash-root .dash-row:active { background-color: rgba(60,60,67,0.08); }
-        .dash-root .dash-bar-col:hover .dash-bar-fill { background: ${COLOR.accent} !important; }
-        .dash-root .dash-top-clients > .dash-row:last-child,
+        .dash-root .dash-quick-card:active { transform: scale(0.98); }
         .dash-root .dash-alerts > .dash-row:last-child { border-bottom: none !important; }
         @media (max-width: 600px) {
-          .dash-root { padding: 12px 12px 90px !important; gap: 12px !important; }
+          .dash-root { padding: 20px 14px 100px !important; gap: 16px !important; }
           .dash-root .dash-card { border-radius: 12px !important; padding: 16px 16px !important; }
           .dash-root .dash-hero-value { font-size: 38px !important; letter-spacing: -1.1px !important; }
           .dash-grid-3 { grid-template-columns: 1fr !important; gap: 10px !important; }
