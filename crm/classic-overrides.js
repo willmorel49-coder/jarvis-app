@@ -1236,39 +1236,34 @@
     const poidsWill = opsTotalDeclared > 0 ? (myTotal / opsTotalDeclared * 100) : 0;
     const FAMILLES_ORDER = ['Froid', 'Biosimilaires', 'Génériques', 'Gén. partenaires', 'Non remboursés', 'Princeps'];
 
+    // Helper pour wrapper une section en <details> collapsible
+    const det = (label, body, open = false) => `
+      <details ${open ? 'open' : ''} style="background:#fff;border-radius:14px;margin-bottom:12px;box-shadow:0 0 0 0.5px rgba(0,0,0,0.05),0 1px 3px rgba(0,0,0,0.06);overflow:hidden">
+        <summary style="padding:14px 18px;cursor:pointer;font-size:13px;font-weight:700;color:#0B1F4D;letter-spacing:.2px;list-style:none;display:flex;justify-content:space-between;align-items:center;background:#F2F2F7;border-bottom:1px solid rgba(60,60,67,0.12)">
+          <span>${escapeHtml(label)}</span>
+          <span style="font-size:11px;color:#94A3B8;font-weight:600">cliquer pour ouvrir</span>
+        </summary>
+        <div style="padding:14px 16px">${body}</div>
+      </details>
+    `;
+
     root.innerHTML = `
       <div style="padding:20px;max-width:1280px;margin:0 auto;font-family:'DM Sans',sans-serif">
-        ${sectionHeader('Benchmark Mon secteur vs OPS Nantes', `Comparatif par famille IP · ${fmtNum(cat.length)} produits référencés`)}
+        ${sectionHeader('Benchmark · Focus opportunités produit', `Top produits par catégorie sur IP National (OPS + CPR + HP) · mon statut sur chacun`)}
 
-        <!-- KPI hero -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px">
-          <div style="${styleCard()};background:linear-gradient(135deg,#0057FF,#5856D6);color:#fff;border:none">
-            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:800">Mon secteur · CA cumulé</div>
-            <div style="font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(myTotal)}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.7)">8 dpts · ${fmtNum((window.SALES_TOTAL||{}).factures||0)} factures</div>
-          </div>
-          <div style="${styleCard()};border-left:4px solid #14B86A">
-            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">OPS Nantes · établissement</div>
-            <div style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:#0B1F4D;margin:4px 0">${fmtEuro(opsTotalDeclared)}</div>
-            <div style="font-size:11px;color:#94A3B8">${fmtNum((window.OPS_TOTAL||{}).nb_produits||0)} références agrégées</div>
-          </div>
-          <div style="${styleCard()};border-left:4px solid #FF9F1C">
-            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Mon poids dans OPS Nantes</div>
-            <div style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:#0B1F4D;margin:4px 0">${poidsWill.toFixed(1)}<span style="font-size:14px;color:#94A3B8"> %</span></div>
-            <div style="font-size:11px;color:#94A3B8">CA Will ÷ CA OPS établissement</div>
-          </div>
-        </div>
+        <!-- ★ BLOC PRINCIPAL : Focus produits par catégorie -->
+        ${typeof window.buildProductFocusByCategoryHtml === 'function' ? window.buildProductFocusByCategoryHtml() : ''}
 
-        <!-- Vue multi-etablissements : Mon secteur vs OPS / CPR / HP -->
-        ${typeof window.buildMultiBenchHtml === 'function' ? window.buildMultiBenchHtml() : ''}
+        <!-- Sections secondaires repliees par defaut -->
+        <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:24px 0 10px">Analyses complémentaires</h3>
 
-        <!-- Comparatif famille vs OPS Nantes (etablissement de reference) -->
-        <h2 style="font-size:18px;font-weight:800;color:#0B1F4D;margin:24px 0 10px">Comparatif vs OPS Nantes</h2>
-        ${buildSectorVsOpsHtml(myFams, myTotal, opsMix.fams, opsTotal, FAMILLES_ORDER, 'OPS Nantes')}
+        ${det('Vue multi-établissements · KPI Mon secteur vs OPS / CPR / HP',
+          typeof window.buildMultiBenchHtml === 'function' ? window.buildMultiBenchHtml() : '')}
 
-        <!-- Comparatif famille vs IP National (OPS + CPR + HP confondus) -->
-        <h2 style="font-size:18px;font-weight:800;color:#0B1F4D;margin:24px 0 10px">Comparatif vs IP National · OPS + CPR + HP confondus</h2>
-        ${(function() {
+        ${det('Comparatif vs OPS Nantes · mix par famille',
+          buildSectorVsOpsHtml(myFams, myTotal, opsMix.fams, opsTotal, FAMILLES_ORDER, 'OPS Nantes'))}
+
+        ${det('Comparatif vs IP National · OPS + CPR + HP confondus', (function() {
           const ipMix = getIpNationalMixByFamille();
           const ipTotal = getIpNationalTotal();
           const poidsIp = ipTotal.ca > 0 ? (myTotal / ipTotal.ca * 100) : 0;
@@ -1282,29 +1277,53 @@
               <div style="${styleCard()};border-left:4px solid #FF9F1C">
                 <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Mon poids dans IP National</div>
                 <div style="font-size:26px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;margin:4px 0">${poidsIp.toFixed(2)}<span style="font-size:14px;color:#94A3B8"> %</span></div>
-                <div style="font-size:11px;color:#94A3B8">CA Will ÷ CA IP National (OPS+CPR+HP)</div>
+                <div style="font-size:11px;color:#94A3B8">CA Will ÷ CA IP National</div>
               </div>
             </div>`;
           return kpis + buildSectorVsOpsHtml(myFams, myTotal, ipMix.fams, ipMix.total, FAMILLES_ORDER, 'IP National');
-        })()}
+        })())}
 
-        <!-- Comparatif par tranche de prix -->
-        ${buildTrancheVsOpsHtml(window.SALES_BY_TRANCHE || {}, myTotal, getOpsMixByTranche())}
+        ${det('Comparatif par tranche de prix · Petit / Inter / Haut',
+          buildTrancheVsOpsHtml(window.SALES_BY_TRANCHE || {}, myTotal, getOpsMixByTranche()))}
 
-        <!-- Matrice tranche × famille · ma position cellule par cellule -->
-        ${buildTrancheFamilleMatrixHtml(window.SALES_BY_TRANCHE_FAMILLE || {}, myTotal, getOpsMixByTranche(), FAMILLES_ORDER)}
+        ${det('Matrice tranche × famille · ma position cellule par cellule',
+          buildTrancheFamilleMatrixHtml(window.SALES_BY_TRANCHE_FAMILLE || {}, myTotal, getOpsMixByTranche(), FAMILLES_ORDER))}
 
-        <!-- ─── CAVALERIE D'ANALYSES COMMERCIALES EXPERTES ─── -->
-        ${typeof window.buildManqueAGagneHtml === 'function' ? window.buildManqueAGagneHtml() : ''}
-        ${typeof window.buildPenetrationCommercialeHtml === 'function' ? window.buildPenetrationCommercialeHtml() : ''}
-        ${typeof window.buildLaboratoiresComparisonHtml === 'function' ? window.buildLaboratoiresComparisonHtml() : ''}
-        ${typeof window.buildTrajectoiresHtml === 'function' ? window.buildTrajectoiresHtml() : ''}
+        ${det('Manque à gagner chiffré par famille et tranche',
+          typeof window.buildManqueAGagneHtml === 'function' ? window.buildManqueAGagneHtml() : '')}
 
-        <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:24px 0 10px">Catalogue Intégral Pharma · structure</h3>
-        <div style="font-size:11px;color:#94A3B8;margin-bottom:10px">Liste des références catalogue (différent du CA facturé ci-dessus)</div>
+        ${det('Pénétration commerciale & trous de raquette par pharmacie',
+          typeof window.buildPenetrationCommercialeHtml === 'function' ? window.buildPenetrationCommercialeHtml() : '')}
 
+        ${det('Comparatif par laboratoire / marque fabricant',
+          typeof window.buildLaboratoiresComparisonHtml === 'function' ? window.buildLaboratoiresComparisonHtml() : '')}
 
-        <!-- Stats catégories -->
+        ${det('Trajectoires temporelles · trends 8 mois par famille',
+          typeof window.buildTrajectoiresHtml === 'function' ? window.buildTrajectoiresHtml() : '')}
+
+        ${det('Catalogue IP · structure & top remises', `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:20px">
+            ${cats.map(([name, d]) => {
+              const remMoy = d.count > 0 ? (d.totalRemise / d.count) : 0;
+              const economMoy = d.count > 0 ? ((d.totalPrixHt - d.totalPrixIp) / d.count) : 0;
+              return `
+                <div style="${styleCard()}">
+                  <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">${escapeHtml(name)}</div>
+                  <div style="font-size:24px;font-weight:800;color:#0B1F4D;margin:4px 0;font-variant-numeric:tabular-nums">${fmtNum(d.count)} <span style="font-size:11px;color:#94A3B8;font-weight:600">réf.</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748B;margin-top:6px">
+                    <span>Remise moy. <b style="color:#14B86A">${remMoy.toFixed(1)}%</b></span>
+                    <span>Économie moy. <b style="color:#0057FF">${economMoy.toFixed(2)}€</b></span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `)}
+
+        <!-- (Stats catégories deplaces dans le details ci-dessus, on ne montre plus en bas) -->
+        <div style="display:none">
+
+          <!-- Stats catégories (cache) -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:20px">
           ${cats.map(([name, d]) => {
             const remMoy = d.count > 0 ? (d.totalRemise / d.count) : 0;
@@ -1342,6 +1361,8 @@
             </div>
           `).join('')}
         </div>
+
+        </div><!-- /display:none -->
       </div>
     `;
   }

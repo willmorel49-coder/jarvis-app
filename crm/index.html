@@ -35,22 +35,23 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260603c" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260603d" />
   <!-- Styles desktop -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="style-classic.css" />
   <link rel="stylesheet" href="style-jarvis.css" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
+  <link rel="stylesheet" href="marketing.css?v=20260603d" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260603c" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260603c" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260603c" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260603c" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260603d" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260603d" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260603d" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260603d" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260603c" />
-  <link rel="stylesheet" href="native-headers.css?v=20260603c" />
-  <link rel="stylesheet" href="native-lists.css?v=20260603c" />
+  <link rel="stylesheet" href="native-shell.css?v=20260603d" />
+  <link rel="stylesheet" href="native-headers.css?v=20260603d" />
+  <link rel="stylesheet" href="native-lists.css?v=20260603d" />
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -70,21 +71,22 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
 
   <!-- Données métier (cache-busted à chaque deploy pour éviter stale data) -->
-  <script src="clients-data.js?v=20260603c"></script>
-  <script src="pharmacies-geo.js?v=20260603c"></script>
-  <script src="benchmark-data.js?v=20260603c"></script>
-  <script src="offilog-data.js?v=20260603c"></script>
-  <script src="drakkars-data.js?v=20260603c"></script>
-  <script src="cap3000-data.js?v=20260603c"></script>
-  <script src="groupements-data.js?v=20260603c"></script>
+  <script src="clients-data.js?v=20260603d"></script>
+  <script src="pharmacies-geo.js?v=20260603d"></script>
+  <script src="benchmark-data.js?v=20260603d"></script>
+  <script src="offilog-data.js?v=20260603d"></script>
+  <script src="drakkars-data.js?v=20260603d"></script>
+  <script src="cap3000-data.js?v=20260603d"></script>
+  <script src="groupements-data.js?v=20260603d"></script>
   <!-- Données enrichies STATS (catalogue IP · produits par client · stock · ventes détaillées) -->
-  <script src="catalogue-ip.js?v=20260603c"></script>
-  <script src="client-products.js?v=20260603c"></script>
-  <script src="stock.js?v=20260603c"></script>
-  <script src="sales-detail.js?v=20260603c"></script>
-  <script src="establishments-aggregate.js?v=20260603c"></script>
+  <script src="catalogue-ip.js?v=20260603d"></script>
+  <script src="client-products.js?v=20260603d"></script>
+  <script src="stock.js?v=20260603d"></script>
+  <script src="sales-detail.js?v=20260603d"></script>
+  <script src="establishments-aggregate.js?v=20260603d"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -107,20 +109,22 @@
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
   </script>
 
-  <script src="app.js?v=20260603c" defer></script>
-  <script src="dashboard-v2.js?v=20260603c" defer></script>
+  <script src="app.js?v=20260603d" defer></script>
+  <script src="dashboard-v2.js?v=20260603d" defer></script>
   <!-- Cavalerie d'analyses commerciales (doivent etre chargees AVANT classic-overrides) -->
-  <script src="benchmark-multibench.js?v=20260603c" defer></script>
-  <script src="benchmark-manque-a-gagne.js?v=20260603c" defer></script>
-  <script src="benchmark-penetration.js?v=20260603c" defer></script>
-  <script src="benchmark-laboratoires.js?v=20260603c" defer></script>
-  <script src="benchmark-trajectoires.js?v=20260603c" defer></script>
-  <script src="classic-overrides.js?v=20260603c" defer></script>
-  <script src="mobile-shell.js?v=20260603c" defer></script>
+  <script src="benchmark-multibench.js?v=20260603d" defer></script>
+  <script src="benchmark-focus.js?v=20260603d" defer></script>
+  <script src="benchmark-manque-a-gagne.js?v=20260603d" defer></script>
+  <script src="benchmark-penetration.js?v=20260603d" defer></script>
+  <script src="benchmark-laboratoires.js?v=20260603d" defer></script>
+  <script src="benchmark-trajectoires.js?v=20260603d" defer></script>
+  <script src="classic-overrides.js?v=20260603d" defer></script>
+  <script src="mobile-shell.js?v=20260603d" defer></script>
   <!-- Native UI shell (bottom tab bar + large titles) -->
-  <script src="native-shell.js?v=20260603c" defer></script>
-  <script src="native-headers.js?v=20260603c" defer></script>
-  <script type="module" src="jarvis/main.js?v=20260603c"></script>
+  <script src="native-shell.js?v=20260603d" defer></script>
+  <script src="native-headers.js?v=20260603d" defer></script>
+  <script src="marketing.js?v=20260603d" defer></script>
+  <script type="module" src="jarvis/main.js?v=20260603d"></script>
 </head>
 
 <body>
@@ -244,6 +248,14 @@
         </div>
       </div>
 
+      <div class="nav-section">
+        <div class="nav-label">Communication</div>
+        <div class="nav-item" data-page="marketing" onclick="navigate('marketing')">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span class="nav-label-text">Marketing</span>
+        </div>
+      </div>
+
       <div class="sidebar-footer">
         <div class="sidebar-user" onclick="logout()">
           <div class="sidebar-avatar" id="sidebar-avatar">W</div>
@@ -282,6 +294,7 @@
         <div class="page" id="page-benchmark"><div id="bench-content"></div></div>
         <div class="page" id="page-simulateur"><div id="simul-content"></div></div>
         <div class="page" id="page-groupements"><div id="groupements-content"></div></div>
+        <div class="page" id="page-marketing"><div id="marketing-content"></div></div>
       </div>
 
       <div class="brand-footer" aria-hidden="true">
