@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '?v=20260603g';
+  var VERSION = '?v=20260603i';
 
   // Mapping page -> scripts à charger à la demande
   var LAZY_BUNDLES = {
@@ -26,6 +26,13 @@
       'benchmark-penetration.js',
       'benchmark-laboratoires.js',
       'benchmark-trajectoires.js'
+    ],
+    // Marketing dépend de BENCHMARK (themeProducts/searchProducts) — sans ça
+    // les cartes thèmes affichent "0 produits" tant que benchmark n'est pas
+    // chargé par idlePreload (4 s après boot). On force le chargement en
+    // entrant sur l'onglet pour garantir des données affichées.
+    marketing: [
+      'benchmark-data.js'
     ],
     offilog: [
       'offilog-data.js',

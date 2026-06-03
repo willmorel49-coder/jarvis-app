@@ -63,6 +63,7 @@ html[data-mode="classic"] [style*="border:1px solid #E8EEFF"][style*="padding:0"
   }
 }
 
+
 /* ════════════════════════════════════════════════════════════════════════════
    3) HERO GRADIENT CARDS — pattern Apple Wallet / Apple Pay
    Cards bleu IP / indigo (linear-gradient(135deg,#0057FF,#5856D6)).
@@ -183,6 +184,12 @@ html[data-mode="classic"] [style*="border-bottom: 1px solid #F2F6FF"][style*="cu
   background-color: rgba(60, 60, 67, 0.08) !important;
 }
 
+/* Tap target HIG : padding vertical minimum sur les rows cliquables */
+html[data-mode="classic"] [style*="border-bottom:1px solid #F2F6FF"][style*="cursor:pointer"],
+html[data-mode="classic"] [style*="border-bottom: 1px solid #F2F6FF"][style*="cursor:pointer"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Hairline horizontale dans les cards stats (display:flex;…;border-bottom:1px solid #F2F6FF) */
 html[data-mode="classic"] [style*="justify-content:space-between"][style*="border-bottom:1px solid #F2F6FF"] {
   border-bottom: 0.5px solid rgba(60, 60, 67, 0.18) !important;
@@ -261,6 +268,15 @@ html[data-mode="classic"] .page-content > h3 {
   color: rgba(60, 60, 67, 0.60) !important;
   padding: 16px 4px 8px !important;
   margin: 0 !important;
+}
+
+/* Eyebrows / petits labels uppercase 10-11px — alignement strict iOS Caps */
+html[data-mode="classic"] [style*="font-size:10px"][style*="text-transform:uppercase"],
+html[data-mode="classic"] [style*="font-size: 10px"][style*="text-transform:uppercase"],
+html[data-mode="classic"] [style*="font-size:11px"][style*="text-transform:uppercase"],
+html[data-mode="classic"] [style*="font-size: 11px"][style*="text-transform:uppercase"] {
+  letter-spacing: 0.6px !important;
+  font-weight: 600 !important;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

@@ -25,15 +25,18 @@
     return `${sign}${n.toFixed(1)} %`;
   }
 
-  // Palette
+  // Palette — iOS system colors + Intégral Pharma brand
   const COLOR = {
     bg: '#F2F2F7',
     card: '#FFFFFF',
     text: '#0B1F4D',
+    textSecondary: 'rgba(60,60,67,0.60)',
     label: '#8E8E93',
+    labelSubtle: 'rgba(60,60,67,0.30)',
     accent: '#0057FF',
     up: '#34C759',
     down: '#FF3B30',
+    warn: '#FF9500',
     hairline: 'rgba(60,60,67,0.18)',
     shadow: '0 0 0 0.5px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
   };
@@ -202,29 +205,32 @@
   function sparkline(values, width, height, color) {
     if (!values || !values.length) return '';
     const w = width || 600;
-    const h = height || 40;
+    const h = height || 44;
     const max = Math.max(...values);
     const min = Math.min(...values);
     const range = max - min || 1;
+    const pad = 3;
     const stepX = w / Math.max(values.length - 1, 1);
     const pts = values.map((v, i) => {
       const x = i * stepX;
-      const y = h - ((v - min) / range) * (h - 4) - 2;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
+      const y = h - ((v - min) / range) * (h - pad * 2) - pad;
+      return { x, y };
     });
-    const path = `M ${pts.join(' L ')}`;
+    const path = `M ${pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')}`;
     const area = `${path} L ${w},${h} L 0,${h} Z`;
     const c = color || COLOR.accent;
+    const last = pts[pts.length - 1];
     return `
-      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:${h}px;display:block">
+      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:${h}px;display:block;overflow:visible">
         <defs>
           <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${c}" stop-opacity="0.22"/>
+            <stop offset="0%" stop-color="${c}" stop-opacity="0.20"/>
             <stop offset="100%" stop-color="${c}" stop-opacity="0"/>
           </linearGradient>
         </defs>
         <path d="${area}" fill="url(#sparkGrad)"/>
-        <path d="${path}" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${path}" fill="none" stroke="${c}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        <circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="2.5" fill="${c}"/>
       </svg>
     `;
   }
@@ -233,19 +239,27 @@
   function monthlyBars(series) {
     if (!series || !series.length) return '';
     const max = Math.max(...series.map(s => s.ca), 1);
+    const lastIdx = series.length - 1;
     return `
-      <div class="dash-bars" style="display:grid;grid-template-columns:repeat(${series.length},1fr);gap:6px;align-items:end;height:80px">
-        ${series.map(s => {
+      <div class="dash-bars" style="display:grid;grid-template-columns:repeat(${series.length},1fr);gap:8px;align-items:end;height:84px">
+        ${series.map((s, i) => {
           const h = Math.max((s.ca / max) * 100, 4);
+          const isLast = i === lastIdx;
+          const bg = isLast ? COLOR.accent : 'rgba(0,87,255,0.32)';
           return `
-            <div class="dash-bar-col" data-label="${escapeHtml(s.label)}" data-value="${fmtEuroPrecis(s.ca)}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:default;height:100%;justify-content:flex-end">
-              <div style="width:100%;height:${h}%;background:${COLOR.accent};border-radius:4px 4px 0 0;opacity:0.85;transition:opacity .12s"></div>
+            <div class="dash-bar-col" data-label="${escapeHtml(s.label)}" data-value="${fmtEuroPrecis(s.ca)}" style="display:flex;flex-direction:column;align-items:stretch;cursor:default;height:100%;justify-content:flex-end">
+              <div class="dash-bar-fill" style="width:100%;height:${h}%;background:${bg};border-radius:3px 3px 0 0;transition:background-color .15s ease"></div>
             </div>
           `;
         }).join('')}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(${series.length},1fr);gap:6px;margin-top:6px">
-        ${series.map(s => `<div style="font-size:10px;color:${COLOR.label};text-align:center;letter-spacing:0.4px;text-transform:uppercase;font-weight:600">${escapeHtml(s.label)}</div>`).join('')}
+      <div style="display:grid;grid-template-columns:repeat(${series.length},1fr);gap:8px;margin-top:8px">
+        ${series.map((s, i) => {
+          const isLast = i === lastIdx;
+          const c = isLast ? COLOR.text : COLOR.label;
+          const w = isLast ? 700 : 600;
+          return `<div style="font-size:10px;color:${c};text-align:center;letter-spacing:0.4px;text-transform:uppercase;font-weight:${w};font-variant-numeric:tabular-nums">${escapeHtml(s.label)}</div>`;
+        }).join('')}
       </div>
     `;
   }
@@ -253,7 +267,7 @@
   // ───────── Composants ────────────────────────────────────────────────────
   function card(innerHtml, extraStyle) {
     return `
-      <div style="background:${COLOR.card};border-radius:14px;padding:18px 20px;box-shadow:${COLOR.shadow};${extraStyle || ''}">
+      <div class="dash-card" style="background:${COLOR.card};border-radius:14px;padding:18px 20px;box-shadow:${COLOR.shadow};${extraStyle || ''}">
         ${innerHtml}
       </div>
     `;
@@ -266,7 +280,11 @@
     const isUp = variation >= 0;
     const color = isUp ? COLOR.up : COLOR.down;
     const arrow = isUp ? '&#9650;' : '&#9660;';
-    return `<span style="font-size:13px;color:${color};font-weight:700;font-variant-numeric:tabular-nums">${arrow} ${pct(variation).replace(/^[+-]/, '')}</span>`;
+    return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:13px;color:${color};font-weight:700;font-variant-numeric:tabular-nums;line-height:1"><span style="font-size:9px">${arrow}</span>${pct(variation).replace(/^[+-]/, '')}</span>`;
+  }
+
+  function eyebrow(text) {
+    return `<div style="font-size:11px;letter-spacing:0.6px;text-transform:uppercase;color:${COLOR.textSecondary};font-weight:600">${escapeHtml(text)}</div>`;
   }
 
   function blockHero(ctx) {
@@ -277,14 +295,14 @@
       : '—';
     const values = monthSeries.map(s => s.ca);
     return card(`
-      <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">Mon CA cumulé</div>
-      <div style="font-size:44px;font-weight:800;color:${COLOR.text};font-variant-numeric:tabular-nums;letter-spacing:-1px;margin:6px 0 4px;line-height:1.05">${fmtEuroPrecis(caTotal)}</div>
-      <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:${COLOR.label};flex-wrap:wrap">
+      ${eyebrow('Mon CA cumulé')}
+      <div class="dash-hero-value" style="font-size:48px;font-weight:800;color:${COLOR.text};font-variant-numeric:tabular-nums;letter-spacing:-1.4px;margin:8px 0 6px;line-height:1.02">${fmtEuroPrecis(caTotal)}</div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:${COLOR.label};flex-wrap:wrap;font-variant-numeric:tabular-nums">
         <span>${escapeHtml(periode)}</span>
-        ${lastMonth ? `<span style="width:3px;height:3px;border-radius:50%;background:${COLOR.label};display:inline-block"></span><span>${escapeHtml(lastMonth.label)}</span><span>${variationBadge(variationMois)}</span>` : ''}
+        ${lastMonth ? `<span style="width:3px;height:3px;border-radius:50%;background:${COLOR.labelSubtle};display:inline-block;flex-shrink:0"></span><span style="color:${COLOR.text};font-weight:500">${escapeHtml(lastMonth.label)}</span>${variationBadge(variationMois)}` : ''}
       </div>
-      <div style="margin-top:14px;margin-left:-4px;margin-right:-4px">${sparkline(values, 600, 40, COLOR.accent)}</div>
-    `);
+      <div style="margin-top:16px;margin-left:-4px;margin-right:-4px">${sparkline(values, 600, 44, COLOR.accent)}</div>
+    `, 'padding:20px 22px');
   }
 
   function blockSecondaryKpis(ctx) {
@@ -307,11 +325,11 @@
       },
     ];
     return `
-      <div class="dash-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div class="dash-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
         ${kpis.map(k => card(`
-          <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">${escapeHtml(k.label)}</div>
-          <div style="font-size:24px;font-weight:800;color:${COLOR.text};font-variant-numeric:tabular-nums;letter-spacing:-0.5px;margin:6px 0 4px">${k.value}</div>
-          <div>${k.sub}</div>
+          ${eyebrow(k.label)}
+          <div style="font-size:26px;font-weight:800;color:${COLOR.text};font-variant-numeric:tabular-nums;letter-spacing:-0.6px;margin:8px 0 4px;line-height:1.1">${k.value}</div>
+          <div style="line-height:1.3">${k.sub}</div>
         `)).join('')}
       </div>
     `;
@@ -320,24 +338,24 @@
   function blockTopClients(ctx) {
     const { topClients, lastMonth } = ctx;
     const head = `
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
-        <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">Top 5 pharmas · ${lastMonth ? escapeHtml(lastMonth.label) : ''}</div>
-        <div style="font-size:11px;color:${COLOR.label}">CA mois · variation vs n-1</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:12px">
+        ${eyebrow(`Top 5 pharmas${lastMonth ? ' · ' + lastMonth.label : ''}`)}
+        <div style="font-size:11px;color:${COLOR.label};font-weight:500;white-space:nowrap">CA · vs n-1</div>
       </div>
     `;
     if (!topClients.length) {
-      return card(`${head}<div style="padding:18px 0;text-align:center;color:${COLOR.label};font-size:13px">Aucune vente sur le mois</div>`);
+      return card(`${head}<div style="padding:20px 0;text-align:center;color:${COLOR.label};font-size:13px">Aucune vente sur le mois</div>`);
     }
     const rows = topClients.map((c, i) => `
-      <div data-cip="${escapeHtml(c.cip)}" onclick="console.log('[dashboard] click client', '${escapeHtml(c.cip)}')" style="display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:0.5px solid ${COLOR.hairline};cursor:pointer">
-        <span style="font-size:13px;color:${COLOR.label};font-weight:700;font-variant-numeric:tabular-nums">${i + 1}</span>
+      <div class="dash-row" data-cip="${escapeHtml(c.cip)}" onclick="console.log('[dashboard] click client', '${escapeHtml(c.cip)}')" style="display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 0;border-bottom:0.5px solid ${COLOR.hairline};cursor:pointer;border-radius:6px;margin:0 -6px;padding-left:6px;padding-right:6px">
+        <span style="font-size:13px;color:${COLOR.label};font-weight:700;font-variant-numeric:tabular-nums;text-align:center">${i + 1}</span>
         <div style="min-width:0">
-          <div style="font-size:14px;font-weight:600;color:${COLOR.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.nom)}</div>
-          <div style="font-size:12px;color:${COLOR.label};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.ville || '—')}</div>
+          <div title="${escapeHtml(c.nom)}" style="font-size:14px;font-weight:600;color:${COLOR.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${escapeHtml(c.nom)}</div>
+          <div style="font-size:12px;color:${COLOR.label};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;margin-top:1px">${escapeHtml(c.ville || '—')}</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:14px;font-weight:700;color:${COLOR.text};font-variant-numeric:tabular-nums">${fmtEuro(c.caMois)}</div>
-          <div>${variationBadge(c.variation)}</div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:14px;font-weight:700;color:${COLOR.text};font-variant-numeric:tabular-nums;line-height:1.3">${fmtEuro(c.caMois)}</div>
+          <div style="line-height:1.3;margin-top:1px">${variationBadge(c.variation)}</div>
         </div>
       </div>
     `).join('');
@@ -347,7 +365,6 @@
       <div class="dash-top-clients">
         ${rows}
       </div>
-      <style>.dash-top-clients > *:last-child{border-bottom:none !important;padding-bottom:2px !important}</style>
     `);
   }
 
@@ -357,46 +374,45 @@
     const total = monthSeries.reduce((s, m) => s + m.ca, 0);
     const avg = total / monthSeries.length;
     return card(`
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
-        <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">Évolution mensuelle</div>
-        <div style="font-size:11px;color:${COLOR.label};font-variant-numeric:tabular-nums">moy. ${fmtEuro(avg)} / mois</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;gap:12px">
+        ${eyebrow('Évolution mensuelle')}
+        <div style="font-size:11px;color:${COLOR.label};font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap">moy. ${fmtEuro(avg)} / mois</div>
       </div>
       ${monthlyBars(monthSeries)}
-      <div id="dash-bars-tooltip" style="margin-top:10px;font-size:12px;color:${COLOR.label};font-variant-numeric:tabular-nums;min-height:16px">Passe sur une barre pour le détail</div>
+      <div id="dash-bars-tooltip" style="margin-top:12px;font-size:12px;color:${COLOR.label};font-variant-numeric:tabular-nums;min-height:16px;font-weight:500">Passe sur une barre pour le détail</div>
     `);
   }
 
   function blockAlerts(ctx) {
     const { alerts } = ctx;
     const head = `
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
-        <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">Alertes du jour</div>
-        <div style="font-size:11px;color:${COLOR.label}">${alerts.length} signal${alerts.length > 1 ? 'aux' : ''}</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:12px">
+        ${eyebrow('Alertes du jour')}
+        <div style="font-size:11px;color:${COLOR.label};font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums">${alerts.length} signal${alerts.length > 1 ? 'aux' : ''}</div>
       </div>
     `;
     if (!alerts.length) {
-      return card(`${head}<div style="padding:18px 0;text-align:center;color:${COLOR.label};font-size:13px">Aucune alerte active</div>`);
+      return card(`${head}<div style="padding:20px 0;text-align:center;color:${COLOR.label};font-size:13px">Aucune alerte active</div>`);
     }
     const shown = alerts.slice(0, 5);
     const extra = alerts.length - shown.length;
     const rows = shown.map(a => {
-      const dot = a.tone === 'down' ? COLOR.down : a.tone === 'up' ? COLOR.up : COLOR.accent;
+      const dot = a.tone === 'down' ? COLOR.down : a.tone === 'up' ? COLOR.up : COLOR.warn;
       return `
-        <div onclick="console.log('[dashboard] click alert', '${escapeHtml(a.type)}')" style="display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:0.5px solid ${COLOR.hairline};cursor:pointer">
-          <span style="width:8px;height:8px;border-radius:50%;background:${dot};display:inline-block"></span>
-          <div style="font-size:14px;color:${COLOR.text};font-weight:500">${escapeHtml(a.label)}</div>
-          <div style="font-size:13px;color:${COLOR.text};font-weight:700;font-variant-numeric:tabular-nums">${typeof a.value === 'number' ? fmtNum(a.value) : escapeHtml(a.value)}</div>
+        <div class="dash-row" onclick="console.log('[dashboard] click alert', '${escapeHtml(a.type)}')" style="display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 0;border-bottom:0.5px solid ${COLOR.hairline};cursor:pointer;border-radius:6px;margin:0 -6px;padding-left:6px;padding-right:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${dot};display:inline-block;box-shadow:0 0 0 3px ${dot}1A"></span>
+          <div style="font-size:14px;color:${COLOR.text};font-weight:500;line-height:1.35;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(a.label)}</div>
+          <div style="font-size:13px;color:${COLOR.text};font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0">${typeof a.value === 'number' ? fmtNum(a.value) : escapeHtml(a.value)}</div>
         </div>
       `;
     }).join('');
     const more = extra > 0
-      ? `<div style="padding:12px 0 2px;font-size:13px;color:${COLOR.accent};font-weight:600;cursor:pointer" onclick="console.log('[dashboard] voir toutes les alertes')">+${extra} autre${extra > 1 ? 's' : ''} alerte${extra > 1 ? 's' : ''}</div>`
+      ? `<div style="padding:14px 0 2px;font-size:13px;color:${COLOR.accent};font-weight:600;cursor:pointer" onclick="console.log('[dashboard] voir toutes les alertes')">+${extra} autre${extra > 1 ? 's' : ''} alerte${extra > 1 ? 's' : ''}</div>`
       : '';
     return card(`
       ${head}
       <div class="dash-alerts">${rows}</div>
       ${more}
-      <style>.dash-alerts > *:last-child{border-bottom:none !important}</style>
     `);
   }
 
@@ -407,7 +423,7 @@
     const ctx = computeContext();
 
     root.innerHTML = `
-      <div class="dash-root" style="font-family:'DM Sans','SF Pro Display',-apple-system,sans-serif;color:${COLOR.text};padding:16px 16px 90px;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+      <div class="dash-root" style="font-family:'DM Sans','SF Pro Display',-apple-system,sans-serif;color:${COLOR.text};padding:16px 16px 90px;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
         ${blockHero(ctx)}
         ${blockSecondaryKpis(ctx)}
         ${blockTopClients(ctx)}
@@ -415,11 +431,20 @@
         ${blockAlerts(ctx)}
       </div>
       <style>
+        .dash-root .dash-row { transition: background-color 120ms ease; }
+        @media (hover: hover) and (pointer: fine) {
+          .dash-root .dash-row:hover { background-color: rgba(60,60,67,0.04); }
+        }
+        .dash-root .dash-row:active { background-color: rgba(60,60,67,0.08); }
+        .dash-root .dash-bar-col:hover .dash-bar-fill { background: ${COLOR.accent} !important; }
+        .dash-root .dash-top-clients > .dash-row:last-child,
+        .dash-root .dash-alerts > .dash-row:last-child { border-bottom: none !important; }
         @media (max-width: 600px) {
           .dash-root { padding: 12px 12px 90px !important; gap: 12px !important; }
-          .dash-grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .dash-root .dash-card { border-radius: 12px !important; padding: 16px 16px !important; }
+          .dash-root .dash-hero-value { font-size: 38px !important; letter-spacing: -1.1px !important; }
+          .dash-grid-3 { grid-template-columns: 1fr !important; gap: 10px !important; }
         }
-        .dash-bar-col:hover > div { opacity: 1 !important; }
       </style>
     `;
 

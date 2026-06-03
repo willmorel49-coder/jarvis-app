@@ -34,24 +34,24 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260603h" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260603i" />
   <!-- Styles desktop -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="style-classic.css" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260603h" />
+  <link rel="stylesheet" href="marketing.css?v=20260603i" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260603h" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260603h" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260603h" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260603h" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260603i" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260603i" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260603i" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260603i" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260603h" />
-  <link rel="stylesheet" href="native-headers.css?v=20260603h" />
-  <link rel="stylesheet" href="native-lists.css?v=20260603h" />
-  <link rel="stylesheet" href="native-motion.css?v=20260603h" />
-  <link rel="stylesheet" href="skeleton-loaders.css?v=20260603h" />
+  <link rel="stylesheet" href="native-shell.css?v=20260603i" />
+  <link rel="stylesheet" href="native-headers.css?v=20260603i" />
+  <link rel="stylesheet" href="native-lists.css?v=20260603i" />
+  <link rel="stylesheet" href="native-motion.css?v=20260603i" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260603i" />
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -76,14 +76,14 @@
   <!-- Données métier critiques au boot (cache-busted à chaque deploy)
        Les lourds (benchmark-data, offilog-data, drakkars-data, cap3000-data,
        establishments-aggregate) sont chargés à la demande par perf-boot.js -->
-  <script src="clients-data.js?v=20260603h"></script>
-  <script src="pharmacies-geo.js?v=20260603h"></script>
-  <script src="groupements-data.js?v=20260603h"></script>
+  <script src="clients-data.js?v=20260603i"></script>
+  <script src="pharmacies-geo.js?v=20260603i"></script>
+  <script src="groupements-data.js?v=20260603i"></script>
   <!-- Données enrichies STATS (catalogue IP · produits par client · stock · ventes détaillées) -->
-  <script src="catalogue-ip.js?v=20260603h"></script>
-  <script src="client-products.js?v=20260603h"></script>
-  <script src="stock.js?v=20260603h"></script>
-  <script src="sales-detail.js?v=20260603h"></script>
+  <script src="catalogue-ip.js?v=20260603i"></script>
+  <script src="client-products.js?v=20260603i"></script>
+  <script src="stock.js?v=20260603i"></script>
+  <script src="sales-detail.js?v=20260603i"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -106,18 +106,18 @@
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
   </script>
 
-  <script src="app.js?v=20260603h" defer></script>
-  <script src="dashboard-v2.js?v=20260603h" defer></script>
+  <script src="app.js?v=20260603i" defer></script>
+  <script src="dashboard-v2.js?v=20260603i" defer></script>
   <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
-  <script src="perf-boot.js?v=20260603h" defer></script>
-  <script src="classic-overrides.js?v=20260603h" defer></script>
-  <script src="mobile-shell.js?v=20260603h" defer></script>
+  <script src="perf-boot.js?v=20260603i" defer></script>
+  <script src="classic-overrides.js?v=20260603i" defer></script>
+  <script src="mobile-shell.js?v=20260603i" defer></script>
   <!-- Native UI shell (bottom tab bar + large titles) -->
-  <script src="native-shell.js?v=20260603h" defer></script>
-  <script src="native-headers.js?v=20260603h" defer></script>
-  <script src="native-motion.js?v=20260603h" defer></script>
-  <script src="skeleton-loaders.js?v=20260603h" defer></script>
-  <script src="marketing.js?v=20260603h" defer></script>
+  <script src="native-shell.js?v=20260603i" defer></script>
+  <script src="native-headers.js?v=20260603i" defer></script>
+  <script src="native-motion.js?v=20260603i" defer></script>
+  <script src="skeleton-loaders.js?v=20260603i" defer></script>
+  <script src="marketing.js?v=20260603i" defer></script>
 </head>
 
 <body>

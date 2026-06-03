@@ -65,37 +65,41 @@
     var cpr = window.CPR_AGGREGATE || {};
     var hp  = window.HP_AGGREGATE  || {};
 
-    // Fusion par artcode : ca + qte + repartition par etablissement
-    var fused = {};
+    // Fusion par artcode : ca + qte + repartition par etablissement (single-pass par source)
+    // Map au lieu d'objet : itération + lookup plus rapides sur 15k+ entrées
+    var fused = new Map();
     function add(src, key) {
       for (var code in src) {
         var p = src[code];
-        if (!fused[code]) {
-          fused[code] = {
+        var ca = p.ca || 0;
+        var existing = fused.get(code);
+        if (!existing) {
+          existing = {
             artcode: code, ean: p.ean, designation: p.designation, marque: p.marque,
             nature: p.nature, sousfamille: p.sousfamille, collection: p.collection,
             afmcode: p.afmcode, ca: 0, qte: 0,
             byEst: { ops: 0, cpr: 0, hp: 0 },
           };
+          fused.set(code, existing);
         }
-        fused[code].ca += p.ca || 0;
-        fused[code].qte += p.qte || 0;
-        fused[code].byEst[key] = (fused[code].byEst[key] || 0) + (p.ca || 0);
+        existing.ca += ca;
+        existing.qte += p.qte || 0;
+        existing.byEst[key] += ca;
       }
     }
     add(ops, 'ops'); add(cpr, 'cpr'); add(hp, 'hp');
 
-    // Regroupe par famille
+    // Regroupe par famille (single-pass via Map.forEach, evite ré-itération via for..in)
     var byFam = {};
     for (var f = 0; f < FAMILLES.length; f++) byFam[FAMILLES[f]] = [];
-    for (var code2 in fused) {
-      var prod = fused[code2];
+    fused.forEach(function (prod) {
       var fam = familleFromAttrs(prod.nature, prod.afmcode, prod.sousfamille);
       byFam[fam].push(prod);
-    }
-    // Trie chaque famille par CA decroissant
-    for (var ff in byFam) {
-      byFam[ff].sort(function (a, b) { return b.ca - a.ca; });
+    });
+    // Trie chaque famille par CA decroissant (n log n par famille)
+    var sortFn = function (a, b) { return b.ca - a.ca; };
+    for (var ff = 0; ff < FAMILLES.length; ff++) {
+      byFam[FAMILLES[ff]].sort(sortFn);
     }
     __ipNationalByFamille = byFam;
     return byFam;
@@ -109,62 +113,78 @@
     return            { label: 'FORT',    col: '#34C759', bg: 'rgba(52,199,89,.08)' };
   }
 
-  function buildFamilleSection(famille, products, myCaMap) {
+  function buildFamilleSection(famille, products, myCaMap, statsOut) {
     if (!products.length) return '';
     var color = FAMILLE_COLORS[famille] || '#0057FF';
-    var top = products.slice(0, TOP_PER_FAMILLE);
+    var topLen = Math.min(TOP_PER_FAMILLE, products.length);
 
-    // Stats famille
-    var totalFamCa = products.reduce(function (s, p) { return s + p.ca; }, 0);
-    var topFamCa = top.reduce(function (s, p) { return s + p.ca; }, 0);
-    var topPct = totalFamCa > 0 ? (topFamCa / totalFamCa * 100) : 0;
+    // Single-pass : total famille + top top CA + counts statuts + rows HTML
+    // Au lieu de 4 traversees distinctes (reduce x2, count loop, map). totalFamCa garde la passe complete famille (necessaire pour topPct).
+    var totalFamCa = 0;
+    for (var pi = 0; pi < products.length; pi++) totalFamCa += products[pi].ca;
 
-    // Compte par statut
-    var counts = { ABSENT: 0, FAIBLE: 0, OK: 0, FORT: 0 };
-    for (var k = 0; k < top.length; k++) {
-      var p0 = top[k];
-      var myCa0 = myCaMap[p0.artcode] || 0;
-      var pdm0 = p0.ca > 0 ? (myCa0 / p0.ca * 100) : 0;
-      var st0 = statusFromPdm(pdm0, myCa0 > 0);
-      counts[st0.label]++;
-    }
-    var summaryBadges = '';
-    summaryBadges += '<span style="background:rgba(255,59,48,.12);color:#FF3B30;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:800">' + counts.ABSENT + ' absent' + (counts.ABSENT > 1 ? 's' : '') + '</span> ';
-    summaryBadges += '<span style="background:rgba(255,149,0,.12);color:#FF9500;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:800;margin-left:4px">' + counts.FAIBLE + ' faible' + (counts.FAIBLE > 1 ? 's' : '') + '</span> ';
+    var topFamCa = 0;
+    var absentCnt = 0, faibleCnt = 0;
+    var rowsParts = new Array(topLen);
 
-    var rows = top.map(function (p, i) {
+    for (var k = 0; k < topLen; k++) {
+      var p = products[k];
+      var pCa = p.ca;
+      topFamCa += pCa;
+
       var myCa = myCaMap[p.artcode] || 0;
-      var pdm = p.ca > 0 ? (myCa / p.ca * 100) : 0;
       var isPresent = myCa > 0;
+      var pdm = pCa > 0 ? (myCa / pCa * 100) : 0;
       var st = statusFromPdm(pdm, isPresent);
+      if (!isPresent) absentCnt++;
+      else if (pdm < 1) faibleCnt++;
 
-      // Repartition par etablissement (mini barres)
-      var ops = p.byEst.ops || 0, cpr = p.byEst.cpr || 0, hp = p.byEst.hp || 0;
-      var maxEst = Math.max(ops, cpr, hp, 1);
-      var miniBars = [
-        '<div style="display:flex;flex-direction:column;gap:2px;font-size:9.5px;color:#64748B;line-height:1.3">',
-        '  <div style="display:flex;align-items:center;gap:4px"><span style="width:10px;font-weight:700;color:#0057FF">O</span><div style="flex:1;height:4px;background:rgba(60,60,67,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + (ops / maxEst * 100) + '%;background:#0057FF"></div></div><b style="font-variant-numeric:tabular-nums;color:#0B1F4D;min-width:42px;text-align:right">' + fmtEuro(ops) + '</b></div>',
-        '  <div style="display:flex;align-items:center;gap:4px"><span style="width:10px;font-weight:700;color:#7C3AED">C</span><div style="flex:1;height:4px;background:rgba(60,60,67,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + (cpr / maxEst * 100) + '%;background:#7C3AED"></div></div><b style="font-variant-numeric:tabular-nums;color:#0B1F4D;min-width:42px;text-align:right">' + fmtEuro(cpr) + '</b></div>',
-        '  <div style="display:flex;align-items:center;gap:4px"><span style="width:10px;font-weight:700;color:#14B86A">H</span><div style="flex:1;height:4px;background:rgba(60,60,67,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + (hp / maxEst * 100) + '%;background:#14B86A"></div></div><b style="font-variant-numeric:tabular-nums;color:#0B1F4D;min-width:42px;text-align:right">' + fmtEuro(hp) + '</b></div>',
-        '</div>'
-      ].join('');
+      var be = p.byEst;
+      var ops = be.ops, cpr = be.cpr, hp = be.hp;
+      var maxEst = ops; if (cpr > maxEst) maxEst = cpr; if (hp > maxEst) maxEst = hp; if (maxEst < 1) maxEst = 1;
+      var opsW = (ops / maxEst * 100);
+      var cprW = (cpr / maxEst * 100);
+      var hpW  = (hp  / maxEst * 100);
 
-      return [
-        '<div style="padding:12px 16px;display:grid;grid-template-columns:24px 1fr 180px 110px 90px;gap:14px;align-items:center;border-bottom:1px solid rgba(60,60,67,0.12);background:' + (isPresent ? '#FFFFFF' : st.bg) + '">',
-        '  <span style="color:#94A3B8;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums">' + (i + 1) + '</span>',
-        '  <div style="min-width:0">',
-        '    <div style="font-weight:700;color:#0B1F4D;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(p.designation || p.artcode) + '</div>',
-        '    <div style="font-size:10.5px;color:#94A3B8;margin-top:2px">' + escapeHtml(p.marque || '—') + ' · CIP ' + escapeHtml(p.artcode) + '</div>',
-        '  </div>',
-        miniBars,
-        '  <div style="text-align:right">',
-        '    <b style="color:' + (isPresent ? '#0B1F4D' : '#CBD5E1') + ';font-variant-numeric:tabular-nums;font-size:13px">' + (isPresent ? fmtEuro(myCa) : '— €') + '</b>',
-        '    <div style="font-size:10.5px;color:' + st.col + ';font-weight:700;margin-top:1px">' + (isPresent ? 'PdM ' + pdm.toFixed(2) + ' %' : 'aucun achat') + '</div>',
-        '  </div>',
-        '  <span style="background:' + st.bg + ';color:' + st.col + ';padding:5px 10px;border-radius:6px;font-size:10.5px;font-weight:800;letter-spacing:.4px;text-align:center;text-transform:uppercase">' + st.label + '</span>',
-        '</div>'
-      ].join('');
-    }).join('');
+      var bg = isPresent ? '#FFFFFF' : st.bg;
+      var caCol = isPresent ? '#0B1F4D' : '#CBD5E1';
+      var caTxt = isPresent ? fmtEuro(myCa) : '— €';
+      var pdmTxt = isPresent ? ('PdM ' + pdm.toFixed(2) + ' %') : 'aucun achat';
+      var design = escapeHtml(p.designation || p.artcode);
+      var marque = escapeHtml(p.marque || '—');
+      var artcode = escapeHtml(p.artcode);
+
+      rowsParts[k] =
+        '<div style="padding:12px 16px;display:grid;grid-template-columns:24px 1fr 180px 110px 90px;gap:14px;align-items:center;border-bottom:1px solid rgba(60,60,67,0.12);background:' + bg + '">' +
+        '<span style="color:#94A3B8;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums">' + (k + 1) + '</span>' +
+        '<div style="min-width:0">' +
+        '<div style="font-weight:700;color:#0B1F4D;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + design + '</div>' +
+        '<div style="font-size:10.5px;color:#94A3B8;margin-top:2px">' + marque + ' · CIP ' + artcode + '</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:2px;font-size:9.5px;color:#64748B;line-height:1.3">' +
+        '<div style="display:flex;align-items:center;gap:4px"><span style="width:10px;font-weight:700;color:#0057FF">O</span><div style="flex:1;height:4px;background:rgba(60,60,67,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + opsW + '%;background:#0057FF"></div></div><b style="font-variant-numeric:tabular-nums;color:#0B1F4D;min-width:42px;text-align:right">' + fmtEuro(ops) + '</b></div>' +
+        '<div style="display:flex;align-items:center;gap:4px"><span style="width:10px;font-weight:700;color:#7C3AED">C</span><div style="flex:1;height:4px;background:rgba(60,60,67,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + cprW + '%;background:#7C3AED"></div></div><b style="font-variant-numeric:tabular-nums;color:#0B1F4D;min-width:42px;text-align:right">' + fmtEuro(cpr) + '</b></div>' +
+        '<div style="display:flex;align-items:center;gap:4px"><span style="width:10px;font-weight:700;color:#14B86A">H</span><div style="flex:1;height:4px;background:rgba(60,60,67,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + hpW + '%;background:#14B86A"></div></div><b style="font-variant-numeric:tabular-nums;color:#0B1F4D;min-width:42px;text-align:right">' + fmtEuro(hp) + '</b></div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+        '<b style="color:' + caCol + ';font-variant-numeric:tabular-nums;font-size:13px">' + caTxt + '</b>' +
+        '<div style="font-size:10.5px;color:' + st.col + ';font-weight:700;margin-top:1px">' + pdmTxt + '</div>' +
+        '</div>' +
+        '<span style="background:' + st.bg + ';color:' + st.col + ';padding:5px 10px;border-radius:6px;font-size:10.5px;font-weight:800;letter-spacing:.4px;text-align:center;text-transform:uppercase">' + st.label + '</span>' +
+        '</div>';
+    }
+
+    if (statsOut) {
+      statsOut.nbOpp += absentCnt + faibleCnt;
+      statsOut.ipTotal += topFamCa;
+    }
+
+    var topPct = totalFamCa > 0 ? (topFamCa / totalFamCa * 100) : 0;
+    var summaryBadges =
+      '<span style="background:rgba(255,59,48,.12);color:#FF3B30;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:800">' + absentCnt + ' absent' + (absentCnt > 1 ? 's' : '') + '</span> ' +
+      '<span style="background:rgba(255,149,0,.12);color:#FF9500;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:800;margin-left:4px">' + faibleCnt + ' faible' + (faibleCnt > 1 ? 's' : '') + '</span> ';
+
+    var rows = rowsParts.join('');
 
     return [
       '<div style="background:#FFFFFF;border-radius:14px;padding:0;margin-bottom:16px;box-shadow:0 0 0 0.5px rgba(0,0,0,0.05),0 1px 3px rgba(0,0,0,0.06);overflow:hidden">',
@@ -173,7 +193,7 @@
       '      <span style="width:14px;height:14px;border-radius:50%;background:' + color + '"></span>',
       '      <div>',
       '        <div style="font-size:17px;font-weight:800;color:#0B1F4D;letter-spacing:-.3px">' + escapeHtml(famille) + '</div>',
-      '        <div style="font-size:11px;color:#64748B">Top ' + top.length + ' sur ' + fmtNum(products.length) + ' réfs · ' + fmtEuro(totalFamCa) + ' CA IP National · top = ' + topPct.toFixed(0) + '%</div>',
+      '        <div style="font-size:11px;color:#64748B">Top ' + topLen + ' sur ' + fmtNum(products.length) + ' réfs · ' + fmtEuro(totalFamCa) + ' CA IP National · top = ' + topPct.toFixed(0) + '%</div>',
       '      </div>',
       '    </div>',
       '    <div>' + summaryBadges + '</div>',
@@ -194,18 +214,14 @@
       var byFam = getIpNationalByFamille();
       var myCa = getMyCaByArtcode();
 
-      // Compte global d'opportunites (ABSENT + FAIBLE) tous categories confondus
-      var nbOpp = 0, ipTotal = 0;
-      for (var f = 0; f < FAMILLES.length; f++) {
-        var arr = byFam[FAMILLES[f]] || [];
-        var topX = arr.slice(0, TOP_PER_FAMILLE);
-        for (var i = 0; i < topX.length; i++) {
-          ipTotal += topX[i].ca;
-          var mca = myCa[topX[i].artcode] || 0;
-          var pdm = topX[i].ca > 0 ? (mca / topX[i].ca * 100) : 0;
-          if (mca === 0 || pdm < 1) nbOpp++;
-        }
+      // Construit les sections d'abord en aggregeant nbOpp via statsOut (single-pass au lieu de re-iterer le top)
+      var stats = { nbOpp: 0, ipTotal: 0 };
+      var sectionsParts = new Array(FAMILLES.length);
+      for (var sf = 0; sf < FAMILLES.length; sf++) {
+        sectionsParts[sf] = buildFamilleSection(FAMILLES[sf], byFam[FAMILLES[sf]] || [], myCa, stats);
       }
+      var sections = sectionsParts.join('');
+      var nbOpp = stats.nbOpp;
 
       // Header explicatif (concis)
       var header = [
@@ -229,11 +245,6 @@
         '  </div>',
         '</div>'
       ].join('');
-
-      var sections = '';
-      for (var ff = 0; ff < FAMILLES.length; ff++) {
-        sections += buildFamilleSection(FAMILLES[ff], byFam[FAMILLES[ff]] || [], myCa);
-      }
 
       return header + sections;
     } catch (e) {

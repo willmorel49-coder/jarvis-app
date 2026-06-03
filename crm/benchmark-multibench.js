@@ -72,24 +72,31 @@
     return { fams: fams, total: total };
   }
 
-  // Top 5 produits qui SE RECOUVRENT a la fois aux 3 etablissements
+  // Top 10 produits qui SE RECOUVRENT a la fois aux 3 etablissements
+  // Cache memoise : meme calcul a chaque appel autrement (~5000 iter + 3000 lookups + sort)
+  var __top10CommonCache = null;
   function getTop5CommonProducts() {
+    if (__top10CommonCache) return __top10CommonCache;
     var ops = window.OPS_AGGREGATE || {};
     var cpr = window.CPR_AGGREGATE || {};
     var hp = window.HP_AGGREGATE || {};
-    var union = {};
-    var keys = Object.keys(ops);
-    for (var i = 0; i < keys.length; i++) {
-      var k = keys[i];
-      if (cpr[k] && hp[k]) {
-        var totalCa = (ops[k].ca || 0) + (cpr[k].ca || 0) + (hp[k].ca || 0);
-        union[k] = { code: k, designation: ops[k].designation, marque: ops[k].marque,
-                     ops: ops[k].ca || 0, cpr: cpr[k].ca || 0, hp: hp[k].ca || 0, total: totalCa };
-      }
+    // Push direct dans un array : evite le `union` object + Object.keys().map() (2-pass devient 1-pass)
+    var arr = [];
+    for (var k in ops) {
+      var po = ops[k];
+      var pc = cpr[k];
+      if (!pc) continue;
+      var ph = hp[k];
+      if (!ph) continue;
+      var caO = po.ca || 0, caC = pc.ca || 0, caH = ph.ca || 0;
+      arr.push({
+        code: k, designation: po.designation, marque: po.marque,
+        ops: caO, cpr: caC, hp: caH, total: caO + caC + caH,
+      });
     }
-    var arr = Object.keys(union).map(function (k) { return union[k]; });
     arr.sort(function (a, b) { return b.total - a.total; });
-    return arr.slice(0, 10);
+    __top10CommonCache = arr.slice(0, 10);
+    return __top10CommonCache;
   }
 
   // ───────── rendu principal ──────────────────────────────────────────
