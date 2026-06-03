@@ -290,6 +290,21 @@
   padding: 1px 7px; border-radius: 999px; color: var(--text2);
   font-weight: 700; letter-spacing: 0.2px; margin-left: 2px;
 }
+
+/* ── Filtre catalogue (L'Integral / ITP) ── */
+.mk-stats-pill-cat {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFF 100%);
+  border-color: rgba(0,87,255,0.18);
+}
+.mk-stats-pill-cat:hover {
+  background: linear-gradient(135deg, #F8FAFF 0%, #EFF4FF 100%);
+  border-color: #0057FF;
+}
+.mk-stats-pill-cat.on {
+  background: linear-gradient(135deg, #0057FF 0%, #3B82F6 100%);
+  border-color: transparent; color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(0,87,255,0.30);
+}
 .mk-stats-list {
   background: #FFFFFF;
   border-radius: 14px;
