@@ -329,9 +329,11 @@
 
   // ── TEMPLATES DISPONIBLES ───────────────────────────────────
   const TEMPLATES = {
-    offre: { name: 'Offre IP',          maxProducts: 12, defaultCount: 12 },
-    memo:  { name: 'Mémo référentiel',  maxProducts: 25, defaultCount: 20 },
-    focus: { name: 'Focus produit',     maxProducts: 3,  defaultCount: 1  },
+    offre:     { name: 'Offre IP',          maxProducts: 12, defaultCount: 12 },
+    memo:      { name: 'Mémo référentiel',  maxProducts: 25, defaultCount: 20 },
+    focus:     { name: 'Focus produit',     maxProducts: 3,  defaultCount: 1  },
+    editorial: { name: 'Editorial (Vogue)', maxProducts: 6,  defaultCount: 3  },
+    bento:     { name: 'Bento (Apple)',     maxProducts: 9,  defaultCount: 6  },
   };
 
   function getTemplateId(sheet) {
@@ -626,13 +628,60 @@
               </div>
               <label class="mk-label" style="margin-top:14px">Template</label>
               <select class="mk-input mk-select" id="sheet-template" onchange="window.mkUpdateTemplate(this.value)">
-                <option value="offre" ${getTemplateId(s)==='offre'?'selected':''}>Offre IP (défaut)</option>
+                <option value="offre" ${getTemplateId(s)==='offre'?'selected':''}>Offre IP (table)</option>
                 <option value="memo" ${getTemplateId(s)==='memo'?'selected':''}>Mémo référentiel</option>
                 <option value="focus" ${getTemplateId(s)==='focus'?'selected':''}>Focus produit</option>
+                <option value="editorial" ${getTemplateId(s)==='editorial'?'selected':''}>📰 Editorial (Vogue)</option>
+                <option value="bento" ${getTemplateId(s)==='bento'?'selected':''}>🍱 Bento (Apple)</option>
               </select>
               <div class="mk-template-hint">${TEMPLATES[getTemplateId(s)].name} · max ${TEMPLATES[getTemplateId(s)].maxProducts} produits</div>
               <label class="mk-label" style="margin-top:14px">Footer</label>
               <input class="mk-input" id="mk-footer" value="${escapeAttr(s.footer)}" oninput="window.mkUpdateFooter(this.value)" />
+            </div>
+
+            <!-- ═══ DESIGN SYSTEM 2026-2027 ═══ -->
+            <div class="mk-card mk-card-ds">
+              <div class="mk-card-title">✨ Design Pinterest 2026-2027</div>
+
+              <label class="mk-label">Look prédéfini</label>
+              <div class="mk-ds-presets">
+                ${Object.entries(window.MK_DESIGN_PRESETS || {}).map(([id, p]) => `
+                  <button class="mk-ds-preset" onclick="window.mkApplyDesignPreset('${id}')">${escapeAttr(p.name)}</button>
+                `).join('')}
+              </div>
+
+              <label class="mk-label" style="margin-top:14px">Gradient mesh</label>
+              <div class="mk-ds-grad-row">
+                ${Object.entries(window.MK_GRADIENTS || {}).map(([id, g]) => `
+                  <button class="mk-ds-grad ${(s.gradient || 'none') === id ? 'on' : ''}" title="${escapeAttr(g.name)}"
+                    style="background:${g.preview || '#F2F2F7'}"
+                    onclick="window.mkUpdateGradient('${id}')"></button>
+                `).join('')}
+              </div>
+
+              <label class="mk-label" style="margin-top:14px">Typographie</label>
+              <select class="mk-input mk-select" onchange="window.mkUpdateFontPair(this.value)">
+                ${Object.entries(window.MK_FONT_PAIRS || {}).map(([id, f]) => `
+                  <option value="${id}" ${(s.fontPair || 'default') === id ? 'selected' : ''}>${escapeAttr(f.name)}</option>
+                `).join('')}
+              </select>
+
+              <label class="mk-label" style="margin-top:14px">Pattern (texture)</label>
+              <div class="mk-ds-pat-row">
+                ${Object.entries(window.MK_PATTERNS || {}).map(([id, p]) => `
+                  <button class="mk-ds-pat ${(s.pattern || 'none') === id ? 'on' : ''}" title="${escapeAttr(p.name)}"
+                    style="background-image:${p.css || 'none'};background-color:#F2F2F7"
+                    onclick="window.mkUpdatePattern('${id}')">${id === 'none' ? '∅' : ''}</button>
+                `).join('')}
+              </div>
+
+              <label class="mk-label" style="margin-top:14px">Sticker / badge</label>
+              <div class="mk-ds-stk-row">
+                ${Object.entries(window.MK_STICKERS || {}).map(([id, st]) => `
+                  <button class="mk-ds-stk ${(s.sticker || 'none') === id ? 'on' : ''}" title="${escapeAttr(st.name)}"
+                    onclick="window.mkUpdateSticker('${id}')">${st.svg || '<span class="mk-ds-none">∅</span>'}</button>
+                `).join('')}
+              </div>
             </div>
 
             <div class="mk-card">
@@ -868,10 +917,39 @@
   };
 
   // ── RENDU FICHE (HTML utilisé pour PDF + preview) ───────────
+  // ─── Helpers design system (gradient + font + pattern + sticker) ──
+  function designBg(sheet) {
+    var g = (window.MK_GRADIENTS || {})[sheet.gradient || 'none'];
+    var p = (window.MK_PATTERNS  || {})[sheet.pattern  || 'none'];
+    var bg = g && g.css ? g.css : '';
+    var pat = p && p.css ? p.css : '';
+    if (bg && pat) return pat + ', ' + bg;
+    return bg || pat || '';
+  }
+  function designFont(sheet) {
+    var fp = (window.MK_FONT_PAIRS || {})[sheet.fontPair || 'default'];
+    if (!fp) return { heading: 'DM Sans', body: 'DM Sans', hw: 800, bw: 500 };
+    // Lazy load les fonts custom si pas encore charges
+    if (typeof window.mkLoadFontPair === 'function') window.mkLoadFontPair(sheet.fontPair || 'default');
+    return {
+      heading: fp.heading.family,
+      body: fp.body.family,
+      hw: fp.heading.weight,
+      bw: fp.body.weight,
+      italic: !!fp.heading.italic,
+    };
+  }
+  function designSticker(sheet) {
+    var s = (window.MK_STICKERS || {})[sheet.sticker || 'none'];
+    return s && s.svg ? s.svg : '';
+  }
+
   function renderSheetHTML(sheet, targetId) {
     const tpl = getTemplateId(sheet);
-    if (tpl === 'memo')  return renderMemoTemplate(sheet, targetId);
-    if (tpl === 'focus') return renderFocusTemplate(sheet, targetId);
+    if (tpl === 'memo')      return renderMemoTemplate(sheet, targetId);
+    if (tpl === 'focus')     return renderFocusTemplate(sheet, targetId);
+    if (tpl === 'editorial') return renderEditorialTemplate(sheet, targetId);
+    if (tpl === 'bento')     return renderBentoTemplate(sheet, targetId);
     return renderOffreTemplate(sheet, targetId);
   }
 
@@ -1264,5 +1342,163 @@
     showShareToast(s);
   };
   window.mkDismissShareToast = dismissShareToast;
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // TEMPLATE EDITORIAL — Vogue/magazine layout (gros serif + asymetrique)
+  // ═══════════════════════════════════════════════════════════════════════
+  function renderEditorialTemplate(sheet, targetId) {
+    const s = sheet;
+    const cp = COLOR_PRESETS[s.color] || COLOR_PRESETS.navy;
+    const font = designFont(s);
+    const bg = designBg(s);
+    const sticker = designSticker(s);
+    const fontFamily = "'" + font.heading + "', '" + font.body + "', serif";
+    const products = (s.products || []).slice(0, TEMPLATES.editorial.maxProducts);
+    const lead = products[0];
+    const rest = products.slice(1);
+    const hasLight = ['noir', 'cosmic', 'midnight', 'ocean', 'forest'].indexOf(s.gradient) >= 0;
+    const textCol = hasLight ? '#FFFFFF' : '#0B1F4D';
+    const subCol = hasLight ? 'rgba(255,255,255,0.78)' : 'rgba(11,31,77,0.65)';
+
+    return `
+      <div id="${targetId}" class="mk-pdf-target mk-pdf-editorial" style="background:${bg || cp.bg};color:${textCol};font-family:${fontFamily}">
+        ${sticker ? `<div class="mk-ed-sticker">${sticker}</div>` : ''}
+        <header class="mk-ed-header">
+          <div class="mk-ed-logo">${renderLogo(56)}</div>
+          <div class="mk-ed-eyebrow" style="color:${subCol}">— OFFRE INTÉGRAL PHARMA —</div>
+        </header>
+        <div class="mk-ed-title-wrap">
+          <h1 class="mk-ed-title" style="font-family:'${font.heading}',serif;font-weight:${font.hw};${font.italic ? 'font-style:italic' : ''}">${escapeAttr(s.title)}</h1>
+        </div>
+        ${lead ? `
+          <div class="mk-ed-lead" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.22)' : 'rgba(11,31,77,0.15)'}">
+            <div class="mk-ed-lead-num" style="color:${subCol}">N°01</div>
+            <div class="mk-ed-lead-name">${escapeAttr(lead.designation)}</div>
+            <div class="mk-ed-lead-cip" style="color:${subCol}">CIP ${escapeAttr(cipFormat(lead.cip13))}</div>
+            <div class="mk-ed-lead-prices">
+              ${lead.ppht ? `<div class="mk-ed-lead-ppht" style="color:${subCol}">PPHT ${eur(lead.ppht)}</div>` : ''}
+              <div class="mk-ed-lead-ip" style="color:${textCol}">${eur(lead.prix_ip)}</div>
+            </div>
+          </div>
+        ` : ''}
+        ${rest.length ? `
+          <div class="mk-ed-grid">
+            ${rest.map((p, i) => `
+              <div class="mk-ed-card" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(11,31,77,0.12)'}">
+                <div class="mk-ed-card-num" style="color:${subCol}">N°0${i + 2}</div>
+                <div class="mk-ed-card-name">${escapeAttr(p.designation)}</div>
+                <div class="mk-ed-card-cip" style="color:${subCol}">CIP ${escapeAttr(cipFormat(p.cip13))}</div>
+                <div class="mk-ed-card-price">${eur(p.prix_ip)}</div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        <footer class="mk-ed-footer" style="color:${subCol};border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(11,31,77,0.12)'}">
+          <span>${escapeAttr(s.footer || 'Tarif en vigueur 2026')}</span>
+          <span>— INTÉGRAL PHARMA —</span>
+        </footer>
+      </div>
+    `;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // TEMPLATE BENTO — Apple Bento Grid asymetrique (2-3 cols, tiles fluides)
+  // ═══════════════════════════════════════════════════════════════════════
+  function renderBentoTemplate(sheet, targetId) {
+    const s = sheet;
+    const cp = COLOR_PRESETS[s.color] || COLOR_PRESETS.navy;
+    const font = designFont(s);
+    const bg = designBg(s);
+    const sticker = designSticker(s);
+    const products = (s.products || []).slice(0, TEMPLATES.bento.maxProducts);
+    const hasLight = ['noir', 'cosmic', 'midnight', 'ocean', 'forest'].indexOf(s.gradient) >= 0;
+    const textCol = hasLight ? '#FFFFFF' : '#0B1F4D';
+    const tileBg = hasLight ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.75)';
+    const tileBorder = hasLight ? 'rgba(255,255,255,0.20)' : 'rgba(11,31,77,0.08)';
+
+    // Layout asymetrique : 9 cellules max, certaines doublees (col-span-2 / row-span-2)
+    const cellLayouts = [
+      'span 2 / span 2',  // tile 1 = grand
+      'span 1 / span 1',
+      'span 1 / span 1',
+      'span 1 / span 2',  // tile 4 = haut
+      'span 2 / span 1',  // tile 5 = large
+      'span 1 / span 1',
+      'span 1 / span 1',
+      'span 2 / span 1',
+      'span 1 / span 1',
+    ];
+
+    return `
+      <div id="${targetId}" class="mk-pdf-target mk-pdf-bento" style="background:${bg || cp.bg};color:${textCol};font-family:'${font.body}',sans-serif">
+        ${sticker ? `<div class="mk-bento-sticker">${sticker}</div>` : ''}
+        <header class="mk-bento-header">
+          <div class="mk-bento-logo">${renderLogo(48)}</div>
+          <div>
+            <div class="mk-bento-eyebrow" style="opacity:.7">OFFRE INTÉGRAL PHARMA</div>
+            <h1 class="mk-bento-title" style="font-family:'${font.heading}',sans-serif;font-weight:${font.hw}">${escapeAttr(s.title)}</h1>
+          </div>
+        </header>
+        <div class="mk-bento-grid">
+          ${products.map((p, i) => {
+            const big = i === 0;
+            return `
+              <div class="mk-bento-tile ${big ? 'mk-bento-tile-big' : ''}" style="background:${tileBg};border-color:${tileBorder};grid-area:${cellLayouts[i % cellLayouts.length]}">
+                <div class="mk-bento-num" style="opacity:.55">${String(i + 1).padStart(2, '0')}</div>
+                <div class="mk-bento-name" style="font-family:'${font.heading}',sans-serif;font-weight:${font.hw}">${escapeAttr(p.designation)}</div>
+                <div class="mk-bento-cip" style="opacity:.55">CIP ${escapeAttr(cipFormat(p.cip13))}</div>
+                <div class="mk-bento-price-block">
+                  ${p.ppht ? `<div class="mk-bento-ppht" style="opacity:.55">PPHT ${eur(p.ppht)}</div>` : ''}
+                  <div class="mk-bento-ip">${eur(p.prix_ip)}</div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <footer class="mk-bento-footer" style="opacity:.55">
+          ${escapeAttr(s.footer || 'Tarif en vigueur 2026')} · INTÉGRAL PHARMA
+        </footer>
+      </div>
+    `;
+  }
+
+  // Handlers d'edition design system
+  window.mkUpdateGradient = function (id) {
+    if (!editingSheet) return;
+    editingSheet.gradient = id;
+    editingSheet.updated_at = new Date().toISOString();
+    renderEdit();
+  };
+  window.mkUpdateFontPair = function (id) {
+    if (!editingSheet) return;
+    editingSheet.fontPair = id;
+    editingSheet.updated_at = new Date().toISOString();
+    if (typeof window.mkLoadFontPair === 'function') window.mkLoadFontPair(id);
+    renderEdit();
+  };
+  window.mkUpdatePattern = function (id) {
+    if (!editingSheet) return;
+    editingSheet.pattern = id;
+    editingSheet.updated_at = new Date().toISOString();
+    renderEdit();
+  };
+  window.mkUpdateSticker = function (id) {
+    if (!editingSheet) return;
+    editingSheet.sticker = id;
+    editingSheet.updated_at = new Date().toISOString();
+    renderEdit();
+  };
+  window.mkApplyDesignPreset = function (presetId) {
+    if (!editingSheet) return;
+    const preset = (window.MK_DESIGN_PRESETS || {})[presetId];
+    if (!preset) return;
+    editingSheet.gradient = preset.gradient;
+    editingSheet.fontPair = preset.fontPair;
+    editingSheet.pattern = preset.pattern;
+    editingSheet.template = preset.template;
+    editingSheet.updated_at = new Date().toISOString();
+    if (typeof window.mkLoadFontPair === 'function') window.mkLoadFontPair(preset.fontPair);
+    renderEdit();
+  };
 
 })();
