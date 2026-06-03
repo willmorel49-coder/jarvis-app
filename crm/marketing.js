@@ -392,11 +392,34 @@
   let editTab = 'season';    // 'season' | 'cat' | 'custom'
   let productSearch = '';
 
+  // ── OFFRES IP OFFICIELLES (depuis marketing-offers.js) ─────────────────
+  function getIpOffers() {
+    return Array.isArray(window.MARKETING_IP_OFFERS) ? window.MARKETING_IP_OFFERS : [];
+  }
+  window.mkStartFromOffer = function (offerId) {
+    const offer = getIpOffers().find(o => o.id === offerId);
+    if (!offer) return;
+    // Pre-rempli newSheet avec les produits officiels
+    editingSheet = {
+      id: 'mk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      title: offer.title,
+      theme: 'custom',
+      color: offer.color || 'navy',
+      footer: offer.footer || 'Tarif en vigueur 2026',
+      template: offer.template || 'offre',
+      products: (offer.products || []).slice(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    renderEdit();
+  };
+
   window.renderMarketing = function () {
     const root = getRoot();
     if (!root) return;
     const sheets = loadSheets();
     const suggested = getCurrentSeasonTheme();
+    const ipOffers = getIpOffers();
 
     root.innerHTML = `
       <div class="mk-wrap">
@@ -414,6 +437,31 @@
             Créer cette fiche
           </button>
         </div>
+
+        ${ipOffers.length ? `
+        <div class="mk-section mk-section-ip">
+          <div class="mk-section-head">
+            <div>
+              <div class="mk-section-title">Offres IP officielles 2026</div>
+              <div class="mk-section-sub">Fiches commerciales pré-remplies — clic = duplicate + édite</div>
+            </div>
+          </div>
+          <div class="mk-ip-offers">
+            ${ipOffers.map(o => {
+              const cp = COLOR_PRESETS[o.color] || COLOR_PRESETS.navy;
+              const n = (o.products || []).length;
+              return `
+                <button class="mk-ip-card" style="background:${cp.bg};color:${cp.accent}" onclick="window.mkStartFromOffer('${o.id}')">
+                  <div class="mk-ip-card-eyebrow" style="color:${cp.headerBg}">OFFRE IP</div>
+                  <div class="mk-ip-card-title">${escapeAttr(o.title.replace(/^OFFRE IP[\\s—-]*/i, ''))}</div>
+                  <div class="mk-ip-card-sub">${escapeAttr(o.subtitle || '')}</div>
+                  <div class="mk-ip-card-meta">${n} produit${n>1?'s':''} · ${escapeAttr(o.template)}</div>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+        ` : ''}
 
         <div class="mk-section">
           <div class="mk-section-head">
