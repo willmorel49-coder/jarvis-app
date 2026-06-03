@@ -32,12 +32,6 @@
         { id: 'groupements', label: 'Suivi adhérents',       icon: 'people',   tint: 'purple' },
       ],
     },
-    {
-      label: 'Système',
-      items: [
-        { id: '__toggle_mode',  label: 'Mode JARVIS',    icon: 'spark', tint: 'indigo' },
-      ],
-    },
   ];
 
   // Set des pages reconnues par le tab bar (pour syncActiveTab)
@@ -220,12 +214,6 @@
   }
 
   function onSheetItemClick(item) {
-    if (item.id === '__toggle_mode') {
-      const next = isClassicMode() ? 'jarvis' : 'classic';
-      document.documentElement.setAttribute('data-mode', next);
-      closeSheet();
-      return;
-    }
     closeSheet();
     if (typeof window.navigate === 'function') {
       window.navigate(item.id);

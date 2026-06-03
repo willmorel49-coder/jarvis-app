@@ -9,20 +9,11 @@
   <meta http-equiv="Expires" content="0" />
   <title>JARVIS · Intégral Pharma</title>
 
-  <!-- Mode detection : jarvis (default) | classic. Lu depuis ?mode=… ou localStorage. -->
+  <!-- Mode classique force (JARVIS retire). -->
   <script>
-    (function () {
-      const urlMode = new URLSearchParams(location.search).get('mode');
-      const stored = localStorage.getItem('jarvis.mode');
-      const mode = (urlMode === 'classic' || urlMode === 'jarvis')
-        ? urlMode
-        : (stored || 'jarvis');
-      if (urlMode) localStorage.setItem('jarvis.mode', urlMode);
-      // <html data-mode="..."> est posé au plus tôt — les CSS html[data-mode=X] s'appliquent dès le premier paint.
-      document.documentElement.dataset.mode = mode;
-      window.__JARVIS_MODE__ = mode;
-      window.__JARVIS_SHELL_ACTIVE__ = (mode === 'jarvis');
-    })();
+    document.documentElement.dataset.mode = 'classic';
+    window.__JARVIS_MODE__ = 'classic';
+    window.__JARVIS_SHELL_ACTIVE__ = false;
   </script>
 
   <!-- Fonts (DM Sans pour mode classique, Inter pour JARVIS) -->
@@ -35,23 +26,22 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260603d" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260603e" />
   <!-- Styles desktop -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="style-classic.css" />
-  <link rel="stylesheet" href="style-jarvis.css" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260603d" />
+  <link rel="stylesheet" href="marketing.css?v=20260603e" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260603d" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260603d" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260603d" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260603d" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260603e" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260603e" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260603e" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260603e" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260603d" />
-  <link rel="stylesheet" href="native-headers.css?v=20260603d" />
-  <link rel="stylesheet" href="native-lists.css?v=20260603d" />
+  <link rel="stylesheet" href="native-shell.css?v=20260603e" />
+  <link rel="stylesheet" href="native-headers.css?v=20260603e" />
+  <link rel="stylesheet" href="native-lists.css?v=20260603e" />
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -74,19 +64,19 @@
   <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
 
   <!-- Données métier (cache-busted à chaque deploy pour éviter stale data) -->
-  <script src="clients-data.js?v=20260603d"></script>
-  <script src="pharmacies-geo.js?v=20260603d"></script>
-  <script src="benchmark-data.js?v=20260603d"></script>
-  <script src="offilog-data.js?v=20260603d"></script>
-  <script src="drakkars-data.js?v=20260603d"></script>
-  <script src="cap3000-data.js?v=20260603d"></script>
-  <script src="groupements-data.js?v=20260603d"></script>
+  <script src="clients-data.js?v=20260603e"></script>
+  <script src="pharmacies-geo.js?v=20260603e"></script>
+  <script src="benchmark-data.js?v=20260603e"></script>
+  <script src="offilog-data.js?v=20260603e"></script>
+  <script src="drakkars-data.js?v=20260603e"></script>
+  <script src="cap3000-data.js?v=20260603e"></script>
+  <script src="groupements-data.js?v=20260603e"></script>
   <!-- Données enrichies STATS (catalogue IP · produits par client · stock · ventes détaillées) -->
-  <script src="catalogue-ip.js?v=20260603d"></script>
-  <script src="client-products.js?v=20260603d"></script>
-  <script src="stock.js?v=20260603d"></script>
-  <script src="sales-detail.js?v=20260603d"></script>
-  <script src="establishments-aggregate.js?v=20260603d"></script>
+  <script src="catalogue-ip.js?v=20260603e"></script>
+  <script src="client-products.js?v=20260603e"></script>
+  <script src="stock.js?v=20260603e"></script>
+  <script src="sales-detail.js?v=20260603e"></script>
+  <script src="establishments-aggregate.js?v=20260603e"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -109,36 +99,26 @@
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
   </script>
 
-  <script src="app.js?v=20260603d" defer></script>
-  <script src="dashboard-v2.js?v=20260603d" defer></script>
+  <script src="app.js?v=20260603e" defer></script>
+  <script src="dashboard-v2.js?v=20260603e" defer></script>
   <!-- Cavalerie d'analyses commerciales (doivent etre chargees AVANT classic-overrides) -->
-  <script src="benchmark-multibench.js?v=20260603d" defer></script>
-  <script src="benchmark-focus.js?v=20260603d" defer></script>
-  <script src="benchmark-manque-a-gagne.js?v=20260603d" defer></script>
-  <script src="benchmark-penetration.js?v=20260603d" defer></script>
-  <script src="benchmark-laboratoires.js?v=20260603d" defer></script>
-  <script src="benchmark-trajectoires.js?v=20260603d" defer></script>
-  <script src="classic-overrides.js?v=20260603d" defer></script>
-  <script src="mobile-shell.js?v=20260603d" defer></script>
+  <script src="benchmark-multibench.js?v=20260603e" defer></script>
+  <script src="benchmark-focus.js?v=20260603e" defer></script>
+  <script src="benchmark-manque-a-gagne.js?v=20260603e" defer></script>
+  <script src="benchmark-penetration.js?v=20260603e" defer></script>
+  <script src="benchmark-laboratoires.js?v=20260603e" defer></script>
+  <script src="benchmark-trajectoires.js?v=20260603e" defer></script>
+  <script src="classic-overrides.js?v=20260603e" defer></script>
+  <script src="mobile-shell.js?v=20260603e" defer></script>
   <!-- Native UI shell (bottom tab bar + large titles) -->
-  <script src="native-shell.js?v=20260603d" defer></script>
-  <script src="native-headers.js?v=20260603d" defer></script>
-  <script src="marketing.js?v=20260603d" defer></script>
-  <script type="module" src="jarvis/main.js?v=20260603d"></script>
+  <script src="native-shell.js?v=20260603e" defer></script>
+  <script src="native-headers.js?v=20260603e" defer></script>
+  <script src="marketing.js?v=20260603e" defer></script>
 </head>
 
 <body>
 
-  <!-- ══════════ MODE TOGGLE (toujours visible) ══════════ -->
-  <button id="mode-toggle" class="mode-toggle" title="Basculer entre JARVIS et le mode classique">
-    <span class="mode-toggle-jarvis">⌂ JARVIS</span>
-    <span class="mode-toggle-classic">≡ Classique</span>
-  </button>
-
-  <!-- ══════════ JARVIS SHELL (visible en mode jarvis) ══════════ -->
-  <div id="jarvis-root"></div>
-
-  <!-- ══════════ LEGACY SHELL (visible en mode classique) ══════════ -->
+  <!-- ══════════ SHELL CLASSIQUE ══════════ -->
 
   <!-- LOGIN -->
   <div id="login-screen">
@@ -327,22 +307,12 @@
       document.getElementById('newpass-input').focus();
     }
 
-    // Topbar date (mode classique)
+    // Topbar date
     document.addEventListener('DOMContentLoaded', function () {
       const el = document.getElementById('topbar-date');
       if (el) {
         const d = new Date();
         el.textContent = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-      }
-
-      // Mode toggle
-      const toggle = document.getElementById('mode-toggle');
-      if (toggle) {
-        toggle.addEventListener('click', () => {
-          const next = (window.__JARVIS_MODE__ === 'classic') ? 'jarvis' : 'classic';
-          localStorage.setItem('jarvis.mode', next);
-          location.search = '?mode=' + next;
-        });
       }
     });
   </script>
