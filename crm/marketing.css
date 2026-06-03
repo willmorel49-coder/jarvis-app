@@ -1207,6 +1207,37 @@
 .mk-pdf, .mk-pdf-target { overflow: visible !important; }
 
 /* ══════════════════════════════════════════════════════════════
+   STICKER GENERIQUE en haut a droite des templates Offre/Memo
+   (les templates Focus/Bento ont leur propre positionnement)
+   ══════════════════════════════════════════════════════════════ */
+.mk-tpl-sticker {
+  position: absolute; top: 32px; right: 32px;
+  width: 96px; height: 96px;
+  z-index: 5;
+  transform: rotate(-6deg);
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.20));
+  pointer-events: none;
+}
+.mk-tpl-sticker svg { width: 100%; height: 100%; display: block; }
+.mk-pdf-offre, .mk-pdf-memo { position: relative; }
+
+/* Table OFFRE : fond blanc semi-transparent quand gradient/mesh en arriere-plan
+   pour garder la lisibilite */
+.mk-pdf-offre .mk-pdf-table-wrap {
+  background: rgba(255,255,255,0.92);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(11,31,77,0.06);
+  backdrop-filter: blur(4px);
+}
+.mk-pdf-memo .mk-memo-table-wrap {
+  background: rgba(255,255,255,0.94);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(11,31,77,0.08);
+}
+
+/* ══════════════════════════════════════════════════════════════
    PDF — Style de la fiche générée (doit être autonome car html2canvas)
    Format A4 portrait : 794 × 1123 px @ 96dpi
    ══════════════════════════════════════════════════════════════ */

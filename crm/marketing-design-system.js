@@ -222,15 +222,14 @@
   // ─────────────────────────────────────────────────────────────────────────
   var DESIGN_PRESETS = {
     classic:    { name: 'Classique',      gradient: 'none',       fontPair: 'default',    pattern: 'none',  template: 'offre' },
-    vogue:      { name: 'Vogue',          gradient: 'rose',       fontPair: 'editorial',  pattern: 'none',  template: 'editorial' },
     apple:      { name: 'Apple Bento',    gradient: 'arctic',     fontPair: 'default',    pattern: 'none',  template: 'bento' },
-    luxe:       { name: 'Luxury',         gradient: 'noir',       fontPair: 'luxe',       pattern: 'noise', template: 'editorial' },
-    sunset:     { name: 'Sunset Glow',    gradient: 'sunset',     fontPair: 'editorial',  pattern: 'none',  template: 'editorial' },
+    luxe:       { name: 'Luxury',         gradient: 'noir',       fontPair: 'luxe',       pattern: 'noise', template: 'focus' },
+    sunset:     { name: 'Sunset Glow',    gradient: 'sunset',     fontPair: 'editorial',  pattern: 'none',  template: 'bento' },
     tech:       { name: 'Tech 2026',      gradient: 'cosmic',     fontPair: 'techno',     pattern: 'grid',  template: 'bento' },
-    holographic:{ name: 'Holographique',  gradient: 'holographic',fontPair: 'bold',       pattern: 'none',  template: 'editorial' },
-    forest:     { name: 'Eco Forest',     gradient: 'forest',     fontPair: 'serif',      pattern: 'dots',  template: 'editorial' },
+    forest:     { name: 'Eco Forest',     gradient: 'forest',     fontPair: 'serif',      pattern: 'dots',  template: 'offre' },
     pastel:     { name: 'Pastel Soft',    gradient: 'peach',      fontPair: 'editorial',  pattern: 'dots',  template: 'bento' },
-    midnight:   { name: 'Midnight Pro',   gradient: 'midnight',   fontPair: 'bold',       pattern: 'grid',  template: 'editorial' },
+    midnight:   { name: 'Midnight Pro',   gradient: 'midnight',   fontPair: 'bold',       pattern: 'grid',  template: 'bento' },
+    pharma:     { name: 'Pharma Pro',     gradient: 'none',       fontPair: 'techno',     pattern: 'none',  template: 'memo' },
   };
   window.MK_DESIGN_PRESETS = DESIGN_PRESETS;
 })();
