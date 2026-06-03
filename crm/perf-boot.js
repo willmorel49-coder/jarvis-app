@@ -13,11 +13,31 @@
 (function () {
   'use strict';
 
-  var VERSION = '?v=20260603j';
+  var VERSION = '?v=20260603k';
 
   // Mapping page -> scripts à charger à la demande
+  // Note : 'loaded' Set evite les doubles chargements (ex stock.js partage par
+  // plusieurs pages ne sera load qu'une seule fois).
   var LAZY_BUNDLES = {
+    pharmacies: [
+      'stock.js',           // 1.7 MB — referentiel produits pour fiche pharma
+      'client-products.js'  // 84 KB — produits achetes par pharma
+    ],
+    produits: [
+      'stock.js',
+      'client-products.js'
+    ],
+    catalogue: [
+      'catalogue-ip.js',    // 188 KB — catalogue IP avec remises
+      'stock.js'
+    ],
+    simulateur: [
+      'catalogue-ip.js'
+    ],
     benchmark: [
+      'stock.js',
+      'client-products.js',
+      'catalogue-ip.js',
       'benchmark-data.js',
       'establishments-aggregate.js',
       'benchmark-multibench.js',
@@ -27,11 +47,10 @@
       'benchmark-laboratoires.js',
       'benchmark-trajectoires.js'
     ],
-    // Marketing dépend de BENCHMARK (themeProducts/searchProducts) — sans ça
-    // les cartes thèmes affichent "0 produits" tant que benchmark n'est pas
-    // chargé par idlePreload (4 s après boot). On force le chargement en
-    // entrant sur l'onglet pour garantir des données affichées.
+    // Marketing depend de BENCHMARK (themeProducts/searchProducts) + catalogue
+    // pour le selecteur de produits dans les fiches.
     marketing: [
+      'catalogue-ip.js',
       'benchmark-data.js'
     ],
     offilog: [
@@ -77,6 +96,9 @@
     try { if (typeof DRAKKARS     !== 'undefined') window.DRAKKARS     = DRAKKARS;     } catch (e) {}
     try { if (typeof CAP3000      !== 'undefined') window.CAP3000      = CAP3000;      } catch (e) {}
     try { if (typeof ESTABLISHMENTS !== 'undefined') window.ESTABLISHMENTS = ESTABLISHMENTS; } catch (e) {}
+    try { if (typeof STOCK        !== 'undefined') window.STOCK        = STOCK;        } catch (e) {}
+    try { if (typeof CATALOGUE_IP !== 'undefined') window.CATALOGUE_IP = CATALOGUE_IP; } catch (e) {}
+    try { if (typeof CLIENT_PRODUCTS !== 'undefined') window.CLIENT_PRODUCTS = CLIENT_PRODUCTS; } catch (e) {}
   }
 
   var bundlePromises = Object.create(null);
