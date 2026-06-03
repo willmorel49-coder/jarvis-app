@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '?v=20260603w';
+  var VERSION = '?v=20260603x';
 
   // Mapping page -> scripts à charger à la demande
   // Note : 'loaded' Set evite les doubles chargements (ex stock.js partage par

@@ -19,27 +19,19 @@
   // ── DONNÉES ─────────────────────────────────────────────────
   const LS_KEY = 'marketing.sheets.v1';
 
-  // ── LOGO IP OFFICIEL (inline SVG, source: crm/marketing-logo.svg) ─
-  // Lettres "i" + "p" en capsules pharmaceutiques.
-  // "i" en bleu marine #0B1F4D · "p" en doré #C9A961
-  const IP_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 28" width="48" height="28" role="img" aria-label="Integral Pharma">
-    <g>
-      <rect x="2" y="1.5" width="9" height="5.5" rx="2.75" fill="#0B1F4D"/>
-      <rect x="2" y="8.5" width="9" height="18" rx="4.5" fill="#0B1F4D"/>
-    </g>
-    <g>
-      <rect x="14" y="6.5" width="11" height="12" rx="5.5" fill="#C9A961"/>
-      <rect x="17" y="9.5" width="5" height="6" rx="2.5" fill="#FFFFFF"/>
-      <rect x="14" y="6.5" width="4" height="21" rx="2" fill="#C9A961"/>
-    </g>
-  </svg>`;
+  // ── LOGO IP OFFICIEL ──────────────────────────────────────────────
+  // Source : crm/marketing-logo.avif (fourni par Will, charte IP officielle)
+  // Fallback SVG inline pour navigateurs sans support AVIF (rare, Safari 16-).
+  const IP_LOGO_FALLBACK_SVG = `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 28"><rect x="2" y="1.5" width="9" height="5.5" rx="2.75" fill="#0B1F4D"/><rect x="2" y="8.5" width="9" height="18" rx="4.5" fill="#0B1F4D"/><rect x="14" y="6.5" width="11" height="12" rx="5.5" fill="#C9A961"/><rect x="17" y="9.5" width="5" height="6" rx="2.5" fill="#FFFFFF"/><rect x="14" y="6.5" width="4" height="21" rx="2" fill="#C9A961"/></svg>')}`;
 
   function renderLogo(size) {
-    const w = size || 56;
-    const h = Math.round(w * 28 / 48);
-    return IP_LOGO_SVG
-      .replace('width="48"', 'width="' + w + '"')
-      .replace('height="28"', 'height="' + h + '"');
+    const h = size || 56;
+    // <picture> avec source AVIF et fallback SVG en img — supporte tous nav.
+    // crossorigin omit : ressource same-origin GH Pages.
+    return `<picture>
+      <source srcset="marketing-logo.avif" type="image/avif">
+      <img src="${IP_LOGO_FALLBACK_SVG}" alt="Integral Pharma" style="height:${h}px;width:auto;display:block;object-fit:contain" />
+    </picture>`;
   }
 
   // CSS @font-face DM Sans embarqué dans le HTML rendu avant export PDF.
