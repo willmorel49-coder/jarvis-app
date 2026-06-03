@@ -344,16 +344,16 @@
       color: t.color,
       template: 'offre',
       footer: 'Tarif en vigueur ' + new Date().getFullYear(),
-      products: themeProducts(t).slice(0, 12).map(snapshotProduct),
+      products: themeProducts(t).slice(0, 25).map(p => p.__off ? snapshotOffilogProduct(p) : snapshotProduct(p)),
     };
   }
 
   // ── TEMPLATES DISPONIBLES ───────────────────────────────────
   const TEMPLATES = {
-    offre:     { name: 'Offre IP',          maxProducts: 500, defaultCount: 12, perPage: 14 },
-    memo:      { name: 'Mémo référentiel',  maxProducts: 500, defaultCount: 20, perPage: 22 },
+    offre:     { name: 'Offre IP',          maxProducts: 500, defaultCount: 25, perPage: 14 },
+    memo:      { name: 'Mémo référentiel',  maxProducts: 500, defaultCount: 25, perPage: 22 },
     focus:     { name: 'Focus produit',     maxProducts: 12,  defaultCount: 1,  perPage: 3  },
-    bento:     { name: 'Bento (Apple)',     maxProducts: 120, defaultCount: 6,  perPage: 9  },
+    bento:     { name: 'Bento (Apple)',     maxProducts: 120, defaultCount: 12, perPage: 9  },
   };
 
   function getTemplateId(sheet) {
@@ -362,34 +362,70 @@
   }
 
   // ── FILTRES PRODUITS ────────────────────────────────────────
+  // Filtre OFFILOG par theme : utilise les memes patterns mais cherche aussi
+  // dans nom + univers + marque. La parapharma saisonniere (solaires, anti-
+  // moustiques, vitamines) explose le BENCHMARK medicament IP-only.
+  function offilogFilterForTheme(themeId, designation, univers) {
+    const txt = ((designation || '') + ' ' + (univers || '')).toLowerCase();
+    if (themeId === 'allergies') return /allerg|cetiriz|loratad|histamin/.test(txt);
+    if (themeId === 'solaire')   return /solair|spf|uva|uvb|sun|apres.soleil|moustiq|repuls|insec|piqur|biafine|photoderm/.test(txt);
+    if (themeId === 'immunite')  return /vitamin|magnes|probio|defense|immuni|\bzinc\b|ginseng|guarana|echinac|propolis|acerola|gelee royale|oligo|berocca|supradyn|elevit|cholecal|complement alimentaire/.test(txt);
+    if (themeId === 'grippe')    return /grippe|vaccin|fervex/.test(txt);
+    if (themeId === 'rhume')     return /rhume|toux|rhino|nasal|pastil|fervex|humex|actifed|dolirhume|strepsil|drill|angin|fluidif|expector|vicks|maxilase|hextril|hexaspray|gorge/.test(txt);
+    if (themeId === 'gastro')    return /gastro|smecta|tiorfan|loperam|imodium|diosmectit|ultra.levure|saccharomyc|vogal|motilium|antidiarr|adiaril|domperidon|metoclopram|diarrh/.test(txt);
+    return false;
+  }
+
   function themeProducts(theme) {
     if (!window.BENCHMARK) return [];
-    // buildSalesByEan defini plus bas (Sagitta module). Hoisting des function
-    // declarations -> accessible. Index OPS+CPR+HP par EAN.
     const salesIdx = (typeof buildSalesByEan === 'function') ? buildSalesByEan() : null;
     if (theme.id === 'top') {
       return [...window.BENCHMARK]
         .filter(theme.filter)
         .sort((a,b) => (a.ip_rank_qty||999) - (b.ip_rank_qty||999));
     }
-    const list = window.BENCHMARK
+    // ─── Source 1 : BENCHMARK (medicaments IP) ────────────────────
+    const benchList = window.BENCHMARK
       .filter(b => b.prix_ip > 0)
       .filter(theme.filter)
       .map(b => {
         const sales = salesIdx ? (salesIdx.get(String(b.cip13)) || { qte: 0, ca: 0 }) : { qte: 0, ca: 0 };
-        // Mutation legere pour passer info volumes au tri (et au rendu hero)
         b._sec_qte = sales.qte;
         b._sec_ca = sales.ca;
+        b.__off = false;
         return b;
       });
-    // Tri principal volume SECTEUR (OPS+CPR+HP) decroissant
-    // -> on identifie les vraies pathologies qui cartonnent dans le marche.
-    // En fallback : ip_qty (ventes IP-only) pour les produits sans match secteur.
-    list.sort((a,b) => {
+    // ─── Source 2 : OFFILOG (parapharmacie saisonnière, images) ──
+    // Cruciale pour themes type 'solaire' qui matchent peu en BENCHMARK
+    // medicament. La parapharma dans OFFILOG explose le catalogue.
+    const offList = (window.OFFILOG || [])
+      .filter(o => o.dans_offilog && o.prix_offilog > 0)
+      .filter(o => offilogFilterForTheme(theme.id, o.produit, o.univers))
+      .map(o => {
+        // Normalisation : on copie en surface avec champs equivalents
+        // BENCHMARK pour permettre le merge + tri
+        const sales = salesIdx ? (salesIdx.get(String(o.ean)) || { qte: 0, ca: 0 }) : { qte: 0, ca: 0 };
+        return Object.assign({}, o, {
+          cip13: String(o.ean || ''),
+          designation: (o.produit || '').replace(/&amp;/g, '&'),
+          prix_ht: Number(o.prix_maxi || 0),
+          prix_ip: Number(o.prix_offilog || 0),
+          ip_qty: Number(o.rang_vente || 0),
+          _sec_qte: sales.qte,
+          _sec_ca: sales.ca,
+          __off: true,
+        });
+      });
+    // Dedup : un OFFILOG ne doit pas doubler un BENCHMARK avec meme cip13
+    const seenCip = new Set(benchList.map(b => String(b.cip13)));
+    const offDedup = offList.filter(o => !seenCip.has(String(o.cip13)));
+    const fused = benchList.concat(offDedup);
+    // Tri : volume secteur DESC, puis ip_qty DESC
+    fused.sort((a,b) => {
       if (b._sec_qte !== a._sec_qte) return b._sec_qte - a._sec_qte;
       return (b.ip_qty || 0) - (a.ip_qty || 0);
     });
-    return list;
+    return fused;
   }
 
   function snapshotProduct(b) {
