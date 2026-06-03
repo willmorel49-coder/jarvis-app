@@ -1,543 +1,449 @@
-// dashboard-v2.js — Refonte du dashboard classique avec les nouvelles data STATS.
-// Override de window.renderDashboard après chargement de app.js.
-// Source : window.CLIENTS, window.SALES_TOTAL, window.SALES_BY_MONTH, window.SALES_BY_SOUSFAMILLE, window.SALES_BY_PRODUCT, window.SALES_BY_CLIENT_MONTH, window.CATALOGUE_IP, window.STOCK.
+// dashboard-v2.js — Dashboard CRM Intégral Pharma · refonte iOS Inset Grouped.
+// 5 blocs : Hero CA · 3 KPIs secondaires · Top 5 clients · Évolution mensuelle · Alertes.
+// Override de window.renderDashboard. Vanilla JS, IIFE, aucun build.
 
 (function () {
+  // ───────── Helpers locaux ────────────────────────────────────────────────
   function fmtEuro(n) {
-    if (!n) return '0 €';
+    if (!n || isNaN(n)) return '0 €';
     const abs = Math.abs(n);
     if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)} M€`;
-    if (abs >= 1000) return `${(n / 1000).toFixed(0)} k€`;
+    if (abs >= 1000) return `${Math.round(n / 1000)} k€`;
     return `${Math.round(n)} €`;
+  }
+  function fmtEuroPrecis(n) {
+    if (!n || isNaN(n)) return '0 €';
+    return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Math.round(n)) + ' €';
   }
   function fmtNum(n) { return Number(n || 0).toLocaleString('fr-FR'); }
   function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
+  function pct(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    const sign = n > 0 ? '+' : '';
+    return `${sign}${n.toFixed(1)} %`;
+  }
 
-  function computeStats() {
+  // Palette
+  const COLOR = {
+    bg: '#F2F2F7',
+    card: '#FFFFFF',
+    text: '#0B1F4D',
+    label: '#8E8E93',
+    accent: '#0057FF',
+    up: '#34C759',
+    down: '#FF3B30',
+    hairline: 'rgba(60,60,67,0.18)',
+    shadow: '0 0 0 0.5px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+  };
+
+  const MONTH_LABELS = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  function labelMonth(ym) {
+    if (!ym) return '';
+    const [y, m] = ym.split('-');
+    return `${MONTH_LABELS[parseInt(m, 10) - 1]} ${y.slice(2)}`;
+  }
+
+  // ───────── Calculs métier ────────────────────────────────────────────────
+  function computeContext() {
+    const salesTotal = window.SALES_TOTAL || {};
+    const salesByMonth = window.SALES_BY_MONTH || {};
+    const salesByFamille = window.SALES_BY_FAMILLE || {};
+    const salesByClientMonth = window.SALES_BY_CLIENT_MONTH || {};
     const clients = window.CLIENTS || [];
-    let clientsActifs = 0, clientsPassifs = 0, prospectsHot = 0, prospectsCold = 0, totalCa = 0;
-    const top10Clients = [];
-    for (const p of clients) {
-      const ca = p.ca2023 || 0;
-      const hasGroupement = !!(p.gros1 || p.gros2 || (p.ecodage && String(p.ecodage).trim()));
-      if (ca > 0) { clientsActifs++; totalCa += ca; top10Clients.push({ ...p, ca }); }
-      else if (hasGroupement) clientsPassifs++;
-      else if ((p.potentielGx || 0) > 0) prospectsHot++;
-      else prospectsCold++;
+    const opsAgg = window.OPS_AGGREGATE || {};
+
+    const months = Object.keys(salesByMonth).sort();
+    const monthSeries = months.map(m => ({
+      key: m,
+      label: labelMonth(m),
+      ca: salesByMonth[m].ca || 0,
+      marge: salesByMonth[m].marge || 0,
+      qte: salesByMonth[m].qte || 0,
+      lignes: salesByMonth[m].lignes || 0,
+    }));
+
+    const lastMonth = monthSeries[monthSeries.length - 1] || null;
+    const prevMonth = monthSeries[monthSeries.length - 2] || null;
+    const variationMois = lastMonth && prevMonth && prevMonth.ca > 0
+      ? ((lastMonth.ca - prevMonth.ca) / prevMonth.ca) * 100
+      : null;
+
+    // Index clients par CIP pour résoudre nom/ville
+    const clientByCip = {};
+    for (const c of clients) {
+      if (c.cip) clientByCip[String(c.cip)] = c;
     }
-    top10Clients.sort((a, b) => b.ca - a.ca);
+
+    // Top 5 clients du dernier mois (avec variation vs mois précédent)
+    const topClients = [];
+    if (lastMonth) {
+      const lastKey = lastMonth.key;
+      const prevKey = prevMonth ? prevMonth.key : null;
+      for (const [cip, byMonth] of Object.entries(salesByClientMonth)) {
+        const caMois = (byMonth[lastKey] && byMonth[lastKey].ca) || 0;
+        if (caMois <= 0) continue;
+        const caPrev = (prevKey && byMonth[prevKey] && byMonth[prevKey].ca) || 0;
+        const variation = caPrev > 0 ? ((caMois - caPrev) / caPrev) * 100 : null;
+        const client = clientByCip[String(cip)];
+        topClients.push({
+          cip,
+          nom: client ? client.nom : `CIP ${cip}`,
+          ville: client ? (client.ville || '') : '',
+          caMois,
+          variation,
+        });
+      }
+      topClients.sort((a, b) => b.caMois - a.caMois);
+    }
+
+    // Alertes
+    const alerts = computeAlerts({ clients, salesByClientMonth, lastMonth, salesByFamille, opsAgg });
+
     return {
-      total: clients.length,
-      clientsActifs, clientsPassifs, prospectsHot, prospectsCold, totalCa,
-      top10Clients: top10Clients.slice(0, 10),
+      salesTotal,
+      monthSeries,
+      lastMonth,
+      prevMonth,
+      variationMois,
+      topClients: topClients.slice(0, 5),
+      alerts,
+      nbPharmasActives: salesTotal.nb_pharmas_actives || 0,
+      nbPharmasTotal: clients.length,
     };
   }
 
+  function computeAlerts({ clients, salesByClientMonth, lastMonth, salesByFamille, opsAgg }) {
+    const alerts = [];
+
+    // 1) Pharmacies silencieuses >30j (aucun CA sur le dernier mois alors qu'elles avaient du CA avant)
+    if (lastMonth) {
+      const lastKey = lastMonth.key;
+      let silencieuses = 0;
+      for (const [cip, byMonth] of Object.entries(salesByClientMonth)) {
+        const totalHist = Object.values(byMonth).reduce((s, m) => s + (m.ca || 0), 0);
+        const caLast = (byMonth[lastKey] && byMonth[lastKey].ca) || 0;
+        if (totalHist > 0 && caLast === 0) silencieuses++;
+      }
+      if (silencieuses > 0) {
+        alerts.push({
+          type: 'silence',
+          label: 'Pharmacies silencieuses ce mois-ci',
+          value: silencieuses,
+          tone: silencieuses > 20 ? 'down' : 'neutral',
+        });
+      }
+    }
+
+    // 2) Famille sous-indexée vs OPS : compare la part de famille IP vs part famille OPS
+    // (heuristique : on calcule la pire sous-indexation en pts)
+    const familleParts = {};
+    let totalCa = 0;
+    for (const [f, d] of Object.entries(salesByFamille || {})) {
+      familleParts[f] = d.ca || 0;
+      totalCa += d.ca || 0;
+    }
+    if (totalCa > 0 && opsAgg && Object.keys(opsAgg).length) {
+      // Agrégation OPS par "nature" (proxy famille)
+      const opsByFamille = {};
+      let opsTotal = 0;
+      for (const p of Object.values(opsAgg)) {
+        const nat = (p.nature || p.famille || 'Autre').trim() || 'Autre';
+        opsByFamille[nat] = (opsByFamille[nat] || 0) + (p.ca || 0);
+        opsTotal += p.ca || 0;
+      }
+      if (opsTotal > 0) {
+        let pire = null;
+        for (const f of Object.keys(familleParts)) {
+          const partMoi = (familleParts[f] / totalCa) * 100;
+          const partOps = ((opsByFamille[f] || 0) / opsTotal) * 100;
+          const ecart = partOps - partMoi;
+          if (ecart > 0 && (!pire || ecart > pire.ecart)) {
+            pire = { famille: f, ecart };
+          }
+        }
+        if (pire) {
+          alerts.push({
+            type: 'famille',
+            label: `Famille sous-indexée : ${pire.famille}`,
+            value: `-${pire.ecart.toFixed(1)} pts vs OPS`,
+            tone: 'down',
+          });
+        }
+      }
+    }
+
+    // 3) Top produits OPS absents de mon catalogue de ventes
+    if (opsAgg && Object.keys(opsAgg).length) {
+      const salesProd = window.SALES_BY_PRODUCT || {};
+      let absents = 0;
+      // top 50 OPS par CA
+      const topOps = Object.entries(opsAgg)
+        .sort((a, b) => (b[1].ca || 0) - (a[1].ca || 0))
+        .slice(0, 50);
+      for (const [code] of topOps) {
+        if (!salesProd[code]) absents++;
+      }
+      if (absents > 0) {
+        alerts.push({
+          type: 'absents',
+          label: 'Top produits OPS absents',
+          value: `${absents} / 50`,
+          tone: absents > 20 ? 'down' : 'neutral',
+        });
+      }
+    }
+
+    return alerts;
+  }
+
+  // ───────── Sparkline SVG ─────────────────────────────────────────────────
+  function sparkline(values, width, height, color) {
+    if (!values || !values.length) return '';
+    const w = width || 600;
+    const h = height || 40;
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    const range = max - min || 1;
+    const stepX = w / Math.max(values.length - 1, 1);
+    const pts = values.map((v, i) => {
+      const x = i * stepX;
+      const y = h - ((v - min) / range) * (h - 4) - 2;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    const path = `M ${pts.join(' L ')}`;
+    const area = `${path} L ${w},${h} L 0,${h} Z`;
+    const c = color || COLOR.accent;
+    return `
+      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:${h}px;display:block">
+        <defs>
+          <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${c}" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="${c}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${area}" fill="url(#sparkGrad)"/>
+        <path d="${path}" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+  }
+
+  // ───────── Bars chart 8 mois ─────────────────────────────────────────────
+  function monthlyBars(series) {
+    if (!series || !series.length) return '';
+    const max = Math.max(...series.map(s => s.ca), 1);
+    return `
+      <div class="dash-bars" style="display:grid;grid-template-columns:repeat(${series.length},1fr);gap:6px;align-items:end;height:80px">
+        ${series.map(s => {
+          const h = Math.max((s.ca / max) * 100, 4);
+          return `
+            <div class="dash-bar-col" data-label="${escapeHtml(s.label)}" data-value="${fmtEuroPrecis(s.ca)}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:default;height:100%;justify-content:flex-end">
+              <div style="width:100%;height:${h}%;background:${COLOR.accent};border-radius:4px 4px 0 0;opacity:0.85;transition:opacity .12s"></div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(${series.length},1fr);gap:6px;margin-top:6px">
+        ${series.map(s => `<div style="font-size:10px;color:${COLOR.label};text-align:center;letter-spacing:0.4px;text-transform:uppercase;font-weight:600">${escapeHtml(s.label)}</div>`).join('')}
+      </div>
+    `;
+  }
+
+  // ───────── Composants ────────────────────────────────────────────────────
+  function card(innerHtml, extraStyle) {
+    return `
+      <div style="background:${COLOR.card};border-radius:14px;padding:18px 20px;box-shadow:${COLOR.shadow};${extraStyle || ''}">
+        ${innerHtml}
+      </div>
+    `;
+  }
+
+  function variationBadge(variation) {
+    if (variation === null || variation === undefined) {
+      return `<span style="font-size:13px;color:${COLOR.label};font-weight:600">—</span>`;
+    }
+    const isUp = variation >= 0;
+    const color = isUp ? COLOR.up : COLOR.down;
+    const arrow = isUp ? '&#9650;' : '&#9660;';
+    return `<span style="font-size:13px;color:${color};font-weight:700;font-variant-numeric:tabular-nums">${arrow} ${pct(variation).replace(/^[+-]/, '')}</span>`;
+  }
+
+  function blockHero(ctx) {
+    const { salesTotal, monthSeries, lastMonth, variationMois } = ctx;
+    const caTotal = salesTotal.ca || 0;
+    const periode = (salesTotal.premiere_date && salesTotal.derniere_date)
+      ? `${salesTotal.premiere_date} → ${salesTotal.derniere_date}`
+      : '—';
+    const values = monthSeries.map(s => s.ca);
+    return card(`
+      <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">Mon CA cumulé</div>
+      <div style="font-size:44px;font-weight:800;color:${COLOR.text};font-variant-numeric:tabular-nums;letter-spacing:-1px;margin:6px 0 4px;line-height:1.05">${fmtEuroPrecis(caTotal)}</div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:${COLOR.label};flex-wrap:wrap">
+        <span>${escapeHtml(periode)}</span>
+        ${lastMonth ? `<span style="width:3px;height:3px;border-radius:50%;background:${COLOR.label};display:inline-block"></span><span>${escapeHtml(lastMonth.label)}</span><span>${variationBadge(variationMois)}</span>` : ''}
+      </div>
+      <div style="margin-top:14px;margin-left:-4px;margin-right:-4px">${sparkline(values, 600, 40, COLOR.accent)}</div>
+    `);
+  }
+
+  function blockSecondaryKpis(ctx) {
+    const { lastMonth, variationMois, nbPharmasActives, nbPharmasTotal, salesTotal } = ctx;
+    const kpis = [
+      {
+        label: 'Mois en cours',
+        value: lastMonth ? fmtEuro(lastMonth.ca) : '—',
+        sub: variationMois !== null ? variationBadge(variationMois) : `<span style="font-size:13px;color:${COLOR.label}">vs n-1</span>`,
+      },
+      {
+        label: 'Pharmas actives',
+        value: fmtNum(nbPharmasActives),
+        sub: `<span style="font-size:13px;color:${COLOR.label}">sur ${fmtNum(nbPharmasTotal)} secteur</span>`,
+      },
+      {
+        label: 'Factures période',
+        value: fmtNum(salesTotal.factures || 0),
+        sub: `<span style="font-size:13px;color:${COLOR.label}">${fmtNum(salesTotal.lignes || 0)} lignes</span>`,
+      },
+    ];
+    return `
+      <div class="dash-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        ${kpis.map(k => card(`
+          <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">${escapeHtml(k.label)}</div>
+          <div style="font-size:24px;font-weight:800;color:${COLOR.text};font-variant-numeric:tabular-nums;letter-spacing:-0.5px;margin:6px 0 4px">${k.value}</div>
+          <div>${k.sub}</div>
+        `)).join('')}
+      </div>
+    `;
+  }
+
+  function blockTopClients(ctx) {
+    const { topClients, lastMonth } = ctx;
+    const head = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+        <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">Top 5 pharmas · ${lastMonth ? escapeHtml(lastMonth.label) : ''}</div>
+        <div style="font-size:11px;color:${COLOR.label}">CA mois · variation vs n-1</div>
+      </div>
+    `;
+    if (!topClients.length) {
+      return card(`${head}<div style="padding:18px 0;text-align:center;color:${COLOR.label};font-size:13px">Aucune vente sur le mois</div>`);
+    }
+    const rows = topClients.map((c, i) => `
+      <div data-cip="${escapeHtml(c.cip)}" onclick="console.log('[dashboard] click client', '${escapeHtml(c.cip)}')" style="display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:0.5px solid ${COLOR.hairline};cursor:pointer">
+        <span style="font-size:13px;color:${COLOR.label};font-weight:700;font-variant-numeric:tabular-nums">${i + 1}</span>
+        <div style="min-width:0">
+          <div style="font-size:14px;font-weight:600;color:${COLOR.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.nom)}</div>
+          <div style="font-size:12px;color:${COLOR.label};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.ville || '—')}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:700;color:${COLOR.text};font-variant-numeric:tabular-nums">${fmtEuro(c.caMois)}</div>
+          <div>${variationBadge(c.variation)}</div>
+        </div>
+      </div>
+    `).join('');
+    // Retire la dernière hairline
+    return card(`
+      ${head}
+      <div class="dash-top-clients">
+        ${rows}
+      </div>
+      <style>.dash-top-clients > *:last-child{border-bottom:none !important;padding-bottom:2px !important}</style>
+    `);
+  }
+
+  function blockMonthly(ctx) {
+    const { monthSeries } = ctx;
+    if (!monthSeries.length) return '';
+    const total = monthSeries.reduce((s, m) => s + m.ca, 0);
+    const avg = total / monthSeries.length;
+    return card(`
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+        <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">Évolution mensuelle</div>
+        <div style="font-size:11px;color:${COLOR.label};font-variant-numeric:tabular-nums">moy. ${fmtEuro(avg)} / mois</div>
+      </div>
+      ${monthlyBars(monthSeries)}
+      <div id="dash-bars-tooltip" style="margin-top:10px;font-size:12px;color:${COLOR.label};font-variant-numeric:tabular-nums;min-height:16px">Passe sur une barre pour le détail</div>
+    `);
+  }
+
+  function blockAlerts(ctx) {
+    const { alerts } = ctx;
+    const head = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+        <div style="font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:${COLOR.label};font-weight:700">Alertes du jour</div>
+        <div style="font-size:11px;color:${COLOR.label}">${alerts.length} signal${alerts.length > 1 ? 'aux' : ''}</div>
+      </div>
+    `;
+    if (!alerts.length) {
+      return card(`${head}<div style="padding:18px 0;text-align:center;color:${COLOR.label};font-size:13px">Aucune alerte active</div>`);
+    }
+    const shown = alerts.slice(0, 5);
+    const extra = alerts.length - shown.length;
+    const rows = shown.map(a => {
+      const dot = a.tone === 'down' ? COLOR.down : a.tone === 'up' ? COLOR.up : COLOR.accent;
+      return `
+        <div onclick="console.log('[dashboard] click alert', '${escapeHtml(a.type)}')" style="display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:0.5px solid ${COLOR.hairline};cursor:pointer">
+          <span style="width:8px;height:8px;border-radius:50%;background:${dot};display:inline-block"></span>
+          <div style="font-size:14px;color:${COLOR.text};font-weight:500">${escapeHtml(a.label)}</div>
+          <div style="font-size:13px;color:${COLOR.text};font-weight:700;font-variant-numeric:tabular-nums">${typeof a.value === 'number' ? fmtNum(a.value) : escapeHtml(a.value)}</div>
+        </div>
+      `;
+    }).join('');
+    const more = extra > 0
+      ? `<div style="padding:12px 0 2px;font-size:13px;color:${COLOR.accent};font-weight:600;cursor:pointer" onclick="console.log('[dashboard] voir toutes les alertes')">+${extra} autre${extra > 1 ? 's' : ''} alerte${extra > 1 ? 's' : ''}</div>`
+      : '';
+    return card(`
+      ${head}
+      <div class="dash-alerts">${rows}</div>
+      ${more}
+      <style>.dash-alerts > *:last-child{border-bottom:none !important}</style>
+    `);
+  }
+
+  // ───────── Render principal ──────────────────────────────────────────────
   function renderDashboardV2() {
     const root = document.getElementById('dash-content');
     if (!root) return;
-    const s = computeStats();
-    const salesTotal = window.SALES_TOTAL || null;
-    const salesMonth = window.SALES_BY_MONTH || {};
-    const salesProd = window.SALES_BY_PRODUCT || {};
-    const catIp = (window.CATALOGUE_IP || []).length;
-    const stockTotal = window.STOCK ? Object.values(window.STOCK).reduce((sum, r) => sum + (r.dispo || 0), 0) : 0;
-
-    // Mensuel : tableau bar chart
-    const months = Object.keys(salesMonth).sort();
-    const monthValues = months.map(m => salesMonth[m].ca);
-    const monthMax = Math.max(...monthValues, 1);
-
-    // Top 10 produits
-    const topProd = Object.entries(salesProd).sort((a, b) => b[1].ca - a[1].ca).slice(0, 10);
+    const ctx = computeContext();
 
     root.innerHTML = `
-      <div style="padding:20px;max-width:1280px;margin:0 auto;font-family:'DM Sans',sans-serif;color:#0B1F4D">
-
-        <!-- HEADER -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-          <div>
-            <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748B;font-weight:700">Vue secteur · STATS Intégral Pharma</div>
-            <h2 style="font-size:26px;font-weight:800;margin:4px 0 0;letter-spacing:-.5px">Tableau de bord</h2>
-            ${salesTotal ? `<div style="font-size:13px;color:#64748B;margin-top:4px">Période ${salesTotal.premiere_date} → ${salesTotal.derniere_date} · ${fmtNum(salesTotal.lignes)} lignes · ${fmtNum(salesTotal.factures)} factures</div>` : ''}
-          </div>
-        </div>
-
-        <!-- 6 KPI CARDS -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px">
-          ${kpiCard('CA secteur', fmtEuro(salesTotal ? salesTotal.ca : s.totalCa), 'Cumulé sur la période', true)}
-          ${kpiCard('Clients actifs', s.clientsActifs, 'Ont facturé')}
-          ${kpiCard('Clients groupement', s.clientsPassifs, 'Membres partenaire')}
-          ${kpiCard('Prospects chauds', s.prospectsHot, 'Potentiel Gx connu')}
-          ${kpiCard('Catalogue IP', fmtNum(catIp), 'Produits référencés')}
-          ${kpiCard('Stock dispo', fmtNum(stockTotal), 'Unités en stock')}
-        </div>
-
-        <!-- ÉVOLUTION MENSUELLE -->
-        ${months.length ? `
-        <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:28px 0 12px">Évolution mensuelle · CA secteur</h3>
-        <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px rgba(11,31,77,.04)">
-          <div style="display:grid;grid-template-columns:repeat(${months.length},1fr);gap:8px;align-items:end;height:160px">
-            ${months.map(m => {
-              const pct = Math.round((salesMonth[m].ca / monthMax) * 100);
-              const noms = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
-              const label = noms[parseInt(m.split('-')[1], 10) - 1] + ' ' + m.slice(2, 4);
-              return `
-                <div style="display:flex;flex-direction:column;align-items:center;gap:6px" title="${m} · ${fmtEuro(salesMonth[m].ca)} · ${fmtNum(salesMonth[m].lignes)} lignes">
-                  <div style="width:100%;height:100px;display:flex;align-items:flex-end">
-                    <div style="width:100%;height:${pct}%;min-height:4px;background:linear-gradient(180deg,#0057FF,#5856D6);border-radius:6px 6px 0 0"></div>
-                  </div>
-                  <div style="font-size:11px;font-weight:700;font-variant-numeric:tabular-nums">${fmtEuro(salesMonth[m].ca)}</div>
-                  <div style="font-size:10px;color:#64748B;letter-spacing:.5px;text-transform:uppercase;font-weight:700">${label}</div>
-                </div>`;
-            }).join('')}
-          </div>
-        </div>` : ''}
-
-        <!-- 2 COLONNES : TOP 10 CLIENTS + TOP 10 PRODUITS -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:18px;margin-top:24px">
-          <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:16px 18px">
-            <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">Top 10 clients · CA réel</h3>
-            ${s.top10Clients.length ? s.top10Clients.map((c, i) => `
-              <div style="display:grid;grid-template-columns:24px 1fr auto;gap:10px;padding:8px 0;border-bottom:1px solid #F2F6FF;font-size:13px;align-items:center">
-                <span style="color:#94A3B8;font-weight:700">${i + 1}</span>
-                <div>
-                  <div style="font-weight:700;color:#0B1F4D">${escapeHtml(c.nom)}</div>
-                  <div style="font-size:11px;color:#64748B">${escapeHtml(c.ville || '—')} · ${escapeHtml(c.ecodage || 'Indé')}</div>
-                </div>
-                <span style="color:#14B86A;font-weight:800;font-variant-numeric:tabular-nums">${fmtEuro(c.ca)}</span>
-              </div>
-            `).join('') : '<div style="padding:20px;text-align:center;color:#94A3B8">Aucun client actif</div>'}
-          </div>
-
-          <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:16px 18px">
-            <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">Top 10 produits · secteur</h3>
-            ${topProd.length ? topProd.map(([artcode, p], i) => `
-              <div style="display:grid;grid-template-columns:24px 1fr auto;gap:10px;padding:8px 0;border-bottom:1px solid #F2F6FF;font-size:12.5px;align-items:center">
-                <span style="color:#94A3B8;font-weight:700">${i + 1}</span>
-                <div>
-                  <div style="font-weight:700;color:#0B1F4D;font-size:12px">${escapeHtml(p.designation)}</div>
-                  <div style="font-size:10.5px;color:#64748B">${escapeHtml(p.sousfamille || '—')} · ${fmtNum(p.qte)} unités · ${p.nb_clients} clients</div>
-                </div>
-                <span style="color:#0057FF;font-weight:800;font-variant-numeric:tabular-nums;font-size:12px">${fmtEuro(p.ca)}</span>
-              </div>
-            `).join('') : '<div style="padding:20px;text-align:center;color:#94A3B8">Aucun produit</div>'}
-          </div>
-        </div>
-
-        <!-- VENTILATION TRANCHE × CATÉGORIE (officielle IP) -->
-        <div id="ventilation-section" style="margin-top:32px"></div>
-
-        <!-- BENCHMARK OPS NANTES -->
-        <div id="ops-benchmark-section" style="margin-top:32px"></div>
-
-        <!-- FOOTER -->
-        <div style="margin-top:32px;padding:12px;background:#EAF2FF;border-radius:10px;font-size:11px;color:#0B1F4D;text-align:center">
-          Données natives : Etat détaillé STATS · ${salesTotal ? fmtNum(salesTotal.lignes) + ' lignes · ' + fmtNum(salesTotal.factures) + ' factures' : ''} · stock 01/06/2026 · catalogue IP ${fmtNum(catIp)} réf.
-        </div>
+      <div class="dash-root" style="font-family:'DM Sans','SF Pro Display',-apple-system,sans-serif;color:${COLOR.text};padding:16px 16px 90px;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+        ${blockHero(ctx)}
+        ${blockSecondaryKpis(ctx)}
+        ${blockTopClients(ctx)}
+        ${blockMonthly(ctx)}
+        ${blockAlerts(ctx)}
       </div>
+      <style>
+        @media (max-width: 600px) {
+          .dash-root { padding: 12px 12px 90px !important; gap: 12px !important; }
+          .dash-grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+        }
+        .dash-bar-col:hover > div { opacity: 1 !important; }
+      </style>
     `;
 
-    // Monte la section Ventilation tranche × catégorie
-    renderVentilation();
-    // Monte la section Benchmark OPS Nantes
-    renderOpsBenchmark();
+    // Tooltips bars (interactif léger)
+    const tip = document.getElementById('dash-bars-tooltip');
+    const cols = root.querySelectorAll('.dash-bar-col');
+    cols.forEach(col => {
+      col.addEventListener('mouseenter', () => {
+        const l = col.getAttribute('data-label');
+        const v = col.getAttribute('data-value');
+        if (tip) tip.textContent = `${l} · ${v}`;
+      });
+      col.addEventListener('mouseleave', () => {
+        if (tip) tip.textContent = 'Passe sur une barre pour le détail';
+      });
+    });
   }
 
-  // ───────── BENCHMARK OPS NANTES ──────────────────────────────────────────
-  function renderOpsBenchmark() {
-    const root = document.getElementById('ops-benchmark-section');
-    if (!root) return;
-    const opsTotal = window.OPS_TOTAL;
-    const opsAgg = window.OPS_AGGREGATE || {};
-    const salesProd = window.SALES_BY_PRODUCT || {};
-    if (!opsTotal || !Object.keys(opsAgg).length) return;
-
-    // Mes ventes par EAN (pour matcher avec OPS qui a ARTCODEBARRE)
-    const mineByEan = {};
-    const catIp = window.CATALOGUE_IP || [];
-    const eanByArtcode = {};
-    for (const p of catIp) eanByArtcode[p.ean] = p.ean;
-    for (const [artcode, p] of Object.entries(salesProd)) {
-      const ean = artcode; // dans SALES_BY_PRODUCT artcode = code interne, mais souvent = EAN13 ou son équivalent
-      mineByEan[ean] = p;
-    }
-
-    // Croise OPS avec mes ventes par artcode (qui est aussi le mapping vers OPS_AGGREGATE clé)
-    const matches = [];
-    const opportunities = []; // OPS vend bcp, moi 0
-    let myMatchedCa = 0;
-    for (const [artcode, opsP] of Object.entries(opsAgg)) {
-      const mine = salesProd[artcode];
-      if (mine) {
-        matches.push({
-          artcode,
-          designation: opsP.designation,
-          marque: opsP.marque || opsP.collection || '—',
-          nature: opsP.nature || '',
-          opsCa: opsP.ca,
-          opsQte: opsP.qte,
-          mineCa: mine.ca || 0,
-          mineQte: mine.qte || 0,
-          partMarche: opsP.ca > 0 ? (mine.ca / opsP.ca) * 100 : 0,
-        });
-        myMatchedCa += mine.ca || 0;
-      } else {
-        opportunities.push({
-          artcode,
-          designation: opsP.designation,
-          marque: opsP.marque || opsP.collection || '—',
-          nature: opsP.nature || '',
-          opsCa: opsP.ca,
-          opsQte: opsP.qte,
-        });
-      }
-    }
-    matches.sort((a, b) => b.opsCa - a.opsCa);
-    opportunities.sort((a, b) => b.opsCa - a.opsCa);
-
-    const myTotalCa = (window.SALES_TOTAL && window.SALES_TOTAL.ca) || 0;
-    const partGlobale = opsTotal.ca > 0 ? (myTotalCa / opsTotal.ca) * 100 : 0;
-
-    root.innerHTML = `
-      <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">📍 Benchmark vs Établissement OPS Nantes</h3>
-
-      <!-- 3 KPI hero -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px">
-        <div style="${styleCard()};border-left:4px solid #0057FF">
-          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Ton CA secteur</div>
-          <div style="font-size:24px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(myTotalCa)}</div>
-          <div style="font-size:11px;color:#94A3B8">Ventes STATS détaillées</div>
-        </div>
-        <div style="${styleCard()};border-left:4px solid #A855F7">
-          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">OPS Nantes total</div>
-          <div style="font-size:24px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(opsTotal.ca)}</div>
-          <div style="font-size:11px;color:#94A3B8">${fmtNum(opsTotal.nb_produits)} produits · ${fmtNum(opsTotal.qte)} unités</div>
-        </div>
-        <div style="${styleCard()};background:linear-gradient(135deg,#0057FF,#A855F7);color:#fff;border:none">
-          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.8);font-weight:800">Tes parts de marché</div>
-          <div style="font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;margin:4px 0">${partGlobale.toFixed(1)} %</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.85)">${matches.length} produits en commun · ${opportunities.length} opportunités</div>
-        </div>
-      </div>
-
-      <!-- 2 colonnes : Top où je suis présent vs opportunités -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px">
-
-        <!-- Top produits OPS où je suis présent (parts de marché) -->
-        <div style="${styleCard('padding:0')}">
-          <div style="padding:12px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF">
-            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Top 15 produits — Mes parts de marché</div>
-            <div style="font-size:11px;color:#94A3B8;margin-top:2px">Produits OPS Nantes où tu fais déjà du CA</div>
-          </div>
-          ${matches.slice(0, 15).map((m, i) => `
-            <div style="padding:10px 16px;border-bottom:1px solid #F2F6FF;font-size:12px">
-              <div style="display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center">
-                <span style="color:#94A3B8;font-weight:700">${i + 1}</span>
-                <div>
-                  <div style="font-weight:700;color:#0B1F4D">${escapeHtml(m.designation)}</div>
-                  <div style="font-size:10.5px;color:#94A3B8">${escapeHtml(m.marque)} · ${escapeHtml(m.nature || '—')}</div>
-                </div>
-                <span style="font-weight:800;color:${m.partMarche >= 20 ? '#14B86A' : m.partMarche >= 5 ? '#FF9F1C' : '#F43F5E'};font-variant-numeric:tabular-nums">${m.partMarche.toFixed(1)}%</span>
-              </div>
-              <div style="display:flex;gap:14px;font-size:11px;color:#64748B;margin-top:4px;padding-left:34px">
-                <span>Moi : <b style="color:#0057FF">${fmtEuro(m.mineCa)}</b> (${fmtNum(m.mineQte)} u)</span>
-                <span>OPS : <b style="color:#A855F7">${fmtEuro(m.opsCa)}</b> (${fmtNum(m.opsQte)} u)</span>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-
-        <!-- Top opportunités (OPS vend bcp, moi 0) -->
-        <div style="${styleCard('padding:0')}">
-          <div style="padding:12px 16px;background:#FFF7ED;border-bottom:1px solid #FFE4D1">
-            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#FF9F1C;font-weight:800">Top 15 opportunités — Tu vends 0</div>
-            <div style="font-size:11px;color:#94A3B8;margin-top:2px">OPS Nantes les vend mais tu n'as aucune facture dessus</div>
-          </div>
-          ${opportunities.slice(0, 15).map((o, i) => `
-            <div style="padding:10px 16px;border-bottom:1px solid #F2F6FF;display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;font-size:12px">
-              <span style="color:#94A3B8;font-weight:700">${i + 1}</span>
-              <div>
-                <div style="font-weight:700;color:#0B1F4D">${escapeHtml(o.designation)}</div>
-                <div style="font-size:10.5px;color:#94A3B8">${escapeHtml(o.marque)} · ${escapeHtml(o.nature || '—')}</div>
-              </div>
-              <div style="text-align:right">
-                <div style="font-weight:800;color:#FF9F1C;font-variant-numeric:tabular-nums">${fmtEuro(o.opsCa)}</div>
-                <div style="font-size:10.5px;color:#94A3B8">${fmtNum(o.opsQte)} u OPS</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-
-      </div>
-
-      <div style="font-size:11px;color:#94A3B8;margin-top:10px;text-align:center">
-        📍 Établissement OPS Nantes · agrégation tous commerciaux · source STATS/OPS_Pharmas_agregation
-      </div>
-    `;
-  }
-
-  function styleCard(extra) {
-    return `background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px rgba(11,31,77,.04);${extra || ''}`;
-  }
-
-  // ───────── VENTILATION TRANCHE × CATÉGORIE (officiel IP) ─────────────────
-  // 3 tranches prix officielles Intégral Pharma + 6 familles produits
-  const ventState = { metrique: 'CA' };
-
-  // Tranches officielles avec règle de remise
-  const TRANCHES_IP = [
-    { key: 'petit', min: 0,      max: 4.33,     label: 'Petit prix',    sub: '0 – 4,33 €',   remiseType: 'fixe', remiseVal: 0.18,  remiseLabel: '0,18 € fixe / unité' },
-    { key: 'inter', min: 4.33,   max: 468,      label: 'Intermédiaire', sub: '4,33 – 468 €', remiseType: 'pct',  remiseVal: 3.9,   remiseLabel: '3,9 % sur CA' },
-    { key: 'haut',  min: 468,    max: Infinity, label: 'Haut prix',     sub: '> 468 €',      remiseType: 'fixe', remiseVal: 19.50, remiseLabel: '19,50 € fixe / unité' },
-  ];
-
-  // Famille produit (6 valeurs métier) — basée sur ARTNATURE + AFMCODE + ARTSOUSFAMILLE
-  // Sources de vérité (depuis stock.js qui contient les vraies valeurs Intégral Pharma) :
-  //   ARTNATURE   ∈ {Referent, Generique, Generique Partenaire, Biosimilaire, #N/A}
-  //   AFMCODE     = REMBSS (remboursé) ou autre (PARA, MED010, MED021, DM, DM_20, HORSMED, AUTRE → NR)
-  //   ARTSOUSFAMILLE = Froid / Ophtalmologie / Cond. Trimestriel / Exclu / #N/A
-  function getFamilleIP(salesProd, stockMatch) {
-    const nature = ((stockMatch && stockMatch.nature) || '').trim();
-    const afmcode = ((stockMatch && stockMatch.marque) || '').trim().toUpperCase(); // "marque" dans stock.js = AFMCODE
-    const sousfamilleStock = ((stockMatch && stockMatch.sousfamille) || '').trim();
-    const sousfamilleSales = ((salesProd && salesProd.sousfamille) || '').trim();
-
-    // Ordre de priorité (mutuellement exclusif)
-    if (nature === 'Biosimilaire') return 'Biosimilaires';
-    const sfCombined = (sousfamilleStock + ' ' + sousfamilleSales).toLowerCase();
-    if (sfCombined.includes('froid')) return 'Froid';
-    // Non remboursé : AFMCODE ≠ REMBSS (et présent, sinon on ne sait pas)
-    if (afmcode && afmcode !== 'REMBSS' && afmcode !== '#N/A' && afmcode !== '') return 'Non remboursés';
-    if (nature === 'Generique Partenaire') return 'Gén. partenaires';
-    if (nature === 'Generique') return 'Génériques';
-    if (nature === 'Referent') return 'Princeps';
-    return 'Princeps'; // fallback (incluant #N/A nature qui sont majoritairement princeps remboursés)
-  }
-
-  function getProductPrixUnit(p) {
-    if (!p.qte || p.qte <= 0) return null;
-    return p.ca / p.qte;
-  }
-
-  function getTrancheIP(prix) {
-    if (prix === null || prix === undefined || prix <= 0) return null;
-    for (const t of TRANCHES_IP) {
-      if (prix > t.min && prix <= t.max) return t;
-    }
-    return null;
-  }
-
-  function computeVentilation() {
-    const products = Object.entries(window.SALES_BY_PRODUCT || {}).map(([artcode, p]) => ({ artcode, ...p }));
-    // Index direct sur STOCK (artcode -> {nature, marque/afmcode, sousfamille, ...})
-    const stockIdx = window.STOCK || {};
-    const FAMILLES = ['Froid', 'Biosimilaires', 'Génériques', 'Gén. partenaires', 'Non remboursés', 'Princeps'];
-
-    const cells = {};
-    for (const t of TRANCHES_IP) {
-      cells[t.key] = {};
-      for (const f of FAMILLES) cells[t.key][f] = { ca: 0, qte: 0, marge: 0, lignes: 0, remise_theo: 0 };
-    }
-
-    for (const p of products) {
-      const prix = getProductPrixUnit(p);
-      const tr = getTrancheIP(prix);
-      if (!tr) continue;
-      const stockMatch = stockIdx[p.artcode] || null;
-      const famille = getFamilleIP(p, stockMatch);
-      const cell = cells[tr.key][famille];
-      cell.ca += p.ca || 0;
-      cell.qte += p.qte || 0;
-      cell.marge += p.marge || 0;
-      cell.lignes += 1;
-      // Remise théorique selon tranche
-      if (tr.remiseType === 'fixe') {
-        cell.remise_theo += tr.remiseVal * (p.qte || 0);
-      } else {
-        cell.remise_theo += (tr.remiseVal / 100) * (p.ca || 0);
-      }
-    }
-
-    return { cells, tranches: TRANCHES_IP, familles: FAMILLES };
-  }
-
-  function renderVentilation() {
-    const root = document.getElementById('ventilation-section');
-    if (!root) return;
-    const { cells, tranches, familles } = computeVentilation();
-
-    // Totaux
-    const colTotals = {};
-    const rowTotals = {};
-    let grandTotal = 0;
-    for (const t of tranches) {
-      rowTotals[t.key] = 0;
-      for (const f of familles) {
-        const val = cells[t.key][f][metricField(ventState.metrique)] || 0;
-        rowTotals[t.key] += val;
-        colTotals[f] = (colTotals[f] || 0) + val;
-        grandTotal += val;
-      }
-    }
-    let maxCellVal = 0;
-    for (const t of tranches) for (const f of familles) {
-      const v = cells[t.key][f][metricField(ventState.metrique)] || 0;
-      if (v > maxCellVal) maxCellVal = v;
-    }
-
-    // Couleurs famille
-    const FAMILLE_COLORS = {
-      'Froid': '#00B5D8',
-      'Biosimilaires': '#7C3AED',
-      'Génériques': '#94A3B8',
-      'Gén. partenaires': '#14B86A',
-      'Non remboursés': '#FF9F1C',
-      'Princeps': '#0057FF',
-    };
-
-    // Body rows
-    const bodyRows = tranches.map(t => {
-      const rowCells = familles.map(f => {
-        const cell = cells[t.key][f];
-        const val = cell[metricField(ventState.metrique)] || 0;
-        const intensity = maxCellVal > 0 ? val / maxCellVal : 0;
-        const fc = FAMILLE_COLORS[f] || '#0057FF';
-        const fcRgb = hexToRgb(fc);
-        const bg = `rgba(${fcRgb.r}, ${fcRgb.g}, ${fcRgb.b}, ${0.04 + intensity * 0.35})`;
-        const fmt = formatMetric(val, ventState.metrique);
-        const sub = val > 0 && ventState.metrique === 'CA' ? `<div style="font-size:9.5px;color:${intensity > 0.5 ? 'rgba(255,255,255,.7)' : '#94A3B8'};font-weight:500">${fmtNum(cell.qte)} u · ${cell.lignes} réf</div>` : '';
-        return `<td style="padding:10px 10px;text-align:right;background:${bg};font-variant-numeric:tabular-nums;border-right:1px solid #fff;font-weight:${intensity > 0.5 ? '700' : '500'};color:${intensity > 0.5 ? '#fff' : '#0B1F4D'}">${fmt}${sub}</td>`;
-      }).join('');
-      const remiseTheoVal = tranches.reduce((s, tr) => 0, 0) + (
-        // Calcul remise théorique pour cette tranche (somme sur toutes familles, hors NR car prix libre)
-        familles.reduce((s, f) => f === 'Non remboursés' ? s : s + (cells[t.key][f].remise_theo || 0), 0)
-      );
-      return `<tr>
-        <td style="padding:11px 14px;font-weight:700;color:#0B1F4D;background:#F2F6FF;border-right:2px solid #0057FF">
-          <div>${t.label}</div>
-          <div style="font-size:10.5px;color:#64748B;font-weight:600">${t.sub}</div>
-          <div style="font-size:10px;color:#0057FF;font-weight:700;margin-top:2px">${t.remiseLabel}</div>
-        </td>
-        ${rowCells}
-        <td style="padding:11px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${formatMetric(rowTotals[t.key], ventState.metrique)}</td>
-      </tr>`;
-    }).join('');
-
-    // Total row
-    const totalRowHtml = familles.map(f => `<td style="padding:11px 10px;text-align:right;font-weight:800;background:#EAF2FF;color:#0B1F4D;font-variant-numeric:tabular-nums">${formatMetric(colTotals[f] || 0, ventState.metrique)}</td>`).join('');
-
-    // Remise théorique totale
-    let remiseTheoTotal = 0;
-    for (const t of tranches) for (const f of familles) {
-      if (f === 'Non remboursés') continue;
-      remiseTheoTotal += cells[t.key][f].remise_theo || 0;
-    }
-    const caTotal = tranches.reduce((s, t) => s + familles.reduce((ss, f) => ss + cells[t.key][f].ca, 0), 0);
-    const tauxRemiseTheo = caTotal > 0 ? (remiseTheoTotal / caTotal * 100) : 0;
-
-    root.innerHTML = `
-      <h3 style="font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:0 0 12px">🎯 Ventilation tranche prix × famille produit · grille officielle IP</h3>
-
-      <!-- Sélecteur métrique uniquement -->
-      <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between">
-        <label style="font-size:12px;color:#64748B;font-weight:700">
-          Métrique affichée
-          <select id="vent-metric" style="margin-left:6px;padding:6px 10px;border-radius:8px;border:1px solid #E8EEFF;font-family:inherit;font-size:13px">
-            <option value="CA" ${ventState.metrique==='CA'?'selected':''}>CA HT</option>
-            <option value="QTE" ${ventState.metrique==='QTE'?'selected':''}>Quantité</option>
-            <option value="LIGNES" ${ventState.metrique==='LIGNES'?'selected':''}>Nb références</option>
-            <option value="REMISE_THEO" ${ventState.metrique==='REMISE_THEO'?'selected':''}>Remise théorique €</option>
-          </select>
-        </label>
-        <div style="font-size:11px;color:#0B1F4D;background:#EAF2FF;padding:6px 12px;border-radius:8px"><b>Remise théorique cumulée :</b> ${fmtEuro(remiseTheoTotal)} <span style="opacity:.6">(${tauxRemiseTheo.toFixed(1)}% du CA · hors NR)</span></div>
-      </div>
-
-      <!-- Pivot table -->
-      <div style="background:#fff;border:1px solid #E8EEFF;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(11,31,77,.04)">
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-            <thead>
-              <tr style="background:#0B1F4D;color:#fff">
-                <th style="padding:11px 14px;text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase">Tranche prix · remise</th>
-                ${familles.map(f => `<th style="padding:11px 10px;text-align:right;font-size:11px;letter-spacing:.5px;font-weight:700;border-left:1px solid rgba(255,255,255,.1)"><div style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${FAMILLE_COLORS[f]};margin-right:6px"></div>${escapeHtml(f)}</th>`).join('')}
-                <th style="padding:11px 10px;text-align:right;font-size:11px;letter-spacing:1px;text-transform:uppercase;background:#1E3A5F">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${bodyRows}
-              <tr style="background:#EAF2FF;border-top:2px solid #0057FF">
-                <td style="padding:11px 14px;font-weight:800;color:#0B1F4D;text-transform:uppercase;font-size:11px;letter-spacing:1px">Total</td>
-                ${totalRowHtml}
-                <td style="padding:11px 10px;text-align:right;font-weight:800;background:#0057FF;color:#fff;font-variant-numeric:tabular-nums;font-size:14px">${formatMetric(grandTotal, ventState.metrique)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Légende -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-top:14px">
-        ${tranches.map(t => `
-          <div style="background:#fff;border:1px solid #E8EEFF;border-left:4px solid #0057FF;border-radius:10px;padding:10px 14px">
-            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">${t.label}</div>
-            <div style="font-size:13px;color:#0B1F4D;font-weight:700;margin:2px 0">${t.sub}</div>
-            <div style="font-size:11.5px;color:#0057FF;font-weight:700">${t.remiseLabel}</div>
-          </div>
-        `).join('')}
-      </div>
-      <div style="margin-top:10px;padding:10px 14px;background:#FFF7ED;border-left:4px solid #FF9F1C;border-radius:10px;font-size:11.5px;color:#7C2D12">
-        ⚠ <b>Non remboursés (NR)</b> : marge variable — pas de remise standard. Le pharmacien achète au prix IP (mark-up ×1,03 sur prix d'achat), puis applique un prix libre selon grossiste / direct labo.
-      </div>
-    `;
-
-    const metric = document.getElementById('vent-metric');
-    if (metric) metric.addEventListener('change', e => { ventState.metrique = e.target.value; renderVentilation(); });
-  }
-
-  function hexToRgb(hex) {
-    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 0, g: 87, b: 255 };
-  }
-
-  function metricField(m) {
-    if (m === 'CA') return 'ca';
-    if (m === 'QTE') return 'qte';
-    if (m === 'LIGNES') return 'lignes';
-    if (m === 'REMISE_THEO') return 'remise_theo';
-    return 'ca';
-  }
-  function formatMetric(val, metrique) {
-    if (val == null || val === 0) return metrique === 'CA' || metrique === 'REMISE_THEO' ? '—' : '0';
-    if (metrique === 'CA' || metrique === 'REMISE_THEO') return fmtEuro(val);
-    if (metrique === 'QTE') return fmtNum(Math.round(val));
-    if (metrique === 'LIGNES') return fmtNum(val);
-    return fmtNum(val);
-  }
-
-  function kpiCard(label, value, sub, hero) {
-    const bg = hero ? 'background:linear-gradient(135deg,#0057FF,#5856D6);color:#fff;border:none' : 'background:#fff;border:1px solid #E8EEFF';
-    const labelColor = hero ? 'rgba(255,255,255,.7)' : '#64748B';
-    const subColor = hero ? 'rgba(255,255,255,.7)' : '#94A3B8';
-    return `
-      <div style="${bg};border-radius:14px;padding:16px 18px">
-        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${labelColor};font-weight:800">${label}</div>
-        <div style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;margin:4px 0 2px;letter-spacing:-.5px">${value}</div>
-        <div style="font-size:11px;color:${subColor}">${sub}</div>
-      </div>
-    `;
-  }
-
-  // Override l'ancienne fonction renderDashboard.
-  // function declarations top-level créent une propriété sur window, donc on peut écraser.
+  // ───────── Override ──────────────────────────────────────────────────────
   function applyOverride() {
     if (typeof window.renderDashboard === 'function') {
       window.renderDashboard = renderDashboardV2;
-      console.log('[dashboard-v2] override renderDashboard appliqué');
+      console.log('[dashboard-v2] override renderDashboard appliqué (refonte 5 blocs)');
     } else {
-      // app.js pas encore chargé, on retry après defer
       setTimeout(applyOverride, 100);
     }
   }
