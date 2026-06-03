@@ -27,6 +27,154 @@
 }
 .mk-hero-title { font-size: 22px; font-weight: 800; color: var(--text); margin-top: 2px; }
 .mk-hero-sub  { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.mk-hero-sub b { color: #0057FF; font-weight: 800; }
+
+/* Hero du mois — version enrichie avec stats secteur */
+.mk-hero-month { flex-direction: column; align-items: stretch; }
+.mk-hero-main {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; width: 100%;
+}
+.mk-hero-stats {
+  display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 14px;
+  margin-top: 20px; padding-top: 18px;
+  border-top: 1.5px dashed rgba(0,87,255,0.18);
+}
+.mk-hero-stat {
+  background: #FFFFFF; border-radius: 14px;
+  padding: 14px 16px; box-shadow: 0 2px 6px rgba(11,31,77,0.04);
+}
+.mk-hero-stat-num {
+  font-size: 22px; font-weight: 900; color: #0B1F4D;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.mk-hero-stat-lbl {
+  font-size: 10.5px; font-weight: 700; color: #64748B;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  margin-top: 4px;
+}
+.mk-hero-top {
+  background: #FFFFFF; border-radius: 14px;
+  padding: 12px 14px; box-shadow: 0 2px 6px rgba(11,31,77,0.04);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.mk-hero-top-lbl {
+  font-size: 10.5px; font-weight: 800; color: #0057FF;
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.mk-hero-top-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; padding: 3px 0;
+}
+.mk-hero-top-row:not(:last-child) {
+  border-bottom: 1px dashed rgba(11,31,77,0.07);
+}
+.mk-hero-top-rank {
+  width: 24px; height: 18px; border-radius: 4px;
+  background: linear-gradient(135deg, #0057FF 0%, #3B82F6 100%);
+  color: #FFFFFF; font-size: 10px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.mk-hero-top-name {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: #0B1F4D; font-weight: 600;
+}
+.mk-hero-top-qte {
+  font-size: 11px; font-weight: 800; color: #14B86A;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+/* ─── PLANNING 12 MOIS ─── */
+.mk-section-planning {
+  background: linear-gradient(135deg, #F8FAFF 0%, #EFF4FF 100%);
+  border: 1px solid rgba(0,87,255,0.10);
+  border-radius: 20px;
+  padding: 22px 24px;
+  margin-bottom: 28px;
+}
+.mk-planning-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.mk-month-card {
+  background: #FFFFFF; border-radius: 14px;
+  border: 1.5px solid rgba(11,31,77,0.08);
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 6px;
+  cursor: pointer; font-family: inherit; text-align: left;
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+  position: relative;
+}
+.mk-month-card:hover {
+  transform: translateY(-2px);
+  border-color: #0057FF;
+  box-shadow: 0 8px 20px rgba(0,87,255,0.12);
+}
+.mk-month-card-now {
+  background: linear-gradient(135deg, #0057FF 0%, #3B82F6 100%);
+  color: #FFFFFF; border-color: transparent;
+  box-shadow: 0 6px 20px rgba(0,87,255,0.28);
+}
+.mk-month-card-now .mk-month-card-eyebrow,
+.mk-month-card-now .mk-month-card-meta { color: rgba(255,255,255,0.85) !important; }
+.mk-month-card-now .mk-month-card-theme { color: #FFFFFF !important; }
+.mk-month-card-now .mk-month-card-top { background: rgba(255,255,255,0.18) !important; color: #FFFFFF !important; }
+.mk-month-card-next {
+  border: 2px solid #14B86A;
+  box-shadow: 0 4px 14px rgba(20,184,106,0.16);
+}
+.mk-month-card-eyebrow {
+  font-size: 9px; font-weight: 800; letter-spacing: 1.4px;
+  text-transform: uppercase; color: #94A3B8;
+  display: flex; align-items: center; gap: 6px;
+}
+.mk-month-card-pin {
+  background: #FFFFFF; color: #0057FF;
+  padding: 1px 6px; border-radius: 999px;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.3px;
+  border: 1px solid rgba(0,87,255,0.20);
+}
+.mk-month-card-now .mk-month-card-pin {
+  background: #FFFFFF; color: #0057FF;
+}
+.mk-month-card-pin-next {
+  background: #14B86A; color: #FFFFFF; border-color: transparent;
+}
+.mk-month-card-month {
+  font-size: 14px; font-weight: 900; color: #0B1F4D;
+  text-transform: capitalize; line-height: 1;
+}
+.mk-month-card-now .mk-month-card-month { color: #FFFFFF; }
+.mk-month-card-emoji { font-size: 18px; }
+.mk-month-card-theme {
+  font-size: 13px; font-weight: 700; color: #0B1F4D;
+  line-height: 1.2;
+}
+.mk-month-card-meta {
+  font-size: 10.5px; font-weight: 600; color: #64748B;
+  margin-top: 2px;
+}
+.mk-month-card-top {
+  background: rgba(0,87,255,0.07);
+  padding: 5px 8px; border-radius: 7px;
+  font-size: 10.5px; font-weight: 700; color: #0B1F4D;
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mk-month-card-top-rank {
+  font-size: 9px; font-weight: 900; color: #0057FF;
+}
+@media (max-width: 700px) {
+  .mk-hero-stats { grid-template-columns: 1fr 1fr; }
+  .mk-hero-top { grid-column: 1 / -1; }
+  .mk-planning-grid { grid-template-columns: repeat(2, 1fr); }
+}
 
 /* ── SECTIONS ── */
 .mk-section { margin-bottom: 32px; }
