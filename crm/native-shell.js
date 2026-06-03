@@ -17,7 +17,7 @@
     { id: 'dashboard',  label: 'Pilotage',   icon: 'chart' },
     { id: 'pharmacies', label: 'Pharmacies', icon: 'pharma' },
     { id: 'benchmark',  label: 'Analyses',   icon: 'trend' },
-    { id: 'produits',   label: 'Produits',   icon: 'grid' },
+    { id: 'marketing',  label: 'Marketing',  icon: 'doc' },
     { id: 'more',       label: 'Plus',       icon: 'more' },
   ];
 
@@ -26,6 +26,7 @@
     {
       label: 'Outils',
       items: [
+        { id: 'produits',    label: 'Produits',              icon: 'grid',     tint: 'indigo' },
         { id: 'catalogue',   label: 'Catalogue IP',          icon: 'book',     tint: 'blue'   },
         { id: 'simulateur',  label: 'Simulateur panier',     icon: 'calc',     tint: 'green'  },
         { id: 'offilog',     label: 'Offilog — Parapharmacie', icon: 'leaf',   tint: 'orange' },
@@ -47,6 +48,7 @@
     pharma: '<svg viewBox="0 0 24 24"><path d="M4 20.5V8a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v12.5"/><path d="M4 20.5h16"/><path d="M12 20.5V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16.5"/><path d="M15.5 9v4M13.5 11h4"/></svg>',
     trend: '<svg viewBox="0 0 24 24"><path d="M3.5 17 9 11.5l3.5 3.5L20 7"/><path d="M15 7h5v5"/></svg>',
     grid: '<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><rect x="14.5" y="3.5" width="6" height="6" rx="1.2"/><rect x="3.5" y="14.5" width="6" height="6" rx="1.2"/><rect x="14.5" y="14.5" width="6" height="6" rx="1.2"/></svg>',
+    doc: '<svg viewBox="0 0 24 24"><path d="M5 3.5h8l5 5V20a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 5 20V4a.5.5 0 0 1 0-.5z"/><path d="M13 3.5V8a.5.5 0 0 0 .5.5H18"/><path d="M8.5 13h7M8.5 16h7M8.5 10h3"/></svg>',
     more: '<svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>',
 
     // Sheet item icons (18x18 within 28x28 colored tile, white stroke)
