@@ -79,3 +79,32 @@ create policy "auth_delete" on imports for delete using (auth.role() = 'authenti
 create policy "auth_select" on sales for select using (auth.role() = 'authenticated');
 create policy "auth_insert" on sales for insert with check (auth.role() = 'authenticated');
 create policy "auth_delete" on sales for delete using (auth.role() = 'authenticated');
+
+-- ═══════════════════════════════════════════════
+-- 5. Marketing sheets (fiches commerciales IP)
+-- ═══════════════════════════════════════════════
+create table if not exists marketing_sheets (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  theme text,
+  color text,
+  footer text,
+  template text default 'offre',
+  products jsonb default '[]'::jsonb,
+  created_by uuid references auth.users(id) default auth.uid(),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index if not exists idx_marketing_sheets_user on marketing_sheets(created_by);
+
+alter table marketing_sheets enable row level security;
+
+-- L'utilisateur authentifié peut tout lire/écrire SES fiches
+create policy "user reads own sheets" on marketing_sheets
+  for select using (auth.uid() = created_by);
+create policy "user inserts own sheets" on marketing_sheets
+  for insert with check (auth.uid() = created_by);
+create policy "user updates own sheets" on marketing_sheets
+  for update using (auth.uid() = created_by);
+create policy "user deletes own sheets" on marketing_sheets
+  for delete using (auth.uid() = created_by);
