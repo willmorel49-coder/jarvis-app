@@ -1,0 +1,246 @@
+/* ============================================================
+   SKELETON LOADERS — Intégral Pharma CRM
+   iOS-native shimmer skeletons + boot splash
+   Mode classique uniquement. Aucune dépendance.
+   ============================================================ */
+
+/* ── Base shimmer ─────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(60, 60, 67, 0.06) 0%,
+    rgba(60, 60, 67, 0.12) 50%,
+    rgba(60, 60, 67, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@keyframes skeletonShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ── Variations ───────────────────────────────────────────── */
+.skeleton-text         { height: 12px; width: 80px; }
+.skeleton-text--lg     { height: 22px; width: 200px; }
+.skeleton-text--xl     { height: 38px; width: 240px; }
+.skeleton-line         { height: 12px; width: 100%; display: block; }
+.skeleton-block        { height: 80px; width: 100%; border-radius: 14px; display: block; }
+.skeleton-block--tall  { height: 220px; width: 100%; border-radius: 14px; display: block; }
+.skeleton-circle       { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; }
+.skeleton-pill         { height: 28px; width: 90px; border-radius: 14px; }
+
+/* ── Pattern : liste ──────────────────────────────────────── */
+.skel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+}
+.skel-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.skel-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+/* ── Pattern : dashboard ──────────────────────────────────── */
+.skel-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 0;
+}
+.skel-hero {
+  padding: 22px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.skel-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.skel-kpi-card {
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skel-chart {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .skel-kpi-row { grid-template-columns: 1fr; }
+}
+
+/* ── Pattern : table ──────────────────────────────────────── */
+.skel-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+}
+.skel-tr {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* ── Pattern : card simple ────────────────────────────────── */
+.skel-card {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Pattern : benchmark (header + 6 sections famille) ────── */
+.skel-bench {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 0;
+}
+.skel-bench-header {
+  padding: 22px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.skel-bench-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.skel-bench-section {
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (max-width: 720px) {
+  .skel-bench-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Conteneur wrapper (fade-out cohérent) ────────────────── */
+.skel-wrap {
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+}
+.skel-wrap--out { opacity: 0; }
+
+/* ============================================================
+   SPLASH BOOT — overlay full-screen au démarrage
+   ============================================================ */
+.app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: #070B14;
+  opacity: 1;
+  transition: opacity 280ms ease-out;
+  animation: appSplashFadeIn 200ms ease-out;
+}
+@keyframes appSplashFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.app-splash--dismiss {
+  opacity: 0;
+  pointer-events: none;
+}
+.app-splash-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: #0057FF;
+  color: #fff;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(0, 87, 255, 0.35);
+}
+.app-splash-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(0, 87, 255, 0.18);
+  border-top-color: #0057FF;
+  animation: appSplashSpin 0.9s linear infinite;
+}
+@keyframes appSplashSpin {
+  to { transform: rotate(360deg); }
+}
+.app-splash-caption {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.3px;
+}
+
+/* ============================================================
+   ACCESSIBILITÉ — reduced motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .app-splash-spinner,
+  .app-splash {
+    animation: none !important;
+  }
+  .skeleton {
+    background: rgba(60, 60, 67, 0.09);
+  }
+  .skel-wrap,
+  .app-splash {
+    transition: none !important;
+  }
+}

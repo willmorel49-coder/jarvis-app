@@ -90,7 +90,8 @@ html[data-mode="classic"] {
   --sidebar-w: 248px;
   --topbar-h:  64px;
 
-  /* ── Radii (DESIGN.md) ── */
+  /* ── Radii (échelle iOS — DESIGN.md) ──
+     8 chips/pills · 10 small · 12 buttons · 14 cards-2nd · 20 cards · 24 modals · 999 round */
   --r:    20px;   /* Cartes principales */
   --rs:   14px;   /* Cartes secondaires */
   --rxs:  10px;   /* Petits éléments */
@@ -101,9 +102,15 @@ html[data-mode="classic"] {
   --r-xl:  24px;
   --rxxs:  6px;
   --r-pin: 20px;  /* legacy : radius standard, plus de biseau */
+  --r-chip: 8px;  /* chips, pills carrés, tabs internes */
+  --r-btn:  12px; /* boutons non-pill */
+
+  /* ── Hairlines iOS (semi-transparent, perf retina) ── */
+  --hairline: 0.5px solid rgba(60,60,67,0.18);
+  --hairline-strong: 0.5px solid rgba(60,60,67,0.29);
 
   /* ── Shadows ── */
-  --sh:   0 2px 6px rgba(11,31,77,.05), 0 1px 2px rgba(11,31,77,.04);
+  --sh:   0 0 0 0.5px rgba(11,31,77,.04), 0 1px 3px rgba(11,31,77,.06);
   --sh2:  0 6px 24px rgba(11,31,77,.08), 0 2px 6px rgba(11,31,77,.05);
   --sh3:  0 18px 48px rgba(11,31,77,.16), 0 6px 14px rgba(11,31,77,.08);
   --sh-b: 0 8px 22px rgba(0,87,255,.26), 0 2px 6px rgba(0,87,255,.14);
@@ -111,6 +118,16 @@ html[data-mode="classic"] {
   --shadow-sm: var(--sh);
   --shadow-md: var(--sh2);
   --shadow-lg: var(--sh3);
+
+  /* ── Z-index scale (structurée 1/10/100/1000/2000) ── */
+  --z-sticky:    1;
+  --z-dropdown:  10;
+  --z-overlay:   100;
+  --z-modal:     1000;
+  --z-toast:     2000;
+
+  /* ── Focus ring (accessibilité) ── */
+  --focus-ring: 0 0 0 3px rgba(0,87,255,.30);
 
   /* ── Transitions ── */
   --t-fast: 0.14s cubic-bezier(0.4, 0, 0.2, 1);
@@ -123,7 +140,8 @@ html[data-mode="classic"] {
    RESET & BASE (scoped : classic mode only)
 ══════════════════════════════════════ */
 html[data-mode="classic"] *, html[data-mode="classic"] *::before, html[data-mode="classic"] *::after { box-sizing: border-box; }
-html[data-mode="classic"], html[data-mode="classic"] body { height: 100%; overflow: hidden; margin: 0; padding: 0; }
+html[data-mode="classic"], html[data-mode="classic"] body { height: 100%; overflow: hidden; margin: 0; padding: 0; scroll-behavior: smooth; }
+html[data-mode="classic"] :focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--rxxs); }
 html[data-mode="classic"] body {
   font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
   background: var(--bg);
@@ -139,7 +157,7 @@ html[data-mode="classic"] body {
 
 html[data-mode="classic"] ::-webkit-scrollbar { width: 8px; height: 8px; }
 html[data-mode="classic"] ::-webkit-scrollbar-track { background: var(--surface-2); }
-html[data-mode="classic"] ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+html[data-mode="classic"] ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--r-chip); }
 html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
 
 /* ══════════════════════════════════════
@@ -162,7 +180,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
    LOGIN — splash navy → blue, logo blanc
 ══════════════════════════════════════ */
 #login-screen {
-  position: fixed; inset: 0; z-index: 999;
+  position: fixed; inset: 0; z-index: var(--z-modal);
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
   padding-top: max(24px, env(safe-area-inset-top));
@@ -330,6 +348,10 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   position: relative;
   border: 1px solid transparent;
 }
+.nav-item:focus-visible, .sidebar-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
 .nav-item .nav-icon { width: 20px; flex-shrink: 0; color: var(--text3); }
 .nav-item:hover, .sidebar-item:hover {
   background: var(--surface-2);
@@ -347,7 +369,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   position: absolute; left: -10px; top: 50%;
   transform: translateY(-50%);
   width: 3px; height: 22px;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 var(--rxxs) var(--rxxs) 0;
   background: var(--blue);
 }
 .nav-badge {
@@ -434,12 +456,14 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   text-decoration: none;
   white-space: nowrap;
 }
+.btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .btn-primary {
   background: var(--blue); color: #fff;
   box-shadow: var(--sh-b);
 }
 .btn-primary:hover { background: var(--blue-d); transform: translateY(-1px); box-shadow: 0 12px 28px rgba(0,87,255,.30); }
 .btn-primary:active { transform: none; }
+.btn-primary:focus-visible { box-shadow: var(--sh-b), var(--focus-ring); }
 
 .btn-ghost {
   background: #fff; color: var(--blue);
@@ -453,7 +477,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   font-weight: 700;
   box-shadow: 0 4px 14px rgba(255,159,28,.30);
 }
-.btn-lime:hover { background: #E68A00; }
+.btn-lime:hover { background: var(--amber); filter: brightness(.92); }
 
 .btn-danger {
   background: var(--rose); color: #fff;
@@ -465,7 +489,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   background: var(--blue-lt); color: var(--blue-d);
   font-weight: 600;
 }
-.btn-soft:hover { background: #DBE6FF; }
+.btn-soft:hover { background: var(--border-strong); }
 
 /* ══════════════════════════════════════
    PAGE CONTENT
@@ -714,7 +738,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
 .tab {
   padding: 8px 16px;
   min-height: 36px;
-  border-radius: 8px;
+  border-radius: var(--r-chip);
   font-family: 'DM Sans', sans-serif;
   font-size: 13px; font-weight: 700;
   color: var(--text2);
@@ -723,6 +747,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   border: none;
   background: transparent;
 }
+.tab:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .tab.active {
   background: #fff;
   color: var(--blue-d);
@@ -752,7 +777,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   border-bottom: 1px solid var(--border);
   text-align: left;
   white-space: nowrap;
-  position: sticky; top: 0; z-index: 1;
+  position: sticky; top: 0; z-index: var(--z-sticky);
 }
 .table tbody tr, .data-table tbody tr {
   border-bottom: 1px solid var(--border);
@@ -771,7 +796,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
 /* ══════════════════════════════════════
    RANK
 ══════════════════════════════════════ */
-.rank { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; font-family: 'DM Sans', sans-serif; }
+.rank { width: 28px; height: 28px; border-radius: var(--r-chip); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; font-family: 'DM Sans', sans-serif; }
 .rank-1 { background: var(--blue);    color: #fff; }
 .rank-2 { background: var(--blue-lt); color: var(--blue-d); }
 .rank-3 { background: var(--surface-3); color: var(--text2); }
@@ -780,8 +805,8 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
 /* ══════════════════════════════════════
    PROGRESS
 ══════════════════════════════════════ */
-.progress-wrap { background: var(--surface-3); border-radius: 6px; overflow: hidden; height: 7px; }
-.progress-bar { height: 100%; border-radius: 6px; background: var(--blue); transition: width .6s cubic-bezier(.4,0,.2,1); }
+.progress-wrap { background: var(--surface-3); border-radius: var(--rxxs); overflow: hidden; height: 7px; }
+.progress-bar { height: 100%; border-radius: var(--rxxs); background: var(--blue); transition: width .6s cubic-bezier(.4,0,.2,1); }
 
 /* ══════════════════════════════════════
    TL ROW — product row (DESIGN.md)
@@ -800,7 +825,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   content: '';
   position: absolute; left: 0; top: 12px; bottom: 12px;
   width: 3px;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 var(--rxxs) var(--rxxs) 0;
   background: var(--blue);
 }
 .tl-row.tl-row-green::before  { background: var(--green); }
@@ -932,7 +957,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   display: flex; align-items: center; gap: 10px;
   box-shadow: var(--sh3);
   transform: translateY(80px); opacity: 0;
-  transition: .3s cubic-bezier(.16,1,.3,1); z-index: 9999;
+  transition: .3s cubic-bezier(.16,1,.3,1); z-index: var(--z-toast);
   font-family: 'DM Sans', sans-serif;
 }
 #toast.show { transform: translateY(0); opacity: 1; }
@@ -968,8 +993,9 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
    MODAL
 ══════════════════════════════════════ */
 .modal-overlay {
-  position: fixed; inset: 0; z-index: 500;
+  position: fixed; inset: 0; z-index: var(--z-modal);
   background: rgba(11,31,77,.55); backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: none; align-items: center; justify-content: center; padding: 20px;
 }
 .modal-overlay.open { display: flex; }
@@ -1030,6 +1056,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   transition: var(--t-fast);
 }
 .filter-chip:hover { background: var(--blue-lt); color: var(--blue-d); border-color: var(--blue); }
+.filter-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .filter-chip.active {
   border-color: var(--blue);
   background: var(--blue);
@@ -1047,7 +1074,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
 .sim-header-card .card-body { padding: 14px 20px; }
 .sim-card { background: #fff; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--sh); }
 .sim-suggestions {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+  position: absolute; top: 100%; left: 0; right: 0; z-index: var(--z-dropdown);
   background: #fff; border: 1px solid var(--border);
   border-top: none; border-radius: 0 0 var(--rs) var(--rs);
   box-shadow: var(--sh2);
@@ -1103,6 +1130,7 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   transition: background .15s, color .15s;
 }
 .cat-pag-btn:hover { background: var(--blue-lt); color: var(--blue-d); border-color: var(--blue); }
+.cat-pag-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .cat-pag-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
 
 /* ══════════════════════════════════════
