@@ -329,11 +329,11 @@
 
   // ── TEMPLATES DISPONIBLES ───────────────────────────────────
   const TEMPLATES = {
-    offre:     { name: 'Offre IP',          maxProducts: 12, defaultCount: 12 },
-    memo:      { name: 'Mémo référentiel',  maxProducts: 25, defaultCount: 20 },
-    focus:     { name: 'Focus produit',     maxProducts: 3,  defaultCount: 1  },
-    editorial: { name: 'Editorial (Vogue)', maxProducts: 6,  defaultCount: 3  },
-    bento:     { name: 'Bento (Apple)',     maxProducts: 9,  defaultCount: 6  },
+    offre:     { name: 'Offre IP',          maxProducts: 500, defaultCount: 12, perPage: 14 },
+    memo:      { name: 'Mémo référentiel',  maxProducts: 500, defaultCount: 20, perPage: 22 },
+    focus:     { name: 'Focus produit',     maxProducts: 12,  defaultCount: 1,  perPage: 3  },
+    editorial: { name: 'Editorial (Vogue)', maxProducts: 120, defaultCount: 3,  perPage: 7  },
+    bento:     { name: 'Bento (Apple)',     maxProducts: 120, defaultCount: 6,  perPage: 9  },
   };
 
   function getTemplateId(sheet) {
@@ -930,7 +930,7 @@
                 <option value="editorial" ${getTemplateId(s)==='editorial'?'selected':''}>📰 Editorial (Vogue)</option>
                 <option value="bento" ${getTemplateId(s)==='bento'?'selected':''}>🍱 Bento (Apple)</option>
               </select>
-              <div class="mk-template-hint">${TEMPLATES[getTemplateId(s)].name} · max ${TEMPLATES[getTemplateId(s)].maxProducts} produits</div>
+              <div class="mk-template-hint">${TEMPLATES[getTemplateId(s)].name} · ${s.products.length} produit${s.products.length>1?'s':''} · PDF multi-pages auto</div>
               <label class="mk-label" style="margin-top:14px">Footer</label>
               <input class="mk-input" id="mk-footer" value="${escapeAttr(s.footer)}" oninput="window.mkUpdateFooter(this.value)" />
             </div>
@@ -1179,33 +1179,170 @@
     generatePDF(editingSheet);
   };
 
-  // ── APERÇU PDF (modal) ──────────────────────────────────────
+  // ── APERÇU PDF (modal) avec édition live ────────────────────
   function openPreview(sheet) {
-    const cp = COLOR_PRESETS[sheet.color] || COLOR_PRESETS.navy;
     let modal = document.getElementById('mk-preview-modal');
     if (modal) modal.remove();
     modal = document.createElement('div');
     modal.id = 'mk-preview-modal';
-    modal.className = 'mk-modal';
+    modal.className = 'mk-modal mk-preview-live';
     modal.innerHTML = `
       <div class="mk-modal-head">
-        <div class="mk-modal-title">Aperçu fiche</div>
+        <div class="mk-modal-title">Aperçu — édition live</div>
         <div class="mk-modal-actions">
           <button class="mk-btn" onclick="window.mkClosePreview()">Fermer</button>
           <button class="mk-btn mk-btn-primary" onclick="window.mkDownloadFromPreview()">⬇ Télécharger PDF</button>
         </div>
       </div>
+      ${renderPreviewToolbar(sheet)}
       <div class="mk-modal-body">
-        ${renderSheetHTML(sheet, 'mk-pdf-target')}
+        <div id="mk-preview-render">${renderSheetHTML(sheet, 'mk-pdf-target')}</div>
       </div>
     `;
     document.body.appendChild(modal);
     window._mkPreviewSheet = sheet;
   }
 
+  function refreshPreview() {
+    const sheet = window._mkPreviewSheet;
+    if (!sheet) return;
+    const render = document.getElementById('mk-preview-render');
+    if (render) render.innerHTML = renderSheetHTML(sheet, 'mk-pdf-target');
+    const tb = document.getElementById('mk-preview-toolbar');
+    if (tb) tb.outerHTML = renderPreviewToolbar(sheet);
+  }
+
+  function renderPreviewToolbar(sheet) {
+    const tpl = getTemplateId(sheet);
+    const gradients = window.MK_GRADIENTS || {};
+    const fonts = window.MK_FONT_PAIRS || {};
+    const stickers = window.MK_STICKERS || {};
+    // Couleurs : groupées classiques + tendances
+    const classics = ['navy','sky','lilac','mint','amber','rose','forest'];
+    const trends   = ['dusk','teal','cherry','sienna','sage','vanilla','chartreuse','slate'];
+
+    const swatch = (k) => {
+      const cp = COLOR_PRESETS[k]; if (!cp) return '';
+      const on = sheet.color === k ? ' on' : '';
+      return `<button class="mk-pv-swatch${on}" title="${escapeAttr(cp.name)}" style="background:${cp.headerBg};border-color:${cp.priceBg}" onclick="window.mkPreviewSetColor('${k}')"></button>`;
+    };
+
+    const tplBtn = (k, label, emo) => {
+      const on = tpl === k ? ' on' : '';
+      return `<button class="mk-pv-tpl${on}" onclick="window.mkPreviewSetTemplate('${k}')"><span class="mk-pv-tpl-emo">${emo}</span>${label}</button>`;
+    };
+
+    const gradBtn = (id) => {
+      const g = gradients[id];
+      const on = (sheet.gradient || 'none') === id ? ' on' : '';
+      const style = (id === 'none')
+        ? 'background:repeating-linear-gradient(45deg,#fff,#fff 5px,#e5e7eb 5px,#e5e7eb 10px)'
+        : 'background:' + (g ? g.css : '#eee');
+      return `<button class="mk-pv-grad${on}" title="${escapeAttr((g && g.name) || 'Aucun')}" style="${style}" onclick="window.mkPreviewSetGradient('${id}')"></button>`;
+    };
+
+    const fontBtn = (id) => {
+      const f = fonts[id]; if (!f) return '';
+      const on = (sheet.fontPair || 'inter-pair') === id ? ' on' : '';
+      return `<button class="mk-pv-font${on}" onclick="window.mkPreviewSetFont('${id}')" style="font-family:'${f.heading}',sans-serif"><span class="mk-pv-font-h">Aa</span><span class="mk-pv-font-name">${escapeAttr(f.name)}</span></button>`;
+    };
+
+    const stkBtn = (id) => {
+      const on = (sheet.sticker || 'none') === id ? ' on' : '';
+      const svg = id === 'none' ? '<span style="opacity:.4">∅</span>' : (stickers[id] || '');
+      return `<button class="mk-pv-stk${on}" onclick="window.mkPreviewSetSticker('${id}')">${svg}</button>`;
+    };
+
+    const gradIds = ['none'].concat(Object.keys(gradients));
+    const fontIds = Object.keys(fonts);
+    const stickerIds = ['none'].concat(Object.keys(stickers));
+
+    return `
+      <div id="mk-preview-toolbar" class="mk-pv-tb">
+        <div class="mk-pv-row">
+          <span class="mk-pv-lbl">Template</span>
+          <div class="mk-pv-scroll">
+            ${tplBtn('offre',     'Offre',     '📋')}
+            ${tplBtn('memo',      'Mémo',      '📑')}
+            ${tplBtn('focus',     'Focus',     '🎯')}
+            ${tplBtn('editorial', 'Editorial', '📰')}
+            ${tplBtn('bento',     'Bento',     '🧩')}
+          </div>
+        </div>
+        <div class="mk-pv-row">
+          <span class="mk-pv-lbl">Couleur</span>
+          <div class="mk-pv-scroll">
+            ${classics.map(swatch).join('')}
+            <span class="mk-pv-sep"></span>
+            ${trends.map(swatch).join('')}
+          </div>
+        </div>
+        <div class="mk-pv-row">
+          <span class="mk-pv-lbl">Fond mesh</span>
+          <div class="mk-pv-scroll">
+            ${gradIds.map(gradBtn).join('')}
+          </div>
+        </div>
+        <div class="mk-pv-row">
+          <span class="mk-pv-lbl">Typo</span>
+          <div class="mk-pv-scroll">
+            ${fontIds.map(fontBtn).join('')}
+          </div>
+        </div>
+        <div class="mk-pv-row">
+          <span class="mk-pv-lbl">Sticker</span>
+          <div class="mk-pv-scroll">
+            ${stickerIds.map(stkBtn).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function previewMutate(fn) {
+    const sheet = window._mkPreviewSheet;
+    if (!sheet) return;
+    fn(sheet);
+    sheet.updated_at = new Date().toISOString();
+    upsertSheet(sheet);
+    refreshPreview();
+  }
+
   window.mkClosePreview = function () {
     const modal = document.getElementById('mk-preview-modal');
     if (modal) modal.remove();
+    // Re-render l'éditeur en arrière-plan (changements via toolbar live)
+    if (typeof renderEdit === 'function' && editingSheet) {
+      try { renderEdit(); } catch (e) {}
+    }
+  };
+
+  window.mkPreviewSetColor = function (k) {
+    previewMutate(s => { s.color = k; });
+  };
+  window.mkPreviewSetTemplate = function (k) {
+    if (!TEMPLATES[k]) return;
+    previewMutate(s => {
+      s.template = k;
+      if (k === 'focus') {
+        s.products.forEach(p => {
+          if (typeof p.accroche !== 'string') p.accroche = '';
+          if (typeof p.argument !== 'string') p.argument = '';
+        });
+      }
+    });
+  };
+  window.mkPreviewSetGradient = function (id) {
+    previewMutate(s => { s.gradient = id === 'none' ? null : id; });
+  };
+  window.mkPreviewSetFont = function (id) {
+    if (typeof window.mkLoadFontPair === 'function') {
+      try { window.mkLoadFontPair(id); } catch (e) {}
+    }
+    previewMutate(s => { s.fontPair = id; });
+  };
+  window.mkPreviewSetSticker = function (id) {
+    previewMutate(s => { s.sticker = id === 'none' ? null : id; });
   };
 
   window.mkDownloadFromPreview = function () {
@@ -1652,6 +1789,7 @@
     const products = (s.products || []).slice(0, TEMPLATES.editorial.maxProducts);
     const lead = products[0];
     const rest = products.slice(1);
+    function padNum(n) { return n < 10 ? '0' + n : '' + n; }
     const hasLight = ['noir', 'cosmic', 'midnight', 'ocean', 'forest'].indexOf(s.gradient) >= 0;
     const textCol = hasLight ? '#FFFFFF' : '#0B1F4D';
     const subCol = hasLight ? 'rgba(255,255,255,0.78)' : 'rgba(11,31,77,0.65)';
@@ -1681,7 +1819,7 @@
           <div class="mk-ed-grid">
             ${rest.map((p, i) => `
               <div class="mk-ed-card" style="border-color:${textCol === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(11,31,77,0.12)'}">
-                <div class="mk-ed-card-num" style="color:${subCol}">N°0${i + 2}</div>
+                <div class="mk-ed-card-num" style="color:${subCol}">N°${padNum(i + 2)}</div>
                 <div class="mk-ed-card-name">${escapeAttr(p.designation)}</div>
                 <div class="mk-ed-card-cip" style="color:${subCol}">CIP ${escapeAttr(cipFormat(p.cip13))}</div>
                 <div class="mk-ed-card-price">${eur(p.prix_ip)}</div>
