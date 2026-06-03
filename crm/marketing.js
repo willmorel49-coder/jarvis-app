@@ -7,6 +7,15 @@
 
 (function () {
 
+  // ── CONTAINER (par défaut #marketing-content, surcharge via mkSetContainer) ─
+  // En mode JARVIS, la lens fournit son propre container — voir lens-marketing.js
+  let _activeContainer = null;
+  function getRoot() {
+    return _activeContainer || document.getElementById('marketing-content');
+  }
+  window.mkSetContainer = function (el) { _activeContainer = el; };
+  window.mkClearContainer = function () { _activeContainer = null; };
+
   // ── DONNÉES ─────────────────────────────────────────────────
   const LS_KEY = 'marketing.sheets.v1';
 
@@ -163,7 +172,7 @@
   let productSearch = '';
 
   window.renderMarketing = function () {
-    const root = document.getElementById('marketing-content');
+    const root = getRoot();
     if (!root) return;
     const sheets = loadSheets();
     const suggested = getCurrentSeasonTheme();
@@ -292,7 +301,7 @@
 
   // ── ÉCRAN ÉDITION ───────────────────────────────────────────
   function renderEdit() {
-    const root = document.getElementById('marketing-content');
+    const root = getRoot();
     if (!root || !editingSheet) return;
     const s = editingSheet;
     const cp = COLOR_PRESETS[s.color] || COLOR_PRESETS.navy;
@@ -399,7 +408,7 @@
     productSearch = q;
     renderEdit();
     // refocus search input
-    const el = document.querySelector('#marketing-content input[placeholder^="Recherc"]');
+    const el = (getRoot() || document).querySelector('input[placeholder^="Recherc"]');
     if (el) { el.focus(); el.setSelectionRange(q.length, q.length); }
   };
 

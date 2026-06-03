@@ -20,12 +20,15 @@ import './lens-catalogue.js';
 import './lens-pilotage.js';
 import './lens-journal.js';
 import './lens-rdv.js';
+import './lens-marketing.js';
 // Nouveaux modules : widget pilotage accueil + lens devis exportable
 import { showPilotageWidget } from './pilotage-widget.js';
 import { openDevisLens } from './lens-devis.js';
 
 // Expose openDevisLens sur window pour que la fiche pharma (bouton "Préparer un devis") puisse l'appeler
 window.openDevisLens = openDevisLens;
+// Expose openLens (utile pour raccourcis HTML inline : bubble, fiche pharma, etc.)
+window.openLens = openLens;
 
 // Note : __JARVIS_SHELL_ACTIVE__ et __JARVIS_MODE__ sont posés dans crm/index.html (head)
 // On ne boot le shell que si le mode JARVIS est actif.
@@ -72,6 +75,9 @@ async function bootJarvis() {
   // 2b. Widget pilotage en accueil (CA mois, % objectif, top client, alertes, sparkline 8 mois)
   showPilotageWidget(document.body, { delay: 600, objectif: 200000 });
 
+  // 2c. FAB Marketing — raccourci visible en haut à droite pour ouvrir la lens
+  mountMarketingFab();
+
   // 3. Sheet bottom (avec prompt actif maintenant)
   sheetRef = createSheet(initialBubbleForStats(stats));
   document.body.appendChild(sheetRef);
@@ -102,6 +108,58 @@ async function bootJarvis() {
   });
 
   console.log(`[JARVIS] Ready · ${allPharmacies.length} pharmacies`);
+}
+
+function mountMarketingFab() {
+  if (document.getElementById('jarvis-marketing-fab')) return;
+  const fab = document.createElement('button');
+  fab.id = 'jarvis-marketing-fab';
+  fab.type = 'button';
+  fab.title = 'Marketing — fiches commerciales';
+  fab.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    <span>Marketing</span>
+  `;
+  Object.assign(fab.style, {
+    position: 'fixed',
+    top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+    right: 'calc(env(safe-area-inset-right, 0px) + 96px)',
+    zIndex: '9000',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 14px',
+    minHeight: '36px',
+    borderRadius: '999px',
+    border: 'none',
+    background: 'rgba(11, 31, 77, 0.92)',
+    color: '#fff',
+    fontFamily: "'DM Sans', system-ui, sans-serif",
+    fontSize: '12px',
+    fontWeight: '700',
+    letterSpacing: '0.02em',
+    boxShadow: '0 6px 20px rgba(11,31,77,0.30)',
+    cursor: 'pointer',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    transition: 'transform .15s ease-out, box-shadow .15s ease-out',
+  });
+  fab.addEventListener('click', () => openLens('marketing'));
+  fab.addEventListener('mouseenter', () => {
+    fab.style.transform = 'translateY(-1px)';
+    fab.style.boxShadow = '0 8px 24px rgba(11,31,77,0.40)';
+  });
+  fab.addEventListener('mouseleave', () => {
+    fab.style.transform = '';
+    fab.style.boxShadow = '0 6px 20px rgba(11,31,77,0.30)';
+  });
+  document.body.appendChild(fab);
 }
 
 function wireFicheCloseBtn() {
@@ -279,7 +337,7 @@ function initialBubbleForStats(stats) {
 function bubbleForStats(stats) {
   const caStr = stats.sectorCa ? ` · <b>${formatEuroShort(stats.sectorCa)}</b> secteur` : '';
   const breakdown = stats.clientsActifs > 0 ? ` (${stats.clientsActifs} actifs)` : '';
-  return `<strong>JARVIS</strong> · ${stats.clients} client${stats.clients > 1 ? 's' : ''}${breakdown}${caStr} · <span style="color:#FF9F1C;font-weight:700">${stats.prospectsHot} à démarcher</span>. Tape un pin, ou demande "secteur", "catalogue"…`;
+  return `<strong>JARVIS</strong> · ${stats.clients} client${stats.clients > 1 ? 's' : ''}${breakdown}${caStr} · <span style="color:#FF9F1C;font-weight:700">${stats.prospectsHot} à démarcher</span>. Tape un pin, ou demande "catalogue", "marketing", "devis"…`;
 }
 
 function formatEuroShort(n) {
