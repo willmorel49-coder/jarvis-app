@@ -503,6 +503,7 @@
   let offilogUnivers = 'all';
   let statsFamille = 'top';  // 'top' | 'Froid' | 'Biosimilaires' | 'Génériques' | 'Gén. partenaires' | 'Non remboursés' | 'Princeps'
   let statsTranche = 'all';  // 'all' | 'petit' (≤4.33€) | 'inter' (4.33-468€) | 'haut' (>468€)
+  let statsCatalogue = 'all';// 'all' | 'integral' | 'itp'
   let sagittaStatus = 'all'; // 'all' | 'ip_win' | 'ip_lose' | 'no_ip'
   let sagittaSearch = '';
   let sagittaSort   = 'volume'; // 'volume' | 'ecart_pct' | 'ecart_eur' | 'gain'
@@ -608,6 +609,33 @@
     return list.filter(function (p) { return p.tranche === tranche; });
   }
 
+  // Filtre catalogue marketing (L'Integral mars 2026 ou Catalogue ITP juin 2026)
+  // Permet a Will de voir UNIQUEMENT les top ventes secteur qui sont dans son
+  // catalogue commercial actif -> argumentaire direct sur le PDF en main.
+  function filterByCatalogue(list, cat) {
+    if (!cat || cat === 'all') return list;
+    if (cat === 'integral') {
+      var codes = window.CATALOGUE_INTEGRAL_CODES;
+      if (!codes) return list;
+      return list.filter(function (p) {
+        var ean = String(p.ean || '');
+        var ac = String(p.artcode || '');
+        // Match par EAN/CIP13 complet, CIP7 fin, ou artcode
+        return codes.has(ean) || codes.has(ac)
+          || (ean.length >= 7 && codes.has(ean.slice(-7)))
+          || (ac.length >= 7 && codes.has(ac.slice(-7)));
+      });
+    }
+    if (cat === 'itp') {
+      var rx = window.CATALOGUE_ITP_REGEX;
+      if (!rx) return list;
+      return list.filter(function (p) {
+        return rx.test(p.designation || '') || rx.test(p.marque || '');
+      });
+    }
+    return list;
+  }
+
   // Ajoute un produit a la fiche en cours (ou cree une nouvelle fiche custom)
   // depuis la section stats. Va chercher le prix dans CATALOGUE_IP/BENCHMARK
   // si dispo, sinon laisse vide (Will renseignera manuellement).
@@ -663,6 +691,10 @@
   };
   window.mkSetStatsTranche = function (id) {
     statsTranche = id;
+    window.renderMarketing();
+  };
+  window.mkSetStatsCatalogue = function (id) {
+    statsCatalogue = id;
     window.renderMarketing();
   };
 
@@ -823,9 +855,17 @@
             { id: 'haut',  label: 'Haut prix',                 sub: '> 468 €' },
           ];
           const baseList = statsFamille === 'top' ? ventes.top : (ventes.byFamille[statsFamille] || []);
-          const list = filterByTranche(baseList, statsTranche);
+          const trancheList = filterByTranche(baseList, statsTranche);
+          const list = filterByCatalogue(trancheList, statsCatalogue);
           const top100 = list.slice(0, 100);
           const totalCa = top100.reduce(function (s, p) { return s + p.ca; }, 0);
+          const integralCount = (window.CATALOGUE_INTEGRAL || []).length;
+          const itpCount = (window.CATALOGUE_ITP_MARKETING || []).length;
+          const cataloguePills = [
+            { id: 'all',      label: 'Tous catalogues',  sub: '',                   icon: '📊' },
+            { id: 'integral', label: 'L’Intégral',  sub: integralCount + ' refs · mars 2026', icon: '📘' },
+            { id: 'itp',      label: 'Catalogue ITP',    sub: itpCount + ' refs · juin 2026',     icon: '📕' },
+          ];
           return `
             <div class="mk-section mk-section-stats">
               <div class="mk-section-head">
@@ -848,6 +888,16 @@
                   <button class="mk-stats-pill mk-stats-pill-tranche ${statsTranche===t.id?'on':''}"
                     onclick="window.mkSetStatsTranche('${t.id}')">
                     <span>${escapeAttr(t.label)}</span>
+                    ${t.sub ? `<span class="mk-stats-pill-sub">${escapeAttr(t.sub)}</span>` : ''}
+                  </button>
+                `).join('')}
+              </div>
+              <div class="mk-stats-filters-label">Catalogue commercial <span class="mk-stats-filters-hint">· focus sur tes PDF en main</span></div>
+              <div class="mk-stats-pills mk-stats-pills-tranches">
+                ${cataloguePills.map(t => `
+                  <button class="mk-stats-pill mk-stats-pill-tranche mk-stats-pill-cat ${statsCatalogue===t.id?'on':''}"
+                    onclick="window.mkSetStatsCatalogue('${t.id}')">
+                    <span>${t.icon} ${escapeAttr(t.label)}</span>
                     ${t.sub ? `<span class="mk-stats-pill-sub">${escapeAttr(t.sub)}</span>` : ''}
                   </button>
                 `).join('')}
