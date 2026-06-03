@@ -458,6 +458,8 @@
   let offilogUnivers = 'all';
   let statsFamille = 'top';  // 'top' | 'Froid' | 'Biosimilaires' | 'Génériques' | 'Gén. partenaires' | 'Non remboursés' | 'Princeps'
   let statsTranche = 'all';  // 'all' | 'petit' (≤4.33€) | 'inter' (4.33-468€) | 'haut' (>468€)
+  let sagittaStatus = 'all'; // 'all' | 'ip_win' | 'ip_lose' | 'no_ip'
+  let sagittaSearch = '';
   let selectedSheetIds = new Set();  // selection multi-fiches pour export PDF combine
 
   // ── TOP VENTES OPS+CPR+HP par famille IP ───────────────────────────────
@@ -733,6 +735,8 @@
             </div>
           </div>
         `}
+
+        ${renderSagittaCompareSection()}
 
         <div class="mk-section">
           <div class="mk-section-head">
@@ -1129,6 +1133,284 @@
   function escapeAttr(s) {
     return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
   }
+
+  // ── COMPARATIF SAGITTA NR / LNR vs IP ───────────────────────
+  function buildSagittaIndex() {
+    // Map CIP13 -> { prix_ip, designation, source }
+    const ix = new Map();
+    if (window.CATALOGUE_IP) {
+      window.CATALOGUE_IP.forEach(c => {
+        if (c.ean && c.prix_ip > 0) {
+          ix.set(String(c.ean), {
+            prix_ip: Number(c.prix_ip),
+            prix_ht: Number(c.prix_ht || 0),
+            designation: c.nom || '',
+            categorie: c.categorie || '',
+            source: 'catalogue',
+          });
+        }
+      });
+    }
+    if (window.BENCHMARK) {
+      window.BENCHMARK.forEach(b => {
+        if (b.cip13 && b.prix_ip > 0 && !ix.has(String(b.cip13))) {
+          ix.set(String(b.cip13), {
+            prix_ip: Number(b.prix_ip),
+            prix_ht: Number(b.prix_ht || 0),
+            designation: b.designation || '',
+            categorie: b.categorie || '',
+            source: 'benchmark',
+          });
+        }
+      });
+    }
+    return ix;
+  }
+
+  function buildOffilogImageIndex() {
+    // Map EAN -> img URL pour visuels Sagitta
+    const ix = new Map();
+    if (window.OFFILOG) {
+      window.OFFILOG.forEach(o => {
+        if (o.ean && o.img) ix.set(String(o.ean), o.img);
+      });
+    }
+    return ix;
+  }
+
+  function computeSagittaCompare() {
+    if (!window.SAGITTA_SHORTLIST) return null;
+    const ipIdx = buildSagittaIndex();
+    const imgIdx = buildOffilogImageIndex();
+    const list = window.SAGITTA_SHORTLIST.map(p => {
+      const ip = ipIdx.get(String(p.cip13));
+      const img = imgIdx.get(String(p.cip13)) || '';
+      const prix_ip = ip ? ip.prix_ip : null;
+      const ecart_eur = (prix_ip != null && p.prix_sagitta != null) ? (prix_ip - p.prix_sagitta) : null;
+      const ecart_pct = (prix_ip != null && p.prix_sagitta != null && p.prix_sagitta > 0)
+        ? ((prix_ip - p.prix_sagitta) / p.prix_sagitta) * 100 : null;
+      let status;
+      if (!ip) status = 'no_ip';
+      else if (ecart_eur == null) status = 'no_ip';
+      else if (ecart_eur < -0.05) status = 'ip_win';    // IP moins cher
+      else if (ecart_eur > 0.05) status = 'ip_lose';    // IP plus cher
+      else status = 'tie';
+      return Object.assign({}, p, {
+        prix_ip: prix_ip,
+        prix_ip_ht: ip ? ip.prix_ht : null,
+        designation_ip: ip ? ip.designation : '',
+        categorie_ip: ip ? ip.categorie : '',
+        ecart_eur: ecart_eur,
+        ecart_pct: ecart_pct,
+        status: status,
+        img: img,
+      });
+    });
+    // Tri : IP gagnant (plus gros ecart négatif) puis tie puis no_ip puis ip_lose
+    const order = { ip_win: 0, tie: 1, no_ip: 2, ip_lose: 3 };
+    list.sort((a, b) => {
+      const oa = order[a.status], ob = order[b.status];
+      if (oa !== ob) return oa - ob;
+      if (a.status === 'ip_win' || a.status === 'ip_lose') {
+        return (Math.abs(b.ecart_eur || 0) - Math.abs(a.ecart_eur || 0));
+      }
+      return 0;
+    });
+    // Stats globales
+    const stats = {
+      total: list.length,
+      ip_win: list.filter(p => p.status === 'ip_win').length,
+      tie: list.filter(p => p.status === 'tie').length,
+      ip_lose: list.filter(p => p.status === 'ip_lose').length,
+      no_ip: list.filter(p => p.status === 'no_ip').length,
+      gain_moyen: 0,
+    };
+    const wins = list.filter(p => p.status === 'ip_win' && p.ecart_pct != null);
+    if (wins.length) {
+      stats.gain_moyen = wins.reduce((s, p) => s + Math.abs(p.ecart_pct), 0) / wins.length;
+    }
+    return { list, stats };
+  }
+
+  function renderSagittaCompareSection() {
+    if (!window.SAGITTA_SHORTLIST) {
+      return `
+        <div class="mk-section mk-section-sagitta">
+          <div class="mk-section-head">
+            <div>
+              <div class="mk-section-title">⚔️ Comparatif Sagitta SHORTLIST NR · IP</div>
+              <div class="mk-section-sub">Chargement…</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    const data = computeSagittaCompare();
+    if (!data) return '';
+    const filters = [
+      { id: 'all',     label: 'Tous',          count: data.stats.total,   tone: 'neutral' },
+      { id: 'ip_win',  label: 'IP gagnant',    count: data.stats.ip_win,  tone: 'win' },
+      { id: 'ip_lose', label: 'IP plus cher',  count: data.stats.ip_lose, tone: 'lose' },
+      { id: 'no_ip',   label: 'Pas chez IP',   count: data.stats.no_ip,   tone: 'gray' },
+    ];
+    let list = data.list;
+    if (sagittaStatus !== 'all') list = list.filter(p => p.status === sagittaStatus);
+    if (sagittaSearch) {
+      const q = sagittaSearch.toLowerCase();
+      list = list.filter(p =>
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.labo || '').toLowerCase().includes(q) ||
+        (p.cip13 || '').includes(q)
+      );
+    }
+    const top = list.slice(0, 80);
+    const statusBadge = (s) => {
+      if (s === 'ip_win') return '<span class="mk-sag-badge mk-sag-win">✓ IP gagnant</span>';
+      if (s === 'ip_lose') return '<span class="mk-sag-badge mk-sag-lose">⚠ IP + cher</span>';
+      if (s === 'tie') return '<span class="mk-sag-badge mk-sag-tie">= Égalité</span>';
+      return '<span class="mk-sag-badge mk-sag-no">— Pas réf.</span>';
+    };
+    return `
+      <div class="mk-section mk-section-sagitta">
+        <div class="mk-section-head">
+          <div>
+            <div class="mk-section-title">⚔️ Comparatif Sagitta SHORTLIST NR · IP</div>
+            <div class="mk-section-sub">Mes prix IP face à la SHORT LIST NR-LNR Sagitta (Pharmarem · La Centrale Pharma)</div>
+          </div>
+        </div>
+
+        <div class="mk-sag-stats-grid">
+          <div class="mk-sag-stat mk-sag-stat-win">
+            <div class="mk-sag-stat-num">${data.stats.ip_win}</div>
+            <div class="mk-sag-stat-lbl">IP moins cher</div>
+            <div class="mk-sag-stat-sub">${data.stats.gain_moyen.toFixed(1)}% d'écart moyen</div>
+          </div>
+          <div class="mk-sag-stat mk-sag-stat-tie">
+            <div class="mk-sag-stat-num">${data.stats.tie}</div>
+            <div class="mk-sag-stat-lbl">Égalité</div>
+            <div class="mk-sag-stat-sub">±0,05 € près</div>
+          </div>
+          <div class="mk-sag-stat mk-sag-stat-lose">
+            <div class="mk-sag-stat-num">${data.stats.ip_lose}</div>
+            <div class="mk-sag-stat-lbl">Sagitta moins cher</div>
+            <div class="mk-sag-stat-sub">à argumenter</div>
+          </div>
+          <div class="mk-sag-stat mk-sag-stat-no">
+            <div class="mk-sag-stat-num">${data.stats.no_ip}</div>
+            <div class="mk-sag-stat-lbl">Non référencés IP</div>
+            <div class="mk-sag-stat-sub">opportunité</div>
+          </div>
+        </div>
+
+        <div class="mk-sag-controls">
+          <input class="mk-input mk-sag-search" placeholder="Rechercher produit, labo, CIP…"
+            value="${escapeAttr(sagittaSearch)}"
+            oninput="window.mkSetSagittaSearch(this.value)" />
+          <div class="mk-sag-filters">
+            ${filters.map(f => `
+              <button class="mk-sag-pill mk-sag-pill-${f.tone} ${sagittaStatus===f.id?'on':''}"
+                onclick="window.mkSetSagittaStatus('${f.id}')">${escapeAttr(f.label)} <span class="mk-sag-pill-count">${f.count}</span></button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="mk-sag-list">
+          ${top.length === 0 ? '<div class="mk-empty-search">Aucun résultat avec ce filtre.</div>' : top.map(p => {
+            const ip = p.prix_ip != null ? eur(p.prix_ip) : '—';
+            const sag = p.prix_sagitta != null ? eur(p.prix_sagitta) : '—';
+            const ecart = p.ecart_eur != null
+              ? `${p.ecart_eur > 0 ? '+' : ''}${p.ecart_eur.toFixed(2).replace('.', ',')} €${p.ecart_pct != null ? ` · ${p.ecart_pct > 0 ? '+' : ''}${p.ecart_pct.toFixed(1).replace('.', ',')}%` : ''}`
+              : '—';
+            const ecartCls = p.status === 'ip_win' ? 'mk-sag-ecart-win' : (p.status === 'ip_lose' ? 'mk-sag-ecart-lose' : '');
+            return `
+              <div class="mk-sag-row mk-sag-row-${p.status}">
+                <div class="mk-sag-thumb">
+                  ${p.img ? `<img src="${escapeAttr(p.img)}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="mk-sag-ph">💊</span>'}
+                </div>
+                <div class="mk-sag-info">
+                  <div class="mk-sag-name">${escapeAttr(p.name)}</div>
+                  <div class="mk-sag-meta">
+                    <span>${escapeAttr(p.labo || '—')}</span>
+                    <span>· CIP ${escapeAttr(p.cip13)}</span>
+                    ${p.categorie ? `<span>· ${escapeAttr(p.categorie)}</span>` : ''}
+                  </div>
+                  ${statusBadge(p.status)}
+                </div>
+                <div class="mk-sag-prices">
+                  <div class="mk-sag-price-block">
+                    <div class="mk-sag-price-lbl">Sagitta</div>
+                    <div class="mk-sag-price-val">${sag}</div>
+                    ${p.prix_barre ? `<div class="mk-sag-price-old">${eur(p.prix_barre)}</div>` : ''}
+                    ${p.remise_pct ? `<div class="mk-sag-price-pct">−${p.remise_pct}%</div>` : ''}
+                  </div>
+                  <div class="mk-sag-price-block mk-sag-price-ip">
+                    <div class="mk-sag-price-lbl">IP</div>
+                    <div class="mk-sag-price-val">${ip}</div>
+                  </div>
+                  <div class="mk-sag-ecart ${ecartCls}">${ecart}</div>
+                </div>
+                ${p.prix_ip != null ? `<button class="mk-sag-add" title="Ajouter à une fiche" onclick="window.mkAddSagittaProduct('${escapeAttr(p.cip13)}')">+</button>` : '<div class="mk-sag-add mk-sag-add-disabled" title="Pas chez IP">·</div>'}
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${list.length > 80 ? `<div class="mk-sag-footer">Affichage limité à 80 sur ${list.length} résultats — affine ta recherche</div>` : `<div class="mk-sag-footer">${list.length} produit${list.length>1?'s':''} affiché${list.length>1?'s':''}</div>`}
+      </div>
+    `;
+  }
+
+  window.mkSetSagittaStatus = function (s) { sagittaStatus = s; renderEdit(); };
+  window.mkSetSagittaSearch = function (q) {
+    sagittaSearch = q;
+    renderEdit();
+    const el = (getRoot() || document).querySelector('input.mk-sag-search');
+    if (el) { el.focus(); el.setSelectionRange(q.length, q.length); }
+  };
+  window.mkAddSagittaProduct = function (cip) {
+    // Ajoute à la fiche en édition (si présente) sinon prompt création
+    if (!editingSheet) {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Ouvre ou crée d\'abord une fiche pour ajouter ce produit', 'info');
+      }
+      return;
+    }
+    if (editingSheet.products.find(p => p.cip13 === cip)) {
+      if (typeof window.showToast === 'function') window.showToast('Déjà dans la fiche', 'info');
+      return;
+    }
+    // Cherche dans BENCHMARK d'abord (pour snapshot complet)
+    let snap = null;
+    if (window.BENCHMARK) {
+      const b = window.BENCHMARK.find(x => String(x.cip13) === String(cip));
+      if (b) snap = snapshotProduct(b);
+    }
+    if (!snap && window.CATALOGUE_IP) {
+      const c = window.CATALOGUE_IP.find(x => String(x.ean) === String(cip));
+      if (c) snap = {
+        cip13: c.ean,
+        designation: c.nom || '',
+        conditionnement: '',
+        prix_ht: Number(c.prix_ht || 0),
+        ppht: Number(c.prix_ht || 0),
+        prix_ip: Number(c.prix_ip || 0),
+        offre_ip: 0,
+        remise_pct: Number(c.remise_pct || 0),
+        img: '', source: 'ip',
+      };
+    }
+    if (!snap) {
+      if (typeof window.showToast === 'function') window.showToast('Produit introuvable dans catalogue IP', 'error');
+      return;
+    }
+    // Récupère image OFFILOG si dispo
+    if (window.OFFILOG) {
+      const o = window.OFFILOG.find(x => String(x.ean) === String(cip));
+      if (o && o.img) snap.img = o.img;
+    }
+    editingSheet.products.push(snap);
+    if (typeof window.showToast === 'function') window.showToast('Ajouté à la fiche ✓', 'success');
+    renderEdit();
+  };
 
   // ── PANEL OFFILOG (parapharmacie + images) ──────────────────
   function renderOffilogPanel(s) {

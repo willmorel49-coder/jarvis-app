@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '?v=20260605b';
+  var VERSION = '?v=20260605c';
 
   // Mapping page -> scripts à charger à la demande
   // Note : 'loaded' Set evite les doubles chargements (ex stock.js partage par
@@ -53,7 +53,8 @@
       'catalogue-ip.js',
       'benchmark-data.js',
       'establishments-aggregate.js',
-      'offilog-data.js'
+      'offilog-data.js',
+      'sagitta-shortlist-data.js'
     ],
     offilog: [
       'offilog-data.js',
@@ -101,6 +102,7 @@
     try { if (typeof STOCK        !== 'undefined') window.STOCK        = STOCK;        } catch (e) {}
     try { if (typeof CATALOGUE_IP !== 'undefined') window.CATALOGUE_IP = CATALOGUE_IP; } catch (e) {}
     try { if (typeof CLIENT_PRODUCTS !== 'undefined') window.CLIENT_PRODUCTS = CLIENT_PRODUCTS; } catch (e) {}
+    try { if (typeof SAGITTA_SHORTLIST !== 'undefined') window.SAGITTA_SHORTLIST = SAGITTA_SHORTLIST; } catch (e) {}
   }
 
   var bundlePromises = Object.create(null);
