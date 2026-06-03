@@ -622,6 +622,213 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
+   PANEL OFFILOG — recherche parapharmacie avec images
+   ══════════════════════════════════════════════════════════════ */
+.mk-card-offilog {
+  background: linear-gradient(135deg, #FFFCF5 0%, #FFF7E8 100%);
+  border: 1px solid rgba(245, 158, 11, 0.18);
+}
+.mk-card-offilog .mk-card-title {
+  background: linear-gradient(90deg, #B45309 0%, #EA580C 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
+}
+.mk-card-sub {
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+  color: #B45309; -webkit-text-fill-color: #B45309;
+  margin-left: 8px; opacity: .75; font-weight: 700;
+}
+.mk-off-filters {
+  display: flex; gap: 5px; flex-wrap: wrap;
+  margin: 8px 0 4px;
+}
+.mk-off-pill {
+  padding: 5px 10px; border-radius: 999px;
+  background: #FFFFFF; border: 1.5px solid rgba(180, 83, 9, 0.18);
+  font-size: 11px; font-weight: 700; color: #B45309;
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+  transition: all .15s;
+}
+.mk-off-pill:hover { border-color: #EA580C; transform: translateY(-1px); }
+.mk-off-pill.on {
+  background: linear-gradient(135deg, #EA580C 0%, #F59E0B 100%);
+  color: #FFFFFF; border-color: transparent;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.28);
+}
+
+.mk-off-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.mk-off-grid::-webkit-scrollbar { width: 6px; }
+.mk-off-grid::-webkit-scrollbar-thumb { background: rgba(180,83,9,0.20); border-radius: 999px; }
+
+.mk-off-tile {
+  background: #FFFFFF; border: 1.5px solid rgba(180,83,9,0.12);
+  border-radius: 12px; padding: 0;
+  cursor: pointer; font-family: inherit;
+  display: flex; flex-direction: column;
+  text-align: left; overflow: hidden;
+  transition: all .18s;
+  position: relative;
+}
+.mk-off-tile:hover {
+  transform: translateY(-2px);
+  border-color: #EA580C;
+  box-shadow: 0 8px 20px rgba(234,88,12,0.18);
+}
+.mk-off-tile.on {
+  border-color: #14B86A; background: #F0FDF4; opacity: .92;
+}
+.mk-off-tile:disabled { cursor: default; }
+
+.mk-off-thumb {
+  position: relative;
+  width: 100%; aspect-ratio: 1;
+  background: linear-gradient(135deg, #FFF7E8 0%, #FEF3C7 100%);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.mk-off-thumb img {
+  width: 100%; height: 100%; object-fit: contain;
+  padding: 6px;
+}
+.mk-off-noimg .mk-off-thumb {
+  background: repeating-linear-gradient(45deg, #FEF3C7, #FEF3C7 6px, #FFFCF5 6px, #FFFCF5 12px);
+}
+.mk-off-ph { font-size: 28px; opacity: .35; }
+.mk-off-badge {
+  position: absolute; top: 4px; right: 4px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #EA580C; color: #FFF;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+.mk-off-tile.on .mk-off-badge { background: #14B86A; }
+
+.mk-off-info {
+  padding: 8px 10px 10px;
+  display: flex; flex-direction: column; gap: 2px;
+  flex: 1;
+}
+.mk-off-marque {
+  font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase;
+  font-weight: 800; color: #B45309;
+}
+.mk-off-name {
+  font-size: 11.5px; font-weight: 700; color: #0B1F4D;
+  line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+.mk-off-prices {
+  display: flex; gap: 8px; align-items: baseline;
+  margin-top: 4px;
+}
+.mk-off-price-off {
+  font-size: 13px; font-weight: 900; color: #14B86A;
+  font-variant-numeric: tabular-nums;
+}
+.mk-off-price-max {
+  font-size: 10px; color: #94A3B8; text-decoration: line-through;
+  font-variant-numeric: tabular-nums;
+}
+.mk-off-footer {
+  margin-top: 6px; padding-top: 6px;
+  font-size: 10px; color: #B45309; opacity: .7;
+  text-align: center; font-weight: 600;
+  border-top: 1px dashed rgba(180,83,9,0.20);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   IMAGES PRODUITS dans templates PDF
+   ══════════════════════════════════════════════════════════════ */
+/* Tables (offre / memo) — miniature inline */
+.mk-cell-thumb {
+  display: inline-block; vertical-align: middle;
+  width: 28px; height: 28px;
+  border-radius: 6px; overflow: hidden;
+  background: #F8FAFC; border: 1px solid #E5E7EB;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.mk-cell-thumb-lg { width: 36px; height: 36px; }
+.mk-cell-thumb img {
+  width: 100%; height: 100%; object-fit: contain;
+}
+.mk-cell-name { display: flex; align-items: center; min-width: 0; }
+.mk-cell-name-text { flex: 1; min-width: 0; }
+
+/* Focus — image grande */
+.mk-focus-img {
+  width: 100%; height: 100%; object-fit: contain;
+  border-radius: 14px; background: #F4F6FB;
+}
+
+/* Editorial — lead image */
+.mk-ed-lead-img {
+  grid-template-columns: auto auto 1fr auto !important;
+}
+.mk-ed-lead-thumb {
+  width: 84px; height: 84px; border-radius: 12px;
+  background: rgba(255,255,255,0.92); padding: 6px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  align-self: center;
+}
+.mk-ed-lead-thumb img { width: 100%; height: 100%; object-fit: contain; }
+
+.mk-ed-card-img { padding-top: 12px; }
+.mk-ed-card-thumb {
+  width: 64px; height: 64px; border-radius: 10px;
+  background: rgba(255,255,255,0.92); padding: 4px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 4px;
+}
+.mk-ed-card-thumb img { width: 100%; height: 100%; object-fit: contain; }
+
+/* Bento — image en arrière-plan blur sur tile */
+.mk-bento-tile-img .mk-bento-tile-thumb {
+  position: absolute; top: 0; right: 0;
+  width: 70%; height: 70%;
+  opacity: 0.95;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 0;
+}
+.mk-bento-tile-img.mk-bento-tile-big .mk-bento-tile-thumb {
+  width: 55%; height: 55%;
+}
+.mk-bento-tile-thumb img {
+  width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.10));
+}
+.mk-bento-tile-img > .mk-bento-num,
+.mk-bento-tile-img > .mk-bento-name,
+.mk-bento-tile-img > .mk-bento-cip,
+.mk-bento-tile-img > .mk-bento-price-block {
+  position: relative; z-index: 1;
+}
+.mk-bento-tile-img > .mk-bento-name {
+  max-width: 70%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.95) 70%, rgba(255,255,255,0) 100%);
+}
+.mk-bento-tile-img > .mk-bento-price-block {
+  background: rgba(255,255,255,0.85);
+  padding: 6px 10px; border-radius: 8px;
+  backdrop-filter: blur(4px);
+  display: inline-flex; flex-direction: column;
+  align-self: flex-start;
+}
+
+/* ══════════════════════════════════════════════════════════════
    AUTO-PAGE-BREAK PDF — gérer >12 produits sur offre/memo
    html2pdf coupe entre les <tr> grâce à break-inside: avoid
    ══════════════════════════════════════════════════════════════ */

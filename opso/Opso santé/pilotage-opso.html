@@ -1,0 +1,981 @@
+<!--
+  Onglet de pilotage – Partenariat Intégral Pharma × OPSO Santé
+  HTML/JS vanilla, zéro build, zéro framework.
+  Dépendance : SheetJS (CDN) pour l'import .xlsx
+  Intégrable tel quel ou copiable dans une <section> existante.
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pilotage Intégral × OPSO Santé</title>
+
+<!-- Polices charte OPSO -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- SheetJS pour import Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+  :root {
+    --opso-green: #11a63c;
+    --opso-green-dark: #0d8530;
+    --opso-green-pale: #e6f7ec;
+    --opso-green-pale-2: #f3fbf6;
+    --opso-gray: #64686a;
+    --opso-gray-light: #9aa0a3;
+    --opso-gray-pale: #f5f6f7;
+    --opso-border: #e5e8ea;
+    --opso-text: #2a2d2f;
+    --opso-white: #ffffff;
+    --opso-warning: #e8a317;
+    --opso-danger: #d04a4a;
+    --shadow-sm: 0 1px 2px rgba(20, 30, 25, 0.04);
+    --shadow-md: 0 4px 16px rgba(20, 30, 25, 0.06);
+    --shadow-lg: 0 12px 32px rgba(20, 30, 25, 0.08);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--opso-gray-pale);
+    color: var(--opso-text);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  h1, h2, h3, h4 { font-family: 'Varela Round', sans-serif; font-weight: 400; letter-spacing: -0.01em; }
+
+  .pilotage-app { max-width: 1400px; margin: 0 auto; }
+
+  /* ===== Header ===== */
+  .header {
+    background: linear-gradient(135deg, var(--opso-green) 0%, var(--opso-green-dark) 100%);
+    color: white;
+    padding: 28px 32px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -10%;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-text h1 { font-size: 28px; margin-bottom: 4px; position: relative; }
+  .header-text p { font-size: 14px; opacity: 0.9; font-weight: 300; position: relative; }
+  .header-actions { display: flex; gap: 12px; position: relative; }
+
+  .btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+  .btn-primary { background: white; color: var(--opso-green-dark); }
+  .btn-primary:hover { background: var(--opso-green-pale); transform: translateY(-1px); }
+  .btn-ghost { background: rgba(255,255,255,0.15); color: white; backdrop-filter: blur(10px); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.25); }
+  .btn-secondary {
+    background: white; color: var(--opso-text);
+    border: 1px solid var(--opso-border);
+  }
+  .btn-secondary:hover { border-color: var(--opso-green); color: var(--opso-green-dark); }
+
+  /* ===== Onglets internes ===== */
+  .subtabs {
+    display: flex;
+    gap: 4px;
+    background: white;
+    padding: 6px;
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+  }
+  .subtab {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 18px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--opso-gray);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .subtab:hover { background: var(--opso-gray-pale); color: var(--opso-text); }
+  .subtab.active {
+    background: var(--opso-green-pale);
+    color: var(--opso-green-dark);
+  }
+
+  /* ===== Cards ===== */
+  .panel {
+    background: white;
+    border-radius: var(--radius-md);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+  }
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .panel-title { font-size: 18px; color: var(--opso-text); }
+  .panel-subtitle { font-size: 13px; color: var(--opso-gray); margin-top: 2px; }
+
+  /* ===== KPI grid ===== */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: white;
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid var(--opso-green);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .kpi-card.intermediaire { border-left-color: var(--opso-warning); }
+  .kpi-card.chers { border-left-color: var(--opso-danger); }
+  .kpi-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--opso-gray);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .kpi-value { font-family: 'Varela Round', sans-serif; font-size: 26px; color: var(--opso-text); }
+  .kpi-sub { font-size: 12px; color: var(--opso-gray-light); margin-top: 4px; }
+
+  /* ===== Tables ===== */
+  .table-wrapper { overflow-x: auto; border-radius: var(--radius-sm); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead { background: var(--opso-green-pale); }
+  th {
+    text-align: left;
+    padding: 12px 14px;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--opso-green-dark);
+  }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--opso-border); }
+  tbody tr:hover { background: var(--opso-green-pale-2); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .badge-petit { background: var(--opso-green-pale); color: var(--opso-green-dark); }
+  .badge-inter { background: #fef5e2; color: #a87410; }
+  .badge-cher { background: #fbe8e8; color: #a83838; }
+  .badge-nr { background: #eef0f2; color: var(--opso-gray); }
+
+  /* ===== Bar (visualisation tranches) ===== */
+  .bar-stack {
+    display: flex;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin: 16px 0;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .bar-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    transition: opacity 0.2s ease;
+  }
+  .bar-segment:hover { opacity: 0.85; }
+  .bar-petit { background: var(--opso-green); }
+  .bar-inter { background: var(--opso-warning); }
+  .bar-cher { background: var(--opso-danger); }
+  .bar-legend { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: var(--opso-gray); }
+  .bar-legend-item { display: flex; align-items: center; gap: 6px; }
+  .bar-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ===== Officines ===== */
+  .officines-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .officine-card {
+    background: white;
+    border: 1px solid var(--opso-border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .officine-card:hover {
+    border-color: var(--opso-green);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  .officine-name { font-weight: 700; font-size: 15px; color: var(--opso-text); margin-bottom: 4px; }
+  .officine-group { font-size: 12px; color: var(--opso-gray); margin-bottom: 12px; }
+  .officine-stats { display: flex; gap: 16px; padding-top: 12px; border-top: 1px solid var(--opso-border); }
+  .officine-stat { flex: 1; }
+  .officine-stat-label { font-size: 10px; text-transform: uppercase; color: var(--opso-gray-light); font-weight: 600; }
+  .officine-stat-value { font-family: 'Varela Round', sans-serif; font-size: 16px; color: var(--opso-text); }
+
+  /* ===== Jalons partenariat ===== */
+  .timeline { position: relative; padding-left: 36px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--opso-border);
+  }
+  .timeline-item { position: relative; padding-bottom: 24px; }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-dot {
+    position: absolute;
+    left: -30px; top: 4px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--opso-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .timeline-item.done .timeline-dot { border-color: var(--opso-green); background: var(--opso-green); }
+  .timeline-item.done .timeline-dot::after { content: '✓'; color: white; font-size: 13px; font-weight: 700; }
+  .timeline-item.in-progress .timeline-dot {
+    border-color: var(--opso-warning);
+    animation: pulse 2s infinite;
+  }
+  .timeline-item.in-progress .timeline-dot::after {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--opso-warning);
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(232, 163, 23, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(232, 163, 23, 0); }
+  }
+  .timeline-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .timeline-meta { font-size: 12px; color: var(--opso-gray); }
+  .timeline-desc { font-size: 13px; color: var(--opso-text); margin-top: 6px; opacity: 0.85; }
+
+  /* ===== Import zone ===== */
+  .import-zone {
+    border: 2px dashed var(--opso-border);
+    border-radius: var(--radius-md);
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--opso-green-pale-2);
+  }
+  .import-zone:hover, .import-zone.dragover {
+    border-color: var(--opso-green);
+    background: var(--opso-green-pale);
+  }
+  .import-zone-icon { font-size: 32px; margin-bottom: 8px; }
+  .import-zone-text { font-size: 14px; color: var(--opso-gray); }
+  .import-zone-text strong { color: var(--opso-green-dark); }
+
+  /* ===== Status pill ===== */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .status-active { background: var(--opso-green-pale); color: var(--opso-green-dark); }
+  .status-pending { background: #fef5e2; color: #a87410; }
+  .status-empty { background: var(--opso-gray-pale); color: var(--opso-gray); }
+
+  /* ===== Hidden state ===== */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--opso-gray);
+  }
+  .empty-state-icon { font-size: 40px; opacity: 0.4; margin-bottom: 12px; }
+
+  /* Form layout */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+  .form-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--opso-gray);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .form-field input, .form-field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--opso-border);
+    border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    background: white;
+  }
+  .form-field input:focus, .form-field select:focus {
+    outline: none;
+    border-color: var(--opso-green);
+    box-shadow: 0 0 0 3px var(--opso-green-pale);
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 16px 12px; }
+    .header { padding: 20px; }
+    .header-text h1 { font-size: 22px; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="pilotage-app">
+
+  <!-- ===== Header ===== -->
+  <header class="header">
+    <div class="header-text">
+      <h1>Pilotage Intégral × OPSO Santé</h1>
+      <p>Suivi du partenariat commercial · Tableau de bord interne</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('xlsx-input').click()">
+        📥 Importer .xlsx
+      </button>
+      <button class="btn btn-primary" onclick="exportSnapshot()">
+        💾 Exporter snapshot
+      </button>
+      <input type="file" id="xlsx-input" accept=".xlsx,.xls" style="display:none" onchange="handleXlsx(event)" />
+    </div>
+  </header>
+
+  <!-- ===== Onglets ===== -->
+  <nav class="subtabs">
+    <button class="subtab active" data-tab="tranches">Tranches grossistes</button>
+    <button class="subtab" data-tab="remises">Remises & rémunération</button>
+    <button class="subtab" data-tab="officines">Officines (11)</button>
+    <button class="subtab" data-tab="partenariat">Partenariat</button>
+  </nav>
+
+  <!-- ===========================================
+       ONGLET 1 — TRANCHES GROSSISTES
+       =========================================== -->
+  <section class="tab-content active" id="tab-tranches">
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">CA Net HT total</div>
+        <div class="kpi-value" id="kpi-ca-total">— €</div>
+        <div class="kpi-sub" id="kpi-ca-period">Aucune donnée importée</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Petit prix (≤ 4,33 €)</div>
+        <div class="kpi-value" id="kpi-petit">— €</div>
+        <div class="kpi-sub" id="kpi-petit-pct">—</div>
+      </div>
+      <div class="kpi-card intermediaire">
+        <div class="kpi-label">Intermédiaire</div>
+        <div class="kpi-value" id="kpi-inter">— €</div>
+        <div class="kpi-sub" id="kpi-inter-pct">4,33 € – 468 €</div>
+      </div>
+      <div class="kpi-card chers">
+        <div class="kpi-label">Chers (&gt; 468 €)</div>
+        <div class="kpi-value" id="kpi-cher">— €</div>
+        <div class="kpi-sub" id="kpi-cher-pct">—</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Répartition du CA par tranche</h2>
+          <p class="panel-subtitle">Visualisation de la distribution selon les seuils grossistes</p>
+        </div>
+      </div>
+      <div class="bar-stack" id="bar-stack">
+        <div class="bar-segment bar-petit" style="width:33.3%">—</div>
+        <div class="bar-segment bar-inter" style="width:33.3%">—</div>
+        <div class="bar-segment bar-cher" style="width:33.4%">—</div>
+      </div>
+      <div class="bar-legend">
+        <div class="bar-legend-item"><span class="bar-dot" style="background:var(--opso-green)"></span> Petit prix · ≤ 4,33 €</div>
+        <div class="bar-legend-item"><span class="bar-dot" style="background:var(--opso-warning)"></span> Intermédiaire · 4,33 € – 468 €</div>
+        <div class="bar-legend-item"><span class="bar-dot" style="background:var(--opso-danger)"></span> Chers · &gt; 468 €</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Détail produits</h2>
+          <p class="panel-subtitle">Triés par quantité décroissante</p>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table id="table-products">
+          <thead>
+            <tr>
+              <th>CIP</th>
+              <th>Désignation</th>
+              <th>Tranche</th>
+              <th class="num">PU Net Moy</th>
+              <th class="num">Qté</th>
+              <th class="num">CA Net HT</th>
+              <th>NR</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-products">
+            <tr><td colspan="7" class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              Importez un fichier .xlsx pour afficher les produits
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===========================================
+       ONGLET 2 — REMISES & RÉMUNÉRATION
+       =========================================== -->
+  <section class="tab-content" id="tab-remises">
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Tranches de rémunération groupement</h2>
+          <p class="panel-subtitle">Paliers trimestriels validés ou en cours de structuration</p>
+        </div>
+        <button class="btn btn-secondary" onclick="addPalier()">+ Ajouter un palier</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Palier CA trim. HT</th>
+              <th class="num">Seuil min</th>
+              <th class="num">Seuil max</th>
+              <th class="num">Remise / rémunération</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-paliers"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Offres fournisseurs validées</h2>
+          <p class="panel-subtitle">État des accords commerciaux par catégorie</p>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Catégorie</th>
+              <th>Statut</th>
+              <th>Conditions clés</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-offres"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Simulation rémunération trimestrielle</h2>
+          <p class="panel-subtitle">Calcul indicatif sur la base d'une projection</p>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>CA trimestriel projeté HT (€)</label>
+          <input type="number" id="sim-ca" value="0" oninput="simulate()" />
+        </div>
+        <div class="form-field">
+          <label>Taux de rémunération appliqué (%)</label>
+          <input type="number" id="sim-taux" value="0" step="0.1" oninput="simulate()" />
+        </div>
+      </div>
+      <div class="kpi-grid" style="margin-top:20px;margin-bottom:0">
+        <div class="kpi-card">
+          <div class="kpi-label">Rémunération trim.</div>
+          <div class="kpi-value" id="sim-remu">0 €</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Annualisé</div>
+          <div class="kpi-value" id="sim-annuel">0 €</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===========================================
+       ONGLET 3 — OFFICINES
+       =========================================== -->
+  <section class="tab-content" id="tab-officines">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Suivi des 11 officines</h2>
+          <p class="panel-subtitle">Répartition sur 2 groupes</p>
+        </div>
+        <button class="btn btn-secondary" onclick="addOfficine()">+ Ajouter une officine</button>
+      </div>
+      <div class="officines-grid" id="officines-grid"></div>
+    </div>
+  </section>
+
+  <!-- ===========================================
+       ONGLET 4 — PARTENARIAT
+       =========================================== -->
+  <section class="tab-content" id="tab-partenariat">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Avancement du partenariat</h2>
+          <p class="panel-subtitle">Jalons depuis la première rencontre</p>
+        </div>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Documents & ressources</h2>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Type</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Proposition commerciale formelle</td><td>PDF</td><td><span class="status-pill status-pending">À finaliser</span></td></tr>
+            <tr><td>Contrat grossiste standard Intégral</td><td>PDF</td><td><span class="status-pill status-pending">Attendu</span></td></tr>
+            <tr><td>Accès plateforme Offilog</td><td>Web</td><td><span class="status-pill status-active">Validé</span></td></tr>
+            <tr><td>Charte graphique OPSO Santé</td><td>PDF</td><td><span class="status-pill status-active">Active</span></td></tr>
+            <tr><td>Présentation Intégral Pharma</td><td>PPTX</td><td><span class="status-pill status-active">Disponible</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ============================================================
+   ÉTAT GLOBAL
+   ============================================================ */
+const state = {
+  products: [],   // [{cip, designation, tranche, pu, qte, ca, nr}]
+  paliers: [
+    { label: 'Palier 1', min: 0, max: 50000, taux: 1.0, statut: 'pending' },
+    { label: 'Palier 2', min: 50000, max: 150000, taux: 1.5, statut: 'pending' },
+    { label: 'Palier 3', min: 150000, max: null, taux: 2.0, statut: 'pending' },
+  ],
+  offres: [
+    { cat: 'Sanofi', statut: 'active', cond: 'Offre validée', note: 'Confirmé en réunion' },
+    { cat: 'UPSA', statut: 'active', cond: 'Offre validée', note: 'Confirmé en réunion' },
+    { cat: 'Zydus', statut: 'pending', cond: 'En cours de négociation', note: '' },
+    { cat: 'Vaccins', statut: 'pending', cond: 'Conditions à définir', note: '' },
+    { cat: 'GLP-1 / Obésité', statut: 'pending', cond: 'NR — circuit spécifique', note: 'Mounjaro, Wegovy' },
+    { cat: 'Plateforme Offilog', statut: 'active', cond: 'Accès groupement', note: 'Validé' },
+  ],
+  officines: [
+    { nom: 'Officine 1', groupe: 'Groupe A', ca: 0, commandes: 0 },
+    { nom: 'Officine 2', groupe: 'Groupe A', ca: 0, commandes: 0 },
+    { nom: 'Officine 3', groupe: 'Groupe A', ca: 0, commandes: 0 },
+    { nom: 'Officine 4', groupe: 'Groupe A', ca: 0, commandes: 0 },
+    { nom: 'Officine 5', groupe: 'Groupe A', ca: 0, commandes: 0 },
+    { nom: 'Officine 6', groupe: 'Groupe B', ca: 0, commandes: 0 },
+    { nom: 'Officine 7', groupe: 'Groupe B', ca: 0, commandes: 0 },
+    { nom: 'Officine 8', groupe: 'Groupe B', ca: 0, commandes: 0 },
+    { nom: 'Officine 9', groupe: 'Groupe B', ca: 0, commandes: 0 },
+    { nom: 'Officine 10', groupe: 'Groupe B', ca: 0, commandes: 0 },
+    { nom: 'Officine 11', groupe: 'Groupe B', ca: 0, commandes: 0 },
+  ],
+  jalons: [
+    { titre: 'Réunion en présentiel OPSO × Intégral', date: 'Réalisée', statut: 'done', desc: 'Première rencontre commerciale, validation des bases.' },
+    { titre: 'Validation offres Sanofi & UPSA', date: 'Réalisée', statut: 'done', desc: 'Conditions commerciales actées sur les deux principaux fournisseurs.' },
+    { titre: 'Accès plateforme Offilog', date: 'Réalisé', statut: 'done', desc: 'Plateforme intégrée à l\'offre groupement.' },
+    { titre: 'Structuration tranches de CA & rémunération', date: 'En cours', statut: 'in-progress', desc: 'Définition des paliers trimestriels et des taux associés.' },
+    { titre: 'Cadrage colisage / fardelage / logistique', date: 'En cours', statut: 'in-progress', desc: 'Conditions opérationnelles de livraison à formaliser.' },
+    { titre: 'Envoi proposition commerciale formelle', date: 'À venir', statut: 'pending', desc: 'Document de synthèse à transmettre après alignement projection.' },
+    { titre: 'Réception & signature contrat grossiste', date: 'À venir', statut: 'pending', desc: 'Contrat standard Intégral, séquencé après alignement.' },
+  ],
+};
+
+/* ============================================================
+   UTILITAIRES
+   ============================================================ */
+const fmtEur = n => (Number(n) || 0).toLocaleString('fr-FR', { style:'currency', currency:'EUR', maximumFractionDigits: 0 });
+const fmtNum = n => (Number(n) || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+const fmtPct = n => `${(Number(n) || 0).toFixed(1)} %`;
+
+function trancheOf(pu) {
+  if (pu <= 4.33) return 'petit';
+  if (pu <= 468) return 'inter';
+  return 'cher';
+}
+
+/* ============================================================
+   ONGLETS
+   ============================================================ */
+document.querySelectorAll('.subtab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ============================================================
+   IMPORT XLSX
+   ============================================================ */
+function handleXlsx(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = new Uint8Array(e.target.result);
+    const wb = XLSX.read(data, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    parseProducts(rows);
+    renderAll();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseProducts(rows) {
+  // Détection souple des noms de colonnes courants
+  const findKey = (row, candidates) => {
+    const keys = Object.keys(row);
+    for (const c of candidates) {
+      const k = keys.find(k => k.toLowerCase().replace(/[\s_-]/g,'').includes(c.toLowerCase().replace(/[\s_-]/g,'')));
+      if (k) return k;
+    }
+    return null;
+  };
+
+  if (!rows.length) { state.products = []; return; }
+  const sample = rows[0];
+  const kCip = findKey(sample, ['cip']);
+  const kDes = findKey(sample, ['designation','artdesignation','libelle','nom']);
+  const kPu  = findKey(sample, ['pu net moy','punetmoy','prix','pu']);
+  const kQte = findKey(sample, ['qte','quantite','quantité']);
+  const kCa  = findKey(sample, ['ca net ht','canetht','ca','chiffre']);
+  const kNr  = findKey(sample, ['nr','remboursement','rembours']);
+
+  state.products = rows.map(r => {
+    const pu = parseFloat(String(r[kPu] || '').replace(',','.')) || 0;
+    const qte = parseFloat(String(r[kQte] || '').replace(',','.')) || 0;
+    const ca = parseFloat(String(r[kCa] || '').replace(',','.')) || (pu * qte);
+    const nrRaw = String(r[kNr] || '').toLowerCase();
+    return {
+      cip: r[kCip] || '',
+      designation: r[kDes] || '',
+      pu, qte, ca,
+      tranche: trancheOf(pu),
+      nr: nrRaw === 'oui' || nrRaw === 'nr' || nrRaw === 'true' || nrRaw === '1',
+    };
+  }).filter(p => p.designation || p.cip);
+
+  // Tri par quantité décroissante (préférence Will)
+  state.products.sort((a,b) => b.qte - a.qte);
+}
+
+/* ============================================================
+   RENDERS
+   ============================================================ */
+function renderTranches() {
+  const total = state.products.reduce((s,p) => s + p.ca, 0);
+  const byTr = { petit: 0, inter: 0, cher: 0 };
+  state.products.forEach(p => byTr[p.tranche] += p.ca);
+
+  document.getElementById('kpi-ca-total').textContent = total ? fmtEur(total) : '— €';
+  document.getElementById('kpi-ca-period').textContent = state.products.length
+    ? `${state.products.length} références`
+    : 'Aucune donnée importée';
+
+  document.getElementById('kpi-petit').textContent = total ? fmtEur(byTr.petit) : '— €';
+  document.getElementById('kpi-inter').textContent = total ? fmtEur(byTr.inter) : '— €';
+  document.getElementById('kpi-cher').textContent  = total ? fmtEur(byTr.cher)  : '— €';
+
+  document.getElementById('kpi-petit-pct').textContent = total ? fmtPct(100*byTr.petit/total) : '≤ 4,33 €';
+  document.getElementById('kpi-inter-pct').textContent = total ? fmtPct(100*byTr.inter/total) : '4,33 € – 468 €';
+  document.getElementById('kpi-cher-pct').textContent  = total ? fmtPct(100*byTr.cher/total)  : '> 468 €';
+
+  // Bar stack
+  const bar = document.getElementById('bar-stack');
+  if (total > 0) {
+    const pPet = (byTr.petit/total*100), pInt = (byTr.inter/total*100), pChe = (byTr.cher/total*100);
+    bar.innerHTML = `
+      <div class="bar-segment bar-petit" style="width:${pPet}%">${pPet >= 5 ? pPet.toFixed(0)+'%' : ''}</div>
+      <div class="bar-segment bar-inter" style="width:${pInt}%">${pInt >= 5 ? pInt.toFixed(0)+'%' : ''}</div>
+      <div class="bar-segment bar-cher" style="width:${pChe}%">${pChe >= 5 ? pChe.toFixed(0)+'%' : ''}</div>
+    `;
+  }
+
+  // Table produits (top 50)
+  const tbody = document.getElementById('tbody-products');
+  if (!state.products.length) return;
+  tbody.innerHTML = state.products.slice(0, 50).map(p => {
+    const badgeClass = p.tranche === 'petit' ? 'badge-petit' : p.tranche === 'inter' ? 'badge-inter' : 'badge-cher';
+    const badgeLabel = p.tranche === 'petit' ? 'Petit prix' : p.tranche === 'inter' ? 'Intermédiaire' : 'Chers';
+    return `
+      <tr>
+        <td>${p.cip}</td>
+        <td>${p.designation}</td>
+        <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+        <td class="num">${fmtEur(p.pu)}</td>
+        <td class="num">${fmtNum(p.qte)}</td>
+        <td class="num">${fmtEur(p.ca)}</td>
+        <td>${p.nr ? '<span class="badge badge-nr">NR</span>' : ''}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderPaliers() {
+  const tbody = document.getElementById('tbody-paliers');
+  tbody.innerHTML = state.paliers.map((p, i) => {
+    const statusClass = p.statut === 'active' ? 'status-active' : p.statut === 'pending' ? 'status-pending' : 'status-empty';
+    const statusLabel = p.statut === 'active' ? 'Validé' : p.statut === 'pending' ? 'À valider' : '—';
+    return `
+      <tr>
+        <td><strong>${p.label}</strong></td>
+        <td class="num">${fmtEur(p.min)}</td>
+        <td class="num">${p.max ? fmtEur(p.max) : '∞'}</td>
+        <td class="num"><strong>${p.taux} %</strong></td>
+        <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+        <td><button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="togglePalier(${i})">${p.statut === 'active' ? 'Annuler' : 'Valider'}</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderOffres() {
+  const tbody = document.getElementById('tbody-offres');
+  tbody.innerHTML = state.offres.map(o => {
+    const statusClass = o.statut === 'active' ? 'status-active' : 'status-pending';
+    const statusLabel = o.statut === 'active' ? '✓ Validée' : '⋯ En cours';
+    return `
+      <tr>
+        <td><strong>${o.cat}</strong></td>
+        <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+        <td>${o.cond}</td>
+        <td style="color:var(--opso-gray);font-size:13px">${o.note}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderOfficines() {
+  const grid = document.getElementById('officines-grid');
+  grid.innerHTML = state.officines.map((o, i) => `
+    <div class="officine-card" onclick="editOfficine(${i})">
+      <div class="officine-name">${o.nom}</div>
+      <div class="officine-group">${o.groupe}</div>
+      <div class="officine-stats">
+        <div class="officine-stat">
+          <div class="officine-stat-label">CA HT</div>
+          <div class="officine-stat-value">${fmtEur(o.ca)}</div>
+        </div>
+        <div class="officine-stat">
+          <div class="officine-stat-label">Commandes</div>
+          <div class="officine-stat-value">${fmtNum(o.commandes)}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderJalons() {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = state.jalons.map(j => `
+    <div class="timeline-item ${j.statut}">
+      <div class="timeline-dot"></div>
+      <div class="timeline-title">${j.titre}</div>
+      <div class="timeline-meta">${j.date}</div>
+      <div class="timeline-desc">${j.desc}</div>
+    </div>
+  `).join('');
+}
+
+function renderAll() {
+  renderTranches();
+  renderPaliers();
+  renderOffres();
+  renderOfficines();
+  renderJalons();
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+function togglePalier(i) {
+  state.paliers[i].statut = state.paliers[i].statut === 'active' ? 'pending' : 'active';
+  renderPaliers();
+}
+
+function addPalier() {
+  const last = state.paliers[state.paliers.length - 1];
+  state.paliers.push({
+    label: `Palier ${state.paliers.length + 1}`,
+    min: last ? (last.max || 0) : 0,
+    max: null,
+    taux: 0,
+    statut: 'pending',
+  });
+  renderPaliers();
+}
+
+function addOfficine() {
+  const nom = prompt('Nom de l\'officine ?');
+  if (!nom) return;
+  const groupe = prompt('Groupe (A ou B) ?', 'A');
+  state.officines.push({
+    nom,
+    groupe: `Groupe ${groupe || 'A'}`,
+    ca: 0,
+    commandes: 0,
+  });
+  renderOfficines();
+}
+
+function editOfficine(i) {
+  const o = state.officines[i];
+  const nom = prompt('Nom :', o.nom);
+  if (nom === null) return;
+  const ca = parseFloat(prompt('CA HT (€) :', o.ca)) || 0;
+  const commandes = parseInt(prompt('Nb commandes :', o.commandes)) || 0;
+  state.officines[i] = { ...o, nom, ca, commandes };
+  renderOfficines();
+}
+
+function simulate() {
+  const ca = parseFloat(document.getElementById('sim-ca').value) || 0;
+  const taux = parseFloat(document.getElementById('sim-taux').value) || 0;
+  const remu = ca * taux / 100;
+  document.getElementById('sim-remu').textContent = fmtEur(remu);
+  document.getElementById('sim-annuel').textContent = fmtEur(remu * 4);
+}
+
+function exportSnapshot() {
+  const wb = XLSX.utils.book_new();
+
+  // Feuille produits
+  if (state.products.length) {
+    const wsProd = XLSX.utils.json_to_sheet(state.products.map(p => ({
+      CIP: p.cip,
+      Designation: p.designation,
+      Tranche: p.tranche === 'petit' ? 'Petit prix' : p.tranche === 'inter' ? 'Intermédiaire' : 'Chers',
+      'PU Net Moy': p.pu,
+      Quantite: p.qte,
+      'CA Net HT': p.ca,
+      NR: p.nr ? 'Oui' : 'Non',
+    })));
+    XLSX.utils.book_append_sheet(wb, wsProd, 'Produits');
+  }
+
+  // Feuille officines
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.officines), 'Officines');
+
+  // Feuille paliers
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.paliers), 'Paliers');
+
+  // Feuille jalons
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.jalons), 'Jalons');
+
+  const date = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `pilotage-opso-${date}.xlsx`);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+renderAll();
+</script>
+</body>
+</html>
