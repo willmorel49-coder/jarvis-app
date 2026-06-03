@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 28" width="48" height="28" role="img" aria-label="Integral Pharma">
+  <!-- "i" : capsule bleu marine + point -->
+  <g>
+    <!-- Point du i (tête de capsule arrondie) -->
+    <rect x="2" y="1.5" width="9" height="5.5" rx="2.75" fill="#0B1F4D"/>
+    <!-- Corps du i (capsule verticale) -->
+    <rect x="2" y="8.5" width="9" height="18" rx="4.5" fill="#0B1F4D"/>
+  </g>
+  <!-- "p" : capsule dorée avec descendante -->
+  <g>
+    <!-- Boucle haute du p (capsule trapue) -->
+    <rect x="14" y="6.5" width="11" height="12" rx="5.5" fill="#C9A961"/>
+    <!-- Trou intérieur de la boucle du p (donne le contour) -->
+    <rect x="17" y="9.5" width="5" height="6" rx="2.5" fill="#FFFFFF"/>
+    <!-- Descendante du p (capsule fine verticale) -->
+    <rect x="14" y="6.5" width="4" height="21" rx="2" fill="#C9A961"/>
+  </g>
+</svg>

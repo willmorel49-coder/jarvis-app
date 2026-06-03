@@ -325,3 +325,291 @@
   .mk-hero { flex-direction: column; align-items: flex-start; }
   .mk-pdf { transform: scale(0.7); transform-origin: top center; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SÉLECTEUR DE TEMPLATE (éditeur)
+   ══════════════════════════════════════════════════════════════ */
+.mk-select {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1l5 5 5-5' stroke='%230B1F4D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+.mk-template-hint {
+  margin-top: 6px; font-size: 11px; color: var(--text2);
+  font-weight: 600;
+}
+
+/* Champs focus (accroche + argument) dans la liste sélectionnée */
+.mk-sel-row { grid-template-columns: 32px 1fr auto auto; }
+.mk-sel-focus-fields {
+  grid-column: 1 / -1; margin-top: 8px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.mk-textarea {
+  min-height: 56px; resize: vertical;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TEMPLATE MEMO — dense, multi-colonnes, look BIOSIM
+   ══════════════════════════════════════════════════════════════ */
+.mk-pdf-memo {
+  background: #FFFFFF;
+  color: #0B1F4D;
+  padding: 40px 36px 32px;
+  box-sizing: border-box;
+}
+.mk-memo-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 20px;
+  padding: 18px 22px;
+  background: #0B1F4D; color: #FFFFFF;
+  border-radius: 14px;
+  margin-bottom: 22px;
+}
+.mk-memo-header-left { flex: 1; min-width: 0; }
+.mk-memo-eyebrow {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.14em;
+  text-transform: uppercase; opacity: 0.85;
+}
+.mk-memo-h1 {
+  font-size: 26px; font-weight: 800; line-height: 1.1;
+  margin-top: 4px;
+}
+.mk-memo-sub {
+  font-size: 12px; font-weight: 500; opacity: 0.75;
+  margin-top: 6px;
+}
+.mk-memo-logo {
+  background: #FFFFFF; padding: 6px 10px; border-radius: 10px;
+  flex-shrink: 0;
+}
+.mk-memo-table-wrap {
+  border: 1px solid #EAEEF7; border-radius: 12px;
+  overflow: hidden;
+}
+.mk-memo-table {
+  width: 100%; border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+}
+.mk-memo-table thead th {
+  background: #0B1F4D; color: #FFFFFF;
+  padding: 9px 8px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase; text-align: center;
+  white-space: nowrap;
+}
+.mk-memo-table tbody td {
+  padding: 7px 8px;
+  color: #0B1F4D; font-weight: 600;
+  text-align: center;
+  border-top: 1px solid #EAEEF7;
+}
+.mk-memo-table tbody tr:nth-child(even) td {
+  background: rgba(11, 31, 77, 0.04);
+}
+.mk-memo-desig {
+  text-align: left !important; font-weight: 700;
+  max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mk-memo-marque { font-weight: 800; letter-spacing: 0.02em; }
+.mk-memo-cip    { letter-spacing: 0.04em; font-weight: 500; opacity: 0.85; }
+.mk-memo-cond   { font-weight: 500; opacity: 0.85; }
+.mk-memo-price  { font-weight: 600; }
+.mk-memo-price-strong {
+  font-weight: 800;
+  background: rgba(11, 31, 77, 0.08);
+}
+.mk-memo-eco {
+  font-weight: 800;
+  color: #1F6B45;
+}
+.mk-memo-footer {
+  margin-top: 20px; text-align: center;
+}
+.mk-memo-footer-main {
+  font-size: 11px; font-weight: 600; color: #0B1F4D; opacity: 0.7;
+  font-style: italic;
+}
+.mk-memo-footer-warn {
+  margin-top: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #B7472A;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TEMPLATE FOCUS — pleine largeur, look magazine
+   ══════════════════════════════════════════════════════════════ */
+.mk-pdf-focus {
+  padding: 56px 52px 44px;
+}
+.mk-focus-header {
+  display: flex; align-items: center; gap: 22px;
+  margin-bottom: 44px;
+}
+.mk-focus-logo { width: 72px; height: 42px; flex-shrink: 0; }
+.mk-focus-title { flex: 1; }
+.mk-focus-eyebrow {
+  font-size: 12px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; opacity: 0.7;
+}
+.mk-focus-h1 {
+  font-size: 34px; font-weight: 900; line-height: 1.05;
+  margin-top: 6px;
+}
+.mk-focus-list {
+  display: flex; flex-direction: column; gap: 32px;
+}
+.mk-focus-card {
+  display: grid; grid-template-columns: 200px 1fr; gap: 28px;
+  align-items: center;
+  background: #FFFFFF; border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(11, 31, 77, 0.08);
+}
+.mk-focus-visual {
+  width: 200px; height: 200px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.mk-focus-body { display: flex; flex-direction: column; gap: 12px; }
+.mk-focus-top { display: flex; flex-direction: column; gap: 4px; }
+.mk-focus-name {
+  font-size: 22px; font-weight: 800; line-height: 1.15;
+  color: #0B1F4D;
+}
+.mk-focus-marque {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #7888A8;
+}
+.mk-focus-cip {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.04em;
+  color: #7888A8;
+  font-variant-numeric: tabular-nums;
+}
+.mk-focus-accroche {
+  font-size: 14px; font-weight: 500; line-height: 1.45;
+  color: #0B1F4D;
+  padding: 10px 0;
+  border-top: 1px solid #EAEEF7;
+  border-bottom: 1px solid #EAEEF7;
+  font-style: italic;
+}
+.mk-focus-argument {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mk-focus-prices {
+  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.mk-focus-price-old {
+  font-size: 14px; font-weight: 600;
+  color: #7888A8;
+  text-decoration: line-through;
+}
+.mk-focus-price-ip {
+  font-size: 34px; font-weight: 900;
+  line-height: 1;
+}
+.mk-focus-eco {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #C8EAD8; color: #1F6B45;
+  font-size: 12px; font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOAST PARTAGE (post-génération PDF)
+   Apparition slide-up depuis le bas, look iOS, 3 actions inline.
+   ══════════════════════════════════════════════════════════════ */
+.marketing-share-toast {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  left: 16px;
+  right: 16px;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 480px;
+  background: #FFFFFF;
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  box-shadow:
+    0 1px 3px rgba(11, 31, 77, 0.08),
+    0 12px 40px rgba(11, 31, 77, 0.22);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  color: #0B1F4D;
+  z-index: 10000;
+  animation: mktShareIn 280ms ease-out;
+}
+@keyframes mktShareIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.marketing-share-close {
+  position: absolute; top: 10px; right: 10px;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent;
+  color: #6B7280; cursor: pointer; border-radius: 50%;
+  transition: background .15s, color .15s;
+}
+.marketing-share-close:hover { background: #F2F2F7; color: #0B1F4D; }
+.marketing-share-head { margin-bottom: 12px; padding-right: 28px; }
+.marketing-share-eyebrow {
+  font-size: 11px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #14B86A;
+  margin-bottom: 2px;
+}
+.marketing-share-title {
+  font-size: 15px; font-weight: 800;
+  color: #0B1F4D; line-height: 1.25;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.marketing-share-hint {
+  font-size: 12px; font-weight: 500;
+  color: #6B7280; margin-top: 4px;
+}
+.marketing-share-actions {
+  display: flex; flex-direction: row; gap: 8px;
+}
+.marketing-share-action {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 14px;
+  background: #FFFFFF;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 10px;
+  font: 600 13px 'DM Sans', system-ui, sans-serif;
+  color: #0B1F4D;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, transform .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.marketing-share-action:hover { background: #F2F2F7; border-color: #D1D5DB; }
+.marketing-share-action:active { transform: scale(0.98); }
+.marketing-share-action svg { flex-shrink: 0; }
+.marketing-share-action[data-act="whatsapp"] { color: #25D366; }
+.marketing-share-action[data-act="whatsapp"] span { color: #0B1F4D; }
+.marketing-share-action.is-copied {
+  background: #DCFCE7; border-color: #86EFAC; color: #14B86A;
+}
+.marketing-share-action.is-copied span { color: #14B86A; }
+
+@media (max-width: 480px) {
+  .marketing-share-action span { font-size: 12px; }
+  .marketing-share-action { padding: 11px 8px; gap: 6px; }
+}
