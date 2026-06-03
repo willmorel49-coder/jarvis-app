@@ -12,6 +12,7 @@ const INTENT_RULES = [
   { re: /\b(rdv|rendez[- ]vous|booking|reservation)\b/i, action: (ctx) => ctx.openLens('rdv') },
   { re: /\b(pilotage|ca|chiffre.{0,3}affaire|kpi|stats?|objectif|top)\b/i, action: (ctx) => ctx.openLens('pilotage') },
   { re: /\b(devis|panier|facture|simul|cot[ae]r)\b/i, action: () => openDevisLens() },
+  { re: /\b(marketing|fiche|tract|brochure|offre)\b/i, action: (ctx) => ctx.openLens('marketing') },
 
   // Recherche pharmacie sur la carte
   // Note : "où est" avec accent — la Web Speech API transcrit l'accent correctement sur Chrome/Safari
@@ -61,6 +62,7 @@ function helpText() {
     · <em>« mes visites »</em> · journal des visites<br>
     · <em>« mes rdv »</em> · gestion des prises de RDV<br>
     · <em>« CA »</em> · pilotage commercial<br>
+    · <em>« marketing »</em> · fiches commerciales PDF<br>
     · <em>« cherche république »</em> · localise une pharmacie<br>
   `;
 }
