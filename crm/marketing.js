@@ -400,6 +400,7 @@
   let editTab = 'season';    // 'season' | 'cat' | 'custom'
   let productSearch = '';
   let statsFamille = 'top';  // 'top' | 'Froid' | 'Biosimilaires' | 'Génériques' | 'Gén. partenaires' | 'Non remboursés' | 'Princeps'
+  let selectedSheetIds = new Set();  // selection multi-fiches pour export PDF combine
 
   // ── TOP VENTES OPS+CPR+HP par famille IP ───────────────────────────────
   // Fusion des 3 etablissements par artcode, classement par famille IP.
@@ -684,8 +685,14 @@
               ${sheets.map(s => {
                 const cp = COLOR_PRESETS[s.color] || COLOR_PRESETS.navy;
                 const date = new Date(s.updated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+                const checked = selectedSheetIds.has(s.id);
                 return `
-                  <div class="mk-lib-card">
+                  <div class="mk-lib-card ${checked ? 'is-selected' : ''}">
+                    <label class="mk-lib-checkbox" title="Sélectionner pour export combiné">
+                      <input type="checkbox" ${checked ? 'checked' : ''}
+                        onclick="event.stopPropagation();window.mkToggleSelectSheet('${s.id}')" />
+                      <span class="mk-lib-checkbox-box"></span>
+                    </label>
                     <div class="mk-lib-preview" style="background:${cp.bg};color:${cp.accent}">
                       <div class="mk-lib-prev-title">OFFRE IP</div>
                       <div class="mk-lib-prev-sub">${escapeAttr(s.title)}</div>
@@ -710,6 +717,19 @@
                 `;
               }).join('')}
             </div>
+            ${selectedSheetIds.size > 0 ? `
+              <div class="mk-multi-bar" role="region" aria-label="Sélection multiple">
+                <div class="mk-multi-bar-count">
+                  <b>${selectedSheetIds.size}</b> fiche${selectedSheetIds.size>1?'s':''} sélectionnée${selectedSheetIds.size>1?'s':''}
+                </div>
+                <div class="mk-multi-bar-actions">
+                  <button class="mk-btn mk-btn-ghost" onclick="window.mkClearSelection()">Désélectionner</button>
+                  <button class="mk-btn mk-btn-primary" onclick="window.mkExportSelected()">
+                    ⬇ Télécharger PDF combiné (${selectedSheetIds.size} page${selectedSheetIds.size>1?'s':''})
+                  </button>
+                </div>
+              </div>
+            ` : ''}
           `}
         </div>
       </div>
@@ -725,6 +745,77 @@
     editingSheet = newSheet(themeId);
     productSearch = '';
     renderEdit();
+  };
+
+  // ─── Selection multiple fiches pour export PDF combine ────────────────
+  window.mkToggleSelectSheet = function (id) {
+    if (selectedSheetIds.has(id)) selectedSheetIds.delete(id);
+    else selectedSheetIds.add(id);
+    window.renderMarketing();
+  };
+  window.mkClearSelection = function () {
+    selectedSheetIds.clear();
+    window.renderMarketing();
+  };
+  // Export multi-fiches en 1 seul PDF (page-break entre chaque fiche)
+  window.mkExportSelected = async function () {
+    const sheets = loadSheets().filter(s => selectedSheetIds.has(s.id));
+    if (!sheets.length) return;
+
+    // Lazy-load html2pdf si pas encore charge
+    if (!window.html2pdf) {
+      if (typeof window.ensureHtml2Pdf === 'function') {
+        try { await window.ensureHtml2Pdf(); } catch (e) {}
+      }
+      if (!window.html2pdf) {
+        alert('Lib html2pdf non chargée. Vérifie ta connexion internet.');
+        return;
+      }
+    }
+
+    // Container offscreen avec toutes les fiches separees par page-break
+    const wrap = document.createElement('div');
+    wrap.id = 'mk-multi-pdf-wrap';
+    wrap.style.cssText = 'position:fixed;top:-99999px;left:0;width:794px;background:#FFFFFF;font-family:"DM Sans",sans-serif';
+
+    ensurePdfFontStyle();
+
+    sheets.forEach((sheet, i) => {
+      const page = document.createElement('div');
+      page.className = 'mk-multi-pdf-page';
+      page.style.cssText = (i > 0 ? 'page-break-before:always;break-before:page;' : '');
+      page.innerHTML = renderSheetHTML(sheet, 'mk-pdf-target-multi-' + i);
+      wrap.appendChild(page);
+    });
+
+    document.body.appendChild(wrap);
+
+    // Laisse aux fonts le temps de se charger
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch (_) {}
+    }
+    await new Promise(r => setTimeout(r, 300));
+
+    const filename = 'IP_Fiches_' + sheets.length + 'pages_' + new Date().toISOString().slice(0, 10) + '.pdf';
+
+    try {
+      await window.html2pdf().set({
+        margin: 0,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.92 },
+        html2canvas: {
+          scale: 3, useCORS: true, letterRendering: true,
+          logging: false, allowTaint: false, backgroundColor: '#FFFFFF'
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+        pagebreak: { mode: ['css', 'legacy'] }
+      }).from(wrap).save();
+    } catch (e) {
+      console.warn('[mkExportSelected]', e);
+      alert('Erreur lors de la génération du PDF combiné.');
+    } finally {
+      wrap.remove();
+    }
   };
 
   window.mkOpenSheet = function (id) {
