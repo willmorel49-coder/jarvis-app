@@ -5690,6 +5690,7 @@ function navigate(page) {
     offilog:      'Offilog — Parapharmacie',
     groupements:  'Suivi Groupement',
     objectifs:    'Objectifs commerciaux',
+    marketing:    'Marketing — Fiches commerciales',
   };
   document.getElementById('topbar-title').textContent = titles[page] || page;
 
@@ -5705,6 +5706,7 @@ function navigate(page) {
     offilog:     renderOffilog,
     groupements: renderGroupements,
     objectifs:   renderObjectifs,
+    marketing:   (typeof renderMarketing === 'function' ? renderMarketing : null),
   };
   if (renders[page]) renders[page]();
 }
