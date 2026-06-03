@@ -69,6 +69,86 @@
     return __OPS_BY_FAMILLE;
   }
 
+  // Agrégat IP NATIONAL = OPS + CPR + HP confondus par famille (mémoïsé)
+  // Fusionne les 3 agregats par artcode (somme CA/qte), recalcule la famille.
+  let __IP_NATIONAL_BY_FAMILLE = null;
+  let __IP_NATIONAL_AGG = null;
+  let __IP_NATIONAL_TOTAL = null;
+  function getIpNationalAggregate() {
+    if (__IP_NATIONAL_AGG) return __IP_NATIONAL_AGG;
+    const ops = window.OPS_AGGREGATE || {};
+    const cpr = window.CPR_AGGREGATE || {};
+    const hp  = window.HP_AGGREGATE  || {};
+    const fused = {};
+    let totalCa = 0, totalQte = 0;
+    function add(src) {
+      for (const code in src) {
+        const p = src[code];
+        if (!fused[code]) {
+          fused[code] = {
+            ean: p.ean, designation: p.designation, marque: p.marque,
+            nature: p.nature, sousfamille: p.sousfamille, collection: p.collection,
+            afmcode: p.afmcode, ca: 0, qte: 0,
+          };
+        }
+        fused[code].ca += p.ca || 0;
+        fused[code].qte += p.qte || 0;
+        totalCa += p.ca || 0;
+        totalQte += p.qte || 0;
+      }
+    }
+    add(ops); add(cpr); add(hp);
+    __IP_NATIONAL_AGG = fused;
+    __IP_NATIONAL_TOTAL = {
+      ca: totalCa, qte: totalQte, nb_produits: Object.keys(fused).length,
+    };
+    return fused;
+  }
+  function getIpNationalTotal() {
+    if (!__IP_NATIONAL_TOTAL) getIpNationalAggregate();
+    return __IP_NATIONAL_TOTAL;
+  }
+  function getIpNationalMixByFamille() {
+    if (__IP_NATIONAL_BY_FAMILLE) return __IP_NATIONAL_BY_FAMILLE;
+    const agg = getIpNationalAggregate();
+    const fams = { 'Froid': 0, 'Biosimilaires': 0, 'Génériques': 0, 'Gén. partenaires': 0, 'Non remboursés': 0, 'Princeps': 0 };
+    let total = 0;
+    for (const code in agg) {
+      const p = agg[code];
+      const fam = familleFromAttrs(p.nature, p.afmcode, p.sousfamille);
+      fams[fam] = (fams[fam] || 0) + (p.ca || 0);
+      total += p.ca || 0;
+    }
+    __IP_NATIONAL_BY_FAMILLE = { fams, total };
+    return __IP_NATIONAL_BY_FAMILLE;
+  }
+  let __IP_NATIONAL_BY_TRANCHE = null;
+  function getIpNationalMixByTranche() {
+    if (__IP_NATIONAL_BY_TRANCHE) return __IP_NATIONAL_BY_TRANCHE;
+    const agg = getIpNationalAggregate();
+    const tranches = { petit: 0, inter: 0, haut: 0 };
+    const matrix = {
+      petit: { 'Froid': 0, 'Biosimilaires': 0, 'Génériques': 0, 'Gén. partenaires': 0, 'Non remboursés': 0, 'Princeps': 0 },
+      inter: { 'Froid': 0, 'Biosimilaires': 0, 'Génériques': 0, 'Gén. partenaires': 0, 'Non remboursés': 0, 'Princeps': 0 },
+      haut:  { 'Froid': 0, 'Biosimilaires': 0, 'Génériques': 0, 'Gén. partenaires': 0, 'Non remboursés': 0, 'Princeps': 0 },
+    };
+    let total = 0;
+    for (const code in agg) {
+      const p = agg[code];
+      const qte = p.qte || 0;
+      const ca = p.ca || 0;
+      if (qte <= 0 || ca <= 0) continue;
+      const prixUnit = ca / qte;
+      const tr = trancheFromPrix(prixUnit);
+      const fam = familleFromAttrs(p.nature, p.afmcode, p.sousfamille);
+      tranches[tr] += ca;
+      matrix[tr][fam] += ca;
+      total += ca;
+    }
+    __IP_NATIONAL_BY_TRANCHE = { tranches, matrix, total };
+    return __IP_NATIONAL_BY_TRANCHE;
+  }
+
   // Agrégat OPS Nantes par tranche prix + matrice tranche × famille (mémoïsé)
   let __OPS_BY_TRANCHE = null;
   function getOpsMixByTranche() {
@@ -668,7 +748,9 @@
   }
 
   // Comparatif Mon secteur (Will) vs OPS Nantes par famille IP — table riche avec indice
-  function buildSectorVsOpsHtml(myFams, myTotal, opsFams, opsTotal, familles) {
+  function buildSectorVsOpsHtml(myFams, myTotal, opsFams, opsTotal, familles, benchLabel) {
+    const _benchShort = benchLabel || 'OPS';
+    const _benchLong  = benchLabel ? benchLabel : 'OPS Nantes';
     const FAMILLE_COLORS = {
       'Froid': '#00B5D8', 'Biosimilaires': '#7C3AED', 'Génériques': '#94A3B8',
       'Gén. partenaires': '#14B86A', 'Non remboursés': '#FF9F1C', 'Princeps': '#0057FF',
@@ -707,13 +789,13 @@
                 <span style="font-size:12px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;text-align:right">${fmtEuro(myCa)}</span>
               </div>
               <div style="display:grid;grid-template-columns:60px 1fr 80px;gap:10px;align-items:center">
-                <span style="font-size:10px;color:#64748B;font-weight:800;text-transform:uppercase">OPS</span>
+                <span style="font-size:10px;color:#64748B;font-weight:800;text-transform:uppercase">${escapeHtml(_benchShort)}</span>
                 <div style="height:10px;background:#F2F6FF;border-radius:4px;overflow:hidden"><div style="height:100%;width:${opsW}%;background:repeating-linear-gradient(90deg,${c}88 0,${c}88 6px,${c}44 6px,${c}44 12px);border-radius:4px"></div></div>
                 <span style="font-size:11px;font-weight:600;color:#64748B;font-variant-numeric:tabular-nums;text-align:right">${fmtEuro(opsCa)}</span>
               </div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Mix Moi · OPS</div>
+              <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Mix Moi · ${escapeHtml(_benchShort)}</div>
               <div style="font-size:14px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums">${myPct.toFixed(1)}% <span style="color:#94A3B8;font-size:11px">vs ${opsPct.toFixed(1)}%</span></div>
               <div style="font-size:11px;font-weight:700;color:${deltaCol};margin-top:2px">${deltaSign}${delta.toFixed(1)} pts</div>
             </div>
@@ -724,7 +806,7 @@
             </div>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94A3B8;padding-left:22px">
-            <span>Ma PdM dans cette famille à OPS Nantes : <b style="color:#0B1F4D">${pdmFam.toFixed(2)} %</b></span>
+            <span>Ma PdM dans cette famille à ${escapeHtml(_benchLong)} : <b style="color:#0B1F4D">${pdmFam.toFixed(2)} %</b></span>
             <span>Indice 100 = aligné · >110 = sur-représenté · <90 = potentiel d'expansion</span>
           </div>
         </div>
@@ -743,16 +825,16 @@
     const topSurIdx = [...sousIdx].sort((a, b) => b.delta - a.delta)[0];
 
     return `
-      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:6px 0 10px">Mix produit par famille · Mon secteur vs OPS Nantes</h3>
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800;margin:6px 0 10px">Mix produit par famille · Mon secteur vs ${escapeHtml(_benchLong)}</h3>
       <div style="${styleCard('padding:0')}">
         <div style="padding:10px 16px;background:#F2F6FF;border-bottom:1px solid #E8EEFF;display:grid;grid-template-columns:180px 1fr 110px 110px;gap:14px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">
-          <span>Famille IP</span><span>CA absolu · barres comparatives</span><span style="text-align:right">Mix Moi · OPS</span><span style="text-align:right">Indice / 100</span>
+          <span>Famille IP</span><span>CA absolu · barres comparatives</span><span style="text-align:right">Mix Moi · ${escapeHtml(_benchShort)}</span><span style="text-align:right">Indice / 100</span>
         </div>
         ${rows}
         <div style="padding:14px 18px;background:linear-gradient(135deg,#FFF8EC,#FFF);border-top:2px solid #FF9F1C">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#7C2D12;font-weight:800;margin-bottom:6px">À retenir</div>
           <div style="font-size:12.5px;color:#0B1F4D;line-height:1.5">
-            ${topSousIdx ? `<div>• <b>${escapeHtml(topSousIdx.f)}</b> : famille la plus sous-indexée vs OPS Nantes <b style="color:#FF4D6D">(${topSousIdx.delta.toFixed(1)} pts)</b> · manque à gagner estimé <b>${fmtEuro(topSousIdx.manqueGagne)}</b>${topSousIdx.delta < 0 ? ' au mix sectoriel' : ''}</div>` : ''}
+            ${topSousIdx ? `<div>• <b>${escapeHtml(topSousIdx.f)}</b> : famille la plus sous-indexée vs ${escapeHtml(_benchLong)} <b style="color:#FF4D6D">(${topSousIdx.delta.toFixed(1)} pts)</b> · manque à gagner estimé <b>${fmtEuro(topSousIdx.manqueGagne)}</b>${topSousIdx.delta < 0 ? ' au mix sectoriel' : ''}</div>` : ''}
             ${topSurIdx && topSurIdx.delta > 0 ? `<div>• <b>${escapeHtml(topSurIdx.f)}</b> : famille où je sur-performe <b style="color:#14B86A">(+${topSurIdx.delta.toFixed(1)} pts)</b> · territoire fidèle</div>` : ''}
           </div>
         </div>
@@ -1180,8 +1262,31 @@
         <!-- Vue multi-etablissements : Mon secteur vs OPS / CPR / HP -->
         ${typeof window.buildMultiBenchHtml === 'function' ? window.buildMultiBenchHtml() : ''}
 
-        <!-- Comparatif détaillé par famille -->
-        ${buildSectorVsOpsHtml(myFams, myTotal, opsMix.fams, opsTotal, FAMILLES_ORDER)}
+        <!-- Comparatif famille vs OPS Nantes (etablissement de reference) -->
+        <h2 style="font-size:18px;font-weight:800;color:#0B1F4D;margin:24px 0 10px">Comparatif vs OPS Nantes</h2>
+        ${buildSectorVsOpsHtml(myFams, myTotal, opsMix.fams, opsTotal, FAMILLES_ORDER, 'OPS Nantes')}
+
+        <!-- Comparatif famille vs IP National (OPS + CPR + HP confondus) -->
+        <h2 style="font-size:18px;font-weight:800;color:#0B1F4D;margin:24px 0 10px">Comparatif vs IP National · OPS + CPR + HP confondus</h2>
+        ${(function() {
+          const ipMix = getIpNationalMixByFamille();
+          const ipTotal = getIpNationalTotal();
+          const poidsIp = ipTotal.ca > 0 ? (myTotal / ipTotal.ca * 100) : 0;
+          const kpis = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px">
+              <div style="${styleCard()};border-left:4px solid #5856D6">
+                <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">IP National · CA cumulé</div>
+                <div style="font-size:26px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;margin:4px 0">${fmtEuro(ipTotal.ca)}</div>
+                <div style="font-size:11px;color:#94A3B8">${fmtNum(ipTotal.nb_produits)} réfs uniques · 3 établissements</div>
+              </div>
+              <div style="${styleCard()};border-left:4px solid #FF9F1C">
+                <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;font-weight:800">Mon poids dans IP National</div>
+                <div style="font-size:26px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums;margin:4px 0">${poidsIp.toFixed(2)}<span style="font-size:14px;color:#94A3B8"> %</span></div>
+                <div style="font-size:11px;color:#94A3B8">CA Will ÷ CA IP National (OPS+CPR+HP)</div>
+              </div>
+            </div>`;
+          return kpis + buildSectorVsOpsHtml(myFams, myTotal, ipMix.fams, ipMix.total, FAMILLES_ORDER, 'IP National');
+        })()}
 
         <!-- Comparatif par tranche de prix -->
         ${buildTrancheVsOpsHtml(window.SALES_BY_TRANCHE || {}, myTotal, getOpsMixByTranche())}
