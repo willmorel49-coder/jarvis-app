@@ -1,0 +1,338 @@
+/* ============================================================================
+   native-motion.css — CRM Intégral Pharma
+   Micro-interactions iOS-native : stagger, page transitions, hover, taps,
+   sparkline mount, loading shimmer, tab bar feedback.
+   ----------------------------------------------------------------------------
+   Chargé APRÈS native-tokens.css (consomme --ease-ios-*, --duration-*).
+   Aucune dépendance JS bloquante : si native-motion.js absent, les hover/tap
+   états continuent de fonctionner.
+   GPU only : transform + opacity. Pas de layout thrash.
+   ============================================================================ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   0) Variables locales (fallback si tokens absents)
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --mkt-ease-out:    var(--ease-ios-out,    cubic-bezier(0, 0, .2, 1));
+  --mkt-ease-snappy: var(--ease-ios-snappy, cubic-bezier(.4, 0, .2, 1));
+  --mkt-ease-spring: var(--ease-ios-spring, cubic-bezier(.34, 1.56, .64, 1));
+
+  --mkt-d-tap:     var(--duration-instant, 80ms);
+  --mkt-d-hover:   180ms;
+  --mkt-d-enter:   280ms;
+  --mkt-d-page:    200ms;
+  --mkt-d-page-out: 120ms;
+
+  --mkt-stagger-step: 40ms;
+  --mkt-stagger-max:  8;            /* après 8 cards, c'est instant */
+
+  --mkt-translate-enter: 8px;
+  --mkt-translate-hover: -1px;
+  --mkt-scale-tap:       .97;
+  --mkt-scale-icon-tap:  .92;
+  --mkt-scale-page-in:   .985;
+}
+
+/* ============================================================================
+   A) STAGGER FADE-IN-UP — cards / sections / details qui apparaissent
+   ============================================================================ */
+
+@keyframes mkt-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--mkt-translate-enter), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* État initial : posé par le JS dès qu'on prépare le stagger */
+.mkt-stagger-prep {
+  opacity: 0;
+  transform: translate3d(0, var(--mkt-translate-enter), 0);
+}
+
+/* État animé : enclenché par le JS frame suivante */
+.mkt-stagger-enter {
+  animation: mkt-fade-in-up var(--mkt-d-enter) var(--mkt-ease-out) both;
+  will-change: opacity, transform;
+  contain: layout style paint;
+}
+
+/* Délais en cascade — index injecté via --mkt-i par le JS (0..7) */
+.mkt-stagger-enter { animation-delay: calc(var(--mkt-i, 0) * var(--mkt-stagger-step)); }
+
+/* Au-delà de --mkt-stagger-max : pas de delay, apparition immédiate (group-fade) */
+.mkt-stagger-enter[style*="--mkt-i: 8"],
+.mkt-stagger-enter[style*="--mkt-i: 9"],
+.mkt-stagger-enter[style*="--mkt-i:10"],
+.mkt-stagger-enter[style*="--mkt-i:11"],
+.mkt-stagger-enter[style*="--mkt-i:12"] {
+  animation-delay: calc(var(--mkt-stagger-max) * var(--mkt-stagger-step));
+}
+
+/* Nettoyage après animation : retire will-change pour libérer la mémoire GPU */
+.mkt-stagger-done {
+  will-change: auto;
+}
+
+/* ============================================================================
+   B) PAGE TRANSITION — fade + scale subtile au switch de tab
+   ============================================================================ */
+
+@keyframes mkt-page-in {
+  from {
+    opacity: 0;
+    transform: scale(var(--mkt-scale-page-in));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes mkt-page-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(var(--mkt-scale-page-in));
+  }
+}
+
+/* La page qui devient active reçoit cette classe pendant qq frames */
+.page.mkt-page-entering {
+  animation: mkt-page-in var(--mkt-d-page) var(--mkt-ease-out) both;
+  will-change: opacity, transform;
+  contain: layout style paint;
+  transform-origin: 50% 30%;
+}
+
+/* La page qui sort (rare car display:none coupe, mais utile en cross-fade) */
+.page.mkt-page-leaving {
+  animation: mkt-page-out var(--mkt-d-page-out) var(--mkt-ease-snappy) both;
+  pointer-events: none;
+}
+
+/* ============================================================================
+   C) HOVER / ACTIVE STATES — cards & boutons (desktop pointer fine uniquement)
+   ============================================================================ */
+
+/* Cards 14px radius (convention dashboard) — hover lift discret */
+@media (hover: hover) and (pointer: fine) {
+  [style*="border-radius:14px"],
+  [style*="border-radius: 14px"],
+  [style*="border-radius:12px"],
+  [style*="border-radius: 12px"] {
+    transition:
+      transform var(--mkt-d-hover) var(--mkt-ease-snappy),
+      box-shadow var(--mkt-d-hover) var(--mkt-ease-snappy);
+  }
+
+  [style*="border-radius:14px"]:hover,
+  [style*="border-radius: 14px"]:hover,
+  [style*="border-radius:12px"]:hover,
+  [style*="border-radius: 12px"]:hover {
+    transform: translate3d(0, var(--mkt-translate-hover), 0);
+    box-shadow:
+      0 0 0 0.5px rgba(0, 0, 0, 0.06),
+      0 6px 18px rgba(0, 0, 0, 0.10),
+      0 12px 32px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Boutons — tap feedback unifié (cohérent avec style-mobile-touch.css) */
+button,
+[role="button"],
+.btn,
+[data-page] {
+  transition: transform var(--mkt-d-tap) var(--mkt-ease-snappy);
+}
+
+button:active,
+[role="button"]:active,
+.btn:active {
+  transform: scale(var(--mkt-scale-tap));
+}
+
+/* Classe ajoutée par le JS au touchstart (mobile sans :active fiable) */
+.is-tapping {
+  transform: scale(var(--mkt-scale-tap));
+  transition: transform var(--mkt-d-tap) var(--mkt-ease-snappy);
+}
+
+/* ============================================================================
+   D) SPARKLINE / CHART MOUNT — animation des SVG au render
+   ============================================================================ */
+
+/* Polylines de sparklines : trace progressive */
+@keyframes mkt-stroke-draw {
+  from { stroke-dashoffset: var(--mkt-dash-len, 1000); }
+  to   { stroke-dashoffset: 0; }
+}
+
+.mkt-spark-enter polyline,
+.mkt-spark-enter path.spark-line {
+  stroke-dasharray: var(--mkt-dash-len, 1000);
+  stroke-dashoffset: var(--mkt-dash-len, 1000);
+  animation: mkt-stroke-draw 600ms var(--mkt-ease-out) both;
+  animation-delay: 100ms;
+}
+
+/* Barres de chart : scale Y depuis le bas */
+@keyframes mkt-bar-rise {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+.mkt-chart-enter rect.bar,
+.mkt-chart-enter rect[data-bar] {
+  transform-origin: 50% 100%;
+  transform-box: fill-box;
+  animation: mkt-bar-rise 400ms var(--mkt-ease-spring) both;
+}
+.mkt-chart-enter rect.bar:nth-child(n)    { animation-delay: calc(var(--mkt-i, 0) * 30ms); }
+
+/* ============================================================================
+   E) LOADING SHIMMER — pour containers .is-loading
+   ============================================================================ */
+
+@keyframes mkt-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.is-loading {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(120, 120, 128, 0.08) 30%,
+      rgba(120, 120, 128, 0.20) 50%,
+      rgba(120, 120, 128, 0.08) 70%
+    );
+  background-size: 200% 100%;
+  animation: mkt-shimmer 1.4s linear infinite;
+  color: transparent !important;
+  pointer-events: none;
+  border-radius: var(--radius-3, 10px);
+}
+
+.is-loading * {
+  visibility: hidden;
+}
+
+/* ============================================================================
+   F) TAB BAR FEEDBACK — icônes qui pulsent / scale au tap
+   ============================================================================ */
+
+[data-page] {
+  transition:
+    transform var(--mkt-d-tap) var(--mkt-ease-snappy),
+    color var(--mkt-d-hover) var(--mkt-ease-out);
+}
+
+[data-page].is-tapping,
+[data-page]:active {
+  transform: scale(var(--mkt-scale-icon-tap));
+}
+
+/* Pulse subtile sur l'active tab quand elle vient d'être activée */
+@keyframes mkt-tab-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+[data-page].active.mkt-tab-pulse,
+[data-page].mkt-just-activated {
+  animation: mkt-tab-pulse 360ms var(--mkt-ease-spring) both;
+}
+
+/* ============================================================================
+   G) DETAILS / COLLAPSIBLES — ouverture douce
+   ============================================================================ */
+
+details > summary {
+  transition:
+    background-color var(--mkt-d-hover) var(--mkt-ease-out),
+    transform var(--mkt-d-tap) var(--mkt-ease-snappy);
+  cursor: pointer;
+}
+
+details[open] > summary ~ * {
+  animation: mkt-fade-in-up 260ms var(--mkt-ease-out) both;
+}
+
+/* ============================================================================
+   H) MODAL / SHEET ENTER (si utilisé) — slide-up iOS
+   ============================================================================ */
+
+@keyframes mkt-sheet-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.mkt-sheet-enter {
+  animation: mkt-sheet-up 380ms var(--mkt-ease-out) both;
+  will-change: opacity, transform;
+}
+
+/* ============================================================================
+   I) PERFORMANCE GUARDS
+   ============================================================================ */
+
+/* Connexions lentes : on désactive les apparitions coûteuses */
+@media (prefers-reduced-data: reduce) {
+  .mkt-stagger-enter,
+  .mkt-spark-enter polyline,
+  .mkt-chart-enter rect.bar {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/* ============================================================================
+   J) REDUCED MOTION — respect strict système (override universel)
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+  }
+
+  .mkt-stagger-prep,
+  .mkt-stagger-enter,
+  .page.mkt-page-entering,
+  .page.mkt-page-leaving {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .mkt-spark-enter polyline,
+  .mkt-spark-enter path.spark-line {
+    stroke-dashoffset: 0 !important;
+  }
+
+  .is-loading {
+    animation: none !important;
+  }
+}
