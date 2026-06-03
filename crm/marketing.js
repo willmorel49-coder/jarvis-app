@@ -465,6 +465,7 @@
   let statsTranche = 'all';  // 'all' | 'petit' (≤4.33€) | 'inter' (4.33-468€) | 'haut' (>468€)
   let sagittaStatus = 'all'; // 'all' | 'ip_win' | 'ip_lose' | 'no_ip'
   let sagittaSearch = '';
+  let sagittaSort   = 'volume'; // 'volume' | 'ecart_pct' | 'ecart_eur' | 'gain'
   let selectedSheetIds = new Set();  // selection multi-fiches pour export PDF combine
 
   // ── DEBOUNCE pour les inputs de recherche ──────────────────
@@ -600,6 +601,7 @@
       editingSheet = newSheet('custom');
       editingSheet.title = 'Fiche depuis top ventes';
       editingSheet.products = [snap];
+      if (typeof celebrateFirstProduct === 'function') celebrateFirstProduct();
     } else {
       var cap = TEMPLATES[getTemplateId(editingSheet)].maxProducts;
       if (editingSheet.products.length >= cap) {
@@ -609,7 +611,9 @@
         return;
       }
       if (editingSheet.products.find(function (p) { return p.artcode === artcode || p.cip13 === snap.cip13; })) return;
+      var wasEmpty = editingSheet.products.length === 0;
       editingSheet.products.push(snap);
+      if (wasEmpty && typeof celebrateFirstProduct === 'function') celebrateFirstProduct();
     }
     renderEdit();
   };
@@ -756,7 +760,13 @@
                     </div>
                   `;
                 }).join('')}
-                ${list.length === 0 ? `<div class="mk-empty" style="padding:20px;text-align:center;color:#8E8E93">Aucune vente dans cette combinaison famille / tranche</div>` : ''}
+                ${list.length === 0 ? `
+                  <div class="mk-empty" style="padding:24px 18px;text-align:center;color:#64748B">
+                    <span style="font-size:22px;display:block;margin-bottom:6px">🧭</span>
+                    Aucune vente sur cette combinaison <b>famille × tranche</b>.<br>
+                    <span style="font-size:11px;opacity:.7">Élargis la sélection (Top global, Tous prix) pour voir le marché complet</span>
+                  </div>
+                ` : ''}
               </div>
               <div class="mk-stats-footer">${top100.length} produits affichés sur ${list.length} · CA secteur cumulé top 100 : <b>${eur(totalCa)}</b></div>
             </div>
@@ -808,8 +818,11 @@
           </div>
           ${sheets.length === 0 ? `
             <div class="mk-empty">
-              Aucune fiche enregistrée pour l'instant.<br>
-              Démarre depuis un thème ci-dessus.
+              <span style="font-size:38px;display:block;margin-bottom:8px">📂</span>
+              <b style="color:#0B1F4D;font-size:15px">Aucune fiche enregistrée</b><br>
+              <span style="font-size:13px">Démarre depuis un <b>thème de saison</b>, une <b>catégorie thérapeutique</b>,
+              le comparatif <b>Sagitta NR</b> ou une <b>sélection libre</b>.</span><br>
+              <span style="font-size:11.5px;opacity:.7;display:block;margin-top:8px">Tout est sauvegardé automatiquement — Supabase si connecté, sinon localStorage</span>
             </div>
           ` : `
             <div class="mk-library">
@@ -1036,11 +1049,19 @@
             <div class="mk-card mk-card-ds">
               <div class="mk-card-title">✨ Design Pinterest 2026-2027</div>
 
-              <label class="mk-label">Look prédéfini</label>
+              <label class="mk-label">Look prédéfini <span class="mk-label-hint">— 1 clic, tout est réglé</span></label>
               <div class="mk-ds-presets">
-                ${Object.entries(window.MK_DESIGN_PRESETS || {}).map(([id, p]) => `
-                  <button class="mk-ds-preset" onclick="window.mkApplyDesignPreset('${id}')">${escapeAttr(p.name)}</button>
-                `).join('')}
+                ${Object.entries(window.MK_DESIGN_PRESETS || {}).map(([id, p]) => {
+                  const g = (window.MK_GRADIENTS || {})[p.gradient];
+                  const previewBg = g && g.preview ? g.preview : '#F2F2F7';
+                  const isActive = isCurrentDesignPreset(s, p);
+                  return `
+                  <button class="mk-ds-preset ${isActive ? 'on' : ''}" onclick="window.mkApplyDesignPreset('${id}')" title="${escapeAttr(p.name)} · template ${escapeAttr(p.template)}">
+                    <span class="mk-ds-preset-swatch" style="background:${previewBg}"></span>
+                    <span class="mk-ds-preset-name">${escapeAttr(p.name)}</span>
+                  </button>
+                `;
+                }).join('')}
               </div>
 
               <label class="mk-label" style="margin-top:14px">Gradient mesh</label>
@@ -1048,40 +1069,56 @@
                 ${Object.entries(window.MK_GRADIENTS || {}).map(([id, g]) => {
                   const isNone = id === 'none';
                   const bgStyle = isNone
-                    ? 'background:repeating-linear-gradient(45deg,#fff,#fff 5px,#E5E7EB 5px,#E5E7EB 10px)'
+                    ? 'background:repeating-linear-gradient(45deg,#FFFFFF,#FFFFFF 5px,#E5E7EB 5px,#E5E7EB 10px)'
                     : 'background:' + (g.preview || g.css || '#F2F2F7');
                   return `
                   <button class="mk-ds-grad ${(s.gradient || 'none') === id ? 'on' : ''}" title="${escapeAttr(g.name)}"
                     style="${bgStyle}"
-                    onclick="window.mkUpdateGradient('${id}')">${isNone ? '<span class="mk-ds-none-mark">∅</span>' : ''}</button>
+                    aria-label="Gradient ${escapeAttr(g.name)}"
+                    onclick="window.mkUpdateGradient('${id}')">${isNone ? '<span class="mk-ds-none-mark" aria-hidden="true">∅</span>' : ''}</button>
                 `;
                 }).join('')}
               </div>
 
               <label class="mk-label" style="margin-top:14px">Typographie</label>
-              <select class="mk-input mk-select" onchange="window.mkUpdateFontPair(this.value)">
-                ${Object.entries(window.MK_FONT_PAIRS || {}).map(([id, f]) => `
-                  <option value="${id}" ${(s.fontPair || 'default') === id ? 'selected' : ''}>${escapeAttr(f.name)}</option>
-                `).join('')}
-              </select>
+              <div class="mk-ds-font-row">
+                ${Object.entries(window.MK_FONT_PAIRS || {}).map(([id, f]) => {
+                  const headingFamily = (f.heading && f.heading.family) || 'DM Sans';
+                  const isOn = (s.fontPair || 'default') === id;
+                  if (typeof window.mkLoadFontPair === 'function') {
+                    try { window.mkLoadFontPair(id); } catch (e) {}
+                  }
+                  return `
+                    <button class="mk-ds-font ${isOn ? 'on' : ''}" onclick="window.mkUpdateFontPair('${id}')" title="${escapeAttr(f.name)}">
+                      <span class="mk-ds-font-aa" style="font-family:'${headingFamily}','DM Sans',sans-serif">Aa</span>
+                      <span class="mk-ds-font-name">${escapeAttr(f.name)}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
 
               <label class="mk-label" style="margin-top:14px">Pattern (texture)</label>
               <div class="mk-ds-pat-row">
-                ${Object.entries(window.MK_PATTERNS || {}).map(([id, p]) => `
+                ${Object.entries(window.MK_PATTERNS || {}).map(([id, p]) => {
+                  const isNone = id === 'none';
+                  return `
                   <button class="mk-ds-pat ${(s.pattern || 'none') === id ? 'on' : ''}" title="${escapeAttr(p.name)}"
                     style="background-image:${p.css || 'none'};background-color:#F2F2F7"
-                    onclick="window.mkUpdatePattern('${id}')">${id === 'none' ? '∅' : ''}</button>
-                `).join('')}
+                    aria-label="Pattern ${escapeAttr(p.name)}"
+                    onclick="window.mkUpdatePattern('${id}')">${isNone ? '<span class="mk-ds-none-mark" aria-hidden="true">∅</span>' : ''}</button>
+                `;
+                }).join('')}
               </div>
 
               <label class="mk-label" style="margin-top:14px">Sticker / badge</label>
               <div class="mk-ds-stk-row">
                 ${Object.entries(window.MK_STICKERS || {}).map(([id, st]) => {
                   const isNone = id === 'none' || !st.svg;
-                  const placeholder = '<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="26" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-dasharray="4 4"/><path d="M14 14L50 50" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round"/></svg>';
+                  const placeholder = '<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-dasharray="4 4"/><path d="M14 14L50 50" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round"/></svg>';
                   const inner = isNone ? placeholder : st.svg;
                   return `
                     <button class="mk-ds-stk ${(s.sticker || 'none') === id ? 'on' : ''}" title="${escapeAttr(st.name)}"
+                      aria-label="Sticker ${escapeAttr(st.name)}"
                       onclick="window.mkUpdateSticker('${id}')">${inner}</button>
                   `;
                 }).join('')}
@@ -1109,8 +1146,18 @@
                   }).join('')}
                 </div>
               ` : productSearch.length >= 2 ? `
-                <div class="mk-empty-search">Aucun produit trouvé</div>
-              ` : ''}
+                <div class="mk-empty-search">
+                  <span style="font-size:18px;display:block;margin-bottom:4px">🔍</span>
+                  Aucun médicament IP ne correspond à <b>"${escapeAttr(productSearch)}"</b>.<br>
+                  <span style="font-size:11px;opacity:.7">Essaie un nom de DCI (paracetamol, ibuprofene…) ou un CIP</span>
+                </div>
+              ` : `
+                <div class="mk-empty-search">
+                  <span style="font-size:18px;display:block;margin-bottom:4px">💊</span>
+                  Tape 2 lettres pour chercher dans <b>${window.BENCHMARK ? (window.BENCHMARK.length || 0).toLocaleString('fr-FR') : '10 500'}</b> médicaments IP<br>
+                  <span style="font-size:11px;opacity:.7">Nom commercial, DCI ou code CIP</span>
+                </div>
+              `}
             </div>
 
             ${renderOffilogPanel(s)}
@@ -1124,7 +1171,13 @@
                 <span class="mk-count-badge">${s.products.length}</span>
               </div>
               ${s.products.length === 0 ? `
-                <div class="mk-empty-search">Aucun produit. Ajoute via la recherche à gauche.</div>
+                <div class="mk-empty-search mk-sel-empty">
+                  <span style="font-size:28px;display:block;margin-bottom:6px">🛒</span>
+                  <b style="color:#0B1F4D;font-size:14px">Ta fiche est vide</b><br>
+                  Ajoute des produits depuis le <b>catalogue IP</b>, <b>OFFILOG parapharmacie</b>
+                  ou directement depuis <b>Sagitta NR</b> ou <b>Top ventes secteur</b>.<br>
+                  <span style="font-size:11px;opacity:.7;display:block;margin-top:6px">Tu pourras ensuite éditer chaque ligne et lancer l'aperçu live ✨</span>
+                </div>
               ` : `
                 <div class="mk-selected-list">
                   ${s.products.map((p, i) => `
@@ -1445,6 +1498,23 @@
         (p.cip13 || '').includes(q)
       );
     }
+    // Tri configurable (par défaut volume secteur)
+    if (sagittaSort === 'ecart_pct') {
+      list = list.slice().sort((a, b) => (Math.abs(b.ecart_pct || 0)) - (Math.abs(a.ecart_pct || 0)));
+    } else if (sagittaSort === 'ecart_eur') {
+      list = list.slice().sort((a, b) => (Math.abs(b.ecart_eur || 0)) - (Math.abs(a.ecart_eur || 0)));
+    } else if (sagittaSort === 'gain') {
+      // Trie les gagnants IP en premier, par CA secteur potentiel
+      list = list.slice().sort((a, b) => {
+        const av = (a.status === 'ip_win' ? 1 : 0) * (a.ca_sector || 0);
+        const bv = (b.status === 'ip_win' ? 1 : 0) * (b.ca_sector || 0);
+        return bv - av;
+      });
+    }
+    // Mini-stats hero : combien de gagnants IP affichés et CA secteur cumulé
+    const filteredWins = list.filter(p => p.status === 'ip_win');
+    const heroWinsCount = filteredWins.length;
+    const heroWinsCa = filteredWins.reduce((s, p) => s + (p.ca_sector || 0), 0);
     const top = list.slice(0, 80);
     const statusBadge = (s) => {
       if (s === 'ip_win') return '<span class="mk-sag-badge mk-sag-win">✓ IP gagnant</span>';
@@ -1496,8 +1566,28 @@
           </div>
         </div>
 
+        <div class="mk-sag-sortbar">
+          <span class="mk-sag-sortbar-lbl">Trier par</span>
+          <button class="mk-sag-sortpill ${sagittaSort==='volume'?'on':''}" onclick="window.mkSetSagittaSort('volume')" title="Volumes secteur OPS+CPR+HP décroissants">Volume secteur</button>
+          <button class="mk-sag-sortpill ${sagittaSort==='ecart_pct'?'on':''}" onclick="window.mkSetSagittaSort('ecart_pct')" title="Écart en pourcentage le plus marqué">Écart %</button>
+          <button class="mk-sag-sortpill ${sagittaSort==='ecart_eur'?'on':''}" onclick="window.mkSetSagittaSort('ecart_eur')" title="Écart en € le plus marqué">Écart €</button>
+          <button class="mk-sag-sortpill ${sagittaSort==='gain'?'on':''}" onclick="window.mkSetSagittaSort('gain')" title="Gagnants IP avec le plus de potentiel CA">Potentiel gain</button>
+          <div class="mk-sag-sortbar-meta" title="Gagnants IP visibles dans la sélection courante">
+            <b>${heroWinsCount}</b> gagnant${heroWinsCount>1?'s':''} IP · <b>${eur(heroWinsCa)}</b> CA secteur
+          </div>
+        </div>
+
         <div class="mk-sag-grid">
-          ${top.length === 0 ? '<div class="mk-empty-search" style="grid-column:1/-1">Aucun résultat avec ce filtre.</div>' : top.map((p, idx) => {
+          ${top.length === 0 ? `
+            <div class="mk-sag-empty" style="grid-column:1/-1">
+              <div class="mk-sag-empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              </div>
+              <div class="mk-sag-empty-title">Aucun produit ne correspond</div>
+              <div class="mk-sag-empty-sub">Essaie un autre filtre, ou tape un nom de produit, labo ou CIP.</div>
+              ${(sagittaSearch || sagittaStatus !== 'all') ? `<button class="mk-sag-empty-reset" onclick="window.mkResetSagitta()">↺ Réinitialiser les filtres</button>` : ''}
+            </div>
+          ` : top.map((p, idx) => {
             const ip = p.prix_ip != null ? eur(p.prix_ip) : '—';
             const sag = p.prix_sagitta != null ? eur(p.prix_sagitta) : '—';
             const ecartCls = p.status === 'ip_win' ? 'mk-sag-ecart-win' : (p.status === 'ip_lose' ? 'mk-sag-ecart-lose' : '');
@@ -1546,7 +1636,7 @@
             `;
           }).join('')}
         </div>
-        ${list.length > 80 ? `<div class="mk-sag-footer">Affichage limité à 80 sur ${list.length} résultats — affine ta recherche</div>` : `<div class="mk-sag-footer">${list.length} produit${list.length>1?'s':''} · tri par volumes secteur OPS+CPR+HP décroissants</div>`}
+        ${list.length > 80 ? `<div class="mk-sag-footer">Affichage limité à 80 sur ${list.length} résultats — affine ta recherche</div>` : `<div class="mk-sag-footer">${list.length} produit${list.length>1?'s':''} · tri ${sagittaSort === 'ecart_pct' ? 'par écart % décroissant' : sagittaSort === 'ecart_eur' ? 'par écart € décroissant' : sagittaSort === 'gain' ? 'par potentiel gain IP' : 'par volumes secteur OPS+CPR+HP'}</div>`}
       </div>
     `;
   }
@@ -1555,6 +1645,17 @@
   // L'appel a renderEdit() etait un no-op silencieux (early-return si pas
   // d'editingSheet). On route vers renderMarketing() qui est le bon contexte.
   window.mkSetSagittaStatus = function (s) { sagittaStatus = s; window.renderMarketing(); };
+  window.mkSetSagittaSort = function (s) {
+    const ok = ['volume', 'ecart_pct', 'ecart_eur', 'gain'];
+    sagittaSort = ok.indexOf(s) >= 0 ? s : 'volume';
+    window.renderMarketing();
+  };
+  window.mkResetSagitta = function () {
+    sagittaStatus = 'all';
+    sagittaSearch = '';
+    sagittaSort   = 'volume';
+    window.renderMarketing();
+  };
   // Debounce 180ms : evite un re-render complet sur chaque keystroke
   // (renderMarketing re-monte la section Top ventes 100 lignes + Sagitta 80 cards).
   const _doSagittaSearch = debounce(function (q) {
@@ -1606,8 +1707,10 @@
     // Recupere image (EAN/CIP7/nom) depuis l'index OFFILOG multi-source
     const found = resolveImage(cip, snap.designation);
     if (found) snap.img = found;
+    const wasEmpty = editingSheet.products.length === 0;
     editingSheet.products.push(snap);
     if (typeof window.showToast === 'function') window.showToast('Ajouté à la fiche ✓', 'success');
+    if (wasEmpty) celebrateFirstProduct();
     renderEdit();
   };
 
@@ -1667,9 +1770,17 @@
           </div>
           <div class="mk-off-footer">${results.length} résultat${results.length>1?'s':''} ${offilogSearch ? `· "${escapeAttr(offilogSearch)}"` : ''}</div>
         ` : (offilogSearch.length >= 2 || offilogUnivers !== 'all') ? `
-          <div class="mk-empty-search">Aucun produit trouvé</div>
+          <div class="mk-empty-search">
+            <span style="font-size:20px;display:block;margin-bottom:4px">🤔</span>
+            Aucun produit parapharmacie ne correspond.<br>
+            <span style="font-size:11px;opacity:.75">Essaie une marque (Mustela, Avène, La Roche-Posay…)</span>
+          </div>
         ` : `
-          <div class="mk-empty-search">Tape 2 lettres ou choisis un univers.</div>
+          <div class="mk-empty-search">
+            <span style="font-size:20px;display:block;margin-bottom:4px">🌿</span>
+            <b>Catalogue parapharmacie</b> — 3 520 références avec images<br>
+            <span style="font-size:11px;opacity:.75">Tape 2 lettres ou clique un univers ci-dessus</span>
+          </div>
         `}
       </div>
     `;
@@ -1707,7 +1818,9 @@
       snap.accroche = '';
       snap.argument = '';
     }
+    const wasEmpty = editingSheet.products.length === 0;
     editingSheet.products.push(snap);
+    if (wasEmpty) celebrateFirstProduct();
     renderEdit();
   };
 
@@ -1786,6 +1899,7 @@
     }
     const b = window.BENCHMARK.find(b => b.cip13 === cip);
     if (b) {
+      const wasEmpty = editingSheet.products.length === 0;
       const snap = snapshotProduct(b);
       // Recupere image automatiquement (OFFILOG par EAN/CIP/nom)
       snap.img = resolveImage(b.cip13, b.designation);
@@ -1794,9 +1908,25 @@
         snap.argument = '';
       }
       editingSheet.products.push(snap);
+      if (wasEmpty) celebrateFirstProduct();
     }
     renderEdit();
   };
+
+  // Confetti CSS-only quand l'utilisateur ajoute son 1er produit dans une fiche vide.
+  // Léger, accessible (respecte prefers-reduced-motion via CSS), zéro dépendance.
+  function celebrateFirstProduct() {
+    try {
+      const wrap = document.createElement('div');
+      wrap.className = 'mk-confetti';
+      wrap.style.cssText = 'position:fixed;left:0;right:0;top:30%;height:0;z-index:9998;pointer-events:none';
+      let inner = '';
+      for (let i = 0; i < 10; i++) inner += '<i></i>';
+      wrap.innerHTML = inner;
+      document.body.appendChild(wrap);
+      setTimeout(() => { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 1500);
+    } catch (e) { /* silencieux */ }
+  }
 
   window.mkRemoveProduct = function (i) {
     editingSheet.products.splice(i, 1);
@@ -1905,9 +2035,12 @@
       return `<button class="mk-pv-stk${on}" onclick="window.mkPreviewSetSticker('${id}')" title="${escapeAttr(label)}">${inner}</button>`;
     };
 
-    const gradIds = ['none'].concat(Object.keys(gradients));
+    // Dedupe — MK_GRADIENTS et MK_STICKERS contiennent déjà 'none' dans leur data
+    const gradKeys = Object.keys(gradients);
+    const stickerKeys = Object.keys(stickers);
+    const gradIds = gradKeys.indexOf('none') >= 0 ? gradKeys : ['none'].concat(gradKeys);
     const fontIds = Object.keys(fonts);
-    const stickerIds = ['none'].concat(Object.keys(stickers));
+    const stickerIds = stickerKeys.indexOf('none') >= 0 ? stickerKeys : ['none'].concat(stickerKeys);
 
     return `
       <div id="mk-preview-toolbar" class="mk-pv-tb">
@@ -2000,6 +2133,16 @@
   window.mkDownloadFromPreview = function () {
     if (window._mkPreviewSheet) generatePDF(window._mkPreviewSheet);
   };
+
+  // Détecte si un preset design correspond à l'état actuel de la fiche.
+  // Sert à activer visuellement la pill "Look prédéfini" courante.
+  function isCurrentDesignPreset(sheet, preset) {
+    if (!sheet || !preset) return false;
+    return (sheet.gradient || 'none') === preset.gradient
+      && (sheet.fontPair || 'default') === preset.fontPair
+      && (sheet.pattern || 'none') === preset.pattern
+      && (sheet.template || 'offre') === preset.template;
+  }
 
   // ── RENDU FICHE (HTML utilisé pour PDF + preview) ───────────
   // ─── Helpers design system (gradient + font + pattern + sticker) ──
