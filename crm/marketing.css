@@ -247,7 +247,7 @@
 /* ── PRODUITS SÉLECTIONNÉS ── */
 .mk-selected-list { display: flex; flex-direction: column; gap: 6px; }
 .mk-sel-row {
-  display: grid; grid-template-columns: 32px 1fr auto auto; align-items: center; gap: 12px;
+  display: grid; grid-template-columns: 32px minmax(0,1fr) auto auto; align-items: center; gap: 12px;
   padding: 10px 12px; background: #F7FAFF; border-radius: 10px;
   transition: background .12s;
 }
@@ -256,16 +256,43 @@
   width: 26px; height: 26px; border-radius: 50%;
   background: var(--blue); color: #fff;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 800;
+  font-size: 11px; font-weight: 800; flex-shrink: 0;
 }
 .mk-sel-info { min-width: 0; }
-.mk-sel-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mk-sel-meta { font-size: 11px; color: var(--text2); font-variant-numeric: tabular-nums; }
-.mk-sel-price {
-  font-size: 14px; font-weight: 800; color: var(--blue);
-  font-variant-numeric: tabular-nums; padding: 0 8px;
+.mk-sel-name {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 2px 4px; border-radius: 4px; outline: none;
+  transition: background .12s;
 }
-.mk-sel-actions { display: flex; gap: 4px; }
+.mk-sel-name:focus { background: #fff; box-shadow: 0 0 0 2px rgba(0,87,255,0.20); white-space: normal; overflow: visible; }
+.mk-sel-meta { font-size: 11px; color: var(--text2); font-variant-numeric: tabular-nums; margin-top: 1px; padding: 0 4px; }
+
+/* Inputs prix editables */
+.mk-sel-prices { display: flex; gap: 8px; align-items: flex-start; }
+.mk-sel-price-field { display: flex; flex-direction: column; gap: 2px; }
+.mk-sel-price-field label {
+  font-size: 9px; letter-spacing: 0.6px; text-transform: uppercase;
+  color: var(--text2); font-weight: 800; padding-left: 2px;
+}
+.mk-price-input {
+  width: 76px; padding: 6px 8px; font-size: 13px; font-weight: 700;
+  font-variant-numeric: tabular-nums; text-align: right;
+  border: 1px solid rgba(60,60,67,0.15); border-radius: 6px;
+  background: #fff; color: var(--text); font-family: inherit;
+  -moz-appearance: textfield;
+}
+.mk-price-input::-webkit-outer-spin-button,
+.mk-price-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mk-price-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,87,255,0.15); }
+.mk-price-input-ip { color: var(--blue); font-weight: 800; border-color: rgba(0,87,255,0.30); }
+
+.mk-sel-actions { display: flex; gap: 4px; flex-shrink: 0; }
+@media (max-width: 600px) {
+  .mk-sel-row { grid-template-columns: 28px minmax(0,1fr) 1fr; gap: 8px; }
+  .mk-sel-actions { grid-column: 1 / -1; justify-content: flex-end; margin-top: 4px; }
+  .mk-price-input { width: 64px; font-size: 12px; }
+}
 
 /* ── MODAL APERÇU ── */
 .mk-modal {
@@ -380,7 +407,6 @@
 }
 
 /* Champs focus (accroche + argument) dans la liste sélectionnée */
-.mk-sel-row { grid-template-columns: 32px 1fr auto auto; }
 .mk-sel-focus-fields {
   grid-column: 1 / -1; margin-top: 8px;
   display: flex; flex-direction: column; gap: 8px;
