@@ -461,14 +461,14 @@
                   <div class="mk-lib-card">
                     <div class="mk-lib-preview" style="background:${cp.bg};color:${cp.accent}">
                       <div class="mk-lib-prev-title">OFFRE IP</div>
-                      <div class="mk-lib-prev-sub">${s.title}</div>
+                      <div class="mk-lib-prev-sub">${escapeAttr(s.title)}</div>
                       <div class="mk-lib-prev-rows">
-                        ${(s.products||[]).slice(0,4).map(p => `<div class="mk-lib-prev-row">${(p.designation||'').slice(0,22)}…</div>`).join('')}
+                        ${(s.products||[]).slice(0,4).map(p => `<div class="mk-lib-prev-row">${escapeAttr((p.designation||'').slice(0,22))}…</div>`).join('')}
                       </div>
                     </div>
                     <div class="mk-lib-meta">
                       <div class="mk-lib-meta-top">
-                        <div class="mk-lib-title">${s.title}</div>
+                        <div class="mk-lib-title">${escapeAttr(s.title)}</div>
                         <div class="mk-lib-date">${date}</div>
                       </div>
                       <div class="mk-lib-count">${(s.products||[]).length} produit${(s.products||[]).length>1?'s':''}</div>

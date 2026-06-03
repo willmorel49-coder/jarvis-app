@@ -130,7 +130,7 @@
   function buildSynthesisBlock(famRows, nbActives, mostUnder) {
     var avgPen = famRows.reduce(function (s, r) { return s + r.penPct; }, 0) / Math.max(1, famRows.length);
     var sub2 = mostUnder ? fmtPct(mostUnder.penPct, 1) + ' · ' + mostUnder.nbHas + '/' + nbActives + ' pharmas achètent' : '—';
-    var sub3 = mostUnder ? fmtNum(mostUnder.nbMiss) + ' clients actifs sans aucun achat · ' + fmtEuro(mostUnder.missCa) + ' de CA déjà fait ailleurs' : '—';
+    var sub3 = mostUnder ? fmtNum(mostUnder.nbMiss) + ' clients actifs sans aucun achat · ' + fmtEuro(mostUnder.missCa) + ' de CA hors cette famille chez eux' : '—';
 
     return '' +
       '<div style="margin-bottom:22px">' +
@@ -376,7 +376,7 @@
             '<div style="font-size:10px;color:#94A3B8;margin-top:2px">' + fmtPct(penActivesPct, 1) + ' de mes actives</div>' +
           '</div>' +
           '<div style="text-align:right">' +
-            '<div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Sur 1027</div>' +
+            '<div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748B;font-weight:800">Sur ' + fmtNum(totalTerritoire) + '</div>' +
             '<div style="font-size:15px;font-weight:800;color:#0B1F4D;font-variant-numeric:tabular-nums">' + fmtPct(penPct, 1) + '</div>' +
             '<div style="font-size:10px;color:#94A3B8">' + r.nbHas + ' / ' + totalTerritoire + '</div>' +
           '</div>' +

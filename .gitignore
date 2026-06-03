@@ -1,12 +1,96 @@
+# ═══════════════════════════════════════════════
+# JARVIS APP — .gitignore (hardened 2026-06-03)
+# ═══════════════════════════════════════════════
+
+# ── OS / éditeur ─────────────────────────────
 .DS_Store
 *.log
-.env
+.vscode/
+.idea/
 
-# Robot-Memory snippet
-ROBOT.local.md
-CLAUDE.local.md
+# ── Secrets & env ────────────────────────────
+.env
 .env.local
 .env.*.local
+.env.*
+*.pem
+*.key
+*.cert
+*.p12
+secrets/
+secret*
+credentials*
+tokens.json
+tokens*.json
+*-credentials.json
+service_role*
+SERVICE_ROLE*
+
+# ── Robot-Memory / Claude locale ─────────────
+ROBOT.local.md
+CLAUDE.local.md
 .claude/cache/
 .claude/.tmp/
 .superpowers/
+
+# ── Caches scrapers / API externes ───────────
+cache_*.json
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# ── Fichiers temporaires Office ──────────────
+~$*.xlsx
+~$*.xls
+~$*.docx
+~$*.pptx
+
+# ── Données client SENSIBLES (RGPD pharmacies/dirigeants) ──
+# Ne JAMAIS pousser ces sources brutes : elles contiennent
+# nom, adresse, email, tel, contact pharmacien (= données perso RGPD)
+CRM INTEGRAL PHARMA.csv
+BASE DE DONNÉE IP WM.xlsx
+LIVRET CLIENTS*.pdf
+cache_societe.json
+cache_sirene.json
+cache_panorama.json
+cache_agents.json
+cache_sites.json
+cache_labodata.json
+
+# ── Sorties scrapers volumineuses ────────────
+output/
+bestsellers_offilog.json
+bestsellers_offilog.xlsx
+offilog_live.json
+offilog_live.xlsx
+leclerc_prices.json
+benchmark_apothical_*.xlsx
+benchmark_drakkars.xlsx
+benchmark_cap3000.xlsx
+images_by_ean.json
+images_cap3000.json
+images_drakkars.json
+
+# ── Excel mois (sources WML/Ameli, données fournisseurs) ──
+WML_*.xlsx
+2025-*medic-am*.xlsx
+2026-*medic-am*.xlsx
+ventes*.xlsx
+stock*.xlsx
+TOP*.xlsx
+Phie*.xlsx
+
+# ── Node (si build step ajouté plus tard) ────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ── Build artefacts ──────────────────────────
+dist/
+build/
+.cache/
