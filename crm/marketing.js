@@ -400,6 +400,7 @@
   let editTab = 'season';    // 'season' | 'cat' | 'custom'
   let productSearch = '';
   let statsFamille = 'top';  // 'top' | 'Froid' | 'Biosimilaires' | 'Génériques' | 'Gén. partenaires' | 'Non remboursés' | 'Princeps'
+  let statsTranche = 'all';  // 'all' | 'petit' (≤4.33€) | 'inter' (4.33-468€) | 'haut' (>468€)
   let selectedSheetIds = new Set();  // selection multi-fiches pour export PDF combine
 
   // ── TOP VENTES OPS+CPR+HP par famille IP ───────────────────────────────
@@ -454,6 +455,10 @@
     fused.forEach(function (prod) {
       var fam = familleFromAttrsLocal(prod.nature, prod.afmcode, prod.sousfamille);
       prod.famille = fam;
+      // Prix unitaire moyen secteur (ca/qte) -> permet classification tranche IP
+      prod.prixUnit = prod.qte > 0 ? prod.ca / prod.qte : 0;
+      // Tranches officielles IP : 'petit' <= 4.33 EUR · 'inter' 4.33-468 EUR · 'haut' >468 EUR
+      prod.tranche = prod.prixUnit <= 4.33 ? 'petit' : (prod.prixUnit <= 468 ? 'inter' : 'haut');
       byFam[fam].push(prod);
       all.push(prod);
     });
@@ -462,6 +467,11 @@
     all.sort(sortFn);
     __topVentesCache = { byFamille: byFam, top: all };
     return __topVentesCache;
+  }
+  // Filtre tranche prix sur une liste pre-triee (preserve l'ordre CA)
+  function filterByTranche(list, tranche) {
+    if (!tranche || tranche === 'all') return list;
+    return list.filter(function (p) { return p.tranche === tranche; });
   }
 
   // Ajoute un produit a la fiche en cours (ou cree une nouvelle fiche custom)
@@ -510,6 +520,10 @@
   };
   window.mkSetStatsFamille = function (id) {
     statsFamille = id;
+    window.renderMarketing();
+  };
+  window.mkSetStatsTranche = function (id) {
+    statsTranche = id;
     window.renderMarketing();
   };
 
@@ -586,10 +600,17 @@
 
         ${(window.OPS_AGGREGATE || window.CPR_AGGREGATE || window.HP_AGGREGATE) ? (function() {
           const ventes = computeTopVentesOpsCprHp();
-          const pills = ['top'].concat(FAMILLES_IP);
-          const list = statsFamille === 'top' ? ventes.top : (ventes.byFamille[statsFamille] || []);
-          const top12 = list.slice(0, 12);
-          const totalCa = top12.reduce(function (s, p) { return s + p.ca; }, 0);
+          const famillePills = ['top'].concat(FAMILLES_IP);
+          const tranchePills = [
+            { id: 'all',   label: 'Toutes tranches',           sub: '' },
+            { id: 'petit', label: 'Petit prix',                sub: '≤ 4,33 €' },
+            { id: 'inter', label: 'Intermédiaire',             sub: '4,33 – 468 €' },
+            { id: 'haut',  label: 'Haut prix',                 sub: '> 468 €' },
+          ];
+          const baseList = statsFamille === 'top' ? ventes.top : (ventes.byFamille[statsFamille] || []);
+          const list = filterByTranche(baseList, statsTranche);
+          const top100 = list.slice(0, 100);
+          const totalCa = top100.reduce(function (s, p) { return s + p.ca; }, 0);
           return `
             <div class="mk-section mk-section-stats">
               <div class="mk-section-head">
@@ -598,16 +619,28 @@
                   <div class="mk-section-sub">Choisis les produits qui cartonnent dans le marché pharma · click <b>+</b> pour ajouter à la fiche</div>
                 </div>
               </div>
+              <div class="mk-stats-filters-label">Famille IP</div>
               <div class="mk-stats-pills">
-                ${pills.map(p => `
+                ${famillePills.map(p => `
                   <button class="mk-stats-pill ${statsFamille===p?'on':''}"
                     style="${statsFamille===p && p!=='top' ? 'background:'+FAMILLE_TINTS[p]+';color:#fff;border-color:'+FAMILLE_TINTS[p]+';' : ''}"
                     onclick="window.mkSetStatsFamille('${p}')">${p === 'top' ? '⭐ Top global' : escapeAttr(p)}</button>
                 `).join('')}
               </div>
-              <div class="mk-stats-list">
-                ${top12.map((p, i) => {
+              <div class="mk-stats-filters-label">Tranche prix IP <span class="mk-stats-filters-hint">· tarification officielle</span></div>
+              <div class="mk-stats-pills mk-stats-pills-tranches">
+                ${tranchePills.map(t => `
+                  <button class="mk-stats-pill mk-stats-pill-tranche ${statsTranche===t.id?'on':''}"
+                    onclick="window.mkSetStatsTranche('${t.id}')">
+                    <span>${escapeAttr(t.label)}</span>
+                    ${t.sub ? `<span class="mk-stats-pill-sub">${escapeAttr(t.sub)}</span>` : ''}
+                  </button>
+                `).join('')}
+              </div>
+              <div class="mk-stats-list mk-stats-list-scroll">
+                ${top100.map((p, i) => {
                   const famColor = FAMILLE_TINTS[p.famille] || '#0057FF';
+                  const trancheLabel = p.tranche === 'petit' ? '≤ 4,33€' : p.tranche === 'inter' ? '4,33 – 468€' : '> 468€';
                   return `
                     <div class="mk-stats-row">
                       <div class="mk-stats-rank" style="background:${famColor}">${i + 1}</div>
@@ -617,6 +650,7 @@
                           <span style="color:${famColor};font-weight:700">${escapeAttr(p.famille)}</span>
                           <span>· ${escapeAttr(p.marque || '—')}</span>
                           <span>· CIP ${escapeAttr(p.artcode)}</span>
+                          <span class="mk-stats-tranche-chip">${trancheLabel} · PU ${eur(p.prixUnit)}</span>
                         </div>
                       </div>
                       <div class="mk-stats-kpi">
@@ -627,9 +661,9 @@
                     </div>
                   `;
                 }).join('')}
-                ${list.length === 0 ? `<div class="mk-empty" style="padding:20px;text-align:center;color:#8E8E93">Aucune vente dans cette catégorie</div>` : ''}
+                ${list.length === 0 ? `<div class="mk-empty" style="padding:20px;text-align:center;color:#8E8E93">Aucune vente dans cette combinaison famille / tranche</div>` : ''}
               </div>
-              <div class="mk-stats-footer">${top12.length} produits affichés sur ${list.length} · CA secteur cumulé top 12 : <b>${eur(totalCa)}</b></div>
+              <div class="mk-stats-footer">${top100.length} produits affichés sur ${list.length} · CA secteur cumulé top 100 : <b>${eur(totalCa)}</b></div>
             </div>
           `;
         })() : `
