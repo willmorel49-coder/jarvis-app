@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '?v=20260603i';
+  var VERSION = '?v=20260603j';
 
   // Mapping page -> scripts à charger à la demande
   var LAZY_BUNDLES = {
@@ -165,21 +165,17 @@
     }, { passive: true, capture: true });
   }
 
-  // Preload en idle (apres dashboard pret) : benchmark d'abord (plus consulté),
-  // puis offilog en second.
-  function idlePreload() {
-    var schedule = window.requestIdleCallback
-      ? function (fn, timeout) { window.requestIdleCallback(fn, { timeout: timeout || 4000 }); }
-      : function (fn, timeout) { setTimeout(fn, timeout || 3000); };
-
-    schedule(function () { loadBundle('benchmark'); }, 4000);
-    schedule(function () { loadBundle('offilog'); }, 8000);
-  }
+  // Preload idle DESACTIVE : preloader 17 MB en arriere-plan saturait la RAM
+  // (Will : 'a fait planter mon ordi'). Maintenant les bundles ne se chargent que :
+  //   1. au clic sur l'onglet correspondant (loadBundle dans navigate wrapper)
+  //   2. au hover/touch sur le tab (attachHoverPreload, retire si trop agressif)
+  // L'experience reste fluide : le chargement prend 1-2s a la 1ere ouverture
+  // d'onglet, puis instant (cache loaded set).
 
   function init() {
     waitForNavigate();
     attachHoverPreload();
-    idlePreload();
+    // Pas de idlePreload — voir commentaire ci-dessus
   }
 
   if (document.readyState === 'loading') {
