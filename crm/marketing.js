@@ -537,34 +537,29 @@
     if (__planning30CacheGr) return __planning30CacheGr;
     const planning = getMonthPlanning(monthsAhead || 12);
     const seen = new Set();
-    // Pool fallback = top vendeurs secteur OPS+CPR+HP (toutes pathologies confondues).
-    // Sert a completer les mois ou le pool saisonnier est sature par les dedup.
-    let fallbackPool = [];
-    try {
-      const v = computeTopVentesOpsCprHp();
-      const salesIdx = (typeof buildSalesByEan === 'function') ? buildSalesByEan() : null;
-      // Adapte la structure : on a besoin de cip13, designation, _sec_qte, _sec_ca
-      fallbackPool = (v.top || []).map(p => {
-        // Cherche le BENCHMARK correspondant pour avoir prix_ip
-        const b = (window.BENCHMARK || []).find(x => String(x.cip13) === String(p.ean) || String(x.cip13) === String(p.artcode));
-        if (!b || !b.prix_ip) return null;
+    // Pool fallback = TOP BENCHMARK par ip_qty desc (vrais bestsellers IP
+    // grossiste). Source robuste : BENCHMARK est obligatoirement charge sur
+    // la page marketing, pas de dependance fragile a OPS_AGGREGATE.
+    const salesIdx = (typeof buildSalesByEan === 'function') ? buildSalesByEan() : null;
+    const fallbackPool = (window.BENCHMARK || [])
+      .filter(b => b.prix_ip > 0 && b.cip13)
+      .sort((a, b) => (b.ip_qty || 0) - (a.ip_qty || 0))
+      .slice(0, 500)
+      .map(b => {
         const sales = salesIdx ? (salesIdx.get(String(b.cip13)) || { qte: 0, ca: 0 }) : { qte: 0, ca: 0 };
         b._sec_qte = sales.qte;
         b._sec_ca = sales.ca;
         return b;
-      }).filter(Boolean);
-    } catch (e) { /* fallback ok meme vide */ }
+      });
 
     const out = planning.map(m => {
       const pool = themeProducts(m.theme);
       const unique = pool.filter(p => !seen.has(String(p.cip13)));
       let top30 = unique.slice(0, 30);
       let completedFromFallback = 0;
-      // Completion : si on a moins de 30 produits, on pioche dans le fallback
-      // marche (top vendeurs OPS+CPR+HP) en evitant les deja vus.
       if (top30.length < 30 && fallbackPool.length) {
-        for (const p of fallbackPool) {
-          if (top30.length >= 30) break;
+        for (let i = 0; i < fallbackPool.length && top30.length < 30; i++) {
+          const p = fallbackPool[i];
           const key = String(p.cip13);
           if (seen.has(key)) continue;
           if (top30.find(x => String(x.cip13) === key)) continue;
