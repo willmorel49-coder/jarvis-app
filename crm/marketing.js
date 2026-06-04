@@ -107,8 +107,13 @@
     { id: 'allergies', name: 'Allergies printemps', months: [3,4,5], emoji: '🌿', color: 'mint',
       filter: b => b.atc2 === 'R06' || b.atc2 === 'D04' || b.atc2 === 'R01'
         || /CETIRIZIN|LORATADIN|DESLORATADIN|FEXOFEN|EBASTINE|RUPATADINE|BILASTINE|MIZOLAST|AERIUS|TELFAST|XYZALL|WYSTAMM|ZYRTEC|VIRLIX|MEQUITAZ|PRIMALAN|POLARAMINE|CLARITYNE|DEXCHLORPHEN|HYDROXYZIN|ATARAX|KESTIN|XYZA|HISTA/i.test(b.designation) },
-    { id: 'solaire', name: 'Soins solaires & insectes', months: [5,6,7,8], emoji: '☀️', color: 'amber',
-      filter: b => /SOLAIRE|UVA|UVB|\bSPF\b|APRES.SOLEIL|COUP DE SOLEIL|MOUSTIQ|REPULSI|INSECT|PIQUR|BIAFINE|PHOTODERM|ANTHELIOS|CAPITAL SOLEIL|MEXORYL|CICAPLAST|CICALFATE|BEPANTHEN|DEXERYL|HOMEOPLASMIN|OCTOCRYL|TETRALYSAL|DIHYDRAL|HYDROCORT|DERMOCORT|CALMINE|APAISYL|EURAX|FENISTIL|BUTIX|ZINEXOL|DERMOSOIN|BURNESHIELD/i.test(b.designation) },
+    { id: 'solaire', name: 'Été · brûlures, piqûres, hydratation', months: [5,6,7,8], emoji: '☀️', color: 'amber',
+      // Été pharmacie : pas que solaire IP (peu present en grossiste) mais
+      // tout ce que pharmacien dispense l'ete : brulures, piqures, allergies
+      // cutanees, deshydratation, traveler kit, antalgiques + collyres + dermo
+      filter: b => b.atc2 === 'D06' || b.atc2 === 'D07' || b.atc2 === 'D08'
+        || b.atc2 === 'R03' || b.atc2 === 'S01'
+        || /SOLAIRE|UVA|UVB|\bSPF\b|APRES.SOLEIL|COUP DE SOLEIL|MOUSTIQ|REPULSI|INSECT|PIQUR|BIAFINE|PHOTODERM|ANTHELIOS|CAPITAL SOLEIL|MEXORYL|CICAPLAST|CICALFATE|BEPANTHEN|DEXERYL|HOMEOPLASMIN|OCTOCRYL|TETRALYSAL|DIHYDRAL|HYDROCORT|DERMOCORT|CALMINE|APAISYL|EURAX|FENISTIL|BUTIX|ZINEXOL|DERMOSOIN|BURNESHIELD|DERMOFENAC|CETAVLON|BISEPTINE|HEXOMEDINE|CHLORHEXIDIN|MERCRYL|BETADINE|MERFENE|HEXAMIDINE|DAKIN|CYTEAL|EOSINE|MILIAN|TOUSEC|TROLAMINE|DOLOPRANE|HEMOCLAR|HIRUDOID|LIOTON|VOLTAREN|DICLOFENAC|KETOPROFEN|FLECTOR|FASTUM|ALGESAL|TRAUMEEL|ARNICA|NICOFLEX|ALGIPAN|BAUME ST BERN|PIOFAR|PRYSE|MITOSYL|NIVEA SUN|PHYTOSUN|PRORHINEL|RHINEDRINE|STERIMAR|PHYSIOMER|HUMER|PHYSIODOSE|SERUM PHYSIO|DACRYO|DACRYUM|DACRYNES|ALLERG|HISTA|PIRITON|CETIRIZ|LORATAD|DESLORATAD|FEXOFEN|EBASTINE|BILASTINE|MIZOLAST|RUPATADINE|XYZALL|AERIUS|TELFAST|VIRLIX|ZYRTEC|REACTINE|KESTIN|MEQUITAZ|PRIMALAN|POLARAMINE|ATARAX|HYDROXYZINE|PROCTOLOG|HEMOROIDE|SEDORRHOIDE|VEINOTONIQUE|DAFLON|GINKOR|VEINOPHYL|SMECTA|PHLOROGLUC|SPASFON|MEBEVERIN|DEBRIDAT|TUSSIPAX|TUSSIDANE|TOPLEXIL|CLARIX|EUVANOL|RHINOSPRAY|ATURGYL|DECONGEST|GIFRER|DOLIPRANE|EFFERALGAN|DAFALGAN|CLARADOL|PARACETAMOL|IBUPROFENE|ADVIL|NUROFEN|ANTARENE|UPFEN|OTOCALMINE|CERULYSE|OPHTHALMOSEPTONEX|CORICIDE|VERRUMAL|DURYL|MYCOSE|GYNO|ECONAZOLE|FLUCONAZOLE|MYCOSTER|PEVARYL|MYK|LAMISIL|TERBINAFIN|KETOCONAZOLE|CICATRICE|GEL ARNICA|CRYO|MAGNESIA|MICROLAX|NORMACOL|TRANSIPEG|FORLAX|MOVICOL|MUCIVITAL|DULCOLAX|JAMYLENE|HYDRA|ACTISOUF|GAVISCON|MAALOX|RENNIE|MOXYDAR|PHOSPHALUGEL|SARGENOR|MAGNE ?B6|VITASCORB|TOPLEXIL/i.test(b.designation) },
     { id: 'immunite', name: 'Rentrée immunité', months: [9,10], emoji: '🛡️', color: 'sky',
       filter: b => b.atc2 === 'A11' || b.atc2 === 'A12'
         || /VITAM|MAGNES|PROBIO|DEFENSE|IMMUNI|\bZINC\b|GINSENG|GUARANA|ECHINAC|PROPOLIS|ACEROLA|GELEE ROYALE|OLIGO|BEROCCA|SUPRADYN|ELEVIT|CHOLECALCI|VIT D|VIT C|VITAMINE D|VITAMINE C|ZYMA|UVEDOSE|STERO|ADRIGYL|CACIT|OROCAL|ORTHOSIPHON|FERRO|FERTIL|ALVITYL|JUVAMINE|FORCAPIL|MAGNESIUM|FERVEX|MERCALM|VITASCORBOL|FERROSTRAN|RHODIOLA|ASHWAGAND/i.test(b.designation) },
@@ -158,6 +163,88 @@
     // Theme COMPOSITE = fusion de tous les themes actifs du mois courant.
     const m = new Date().getMonth() + 1;
     return getCompositeThemeForMonth(m);
+  }
+
+  // Filtre OFFILOG par theme saisonnier (parapharma uniquement, distinct du
+  // canal grossiste IP). Patterns dedies axes parapharma OTC + cosmetique.
+  function offilogFilterForTheme(themeId, designation, univers) {
+    const txt = ((designation || '') + ' ' + (univers || '')).toLowerCase();
+    if (themeId === 'allergies' || (themeId && themeId.indexOf('__month_') === 0 && /allerg/i.test(themeId))) {
+      return /allerg|cetiriz|loratad|histamin|pollen|conjoncti/.test(txt);
+    }
+    if (themeId === 'solaire')   return /solair|spf|uva|uvb|sun |sun$|apres.soleil|moustiq|repuls|insec|piqur|biafine|photoderm|anti.moustique|anti.solaire/.test(txt);
+    if (themeId === 'immunite')  return /vitamin|magnes|probio|defense|immuni|\bzinc\b|ginseng|guarana|echinac|propolis|acerola|gelee royale|oligo|berocca|supradyn|elevit|cholecal|complement|fer|spiruline|rhodiola|ashwagand/.test(txt);
+    if (themeId === 'grippe')    return /grippe|antivir|vitamine c|paracetamol|ibuprofen|doliprane|advil|nurofen/.test(txt);
+    if (themeId === 'rhume')     return /rhume|toux|rhino|nasal|pastil|fervex|humex|actifed|dolirhume|strepsil|drill|angin|fluidif|expector|vicks|maxilase|hextril|hexaspray|sterimar|physiomer|baume|propol|euvanol|spray nasal|sirop|gorge|pastille/.test(txt);
+    if (themeId === 'gastro')    return /gastro|diarrh|smecta|tiorfan|loperam|imodium|ultra.levure|charbon|probiotique|electrolyt|adiaril|rehydr|antinauseu|nausee|crampe|spasm/.test(txt);
+    return false;
+  }
+
+  // Theme composite OFFILOG : meme principe que getCompositeThemeForMonth
+  // mais filter() chasse dans OFFILOG (canal parapharma).
+  function getCompositeOffilogThemeForMonth(month) {
+    const active = SEASON_THEMES.filter(t => t.months.includes(month));
+    if (!active.length) return null;
+    if (active.length === 1) {
+      return {
+        id: '__off_month_' + month,
+        name: active[0].name,
+        emoji: active[0].emoji,
+        color: active[0].color,
+        _themes: active,
+      };
+    }
+    return {
+      id: '__off_month_' + month,
+      name: active.map(t => t.name).join(' + '),
+      emoji: active[0].emoji,
+      color: active[0].color,
+      _themes: active,
+    };
+  }
+
+  // Top OFFILOG saisonnier : filtre + tri par rang vente decroissant
+  // (rang_vente = ranking OFFILOG officiel des ventes parapharma)
+  let __offSeasonCache = null;
+  function themeProductsOffilog(theme) {
+    if (!window.OFFILOG) return [];
+    if (!theme) return [];
+    const cacheKey = theme.id;
+    if (__offSeasonCache && __offSeasonCache[cacheKey]) return __offSeasonCache[cacheKey];
+    const themes = theme._themes || [theme];
+    const list = window.OFFILOG
+      .filter(o => o.dans_offilog && o.prix_offilog > 0)
+      .filter(o => themes.some(t => offilogFilterForTheme(t.id, o.produit, o.univers)));
+    // Tri par rang_vente croissant (1 = meilleure vente). rang_vente null = mauvais rang.
+    list.sort((a, b) => {
+      const ra = a.rang_vente || 99999;
+      const rb = b.rang_vente || 99999;
+      if (ra !== rb) return ra - rb;
+      // Fallback : prix_offilog desc (gros prix = plus de marge)
+      return (b.prix_offilog || 0) - (a.prix_offilog || 0);
+    });
+    if (!__offSeasonCache) __offSeasonCache = {};
+    __offSeasonCache[cacheKey] = list;
+    return list;
+  }
+
+  // Planning OFFILOG : pour chaque mois, retourne le composite OFFILOG
+  function getOffilogPlanning(monthsAhead) {
+    const now = new Date();
+    const out = [];
+    for (let i = 0; i <= monthsAhead; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const month = d.getMonth() + 1;
+      const theme = getCompositeOffilogThemeForMonth(month);
+      out.push({
+        offset: i,
+        date: d,
+        monthName: d.toLocaleDateString('fr-FR', { month: 'long' }),
+        monthLabel: d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }),
+        theme: theme,
+      });
+    }
+    return out;
   }
 
   // Construit un theme COMPOSITE pour un mois donne : fusion des regex de
@@ -528,6 +615,7 @@
   let statsFamille = 'top';  // 'top' | 'Froid' | 'Biosimilaires' | 'Génériques' | 'Gén. partenaires' | 'Non remboursés' | 'Princeps'
   let statsTranche = 'all';  // 'all' | 'petit' (≤4.33€) | 'inter' (4.33-468€) | 'haut' (>468€)
   let statsCatalogue = 'all';// 'all' | 'integral' | 'itp'
+  let mkPage = 'grossiste';  // 'grossiste' (IP / canal grossiste) | 'offilog' (parapharma direct labo)
   let sagittaStatus = 'all'; // 'all' | 'ip_win' | 'ip_lose' | 'no_ip'
   let sagittaSearch = '';
   let sagittaSort   = 'volume'; // 'volume' | 'ecart_pct' | 'ecart_eur' | 'gain'
@@ -744,9 +832,45 @@
     renderEdit();
   };
 
+  window.mkSetPage = function (id) {
+    if (id !== 'grossiste' && id !== 'offilog') return;
+    mkPage = id;
+    window.renderMarketing();
+    // Scroll en haut de la page apres switch de tab
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+  };
+
+  function renderPageTabs() {
+    return `
+      <div class="mk-pagetabs">
+        <button class="mk-pagetab ${mkPage==='grossiste'?'on':''}" onclick="window.mkSetPage('grossiste')">
+          <span class="mk-pagetab-emoji">💊</span>
+          <div class="mk-pagetab-text">
+            <div class="mk-pagetab-title">Grossiste IP</div>
+            <div class="mk-pagetab-sub">Catalogue médicaments · CIP · marché OPS+CPR+HP</div>
+          </div>
+        </button>
+        <button class="mk-pagetab ${mkPage==='offilog'?'on':''}" onclick="window.mkSetPage('offilog')">
+          <span class="mk-pagetab-emoji">🧴</span>
+          <div class="mk-pagetab-text">
+            <div class="mk-pagetab-title">Parapharma OFFILOG</div>
+            <div class="mk-pagetab-sub">Direct labo · EAN · 3 520 réfs + 2 242 images</div>
+          </div>
+        </button>
+      </div>
+    `;
+  }
+
   window.renderMarketing = function () {
     const root = getRoot();
     if (!root) return;
+    if (mkPage === 'offilog') {
+      return renderMarketingOffilog(root);
+    }
+    return renderMarketingGrossiste(root);
+  };
+
+  function renderMarketingGrossiste(root) {
     const sheets = loadSheets();
     const suggested = getCurrentSeasonTheme();
     const ipOffers = getIpOffers();
@@ -759,6 +883,7 @@
 
     root.innerHTML = `
       <div class="mk-wrap">
+        ${renderPageTabs()}
         <div class="mk-hero mk-hero-month">
           <div class="mk-hero-main">
             <div class="mk-hero-left">
@@ -1085,6 +1210,205 @@
         </div>
       </div>
     `;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // PAGE OFFILOG — Parapharma direct labo (canal distinct du grossiste)
+  // ═══════════════════════════════════════════════════════════════════════
+  function renderMarketingOffilog(root) {
+    if (!window.OFFILOG) {
+      root.innerHTML = `
+        <div class="mk-wrap">
+          ${renderPageTabs()}
+          <div class="mk-section" style="text-align:center;padding:60px 20px;color:#64748B">
+            Chargement du catalogue OFFILOG… (3 520 références)
+          </div>
+        </div>
+      `;
+      return;
+    }
+    const monthIdx = new Date().getMonth() + 1;
+    const suggestedOff = getCompositeOffilogThemeForMonth(monthIdx);
+    const monthList = suggestedOff ? themeProductsOffilog(suggestedOff) : [];
+    const top5 = monthList.slice(0, 5);
+    const top20 = monthList.slice(0, 20);
+    const totalTop20Off = top20.reduce((s, o) => s + (o.prix_offilog || 0), 0);
+    const monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
+    const planning = getOffilogPlanning(12);
+    // Univers OFFILOG (Solaires, Capillaire, Dermo…) avec count
+    const universes = {};
+    window.OFFILOG.forEach(o => {
+      if (!o.dans_offilog || !o.prix_offilog) return;
+      const u = (o.univers || 'Autres').trim() || 'Autres';
+      if (u === 'Non classé' || u === '') return;
+      universes[u] = (universes[u] || 0) + 1;
+    });
+    const topUniverses = Object.entries(universes).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+    root.innerHTML = `
+      <div class="mk-wrap">
+        ${renderPageTabs()}
+
+        <div class="mk-hero mk-hero-month mk-hero-offilog">
+          <div class="mk-hero-main">
+            <div class="mk-hero-left">
+              <div class="mk-hero-emoji">${suggestedOff ? suggestedOff.emoji : '🧴'}</div>
+              <div>
+                <div class="mk-hero-eyebrow">Parapharma OFFILOG · ${monthName}</div>
+                <div class="mk-hero-title">${suggestedOff ? escapeAttr(suggestedOff.name) : 'Aucune saison active'}</div>
+                <div class="mk-hero-sub">${monthList.length} références OFFILOG triées par <b>rang de vente parapharma</b> · top 20 = ${eur(totalTop20Off)} prix Offilog cumulé</div>
+              </div>
+            </div>
+          </div>
+          ${top5.length ? `
+            <div class="mk-hero-stats">
+              <div class="mk-hero-top" style="grid-column:1/-1">
+                <div class="mk-hero-top-lbl">Top 5 parapharma ${monthName}</div>
+                <div class="mk-hero-top-list">
+                  ${top5.map((o, i) => `
+                    <div class="mk-hero-top-row">
+                      <span class="mk-hero-top-rank">#${i+1}</span>
+                      <span class="mk-hero-top-name" title="${escapeAttr((o.produit||'').replace(/&amp;/g,'&'))}">${escapeAttr(((o.produit||'').replace(/&amp;/g,'&')).slice(0, 60))}</span>
+                      <span class="mk-hero-top-qte">${eur(o.prix_offilog)}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="mk-section-planning">
+          <div class="mk-section-head">
+            <div>
+              <div class="mk-section-title">📅 Planning OFFILOG · top 20 parapharma par mois</div>
+              <div class="mk-section-sub">Mois courant + 12 à venir · ventes parapharma OFFILOG · click pour préparer la fiche</div>
+            </div>
+          </div>
+          <div class="mk-planning-grid">
+            ${planning.map(m => {
+              const list = m.theme ? themeProductsOffilog(m.theme) : [];
+              const top5p = list.slice(0, 5);
+              const isNow = m.offset === 0;
+              const isNext = m.offset === 1;
+              const cardClass = isNow ? 'mk-month-card-now' : (isNext ? 'mk-month-card-next' : '');
+              const pinClass = isNow ? '' : (isNext ? 'mk-month-card-pin-next' : '');
+              const pinTxt = isNow ? 'CE MOIS' : (isNext ? 'MOIS +1' : (m.offset === 12 ? 'N+1' : ''));
+              if (!m.theme) {
+                return `
+                  <div class="mk-month-card ${cardClass}">
+                    <div class="mk-month-card-eyebrow">
+                      <span>${escapeAttr(m.monthLabel)}</span>
+                      ${pinTxt ? `<span class="mk-month-card-pin ${pinClass}">${pinTxt}</span>` : ''}
+                    </div>
+                    <div class="mk-month-card-month">⚪ ${escapeAttr(m.monthName)}</div>
+                    <div class="mk-month-card-theme">Hors saison parapharma</div>
+                    <div class="mk-month-card-meta">Aucune patho saisonnière dominante</div>
+                  </div>
+                `;
+              }
+              return `
+                <div class="mk-month-card ${cardClass}">
+                  <div class="mk-month-card-eyebrow">
+                    <span>${escapeAttr(m.monthLabel)}</span>
+                    ${pinTxt ? `<span class="mk-month-card-pin ${pinClass}">${pinTxt}</span>` : ''}
+                  </div>
+                  <div class="mk-month-card-month">
+                    <span class="mk-month-card-emoji">${m.theme.emoji}</span>
+                    ${escapeAttr(m.monthName)}
+                  </div>
+                  <div class="mk-month-card-theme">${escapeAttr(m.theme.name)}</div>
+                  <div class="mk-month-card-meta">${list.length} parapharma · top 20 disponible</div>
+                  ${top5p.length ? `
+                    <div class="mk-month-card-top5">
+                      ${top5p.map((o, i) => `
+                        <div class="mk-month-card-top5-row">
+                          <span class="mk-month-card-top-rank">#${i+1}</span>
+                          <span class="mk-month-card-top5-name" title="${escapeAttr((o.produit||'').replace(/&amp;/g,'&'))}">${escapeAttr(((o.produit||'').replace(/&amp;/g,'&')).slice(0, 28))}${(o.produit||'').length > 28 ? '…' : ''}</span>
+                          <span class="mk-month-card-top5-qte">${eur(o.prix_offilog)}</span>
+                        </div>
+                      `).join('')}
+                      ${list.length > 5 ? `<div class="mk-month-card-more">+ ${Math.min(15, list.length - 5)} autres dans le top 20</div>` : ''}
+                    </div>
+                  ` : ''}
+                  <button class="mk-month-card-cta" onclick="window.mkStartOffilogMonth(${m.offset})">
+                    Créer la fiche top 20 →
+                  </button>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <div class="mk-section">
+          <div class="mk-section-head">
+            <div>
+              <div class="mk-section-title">📦 Top 20 OFFILOG par univers</div>
+              <div class="mk-section-sub">Catégories parapharma classées par nombre de références</div>
+            </div>
+          </div>
+          <div class="mk-off-univers-grid">
+            ${topUniverses.map(([u, count]) => `
+              <button class="mk-off-univers-card" onclick="window.mkStartOffilogUnivers('${escapeAttr(u).replace(/'/g, '&#39;')}')">
+                <div class="mk-off-univers-name">${escapeAttr(u)}</div>
+                <div class="mk-off-univers-count">${count} réfs</div>
+                <div class="mk-off-univers-cta">Voir top 20 →</div>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Cree une fiche OFFILOG depuis le planning d'un mois donne
+  window.mkStartOffilogMonth = function (offset) {
+    const d = new Date();
+    d.setMonth(d.getMonth() + (offset || 0));
+    const month = d.getMonth() + 1;
+    const theme = getCompositeOffilogThemeForMonth(month);
+    if (!theme) {
+      if (typeof window.showToast === 'function') window.showToast('Aucune saison parapharma sur ce mois', 'info');
+      return;
+    }
+    const list = themeProductsOffilog(theme).slice(0, 20);
+    editingSheet = {
+      id: 'mk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      title: 'OFFILOG ' + theme.name + ' — ' + d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+      theme: 'custom',
+      color: 'amber',
+      footer: 'Tarifs OFFILOG ' + d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+      template: 'offre',
+      products: list.map(snapshotOffilogProduct),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    renderEdit();
+  };
+
+  // Cree une fiche OFFILOG depuis un univers (Solaires, Capillaire…)
+  window.mkStartOffilogUnivers = function (univers) {
+    if (!window.OFFILOG) return;
+    const list = window.OFFILOG
+      .filter(o => o.dans_offilog && o.prix_offilog > 0 && (o.univers || '').trim() === univers)
+      .sort((a, b) => (a.rang_vente || 99999) - (b.rang_vente || 99999))
+      .slice(0, 20);
+    if (!list.length) {
+      if (typeof window.showToast === 'function') window.showToast('Univers vide', 'info');
+      return;
+    }
+    editingSheet = {
+      id: 'mk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      title: 'OFFILOG · ' + univers,
+      theme: 'custom',
+      color: 'amber',
+      footer: 'Tarifs OFFILOG ' + new Date().getFullYear(),
+      template: 'offre',
+      products: list.map(snapshotOffilogProduct),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    renderEdit();
   };
 
   window.mkSetTab = function (tab) {
