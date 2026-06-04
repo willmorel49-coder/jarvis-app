@@ -69,15 +69,18 @@
   box-shadow: 0 2px 6px rgba(20,184,106,0.30);
 }
 
-/* Pool epuise (mois sans top 30 dispo) */
-.mk-month-card-empty {
-  background: rgba(245,158,11,0.08);
-  border: 1px dashed rgba(245,158,11,0.30);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 11px; font-weight: 700; color: #B45309;
-  text-align: center;
-  margin-top: 4px;
+/* Tag discret pour completion automatique depuis top vendeurs marche */
+.mk-card-fallback-tag {
+  display: inline-block;
+  background: rgba(20,184,106,0.14);
+  color: #0D8F52;
+  padding: 1px 7px; border-radius: 4px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.3px;
+  margin-left: 4px;
+}
+.mk-month-card-now .mk-card-fallback-tag {
+  background: rgba(255,255,255,0.20);
+  color: #FFFFFF;
 }
 .mk-picker-stats {
   background: linear-gradient(90deg, #EFF4FF 0%, #F8FAFF 100%);
