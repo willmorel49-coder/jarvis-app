@@ -311,14 +311,22 @@
     return String(p.cip13 || p.artcode || '');
   }
 
-  window.mkOpenSeasonPicker = function (themeId, source) {
+  // Ouvre le picker. Si monthOffset fourni -> pre-coche le top 30 DEDUPLIQUE
+  // (sinon top 30 du pool entier sans dedup).
+  window.mkOpenSeasonPicker = function (themeId, source, monthOffset) {
     seasonPickerThemeId = themeId;
     seasonPickerSource = source || 'grossiste';
     seasonPickerSearch = '';
     seasonPickerOnlySelected = false;
     var ctx = getSeasonPickerProducts();
-    // Pre-coche top 20
-    seasonPickerSelectedKeys = new Set(ctx.products.slice(0, 20).map(getProductKey));
+    var preselect = null;
+    if (typeof monthOffset === 'number') {
+      preselect = seasonPickerSource === 'offilog'
+        ? getMonthTop30Offilog(monthOffset)
+        : getMonthTop30Grossiste(monthOffset);
+    }
+    if (!preselect || !preselect.length) preselect = ctx.products.slice(0, 30);
+    seasonPickerSelectedKeys = new Set(preselect.map(getProductKey));
     seasonPickerOpen = true;
     renderSeasonPicker();
   };
@@ -338,6 +346,23 @@
   window.mkPickerSelectTop = function (n) {
     var ctx = getSeasonPickerProducts();
     seasonPickerSelectedKeys = new Set(ctx.products.slice(0, n).map(getProductKey));
+    renderSeasonPicker();
+  };
+  // Restaure le top 30 deduplique du mois (defini lors de l'ouverture du picker)
+  window.mkPickerResetDedup = function () {
+    // On retrouve le mois via le themeId qui contient __month_N ou __off_month_N
+    var mGr = (seasonPickerThemeId || '').match(/^__month_(\d+)$/);
+    var mOff = (seasonPickerThemeId || '').match(/^__off_month_(\d+)$/);
+    var offset = -1;
+    var now = new Date().getMonth() + 1;
+    if (mGr) { var t = parseInt(mGr[1], 10); offset = ((t - now) + 12) % 13; }
+    if (mOff) { var t2 = parseInt(mOff[1], 10); offset = ((t2 - now) + 12) % 13; }
+    if (offset < 0) return window.mkPickerSelectTop(30);
+    var preset = seasonPickerSource === 'offilog'
+      ? getMonthTop30Offilog(offset)
+      : getMonthTop30Grossiste(offset);
+    if (!preset.length) return window.mkPickerSelectTop(30);
+    seasonPickerSelectedKeys = new Set(preset.map(getProductKey));
     renderSeasonPicker();
   };
   window.mkPickerClearAll = function () {
@@ -432,7 +457,8 @@
       '        <div class="mk-picker-toolbar">\n' +
       '          <input type="text" class="mk-input mk-picker-search" placeholder="🔍 Recherche par nom ou code…" value="' + escapeAttr(seasonPickerSearch) + '" oninput="window.mkPickerSearch(this.value)" />\n' +
       '          <div class="mk-picker-quick">\n' +
-      '            <button class="mk-btn-sm" onclick="window.mkPickerSelectTop(20)">⭐ Top 20</button>\n' +
+      '            <button class="mk-btn-sm mk-btn-sm-primary" onclick="window.mkPickerResetDedup()">⭐ Top 30 sans doublon</button>\n' +
+      '            <button class="mk-btn-sm" onclick="window.mkPickerSelectTop(30)">Top 30 pool</button>\n' +
       '            <button class="mk-btn-sm" onclick="window.mkPickerSelectTop(50)">Top 50</button>\n' +
       '            <button class="mk-btn-sm" onclick="window.mkPickerSelectTop(' + totalPool + ')">Tout cocher</button>\n' +
       '            <button class="mk-btn-sm" onclick="window.mkPickerClearAll()">Tout décocher</button>\n' +
@@ -495,6 +521,64 @@
         '<span class="mk-picker-rank">#' + (i + 1) + '</span>' +
         '</label>';
     }).join('');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // PLANNING TOP 30 DEDUPLIQUE — chaque mois recoit 30 produits distincts
+  // des autres mois. Sinon faire des fiches mensuelles n'a pas de sens.
+  // Algo greedy : on parcourt les mois dans l'ordre (mois courant prioritaire)
+  // et chaque mois consomme les 30 premiers de son pool encore disponibles.
+  // ═══════════════════════════════════════════════════════════════════════
+  let __planning30CacheGr = null;
+  let __planning30CacheOff = null;
+  function invalidatePlanningCaches() { __planning30CacheGr = null; __planning30CacheOff = null; }
+
+  function getPlanning30Grossiste(monthsAhead) {
+    if (__planning30CacheGr) return __planning30CacheGr;
+    const planning = getMonthPlanning(monthsAhead || 12);
+    const seen = new Set();
+    const out = planning.map(m => {
+      const pool = themeProducts(m.theme);
+      const unique = pool.filter(p => !seen.has(String(p.cip13)));
+      const top30 = unique.slice(0, 30);
+      top30.forEach(p => seen.add(String(p.cip13)));
+      return Object.assign({}, m, {
+        pool: pool,
+        top30: top30,
+        dedupRemoved: pool.length - unique.length,
+      });
+    });
+    __planning30CacheGr = out;
+    return out;
+  }
+
+  function getPlanning30Offilog(monthsAhead) {
+    if (__planning30CacheOff) return __planning30CacheOff;
+    const planning = getOffilogPlanning(monthsAhead || 12);
+    const seen = new Set();
+    const out = planning.map(m => {
+      const pool = m.theme ? themeProductsOffilog(m.theme) : [];
+      const unique = pool.filter(o => !seen.has(String(o.ean)));
+      const top30 = unique.slice(0, 30);
+      top30.forEach(o => seen.add(String(o.ean)));
+      return Object.assign({}, m, {
+        pool: pool,
+        top30: top30,
+        dedupRemoved: pool.length - unique.length,
+      });
+    });
+    __planning30CacheOff = out;
+    return out;
+  }
+
+  // Recupere le top 30 deduplique pour un offset mois donne (grossiste)
+  function getMonthTop30Grossiste(offset) {
+    const planning = getPlanning30Grossiste(12);
+    return (planning[offset] && planning[offset].top30) || [];
+  }
+  function getMonthTop30Offilog(offset) {
+    const planning = getPlanning30Offilog(12);
+    return (planning[offset] && planning[offset].top30) || [];
   }
 
   // Planning prévisionnel : pour chaque mois (relatif 0..11), retourne le
@@ -1164,25 +1248,23 @@
         </div>
 
         ${(() => {
-          // Planning des operations commerciales mensuelles : mois courant + 12 a venir.
-          // Theme COMPOSITE par mois (fusion de tous les themes actifs ce mois).
-          // -> garantit un top 20 par mois meme quand un seul theme ne suffit pas.
-          const planning = getMonthPlanning(12);
+          // Planning DEDUPLIQUE : chaque mois recoit 30 produits distincts
+          // (pas de doublons inter-mois, sinon fiches mensuelles inutiles).
+          const planning = getPlanning30Grossiste(12);
           return `
             <div class="mk-section-planning">
               <div class="mk-section-head">
                 <div>
-                  <div class="mk-section-title">📅 Planning des suggestions du mois · top 20 par mois</div>
-                  <div class="mk-section-sub">Mois courant + 12 à venir · top 20 produits par volume secteur OPS+CPR+HP · click une card pour préparer la fiche</div>
+                  <div class="mk-section-title">📅 Planning des suggestions · top 30 par mois <span class="mk-section-badge">SANS DOUBLON</span></div>
+                  <div class="mk-section-sub">Mois courant + 12 à venir · top 30 PRODUITS DISTINCTS par mois (algo greedy) · click une card pour composer la fiche</div>
                 </div>
               </div>
               <div class="mk-planning-grid">
                 ${planning.map(m => {
-                  const list = themeProducts(m.theme);
-                  const top20 = list.slice(0, 20);
+                  const list = m.top30;
                   const top5 = list.slice(0, 5);
-                  const totalQte20 = top20.reduce((s, b) => s + (b._sec_qte || 0), 0);
-                  const totalCa20  = top20.reduce((s, b) => s + (b._sec_ca  || 0), 0);
+                  const totalQte30 = list.reduce((s, b) => s + (b._sec_qte || 0), 0);
+                  const totalCa30  = list.reduce((s, b) => s + (b._sec_ca  || 0), 0);
                   const isNow = m.offset === 0;
                   const isNext = m.offset === 1;
                   const cardClass = isNow ? 'mk-month-card-now' : (isNext ? 'mk-month-card-next' : '');
@@ -1190,7 +1272,7 @@
                   const pinTxt = isNow ? 'CE MOIS' : (isNext ? 'MOIS +1' : (m.offset === 12 ? 'N+1' : ''));
                   return `
                     <div class="mk-month-card ${cardClass}"
-                      title="Top 20 ${escapeAttr(m.theme.name)} pour ${escapeAttr(m.monthName)}">
+                      title="Top 30 ${escapeAttr(m.theme.name)} pour ${escapeAttr(m.monthName)} (sans doublon)">
                       <div class="mk-month-card-eyebrow">
                         <span>${escapeAttr(m.monthLabel)}</span>
                         ${pinTxt ? `<span class="mk-month-card-pin ${pinClass}">${pinTxt}</span>` : ''}
@@ -1200,7 +1282,7 @@
                         ${escapeAttr(m.monthName)}
                       </div>
                       <div class="mk-month-card-theme">${escapeAttr(m.theme.name)}</div>
-                      <div class="mk-month-card-meta">${list.length} produits IP · top 20 = ${totalQte20.toLocaleString('fr-FR')} u secteur (${eur(totalCa20)})</div>
+                      <div class="mk-month-card-meta">${list.length} produits exclusifs · ${totalQte30.toLocaleString('fr-FR')} u secteur (${eur(totalCa30)})${m.dedupRemoved > 0 ? ` · ${m.dedupRemoved} ❌ doublons retirés` : ''}</div>
                       ${top5.length ? `
                         <div class="mk-month-card-top5">
                           ${top5.map((p, i) => `
@@ -1210,11 +1292,11 @@
                               ${p._sec_qte > 0 ? `<span class="mk-month-card-top5-qte">${(p._sec_qte).toLocaleString('fr-FR')}u</span>` : ''}
                             </div>
                           `).join('')}
-                          ${list.length > 5 ? `<div class="mk-month-card-more">+ ${Math.min(15, list.length - 5)} autres dans le top 20</div>` : ''}
+                          ${list.length > 5 ? `<div class="mk-month-card-more">+ ${list.length - 5} autres dans le top 30</div>` : ''}
                         </div>
-                      ` : ''}
-                      <button class="mk-month-card-cta" onclick="window.mkOpenSeasonPicker('${m.theme.id}', 'grossiste')">
-                        Composer la fiche · ${list.length} dispos →
+                      ` : '<div class="mk-month-card-empty">Pool epuise par les mois precedents</div>'}
+                      <button class="mk-month-card-cta" onclick="window.mkOpenSeasonPicker('${m.theme.id}', 'grossiste', ${m.offset})">
+                        Composer la fiche · ${m.pool.length} dispos →
                       </button>
                     </div>
                   `;
@@ -1472,7 +1554,7 @@
     const top20 = monthList.slice(0, 20);
     const totalTop20Off = top20.reduce((s, o) => s + (o.prix_offilog || 0), 0);
     const monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
-    const planning = getOffilogPlanning(12);
+    const planning = getPlanning30Offilog(12);
     // Univers OFFILOG (Solaires, Capillaire, Dermo…) avec count
     const universes = {};
     window.OFFILOG.forEach(o => {
@@ -1519,13 +1601,13 @@
         <div class="mk-section-planning">
           <div class="mk-section-head">
             <div>
-              <div class="mk-section-title">📅 Planning OFFILOG · top 20 parapharma par mois</div>
-              <div class="mk-section-sub">Mois courant + 12 à venir · ventes parapharma OFFILOG · click pour préparer la fiche</div>
+              <div class="mk-section-title">📅 Planning OFFILOG · top 30 parapharma par mois <span class="mk-section-badge">SANS DOUBLON</span></div>
+              <div class="mk-section-sub">Mois courant + 12 à venir · top 30 produits parapharma DISTINCTS par mois · click pour composer la fiche</div>
             </div>
           </div>
           <div class="mk-planning-grid">
             ${planning.map(m => {
-              const list = m.theme ? themeProductsOffilog(m.theme) : [];
+              const list = m.top30;
               const top5p = list.slice(0, 5);
               const isNow = m.offset === 0;
               const isNext = m.offset === 1;
@@ -1556,7 +1638,7 @@
                     ${escapeAttr(m.monthName)}
                   </div>
                   <div class="mk-month-card-theme">${escapeAttr(m.theme.name)}</div>
-                  <div class="mk-month-card-meta">${list.length} parapharma · top 20 disponible</div>
+                  <div class="mk-month-card-meta">${list.length} parapharma exclusifs${m.dedupRemoved > 0 ? ` · ${m.dedupRemoved} ❌ doublons retirés` : ''}</div>
                   ${top5p.length ? `
                     <div class="mk-month-card-top5">
                       ${top5p.map((o, i) => `
@@ -1566,11 +1648,11 @@
                           <span class="mk-month-card-top5-qte">${eur(o.prix_offilog)}</span>
                         </div>
                       `).join('')}
-                      ${list.length > 5 ? `<div class="mk-month-card-more">+ ${Math.min(15, list.length - 5)} autres dans le top 20</div>` : ''}
+                      ${list.length > 5 ? `<div class="mk-month-card-more">+ ${list.length - 5} autres dans le top 30</div>` : ''}
                     </div>
-                  ` : ''}
-                  <button class="mk-month-card-cta" onclick="window.mkOpenSeasonPicker('${m.theme.id}', 'offilog')">
-                    Composer la fiche · ${list.length} dispos →
+                  ` : '<div class="mk-month-card-empty">Pool epuise par les mois precedents</div>'}
+                  <button class="mk-month-card-cta" onclick="window.mkOpenSeasonPicker('${m.theme.id}', 'offilog', ${m.offset})">
+                    Composer la fiche · ${m.pool.length} dispos →
                   </button>
                 </div>
               `;
