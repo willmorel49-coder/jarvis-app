@@ -268,6 +268,222 @@
     };
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // PICKER SAISONNIER — modal pour composer la selection avant fiche
+  // ═══════════════════════════════════════════════════════════════════════
+  function getSeasonPickerProducts() {
+    // Resout le theme + le pool de produits selon la source
+    let theme = null;
+    let products = [];
+    if (seasonPickerSource === 'offilog') {
+      // Theme OFFILOG : id de type '__off_month_X' ou theme natif
+      var mOff = (seasonPickerThemeId || '').match(/^__off_month_(\d+)$/);
+      if (mOff) {
+        theme = getCompositeOffilogThemeForMonth(parseInt(mOff[1], 10));
+      } else {
+        // Fallback : theme SEASON natif transpose en parapharma
+        theme = SEASON_THEMES.find(t => t.id === seasonPickerThemeId);
+      }
+      if (theme) products = themeProductsOffilog(theme);
+    } else {
+      theme = getThemeById(seasonPickerThemeId);
+      if (theme) products = themeProducts(theme);
+    }
+    return { theme: theme, products: products };
+  }
+
+  function getProductKey(p) {
+    // Cle unique pour set : EAN pour OFFILOG, cip13 pour BENCHMARK
+    if (seasonPickerSource === 'offilog') return String(p.ean || '');
+    return String(p.cip13 || p.artcode || '');
+  }
+
+  window.mkOpenSeasonPicker = function (themeId, source) {
+    seasonPickerThemeId = themeId;
+    seasonPickerSource = source || 'grossiste';
+    seasonPickerSearch = '';
+    seasonPickerOnlySelected = false;
+    var ctx = getSeasonPickerProducts();
+    // Pre-coche top 20
+    seasonPickerSelectedKeys = new Set(ctx.products.slice(0, 20).map(getProductKey));
+    seasonPickerOpen = true;
+    renderSeasonPicker();
+  };
+
+  window.mkClosePicker = function () {
+    seasonPickerOpen = false;
+    var el = document.getElementById('mk-season-picker');
+    if (el) el.remove();
+  };
+
+  window.mkPickerToggle = function (key) {
+    if (seasonPickerSelectedKeys.has(key)) seasonPickerSelectedKeys.delete(key);
+    else seasonPickerSelectedKeys.add(key);
+    renderSeasonPicker();
+  };
+
+  window.mkPickerSelectTop = function (n) {
+    var ctx = getSeasonPickerProducts();
+    seasonPickerSelectedKeys = new Set(ctx.products.slice(0, n).map(getProductKey));
+    renderSeasonPicker();
+  };
+  window.mkPickerClearAll = function () {
+    seasonPickerSelectedKeys = new Set();
+    renderSeasonPicker();
+  };
+  window.mkPickerSearch = function (q) {
+    seasonPickerSearch = q;
+    renderSeasonPicker();
+    var el = document.querySelector('#mk-season-picker input.mk-picker-search');
+    if (el) { el.focus(); el.setSelectionRange(q.length, q.length); }
+  };
+  window.mkPickerToggleOnlySelected = function () {
+    seasonPickerOnlySelected = !seasonPickerOnlySelected;
+    renderSeasonPicker();
+  };
+
+  window.mkPickerCreateSheet = function () {
+    var ctx = getSeasonPickerProducts();
+    if (!ctx.theme) return;
+    var selectedKeys = seasonPickerSelectedKeys;
+    if (!selectedKeys.size) {
+      if (typeof window.showToast === 'function') window.showToast('Coche au moins 1 produit', 'info');
+      return;
+    }
+    // Filtre et preserve l'ordre du pool original (tri volume secteur DESC)
+    var picked = ctx.products.filter(p => selectedKeys.has(getProductKey(p)));
+    var snap = picked.map(p => seasonPickerSource === 'offilog'
+      ? snapshotOffilogProduct(p)
+      : snapshotProduct(p));
+    var titlePrefix = seasonPickerSource === 'offilog' ? 'OFFILOG ' : '';
+    var color = seasonPickerSource === 'offilog' ? 'amber' : (ctx.theme.color || 'navy');
+    editingSheet = {
+      id: 'mk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      title: titlePrefix + ctx.theme.name,
+      theme: 'custom',
+      color: color,
+      footer: 'Tarifs ' + new Date().getFullYear(),
+      template: 'offre',
+      products: snap,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    window.mkClosePicker();
+    renderEdit();
+  };
+
+  function renderSeasonPicker() {
+    if (!seasonPickerOpen) return;
+    var ctx = getSeasonPickerProducts();
+    if (!ctx.theme) return;
+    var allProducts = ctx.products;
+    // Filtre recherche + only-selected
+    var filtered = allProducts;
+    var q = (seasonPickerSearch || '').toLowerCase().trim();
+    if (q) {
+      filtered = filtered.filter(p => {
+        var name = String(p.designation || p.produit || '').toLowerCase();
+        var code = String(p.cip13 || p.ean || p.artcode || '');
+        return name.includes(q) || code.includes(q);
+      });
+    }
+    if (seasonPickerOnlySelected) {
+      filtered = filtered.filter(p => seasonPickerSelectedKeys.has(getProductKey(p)));
+    }
+    var selCount = seasonPickerSelectedKeys.size;
+    var totalPool = allProducts.length;
+    var totalQte = 0, totalCa = 0, totalPrix = 0;
+    filtered.forEach(p => {
+      if (seasonPickerSelectedKeys.has(getProductKey(p))) {
+        totalQte += (p._sec_qte || 0);
+        totalCa  += (p._sec_ca || 0);
+        totalPrix += (p.prix_offilog || p.prix_ip || 0);
+      }
+    });
+    var isOff = seasonPickerSource === 'offilog';
+    var headerCol = isOff ? '#EA580C' : '#0057FF';
+    var html = '\n      <div class="mk-modal mk-season-picker-modal">\n' +
+      '        <div class="mk-modal-head">\n' +
+      '          <div class="mk-modal-title">\n' +
+      '            <span style="font-size:22px;margin-right:6px">' + (ctx.theme.emoji || '🎯') + '</span>\n' +
+      '            ' + escapeAttr(ctx.theme.name) + '\n' +
+      '            <span class="mk-picker-source-pill" style="background:' + headerCol + '">' + (isOff ? '🧴 OFFILOG' : '💊 GROSSISTE IP') + '</span>\n' +
+      '          </div>\n' +
+      '          <div class="mk-modal-actions">\n' +
+      '            <button class="mk-btn" onclick="window.mkClosePicker()">Annuler</button>\n' +
+      '            <button class="mk-btn mk-btn-primary" onclick="window.mkPickerCreateSheet()" ' + (selCount === 0 ? 'disabled' : '') + '>\n' +
+      '              Créer la fiche · ' + selCount + ' produit' + (selCount > 1 ? 's' : '') + '\n' +
+      '            </button>\n' +
+      '          </div>\n' +
+      '        </div>\n' +
+      '        <div class="mk-picker-toolbar">\n' +
+      '          <input type="text" class="mk-input mk-picker-search" placeholder="🔍 Recherche par nom ou code…" value="' + escapeAttr(seasonPickerSearch) + '" oninput="window.mkPickerSearch(this.value)" />\n' +
+      '          <div class="mk-picker-quick">\n' +
+      '            <button class="mk-btn-sm" onclick="window.mkPickerSelectTop(20)">⭐ Top 20</button>\n' +
+      '            <button class="mk-btn-sm" onclick="window.mkPickerSelectTop(50)">Top 50</button>\n' +
+      '            <button class="mk-btn-sm" onclick="window.mkPickerSelectTop(' + totalPool + ')">Tout cocher</button>\n' +
+      '            <button class="mk-btn-sm" onclick="window.mkPickerClearAll()">Tout décocher</button>\n' +
+      '            <button class="mk-btn-sm ' + (seasonPickerOnlySelected ? 'on' : '') + '" onclick="window.mkPickerToggleOnlySelected()">' + (seasonPickerOnlySelected ? '✓ Cochés seulement' : 'Voir cochés seulement') + '</button>\n' +
+      '          </div>\n' +
+      '        </div>\n' +
+      '        <div class="mk-picker-stats">\n' +
+      '          <div><b>' + selCount + '</b> / ' + totalPool + ' produits sélectionnés' + (q ? ' (' + filtered.length + ' filtrés)' : '') + '</div>\n' +
+      (totalQte > 0 ? '          <div>Volume secteur cumulé : <b>' + totalQte.toLocaleString('fr-FR') + ' u</b></div>\n' : '') +
+      (totalCa > 0 ? '          <div>CA secteur cumulé : <b>' + eur(totalCa) + '</b></div>\n' : '') +
+      (isOff && totalPrix > 0 ? '          <div>Prix Offilog cumulé : <b>' + eur(totalPrix) + '</b></div>\n' : '') +
+      '        </div>\n' +
+      '        <div class="mk-modal-body mk-picker-body">\n' +
+      '          <div class="mk-picker-list">\n' +
+      renderPickerRows(filtered) +
+      '          </div>\n' +
+      (filtered.length === 0 ? '          <div class="mk-empty-search" style="padding:32px;text-align:center">Aucun produit ne correspond.</div>' : '') +
+      '        </div>\n' +
+      '      </div>\n    ';
+    var existing = document.getElementById('mk-season-picker');
+    if (existing) existing.outerHTML = html.replace('<div class="mk-modal mk-season-picker-modal">', '<div class="mk-modal mk-season-picker-modal" id="mk-season-picker">');
+    else {
+      var wrap = document.createElement('div');
+      wrap.id = 'mk-season-picker';
+      wrap.innerHTML = html;
+      document.body.appendChild(wrap.firstElementChild);
+      var firstChild = document.body.lastElementChild;
+      if (firstChild) firstChild.id = 'mk-season-picker';
+    }
+  }
+
+  function renderPickerRows(list) {
+    return list.map(function (p, i) {
+      var key = getProductKey(p);
+      var checked = seasonPickerSelectedKeys.has(key);
+      var name = String(p.designation || p.produit || '').replace(/&amp;/g, '&');
+      var code = String(p.cip13 || p.ean || p.artcode || '');
+      var prix = p.prix_offilog || p.prix_ip || 0;
+      var prixHt = p.prix_ht || p.prix_maxi || 0;
+      var secQte = p._sec_qte || 0;
+      var img = p.img || '';
+      var isOff = seasonPickerSource === 'offilog';
+      var codeLabel = isOff ? 'EAN' : 'CIP';
+      return '<label class="mk-picker-row ' + (checked ? 'on' : '') + '">' +
+        '<input type="checkbox" ' + (checked ? 'checked' : '') + ' onchange="window.mkPickerToggle(\'' + key + '\')" />' +
+        '<span class="mk-picker-thumb">' + (img ? '<img src="' + escapeAttr(img) + '" alt="" loading="lazy" width="44" height="44" onerror="this.style.display=&quot;none&quot;"/>' : '<span class="mk-picker-thumb-ph">💊</span>') + '</span>' +
+        '<span class="mk-picker-info">' +
+          '<span class="mk-picker-name">' + escapeAttr(name) + '</span>' +
+          '<span class="mk-picker-meta">' +
+            codeLabel + ' ' + escapeAttr(code) +
+            (p.marque ? ' · ' + escapeAttr(p.marque) : '') +
+            (p.univers ? ' · ' + escapeAttr(p.univers) : '') +
+          '</span>' +
+        '</span>' +
+        '<span class="mk-picker-prices">' +
+          (prixHt > 0 && prixHt !== prix ? '<span class="mk-picker-price-old">' + eur(prixHt) + '</span>' : '') +
+          '<span class="mk-picker-price">' + eur(prix) + '</span>' +
+        '</span>' +
+        (secQte > 0 ? '<span class="mk-picker-qte">' + secQte.toLocaleString('fr-FR') + 'u</span>' : '<span class="mk-picker-qte mk-picker-qte-empty">—</span>') +
+        '<span class="mk-picker-rank">#' + (i + 1) + '</span>' +
+        '</label>';
+    }).join('');
+  }
+
   // Planning prévisionnel : pour chaque mois (relatif 0..11), retourne le
   // theme COMPOSITE (fusion de tous les themes actifs ce mois-la).
   function getMonthPlanning(monthsAhead) {
@@ -616,6 +832,15 @@
   let statsTranche = 'all';  // 'all' | 'petit' (≤4.33€) | 'inter' (4.33-468€) | 'haut' (>468€)
   let statsCatalogue = 'all';// 'all' | 'integral' | 'itp'
   let mkPage = 'grossiste';  // 'grossiste' (IP / canal grossiste) | 'offilog' (parapharma direct labo)
+  // Picker saisonnier : selection composable avant creation de fiche.
+  // On y voit TOUS les produits du theme (peut etre 245+), top 20 precoche,
+  // l'utilisateur ajuste puis valide.
+  let seasonPickerOpen = false;
+  let seasonPickerThemeId = null;  // 'allergies', '__month_6', '__off_month_6', etc.
+  let seasonPickerSource = 'grossiste'; // 'grossiste' (BENCHMARK) | 'offilog' (OFFILOG)
+  let seasonPickerSelectedKeys = new Set();
+  let seasonPickerSearch = '';
+  let seasonPickerOnlySelected = false;
   let sagittaStatus = 'all'; // 'all' | 'ip_win' | 'ip_lose' | 'no_ip'
   let sagittaSearch = '';
   let sagittaSort   = 'volume'; // 'volume' | 'ecart_pct' | 'ecart_eur' | 'gain'
@@ -894,9 +1119,9 @@
                 <div class="mk-hero-sub">${monthProds.length} médicaments catalogue IP triés par volumes <b>secteur OPS+CPR+HP</b> décroissants</div>
               </div>
             </div>
-            <button class="mk-btn mk-btn-primary" onclick="window.mkStartEdit('${suggested.id}')">
+            <button class="mk-btn mk-btn-primary" onclick="window.mkOpenSeasonPicker('${suggested.id}', 'grossiste')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Créer cette fiche
+              Composer la fiche · ${monthProds.length} dispos
             </button>
           </div>
           ${topMonth.length && totalSecQte > 0 ? `
@@ -975,8 +1200,8 @@
                           ${list.length > 5 ? `<div class="mk-month-card-more">+ ${Math.min(15, list.length - 5)} autres dans le top 20</div>` : ''}
                         </div>
                       ` : ''}
-                      <button class="mk-month-card-cta" onclick="window.mkStartEdit('${m.theme.id}')">
-                        Créer la fiche top 20 →
+                      <button class="mk-month-card-cta" onclick="window.mkOpenSeasonPicker('${m.theme.id}', 'grossiste')">
+                        Composer la fiche · ${list.length} dispos →
                       </button>
                     </div>
                   `;
@@ -1331,8 +1556,8 @@
                       ${list.length > 5 ? `<div class="mk-month-card-more">+ ${Math.min(15, list.length - 5)} autres dans le top 20</div>` : ''}
                     </div>
                   ` : ''}
-                  <button class="mk-month-card-cta" onclick="window.mkStartOffilogMonth(${m.offset})">
-                    Créer la fiche top 20 →
+                  <button class="mk-month-card-cta" onclick="window.mkOpenSeasonPicker('${m.theme.id}', 'offilog')">
+                    Composer la fiche · ${list.length} dispos →
                   </button>
                 </div>
               `;
