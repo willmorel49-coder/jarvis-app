@@ -48,6 +48,37 @@
 .mk-btn-sm.on {
   background: #0057FF; color: #FFFFFF; border-color: #0057FF;
 }
+.mk-btn-sm-primary {
+  background: linear-gradient(135deg, #0057FF 0%, #3B82F6 100%);
+  color: #FFFFFF; border-color: transparent;
+  box-shadow: 0 2px 6px rgba(0,87,255,0.25);
+}
+.mk-btn-sm-primary:hover {
+  background: linear-gradient(135deg, #003ECC 0%, #0057FF 100%);
+  color: #FFFFFF; transform: translateY(-1px);
+}
+
+/* Badge 'SANS DOUBLON' dans le titre de section */
+.mk-section-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #14B86A 0%, #0BA85F 100%);
+  color: #FFFFFF;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 9.5px; letter-spacing: 0.9px; font-weight: 900;
+  margin-left: 8px; vertical-align: middle;
+  box-shadow: 0 2px 6px rgba(20,184,106,0.30);
+}
+
+/* Pool epuise (mois sans top 30 dispo) */
+.mk-month-card-empty {
+  background: rgba(245,158,11,0.08);
+  border: 1px dashed rgba(245,158,11,0.30);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11px; font-weight: 700; color: #B45309;
+  text-align: center;
+  margin-top: 4px;
+}
 .mk-picker-stats {
   background: linear-gradient(90deg, #EFF4FF 0%, #F8FAFF 100%);
   padding: 10px 18px;
