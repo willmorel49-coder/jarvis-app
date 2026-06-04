@@ -537,15 +537,47 @@
     if (__planning30CacheGr) return __planning30CacheGr;
     const planning = getMonthPlanning(monthsAhead || 12);
     const seen = new Set();
+    // Pool fallback = top vendeurs secteur OPS+CPR+HP (toutes pathologies confondues).
+    // Sert a completer les mois ou le pool saisonnier est sature par les dedup.
+    let fallbackPool = [];
+    try {
+      const v = computeTopVentesOpsCprHp();
+      const salesIdx = (typeof buildSalesByEan === 'function') ? buildSalesByEan() : null;
+      // Adapte la structure : on a besoin de cip13, designation, _sec_qte, _sec_ca
+      fallbackPool = (v.top || []).map(p => {
+        // Cherche le BENCHMARK correspondant pour avoir prix_ip
+        const b = (window.BENCHMARK || []).find(x => String(x.cip13) === String(p.ean) || String(x.cip13) === String(p.artcode));
+        if (!b || !b.prix_ip) return null;
+        const sales = salesIdx ? (salesIdx.get(String(b.cip13)) || { qte: 0, ca: 0 }) : { qte: 0, ca: 0 };
+        b._sec_qte = sales.qte;
+        b._sec_ca = sales.ca;
+        return b;
+      }).filter(Boolean);
+    } catch (e) { /* fallback ok meme vide */ }
+
     const out = planning.map(m => {
       const pool = themeProducts(m.theme);
       const unique = pool.filter(p => !seen.has(String(p.cip13)));
-      const top30 = unique.slice(0, 30);
+      let top30 = unique.slice(0, 30);
+      let completedFromFallback = 0;
+      // Completion : si on a moins de 30 produits, on pioche dans le fallback
+      // marche (top vendeurs OPS+CPR+HP) en evitant les deja vus.
+      if (top30.length < 30 && fallbackPool.length) {
+        for (const p of fallbackPool) {
+          if (top30.length >= 30) break;
+          const key = String(p.cip13);
+          if (seen.has(key)) continue;
+          if (top30.find(x => String(x.cip13) === key)) continue;
+          top30.push(p);
+          completedFromFallback++;
+        }
+      }
       top30.forEach(p => seen.add(String(p.cip13)));
       return Object.assign({}, m, {
         pool: pool,
         top30: top30,
         dedupRemoved: pool.length - unique.length,
+        completedFromFallback: completedFromFallback,
       });
     });
     __planning30CacheGr = out;
@@ -556,15 +588,32 @@
     if (__planning30CacheOff) return __planning30CacheOff;
     const planning = getOffilogPlanning(monthsAhead || 12);
     const seen = new Set();
+    // Pool fallback OFFILOG = top vendeurs parapharma global (rang_vente)
+    const fallbackOff = (window.OFFILOG || [])
+      .filter(o => o.dans_offilog && o.prix_offilog > 0)
+      .sort((a, b) => (a.rang_vente || 99999) - (b.rang_vente || 99999));
+
     const out = planning.map(m => {
       const pool = m.theme ? themeProductsOffilog(m.theme) : [];
       const unique = pool.filter(o => !seen.has(String(o.ean)));
-      const top30 = unique.slice(0, 30);
+      let top30 = unique.slice(0, 30);
+      let completedFromFallback = 0;
+      if (top30.length < 30 && fallbackOff.length) {
+        for (const o of fallbackOff) {
+          if (top30.length >= 30) break;
+          const key = String(o.ean);
+          if (seen.has(key)) continue;
+          if (top30.find(x => String(x.ean) === key)) continue;
+          top30.push(o);
+          completedFromFallback++;
+        }
+      }
       top30.forEach(o => seen.add(String(o.ean)));
       return Object.assign({}, m, {
         pool: pool,
         top30: top30,
         dedupRemoved: pool.length - unique.length,
+        completedFromFallback: completedFromFallback,
       });
     });
     __planning30CacheOff = out;
@@ -1282,7 +1331,7 @@
                         ${escapeAttr(m.monthName)}
                       </div>
                       <div class="mk-month-card-theme">${escapeAttr(m.theme.name)}</div>
-                      <div class="mk-month-card-meta">${list.length} produits exclusifs · ${totalQte30.toLocaleString('fr-FR')} u secteur (${eur(totalCa30)})${m.dedupRemoved > 0 ? ` · ${m.dedupRemoved} ❌ doublons retirés` : ''}</div>
+                      <div class="mk-month-card-meta">${list.length} produits · ${totalQte30.toLocaleString('fr-FR')} u secteur (${eur(totalCa30)})${m.completedFromFallback > 0 ? ` · <span class="mk-card-fallback-tag">+${m.completedFromFallback} top vendeurs marché</span>` : ''}</div>
                       ${top5.length ? `
                         <div class="mk-month-card-top5">
                           ${top5.map((p, i) => `
@@ -1294,7 +1343,7 @@
                           `).join('')}
                           ${list.length > 5 ? `<div class="mk-month-card-more">+ ${list.length - 5} autres dans le top 30</div>` : ''}
                         </div>
-                      ` : '<div class="mk-month-card-empty">Pool epuise par les mois precedents</div>'}
+                      ` : ''}
                       <button class="mk-month-card-cta" onclick="window.mkOpenSeasonPicker('${m.theme.id}', 'grossiste', ${m.offset})">
                         Composer la fiche · ${m.pool.length} dispos →
                       </button>
@@ -1638,7 +1687,7 @@
                     ${escapeAttr(m.monthName)}
                   </div>
                   <div class="mk-month-card-theme">${escapeAttr(m.theme.name)}</div>
-                  <div class="mk-month-card-meta">${list.length} parapharma exclusifs${m.dedupRemoved > 0 ? ` · ${m.dedupRemoved} ❌ doublons retirés` : ''}</div>
+                  <div class="mk-month-card-meta">${list.length} parapharma${m.completedFromFallback > 0 ? ` · <span class="mk-card-fallback-tag">+${m.completedFromFallback} top vendeurs OFFILOG</span>` : ''}</div>
                   ${top5p.length ? `
                     <div class="mk-month-card-top5">
                       ${top5p.map((o, i) => `
@@ -1650,7 +1699,7 @@
                       `).join('')}
                       ${list.length > 5 ? `<div class="mk-month-card-more">+ ${list.length - 5} autres dans le top 30</div>` : ''}
                     </div>
-                  ` : '<div class="mk-month-card-empty">Pool epuise par les mois precedents</div>'}
+                  ` : ''}
                   <button class="mk-month-card-cta" onclick="window.mkOpenSeasonPicker('${m.theme.id}', 'offilog', ${m.offset})">
                     Composer la fiche · ${m.pool.length} dispos →
                   </button>
