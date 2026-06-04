@@ -148,24 +148,48 @@
   ];
 
   function getThemeById(id) {
+    // Ids composites de planning : '__month_N' (1..12) -> composite du mois N
+    var compMatch = String(id || '').match(/^__month_(\d{1,2})$/);
+    if (compMatch) return getCompositeThemeForMonth(parseInt(compMatch[1], 10));
     return SEASON_THEMES.find(t => t.id === id) || CAT_THEMES.find(t => t.id === id) || null;
   }
 
   function getCurrentSeasonTheme() {
+    // Theme COMPOSITE = fusion de tous les themes actifs du mois courant.
     const m = new Date().getMonth() + 1;
-    return SEASON_THEMES.find(t => t.months.includes(m)) || SEASON_THEMES[0];
+    return getCompositeThemeForMonth(m);
+  }
+
+  // Construit un theme COMPOSITE pour un mois donne : fusion des regex de
+  // TOUS les themes saisonniers actifs ce mois-la. Permet d'atteindre 20+
+  // produits par mois meme quand un seul theme ne suffit pas.
+  // Ex: novembre = grippe + rhume + gastro -> ~150 produits BENCHMARK matches.
+  function getCompositeThemeForMonth(month) {
+    const active = SEASON_THEMES.filter(t => t.months.includes(month));
+    if (!active.length) return SEASON_THEMES[0];
+    if (active.length === 1) return active[0];
+    // Composite : reutilise les filter() de chaque theme actif (OR logique)
+    return {
+      id: '__month_' + month,
+      name: active.map(t => t.name).join(' + '),
+      months: [month],
+      emoji: active[0].emoji,
+      color: active[0].color,
+      _composite: true,
+      _themes: active,
+      filter: b => active.some(t => t.filter(b)),
+    };
   }
 
   // Planning prévisionnel : pour chaque mois (relatif 0..11), retourne le
-  // theme actif (1er thème dont months[] contient ce mois). Permet d'anticiper
-  // les operations commerciales saisonnieres a venir.
+  // theme COMPOSITE (fusion de tous les themes actifs ce mois-la).
   function getMonthPlanning(monthsAhead) {
     const now = new Date();
     const out = [];
     for (let i = 0; i <= monthsAhead; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const month = d.getMonth() + 1; // 1..12
-      const theme = SEASON_THEMES.find(t => t.months.includes(month)) || SEASON_THEMES[0];
+      const theme = getCompositeThemeForMonth(month);
       out.push({
         offset: i,
         date: d,
@@ -350,7 +374,7 @@
       color: t.color,
       template: 'offre',
       footer: 'Tarif en vigueur ' + new Date().getFullYear(),
-      products: themeProducts(t).slice(0, 25).map(snapshotProduct),
+      products: themeProducts(t).slice(0, 20).map(snapshotProduct),
     };
   }
 
@@ -777,30 +801,33 @@
         </div>
 
         ${(() => {
-          // Planning des operations commerciales mensuelles : mois courant + 11 a venir
+          // Planning des operations commerciales mensuelles : mois courant + 12 a venir.
+          // Theme COMPOSITE par mois (fusion de tous les themes actifs ce mois).
+          // -> garantit un top 20 par mois meme quand un seul theme ne suffit pas.
           const planning = getMonthPlanning(12);
           return `
             <div class="mk-section-planning">
               <div class="mk-section-head">
                 <div>
-                  <div class="mk-section-title">📅 Planning des suggestions du mois</div>
-                  <div class="mk-section-sub">Mois courant + 12 prochains · pathologies saisonnières & volumes secteur · anticipe tes opérations commerciales</div>
+                  <div class="mk-section-title">📅 Planning des suggestions du mois · top 20 par mois</div>
+                  <div class="mk-section-sub">Mois courant + 12 à venir · top 20 produits par volume secteur OPS+CPR+HP · click une card pour préparer la fiche</div>
                 </div>
               </div>
               <div class="mk-planning-grid">
                 ${planning.map(m => {
                   const list = themeProducts(m.theme);
-                  const top1 = list[0];
-                  const totalQte = list.reduce((s, b) => s + (b._sec_qte || 0), 0);
+                  const top20 = list.slice(0, 20);
+                  const top5 = list.slice(0, 5);
+                  const totalQte20 = top20.reduce((s, b) => s + (b._sec_qte || 0), 0);
+                  const totalCa20  = top20.reduce((s, b) => s + (b._sec_ca  || 0), 0);
                   const isNow = m.offset === 0;
                   const isNext = m.offset === 1;
                   const cardClass = isNow ? 'mk-month-card-now' : (isNext ? 'mk-month-card-next' : '');
                   const pinClass = isNow ? '' : (isNext ? 'mk-month-card-pin-next' : '');
                   const pinTxt = isNow ? 'CE MOIS' : (isNext ? 'MOIS +1' : (m.offset === 12 ? 'N+1' : ''));
                   return `
-                    <button class="mk-month-card ${cardClass}"
-                      onclick="window.mkStartEdit('${m.theme.id}')"
-                      title="Créer une fiche ${escapeAttr(m.theme.name)} pour ${escapeAttr(m.monthName)}">
+                    <div class="mk-month-card ${cardClass}"
+                      title="Top 20 ${escapeAttr(m.theme.name)} pour ${escapeAttr(m.monthName)}">
                       <div class="mk-month-card-eyebrow">
                         <span>${escapeAttr(m.monthLabel)}</span>
                         ${pinTxt ? `<span class="mk-month-card-pin ${pinClass}">${pinTxt}</span>` : ''}
@@ -810,9 +837,23 @@
                         ${escapeAttr(m.monthName)}
                       </div>
                       <div class="mk-month-card-theme">${escapeAttr(m.theme.name)}</div>
-                      <div class="mk-month-card-meta">${list.length} produits IP${totalQte > 0 ? ' · ' + totalQte.toLocaleString('fr-FR') + ' u secteur' : ''}</div>
-                      ${top1 ? `<div class="mk-month-card-top"><span class="mk-month-card-top-rank">#1</span>${escapeAttr((top1.designation || '').slice(0, 28))}${(top1.designation || '').length > 28 ? '…' : ''}</div>` : ''}
-                    </button>
+                      <div class="mk-month-card-meta">${list.length} produits IP · top 20 = ${totalQte20.toLocaleString('fr-FR')} u secteur (${eur(totalCa20)})</div>
+                      ${top5.length ? `
+                        <div class="mk-month-card-top5">
+                          ${top5.map((p, i) => `
+                            <div class="mk-month-card-top5-row">
+                              <span class="mk-month-card-top-rank">#${i+1}</span>
+                              <span class="mk-month-card-top5-name" title="${escapeAttr(p.designation)}">${escapeAttr((p.designation || '').slice(0, 30))}${(p.designation || '').length > 30 ? '…' : ''}</span>
+                              ${p._sec_qte > 0 ? `<span class="mk-month-card-top5-qte">${(p._sec_qte).toLocaleString('fr-FR')}u</span>` : ''}
+                            </div>
+                          `).join('')}
+                          ${list.length > 5 ? `<div class="mk-month-card-more">+ ${Math.min(15, list.length - 5)} autres dans le top 20</div>` : ''}
+                        </div>
+                      ` : ''}
+                      <button class="mk-month-card-cta" onclick="window.mkStartEdit('${m.theme.id}')">
+                        Créer la fiche top 20 →
+                      </button>
+                    </div>
                   `;
                 }).join('')}
               </div>

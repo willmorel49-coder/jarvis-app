@@ -170,6 +170,65 @@
 .mk-month-card-top-rank {
   font-size: 9px; font-weight: 900; color: #0057FF;
 }
+
+/* Top 5 inline dans la card mois (planning) */
+.mk-month-card { cursor: default; }
+.mk-month-card-top5 {
+  background: rgba(0,87,255,0.04);
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin-top: 4px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.mk-month-card-now .mk-month-card-top5 { background: rgba(255,255,255,0.14); }
+.mk-month-card-top5-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10.5px;
+  padding: 2px 0;
+}
+.mk-month-card-top5-row:not(:last-child) {
+  border-bottom: 1px dashed rgba(11,31,77,0.06);
+}
+.mk-month-card-now .mk-month-card-top5-row:not(:last-child) {
+  border-bottom-color: rgba(255,255,255,0.15);
+}
+.mk-month-card-top5-name {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: #0B1F4D; font-weight: 600;
+}
+.mk-month-card-now .mk-month-card-top5-name { color: #FFFFFF; }
+.mk-month-card-top5-qte {
+  font-size: 9.5px; font-weight: 800; color: #14B86A;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.mk-month-card-now .mk-month-card-top5-qte { color: #C8FCD9; }
+.mk-month-card-more {
+  font-size: 9.5px; font-weight: 700; color: #64748B;
+  text-align: center;
+  margin-top: 3px; padding-top: 3px;
+  border-top: 1px dashed rgba(11,31,77,0.08);
+}
+.mk-month-card-now .mk-month-card-more {
+  color: rgba(255,255,255,0.75);
+  border-top-color: rgba(255,255,255,0.18);
+}
+.mk-month-card-cta {
+  background: #0057FF; color: #FFFFFF;
+  border: none; padding: 7px 10px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.3px;
+  border-radius: 8px;
+  cursor: pointer; font-family: inherit;
+  margin-top: 6px;
+  transition: transform .12s, box-shadow .12s;
+}
+.mk-month-card-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,87,255,0.30); }
+.mk-month-card-now .mk-month-card-cta {
+  background: #FFFFFF; color: #0057FF;
+}
+.mk-month-card-now .mk-month-card-cta:hover {
+  box-shadow: 0 4px 12px rgba(255,255,255,0.30);
+}
 @media (max-width: 700px) {
   .mk-hero-stats { grid-template-columns: 1fr 1fr; }
   .mk-hero-top { grid-column: 1 / -1; }
