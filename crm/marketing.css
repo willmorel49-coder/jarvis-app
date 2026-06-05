@@ -1012,74 +1012,12 @@
   background: #E8EEFF;
 }
 
-/* APERCU 2 COLONNES — toolbar a gauche (vertical), fiche au centre droite.
-   Pattern classique outils de design pro (Figma, Canva, Sketch).
-   Sur mobile <900px : retour layout vertical (toolbar en haut). */
-.mk-preview-live {
-  display: flex; flex-direction: column;
-}
-.mk-preview-live .mk-modal-head {
-  flex-shrink: 0;
-}
-.mk-preview-live .mk-preview-stage {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  overflow: hidden;
-  min-height: 0;
-}
-.mk-preview-live .mk-pv-tb {
-  /* Override : la toolbar devient sidebar verticale a gauche */
-  max-height: none !important;
-  width: 280px;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 14px 14px 24px;
-  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFF 100%);
-  border-right: 1.5px solid var(--border);
-  border-bottom: none !important;
-  box-shadow: 4px 0 12px rgba(11,31,77,0.04);
-  flex-direction: column;
-  gap: 14px !important;
-  /* Sticky scrollbar custom */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,87,255,0.20) transparent;
-}
-.mk-preview-live .mk-pv-tb::-webkit-scrollbar { width: 6px; }
-.mk-preview-live .mk-pv-tb::-webkit-scrollbar-thumb { background: rgba(0,87,255,0.20); border-radius: 999px; }
-.mk-preview-live .mk-pv-tb::-webkit-scrollbar-track { background: transparent; }
-
-/* Chaque rangee de la toolbar devient un bloc empile verticalement */
-.mk-preview-live .mk-pv-row {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  padding-bottom: 12px;
-  border-bottom: 1px dashed rgba(11,31,77,0.06);
-}
-.mk-preview-live .mk-pv-row:last-child { border-bottom: none; }
-.mk-preview-live .mk-pv-lbl {
-  width: auto;
-  font-size: 10px;
-  letter-spacing: 1.2px;
-  color: #0057FF;
-  margin-bottom: 4px;
-}
-.mk-preview-live .mk-pv-scroll {
-  flex: 1;
-  flex-wrap: wrap;
-  padding: 0;
-  overflow-x: visible;
-  gap: 7px;
-}
-
+/* Layout standard restaure : toolbar en haut horizontal, fiche en bas.
+   Auto-fit garde, slider zoom garde. */
 .mk-preview-live .mk-modal-body {
-  padding: 24px 16px;
+  padding: 16px;
   align-items: center;
   background: linear-gradient(180deg, #E8EEFF 0%, #F5F8FF 100%);
-  overflow-y: auto;
-  min-height: 0;
 }
 .mk-preview-live #mk-preview-render {
   transform-origin: top center;
@@ -1110,9 +1048,7 @@
 }
 .mk-btn-icon-only svg { display: block; }
 
-/* PLEIN ECRAN : la modal occupe tout, fond fonce, toolbar masquee, fiche
-   prend toute la largeur (grid passe a 0 + 1fr). */
-.mk-preview-fullscreen .mk-preview-stage { grid-template-columns: 0 1fr; }
+/* PLEIN ECRAN : la modal occupe tout, fond fonce, toolbar masquee */
 .mk-preview-fullscreen .mk-pv-tb { display: none !important; }
 .mk-preview-fullscreen .mk-modal-body {
   background: #0B1F4D !important;
@@ -1130,38 +1066,8 @@
 }
 
 /* TOOLBAR REPLIEE : 1 clic pour masquer les controles d'edition */
-.mk-preview-toolbar-collapsed .mk-preview-stage { grid-template-columns: 0 1fr; }
 .mk-preview-toolbar-collapsed .mk-pv-tb {
   display: none;
-}
-
-/* MOBILE <900px : retour layout vertical (toolbar en haut, fiche en bas) */
-@media (max-width: 900px) {
-  .mk-preview-live .mk-preview-stage {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-  }
-  .mk-preview-live .mk-pv-tb {
-    width: 100%;
-    height: auto;
-    max-height: 38vh !important;
-    border-right: none !important;
-    border-bottom: 1.5px solid var(--border) !important;
-    box-shadow: 0 4px 12px rgba(11,31,77,0.04);
-  }
-  .mk-preview-live .mk-pv-row {
-    flex-direction: row;
-    align-items: center;
-    border-bottom: none;
-  }
-  .mk-preview-live .mk-pv-lbl {
-    width: 84px;
-    margin-bottom: 0;
-  }
-  .mk-preview-live .mk-pv-scroll {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-  }
 }
 
 /* SLIDER ZOOM dans le header */
