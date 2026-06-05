@@ -422,6 +422,11 @@
     };
     window.mkClosePicker();
     renderEdit();
+    // Ouvre directement l'apercu live (sidebar gauche) plutot que de laisser
+    // l'utilisateur cliquer "Apercu" : il arrive direct sur le doc editable.
+    setTimeout(function () {
+      if (typeof window.mkPreview === 'function') window.mkPreview();
+    }, 60);
   };
 
   function renderSeasonPicker() {
@@ -2890,10 +2895,19 @@
     const vh = window.innerHeight || 800;
     const vw = window.innerWidth || 1200;
     const headH = 64;
-    const padH = 40;
-    const tbH = (__previewFullscreen || __previewToolbarCollapsed) ? 0 : Math.min(vh * 0.38, 360);
-    const availH = vh - headH - tbH - padH;
-    const availW = Math.min(vw - 40, 900);
+    const padH = 48;
+    const isMobile = vw < 900;
+    const sidebarVisible = !__previewFullscreen && !__previewToolbarCollapsed;
+    let availW, availH;
+    if (isMobile) {
+      const tbH = sidebarVisible ? Math.min(vh * 0.38, 320) : 0;
+      availH = vh - headH - tbH - padH;
+      availW = vw - 40;
+    } else {
+      const sbW = sidebarVisible ? 280 : 0;
+      availH = vh - headH - padH;
+      availW = vw - sbW - 60;
+    }
     const scaleH = availH / 1123;
     const scaleW = availW / 794;
     const auto = Math.min(scaleH, scaleW, __previewFullscreen ? 1.0 : 0.95);
@@ -2956,9 +2970,11 @@
           <button class="mk-btn mk-btn-primary" onclick="window.mkDownloadFromPreview()">⬇ PDF</button>
         </div>
       </div>
-      ${renderPreviewToolbar(sheet)}
-      <div class="mk-modal-body">
-        <div id="mk-preview-render">${renderSheetHTML(sheet, 'mk-pdf-target')}</div>
+      <div class="mk-preview-stage">
+        ${renderPreviewToolbar(sheet)}
+        <div class="mk-modal-body">
+          <div id="mk-preview-render">${renderSheetHTML(sheet, 'mk-pdf-target')}</div>
+        </div>
       </div>
     `;
     document.body.appendChild(modal);
