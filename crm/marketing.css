@@ -1012,6 +1012,30 @@
   background: #E8EEFF;
 }
 
+/* APERCU AUTO-FIT — la fiche A4 (794x1123) zoom-out pour tenir dans la
+   hauteur dispo de la modale, plus de slider/scroll necessaire.
+   Calcul JS dans marketing.js mais fallback CSS pur ici. */
+.mk-preview-live .mk-modal-body {
+  padding: 16px;
+  align-items: center; /* centre verticalement la fiche */
+  background: linear-gradient(180deg, #E8EEFF 0%, #F5F8FF 100%);
+}
+.mk-preview-live #mk-preview-render {
+  transform-origin: top center;
+  transition: transform .2s ease-out;
+  will-change: transform;
+}
+/* Auto-scale par defaut pour que la fiche tienne dans la modale.
+   La hauteur dispo est viewport - 64px (head) - 38vh max (toolbar) - 32px (padding).
+   Donc ~37vh utilisable. La fiche fait 1123px → scale 0.55-0.65 typique.
+   On set un scale par defaut via var CSS, ajustable par bouton +/- */
+.mk-preview-live #mk-preview-render {
+  --preview-scale: 0.62;
+  transform: scale(var(--preview-scale));
+  /* Marge negative pour eviter espace blanc apres scale */
+  margin-bottom: calc(1123px * (var(--preview-scale) - 1));
+}
+
 /* ══════════════════════════════════════════════════════════════
    APERÇU LIVE — toolbar d'édition + mode plein ecran
    ══════════════════════════════════════════════════════════════ */
@@ -1045,6 +1069,60 @@
 /* TOOLBAR REPLIEE : 1 clic pour masquer les controles d'edition */
 .mk-preview-toolbar-collapsed .mk-pv-tb {
   display: none;
+}
+
+/* SLIDER ZOOM dans le header */
+.mk-zoom-control {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-right: 10px;
+  padding: 4px 10px;
+  background: rgba(0,87,255,0.05);
+  border: 1px solid rgba(0,87,255,0.12);
+  border-radius: 999px;
+}
+.mk-zoom-btn {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(11,31,77,0.12);
+  background: #FFFFFF; color: #0B1F4D;
+  cursor: pointer; font-weight: 900; font-size: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  line-height: 1; padding: 0;
+  transition: all .12s;
+}
+.mk-zoom-btn:hover { background: #0057FF; color: #FFFFFF; border-color: #0057FF; }
+#mk-zoom-slider {
+  width: 100px; height: 4px;
+  -webkit-appearance: none; appearance: none;
+  background: rgba(0,87,255,0.18);
+  border-radius: 999px; outline: none;
+  cursor: pointer;
+}
+#mk-zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px;
+  background: #0057FF;
+  border-radius: 50%; border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0,87,255,0.30);
+  cursor: pointer;
+}
+#mk-zoom-slider::-moz-range-thumb {
+  width: 16px; height: 16px;
+  background: #0057FF;
+  border-radius: 50%; border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0,87,255,0.30);
+  cursor: pointer;
+}
+#mk-zoom-label {
+  font-size: 11px; font-weight: 800; color: #0057FF;
+  min-width: 36px; text-align: right;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+#mk-zoom-label:hover { text-decoration: underline; }
+
+@media (max-width: 700px) {
+  .mk-zoom-control { display: none; }
 }
 .mk-pv-tb {
   background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFF 100%);
