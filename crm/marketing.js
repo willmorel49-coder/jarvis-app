@@ -2867,19 +2867,33 @@
     generatePDF(editingSheet);
   };
 
-  // ── APERÇU PDF (modal) avec édition live ────────────────────
+  // ── APERÇU PDF (modal) avec édition live + mode plein ecran ─
+  let __previewFullscreen = false;
+  let __previewToolbarCollapsed = false;
   function openPreview(sheet) {
     let modal = document.getElementById('mk-preview-modal');
     if (modal) modal.remove();
     modal = document.createElement('div');
     modal.id = 'mk-preview-modal';
-    modal.className = 'mk-modal mk-preview-live';
+    modal.className = 'mk-modal mk-preview-live' + (__previewFullscreen ? ' mk-preview-fullscreen' : '') + (__previewToolbarCollapsed ? ' mk-preview-toolbar-collapsed' : '');
     modal.innerHTML = `
       <div class="mk-modal-head">
-        <div class="mk-modal-title">Aperçu — édition live</div>
+        <div class="mk-modal-title">${__previewFullscreen ? 'Aperçu plein écran' : 'Aperçu — édition live'}</div>
         <div class="mk-modal-actions">
+          <button class="mk-btn mk-btn-icon-only" title="${__previewToolbarCollapsed ? 'Afficher les contrôles' : 'Masquer les contrôles'}" onclick="window.mkTogglePreviewToolbar()">
+            ${__previewToolbarCollapsed
+              ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/></svg>'
+              : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-7-10-7a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+            }
+          </button>
+          <button class="mk-btn mk-btn-icon-only" title="${__previewFullscreen ? 'Quitter plein écran (Echap)' : 'Plein écran'}" onclick="window.mkTogglePreviewFullscreen()">
+            ${__previewFullscreen
+              ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>'
+              : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>'
+            }
+          </button>
           <button class="mk-btn" onclick="window.mkClosePreview()">Fermer</button>
-          <button class="mk-btn mk-btn-primary" onclick="window.mkDownloadFromPreview()">⬇ Télécharger PDF</button>
+          <button class="mk-btn mk-btn-primary" onclick="window.mkDownloadFromPreview()">⬇ PDF</button>
         </div>
       </div>
       ${renderPreviewToolbar(sheet)}
@@ -2889,7 +2903,31 @@
     `;
     document.body.appendChild(modal);
     window._mkPreviewSheet = sheet;
+    // Echap pour quitter le plein ecran (sinon fermer)
+    if (!window.__mkPreviewEsc) {
+      window.__mkPreviewEsc = function (e) {
+        if (e.key !== 'Escape') return;
+        const m = document.getElementById('mk-preview-modal');
+        if (!m) return;
+        if (__previewFullscreen) {
+          __previewFullscreen = false;
+          openPreview(window._mkPreviewSheet);
+        } else {
+          window.mkClosePreview();
+        }
+      };
+      document.addEventListener('keydown', window.__mkPreviewEsc);
+    }
   }
+
+  window.mkTogglePreviewFullscreen = function () {
+    __previewFullscreen = !__previewFullscreen;
+    if (window._mkPreviewSheet) openPreview(window._mkPreviewSheet);
+  };
+  window.mkTogglePreviewToolbar = function () {
+    __previewToolbarCollapsed = !__previewToolbarCollapsed;
+    if (window._mkPreviewSheet) openPreview(window._mkPreviewSheet);
+  };
 
   function refreshPreview() {
     const sheet = window._mkPreviewSheet;
