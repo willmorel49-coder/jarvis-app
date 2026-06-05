@@ -329,12 +329,26 @@
     seasonPickerSelectedKeys = new Set(preselect.map(getProductKey));
     seasonPickerOpen = true;
     renderSeasonPicker();
+    // Escape ferme le picker
+    if (!window.__mkPickerEscBound) {
+      window.__mkPickerEscBound = function (e) {
+        if (e.key === 'Escape' && seasonPickerOpen) {
+          e.stopPropagation();
+          window.mkClosePicker();
+        }
+      };
+      document.addEventListener('keydown', window.__mkPickerEscBound, true);
+    }
   };
 
   window.mkClosePicker = function () {
     seasonPickerOpen = false;
     var el = document.getElementById('mk-season-picker');
     if (el) el.remove();
+    if (window.__mkPickerEscBound) {
+      document.removeEventListener('keydown', window.__mkPickerEscBound, true);
+      window.__mkPickerEscBound = null;
+    }
   };
 
   window.mkPickerToggle = function (key) {
@@ -3669,11 +3683,14 @@
     modal.id = 'mk-img-search-modal';
     modal.className = 'mk-img-search-modal';
     modal.setAttribute('hidden', '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'mk-img-search-title');
     modal.innerHTML = ''
       + '<div class="mk-img-search-backdrop" onclick="window.mkImgCloseModal()"></div>'
-      + '<div class="mk-img-search-panel" role="dialog" aria-label="Choisir une image produit">'
+      + '<div class="mk-img-search-panel" role="document">'
       +   '<div class="mk-img-search-head">'
-      +     '<div class="mk-img-search-title">Choisir une image</div>'
+      +     '<div class="mk-img-search-title" id="mk-img-search-title">Choisir une image</div>'
       +     '<button class="mk-img-search-close" onclick="window.mkImgCloseModal()" aria-label="Fermer">✕</button>'
       +   '</div>'
       +   '<div class="mk-img-search-sub" id="mk-img-search-sub"></div>'
@@ -3737,8 +3754,26 @@
 
   window.mkImgCloseModal = function () {
     const modal = document.getElementById('mk-img-search-modal');
-    if (modal) modal.setAttribute('hidden', '');
+    if (!modal) return;
+    modal.setAttribute('hidden', '');
+    if (modal.__escHandler) {
+      document.removeEventListener('keydown', modal.__escHandler, true);
+      modal.__escHandler = null;
+    }
   };
+
+  // Escape ferme le modal image search dès qu'il est visible
+  function mkImgBindEscape() {
+    const modal = document.getElementById('mk-img-search-modal');
+    if (!modal || modal.__escHandler) return;
+    modal.__escHandler = function (e) {
+      if (e.key === 'Escape' && !modal.hasAttribute('hidden')) {
+        e.stopPropagation();
+        window.mkImgCloseModal();
+      }
+    };
+    document.addEventListener('keydown', modal.__escHandler, true);
+  }
 
   window.mkImgUse = function (productIndex, candIndex) {
     if (!editingSheet || !editingSheet.products[productIndex]) return;
@@ -3774,6 +3809,7 @@
     mkImgEnsureModal();
     const modal = document.getElementById('mk-img-search-modal');
     modal.removeAttribute('hidden');
+    mkImgBindEscape();
     mkImgRenderState('loading', { label: name || cip13 || ean });
 
     const base = (window.SUPABASE_URL || '').replace(/\/+$/, '');
