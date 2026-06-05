@@ -2884,6 +2884,46 @@
   // ── APERÇU PDF (modal) avec édition live + mode plein ecran ─
   let __previewFullscreen = false;
   let __previewToolbarCollapsed = false;
+  let __previewZoom = null; // null = auto-fit calcule
+
+  function computePreviewAutoScale() {
+    const vh = window.innerHeight || 800;
+    const vw = window.innerWidth || 1200;
+    const headH = 64;
+    const padH = 40;
+    const tbH = (__previewFullscreen || __previewToolbarCollapsed) ? 0 : Math.min(vh * 0.38, 360);
+    const availH = vh - headH - tbH - padH;
+    const availW = Math.min(vw - 40, 900);
+    const scaleH = availH / 1123;
+    const scaleW = availW / 794;
+    const auto = Math.min(scaleH, scaleW, __previewFullscreen ? 1.0 : 0.95);
+    return Math.max(0.30, Math.min(1.40, auto));
+  }
+
+  function applyPreviewZoom() {
+    const render = document.getElementById('mk-preview-render');
+    if (!render) return;
+    const z = __previewZoom != null ? __previewZoom : computePreviewAutoScale();
+    render.style.setProperty('--preview-scale', String(z.toFixed(3)));
+    // Compense la marge inferieure pour eviter espace blanc apres scale
+    render.style.marginBottom = ((z - 1) * 1123) + 'px';
+    const lbl = document.getElementById('mk-zoom-label');
+    if (lbl) lbl.textContent = Math.round(z * 100) + '%';
+    const slider = document.getElementById('mk-zoom-slider');
+    if (slider) slider.value = String(Math.round(z * 100));
+  }
+
+  window.mkPreviewSetZoom = function (pct) {
+    const p = parseInt(pct, 10);
+    if (isNaN(p)) return;
+    __previewZoom = Math.max(0.30, Math.min(1.40, p / 100));
+    applyPreviewZoom();
+  };
+  window.mkPreviewResetZoom = function () {
+    __previewZoom = null;
+    applyPreviewZoom();
+  };
+
   function openPreview(sheet) {
     let modal = document.getElementById('mk-preview-modal');
     if (modal) modal.remove();
@@ -2906,6 +2946,12 @@
               : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>'
             }
           </button>
+          <div class="mk-zoom-control" title="Zoom de l'aperçu">
+            <button class="mk-zoom-btn" onclick="window.mkPreviewSetZoom((parseInt(document.getElementById('mk-zoom-slider').value)-10))" title="Dézoomer">−</button>
+            <input id="mk-zoom-slider" type="range" min="30" max="140" value="62" oninput="window.mkPreviewSetZoom(this.value)" />
+            <button class="mk-zoom-btn" onclick="window.mkPreviewSetZoom((parseInt(document.getElementById('mk-zoom-slider').value)+10))" title="Zoomer">+</button>
+            <span id="mk-zoom-label" onclick="window.mkPreviewResetZoom()" title="Click pour auto-ajuster">62%</span>
+          </div>
           <button class="mk-btn" onclick="window.mkClosePreview()">Fermer</button>
           <button class="mk-btn mk-btn-primary" onclick="window.mkDownloadFromPreview()">⬇ PDF</button>
         </div>
@@ -2917,6 +2963,15 @@
     `;
     document.body.appendChild(modal);
     window._mkPreviewSheet = sheet;
+    // Auto-fit le zoom apres mount (DOM disponible)
+    requestAnimationFrame(applyPreviewZoom);
+    // Recalcule auto-zoom sur resize fenetre
+    if (!window.__mkPreviewResize) {
+      window.__mkPreviewResize = function () {
+        if (__previewZoom == null) applyPreviewZoom();
+      };
+      window.addEventListener('resize', window.__mkPreviewResize);
+    }
     // Echap pour quitter le plein ecran (sinon fermer)
     if (!window.__mkPreviewEsc) {
       window.__mkPreviewEsc = function (e) {
@@ -2950,6 +3005,9 @@
     if (render) render.innerHTML = renderSheetHTML(sheet, 'mk-pdf-target');
     const tb = document.getElementById('mk-preview-toolbar');
     if (tb) tb.outerHTML = renderPreviewToolbar(sheet);
+    // Reapplique le zoom apres rerender (le style inline est preserve sur le
+    // container mais on s'assure que le label/slider correspondent toujours)
+    requestAnimationFrame(applyPreviewZoom);
   }
 
   function renderPreviewToolbar(sheet) {
