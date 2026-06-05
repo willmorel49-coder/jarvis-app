@@ -2891,9 +2891,22 @@
     const vw = window.innerWidth || 1200;
     const headH = 64;
     const padH = 40;
-    const tbH = (__previewFullscreen || __previewToolbarCollapsed) ? 0 : Math.min(vh * 0.38, 360);
-    const availH = vh - headH - tbH - padH;
-    const availW = Math.min(vw - 40, 900);
+    // Layout 2 cols desktop : toolbar 280px a gauche, sinon mobile/collapsed.
+    // En mobile <900px : toolbar reprend la full width en HAUT.
+    const isMobile = vw < 900;
+    const sidebarVisible = !__previewFullscreen && !__previewToolbarCollapsed;
+    let availW, availH;
+    if (isMobile) {
+      // Layout vertical : toolbar en haut, fiche en bas
+      const tbH = sidebarVisible ? Math.min(vh * 0.38, 320) : 0;
+      availH = vh - headH - tbH - padH;
+      availW = vw - 40;
+    } else {
+      // Layout horizontal : toolbar a gauche, fiche a droite
+      const sbW = sidebarVisible ? 280 : 0;
+      availH = vh - headH - padH;
+      availW = vw - sbW - 60; // 60 = padding gauche/droite body
+    }
     const scaleH = availH / 1123;
     const scaleW = availW / 794;
     const auto = Math.min(scaleH, scaleW, __previewFullscreen ? 1.0 : 0.95);
@@ -2956,9 +2969,11 @@
           <button class="mk-btn mk-btn-primary" onclick="window.mkDownloadFromPreview()">⬇ PDF</button>
         </div>
       </div>
-      ${renderPreviewToolbar(sheet)}
-      <div class="mk-modal-body">
-        <div id="mk-preview-render">${renderSheetHTML(sheet, 'mk-pdf-target')}</div>
+      <div class="mk-preview-stage">
+        ${renderPreviewToolbar(sheet)}
+        <div class="mk-modal-body">
+          <div id="mk-preview-render">${renderSheetHTML(sheet, 'mk-pdf-target')}</div>
+        </div>
       </div>
     `;
     document.body.appendChild(modal);
