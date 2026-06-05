@@ -2919,8 +2919,8 @@
     if (!render) return;
     const z = __previewZoom != null ? __previewZoom : computePreviewAutoScale();
     render.style.setProperty('--preview-scale', String(z.toFixed(3)));
-    // Compense la marge inferieure pour eviter espace blanc apres scale
-    render.style.marginBottom = ((z - 1) * 1123) + 'px';
+    // Le wrapper a width/height calc(794*s, 1123*s) en CSS, donc le flexbox
+    // parent centre proprement sans hack de margin negative.
     const lbl = document.getElementById('mk-zoom-label');
     if (lbl) lbl.textContent = Math.round(z * 100) + '%';
     const slider = document.getElementById('mk-zoom-slider');

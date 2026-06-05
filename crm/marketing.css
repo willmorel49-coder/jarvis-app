@@ -1064,10 +1064,12 @@
 
 .mk-preview-live .mk-modal-body {
   flex: 1; min-width: 0;
-  padding: 24px 16px;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
   align-items: center;
   background: linear-gradient(180deg, #E8EEFF 0%, #F5F8FF 100%);
-  overflow-y: auto;
+  overflow: auto;
 }
 
 /* PLEIN ECRAN / TOOLBAR REPLIEE : sidebar masquee, fiche pleine largeur */
@@ -1093,20 +1095,27 @@
   .mk-preview-live .mk-pv-lbl { width: 84px; margin-bottom: 0; }
   .mk-preview-live .mk-pv-scroll { flex-wrap: nowrap; overflow-x: auto; }
 }
-.mk-preview-live #mk-preview-render {
-  transform-origin: top center;
-  transition: transform .2s ease-out;
-  will-change: transform;
-}
-/* Auto-scale par defaut pour que la fiche tienne dans la modale.
-   La hauteur dispo est viewport - 64px (head) - 38vh max (toolbar) - 32px (padding).
-   Donc ~37vh utilisable. La fiche fait 1123px → scale 0.55-0.65 typique.
-   On set un scale par defaut via var CSS, ajustable par bouton +/- */
+/* Pattern wrapper-sizing : un wrapper avec la VRAIE taille post-scale (794*s
+   × 1123*s) absorbe le scale, donc flexbox centre proprement.
+   Le render interne fait toujours 794×1123 mais est scale via transform. */
 .mk-preview-live #mk-preview-render {
   --preview-scale: 0.62;
+  width: calc(794px * var(--preview-scale));
+  height: calc(1123px * var(--preview-scale));
+  position: relative;
+  margin: auto; /* centre dans le canvas */
+  transition: width .2s ease-out, height .2s ease-out;
+}
+.mk-preview-live #mk-preview-render > .mk-pdf-target,
+.mk-preview-live #mk-preview-render > .mk-pdf,
+.mk-preview-live #mk-preview-render > .mk-pdf-bento,
+.mk-preview-live #mk-preview-render > .mk-pdf-focus,
+.mk-preview-live #mk-preview-render > div[id^="mk-pdf-target"] {
+  position: absolute; top: 0; left: 0;
   transform: scale(var(--preview-scale));
-  /* Marge negative pour eviter espace blanc apres scale */
-  margin-bottom: calc(1123px * (var(--preview-scale) - 1));
+  transform-origin: top left;
+  transition: transform .2s ease-out;
+  will-change: transform;
 }
 
 /* ══════════════════════════════════════════════════════════════
