@@ -1012,12 +1012,86 @@
   background: #E8EEFF;
 }
 
-/* Layout standard restaure : toolbar en haut horizontal, fiche en bas.
-   Auto-fit garde, slider zoom garde. */
+/* APERCU 2 COLONNES SIDEBAR — toolbar a gauche, fiche au centre droite.
+   Layout pro outils de design (Figma/Canva). Implementation flexbox
+   (plus robuste que grid pour ce cas). */
+.mk-preview-live .mk-preview-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  overflow: hidden;
+}
+.mk-preview-live .mk-pv-tb {
+  width: 280px; flex-shrink: 0;
+  max-height: none !important;
+  height: auto; align-self: stretch;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 14px 14px 24px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFF 100%);
+  border-right: 1.5px solid var(--border);
+  border-bottom: none !important;
+  box-shadow: 4px 0 12px rgba(11,31,77,0.04);
+  flex-direction: column;
+  gap: 14px !important;
+  scrollbar-width: thin;
+}
+.mk-preview-live .mk-pv-tb::-webkit-scrollbar { width: 6px; }
+.mk-preview-live .mk-pv-tb::-webkit-scrollbar-thumb { background: rgba(0,87,255,0.20); border-radius: 999px; }
+
+.mk-preview-live .mk-pv-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed rgba(11,31,77,0.06);
+  min-height: 0;
+}
+.mk-preview-live .mk-pv-row:last-child { border-bottom: none; padding-bottom: 0; }
+.mk-preview-live .mk-pv-lbl {
+  width: auto;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: #0057FF;
+  margin-bottom: 4px;
+}
+.mk-preview-live .mk-pv-scroll {
+  flex-wrap: wrap;
+  padding: 0;
+  overflow-x: visible;
+  gap: 7px;
+}
+
 .mk-preview-live .mk-modal-body {
-  padding: 16px;
+  flex: 1; min-width: 0;
+  padding: 24px 16px;
   align-items: center;
   background: linear-gradient(180deg, #E8EEFF 0%, #F5F8FF 100%);
+  overflow-y: auto;
+}
+
+/* PLEIN ECRAN / TOOLBAR REPLIEE : sidebar masquee, fiche pleine largeur */
+.mk-preview-fullscreen .mk-pv-tb,
+.mk-preview-toolbar-collapsed .mk-pv-tb {
+  display: none !important;
+}
+
+/* MOBILE <900px : retour layout vertical (toolbar en haut) */
+@media (max-width: 900px) {
+  .mk-preview-live .mk-preview-stage { flex-direction: column; }
+  .mk-preview-live .mk-pv-tb {
+    width: 100%; flex-shrink: 0;
+    height: auto; max-height: 38vh !important;
+    border-right: none !important;
+    border-bottom: 1.5px solid var(--border) !important;
+    box-shadow: 0 4px 12px rgba(11,31,77,0.04);
+  }
+  .mk-preview-live .mk-pv-row {
+    flex-direction: row; align-items: center;
+    border-bottom: none; padding-bottom: 0;
+  }
+  .mk-preview-live .mk-pv-lbl { width: 84px; margin-bottom: 0; }
+  .mk-preview-live .mk-pv-scroll { flex-wrap: nowrap; overflow-x: auto; }
 }
 .mk-preview-live #mk-preview-render {
   transform-origin: top center;
