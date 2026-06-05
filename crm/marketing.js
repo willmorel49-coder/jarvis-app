@@ -864,6 +864,15 @@
   }
 
   function snapshotProduct(b) {
+    // Resout l'image OFFILOG par EAN/CIP7/nom — sinon les fiches PDF des
+    // produits BENCHMARK grossiste n'ont jamais d'image (BENCHMARK ne porte
+    // pas img). resolveImage est hoistee (function declaration).
+    let resolved = '';
+    try {
+      if (typeof resolveImage === 'function') {
+        resolved = resolveImage(b.cip13, b.designation) || '';
+      }
+    } catch (e) {}
     return {
       cip13: b.cip13 || '',
       designation: b.designation || '',
@@ -873,7 +882,7 @@
       ppht: Number(b.prix_ht || 0),
       offre_ip: Number(b.offre_ip || 0),
       remise_pct: Number(b.remise_pct || 0),
-      img: '',
+      img: resolved,
       source: 'ip',
     };
   }
