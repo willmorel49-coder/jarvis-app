@@ -1013,8 +1013,39 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   APERÇU LIVE — toolbar d'édition en haut de la modal
+   APERÇU LIVE — toolbar d'édition + mode plein ecran
    ══════════════════════════════════════════════════════════════ */
+.mk-preview-live .mk-modal-head {
+  position: sticky; top: 0; z-index: 10;
+}
+.mk-btn-icon-only {
+  width: 36px !important; height: 36px;
+  padding: 0 !important;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.mk-btn-icon-only svg { display: block; }
+
+/* PLEIN ECRAN : la modal occupe tout, fond fonce, toolbar masquee */
+.mk-preview-fullscreen .mk-pv-tb { display: none !important; }
+.mk-preview-fullscreen .mk-modal-body {
+  background: #0B1F4D !important;
+  padding: 24px 16px;
+}
+.mk-preview-fullscreen #mk-preview-render {
+  transform-origin: top center;
+  /* La fiche est en 794px (A4 width). On l'agrandit jusqu'a la largeur dispo */
+  zoom: 1.05;
+}
+.mk-preview-fullscreen .mk-modal-head {
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* TOOLBAR REPLIEE : 1 clic pour masquer les controles d'edition */
+.mk-preview-toolbar-collapsed .mk-pv-tb {
+  display: none;
+}
 .mk-pv-tb {
   background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFF 100%);
   border-bottom: 1.5px solid var(--border);
