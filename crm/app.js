@@ -2237,13 +2237,13 @@ function renderPharmacies() {
               <div class="pharma-ca">${fmt(caCur)}</div>
               <div class="pharma-qte">CA net HT</div>
             </div>
-            <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Fiche de visite" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📋</button>
+            <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Ouvrir la fiche de visite" data-tooltip="Ouvrir la fiche de visite" aria-label="Ouvrir la fiche de visite" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📋</button>
             <div style="color:var(--text3);font-size:16px">›</div>
           </div>`;
       }).join('')
-    : emptyState('🏥',
-        pharmaSearch ? 'Aucun résultat' : 'Aucune pharmacie',
-        pharmaSearch ? 'Essayez un autre terme' : 'Importez des fichiers Excel pour voir vos pharmacies');
+    : (pharmaSearch
+        ? emptyState('search', 'Aucune pharmacie ne correspond', `Aucun résultat pour « ${pharmaSearch} ». Essayez un autre terme ou réinitialisez les filtres.`, 'Réinitialiser', "document.getElementById('pharma-search')&&(document.getElementById('pharma-search').value='');pharmaSearch='';renderPharmacies&&renderPharmacies()")
+        : emptyState('pharmacy', 'Aucune pharmacie', 'Importez vos premiers fichiers Excel pour voir vos pharmacies apparaître ici.'));
 
   const planningHtml = (() => {
     if (typeof CLIENTS === 'undefined' || !CLIENTS.length) return '';
@@ -3656,7 +3656,7 @@ function renderProduits() {
       ${familyKpiHtml}
     </div>` : ''}
 
-    ${!sales.length ? emptyState('📊', 'Aucune donnée', 'Importez des fichiers Excel pour analyser votre portefeuille') : `
+    ${!sales.length ? emptyState('chart', 'Aucune donnée à afficher', 'Importez des fichiers Excel pour analyser votre portefeuille produits.') : `
     <div class="card fade-up" style="margin-bottom:24px">
       <div class="card-header" style="flex-wrap:wrap;gap:12px">
         <div>
@@ -3681,7 +3681,7 @@ function renderProduits() {
       <div class="card-body">
         ${chartProds.length
           ? '<div class="chart-wrap" style="height:300px"><canvas id="chart-produits-bar"></canvas></div>'
-          : emptyState('💊', 'Aucun produit', 'Aucune donnée pour cette famille')}
+          : emptyState('box', 'Aucun produit dans cette famille', 'Sélectionnez une autre famille ou élargissez vos filtres.')}
       </div>
     </div>`}
 
@@ -4223,7 +4223,7 @@ function renderImport() {
           </div>
         </div>
         ${matrixHtml}
-      </div>` : emptyState('🏥','Aucune pharmacie','Importez un premier fichier pour démarrer')}
+      </div>` : emptyState('pharmacy','Aucune pharmacie suivie','Importez un premier fichier Excel pour démarrer le suivi de votre portefeuille.')}
 
       ${totalPharmas > 0 ? `
       <div class="card fade-up" style="margin-bottom:24px">
@@ -5172,7 +5172,7 @@ function benchSparkline(months, width=60, height=18) {
 
 function renderBenchmark() {
   if (typeof BENCHMARK === 'undefined') {
-    document.getElementById('bench-content').innerHTML = emptyState('📊', 'Données non chargées', 'benchmark-data.js manquant');
+    document.getElementById('bench-content').innerHTML = emptyState('chart', 'Données Benchmark indisponibles', 'Le fichier benchmark-data.js n\'est pas chargé. Vérifiez votre import.');
     return;
   }
 
@@ -5673,26 +5673,62 @@ function catAddBenchToSimIdx(idx) {
 }
 
 // ── NAV ───────────────────────────────────────
+const PAGE_TITLES = {
+  dashboard:  'Pilotage',
+  pharmacies: 'Pharmacies',
+  produits:   'Analyse Portefeuille',
+  import:     'Import',
+  admin:      'Administration',
+  catalogue:  'Catalogue Produits IP',
+  benchmark:  'Benchmark Marché',
+  simulateur: 'Simulateur de panier',
+  offilog:    'Offilog — Parapharmacie',
+  groupements:'Suivi Groupement',
+  objectifs:  'Objectifs commerciaux',
+  marketing:  'Marketing — Fiches commerciales',
+};
+const PAGE_SUBTITLES = {
+  dashboard:  'Performance commerciale en temps réel',
+  pharmacies: 'Portefeuille clients & fiches détaillées',
+  produits:   'Mix produit · marge · pénétration',
+  catalogue:  'Référentiel produits IP',
+  benchmark:  'Comparatif marché & remboursement Ameli',
+  simulateur: 'Calcul de panier & marges',
+  offilog:    'Veille parapharmacie & alertes prix concurrents',
+  groupements:'Suivi groupements & adhérents',
+  marketing:  'Fiches commerciales · offres ·  PDF',
+};
+// Historique simple pour le bouton retour topbar
+window._navHistory = window._navHistory || [];
+
 function navigate(page) {
+  // Push dans historique seulement si différent de la page actuelle
+  if (state.currentPage && state.currentPage !== page) {
+    window._navHistory.push(state.currentPage);
+    if (window._navHistory.length > 20) window._navHistory.shift();
+  }
   state.currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
 
-  const titles = {
-    dashboard:  'Dashboard',
-    pharmacies: 'Pharmacies',
-    produits:   'Analyse Portefeuille',
-    import:     'Import',
-    admin:      'Administration',
-    catalogue:  'Catalogue Produits IP',
-    benchmark:  'Benchmark Marché',
-    simulateur: 'Simulateur de panier',
-    offilog:      'Offilog — Parapharmacie',
-    groupements:  'Suivi Groupement',
-    objectifs:    'Objectifs commerciaux',
-    marketing:    'Marketing — Fiches commerciales',
-  };
-  document.getElementById('topbar-title').textContent = titles[page] || page;
+  // Fermer sidebar mobile apres navigation
+  if (typeof closeSidebarMobile === 'function') closeSidebarMobile();
+
+  // Title + breadcrumb subtitle
+  const titleEl = document.getElementById('topbar-title');
+  if (titleEl) titleEl.textContent = PAGE_TITLES[page] || page;
+  const crumbEl = document.getElementById('topbar-breadcrumb');
+  if (crumbEl) {
+    const sub = PAGE_SUBTITLES[page];
+    if (sub) { crumbEl.style.display = ''; crumbEl.textContent = sub; }
+    else     { crumbEl.style.display = 'none'; crumbEl.textContent = ''; }
+  }
+  // Back button : visible si historique non vide
+  updateBackButton();
+
+  // Loading bar : show pendant le render (le lazy bundle de marketing/benchmark
+  // peut prendre ~1-2s)
+  showTopbarLoader();
 
   const renders = {
     dashboard:   renderDashboard,
@@ -5708,7 +5744,119 @@ function navigate(page) {
     objectifs:   renderObjectifs,
     marketing:   (typeof renderMarketing === 'function' ? renderMarketing : null),
   };
-  if (renders[page]) renders[page]();
+  if (renders[page]) {
+    try { renders[page](); } catch (e) { console.error('[nav] render error', e); }
+  }
+  // Cache la barre apres render (next frame pour laisser respirer)
+  requestAnimationFrame(() => requestAnimationFrame(hideTopbarLoader));
+
+  // Scroll top apres navigation (UX intuitive)
+  const pc = document.querySelector('.page-content');
+  if (pc) pc.scrollTop = 0;
+}
+
+function navBack() {
+  if (!window._navHistory || !window._navHistory.length) return;
+  const prev = window._navHistory.pop();
+  // Pop again pour eviter de re-push dans navigate
+  const cur = state.currentPage;
+  state.currentPage = null;
+  navigate(prev);
+  // Le navigate ci-dessus va push cur dans l'historique, retirons-le
+  if (window._navHistory[window._navHistory.length - 1] === cur) window._navHistory.pop();
+  updateBackButton();
+}
+
+function updateBackButton() {
+  const btn = document.getElementById('topbar-back-btn');
+  if (!btn) return;
+  btn.style.display = (window._navHistory && window._navHistory.length > 0) ? '' : 'none';
+}
+
+// ── SIDEBAR : toggle desktop + overlay mobile ─────────
+function toggleSidebar() {
+  const cur = document.documentElement.dataset.sidebar || '';
+  const next = (cur === 'collapsed') ? 'expanded' : 'collapsed';
+  document.documentElement.dataset.sidebar = next;
+  try { localStorage.setItem('mk_sidebar_collapsed', next === 'collapsed' ? '1' : '0'); } catch {}
+  // Resize charts apres transition
+  setTimeout(() => {
+    if (window.Chart && Chart.instances) {
+      try { Object.values(Chart.instances).forEach(c => c.resize && c.resize()); } catch {}
+    }
+    window.dispatchEvent(new Event('resize'));
+  }, 220);
+}
+
+function restoreSidebarState() {
+  try {
+    const v = localStorage.getItem('mk_sidebar_collapsed');
+    if (v === '1') document.documentElement.dataset.sidebar = 'collapsed';
+    else if (v === '0') document.documentElement.dataset.sidebar = 'expanded';
+  } catch {}
+}
+
+function openSidebarMobile() {
+  // Si mobile-shell.js a expose son API, on delegue (il a focus trap + swipe + overlay)
+  if (window.MobileShell && typeof window.MobileShell.open === 'function') {
+    window.MobileShell.open();
+    return;
+  }
+  // Fallback (mobile-shell pas charge)
+  document.documentElement.dataset.sidebarMobile = 'open';
+  const bk = document.getElementById('sidebar-backdrop');
+  if (bk) bk.classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebarMobile() {
+  if (window.MobileShell && typeof window.MobileShell.close === 'function') {
+    if (window.MobileShell.isOpen && window.MobileShell.isOpen()) window.MobileShell.close();
+    return;
+  }
+  if (document.documentElement.dataset.sidebarMobile !== 'open') return;
+  document.documentElement.dataset.sidebarMobile = '';
+  const bk = document.getElementById('sidebar-backdrop');
+  if (bk) bk.classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+// ── TOPBAR LOADER ─────────────────────────────
+let _topbarLoaderTimer = null;
+function showTopbarLoader() {
+  const el = document.getElementById('topbar-loader');
+  if (!el) return;
+  clearTimeout(_topbarLoaderTimer);
+  el.classList.add('show');
+}
+function hideTopbarLoader() {
+  const el = document.getElementById('topbar-loader');
+  if (!el) return;
+  clearTimeout(_topbarLoaderTimer);
+  _topbarLoaderTimer = setTimeout(() => el.classList.remove('show'), 80);
+}
+
+// ── KEYBOARD SHORTCUTS HELP ───────────────────
+function showShortcutsHelp() {
+  if (document.getElementById('shortcuts-modal')) return;
+  const m = document.createElement('div');
+  m.id = 'shortcuts-modal';
+  m.className = 'shortcuts-modal';
+  m.innerHTML = `
+    <div class="shortcuts-card" onclick="event.stopPropagation()">
+      <h3>Raccourcis clavier</h3>
+      <div class="sc-row"><span>Recherche globale</span><span><kbd>⌘</kbd><kbd>K</kbd></span></div>
+      <div class="sc-row"><span>Réduire / agrandir le menu</span><span><kbd>⌘</kbd><kbd>B</kbd></span></div>
+      <div class="sc-row"><span>Retour à la page précédente</span><span><kbd>⌘</kbd><kbd>←</kbd></span></div>
+      <div class="sc-row"><span>Fermer une fenêtre</span><span><kbd>Échap</kbd></span></div>
+      <div class="sc-row"><span>Afficher cette aide</span><span><kbd>?</kbd></span></div>
+      <button class="sc-close" onclick="document.getElementById('shortcuts-modal').remove()">Fermer</button>
+    </div>
+  `;
+  m.addEventListener('click', () => m.remove());
+  document.body.appendChild(m);
+  document.addEventListener('keydown', function escSc(e) {
+    if (e.key === 'Escape') { m.remove(); document.removeEventListener('keydown', escSc); }
+  });
 }
 
 function updateNavBadge() {
@@ -5716,16 +5864,166 @@ function updateNavBadge() {
   if (badge) badge.textContent = state.imports.length;
 }
 
-// ── TOAST ─────────────────────────────────────
-let toastTimer;
-function showToast(msg, type = 'info') {
-  const t = document.getElementById('toast');
-  const icons = { success: '✓', error: '✗', info: 'ℹ' };
-  t.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
-  t.className = `show ${type}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+// ── MODAL SYSTEM (unifié) ─────────────────────
+// Couche commune utilisée par toutes les modales custom (recherche globale,
+// fiches, image search marketing, etc.). Comportement :
+//   - Echap ferme la dernière modal ouverte
+//   - Click backdrop ferme (sauf opts.persistent)
+//   - Focus trap Tab/Shift+Tab
+//   - aria-modal/role/labelledby
+//   - Mobile (<768px) → fullscreen + slide-up
+// API: window.openAppModal(el, opts), window.closeAppModal(el)
+const __appModalStack = [];
+
+function __appModalIsEditing() {
+  const ae = document.activeElement;
+  if (!ae) return false;
+  const tag = ae.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+    // Si du texte est sélectionné, considérer comme édition active
+    if (ae.value && ae.selectionStart !== ae.selectionEnd) return true;
+    // Sinon, autorise quand même la fermeture par backdrop (UX classique)
+    return false;
+  }
+  return ae.isContentEditable === true;
 }
+
+function __appModalFocusables(root) {
+  if (!root) return [];
+  const sel = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  return Array.from(root.querySelectorAll(sel)).filter(el => el.offsetParent !== null || el === document.activeElement);
+}
+
+function __appModalKeyHandler(e) {
+  if (!__appModalStack.length) return;
+  const top = __appModalStack[__appModalStack.length - 1];
+  if (!top || !top.el || !document.body.contains(top.el)) return;
+  if (e.key === 'Escape') {
+    if (top.opts && top.opts.persistent) return;
+    e.stopPropagation();
+    closeAppModal(top.el);
+    return;
+  }
+  if (e.key === 'Tab') {
+    const focusables = __appModalFocusables(top.el);
+    if (!focusables.length) { e.preventDefault(); return; }
+    const first = focusables[0], last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+}
+
+function openAppModal(el, opts) {
+  if (!el) return;
+  opts = opts || {};
+  // ARIA
+  if (!el.getAttribute('role')) el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  if (opts.labelledBy) el.setAttribute('aria-labelledby', opts.labelledBy);
+  // Animation entrée
+  el.classList.add('app-modal-enter');
+  requestAnimationFrame(() => {
+    el.classList.add('app-modal-enter-active');
+    setTimeout(() => el.classList.remove('app-modal-enter', 'app-modal-enter-active'), 200);
+  });
+  // Backdrop click (cible = elem racine = backdrop)
+  if (!opts.persistent && !el.__appModalBackdropBound) {
+    el.__appModalBackdropBound = true;
+    el.addEventListener('click', function (ev) {
+      if (ev.target === el && !__appModalIsEditing()) closeAppModal(el);
+    });
+  }
+  // Mémorise la cible de focus précédente
+  const prevFocus = document.activeElement;
+  __appModalStack.push({ el: el, opts: opts, prevFocus: prevFocus });
+  // Bind global listener si premier ouvert
+  if (__appModalStack.length === 1) {
+    document.addEventListener('keydown', __appModalKeyHandler, true);
+  }
+  // Auto-focus
+  setTimeout(() => {
+    const focusTarget = el.querySelector('[data-autofocus]')
+      || el.querySelector('input:not([type="hidden"]):not([disabled])')
+      || el.querySelector('button.app-modal-primary, .mk-btn-primary, .btn-primary')
+      || __appModalFocusables(el)[0];
+    if (focusTarget && typeof focusTarget.focus === 'function') {
+      try { focusTarget.focus({ preventScroll: false }); } catch (e) { focusTarget.focus(); }
+    }
+  }, 60);
+}
+
+function closeAppModal(el) {
+  if (!el) return;
+  const idx = __appModalStack.findIndex(s => s.el === el);
+  let entry = null;
+  if (idx >= 0) { entry = __appModalStack[idx]; __appModalStack.splice(idx, 1); }
+  if (__appModalStack.length === 0) {
+    document.removeEventListener('keydown', __appModalKeyHandler, true);
+  }
+  // Animation sortie
+  el.classList.add('app-modal-leave-active');
+  setTimeout(() => {
+    if (el.parentNode) el.parentNode.removeChild(el);
+    if (entry && entry.prevFocus && typeof entry.prevFocus.focus === 'function') {
+      try { entry.prevFocus.focus({ preventScroll: true }); } catch (e) {}
+    }
+  }, 180);
+}
+
+window.openAppModal = openAppModal;
+window.closeAppModal = closeAppModal;
+
+// ── TOAST ─────────────────────────────────────
+// Système harmonisé : success / info / warning / error
+// Stack vertical (plusieurs toasts), auto-dismiss 3s (5s pour error).
+// Compatible avec l'élément #toast historique pour rétrocompat.
+function __ensureToastHost() {
+  let host = document.getElementById('app-toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'app-toast-host';
+    host.className = 'app-toast-host';
+    host.setAttribute('role', 'status');
+    host.setAttribute('aria-live', 'polite');
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+function showToast(msg, type) {
+  type = type || 'info';
+  // Normalise les alias
+  if (type === 'warn') type = 'warning';
+  if (!['success', 'error', 'info', 'warning'].includes(type)) type = 'info';
+  const icons = { success: '✓', error: '✗', info: 'ℹ', warning: '⚠' };
+  const host = __ensureToastHost();
+  // Crée l'item
+  const item = document.createElement('div');
+  item.className = 'app-toast app-toast-' + type;
+  item.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  item.innerHTML = '<span class="app-toast-ico">' + icons[type] + '</span><span class="app-toast-msg"></span>';
+  item.querySelector('.app-toast-msg').textContent = msg;
+  host.appendChild(item);
+  requestAnimationFrame(() => item.classList.add('show'));
+  const duration = type === 'error' ? 5000 : 3000;
+  const timer = setTimeout(() => dismiss(), duration);
+  function dismiss() {
+    clearTimeout(timer);
+    item.classList.remove('show');
+    item.classList.add('leave');
+    setTimeout(() => { if (item.parentNode) item.parentNode.removeChild(item); }, 220);
+  }
+  item.addEventListener('click', dismiss);
+  // Backward compat : maintient aussi l'ancien #toast en succès silencieux
+  const legacy = document.getElementById('toast');
+  if (legacy) {
+    // Vide le legacy pour éviter doublon visuel (l'ancien CSS le masquera de toute façon)
+    legacy.className = '';
+    legacy.textContent = '';
+  }
+  return { dismiss };
+}
+window.showToast = showToast;
 
 // ── CATALOGUE ────────────────────────────────
 let catQuery = '', catCatFilter = 'tous', catPageNum = 1;
@@ -5895,7 +6193,7 @@ function renderCatalogue() {
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">${prix}${addBtn}</div>
     </div>`;
   }).join('')
-  : `<div style="padding:40px;text-align:center;color:var(--text3)">Aucun produit trouvé</div>`;
+  : emptyState('search', 'Aucun produit trouvé', 'Affinez votre recherche ou réinitialisez les filtres pour voir plus de résultats.', 'Réinitialiser', "catQuery='';catCatFilter='tous';renderCatalogue&&renderCatalogue()");
 
   // ── Pagination ───────────────────────────────
   let pagHtml = '';
@@ -7177,8 +7475,29 @@ function showOffiDetail(idx) {
 }
 
 // ── EMPTY STATE ───────────────────────────────
-function emptyState(icon, title, sub) {
-  return `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-sub">${sub}</div></div>`;
+// SVG illustrations contextuelles (loupe, dossier vide, paquet, graphe, pharmacie, etc.)
+const EMPTY_SVG = {
+  search:   `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="27" cy="27" r="14" stroke="currentColor" stroke-width="2.5" opacity=".7"/><path d="M37.5 37.5L50 50" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M22 27h10M27 22v10" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".4"/></svg>`,
+  folder:   `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M8 18a4 4 0 0 1 4-4h12l4 5h24a4 4 0 0 1 4 4v25a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V18z" stroke="currentColor" stroke-width="2.5" opacity=".7"/><path d="M20 32h24M20 38h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".4"/></svg>`,
+  box:      `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M10 22l22-10 22 10v22L32 54 10 44V22z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" opacity=".7"/><path d="M10 22l22 10 22-10M32 32v22" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" opacity=".5"/></svg>`,
+  chart:    `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M8 54h48" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".7"/><rect x="14" y="34" width="8" height="16" rx="2" stroke="currentColor" stroke-width="2.5" opacity=".5"/><rect x="28" y="22" width="8" height="28" rx="2" stroke="currentColor" stroke-width="2.5" opacity=".7"/><rect x="42" y="14" width="8" height="36" rx="2" stroke="currentColor" stroke-width="2.5" opacity=".5"/></svg>`,
+  pharmacy: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="12" y="14" width="40" height="40" rx="6" stroke="currentColor" stroke-width="2.5" opacity=".7"/><path d="M32 24v20M22 34h20" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg>`,
+  bell:     `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M18 28a14 14 0 0 1 28 0v8l4 8H14l4-8v-8z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" opacity=".7"/><path d="M28 48a4 4 0 0 0 8 0" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+  doc:      `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M16 10h22l12 12v32a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" opacity=".7"/><path d="M36 10v12h12M22 32h20M22 40h20M22 48h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".5"/></svg>`,
+};
+
+// Signature étendue : emptyState(icon, title, sub, ctaLabel?, ctaOnclick?)
+//   icon = clé SVG (search/folder/box/chart/pharmacy/bell/doc) ou emoji legacy
+//   ctaLabel + ctaOnclick = bouton CTA optionnel sous le sub
+function emptyState(icon, title, sub, ctaLabel, ctaOnclick) {
+  const svg = (typeof icon === 'string') ? EMPTY_SVG[icon] : null;
+  const iconHtml = svg
+    ? `<div class="empty-icon empty-icon--svg">${svg}</div>`
+    : `<div class="empty-icon">${icon || ''}</div>`;
+  const cta = (ctaLabel && ctaOnclick)
+    ? `<button class="btn btn-ghost btn-sm empty-cta" onclick="${String(ctaOnclick).replace(/"/g, '&quot;')}">${ctaLabel}</button>`
+    : '';
+  return `<div class="empty">${iconHtml}<div class="empty-title">${title}</div><div class="empty-sub">${sub}</div>${cta}</div>`;
 }
 
 // ── INIT ──────────────────────────────────────
@@ -8457,33 +8776,29 @@ let globalSearchQuery = '';
 
 function showGlobalSearch() {
   const existing = document.getElementById('global-search-modal');
-  if (existing) { existing.remove(); return; }
+  if (existing) { closeAppModal(existing); return; }
 
   globalSearchQuery = '';
   const modal = document.createElement('div');
   modal.id = 'global-search-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:80px 16px 16px;backdrop-filter:blur(4px)';
+  modal.className = 'app-modal app-modal-search';
   modal.innerHTML = `
-    <div style="background:var(--bg);border-radius:20px;width:100%;max-width:620px;box-shadow:0 32px 100px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;max-height:75vh">
-      <!-- Search input -->
-      <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border1);flex-shrink:0">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <div class="app-modal-panel app-modal-panel-search" role="document">
+      <div class="app-modal-head app-modal-head-search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="app-modal-search-ico" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input id="gs-input" type="text" placeholder="Rechercher produit, pharmacie, marque, EAN…"
-          style="flex:1;border:none;background:transparent;outline:none;font-size:16px;color:var(--text);font-family:inherit"
-          oninput="gsSearch(this.value)" autocomplete="off" spellcheck="false">
-        <span style="font-size:10px;color:var(--text3);background:var(--bg2);padding:2px 7px;border-radius:5px;font-family:monospace;flex-shrink:0">ESC</span>
+          class="app-modal-search-input" data-autofocus
+          oninput="gsSearch(this.value)" autocomplete="off" spellcheck="false"
+          aria-label="Recherche globale">
+        <span class="app-modal-kbd" aria-hidden="true">ESC</span>
+        <button type="button" class="app-modal-close-btn" aria-label="Fermer" onclick="closeAppModal(document.getElementById('global-search-modal'))">&times;</button>
       </div>
-      <!-- Results -->
-      <div id="gs-results" style="overflow-y:auto;flex:1;padding:8px 8px 12px">
-        <div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Tapez au moins 2 caractères…</div>
+      <div id="gs-results" class="app-modal-body app-modal-body-search">
+        <div class="app-modal-empty">Tapez au moins 2 caractères…</div>
       </div>
     </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.addEventListener('keydown', function gsEsc(e) {
-    if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', gsEsc); }
-  });
   document.body.appendChild(modal);
-  setTimeout(() => document.getElementById('gs-input')?.focus(), 50);
+  openAppModal(modal, { labelledBy: null });
 }
 
 function gsSearch(q) {
@@ -8548,7 +8863,7 @@ function gsSearch(q) {
 
   const total = offiHits.length + benchHits.length + pharmaHits.length + clientHits.length + noteHits.length + salesHits.length;
   if (total === 0) {
-    res.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">Aucun résultat pour "${globalSearchQuery}"</div>`;
+    res.innerHTML = emptyState('search', 'Aucun résultat', `Rien ne correspond à « ${globalSearchQuery} ». Essayez un autre terme ou vérifiez l'orthographe.`);
     return;
   }
 
@@ -8726,11 +9041,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initApp();
   }
 
-  // Global Cmd+K / Ctrl+K search shortcut
+  // Restore sidebar collapsed state au boot
+  if (typeof restoreSidebarState === 'function') restoreSidebarState();
+
+  // Raccourcis clavier globaux
   document.addEventListener('keydown', e => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    const target = e.target;
+    const inField = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+    // Cmd/Ctrl + K : recherche globale
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
       e.preventDefault();
       showGlobalSearch();
+      return;
+    }
+    // Cmd/Ctrl + B : toggle sidebar
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'B')) {
+      e.preventDefault();
+      if (typeof toggleSidebar === 'function') toggleSidebar();
+      return;
+    }
+    // Cmd/Ctrl + ArrowLeft : retour
+    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft' && !inField) {
+      if (window._navHistory && window._navHistory.length) {
+        e.preventDefault();
+        navBack();
+      }
+      return;
+    }
+    // "?" : cheatsheet (uniquement si pas dans un champ)
+    if (e.key === '?' && !inField && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      showShortcutsHelp();
+      return;
+    }
+    // Escape : ferme overlay sidebar mobile
+    if (e.key === 'Escape' && document.documentElement.dataset.sidebarMobile === 'open') {
+      closeSidebarMobile();
     }
   });
 
