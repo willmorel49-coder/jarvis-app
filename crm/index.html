@@ -54,25 +54,25 @@
 
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260605a2" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260605b2" />
   <!-- Styles desktop -->
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="style-classic.css" />
+  <link rel="stylesheet" href="style.css?v=20260605b2" />
+  <link rel="stylesheet" href="style-classic.css?v=20260605c2" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260605a2" />
-  <link rel="stylesheet" href="marketing-design-system.css?v=20260605a2" />
+  <link rel="stylesheet" href="marketing.css?v=20260605b2" />
+  <link rel="stylesheet" href="marketing-design-system.css?v=20260605b2" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260605a2" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260605a2" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260605a2" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260605a2" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260605b2" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260605b2" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260605b2" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260605b2" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260605a2" />
-  <link rel="stylesheet" href="native-headers.css?v=20260605a2" />
-  <link rel="stylesheet" href="native-lists.css?v=20260605a2" />
-  <link rel="stylesheet" href="native-motion.css?v=20260605a2" />
-  <link rel="stylesheet" href="skeleton-loaders.css?v=20260605a2" />
+  <link rel="stylesheet" href="native-shell.css?v=20260605b2" />
+  <link rel="stylesheet" href="native-headers.css?v=20260605b2" />
+  <link rel="stylesheet" href="native-lists.css?v=20260605b2" />
+  <link rel="stylesheet" href="native-motion.css?v=20260605c2" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260605c2" />
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -109,10 +109,10 @@
        Les lourds (stock 1.7 MB, catalogue-ip 188 KB, client-products 84 KB,
        benchmark-data 3.6 MB, establishments-aggregate 4 MB, offilog 1.7 MB,
        drakkars 3.8 MB, cap3000 2.4 MB) sont LAZY via perf-boot.js. -->
-  <script src="clients-data.js?v=20260605a2"></script>
-  <script src="pharmacies-geo.js?v=20260605a2"></script>
-  <script src="groupements-data.js?v=20260605a2"></script>
-  <script src="sales-detail.js?v=20260605a2"></script>
+  <script src="clients-data.js?v=20260605b2"></script>
+  <script src="pharmacies-geo.js?v=20260605b2"></script>
+  <script src="groupements-data.js?v=20260605b2"></script>
+  <script src="sales-detail.js?v=20260605b2"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -140,22 +140,24 @@
     });
   </script>
 
-  <script src="app.js?v=20260605a2" defer></script>
-  <script src="dashboard-v2.js?v=20260605a2" defer></script>
+  <script src="app.js?v=20260605c2" defer></script>
+  <script src="dashboard-v2.js?v=20260605b2" defer></script>
   <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
-  <script src="perf-boot.js?v=20260605a2" defer></script>
-  <script src="classic-overrides.js?v=20260605a2" defer></script>
-  <script src="mobile-shell.js?v=20260605a2" defer></script>
+  <script src="perf-boot.js?v=20260605b2" defer></script>
+  <script src="classic-overrides.js?v=20260605b2" defer></script>
+  <script src="mobile-shell.js?v=20260605b2" defer></script>
+  <!-- Gestures iOS-native : swipe-back, pull-to-refresh, bottom-sheet swipe-down -->
+  <script src="mobile-gestures.js?v=20260605b2" defer></script>
   <!-- Native UI shell (bottom tab bar uniquement) -->
-  <script src="native-shell.js?v=20260605a2" defer></script>
+  <script src="native-shell.js?v=20260605b2" defer></script>
   <!-- DESACTIVES temporairement (debug : Will n'a aucune page qui s'affiche)
-       <script src="native-headers.js?v=20260605a2" defer></script>
-       <script src="native-motion.js?v=20260605a2" defer></script>
-       <script src="skeleton-loaders.js?v=20260605a2" defer></script>
+       <script src="native-headers.js?v=20260605b2" defer></script>
+       <script src="native-motion.js?v=20260605b2" defer></script>
+       <script src="skeleton-loaders.js?v=20260605b2" defer></script>
   -->
-  <script src="marketing-offers.js?v=20260605a2" defer></script>
-  <script src="marketing-design-system.js?v=20260605a2" defer></script>
-  <script src="marketing.js?v=20260605a2" defer></script>
+  <script src="marketing-offers.js?v=20260605b2" defer></script>
+  <script src="marketing-design-system.js?v=20260605b2" defer></script>
+  <script src="marketing.js?v=20260605b2" defer></script>
 </head>
 
 <body>
@@ -213,26 +215,37 @@
 
   <!-- APP (sidebar + topbar + pages) -->
   <div id="app">
-    <nav class="sidebar">
+    <!-- Backdrop pour overlay mobile (click = ferme) -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="closeSidebarMobile()" aria-hidden="true"></div>
+
+    <nav class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <div class="sidebar-logo" aria-hidden="true">IP</div>
         <div class="sidebar-brand-text">
           <div class="sidebar-brand-name">Intégral Pharma</div>
           <div class="sidebar-brand-sub">CRM Commercial</div>
         </div>
+        <!-- Toggle collapse desktop (visible >900px) -->
+        <button class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Réduire le menu (⌘B)" aria-label="Réduire le menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <!-- Close button mobile (visible <768px quand sidebar ouverte) -->
+        <button class="sidebar-close-mobile" onclick="closeSidebarMobile()" aria-label="Fermer le menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
 
       <div class="nav-section">
         <div class="nav-label">Pilotage</div>
-        <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <div class="nav-item active" data-page="dashboard" data-tooltip="Pilotage" onclick="navigate('dashboard')">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
           <span class="nav-label-text">Pilotage</span>
         </div>
-        <div class="nav-item" data-page="pharmacies" onclick="navigate('pharmacies')">
+        <div class="nav-item" data-page="pharmacies" data-tooltip="Pharmacies" onclick="navigate('pharmacies')">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           <span class="nav-label-text">Pharmacies</span>
         </div>
-        <div class="nav-item" data-page="produits" onclick="navigate('produits')">
+        <div class="nav-item" data-page="produits" data-tooltip="Produits" onclick="navigate('produits')">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="4" height="16"/><rect x="4" y="10" width="16" height="4"/></svg>
           <span class="nav-label-text">Produits</span>
         </div>
@@ -240,15 +253,15 @@
 
       <div class="nav-section">
         <div class="nav-label">Données</div>
-        <div class="nav-item" data-page="catalogue" onclick="navigate('catalogue')">
+        <div class="nav-item" data-page="catalogue" data-tooltip="Catalogue IP" onclick="navigate('catalogue')">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           <span class="nav-label-text">Catalogue IP</span>
         </div>
-        <div class="nav-item" data-page="benchmark" onclick="navigate('benchmark')">
+        <div class="nav-item" data-page="benchmark" data-tooltip="Benchmark" onclick="navigate('benchmark')">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
           <span class="nav-label-text">Benchmark</span>
         </div>
-        <div class="nav-item" data-page="simulateur" onclick="navigate('simulateur')">
+        <div class="nav-item" data-page="simulateur" data-tooltip="Simulateur" onclick="navigate('simulateur')">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           <span class="nav-label-text">Simulateur</span>
         </div>
@@ -256,7 +269,7 @@
 
       <div class="nav-section">
         <div class="nav-label">Parapharmacie</div>
-        <div class="nav-item" data-page="offilog" onclick="navigate('offilog')">
+        <div class="nav-item" data-page="offilog" data-tooltip="Offilog" onclick="navigate('offilog')">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11l-6 7h18l-6-7V3"/></svg>
           <span class="nav-label-text">Offilog</span>
         </div>
@@ -264,7 +277,7 @@
 
       <div class="nav-section">
         <div class="nav-label">Groupements</div>
-        <div class="nav-item" data-page="groupements" onclick="navigate('groupements')">
+        <div class="nav-item" data-page="groupements" data-tooltip="Suivi adhérents" onclick="navigate('groupements')">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><path d="M2 20v-1a4 4 0 0 1 4-4"/><path d="M22 20v-1a4 4 0 0 0-4-4"/></svg>
           <span class="nav-label-text">Suivi adhérents</span>
         </div>
@@ -272,7 +285,7 @@
 
       <div class="nav-section">
         <div class="nav-label">Communication</div>
-        <div class="nav-item" data-page="marketing" onclick="navigate('marketing')">
+        <div class="nav-item" data-page="marketing" data-tooltip="Marketing" onclick="navigate('marketing')">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           <span class="nav-label-text">Marketing</span>
         </div>
@@ -292,22 +305,37 @@
 
     <div class="main">
       <div class="topbar">
-        <div style="display:flex;align-items:center;gap:18px;min-width:0;flex:1">
-          <div class="topbar-title" id="topbar-title">Pilotage</div>
+        <div class="topbar-left">
+          <!-- Hamburger mobile (visible <768px) -->
+          <button class="topbar-hamburger" onclick="openSidebarMobile()" title="Menu" aria-label="Ouvrir le menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <!-- Back button (contextuel, JS toggle) -->
+          <button class="topbar-back" id="topbar-back-btn" onclick="navBack()" title="Retour" aria-label="Retour" style="display:none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            <span class="topbar-back-label">Retour</span>
+          </button>
+          <div class="topbar-title-wrap">
+            <div class="topbar-title" id="topbar-title">Pilotage</div>
+            <div class="topbar-breadcrumb" id="topbar-breadcrumb" style="display:none"></div>
+          </div>
           <span class="topbar-tagline" aria-hidden="true">Performance commerciale</span>
-          <div id="topbar-date" style="font-size:12px;color:var(--text3);font-weight:600"></div>
+          <div id="topbar-date" class="topbar-date"></div>
+          <!-- Loading bar subtile (JS toggle .show) -->
+          <div class="topbar-loader" id="topbar-loader" aria-hidden="true"><div class="topbar-loader-bar"></div></div>
         </div>
         <div class="topbar-actions">
-          <button onclick="showGlobalSearch()" title="Recherche globale (⌘K)"
-            style="display:flex;align-items:center;gap:7px;padding:8px 14px;min-height:40px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--text2);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif">
+          <button class="topbar-btn-search" onclick="showGlobalSearch()" title="Recherche globale (⌘K)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            Recherche
-            <span style="font-size:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-family:monospace;color:var(--text3)">⌘K</span>
+            <span class="topbar-btn-label">Recherche</span>
+            <span class="topbar-kbd">⌘K</span>
           </button>
-          <button onclick="if(confirm('Te déconnecter ?')) logout()" title="Se déconnecter"
-            style="display:flex;align-items:center;gap:7px;padding:8px 14px;min-height:40px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--text2);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif">
+          <button class="topbar-btn-help" onclick="showShortcutsHelp()" title="Raccourcis clavier (?)" aria-label="Raccourcis">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </button>
+          <button class="topbar-btn-logout" onclick="if(confirm('Te déconnecter ?')) logout()" title="Se déconnecter">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Déconnexion
+            <span class="topbar-btn-label">Déconnexion</span>
           </button>
         </div>
       </div>

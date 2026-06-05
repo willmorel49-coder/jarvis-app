@@ -292,6 +292,9 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   display: flex; flex-direction: column;
   padding: 20px 0 16px;
   overflow-y: auto;
+  transition: width .2s ease;
+  position: relative;
+  z-index: 60;
 }
 
 .sidebar-brand {
@@ -299,6 +302,58 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   padding: 0 18px 22px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 18px;
+  position: relative;
+}
+
+/* Bouton toggle collapse (desktop) */
+.sidebar-toggle {
+  margin-left: auto;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text2);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.sidebar-toggle:hover {
+  background: var(--blue-lt);
+  color: var(--blue-d);
+  border-color: var(--blue);
+}
+.sidebar-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Bouton close mobile : cache par defaut, visible en overlay mobile */
+.sidebar-close-mobile {
+  display: none;
+  margin-left: auto;
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text2);
+  cursor: pointer;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Backdrop overlay mobile */
+.sidebar-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(7, 11, 20, .42);
+  z-index: 55;
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.sidebar-backdrop.visible {
+  display: block;
+  opacity: 1;
 }
 
 .sidebar-logo {
@@ -362,15 +417,17 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   background: var(--blue-lt);
   color: var(--blue-d);
   font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(0, 87, 255, .12);
 }
 .nav-item.active .nav-icon { color: var(--blue); }
 .nav-item.active::before, .sidebar-item.active::before {
   content: '';
   position: absolute; left: -10px; top: 50%;
   transform: translateY(-50%);
-  width: 3px; height: 22px;
+  width: 3px; height: 24px;
   border-radius: 0 var(--rxxs) var(--rxxs) 0;
   background: var(--blue);
+  box-shadow: 0 0 8px rgba(0, 87, 255, .35);
 }
 .nav-badge {
   margin-left: auto;
@@ -439,6 +496,248 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
 @media (min-width: 1100px) { .topbar-tagline { display: inline-flex; align-items: center; gap: 8px; } }
 
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+/* ── Topbar — layout left + back button + breadcrumb ── */
+.topbar-left {
+  display: flex; align-items: center; gap: 14px;
+  min-width: 0; flex: 1;
+}
+.topbar-title-wrap { display: flex; flex-direction: column; min-width: 0; }
+.topbar-breadcrumb {
+  font-size: 11px; color: var(--text3); font-weight: 600;
+  margin-top: 2px; letter-spacing: .2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 380px;
+}
+.topbar-breadcrumb .crumb-sep { opacity: .55; padding: 0 6px; }
+.topbar-breadcrumb .crumb-link {
+  cursor: pointer;
+  transition: color .15s;
+}
+.topbar-breadcrumb .crumb-link:hover { color: var(--blue); }
+.topbar-date { font-size: 12px; color: var(--text3); font-weight: 600; white-space: nowrap; }
+
+/* Bouton retour topbar */
+.topbar-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--text2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+  flex-shrink: 0;
+}
+.topbar-back:hover {
+  background: var(--blue-lt);
+  color: var(--blue-d);
+  border-color: var(--blue);
+}
+.topbar-back:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.topbar-back-label { white-space: nowrap; }
+
+/* Hamburger mobile */
+.topbar-hamburger {
+  display: none;
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.topbar-hamburger:hover { background: var(--surface-2); }
+.topbar-hamburger:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* Loader subtil sous topbar (barre 2px qui slide) */
+.topbar-loader {
+  position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 2px; overflow: hidden;
+  pointer-events: none;
+  opacity: 0; transition: opacity .15s;
+}
+.topbar-loader.show { opacity: 1; }
+.topbar-loader-bar {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--blue) 50%, transparent 100%);
+  animation: topbar-loader-slide 1.1s linear infinite;
+}
+@keyframes topbar-loader-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Topbar : sticky + position relative pour loader */
+.topbar { position: relative; }
+
+/* Boutons topbar harmonises (etaient inline) */
+.topbar-btn-search,
+.topbar-btn-help,
+.topbar-btn-logout {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px;
+  min-height: 40px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  white-space: nowrap;
+  transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.topbar-btn-search:hover,
+.topbar-btn-help:hover,
+.topbar-btn-logout:hover {
+  border-color: var(--blue);
+  color: var(--blue-d);
+  background: var(--blue-lt);
+}
+.topbar-btn-search:focus-visible,
+.topbar-btn-help:focus-visible,
+.topbar-btn-logout:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.topbar-btn-help {
+  width: 40px; padding: 0;
+  justify-content: center;
+}
+.topbar-kbd {
+  font-size: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: monospace;
+  color: var(--text3);
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR — collapsed mode (1-clic toggle desktop)
+══════════════════════════════════════ */
+html[data-mode="classic"][data-sidebar="collapsed"] { --sidebar-w: 68px; }
+html[data-mode="classic"][data-sidebar="collapsed"] .sidebar-brand-text,
+html[data-mode="classic"][data-sidebar="collapsed"] .nav-item .nav-label-text,
+html[data-mode="classic"][data-sidebar="collapsed"] .nav-label,
+html[data-mode="classic"][data-sidebar="collapsed"] .sidebar-user-info,
+html[data-mode="classic"][data-sidebar="collapsed"] .sidebar-user > svg:last-child {
+  display: none;
+}
+html[data-mode="classic"][data-sidebar="collapsed"] .sidebar-brand {
+  padding: 0 10px 14px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+html[data-mode="classic"][data-sidebar="collapsed"] .sidebar-toggle {
+  margin: 0;
+  width: 36px; height: 36px;
+}
+html[data-mode="classic"][data-sidebar="collapsed"] .nav-item {
+  justify-content: center;
+  padding: 12px 8px;
+  position: relative;
+}
+html[data-mode="classic"][data-sidebar="collapsed"] .nav-item .nav-icon { width: auto; }
+html[data-mode="classic"][data-sidebar="collapsed"] .nav-item.active::before {
+  left: 0;
+  height: 28px;
+}
+html[data-mode="classic"][data-sidebar="collapsed"] .sidebar-user {
+  justify-content: center;
+  padding: 10px 6px;
+}
+
+/* Tooltips CSS-only au hover des nav-items en mode collapsed */
+html[data-mode="classic"][data-sidebar="collapsed"] .nav-item[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--text);
+  color: #fff;
+  font-size: 12px; font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,.18);
+  font-family: 'DM Sans', sans-serif;
+}
+html[data-mode="classic"][data-sidebar="collapsed"] .nav-item[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: var(--text);
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════
+   SHORTCUTS HELP MODAL (?)
+══════════════════════════════════════ */
+.shortcuts-modal {
+  position: fixed; inset: 0;
+  background: rgba(7, 11, 20, .42);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9000;
+  padding: 20px;
+}
+.shortcuts-card {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 460px;
+  padding: 26px 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.22);
+}
+.shortcuts-card h3 {
+  margin: 0 0 18px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 18px; font-weight: 800;
+  color: var(--text);
+  letter-spacing: -.3px;
+}
+.shortcuts-card .sc-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text2);
+}
+.shortcuts-card .sc-row:last-child { border-bottom: none; }
+.shortcuts-card kbd {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text);
+  font-weight: 700;
+  margin-left: 4px;
+}
+.shortcuts-card .sc-close {
+  margin-top: 18px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--blue);
+  color: #fff;
+  font-weight: 700; font-size: 13px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.shortcuts-card .sc-close:hover { background: var(--blue-d); }
 
 /* ══════════════════════════════════════
    BUTTONS
@@ -1177,30 +1476,71 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 900px) {
-  html[data-mode="classic"] { --sidebar-w: 68px; }
-  .sidebar-brand-text, .nav-item span.nav-label-text, .nav-label, .sidebar-user-info { display: none; }
-  .sidebar-brand { padding: 0 14px 20px; justify-content: center; }
-  .nav-item { justify-content: center; padding: 12px; }
-  .nav-item .nav-icon { width: auto; }
-  .nav-item.active::before { display: none; }
-  .kpi-grid, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+@media (max-width: 1100px) and (min-width: 769px) {
+  /* Tablette : sidebar auto-collapsed sauf si user a force expanded */
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) { --sidebar-w: 68px; }
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .sidebar-brand-text,
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .nav-item .nav-label-text,
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .nav-label,
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .sidebar-user-info { display: none; }
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .sidebar-brand { padding: 0 10px 14px; flex-direction: column; align-items: center; gap: 8px; }
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .nav-item { justify-content: center; padding: 12px 8px; position: relative; }
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .nav-item .nav-icon { width: auto; }
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .nav-item.active::before { left: 0; }
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .sidebar-toggle {
+    margin: 0; width: 36px; height: 36px;
+  }
+  html[data-mode="classic"]:not([data-sidebar="expanded"]) .nav-item[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%);
+    background: var(--text); color: #fff;
+    font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 6px;
+    white-space: nowrap; z-index: 100; pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,.18);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .kpi-grid, .grid-4 { grid-template-columns: repeat(2, 1fr); }
   .page-content { padding: 24px 20px; }
   .topbar { padding: 0 20px; }
 }
-@media (max-width: 600px) {
-  html[data-mode="classic"] { --sidebar-w: 0px; }
-  .sidebar { display: none; }
+
+/* MOBILE : sidebar geree par mobile-shell.js (drawer existant)
+   On affiche notre hamburger topbar et on cache le bouton floating .mob-hamburger
+   pour eviter le doublon. Le drawer reste pilote par MobileShell (focus trap,
+   swipe-to-close, overlay anime). */
+@media (max-width: 768px) {
+  .topbar-hamburger { display: inline-flex; }
+  .topbar-btn-label { display: none; }
+  .topbar-btn-search .topbar-kbd { display: none; }
+  .topbar-btn-search { padding: 0 12px; width: 40px; justify-content: center; }
+  .topbar-btn-logout { padding: 0 12px; width: 40px; justify-content: center; }
+  .topbar-date { display: none; }
+  .topbar-tagline { display: none !important; }
+
+  .sidebar-toggle { display: none; }
+  .sidebar-close-mobile { display: inline-flex; }
+
+  /* Cache le hamburger floating de mobile-shell.js — on utilise celui de la topbar */
+  html[data-mode="classic"] .mob-hamburger { display: none !important; }
+
+  /* Backdrop "maison" non utilise (le drawer mobile utilise .mob-drawer-overlay) */
+  #sidebar-backdrop { display: none !important; }
+
+  .kpi-grid, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .page-content { padding: 16px; }
-  .topbar { padding: 0 16px; }
-  .section-title { font-size: 22px; }
-  .kpi-card { padding: 16px 18px; }
-  .kpi-card.kpi-hero .kpi-value { font-size: 28px; }
+  .topbar { padding: 0 14px; gap: 10px; }
+  .topbar-left { gap: 10px; }
+  .topbar-title { font-size: 17px; }
+  .topbar-breadcrumb { max-width: 200px; }
 }
 @media (max-width: 430px) {
   .page-content { padding: 14px; }
   .card-header { padding: 14px 18px; }
   .card-body { padding: 16px 18px; }
+  .section-title { font-size: 22px; }
+  .kpi-card { padding: 16px 18px; }
+  .kpi-card.kpi-hero .kpi-value { font-size: 28px; }
+  .topbar-back-label { display: none; }
 }
 
 /* ══════════════════════════════════════
@@ -1211,3 +1551,236 @@ html[data-mode="classic"] ::-webkit-scrollbar-thumb:hover { background: var(--te
   display: none !important;
 }
 .border1 { border-color: var(--border) !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   UI POLISH — 20260605c2
+   • Btn library standardisée (.btn, variants, sizes, states)
+   • Tooltip CSS-only via [data-tooltip]
+   • Empty state enrichi (SVG + CTA)
+   • Focus visible ambre
+   • Transitions globales cheap (transform/opacity, 180ms ease-out)
+   • Reduced motion respect
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Variables polish ──────────────────────────────────────────────── */
+:root {
+  --focus-amber: 0 0 0 2px #fff, 0 0 0 4px #F59E0B;
+  --t-polish: 180ms cubic-bezier(0, 0, .2, 1);
+  --hover-lift: translateY(-1px);
+  --hover-shadow: 0 6px 18px rgba(11,31,77,.10), 0 2px 6px rgba(11,31,77,.06);
+}
+
+/* ── Focus visible accessible (clavier uniquement, pas la souris) ──── */
+html[data-mode="classic"] :focus { outline: none; }
+html[data-mode="classic"] :focus-visible {
+  outline: none !important;
+  box-shadow: var(--focus-amber) !important;
+  border-radius: 8px;
+}
+
+/* ── BTN LIBRARY STANDARDISÉE ──────────────────────────────────────── */
+/* Les classes existantes (.btn, .btn-primary, .btn-ghost, .btn-danger, .btn-soft, .btn-lime)
+   ne sont PAS modifiées. On ajoute en parallèle les sizes, le secondary, le icon-only et l'amélioration des states. */
+
+/* Tabular nums sur boutons (chiffres alignés sur prix/compteurs) */
+html[data-mode="classic"] .btn { font-variant-numeric: tabular-nums; }
+
+/* Active state cohérent + focus visible ambre */
+html[data-mode="classic"] .btn:active { transform: translateY(0); filter: brightness(.96); }
+html[data-mode="classic"] .btn:focus-visible {
+  outline: none !important;
+  box-shadow: var(--focus-amber) !important;
+}
+html[data-mode="classic"] .btn:disabled,
+html[data-mode="classic"] .btn[aria-disabled="true"] {
+  opacity: .5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Sizes */
+html[data-mode="classic"] .btn-sm {
+  padding: 6px 12px;
+  min-height: 32px;
+  font-size: 11px;
+  font-weight: 700;
+}
+html[data-mode="classic"] .btn-lg {
+  padding: 14px 24px;
+  min-height: 52px;
+  font-size: 15px;
+}
+
+/* Secondary (gris clair avec border) */
+html[data-mode="classic"] .btn-secondary {
+  background: var(--surface-2, #F2F6FF);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  font-weight: 600;
+}
+html[data-mode="classic"] .btn-secondary:hover {
+  background: #fff;
+  border-color: var(--blue);
+  transform: var(--hover-lift);
+  box-shadow: var(--hover-shadow);
+}
+
+/* Icon-only (carré 40x40) */
+html[data-mode="classic"] .btn-icon-only {
+  width: 40px; height: 40px;
+  min-height: 40px;
+  padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid transparent;
+}
+html[data-mode="classic"] .btn-icon-only:hover {
+  background: var(--blue-lt);
+  color: var(--blue-d);
+  border-color: var(--border);
+  transform: var(--hover-lift);
+}
+html[data-mode="classic"] .btn-icon-only.btn-sm { width: 32px; height: 32px; min-height: 32px; border-radius: 10px; }
+html[data-mode="classic"] .btn-icon-only.btn-lg { width: 48px; height: 48px; min-height: 48px; border-radius: 14px; }
+
+/* ── TOOLTIP CSS-ONLY via [data-tooltip] ───────────────────────────── */
+/* Usage : <button data-tooltip="Description">…</button>
+   Position par défaut : top. Override : data-tooltip-pos="bottom|left|right". */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after,
+[data-tooltip]::before {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition: opacity 100ms ease-out, transform 100ms ease-out;
+  z-index: 9999;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  left: 50%;
+  bottom: calc(100% + 8px);
+  background: #1F1F23;
+  color: #fff;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  max-width: 240px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.18);
+}
+[data-tooltip]::before {
+  content: "";
+  left: 50%;
+  bottom: calc(100% + 3px);
+  width: 0; height: 0;
+  border: 5px solid transparent;
+  border-top-color: #1F1F23;
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-tooltip]:hover::after,
+  [data-tooltip]:hover::before,
+  [data-tooltip]:focus-visible::after,
+  [data-tooltip]:focus-visible::before {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    transition-delay: 250ms;
+  }
+}
+
+/* Position bottom */
+[data-tooltip][data-tooltip-pos="bottom"]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+[data-tooltip][data-tooltip-pos="bottom"]::before {
+  bottom: auto;
+  top: calc(100% + 3px);
+  border-top-color: transparent;
+  border-bottom-color: #1F1F23;
+}
+
+/* Mobile : tooltip désactivé (espace limité, gestion native via title) */
+@media (hover: none) {
+  [data-tooltip]::after,
+  [data-tooltip]::before { display: none; }
+}
+
+/* ── EMPTY STATE — variante SVG enrichie ───────────────────────────── */
+html[data-mode="classic"] .empty {
+  gap: 0;
+}
+html[data-mode="classic"] .empty-icon--svg {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 18px;
+  color: var(--blue);
+  opacity: .85;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+}
+html[data-mode="classic"] .empty-icon--svg svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+html[data-mode="classic"] .empty-cta {
+  margin-top: 18px;
+}
+
+/* ── TRANSITIONS GLOBALES CHEAP ────────────────────────────────────── */
+/* Hover lift discret sur tous les boutons / cards (transform + shadow seulement) */
+html[data-mode="classic"] button,
+html[data-mode="classic"] [role="button"],
+html[data-mode="classic"] .btn,
+html[data-mode="classic"] .filter-chip,
+html[data-mode="classic"] .tab {
+  transition:
+    transform var(--t-polish),
+    box-shadow var(--t-polish),
+    background-color var(--t-polish),
+    border-color var(--t-polish),
+    color var(--t-polish),
+    opacity var(--t-polish);
+}
+
+/* Active/click feedback rapide < 50ms */
+html[data-mode="classic"] button:active,
+html[data-mode="classic"] .btn:active {
+  transition-duration: 40ms;
+}
+
+/* Tabular nums sur tous les nombres (prix, compteurs, KPIs) */
+html[data-mode="classic"] .kpi-value,
+html[data-mode="classic"] .price,
+html[data-mode="classic"] .kpi-number,
+html[data-mode="classic"] [data-num] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── REDUCED MOTION (override universel) ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html[data-mode="classic"] *,
+  html[data-mode="classic"] *::before,
+  html[data-mode="classic"] *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  [data-tooltip]::after,
+  [data-tooltip]::before { transition: none !important; }
+  html[data-mode="classic"] .btn:hover,
+  html[data-mode="classic"] .btn-icon-only:hover,
+  html[data-mode="classic"] .btn-secondary:hover {
+    transform: none !important;
+  }
+}

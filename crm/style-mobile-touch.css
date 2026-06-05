@@ -580,6 +580,114 @@ td.num, td.ca, td.qty, td.price, td.montant,
     overscroll-behavior-y: none;
   }
 
+  /* ───────── O) SWIPE-BACK iOS — preview pendant le drag ───────── */
+  /* La page en cours de swipe-back (translation gérée en JS) reçoit ce style
+     pour assurer un rendu propre. JS set le transform inline pendant le geste. */
+  .page.active.is-swiping-back,
+  .np-modal-card.is-swiping-back {
+    will-change: transform, opacity;
+    transform-origin: 0 0;
+  }
+
+  /* Pendant un swipe-back, on tue le pointer-events sur le contenu pour
+     éviter qu'un tap accidentel pendant le geste déclenche un onclick. */
+  body.is-swiping-back * {
+    pointer-events: none !important;
+  }
+
+  /* ───────── P) BOTTOM SHEET — handle visible iOS ───────── */
+  /* Pose un "handle" 32x4 arrondi en haut des éléments [data-mobile-sheet]
+     ou des modales qu'on souhaite traiter en bottom sheet. */
+  [data-mobile-sheet],
+  .np-modal-card[data-mobile-sheet] {
+    position: relative;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    padding-top: 18px;
+    touch-action: pan-y;
+  }
+  [data-mobile-sheet]::before,
+  .np-modal-card[data-mobile-sheet]::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(11, 31, 77, .18);
+    pointer-events: none;
+  }
+
+  /* Modales connues qu'on traite comme bottom-sheets en mobile */
+  /* bench-detail-modal : utilise un <div> interne stylé inline → on cible le 1er enfant */
+  #bench-detail-modal {
+    align-items: flex-end !important;
+    padding: 0 !important;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  #bench-detail-modal > div {
+    border-top-left-radius: 18px !important;
+    border-top-right-radius: 18px !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92dvh !important;
+    padding-top: 22px !important;
+    position: relative;
+    touch-action: pan-y;
+    animation: touchFadeUp 240ms var(--touch-ease);
+    box-shadow: 0 -12px 40px -8px rgba(11, 31, 77, .35) !important;
+  }
+  #bench-detail-modal > div::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(11, 31, 77, .18);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* edit-pharma-modal : utilise .np-modal-card (classe std styles-pharmacies) */
+  #edit-pharma-modal.np-modal {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  #edit-pharma-modal .np-modal-card {
+    position: relative;
+    border-top-left-radius: 18px !important;
+    border-top-right-radius: 18px !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92dvh !important;
+    padding-top: 22px !important;
+    touch-action: pan-y;
+    box-shadow: 0 -12px 40px -8px rgba(11, 31, 77, .35) !important;
+  }
+  #edit-pharma-modal .np-modal-card::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(11, 31, 77, .18);
+    pointer-events: none;
+    z-index: 2;
+  }
+
 } /* ═══ FIN @media (max-width: 768px) ════════════════════════════════════════ */
 
 
