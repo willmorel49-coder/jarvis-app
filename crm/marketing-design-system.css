@@ -10,16 +10,27 @@
   position: relative; overflow: hidden;
 }
 .mk-bento-sticker {
-  position: absolute; top: 48px; right: 48px;
-  width: 92px; height: 92px;
+  position: absolute; top: 18px; right: 18px;
+  width: 84px; height: 84px;
   transform: rotate(8deg);
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.18));
+  /* Halo blanc multi-couches : reste visible sur les bento à fond mesh sombre */
+  filter:
+    drop-shadow(0 0 1.5px rgba(255,255,255,0.95))
+    drop-shadow(0 0 3px rgba(255,255,255,0.85))
+    drop-shadow(0 0 5px rgba(255,255,255,0.55))
+    drop-shadow(0 6px 14px rgba(0,0,0,0.28));
   z-index: 5;
+  pointer-events: none;
 }
 .mk-bento-header {
   display: flex; align-items: center; gap: 18px;
   margin-bottom: 32px;
+  min-width: 0;
 }
+/* Reserve l'espace pour la sticker uniquement si elle est présente */
+.mk-pdf-bento:has(.mk-bento-sticker) .mk-bento-header { padding-right: 108px; }
+.mk-bento-header > div:last-child { min-width: 0; flex: 1; }
+.mk-bento-title { word-wrap: break-word; overflow-wrap: anywhere; }
 .mk-bento-logo img { height: 48px !important; }
 .mk-bento-eyebrow {
   font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;

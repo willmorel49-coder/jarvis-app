@@ -298,8 +298,20 @@
   // Ex: novembre = grippe + rhume + gastro -> ~150 produits BENCHMARK matches.
   function getCompositeThemeForMonth(month) {
     const active = SEASON_THEMES.filter(t => t.months.includes(month));
-    if (!active.length) return SEASON_THEMES[0];
-    if (active.length === 1) return active[0];
+    // Pitch commercial mensuel (marketing-monthly-pitches.js). Fallback safe
+    // si le fichier n'est pas charge (vieux deploiement) → on retourne theme nu.
+    const pitch = (typeof window.getMonthlyPitch === 'function')
+      ? window.getMonthlyPitch(month)
+      : null;
+    if (!active.length) {
+      const base = SEASON_THEMES[0];
+      if (pitch) return Object.assign({}, base, { _pitch: pitch, _month: month });
+      return base;
+    }
+    if (active.length === 1) {
+      if (pitch) return Object.assign({}, active[0], { _pitch: pitch, _month: month });
+      return active[0];
+    }
     // Composite : reutilise les filter() de chaque theme actif (OR logique)
     return {
       id: '__month_' + month,
@@ -309,6 +321,8 @@
       color: active[0].color,
       _composite: true,
       _themes: active,
+      _pitch: pitch,
+      _month: month,
       filter: b => active.some(t => t.filter(b)),
     };
   }
@@ -441,13 +455,36 @@
       : snapshotProduct(p));
     var titlePrefix = seasonPickerSource === 'offilog' ? 'OFFILOG ' : '';
     var color = seasonPickerSource === 'offilog' ? 'amber' : (ctx.theme.color || 'navy');
+
+    // Pitch commercial mensuel (si dispo) → pre-remplit titre, footer,
+    // accroche du 1er produit, et propose template focus si reco du preset.
+    var pitch = ctx.theme && ctx.theme._pitch ? ctx.theme._pitch : null;
+    var sheetTitle = titlePrefix + (pitch && pitch.headline ? pitch.headline : ctx.theme.name);
+    var sheetFooter = pitch && pitch.cta_line
+      ? pitch.cta_line
+      : ('Tarifs ' + new Date().getFullYear());
+    var template = 'offre';
+    // Si le preset recommande implique un template focus, pre-rempli accroche/argument
+    if (pitch && pitch.recommended_preset && window.MK_DESIGN_PRESETS && window.MK_DESIGN_PRESETS[pitch.recommended_preset]) {
+      var preset = window.MK_DESIGN_PRESETS[pitch.recommended_preset];
+      if (preset && preset.template) template = preset.template;
+    }
+    // Si template focus → on enrichit le 1er produit avec l'accent_quote
+    if (template === 'focus' && pitch && snap.length > 0) {
+      if (!snap[0].accroche && pitch.accent_quote) {
+        snap[0].accroche = pitch.accent_quote;
+      }
+      if (!snap[0].argument && pitch.pitch_short) {
+        snap[0].argument = pitch.pitch_short;
+      }
+    }
     editingSheet = {
       id: 'mk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-      title: titlePrefix + ctx.theme.name,
+      title: sheetTitle,
       theme: 'custom',
       color: color,
-      footer: 'Tarifs ' + new Date().getFullYear(),
-      template: 'offre',
+      footer: sheetFooter,
+      template: template,
       products: snap,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -1315,9 +1352,12 @@
             <div class="mk-hero-left">
               <div class="mk-hero-emoji">${suggested.emoji}</div>
               <div>
-                <div class="mk-hero-eyebrow">Suggestion ${monthName} · canal grossiste IP</div>
+                <div class="mk-hero-eyebrow">${suggested._pitch && suggested._pitch.eyebrow ? escapeAttr(suggested._pitch.eyebrow) : ('Suggestion ' + monthName + ' · canal grossiste IP')}</div>
+                ${suggested._pitch && suggested._pitch.headline ? `<div class="mk-hero-headline-pitch">${escapeAttr(suggested._pitch.headline)}</div>` : ''}
                 <div class="mk-hero-title">${suggested.name}</div>
-                <div class="mk-hero-sub">${monthProds.length} médicaments catalogue IP triés par volumes <b>secteur OPS+CPR+HP</b> décroissants</div>
+                <div class="mk-hero-sub">${suggested._pitch && suggested._pitch.pitch_short ? escapeAttr(suggested._pitch.pitch_short) : (monthProds.length + ' médicaments catalogue IP triés par volumes secteur OPS+CPR+HP décroissants')}</div>
+                ${suggested._pitch && suggested._pitch.cta_line ? `<div class="mk-hero-cta-line" onclick="window.mkOpenSeasonPicker('${suggested.id}', 'grossiste')">${escapeAttr(suggested._pitch.cta_line)}</div>` : ''}
+                ${suggested._pitch && suggested._pitch.accent_quote ? `<div class="mk-hero-quote">« ${escapeAttr(suggested._pitch.accent_quote)} »</div>` : ''}
               </div>
             </div>
             <button class="mk-btn mk-btn-primary" onclick="window.mkOpenSeasonPicker('${suggested.id}', 'grossiste')">
@@ -1385,7 +1425,8 @@
                         <span class="mk-month-card-emoji">${m.theme.emoji}</span>
                         ${escapeAttr(m.monthName)}
                       </div>
-                      <div class="mk-month-card-theme">${escapeAttr(m.theme.name)}</div>
+                      <div class="mk-month-card-theme">${escapeAttr((m.theme._pitch && m.theme._pitch.headline) || m.theme.name)}</div>
+                      ${m.theme._pitch && m.theme._pitch.pitch_short ? `<div class="mk-month-card-pitch">${escapeAttr(m.theme._pitch.pitch_short)}</div>` : ''}
                       <div class="mk-month-card-meta">${list.length} produits · ${totalQte30.toLocaleString('fr-FR')} u secteur (${eur(totalCa30)})${m.completedFromFallback > 0 ? ` · <span class="mk-card-fallback-tag">+${m.completedFromFallback} top vendeurs marché</span>` : ''}</div>
                       ${top5.length ? `
                         <div class="mk-month-card-top5">
@@ -3255,6 +3296,37 @@
     return s && s.svg ? s.svg : '';
   }
 
+  // ── WCAG helpers (audit lisibilité texte/couleur fiches PDF) ────
+  // Calcule la luminance relative WCAG 2.x d'une couleur hex.
+  function wcagLum(hex) {
+    var h = String(hex || '').replace('#', '');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    if (h.length !== 6) return 1;
+    var r = parseInt(h.slice(0,2),16)/255;
+    var g = parseInt(h.slice(2,4),16)/255;
+    var b = parseInt(h.slice(4,6),16)/255;
+    function ch(v){ return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }
+    return 0.2126*ch(r) + 0.7152*ch(g) + 0.0722*ch(b);
+  }
+  function wcagRatio(hex1, hex2) {
+    var L1 = wcagLum(hex1), L2 = wcagLum(hex2);
+    if (L1 < L2) { var t = L1; L1 = L2; L2 = t; }
+    return (L1 + 0.05) / (L2 + 0.05);
+  }
+  // Choisit la couleur la plus lisible parmi candidates pour un fond donné
+  function pickBestFg(bgHex, candidates) {
+    var best = candidates[0], bestR = 0;
+    for (var i = 0; i < candidates.length; i++) {
+      var r = wcagRatio(bgHex, candidates[i]);
+      if (r > bestR) { bestR = r; best = candidates[i]; }
+    }
+    return best;
+  }
+  // Fiche à fond sombre ? Utilisé pour ajouter un outline blanc sur stickers
+  function isDarkSheetBg(hex) {
+    return wcagLum(hex || '#FFFFFF') < 0.18;
+  }
+
   function renderSheetHTML(sheet, targetId) {
     const tpl = getTemplateId(sheet);
     if (tpl === 'memo')      return renderMemoTemplate(sheet, targetId);
@@ -3271,9 +3343,10 @@
     const sticker = designSticker(sheet);
     const headingFamily = "'" + font.heading + "', 'DM Sans', sans-serif";
     const bodyFamily = "'" + font.body + "', 'DM Sans', sans-serif";
+    const stickerCls = isDarkSheetBg(cp.bg) ? 'mk-tpl-sticker mk-tpl-sticker-on-dark' : 'mk-tpl-sticker';
     return `
       <div id="${targetId}" class="mk-pdf mk-pdf-offre" style="background:${bg || cp.bg};color:${cp.accent};font-family:${bodyFamily}">
-        ${sticker ? `<div class="mk-tpl-sticker">${sticker}</div>` : ''}
+        ${sticker ? `<div class="${stickerCls}">${sticker}</div>` : ''}
         <div class="mk-pdf-header">
           <div class="mk-pdf-logo">
             ${renderLogo(72)}
@@ -3334,13 +3407,14 @@
     const sticker = designSticker(sheet);
     const headingFamily = "'" + font.heading + "', 'DM Sans', sans-serif";
     const bodyFamily = "'" + font.body + "', 'DM Sans', sans-serif";
+    const stickerCls = isDarkSheetBg(cp.bg) ? 'mk-tpl-sticker mk-tpl-sticker-on-dark' : 'mk-tpl-sticker';
     return `
       <div id="${targetId}" class="mk-pdf mk-pdf-memo" style="${bg ? 'background:' + bg + ';' : ''}font-family:${bodyFamily}">
-        ${sticker ? `<div class="mk-tpl-sticker">${sticker}</div>` : ''}
-        <div class="mk-memo-header" style="border-color:${cp.headerBg}">
+        ${sticker ? `<div class="${stickerCls}">${sticker}</div>` : ''}
+        <div class="mk-memo-header" style="background:${cp.headerBg};color:${cp.headerFg};border-color:${cp.headerBg}">
           <div class="mk-memo-header-left">
-            <div class="mk-memo-eyebrow" style="color:${cp.headerBg}">MÉMO RÉFÉRENTIEL</div>
-            <div class="mk-memo-h1" style="font-family:${headingFamily};font-weight:${font.hw};${font.italic ? 'font-style:italic;' : ''}color:${cp.accent}">${sheet.title || 'Sans titre'}</div>
+            <div class="mk-memo-eyebrow">MÉMO RÉFÉRENTIEL</div>
+            <div class="mk-memo-h1" style="font-family:${headingFamily};font-weight:${font.hw};${font.italic ? 'font-style:italic;' : ''}">${sheet.title || 'Sans titre'}</div>
             <div class="mk-memo-sub">${sheet.products.length} référence${sheet.products.length>1?'s':''} · ${new Date().toLocaleDateString('fr-FR', { month:'long', year:'numeric' })}</div>
           </div>
           <div class="mk-memo-logo">${renderLogo(64)}</div>
@@ -3408,8 +3482,15 @@
         <text x="100" y="172" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="11" font-weight="700" fill="#7888A8" letter-spacing="0.08em">${(label||'').slice(0,18).toUpperCase()}</text>
       </svg>
     `;
+    // WCAG : .mk-focus-price-ip est posé en TEXTE sur le bg de la carte (#FFFFFF).
+    // On préfère cp.headerBg si ratio OK contre blanc, sinon cp.accent (toujours sombre).
+    const focusPriceIpCol = wcagRatio('#FFFFFF', cp.headerBg) >= 4.5 ? cp.headerBg : cp.accent;
+    // .mk-focus-argument est une pill colorée : on garde headerBg/headerFg (pair audit OK)
+    const stickerFocus = designSticker(sheet);
+    const stickerClsFocus = isDarkSheetBg(cp.bg) ? 'mk-tpl-sticker mk-tpl-sticker-on-dark' : 'mk-tpl-sticker';
     return `
       <div id="${targetId}" class="mk-pdf mk-pdf-focus" style="background:${cp.bg};color:${cp.accent}">
+        ${stickerFocus ? `<div class="${stickerClsFocus}">${stickerFocus}</div>` : ''}
         <div class="mk-focus-header">
           <div class="mk-focus-logo">${renderLogo(72)}</div>
           <div class="mk-focus-title">
@@ -3432,7 +3513,7 @@
                 ${p.argument ? `<div class="mk-focus-argument" style="background:${cp.headerBg};color:${cp.headerFg}">${p.argument}</div>` : ''}
                 <div class="mk-focus-prices">
                   <div class="mk-focus-price-old">${eur(p.prix_ht)}</div>
-                  <div class="mk-focus-price-ip" style="color:${cp.headerBg}">${eur(p.prix_ip)}</div>
+                  <div class="mk-focus-price-ip" style="color:${focusPriceIpCol}">${eur(p.prix_ip)}</div>
                   <div class="mk-focus-eco">Économie ${ecoEur(p)}</div>
                 </div>
               </div>
@@ -3685,10 +3766,24 @@
     const bg = designBg(s);
     const sticker = designSticker(s);
     const products = (s.products || []).slice(0, TEMPLATES.bento.maxProducts);
-    const hasLight = ['noir', 'cosmic', 'midnight', 'ocean', 'forest'].indexOf(s.gradient) >= 0;
-    const textCol = hasLight ? '#FFFFFF' : '#0B1F4D';
+    // Detection auto fond sombre :
+    //  1) gradient marqué "darkness:dark" dans MK_GRADIENTS
+    //  2) palette dont le bg est sombre (luminance < 0.5)
+    const gObj = (window.MK_GRADIENTS || {})[s.gradient || 'none'];
+    const gradientIsDark = !!(gObj && gObj.darkness === 'dark');
+    function isHexDark(hex) {
+      if (!hex || typeof hex !== 'string') return false;
+      const h = hex.replace('#','');
+      if (h.length < 6) return false;
+      const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+      const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+      return lum < 0.5;
+    }
+    const paletteIsDark = !gradientIsDark && !s.gradient && isHexDark(cp.bg);
+    const hasLight = gradientIsDark || paletteIsDark;
+    const textCol = hasLight ? '#FFFFFF' : (cp.accent || '#0B1F4D');
     const tileBg = hasLight ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.75)';
-    const tileBorder = hasLight ? 'rgba(255,255,255,0.20)' : 'rgba(11,31,77,0.08)';
+    const tileBorder = hasLight ? 'rgba(255,255,255,0.22)' : 'rgba(11,31,77,0.08)';
 
     // Layout asymetrique : 9 cellules max, certaines doublees (col-span-2 / row-span-2)
     const cellLayouts = [
