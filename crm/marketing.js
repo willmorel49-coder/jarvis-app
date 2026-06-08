@@ -2000,7 +2000,27 @@
   };
 
   // ── ÉCRAN ÉDITION ───────────────────────────────────────────
+  // ============================================================
+  // REFONTE V2 — Foundation (Topbar + Rail + Canvas live)
+  // Feature flag : window.MK_REFONTE_ENABLED ou URL ?refonte=1
+  // ============================================================
+  function isRefonteV2() {
+    if (window.MK_REFONTE_ENABLED === true) return true;
+    try {
+      if (new URLSearchParams(location.search).get('refonte') === '1') {
+        window.MK_REFONTE_ENABLED = true;
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  window.mkIsRefonteV2 = isRefonteV2;
+
   function renderEdit() {
+    if (isRefonteV2()) return renderEditV2();
+    return renderEditV1();
+  }
+  function renderEditV1() {
     const root = getRoot();
     if (!root || !editingSheet) return;
     const s = editingSheet;
@@ -2249,6 +2269,174 @@
       </div>
     `;
   }
+
+  // ── ÉCRAN ÉDITION V2 (Refonte Phase 1 Foundation) ──────────
+  // Auto-save state machine simplifiée
+  let __mkSaveState = 'saved';  // 'saved' | 'saving' | 'dirty' | 'error'
+  let __mkLastSaveTime = Date.now();
+  let __mkSaveTimer = null;
+
+  function relativeTimeFr(ts) {
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 5) return 'à l\'instant';
+    if (s < 60) return 'il y a ' + s + 's';
+    if (s < 3600) return 'il y a ' + Math.floor(s / 60) + 'min';
+    return 'il y a ' + Math.floor(s / 3600) + 'h';
+  }
+  function mkSetSaveStatus(state) {
+    __mkSaveState = state;
+    if (state === 'saved') __mkLastSaveTime = Date.now();
+    const el = document.getElementById('mk-edit-save-status');
+    if (!el) return;
+    el.dataset.state = state;
+    if (state === 'saving') el.textContent = 'Enregistrement…';
+    else if (state === 'error') el.textContent = 'Hors ligne — sauvegardé localement';
+    else el.textContent = 'Enregistré ' + relativeTimeFr(__mkLastSaveTime);
+  }
+  // Refresh ticker (uniquement quand on est en V2 et état saved)
+  setInterval(function () {
+    if (__mkSaveState === 'saved' && document.getElementById('mk-edit-save-status')) {
+      mkSetSaveStatus('saved');
+    }
+  }, 5000);
+
+  function mkMutateSheetV2(patch) {
+    if (!editingSheet) return;
+    Object.assign(editingSheet, patch);
+    mkSetSaveStatus('saving');
+    if (__mkSaveTimer) clearTimeout(__mkSaveTimer);
+    __mkSaveTimer = setTimeout(function () {
+      try { upsertSheet(editingSheet); mkSetSaveStatus('saved'); }
+      catch (e) { mkSetSaveStatus('error'); }
+    }, 800);
+  }
+  window.mkUpdateTitleV2 = function (v) {
+    mkMutateSheetV2({ title: v });
+    refreshCanvasV2();
+  };
+
+  // Zoom canvas
+  let __mkCanvasZoom = null; // null = auto-fit
+  function mkComputeAutoZoomV2() {
+    const wrap = document.querySelector('.mk-edit-canvas');
+    if (!wrap) return 0.7;
+    const wH = wrap.clientHeight - 48;
+    const wW = wrap.clientWidth - 48;
+    return Math.max(0.25, Math.min(1.4, Math.min(wH / 1123, wW / 794, 0.95)));
+  }
+  function mkApplyZoomV2() {
+    const z = __mkCanvasZoom != null ? __mkCanvasZoom : mkComputeAutoZoomV2();
+    const stage = document.getElementById('mk-canvas-stage-v2');
+    if (stage) stage.style.setProperty('--mk-zoom', z.toFixed(3));
+    const slider = document.getElementById('mk-canvas-zoom-slider');
+    if (slider) slider.value = Math.round(z * 100);
+    const lbl = document.getElementById('mk-canvas-zoom-label');
+    if (lbl) lbl.textContent = Math.round(z * 100) + '%';
+  }
+  window.mkCanvasSetZoomV2 = function (pct) {
+    __mkCanvasZoom = Math.max(0.25, Math.min(2.0, parseInt(pct, 10) / 100));
+    mkApplyZoomV2();
+  };
+  window.mkCanvasResetZoomV2 = function () { __mkCanvasZoom = null; mkApplyZoomV2(); };
+
+  function refreshCanvasV2() {
+    const stage = document.getElementById('mk-canvas-stage-v2');
+    if (stage && editingSheet) stage.innerHTML = renderSheetHTML(editingSheet, 'mk-pdf-target');
+  }
+
+  function renderEditV2() {
+    const root = getRoot();
+    if (!root || !editingSheet) return;
+    root.innerHTML = `
+      <div class="mk-edit-v2">
+        <header class="mk-edit-topbar">
+          <button class="mk-edit-back" aria-label="Retour bibliothèque" onclick="window.mkBackToLibrary()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <div class="mk-edit-title-wrap">
+            <input class="mk-edit-title-input" value="${escapeAttr(editingSheet.title || '')}"
+              placeholder="Titre de la fiche" maxlength="80"
+              oninput="window.mkUpdateTitleV2(this.value)" />
+            <span class="mk-edit-save-status" id="mk-edit-save-status" data-state="saved">Enregistré à l'instant</span>
+          </div>
+          <div class="mk-edit-topbar-actions">
+            <button class="mk-btn mk-btn-ghost" onclick="window.mkDuplicateCurrent()" aria-label="Dupliquer">Dupliquer</button>
+            <button class="mk-btn mk-btn-primary" onclick="window.mkSaveAndDownload()">⬇ PDF</button>
+          </div>
+        </header>
+        <div class="mk-edit-body">
+          <aside class="mk-edit-rail" role="navigation">
+            <button class="mk-rail-item" data-section="hub" onclick="window.mkBackToLibrary()" title="Hub" aria-label="Hub">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+            </button>
+            <div class="mk-rail-divider"></div>
+            <button class="mk-rail-item is-active" data-section="editor" title="Éditer" aria-label="Éditer">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </button>
+            <button class="mk-rail-item" data-section="theme" title="Thème" aria-label="Thème">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="7" cy="12" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="17" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>
+            </button>
+            <button class="mk-rail-item" data-section="data" title="Données" aria-label="Données">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>
+            </button>
+            <div class="mk-rail-spacer"></div>
+            <button class="mk-rail-item" data-section="help" title="Aide" aria-label="Aide" onclick="window.showShortcutsHelp && window.showShortcutsHelp()">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+            </button>
+          </aside>
+          <main class="mk-edit-canvas-wrap">
+            <div class="mk-canvas-toolbar">
+              <button class="mk-canvas-zoom-btn" onclick="window.mkCanvasResetZoomV2()">Ajuster</button>
+              <button class="mk-canvas-zoom-btn" onclick="window.mkCanvasSetZoomV2(100)">100%</button>
+              <button class="mk-canvas-zoom-btn" onclick="window.mkCanvasSetZoomV2(150)">150%</button>
+              <input id="mk-canvas-zoom-slider" type="range" min="25" max="200" value="70" oninput="window.mkCanvasSetZoomV2(this.value)" class="mk-canvas-zoom-slider" />
+              <span id="mk-canvas-zoom-label" class="mk-canvas-zoom-label">70%</span>
+            </div>
+            <div class="mk-edit-canvas">
+              <div id="mk-canvas-stage-v2" class="mk-canvas-stage">
+                ${renderSheetHTML(editingSheet, 'mk-pdf-target')}
+              </div>
+            </div>
+          </main>
+          <aside class="mk-edit-inspector">
+            <div class="mk-inspector-placeholder">
+              <div class="mk-inspector-ph-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+              </div>
+              <div class="mk-inspector-ph-title">Inspector — Phase 2</div>
+              <div class="mk-inspector-ph-sub">Apparence · Contenu · Données seront ici dans la prochaine livraison.</div>
+              <button class="mk-btn mk-btn-ghost" onclick="window.MK_REFONTE_ENABLED=false;window.renderEdit&&window.renderEdit()">↩ Revenir à l'éditeur V1</button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    `;
+    // Auto-fit zoom après mount
+    requestAnimationFrame(mkApplyZoomV2);
+    // Recalcule sur resize
+    if (!window.__mkV2Resize) {
+      window.__mkV2Resize = function () { if (__mkCanvasZoom == null) mkApplyZoomV2(); };
+      window.addEventListener('resize', window.__mkV2Resize);
+    }
+  }
+  window.renderEditV2 = renderEditV2;
+
+  window.mkBackToLibrary = function () {
+    editingSheet = null;
+    window.renderMarketing();
+  };
+  window.mkDuplicateCurrent = function () {
+    if (!editingSheet) return;
+    const dup = JSON.parse(JSON.stringify(editingSheet));
+    dup.id = 'mk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    dup.title = (dup.title || 'Fiche') + ' — Copie';
+    dup.created_at = new Date().toISOString();
+    dup.updated_at = new Date().toISOString();
+    upsertSheet(dup);
+    editingSheet = dup;
+    renderEdit();
+    if (typeof window.showToast === 'function') window.showToast('Fiche dupliquée ✓', 'success');
+  };
 
   function escapeAttr(s) {
     return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
