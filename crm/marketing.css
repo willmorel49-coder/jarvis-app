@@ -3643,3 +3643,385 @@
 .mk-picker-sel-count {
   font-size: 12px; font-weight: 700; color: #0B1F4D;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PHASE POLISH ESTHÉTIQUE — V2 distinctive
+   Typo éditoriale · gradient mesh · noise · spring · custom cursor
+   Cache-bust v=20260608d
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── 1. Fonts éditoriales : load Fraunces variable (axe opsz) ─── */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Geist+Mono:wght@500&display=swap');
+
+/* ─── 2. Topbar — typographie éditoriale + gradient subtle ─── */
+.mk-edit-v2 .mk-edit-topbar {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%),
+    radial-gradient(ellipse at 12% 50%, rgba(0,87,255,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse at 90% 50%, rgba(245,158,11,0.04) 0%, transparent 50%),
+    #FFFFFF;
+  border-bottom: 1px solid rgba(11,31,77,0.06);
+  /* Hairline gold accent : signature IP en topbar */
+  box-shadow: 0 1px 0 rgba(245,158,11,0.18), 0 1px 12px rgba(11,31,77,0.04);
+}
+.mk-edit-v2 .mk-edit-title-input {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-weight: 700;
+  font-variation-settings: 'opsz' 32;
+  letter-spacing: -0.015em;
+  font-size: 17px !important;
+}
+.mk-edit-v2 .mk-edit-save-status {
+  font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.4px;
+  text-transform: lowercase;
+}
+.mk-edit-v2 .mk-edit-save-status::before {
+  width: 8px !important; height: 8px !important;
+}
+.mk-edit-v2 .mk-edit-save-status[data-state="saved"]::before {
+  background: #14B86A;
+  box-shadow: 0 0 0 2px rgba(20,184,106,0.20), 0 0 10px rgba(20,184,106,0.50);
+}
+.mk-edit-v2 .mk-edit-save-status[data-state="saving"]::before {
+  box-shadow: 0 0 0 2px rgba(245,158,11,0.20);
+  animation: mkPulseRing 1.4s ease-in-out infinite;
+}
+@keyframes mkPulseRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.40), 0 0 0 2px rgba(245,158,11,0.20); }
+  50% { box-shadow: 0 0 0 6px rgba(245,158,11,0), 0 0 0 2px rgba(245,158,11,0.20); }
+}
+
+/* ─── 3. Rail gauche — gradient mesh + glassmorphism subtle ─── */
+.mk-edit-v2 .mk-edit-rail {
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(0,87,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 80%, rgba(11,31,77,0.04) 0%, transparent 50%),
+    linear-gradient(180deg, #FBFCFE 0%, #F6F8FC 100%);
+  border-right: 1px solid rgba(11,31,77,0.05);
+  box-shadow: inset -1px 0 0 rgba(255,255,255,0.6);
+}
+.mk-edit-v2 .mk-rail-item {
+  position: relative;
+  transition: transform .22s cubic-bezier(.34, 1.56, .64, 1),
+              background .15s, color .15s, box-shadow .25s;
+}
+.mk-edit-v2 .mk-rail-item:hover {
+  transform: translateY(-1px) scale(1.04);
+}
+.mk-edit-v2 .mk-rail-item.is-active {
+  background: linear-gradient(135deg, #0A1F4E 0%, #0057FF 60%, #3B82F6 100%);
+  box-shadow:
+    0 6px 18px rgba(0,87,255,0.30),
+    0 0 0 1px rgba(255,255,255,0.15) inset,
+    0 -2px 8px rgba(255,255,255,0.20) inset;
+}
+.mk-edit-v2 .mk-rail-item.is-active::before {
+  content: '';
+  position: absolute; left: -1px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 24px;
+  background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 12px rgba(245,158,11,0.6);
+}
+.mk-edit-v2 .mk-rail-item::after {
+  background: linear-gradient(135deg, #0B1F4D 0%, #0A1628 100%);
+  font-family: 'Geist Mono', ui-monospace, monospace !important;
+  letter-spacing: 0.6px !important;
+  text-transform: uppercase;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 8px 24px rgba(11,31,77,0.18), 0 0 0 1px rgba(255,255,255,0.05) inset;
+}
+
+/* ─── 4. Canvas wrap — noise overlay + vignette + atmosphère ─── */
+.mk-edit-v2 .mk-edit-canvas-wrap {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(0,87,255,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(11,31,77,0.05) 0%, transparent 60%),
+    linear-gradient(180deg, #F4F6FA 0%, #EEF1F7 100%);
+  position: relative;
+}
+.mk-edit-v2 .mk-edit-canvas-wrap::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.04 0 0 0 0 0.12 0 0 0 0 0.30 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.45;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+.mk-edit-v2 .mk-canvas-toolbar {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.70) 0%, rgba(255,255,255,0.40) 100%);
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  border-bottom: 1px solid rgba(11,31,77,0.05);
+  position: relative; z-index: 2;
+}
+.mk-edit-v2 .mk-canvas-zoom-btn {
+  font-family: 'Geist Mono', ui-monospace, monospace !important;
+  letter-spacing: 0.4px;
+  font-size: 11px !important;
+}
+.mk-edit-v2 .mk-canvas-zoom-label {
+  font-family: 'Geist Mono', ui-monospace, monospace !important;
+  font-size: 11px !important;
+  letter-spacing: 0.2px;
+}
+
+/* ─── 5. Fiche A4 — ombre stratifiée premium ─── */
+.mk-edit-v2 .mk-edit-canvas { position: relative; z-index: 2; }
+.mk-edit-v2 .mk-canvas-stage > .mk-pdf-target,
+.mk-edit-v2 .mk-canvas-stage > .mk-pdf,
+.mk-edit-v2 .mk-canvas-stage > .mk-pdf-bento,
+.mk-edit-v2 .mk-canvas-stage > div[id^="mk-pdf-target"] {
+  box-shadow:
+    0 0 0 1px rgba(11,31,77,0.06),
+    0 1px 2px rgba(11,31,77,0.04),
+    0 4px 12px rgba(11,31,77,0.06),
+    0 16px 40px rgba(11,31,77,0.10),
+    0 32px 64px rgba(11,31,77,0.06);
+}
+
+/* ─── 6. Inline edit — custom cursor + hint refait ─── */
+.mk-edit-v2 .mk-canvas-stage [data-editable] {
+  cursor:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%230057FF' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M12 20h9'/><path d='M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z'/></svg>") 2 22, text;
+  transition: background .18s cubic-bezier(.4,0,.2,1),
+              outline-color .18s, outline-offset .18s;
+}
+.mk-edit-v2 .mk-canvas-stage [data-editable]:hover {
+  background: linear-gradient(135deg, rgba(0,87,255,0.08) 0%, rgba(59,130,246,0.10) 100%);
+  outline: 1.5px dashed rgba(0,87,255,0.45);
+  outline-offset: 3px;
+}
+.mk-edit-v2 .mk-canvas-stage [data-editable]:hover::after {
+  background: linear-gradient(135deg, #0A1F4E 0%, #0057FF 100%);
+  color: #FFFFFF;
+  font-family: 'Geist Mono', ui-monospace, monospace !important;
+  font-size: 9.5px !important;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 8px !important;
+  border-radius: 5px;
+  box-shadow: 0 6px 16px rgba(0,87,255,0.28), 0 0 0 1px rgba(255,255,255,0.10) inset;
+}
+.mk-edit-v2 .mk-canvas-stage .mk-canvas-editing {
+  background: linear-gradient(135deg, rgba(0,87,255,0.14) 0%, rgba(59,130,246,0.10) 100%) !important;
+  outline: 2px solid #0057FF !important;
+  outline-offset: 3px !important;
+  box-shadow:
+    0 0 0 6px rgba(0,87,255,0.10),
+    0 6px 20px rgba(0,87,255,0.22) !important;
+}
+
+/* ─── 7. Inspector — eyebrows éditoriaux + spring sur sections ─── */
+.mk-edit-v2 .mk-edit-inspector {
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(0,87,255,0.04) 0%, transparent 50%),
+    linear-gradient(180deg, #FAFBFE 0%, #F4F6FA 100%);
+  border-left: 1px solid rgba(11,31,77,0.06);
+  box-shadow: inset 1px 0 0 rgba(255,255,255,0.6);
+}
+.mk-edit-v2 .mk-inspector-tabs {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px) saturate(1.6);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  border-bottom: 1px solid rgba(11,31,77,0.06);
+}
+.mk-edit-v2 .mk-inspector-tab {
+  font-family: 'Geist Mono', ui-monospace, monospace !important;
+  font-size: 11px !important;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 14px 8px !important;
+}
+.mk-edit-v2 .mk-inspector-tab.is-active::after {
+  content: '';
+  position: absolute; bottom: -2px; left: 50%;
+  transform: translateX(-50%);
+  width: 6px; height: 6px;
+  background: #F59E0B;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(245,158,11,0.60);
+}
+.mk-edit-v2 .mk-inspector-tab { position: relative; }
+
+.mk-edit-v2 .mk-insp-section {
+  background: #FFFFFF;
+  border: 1px solid rgba(11,31,77,0.06);
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1),
+              border-color .15s, box-shadow .25s;
+}
+.mk-edit-v2 .mk-insp-section.is-open {
+  border-color: rgba(0,87,255,0.15);
+  box-shadow:
+    0 4px 14px rgba(11,31,77,0.04),
+    0 0 0 1px rgba(0,87,255,0.05);
+}
+.mk-edit-v2 .mk-insp-section-title {
+  font-family: 'Geist Mono', ui-monospace, monospace !important;
+  font-size: 10.5px !important;
+  letter-spacing: 1.3px;
+}
+.mk-edit-v2 .mk-insp-section-chevron {
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+  color: #0057FF;
+}
+.mk-edit-v2 .mk-insp-section.is-open .mk-insp-section-chevron {
+  transform: rotate(0deg);
+}
+
+/* ─── 8. Swatches palette — spring + ring scale ─── */
+.mk-edit-v2 .mk-insp-pal {
+  transition:
+    transform .25s cubic-bezier(.34, 1.56, .64, 1),
+    box-shadow .25s;
+}
+.mk-edit-v2 .mk-insp-pal:hover {
+  transform: scale(1.14) rotate(-2deg);
+  z-index: 2;
+}
+.mk-edit-v2 .mk-insp-pal.is-active {
+  transform: scale(1.10);
+  box-shadow:
+    0 0 0 2px #FFFFFF,
+    0 0 0 4px #0057FF,
+    0 0 0 5px rgba(245,158,11,0.30),
+    0 6px 16px rgba(0,87,255,0.25);
+}
+
+.mk-edit-v2 .mk-insp-tpl {
+  transition: transform .22s cubic-bezier(.34, 1.56, .64, 1), border-color .15s, box-shadow .15s;
+}
+.mk-edit-v2 .mk-insp-tpl:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+.mk-edit-v2 .mk-insp-tpl-name {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-weight: 700;
+  font-variation-settings: 'opsz' 14;
+  letter-spacing: -0.01em;
+}
+
+.mk-edit-v2 .mk-insp-preset {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-weight: 600;
+  font-variation-settings: 'opsz' 12;
+  letter-spacing: 0;
+}
+.mk-edit-v2 .mk-insp-preset:hover {
+  background: linear-gradient(135deg, #0A1F4E 0%, #0057FF 60%, #3B82F6 100%);
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px rgba(0,87,255,0.32), 0 0 0 1px rgba(245,158,11,0.30) inset;
+}
+
+.mk-edit-v2 .mk-insp-font {
+  transition: transform .22s cubic-bezier(.34, 1.56, .64, 1), border-color .15s, box-shadow .15s;
+}
+.mk-edit-v2 .mk-insp-font:hover { transform: translateY(-2px); }
+.mk-edit-v2 .mk-insp-font-aa {
+  font-variation-settings: 'opsz' 40, 'wght' 800;
+}
+
+/* ─── 9. Picker unifié — spring slide + tags glow ─── */
+.mk-edit-v2 .mk-picker-unified {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(0,87,255,0.04) 0%, transparent 50%),
+    linear-gradient(180deg, #FAFBFE 0%, #F4F6FA 100%);
+  animation: mkPickerSpringIn .42s cubic-bezier(.34, 1.56, .64, 1);
+}
+@keyframes mkPickerSpringIn {
+  0% { opacity: 0; transform: translateX(28px) scale(0.97); }
+  60% { opacity: 1; transform: translateX(-3px) scale(1.005); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+.mk-edit-v2 .mk-picker-head {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px) saturate(1.6);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
+}
+.mk-edit-v2 .mk-picker-title {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-weight: 700;
+  font-variation-settings: 'opsz' 24;
+  letter-spacing: -0.01em;
+  font-size: 16px !important;
+}
+.mk-edit-v2 .mk-picker-src {
+  font-family: 'Geist Mono', ui-monospace, monospace !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 10px !important;
+}
+.mk-edit-v2 .mk-picker-src.is-active {
+  box-shadow:
+    0 4px 14px rgba(0,87,255,0.30),
+    0 0 0 1px rgba(255,255,255,0.20) inset,
+    0 0 16px rgba(0,87,255,0.20);
+}
+.mk-edit-v2 .mk-picker-result {
+  transition: transform .22s cubic-bezier(.34, 1.56, .64, 1), border-color .15s, box-shadow .15s;
+}
+.mk-edit-v2 .mk-picker-result:not(.is-already):hover {
+  transform: translateY(-2px) scale(1.005);
+}
+.mk-edit-v2 .mk-picker-name {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-weight: 600;
+  font-variation-settings: 'opsz' 14;
+  letter-spacing: -0.005em;
+  font-size: 13px !important;
+}
+.mk-edit-v2 .mk-picker-source-tag {
+  font-family: 'Geist Mono', ui-monospace, monospace !important;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* ─── 10. Bouton primary unifié V2 — gradient + glow ─── */
+.mk-edit-v2 .mk-btn-primary {
+  background: linear-gradient(135deg, #0A1F4E 0%, #0057FF 55%, #3B82F6 100%) !important;
+  box-shadow:
+    0 4px 12px rgba(0,87,255,0.28),
+    0 0 0 1px rgba(255,255,255,0.10) inset,
+    0 -2px 8px rgba(255,255,255,0.18) inset;
+  letter-spacing: 0.3px;
+}
+.mk-edit-v2 .mk-btn-primary:hover {
+  box-shadow:
+    0 6px 18px rgba(0,87,255,0.38),
+    0 0 0 1px rgba(245,158,11,0.20) inset,
+    0 -2px 8px rgba(255,255,255,0.22) inset,
+    0 0 22px rgba(0,87,255,0.22);
+  transform: translateY(-1px);
+}
+
+/* ─── 11. Stagger entrance Inspector sections ─── */
+.mk-edit-v2 .mk-inspector-body .mk-insp-section {
+  animation: mkSectionFadeUp .45s cubic-bezier(.22, 1, .36, 1) backwards;
+}
+.mk-edit-v2 .mk-inspector-body .mk-insp-section:nth-child(1) { animation-delay: 30ms; }
+.mk-edit-v2 .mk-inspector-body .mk-insp-section:nth-child(2) { animation-delay: 70ms; }
+.mk-edit-v2 .mk-inspector-body .mk-insp-section:nth-child(3) { animation-delay: 110ms; }
+.mk-edit-v2 .mk-inspector-body .mk-insp-section:nth-child(4) { animation-delay: 150ms; }
+.mk-edit-v2 .mk-inspector-body .mk-insp-section:nth-child(5) { animation-delay: 190ms; }
+.mk-edit-v2 .mk-inspector-body .mk-insp-section:nth-child(6) { animation-delay: 230ms; }
+.mk-edit-v2 .mk-inspector-body .mk-insp-section:nth-child(7) { animation-delay: 270ms; }
+@keyframes mkSectionFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── 12. Reduced motion fallback ─── */
+@media (prefers-reduced-motion: reduce) {
+  .mk-edit-v2 *,
+  .mk-edit-v2 *::before,
+  .mk-edit-v2 *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
