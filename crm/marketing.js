@@ -81,35 +81,67 @@
   // PALETTES MARKETING 2026-2027 — Tendances + Neutres (les classiques IP
   // sont retires de l'UI mais gardent leur id pour retrocompat des sheets
   // sauvegardees, remappes vers leur equivalent tendance).
+  // ── PALETTES PRO 2026-2027 (refondues par 3 agents experts + synthese DM) ──
+  // 20 palettes : 10 tendances + 5 neutres premium + 5 signatures IP.
+  // Inspirations : Aesop, Bioderma 2024, La Roche-Posay refresh, Eight Sleep,
+  // Pantone Future Dusk / Butter Yellow, WGSN Beauty Insight S/S 2026.
+  // Voir crm/marketing-design-system.js pour la source canonique.
+  // Les ids alias legacy (navy/sky/mint/...) sont mappes intelligemment vers
+  // leur meilleur equivalent pro pour preserver les sheets existantes.
   const COLOR_PRESETS = {
-    // ─── Tendances 2026-2027 (cards equilibrees, harmonies de saturation) ───
-    dusk:       { name: 'Future Dusk',       category: 'trend',   bg: '#E5DEEF', accent: '#2D1B69', headerBg: '#2D1B69', headerFg: '#FFFFFF', priceBg: '#5740B5', priceFg: '#FFFFFF' },
-    teal:       { name: 'Deep Teal',         category: 'trend',   bg: '#C9E2DF', accent: '#0A4A45', headerBg: '#0A4A45', headerFg: '#FFFFFF', priceBg: '#1A8B82', priceFg: '#FFFFFF' },
-    cherry:     { name: 'Cherry Lacquer',    category: 'trend',   bg: '#F7D6DA', accent: '#8B0E25', headerBg: '#8B0E25', headerFg: '#FFFFFF', priceBg: '#C9182E', priceFg: '#FFFFFF' },
-    sienna:     { name: 'Burnt Sienna',      category: 'trend',   bg: '#F4DDC9', accent: '#8B3A1B', headerBg: '#8B3A1B', headerFg: '#FFFFFF', priceBg: '#C25032', priceFg: '#FFFFFF' },
-    sage:       { name: 'Sage Eucalyptus',   category: 'trend',   bg: '#DDE5D2', accent: '#3D5A3D', headerBg: '#3D5A3D', headerFg: '#FFFFFF', priceBg: '#5E7E5E', priceFg: '#FFFFFF' },
-    vanilla:    { name: 'Vanilla Cream',     category: 'trend',   bg: '#F8EDD9', accent: '#6B4E2F', headerBg: '#6B4E2F', headerFg: '#FFFFFF', priceBg: '#946F45', priceFg: '#FFFFFF' },
-    chartreuse: { name: 'Chartreuse',        category: 'trend',   bg: '#ECF3C2', accent: '#4F5E0F', headerBg: '#4F5E0F', headerFg: '#FFFFFF', priceBg: '#7A8F1A', priceFg: '#FFFFFF' },
-    slate:      { name: 'Slate Gold',        category: 'trend',   bg: '#2A2D3A', accent: '#C9A961', headerBg: '#1A1C26', headerFg: '#C9A961', priceBg: '#C9A961', priceFg: '#1A1C26' },
-    plum:       { name: 'Mystic Plum',       category: 'trend',   bg: '#E8D6E0', accent: '#4A1A35', headerBg: '#4A1A35', headerFg: '#FFFFFF', priceBg: '#7D2D5C', priceFg: '#FFFFFF' },
-    terracotta: { name: 'Terracotta Soft',   category: 'trend',   bg: '#F0CDB8', accent: '#9C3F1A', headerBg: '#9C3F1A', headerFg: '#FFFFFF', priceBg: '#C75A2A', priceFg: '#FFFFFF' },
+    // ─── Tendances 2026-2027 (10) ──────────────────────────────────
+    'future-dusk-pharma':   { name: 'Future Dusk',         category: 'trend',   bg: '#F5F2EC', accent: '#2D2A4A', headerBg: '#4A4870', headerFg: '#F5F2EC', priceBg: '#2D2A4A', priceFg: '#FFD66B' },
+    'transformative-teal':  { name: 'Teal Vitalité',       category: 'trend',   bg: '#F8FAF9', accent: '#0F5A4E', headerBg: '#16A085', headerFg: '#FFFFFF', priceBg: '#0F5A4E', priceFg: '#FFE8A3' },
+    'butter-yellow-solaire':{ name: 'Butter Solaire',      category: 'trend',   bg: '#FFFCF2', accent: '#3D2817', headerBg: '#FFD66B', headerFg: '#3D2817', priceBg: '#3D2817', priceFg: '#FFD66B' },
+    'sour-cherry-prestige': { name: 'Cherry Lacquer',      category: 'trend',   bg: '#FAF6F2', accent: '#5C1A24', headerBg: '#7A2433', headerFg: '#FAF6F2', priceBg: '#5C1A24', priceFg: '#F4B942' },
+    'aura-indigo-tech':     { name: 'Aura Indigo Tech',    category: 'trend',   bg: '#F4F4F8', accent: '#1E1B4B', headerBg: '#2E2A6B', headerFg: '#F4F4F8', priceBg: '#1E1B4B', priceFg: '#A5F3FC' },
+    'mocha-mousse-2025':    { name: 'Mocha Apothicaire',   category: 'trend',   bg: '#FAF5EC', accent: '#3A2A1F', headerBg: '#A47864', headerFg: '#FAF5EC', priceBg: '#3A2A1F', priceFg: '#F4B942' },
+    'verdant-sage':         { name: 'Sage Botanique',      category: 'trend',   bg: '#F4F6F2', accent: '#2F4030', headerBg: '#7A9070', headerFg: '#F4F6F2', priceBg: '#2F4030', priceFg: '#FAF5EC' },
+    'coral-warmth':         { name: 'Corail Officinal',    category: 'trend',   bg: '#FDF8F4', accent: '#7A2E1A', headerBg: '#E07856', headerFg: '#FDF8F4', priceBg: '#7A2E1A', priceFg: '#FDF8F4' },
+    'raspberry-mat':        { name: 'Framboise Mate',      category: 'trend',   bg: '#FAF4F6', accent: '#4A1E2E', headerBg: '#9B3A5C', headerFg: '#FAF4F6', priceBg: '#4A1E2E', priceFg: '#FFD66B' },
+    'ocean-deep':           { name: 'Océan Profond',       category: 'trend',   bg: '#F0F4F7', accent: '#0A2540', headerBg: '#1E3A5F', headerFg: '#F0F4F7', priceBg: '#0A2540', priceFg: '#FFD66B' },
 
-    // ─── Neutres (blanc glace, gris, noir, cremes) ─────────────
-    ice:        { name: 'Blanc glacé',       category: 'neutral', bg: '#F4F7FB', accent: '#1E293B', headerBg: '#1E293B', headerFg: '#FFFFFF', priceBg: '#1E293B', priceFg: '#FFFFFF' },
-    pearl:      { name: 'Perle',             category: 'neutral', bg: '#F5F1EC', accent: '#3D3A36', headerBg: '#3D3A36', headerFg: '#FFFFFF', priceBg: '#5D5750', priceFg: '#FFFFFF' },
-    stone:      { name: 'Gris pierre',       category: 'neutral', bg: '#E8E6E1', accent: '#3A3A3A', headerBg: '#3A3A3A', headerFg: '#FFFFFF', priceBg: '#5C5C5C', priceFg: '#FFFFFF' },
-    charcoal:   { name: 'Noir mat',          category: 'neutral', bg: '#1F1F23', accent: '#E8E6E1', headerBg: '#0F0F12', headerFg: '#FFFFFF', priceBg: '#E8E6E1', priceFg: '#1F1F23' },
-    cream:      { name: 'Crème',             category: 'neutral', bg: '#FBF7EE', accent: '#4A3A28', headerBg: '#4A3A28', headerFg: '#FFFFFF', priceBg: '#7A5F40', priceFg: '#FFFFFF' },
-    ivory:      { name: 'Ivoire',            category: 'neutral', bg: '#FDF9F0', accent: '#5E4E36', headerBg: '#2C231A', headerFg: '#FDF9F0', priceBg: '#5E4E36', priceFg: '#FDF9F0' },
+    // ─── Neutres Premium (5) ───────────────────────────────────────
+    'ivoire-vellum':        { name: 'Ivoire Vélin',        category: 'neutral', bg: '#F5F0E8', accent: '#1A1A1A', headerBg: '#2C2C2C', headerFg: '#F5F0E8', priceBg: '#1A1A1A', priceFg: '#FFD66B' },
+    'glacial-white':        { name: 'Blanc Glacé',         category: 'neutral', bg: '#FAFBFC', accent: '#0A1628', headerBg: '#1B2A4E', headerFg: '#FAFBFC', priceBg: '#0A1628', priceFg: '#FAFBFC' },
+    'champagne-mineral':    { name: 'Champagne Minéral',   category: 'neutral', bg: '#F4EFE3', accent: '#2B2118', headerBg: '#5C4A35', headerFg: '#F4EFE3', priceBg: '#2B2118', priceFg: '#D4A574' },
+    'graphite-mat':         { name: 'Graphite Mat',        category: 'neutral', bg: '#1C1C1E', accent: '#F2EDE4', headerBg: '#2C2C2E', headerFg: '#F2EDE4', priceBg: '#F2EDE4', priceFg: '#1C1C1E' },
+    'perle-grise':          { name: 'Perle Grise',         category: 'neutral', bg: '#EDEEF0', accent: '#1F2937', headerBg: '#374151', headerFg: '#EDEEF0', priceBg: '#1F2937', priceFg: '#FFD66B' },
 
-    // ─── Alias retrocompat (sheets existantes) — remappes vers tendances/neutres ───
-    navy:   { name: 'Marine',  category: '_legacy', bg: '#E5DEEF', accent: '#2D1B69', headerBg: '#2D1B69', headerFg: '#FFFFFF', priceBg: '#5740B5', priceFg: '#FFFFFF' },
-    sky:    { name: 'Ciel',    category: '_legacy', bg: '#C9E2DF', accent: '#0A4A45', headerBg: '#0A4A45', headerFg: '#FFFFFF', priceBg: '#1A8B82', priceFg: '#FFFFFF' },
-    lilac:  { name: 'Lilas',   category: '_legacy', bg: '#E8D6E0', accent: '#4A1A35', headerBg: '#4A1A35', headerFg: '#FFFFFF', priceBg: '#7D2D5C', priceFg: '#FFFFFF' },
-    mint:   { name: 'Menthe',  category: '_legacy', bg: '#DDE5D2', accent: '#3D5A3D', headerBg: '#3D5A3D', headerFg: '#FFFFFF', priceBg: '#5E7E5E', priceFg: '#FFFFFF' },
-    amber:  { name: 'Ambre',   category: '_legacy', bg: '#F8EDD9', accent: '#6B4E2F', headerBg: '#6B4E2F', headerFg: '#FFFFFF', priceBg: '#946F45', priceFg: '#FFFFFF' },
-    rose:   { name: 'Rose',    category: '_legacy', bg: '#F7D6DA', accent: '#8B0E25', headerBg: '#8B0E25', headerFg: '#FFFFFF', priceBg: '#C9182E', priceFg: '#FFFFFF' },
-    forest: { name: 'Forêt',   category: '_legacy', bg: '#DDE5D2', accent: '#3D5A3D', headerBg: '#3D5A3D', headerFg: '#FFFFFF', priceBg: '#5E7E5E', priceFg: '#FFFFFF' },
+    // ─── Signatures Intégral Pharma (5) ────────────────────────────
+    'ip-signature-azure':   { name: 'IP Azur Signature',   category: 'signature', bg: '#F4F7FC', accent: '#0A1F4E', headerBg: '#1B2A4E', headerFg: '#F4F7FC', priceBg: '#0057FF', priceFg: '#FFFFFF' },
+    'ip-encre-miel':        { name: 'IP Encre & Miel',     category: 'signature', bg: '#FAF6EE', accent: '#0A1F4E', headerBg: '#1B2A4E', headerFg: '#FAF6EE', priceBg: '#0A1F4E', priceFg: '#F4B942' },
+    'ip-cherry-edition':    { name: 'IP Cherry Édition',   category: 'signature', bg: '#FAF4F4', accent: '#0A1F4E', headerBg: '#5C1A24', headerFg: '#FAF4F4', priceBg: '#5C1A24', priceFg: '#FFD66B' },
+    'ip-sage-conseil':      { name: 'IP Sage Conseil',     category: 'signature', bg: '#F4F7F2', accent: '#1A2F1E', headerBg: '#2F4030', headerFg: '#F4F7F2', priceBg: '#1A2F1E', priceFg: '#F4B942' },
+    'ip-graphite-prestige': { name: 'IP Graphite Prestige', category: 'signature', bg: '#1A1D2E', accent: '#F2EDE4', headerBg: '#2C3045', headerFg: '#F2EDE4', priceBg: '#F2EDE4', priceFg: '#0A1F4E' },
+
+    // ─── Alias retrocompat (sheets existantes + SEASON_THEMES) ─────
+    // Mapped intelligemment vers leur equivalent pro le plus proche.
+    navy:       { name: 'Marine',  category: '_legacy', bg: '#F4F7FC', accent: '#0A1F4E', headerBg: '#1B2A4E', headerFg: '#F4F7FC', priceBg: '#0057FF', priceFg: '#FFFFFF' },
+    sky:        { name: 'Ciel',    category: '_legacy', bg: '#F0F4F7', accent: '#0A2540', headerBg: '#1E3A5F', headerFg: '#F0F4F7', priceBg: '#0A2540', priceFg: '#FFD66B' },
+    lilac:      { name: 'Lilas',   category: '_legacy', bg: '#F5F2EC', accent: '#2D2A4A', headerBg: '#4A4870', headerFg: '#F5F2EC', priceBg: '#2D2A4A', priceFg: '#FFD66B' },
+    mint:       { name: 'Menthe',  category: '_legacy', bg: '#F4F6F2', accent: '#2F4030', headerBg: '#7A9070', headerFg: '#F4F6F2', priceBg: '#2F4030', priceFg: '#FAF5EC' },
+    amber:      { name: 'Ambre',   category: '_legacy', bg: '#FFFCF2', accent: '#3D2817', headerBg: '#FFD66B', headerFg: '#3D2817', priceBg: '#3D2817', priceFg: '#FFD66B' },
+    rose:       { name: 'Rose',    category: '_legacy', bg: '#FAF4F6', accent: '#4A1E2E', headerBg: '#9B3A5C', headerFg: '#FAF4F6', priceBg: '#4A1E2E', priceFg: '#FFD66B' },
+    forest:     { name: 'Forêt',   category: '_legacy', bg: '#F4F7F2', accent: '#1A2F1E', headerBg: '#2F4030', headerFg: '#F4F7F2', priceBg: '#1A2F1E', priceFg: '#F4B942' },
+
+    // ─── Aliases additionnels pour sheets templates existants ──────
+    dusk:       { name: 'Future Dusk',       category: '_legacy', bg: '#F5F2EC', accent: '#2D2A4A', headerBg: '#4A4870', headerFg: '#F5F2EC', priceBg: '#2D2A4A', priceFg: '#FFD66B' },
+    teal:       { name: 'Deep Teal',         category: '_legacy', bg: '#F8FAF9', accent: '#0F5A4E', headerBg: '#16A085', headerFg: '#FFFFFF', priceBg: '#0F5A4E', priceFg: '#FFE8A3' },
+    cherry:     { name: 'Cherry Lacquer',    category: '_legacy', bg: '#FAF6F2', accent: '#5C1A24', headerBg: '#7A2433', headerFg: '#FAF6F2', priceBg: '#5C1A24', priceFg: '#F4B942' },
+    sienna:     { name: 'Burnt Sienna',      category: '_legacy', bg: '#FDF8F4', accent: '#7A2E1A', headerBg: '#E07856', headerFg: '#FDF8F4', priceBg: '#7A2E1A', priceFg: '#FDF8F4' },
+    sage:       { name: 'Sage Eucalyptus',   category: '_legacy', bg: '#F4F6F2', accent: '#2F4030', headerBg: '#7A9070', headerFg: '#F4F6F2', priceBg: '#2F4030', priceFg: '#FAF5EC' },
+    vanilla:    { name: 'Vanilla Cream',     category: '_legacy', bg: '#FAF5EC', accent: '#3A2A1F', headerBg: '#A47864', headerFg: '#FAF5EC', priceBg: '#3A2A1F', priceFg: '#F4B942' },
+    chartreuse: { name: 'Chartreuse',        category: '_legacy', bg: '#F8FAF9', accent: '#0F5A4E', headerBg: '#16A085', headerFg: '#FFFFFF', priceBg: '#0F5A4E', priceFg: '#FFE8A3' },
+    slate:      { name: 'Slate Gold',        category: '_legacy', bg: '#1C1C1E', accent: '#F2EDE4', headerBg: '#2C2C2E', headerFg: '#F2EDE4', priceBg: '#F2EDE4', priceFg: '#1C1C1E' },
+    plum:       { name: 'Mystic Plum',       category: '_legacy', bg: '#FAF4F6', accent: '#4A1E2E', headerBg: '#9B3A5C', headerFg: '#FAF4F6', priceBg: '#4A1E2E', priceFg: '#FFD66B' },
+    terracotta: { name: 'Terracotta',        category: '_legacy', bg: '#FDF8F4', accent: '#7A2E1A', headerBg: '#E07856', headerFg: '#FDF8F4', priceBg: '#7A2E1A', priceFg: '#FDF8F4' },
+    ice:        { name: 'Blanc glacé',       category: '_legacy', bg: '#FAFBFC', accent: '#0A1628', headerBg: '#1B2A4E', headerFg: '#FAFBFC', priceBg: '#0A1628', priceFg: '#FAFBFC' },
+    pearl:      { name: 'Perle',             category: '_legacy', bg: '#F4EFE3', accent: '#2B2118', headerBg: '#5C4A35', headerFg: '#F4EFE3', priceBg: '#2B2118', priceFg: '#D4A574' },
+    stone:      { name: 'Gris pierre',       category: '_legacy', bg: '#EDEEF0', accent: '#1F2937', headerBg: '#374151', headerFg: '#EDEEF0', priceBg: '#1F2937', priceFg: '#FFD66B' },
+    charcoal:   { name: 'Noir mat',          category: '_legacy', bg: '#1C1C1E', accent: '#F2EDE4', headerBg: '#2C2C2E', headerFg: '#F2EDE4', priceBg: '#F2EDE4', priceFg: '#1C1C1E' },
+    cream:      { name: 'Crème',             category: '_legacy', bg: '#F5F0E8', accent: '#1A1A1A', headerBg: '#2C2C2C', headerFg: '#F5F0E8', priceBg: '#1A1A1A', priceFg: '#FFD66B' },
+    ivory:      { name: 'Ivoire',            category: '_legacy', bg: '#FAF6EE', accent: '#0A1F4E', headerBg: '#1B2A4E', headerFg: '#FAF6EE', priceBg: '#0A1F4E', priceFg: '#F4B942' },
   };
 
   // Thèmes saison — filtres + mois pertinents
