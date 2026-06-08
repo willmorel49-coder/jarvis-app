@@ -4903,3 +4903,243 @@
   .mk-home2-recent-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .mk-home2-more { padding: 12px 18px; width: 100%; justify-content: space-between; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   TOP VENTES PAR SEGMENT — IP × Ameli (validé Will 2026-06-08)
+   ═══════════════════════════════════════════════════════════════ */
+.mk-cat-section { margin-top: 32px; }
+.mk-cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.mk-cat-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(11,31,77,0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all .18s cubic-bezier(.2,.8,.2,1);
+  box-shadow: 0 1px 2px rgba(11,31,77,0.03);
+}
+.mk-cat-card:hover { border-color: rgba(0,87,255,0.18); }
+.mk-cat-card.is-open {
+  border-color: rgba(0,87,255,0.25);
+  box-shadow: 0 6px 16px rgba(11,31,77,0.06), 0 0 0 4px rgba(0,87,255,0.04);
+}
+
+.mk-cat-card-head {
+  position: relative;
+  display: grid;
+  grid-template-columns: 6px 1fr auto 20px;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FBFAF7 100%);
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: background .15s;
+}
+.mk-cat-card-head:hover { background: linear-gradient(180deg, #FBFCFE 0%, #F4F6FA 100%); }
+.mk-cat-card-accent {
+  width: 4px;
+  height: 38px;
+  border-radius: 3px;
+  align-self: center;
+}
+.mk-cat-card-titles { min-width: 0; }
+.mk-cat-card-name {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-variation-settings: 'opsz' 24;
+  font-size: 17px;
+  color: #0A1F4E;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mk-cat-card-cap {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background: #0057FF;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.mk-cat-card-meta {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: #71717A;
+  margin-top: 4px;
+}
+
+.mk-cat-card-stats {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.mk-cat-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 70px;
+}
+.mk-cat-stat-v {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0A1F4E;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.mk-cat-stat-k {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #71717A;
+  margin-top: 4px;
+}
+.mk-cat-stat-ratio-cell .mk-cat-stat-v { color: #0057FF; }
+
+.mk-cat-card-chev {
+  color: #71717A;
+  transition: transform .25s cubic-bezier(.2,.8,.2,1);
+}
+.mk-cat-card.is-open .mk-cat-card-chev { transform: rotate(180deg); color: #0057FF; }
+
+.mk-cat-card-body {
+  background: #FFFFFF;
+  padding: 8px 18px 16px;
+  border-top: 1px solid rgba(11,31,77,0.05);
+  animation: mkCatExpand .25s cubic-bezier(.22, 1, .36, 1);
+  overflow-x: auto;
+}
+@keyframes mkCatExpand {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.mk-cat-card:not(.is-open) .mk-cat-card-body { display: none; }
+
+.mk-cat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+}
+.mk-cat-table thead th {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #71717A;
+  font-weight: 500;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(11,31,77,0.06);
+  background: #FBFAF7;
+}
+.mk-cat-table thead th.mk-cat-num-h { text-align: right; }
+.mk-cat-table tbody tr { transition: background .12s; }
+.mk-cat-table tbody tr:hover { background: rgba(0,87,255,0.04); }
+.mk-cat-table tbody td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(11,31,77,0.04);
+  color: #0A1F4E;
+}
+.mk-cat-table tbody tr:last-child td { border-bottom: none; }
+
+.mk-cat-rk {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #71717A;
+  width: 24px;
+  text-align: center;
+}
+.mk-cat-name {
+  font-weight: 500;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mk-cat-cip {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #5B6478;
+  letter-spacing: 0.02em;
+}
+.mk-cat-num {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-size: 12.5px;
+  text-align: right;
+  color: #0A1F4E;
+}
+.mk-cat-ratio { color: #0057FF; font-weight: 600; }
+.mk-cat-empty { color: #C7CAD3; }
+
+.mk-cat-addbtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: 1px solid rgba(11,31,77,0.10);
+  background: #FFFFFF;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 14px;
+  color: #0057FF;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: all .15s cubic-bezier(.2,.8,.2,1);
+  padding: 0;
+  line-height: 1;
+}
+.mk-cat-addbtn:hover {
+  background: #0057FF;
+  color: #FFFFFF;
+  border-color: #0057FF;
+  transform: scale(1.05);
+}
+
+.mk-cat-table-more {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(0,87,255,0.04);
+  border: 1px dashed rgba(0,87,255,0.20);
+  border-radius: 8px;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0057FF;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all .15s;
+}
+.mk-cat-table-more:hover {
+  background: rgba(0,87,255,0.08);
+  border-color: rgba(0,87,255,0.35);
+}
+
+@media (max-width: 720px) {
+  .mk-cat-card-head { grid-template-columns: 4px 1fr 18px; padding: 12px 14px; gap: 10px; }
+  .mk-cat-card-stats { display: none; }
+  .mk-cat-card-name { font-size: 15px; }
+  .mk-cat-table { font-size: 12px; }
+  .mk-cat-name { max-width: 180px; }
+}

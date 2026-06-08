@@ -1091,6 +1091,8 @@
   let statsCatalogue = 'all';// 'all' | 'integral' | 'itp'
   let mkPage = 'grossiste';  // 'grossiste' (IP / canal grossiste) | 'offilog' (parapharma direct labo)
   let mkShowMore = false;     // false = home drastique (Hero + Fiches récentes), true = full hub (sections empilées)
+  let mkExpandedCategories = new Set(); // catégories dépliées dans la section "Top ventes par cat · IP × Ameli"
+  let mkCategoriesShowAll = false;       // false = top 12 catégories, true = toutes
   // Picker saisonnier : selection composable avant creation de fiche.
   // On y voit TOUS les produits du theme (peut etre 245+), top 20 precoche,
   // l'utilisateur ajuste puis valide.
@@ -1526,6 +1528,190 @@
     };
   }
 
+  // ════════════════════════════════════════════════════════════
+  // TOP VENTES PAR SEGMENT — IP × Ameli (validé Will 2026-06-08)
+  // 7 segments commerciaux : petits prix / intermédiaires / chers /
+  // froids / génériques / biosimilaires / non remboursés
+  // ════════════════════════════════════════════════════════════
+  function fmtBigVol(n) {
+    if (!n) return '—';
+    if (n >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + ' M';
+    if (n >= 1e3) return (n / 1e3).toFixed(0) + ' k';
+    return n.toLocaleString('fr-FR');
+  }
+
+  function getSegments() {
+    const BENCH = window.BENCHMARK || [];
+    const SAGITTA = window.SAGITTA_SHORTLIST || [];
+    const sagittaCipSet = new Set(SAGITTA.map(p => String(p.cip13 || p.cip || '')));
+
+    const priceOf = (b) => (typeof b.prix_ip === 'number' && b.prix_ip > 0) ? b.prix_ip :
+                          (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
+    const isFroid = (b) => b.is_froid === true;
+    const isCheap = (b) => { const p = priceOf(b); return p > 0 && p < 5 && !isFroid(b); };
+    const isMid   = (b) => { const p = priceOf(b); return p >= 5 && p <= 20 && !isFroid(b); };
+    const isExp   = (b) => priceOf(b) > 20 && !isFroid(b);
+    const GEN_RX  = /\b(MYLAN|BIOGARAN|SANDOZ|TEVA|RATIOPHARM|EG|ZENTIVA|ARROW|VIATRIS|ACCORD|KRKA|BAILLY|CRISTERS|RANBAXY|G GAM|G\b)\b/;
+    const isGen   = (b) => GEN_RX.test((b.designation || '').toUpperCase()) || /générique/i.test(b.categorie || '');
+    const BIO_RX  = /\b(BIOSIMILAIRE|TRUXIMA|BENEPALI|REMSIMA|RIXATHON|RUXIENCE|MVASI|ZIRABEV|HULIO|HEFIYA|KANJINTI|HALAVEN|IMRALDI|ZESSLY|FLIXABI|INHIXA|ENROL|YESINTEK|AMSPARITY|ZYNTEGLO|TROVA)\b/;
+    const isBio   = (b) => BIO_RX.test((b.designation || '').toUpperCase());
+    const isNR    = (b) => sagittaCipSet.has(String(b.cip13 || '')) || (b.has_ameli === false);
+
+    const defs = [
+      { id: 'cheap',  name: 'Petits prix',                 sub: '< 5 €',                                cap: 100, filter: isCheap, accent: '#10B981' },
+      { id: 'mid',    name: 'Produits intermédiaires ambiants', sub: '5 € — 20 €',                       cap: 500, filter: isMid,   accent: '#0057FF' },
+      { id: 'exp',    name: 'Produits chers',              sub: '> 20 €',                               cap: 100, filter: isExp,   accent: '#FF6B35' },
+      { id: 'cold',   name: 'Produits froids',             sub: 'chaîne du froid 2–8 °C',               cap: 200, filter: isFroid, accent: '#06B6D4' },
+      { id: 'gen',    name: 'Génériques',                  sub: 'EG · Mylan · Biogaran · Sandoz · Teva…', cap: 200, filter: isGen,  accent: '#A78BFA' },
+      { id: 'biosim', name: 'Biosimilaires',               sub: 'Truxima · Benepali · Remsima…',         cap: 50,  filter: isBio,  accent: '#EC4899' },
+      { id: 'nr',     name: 'Non remboursés',              sub: 'Sagitta SHORTLIST NR · ' + SAGITTA.length + ' réfs', cap: 500, filter: isNR, accent: '#F59E0B' },
+    ];
+
+    return defs.map(def => {
+      const filtered = BENCH.filter(def.filter).sort((a, b) => (b.ip_qty || 0) - (a.ip_qty || 0));
+      const items = filtered.slice(0, def.cap);
+      return {
+        ...def,
+        items,
+        totalCount: filtered.length,
+        totalIpQty: filtered.reduce((s, b) => s + (b.ip_qty || 0), 0),
+        totalAmeli: filtered.reduce((s, b) => s + (b.ameli_total || 0), 0),
+        matchedAmeli: filtered.filter(b => b.has_ameli).length,
+      };
+    });
+  }
+
+  function renderSegmentRow(b, i) {
+    const ipQty = b.ip_qty || 0;
+    const ameliQty = b.ameli_total || 0;
+    const r = ameliQty > 0 ? (ipQty / ameliQty) * 100 : null;
+    const prixIP = (typeof b.prix_ip === 'number' && b.prix_ip > 0) ? b.prix_ip :
+                   (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
+    const designation = b.designation || '';
+    return `
+      <tr>
+        <td class="mk-cat-rk">${i + 1}</td>
+        <td class="mk-cat-name" title="${escapeAttr(designation)}">${escapeAttr(designation.slice(0, 44))}${designation.length > 44 ? '…' : ''}</td>
+        <td class="mk-cat-cip">${escapeAttr(cipFormat(b.cip13 || ''))}</td>
+        <td class="mk-cat-num">${prixIP > 0 ? prixIP.toFixed(2) + ' €' : '—'}</td>
+        <td class="mk-cat-num">${ipQty.toLocaleString('fr-FR')}</td>
+        <td class="mk-cat-num">${ameliQty > 0 ? fmtBigVol(ameliQty) : '—'}</td>
+        <td class="mk-cat-num ${r != null ? 'mk-cat-ratio' : 'mk-cat-empty'}">${r != null ? r.toFixed(1) + '%' : '—'}</td>
+        <td><button class="mk-cat-addbtn" onclick="event.stopPropagation();window.mkQuickAddProduct('${escapeAttr(b.cip13 || '')}')" title="Ajouter à la fiche en cours">+</button></td>
+      </tr>
+    `;
+  }
+
+  function renderSegmentCard(seg) {
+    const isOpen = mkExpandedCategories.has(seg.id);
+    const ratio = seg.totalAmeli > 0 ? (seg.totalIpQty / seg.totalAmeli) * 100 : null;
+    const initial = isOpen ? seg.items : seg.items.slice(0, 10);
+
+    return `
+      <div class="mk-cat-card ${isOpen ? 'is-open' : ''}" data-seg-id="${seg.id}">
+        <button class="mk-cat-card-head" onclick="window.mkToggleSegment('${seg.id}')">
+          <span class="mk-cat-card-accent" style="background:${seg.accent}"></span>
+          <div class="mk-cat-card-titles">
+            <div class="mk-cat-card-name">${escapeAttr(seg.name)} <span class="mk-cat-card-cap">Top ${seg.cap}</span></div>
+            <div class="mk-cat-card-meta">${escapeAttr(seg.sub)} · ${seg.totalCount.toLocaleString('fr-FR')} produits · ${seg.matchedAmeli} matchs Ameli</div>
+          </div>
+          <div class="mk-cat-card-stats">
+            <div class="mk-cat-stat">
+              <span class="mk-cat-stat-v">${seg.totalIpQty.toLocaleString('fr-FR')}</span>
+              <span class="mk-cat-stat-k">u IP vendues</span>
+            </div>
+            ${seg.totalAmeli > 0 ? `
+            <div class="mk-cat-stat">
+              <span class="mk-cat-stat-v">${fmtBigVol(seg.totalAmeli)}</span>
+              <span class="mk-cat-stat-k">u Ameli France</span>
+            </div>
+            ` : ''}
+            ${ratio != null ? `
+            <div class="mk-cat-stat mk-cat-stat-ratio-cell">
+              <span class="mk-cat-stat-v">${ratio.toFixed(1)}%</span>
+              <span class="mk-cat-stat-k">part IP / marché</span>
+            </div>
+            ` : ''}
+          </div>
+          <svg class="mk-cat-card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="mk-cat-card-body">
+          <table class="mk-cat-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Produit</th>
+                <th>CIP13</th>
+                <th class="mk-cat-num-h">Prix net</th>
+                <th class="mk-cat-num-h">Vol IP</th>
+                <th class="mk-cat-num-h">Vol Ameli</th>
+                <th class="mk-cat-num-h">Part IP</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${initial.map(renderSegmentRow).join('')}
+            </tbody>
+          </table>
+          ${!isOpen && seg.items.length > 10 ? `
+            <button class="mk-cat-table-more" onclick="window.mkToggleSegment('${seg.id}')">
+              Voir le top ${seg.cap} complet (${(seg.items.length - 10)} produits restants) →
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderTopVentesCategoriesSection() {
+    const BENCH = window.BENCHMARK || [];
+    if (!BENCH.length) return '';
+    const segments = getSegments();
+    return `
+      <div class="mk-section mk-cat-section">
+        <div class="mk-section-head">
+          <div>
+            <div class="mk-section-title">📊 Top ventes IP × Ameli · par segment</div>
+            <div class="mk-section-sub">7 segments commerciaux · ${BENCH.length.toLocaleString('fr-FR')} produits IP · cliquer <code style="font-family:'Geist Mono',monospace;background:rgba(0,87,255,0.08);color:#0057FF;padding:1px 5px;border-radius:3px;font-size:11px">+</code> ajoute le produit à la fiche en cours</div>
+          </div>
+        </div>
+        <div class="mk-cat-list">
+          ${segments.map(renderSegmentCard).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  window.mkToggleSegment = function (segId) {
+    if (mkExpandedCategories.has(segId)) mkExpandedCategories.delete(segId);
+    else mkExpandedCategories.add(segId);
+    window.renderMarketing();
+  };
+
+  window.mkQuickAddProduct = function (cip13) {
+    const BENCH = window.BENCHMARK || [];
+    const b = BENCH.find(x => String(x.cip13) === String(cip13));
+    if (!b) return;
+    const prod = snapshotProduct(b);
+    if (editingSheet && editingSheet.products) {
+      editingSheet.products.push(prod);
+      editingSheet.updated_at = new Date().toISOString();
+      saveSheets(loadSheets().map(s => s.id === editingSheet.id ? editingSheet : s));
+      if (typeof renderEdit === 'function') renderEdit();
+      return;
+    }
+    editingSheet = {
+      id: 'sheet-' + Date.now(),
+      title: b.designation || 'Nouvelle fiche',
+      theme: null,
+      template: 'offre',
+      products: [prod],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (typeof renderEdit === 'function') renderEdit();
+  };
+
   function renderMarketingGrossiste(root) {
     const sheets = loadSheets();
     const suggested = getCurrentSeasonTheme();
@@ -1777,6 +1963,8 @@
         `}
 
         ${renderSagittaCompareSection()}
+
+        ${renderTopVentesCategoriesSection()}
 
         <div class="mk-section">
           <div class="mk-section-head">
