@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 01 — Editor V2 3-zones · Marketing IP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAFAF7; --surface:#FFFFFF; --ink:#0E0E10; --muted:#71717A;
+  --hair:rgba(0,0,0,.06); --hair-strong:rgba(0,0,0,.08);
+  --hover:#F4F4F5; --accent:#0057FF; --accent-soft:#E6EEFF;
+  --green:#10B981; --amber:#FFB020;
+  --shadow-sm:0 1px 0 rgba(0,0,0,.04);
+  --shadow-md:0 4px 20px rgba(0,0,0,.04);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.08);
+  --radius-sm:6px; --radius:8px; --radius-lg:12px;
+  --t:160ms cubic-bezier(.2,.8,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg);font-family:'Inter',system-ui,sans-serif;color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
+.mono{font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums}
+.serif{font-family:'Fraunces',serif}
+
+/* ───── annotation bar ───── */
+.note-bar{background:#0E0E10;color:#fff;padding:10px 20px;font-size:12px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.note-bar b{color:#FFB020;font-weight:500}
+.note-bar small{opacity:.6}
+
+/* ───── shell 3-zones ───── */
+.app{display:grid;grid-template-rows:48px 1fr;grid-template-columns:64px 1fr 360px;height:calc(100vh - 40px);min-height:720px}
+@media(max-width:1100px){.app{grid-template-columns:64px 1fr 320px}}
+
+/* ───── topbar ───── */
+.topbar{grid-column:1/-1;display:flex;align-items:center;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--hair);gap:12px;font-size:13px;font-weight:500}
+.logo{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#0057FF,#0044CC);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11px}
+.crumb{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.crumb .sep{opacity:.4}
+.crumb .doc{color:var(--ink);background:var(--hover);padding:3px 8px;border-radius:4px;border:1px solid transparent;transition:var(--t)}
+.crumb .doc:hover{border-color:var(--hair-strong)}
+.crumb .doc::after{content:"✎";opacity:.3;margin-left:6px;font-size:11px}
+.status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-left:12px}
+.status .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.cmdk{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--hover);padding:6px 10px;border-radius:6px;font-size:12px;color:var(--muted);border:1px solid var(--hair);cursor:pointer;transition:var(--t)}
+.cmdk:hover{background:#EBEBEC}
+.cmdk kbd{font-family:'Geist Mono',monospace;font-size:10px;background:#fff;padding:2px 5px;border-radius:3px;border:1px solid var(--hair-strong);color:var(--ink)}
+.t-btn{padding:6px 12px;font-size:13px;font-weight:500;border:1px solid var(--hair-strong);background:var(--surface);border-radius:6px;cursor:pointer;transition:var(--t)}
+.t-btn:hover{background:var(--hover)}
+.t-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 1px 0 rgba(0,87,255,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+.t-btn.primary:hover{background:#0044CC}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#FFB020,#FF6B35);color:#fff;font-weight:600;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* ───── rail gauche ───── */
+.rail{background:var(--surface);border-right:1px solid var(--hair);display:flex;flex-direction:column;padding:8px 0;align-items:center;gap:2px}
+.rail .item{position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;color:var(--muted);transition:var(--t)}
+.rail .item:hover{background:var(--hover);color:var(--ink)}
+.rail .item.active{background:var(--hover);color:var(--ink)}
+.rail .item.active::before{content:"";position:absolute;left:-1px;top:12px;bottom:12px;width:2px;background:var(--accent);border-radius:0 2px 2px 0}
+.rail .item svg{width:20px;height:20px;stroke-width:1.5}
+.rail-divider{width:32px;height:1px;background:var(--hair);margin:8px 0}
+
+/* ───── canvas central ───── */
+.canvas{background:var(--bg);overflow:auto;position:relative;display:flex;align-items:flex-start;justify-content:center;padding:32px;background-image:radial-gradient(circle,rgba(0,0,0,.04) 1px,transparent 1px);background-size:24px 24px}
+.a4{background:#fff;width:794px;min-height:1123px;box-shadow:var(--shadow-md);border-radius:2px;padding:48px 56px;position:relative;transform:scale(.7);transform-origin:top center}
+@media(max-width:1500px){.a4{transform:scale(.6)}}
+@media(max-width:1300px){.a4{transform:scale(.5)}}
+
+/* ───── fiche pharma contenu ───── */
+.fiche-eyebrow{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;font-weight:500}
+.fiche-h1{font-family:'Fraunces',serif;font-size:48px;font-weight:500;line-height:1.05;margin-bottom:12px;color:#0E0E10;letter-spacing:-.02em}
+.fiche-h1 em{font-style:italic;color:#FF6B35}
+.fiche-sub{font-family:'Inter',sans-serif;font-size:18px;color:var(--muted);margin-bottom:32px;line-height:1.5;max-width:520px}
+.fiche-divider{height:1px;background:var(--hair-strong);margin:24px 0}
+
+.product-block{display:grid;grid-template-columns:80px 1fr auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--hair);position:relative;cursor:default}
+.product-block:last-child{border-bottom:none}
+.product-block:hover{background:#FAFAF7}
+.product-block .drag-handle{position:absolute;left:-28px;top:50%;transform:translateY(-50%);width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:var(--muted);opacity:0;cursor:grab;font-size:14px;transition:var(--t)}
+.product-block:hover .drag-handle{opacity:.5}
+.product-img{width:80px;height:80px;background:#F7F5F2;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace}
+.product-info .nom{font-weight:600;font-size:15px;margin-bottom:4px}
+.product-info .marque{font-size:13px;color:var(--muted);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.04em}
+.product-price{text-align:right}
+.product-price .prix{font-family:'Geist Mono',monospace;font-size:18px;font-weight:600;color:var(--ink)}
+.product-price .barre{font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted);text-decoration:line-through;margin-bottom:2px}
+.product-price .remise{font-size:10px;background:#FFE4D6;color:#FF6B35;padding:2px 6px;border-radius:3px;font-weight:600;font-family:'Geist Mono',monospace;display:inline-block;margin-top:4px}
+
+.footer-strip{position:absolute;bottom:48px;left:56px;right:56px;display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:1px solid var(--hair-strong)}
+.footer-strip .brand{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.footer-strip .pitch{font-family:'Fraunces',serif;font-style:italic;font-size:13px;color:#FF6B35;max-width:300px;text-align:right}
+
+/* ───── zoom controls ───── */
+.zoom-pill{position:fixed;bottom:24px;right:380px;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);border:1px solid var(--hair-strong);border-radius:24px;padding:6px;display:flex;align-items:center;gap:4px;box-shadow:var(--shadow-md);font-size:12px;font-family:'Geist Mono',monospace;z-index:50}
+.zoom-pill button{width:24px;height:24px;border:none;background:transparent;border-radius:50%;cursor:pointer;color:var(--ink);transition:var(--t)}
+.zoom-pill button:hover{background:var(--hover)}
+.zoom-pill .val{padding:0 8px;color:var(--muted);min-width:42px;text-align:center}
+
+/* ───── inspector droit ───── */
+.inspector{background:var(--surface);border-left:1px solid var(--hair);overflow-y:auto;display:flex;flex-direction:column}
+.inspector-head{padding:14px 16px 12px;border-bottom:1px solid var(--hair)}
+.inspector-context{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.inspector-context .badge{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:3px 8px;border-radius:4px;font-weight:500}
+.inspector-context .name{font-size:14px;font-weight:500}
+.inspector-context .name small{color:var(--muted);font-weight:400;display:block;font-size:11px;font-family:'Geist Mono',monospace;margin-top:2px}
+.inspector-section{padding:16px;border-bottom:1px solid var(--hair)}
+.inspector-section:last-child{border-bottom:none}
+.section-title{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.section-title .toggle{font-size:14px;cursor:pointer;opacity:.5}
+
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.input-num{position:relative;background:var(--bg);border:1px solid var(--hair-strong);border-radius:6px;padding:6px 8px;display:flex;align-items:center;transition:var(--t)}
+.input-num:hover,.input-num:focus-within{border-color:var(--accent);background:#fff}
+.input-num label{font-size:11px;color:var(--muted);margin-right:6px;font-family:'Geist Mono',monospace;text-transform:uppercase}
+.input-num input{border:none;outline:none;background:transparent;width:100%;font-family:'Geist Mono',monospace;font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+.input-num .unit{color:var(--muted);font-family:'Geist Mono',monospace;font-size:11px;margin-left:4px}
+
+.swatch-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}
+.swatch{aspect-ratio:1;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:var(--t);position:relative}
+.swatch:hover{transform:translateY(-1px)}
+.swatch.active{border-color:var(--ink);box-shadow:0 0 0 2px #fff inset}
+.s1{background:linear-gradient(135deg,#0057FF,#003BB0)}
+.s2{background:linear-gradient(135deg,#10B981,#047857)}
+.s3{background:linear-gradient(135deg,#FF6B35,#E84A1F)}
+.s4{background:linear-gradient(135deg,#A78BFA,#7C3AED)}
+.s5{background:linear-gradient(135deg,#0E0E10,#3F3F46)}
+.s6{background:linear-gradient(135deg,#FBBF24,#F59E0B)}
+.s7{background:linear-gradient(135deg,#EC4899,#BE185D)}
+.s8{background:linear-gradient(135deg,#06B6D4,#0E7490)}
+.s9{background:linear-gradient(135deg,#84CC16,#3F6212)}
+.s10{background:linear-gradient(135deg,#F97316,#9A3412)}
+.s11{background:linear-gradient(135deg,#6366F1,#3730A3)}
+.s12{background:linear-gradient(135deg,#FAFAF7,#D6D3D1);border:1px solid var(--hair-strong)}
+
+.image-preview{aspect-ratio:1;background:#F7F5F2;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:8px;position:relative;overflow:hidden}
+.image-preview::after{content:"OFFILOG · EAN 3401352920018";position:absolute;bottom:6px;left:6px;font-size:9px;color:var(--muted);background:rgba(255,255,255,.9);padding:2px 6px;border-radius:3px}
+.image-actions{display:flex;gap:6px}
+.image-actions button{flex:1;padding:6px;border:1px solid var(--hair-strong);background:#fff;border-radius:5px;font-size:11px;cursor:pointer;transition:var(--t);display:flex;align-items:center;gap:4px;justify-content:center;color:var(--muted)}
+.image-actions button:hover{background:var(--hover);color:var(--ink)}
+
+.toggle-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px}
+.toggle-row label{display:flex;align-items:center;gap:8px}
+.toggle-row label .help{font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace}
+.switch{position:relative;width:32px;height:18px;background:var(--hair-strong);border-radius:10px;cursor:pointer;transition:var(--t)}
+.switch.on{background:var(--accent)}
+.switch::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:var(--t);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch.on::after{left:16px}
+
+/* ───── floating pill toolbar (sur sélection texte) ───── */
+.float-tool{position:absolute;top:24%;left:42%;background:#0E0E10;color:#fff;border-radius:8px;padding:4px;display:flex;align-items:center;gap:2px;box-shadow:0 12px 32px rgba(0,0,0,.25);z-index:30;animation:fadeUp 200ms cubic-bezier(.2,.8,.2,1)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.float-tool button{background:transparent;border:none;color:#fff;width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:var(--t)}
+.float-tool button:hover{background:rgba(255,255,255,.15)}
+.float-tool button.active{background:rgba(255,255,255,.2)}
+.float-tool .sep{width:1px;height:16px;background:rgba(255,255,255,.2);margin:0 4px}
+.float-tool::after{content:"";position:absolute;bottom:-6px;left:24px;width:12px;height:12px;background:#0E0E10;transform:rotate(45deg);z-index:-1}
+
+/* ───── selection ring ───── */
+.selected-ring{position:absolute;border:2px solid var(--accent);border-radius:4px;pointer-events:none;animation:ringIn 200ms cubic-bezier(.2,.8,.2,1)}
+@keyframes ringIn{from{opacity:0}to{opacity:1}}
+.selected-ring::before{content:"BLOC IMAGE";position:absolute;top:-22px;left:-2px;font-size:9px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:3px;font-family:'Geist Mono',monospace;letter-spacing:.04em;font-weight:500}
+
+/* anchor pour selected ring */
+.product-block:nth-child(2) .product-img{box-shadow:0 0 0 2px var(--accent),0 0 0 4px rgba(0,87,255,.15)}
+</style>
+</head>
+<body>
+
+<div class="note-bar">
+  <span><b>MOCKUP 01</b> · Éditeur Marketing V2 — Layout 3-zones (Topbar 48px + Rail 64px + Canvas A4 + Inspector 360px contextuel)</span>
+  <span><small>Refs : Linear · Figma · Notion · Pitch · Vercel</small></span>
+</div>
+
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo">IP</div>
+    <div class="crumb">
+      <span>Marketing</span>
+      <span class="sep">/</span>
+      <span>Juin 2026</span>
+      <span class="sep">/</span>
+      <span class="doc">Fiche Solaire — Pharm. du Centre</span>
+    </div>
+    <div class="status">
+      <span class="dot"></span>
+      <span>Enregistré il y a 2s</span>
+    </div>
+    <div class="cmdk">
+      <span>Rechercher tout</span>
+      <kbd>⌘</kbd><kbd>K</kbd>
+    </div>
+    <button class="t-btn">Aperçu</button>
+    <button class="t-btn primary">Télécharger PDF</button>
+    <div class="avatar">WM</div>
+  </header>
+
+  <!-- RAIL -->
+  <aside class="rail">
+    <div class="item active" title="Pages">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+    </div>
+    <div class="item" title="Palettes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="9" r="1.5" fill="currentColor"/><circle cx="9" cy="15" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/></svg>
+    </div>
+    <div class="item" title="Typographies">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7V5h16v2M12 5v14M9 19h6"/></svg>
+    </div>
+    <div class="item" title="Stickers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M8 14s1.5 2 4 2 4-2 4-2"/></svg>
+    </div>
+    <div class="item" title="Gradients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12h18M12 3v18"/><circle cx="12" cy="12" r="9"/></svg>
+    </div>
+    <div class="item" title="Presets">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    </div>
+    <div class="rail-divider"></div>
+    <div class="item" style="margin-top:auto" title="Aide">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M9.5 9c.5-1.5 2-2 2.5-2s2.5.5 2.5 2.5-2.5 2-2.5 4M12 17v.01"/></svg>
+    </div>
+  </aside>
+
+  <!-- CANVAS -->
+  <main class="canvas">
+    <div class="a4">
+      <div class="fiche-eyebrow">Solaire · Juin 2026 · Sélection commerciale</div>
+      <h1 class="fiche-h1">L'<em>été</em> en officine</h1>
+      <p class="fiche-sub">3 best-sellers Solaire validés sur 247 pharmacies normandes. Stock garanti — livraison 24h.</p>
+
+      <div class="fiche-divider"></div>
+
+      <div class="product-block">
+        <span class="drag-handle">⋮⋮</span>
+        <div class="product-img">IMG</div>
+        <div class="product-info">
+          <div class="nom">Sun Secure Crème SPF50+</div>
+          <div class="marque">Nuxe · 50ml</div>
+        </div>
+        <div class="product-price">
+          <div class="barre">17,90 €</div>
+          <div class="prix">12,90 €</div>
+          <span class="remise">−28%</span>
+        </div>
+      </div>
+
+      <div class="product-block">
+        <span class="drag-handle">⋮⋮</span>
+        <div class="product-img">IMG</div>
+        <div class="product-info">
+          <div class="nom">Photoderm MAX SPF50+</div>
+          <div class="marque">Bioderma · 40ml</div>
+        </div>
+        <div class="product-price">
+          <div class="barre">19,50 €</div>
+          <div class="prix">15,50 €</div>
+          <span class="remise">−20%</span>
+        </div>
+      </div>
+
+      <div class="product-block">
+        <span class="drag-handle">⋮⋮</span>
+        <div class="product-img">IMG</div>
+        <div class="product-info">
+          <div class="nom">Anthelios Invisible SPF50</div>
+          <div class="marque">La Roche-Posay · 50ml</div>
+        </div>
+        <div class="product-price">
+          <div class="barre">21,90 €</div>
+          <div class="prix">17,90 €</div>
+          <span class="remise">−18%</span>
+        </div>
+      </div>
+
+      <!-- Floating pill toolbar (texte sélectionné mockup) -->
+      <div class="float-tool">
+        <button class="active"><b>B</b></button>
+        <button><i>I</i></button>
+        <button><u>U</u></button>
+        <span class="sep"></span>
+        <button title="Couleur" style="color:#FF6B35">A</button>
+        <button title="Format">¶</button>
+        <span class="sep"></span>
+        <button title="Lien produit">🔗</button>
+      </div>
+
+      <div class="footer-strip">
+        <div class="brand">Intégral Pharma · Normandie · 06 12 34 56 78</div>
+        <div class="pitch">« Sortez l'été en grande pompe — vos pharmacies sont prêtes »</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ZOOM PILL -->
+  <div class="zoom-pill">
+    <button>−</button>
+    <span class="val">60 %</span>
+    <button>+</button>
+    <span style="width:1px;height:14px;background:var(--hair-strong);margin:0 2px"></span>
+    <button title="Fit">⤢</button>
+  </div>
+
+  <!-- INSPECTOR DROIT (contextuel : block image sélectionné) -->
+  <aside class="inspector">
+    <div class="inspector-head">
+      <div class="inspector-context">
+        <span class="badge">Bloc image</span>
+      </div>
+      <div class="inspector-context">
+        <div class="name">
+          Sun Secure SPF50+
+          <small>EAN · 3401352920018</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="inspector-section">
+      <div class="section-title">
+        <span>Visuel produit</span>
+        <span class="toggle">▾</span>
+      </div>
+      <div class="image-preview">80 × 80 px</div>
+      <div class="image-actions">
+        <button>Remplacer</button>
+        <button>Recadrer</button>
+        <button>Supprimer</button>
+      </div>
+    </div>
+
+    <div class="inspector-section">
+      <div class="section-title">
+        <span>Prix &amp; remise</span>
+        <span class="toggle">▾</span>
+      </div>
+      <div class="input-row">
+        <div class="input-num">
+          <label>Pub</label>
+          <input value="17.90" type="text">
+          <span class="unit">€</span>
+        </div>
+        <div class="input-num">
+          <label>Net</label>
+          <input value="12.90" type="text">
+          <span class="unit">€</span>
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="input-num">
+          <label>Remise</label>
+          <input value="28" type="text">
+          <span class="unit">%</span>
+        </div>
+        <div class="input-num">
+          <label>MOQ</label>
+          <input value="6" type="text">
+          <span class="unit">u</span>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <label>Afficher prix barré <span class="help">⌥B</span></label>
+        <div class="switch on"></div>
+      </div>
+      <div class="toggle-row">
+        <label>Pastille remise <span class="help">⌥P</span></label>
+        <div class="switch on"></div>
+      </div>
+    </div>
+
+    <div class="inspector-section">
+      <div class="section-title">
+        <span>Palette globale</span>
+        <span class="toggle">▾</span>
+      </div>
+      <div class="swatch-grid">
+        <div class="swatch s1 active"></div>
+        <div class="swatch s2"></div>
+        <div class="swatch s3"></div>
+        <div class="swatch s4"></div>
+        <div class="swatch s5"></div>
+        <div class="swatch s6"></div>
+        <div class="swatch s7"></div>
+        <div class="swatch s8"></div>
+        <div class="swatch s9"></div>
+        <div class="swatch s10"></div>
+        <div class="swatch s11"></div>
+        <div class="swatch s12"></div>
+      </div>
+      <div class="toggle-row" style="margin-top:8px">
+        <label>Vibrant <span class="help">vs Subtil</span></label>
+        <div class="switch"></div>
+      </div>
+    </div>
+
+    <div class="inspector-section">
+      <div class="section-title">
+        <span>Données pharma</span>
+        <span class="toggle">▾</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);display:grid;gap:6px">
+        <div style="display:flex;justify-content:space-between"><span>Cat. OFFILOG</span><span class="mono" style="color:var(--ink)">Solaire</span></div>
+        <div style="display:flex;justify-content:space-between"><span>Rotation 247 pharm.</span><span class="mono" style="color:var(--green)">+18 %</span></div>
+        <div style="display:flex;justify-content:space-between"><span>Stock garanti</span><span class="mono" style="color:var(--green)">✓</span></div>
+        <div style="display:flex;justify-content:space-between"><span>Prix conc. min</span><span class="mono">11,90 €</span></div>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+</body>
+</html>

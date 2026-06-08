@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 02 — Product Picker ⌘K · Marketing IP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAFAF7; --surface:#FFFFFF; --ink:#0E0E10; --muted:#71717A;
+  --hair:rgba(0,0,0,.06); --hair-strong:rgba(0,0,0,.08);
+  --hover:#F4F4F5; --accent:#0057FF; --accent-soft:#E6EEFF;
+  --green:#10B981; --amber:#FFB020; --orange:#FF6B35;
+  --t:160ms cubic-bezier(.2,.8,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg);font-family:'Inter',system-ui,sans-serif;color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased;height:100vh;overflow:hidden}
+.mono{font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums}
+
+/* note bar */
+.note-bar{background:#0E0E10;color:#fff;padding:10px 20px;font-size:12px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.note-bar b{color:#FFB020;font-weight:500}
+.note-bar small{opacity:.6}
+
+/* faux background (éditeur en flou derrière) */
+.bg-blur{position:absolute;inset:40px 0 0 0;background:var(--bg);background-image:radial-gradient(circle,rgba(0,0,0,.04) 1px,transparent 1px);background-size:24px 24px;filter:blur(4px);opacity:.7}
+
+/* overlay */
+.overlay{position:absolute;inset:40px 0 0 0;background:rgba(14,14,16,.4);backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding-top:80px;z-index:10}
+
+/* picker */
+.picker{width:720px;max-width:95vw;background:var(--surface);border-radius:14px;box-shadow:0 32px 80px rgba(0,0,0,.25),0 0 0 1px rgba(0,0,0,.05);overflow:hidden;display:flex;flex-direction:column;max-height:78vh}
+
+/* search */
+.search-bar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--hair)}
+.search-bar svg{width:18px;height:18px;color:var(--muted);flex-shrink:0}
+.search-bar input{flex:1;border:none;outline:none;font-size:16px;font-family:'Inter',sans-serif;color:var(--ink);background:transparent}
+.search-bar input::placeholder{color:var(--muted)}
+.kbd-hint{font-family:'Geist Mono',monospace;font-size:10px;color:var(--muted);background:var(--hover);padding:3px 7px;border-radius:4px;border:1px solid var(--hair)}
+
+/* filters chips */
+.filters{display:flex;gap:6px;padding:8px 20px;border-bottom:1px solid var(--hair);overflow-x:auto}
+.chip{display:flex;align-items:center;gap:6px;padding:5px 10px;font-size:12px;border:1px solid var(--hair-strong);background:var(--surface);border-radius:6px;cursor:pointer;transition:var(--t);white-space:nowrap;color:var(--muted);font-weight:500}
+.chip:hover{background:var(--hover)}
+.chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip .count{font-family:'Geist Mono',monospace;opacity:.6}
+.chip .dot{width:6px;height:6px;border-radius:50%}
+.chip .dot.ip{background:var(--accent)}
+.chip .dot.offilog{background:var(--orange)}
+.chip .dot.sagitta{background:var(--green)}
+
+/* results body */
+.results{flex:1;overflow-y:auto;padding:8px 0}
+.group{padding:4px 0}
+.group-head{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 20px 4px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.group-head .count{opacity:.6}
+
+.result-row{display:grid;grid-template-columns:40px 1fr auto auto;gap:12px;align-items:center;padding:8px 20px;cursor:pointer;transition:var(--t);position:relative}
+.result-row:hover,.result-row.focused{background:var(--hover)}
+.result-row.focused::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:2px;background:var(--accent);border-radius:0 2px 2px 0}
+.result-img{width:40px;height:40px;background:#F7F5F2;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;border:1px solid var(--hair)}
+.result-info{min-width:0}
+.result-info .nom{font-weight:500;font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-info .marque{font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.04em;margin-top:1px}
+.result-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.result-meta .prix{font-family:'Geist Mono',monospace;font-size:13px;font-weight:600;color:var(--ink)}
+.result-meta .tag{font-size:9px;background:var(--accent-soft);color:var(--accent);padding:2px 5px;border-radius:3px;font-family:'Geist Mono',monospace;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.result-meta .tag.offilog{background:#FFE4D6;color:var(--orange)}
+.result-meta .tag.sagitta{background:#D1FAE5;color:#047857}
+
+.shortcut{font-family:'Geist Mono',monospace;font-size:10px;color:var(--muted);background:var(--hover);padding:2px 6px;border-radius:3px;border:1px solid var(--hair);opacity:0;transition:var(--t)}
+.result-row.focused .shortcut{opacity:1}
+
+/* footer */
+.picker-foot{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-top:1px solid var(--hair);background:var(--bg);font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace}
+.picker-foot .hints{display:flex;gap:12px}
+.picker-foot .hints span{display:flex;align-items:center;gap:4px}
+.picker-foot .hints kbd{font-family:'Geist Mono',monospace;font-size:10px;background:#fff;padding:2px 5px;border-radius:3px;border:1px solid var(--hair-strong);color:var(--ink)}
+
+/* preview pane */
+.preview-pane{position:absolute;left:calc(50% + 380px);top:120px;width:280px;background:var(--surface);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.15),0 0 0 1px rgba(0,0,0,.05);padding:20px;animation:slideIn 240ms cubic-bezier(.2,.8,.2,1)}
+@media(max-width:1400px){.preview-pane{display:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+.preview-pane .ph{width:100%;aspect-ratio:1;background:#F7F5F2;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:14px}
+.preview-pane .nom{font-family:'Fraunces',serif;font-size:20px;font-weight:500;margin-bottom:4px;line-height:1.2}
+.preview-pane .marque{font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px}
+.preview-pane .stats{display:grid;gap:6px;padding:12px 0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);margin-bottom:14px}
+.preview-pane .stat{display:flex;justify-content:space-between;font-size:12px}
+.preview-pane .stat .k{color:var(--muted)}
+.preview-pane .stat .v{font-family:'Geist Mono',monospace;color:var(--ink);font-weight:500}
+.preview-pane .stat .v.up{color:var(--green)}
+.preview-pane button{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;transition:var(--t);display:flex;align-items:center;justify-content:center;gap:8px}
+.preview-pane button:hover{background:#0044CC}
+.preview-pane button kbd{font-family:'Geist Mono',monospace;font-size:10px;background:rgba(255,255,255,.2);padding:2px 5px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="note-bar">
+  <span><b>MOCKUP 02</b> · Product Picker unifié — ⌘K ouvre overlay backdrop-blur, search instantané sur 3 sources + preview pane</span>
+  <span><small>Refs : Linear ⌘K · Notion / · Arc Browser · Raycast</small></span>
+</div>
+
+<div class="bg-blur"></div>
+
+<div class="overlay">
+
+  <div class="picker">
+
+    <!-- search bar -->
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" value="solaire spf" placeholder="Rechercher dans Grossiste IP · OFFILOG · Sagitta...">
+      <span class="kbd-hint">Esc</span>
+    </div>
+
+    <!-- filtres -->
+    <div class="filters">
+      <span class="chip active">Tous <span class="count">· 247</span></span>
+      <span class="chip"><span class="dot ip"></span> Grossiste IP <span class="count">· 84</span></span>
+      <span class="chip"><span class="dot offilog"></span> OFFILOG <span class="count">· 132</span></span>
+      <span class="chip"><span class="dot sagitta"></span> Sagitta NR <span class="count">· 31</span></span>
+      <span style="width:1px;background:var(--hair);margin:0 4px"></span>
+      <span class="chip">Récents</span>
+      <span class="chip">Saison été</span>
+      <span class="chip">−20%+</span>
+      <span class="chip">Stock garanti</span>
+    </div>
+
+    <!-- results -->
+    <div class="results">
+
+      <div class="group">
+        <div class="group-head"><span>Suggestions du mois · Juin 2026</span><span class="count">3 résultats</span></div>
+
+        <div class="result-row focused">
+          <div class="result-img">IMG</div>
+          <div class="result-info">
+            <div class="nom">Sun Secure Crème SPF50+ 50ml</div>
+            <div class="marque">Nuxe · EAN 3401352920018</div>
+          </div>
+          <div class="result-meta">
+            <span class="prix">12,90 €</span>
+            <span class="tag">Grossiste IP</span>
+          </div>
+          <span class="shortcut">↵</span>
+        </div>
+
+        <div class="result-row">
+          <div class="result-img">IMG</div>
+          <div class="result-info">
+            <div class="nom">Photoderm MAX SPF50+ 40ml</div>
+            <div class="marque">Bioderma · EAN 3401528562901</div>
+          </div>
+          <div class="result-meta">
+            <span class="prix">15,50 €</span>
+            <span class="tag offilog">OFFILOG</span>
+          </div>
+          <span class="shortcut">↵</span>
+        </div>
+
+        <div class="result-row">
+          <div class="result-img">IMG</div>
+          <div class="result-info">
+            <div class="nom">Anthelios Invisible SPF50</div>
+            <div class="marque">La Roche-Posay · EAN 3337875546454</div>
+          </div>
+          <div class="result-meta">
+            <span class="prix">17,90 €</span>
+            <span class="tag">Grossiste IP</span>
+          </div>
+          <span class="shortcut">↵</span>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-head"><span>Grossiste IP</span><span class="count">84 produits</span></div>
+
+        <div class="result-row">
+          <div class="result-img">IMG</div>
+          <div class="result-info">
+            <div class="nom">Capital Soleil Cellular SPF50+</div>
+            <div class="marque">Vichy · CIP 3401577402849</div>
+          </div>
+          <div class="result-meta">
+            <span class="prix">19,90 €</span>
+            <span class="tag">Grossiste IP</span>
+          </div>
+        </div>
+
+        <div class="result-row">
+          <div class="result-img">IMG</div>
+          <div class="result-info">
+            <div class="nom">Solaire Crème Visage SPF50+</div>
+            <div class="marque">Avène · CIP 3282770204544</div>
+          </div>
+          <div class="result-meta">
+            <span class="prix">14,50 €</span>
+            <span class="tag">Grossiste IP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-head"><span>Sagitta · Shortlist NR</span><span class="count">31 produits</span></div>
+
+        <div class="result-row">
+          <div class="result-img">IMG</div>
+          <div class="result-info">
+            <div class="nom">Solaire Toucher Sec SPF50+</div>
+            <div class="marque">SVR · EAN 3401572930187</div>
+          </div>
+          <div class="result-meta">
+            <span class="prix">13,90 €</span>
+            <span class="tag sagitta">Sagitta NR</span>
+          </div>
+        </div>
+
+        <div class="result-row">
+          <div class="result-img">IMG</div>
+          <div class="result-info">
+            <div class="nom">Photoprotection Visage SPF50</div>
+            <div class="marque">Eucerin · EAN 4005800279287</div>
+          </div>
+          <div class="result-meta">
+            <span class="prix">16,50 €</span>
+            <span class="tag sagitta">Sagitta NR</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- footer -->
+    <div class="picker-foot">
+      <div class="hints">
+        <span><kbd>↑↓</kbd> Naviguer</span>
+        <span><kbd>↵</kbd> Insérer</span>
+        <span><kbd>⌘↵</kbd> Tout cocher</span>
+        <span><kbd>Esc</kbd> Fermer</span>
+      </div>
+      <span>247 résultats · 14 ms</span>
+    </div>
+
+  </div>
+
+  <!-- preview pane (item focused) -->
+  <aside class="preview-pane">
+    <div class="ph">80 × 80 px</div>
+    <div class="nom">Sun Secure SPF50+</div>
+    <div class="marque">Nuxe · 50 ml</div>
+
+    <div class="stats">
+      <div class="stat"><span class="k">Prix public conseil</span><span class="v">17,90 €</span></div>
+      <div class="stat"><span class="k">Prix net pharma</span><span class="v">12,90 €</span></div>
+      <div class="stat"><span class="k">Remise</span><span class="v up">−28 %</span></div>
+      <div class="stat"><span class="k">Rotation 247 pharm.</span><span class="v up">+18 %</span></div>
+      <div class="stat"><span class="k">Stock garanti</span><span class="v up">✓</span></div>
+      <div class="stat"><span class="k">MOQ</span><span class="v">6 unités</span></div>
+    </div>
+
+    <button>Insérer dans la fiche <kbd>↵</kbd></button>
+  </aside>
+
+</div>
+
+</body>
+</html>
