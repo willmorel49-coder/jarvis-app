@@ -3416,3 +3416,230 @@
 .mk-insp-prod-btn:hover:not(:disabled) { border-color: #0057FF; color: #0057FF; }
 .mk-insp-prod-btn:disabled { opacity: .35; cursor: not-allowed; }
 .mk-insp-prod-btn-danger:hover { border-color: #DC2626; color: #DC2626; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PHASE 3 — Inline edit engine (canvas double-click)
+   Permet l'édition directe (titre / prix / désignation / footer)
+   sur le canvas A4 V2. Stratégie : contentEditable in-place pour
+   contourner le transform: scale du stage.
+   ═══════════════════════════════════════════════════════════════ */
+.mk-canvas-stage [data-editable] {
+  cursor: text;
+  border-radius: 4px;
+  transition: background .12s, outline .12s;
+  position: relative;
+}
+.mk-canvas-stage [data-editable]:hover {
+  background: rgba(0, 87, 255, 0.08);
+  outline: 2px dashed rgba(0, 87, 255, 0.40);
+  outline-offset: 2px;
+}
+.mk-canvas-stage .mk-canvas-editing,
+.mk-canvas-stage [data-editable].mk-canvas-editing {
+  background: rgba(0, 87, 255, 0.14) !important;
+  outline: 2px solid #0057FF !important;
+  outline-offset: 2px !important;
+  cursor: text;
+  transition: none !important;
+}
+/* Hint subtil au hover : "✎ double-clic" — apparait après .6s */
+.mk-canvas-stage [data-editable]:not(.mk-canvas-editing):hover::after {
+  content: '✎ double-clic';
+  position: absolute;
+  top: -22px; right: 0;
+  font-size: 10px; font-weight: 700; color: #0057FF;
+  background: #FFFFFF; padding: 2px 6px; border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 87, 255, 0.20);
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  animation: mkHintShow .4s ease-out forwards;
+  animation-delay: .6s;
+  z-index: 5;
+}
+@keyframes mkHintShow {
+  to { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PHASE 2.5 — Product Picker Unifié (slide-in Inspector)
+   ═══════════════════════════════════════════════════════════════ */
+.mk-picker-unified {
+  display: flex; flex-direction: column;
+  height: 100%; min-height: 0;
+  animation: mkPickerSlideIn .22s cubic-bezier(.4,0,.2,1);
+}
+@keyframes mkPickerSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.mk-picker-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; flex-shrink: 0;
+  border-bottom: 1px solid rgba(11,31,77,0.08);
+  background: #FFFFFF;
+}
+.mk-picker-back {
+  width: 32px; height: 32px; border: 0; background: transparent;
+  border-radius: 8px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #0B1F4D;
+  transition: background .12s;
+}
+.mk-picker-back:hover { background: rgba(0,87,255,0.10); color: #0057FF; }
+.mk-picker-title { font-size: 14px; font-weight: 800; color: #0B1F4D; }
+
+.mk-picker-search {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; flex-shrink: 0;
+  border-bottom: 1px solid rgba(11,31,77,0.06);
+  background: #F8FAFC;
+}
+.mk-picker-search svg { flex-shrink: 0; }
+.mk-picker-search input {
+  flex: 1; border: 0; background: transparent;
+  font-family: inherit; font-size: 13px; color: #0B1F4D;
+  outline: none; padding: 4px 0;
+}
+.mk-picker-search input::placeholder { color: #94A3B8; }
+
+.mk-picker-sources {
+  display: flex; gap: 4px; padding: 8px 12px; flex-shrink: 0;
+  overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1px solid rgba(11,31,77,0.06);
+}
+.mk-picker-sources::-webkit-scrollbar { display: none; }
+.mk-picker-src {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 999px; flex-shrink: 0;
+  background: rgba(11,31,77,0.05); border: 1px solid transparent;
+  font-family: inherit; font-size: 11px; font-weight: 700; color: #64748B;
+  cursor: pointer; white-space: nowrap;
+  transition: all .12s;
+}
+.mk-picker-src:hover { background: rgba(0,87,255,0.08); color: #0057FF; }
+.mk-picker-src.is-active {
+  background: var(--src-color, #0057FF); color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 2px 6px rgba(0,87,255,0.25);
+}
+.mk-picker-src-count {
+  background: rgba(255,255,255,0.25); padding: 1px 6px; border-radius: 999px;
+  font-size: 10px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.mk-picker-src:not(.is-active) .mk-picker-src-count {
+  background: rgba(11,31,77,0.08); color: #64748B;
+}
+
+.mk-picker-results {
+  flex: 1; overflow-y: auto;
+  padding: 8px 12px;
+  scrollbar-width: thin;
+}
+.mk-picker-results::-webkit-scrollbar { width: 6px; }
+.mk-picker-results::-webkit-scrollbar-thumb { background: rgba(0,87,255,0.20); border-radius: 999px; }
+
+.mk-picker-result {
+  display: grid; grid-template-columns: 44px 1fr auto;
+  gap: 10px; padding: 8px;
+  background: #FFFFFF; border: 1px solid rgba(11,31,77,0.06);
+  border-radius: 10px; margin-bottom: 5px;
+  cursor: pointer; position: relative;
+  transition: all .12s;
+}
+.mk-picker-result:not(.is-already):hover {
+  border-color: #0057FF; transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,87,255,0.10);
+}
+.mk-picker-result.is-selected {
+  background: linear-gradient(135deg, rgba(0,87,255,0.08) 0%, rgba(59,130,246,0.04) 100%);
+  border-color: #0057FF;
+  box-shadow: 0 0 0 2px rgba(0,87,255,0.18);
+}
+.mk-picker-result.is-already {
+  opacity: 0.55; cursor: not-allowed;
+  background: rgba(11,31,77,0.04);
+}
+
+.mk-picker-thumb {
+  width: 44px; height: 44px; border-radius: 8px;
+  background: #F4F6FB; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.mk-picker-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
+
+.mk-picker-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mk-picker-name {
+  font-size: 12.5px; font-weight: 700; color: #0B1F4D;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mk-picker-meta {
+  font-size: 10px; color: #94A3B8; font-weight: 600;
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.mk-picker-marque { font-weight: 700; color: #64748B; }
+.mk-picker-cip { font-variant-numeric: tabular-nums; }
+.mk-picker-prices {
+  display: flex; align-items: baseline; gap: 6px;
+  margin-top: 1px;
+}
+.mk-picker-price {
+  font-size: 13px; font-weight: 900; color: #0057FF;
+  font-variant-numeric: tabular-nums;
+}
+.mk-picker-price-old {
+  font-size: 10px; color: #94A3B8; text-decoration: line-through;
+  font-variant-numeric: tabular-nums;
+}
+.mk-picker-discount {
+  font-size: 10px; font-weight: 800; color: #DC2626;
+  background: rgba(220,38,38,0.10); padding: 1px 5px; border-radius: 4px;
+}
+.mk-picker-qte {
+  font-size: 10px; font-weight: 700; color: #14B86A;
+  font-variant-numeric: tabular-nums;
+}
+
+.mk-picker-source-tag {
+  position: absolute; top: 6px; right: 6px;
+  padding: 1px 6px; border-radius: 4px;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.3px;
+  color: #FFFFFF;
+}
+.mk-picker-plus, .mk-picker-check, .mk-picker-already-mark {
+  align-self: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 900;
+  flex-shrink: 0;
+}
+.mk-picker-plus {
+  background: rgba(0,87,255,0.10); color: #0057FF;
+}
+.mk-picker-check {
+  background: #0057FF; color: #FFFFFF;
+}
+.mk-picker-already-mark {
+  background: rgba(20,184,106,0.18); color: #0D8F52;
+}
+
+.mk-picker-empty {
+  text-align: center; padding: 36px 16px;
+  color: #94A3B8;
+}
+.mk-picker-empty-icon { font-size: 32px; margin-bottom: 8px; opacity: .6; }
+.mk-picker-empty-title { font-size: 13px; font-weight: 800; color: #0B1F4D; margin-bottom: 3px; }
+.mk-picker-empty-sub { font-size: 11.5px; }
+
+.mk-picker-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 12px 14px; flex-shrink: 0;
+  background: #FFFFFF;
+  border-top: 1px solid rgba(11,31,77,0.10);
+  box-shadow: 0 -4px 12px rgba(11,31,77,0.05);
+}
+.mk-picker-sel-count {
+  font-size: 12px; font-weight: 700; color: #0B1F4D;
+}
