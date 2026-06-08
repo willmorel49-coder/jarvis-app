@@ -1003,9 +1003,20 @@
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 24px; background: #fff;
   border-bottom: 1.5px solid var(--border);
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
-.mk-modal-title { font-size: 15px; font-weight: 700; color: var(--text); }
-.mk-modal-actions { display: flex; gap: 8px; }
+.mk-modal-title {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  flex: 1 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mk-modal-actions {
+  display: flex; gap: 8px; align-items: center;
+  flex-wrap: wrap; flex-shrink: 0;
+  justify-content: flex-end;
+}
 .mk-modal-body {
   flex: 1; overflow-y: auto; padding: 24px;
   display: flex; justify-content: center; align-items: flex-start;
@@ -1060,7 +1071,12 @@
   padding: 0;
   overflow-x: visible;
   gap: 7px;
+  min-width: 0;
+  width: 100%;
 }
+.mk-preview-live .mk-pv-tpl { white-space: normal; max-width: 100%; min-width: 0; }
+.mk-preview-live .mk-pv-font { max-width: 100%; min-width: 0; }
+.mk-preview-live .mk-pv-font-name { max-width: 130px; }
 
 .mk-preview-live .mk-modal-body {
   flex: 1; min-width: 0;
@@ -1156,11 +1172,16 @@
 /* SLIDER ZOOM dans le header */
 .mk-zoom-control {
   display: inline-flex; align-items: center; gap: 6px;
-  margin-right: 10px;
+  margin-right: 4px;
   padding: 4px 10px;
   background: rgba(0,87,255,0.05);
   border: 1px solid rgba(0,87,255,0.12);
   border-radius: 999px;
+  flex-shrink: 0;
+}
+/* Compacter le slider sur écran moyen pour éviter le wrap des boutons */
+@media (max-width: 1280px) {
+  #mk-zoom-slider { width: 72px; }
 }
 .mk-zoom-btn {
   width: 24px; height: 24px;
@@ -1285,12 +1306,15 @@
   padding: 5px 10px; border-radius: 8px;
   background: #FFFFFF; border: 1.5px solid rgba(11,31,77,0.10);
   cursor: pointer; flex-shrink: 0;
+  max-width: 100%; min-width: 0;
   transition: all .15s;
 }
-.mk-pv-font-h { font-size: 16px; font-weight: 900; line-height: 1; color: #0B1F4D; }
+.mk-pv-font-h { font-size: 16px; font-weight: 900; line-height: 1; color: #0B1F4D; flex-shrink: 0; }
 .mk-pv-font-name {
   font-family: 'DM Sans', sans-serif !important;
   font-size: 11px; font-weight: 700; color: #64748B; letter-spacing: .3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 160px; min-width: 0;
 }
 .mk-pv-font:hover { border-color: #0057FF; }
 .mk-pv-font.on { border-color: #0057FF; box-shadow: 0 0 0 2px rgba(0,87,255,0.20); }
@@ -1904,17 +1928,41 @@
 /* ══════════════════════════════════════════════════════════════
    STICKER GENERIQUE en haut a droite des templates Offre/Memo
    (les templates Focus/Bento ont leur propre positionnement)
+   Position décalée vers le haut-droit hors zone titre pour éviter
+   le chevauchement avec le header de la fiche. Outline blanc pour
+   garantir la visibilité sur fond mesh sombre.
    ══════════════════════════════════════════════════════════════ */
 .mk-tpl-sticker {
-  position: absolute; top: 32px; right: 32px;
-  width: 96px; height: 96px;
+  position: absolute; top: 14px; right: 14px;
+  width: 82px; height: 82px;
   z-index: 5;
   transform: rotate(-6deg);
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.20));
+  /* Halo blanc multi-couches pour rester visible sur n'importe quel fond
+     (mesh sombre cherry-lacquer, ink-pharma, etc + palettes graphite) */
+  filter:
+    drop-shadow(0 0 1.5px rgba(255,255,255,0.95))
+    drop-shadow(0 0 3px rgba(255,255,255,0.85))
+    drop-shadow(0 0 5px rgba(255,255,255,0.55))
+    drop-shadow(0 6px 14px rgba(0,0,0,0.30));
   pointer-events: none;
 }
 .mk-tpl-sticker svg { width: 100%; height: 100%; display: block; }
-.mk-pdf-offre, .mk-pdf-memo { position: relative; }
+/* WCAG : si la fiche elle-même a un fond sombre (graphite-mat, ip-graphite-prestige)
+   on renforce le halo blanc autour du sticker pour éviter les stickers à fond foncé
+   (EXCLU IP #1A2230, DM CE #2E3A4C, PARTENAIRE #1A2230) qui se confondraient avec
+   le fond fiche. Couche supplémentaire de drop-shadow blanc à rayon plus large. */
+.mk-tpl-sticker-on-dark {
+  filter:
+    drop-shadow(0 0 2px  rgba(255,255,255,1))
+    drop-shadow(0 0 4px  rgba(255,255,255,0.95))
+    drop-shadow(0 0 8px  rgba(255,255,255,0.75))
+    drop-shadow(0 0 14px rgba(255,255,255,0.45))
+    drop-shadow(0 6px 18px rgba(0,0,0,0.45));
+}
+.mk-pdf-offre, .mk-pdf-memo, .mk-pdf-focus { position: relative; }
+/* Mémo : la sticker peut chevaucher le header bleu → réserve de l'espace
+   à droite dans le header (seulement quand un sticker est présent) */
+.mk-pdf-memo:has(.mk-tpl-sticker) .mk-memo-header { padding-right: 110px; }
 
 /* Table OFFRE : fond blanc semi-transparent quand gradient/mesh en arriere-plan
    pour garder la lisibilite */
@@ -1947,13 +1995,21 @@
 .mk-pdf-header {
   display: flex; align-items: center; gap: 24px;
   margin-bottom: 38px;
+  min-width: 0;
 }
 .mk-pdf-logo {
   width: 64px; height: 64px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.mk-pdf-title { flex: 1; text-align: center; padding-right: 64px; /* compense le logo pour centrage visuel */ }
+/* La fiche Offre a une sticker top-right qui réserve ~100px à droite
+   (seulement quand un sticker est présent). */
+.mk-pdf-offre:has(.mk-tpl-sticker) .mk-pdf-header { padding-right: 96px; }
+.mk-pdf-title {
+  flex: 1; min-width: 0;
+  text-align: center; padding-right: 64px; /* compense le logo pour centrage visuel */
+  word-wrap: break-word; overflow-wrap: anywhere;
+}
 .mk-pdf-eyebrow {
   font-size: 38px; font-weight: 300; letter-spacing: 0.04em;
   line-height: 1;
@@ -2050,14 +2106,19 @@
   margin-bottom: 22px;
 }
 .mk-memo-header-left { flex: 1; min-width: 0; }
+/* Eyebrow et h1 héritent de la couleur du header (inline style via palette
+   sur le node parent). On force inherit pour eviter le bleu sur bleu */
 .mk-memo-eyebrow {
   font-size: 11px; font-weight: 800; letter-spacing: 0.14em;
   text-transform: uppercase; opacity: 0.85;
+  color: inherit !important;
 }
 .mk-memo-h1 {
   font-size: 26px; font-weight: 800; line-height: 1.1;
   margin-top: 4px;
+  color: inherit !important;
 }
+.mk-memo-sub { color: inherit; }
 .mk-memo-sub {
   font-size: 12px; font-weight: 500; opacity: 0.75;
   margin-top: 6px;
