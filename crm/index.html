@@ -54,25 +54,31 @@
 
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260608j" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260608k" />
   <!-- Styles desktop -->
-  <link rel="stylesheet" href="style.css?v=20260608j" />
-  <link rel="stylesheet" href="style-classic.css?v=20260608j" />
+  <link rel="stylesheet" href="style.css?v=20260608k" />
+  <link rel="stylesheet" href="style-classic.css?v=20260608k" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260608j" />
-  <link rel="stylesheet" href="marketing-design-system.css?v=20260608j" />
+  <link rel="stylesheet" href="marketing.css?v=20260608k" />
+  <link rel="stylesheet" href="marketing-design-system.css?v=20260608k" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260608j" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260608j" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260608j" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260608j" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260608k" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260608k" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260608k" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260608k" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260608j" />
-  <link rel="stylesheet" href="native-headers.css?v=20260608j" />
-  <link rel="stylesheet" href="native-lists.css?v=20260608j" />
-  <link rel="stylesheet" href="native-motion.css?v=20260608j" />
-  <link rel="stylesheet" href="skeleton-loaders.css?v=20260608j" />
+  <link rel="stylesheet" href="native-shell.css?v=20260608k" />
+  <link rel="stylesheet" href="native-headers.css?v=20260608k" />
+  <link rel="stylesheet" href="native-lists.css?v=20260608k" />
+  <link rel="stylesheet" href="native-motion.css?v=20260608k" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260608k" />
+
+  <!-- ════ APPLE MODE (refonte from scratch 2026-06-08) — override final ════ -->
+  <link rel="stylesheet" href="apple/tokens.css?v=20260608k" />
+  <link rel="stylesheet" href="apple/components.css?v=20260608k" />
+  <script src="apple/icons.js?v=20260608k" defer></script>
+  <script src="apple/motion.js?v=20260608k" defer></script>
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -109,10 +115,10 @@
        Les lourds (stock 1.7 MB, catalogue-ip 188 KB, client-products 84 KB,
        benchmark-data 3.6 MB, establishments-aggregate 4 MB, offilog 1.7 MB,
        drakkars 3.8 MB, cap3000 2.4 MB) sont LAZY via perf-boot.js. -->
-  <script src="clients-data.js?v=20260608j"></script>
-  <script src="pharmacies-geo.js?v=20260608j"></script>
-  <script src="groupements-data.js?v=20260608j"></script>
-  <script src="sales-detail.js?v=20260608j"></script>
+  <script src="clients-data.js?v=20260608k"></script>
+  <script src="pharmacies-geo.js?v=20260608k"></script>
+  <script src="groupements-data.js?v=20260608k"></script>
+  <script src="sales-detail.js?v=20260608k"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -140,25 +146,25 @@
     });
   </script>
 
-  <script src="app.js?v=20260608j" defer></script>
-  <script src="dashboard-v2.js?v=20260608j" defer></script>
+  <script src="app.js?v=20260608k" defer></script>
+  <script src="dashboard-v2.js?v=20260608k" defer></script>
   <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
-  <script src="perf-boot.js?v=20260608j" defer></script>
-  <script src="classic-overrides.js?v=20260608j" defer></script>
-  <script src="mobile-shell.js?v=20260608j" defer></script>
+  <script src="perf-boot.js?v=20260608k" defer></script>
+  <script src="classic-overrides.js?v=20260608k" defer></script>
+  <script src="mobile-shell.js?v=20260608k" defer></script>
   <!-- Gestures iOS-native : swipe-back, pull-to-refresh, bottom-sheet swipe-down -->
-  <script src="mobile-gestures.js?v=20260608j" defer></script>
+  <script src="mobile-gestures.js?v=20260608k" defer></script>
   <!-- Native UI shell (bottom tab bar uniquement) -->
-  <script src="native-shell.js?v=20260608j" defer></script>
+  <script src="native-shell.js?v=20260608k" defer></script>
   <!-- DESACTIVES temporairement (debug : Will n'a aucune page qui s'affiche)
-       <script src="native-headers.js?v=20260608j" defer></script>
-       <script src="native-motion.js?v=20260608j" defer></script>
-       <script src="skeleton-loaders.js?v=20260608j" defer></script>
+       <script src="native-headers.js?v=20260608k" defer></script>
+       <script src="native-motion.js?v=20260608k" defer></script>
+       <script src="skeleton-loaders.js?v=20260608k" defer></script>
   -->
-  <script src="marketing-offers.js?v=20260608j" defer></script>
-  <script src="marketing-design-system.js?v=20260608j" defer></script>
-  <script src="marketing-monthly-pitches.js?v=20260608j" defer></script>
-  <script src="marketing.js?v=20260608j" defer></script>
+  <script src="marketing-offers.js?v=20260608k" defer></script>
+  <script src="marketing-design-system.js?v=20260608k" defer></script>
+  <script src="marketing-monthly-pitches.js?v=20260608k" defer></script>
+  <script src="marketing.js?v=20260608k" defer></script>
 </head>
 
 <body>
@@ -219,87 +225,90 @@
     <!-- Backdrop pour overlay mobile (click = ferme) -->
     <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="closeSidebarMobile()" aria-hidden="true"></div>
 
-    <nav class="sidebar" id="sidebar">
-      <div class="sidebar-brand">
-        <div class="sidebar-logo" aria-hidden="true">IP</div>
-        <div class="sidebar-brand-text">
-          <div class="sidebar-brand-name">Intégral Pharma</div>
-          <div class="sidebar-brand-sub">CRM Commercial</div>
+    <nav class="sidebar a-sidebar" id="sidebar">
+      <div class="sidebar-brand a-sidebar-header">
+        <div class="a-sidebar-brand">
+          <div class="sidebar-logo a-sidebar-brand-mark" aria-hidden="true">IP</div>
+          <span>Intégral Pharma</span>
         </div>
         <!-- Toggle collapse desktop (visible >900px) -->
-        <button class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Réduire le menu (⌘B)" aria-label="Réduire le menu">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <button class="sidebar-toggle a-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Réduire le menu (⌘B)" aria-label="Réduire le menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <!-- Close button mobile (visible <768px quand sidebar ouverte) -->
         <button class="sidebar-close-mobile" onclick="closeSidebarMobile()" aria-label="Fermer le menu">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <div class="nav-section">
-        <div class="nav-label">Marketing</div>
-        <div class="nav-item active" data-page="marketing" data-tooltip="Marketing" onclick="navigate('marketing')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          <span class="nav-label-text">Fiches commerciales</span>
-        </div>
-      </div>
+      <div class="a-sidebar-nav">
 
-      <div class="nav-section">
-        <div class="nav-label">Pilotage</div>
-        <div class="nav-item" data-page="dashboard" data-tooltip="Pilotage" onclick="navigate('dashboard')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
-          <span class="nav-label-text">Pilotage</span>
-        </div>
-        <div class="nav-item" data-page="pharmacies" data-tooltip="Pharmacies" onclick="navigate('pharmacies')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span class="nav-label-text">Pharmacies</span>
-        </div>
-        <div class="nav-item" data-page="produits" data-tooltip="Produits" onclick="navigate('produits')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="4" height="16"/><rect x="4" y="10" width="16" height="4"/></svg>
-          <span class="nav-label-text">Produits</span>
-        </div>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-label">Données</div>
-        <div class="nav-item" data-page="catalogue" data-tooltip="Catalogue IP" onclick="navigate('catalogue')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          <span class="nav-label-text">Catalogue IP</span>
-        </div>
-        <div class="nav-item" data-page="benchmark" data-tooltip="Benchmark" onclick="navigate('benchmark')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          <span class="nav-label-text">Benchmark</span>
-        </div>
-        <div class="nav-item" data-page="simulateur" data-tooltip="Simulateur" onclick="navigate('simulateur')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-          <span class="nav-label-text">Simulateur</span>
-        </div>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-label">Parapharmacie</div>
-        <div class="nav-item" data-page="offilog" data-tooltip="Offilog" onclick="navigate('offilog')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11l-6 7h18l-6-7V3"/></svg>
-          <span class="nav-label-text">Offilog</span>
-        </div>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-label">Groupements</div>
-        <div class="nav-item" data-page="groupements" data-tooltip="Suivi adhérents" onclick="navigate('groupements')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><path d="M2 20v-1a4 4 0 0 1 4-4"/><path d="M22 20v-1a4 4 0 0 0-4-4"/></svg>
-          <span class="nav-label-text">Suivi adhérents</span>
-        </div>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-user" onclick="logout()">
-          <div class="sidebar-avatar" id="sidebar-avatar">W</div>
-          <div class="sidebar-user-info">
-            <div class="sidebar-user-name" id="sidebar-user-name">Utilisateur</div>
-            <div class="sidebar-user-role" id="sidebar-user-role">role</div>
+        <div class="nav-section a-sidebar-section">
+          <div class="nav-label a-sidebar-section-label">Marketing</div>
+          <div class="nav-item a-sidebar-item active" data-page="marketing" data-tooltip="Marketing" onclick="navigate('marketing')">
+            <svg class="nav-icon a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            <span class="nav-label-text a-sidebar-item-label">Fiches commerciales</span>
           </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+
+        <div class="nav-section a-sidebar-section">
+          <div class="nav-label a-sidebar-section-label">Pilotage</div>
+          <div class="nav-item a-sidebar-item" data-page="dashboard" data-tooltip="Pilotage" onclick="navigate('dashboard')">
+            <svg class="nav-icon a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+            <span class="nav-label-text a-sidebar-item-label">Pilotage</span>
+          </div>
+          <div class="nav-item a-sidebar-item" data-page="pharmacies" data-tooltip="Pharmacies" onclick="navigate('pharmacies')">
+            <svg class="nav-icon a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="22" x2="9" y2="18"/><line x1="15" y1="22" x2="15" y2="18"/></svg>
+            <span class="nav-label-text a-sidebar-item-label">Pharmacies</span>
+          </div>
+          <div class="nav-item a-sidebar-item" data-page="produits" data-tooltip="Produits" onclick="navigate('produits')">
+            <svg class="nav-icon a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span class="nav-label-text a-sidebar-item-label">Produits</span>
+          </div>
+        </div>
+
+        <div class="nav-section a-sidebar-section">
+          <div class="nav-label a-sidebar-section-label">Données</div>
+          <div class="nav-item a-sidebar-item" data-page="catalogue" data-tooltip="Catalogue IP" onclick="navigate('catalogue')">
+            <svg class="nav-icon a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span class="nav-label-text a-sidebar-item-label">Catalogue IP</span>
+          </div>
+          <div class="nav-item a-sidebar-item" data-page="benchmark" data-tooltip="Benchmark" onclick="navigate('benchmark')">
+            <svg class="nav-icon a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <span class="nav-label-text a-sidebar-item-label">Benchmark</span>
+          </div>
+          <div class="nav-item a-sidebar-item" data-page="simulateur" data-tooltip="Simulateur" onclick="navigate('simulateur')">
+            <svg class="nav-icon a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <span class="nav-label-text a-sidebar-item-label">Simulateur</span>
+          </div>
+        </div>
+
+        <div class="nav-section a-sidebar-section">
+          <div class="nav-label a-sidebar-section-label">Parapharmacie</div>
+          <div class="nav-item a-sidebar-item" data-page="offilog" data-tooltip="Offilog" onclick="navigate('offilog')">
+            <svg class="nav-icon a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            <span class="nav-label-text a-sidebar-item-label">Offilog</span>
+          </div>
+        </div>
+
+        <div class="nav-section a-sidebar-section">
+          <div class="nav-label a-sidebar-section-label">Groupements</div>
+          <div class="nav-item a-sidebar-item" data-page="groupements" data-tooltip="Suivi adhérents" onclick="navigate('groupements')">
+            <svg class="nav-icon a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="nav-label-text a-sidebar-item-label">Suivi adhérents</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="sidebar-footer a-sidebar-footer">
+        <div class="sidebar-user a-sidebar-user" onclick="logout()">
+          <div class="sidebar-avatar a-sidebar-avatar" id="sidebar-avatar">W</div>
+          <div class="sidebar-user-info a-sidebar-user-info">
+            <div class="sidebar-user-name a-sidebar-user-name" id="sidebar-user-name">Utilisateur</div>
+            <div class="sidebar-user-role a-sidebar-user-role" id="sidebar-user-role">role</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="color:var(--label-tertiary)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </div>
       </div>
     </nav>
