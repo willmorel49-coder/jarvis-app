@@ -1548,9 +1548,10 @@
     const priceOf = (b) => (typeof b.prix_ip === 'number' && b.prix_ip > 0) ? b.prix_ip :
                           (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
     const isFroid = (b) => b.is_froid === true;
-    const isCheap = (b) => { const p = priceOf(b); return p > 0 && p < 5 && !isFroid(b); };
-    const isMid   = (b) => { const p = priceOf(b); return p >= 5 && p <= 20 && !isFroid(b); };
-    const isExp   = (b) => priceOf(b) > 20 && !isFroid(b);
+    // Seuils IP fournis par Will 2026-06-08 : 0–4,33 € / 4,33–468 € / > 468 €
+    const isCheap = (b) => { const p = priceOf(b); return p > 0 && p <= 4.33 && !isFroid(b); };
+    const isMid   = (b) => { const p = priceOf(b); return p > 4.33 && p <= 468 && !isFroid(b); };
+    const isExp   = (b) => priceOf(b) > 468 && !isFroid(b);
     const GEN_RX  = /\b(MYLAN|BIOGARAN|SANDOZ|TEVA|RATIOPHARM|EG|ZENTIVA|ARROW|VIATRIS|ACCORD|KRKA|BAILLY|CRISTERS|RANBAXY|G GAM|G\b)\b/;
     const isGen   = (b) => GEN_RX.test((b.designation || '').toUpperCase()) || /générique/i.test(b.categorie || '');
     const BIO_RX  = /\b(BIOSIMILAIRE|TRUXIMA|BENEPALI|REMSIMA|RIXATHON|RUXIENCE|MVASI|ZIRABEV|HULIO|HEFIYA|KANJINTI|HALAVEN|IMRALDI|ZESSLY|FLIXABI|INHIXA|ENROL|YESINTEK|AMSPARITY|ZYNTEGLO|TROVA)\b/;
@@ -1558,9 +1559,9 @@
     const isNR    = (b) => sagittaCipSet.has(String(b.cip13 || '')) || (b.has_ameli === false);
 
     const defs = [
-      { id: 'cheap',  name: 'Petits prix',                 sub: '< 5 €',                                cap: 100, filter: isCheap, accent: '#10B981' },
-      { id: 'mid',    name: 'Produits intermédiaires ambiants', sub: '5 € — 20 €',                       cap: 500, filter: isMid,   accent: '#0057FF' },
-      { id: 'exp',    name: 'Produits chers',              sub: '> 20 €',                               cap: 100, filter: isExp,   accent: '#FF6B35' },
+      { id: 'cheap',  name: 'Petits prix',                 sub: '0 — 4,33 € · ambiant',                 cap: 100, filter: isCheap, accent: '#10B981' },
+      { id: 'mid',    name: 'Produits intermédiaires ambiants', sub: '4,33 — 468 €',                     cap: 500, filter: isMid,   accent: '#0057FF' },
+      { id: 'exp',    name: 'Produits chers',              sub: '> 468 €',                              cap: 100, filter: isExp,   accent: '#FF6B35' },
       { id: 'cold',   name: 'Produits froids',             sub: 'chaîne du froid 2–8 °C',               cap: 200, filter: isFroid, accent: '#06B6D4' },
       { id: 'gen',    name: 'Génériques',                  sub: 'EG · Mylan · Biogaran · Sandoz · Teva…', cap: 200, filter: isGen,  accent: '#A78BFA' },
       { id: 'biosim', name: 'Biosimilaires',               sub: 'Truxima · Benepali · Remsima…',         cap: 50,  filter: isBio,  accent: '#EC4899' },
