@@ -2372,13 +2372,13 @@
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
             </button>
             <div class="mk-rail-divider"></div>
-            <button class="mk-rail-item is-active" data-section="editor" title="Éditer" aria-label="Éditer">
+            <button class="mk-rail-item ${__mkInspectorTab==='contenu'?'is-active':''}" data-section="editor" title="Éditer le contenu" aria-label="Éditer" onclick="window.mkInspectorSwitchTab('contenu')">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             </button>
-            <button class="mk-rail-item" data-section="theme" title="Thème" aria-label="Thème">
+            <button class="mk-rail-item ${__mkInspectorTab==='apparence'?'is-active':''}" data-section="theme" title="Thème, palette &amp; typo" aria-label="Thème" onclick="window.mkInspectorSwitchTab('apparence')">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="7" cy="12" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="17" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>
             </button>
-            <button class="mk-rail-item" data-section="data" title="Données" aria-label="Données">
+            <button class="mk-rail-item ${__mkInspectorTab==='donnees'?'is-active':''}" data-section="data" title="Produits &amp; données" aria-label="Données" onclick="window.mkInspectorSwitchTab('donnees')">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>
             </button>
             <div class="mk-rail-spacer"></div>
@@ -2429,7 +2429,18 @@
   window.mkInspectorSwitchTab = function (tab) {
     __mkInspectorTab = tab;
     refreshInspectorV2();
+    mkRailSyncActive();
   };
+
+  function mkRailSyncActive() {
+    const map = { editor: 'contenu', theme: 'apparence', data: 'donnees' };
+    document.querySelectorAll('.mk-edit-rail .mk-rail-item[data-section]').forEach(btn => {
+      const section = btn.getAttribute('data-section');
+      const target = map[section];
+      if (target == null) return; // hub & help : pas concernés
+      btn.classList.toggle('is-active', target === __mkInspectorTab);
+    });
+  }
   window.mkInspectorToggleSection = function (sectionId) {
     if (__mkInspectorOpenSections.has(sectionId)) __mkInspectorOpenSections.delete(sectionId);
     else __mkInspectorOpenSections.add(sectionId);
