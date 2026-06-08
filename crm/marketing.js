@@ -2342,6 +2342,8 @@
   function refreshCanvasV2() {
     const stage = document.getElementById('mk-canvas-stage-v2');
     if (stage && editingSheet) stage.innerHTML = renderSheetHTML(editingSheet, 'mk-pdf-target');
+    // PHASE 3 : Rebind inline edit handlers après chaque refresh
+    if (typeof mkBindCanvasInlineEdit === 'function') mkBindCanvasInlineEdit();
   }
 
   function renderEditV2() {
@@ -2403,7 +2405,11 @@
       </div>
     `;
     // Auto-fit zoom après mount
-    requestAnimationFrame(mkApplyZoomV2);
+    requestAnimationFrame(() => {
+      mkApplyZoomV2();
+      // PHASE 3 : bind initial des handlers d'édition inline
+      if (typeof mkBindCanvasInlineEdit === 'function') mkBindCanvasInlineEdit();
+    });
     // Recalcule sur resize
     if (!window.__mkV2Resize) {
       window.__mkV2Resize = function () { if (__mkCanvasZoom == null) mkApplyZoomV2(); };
@@ -2432,7 +2438,282 @@
     inspectorEl.innerHTML = renderInspectorV2(editingSheet);
   }
 
+  // ============================================================
+  // PHASE 2.5 — Product Picker Unifié (slide-in dans Inspector)
+  // ============================================================
+  let __mkPickerOpen = false;
+  let __mkPickerSource = 'all';
+  let __mkPickerSearch = '';
+  let __mkPickerSelectedIds = new Set();
+  let __mkPickerSearchTimer = null;
+
+  function normSearchToken(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  function searchUnifiedProducts(query, source) {
+    const q = normSearchToken((query || '').trim());
+    const results = [];
+    // Mode 'all' ou 'ip' → BENCHMARK
+    if (source === 'all' || source === 'ip') {
+      const bench = (window.BENCHMARK || []).filter(b => {
+        if (!b.prix_ip || b.prix_ip <= 0) return false;
+        if (!q) return false;
+        const name = normSearchToken(b.designation || '');
+        const cip = String(b.cip13 || '');
+        return name.includes(q) || cip.includes(query);
+      });
+      bench.slice(0, source === 'ip' ? 100 : 30).forEach(b => results.push({
+        id: 'ip:' + b.cip13,
+        source: 'ip',
+        cip13: b.cip13,
+        name: b.designation,
+        marque: b.marque || '',
+        prix: b.prix_ip,
+        prix_old: b.prix_ht || 0,
+        img: resolveImage(b.cip13, b.designation),
+        _raw: b,
+      }));
+    }
+    // Mode 'all' ou 'offilog' → OFFILOG
+    if (source === 'all' || source === 'offilog') {
+      const off = (window.OFFILOG || []).filter(o => {
+        if (!o.dans_offilog || !o.prix_offilog) return false;
+        if (!q) return false;
+        const name = normSearchToken(o.produit || '');
+        const ean = String(o.ean || '');
+        const marque = normSearchToken(o.marque || '');
+        return name.includes(q) || ean.includes(query) || marque.includes(q);
+      });
+      off.slice(0, source === 'offilog' ? 100 : 30).forEach(o => results.push({
+        id: 'off:' + o.ean,
+        source: 'offilog',
+        cip13: String(o.ean || ''),
+        name: (o.produit || '').replace(/&amp;/g, '&'),
+        marque: o.marque || '',
+        univers: o.univers || '',
+        prix: o.prix_offilog,
+        prix_old: o.prix_maxi || 0,
+        img: o.img || '',
+        _raw: o,
+      }));
+    }
+    // Mode 'all' ou 'sagitta' → SAGITTA
+    if (source === 'all' || source === 'sagitta') {
+      const sag = (window.SAGITTA_SHORTLIST || []).filter(s => {
+        if (!q) return false;
+        const name = normSearchToken(s.name || '');
+        const cip = String(s.cip13 || '');
+        const labo = normSearchToken(s.labo || '');
+        return name.includes(q) || cip.includes(query) || labo.includes(q);
+      });
+      sag.slice(0, source === 'sagitta' ? 100 : 20).forEach(s => results.push({
+        id: 'sag:' + s.cip13,
+        source: 'sagitta',
+        cip13: s.cip13,
+        name: s.name,
+        marque: s.labo || '',
+        prix: s.prix_sagitta || 0,
+        prix_old: s.prix_barre || 0,
+        img: resolveImage(s.cip13, s.name),
+        remise_pct: s.remise_pct,
+        _raw: s,
+      }));
+    }
+    // Mode 'top' → top ventes secteur
+    if (source === 'top') {
+      try {
+        const v = window.computeTopVentesOpsCprHp ? window.computeTopVentesOpsCprHp() : (typeof computeTopVentesOpsCprHp === 'function' ? computeTopVentesOpsCprHp() : null);
+        if (v && v.top) {
+          const top = v.top.filter(p => {
+            if (!q) return true;
+            const name = normSearchToken(p.designation || '');
+            return name.includes(q);
+          }).slice(0, 100);
+          top.forEach(p => {
+            const b = (window.BENCHMARK || []).find(x => String(x.cip13) === String(p.ean) || String(x.cip13) === String(p.artcode));
+            results.push({
+              id: 'top:' + (p.ean || p.artcode),
+              source: 'top',
+              cip13: p.ean || p.artcode,
+              name: p.designation,
+              marque: p.marque || '',
+              prix: b ? b.prix_ip : 0,
+              prix_old: b ? b.prix_ht : 0,
+              img: resolveImage(p.ean || p.artcode, p.designation),
+              ca: p.ca || 0,
+              qte: p.qte || 0,
+              _raw: p,
+            });
+          });
+        }
+      } catch (e) { console.warn('top ventes', e); }
+    }
+    return results;
+  }
+
+  function getUnifiedSourceCounts(query) {
+    const ipResults = searchUnifiedProducts(query, 'ip').length;
+    const offResults = searchUnifiedProducts(query, 'offilog').length;
+    const sagResults = searchUnifiedProducts(query, 'sagitta').length;
+    return { ip: ipResults, offilog: offResults, sagitta: sagResults, all: ipResults + offResults + sagResults };
+  }
+
+  window.mkPickerClose = function () {
+    __mkPickerOpen = false;
+    refreshInspectorV2();
+  };
+  window.mkPickerSetSource = function (src) {
+    __mkPickerSource = src;
+    refreshInspectorV2();
+  };
+  window.mkPickerSearchInput = function (val) {
+    __mkPickerSearch = val;
+    if (__mkPickerSearchTimer) clearTimeout(__mkPickerSearchTimer);
+    __mkPickerSearchTimer = setTimeout(() => {
+      refreshInspectorV2();
+      const el = document.querySelector('.mk-picker-search input');
+      if (el) { el.focus(); try { el.setSelectionRange(val.length, val.length); } catch(_) {} }
+    }, 180);
+  };
+  window.mkPickerToggleSelection = function (id) {
+    if (__mkPickerSelectedIds.has(id)) __mkPickerSelectedIds.delete(id);
+    else __mkPickerSelectedIds.add(id);
+    refreshInspectorV2();
+  };
+  window.mkPickerAddSelected = function () {
+    if (!editingSheet) return;
+    if (__mkPickerSelectedIds.size === 0) {
+      if (typeof window.showToast === 'function') window.showToast('Aucun produit sélectionné', 'info');
+      return;
+    }
+    // Récupère les produits depuis toutes les sources (au cas où mode tab actif diffère)
+    const sources = ['ip', 'offilog', 'sagitta', 'top'];
+    const allResults = [];
+    sources.forEach(s => {
+      searchUnifiedProducts(__mkPickerSearch, s).forEach(r => allResults.push(r));
+    });
+    let added = 0;
+    const seenIds = new Set();
+    for (const r of allResults) {
+      if (seenIds.has(r.id)) continue;
+      seenIds.add(r.id);
+      if (!__mkPickerSelectedIds.has(r.id)) continue;
+      if (editingSheet.products.find(p => String(p.cip13) === String(r.cip13))) continue;
+      let snap;
+      if (r.source === 'offilog') {
+        snap = snapshotOffilogProduct(r._raw);
+      } else {
+        const b = (window.BENCHMARK || []).find(x => String(x.cip13) === String(r.cip13));
+        if (b) snap = snapshotProduct(b);
+        else snap = {
+          cip13: r.cip13, designation: r.name, prix_ht: r.prix_old || 0,
+          prix_ip: r.prix || 0, ppht: r.prix_old || 0, remise_pct: 0,
+          offre_ip: 0, conditionnement: '',
+          img: r.img || '', source: 'ip',
+        };
+      }
+      editingSheet.products.push(snap);
+      added++;
+    }
+    __mkPickerOpen = false;
+    __mkPickerSelectedIds = new Set();
+    mkMutateSheetV2({ products: editingSheet.products });
+    refreshCanvasV2();
+    refreshInspectorV2();
+    if (typeof window.showToast === 'function') window.showToast(added + ' produit(s) ajouté(s) ✓', 'success');
+  };
+
+  function renderPickerUnified(sheet) {
+    const counts = getUnifiedSourceCounts(__mkPickerSearch);
+    const results = searchUnifiedProducts(__mkPickerSearch, __mkPickerSource);
+    const selCount = __mkPickerSelectedIds.size;
+    const existingCips = new Set((sheet.products || []).map(p => String(p.cip13)));
+    const sourceColors = { ip: '#0057FF', offilog: '#EA580C', sagitta: '#7B61FF', top: '#14B86A' };
+    const sourceLabels = { ip: 'IP', offilog: 'OFFILOG', sagitta: 'Sagitta', top: 'Top vente' };
+
+    return `
+      <div class="mk-picker-unified">
+        <header class="mk-picker-head">
+          <button class="mk-picker-back" onclick="window.mkPickerClose()" title="Retour Inspector" aria-label="Retour">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <div class="mk-picker-title">Ajouter un produit</div>
+        </header>
+        <div class="mk-picker-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="Recherche nom, CIP, EAN, marque…" value="${escapeAttr(__mkPickerSearch)}"
+            oninput="window.mkPickerSearchInput(this.value)" autofocus />
+        </div>
+        <div class="mk-picker-sources">
+          <button class="mk-picker-src ${__mkPickerSource==='all'?'is-active':''}" onclick="window.mkPickerSetSource('all')">
+            Tous <span class="mk-picker-src-count">${counts.all}</span>
+          </button>
+          <button class="mk-picker-src ${__mkPickerSource==='ip'?'is-active':''}" onclick="window.mkPickerSetSource('ip')" style="--src-color:#0057FF">
+            IP <span class="mk-picker-src-count">${counts.ip}</span>
+          </button>
+          <button class="mk-picker-src ${__mkPickerSource==='offilog'?'is-active':''}" onclick="window.mkPickerSetSource('offilog')" style="--src-color:#EA580C">
+            OFFILOG <span class="mk-picker-src-count">${counts.offilog}</span>
+          </button>
+          <button class="mk-picker-src ${__mkPickerSource==='sagitta'?'is-active':''}" onclick="window.mkPickerSetSource('sagitta')" style="--src-color:#7B61FF">
+            Sagitta <span class="mk-picker-src-count">${counts.sagitta}</span>
+          </button>
+          <button class="mk-picker-src ${__mkPickerSource==='top'?'is-active':''}" onclick="window.mkPickerSetSource('top')" style="--src-color:#14B86A">
+            Top vente
+          </button>
+        </div>
+        <div class="mk-picker-results">
+          ${results.length === 0 ? `
+            <div class="mk-picker-empty">
+              ${(__mkPickerSearch || '').length < 2 && __mkPickerSource !== 'top' ?
+                '<div class="mk-picker-empty-icon">🔍</div><div class="mk-picker-empty-title">Tape 2 lettres pour rechercher</div><div class="mk-picker-empty-sub">Nom du produit, code CIP, EAN, marque…</div>' :
+                '<div class="mk-picker-empty-icon">📭</div><div class="mk-picker-empty-title">Aucun résultat</div><div class="mk-picker-empty-sub">Essaie une autre requête ou change de source.</div>'
+              }
+            </div>
+          ` : results.map(r => {
+            const already = existingCips.has(String(r.cip13));
+            const selected = __mkPickerSelectedIds.has(r.id);
+            return `
+              <div class="mk-picker-result ${selected ? 'is-selected' : ''} ${already ? 'is-already' : ''}"
+                ${already ? '' : `onclick="window.mkPickerToggleSelection('${escapeAttr(r.id)}')"`}
+                ${already ? 'title="Déjà dans la fiche"' : ''}>
+                <div class="mk-picker-thumb">
+                  ${r.img ? `<img src="${escapeAttr(proxyImg(r.img))}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : '<span>💊</span>'}
+                </div>
+                <div class="mk-picker-info">
+                  <div class="mk-picker-name" title="${escapeAttr(r.name)}">${escapeAttr((r.name || '').slice(0, 60))}${(r.name || '').length > 60 ? '…' : ''}</div>
+                  <div class="mk-picker-meta">
+                    ${r.marque ? `<span class="mk-picker-marque">${escapeAttr(r.marque)}</span>` : ''}
+                    <span class="mk-picker-cip">${r.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(r.cip13))}</span>
+                  </div>
+                  <div class="mk-picker-prices">
+                    ${r.prix_old && r.prix_old > r.prix ? `<span class="mk-picker-price-old">${eur(r.prix_old)}</span>` : ''}
+                    <span class="mk-picker-price">${eur(r.prix)}</span>
+                    ${r.remise_pct ? `<span class="mk-picker-discount">-${r.remise_pct}%</span>` : ''}
+                    ${r.qte ? `<span class="mk-picker-qte">${r.qte.toLocaleString('fr-FR')}u secteur</span>` : ''}
+                  </div>
+                </div>
+                <span class="mk-picker-source-tag" style="background:${sourceColors[r.source]}">${sourceLabels[r.source]}</span>
+                ${already ? `<span class="mk-picker-already-mark" title="Déjà dans la fiche">✓</span>` :
+                  selected ? `<span class="mk-picker-check">✓</span>` :
+                  `<span class="mk-picker-plus">+</span>`}
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${selCount > 0 ? `
+          <footer class="mk-picker-footer">
+            <span class="mk-picker-sel-count">${selCount} produit${selCount>1?'s':''} sélectionné${selCount>1?'s':''}</span>
+            <button class="mk-btn mk-btn-primary" onclick="window.mkPickerAddSelected()">Ajouter à la fiche</button>
+          </footer>
+        ` : ''}
+      </div>
+    `;
+  }
+
   function renderInspectorV2(sheet) {
+    // Mode picker prend toute la place
+    if (__mkPickerOpen) return renderPickerUnified(sheet);
     return `
       <nav class="mk-inspector-tabs" role="tablist">
         <button class="mk-inspector-tab ${__mkInspectorTab==='apparence'?'is-active':''}" onclick="window.mkInspectorSwitchTab('apparence')">Apparence</button>
@@ -2774,9 +3055,159 @@
     if (typeof window.showToast === 'function') window.showToast('Produit retiré', 'info');
   };
   window.mkInspectorOpenPicker = function () {
-    // Phase 2.5 : Product Picker unifié dédié. Pour l'instant, fallback sur picker saisonnier existant.
-    if (typeof window.showToast === 'function') window.showToast('Picker unifié en Phase 2.5 — utilise pour l\'instant la recherche dans le menu V1', 'info');
+    __mkPickerOpen = true;
+    __mkPickerSearch = '';
+    __mkPickerSource = 'all';
+    __mkPickerSelectedIds = new Set();
+    refreshInspectorV2();
+    // focus search after render
+    setTimeout(() => {
+      const el = document.querySelector('.mk-picker-search input');
+      if (el) el.focus();
+    }, 50);
   };
+
+  // ============================================================
+  // PHASE 3 — Inline edit engine (canvas A4)
+  // ============================================================
+  // Permet de double-cliquer sur titre / prix / footer / désignation
+  // directement dans le canvas A4 pour les éditer en place.
+  // Stratégie : contentEditable sur l'élément original (évite le piège
+  // du transform: scale du canvas qui casse les inputs positionnés).
+  // ------------------------------------------------------------
+  let __mkInlineEditing = null; // { element, field, productIdx, originalText }
+
+  function mkParseEditedValue(field, raw) {
+    if (field === 'price' || field === 'price_ip' || field === 'price_ht' || field === 'ppht') {
+      // Parse "12,90 €" ou "12.90" ou "12,90"
+      const cleaned = String(raw).replace(/[€\s ]/g, '').replace(',', '.');
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? null : Math.max(0, n);
+    }
+    return String(raw).trim();
+  }
+
+  function mkInlineEditStart(el) {
+    if (__mkInlineEditing) return; // Une seule édition à la fois
+    if (!el || !editingSheet) return;
+    const field = el.dataset.editable;
+    const productIdx = el.dataset.productIdx != null ? parseInt(el.dataset.productIdx, 10) : null;
+    if (!field) return;
+    __mkInlineEditing = {
+      element: el,
+      field: field,
+      productIdx: productIdx,
+      originalText: el.innerText,
+    };
+    el.contentEditable = 'true';
+    el.classList.add('mk-canvas-editing');
+    el.focus();
+    // Select all
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch (e) { /* noop */ }
+  }
+
+  function mkInlineEditCommit() {
+    if (!__mkInlineEditing) return;
+    const { element, field, productIdx, originalText } = __mkInlineEditing;
+    const newText = element.innerText.trim();
+    const newValue = mkParseEditedValue(field, newText);
+    element.contentEditable = 'false';
+    element.classList.remove('mk-canvas-editing');
+    __mkInlineEditing = null;
+    // Vérif : si invalide ou inchangé → restore visuel et abort
+    if (newValue == null || newText === originalText) {
+      element.innerText = originalText;
+      return;
+    }
+    let didMutate = false;
+    if (productIdx != null && editingSheet.products && editingSheet.products[productIdx]) {
+      const p = editingSheet.products[productIdx];
+      if (field === 'price' || field === 'price_ip') {
+        p.prix_ip = newValue;
+        if (p.ppht > 0 && p.prix_ip > 0) p.remise_pct = Math.max(0, ((p.ppht - p.prix_ip) / p.ppht) * 100);
+        didMutate = true;
+      } else if (field === 'ppht' || field === 'price_ht') {
+        p.ppht = newValue; p.prix_ht = newValue;
+        if (p.ppht > 0 && p.prix_ip > 0) p.remise_pct = Math.max(0, ((p.ppht - p.prix_ip) / p.ppht) * 100);
+        didMutate = true;
+      } else if (field === 'designation') {
+        p.designation = String(newValue);
+        didMutate = true;
+      }
+      if (didMutate) mkMutateSheetV2({ products: editingSheet.products });
+    } else if (field === 'title') {
+      mkMutateSheetV2({ title: String(newValue) });
+      didMutate = true;
+      // Sync topbar input
+      const ti = document.querySelector('.mk-edit-title-input');
+      if (ti && ti.value !== String(newValue)) ti.value = String(newValue);
+    } else if (field === 'footer') {
+      mkMutateSheetV2({ footer: String(newValue) });
+      didMutate = true;
+    }
+    if (didMutate) {
+      refreshCanvasV2();
+      if (typeof refreshInspectorV2 === 'function') refreshInspectorV2();
+      if (typeof window.showToast === 'function') window.showToast('Modifié ✓', 'success');
+    }
+  }
+
+  function mkInlineEditCancel() {
+    if (!__mkInlineEditing) return;
+    const { element, originalText } = __mkInlineEditing;
+    element.contentEditable = 'false';
+    element.classList.remove('mk-canvas-editing');
+    element.innerText = originalText;
+    __mkInlineEditing = null;
+  }
+
+  function mkBindCanvasInlineEdit() {
+    const stage = document.getElementById('mk-canvas-stage-v2');
+    if (!stage) return;
+    if (stage.dataset.inlineEditBound === '1') return;
+    stage.dataset.inlineEditBound = '1';
+    // Dbl-click → entrée en édition
+    stage.addEventListener('dblclick', function (e) {
+      const target = e.target.closest('[data-editable]');
+      if (target) {
+        e.preventDefault();
+        mkInlineEditStart(target);
+      }
+    });
+    // Blur → commit (sauf si Enter/Escape déjà géré)
+    stage.addEventListener('focusout', function (e) {
+      if (!__mkInlineEditing) return;
+      if (e.target === __mkInlineEditing.element) {
+        // Petit délai pour laisser Enter/Escape passer en priorité
+        setTimeout(function () {
+          if (__mkInlineEditing && __mkInlineEditing.element === e.target) {
+            mkInlineEditCommit();
+          }
+        }, 50);
+      }
+    });
+  }
+
+  // Keyboard handlers globaux (un seul listener pour toute l'édition)
+  if (!window.__mkInlineEditKeyBound) {
+    window.__mkInlineEditKeyBound = true;
+    document.addEventListener('keydown', function (e) {
+      if (!__mkInlineEditing) return;
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        mkInlineEditCommit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        mkInlineEditCancel();
+      }
+    });
+  }
 
   window.renderEditV2 = renderEditV2;
 
@@ -3920,7 +4351,7 @@
           </div>
           <div class="mk-pdf-title">
             <div class="mk-pdf-eyebrow">OFFRE IP</div>
-            <div class="mk-pdf-h1" style="font-family:${headingFamily};font-weight:${font.hw};${font.italic ? 'font-style:italic' : ''}">${sheet.title || 'Sans titre'}</div>
+            <div class="mk-pdf-h1" data-editable="title" style="font-family:${headingFamily};font-weight:${font.hw};${font.italic ? 'font-style:italic' : ''}">${sheet.title || 'Sans titre'}</div>
           </div>
         </div>
 
@@ -3935,22 +4366,22 @@
               </tr>
             </thead>
             <tbody>
-              ${sheet.products.map(p => `
+              ${sheet.products.map((p, idx) => `
                 <tr>
                   <td class="mk-cell-cip">${cipFormat(p.cip13)}</td>
                   <td class="mk-cell-name">
                     ${(p.img && !sheet.hideImages) ? `<span class="mk-cell-thumb"><img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" onerror="this.style.display='none'"/></span>` : ''}
-                    <span class="mk-cell-name-text">${p.designation}</span>
+                    <span class="mk-cell-name-text" data-editable="designation" data-product-idx="${idx}">${p.designation}</span>
                   </td>
-                  <td class="mk-cell-price">${eur(p.prix_ht)}</td>
-                  <td class="mk-cell-price-strong" style="background:${cp.priceBg};color:${cp.priceFg}">${eur(p.prix_ip)}</td>
+                  <td class="mk-cell-price" data-editable="ppht" data-product-idx="${idx}">${eur(p.prix_ht)}</td>
+                  <td class="mk-cell-price-strong" data-editable="price" data-product-idx="${idx}" style="background:${cp.priceBg};color:${cp.priceFg}">${eur(p.prix_ip)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         </div>
 
-        <div class="mk-pdf-footer">${sheet.footer || ''}</div>
+        <div class="mk-pdf-footer" data-editable="footer">${sheet.footer || ''}</div>
       </div>
     `;
   }
@@ -3981,7 +4412,7 @@
         <div class="mk-memo-header" style="background:${cp.headerBg};color:${cp.headerFg};border-color:${cp.headerBg}">
           <div class="mk-memo-header-left">
             <div class="mk-memo-eyebrow">MÉMO RÉFÉRENTIEL</div>
-            <div class="mk-memo-h1" style="font-family:${headingFamily};font-weight:${font.hw};${font.italic ? 'font-style:italic;' : ''}">${sheet.title || 'Sans titre'}</div>
+            <div class="mk-memo-h1" data-editable="title" style="font-family:${headingFamily};font-weight:${font.hw};${font.italic ? 'font-style:italic;' : ''}">${sheet.title || 'Sans titre'}</div>
             <div class="mk-memo-sub">${sheet.products.length} référence${sheet.products.length>1?'s':''} · ${new Date().toLocaleDateString('fr-FR', { month:'long', year:'numeric' })}</div>
           </div>
           <div class="mk-memo-logo">${renderLogo(64)}</div>
@@ -4001,17 +4432,17 @@
               </tr>
             </thead>
             <tbody>
-              ${sheet.products.map(p => `
+              ${sheet.products.map((p, idx) => `
                 <tr>
                   <td class="mk-memo-desig">
                     ${(p.img && !sheet.hideImages) ? `<span class="mk-cell-thumb mk-cell-thumb-lg"><img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" onerror="this.style.display='none'"/></span>` : ''}
-                    <span class="mk-cell-name-text">${p.designation || '—'}</span>
+                    <span class="mk-cell-name-text" data-editable="designation" data-product-idx="${idx}">${p.designation || '—'}</span>
                   </td>
                   <td class="mk-memo-marque">${p.marque || extractMarque(p.designation)}</td>
                   <td class="mk-memo-cip">${cipFormat(p.cip13)}</td>
                   <td class="mk-memo-cond">${p.conditionnement || '—'}</td>
-                  <td class="mk-memo-price">${eur(p.prix_ht)}</td>
-                  <td class="mk-memo-price-strong" style="background:${cp.priceBg};color:${cp.priceFg}">${eur(p.prix_ip)}</td>
+                  <td class="mk-memo-price" data-editable="ppht" data-product-idx="${idx}">${eur(p.prix_ht)}</td>
+                  <td class="mk-memo-price-strong" data-editable="price" data-product-idx="${idx}" style="background:${cp.priceBg};color:${cp.priceFg}">${eur(p.prix_ip)}</td>
                   <td class="mk-memo-eco">${ecoPct(p)}</td>
                 </tr>
               `).join('')}
@@ -4020,7 +4451,7 @@
         </div>
 
         <div class="mk-memo-footer">
-          <div class="mk-memo-footer-main">${sheet.footer || 'Tarif en vigueur ' + new Date().getFullYear()}</div>
+          <div class="mk-memo-footer-main" data-editable="footer">${sheet.footer || 'Tarif en vigueur ' + new Date().getFullYear()}</div>
           <div class="mk-memo-footer-warn">Document à usage interne · ne pas diffuser</div>
         </div>
       </div>
@@ -4062,7 +4493,7 @@
           <div class="mk-focus-logo">${renderLogo(72)}</div>
           <div class="mk-focus-title">
             <div class="mk-focus-eyebrow">FOCUS PRODUIT</div>
-            <div class="mk-focus-h1">${sheet.title || 'Sans titre'}</div>
+            <div class="mk-focus-h1" data-editable="title">${sheet.title || 'Sans titre'}</div>
           </div>
         </div>
 
@@ -4072,15 +4503,15 @@
               <div class="mk-focus-visual">${(p.img && !sheet.hideImages) ? `<img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" class="mk-focus-img" onerror="this.outerHTML='${(placeholderSVG(p.designation)+'').replace(/'/g,'&#39;')}'"/>` : placeholderSVG(p.designation)}</div>
               <div class="mk-focus-body">
                 <div class="mk-focus-top">
-                  <div class="mk-focus-name">${p.designation || '—'}</div>
+                  <div class="mk-focus-name" data-editable="designation" data-product-idx="${i}">${p.designation || '—'}</div>
                   <div class="mk-focus-marque">${extractMarque(p.designation)}</div>
                   <div class="mk-focus-cip">CIP13 · ${cipFormat(p.cip13)}</div>
                 </div>
                 ${p.accroche ? `<div class="mk-focus-accroche">${p.accroche}</div>` : ''}
                 ${p.argument ? `<div class="mk-focus-argument" style="background:${cp.headerBg};color:${cp.headerFg}">${p.argument}</div>` : ''}
                 <div class="mk-focus-prices">
-                  <div class="mk-focus-price-old">${eur(p.prix_ht)}</div>
-                  <div class="mk-focus-price-ip" style="color:${focusPriceIpCol}">${eur(p.prix_ip)}</div>
+                  <div class="mk-focus-price-old" data-editable="ppht" data-product-idx="${i}">${eur(p.prix_ht)}</div>
+                  <div class="mk-focus-price-ip" data-editable="price" data-product-idx="${i}" style="color:${focusPriceIpCol}">${eur(p.prix_ip)}</div>
                   <div class="mk-focus-eco">Économie ${ecoEur(p)}</div>
                 </div>
               </div>
@@ -4088,7 +4519,7 @@
           `).join('')}
         </div>
 
-        <div class="mk-pdf-footer">${sheet.footer || ''}</div>
+        <div class="mk-pdf-footer" data-editable="footer">${sheet.footer || ''}</div>
       </div>
     `;
   }
@@ -4372,7 +4803,7 @@
           <div class="mk-bento-logo">${renderLogo(48)}</div>
           <div>
             <div class="mk-bento-eyebrow" style="opacity:.7">OFFRE INTÉGRAL PHARMA</div>
-            <h1 class="mk-bento-title" style="font-family:'${font.heading}',sans-serif;font-weight:${font.hw}">${escapeAttr(s.title)}</h1>
+            <h1 class="mk-bento-title" data-editable="title" style="font-family:'${font.heading}',sans-serif;font-weight:${font.hw}">${escapeAttr(s.title)}</h1>
           </div>
         </header>
         <div class="mk-bento-grid">
@@ -4382,17 +4813,17 @@
               <div class="mk-bento-tile ${big ? 'mk-bento-tile-big' : ''} ${p.img ? 'mk-bento-tile-img' : ''}" style="background:${tileBg};border-color:${tileBorder};grid-area:${cellLayouts[i % cellLayouts.length]}">
                 ${(p.img && !sheet.hideImages) ? `<div class="mk-bento-tile-thumb"><img src="${escapeAttr(proxyImg(p.img))}" alt="" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ''}
                 <div class="mk-bento-num" style="opacity:.55">${String(i + 1).padStart(2, '0')}</div>
-                <div class="mk-bento-name" style="font-family:'${font.heading}',sans-serif;font-weight:${font.hw}">${escapeAttr(p.designation)}</div>
+                <div class="mk-bento-name" data-editable="designation" data-product-idx="${i}" style="font-family:'${font.heading}',sans-serif;font-weight:${font.hw}">${escapeAttr(p.designation)}</div>
                 <div class="mk-bento-cip" style="opacity:.55">${p.source === 'offilog' ? 'EAN' : 'CIP'} ${escapeAttr(cipFormat(p.cip13))}</div>
                 <div class="mk-bento-price-block">
-                  ${p.ppht ? `<div class="mk-bento-ppht" style="opacity:.55">PPHT ${eur(p.ppht)}</div>` : ''}
-                  <div class="mk-bento-ip">${eur(p.prix_ip)}</div>
+                  ${p.ppht ? `<div class="mk-bento-ppht" data-editable="ppht" data-product-idx="${i}" style="opacity:.55">PPHT ${eur(p.ppht)}</div>` : ''}
+                  <div class="mk-bento-ip" data-editable="price" data-product-idx="${i}">${eur(p.prix_ip)}</div>
                 </div>
               </div>
             `;
           }).join('')}
         </div>
-        <footer class="mk-bento-footer" style="opacity:.55">
+        <footer class="mk-bento-footer" data-editable="footer" style="opacity:.55">
           ${escapeAttr(s.footer || 'Tarif en vigueur 2026')} · INTÉGRAL PHARMA
         </footer>
       </div>
