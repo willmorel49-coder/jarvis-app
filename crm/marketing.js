@@ -2002,17 +2002,13 @@
   // ── ÉCRAN ÉDITION ───────────────────────────────────────────
   // ============================================================
   // REFONTE V2 — Foundation (Topbar + Rail + Canvas live)
-  // Feature flag : window.MK_REFONTE_ENABLED ou URL ?refonte=1
-  // ============================================================
+  // V2 est devenue le défaut partout (Wave 2 validée par Will 2026-06-08).
+  // La V1 ("aperçu/édition live" + "créer") n'est plus exposée.
+  // Le code V1 (renderEditV1) reste en place comme filet de sécurité interne,
+  // mais aucun chemin utilisateur ne le déclenche.
   function isRefonteV2() {
-    if (window.MK_REFONTE_ENABLED === true) return true;
-    try {
-      if (new URLSearchParams(location.search).get('refonte') === '1') {
-        window.MK_REFONTE_ENABLED = true;
-        return true;
-      }
-    } catch (e) {}
-    return false;
+    window.MK_REFONTE_ENABLED = true;
+    return true;
   }
   window.mkIsRefonteV2 = isRefonteV2;
 
