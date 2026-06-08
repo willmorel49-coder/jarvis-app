@@ -723,10 +723,13 @@
   grid-template-columns: 64px 1fr;
 }
 .a-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   position: relative;
+  overflow-y: auto;
+  background: var(--bg-grouped-primary);
 }
 .a-page-content {
   padding: 0 var(--s-4) var(--s-8);
