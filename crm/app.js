@@ -17,7 +17,7 @@ let state = {
   pharmacies: [],
   imports: [],
   sales: [],
-  currentPage: 'dashboard',
+  currentPage: 'marketing',
   charts: {},
   sim: { pharmacyId: null, name: 'Simulation 1', items: [] },
 };
@@ -110,7 +110,7 @@ async function logout() {
   state.pharmacies = [];
   state.imports    = [];
   state.sales      = [];
-  state.currentPage = 'dashboard';
+  state.currentPage = 'marketing';
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-screen').style.display = 'flex';
 }
@@ -7520,7 +7520,7 @@ async function initApp() {
   document.getElementById('nav-admin').style.display = state.user.role === 'admin' ? 'flex' : 'none';
 
   updateNavBadge();
-  navigate('dashboard');
+  navigate('marketing');
 }
 
 

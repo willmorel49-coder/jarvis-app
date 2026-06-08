@@ -1090,6 +1090,7 @@
   let statsTranche = 'all';  // 'all' | 'petit' (≤4.33€) | 'inter' (4.33-468€) | 'haut' (>468€)
   let statsCatalogue = 'all';// 'all' | 'integral' | 'itp'
   let mkPage = 'grossiste';  // 'grossiste' (IP / canal grossiste) | 'offilog' (parapharma direct labo)
+  let mkShowMore = false;     // false = home drastique (Hero + Fiches récentes), true = full hub (sections empilées)
   // Picker saisonnier : selection composable avant creation de fiche.
   // On y voit TOUS les produits du theme (peut etre 245+), top 20 precoche,
   // l'utilisateur ajuste puis valide.
@@ -1350,8 +1351,180 @@
     if (mkPage === 'offilog') {
       return renderMarketingOffilog(root);
     }
+    if (!mkShowMore) {
+      return renderMarketingHomeSimple(root);
+    }
     return renderMarketingGrossiste(root);
   };
+
+  window.mkTogglePlus = function () {
+    mkShowMore = !mkShowMore;
+    window.renderMarketing();
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+  };
+
+  // ════════════════════════════════════════════════════════════
+  // HOME MARKETING — Vue drastique (validée Will 2026-06-08)
+  // Hero du mois XXL + Mes fiches récentes + bouton "Plus d'options"
+  // ════════════════════════════════════════════════════════════
+  function renderMarketingHomeSimple(root) {
+    const sheets = loadSheets().slice().sort((a, b) => {
+      const da = new Date(a.updated_at || a.created_at || 0).getTime();
+      const db = new Date(b.updated_at || b.created_at || 0).getTime();
+      return db - da;
+    });
+    const recent = sheets.slice(0, 6);
+    const suggested = getCurrentSeasonTheme();
+    const monthProds = themeProducts(suggested);
+    const top3 = monthProds.slice(0, 3);
+    const monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
+    const yearStr = new Date().getFullYear();
+    const pitch = (typeof getCurrentMonthlyPitch === 'function') ? getCurrentMonthlyPitch() : null;
+    const headline = pitch && pitch.headline ? pitch.headline : (suggested.label || suggested.name || 'Sélection du mois');
+    const subhead = pitch && pitch.subhead ? pitch.subhead : (suggested.sub || '');
+    const pitchShort = pitch && pitch.pitch_short ? pitch.pitch_short : '';
+
+    root.innerHTML = `
+      <div class="mk-home2">
+        <header class="mk-home2-head">
+          <div>
+            <div class="mk-home2-eyebrow">Marketing · ${escapeAttr(monthName)} ${yearStr}</div>
+            <h1 class="mk-home2-h1">Tes <em>fiches</em> commerciales</h1>
+          </div>
+          <button class="mk-home2-quickbtn" onclick="window.mkStartBlank && window.mkStartBlank()" title="Créer une fiche vide">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Nouvelle fiche</span>
+          </button>
+        </header>
+
+        <section class="mk-home2-hero">
+          <div class="mk-home2-hero-eyebrow">★ Sélection commerciale du mois</div>
+          <h2 class="mk-home2-hero-title">${escapeAttr(headline)}</h2>
+          ${subhead ? `<p class="mk-home2-hero-sub">${escapeAttr(subhead)}</p>` : ''}
+          ${pitchShort ? `<p class="mk-home2-hero-pitch">${escapeAttr(pitchShort)}</p>` : ''}
+
+          <div class="mk-home2-hero-prods">
+            ${top3.map(p => `
+              <div class="mk-home2-prod">
+                <div class="mk-home2-prod-img">${p.img ? `<img src="${escapeAttr(proxyImg(p.img))}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='💊'"/>` : '💊'}</div>
+                <div class="mk-home2-prod-info">
+                  <div class="mk-home2-prod-name" title="${escapeAttr(p.designation || '')}">${escapeAttr((p.designation || '').slice(0, 36))}${(p.designation || '').length > 36 ? '…' : ''}</div>
+                  <div class="mk-home2-prod-meta">${escapeAttr(p.marque || p.categorie || '—')}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="mk-home2-hero-actions">
+            <button class="mk-home2-cta mk-home2-cta-primary" onclick="window.mkStartFromTheme && window.mkStartFromTheme('${escapeAttr(suggested.id || '')}')">
+              Créer la fiche du mois →
+            </button>
+            <button class="mk-home2-cta mk-home2-cta-ghost" onclick="window.mkTogglePlus()">
+              Voir 30 produits suggérés
+            </button>
+          </div>
+        </section>
+
+        <section class="mk-home2-recent">
+          <header class="mk-home2-section-head">
+            <h3 class="mk-home2-section-title">Mes fiches récentes</h3>
+            ${sheets.length > 6 ? `<button class="mk-home2-section-link" onclick="window.mkTogglePlus()">Voir les ${sheets.length} fiches →</button>` : ''}
+          </header>
+          ${recent.length === 0 ? `
+            <div class="mk-home2-empty">
+              <div class="mk-home2-empty-art">📋</div>
+              <div class="mk-home2-empty-title">Aucune fiche encore</div>
+              <div class="mk-home2-empty-sub">Clique "Créer la fiche du mois" pour démarrer en 60s.</div>
+            </div>
+          ` : `
+            <div class="mk-home2-recent-grid">
+              ${recent.map(s => {
+                const products = (s.products || []);
+                const cnt = products.length;
+                const firstImg = products.find(p => p.img);
+                const updated = new Date(s.updated_at || s.created_at || Date.now());
+                const ago = formatAgo(updated);
+                return `
+                  <button class="mk-home2-card" onclick="window.mkOpenSheet && window.mkOpenSheet('${escapeAttr(s.id)}')">
+                    <div class="mk-home2-card-cover">${firstImg ? `<img src="${escapeAttr(proxyImg(firstImg.img))}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="mk-home2-card-cover-icon">📄</span>'}</div>
+                    <div class="mk-home2-card-body">
+                      <div class="mk-home2-card-title">${escapeAttr((s.title || 'Sans titre').slice(0, 38))}</div>
+                      <div class="mk-home2-card-meta"><span class="mk-home2-card-count">${cnt} produit${cnt > 1 ? 's' : ''}</span> · <span class="mk-home2-card-when">${escapeAttr(ago)}</span></div>
+                    </div>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </section>
+
+        <div class="mk-home2-foot">
+          <button class="mk-home2-more" onclick="window.mkTogglePlus()">
+            <span>Plus d'options</span>
+            <small>Planning 13 mois · Top ventes · Sagitta · Parapharma OFFILOG · Bibliothèque complète</small>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function formatAgo(date) {
+    const sec = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (sec < 60) return 'à l\'instant';
+    const min = Math.floor(sec / 60);
+    if (min < 60) return 'il y a ' + min + ' min';
+    const h = Math.floor(min / 60);
+    if (h < 24) return 'il y a ' + h + ' h';
+    const d = Math.floor(h / 24);
+    if (d === 1) return 'hier';
+    if (d < 7) return 'il y a ' + d + ' jours';
+    const w = Math.floor(d / 7);
+    if (w < 5) return 'il y a ' + w + ' sem.';
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  }
+
+  // mkStartBlank : crée une fiche vide et ouvre l'éditeur V2
+  window.mkStartBlank = function () {
+    editingSheet = {
+      id: 'sheet-' + Date.now(),
+      title: '',
+      theme: null,
+      template: 'offre',
+      products: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (typeof renderEdit === 'function') renderEdit();
+  };
+
+  // mkStartFromTheme : crée une fiche pré-remplie depuis un thème saisonnier
+  if (typeof window.mkStartFromTheme !== 'function') {
+    window.mkStartFromTheme = function (themeId) {
+      const t = getCurrentSeasonTheme();
+      const prods = themeProducts(t).slice(0, 20).map(snapshotProduct);
+      editingSheet = {
+        id: 'sheet-' + Date.now(),
+        title: t.label || t.name || 'Sélection du mois',
+        theme: t.id || themeId || null,
+        template: 'offre',
+        products: prods,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      if (typeof renderEdit === 'function') renderEdit();
+    };
+  }
+
+  // mkOpenSheet : ouvre une fiche existante de la bibliothèque
+  if (typeof window.mkOpenSheet !== 'function') {
+    window.mkOpenSheet = function (id) {
+      const s = loadSheets().find(x => x.id === id);
+      if (!s) return;
+      editingSheet = JSON.parse(JSON.stringify(s));
+      if (typeof renderEdit === 'function') renderEdit();
+    };
+  }
 
   function renderMarketingGrossiste(root) {
     const sheets = loadSheets();
@@ -1366,6 +1539,10 @@
 
     root.innerHTML = `
       <div class="mk-wrap">
+        <button class="mk-home2-back" onclick="window.mkTogglePlus()" title="Retour à l'accueil simple">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>Retour à l'accueil</span>
+        </button>
         ${renderPageTabs()}
         <div class="mk-hero mk-hero-month">
           <div class="mk-hero-main">
