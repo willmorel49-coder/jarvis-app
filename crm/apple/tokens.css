@@ -1,0 +1,264 @@
+/* ═══════════════════════════════════════════════════════════════════
+   APPLE TOKENS — Refonte from scratch 2026-06-08 (Will validé)
+   Spec : docs/apple-mode-refonte/03-spec-hig-2026.md
+   Conformité : Apple HIG 2025-2026, iOS 18, macOS Sequoia/Tahoe
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── COULEURS SYSTÈME (light mode) ─── */
+  --sys-blue:    #007AFF;
+  --sys-green:   #34C759;
+  --sys-indigo:  #5856D6;
+  --sys-orange:  #FF9500;
+  --sys-pink:    #FF2D55;
+  --sys-purple:  #AF52DE;
+  --sys-red:     #FF3B30;
+  --sys-teal:    #5AC8FA;
+  --sys-yellow:  #FFCC00;
+  --sys-mint:    #00C7BE;
+  --sys-cyan:    #32ADE6;
+  --sys-brown:   #A2845E;
+
+  /* ─── BRAND INTÉGRAL PHARMA (usage restreint) ─── */
+  --brand-ip:        #0057FF;
+  --brand-ip-tint:   rgba(0, 87, 255, 0.12);
+  --brand-ip-glow:   rgba(0, 87, 255, 0.28);
+
+  /* ─── BACKGROUNDS — plain (content full-bleed) ─── */
+  --bg-plain-primary:    #FFFFFF;
+  --bg-plain-secondary:  #F2F2F7;
+  --bg-plain-tertiary:   #FFFFFF;
+
+  /* ─── BACKGROUNDS — grouped (lists, settings, formulaires) ─── */
+  --bg-grouped-primary:    #F2F2F7;
+  --bg-grouped-secondary:  #FFFFFF;
+  --bg-grouped-tertiary:   #F2F2F7;
+
+  /* ─── ELEVATED (sheets, cards, popovers) ─── */
+  --bg-elevated:           #FFFFFF;
+  --bg-elevated-secondary: #F9F9F9;
+
+  /* ─── LABELS (texte) ─── */
+  --label-primary:    rgba(0, 0, 0, 1);
+  --label-secondary:  rgba(60, 60, 67, 0.60);
+  --label-tertiary:   rgba(60, 60, 67, 0.30);
+  --label-quaternary: rgba(60, 60, 67, 0.18);
+
+  /* ─── SEPARATORS ─── */
+  --separator-opaque:     #C6C6C8;
+  --separator-non-opaque: rgba(60, 60, 67, 0.36);
+
+  /* ─── FILLS (boutons tinted, inputs, swipe bg) ─── */
+  --fill-1: rgba(120, 120, 128, 0.20);
+  --fill-2: rgba(120, 120, 128, 0.16);
+  --fill-3: rgba(120, 120, 128, 0.12);
+  --fill-4: rgba(120, 120, 128, 0.08);
+
+  /* ─── SÉMANTIQUE ─── */
+  --success: var(--sys-green);
+  --warning: var(--sys-orange);
+  --danger:  var(--sys-red);
+  --info:    var(--sys-teal);
+
+  /* ─── ACCENT (basculable brand vs system) ─── */
+  --accent: var(--sys-blue);
+  --accent-on: #FFFFFF;
+
+  /* ─── TYPOGRAPHIE ─── */
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+                  'Inter', system-ui, sans-serif;
+  --font-text:    -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+                  'Inter', system-ui, sans-serif;
+  --font-mono:    ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ─── SPACING SCALE (multiples de 4) ─── */
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  20px;
+  --s-6:  24px;
+  --s-8:  32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-14: 56px;
+  --s-16: 64px;
+
+  /* ─── RADIUS (corner continu iOS) ─── */
+  --r-xs:  4px;
+  --r-sm:  6px;
+  --r-md:  8px;
+  --r-lg:  10px;
+  --r-xl:  12px;
+  --r-2xl: 14px;
+  --r-3xl: 16px;
+  --r-4xl: 22px;
+  --r-pill: 22px;
+  --r-full: 9999px;
+
+  /* ─── SHADOWS stratifiées iOS ─── */
+  --shadow-1: 0 0.5px 0 rgba(0, 0, 0, 0.12);
+  --shadow-2: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-3: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-4: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --shadow-floating: 0 32px 64px rgba(0, 0, 0, 0.16);
+
+  /* ─── MOTION ─── */
+  --ease-standard:   cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:     cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-sheet:      cubic-bezier(0.0, 0.0, 0.58, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+
+  --dur-quick:  120ms;
+  --dur-base:   200ms;
+  --dur-spring: 320ms;
+  --dur-sheet:  400ms;
+  --dur-slow:   500ms;
+
+  /* ─── MATERIALS (translucides Apple) ─── */
+  --material-thin:    saturate(180%) blur(20px);
+  --material-regular: saturate(180%) blur(30px);
+  --material-thick:   saturate(180%) blur(40px);
+  --material-chrome:  saturate(180%) blur(50px);
+
+  --material-bg-light: rgba(255, 255, 255, 0.72);
+  --material-bg-dark:  rgba(30, 30, 30, 0.72);
+
+  /* ─── SAFE AREA mobile iOS ─── */
+  --safe-top:    env(safe-area-inset-top, 0);
+  --safe-right:  env(safe-area-inset-right, 0);
+  --safe-bottom: env(safe-area-inset-bottom, 0);
+  --safe-left:   env(safe-area-inset-left, 0);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK MODE — bascule automatique selon prefers-color-scheme
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-plain-primary:    #000000;
+    --bg-plain-secondary:  #1C1C1E;
+    --bg-plain-tertiary:   #2C2C2E;
+
+    --bg-grouped-primary:    #000000;
+    --bg-grouped-secondary:  #1C1C1E;
+    --bg-grouped-tertiary:   #2C2C2E;
+
+    --bg-elevated:           #1C1C1E;
+    --bg-elevated-secondary: #2C2C2E;
+
+    --label-primary:    rgba(255, 255, 255, 1);
+    --label-secondary:  rgba(235, 235, 245, 0.60);
+    --label-tertiary:   rgba(235, 235, 245, 0.30);
+    --label-quaternary: rgba(235, 235, 245, 0.18);
+
+    --separator-opaque:     #38383A;
+    --separator-non-opaque: rgba(84, 84, 88, 0.65);
+
+    --fill-1: rgba(120, 120, 128, 0.36);
+    --fill-2: rgba(120, 120, 128, 0.32);
+    --fill-3: rgba(118, 118, 128, 0.24);
+    --fill-4: rgba(118, 118, 128, 0.18);
+
+    --sys-blue:   #0A84FF;
+    --sys-green:  #30D158;
+    --sys-orange: #FF9F0A;
+    --sys-red:    #FF453A;
+    --sys-teal:   #64D2FF;
+    --sys-yellow: #FFD60A;
+
+    --material-bg-light: rgba(30, 30, 30, 0.72);
+    --material-bg-dark:  rgba(0, 0, 0, 0.72);
+
+    --shadow-1: 0 0.5px 0 rgba(255, 255, 255, 0.10);
+    --shadow-2: 0 1px 3px rgba(0, 0, 0, 0.30), 0 1px 2px rgba(0, 0, 0, 0.20);
+    --shadow-3: 0 4px 16px rgba(0, 0, 0, 0.40);
+    --shadow-4: 0 12px 32px rgba(0, 0, 0, 0.50);
+    --shadow-floating: 0 32px 64px rgba(0, 0, 0, 0.60);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FORCE DARK MODE (toggle JS optionnel)
+   ═══════════════════════════════════════════════════════════════════ */
+:root[data-theme="dark"] {
+  --bg-plain-primary:    #000000;
+  --bg-plain-secondary:  #1C1C1E;
+  --bg-plain-tertiary:   #2C2C2E;
+  --bg-grouped-primary:    #000000;
+  --bg-grouped-secondary:  #1C1C1E;
+  --bg-grouped-tertiary:   #2C2C2E;
+  --bg-elevated:           #1C1C1E;
+  --bg-elevated-secondary: #2C2C2E;
+  --label-primary:    rgba(255, 255, 255, 1);
+  --label-secondary:  rgba(235, 235, 245, 0.60);
+  --label-tertiary:   rgba(235, 235, 245, 0.30);
+  --label-quaternary: rgba(235, 235, 245, 0.18);
+  --separator-opaque:     #38383A;
+  --separator-non-opaque: rgba(84, 84, 88, 0.65);
+  --fill-1: rgba(120, 120, 128, 0.36);
+  --fill-2: rgba(120, 120, 128, 0.32);
+  --fill-3: rgba(118, 118, 128, 0.24);
+  --fill-4: rgba(118, 118, 128, 0.18);
+  --sys-blue:   #0A84FF;
+  --sys-green:  #30D158;
+  --material-bg-light: rgba(30, 30, 30, 0.72);
+  --material-bg-dark:  rgba(0, 0, 0, 0.72);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CLASSES UTILITAIRES TYPOGRAPHIE (Apple HIG type scale)
+   ═══════════════════════════════════════════════════════════════════ */
+.t-large-title { font: 700 34px/41px var(--font-display); letter-spacing: 0.37px; }
+.t-title-1     { font: 700 28px/34px var(--font-display); letter-spacing: 0.36px; }
+.t-title-2     { font: 700 22px/28px var(--font-display); letter-spacing: 0.35px; }
+.t-title-3     { font: 600 20px/25px var(--font-display); letter-spacing: 0.38px; }
+.t-headline    { font: 600 17px/22px var(--font-text);   letter-spacing: -0.41px; }
+.t-body        { font: 400 17px/22px var(--font-text);   letter-spacing: -0.41px; }
+.t-callout     { font: 400 16px/21px var(--font-text);   letter-spacing: -0.32px; }
+.t-subhead     { font: 400 15px/20px var(--font-text);   letter-spacing: -0.24px; }
+.t-footnote    { font: 400 13px/18px var(--font-text);   letter-spacing: -0.08px; }
+.t-caption-1   { font: 400 12px/16px var(--font-text);   letter-spacing: 0; }
+.t-caption-2   { font: 400 11px/13px var(--font-text);   letter-spacing: 0.07px;
+                 text-transform: uppercase; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESET MINIMAL (cohérent avec Apple)
+   ═══════════════════════════════════════════════════════════════════ */
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-variant-ligatures: common-ligatures;
+}
+body {
+  font-family: var(--font-text);
+  color: var(--label-primary);
+  background: var(--bg-grouped-primary);
+  line-height: 1.4;
+}
+button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  font-family: inherit;
+}
+input, textarea, select {
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+::selection {
+  background: var(--accent);
+  color: var(--accent-on);
+}
