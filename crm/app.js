@@ -5708,7 +5708,7 @@ function navigate(page) {
     if (window._navHistory.length > 20) window._navHistory.shift();
   }
   state.currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  document.querySelectorAll('.nav-item, .a-sidebar-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
 
   // Fermer sidebar mobile apres navigation
