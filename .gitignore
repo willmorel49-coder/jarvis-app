@@ -95,3 +95,9 @@ yarn.lock
 dist/
 build/
 .cache/
+
+# STATS — fichiers source Ameli (générés depuis NB_2025 CSV)
+STATS/*.zip
+STATS/*.CSV.gz
+STATS/OPEN_MEDIC_2025.CSV
+STATS/NB_2025_cip13_reg.CSV
