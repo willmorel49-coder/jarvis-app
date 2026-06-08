@@ -296,21 +296,41 @@
   // TOUS les themes saisonniers actifs ce mois-la. Permet d'atteindre 20+
   // produits par mois meme quand un seul theme ne suffit pas.
   // Ex: novembre = grippe + rhume + gastro -> ~150 produits BENCHMARK matches.
+  // Pitch fallback synthetique si MONTHLY_PITCH absent ou mois inconnu :
+  // garantit qu'AUCUNE card mensuelle ne soit vide. Headline base sur les
+  // themes saisonniers actifs + mois en clair.
+  function synthFallbackPitch(month, activeThemes) {
+    const monthNames = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const mn = monthNames[month] || ('Mois ' + month);
+    const themeName = activeThemes && activeThemes.length
+      ? activeThemes.map(t => t.name).join(' + ')
+      : 'Catalogue grossiste IP';
+    return {
+      headline: themeName,
+      subhead: 'Top 30 produits du mois — secteur OPS+CPR+HP',
+      eyebrow: 'PLANNING ' + mn.toUpperCase() + ' · CANAL GROSSISTE IP',
+      pitch_short: 'Sélection priorisée par volume marché pour cibler tes meilleures ventes ' + mn.toLowerCase() + '.',
+      cta_line: 'Composer la fiche du mois',
+      accent_quote: '',
+    };
+  }
+
   function getCompositeThemeForMonth(month) {
     const active = SEASON_THEMES.filter(t => t.months.includes(month));
-    // Pitch commercial mensuel (marketing-monthly-pitches.js). Fallback safe
-    // si le fichier n'est pas charge (vieux deploiement) → on retourne theme nu.
-    const pitch = (typeof window.getMonthlyPitch === 'function')
+    // Pitch commercial mensuel (marketing-monthly-pitches.js).
+    // Si fichier absent OU mois sans pitch defini -> fallback synthetique
+    // pour ne JAMAIS avoir de card vide.
+    let pitch = (typeof window.getMonthlyPitch === 'function')
       ? window.getMonthlyPitch(month)
       : null;
+    if (!pitch) pitch = synthFallbackPitch(month, active);
     if (!active.length) {
       const base = SEASON_THEMES[0];
-      if (pitch) return Object.assign({}, base, { _pitch: pitch, _month: month });
-      return base;
+      return Object.assign({}, base, { _pitch: pitch, _month: month });
     }
     if (active.length === 1) {
-      if (pitch) return Object.assign({}, active[0], { _pitch: pitch, _month: month });
-      return active[0];
+      return Object.assign({}, active[0], { _pitch: pitch, _month: month });
     }
     // Composite : reutilise les filter() de chaque theme actif (OR logique)
     return {
@@ -2977,7 +2997,7 @@
       availH = vh - headH - tbH - padH;
       availW = vw - 40;
     } else {
-      const sbW = sidebarVisible ? 280 : 0;
+      const sbW = sidebarVisible ? 320 : 0;
       availH = vh - headH - padH;
       availW = vw - sbW - 60;
     }
