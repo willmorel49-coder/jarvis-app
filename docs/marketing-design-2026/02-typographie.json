@@ -1,0 +1,51 @@
+{
+  "executive_summary": "Intégral Pharma 2026 doit incarner une pharma B2B qui sort du conservatisme bleu-marine-Helvetica pour adopter un système typographique éditorial-grotesque assumé. La philosophie : un sérieux structurel (grotesque variable propre, chiffres tabulaires irréprochables) rehaussé d'un accent éditorial signature (serif contemporaine avec axes optiques) qui transforme une fiche prix en objet de lecture désirable. Nous privilégions des variable fonts récentes (2022-2025) qui portent en elles l'imaginaire des marques santé premium 2026 — précision suisse + chaleur méditerranéenne. L'enjeu pharma : la lisibilité des prix à 8pt en impression A4 est non-négociable, donc chaque paire est validée sur sa OpenType feature 'tnum'.",
+  "principles": [
+    "Jamais plus de 2 familles typographiques par fiche, sauf cas signature où une 3e famille mono apparait uniquement pour les codes EAN/CIP",
+    "Tabular nums (font-feature-settings: 'tnum', 'lnum') obligatoire sur tous les chiffres : prix, remises, stocks, dates, CIP — alignement vertical à la décimale impératif",
+    "Hierarchy ratio fixe Major Third (1.333) ou Perfect Fourth (1.333-1.5) — jamais d'ajustements ad hoc, le rythme typographique est mathématique",
+    "Variable fonts privilégiées partout : un seul fichier .woff2 chargé, axes wght/opsz/slnt exploités pour la nuance plutôt que multiples poids statiques",
+    "Optical sizing systématique sur les serifs éditoriales (Fraunces, Newsreader) : axe opsz 144 pour H1, opsz 14 pour body — sinon le serif s'écrase en print",
+    "Antiqua/Serif réservée aux headings et baselines émotionnelles ; corps de table et prix toujours en grotesque pour la densité informationnelle",
+    "Interlettrage négatif (-0.02em à -0.04em) sur tous les H1 display ≥ 32px — éviter l'effet 'mots qui flottent' typique du print pharma 1990s"
+  ],
+  "font_pairs": "VOIR LE LIVRABLE COMPLET — 14 paires typo dans le commit (Fraunces+Inter, Newsreader+DM Sans, Bricolage+Public Sans, Cormorant+DM Sans, Geist+GeistMono, Instrument+Jakarta, Space+IBMPlex, Playfair+Inter, DM Sans système, Manrope+IBMPlexMono, EB Garamond+Work Sans, Bricolage seul, Libre Caslon+Inter, Syne+Inter)",
+  "size_scale": {
+    "h1_pdf": "32pt — ratio 4.0x body (display hero magazine layout, hero Focus produit)",
+    "h2_pdf": "20pt — ratio 2.5x body (titres section, en-têtes Bento card)",
+    "h3_pdf": "14pt — ratio 1.75x body (sous-titres, labels prix mis en avant)",
+    "body_pdf": "8pt — base lisibilité minimum pharma A4 print",
+    "caption_pdf": "6.5pt — ratio 0.81x body (mentions légales, footer)",
+    "price_main_pdf": "24pt — ratio 3.0x body (prix mis en avant, weight 700)",
+    "price_table_pdf": "9pt — ratio 1.125x body (prix dans tables denses, tabular nums obligatoire)",
+    "rationale_scale": "Echelle hybride Perfect Fourth (1.333) sur headings éditoriaux + Major Third (1.25) sur corps de table. Base 8pt = seuil lisibilité validé impression CMJN 300dpi A4."
+  },
+  "implementation_notes": [
+    "font-feature-settings: 'tnum' 1, 'lnum' 1 obligatoire sur tous les <td> contenant chiffres",
+    "font-display: swap sur toutes les @font-face pour éviter FOIT en preview PDF rendering",
+    "Préfèrer .woff2 variable (1 fichier) au format statique multi-fichiers : Bricolage Grotesque variable ≈ 95KB couvre tous les usages",
+    "Pour génération PDF (Puppeteer/Chromium), inclure preload <link rel='preload' as='font'>",
+    "Subset Google Fonts à latin-ext (incluant français accentué + signes pharma µ, °, ™, ®)",
+    "OpenType features par défaut sur body : 'kern' 1, 'liga' 1, 'calt' 1, 'tnum' 1, 'lnum' 1",
+    "Pour prix avec décimales : font-variant-numeric: tabular-nums + text-align: right + padding-right uniforme",
+    "Variable fonts : exposer axes en custom properties CSS (--font-opsz, --font-wght, --font-wdth)",
+    "Tester impression réelle CMJN A4 sur Konica/Xerox — weight 300/200 invisibles, weight 800+ peuvent baver",
+    "Hébergement : Google Fonts CDN ok pour preview web, self-hoster .woff2 dans /public/fonts/ pour génération PDF serverside"
+  ],
+  "_pairs_summary_for_synthesis": [
+    {"id":"fraunces-inter","name":"Fraunces Editorial Inter","mood":"luxe éditorial","heading":"Fraunces","body":"Inter","weight_h":700,"category":"signature"},
+    {"id":"newsreader-dm-sans","name":"Newsreader Memo Pharma","mood":"sérieux chaleureux","heading":"Newsreader","body":"DM Sans","weight_h":700,"category":"editorial"},
+    {"id":"bricolage-public-sans","name":"Bricolage Modern Civic","mood":"éclatant technique","heading":"Bricolage Grotesque","body":"Public Sans","weight_h":800,"category":"modern"},
+    {"id":"cormorant-dm-sans","name":"Cormorant Pharmacie Premium","mood":"luxe sérieux","heading":"Cormorant Garamond","body":"DM Sans","weight_h":600,"category":"premium"},
+    {"id":"geist-geist","name":"Geist Tech Pharma","mood":"technique éclatant","heading":"Geist","body":"Geist","weight_h":700,"category":"modern"},
+    {"id":"instrument-jakarta","name":"Instrument Editorial","mood":"luxe éclatant","heading":"Instrument Serif","body":"Plus Jakarta Sans","weight_h":400,"category":"signature"},
+    {"id":"space-ibm-plex","name":"Space IBM Technical","mood":"technique sérieux","heading":"Space Grotesk","body":"IBM Plex Sans","weight_h":700,"category":"technique"},
+    {"id":"playfair-inter","name":"Playfair Classique Refresh","mood":"luxe chaleureux","heading":"Playfair Display","body":"Inter","weight_h":700,"category":"premium"},
+    {"id":"dm-sans-system","name":"DM System Monochrome","mood":"sérieux technique","heading":"DM Sans","body":"DM Sans","weight_h":700,"category":"modern"},
+    {"id":"manrope-ibm-mono","name":"Manrope Modern Pharma","mood":"éclatant chaleureux","heading":"Manrope","body":"Manrope","weight_h":800,"category":"modern"},
+    {"id":"eb-garamond-work","name":"EB Garamond Classique","mood":"sérieux chaleureux","heading":"EB Garamond","body":"Work Sans","weight_h":700,"category":"classic"},
+    {"id":"bricolage-system","name":"Bricolage Système Unique","mood":"éclatant signature","heading":"Bricolage Grotesque","body":"Bricolage Grotesque","weight_h":800,"category":"modern"},
+    {"id":"libre-caslon-inter","name":"Libre Caslon Apothecary","mood":"luxe chaleureux","heading":"Libre Caslon Display","body":"Inter","weight_h":400,"category":"premium"},
+    {"id":"syne-inter","name":"Syne Editorial Audacieux","mood":"éclatant signature","heading":"Syne","body":"Inter","weight_h":800,"category":"signature"}
+  ]
+}
