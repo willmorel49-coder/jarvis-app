@@ -2362,6 +2362,10 @@
             <span class="mk-edit-save-status" id="mk-edit-save-status" data-state="saved">Enregistré à l'instant</span>
           </div>
           <div class="mk-edit-topbar-actions">
+            <div class="mk-edit-density-toggle" role="group" aria-label="Densité">
+              <button class="${(localStorage.getItem('mk_density') || 'cozy') === 'compact' ? 'is-active' : ''}" onclick="window.mkSetDensity('compact')" title="Dense — voir plus, scroller moins">Dense</button>
+              <button class="${(localStorage.getItem('mk_density') || 'cozy') === 'cozy' ? 'is-active' : ''}" onclick="window.mkSetDensity('cozy')" title="Aéré — confort de lecture">Aéré</button>
+            </div>
             <button class="mk-btn mk-btn-ghost" onclick="window.mkDuplicateCurrent()" aria-label="Dupliquer">Dupliquer</button>
             <button class="mk-btn mk-btn-primary" onclick="window.mkSaveAndDownload()">⬇ PDF</button>
           </div>
@@ -2409,6 +2413,10 @@
       mkApplyZoomV2();
       // PHASE 3 : bind initial des handlers d'édition inline
       if (typeof mkBindCanvasInlineEdit === 'function') mkBindCanvasInlineEdit();
+      // WAVE 2 : appliquer densité + binder single-click selection + cleanup observer
+      mkApplyDensity(localStorage.getItem('mk_density') || 'cozy');
+      mkBindBlockSelection();
+      mkBindStageMutationObserver();
     });
     // Recalcule sur resize
     if (!window.__mkV2Resize) {
@@ -2715,6 +2723,7 @@
     // Mode picker prend toute la place
     if (__mkPickerOpen) return renderPickerUnified(sheet);
     return `
+      ${renderInspectorContextCard(sheet)}
       <nav class="mk-inspector-tabs" role="tablist">
         <button class="mk-inspector-tab ${__mkInspectorTab==='apparence'?'is-active':''}" onclick="window.mkInspectorSwitchTab('apparence')">Apparence</button>
         <button class="mk-inspector-tab ${__mkInspectorTab==='contenu'?'is-active':''}" onclick="window.mkInspectorSwitchTab('contenu')">Contenu</button>
@@ -2724,6 +2733,56 @@
         ${__mkInspectorTab === 'apparence' ? renderInspectorApparence(sheet) :
           __mkInspectorTab === 'contenu' ? renderInspectorContenu(sheet) :
           renderInspectorDonnees(sheet)}
+      </div>
+    `;
+  }
+
+  // ── WAVE 2 — Section contextuelle (Inspector hybride) ─────
+  // S'affiche au-dessus des 3 tabs quand un block est sélectionné dans le canvas.
+  function renderInspectorContextCard(sheet) {
+    const sel = __mkSelectedBlock;
+    if (!sel) {
+      return `
+        <div class="mk-insp-context-empty">
+          Clique un bloc dans la fiche pour voir ses réglages ici, ou utilise les onglets ci-dessous.<br>
+          Astuce : <kbd>dbl-clic</kbd> pour éditer directement le texte.
+        </div>
+      `;
+    }
+    const kind = sel.kind || 'block';
+    const labels = {
+      title: { eyebrow: 'Titre', icon: '✎', actions: [
+        { label: 'Recentrer', onclick: 'window.mkInspectorSwitchTab(\'contenu\')' },
+        { label: 'Police', onclick: 'window.mkInspectorSwitchTab(\'apparence\')' },
+      ]},
+      footer: { eyebrow: 'Footer', icon: '✎', actions: [
+        { label: 'Modifier', onclick: 'window.mkInspectorSwitchTab(\'contenu\')' },
+      ]},
+      price: { eyebrow: 'Prix produit', icon: '€', actions: [
+        { label: 'Voir prix', onclick: 'window.mkInspectorSwitchTab(\'donnees\')' },
+      ]},
+      product: { eyebrow: 'Produit', icon: '💊', actions: [
+        { label: 'Modifier', onclick: 'window.mkInspectorSwitchTab(\'donnees\')' },
+        { label: 'Remplacer image', onclick: 'window.mkOpenImageSearch && window.mkOpenImageSearch(' + (sel.index || 0) + ')' },
+        { label: 'Retirer', onclick: 'window.mkInspectorRemoveProduct(' + (sel.index || 0) + ')', danger: true },
+      ]},
+      block: { eyebrow: 'Bloc sélectionné', icon: '◇', actions: [
+        { label: 'Éditer le texte', onclick: 'window.mkInspectorSwitchTab(\'contenu\')' },
+      ]},
+    };
+    const meta = labels[kind] || labels.block;
+    const title = sel.title || sel.label || 'Bloc';
+    const subtitle = sel.subtitle || '';
+    return `
+      <div class="mk-insp-context-card">
+        <div class="mk-insp-context-eyebrow">${meta.icon} ${escapeAttr(meta.eyebrow)}</div>
+        <div class="mk-insp-context-title">${escapeAttr(title)}</div>
+        ${subtitle ? `<div class="mk-insp-context-meta">${escapeAttr(subtitle)}</div>` : ''}
+        <div class="mk-insp-context-actions">
+          ${meta.actions.map(a => `
+            <button class="${a.danger ? 'is-danger' : ''}" onclick="${a.onclick}">${escapeAttr(a.label)}</button>
+          `).join('')}
+        </div>
       </div>
     `;
   }
@@ -3207,6 +3266,119 @@
         mkInlineEditCancel();
       }
     });
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // WAVE 2 — Density toggle + single-click block selection
+  // ════════════════════════════════════════════════════════════
+  let __mkSelectedBlock = null;
+  let __mkSelectedEl = null;
+
+  function mkApplyDensity(mode) {
+    const root = document.querySelector('.mk-edit-v2');
+    if (!root) return;
+    root.setAttribute('data-density', mode === 'compact' ? 'compact' : 'cozy');
+  }
+
+  window.mkSetDensity = function (mode) {
+    const m = mode === 'compact' ? 'compact' : 'cozy';
+    try { localStorage.setItem('mk_density', m); } catch (e) {}
+    mkApplyDensity(m);
+    // Refresh topbar buttons active state (cheap: just refresh full editor)
+    const toggle = document.querySelector('.mk-edit-density-toggle');
+    if (toggle) {
+      toggle.querySelectorAll('button').forEach((b, i) => {
+        b.classList.toggle('is-active', (i === 0 && m === 'compact') || (i === 1 && m === 'cozy'));
+      });
+    }
+  };
+
+  function mkBindBlockSelection() {
+    const stage = document.querySelector('.mk-edit-v2 .mk-canvas-stage');
+    if (!stage) return;
+    // Single click = select. Double click already handled by inline edit engine (it'll fire after).
+    stage.addEventListener('click', function (e) {
+      // Skip if user is editing (contenteditable focused)
+      if (e.target.isContentEditable) return;
+      // Skip if clicked outside any data-editable
+      const editable = e.target.closest('[data-editable]');
+      if (!editable) { mkClearBlockSelection(); return; }
+      // Avoid stealing focus from active editing
+      if (editable.classList.contains('is-editing')) return;
+      e.stopPropagation();
+      mkSelectBlock(editable);
+    });
+    // ESC = deselect
+    if (!window.__mkBlockEscBound) {
+      window.__mkBlockEscBound = true;
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && __mkSelectedEl) mkClearBlockSelection();
+      });
+    }
+  }
+
+  function mkSelectBlock(el) {
+    if (__mkSelectedEl === el) return;
+    mkClearBlockSelection();
+    el.classList.add('is-selected');
+    __mkSelectedEl = el;
+    // Inférer le type + métadonnées depuis data-editable / dataset
+    const field = el.getAttribute('data-editable-field') || el.getAttribute('data-editable') || '';
+    const idxAttr = el.getAttribute('data-product-idx') || el.getAttribute('data-idx');
+    const idx = idxAttr != null ? parseInt(idxAttr, 10) : null;
+    let kind = 'block', title = '', subtitle = '';
+    if (field === 'title' || el.matches('h1,h2,h3,[class*="title"],[class*="heading"]')) {
+      kind = 'title';
+      title = (el.textContent || '').trim().slice(0, 60) || 'Titre de la fiche';
+    } else if (field === 'footer' || el.matches('footer,[class*="footer"]')) {
+      kind = 'footer';
+      title = (el.textContent || '').trim().slice(0, 60) || 'Footer';
+    } else if (field === 'prix_ip' || field === 'ppht' || field === 'prix_offilog' || el.matches('[class*="price"],[class*="prix"]')) {
+      kind = 'price';
+      title = (el.textContent || '').trim();
+      subtitle = field || 'Prix';
+    } else if (idx != null && !isNaN(idx) && editingSheet && editingSheet.products && editingSheet.products[idx]) {
+      kind = 'product';
+      const p = editingSheet.products[idx];
+      title = (p.designation || '').slice(0, 50);
+      subtitle = (p.source === 'offilog' ? 'EAN' : 'CIP') + ' ' + (p.cip13 || '');
+    } else {
+      kind = 'block';
+      title = (el.textContent || '').trim().slice(0, 50) || 'Bloc';
+    }
+    el.setAttribute('data-editable-label', kind.toUpperCase());
+    __mkSelectedBlock = { kind, title, subtitle, index: idx };
+    refreshInspectorV2();
+  }
+
+  function mkClearBlockSelection() {
+    if (__mkSelectedEl) {
+      __mkSelectedEl.classList.remove('is-selected');
+      __mkSelectedEl = null;
+    }
+    if (__mkSelectedBlock) {
+      __mkSelectedBlock = null;
+      refreshInspectorV2();
+    }
+  }
+
+  window.mkClearBlockSelection = mkClearBlockSelection;
+
+  // Cleanup selection orpheline quand le canvas re-render (innerHTML replace)
+  // Le listener click est sur le stage parent (persiste à travers les innerHTML).
+  // Mais __mkSelectedEl peut pointer vers un élément détruit → MutationObserver détecte.
+  function mkBindStageMutationObserver() {
+    const stage = document.querySelector('.mk-edit-v2 .mk-canvas-stage');
+    if (!stage || stage.__mkW2Observed) return;
+    stage.__mkW2Observed = true;
+    const mo = new MutationObserver(() => {
+      if (__mkSelectedEl && !stage.contains(__mkSelectedEl)) {
+        __mkSelectedEl = null;
+        __mkSelectedBlock = null;
+        refreshInspectorV2();
+      }
+    });
+    mo.observe(stage, { childList: true, subtree: true });
   }
 
   window.renderEditV2 = renderEditV2;
