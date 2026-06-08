@@ -2398,16 +2398,7 @@
               </div>
             </div>
           </main>
-          <aside class="mk-edit-inspector">
-            <div class="mk-inspector-placeholder">
-              <div class="mk-inspector-ph-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
-              </div>
-              <div class="mk-inspector-ph-title">Inspector — Phase 2</div>
-              <div class="mk-inspector-ph-sub">Apparence · Contenu · Données seront ici dans la prochaine livraison.</div>
-              <button class="mk-btn mk-btn-ghost" onclick="window.MK_REFONTE_ENABLED=false;window.renderEdit&&window.renderEdit()">↩ Revenir à l'éditeur V1</button>
-            </div>
-          </aside>
+          <aside class="mk-edit-inspector">${renderInspectorV2(editingSheet)}</aside>
         </div>
       </div>
     `;
@@ -2419,6 +2410,374 @@
       window.addEventListener('resize', window.__mkV2Resize);
     }
   }
+  // ============================================================
+  // PHASE 2 — Inspector contextuel 3 onglets
+  // ============================================================
+  let __mkInspectorTab = 'apparence';
+  let __mkInspectorOpenSections = new Set(['template', 'palette']);
+
+  window.mkInspectorSwitchTab = function (tab) {
+    __mkInspectorTab = tab;
+    refreshInspectorV2();
+  };
+  window.mkInspectorToggleSection = function (sectionId) {
+    if (__mkInspectorOpenSections.has(sectionId)) __mkInspectorOpenSections.delete(sectionId);
+    else __mkInspectorOpenSections.add(sectionId);
+    refreshInspectorV2();
+  };
+
+  function refreshInspectorV2() {
+    const inspectorEl = document.querySelector('.mk-edit-inspector');
+    if (!inspectorEl || !editingSheet) return;
+    inspectorEl.innerHTML = renderInspectorV2(editingSheet);
+  }
+
+  function renderInspectorV2(sheet) {
+    return `
+      <nav class="mk-inspector-tabs" role="tablist">
+        <button class="mk-inspector-tab ${__mkInspectorTab==='apparence'?'is-active':''}" onclick="window.mkInspectorSwitchTab('apparence')">Apparence</button>
+        <button class="mk-inspector-tab ${__mkInspectorTab==='contenu'?'is-active':''}" onclick="window.mkInspectorSwitchTab('contenu')">Contenu</button>
+        <button class="mk-inspector-tab ${__mkInspectorTab==='donnees'?'is-active':''}" onclick="window.mkInspectorSwitchTab('donnees')">Données <span class="mk-inspector-tab-count">${(sheet.products||[]).length}</span></button>
+      </nav>
+      <div class="mk-inspector-body">
+        ${__mkInspectorTab === 'apparence' ? renderInspectorApparence(sheet) :
+          __mkInspectorTab === 'contenu' ? renderInspectorContenu(sheet) :
+          renderInspectorDonnees(sheet)}
+      </div>
+    `;
+  }
+
+  function inspectorSection(id, title, sub, contentHtml) {
+    const isOpen = __mkInspectorOpenSections.has(id);
+    return `
+      <section class="mk-insp-section ${isOpen ? 'is-open' : ''}">
+        <header class="mk-insp-section-head" onclick="window.mkInspectorToggleSection('${id}')">
+          <span class="mk-insp-section-chevron">${isOpen ? '▾' : '▸'}</span>
+          <span class="mk-insp-section-title">${escapeAttr(title)}</span>
+          ${sub ? `<span class="mk-insp-section-sub">${escapeAttr(sub)}</span>` : ''}
+        </header>
+        ${isOpen ? `<div class="mk-insp-section-body">${contentHtml}</div>` : ''}
+      </section>
+    `;
+  }
+
+  // ── ONGLET APPARENCE ──────────────────────────────────────
+  function renderInspectorApparence(sheet) {
+    const palettes = window.MK_COLOR_PRESETS || {};
+    const fonts = window.MK_FONT_PAIRS || {};
+    const gradients = window.MK_GRADIENTS || {};
+    const stickers = window.MK_STICKERS || {};
+    const patterns = window.MK_PATTERNS || {};
+    const presets = window.MK_DESIGN_PRESETS || {};
+    const templates = [
+      {id:'offre', name:'Offre IP', emoji:'📋', sub:'table dense'},
+      {id:'memo', name:'Mémo', emoji:'📑', sub:'multi-col'},
+      {id:'focus', name:'Focus', emoji:'🎯', sub:'magazine 1-3'},
+      {id:'bento', name:'Bento', emoji:'🧩', sub:'grid 6-12'},
+    ];
+    const currentTpl = (sheet.template || 'offre');
+    const trends = Object.entries(palettes).filter(([,p]) => p.category === 'trend');
+    const neutrals = Object.entries(palettes).filter(([,p]) => p.category === 'neutral');
+    const signatures = Object.entries(palettes).filter(([,p]) => p.category === 'signature');
+
+    return `
+      ${inspectorSection('preset', 'Look prédéfini', Object.keys(presets).length + ' presets', `
+        <div class="mk-insp-presets">
+          ${Object.entries(presets).map(([id,p]) => `
+            <button class="mk-insp-preset" title="${escapeAttr(p.rationale || p.name)}" onclick="window.mkInspectorApplyPreset('${id}')">
+              <span class="mk-insp-preset-name">${escapeAttr(p.name)}</span>
+            </button>
+          `).join('')}
+        </div>
+      `)}
+
+      ${inspectorSection('template', 'Template', currentTpl, `
+        <div class="mk-insp-tpls">
+          ${templates.map(t => `
+            <button class="mk-insp-tpl ${currentTpl === t.id ? 'is-active' : ''}" onclick="window.mkInspectorSetTemplate('${t.id}')">
+              <span class="mk-insp-tpl-emoji">${t.emoji}</span>
+              <span class="mk-insp-tpl-name">${escapeAttr(t.name)}</span>
+              <span class="mk-insp-tpl-sub">${escapeAttr(t.sub)}</span>
+            </button>
+          `).join('')}
+        </div>
+      `)}
+
+      ${inspectorSection('palette', 'Palette', (palettes[sheet.color] || {}).name || '', `
+        <div class="mk-insp-pal-label">Tendances 2026</div>
+        <div class="mk-insp-pals">
+          ${trends.map(([k,p]) => `
+            <button class="mk-insp-pal ${sheet.color === k ? 'is-active' : ''}" title="${escapeAttr(p.name + ' · ' + (p.useCase||''))}"
+              style="background:${p.bg};border-color:${p.accent}"
+              onclick="window.mkInspectorSetPalette('${k}')">
+              <span class="mk-insp-pal-stripe" style="background:${p.priceBg}"></span>
+            </button>
+          `).join('')}
+        </div>
+        <div class="mk-insp-pal-label" style="margin-top:10px">Neutres</div>
+        <div class="mk-insp-pals">
+          ${neutrals.map(([k,p]) => `
+            <button class="mk-insp-pal ${sheet.color === k ? 'is-active' : ''}" title="${escapeAttr(p.name + ' · ' + (p.useCase||''))}"
+              style="background:${p.bg};border-color:${p.accent}"
+              onclick="window.mkInspectorSetPalette('${k}')">
+              <span class="mk-insp-pal-stripe" style="background:${p.priceBg}"></span>
+            </button>
+          `).join('')}
+        </div>
+        <div class="mk-insp-pal-label" style="margin-top:10px">Signature IP</div>
+        <div class="mk-insp-pals">
+          ${signatures.map(([k,p]) => `
+            <button class="mk-insp-pal ${sheet.color === k ? 'is-active' : ''}" title="${escapeAttr(p.name + ' · ' + (p.useCase||''))}"
+              style="background:${p.bg};border-color:${p.accent}"
+              onclick="window.mkInspectorSetPalette('${k}')">
+              <span class="mk-insp-pal-stripe" style="background:${p.priceBg}"></span>
+            </button>
+          `).join('')}
+        </div>
+      `)}
+
+      ${inspectorSection('typo', 'Typographie', (fonts[sheet.fontPair || 'default'] || {}).name || '', `
+        <div class="mk-insp-fonts">
+          ${Object.entries(fonts).map(([k,f]) => {
+            const headFamily = (f.heading && f.heading.family) || 'DM Sans';
+            return `
+              <button class="mk-insp-font ${(sheet.fontPair || 'default') === k ? 'is-active' : ''}" onclick="window.mkInspectorSetFont('${k}')">
+                <span class="mk-insp-font-aa" style="font-family:'${headFamily}',serif">Aa</span>
+                <span class="mk-insp-font-name">${escapeAttr(f.name)}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `)}
+
+      ${inspectorSection('gradient', 'Fond mesh', (gradients[sheet.gradient || 'none'] || {}).name || 'Aucun', `
+        <div class="mk-insp-grads">
+          ${Object.entries(gradients).map(([k,g]) => {
+            const isNone = k === 'none';
+            const style = isNone ? 'background:repeating-linear-gradient(45deg,#fff,#fff 5px,#E5E7EB 5px,#E5E7EB 10px)' : 'background:' + (g.preview || g.css);
+            return `
+              <button class="mk-insp-grad ${(sheet.gradient || 'none') === k ? 'is-active' : ''}" title="${escapeAttr(g.name)}"
+                style="${style}" onclick="window.mkInspectorSetGradient('${k}')">${isNone ? '∅' : ''}</button>
+            `;
+          }).join('')}
+        </div>
+      `)}
+
+      ${inspectorSection('sticker', 'Sticker / badge', (stickers[sheet.sticker || 'none'] || {}).name || 'Aucun', `
+        <div class="mk-insp-stkrs">
+          ${Object.entries(stickers).map(([k,s]) => {
+            const isNone = k === 'none' || !s.svg;
+            const placeholder = '<svg viewBox="0 0 32 32" width="100%" height="100%"><circle cx="16" cy="16" r="13" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="3 3"/><path d="M8 8L24 24" stroke="#94A3B8" stroke-width="2"/></svg>';
+            return `
+              <button class="mk-insp-stkr ${(sheet.sticker || 'none') === k ? 'is-active' : ''}" title="${escapeAttr(s.name)}"
+                onclick="window.mkInspectorSetSticker('${k}')">${isNone ? placeholder : s.svg}</button>
+            `;
+          }).join('')}
+        </div>
+      `)}
+
+      ${inspectorSection('pattern', 'Texture', (patterns[sheet.pattern || 'none'] || {}).name || 'Aucun', `
+        <div class="mk-insp-pats">
+          ${Object.entries(patterns).map(([k,p]) => {
+            const isNone = k === 'none' || !p.css;
+            return `
+              <button class="mk-insp-pat ${(sheet.pattern || 'none') === k ? 'is-active' : ''}" title="${escapeAttr(p.name)}"
+                style="background-image:${p.css || 'none'};background-color:#F2F2F7"
+                onclick="window.mkInspectorSetPattern('${k}')">${isNone ? '∅' : ''}</button>
+            `;
+          }).join('')}
+        </div>
+      `)}
+
+      ${inspectorSection('images', 'Images produits', sheet.hideImages ? 'masquées' : 'affichées', `
+        <label class="mk-insp-toggle">
+          <input type="checkbox" ${sheet.hideImages ? 'checked' : ''} onchange="window.mkInspectorToggleImages(this.checked)">
+          <span>Masquer les images des produits</span>
+        </label>
+      `)}
+    `;
+  }
+
+  // ── ONGLET CONTENU ────────────────────────────────────────
+  function renderInspectorContenu(sheet) {
+    return `
+      ${inspectorSection('title', 'Titre de la fiche', '', `
+        <input class="mk-insp-input" value="${escapeAttr(sheet.title || '')}" maxlength="80"
+          oninput="window.mkInspectorSetField('title', this.value)" placeholder="Ex: Solaire juin 2026" />
+      `)}
+      ${inspectorSection('footer', 'Footer / mentions', '', `
+        <textarea class="mk-insp-textarea" rows="3" maxlength="240"
+          oninput="window.mkInspectorSetField('footer', this.value)" placeholder="Ex: Tarifs en vigueur — Sous réserve de stock">${escapeAttr(sheet.footer || '')}</textarea>
+      `)}
+      ${inspectorSection('hint', 'Astuce', '', `
+        <div class="mk-insp-hint">
+          <strong>💡 Édition rapide :</strong> double-clic sur le titre ou le prix directement dans la fiche pour modifier sans passer par cet onglet.
+        </div>
+      `)}
+    `;
+  }
+
+  // ── ONGLET DONNÉES ────────────────────────────────────────
+  function renderInspectorDonnees(sheet) {
+    const products = sheet.products || [];
+    return `
+      ${inspectorSection('add', 'Ajouter des produits', products.length + '/' + (TEMPLATES[sheet.template || 'offre'].maxProducts || 500), `
+        <button class="mk-insp-add-btn mk-btn mk-btn-primary" onclick="window.mkInspectorOpenPicker()">
+          + Ajouter un produit
+        </button>
+        <div class="mk-insp-add-hint">Recherche unifiée : catalogue IP, OFFILOG, Sagitta, Top ventes</div>
+      `)}
+      ${inspectorSection('products', 'Produits sélectionnés', products.length + ' produits', products.length === 0 ? `
+        <div class="mk-insp-empty">
+          <div class="mk-insp-empty-icon">📦</div>
+          <div class="mk-insp-empty-title">Aucun produit</div>
+          <div class="mk-insp-empty-sub">Click "+ Ajouter un produit" ci-dessus pour commencer.</div>
+        </div>
+      ` : `
+        <div class="mk-insp-prods">
+          ${products.map((p, i) => `
+            <div class="mk-insp-prod" data-idx="${i}">
+              <div class="mk-insp-prod-thumb">${p.img ? `<img src="${escapeAttr(proxyImg(p.img))}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='💊'"/>` : '<span style="font-size:18px;opacity:.4">💊</span>'}</div>
+              <div class="mk-insp-prod-info">
+                <div class="mk-insp-prod-name" title="${escapeAttr(p.designation || '')}">${escapeAttr((p.designation || '').slice(0, 40))}${(p.designation || '').length > 40 ? '…' : ''}</div>
+                <div class="mk-insp-prod-meta">${escapeAttr(p.source === 'offilog' ? 'EAN' : 'CIP')} ${escapeAttr(cipFormat(p.cip13))}</div>
+                <div class="mk-insp-prod-prices">
+                  <input type="number" step="0.01" class="mk-insp-prod-price" value="${p.prix_ip || ''}" placeholder="—"
+                    oninput="window.mkInspectorUpdateProductField(${i}, 'prix_ip', this.value)" title="Prix IP" />
+                  <span class="mk-insp-prod-price-sep">/</span>
+                  <input type="number" step="0.01" class="mk-insp-prod-price mk-insp-prod-price-old" value="${p.ppht || ''}" placeholder="—"
+                    oninput="window.mkInspectorUpdateProductField(${i}, 'ppht', this.value)" title="PPHT" />
+                </div>
+              </div>
+              <div class="mk-insp-prod-actions">
+                <button class="mk-insp-prod-btn" onclick="window.mkInspectorMoveProduct(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Monter">↑</button>
+                <button class="mk-insp-prod-btn" onclick="window.mkInspectorMoveProduct(${i}, 1)" ${i === products.length - 1 ? 'disabled' : ''} title="Descendre">↓</button>
+                <button class="mk-insp-prod-btn mk-insp-prod-btn-danger" onclick="window.mkInspectorRemoveProduct(${i})" title="Retirer">✕</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `)}
+    `;
+  }
+
+  // ── HANDLERS APPARENCE ────────────────────────────────────
+  window.mkInspectorSetTemplate = function (id) {
+    if (!editingSheet) return;
+    mkMutateSheetV2({ template: id });
+    refreshCanvasV2();
+    refreshInspectorV2();
+  };
+  window.mkInspectorSetPalette = function (id) {
+    if (!editingSheet) return;
+    mkMutateSheetV2({ color: id });
+    refreshCanvasV2();
+    refreshInspectorV2();
+  };
+  window.mkInspectorSetFont = function (id) {
+    if (!editingSheet) return;
+    if (typeof window.mkLoadFontPair === 'function') {
+      try { window.mkLoadFontPair(id); } catch (e) {}
+    }
+    mkMutateSheetV2({ fontPair: id });
+    refreshCanvasV2();
+    refreshInspectorV2();
+  };
+  window.mkInspectorSetGradient = function (id) {
+    if (!editingSheet) return;
+    mkMutateSheetV2({ gradient: id === 'none' ? null : id });
+    refreshCanvasV2();
+    refreshInspectorV2();
+  };
+  window.mkInspectorSetSticker = function (id) {
+    if (!editingSheet) return;
+    mkMutateSheetV2({ sticker: id === 'none' ? null : id });
+    refreshCanvasV2();
+    refreshInspectorV2();
+  };
+  window.mkInspectorSetPattern = function (id) {
+    if (!editingSheet) return;
+    mkMutateSheetV2({ pattern: id === 'none' ? null : id });
+    refreshCanvasV2();
+    refreshInspectorV2();
+  };
+  window.mkInspectorToggleImages = function (hide) {
+    if (!editingSheet) return;
+    mkMutateSheetV2({ hideImages: !!hide });
+    refreshCanvasV2();
+    refreshInspectorV2();
+  };
+  window.mkInspectorApplyPreset = function (id) {
+    const p = (window.MK_DESIGN_PRESETS || {})[id];
+    if (!p || !editingSheet) return;
+    const patch = {};
+    if (p.template) patch.template = p.template;
+    if (p.color) patch.color = p.color;
+    if (p.fontPair) patch.fontPair = p.fontPair;
+    if (p.gradient) patch.gradient = p.gradient === 'none' ? null : p.gradient;
+    if (p.pattern) patch.pattern = p.pattern === 'none' ? null : p.pattern;
+    if (p.sticker) patch.sticker = p.sticker === 'none' ? null : p.sticker;
+    mkMutateSheetV2(patch);
+    if (patch.fontPair && typeof window.mkLoadFontPair === 'function') {
+      try { window.mkLoadFontPair(patch.fontPair); } catch (e) {}
+    }
+    refreshCanvasV2();
+    refreshInspectorV2();
+    if (typeof window.showToast === 'function') window.showToast('Preset "' + p.name + '" appliqué', 'success');
+  };
+
+  // ── HANDLERS CONTENU ──────────────────────────────────────
+  window.mkInspectorSetField = function (field, value) {
+    if (!editingSheet) return;
+    const patch = {};
+    patch[field] = value;
+    mkMutateSheetV2(patch);
+    refreshCanvasV2();
+    // Sync topbar input si title
+    if (field === 'title') {
+      const ti = document.querySelector('.mk-edit-title-input');
+      if (ti && ti.value !== value) ti.value = value;
+    }
+  };
+
+  // ── HANDLERS DONNÉES ──────────────────────────────────────
+  window.mkInspectorUpdateProductField = function (idx, field, value) {
+    if (!editingSheet || !editingSheet.products[idx]) return;
+    const p = editingSheet.products[idx];
+    if (field === 'designation') p.designation = String(value || '').trim();
+    else {
+      const num = parseFloat(String(value).replace(',', '.'));
+      p[field] = isNaN(num) ? null : num;
+      if (field === 'ppht') p.prix_ht = p.ppht;
+      if (p.ppht > 0 && p.prix_ip > 0) p.remise_pct = Math.max(0, ((p.ppht - p.prix_ip) / p.ppht) * 100);
+      else p.remise_pct = null;
+    }
+    mkMutateSheetV2({});  // trigger save status
+    refreshCanvasV2();
+  };
+  window.mkInspectorMoveProduct = function (idx, dir) {
+    if (!editingSheet) return;
+    const products = editingSheet.products;
+    const j = idx + dir;
+    if (j < 0 || j >= products.length) return;
+    [products[idx], products[j]] = [products[j], products[idx]];
+    mkMutateSheetV2({ products });
+    refreshCanvasV2();
+    refreshInspectorV2();
+  };
+  window.mkInspectorRemoveProduct = function (idx) {
+    if (!editingSheet) return;
+    editingSheet.products.splice(idx, 1);
+    mkMutateSheetV2({ products: editingSheet.products });
+    refreshCanvasV2();
+    refreshInspectorV2();
+    if (typeof window.showToast === 'function') window.showToast('Produit retiré', 'info');
+  };
+  window.mkInspectorOpenPicker = function () {
+    // Phase 2.5 : Product Picker unifié dédié. Pour l'instant, fallback sur picker saisonnier existant.
+    if (typeof window.showToast === 'function') window.showToast('Picker unifié en Phase 2.5 — utilise pour l\'instant la recherche dans le menu V1', 'info');
+  };
+
   window.renderEditV2 = renderEditV2;
 
   window.mkBackToLibrary = function () {
