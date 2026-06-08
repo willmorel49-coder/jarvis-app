@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '?v=20260605b2';
+  var VERSION = '?v=20260605j2';
 
   // Mapping page -> scripts à charger à la demande
   // Note : 'loaded' Set evite les doubles chargements (ex stock.js partage par
@@ -55,7 +55,8 @@
       'establishments-aggregate.js',
       'offilog-data.js',
       'sagitta-shortlist-data.js',
-      'catalogues-marketing-data.js'
+      'catalogues-marketing-data.js',
+      'marketing-monthly-pitches.js'
     ],
     offilog: [
       'offilog-data.js',
