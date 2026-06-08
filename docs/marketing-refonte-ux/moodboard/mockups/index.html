@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockups Marketing V2 — 3 écrans cibles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAFAF7; --surface:#FFFFFF; --ink:#0E0E10; --muted:#71717A;
+  --hair:rgba(0,0,0,.08); --accent:#0057FF; --orange:#FF6B35;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg);font-family:'Inter',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+
+.hero{padding:64px 32px 48px;max-width:920px;margin:0 auto;text-align:center}
+.tag{display:inline-flex;align-items:center;gap:8px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:rgba(0,87,255,.08);padding:6px 12px;border-radius:20px;margin-bottom:24px;font-weight:500}
+.tag .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+h1{font-family:'Fraunces',serif;font-size:clamp(40px,7vw,72px);font-weight:500;line-height:1.05;letter-spacing:-.02em;margin-bottom:20px}
+h1 em{font-style:italic;color:var(--orange)}
+.lead{font-size:18px;color:var(--muted);max-width:580px;margin:0 auto 32px;line-height:1.5}
+
+.cards{max-width:1200px;margin:0 auto;padding:32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px}
+
+.card{background:var(--surface);border-radius:16px;overflow:hidden;border:1px solid var(--hair);transition:.2s cubic-bezier(.2,.8,.2,1);text-decoration:none;color:inherit;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.08);border-color:rgba(0,87,255,.15)}
+
+.card-num{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--muted);padding:20px 24px 0}
+
+.card-preview{aspect-ratio:16/10;background:var(--bg);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);margin-top:16px}
+.card:hover .card-preview{background:#F4F4F5}
+
+/* mini previews graphiques */
+.preview-01{position:absolute;inset:16px;display:grid;grid-template-rows:18px 1fr;grid-template-columns:24px 1fr 100px;gap:6px}
+.preview-01 .topbar{grid-column:1/-1;background:#fff;border:1px solid var(--hair);border-radius:3px}
+.preview-01 .rail{background:#fff;border:1px solid var(--hair);border-radius:3px}
+.preview-01 .canvas{background:#fff;border:1px solid var(--hair);border-radius:3px;display:flex;align-items:flex-start;justify-content:center;padding:10px}
+.preview-01 .canvas .doc{width:90%;height:80%;background:#fff;border:1px solid var(--hair);border-radius:2px;padding:8px;font-family:'Fraunces',serif;font-size:11px;color:var(--ink)}
+.preview-01 .canvas .doc em{font-style:italic;color:var(--orange)}
+.preview-01 .canvas .doc .small{font-size:7px;color:var(--muted);margin-top:4px;font-family:'Inter',sans-serif;font-style:normal}
+.preview-01 .inspector{background:#fff;border:1px solid var(--hair);border-radius:3px;padding:8px;display:flex;flex-direction:column;gap:4px}
+.preview-01 .inspector .row{height:10px;background:#F4F4F5;border-radius:2px}
+.preview-01 .inspector .row.short{width:60%}
+.preview-01 .inspector .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-top:4px}
+.preview-01 .inspector .swatches span{aspect-ratio:1;border-radius:2px}
+
+.preview-02{position:absolute;inset:16px;display:flex;align-items:flex-start;justify-content:center;padding-top:8px;background:rgba(14,14,16,.05);backdrop-filter:blur(2px)}
+.preview-02 .picker{width:75%;background:#fff;border-radius:6px;box-shadow:0 8px 16px rgba(0,0,0,.1);padding:10px;display:flex;flex-direction:column;gap:6px;border:1px solid var(--hair)}
+.preview-02 .picker .search{height:14px;background:#F4F4F5;border-radius:3px;display:flex;align-items:center;padding:0 8px;font-family:'Geist Mono',monospace;font-size:7px;color:var(--muted)}
+.preview-02 .picker .chips{display:flex;gap:3px}
+.preview-02 .picker .chips span{height:9px;width:24px;background:#F4F4F5;border-radius:2px}
+.preview-02 .picker .chips .a{background:var(--ink)}
+.preview-02 .picker .results{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+.preview-02 .picker .row{height:14px;background:#F4F4F5;border-radius:2px;display:flex;align-items:center;gap:4px;padding:0 4px;font-family:'Geist Mono',monospace;font-size:6px;color:var(--muted)}
+.preview-02 .picker .row.focused{background:var(--accent);color:#fff}
+
+.preview-03{position:absolute;inset:16px;display:flex;align-items:flex-start;justify-content:center;padding-top:8px}
+.preview-03 .doc{width:75%;background:#fff;border:1px solid var(--hair);border-radius:4px;padding:10px;position:relative;display:flex;flex-direction:column;gap:4px}
+.preview-03 .doc .t{font-family:'Fraunces',serif;font-size:13px;color:var(--ink)}
+.preview-03 .doc .t em{color:var(--orange);font-style:italic}
+.preview-03 .doc .line{height:6px;background:#F4F4F5;border-radius:1px}
+.preview-03 .doc .line.short{width:60%}
+.preview-03 .doc .menu{position:absolute;bottom:8px;right:8px;width:60%;background:#fff;border-radius:4px;box-shadow:0 4px 8px rgba(0,0,0,.12);padding:4px;display:flex;flex-direction:column;gap:2px;border:1px solid var(--hair)}
+.preview-03 .doc .menu .item{height:10px;background:#F4F4F5;border-radius:2px;display:flex;align-items:center;padding:0 4px;font-family:'Geist Mono',monospace;font-size:6px;color:var(--muted)}
+.preview-03 .doc .menu .item.focused{background:var(--accent);color:#fff}
+.preview-03 .doc .float-pill{position:absolute;top:-12px;left:30%;background:var(--ink);height:18px;width:80px;border-radius:4px;box-shadow:0 4px 8px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;gap:3px;padding:0 4px}
+.preview-03 .doc .float-pill span{width:8px;height:8px;background:rgba(255,255,255,.2);border-radius:1px}
+
+.card-body{padding:20px 24px 24px;flex:1;display:flex;flex-direction:column}
+.card-title{font-family:'Fraunces',serif;font-size:24px;font-weight:500;letter-spacing:-.01em;margin-bottom:8px}
+.card-title em{color:var(--orange);font-style:italic}
+.card-desc{color:var(--muted);font-size:14px;margin-bottom:20px;flex:1}
+.card-refs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.card-refs span{font-family:'Geist Mono',monospace;font-size:10px;background:var(--bg);padding:3px 8px;border-radius:4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:500}
+.card-cta{font-size:13px;font-weight:500;color:var(--accent);display:flex;align-items:center;gap:6px;transition:.2s}
+.card:hover .card-cta{gap:10px}
+
+.section{max-width:920px;margin:64px auto;padding:0 32px}
+.section h2{font-family:'Fraunces',serif;font-size:32px;font-weight:500;margin-bottom:24px;letter-spacing:-.01em}
+.summary{background:var(--surface);border-radius:14px;padding:32px;border:1px solid var(--hair);display:grid;gap:16px}
+.summary-row{display:flex;gap:16px;font-size:14px;line-height:1.6}
+.summary-row .num{font-family:'Geist Mono',monospace;color:var(--accent);font-weight:600;min-width:24px;flex-shrink:0}
+
+footer{text-align:center;padding:48px 32px;color:var(--muted);font-size:12px;font-family:'Geist Mono',monospace;letter-spacing:.04em}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="tag"><span class="dot"></span>Moodboard V2 · 2026-06-08</div>
+  <h1>3 mockups<br>pour l'<em>éditeur</em> Marketing</h1>
+  <p class="lead">Direction validée par 3 agents sur Behance · Dribbble · Envato. Avant que je touche au code, dis-moi ce que tu retiens et ce que tu refuses.</p>
+</section>
+
+<div class="cards">
+
+  <a class="card" href="01-editor-3zones.html">
+    <div class="card-num">MOCKUP · 01</div>
+    <div class="card-preview">
+      <div class="preview-01">
+        <div class="topbar"></div>
+        <div class="rail"></div>
+        <div class="canvas">
+          <div class="doc">L'<em>été</em> en officine<div class="small">3 best-sellers · Solaire Juin</div></div>
+        </div>
+        <div class="inspector">
+          <div class="row"></div>
+          <div class="row short"></div>
+          <div class="swatches">
+            <span style="background:#0057FF"></span>
+            <span style="background:#10B981"></span>
+            <span style="background:#FF6B35"></span>
+            <span style="background:#FFB020"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3 class="card-title">Éditeur <em>3-zones</em></h3>
+      <p class="card-desc">Topbar 48px · Rail icônes 64px · Canvas A4 centré · Inspector 360px contextuel qui change selon ce que tu sélectionnes.</p>
+      <div class="card-refs">
+        <span>Linear</span><span>Figma</span><span>Vercel</span>
+      </div>
+      <div class="card-cta">Ouvrir le mockup →</div>
+    </div>
+  </a>
+
+  <a class="card" href="02-product-picker-cmdk.html">
+    <div class="card-num">MOCKUP · 02</div>
+    <div class="card-preview">
+      <div class="preview-02">
+        <div class="picker">
+          <div class="search">solaire spf...</div>
+          <div class="chips">
+            <span class="a"></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="results">
+            <div class="row focused">Sun Secure SPF50+</div>
+            <div class="row">Photoderm MAX</div>
+            <div class="row">Anthelios Invis.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3 class="card-title">Picker <em>unifié</em></h3>
+      <p class="card-desc">⌘K ouvre une recherche sur les 3 catalogues (Grossiste IP · OFFILOG · Sagitta) en même temps. Navigation 100% clavier.</p>
+      <div class="card-refs">
+        <span>Linear ⌘K</span><span>Raycast</span><span>Arc</span>
+      </div>
+      <div class="card-cta">Ouvrir le mockup →</div>
+    </div>
+  </a>
+
+  <a class="card" href="03-inline-edit-slash.html">
+    <div class="card-num">MOCKUP · 03</div>
+    <div class="card-preview">
+      <div class="preview-03">
+        <div class="doc">
+          <div class="float-pill"><span></span><span></span><span></span></div>
+          <div class="t">L'<em>été</em> en officine</div>
+          <div class="line"></div>
+          <div class="line short"></div>
+          <div class="menu">
+            <div class="item focused">/Produit IP</div>
+            <div class="item">/Produit OFFILOG</div>
+            <div class="item">/Tableau prix</div>
+            <div class="item">/Mention légale</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3 class="card-title">Édition <em>inline</em></h3>
+      <p class="card-desc">Drag handle au hover · Slash menu <code style="font-family:'Geist Mono',monospace;background:var(--bg);padding:1px 4px;border-radius:2px">/</code> pour insérer un block · Pill toolbar sur sélection texte.</p>
+      <div class="card-refs">
+        <span>Notion</span><span>Pitch</span><span>Linear</span>
+      </div>
+      <div class="card-cta">Ouvrir le mockup →</div>
+    </div>
+  </a>
+
+</div>
+
+<section class="section">
+  <h2>Ce que je propose de coder ensuite</h2>
+  <div class="summary">
+    <div class="summary-row"><span class="num">1</span><span><b>Inspector contextuel</b> — au lieu des 3 onglets fixes Apparence/Contenu/Données, il change selon ce que tu sélectionnes. Sélection block image → contrôles image. Sélection prix → contrôles prix. Sélection rien → contrôles page globale.</span></div>
+    <div class="summary-row"><span class="num">2</span><span><b>Slash menu /</b> — taper / dans une ligne vide ouvre le menu d'insertion (Produit IP, OFFILOG, Sagitta, Tableau, Mention légale, Bloc remise).</span></div>
+    <div class="summary-row"><span class="num">3</span><span><b>Floating pill toolbar</b> — sélection texte fait apparaître une barre noire flottante au-dessus avec Bold/Italic/Color/Lien.</span></div>
+    <div class="summary-row"><span class="num">4</span><span><b>Drag handle au hover</b> — icône ⋮⋮ apparaît à gauche de chaque block au survol, pour réordonner par drag.</span></div>
+    <div class="summary-row"><span class="num">5</span><span><b>Geist Mono pour les chiffres</b> — prix, CIP13, pourcentages, MOQ. Plus pro, plus lisible.</span></div>
+    <div class="summary-row"><span class="num">6</span><span><b>Toggle densité compact / cozy</b> — pour les commerciaux qui veulent voir plus de produits sans scroller (à la Linear).</span></div>
+  </div>
+</section>
+
+<footer>
+  Mockups statiques · CSS only · Aucune ligne du code Marketing V2 n'a été touchée
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 03 — Inline edit + Slash menu · Marketing IP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAFAF7; --surface:#FFFFFF; --ink:#0E0E10; --muted:#71717A;
+  --hair:rgba(0,0,0,.06); --hair-strong:rgba(0,0,0,.08);
+  --hover:#F4F4F5; --accent:#0057FF; --accent-soft:#E6EEFF;
+  --green:#10B981; --orange:#FF6B35;
+  --t:160ms cubic-bezier(.2,.8,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg);font-family:'Inter',system-ui,sans-serif;color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased;min-height:100vh}
+.mono{font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums}
+
+.note-bar{background:#0E0E10;color:#fff;padding:10px 20px;font-size:12px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.note-bar b{color:#FFB020;font-weight:500}
+.note-bar small{opacity:.6}
+
+.workspace{padding:48px 24px;display:flex;justify-content:center;background-image:radial-gradient(circle,rgba(0,0,0,.04) 1px,transparent 1px);background-size:24px 24px;min-height:calc(100vh - 40px)}
+
+.a4{background:#fff;width:680px;min-height:900px;box-shadow:0 4px 20px rgba(0,0,0,.04);border-radius:2px;padding:48px;position:relative}
+
+.eyebrow{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;font-weight:500}
+.h1{font-family:'Fraunces',serif;font-size:42px;font-weight:500;line-height:1.05;margin-bottom:14px;color:var(--ink);letter-spacing:-.02em}
+.h1 em{font-style:italic;color:var(--orange)}
+.sub{font-size:16px;color:var(--muted);margin-bottom:32px;line-height:1.5}
+
+/* block générique avec drag handle au hover */
+.block{position:relative;padding:8px 0;margin-left:-32px;padding-left:32px;border-radius:4px;transition:var(--t)}
+.block:hover{background:rgba(0,0,0,.015)}
+.block:hover .drag-handle,.block:hover .add-btn{opacity:1}
+.drag-handle{position:absolute;left:4px;top:50%;transform:translateY(-50%);width:18px;height:18px;display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--muted);opacity:0;transition:var(--t);font-size:14px;border-radius:3px}
+.drag-handle:hover{background:var(--hover)}
+.add-btn{position:absolute;left:-18px;top:50%;transform:translateY(-50%);width:18px;height:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);opacity:0;transition:var(--t);font-size:16px;border-radius:3px;background:transparent}
+.add-btn:hover{background:var(--hover);color:var(--ink)}
+
+/* texte sélectionné */
+.selected{background:rgba(0,87,255,.18);border-radius:2px;padding:1px 0}
+
+/* floating pill toolbar */
+.float-tool{position:absolute;top:-44px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:4px;display:flex;align-items:center;gap:2px;box-shadow:0 12px 32px rgba(0,0,0,.25);z-index:30;animation:fadeUp 200ms cubic-bezier(.2,.8,.2,1)}
+@keyframes fadeUp{from{opacity:0;transform:translate(-50%,4px)}to{opacity:1;transform:translate(-50%,0)}}
+.float-tool::after{content:"";position:absolute;bottom:-5px;left:50%;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:var(--ink);z-index:-1}
+.float-tool button{background:transparent;border:none;color:#fff;width:30px;height:30px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:var(--t);font-weight:500}
+.float-tool button:hover{background:rgba(255,255,255,.15)}
+.float-tool button.active{background:rgba(255,255,255,.22)}
+.float-tool .sep{width:1px;height:18px;background:rgba(255,255,255,.18);margin:0 4px}
+.float-tool .color-swatches{display:flex;gap:3px;padding:0 4px;align-items:center}
+.float-tool .color-swatches span{width:14px;height:14px;border-radius:50%;cursor:pointer;transition:var(--t);border:1.5px solid rgba(255,255,255,.4)}
+.float-tool .color-swatches span:hover{transform:scale(1.15)}
+.float-tool .color-swatches .active{box-shadow:0 0 0 2px #fff,0 0 0 3px var(--ink)}
+
+/* produit block */
+.product-block{position:relative;display:grid;grid-template-columns:64px 1fr auto;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--hair);margin-left:-32px;padding-left:32px}
+.product-block:hover{background:rgba(0,0,0,.015)}
+.product-block:hover .drag-handle,.product-block:hover .add-btn{opacity:1}
+.product-block:last-child{border-bottom:none}
+.product-img{width:64px;height:64px;background:#F7F5F2;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;border:1px solid var(--hair)}
+.product-info .nom{font-weight:600;font-size:14px;margin-bottom:2px}
+.product-info .marque{font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.04em}
+.product-price{text-align:right}
+.product-price .prix{font-family:'Geist Mono',monospace;font-size:16px;font-weight:600;color:var(--ink)}
+.product-price .barre{font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted);text-decoration:line-through}
+
+/* slash menu */
+.slash-menu{position:absolute;left:50%;top:200px;transform:translateX(-50%);width:340px;background:var(--surface);border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,.15),0 0 0 1px rgba(0,0,0,.05);overflow:hidden;z-index:20;animation:fadeUp 200ms cubic-bezier(.2,.8,.2,1)}
+.slash-head{padding:8px 14px;border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:8px}
+.slash-head .prompt{font-family:'Geist Mono',monospace;color:var(--muted);font-size:13px}
+.slash-head .prompt .typed{color:var(--ink);font-weight:500}
+.slash-head .cursor{display:inline-block;width:2px;height:14px;background:var(--accent);animation:blink 1s infinite;vertical-align:middle;margin-left:2px}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+.slash-body{padding:4px 0;max-height:340px;overflow-y:auto}
+.slash-group{padding:4px 0}
+.slash-group-title{font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 14px 2px;font-weight:500}
+.slash-item{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:6px 14px;cursor:pointer;transition:var(--t)}
+.slash-item:hover,.slash-item.focused{background:var(--hover)}
+.slash-item .icon{width:28px;height:28px;background:var(--bg);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--ink);border:1px solid var(--hair)}
+.slash-item .label{font-size:13px;font-weight:500}
+.slash-item .desc{font-size:11px;color:var(--muted)}
+.slash-item .kbd{font-family:'Geist Mono',monospace;font-size:10px;color:var(--muted);background:var(--bg);padding:2px 5px;border-radius:3px;border:1px solid var(--hair)}
+.slash-item.focused::before{content:"";position:absolute;left:0;width:2px;background:var(--accent);height:100%}
+.slash-item{position:relative}
+
+.slash-foot{padding:8px 14px;border-top:1px solid var(--hair);background:var(--bg);font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;display:flex;justify-content:space-between;gap:8px}
+.slash-foot kbd{font-family:'Geist Mono',monospace;font-size:10px;background:#fff;padding:2px 5px;border-radius:3px;border:1px solid var(--hair-strong);color:var(--ink)}
+
+/* footer */
+.fiche-footer{margin-top:auto;padding-top:24px;border-top:1px solid var(--hair-strong);display:flex;justify-content:space-between;align-items:center}
+.brand{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pitch{font-family:'Fraunces',serif;font-style:italic;font-size:13px;color:var(--orange);max-width:280px;text-align:right}
+
+/* side note */
+.side-note{position:fixed;right:24px;top:80px;width:240px;background:#0E0E10;color:#fff;padding:16px;border-radius:10px;font-size:12px;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+@media(max-width:1200px){.side-note{display:none}}
+.side-note h4{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#FFB020;margin-bottom:10px;font-weight:500}
+.side-note ul{list-style:none;display:grid;gap:8px}
+.side-note li{display:flex;gap:8px;align-items:flex-start}
+.side-note li b{color:#FFB020;font-family:'Geist Mono',monospace;font-size:11px;flex-shrink:0;min-width:32px}
+.side-note li span{opacity:.85}
+</style>
+</head>
+<body>
+
+<div class="note-bar">
+  <span><b>MOCKUP 03</b> · Inline edit (Notion-style) + Slash menu / + Floating pill toolbar sur sélection</span>
+  <span><small>Refs : Notion blocks · Linear inline edit · Pitch toolbar</small></span>
+</div>
+
+<div class="workspace">
+
+  <div class="a4">
+
+    <!-- header -->
+    <div class="block">
+      <span class="drag-handle">⋮⋮</span>
+      <span class="add-btn">+</span>
+      <div class="eyebrow">Solaire · Juin 2026 · Sélection commerciale</div>
+    </div>
+
+    <div class="block">
+      <span class="drag-handle">⋮⋮</span>
+      <span class="add-btn">+</span>
+      <h1 class="h1">L'<em>été</em> en officine</h1>
+    </div>
+
+    <!-- TEXTE SÉLECTIONNÉ avec floating toolbar -->
+    <div class="block" style="position:relative">
+      <span class="drag-handle">⋮⋮</span>
+      <span class="add-btn">+</span>
+      <div class="float-tool">
+        <button class="active"><b>B</b></button>
+        <button><i>I</i></button>
+        <button><u>U</u></button>
+        <button><s>S</s></button>
+        <span class="sep"></span>
+        <div class="color-swatches">
+          <span style="background:#0E0E10" title="Ink"></span>
+          <span style="background:#FF6B35" class="active" title="Orange"></span>
+          <span style="background:#0057FF" title="Bleu IP"></span>
+          <span style="background:#10B981" title="Vert"></span>
+        </div>
+        <span class="sep"></span>
+        <button title="Heading">¶</button>
+        <button title="Lien produit">🔗</button>
+        <button title="Plus">⋯</button>
+      </div>
+      <p class="sub">3 best-sellers Solaire validés sur <span class="selected">247 pharmacies normandes</span>. Stock garanti — livraison 24h.</p>
+    </div>
+
+    <!-- products -->
+    <div class="product-block">
+      <span class="drag-handle">⋮⋮</span>
+      <span class="add-btn">+</span>
+      <div class="product-img">IMG</div>
+      <div class="product-info">
+        <div class="nom">Sun Secure Crème SPF50+</div>
+        <div class="marque">Nuxe · 50ml</div>
+      </div>
+      <div class="product-price">
+        <div class="barre">17,90 €</div>
+        <div class="prix">12,90 €</div>
+      </div>
+    </div>
+
+    <div class="product-block">
+      <span class="drag-handle">⋮⋮</span>
+      <span class="add-btn">+</span>
+      <div class="product-img">IMG</div>
+      <div class="product-info">
+        <div class="nom">Photoderm MAX SPF50+</div>
+        <div class="marque">Bioderma · 40ml</div>
+      </div>
+      <div class="product-price">
+        <div class="barre">19,50 €</div>
+        <div class="prix">15,50 €</div>
+      </div>
+    </div>
+
+    <!-- SLASH MENU OUVERT -->
+    <div class="slash-menu">
+      <div class="slash-head">
+        <span class="prompt"><span class="typed">/produ</span><span class="cursor"></span></span>
+      </div>
+      <div class="slash-body">
+
+        <div class="slash-group">
+          <div class="slash-group-title">Produits pharma</div>
+          <div class="slash-item focused">
+            <div class="icon">💊</div>
+            <div>
+              <div class="label">Produit Grossiste IP</div>
+              <div class="desc">Insérer depuis catalogue 10 500 réf.</div>
+            </div>
+            <span class="kbd">↵</span>
+          </div>
+          <div class="slash-item">
+            <div class="icon" style="background:#FFE4D6;color:var(--orange);border-color:#FFE4D6">🧴</div>
+            <div>
+              <div class="label">Produit OFFILOG</div>
+              <div class="desc">Insérer depuis parapharma 3 520 réf.</div>
+            </div>
+            <span class="kbd">↵</span>
+          </div>
+          <div class="slash-item">
+            <div class="icon" style="background:#D1FAE5;color:#047857;border-color:#D1FAE5">🎯</div>
+            <div>
+              <div class="label">Produit Sagitta NR</div>
+              <div class="desc">Insérer depuis shortlist 249 réf.</div>
+            </div>
+            <span class="kbd">↵</span>
+          </div>
+        </div>
+
+        <div class="slash-group">
+          <div class="slash-group-title">Mise en forme</div>
+          <div class="slash-item">
+            <div class="icon">¶</div>
+            <div>
+              <div class="label">Titre H1</div>
+              <div class="desc">Fraunces 48px</div>
+            </div>
+            <span class="kbd">⌘1</span>
+          </div>
+          <div class="slash-item">
+            <div class="icon">📊</div>
+            <div>
+              <div class="label">Tableau comparatif</div>
+              <div class="desc">Insérer un tableau 3 colonnes</div>
+            </div>
+            <span class="kbd">⌘T</span>
+          </div>
+        </div>
+
+        <div class="slash-group">
+          <div class="slash-group-title">Pharma</div>
+          <div class="slash-item">
+            <div class="icon" style="background:#FEF3C7;color:#92400E;border-color:#FEF3C7">⚠️</div>
+            <div>
+              <div class="label">Mention légale obligatoire</div>
+              <div class="desc">Bloc rouge — texte légal</div>
+            </div>
+            <span class="kbd">⌘M</span>
+          </div>
+          <div class="slash-item">
+            <div class="icon" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft)">💸</div>
+            <div>
+              <div class="label">Bloc remise</div>
+              <div class="desc">Badge promo avec dates</div>
+            </div>
+            <span class="kbd">⌘R</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="slash-foot">
+        <span><kbd>↑↓</kbd> Naviguer  <kbd>↵</kbd> Sélectionner  <kbd>Esc</kbd> Fermer</span>
+      </div>
+    </div>
+
+    <div class="fiche-footer">
+      <div class="brand">Intégral Pharma · Normandie</div>
+      <div class="pitch">« Sortez l'été en grande pompe »</div>
+    </div>
+
+  </div>
+
+</div>
+
+<aside class="side-note">
+  <h4>3 patterns clés</h4>
+  <ul>
+    <li><b>HOVER</b><span>Drag handle <code style="font-family:'Geist Mono',monospace;background:rgba(255,255,255,.1);padding:1px 4px;border-radius:2px">⋮⋮</code> et <code style="font-family:'Geist Mono',monospace;background:rgba(255,255,255,.1);padding:1px 4px;border-radius:2px">+</code> insertion apparaissent au hover du block</span></li>
+    <li><b>SELECT</b><span>Floating pill toolbar apparaît au-dessus du texte sélectionné</span></li>
+    <li><b>/</b><span>Taper / dans une ligne vide ouvre le menu d'insertion contextuel</span></li>
+  </ul>
+</aside>
+
+</body>
+</html>
