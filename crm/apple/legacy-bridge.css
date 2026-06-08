@@ -1,0 +1,478 @@
+/* ═══════════════════════════════════════════════════════════════════
+   APPLE LEGACY BRIDGE — force le look Apple sur les classes existantes
+   Refonte from scratch 2026-06-08
+   Cible les classes legacy de style-classic.css / styles-pharmacies.css /
+   styles-offilog.css / marketing.css sans toucher au JS qui les rend.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── BODY GLOBAL — bg grouped iOS ─── */
+body {
+  background: var(--bg-grouped-primary) !important;
+  color: var(--label-primary) !important;
+  font-family: var(--font-text) !important;
+}
+
+/* ─── PAGE CONTENT — padding cohérent ─── */
+.page-content {
+  background: var(--bg-grouped-primary) !important;
+}
+
+.page {
+  background: transparent !important;
+}
+
+/* Headers section h2/h3 — Apple Title style */
+.page-content h1,
+.page-content > h1,
+.page-content h2,
+.page-content > h2 {
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.41px !important;
+}
+.page-content h2 {
+  font-size: 22px !important;
+  line-height: 28px !important;
+  margin-top: var(--s-8) !important;
+  margin-bottom: var(--s-4) !important;
+  color: var(--label-primary) !important;
+}
+.page-content h3 {
+  font-family: var(--font-text) !important;
+  font-size: 17px !important;
+  line-height: 22px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.41px !important;
+  color: var(--label-primary) !important;
+  margin-top: var(--s-5) !important;
+  margin-bottom: var(--s-3) !important;
+}
+
+/* ─── BUTTONS legacy → Apple pill ─── */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-default {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--s-2) !important;
+  min-height: 44px !important;
+  padding: 0 var(--s-5) !important;
+  border-radius: var(--r-pill) !important;
+  font-family: var(--font-text) !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.41px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: transform var(--dur-quick) var(--ease-spring),
+              background var(--dur-quick) var(--ease-standard),
+              opacity var(--dur-quick) var(--ease-standard) !important;
+  white-space: nowrap !important;
+}
+.btn:active,
+.btn-primary:active,
+.btn-secondary:active,
+.btn-ghost:active { transform: scale(0.97) !important; }
+
+.btn-primary,
+.btn.btn-primary {
+  background: var(--accent) !important;
+  color: var(--accent-on) !important;
+  box-shadow: none !important;
+}
+.btn-secondary,
+.btn-ghost {
+  background: color-mix(in srgb, var(--accent) 15%, transparent) !important;
+  color: var(--accent) !important;
+  border: none !important;
+}
+.btn-default,
+.btn:not(.btn-primary):not(.btn-secondary):not(.btn-ghost) {
+  background: var(--fill-2) !important;
+  color: var(--label-primary) !important;
+}
+
+/* Mini buttons (compactes) — radius continu pas pill */
+.btn-mini,
+.btn-sm {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 var(--s-3) !important;
+  font-size: 14px !important;
+  border-radius: var(--r-md) !important;
+}
+
+/* ─── CARDS legacy → Apple elevated ─── */
+.card,
+.pin-card,
+.metric-card,
+.kpi-card,
+.section-card,
+.card-default {
+  background: var(--bg-elevated) !important;
+  border-radius: var(--r-2xl) !important;
+  box-shadow: var(--shadow-2) !important;
+  border: none !important;
+  padding: var(--s-5) !important;
+}
+
+/* Cards avec hover lift */
+.card:hover,
+.pin-card:hover {
+  box-shadow: var(--shadow-3) !important;
+  transform: translateY(-1px);
+  transition: transform var(--dur-quick) var(--ease-spring),
+              box-shadow var(--dur-quick) var(--ease-standard);
+}
+
+/* ─── KPI CARDS (dashboard) ─── */
+.kpi-card .kpi-value,
+.metric-card .metric-value,
+.metric-num,
+.kpi-num {
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  font-size: 28px !important;
+  line-height: 34px !important;
+  color: var(--label-primary) !important;
+  letter-spacing: 0.36px !important;
+  font-variant-numeric: tabular-nums lining-nums !important;
+}
+.kpi-card .kpi-label,
+.metric-card .metric-label,
+.metric-name,
+.kpi-name {
+  font-family: var(--font-text) !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  color: var(--label-secondary) !important;
+  letter-spacing: -0.08px !important;
+}
+
+/* ─── BADGES legacy → Apple pill ─── */
+.badge,
+.tag,
+.chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 20px !important;
+  padding: 0 var(--s-2) !important;
+  background: var(--fill-2) !important;
+  color: var(--label-primary) !important;
+  border-radius: var(--r-full) !important;
+  font-family: var(--font-text) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  border: none !important;
+}
+.badge-success,
+.tag-success,
+.badge.success {
+  background: rgba(52, 199, 89, 0.16) !important;
+  color: #1F7A3A !important;
+}
+.badge-warning,
+.tag-warning,
+.badge.warning {
+  background: rgba(255, 149, 0, 0.16) !important;
+  color: #B45F00 !important;
+}
+.badge-danger,
+.tag-danger,
+.badge.danger,
+.badge-error {
+  background: rgba(255, 59, 48, 0.16) !important;
+  color: #B7281E !important;
+}
+.badge-info,
+.tag-info,
+.badge.info {
+  background: rgba(90, 200, 250, 0.20) !important;
+  color: #006089 !important;
+}
+
+/* ─── FILTER CHIPS / TABS ─── */
+.filter-chip,
+.cat-chip,
+.np-chip,
+.tab-pill,
+.mk-tab,
+.mk-pagetab {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: var(--s-2) !important;
+  height: 32px !important;
+  padding: 0 var(--s-3) !important;
+  border-radius: var(--r-md) !important;
+  background: var(--fill-2) !important;
+  color: var(--label-primary) !important;
+  font-family: var(--font-text) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.08px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: background var(--dur-quick) var(--ease-standard),
+              transform var(--dur-quick) var(--ease-spring) !important;
+}
+.filter-chip:hover,
+.cat-chip:hover,
+.np-chip:hover { background: var(--fill-1) !important; }
+.filter-chip:active { transform: scale(0.97) !important; }
+.filter-chip.active,
+.cat-chip.active,
+.np-chip.np-active,
+.tab-pill.active,
+.mk-tab.on,
+.mk-pagetab.on {
+  background: var(--accent) !important;
+  color: var(--accent-on) !important;
+}
+
+/* ─── INPUTS legacy → Apple fields ─── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="date"],
+textarea,
+select {
+  height: 44px !important;
+  padding: 0 var(--s-3) !important;
+  background: var(--fill-1) !important;
+  border: none !important;
+  border-radius: var(--r-lg) !important;
+  font-family: var(--font-text) !important;
+  font-size: 17px !important;
+  letter-spacing: -0.41px !important;
+  color: var(--label-primary) !important;
+  outline: none !important;
+  transition: background var(--dur-quick) var(--ease-standard),
+              box-shadow var(--dur-quick) var(--ease-standard) !important;
+  box-shadow: none !important;
+}
+textarea {
+  height: auto !important;
+  min-height: 88px !important;
+  padding: var(--s-3) !important;
+  line-height: 1.4;
+  resize: vertical;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  background: var(--fill-2) !important;
+  box-shadow: 0 0 0 2px var(--accent) !important;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--label-tertiary) !important;
+}
+
+/* ─── TABLES legacy → Apple inset-grouped feel ─── */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: var(--bg-elevated) !important;
+  border-radius: var(--r-lg) !important;
+  overflow: hidden !important;
+  box-shadow: var(--shadow-2) !important;
+  width: 100%;
+}
+table thead th {
+  font-family: var(--font-text) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: var(--label-secondary) !important;
+  background: var(--bg-grouped-tertiary) !important;
+  padding: var(--s-3) var(--s-4) !important;
+  text-align: left !important;
+  border: none !important;
+  border-bottom: 0.5px solid var(--separator-non-opaque) !important;
+}
+table tbody td {
+  padding: var(--s-3) var(--s-4) !important;
+  font-family: var(--font-text) !important;
+  font-size: 15px !important;
+  letter-spacing: -0.24px !important;
+  color: var(--label-primary) !important;
+  border: none !important;
+  border-bottom: 0.5px solid var(--separator-non-opaque) !important;
+}
+table tbody tr:last-child td { border-bottom: none !important; }
+table tbody tr:hover { background: var(--fill-4) !important; }
+
+/* ─── SEARCH BARS ─── */
+.search-box,
+.search-input,
+.search-bar input,
+.global-search-input {
+  height: 36px !important;
+  padding: 0 var(--s-3) !important;
+  background: var(--fill-1) !important;
+  border-radius: var(--r-lg) !important;
+  border: none !important;
+}
+
+/* ─── HERO SECTIONS / banner ─── */
+.hero,
+.hero-card,
+.dashboard-hero {
+  background: var(--bg-elevated) !important;
+  border-radius: var(--r-3xl) !important;
+  box-shadow: var(--shadow-3) !important;
+  padding: var(--s-6) !important;
+  border: none !important;
+}
+
+/* ─── ALERTES / NOTIF BAR ─── */
+.alert,
+.notification,
+.banner {
+  border-radius: var(--r-2xl) !important;
+  padding: var(--s-3) var(--s-4) !important;
+  border: none !important;
+  box-shadow: var(--shadow-1) !important;
+}
+.alert-success { background: rgba(52, 199, 89, 0.12) !important; color: #0F5526 !important; }
+.alert-warning { background: rgba(255, 149, 0, 0.12) !important; color: #8C4900 !important; }
+.alert-danger  { background: rgba(255, 59, 48, 0.12) !important; color: #851C14 !important; }
+.alert-info    { background: rgba(90, 200, 250, 0.18) !important; color: #004566 !important; }
+
+/* ─── MODAL legacy → Apple sheet ─── */
+.app-modal,
+.modal {
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+.app-modal-content,
+.modal-content,
+.modal-dialog {
+  background: var(--bg-elevated) !important;
+  border-radius: var(--r-2xl) !important;
+  box-shadow: var(--shadow-floating) !important;
+  border: none !important;
+}
+
+/* ─── DASHBOARD pin-grid layout iOS Settings ─── */
+.dash-grid,
+.kpi-grid,
+.metric-grid {
+  display: grid !important;
+  gap: var(--s-3) !important;
+}
+
+/* ─── SECTIONS HEADERS ─── */
+.section-head,
+.mk-section-head {
+  margin-bottom: var(--s-4) !important;
+}
+.section-title,
+.mk-section-title {
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  font-size: 22px !important;
+  line-height: 28px !important;
+  letter-spacing: -0.41px !important;
+  color: var(--label-primary) !important;
+}
+.section-sub,
+.mk-section-sub {
+  font-family: var(--font-text) !important;
+  font-size: 15px !important;
+  line-height: 20px !important;
+  color: var(--label-secondary) !important;
+  letter-spacing: -0.24px !important;
+}
+
+/* ─── TOAST legacy → Apple pill bottom ─── */
+.app-toast-host {
+  bottom: calc(var(--s-6) + var(--safe-bottom)) !important;
+}
+.app-toast {
+  background: var(--bg-elevated) !important;
+  border-radius: var(--r-pill) !important;
+  box-shadow: var(--shadow-4) !important;
+  border: none !important;
+  font-family: var(--font-text) !important;
+  font-size: 15px !important;
+  letter-spacing: -0.24px !important;
+  color: var(--label-primary) !important;
+}
+
+/* ─── PROGRESS BARS ─── */
+.progress-bar,
+.progress-track {
+  background: var(--fill-2) !important;
+  border-radius: var(--r-full) !important;
+  height: 6px !important;
+  overflow: hidden !important;
+}
+.progress-fill,
+.progress-bar-fill {
+  background: var(--accent) !important;
+  border-radius: var(--r-full) !important;
+}
+
+/* ─── BREADCRUMBS ─── */
+.breadcrumb,
+.bc-trail {
+  font-family: var(--font-text) !important;
+  font-size: 13px !important;
+  color: var(--label-secondary) !important;
+  letter-spacing: -0.08px !important;
+}
+.breadcrumb a,
+.bc-trail a {
+  color: var(--accent) !important;
+  text-decoration: none !important;
+}
+
+/* ─── ELEMENTS REMOVED legacy gradients ─── */
+.mode-toggle,
+.brand-footer { display: none !important; }
+
+/* ─── SCROLLBARS (style iOS) ─── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--label-quaternary);
+  border-radius: var(--r-full);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--label-tertiary); }
+
+/* ─── BRAND footer / logo gradients dans la sidebar legacy ─── */
+.sidebar-logo {
+  background: linear-gradient(135deg, var(--brand-ip) 0%, #003BB0 100%) !important;
+  border-radius: var(--r-md) !important;
+  color: #fff !important;
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+}
+
+/* ─── MK HOME 2 (Marketing home drastique) — déjà bien posé, juste tokens ─── */
+.mk-home2-h1,
+.mk-home2-hero-title {
+  font-family: var(--font-display) !important;
+}
+.mk-home2-cta-primary {
+  background: var(--accent) !important;
+  border-radius: var(--r-pill) !important;
+}
+.mk-home2-card {
+  background: var(--bg-elevated) !important;
+  border-radius: var(--r-2xl) !important;
+  box-shadow: var(--shadow-2) !important;
+  border: none !important;
+}
