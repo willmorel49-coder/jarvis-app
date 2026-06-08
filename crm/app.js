@@ -5714,9 +5714,12 @@ function navigate(page) {
   // Fermer sidebar mobile apres navigation
   if (typeof closeSidebarMobile === 'function') closeSidebarMobile();
 
-  // Title + breadcrumb subtitle
+  // Title + breadcrumb subtitle (sync sur les 2 titres : large + inline)
+  const titleText = PAGE_TITLES[page] || page;
   const titleEl = document.getElementById('topbar-title');
-  if (titleEl) titleEl.textContent = PAGE_TITLES[page] || page;
+  if (titleEl) titleEl.textContent = titleText;
+  const titleInlineEl = document.getElementById('topbar-title-inline');
+  if (titleInlineEl) titleInlineEl.textContent = titleText;
   const crumbEl = document.getElementById('topbar-breadcrumb');
   if (crumbEl) {
     const sub = PAGE_SUBTITLES[page];
