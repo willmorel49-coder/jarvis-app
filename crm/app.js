@@ -2659,6 +2659,14 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
       </select>`
     : `<span class="np-hero-chip">${monthName(curM)} ${curY}</span>`;
 
+  // Opportunités : CIPs déjà commandés par cette pharmacie (toutes périodes confondues)
+  const __orderedCipsSet = new Set(
+    allPhSales.map(s => String(s.artCode || '')).filter(c => c.length >= 7)
+  );
+  const __opportunitiesHTML = typeof window.renderTopVentesSegmentsForPharmaHTML === 'function'
+    ? window.renderTopVentesSegmentsForPharmaHTML(__orderedCipsSet)
+    : '';
+
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
 
@@ -3203,6 +3211,9 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </table>
         </div>
       </div>` : ''}
+
+      <!-- Top ventes IP par segment FILTRÉ : opportunités commerciales pour cette pharmacie -->
+      ${__opportunitiesHTML}
 
       <!-- Bouton flottant Nouvelle visite (DA Intégral Pharma) -->
       <button class="np-fab" onclick="showFicheVisite('${pharma.id}')" aria-label="Nouvelle visite">
@@ -6232,6 +6243,9 @@ function renderCatalogue() {
     </div>
 
     ${simBar}
+
+    <!-- Top ventes par segment IP x Ameli (réutilisé depuis Marketing) -->
+    ${typeof window.renderTopVentesSegmentsHTML === 'function' ? window.renderTopVentesSegmentsHTML() : ''}
 
     <!-- Search + Filters -->
     <div class="card fade-up" style="margin-bottom:16px">
