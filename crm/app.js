@@ -2663,9 +2663,23 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   const __orderedCipsSet = new Set(
     allPhSales.map(s => String(s.artCode || '')).filter(c => c.length >= 7)
   );
-  const __opportunitiesHTML = typeof window.renderTopVentesSegmentsForPharmaHTML === 'function'
-    ? window.renderTopVentesSegmentsForPharmaHTML(__orderedCipsSet)
+  // (A) Vraies opportunités : IP absent + OPS/HP/CPR vendent + pharma ne commande pas
+  const __opsOpportunitiesHTML = typeof window.renderOpsOpportunitiesHTML === 'function'
+    ? window.renderOpsOpportunitiesHTML(
+        __orderedCipsSet,
+        '🚀 Vraies opportunités · IP absent + cette pharmacie ne commande pas',
+        'Produits vendus chez les concurrents grossistes (OPS+CPR+HP), absents du catalogue IP, et que cette pharmacie ne commande pas non plus. La double opportunité : élargir le catalogue IP ET pénétrer cette pharmacie.'
+      )
     : '';
+  // (B) Opportunités au catalogue IP : produits IP top ventes que cette pharmacie ne commande pas
+  const __catalogueGapsHTML = typeof window.renderTopVentesSegmentsForPharmaHTML === 'function'
+    ? window.renderTopVentesSegmentsForPharmaHTML(
+        __orderedCipsSet,
+        '🎯 Trous catalogue · top IP que cette pharmacie ne commande pas',
+        'Produits IP top ventes (déjà au catalogue grossiste) que cette pharmacie ne commande pas encore. Action commerciale directe : pousser ces références.'
+      )
+    : '';
+  const __opportunitiesHTML = __opsOpportunitiesHTML + __catalogueGapsHTML;
 
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
@@ -6243,6 +6257,9 @@ function renderCatalogue() {
     </div>
 
     ${simBar}
+
+    <!-- Vraies opportunités : IP absent + OPS/HP/CPR vendent -->
+    ${typeof window.renderOpsOpportunitiesHTML === 'function' ? window.renderOpsOpportunitiesHTML() : ''}
 
     <!-- Top ventes par segment IP x Ameli (réutilisé depuis Marketing) -->
     ${typeof window.renderTopVentesSegmentsHTML === 'function' ? window.renderTopVentesSegmentsHTML() : ''}

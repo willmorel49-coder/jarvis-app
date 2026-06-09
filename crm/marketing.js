@@ -1700,6 +1700,227 @@
   window.renderTopVentesSegmentsHTML = renderTopVentesCategoriesSection;
   window.getMkSegments = getSegments;
 
+  // ════════════════════════════════════════════════════════════
+  // VRAIES OPPORTUNITÉS : IP ne vend pas (ou vend rien)
+  //                      MAIS OPS + HP + CPR vendent fort
+  // ════════════════════════════════════════════════════════════
+  function buildOpportunities(excludedCipsSet) {
+    const ops = window.OPS_AGGREGATE || {};
+    const cpr = window.CPR_AGGREGATE || {};
+    const hp  = window.HP_AGGREGATE  || {};
+    const BENCH = window.BENCHMARK || [];
+
+    // Index "IP connu" : tous les codes dans BENCHMARK avec ip_qty > 0 (IP vend)
+    // Si ip_qty === 0 ou null, c'est dans catalogue mais 0 vente → reste opportunité.
+    const ipSellsSet = new Set();
+    for (let i = 0; i < BENCH.length; i++) {
+      const b = BENCH[i];
+      if ((b.ip_qty || 0) <= 0) continue;
+      if (b.cip13)   ipSellsSet.add(String(b.cip13));
+      if (b.ean)     ipSellsSet.add(String(b.ean));
+      if (b.artcode) ipSellsSet.add(String(b.artcode));
+    }
+    // Index BENCHMARK ameli_total par code (CIP13/EAN) pour enrichir les opportunités
+    const ameliByCode = new Map();
+    for (let i = 0; i < BENCH.length; i++) {
+      const b = BENCH[i];
+      if (!b.has_ameli || !(b.ameli_total > 0)) continue;
+      if (b.cip13) ameliByCode.set(String(b.cip13), b.ameli_total);
+      if (b.ean)   ameliByCode.set(String(b.ean),   b.ameli_total);
+    }
+    // Excluded set (Set ou array)
+    const excluded = (excludedCipsSet instanceof Set) ? excludedCipsSet :
+                     (Array.isArray(excludedCipsSet) ? new Set(excludedCipsSet.map(String)) : null);
+
+    // Fusion OPS + CPR + HP par code, en gardant uniquement les opportunités
+    const oppMap = new Map();
+    function addAggSource(src, sourceName) {
+      for (const code in src) {
+        if (!Object.prototype.hasOwnProperty.call(src, code)) continue;
+        const p = src[code];
+        const codeStr = String(code);
+        const ean = String(p.ean || '');
+        // Skip si IP vend déjà ce produit
+        if (ipSellsSet.has(codeStr) || (ean && ipSellsSet.has(ean))) continue;
+        // Skip si exclu (cas fiche pharmacie : déjà commandé)
+        if (excluded && (excluded.has(codeStr) || (ean && excluded.has(ean)))) continue;
+
+        let existing = oppMap.get(codeStr);
+        if (!existing) {
+          existing = {
+            artcode: codeStr,
+            ean: ean,
+            cip13: ean.length === 13 ? ean : (codeStr.length === 13 ? codeStr : ean),
+            designation: p.designation || '',
+            marque: p.marque || '',
+            ca: 0, qte: 0,
+            sources: { ops: 0, cpr: 0, hp: 0 },
+            ameli_total: ameliByCode.get(codeStr) || ameliByCode.get(ean) || 0,
+          };
+          oppMap.set(codeStr, existing);
+        }
+        existing.ca += (p.ca || 0);
+        existing.qte += (p.qte || 0);
+        existing.sources[sourceName] += (p.qte || 0);
+      }
+    }
+    addAggSource(ops, 'ops');
+    addAggSource(cpr, 'cpr');
+    addAggSource(hp,  'hp');
+
+    // Calculer prix unitaire moyen (CA / Qte)
+    const oppList = Array.from(oppMap.values()).map(function (o) {
+      o.prix_unit = o.qte > 0 ? o.ca / o.qte : 0;
+      return o;
+    }).filter(function (o) { return o.qte > 0; });
+
+    return oppList;
+  }
+
+  function getOpportunitiesSegments(excludedCipsSet) {
+    const oppList = buildOpportunities(excludedCipsSet);
+    // Tranches Will : 0-4,33 / 4,33-468 / >468
+    const defs = [
+      { id: 'opp-cheap', name: 'Opportunités · Petits prix',        sub: '0 — 4,33 € · vendus chez les concurrents grossistes',     cap: 200, accent: '#10B981',
+        filter: function (o) { return o.prix_unit > 0 && o.prix_unit <= 4.33; } },
+      { id: 'opp-mid',   name: 'Opportunités · Intermédiaires',     sub: '4,33 — 468 €',                                            cap: 500, accent: '#0057FF',
+        filter: function (o) { return o.prix_unit > 4.33 && o.prix_unit <= 468; } },
+      { id: 'opp-exp',   name: 'Opportunités · Chers',              sub: '> 468 €',                                                 cap: 200, accent: '#FF6B35',
+        filter: function (o) { return o.prix_unit > 468; } },
+    ];
+    return defs.map(function (def) {
+      const filtered = oppList.filter(def.filter).sort(function (a, b) { return b.qte - a.qte; });
+      const items = filtered.slice(0, def.cap);
+      return Object.assign({}, def, {
+        items: items,
+        totalCount: filtered.length,
+        totalOpsQte: filtered.reduce(function (s, o) { return s + o.qte; }, 0),
+        totalOpsCa:  filtered.reduce(function (s, o) { return s + o.ca; }, 0),
+        totalAmeli:  filtered.reduce(function (s, o) { return s + (o.ameli_total || 0); }, 0),
+        matchedAmeli: filtered.filter(function (o) { return (o.ameli_total || 0) > 0; }).length,
+      });
+    });
+  }
+
+  function renderOpportunityRow(o, i) {
+    const ameliQty = o.ameli_total || 0;
+    const designation = o.designation || '';
+    return `
+      <tr>
+        <td class="mk-cat-rk">${i + 1}</td>
+        <td class="mk-cat-name" title="${escapeAttr(designation + (o.marque ? ' · ' + o.marque : ''))}">${escapeAttr(designation.slice(0, 44))}${designation.length > 44 ? '…' : ''}</td>
+        <td class="mk-cat-cip">${escapeAttr(o.ean || o.artcode || '')}</td>
+        <td class="mk-cat-num">${o.prix_unit > 0 ? o.prix_unit.toFixed(2) + ' €' : '—'}</td>
+        <td class="mk-cat-num">${o.qte.toLocaleString('fr-FR')}</td>
+        <td class="mk-cat-num">${ameliQty > 0 ? fmtBigVol(ameliQty) : '—'}</td>
+        <td class="mk-cat-num">${(o.sources.ops || 0).toLocaleString('fr-FR')}</td>
+        <td class="mk-cat-num">${(o.sources.cpr || 0).toLocaleString('fr-FR')}</td>
+        <td class="mk-cat-num">${(o.sources.hp  || 0).toLocaleString('fr-FR')}</td>
+      </tr>
+    `;
+  }
+
+  function renderOpportunitySegmentCard(seg) {
+    const isOpen = mkExpandedCategories.has(seg.id);
+    const initial = isOpen ? seg.items : seg.items.slice(0, 10);
+    return `
+      <div class="mk-cat-card ${isOpen ? 'is-open' : ''}" data-seg-id="${seg.id}">
+        <button class="mk-cat-card-head" onclick="window.mkToggleSegment('${seg.id}')">
+          <span class="mk-cat-card-accent" style="background:${seg.accent}"></span>
+          <div class="mk-cat-card-titles">
+            <div class="mk-cat-card-name">${escapeAttr(seg.name)} <span class="mk-cat-card-cap">Top ${seg.cap}</span></div>
+            <div class="mk-cat-card-meta">${escapeAttr(seg.sub)} · ${seg.totalCount.toLocaleString('fr-FR')} produits opportunités · ${seg.matchedAmeli} matchs Ameli</div>
+          </div>
+          <div class="mk-cat-card-stats">
+            <div class="mk-cat-stat">
+              <span class="mk-cat-stat-v">${seg.totalOpsQte.toLocaleString('fr-FR')}</span>
+              <span class="mk-cat-stat-k">u OPS + CPR + HP</span>
+            </div>
+            ${seg.totalAmeli > 0 ? `
+            <div class="mk-cat-stat">
+              <span class="mk-cat-stat-v">${fmtBigVol(seg.totalAmeli)}</span>
+              <span class="mk-cat-stat-k">u Ameli France</span>
+            </div>
+            ` : ''}
+            <div class="mk-cat-stat mk-cat-stat-ratio-cell">
+              <span class="mk-cat-stat-v" style="color:#0057FF">€${fmtBigVol(seg.totalOpsCa)}</span>
+              <span class="mk-cat-stat-k">CA marché à conquérir</span>
+            </div>
+          </div>
+          <svg class="mk-cat-card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="mk-cat-card-body">
+          <table class="mk-cat-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Produit</th>
+                <th>EAN / Code</th>
+                <th class="mk-cat-num-h">Prix unit. moy</th>
+                <th class="mk-cat-num-h">Vol total marché</th>
+                <th class="mk-cat-num-h">Vol Ameli</th>
+                <th class="mk-cat-num-h">Vol OPS</th>
+                <th class="mk-cat-num-h">Vol CPR</th>
+                <th class="mk-cat-num-h">Vol HP</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${initial.map(renderOpportunityRow).join('')}
+            </tbody>
+          </table>
+          ${!isOpen && seg.items.length > 10 ? `
+            <button class="mk-cat-table-more" onclick="window.mkToggleSegment('${seg.id}')">
+              Voir le top ${seg.cap} complet (${(seg.items.length - 10)} produits restants) →
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Rend la section "Vraies opportunités" (IP absent + OPS/HP/CPR vendent).
+   * @param {Set<string>|null} excludedCipsSet - CIPs à exclure (cas fiche pharmacie : déjà commandés)
+   * @param {string} [titleOverride]
+   * @param {string} [subOverride]
+   */
+  window.renderOpsOpportunitiesHTML = function (excludedCipsSet, titleOverride, subOverride) {
+    const ops = window.OPS_AGGREGATE;
+    if (!ops || Object.keys(ops).length === 0) {
+      return `
+        <div class="mk-section mk-cat-section">
+          <div class="mk-section-head">
+            <div>
+              <div class="mk-section-title">🚀 Opportunités catalogue · IP absent vs concurrents</div>
+              <div class="mk-section-sub" style="color:#71717A">Données OPS/HP/CPR non chargées encore. Recharge la page si tu attends ce visu.</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    const segments = getOpportunitiesSegments(excludedCipsSet);
+    const nonEmptySegments = segments.filter(function (s) { return s.items.length > 0; });
+    const totalOpp = nonEmptySegments.reduce(function (s, seg) { return s + seg.totalCount; }, 0);
+    const totalCa = nonEmptySegments.reduce(function (s, seg) { return s + seg.totalOpsCa; }, 0);
+    const title = titleOverride || '🚀 Vraies opportunités catalogue · IP absent ET concurrents grossistes vendent';
+    const sub = subOverride || (totalOpp.toLocaleString('fr-FR') + ' produits vendus OPS+CPR+HP totalement absents du catalogue IP · ' +
+                 '<strong style="color:#0057FF">' + fmtBigVol(totalCa) + ' €</strong> de marché grossiste à conquérir · ' +
+                 'volumes Ameli affichés quand le produit est remboursé France');
+    return `
+      <div class="mk-section mk-cat-section">
+        <div class="mk-section-head">
+          <div>
+            <div class="mk-section-title">${title}</div>
+            <div class="mk-section-sub">${sub}</div>
+          </div>
+        </div>
+        <div class="mk-cat-list">
+          ${nonEmptySegments.map(renderOpportunitySegmentCard).join('')}
+        </div>
+      </div>
+    `;
+  };
+
   /**
    * Rend la section "Top ventes IP × Ameli · par segment" FILTRÉE :
    * exclut les CIPs déjà commandés par la pharmacie pour révéler les opportunités.
