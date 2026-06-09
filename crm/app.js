@@ -3670,10 +3670,15 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   const __bestWorkHTML = __safeRender(() => renderBestAndWorkSectionsHTML(pharma, allPhSales), 'Best produits + À travailler');
   const __opportunitiesHTML = __bestWorkHTML + __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
   // Marqueur de version visible — confirme que la dernière version est bien chargée
-  const __versionBadge = '<div style="margin-top:24px;text-align:center;font-family:\'SF Mono\',Menlo,monospace;font-size:10px;letter-spacing:0.06em;color:#71717A">CRM Intégral Pharma · v=20260609j · listing pharma activé · ' + new Date().toLocaleTimeString('fr-FR') + '</div>';
+  // Ultra-visible : bandeau bleu en haut, retiré après que Will ait confirmé
+  const __versionBadge = '<div style="position:sticky;top:0;z-index:100;background:linear-gradient(90deg,#0057FF 0%,#0070FF 100%);color:#fff;padding:10px 16px;border-radius:0;font-family:\'SF Mono\',Menlo,monospace;font-size:13px;font-weight:600;letter-spacing:0.04em;text-align:center;box-shadow:0 4px 12px rgba(0,87,255,0.30);margin:-16px -16px 20px"><span style="font-size:16px;margin-right:6px">✓</span> Listing pharma activé · v=20260609k · ' + new Date().toLocaleTimeString('fr-FR') + ' · si tu vois ce bandeau bleu la nouvelle version est chargée</div>';
+  // Log au démarrage pour debug console
+  try { console.log('[showPharmaDetail v20260609k] pharma=' + pharma.name + ' sales=' + allPhSales.length); } catch(e){}
 
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
+
+      ${__versionBadge}
 
       <!-- Bouton retour officines (règle UX Will) -->
       <div style="margin-bottom:14px">
@@ -4249,9 +4254,6 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
       <!-- Top ventes IP par segment FILTRÉ : opportunités commerciales pour cette pharmacie -->
       ${__opportunitiesHTML}
-
-      <!-- Marqueur de version (debug : visible pour valider le déploiement) -->
-      ${__versionBadge}
 
       <!-- Bouton flottant Nouvelle visite (DA Intégral Pharma) -->
       <button class="np-fab" onclick="showFicheVisite('${pharma.id}')" aria-label="Nouvelle visite">
