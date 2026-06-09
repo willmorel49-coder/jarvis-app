@@ -20,7 +20,227 @@ let state = {
   currentPage: 'marketing',
   charts: {},
   sim: { pharmacyId: null, name: 'Simulation 1', items: [] },
+  // Période active du dashboard ('current' | '3m' | 'ytd' | 'year' | {year, month} pour mois précis)
+  dashboardPeriod: 'current',
 };
+
+// ── DASHBOARD: helpers période + styles desktop ─────────────────
+function setDashboardPeriod(p) {
+  state.dashboardPeriod = p;
+  if (typeof renderDashboard === 'function') renderDashboard();
+}
+
+function __ensureDashboardStyles() {
+  if (document.getElementById('dash-desktop-styles')) return;
+  const css = `
+    /* === Dashboard desktop grid (Wave 4 layout) === */
+    .dash-grid-desktop {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--s-6, 24px);
+      margin: var(--s-6, 24px) 0;
+      align-items: start;
+    }
+    @media (min-width: 1280px) {
+      .dash-grid-desktop {
+        grid-template-columns: 1.5fr 1fr;
+        align-items: start;
+      }
+    }
+    @media (min-width: 1600px) {
+      .dash-grid-desktop {
+        grid-template-columns: 1.6fr 1fr;
+      }
+    }
+    .dash-col-main, .dash-col-side {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-5, 20px);
+      min-width: 0;
+    }
+    .dash-col-main > .card,
+    .dash-col-side > .card { margin-bottom: 0 !important; }
+    .dash-section-fullwidth { margin-top: var(--s-6, 24px); }
+    .dash-section-fullwidth > .card { margin-bottom: var(--s-6, 24px) !important; }
+
+    /* 4 KPI cards égales sur grand écran */
+    @media (min-width: 1440px) {
+      .kpi-grid.kpi-grid-4 {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+    }
+
+    /* Barre période + actions topbar dashboard */
+    .dash-period-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      background: var(--bg-elevated, var(--bg, #fff));
+      border: 1px solid var(--border1, rgba(0,0,0,.06));
+      border-radius: 14px;
+      box-shadow: var(--shadow-2, 0 1px 2px rgba(0,0,0,.04));
+    }
+    .dash-period-bar .dpb-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--label-secondary, var(--text3, #64748B));
+      font-weight: 700;
+    }
+    .dash-period-bar .a-seg {
+      display: inline-flex;
+      background: var(--fill-1, var(--bg2, rgba(120,120,128,.16)));
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .dash-period-bar .a-seg button {
+      border: none;
+      background: transparent;
+      color: var(--text2, #64748B);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+    }
+    .dash-period-bar .a-seg button:hover { color: var(--text, #111); }
+    .dash-period-bar .a-seg button.is-active {
+      background: var(--bg, #fff);
+      color: var(--blue, #0057FF);
+      box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    }
+    .dash-period-bar .dpb-month {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border2, rgba(0,0,0,.08));
+      background: var(--bg, #fff);
+      color: var(--text, #111);
+      font-size: 12px;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .dash-period-bar .dpb-refresh {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--label-tertiary, var(--text3, #94A3B8));
+      font-family: 'Geist Mono', ui-monospace, monospace;
+    }
+    .dash-period-bar .dpb-print {
+      padding: 7px 14px;
+      border-radius: 99px;
+      border: 1px solid var(--border2, rgba(0,0,0,.08));
+      background: var(--bg, #fff);
+      color: var(--text, #111);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s, border-color .15s;
+    }
+    .dash-period-bar .dpb-print:hover {
+      background: var(--bg2, #f5f5f7);
+      border-color: var(--border1, rgba(0,0,0,.12));
+    }
+
+    /* Fade-in stagger desktop */
+    @media (min-width: 1280px) {
+      .dash-col-main > *, .dash-col-side > * {
+        animation: dashFadeUp 280ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+      }
+      .dash-col-main > *:nth-child(1) { animation-delay: 0ms; }
+      .dash-col-main > *:nth-child(2) { animation-delay: 60ms; }
+      .dash-col-main > *:nth-child(3) { animation-delay: 120ms; }
+      .dash-col-main > *:nth-child(4) { animation-delay: 180ms; }
+      .dash-col-side > *:nth-child(1) { animation-delay: 40ms; }
+      .dash-col-side > *:nth-child(2) { animation-delay: 100ms; }
+      .dash-col-side > *:nth-child(3) { animation-delay: 160ms; }
+      .dash-col-side > *:nth-child(4) { animation-delay: 220ms; }
+      .dash-col-side > *:nth-child(5) { animation-delay: 280ms; }
+    }
+    @keyframes dashFadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  `;
+  const style = document.createElement('style');
+  style.id = 'dash-desktop-styles';
+  style.textContent = css;
+  document.head.appendChild(style);
+}
+
+// Filtre les ventes selon state.dashboardPeriod
+// Renvoie { salesCur, salesPrev, curY, curM, prevY, prevM, periodLabel, isMulti }
+function getDashboardPeriodSlice(allSalesRaw) {
+  const detected = getCurrentPeriod(allSalesRaw);
+  const curY0 = detected.year, curM0 = detected.month;
+  const period = state.dashboardPeriod || 'current';
+
+  // Mode mois précis (objet { year, month })
+  if (period && typeof period === 'object' && period.year && period.month) {
+    const { year: pY, month: pM } = period;
+    const { year: prevY, month: prevM } = getPrevPeriod(pY, pM);
+    return {
+      curY: pY, curM: pM, prevY, prevM,
+      salesCur: getSales({ year: pY, month: pM }),
+      salesPrev: prevY ? getSales({ year: prevY, month: prevM }) : [],
+      periodLabel: `${monthName(pM)} ${pY}`,
+      isMulti: false,
+      mode: 'month',
+    };
+  }
+
+  if (period === 'current') {
+    const { year: prevY, month: prevM } = getPrevPeriod(curY0, curM0);
+    return {
+      curY: curY0, curM: curM0, prevY, prevM,
+      salesCur: getSales({ year: curY0, month: curM0 }),
+      salesPrev: prevY ? getSales({ year: prevY, month: prevM }) : [],
+      periodLabel: `${monthName(curM0)} ${curY0}`,
+      isMulti: false,
+      mode: 'current',
+    };
+  }
+
+  // Modes multi-mois (3m / ytd / year)
+  let monthsKeep = [];
+  if (period === '3m') {
+    // 3 derniers mois (incl. courant)
+    let y = curY0, m = curM0;
+    for (let i = 0; i < 3; i++) {
+      monthsKeep.push({ y, m });
+      m--; if (m === 0) { m = 12; y--; }
+    }
+  } else if (period === 'ytd') {
+    for (let m = 1; m <= curM0; m++) monthsKeep.push({ y: curY0, m });
+  } else if (period === 'year') {
+    for (let m = 1; m <= 12; m++) monthsKeep.push({ y: curY0, m });
+  }
+  const keyset = new Set(monthsKeep.map(x => `${x.y}-${x.m}`));
+  const salesCur = allSalesRaw.filter(s => keyset.has(`${s.year}-${s.month}`));
+  // Comparaison : même fenêtre l'année précédente
+  const salesPrev = allSalesRaw.filter(s => keyset.has(`${s.year + 1}-${s.month}`));
+  let periodLabel;
+  if (period === '3m') periodLabel = `3 derniers mois`;
+  else if (period === 'ytd') periodLabel = `YTD ${curY0}`;
+  else periodLabel = `Année ${curY0}`;
+  return {
+    curY: curY0, curM: curM0,
+    prevY: curY0 - 1, prevM: curM0,
+    salesCur, salesPrev,
+    periodLabel,
+    isMulti: true,
+    mode: period,
+  };
+}
 
 // ── STORAGE ──────────────────────────────────
 async function load() {
@@ -612,13 +832,13 @@ function getPrevPeriod(year, month) {
 }
 
 function renderDashboard() {
+  __ensureDashboardStyles();
   const allSalesRaw = getSales();
 
   if (!allSalesRaw.length) {
     document.getElementById('dash-content').innerHTML = `
       <div class="fade-up" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap">
         <div>
-          <div class="section-title">Tableau de pilotage</div>
           <div class="section-sub" style="margin-bottom:0">Aucune donnée importée pour le moment</div>
         </div>
       </div>
@@ -639,11 +859,14 @@ function renderDashboard() {
   }
 
   // ── Périodes clés ────────────────────────────
-  const { year: curY, month: curM } = getCurrentPeriod(allSalesRaw);
-  const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
-
-  const salesCur  = getSales({ year: curY, month: curM });
-  const salesPrev = prevY ? getSales({ year: prevY, month: prevM }) : [];
+  // Respecte state.dashboardPeriod ('current' | '3m' | 'ytd' | 'year' | {year,month})
+  const __dp = getDashboardPeriodSlice(allSalesRaw);
+  const curY = __dp.curY, curM = __dp.curM;
+  const prevY = __dp.prevY, prevM = __dp.prevM;
+  const salesCur  = __dp.salesCur;
+  const salesPrev = __dp.salesPrev;
+  const __isMultiPeriod = __dp.isMulti;
+  const __periodLabel = __dp.periodLabel;
 
   // ── KPIs mois courant ─────────────────────────
   const caCur   = sumCA(salesCur);
@@ -922,35 +1145,198 @@ function renderDashboard() {
     return { totWmlCa, totWmlMg, convRate, potRows: potRows.slice(0,3), nPhWml: wmlVis.length };
   })();
 
-  document.getElementById('dash-content').innerHTML = `
-
-    <!-- En-tête bienvenue : section title -->
-    <div class="fade-up" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap">
-      <div>
-        <div class="section-title">Tableau de pilotage</div>
-        <div class="section-sub" style="margin-bottom:0">Réseau d'officines adhérentes — ${curLabel}</div>
-      </div>
-    </div>
-
-    <!-- Row 1 : Hero KPI + 3 secondaires (DA Intégral Pharma) -->
-    <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:24px">
-
-      <!-- Hero vert brand — KPI principal -->
-      <div class="kpi-card kpi-hero">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:relative;z-index:1">
-          <div style="flex:1;min-width:0">
-            <div class="kpi-label" style="margin-bottom:14px">CA réseau · ${curLabel}</div>
-            <div class="kpi-value" style="margin-bottom:14px">${fmt(caCur)}</div>
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              ${deltaBadge(caCur, caPrev)}
-              <span style="font-size:12px;color:rgba(255,255,255,0.78)">vs ${prevLabel}</span>
-            </div>
-          </div>
-          <svg viewBox="0 0 24 24" width="44" height="44" style="color:rgba(255,255,255,.22);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
+  // ── Sections extraites pour réorganisation desktop grid ──
+  const __sectionYTD = caYTD > 0 ? `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Cumul Année en cours — Jan → ${monthName(curM)} ${curY}</div>
+          <div class="card-subtitle">${hasYTDprev ? `Comparaison même période ${curY - 1}` : 'Pas de données année précédente'}</div>
         </div>
-        <button onclick="printRapportMensuel()" style="margin-top:18px;padding:7px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;position:relative;z-index:1" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">Imprimer le rapport mensuel</button>
+        ${hasYTDprev ? deltaBadge(caYTD, caYTDprev) : ''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr ${hasYTDprev ? '1fr' : ''};gap:0;border-top:1px solid var(--border)">
+        <div style="padding:18px 24px;${hasYTDprev ? 'border-right:1px solid var(--border);' : ''}text-align:center">
+          <div style="font-size:28px;font-weight:900;color:var(--blue);letter-spacing:-1px">${fmt(caYTD)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">CA Jan–${monthName(curM)} ${curY}</div>
+        </div>
+        ${hasYTDprev ? `<div style="padding:18px 24px;border-right:1px solid var(--border);text-align:center">
+          <div style="font-size:28px;font-weight:900;color:var(--text2);letter-spacing:-1px">${fmt(caYTDprev)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">CA Jan–${monthName(curM)} ${curY - 1}</div>
+        </div>
+        <div style="padding:18px 24px;text-align:center">
+          <div style="font-size:28px;font-weight:900;color:${caYTD >= caYTDprev ? 'var(--mint)' : 'var(--rose)'};letter-spacing:-1px">
+            ${caYTDprev > 0 ? `${caYTD >= caYTDprev ? '+' : ''}${((caYTD - caYTDprev) / caYTDprev * 100).toFixed(1)}%` : '—'}
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">Évolution YoY</div>
+        </div>` : ''}
+      </div>
+    </div>` : '';
+
+  const __sectionSwitch = topSwitchSecteur.length ? `
+    <div class="card" style="border-left:3px solid var(--mint)">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🔄 Top opportunités switch — secteur</div>
+          <div class="card-subtitle">Produits commandés hors IP — gain immédiat si basculés vers Intégral Pharma</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:22px;font-weight:900;color:var(--mint)">+${fmt(topSwitchSecteur.reduce((s,o)=>s+o.gainTotal,0))}</div>
+          <div style="font-size:11px;color:var(--text3)">gain total secteur/mois</div>
+        </div>
+      </div>
+      ${topSwitchSecteur.map(o => {
+        const cat = CATS[o.cat] || CATS.mi;
+        return `<div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--border1)">
+          <span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.designation}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${o.qte.toFixed(0)} unités · ${fmtP(o.gainUnit)}/u d'écart</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:18px;font-weight:800;color:var(--mint)">+${fmt(o.gainTotal)}</div>
+            <div style="font-size:10px;color:var(--text3)">gain/mois</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const __sectionCompMM = compRows.length ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Comparaison M vs M-1 par pharmacie</div>
+          <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border2)">
+              <th style="padding:8px 16px;text-align:left;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Pharmacie</th>
+              <th style="padding:8px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">${prevLabel}</th>
+              <th style="padding:8px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">${curLabel}</th>
+              <th style="padding:8px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Évolution</th>
+            </tr>
+          </thead>
+          <tbody>${compRowsHtml}</tbody>
+        </table>
+      </div>
+    </div>` : '';
+
+  const __sectionPerdusNouveaux = (prodLostNew.lost.length || prodLostNew.gained.length) ? `
+    <div class="card fade-up" style="margin-bottom:24px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Références perdues &amp; nouvelles ce mois</div>
+          <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          ${prodLostNew.lost.length ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,77,109,.1);color:var(--rose)">${prodLostNew.lost.length} perdus</span>` : ''}
+          ${prodLostNew.gained.length ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,229,160,.1);color:var(--mint)">${prodLostNew.gained.length} nouveaux</span>` : ''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border1)">
+        <div style="border-right:1px solid var(--border1)">
+          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border1)">Perdus depuis ${prevLabel}</div>
+          ${prodLostNew.lost.length ? prodLostNew.lost.map(p => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px;cursor:pointer" onclick="showProductBreakdown('${(p.label||'').replace(/'/g,"&#39;")}');">
+              <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;cursor:pointer">${p.label}</div>
+              <div style="font-size:12px;font-weight:700;color:var(--rose);flex-shrink:0">${fmt(p.ca)}</div>
+            </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucun produit perdu</div>`}
+        </div>
+        <div>
+          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border1)">Nouveaux en ${curLabel}</div>
+          ${prodLostNew.gained.length ? prodLostNew.gained.map(p => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px">
+              <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${p.label}</div>
+              <div style="font-size:12px;font-weight:700;color:var(--mint);flex-shrink:0">${fmt(p.ca)}</div>
+            </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucune nouvelle référence</div>`}
+        </div>
+      </div>
+    </div>` : '';
+
+  // ── Couverture import (stockée pour insertion dans col side) ──
+  const __importCoverageHtml = (() => {
+    if (!state.pharmacies.length) return '';
+    const imported = new Set(salesCur.map(s => s.pharmacyId));
+    const missing = state.pharmacies.filter(ph => !imported.has(ph.id));
+    const pct = Math.round((state.pharmacies.length - missing.length) / state.pharmacies.length * 100);
+    const barColor = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
+    return `<div class="card" style="padding:14px 20px;display:flex;flex-direction:column;gap:12px">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:700;color:var(--text2)">Couverture import ${__periodLabel}</span>
+          <span style="font-size:14px;font-weight:800;color:${barColor}">${pct}%</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:var(--border1);overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .5s"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">${state.pharmacies.length - missing.length}/${state.pharmacies.length} pharmacies importées</div>
+      </div>
+      ${missing.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${missing.slice(0, 6).map(ph => `<span onclick="showPharmaDetail('${ph.id}')" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(239,68,68,.08);color:#EF4444;border:1px solid rgba(239,68,68,.2);cursor:pointer;white-space:nowrap" title="Cliquer pour voir la fiche">${ph.name}</span>`).join('')}
+        ${missing.length > 6 ? `<span style="font-size:11px;color:var(--text3)">+${missing.length-6} autres</span>` : ''}
+        <button onclick="navigate('import')" style="font-size:11px;padding:4px 12px;border-radius:20px;background:var(--bg2);border:1px solid var(--border2);cursor:pointer;color:var(--text2);font-weight:600;white-space:nowrap">↑ Importer</button>
+      </div>` : `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mint);font-weight:600"><span style="font-size:16px">✅</span> Toutes importées</div>`}
+    </div>`;
+  })();
+
+  // ── Barre période globale (segmented control + mois précis + imprimer) ──
+  // Construit la liste des mois disponibles (12 derniers) pour le picker
+  const __availableMonths = (() => {
+    const seen = new Set();
+    const out = [];
+    for (const s of allSalesRaw) {
+      const k = `${s.year}-${s.month}`;
+      if (!seen.has(k)) { seen.add(k); out.push({ year: s.year, month: s.month }); }
+    }
+    out.sort((a, b) => b.year - a.year || b.month - a.month);
+    return out.slice(0, 24);
+  })();
+  const __dpMode = (typeof state.dashboardPeriod === 'object' && state.dashboardPeriod)
+    ? 'month'
+    : (state.dashboardPeriod || 'current');
+  const __dpSelectedMonth = __dpMode === 'month'
+    ? `${state.dashboardPeriod.year}-${state.dashboardPeriod.month}`
+    : '';
+  const __periodBarHtml = `
+    <div class="dash-period-bar fade-up">
+      <div class="dpb-label">Période</div>
+      <div class="a-seg" role="tablist">
+        <button class="${__dpMode==='current'?'is-active':''}" onclick="setDashboardPeriod('current')">${monthName(curM)} ${curY}</button>
+        <button class="${__dpMode==='3m'?'is-active':''}" onclick="setDashboardPeriod('3m')">3 derniers mois</button>
+        <button class="${__dpMode==='ytd'?'is-active':''}" onclick="setDashboardPeriod('ytd')">YTD ${curY}</button>
+        <button class="${__dpMode==='year'?'is-active':''}" onclick="setDashboardPeriod('year')">Année ${curY}</button>
+      </div>
+      ${__availableMonths.length ? `
+        <select class="dpb-month" onchange="if(this.value){const [y,m]=this.value.split('-');setDashboardPeriod({year:+y,month:+m});}else{setDashboardPeriod('current');}">
+          <option value="">Mois précis…</option>
+          ${__availableMonths.map(m => `<option value="${m.year}-${m.month}" ${__dpSelectedMonth===`${m.year}-${m.month}`?'selected':''}>${monthName(m.month)} ${m.year}</option>`).join('')}
+        </select>` : ''}
+      <button class="dpb-print" onclick="printRapportMensuel()" title="Imprimer le rapport mensuel">
+        <span aria-hidden="true" style="margin-right:6px">🖨</span>Imprimer rapport
+      </button>
+      <div class="dpb-refresh">Données : ${(() => { try { const d = new Date(); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); } catch(e) { return ''; } })()}</div>
+    </div>`;
+
+  document.getElementById('dash-content').innerHTML = `
+    ${__periodBarHtml}
+
+    <!-- Row 1 : 4 KPI cards égales (DA Intégral Pharma) -->
+    <div class="kpi-grid kpi-grid-4 fade-up" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+
+      <!-- CA réseau — KPI principal -->
+      <div class="kpi-card kc-g">
+        <div class="kpi-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="kpi-value">${fmt(caCur)}</div>
+        <div class="kpi-label" style="margin-top:6px">CA réseau · ${__periodLabel}</div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${deltaBadge(caCur, caPrev)}
+          <span style="font-size:11px;color:var(--text3)">vs ${__isMultiPeriod ? 'N-1' : prevLabel}</span>
+        </div>
       </div>
 
       <!-- Officines actives -->
@@ -990,30 +1376,11 @@ function renderDashboard() {
       </div>
     </div>
 
-    <!-- Import coverage banner -->
-    ${(() => {
-      if (!state.pharmacies.length) return '';
-      const imported = new Set(salesCur.map(s => s.pharmacyId));
-      const missing = state.pharmacies.filter(ph => !imported.has(ph.id));
-      const pct = Math.round((state.pharmacies.length - missing.length) / state.pharmacies.length * 100);
-      const barColor = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
-      return `<div style="background:var(--bg);border:1px solid var(--border1);border-radius:16px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-        <div style="flex:1;min-width:200px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <span style="font-size:12px;font-weight:700;color:var(--text2)">Couverture import ${curLabel}</span>
-            <span style="font-size:14px;font-weight:800;color:${barColor}">${pct}%</span>
-          </div>
-          <div style="height:6px;border-radius:3px;background:var(--border1);overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .5s"></div>
-          </div>
-          <div style="font-size:11px;color:var(--text3);margin-top:5px">${state.pharmacies.length - missing.length}/${state.pharmacies.length} pharmacies importées</div>
-        </div>
-        ${missing.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          ${missing.map(ph => `<span onclick="showPharmaDetail('${ph.id}')" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(239,68,68,.08);color:#EF4444;border:1px solid rgba(239,68,68,.2);cursor:pointer;white-space:nowrap" title="Cliquer pour voir la fiche">${ph.name}</span>`).join('')}
-          <button onclick="navigate('import')" style="font-size:11px;padding:4px 12px;border-radius:20px;background:var(--bg2);border:1px solid var(--border2);cursor:pointer;color:var(--text2);font-weight:600;white-space:nowrap">↑ Importer</button>
-        </div>` : `<span style="font-size:22px">✅</span>`}
-      </div>`;
-    })()}
+    <!-- DÉBUT GRID 2 COLONNES DESKTOP -->
+    <div class="dash-grid-desktop">
+      <div class="dash-col-main">
+
+        <!-- ▼ MAIN COL CONTENT (Plan du jour, Signaux, YTD, Switch, etc.) ▼ -->
 
     <!-- Plan du jour -->
     ${(() => {
@@ -1086,29 +1453,21 @@ function renderDashboard() {
       </div>
     </div>
 
-    <!-- Row 2b : Comparaison M vs M-1 -->
-    ${compRows.length ? `
-    <div class="card fade-up" style="margin-bottom:24px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Comparaison M vs M-1 par pharmacie</div>
-          <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
-        </div>
+    <!-- (Comp M vs M-1 déplacé en full-width après la grid) -->
+
+        <!-- YTD dans MAIN -->
+        ${__sectionYTD}
+
+        <!-- Switch dans MAIN -->
+        ${__sectionSwitch}
+
       </div>
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse">
-          <thead>
-            <tr style="border-bottom:2px solid var(--border2)">
-              <th style="padding:8px 16px;text-align:left;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Pharmacie</th>
-              <th style="padding:8px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">${prevLabel}</th>
-              <th style="padding:8px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">${curLabel}</th>
-              <th style="padding:8px 12px;text-align:right;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Évolution</th>
-            </tr>
-          </thead>
-          <tbody>${compRowsHtml}</tbody>
-        </table>
-      </div>
-    </div>` : ''}
+      <!-- ▲ FIN dash-col-main ▲ -->
+
+      <div class="dash-col-side">
+
+        <!-- Couverture import (priorité haute side col) -->
+        ${__importCoverageHtml}
 
     <!-- Row 2b-wml : WML Summary -->
     ${wmlDashData ? `
@@ -1155,33 +1514,7 @@ function renderDashboard() {
       </div>` : ''}
     </div>` : ''}
 
-    <!-- Row 2c-ytd : Cumul YTD -->
-    ${caYTD > 0 ? `
-    <div class="card fade-up" style="margin-bottom:24px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Cumul Année en cours — Jan → ${monthName(curM)} ${curY}</div>
-          <div class="card-subtitle">${hasYTDprev ? `Comparaison même période ${curY - 1}` : 'Pas de données année précédente'}</div>
-        </div>
-        ${hasYTDprev ? deltaBadge(caYTD, caYTDprev) : ''}
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr ${hasYTDprev ? '1fr' : ''};gap:0;border-top:1px solid var(--border)">
-        <div style="padding:18px 24px;${hasYTDprev ? 'border-right:1px solid var(--border);' : ''}text-align:center">
-          <div style="font-size:28px;font-weight:900;color:var(--blue);letter-spacing:-1px">${fmt(caYTD)}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">CA Jan–${monthName(curM)} ${curY}</div>
-        </div>
-        ${hasYTDprev ? `<div style="padding:18px 24px;border-right:1px solid var(--border);text-align:center">
-          <div style="font-size:28px;font-weight:900;color:var(--text2);letter-spacing:-1px">${fmt(caYTDprev)}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">CA Jan–${monthName(curM)} ${curY - 1}</div>
-        </div>
-        <div style="padding:18px 24px;text-align:center">
-          <div style="font-size:28px;font-weight:900;color:${caYTD >= caYTDprev ? 'var(--mint)' : 'var(--rose)'};letter-spacing:-1px">
-            ${caYTDprev > 0 ? `${caYTD >= caYTDprev ? '+' : ''}${((caYTD - caYTDprev) / caYTDprev * 100).toFixed(1)}%` : '—'}
-          </div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">Évolution YoY</div>
-        </div>` : ''}
-      </div>
-    </div>` : ''}
+    <!-- (YTD déplacé dans dash-col-main) -->
 
     <!-- Row 2c : Objectifs du mois -->
     ${objRows.some(r => r.target > 0) ? `
@@ -1213,69 +1546,9 @@ function renderDashboard() {
       </div>
     </div>` : ''}
 
-    <!-- Row 2d : Top switch opportunités secteur -->
-    ${topSwitchSecteur.length ? `
-    <div class="card fade-up" style="margin-bottom:24px;border-left:3px solid var(--mint)">
-      <div class="card-header">
-        <div>
-          <div class="card-title">🔄 Top opportunités switch — secteur</div>
-          <div class="card-subtitle">Produits commandés hors IP ce mois — gain immédiat si basculés vers Intégral Pharma</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:22px;font-weight:900;color:var(--mint)">+${fmt(topSwitchSecteur.reduce((s,o)=>s+o.gainTotal,0))}</div>
-          <div style="font-size:11px;color:var(--text3)">gain total secteur/mois</div>
-        </div>
-      </div>
-      ${topSwitchSecteur.map(o => {
-        const cat = CATS[o.cat] || CATS.mi;
-        return `<div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--border1)">
-          <span style="font-size:10px;padding:2px 7px;border-radius:6px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.designation}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">${o.qte.toFixed(0)} unités · ${fmtP(o.gainUnit)}/u d'écart</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:18px;font-weight:800;color:var(--mint)">+${fmt(o.gainTotal)}</div>
-            <div style="font-size:10px;color:var(--text3)">gain/mois</div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>` : ''}
+    <!-- (Switch déplacé dans dash-col-main) -->
 
-    <!-- Row 2e : Produits perdus / nouvelles références -->
-    ${(prodLostNew.lost.length || prodLostNew.gained.length) ? `
-    <div class="card fade-up" style="margin-bottom:24px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Références perdues &amp; nouvelles ce mois</div>
-          <div class="card-subtitle">${prevLabel} → ${curLabel}</div>
-        </div>
-        <div style="display:flex;gap:8px">
-          ${prodLostNew.lost.length ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,77,109,.1);color:var(--rose)">${prodLostNew.lost.length} perdus</span>` : ''}
-          ${prodLostNew.gained.length ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,229,160,.1);color:var(--mint)">${prodLostNew.gained.length} nouveaux</span>` : ''}
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border1)">
-        <!-- Perdus -->
-        <div style="border-right:1px solid var(--border1)">
-          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border1)">Perdus depuis ${prevLabel}</div>
-          ${prodLostNew.lost.length ? prodLostNew.lost.map(p => `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px;cursor:pointer" onclick="showProductBreakdown('${(p.label||'').replace(/'/g,"&#39;")}');">
-              <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;cursor:pointer">${p.label}</div>
-              <div style="font-size:12px;font-weight:700;color:var(--rose);flex-shrink:0">${fmt(p.ca)}</div>
-            </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucun produit perdu</div>`}
-        </div>
-        <!-- Nouveaux -->
-        <div>
-          <div style="padding:10px 16px;font-size:11px;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border1)">Nouveaux en ${curLabel}</div>
-          ${prodLostNew.gained.length ? prodLostNew.gained.map(p => `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border1);gap:8px">
-              <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${p.label}</div>
-              <div style="font-size:12px;font-weight:700;color:var(--mint);flex-shrink:0">${fmt(p.ca)}</div>
-            </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Aucune nouvelle référence</div>`}
-        </div>
-      </div>
-    </div>` : ''}
+    <!-- (Perdus/Nouveaux déplacé en full-width après la grid) -->
 
     <!-- Row 2f : Couverture catalogue IP -->
     ${ipCoverage ? `
@@ -1397,7 +1670,16 @@ function renderDashboard() {
       </div>
     </div>` : ''}
 
+      </div>
+      <!-- ▲ FIN dash-col-side ▲ -->
+    </div>
+    <!-- ▲ FIN dash-grid-desktop ▲ -->
 
+    <!-- Comparaison M vs M-1 — full-width -->
+    ${__sectionCompMM ? `<div class="dash-section-fullwidth">${__sectionCompMM}</div>` : ''}
+
+    <!-- Perdus / Nouveaux — full-width -->
+    ${__sectionPerdusNouveaux ? `<div class="dash-section-fullwidth">${__sectionPerdusNouveaux}</div>` : ''}
 
     <!-- Offres IP en cours -->
     ${(() => {
