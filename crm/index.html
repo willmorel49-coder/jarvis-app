@@ -9,6 +9,37 @@
   <meta http-equiv="Expires" content="0" />
   <title>JARVIS · Intégral Pharma</title>
 
+  <!-- DEBUG : capteur d'erreurs JS global, affiche l'erreur en grand sur la page -->
+  <script>
+    (function () {
+      function showErrPanel(title, body) {
+        var p = document.getElementById('__js_err_panel');
+        if (!p) {
+          p = document.createElement('div');
+          p.id = '__js_err_panel';
+          p.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#FFE5E5;color:#7A0000;padding:14px 20px;font-family:-apple-system,system-ui,sans-serif;font-size:13px;line-height:1.4;border-bottom:3px solid #FF3B30;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:50vh;overflow-y:auto;white-space:pre-wrap;font-weight:500';
+          document.body && document.body.appendChild(p);
+          if (!document.body) document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(p); });
+        }
+        p.innerHTML += '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(122,0,0,0.2)">'
+          + '<div style="font-weight:700;color:#B7281E;margin-bottom:4px">⚠️ ' + title + '</div>'
+          + '<div style="font-family:ui-monospace,monospace;font-size:11px;color:#5B0000">' + body + '</div>'
+          + '<button onclick="document.getElementById(\'__js_err_panel\').style.display=\'none\'" style="margin-top:6px;padding:4px 10px;background:#FF3B30;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;font-weight:600">Fermer</button>'
+          + '</div>';
+      }
+      window.addEventListener('error', function (e) {
+        var msg = (e.message || 'Erreur inconnue') + (e.filename ? '\n→ ' + e.filename.split('/').pop() + ':' + (e.lineno||'?') : '');
+        if (e.error && e.error.stack) msg += '\n\n' + String(e.error.stack).slice(0, 500);
+        showErrPanel('Erreur JS', msg);
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        var msg = (e.reason && (e.reason.message || e.reason)) || 'Promise rejection';
+        showErrPanel('Promise rejected', String(msg).slice(0, 500));
+      });
+      window.__showJsErr = showErrPanel;
+    })();
+  </script>
+
   <!-- Mode classique force (JARVIS retire). -->
   <script>
     document.documentElement.dataset.mode = 'classic';
@@ -54,33 +85,33 @@
 
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260609k" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260609m" />
   <!-- Styles desktop -->
-  <link rel="stylesheet" href="style.css?v=20260609k" />
-  <link rel="stylesheet" href="style-classic.css?v=20260609k" />
+  <link rel="stylesheet" href="style.css?v=20260609m" />
+  <link rel="stylesheet" href="style-classic.css?v=20260609m" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260609k" />
-  <link rel="stylesheet" href="marketing-design-system.css?v=20260609k" />
+  <link rel="stylesheet" href="marketing.css?v=20260609m" />
+  <link rel="stylesheet" href="marketing-design-system.css?v=20260609m" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260609k" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260609k" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260609k" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260609k" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260609m" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260609m" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260609m" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260609m" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260609k" />
-  <link rel="stylesheet" href="native-headers.css?v=20260609k" />
-  <link rel="stylesheet" href="native-lists.css?v=20260609k" />
-  <link rel="stylesheet" href="native-motion.css?v=20260609k" />
-  <link rel="stylesheet" href="skeleton-loaders.css?v=20260609k" />
+  <link rel="stylesheet" href="native-shell.css?v=20260609m" />
+  <link rel="stylesheet" href="native-headers.css?v=20260609m" />
+  <link rel="stylesheet" href="native-lists.css?v=20260609m" />
+  <link rel="stylesheet" href="native-motion.css?v=20260609m" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260609m" />
 
   <!-- ════ APPLE MODE (refonte from scratch 2026-06-08) — override final ════ -->
-  <link rel="stylesheet" href="apple/tokens.css?v=20260609k" />
-  <link rel="stylesheet" href="apple/components.css?v=20260609k" />
-  <link rel="stylesheet" href="apple/legacy-bridge.css?v=20260609k" />
-  <link rel="stylesheet" href="apple/peer-recs.css?v=20260609k" />
-  <script src="apple/icons.js?v=20260609k" defer></script>
-  <script src="apple/motion.js?v=20260609k" defer></script>
+  <link rel="stylesheet" href="apple/tokens.css?v=20260609m" />
+  <link rel="stylesheet" href="apple/components.css?v=20260609m" />
+  <link rel="stylesheet" href="apple/legacy-bridge.css?v=20260609m" />
+  <link rel="stylesheet" href="apple/peer-recs.css?v=20260609m" />
+  <script src="apple/icons.js?v=20260609m" defer></script>
+  <script src="apple/motion.js?v=20260609m" defer></script>
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -117,10 +148,10 @@
        Les lourds (stock 1.7 MB, catalogue-ip 188 KB, client-products 84 KB,
        benchmark-data 3.6 MB, establishments-aggregate 4 MB, offilog 1.7 MB,
        drakkars 3.8 MB, cap3000 2.4 MB) sont LAZY via perf-boot.js. -->
-  <script src="clients-data.js?v=20260609k"></script>
-  <script src="pharmacies-geo.js?v=20260609k"></script>
-  <script src="groupements-data.js?v=20260609k"></script>
-  <script src="sales-detail.js?v=20260609k"></script>
+  <script src="clients-data.js?v=20260609m"></script>
+  <script src="pharmacies-geo.js?v=20260609m"></script>
+  <script src="groupements-data.js?v=20260609m"></script>
+  <script src="sales-detail.js?v=20260609m"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -148,25 +179,25 @@
     });
   </script>
 
-  <script src="app.js?v=20260609k" defer></script>
-  <script src="dashboard-v2.js?v=20260609k" defer></script>
+  <script src="app.js?v=20260609m" defer></script>
+  <script src="dashboard-v2.js?v=20260609m" defer></script>
   <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
-  <script src="perf-boot.js?v=20260609k" defer></script>
-  <script src="classic-overrides.js?v=20260609k" defer></script>
-  <script src="mobile-shell.js?v=20260609k" defer></script>
+  <script src="perf-boot.js?v=20260609m" defer></script>
+  <script src="classic-overrides.js?v=20260609m" defer></script>
+  <script src="mobile-shell.js?v=20260609m" defer></script>
   <!-- Gestures iOS-native : swipe-back, pull-to-refresh, bottom-sheet swipe-down -->
-  <script src="mobile-gestures.js?v=20260609k" defer></script>
+  <script src="mobile-gestures.js?v=20260609m" defer></script>
   <!-- Native UI shell (bottom tab bar uniquement) -->
-  <script src="native-shell.js?v=20260609k" defer></script>
+  <script src="native-shell.js?v=20260609m" defer></script>
   <!-- DESACTIVES temporairement (debug : Will n'a aucune page qui s'affiche)
-       <script src="native-headers.js?v=20260609k" defer></script>
-       <script src="native-motion.js?v=20260609k" defer></script>
-       <script src="skeleton-loaders.js?v=20260609k" defer></script>
+       <script src="native-headers.js?v=20260609m" defer></script>
+       <script src="native-motion.js?v=20260609m" defer></script>
+       <script src="skeleton-loaders.js?v=20260609m" defer></script>
   -->
-  <script src="marketing-offers.js?v=20260609k" defer></script>
-  <script src="marketing-design-system.js?v=20260609k" defer></script>
-  <script src="marketing-monthly-pitches.js?v=20260609k" defer></script>
-  <script src="marketing.js?v=20260609k" defer></script>
+  <script src="marketing-offers.js?v=20260609m" defer></script>
+  <script src="marketing-design-system.js?v=20260609m" defer></script>
+  <script src="marketing-monthly-pitches.js?v=20260609m" defer></script>
+  <script src="marketing.js?v=20260609m" defer></script>
 </head>
 
 <body>
