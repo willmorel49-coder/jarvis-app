@@ -2303,13 +2303,44 @@ function renderPharmacies() {
           if (diffCv <= 7) return `<span style="font-size:10px;color:var(--mint);background:rgba(0,229,160,.1);padding:1px 6px;border-radius:8px;font-weight:700">📅 J+${diffCv}</span>`;
           return `<span style="font-size:10px;color:var(--text3);background:var(--bg3);padding:1px 6px;border-radius:8px">📅 ${scv}</span>`;
         })();
+        // Refonte desktop : 2 lignes au lieu de 12 colonnes qui débordent
+        const chiffres = `
+          <div style="display:flex;gap:18px;align-items:baseline;flex-shrink:0">
+            <div style="text-align:right">
+              <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:16px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">${fmt(caCur)}</div>
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-top:1px">CA net HT</div>
+            </div>
+            <div style="text-align:right;padding-left:14px;border-left:0.5px solid var(--border1)">
+              <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--mint);font-variant-numeric:tabular-nums" title="Marge MDL pharma (barème officiel France, remboursables uniquement)">${fmt(mdl.margeTotale)}</div>
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-top:1px">Marge MDL ${mdl.margePct > 0 ? mdl.margePct.toFixed(1) + '%' : ''}</div>
+            </div>
+            <div style="text-align:right;padding-left:14px;border-left:0.5px solid var(--border1)">
+              <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums" title="Nombre de références produit commandées">${nProdOrdered}</div>
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-top:1px">Réfs</div>
+            </div>
+          </div>`;
+        const actions = `
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:12px">
+            <button onclick="event.stopPropagation();window.exportPharmaPeerRecsPDF && window.exportPharmaPeerRecsPDF('${ph.id}')" style="width:32px;height:32px;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center" title="Fiche RDV opportunités sur mesure (basée sur ce que les peers commandent)">🎯</button>
+            <button onclick="event.stopPropagation();window.exportPharmaListingPDF && window.exportPharmaListingPDF('${ph.id}')" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center" title="Télécharger le listing PDF (Best + À travailler)">📄</button>
+            <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center" title="Ouvrir la fiche de visite">📋</button>
+            <div style="color:var(--text3);font-size:16px;margin-left:2px">›</div>
+          </div>`;
         return `
-          <div class="pharma-item" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
-            <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
-            <div class="pharma-dot" style="background:${ph.color}"></div>
-            <div class="pharma-info">
-              <div class="pharma-name">${ph.name}</div>
-              <div class="pharma-meta" style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
+          <div class="pharma-item pharma-item-v2" onclick="showPharmaDetail('${ph.id}')" style="display:flex;flex-direction:column;gap:8px;padding:14px 18px;cursor:pointer;border-bottom:0.5px solid var(--border1);transition:background var(--dur-quick,120ms) ease" onmouseenter="this.style.background='var(--fill-4, rgba(120,120,128,.06))'" onmouseleave="this.style.background='transparent'">
+            <!-- Ligne 1 : rank + dot + name + chiffres + actions -->
+            <div style="display:flex;align-items:center;gap:14px;width:100%">
+              <div class="rank ${i < 3 ? ['rank-1','rank-2','rank-3'][i] : 'rank-n'}" style="flex-shrink:0">${i < 3 ? '🥇🥈🥉'[i] : i+1}</div>
+              <div class="pharma-dot" style="background:${ph.color};flex-shrink:0;width:10px;height:10px;border-radius:50%"></div>
+              <div style="flex:1;min-width:0">
+                <div class="pharma-name" style="font-weight:600;font-size:15px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph.name}</div>
+              </div>
+              ${chiffres}
+              ${actions}
+            </div>
+            <!-- Ligne 2 : meta chips + progress -->
+            <div style="display:flex;align-items:center;gap:10px;padding-left:34px">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0">
                 ${chipHtml}
                 ${g !== null ? deltaBadge(caCur, caPrev) : ''}
                 ${importFreshness}
@@ -2319,24 +2350,8 @@ function renderPharmacies() {
                   : ''}
                 ${wmlEntry ? `<span style="font-size:10px;color:#14B86A;background:rgba(20,184,106,.12);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>` : ''}
               </div>
+              <div style="width:140px;flex-shrink:0">${renderProgress(caCur, maxCA, ph.color)}</div>
             </div>
-            <div style="flex:1;max-width:100px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
-            <div class="pharma-stats" style="min-width:88px">
-              <div class="pharma-ca" style="font-family:'Geist Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums">${fmt(caCur)}</div>
-              <div class="pharma-qte">CA net HT</div>
-            </div>
-            <div style="min-width:96px;text-align:right;border-left:1px solid var(--border1);padding-left:12px">
-              <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--mint);font-variant-numeric:tabular-nums" title="Marge MDL générée pour cette pharma (officiel France, remboursables uniquement)">${fmt(mdl.margeTotale)}</div>
-              <div style="font-size:10px;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase">Marge MDL ${mdl.margePct > 0 ? mdl.margePct.toFixed(1) + '%' : ''}</div>
-            </div>
-            <div style="min-width:72px;text-align:right;border-left:1px solid var(--border1);padding-left:12px">
-              <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums" title="Nombre de références produit commandées (toutes périodes)">${nProdOrdered}</div>
-              <div style="font-size:10px;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase">Réfs</div>
-            </div>
-            <button onclick="event.stopPropagation();window.exportPharmaPeerRecsPDF && window.exportPharmaPeerRecsPDF('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s;font-weight:700" title="Fiche RDV opportunités sur mesure (basée sur ce que les peers commandent)" aria-label="Fiche RDV PDF">🎯</button>
-            <button onclick="event.stopPropagation();window.exportPharmaListingPDF && window.exportPharmaListingPDF('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Télécharger le listing PDF (Best + À travailler)" aria-label="PDF listing" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📄</button>
-            <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Ouvrir la fiche de visite" data-tooltip="Ouvrir la fiche de visite" aria-label="Ouvrir la fiche de visite" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📋</button>
-            <div style="color:var(--text3);font-size:16px">›</div>
           </div>`;
       }).join('')
     : (pharmaSearch
@@ -3665,10 +3680,60 @@ function buildPharmaListingPdfHTML(pharma, allPhSales) {
   `;
 }
 
+// ── Tabs internes fiche pharmacie (refonte Apple HIG : 5 onglets sticky) ─────
+let __pharmaTab = (() => {
+  try {
+    const v = localStorage.getItem('a-pharma-last-tab');
+    return ['overview','best','opp','history','notes'].includes(v) ? v : 'overview';
+  } catch { return 'overview'; }
+})();
+let __pharmaTabLastPharmaId = null;
+window.__pharmaSwitchTab = function(tab) {
+  if (!['overview','best','opp','history','notes'].includes(tab)) return;
+  __pharmaTab = tab;
+  try { localStorage.setItem('a-pharma-last-tab', tab); } catch {}
+  if (window.__currentPharmaId) showPharmaDetail(window.__currentPharmaId);
+};
+
+// Injection styles tabs (une seule fois)
+function __ensurePharmaTabsStyles() {
+  if (document.getElementById('a-pharma-tabs-style')) return;
+  const s = document.createElement('style');
+  s.id = 'a-pharma-tabs-style';
+  s.textContent = `
+  .a-pharma-tabs { display:flex; gap:4px; padding:0 16px; border-bottom:0.5px solid var(--separator-non-opaque,rgba(60,60,67,.12));
+    background:var(--material-bg-light,rgba(255,255,255,.72)); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%);
+    position:sticky; top:96px; z-index:20; margin:0 -16px 24px; overflow-x:auto; scrollbar-width:none; }
+  .a-pharma-tabs::-webkit-scrollbar { display:none; }
+  .a-pharma-tab { height:40px; padding:0 14px; background:transparent; border:none;
+    font:500 13px/18px var(--font-text,'Inter',system-ui,sans-serif); color:var(--label-secondary,#5B6478);
+    cursor:pointer; position:relative; white-space:nowrap;
+    transition:color var(--dur-quick,160ms) var(--ease-standard,cubic-bezier(.4,0,.2,1)); }
+  .a-pharma-tab:hover { color:var(--label-primary,#0B1220); }
+  .a-pharma-tab.is-active { color:var(--label-primary,#0B1220); font-weight:600; }
+  .a-pharma-tab.is-active::after { content:''; position:absolute; left:14px; right:14px; bottom:-1px;
+    height:2px; background:var(--accent,#0057FF); border-radius:2px;
+    animation:aTabUnderline 240ms cubic-bezier(.22,1,.36,1); }
+  @keyframes aTabUnderline { from { transform:scaleX(0); opacity:0; } to { transform:scaleX(1); opacity:1; } }
+  .a-pharma-panel { animation:aTabFade 180ms ease-out; }
+  @keyframes aTabFade { from { opacity:0; transform:translateY(2px); } to { opacity:1; transform:translateY(0); } }
+  @media (max-width:1024px) { .a-pharma-tabs { top:64px; } }
+  `;
+  document.head.appendChild(s);
+}
+
 function showPharmaDetail(pharmacyId, overridePeriod) {
   if (overridePeriod !== undefined) pharmaDetailOverridePeriod = overridePeriod;
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
   if (!pharma) return;
+  // Réinitialise sur 'overview' si on change de pharmacie
+  if (__pharmaTabLastPharmaId && __pharmaTabLastPharmaId !== String(pharma.id)) {
+    __pharmaTab = 'overview';
+    try { localStorage.setItem('a-pharma-last-tab', 'overview'); } catch {}
+  }
+  __pharmaTabLastPharmaId = String(pharma.id);
+  window.__currentPharmaId = pharma.id;
+  __ensurePharmaTabsStyles();
 
   const allPhSales = getSales({ pharmacyId: pharma.id });
   const autoP = getCurrentPeriod(allPhSales.length ? allPhSales : getSales());
@@ -3866,8 +3931,8 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   const __versionBadge = '';
   try { console.log('[showPharmaDetail] pharma=' + pharma.name + ' sales=' + allPhSales.length); } catch(e){}
 
-  document.getElementById('pharma-content').innerHTML = `
-    <div class="fade-up">
+  // ── HTML : header (back + hero + actions) — toujours visible ──────────
+  const __headerHtml = `
 
       ${__versionBadge}
 
@@ -3905,7 +3970,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <button class="btn btn-ghost" onclick="showNextVisitPicker('${pharma.id}')" style="font-size:12px" title="Planifier prochaine visite">📅 Planifier</button>
         <button class="btn btn-ghost" style="color:var(--np-pink);border-color:rgba(230,33,118,.3)" onclick="deletePharmacy('${pharma.id}')">🗑</button>
       </div>
+  `;
 
+  // ── HTML : KPIs grid (overview) ──────────
+  const __kpisHtml = `
       <!-- Row 1 : Hero + KPIs -->
       <div class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:20px">
         <div class="kpi-card" style="background:linear-gradient(135deg,#0B1F4D 0%,#0041CC 55%,#0057FF 100%);box-shadow:0 14px 40px rgba(0,87,255,.30),0 4px 12px rgba(0,87,255,.16);border:none;color:#fff">
@@ -3939,7 +4007,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           ${potentielGx > 0 ? `<div style="margin-top:6px;font-size:11px;color:var(--text3)">Pot. Gx ${fmt(potentielGx)}</div>` : ''}
         </div>
       </div>
+  `;
 
+  // ── HTML : Marge MDL card (overview) ──────────
+  const __mdlHtml = `
       <!-- Marge MDL pharmacie (officielle France, médicaments remboursables uniquement) -->
       <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--mint);padding:14px 18px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
@@ -3969,7 +4040,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </div>
         </div>
       </div>
+  `;
 
+  // ── HTML : Infos client (overview) ──────────
+  const __clientInfoHtml = `
       <!-- Info client (CLIENTS data) -->
       ${clientInfo ? `
       <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid ${pharma.color}">
@@ -3989,7 +4063,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div style="font-size:12px;color:var(--text2);line-height:1.5">${clientInfo.commentaire}</div>
         </div>` : ''}
       </div>` : ''}
+  `;
 
+  // ── HTML : Top produits du mois (history) ──────────
+  const __topProdsHtml = `
       <!-- Top produits du mois -->
       ${salesCur.length ? (() => {
         const byProd = {};
@@ -4032,7 +4109,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           ${rows}
         </div>`;
       })() : ''}
+  `;
 
+  // ── HTML : Tendance produits M vs M-1 (history) ──────────
+  const __trendHtml = `
       <!-- Tendance produits M vs M-1 -->
       ${salesCur.length && salesPrev.length ? (() => {
         const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g,' ');
@@ -4081,7 +4161,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           ${newProds.length ? `<div style="padding:6px 20px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--amber)">Nouveaux ce mois</div>${newProds.map(d => row(d,'var(--amber)','★')).join('')}` : ''}
         </div>`;
       })() : ''}
+  `;
 
+  // ── HTML : Palier progression CA mensuel (overview) ──────────
+  const __palierHtml = `
       <!-- Palier progression -->
       <div class="card fade-up" style="margin-bottom:20px">
         <div style="padding:16px 20px">
@@ -4102,7 +4185,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </div>
         </div>
       </div>
+  `;
 
+  // ── HTML : Switch opportunities (opp) ──────────
+  const __switchSectionHtml = `
       <!-- Switch opportunities -->
       ${switchOpps.length ? `
       <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--mint)">
@@ -4119,7 +4205,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         ${switchHtml}
         ${switchOpps.length > 6 ? `<div style="padding:10px 20px;font-size:12px;color:var(--text3)">+${switchOpps.length - 6} autres opportunités switch</div>` : ''}
       </div>` : ''}
+  `;
 
+  // ── HTML : Ajout opportunities (opp) ──────────
+  const __addSectionHtml = `
       <!-- Ajout opportunities -->
       ${addOpps.length ? `
       <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--blue)">
@@ -4135,7 +4224,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         ${addHtml}
       </div>` : ''}
+  `;
 
+  // ── HTML : WML groupement OPSO (overview) ──────────
+  const __wmlHtml = `
       <!-- WML groupement card -->
       ${wmlEntDet ? (() => {
         const nnWml2 = s => (s||'').trim().toUpperCase().replace(/\s+/g,' ');
@@ -4205,7 +4297,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </div>` : ''}
         </div>`;
       })() : ''}
+  `;
 
+  // ── HTML : YTD pharmacie cumul (overview) ──────────
+  const __ytdHtml = `
       <!-- YTD pharmacie -->
       ${pharmaYTD > 0 ? `
       <div class="card fade-up" style="margin-bottom:20px">
@@ -4238,7 +4333,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </div>`}
         </div>
       </div>` : ''}
+  `;
 
+  // ── HTML : Veille prix parapharmacie concurrents (opp) ──────────
+  const __veilleHtml = `
       <!-- Veille prix parapharmacie dans la fiche pharmacie -->
       ${(() => {
         if (typeof OFFILOG === 'undefined' || !salesCur.length) return '';
@@ -4284,7 +4382,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           ${veilleRows.length > 6 ? `<div style="padding:10px 20px;font-size:11px;color:var(--text3)">+${veilleRows.length - 6} autres — voir l'onglet Offilog</div>` : ''}
         </div>`;
       })()}
+  `;
 
+  // ── HTML : Évolution mensuelle chart (history) ──────────
+  const __chartHtml = `
       <!-- Évolution mensuelle -->
       ${pharmaByMonth.length > 1 ? `
       <div class="card fade-up" style="margin-bottom:20px">
@@ -4294,7 +4395,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         <div class="card-body"><div class="chart-wrap"><canvas id="chart-pharma-month"></canvas></div></div>
       </div>` : ''}
+  `;
 
+  // ── HTML : Historique complet produits (history) ──────────
+  const __histProdsHtml = `
       <!-- Historique complet produits -->
       ${allPhSales.length > 0 ? (() => {
         const histMap = {};
@@ -4353,7 +4457,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </div>
         </div>`;
       })() : ''}
+  `;
 
+  // ── HTML : Produits IP suggérés (opp) ──────────
+  const __suggestionsHtml = `
       <!-- Produits IP suggérés -->
       ${typeof BENCHMARK !== 'undefined' && allPhSales.length ? (() => {
         const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
@@ -4386,7 +4493,35 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           }).join('')}
         </div>`;
       })() : ''}
+  `;
 
+  // ── HTML : Notes de visite + prochaine visite (notes) ──────────
+  const __nextVisitRaw = (() => { try { return localStorage.getItem('next_visit_' + pharma.id) || (clientInfo?.prochaineVisite || ''); } catch { return ''; } })();
+  const __nextVisitCard = (() => {
+    if (!__nextVisitRaw) return '';
+    let iso = '';
+    const m = __nextVisitRaw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) iso = m[3] + '-' + m[2] + '-' + m[1];
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(__nextVisitRaw)) iso = __nextVisitRaw;
+    if (!iso) return '';
+    const dNext = new Date(iso + 'T12:00:00');
+    if (isNaN(dNext.getTime())) return '';
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diffDays = Math.round((dNext - today) / 86400000);
+    const labelDate = dNext.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+    const jLabel = diffDays === 0 ? "aujourd'hui" : diffDays > 0 ? `J-${diffDays}` : `en retard de ${Math.abs(diffDays)}j`;
+    const color = diffDays < 0 ? 'var(--rose)' : diffDays <= 7 ? 'var(--amber)' : 'var(--mint)';
+    return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid ${color};padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="font-size:22px">📅</div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700">Prochaine visite</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-top:2px">${labelDate} <span style="color:${color};font-weight:600">(${jLabel})</span></div>
+      </div>
+      <button class="btn btn-ghost" onclick="showNextVisitPicker('${pharma.id}')" style="font-size:12px">Modifier</button>
+    </div>`;
+  })();
+  const __notesHtmlSection = `
+      ${__nextVisitCard}
       <!-- Notes de visite -->
       ${(() => {
         const notesKey = `visit_notes_${pharma.id}`;
@@ -4399,7 +4534,14 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
                 <div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">${n.text.replace(/</g,'&lt;')}</div>
                 <button onclick="deleteVisitNote('${pharma.id}',${n.id})" style="background:none;border:none;cursor:pointer;color:var(--text4);font-size:14px;padding:0;flex-shrink:0">✕</button>
               </div>`).join('')
-          : `<div style="padding:16px 20px;font-size:12px;color:var(--text3)">Aucune note de visite enregistrée.</div>`;
+          : `<div style="padding:32px 20px;text-align:center">
+              <div style="width:48px;height:48px;border-radius:14px;background:var(--fill-quaternary,rgba(120,120,128,.08));display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--label-tertiary,#8E94A1)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <div style="font-size:15px;font-weight:600;color:var(--label-primary,#0B1220);margin-bottom:4px">Pas encore de notes</div>
+              <div style="font-size:13px;color:var(--label-secondary,#5B6478);margin-bottom:14px">Ajoutez votre première note de visite ci-dessous</div>
+              <button onclick="document.getElementById('visit-note-input-${pharma.id}')?.focus()" style="padding:8px 16px;border-radius:10px;border:none;background:var(--accent,#0057FF);color:#fff;font-size:13px;font-weight:600;cursor:pointer">+ Note rapide</button>
+            </div>`;
         return `<div class="card fade-up" style="margin-bottom:20px">
           <div class="card-header">
             <div class="card-title">Notes de visite</div>
@@ -4422,7 +4564,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </div>
         </div>`;
       })()}
+  `;
 
+  // ── HTML : Imports historique fichiers (history) ──────────
+  const __importsHtml = `
       <!-- Imports -->
       ${imports.length ? `
       <div class="card fade-up">
@@ -4442,15 +4587,49 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           </table>
         </div>
       </div>` : ''}
+  `;
 
-      <!-- Top ventes IP par segment FILTRÉ : opportunités commerciales pour cette pharmacie -->
-      ${__opportunitiesHTML}
+  // ── Split __opportunitiesHTML : Best&Work va dans tab "best", le reste va dans "opp" ──
+  // Préservation du marker __opportunitiesHTML (toujours calculé en amont)
+  const __bestPanelHtml = __bestWorkHTML;
+  const __oppExtraHtml = __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
+
+  // ── Tabbar sticky ──
+  const __tabbarHtml = `
+    <nav class="a-pharma-tabs" role="tablist">
+      <button class="a-pharma-tab ${__pharmaTab==='overview'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('overview')">Vue d'ensemble</button>
+      <button class="a-pharma-tab ${__pharmaTab==='best'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('best')">🏆 Best & À travailler</button>
+      <button class="a-pharma-tab ${__pharmaTab==='opp'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('opp')">🎁 Opportunités</button>
+      <button class="a-pharma-tab ${__pharmaTab==='history'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('history')">📊 Historique</button>
+      <button class="a-pharma-tab ${__pharmaTab==='notes'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('notes')">📝 Notes & Visites</button>
+    </nav>`;
+
+  // ── Compose panels par tab ──
+  const __overviewPanel = __kpisHtml + __mdlHtml + __clientInfoHtml + __palierHtml + __wmlHtml + __ytdHtml;
+  const __bestPanel = __bestPanelHtml || `<div class="card" style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Pas de données Best & À travailler disponibles pour cette pharmacie.</div>`;
+  const __oppPanel = __switchSectionHtml + __addSectionHtml + __veilleHtml + __suggestionsHtml + __oppExtraHtml;
+  const __historyPanel = __topProdsHtml + __trendHtml + __chartHtml + __histProdsHtml + __importsHtml;
+  const __notesPanel = __notesHtmlSection;
+
+  const __activePanel =
+    __pharmaTab === 'overview' ? __overviewPanel :
+    __pharmaTab === 'best'     ? __bestPanel :
+    __pharmaTab === 'opp'      ? __oppPanel :
+    __pharmaTab === 'history'  ? __historyPanel :
+    __notesPanel;
+
+  document.getElementById('pharma-content').innerHTML = `
+    <div class="fade-up">
+      ${__headerHtml}
+      ${__tabbarHtml}
+      <div class="a-pharma-panel" role="tabpanel">
+        ${__activePanel}
+      </div>
 
       <!-- Bouton flottant Nouvelle visite (DA Intégral Pharma) -->
       <button class="np-fab" onclick="showFicheVisite('${pharma.id}')" aria-label="Nouvelle visite">
         Nouvelle visite
       </button>
-
     </div>
   `;
 
@@ -6952,6 +7131,21 @@ function navigate(page) {
   state.currentPage = page;
   document.querySelectorAll('.nav-item, .a-sidebar-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
+
+  // Pose data-layout sur .a-page-content selon la page (active CSS Wave 4 Agent A)
+  // - reader : Marketing home (max-width 1100, padding aéré)
+  // - full   : Pharmacies, Catalogue, Benchmark, Offilog, Produits (max-width none, tables denses)
+  // - default: autres (max-width clamp(1100, 92vw, 1600))
+  const LAYOUT_BY_PAGE = {
+    marketing: 'reader',
+    pharmacies: 'full',
+    catalogue: 'full',
+    benchmark: 'full',
+    offilog: 'full',
+    produits: 'full',
+  };
+  const pageContent = document.querySelector('.a-page-content, .page-content');
+  if (pageContent) pageContent.setAttribute('data-layout', LAYOUT_BY_PAGE[page] || 'default');
 
   // Fermer sidebar mobile apres navigation
   if (typeof closeSidebarMobile === 'function') closeSidebarMobile();
