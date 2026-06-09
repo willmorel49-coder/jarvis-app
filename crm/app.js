@@ -2501,6 +2501,257 @@ function renderProspects(search = '') {
     </div>`;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// PEER RECOMMENDATIONS — fiche RDV sur mesure validée Will 2026-06-09
+// Trouve les pharmacies similaires (peers) → agrège leurs commandes →
+// propose les produits que la pharma ne commande pas encore. Avec
+// bouton "Créer fiche RDV" qui ouvre l'éditeur Marketing pré-rempli.
+// ════════════════════════════════════════════════════════════════════
+
+function findPeerPharmacies(pharma) {
+  const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+  const myWml = wmlVis.find(d => nn(d.nom) === nn(pharma.name));
+
+  // 1. Priorité : peers du même groupement WML
+  if (myWml && myWml.groupement) {
+    const peers = wmlVis
+      .filter(d => d.groupement === myWml.groupement && nn(d.nom) !== nn(pharma.name))
+      .map(d => state.pharmacies.find(p => nn(p.name) === nn(d.nom)))
+      .filter(Boolean);
+    if (peers.length >= 3) return peers.slice(0, 30);
+  }
+
+  // 2. Fallback : top 30 par CA proche (±50% à ±200% du mien)
+  const myCa = sumCA(getSales({ pharmacyId: pharma.id }));
+  if (myCa <= 0) {
+    // Aucune vente IP pour le moment → fallback final : 20 plus grosses pharmas
+    return state.pharmacies
+      .filter(p => p.id !== pharma.id)
+      .map(p => ({ p, ca: sumCA(getSales({ pharmacyId: p.id })) }))
+      .filter(x => x.ca > 0)
+      .sort((a, b) => b.ca - a.ca)
+      .slice(0, 20)
+      .map(x => x.p);
+  }
+  return state.pharmacies
+    .filter(p => p.id !== pharma.id)
+    .map(p => ({ p, ca: sumCA(getSales({ pharmacyId: p.id })) }))
+    .filter(x => x.ca > 0 && x.ca >= myCa * 0.4 && x.ca <= myCa * 2.5)
+    .sort((a, b) => Math.abs(a.ca - myCa) - Math.abs(b.ca - myCa))
+    .slice(0, 30)
+    .map(x => x.p);
+}
+
+function buildPeerRecommendations(pharma, peers, allPhSales) {
+  // CIPs commandés par CETTE pharmacie
+  const myCipsSet = new Set(allPhSales.map(s => String(s.artCode || '')).filter(c => c.length >= 7));
+
+  // Agréger ce que les peers commandent par CIP
+  const peerStats = new Map();
+  peers.forEach(peer => {
+    const peerSales = getSales({ pharmacyId: peer.id });
+    // Set unique CIPs ce peer commande pour ne pas compter en double
+    const peerCipsByCode = new Map();
+    peerSales.forEach(s => {
+      const code = String(s.artCode || '');
+      if (code.length < 7) return;
+      const cur = peerCipsByCode.get(code) || { qte: 0, ca: 0, sample: null };
+      cur.qte += (s.qte || 0);
+      cur.ca += (s.mntNetHt || 0);
+      if (!cur.sample) cur.sample = s;
+      peerCipsByCode.set(code, cur);
+    });
+    peerCipsByCode.forEach((agg, code) => {
+      let stat = peerStats.get(code);
+      if (!stat) {
+        stat = {
+          cip: code,
+          designation: agg.sample.artDesignation || '',
+          puNet: agg.sample.puNet || 0,
+          famille: agg.sample.artFamille || '',
+          count_peers: 0,
+          total_qte: 0,
+          total_ca: 0,
+        };
+        peerStats.set(code, stat);
+      }
+      stat.count_peers++;
+      stat.total_qte += agg.qte;
+      stat.total_ca += agg.ca;
+      // Update sample puNet if missing
+      if (!stat.puNet && agg.sample.puNet) stat.puNet = agg.sample.puNet;
+    });
+  });
+
+  // Filtrer : commandé par au moins 2 peers ET non commandé par moi
+  const totalPeers = Math.max(1, peers.length);
+  const recs = [];
+  peerStats.forEach(stat => {
+    if (stat.count_peers < 2) return;
+    if (myCipsSet.has(stat.cip)) return;
+    recs.push({
+      cip: stat.cip,
+      designation: stat.designation,
+      famille: stat.famille,
+      puNet: stat.puNet,
+      count_peers: stat.count_peers,
+      total_qte: stat.total_qte,
+      total_ca: stat.total_ca,
+      pct_peers: stat.count_peers / totalPeers,
+      avg_qte: stat.total_qte / stat.count_peers,
+    });
+  });
+
+  // Enrich with BENCHMARK info (catégorie, ip_qty, is_froid, has_ameli) if available
+  if (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) {
+    const benchByCip = new Map();
+    BENCHMARK.forEach(b => {
+      if (b.cip13) benchByCip.set(String(b.cip13), b);
+      if (b.artcode) benchByCip.set(String(b.artcode), b);
+    });
+    recs.forEach(r => {
+      const b = benchByCip.get(r.cip);
+      if (b) {
+        r.categorie = b.categorie;
+        r.is_froid = b.is_froid;
+        r.has_ameli = b.has_ameli;
+        r.ameli_total = b.ameli_total || 0;
+        r.prix_ip = b.prix_ip;
+      }
+    });
+  }
+
+  // Tri : nb peers desc puis avg_qte desc
+  recs.sort((a, b) => (b.count_peers - a.count_peers) || (b.avg_qte - a.avg_qte));
+  return recs;
+}
+
+function segmentPeerRecommendations(recs) {
+  // Détection familles élargies
+  const GEN_RX  = /\b(MYLAN|BIOGARAN|SANDOZ|TEVA|RATIOPHARM|EG|ZENTIVA|ARROW|VIATRIS|ACCORD|KRKA|BAILLY|CRISTERS|RANBAXY)\b/;
+  const BIO_RX  = /\b(BIOSIMILAIRE|TRUXIMA|BENEPALI|REMSIMA|RIXATHON|RUXIENCE|MVASI|ZIRABEV|HULIO|HEFIYA|KANJINTI|IMRALDI|ZESSLY|FLIXABI|INHIXA)\b/;
+  const isFroid = r => r.is_froid === true || r.famille === 'froid' || /FROID|RÉFRIGÉR|REFRIGER|THERMOSENS/i.test(r.designation || '');
+  const isGen   = r => GEN_RX.test((r.designation || '').toUpperCase()) || /générique/i.test(r.categorie || '');
+  const isBio   = r => BIO_RX.test((r.designation || '').toUpperCase());
+
+  const defs = [
+    { id: 'peer-froid',  name: '❄️ Froids · peers commandent',       sub: 'chaîne du froid 2–8 °C',                       cap: 30,  accent: '#06B6D4', filter: isFroid },
+    { id: 'peer-bio',    name: '🧬 Biosimilaires · peers commandent', sub: 'top biosimilaires omis par cette pharmacie',   cap: 15,  accent: '#EC4899', filter: r => !isFroid(r) && isBio(r) },
+    { id: 'peer-gen',    name: '💊 Génériques · peers commandent',    sub: 'EG · Mylan · Biogaran · Sandoz · Teva…',      cap: 50,  accent: '#A78BFA', filter: r => !isFroid(r) && !isBio(r) && isGen(r) },
+    { id: 'peer-cheap',  name: '🟢 Petits prix · peers commandent',   sub: '0 — 4,33 € ambiant',                          cap: 30,  accent: '#10B981', filter: r => !isFroid(r) && !isBio(r) && !isGen(r) && r.puNet > 0 && r.puNet <= 4.33 },
+    { id: 'peer-mid',    name: '🔵 Intermédiaires · peers commandent', sub: '4,33 — 468 €',                                cap: 80,  accent: '#0057FF', filter: r => !isFroid(r) && !isBio(r) && !isGen(r) && r.puNet > 4.33 && r.puNet <= 468 },
+    { id: 'peer-exp',    name: '🟠 Chers · peers commandent',         sub: '> 468 €',                                     cap: 20,  accent: '#FF6B35', filter: r => !isFroid(r) && !isBio(r) && !isGen(r) && r.puNet > 468 },
+  ];
+  defs.forEach(seg => {
+    const filtered = recs.filter(seg.filter);
+    seg.items = filtered.slice(0, seg.cap);
+    seg.totalCount = filtered.length;
+    seg.totalQte = filtered.reduce((s, r) => s + r.total_qte, 0);
+    seg.avgPctPeers = filtered.length ? filtered.reduce((s, r) => s + r.pct_peers, 0) / filtered.length : 0;
+  });
+  return defs;
+}
+
+function renderPeerRecommendationsHTML(pharma, allPhSales) {
+  // Si pas de données de ventes → empty state simple
+  if (!state.sales || state.sales.length === 0) return '';
+
+  const peers = findPeerPharmacies(pharma);
+  if (peers.length < 2) return '';
+
+  const recs = buildPeerRecommendations(pharma, peers, allPhSales);
+  if (recs.length === 0) return '';
+
+  const segments = segmentPeerRecommendations(recs).filter(s => s.items.length > 0);
+  if (segments.length === 0) return '';
+
+  const sourceLabel = (() => {
+    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+    const mine = wmlVis.find(d => nn(d.nom) === nn(pharma.name));
+    if (mine && mine.groupement) return 'groupement ' + mine.groupement;
+    return 'pharmacies de CA proche';
+  })();
+
+  // Tag rec count pour stocker dans window pour création fiche
+  const recId = '__peer_recs_' + (pharma.id || '').toString().replace(/\W/g,'_');
+  window[recId] = { pharma: pharma.name, recs: recs.slice(0, 60), segments: segments };
+
+  const cardsHtml = segments.map(seg => {
+    const isOpen = (typeof mkExpandedCategories !== 'undefined' && mkExpandedCategories.has(seg.id));
+    const initial = isOpen ? seg.items : seg.items.slice(0, 10);
+    return `
+      <div class="mk-cat-card ${isOpen ? 'is-open' : ''}" data-seg-id="${seg.id}">
+        <button class="mk-cat-card-head" onclick="window.mkToggleSegment('${seg.id}')">
+          <span class="mk-cat-card-accent" style="background:${seg.accent}"></span>
+          <div class="mk-cat-card-titles">
+            <div class="mk-cat-card-name">${seg.name} <span class="mk-cat-card-cap">${seg.totalCount} reco</span></div>
+            <div class="mk-cat-card-meta">${seg.sub} · ${Math.round(seg.avgPctPeers * 100)}% des peers commandent en moyenne</div>
+          </div>
+          <div class="mk-cat-card-stats">
+            <div class="mk-cat-stat">
+              <span class="mk-cat-stat-v">${seg.totalQte.toLocaleString('fr-FR')}</span>
+              <span class="mk-cat-stat-k">u peers vendent</span>
+            </div>
+            <div class="mk-cat-stat mk-cat-stat-ratio-cell">
+              <span class="mk-cat-stat-v">${seg.totalCount}</span>
+              <span class="mk-cat-stat-k">produits à proposer</span>
+            </div>
+          </div>
+          <svg class="mk-cat-card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="mk-cat-card-body">
+          <table class="mk-cat-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Produit</th>
+                <th>CIP13</th>
+                <th class="mk-cat-num-h">Prix net</th>
+                <th class="mk-cat-num-h">Peers</th>
+                <th class="mk-cat-num-h">% peers</th>
+                <th class="mk-cat-num-h">Qté moy.</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${initial.map((r, i) => `
+                <tr>
+                  <td class="mk-cat-rk">${i + 1}</td>
+                  <td class="mk-cat-name" title="${(r.designation || '').replace(/"/g,'&quot;')}">${(r.designation || '').slice(0, 44)}${(r.designation || '').length > 44 ? '…' : ''}</td>
+                  <td class="mk-cat-cip">${r.cip || ''}</td>
+                  <td class="mk-cat-num">${r.puNet > 0 ? r.puNet.toFixed(2) + ' €' : '—'}</td>
+                  <td class="mk-cat-num">${r.count_peers}/${peers.length}</td>
+                  <td class="mk-cat-num mk-cat-ratio">${Math.round(r.pct_peers * 100)}%</td>
+                  <td class="mk-cat-num">${Math.round(r.avg_qte).toLocaleString('fr-FR')}</td>
+                  <td><button class="mk-cat-addbtn" onclick="event.stopPropagation();window.mkQuickAddProduct('${r.cip}')" title="Ajouter à la fiche en cours">+</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="mk-section mk-cat-section" style="margin-top:32px">
+      <div class="mk-section-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <div class="mk-section-title">🎁 Sur mesure pour cette pharmacie · top des peers</div>
+          <div class="mk-section-sub">${peers.length} pharmacies similaires (${sourceLabel}) commandent ${recs.length} produits que ${pharma.name} ne commande pas — répartis en ${segments.length} catégories</div>
+        </div>
+        <button class="a-btn a-btn-filled" onclick="window.mkCreatePharmaOpportunityFiche('${recId}')" style="white-space:nowrap;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Créer la fiche RDV
+        </button>
+      </div>
+      <div class="mk-cat-list">${cardsHtml}</div>
+    </div>
+  `;
+}
+
 function showPharmaDetail(pharmacyId, overridePeriod) {
   if (overridePeriod !== undefined) pharmaDetailOverridePeriod = overridePeriod;
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
@@ -2679,7 +2930,9 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         'Produits IP top ventes (déjà au catalogue grossiste) que cette pharmacie ne commande pas encore. Action commerciale directe : pousser ces références.'
       )
     : '';
-  const __opportunitiesHTML = __opsOpportunitiesHTML + __catalogueGapsHTML;
+  // (C) Sur mesure : ce que ses peers commandent et qu'elle ne commande pas
+  const __peerRecsHTML = renderPeerRecommendationsHTML(pharma, allPhSales);
+  const __opportunitiesHTML = __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
 
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
