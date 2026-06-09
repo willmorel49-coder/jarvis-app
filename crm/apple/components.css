@@ -809,3 +809,89 @@
   --accent: var(--brand-ip);
   --accent-on: #FFFFFF;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   WAVE 4 — DESKTOP QUICK WINS
+   Layout variants : reader / default / full
+   + Segmented density toggle dans la topbar
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Page content — largeur fluide selon contexte de la page.
+   Default = la majorité (dashboard, formulaires) : confort lecture sans gâcher l'écran.
+   Reader = Marketing home : 1100px conservé pour préserver la rythme actuel.
+   Full   = Benchmark/Catalogue/Pharmacies/Offilog : tableaux pleine largeur. */
+.a-page-content {
+  padding: 0 var(--content-padding) var(--s-8);
+  max-width: clamp(1100px, 92vw, var(--max-content-w));
+  margin: 0 auto;
+  width: 100%;
+}
+.a-page-content[data-layout="reader"] {
+  max-width: 1100px;
+}
+.a-page-content[data-layout="default"] {
+  max-width: clamp(1100px, 92vw, var(--max-content-w));
+}
+.a-page-content[data-layout="full"] {
+  max-width: none;
+}
+
+@media (max-width: 1023px) {
+  .a-page-content,
+  .a-page-content[data-layout="reader"],
+  .a-page-content[data-layout="default"],
+  .a-page-content[data-layout="full"] {
+    max-width: 100%;
+    padding-left: var(--s-4);
+    padding-right: var(--s-4);
+    padding-bottom: calc(var(--s-8) + 49px + var(--safe-bottom));
+  }
+}
+
+/* Segmented control "density" — version compacte dans la topbar */
+.a-seg.a-seg-density {
+  padding: 2px;
+  gap: 1px;
+}
+.a-seg.a-seg-density button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--label-secondary);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur-base) var(--ease-spring),
+              box-shadow var(--dur-base) var(--ease-spring),
+              color var(--dur-base) var(--ease-standard);
+}
+.a-seg.a-seg-density button:hover {
+  color: var(--label-primary);
+}
+.a-seg.a-seg-density button.is-active {
+  background: var(--bg-elevated);
+  color: var(--label-primary);
+  box-shadow: var(--shadow-2);
+}
+
+/* Slots topbar — wrappers neutres tant que le JS ne les remplit pas */
+#topbar-slot-breadcrumb,
+#topbar-slot-quick-actions,
+#topbar-slot-density {
+  display: inline-flex;
+  align-items: center;
+}
+#topbar-slot-breadcrumb:empty,
+#topbar-slot-quick-actions:empty {
+  display: none;
+}
+@media (max-width: 1023px) {
+  /* Sur mobile, on cache la density (pas d'usage tactile pertinent) */
+  #topbar-slot-density { display: none; }
+}
