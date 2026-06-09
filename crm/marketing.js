@@ -1528,6 +1528,87 @@
     };
   }
 
+  /**
+   * Crée une fiche commerciale RDV pré-remplie avec les top peer recommendations
+   * (produits que les pharmacies similaires commandent et que la pharma cible ne commande pas).
+   * Stocké dans window[recId] par renderPeerRecommendationsHTML dans app.js.
+   * Sélectionne intelligemment 12 produits : top X par segment, scindés en catégories.
+   */
+  window.mkCreatePharmaOpportunityFiche = function (recId) {
+    const data = window[recId];
+    if (!data || !data.recs) {
+      alert('Recommandations introuvables. Recharge la page et réessaie.');
+      return;
+    }
+    const BENCH = window.BENCHMARK || [];
+    const benchByCip = new Map();
+    BENCH.forEach(function (b) {
+      if (b.cip13) benchByCip.set(String(b.cip13), b);
+      if (b.artcode) benchByCip.set(String(b.artcode), b);
+    });
+
+    // Sélection 'mixte' : 2 produits par segment max, 12 produits au total
+    const products = [];
+    const seenCips = new Set();
+    (data.segments || []).forEach(function (seg) {
+      const top = seg.items.slice(0, 2); // 2 produits par catégorie
+      top.forEach(function (r) {
+        if (seenCips.has(r.cip)) return;
+        const b = benchByCip.get(r.cip);
+        if (b) {
+          const snap = snapshotProduct(b);
+          products.push(snap);
+          seenCips.add(r.cip);
+        } else {
+          // Pas dans BENCHMARK : créer un snapshot minimal depuis la rec
+          products.push({
+            cip13: r.cip,
+            artcode: r.cip,
+            designation: r.designation,
+            prix_ip: r.puNet || 0,
+            prix_ht: r.puNet || 0,
+            categorie: r.categorie || 'mi',
+            is_froid: !!r.is_froid,
+            has_ameli: !!r.has_ameli,
+            ameli_total: r.ameli_total || 0,
+            source: 'peer-rec',
+            img: '',
+          });
+          seenCips.add(r.cip);
+        }
+      });
+    });
+
+    if (products.length === 0) {
+      alert('Aucun produit à insérer dans la fiche. Recharge la page et réessaie.');
+      return;
+    }
+
+    const today = new Date().toLocaleDateString('fr-FR');
+    editingSheet = {
+      id: 'sheet-rdv-' + Date.now(),
+      title: 'Opportunités · ' + (data.pharma || 'pharmacie') + ' · ' + today,
+      theme: null,
+      template: 'offre',
+      products: products,
+      // Métadonnées contextuelles
+      _from_pharma: data.pharma,
+      _peer_recs_count: data.recs.length,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    // Bascule sur l'onglet Marketing puis ouvre l'éditeur
+    if (typeof window.navigate === 'function') {
+      window.navigate('marketing');
+      // Délai pour laisser le DOM monter Marketing avant renderEdit
+      setTimeout(function () {
+        if (typeof renderEdit === 'function') renderEdit();
+      }, 60);
+    } else if (typeof renderEdit === 'function') {
+      renderEdit();
+    }
+  };
+
   // ════════════════════════════════════════════════════════════
   // TOP VENTES PAR SEGMENT — IP × Ameli (validé Will 2026-06-08)
   // 7 segments commerciaux : petits prix / intermédiaires / chers /
