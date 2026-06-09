@@ -2333,6 +2333,7 @@ function renderPharmacies() {
               <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums" title="Nombre de références produit commandées (toutes périodes)">${nProdOrdered}</div>
               <div style="font-size:10px;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase">Réfs</div>
             </div>
+            <button onclick="event.stopPropagation();window.exportPharmaPeerRecsPDF && window.exportPharmaPeerRecsPDF('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s;font-weight:700" title="Fiche RDV opportunités sur mesure (basée sur ce que les peers commandent)" aria-label="Fiche RDV PDF">🎯</button>
             <button onclick="event.stopPropagation();window.exportPharmaListingPDF && window.exportPharmaListingPDF('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Télécharger le listing PDF (Best + À travailler)" aria-label="PDF listing" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📄</button>
             <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Ouvrir la fiche de visite" data-tooltip="Ouvrir la fiche de visite" aria-label="Ouvrir la fiche de visite" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📋</button>
             <div style="color:var(--text3);font-size:16px">›</div>
@@ -3295,10 +3296,15 @@ function renderBestAndWorkSectionsHTML(pharma, allPhSales) {
           <div class="mk-section-title">🏆 Best produits · ce que cette pharmacie cartonne déjà</div>
           <div class="mk-section-sub">${bestCats.length} catégories actives · top ${bestCats.reduce((s, c) => s + c.cap, 0).toLocaleString('fr-FR')} produits triés par CA décroissant</div>
         </div>
-        <button class="a-btn a-btn-tinted" onclick="window.exportPharmaListingPDF('${pharma.id}')" style="white-space:nowrap;flex-shrink:0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Télécharger le listing PDF
-        </button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0">
+          <button class="a-btn a-btn-filled" onclick="window.exportPharmaPeerRecsPDF('${pharma.id}')" style="white-space:nowrap;background:linear-gradient(135deg,#0057FF 0%,#003BB0 100%);color:#fff" title="Génère immédiatement un PDF de fiche RDV sur mesure basé sur ce que les peers commandent">
+            🎯 Fiche RDV opportunités
+          </button>
+          <button class="a-btn a-btn-tinted" onclick="window.exportPharmaListingPDF('${pharma.id}')" style="white-space:nowrap" title="PDF listing complet (Best + À travailler)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Listing PDF
+          </button>
+        </div>
       </div>
       <div class="mk-cat-list">${bestCats.map(bestCardHtml).join('')}</div>
     </div>
@@ -3322,6 +3328,177 @@ function renderBestAndWorkSectionsHTML(pharma, allPhSales) {
  * Génère le PDF du listing pharmacie (Best + À travailler + Marge MDL).
  * Lazy-load html2pdf.js si nécessaire.
  */
+/**
+ * Génère un PDF "Fiche RDV opportunités" basé sur les peer recommendations.
+ * = ce que les pharmacies similaires commandent et que cette pharma ne commande pas.
+ * Direct PDF, pas via éditeur Marketing : pour utilisation pendant le RDV.
+ */
+window.exportPharmaPeerRecsPDF = function (pharmacyId) {
+  const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!pharma) { showToast && showToast('Pharmacie introuvable', 'error'); return; }
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  if (!allPhSales.length) {
+    showToast && showToast('Pas encore de ventes pour cette pharmacie', 'warning');
+    return;
+  }
+  const peers = findPeerPharmacies(pharma);
+  if (peers.length < 2) {
+    showToast && showToast('Pas assez de peers identifiés pour cette pharma', 'warning');
+    return;
+  }
+  const recs = buildPeerRecommendations(pharma, peers, allPhSales);
+  if (recs.length === 0) {
+    showToast && showToast('Cette pharma commande déjà tous les top produits de ses peers', 'info');
+    return;
+  }
+  const segments = segmentPeerRecommendations(recs).filter(s => s.items.length > 0);
+  if (segments.length === 0) {
+    showToast && showToast('Aucune opportunité par catégorie', 'info');
+    return;
+  }
+  if (typeof window.ensureHtml2Pdf !== 'function') {
+    alert('Module PDF non disponible. Recharge la page.');
+    return;
+  }
+  showToast && showToast('Génération de la fiche RDV…', 'info');
+  window.ensureHtml2Pdf().then(() => {
+    const html = buildPharmaPeerRecsPdfHTML(pharma, peers, segments, recs, allPhSales);
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;font-family:Inter,system-ui,sans-serif;color:#0E0E10';
+    wrap.innerHTML = html;
+    document.body.appendChild(wrap);
+    const filename = `OpportunitesRDV-${pharma.name.replace(/[^A-Za-z0-9-]/g, '_')}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    window.html2pdf().from(wrap).set({
+      filename,
+      margin: [10, 10, 12, 10],
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    }).save().then(() => {
+      document.body.removeChild(wrap);
+      showToast && showToast('✓ Fiche RDV téléchargée', 'success');
+    }).catch(err => {
+      console.error(err);
+      document.body.removeChild(wrap);
+      showToast && showToast('Erreur génération PDF', 'error');
+    });
+  });
+};
+
+function buildPharmaPeerRecsPdfHTML(pharma, peers, segments, recs, allPhSales) {
+  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const clientInfo = typeof CLIENTS !== 'undefined'
+    ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === pharma.name.toUpperCase().trim())
+    : null;
+  const adresseTxt = clientInfo && clientInfo.adresse
+    ? `${clientInfo.adresse}, ${clientInfo.cp || ''} ${clientInfo.ville || ''}` : '';
+  // Calcul d'un "potentiel CA" : pour chaque produit reco, qte moyenne peer × prix
+  const potentielCa = recs.reduce((s, r) => s + (r.avg_qte || 0) * (r.puNet || 0), 0);
+  // Estimation marge MDL si IP capture (sur remboursables seulement)
+  const potentielMargeMDL = recs.reduce((s, r) => {
+    if (isMdlRemboursable(r.cip) && r.puNet > 0) {
+      return s + calcMargeBoiteMDL(r.puNet) * (r.avg_qte || 0);
+    }
+    return s;
+  }, 0);
+  // Identifie source des peers (groupement WML ou CA proche)
+  const sourceLabel = (() => {
+    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
+    const mine = wmlVis.find(d => nn(d.nom) === nn(pharma.name));
+    if (mine && mine.groupement) return 'groupement ' + mine.groupement;
+    return 'pharmacies de CA similaire';
+  })();
+
+  const segRow = (r, i) => `
+    <tr>
+      <td style="padding:6px 7px;text-align:center;color:#71717A;font-size:9px;font-family:'SF Mono',Menlo,monospace">${i + 1}</td>
+      <td style="padding:6px 7px;font-size:10px;font-weight:600;color:#0A1F4E">${(r.designation || '').slice(0, 50).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</td>
+      <td style="padding:6px 7px;font-family:'SF Mono',Menlo,monospace;font-size:9px;color:#5B6478">${r.cip}</td>
+      <td style="padding:6px 7px;text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#0E0E10">${r.puNet > 0 ? r.puNet.toFixed(2) + ' €' : '—'}</td>
+      <td style="padding:6px 7px;text-align:center;font-family:'SF Mono',Menlo,monospace;font-size:10px;font-weight:700;color:${r.pct_peers >= 0.6 ? '#10B981' : r.pct_peers >= 0.3 ? '#FF9500' : '#71717A'}">${Math.round(r.pct_peers * 100)}%</td>
+      <td style="padding:6px 7px;text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#0E0E10">${Math.round(r.avg_qte).toLocaleString('fr-FR')}</td>
+    </tr>
+  `;
+  const segHtml = segments.map(seg => `
+    <div style="margin-bottom:16px;page-break-inside:avoid">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(90deg, ${seg.accent}22 0%, transparent 100%);border-left:4px solid ${seg.accent};border-radius:6px;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:#0A1F4E;letter-spacing:-0.01em">${seg.name}</div>
+        <div style="font-size:9px;color:#71717A;margin-left:auto;font-family:'SF Mono',Menlo,monospace">${seg.totalCount} produits · ${Math.round(seg.avgPctPeers * 100)}% des peers en moyenne</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#F2F2F7;border-bottom:1px solid #E5E7EB">
+            <th style="padding:6px 7px;font-size:8px;letter-spacing:0.06em;text-transform:uppercase;color:#71717A;text-align:center;font-weight:700">#</th>
+            <th style="padding:6px 7px;font-size:8px;letter-spacing:0.06em;text-transform:uppercase;color:#71717A;text-align:left;font-weight:700">Produit</th>
+            <th style="padding:6px 7px;font-size:8px;letter-spacing:0.06em;text-transform:uppercase;color:#71717A;text-align:left;font-weight:700">CIP13</th>
+            <th style="padding:6px 7px;font-size:8px;letter-spacing:0.06em;text-transform:uppercase;color:#71717A;text-align:right;font-weight:700">Prix net</th>
+            <th style="padding:6px 7px;font-size:8px;letter-spacing:0.06em;text-transform:uppercase;color:#71717A;text-align:center;font-weight:700">% Peers</th>
+            <th style="padding:6px 7px;font-size:8px;letter-spacing:0.06em;text-transform:uppercase;color:#71717A;text-align:right;font-weight:700">Qté moy.</th>
+          </tr>
+        </thead>
+        <tbody>${seg.items.slice(0, 10).map(segRow).join('')}</tbody>
+      </table>
+    </div>
+  `).join('');
+
+  return `
+    <div style="padding:14px 18px;font-family:Inter,system-ui,sans-serif;color:#0E0E10">
+      <!-- Header -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #0057FF;padding-bottom:10px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#0057FF 0%,#003BB0 100%);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;letter-spacing:0.02em">IP</div>
+          <div>
+            <div style="font-size:9px;color:#71717A;text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Intégral Pharma · Fiche RDV sur mesure</div>
+            <div style="font-size:18px;font-weight:800;color:#0A1F4E;letter-spacing:-0.01em">${(pharma.name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>
+            ${adresseTxt ? `<div style="font-size:10px;color:#5B6478">${adresseTxt.replace(/</g, '&lt;')}</div>` : ''}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:#71717A;text-transform:uppercase;letter-spacing:0.04em;font-weight:700">Édité le</div>
+          <div style="font-size:13px;font-weight:700;color:#0A1F4E;font-family:'SF Mono',Menlo,monospace">${today}</div>
+        </div>
+      </div>
+
+      <!-- Intro pitch -->
+      <div style="background:linear-gradient(135deg,#0057FF 0%,#0070FF 100%);color:#fff;padding:14px 18px;border-radius:10px;margin-bottom:14px">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;opacity:0.85;margin-bottom:4px">🎁 Sélection sur mesure</div>
+        <div style="font-size:14px;font-weight:600;line-height:1.4">${peers.length} pharmacies similaires (${sourceLabel}) commandent <strong>${recs.length} produits</strong> que vous ne commandez pas encore.</div>
+        <div style="font-size:11px;line-height:1.45;margin-top:6px;opacity:0.92">Cette sélection est <strong>spécifiquement calibrée</strong> pour votre profil d'officine. Les % indiquent la fréquence avec laquelle vos peers commandent chaque référence.</div>
+      </div>
+
+      <!-- KPIs Potentiel -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
+        <div style="border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px">
+          <div style="font-size:8px;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Potentiel CA estimé</div>
+          <div style="font-size:18px;font-weight:800;color:#0057FF;font-family:'SF Mono',Menlo,monospace">${Math.round(potentielCa).toLocaleString('fr-FR')} €</div>
+          <div style="font-size:9px;color:#5B6478;margin-top:2px">Si vous capturez ces opportunités</div>
+        </div>
+        <div style="border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px">
+          <div style="font-size:8px;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Marge MDL prévisionnelle</div>
+          <div style="font-size:18px;font-weight:800;color:#10B981;font-family:'SF Mono',Menlo,monospace">${Math.round(potentielMargeMDL).toLocaleString('fr-FR')} €</div>
+          <div style="font-size:9px;color:#5B6478;margin-top:2px">Barème officiel France 2026</div>
+        </div>
+        <div style="border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px">
+          <div style="font-size:8px;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Catégories</div>
+          <div style="font-size:18px;font-weight:800;color:#FF9500;font-family:'SF Mono',Menlo,monospace">${segments.length}</div>
+          <div style="font-size:9px;color:#5B6478;margin-top:2px">${recs.length} références à pousser</div>
+        </div>
+      </div>
+
+      <!-- Liste segments -->
+      ${segHtml}
+
+      <!-- Footer -->
+      <div style="margin-top:18px;padding-top:8px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:8px;color:#71717A;letter-spacing:0.04em;text-transform:uppercase">
+        <div>Intégral Pharma · Normandie · Fiche confidentielle</div>
+        <div>Barème MDL : 0,18€ &lt; 4,33€ · 3,9 % jusqu'à 468€ · 19,50€ au-delà</div>
+      </div>
+    </div>
+  `;
+}
+
 window.exportPharmaListingPDF = function (pharmacyId) {
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
   if (!pharma) { showToast && showToast('Pharmacie introuvable', 'error'); return; }
