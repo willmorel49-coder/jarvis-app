@@ -2752,11 +2752,16 @@ if (!window.__peerRecCreateFiche) {
 const _PEER_REC_SPARKLES_SVG = '<svg class="peer-rec-cta-sparkle" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M19 14l.75 2.25L22 17l-2.25.75L19 20l-.75-2.25L16 17l2.25-.75L19 14z"/><path d="M5 14l.75 2.25L8 17l-2.25.75L5 20l-.75-2.25L2 17l2.25-.75L5 14z"/></svg>';
 
 function _peerRecEmptyShell(title, body, ctaLabel, ctaAction) {
-  const icon = ctaAction === 'groupements'
-    ? '<svg class="peer-rec-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
-    : '<svg class="peer-rec-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>';
-  const ctaHtml = ctaLabel
-    ? '<button class="peer-rec-empty-cta" onclick="' + (ctaAction === 'groupements' ? "navigate('groupements')" : '') + '">' + ctaLabel + '</button>'
+  // 3 variants d'icônes line-art selon le contexte de l'empty state
+  const ICONS = {
+    groupements: '<svg class="peer-rec-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    import:      '<svg class="peer-rec-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+    done:        '<svg class="peer-rec-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>',
+  };
+  const icon = ICONS[ctaAction] || ICONS.done;
+  // Toute action ctaAction non-vide est traitée comme une page navigate cible
+  const ctaHtml = (ctaLabel && ctaAction)
+    ? '<button class="peer-rec-empty-cta" onclick="navigate(\'' + ctaAction + '\')">' + ctaLabel + '</button>'
     : '';
   return '<section class="peer-rec-section"><div class="peer-rec-empty">' +
     icon +
@@ -2767,8 +2772,15 @@ function _peerRecEmptyShell(title, body, ctaLabel, ctaAction) {
 }
 
 function renderPeerRecommendationsHTML(pharma, allPhSales) {
-  // Si pas de données de ventes → ne rien afficher (cohérent avec le reste de la fiche)
-  if (!state.sales || state.sales.length === 0) return '';
+  // Si pas de données de ventes → afficher empty state explicite (au lieu de tout cacher)
+  if (!state.sales || state.sales.length === 0) {
+    return _peerRecEmptyShell(
+      'Importe tes ventes pour activer les recommandations',
+      "L'algorithme a besoin de l'historique des commandes (page Import) pour identifier les pharmacies similaires et te proposer leurs top produits.",
+      'Importer mes ventes',
+      'import'
+    );
+  }
 
   const peers = findPeerPharmacies(pharma);
   if (peers.length < 2) {
