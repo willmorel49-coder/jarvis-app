@@ -1090,7 +1090,12 @@
   let statsTranche = 'all';  // 'all' | 'petit' (≤4.33€) | 'inter' (4.33-468€) | 'haut' (>468€)
   let statsCatalogue = 'all';// 'all' | 'integral' | 'itp'
   let mkPage = 'grossiste';  // 'grossiste' (IP / canal grossiste) | 'offilog' (parapharma direct labo)
-  let mkShowMore = false;     // false = home drastique (Hero + Fiches récentes), true = full hub (sections empilées)
+  let mkShowMore = false;     // false = home drastique (Hero + Fiches récentes), true = full hub (sections empilées) — GARDÉ comme fallback
+  // Tabs desktop V3 (2026-06-09) — refonte home pour usage ordinateur
+  // 'selection' | 'planning' | 'topventes' | 'sagitta' | 'offilog' | 'biblio'
+  let mkActiveTab = 'selection';
+  let mkLibrarySearch = '';
+  let mkLibraryFilter = 'all'; // 'all' | 'recent' | 'archived' | 'template'
   let mkExpandedCategories = new Set(); // catégories dépliées dans la section "Top ventes par cat · IP × Ameli"
   let mkCategoriesShowAll = false;       // false = top 12 catégories, true = toutes
   // Picker saisonnier : selection composable avant creation de fiche.
@@ -1321,6 +1326,11 @@
   window.mkSetPage = function (id) {
     if (id !== 'grossiste' && id !== 'offilog') return;
     mkPage = id;
+    // Sync de l'onglet home : si on revient sur grossiste depuis offilog,
+    // on remet "selection" comme onglet par défaut (sinon on resterait
+    // bloqué sur l'onglet "offilog" alors qu'on est sur la home grossiste).
+    if (id === 'grossiste' && mkActiveTab === 'offilog') mkActiveTab = 'selection';
+    if (id === 'offilog') mkActiveTab = 'offilog';
     window.renderMarketing();
     // Scroll en haut de la page apres switch de tab
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
@@ -1366,109 +1376,521 @@
   };
 
   // ════════════════════════════════════════════════════════════
-  // HOME MARKETING — Vue drastique (validée Will 2026-06-08)
-  // Hero du mois XXL + Mes fiches récentes + bouton "Plus d'options"
+  // HOME MARKETING — Vue desktop V3 (refonte 2026-06-09)
+  // Header + Tabs (Sélection / Planning / Top ventes / Sagitta /
+  // Offilog / Bibliothèque) + contenu de l'onglet actif.
+  // En desktop ≥1280px, tab "Sélection" passe en 2-col 60/40.
   // ════════════════════════════════════════════════════════════
+  window.mkSetActiveTab = function (tab) {
+    const valid = ['selection', 'planning', 'topventes', 'sagitta', 'offilog', 'biblio'];
+    if (!valid.includes(tab)) return;
+    mkActiveTab = tab;
+    // Toujours retourner à la home tabs (jamais sur l'ancien hub plein)
+    mkShowMore = false;
+    // Switch logique : "offilog" pilote la page parapharma; les autres rendent
+    // la home unifiée. On laisse mkPage="grossiste" pour préserver le pipeline.
+    if (tab === 'offilog') {
+      mkPage = 'offilog';
+    } else {
+      mkPage = 'grossiste';
+    }
+    try { if (typeof window.renderMarketing === 'function') window.renderMarketing(); } catch (e) {}
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+  };
+
+  window.mkSetLibrarySearch = debounce(function (val) {
+    mkLibrarySearch = (val || '').trim().toLowerCase();
+    try { if (typeof window.renderMarketing === 'function') window.renderMarketing(); } catch (e) {}
+    restoreFocus('.mk-home2-omnibox input', mkLibrarySearch);
+  }, 160);
+
+  window.mkSetLibraryFilter = function (id) {
+    if (!['all', 'recent', 'archived', 'template'].includes(id)) return;
+    mkLibraryFilter = id;
+    try { if (typeof window.renderMarketing === 'function') window.renderMarketing(); } catch (e) {}
+  };
+
   function renderMarketingHomeSimple(root) {
-    const sheets = loadSheets().slice().sort((a, b) => {
-      const da = new Date(a.updated_at || a.created_at || 0).getTime();
-      const db = new Date(b.updated_at || b.created_at || 0).getTime();
-      return db - da;
-    });
-    const recent = sheets.slice(0, 6);
+    try {
+      const sheets = loadSheets().slice().sort((a, b) => {
+        const da = new Date(a.updated_at || a.created_at || 0).getTime();
+        const db = new Date(b.updated_at || b.created_at || 0).getTime();
+        return db - da;
+      });
+      const monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
+      const yearStr = new Date().getFullYear();
+      const sheetsCount = sheets.length;
+
+      // Tabs config — icône + label + sub label compact
+      const tabs = [
+        { id: 'selection', label: 'Sélection',     sub: 'du mois' },
+        { id: 'planning',  label: 'Planning',      sub: '13 mois' },
+        { id: 'topventes', label: 'Top ventes IP', sub: 'OPS+CPR+HP' },
+        { id: 'sagitta',   label: 'Sagitta',       sub: 'shortlist' },
+        { id: 'offilog',   label: 'Offilog',       sub: 'parapharma' },
+        { id: 'biblio',    label: 'Bibliothèque',  sub: sheetsCount + ' fiches' },
+      ];
+
+      // Contenu selon tab actif — lazy : on calcule seulement ce qui s'affiche
+      let tabContent = '';
+      if (mkActiveTab === 'selection') {
+        tabContent = renderHomeSelectionTab(sheets);
+      } else if (mkActiveTab === 'planning') {
+        tabContent = renderHomePlanningTab();
+      } else if (mkActiveTab === 'topventes') {
+        tabContent = renderHomeTopVentesTab();
+      } else if (mkActiveTab === 'sagitta') {
+        tabContent = renderHomeSagittaTab();
+      } else if (mkActiveTab === 'biblio') {
+        tabContent = renderHomeBiblioTab(sheets);
+      } else {
+        tabContent = renderHomeSelectionTab(sheets);
+      }
+
+      const tabsHTML = `
+        <nav class="mk-home2-tabs" role="tablist" aria-label="Sections marketing">
+          ${tabs.map(t => {
+            const on = mkActiveTab === t.id;
+            return `
+              <button class="mk-home2-tab ${on ? 'on' : ''}"
+                role="tab" aria-selected="${on ? 'true' : 'false'}"
+                onclick="window.mkSetActiveTab('${t.id}')">
+                <span class="mk-home2-tab-label">${escapeAttr(t.label)}</span>
+                <span class="mk-home2-tab-sub">${escapeAttr(t.sub)}</span>
+              </button>
+            `;
+          }).join('')}
+        </nav>
+      `;
+
+      root.innerHTML = `
+        <div class="mk-home2 mk-home2-v3">
+          <header class="mk-home2-head">
+            <div>
+              <div class="mk-home2-eyebrow">Marketing · ${escapeAttr(monthName)} ${yearStr}</div>
+              <h1 class="mk-home2-h1">
+                Tes <em>fiches</em> commerciales
+                <span class="mk-home2-count" title="Nombre total de fiches enregistrées">${sheetsCount} fiche${sheetsCount > 1 ? 's' : ''}</span>
+              </h1>
+            </div>
+            <button class="mk-home2-quickbtn" onclick="window.mkStartBlank && window.mkStartBlank()" title="Créer une fiche vide (⌘N)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              <span>Nouvelle fiche</span>
+              <kbd class="mk-home2-kbd" aria-label="Raccourci commande N">⌘N</kbd>
+            </button>
+          </header>
+
+          ${tabsHTML}
+
+          <div class="mk-home2-tabpanel" role="tabpanel" data-tab="${mkActiveTab}">
+            ${tabContent}
+          </div>
+        </div>
+      `;
+
+      // Bind ⌘N shortcut une seule fois
+      bindMkKeyboardShortcutsOnce();
+    } catch (err) {
+      // Fallback : si quelque chose explose, on retombe sur l'ancien hub complet
+      try { console.error('[marketing home v3] fallback to grossiste hub', err); } catch (e) {}
+      try { renderMarketingGrossiste(root); } catch (e2) {}
+    }
+  }
+
+  // ── Tab "Sélection" — Hero XXL + Mes fiches récentes (2-col ≥1280px) ──
+  function renderHomeSelectionTab(sheets) {
+    const recent = sheets.slice(0, 4); // 4 fiches en 2x2 sur col droite desktop
     const suggested = getCurrentSeasonTheme();
     const monthProds = themeProducts(suggested);
     const top3 = monthProds.slice(0, 3);
-    const monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
-    const yearStr = new Date().getFullYear();
     const pitch = (typeof getCurrentMonthlyPitch === 'function') ? getCurrentMonthlyPitch() : null;
     const headline = pitch && pitch.headline ? pitch.headline : (suggested.label || suggested.name || 'Sélection du mois');
     const subhead = pitch && pitch.subhead ? pitch.subhead : (suggested.sub || '');
     const pitchShort = pitch && pitch.pitch_short ? pitch.pitch_short : '';
 
-    root.innerHTML = `
-      <div class="mk-home2">
-        <header class="mk-home2-head">
-          <div>
-            <div class="mk-home2-eyebrow">Marketing · ${escapeAttr(monthName)} ${yearStr}</div>
-            <h1 class="mk-home2-h1">Tes <em>fiches</em> commerciales</h1>
-          </div>
-          <button class="mk-home2-quickbtn" onclick="window.mkStartBlank && window.mkStartBlank()" title="Créer une fiche vide">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-            <span>Nouvelle fiche</span>
-          </button>
-        </header>
+    const heroHTML = `
+      <section class="mk-home2-hero" data-editable="hero">
+        <div class="mk-home2-hero-eyebrow">★ Sélection commerciale du mois</div>
+        <h2 class="mk-home2-hero-title" data-editable="hero-title">${escapeAttr(headline)}</h2>
+        ${subhead ? `<p class="mk-home2-hero-sub" data-editable="hero-sub">${escapeAttr(subhead)}</p>` : ''}
+        ${pitchShort ? `<p class="mk-home2-hero-pitch" data-editable="hero-pitch">${escapeAttr(pitchShort)}</p>` : ''}
 
-        <section class="mk-home2-hero">
-          <div class="mk-home2-hero-eyebrow">★ Sélection commerciale du mois</div>
-          <h2 class="mk-home2-hero-title">${escapeAttr(headline)}</h2>
-          ${subhead ? `<p class="mk-home2-hero-sub">${escapeAttr(subhead)}</p>` : ''}
-          ${pitchShort ? `<p class="mk-home2-hero-pitch">${escapeAttr(pitchShort)}</p>` : ''}
-
-          <div class="mk-home2-hero-prods">
-            ${top3.map(p => `
-              <div class="mk-home2-prod">
-                <div class="mk-home2-prod-img">${p.img ? `<img src="${escapeAttr(proxyImg(p.img))}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='💊'"/>` : '💊'}</div>
-                <div class="mk-home2-prod-info">
-                  <div class="mk-home2-prod-name" title="${escapeAttr(p.designation || '')}">${escapeAttr((p.designation || '').slice(0, 36))}${(p.designation || '').length > 36 ? '…' : ''}</div>
-                  <div class="mk-home2-prod-meta">${escapeAttr(p.marque || p.categorie || '—')}</div>
-                </div>
+        <div class="mk-home2-hero-prods">
+          ${top3.map(p => `
+            <div class="mk-home2-prod">
+              <div class="mk-home2-prod-img">${p.img ? `<img src="${escapeAttr(proxyImg(p.img))}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='💊'"/>` : '💊'}</div>
+              <div class="mk-home2-prod-info">
+                <div class="mk-home2-prod-name" title="${escapeAttr(p.designation || '')}">${escapeAttr((p.designation || '').slice(0, 36))}${(p.designation || '').length > 36 ? '…' : ''}</div>
+                <div class="mk-home2-prod-meta">${escapeAttr(p.marque || p.categorie || '—')}</div>
               </div>
-            `).join('')}
-          </div>
-
-          <div class="mk-home2-hero-actions">
-            <button class="mk-home2-cta mk-home2-cta-primary" onclick="window.mkStartFromTheme && window.mkStartFromTheme('${escapeAttr(suggested.id || '')}')">
-              Créer la fiche du mois →
-            </button>
-            <button class="mk-home2-cta mk-home2-cta-ghost" onclick="window.mkTogglePlus()">
-              Voir 30 produits suggérés
-            </button>
-          </div>
-        </section>
-
-        <section class="mk-home2-recent">
-          <header class="mk-home2-section-head">
-            <h3 class="mk-home2-section-title">Mes fiches récentes</h3>
-            ${sheets.length > 6 ? `<button class="mk-home2-section-link" onclick="window.mkTogglePlus()">Voir les ${sheets.length} fiches →</button>` : ''}
-          </header>
-          ${recent.length === 0 ? `
-            <div class="mk-home2-empty">
-              <div class="mk-home2-empty-art">📋</div>
-              <div class="mk-home2-empty-title">Aucune fiche encore</div>
-              <div class="mk-home2-empty-sub">Clique "Créer la fiche du mois" pour démarrer en 60s.</div>
             </div>
-          ` : `
-            <div class="mk-home2-recent-grid">
-              ${recent.map(s => {
-                const products = (s.products || []);
-                const cnt = products.length;
-                const firstImg = products.find(p => p.img);
-                const updated = new Date(s.updated_at || s.created_at || Date.now());
-                const ago = formatAgo(updated);
+          `).join('')}
+        </div>
+
+        <div class="mk-home2-hero-actions">
+          <button class="mk-home2-cta mk-home2-cta-primary" onclick="window.mkStartFromTheme && window.mkStartFromTheme('${escapeAttr(suggested.id || '')}')">
+            Créer la fiche du mois →
+          </button>
+          <button class="mk-home2-cta mk-home2-cta-ghost" onclick="window.mkSetActiveTab('planning')">
+            Voir 30 produits suggérés
+          </button>
+        </div>
+      </section>
+    `;
+
+    const recentHTML = `
+      <section class="mk-home2-recent">
+        <header class="mk-home2-section-head">
+          <h3 class="mk-home2-section-title">Mes fiches récentes</h3>
+          ${sheets.length > 4 ? `<button class="mk-home2-section-link" onclick="window.mkSetActiveTab('biblio')">Voir les ${sheets.length} fiches →</button>` : ''}
+        </header>
+        ${recent.length === 0 ? `
+          <div class="mk-home2-empty">
+            <div class="mk-home2-empty-art">📋</div>
+            <div class="mk-home2-empty-title">Aucune fiche encore</div>
+            <div class="mk-home2-empty-sub">Clique "Créer la fiche du mois" pour démarrer en 60s.</div>
+          </div>
+        ` : `
+          <div class="mk-home2-recent-grid">
+            ${recent.map(s => {
+              const products = (s.products || []);
+              const cnt = products.length;
+              const firstImg = products.find(p => p.img);
+              const updated = new Date(s.updated_at || s.created_at || Date.now());
+              const ago = formatAgo(updated);
+              return `
+                <button class="mk-home2-card" onclick="window.mkOpenSheet && window.mkOpenSheet('${escapeAttr(s.id)}')">
+                  <div class="mk-home2-card-cover">${firstImg ? `<img src="${escapeAttr(proxyImg(firstImg.img))}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="mk-home2-card-cover-icon">📄</span>'}</div>
+                  <div class="mk-home2-card-body">
+                    <div class="mk-home2-card-title">${escapeAttr((s.title || 'Sans titre').slice(0, 38))}</div>
+                    <div class="mk-home2-card-meta"><span class="mk-home2-card-count">${cnt} produit${cnt > 1 ? 's' : ''}</span> · <span class="mk-home2-card-when">${escapeAttr(ago)}</span></div>
+                  </div>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </section>
+    `;
+
+    return `
+      <div class="mk-home2-selection-grid">
+        <div class="mk-home2-selection-col mk-home2-selection-col-hero">${heroHTML}</div>
+        <div class="mk-home2-selection-col mk-home2-selection-col-recent">${recentHTML}</div>
+      </div>
+    `;
+  }
+
+  // ── Tab "Planning 13 mois" — lazy : utilise getPlanning30Grossiste ──
+  function renderHomePlanningTab() {
+    try {
+      const planning = getPlanning30Grossiste(12);
+      return `
+        <div class="mk-home2-tab-section">
+          <div class="mk-section-planning mk-section-planning-tab">
+            <div class="mk-section-head">
+              <div>
+                <div class="mk-section-title">📅 Planning des suggestions · top 30 par mois <span class="mk-section-badge">SANS DOUBLON</span></div>
+                <div class="mk-section-sub">Mois courant + 12 à venir · top 30 PRODUITS DISTINCTS par mois · click une card pour composer la fiche</div>
+              </div>
+            </div>
+            <div class="mk-planning-grid">
+              ${planning.map(m => {
+                const list = m.top30;
+                const top5 = list.slice(0, 5);
+                const totalQte30 = list.reduce((s, b) => s + (b._sec_qte || 0), 0);
+                const totalCa30  = list.reduce((s, b) => s + (b._sec_ca  || 0), 0);
+                const isNow = m.offset === 0;
+                const isNext = m.offset === 1;
+                const cardClass = isNow ? 'mk-month-card-now' : (isNext ? 'mk-month-card-next' : '');
+                const pinClass = isNow ? '' : (isNext ? 'mk-month-card-pin-next' : '');
+                const pinTxt = isNow ? 'CE MOIS' : (isNext ? 'MOIS +1' : (m.offset === 12 ? 'N+1' : ''));
                 return `
-                  <button class="mk-home2-card" onclick="window.mkOpenSheet && window.mkOpenSheet('${escapeAttr(s.id)}')">
-                    <div class="mk-home2-card-cover">${firstImg ? `<img src="${escapeAttr(proxyImg(firstImg.img))}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="mk-home2-card-cover-icon">📄</span>'}</div>
-                    <div class="mk-home2-card-body">
-                      <div class="mk-home2-card-title">${escapeAttr((s.title || 'Sans titre').slice(0, 38))}</div>
-                      <div class="mk-home2-card-meta"><span class="mk-home2-card-count">${cnt} produit${cnt > 1 ? 's' : ''}</span> · <span class="mk-home2-card-when">${escapeAttr(ago)}</span></div>
+                  <div class="mk-month-card ${cardClass}"
+                    title="Top 30 ${escapeAttr(m.theme.name)} pour ${escapeAttr(m.monthName)} (sans doublon)">
+                    <div class="mk-month-card-eyebrow">
+                      <span>${escapeAttr(m.monthLabel)}</span>
+                      ${pinTxt ? `<span class="mk-month-card-pin ${pinClass}">${pinTxt}</span>` : ''}
                     </div>
-                  </button>
+                    <div class="mk-month-card-month">
+                      <span class="mk-month-card-emoji">${m.theme.emoji}</span>
+                      ${escapeAttr(m.monthName)}
+                    </div>
+                    <div class="mk-month-card-theme">${escapeAttr((m.theme._pitch && m.theme._pitch.headline) || m.theme.name)}</div>
+                    ${m.theme._pitch && m.theme._pitch.pitch_short ? `<div class="mk-month-card-pitch">${escapeAttr(m.theme._pitch.pitch_short)}</div>` : ''}
+                    <div class="mk-month-card-meta">${list.length} produits · ${totalQte30.toLocaleString('fr-FR')} u secteur (${eur(totalCa30)})</div>
+                    ${top5.length ? `
+                      <div class="mk-month-card-top5">
+                        ${top5.map((p, i) => `
+                          <div class="mk-month-card-top5-row">
+                            <span class="mk-month-card-top-rank">#${i+1}</span>
+                            <span class="mk-month-card-top5-name" title="${escapeAttr(p.designation)}">${escapeAttr((p.designation || '').slice(0, 30))}${(p.designation || '').length > 30 ? '…' : ''}</span>
+                            ${p._sec_qte > 0 ? `<span class="mk-month-card-top5-qte">${(p._sec_qte).toLocaleString('fr-FR')}u</span>` : ''}
+                          </div>
+                        `).join('')}
+                        ${list.length > 5 ? `<div class="mk-month-card-more">+ ${list.length - 5} autres dans le top 30</div>` : ''}
+                      </div>
+                    ` : ''}
+                    <button class="mk-month-card-cta" onclick="window.mkOpenSeasonPicker('${m.theme.id}', 'grossiste', ${m.offset})">
+                      Composer la fiche · ${m.pool.length} dispos →
+                    </button>
+                  </div>
                 `;
               }).join('')}
             </div>
-          `}
-        </section>
-
-        <div class="mk-home2-foot">
-          <button class="mk-home2-more" onclick="window.mkTogglePlus()">
-            <span>Plus d'options</span>
-            <small>Planning 13 mois · Top ventes · Sagitta · Parapharma OFFILOG · Bibliothèque complète</small>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>
-          </button>
+          </div>
         </div>
+      `;
+    } catch (e) {
+      return `<div class="mk-home2-tab-section mk-home2-tab-error">Données planning indisponibles · <button class="mk-home2-cta mk-home2-cta-ghost" onclick="window.mkTogglePlus()">Ouvrir le hub complet</button></div>`;
+    }
+  }
+
+  // ── Tab "Top ventes IP" — lazy : computeTopVentesOpsCprHp ──
+  function renderHomeTopVentesTab() {
+    if (!(window.OPS_AGGREGATE || window.CPR_AGGREGATE || window.HP_AGGREGATE)) {
+      return `<div class="mk-home2-tab-section mk-home2-tab-loading">📊 Chargement des données ventes OPS+CPR+HP…</div>`;
+    }
+    try {
+      const ventes = computeTopVentesOpsCprHp();
+      const famillePills = ['top'].concat(FAMILLES_IP);
+      const tranchePills = [
+        { id: 'all',   label: 'Toutes tranches',           sub: '' },
+        { id: 'petit', label: 'Petit prix',                sub: '≤ 4,33 €' },
+        { id: 'inter', label: 'Intermédiaire',             sub: '4,33 – 468 €' },
+        { id: 'haut',  label: 'Haut prix',                 sub: '> 468 €' },
+      ];
+      const baseList = statsFamille === 'top' ? ventes.top : (ventes.byFamille[statsFamille] || []);
+      const trancheList = filterByTranche(baseList, statsTranche);
+      const list = filterByCatalogue(trancheList, statsCatalogue);
+      const top100 = list.slice(0, 100);
+      const totalCa = top100.reduce(function (s, p) { return s + p.ca; }, 0);
+      const integralCount = (window.CATALOGUE_INTEGRAL || []).length;
+      const itpCount = (window.CATALOGUE_ITP_MARKETING || []).length;
+      const cataloguePills = [
+        { id: 'all',      label: 'Tous catalogues',  sub: '',                                  icon: '📊' },
+        { id: 'integral', label: 'L’Intégral',       sub: integralCount + ' refs · mars 2026', icon: '📘' },
+        { id: 'itp',      label: 'Catalogue ITP',    sub: itpCount + ' refs · juin 2026',      icon: '📕' },
+      ];
+      return `
+        <div class="mk-home2-tab-section">
+          <div class="mk-section mk-section-stats">
+            <div class="mk-section-head">
+              <div>
+                <div class="mk-section-title">📊 Top ventes secteur OPS + CPR + HP</div>
+                <div class="mk-section-sub">Choisis les produits qui cartonnent dans le marché pharma · click <b>+</b> pour ajouter à la fiche</div>
+              </div>
+            </div>
+            <div class="mk-stats-filters-label">Famille IP</div>
+            <div class="mk-stats-pills">
+              ${famillePills.map(p => `
+                <button class="mk-stats-pill ${statsFamille===p?'on':''}"
+                  style="${statsFamille===p && p!=='top' ? 'background:'+FAMILLE_TINTS[p]+';color:#fff;border-color:'+FAMILLE_TINTS[p]+';' : ''}"
+                  onclick="window.mkSetStatsFamille('${p}')">${p === 'top' ? '⭐ Top global' : escapeAttr(p)}</button>
+              `).join('')}
+            </div>
+            <div class="mk-stats-filters-label">Tranche prix IP <span class="mk-stats-filters-hint">· tarification officielle</span></div>
+            <div class="mk-stats-pills mk-stats-pills-tranches">
+              ${tranchePills.map(t => `
+                <button class="mk-stats-pill mk-stats-pill-tranche ${statsTranche===t.id?'on':''}"
+                  onclick="window.mkSetStatsTranche('${t.id}')">
+                  <span>${escapeAttr(t.label)}</span>
+                  ${t.sub ? `<span class="mk-stats-pill-sub">${escapeAttr(t.sub)}</span>` : ''}
+                </button>
+              `).join('')}
+            </div>
+            <div class="mk-stats-filters-label">Catalogue commercial <span class="mk-stats-filters-hint">· focus sur tes PDF en main</span></div>
+            <div class="mk-stats-pills mk-stats-pills-tranches">
+              ${cataloguePills.map(t => `
+                <button class="mk-stats-pill mk-stats-pill-tranche mk-stats-pill-cat ${statsCatalogue===t.id?'on':''}"
+                  onclick="window.mkSetStatsCatalogue('${t.id}')">
+                  <span>${t.icon} ${escapeAttr(t.label)}</span>
+                  ${t.sub ? `<span class="mk-stats-pill-sub">${escapeAttr(t.sub)}</span>` : ''}
+                </button>
+              `).join('')}
+            </div>
+            <div class="mk-stats-list mk-stats-list-scroll">
+              ${top100.map((p, i) => {
+                const famColor = FAMILLE_TINTS[p.famille] || '#0057FF';
+                const trancheLabel = p.tranche === 'petit' ? '≤ 4,33€' : p.tranche === 'inter' ? '4,33 – 468€' : '> 468€';
+                return `
+                  <div class="mk-stats-row">
+                    <div class="mk-stats-rank" style="background:${famColor}">${i + 1}</div>
+                    <div class="mk-stats-info">
+                      <div class="mk-stats-name">${escapeAttr(p.designation)}</div>
+                      <div class="mk-stats-meta">
+                        <span style="color:${famColor};font-weight:700">${escapeAttr(p.famille)}</span>
+                        <span>· ${escapeAttr(p.marque || '—')}</span>
+                        <span>· CIP ${escapeAttr(p.artcode)}</span>
+                        <span class="mk-stats-tranche-chip">${trancheLabel} · PU ${eur(p.prixUnit)}</span>
+                      </div>
+                    </div>
+                    <div class="mk-stats-kpi">
+                      <div class="mk-stats-ca">${eur(p.ca)}</div>
+                      <div class="mk-stats-qte">${(p.qte || 0).toLocaleString('fr-FR')} u</div>
+                    </div>
+                    <button class="mk-stats-add" onclick="window.mkAddProductFromStats('${escapeAttr(p.artcode)}')" title="Ajouter à une fiche">+</button>
+                  </div>
+                `;
+              }).join('')}
+              ${list.length === 0 ? `
+                <div class="mk-empty" style="padding:24px 18px;text-align:center;color:#64748B">
+                  <span style="font-size:22px;display:block;margin-bottom:6px">🧭</span>
+                  Aucune vente sur cette combinaison <b>famille × tranche</b>.<br>
+                  <span style="font-size:11px;opacity:.7">Élargis la sélection (Top global, Tous prix) pour voir le marché complet</span>
+                </div>
+              ` : ''}
+            </div>
+            <div class="mk-stats-footer">${top100.length} produits affichés sur ${list.length} · CA secteur cumulé top 100 : <b>${eur(totalCa)}</b></div>
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      return `<div class="mk-home2-tab-section mk-home2-tab-error">Erreur calcul top ventes · <button class="mk-home2-cta mk-home2-cta-ghost" onclick="window.mkTogglePlus()">Ouvrir le hub complet</button></div>`;
+    }
+  }
+
+  // ── Tab "Sagitta SHORTLIST" — lazy : renderSagittaCompareSection ──
+  function renderHomeSagittaTab() {
+    try {
+      return `<div class="mk-home2-tab-section">${renderSagittaCompareSection()}</div>`;
+    } catch (e) {
+      return `<div class="mk-home2-tab-section mk-home2-tab-error">Données Sagitta indisponibles</div>`;
+    }
+  }
+
+  // ── Tab "Bibliothèque" — search + filters + grille COMPLÈTE ──
+  function renderHomeBiblioTab(sheetsAll) {
+    const q = mkLibrarySearch;
+    const filter = mkLibraryFilter;
+    // Filtre par recherche (titre + produits.designation)
+    let filtered = sheetsAll.slice();
+    if (q) {
+      filtered = filtered.filter(s => {
+        if ((s.title || '').toLowerCase().includes(q)) return true;
+        return (s.products || []).some(p => (p.designation || '').toLowerCase().includes(q));
+      });
+    }
+    // Filtre par catégorie (récentes <30j, archivées, templates)
+    if (filter === 'recent') {
+      const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      filtered = filtered.filter(s => {
+        const t = new Date(s.updated_at || s.created_at || 0).getTime();
+        return (now - t) < THIRTY_DAYS;
+      });
+    } else if (filter === 'archived') {
+      const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      filtered = filtered.filter(s => {
+        const t = new Date(s.updated_at || s.created_at || 0).getTime();
+        return (now - t) >= THIRTY_DAYS;
+      });
+    } else if (filter === 'template') {
+      filtered = filtered.filter(s => (s.template || 'offre') !== 'offre');
+    }
+
+    const filterPills = [
+      { id: 'all',      label: 'Toutes',     count: sheetsAll.length },
+      { id: 'recent',   label: 'Récentes',   count: sheetsAll.filter(s => (Date.now() - new Date(s.updated_at || s.created_at || 0).getTime()) < 30*24*60*60*1000).length },
+      { id: 'archived', label: 'Archivées',  count: sheetsAll.filter(s => (Date.now() - new Date(s.updated_at || s.created_at || 0).getTime()) >= 30*24*60*60*1000).length },
+      { id: 'template', label: 'Templates',  count: sheetsAll.filter(s => (s.template || 'offre') !== 'offre').length },
+    ];
+
+    return `
+      <div class="mk-home2-tab-section mk-home2-biblio">
+        <div class="mk-home2-biblio-sticky">
+          <div class="mk-home2-omnibox a-field">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search"
+              placeholder="Rechercher dans toutes mes fiches… (titre, produit)"
+              value="${escapeAttr(mkLibrarySearch)}"
+              oninput="window.mkSetLibrarySearch(this.value)"
+              autocomplete="off"
+              spellcheck="false"
+              aria-label="Rechercher dans la bibliothèque" />
+            ${mkLibrarySearch ? `<button class="mk-home2-omnibox-clear" onclick="window.mkSetLibrarySearch('')" title="Effacer">✕</button>` : ''}
+          </div>
+          <div class="mk-home2-biblio-filters">
+            ${filterPills.map(p => `
+              <button class="mk-home2-biblio-pill ${mkLibraryFilter===p.id?'on':''}"
+                onclick="window.mkSetLibraryFilter('${p.id}')">
+                ${escapeAttr(p.label)} <span class="mk-home2-biblio-pill-count">${p.count}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        ${filtered.length === 0 ? `
+          <div class="mk-home2-empty">
+            <div class="mk-home2-empty-art">🔎</div>
+            <div class="mk-home2-empty-title">${mkLibrarySearch ? 'Aucun résultat' : 'Aucune fiche'}</div>
+            <div class="mk-home2-empty-sub">${mkLibrarySearch ? 'Essaie un autre terme ou élargis le filtre.' : 'Crée ta première fiche depuis l’onglet Sélection.'}</div>
+          </div>
+        ` : `
+          <div class="mk-home2-biblio-grid">
+            ${filtered.map(s => {
+              const products = (s.products || []);
+              const cnt = products.length;
+              const firstImg = products.find(p => p.img);
+              const updated = new Date(s.updated_at || s.created_at || Date.now());
+              const ago = formatAgo(updated);
+              const checked = selectedSheetIds.has(s.id);
+              return `
+                <div class="mk-home2-biblio-card ${checked ? 'is-selected' : ''}">
+                  <label class="mk-home2-biblio-check" title="Sélectionner pour export combiné" onclick="event.stopPropagation()">
+                    <input type="checkbox" ${checked ? 'checked' : ''}
+                      onclick="event.stopPropagation();window.mkToggleSelectSheet && window.mkToggleSelectSheet('${escapeAttr(s.id)}')" />
+                    <span class="mk-home2-biblio-check-box"></span>
+                  </label>
+                  <button class="mk-home2-card mk-home2-biblio-cardbtn" onclick="window.mkOpenSheet && window.mkOpenSheet('${escapeAttr(s.id)}')">
+                    <div class="mk-home2-card-cover">${firstImg ? `<img src="${escapeAttr(proxyImg(firstImg.img))}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="mk-home2-card-cover-icon">📄</span>'}</div>
+                    <div class="mk-home2-card-body">
+                      <div class="mk-home2-card-title">${escapeAttr((s.title || 'Sans titre').slice(0, 48))}</div>
+                      <div class="mk-home2-card-meta"><span class="mk-home2-card-count">${cnt} produit${cnt > 1 ? 's' : ''}</span> · <span class="mk-home2-card-when">${escapeAttr(ago)}</span></div>
+                    </div>
+                  </button>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+
+        ${selectedSheetIds.size > 0 ? `
+          <div class="mk-multi-bar mk-home2-batchbar" role="region" aria-label="Sélection multiple">
+            <div class="mk-multi-bar-count">
+              <b>${selectedSheetIds.size}</b> fiche${selectedSheetIds.size>1?'s':''} sélectionnée${selectedSheetIds.size>1?'s':''}
+            </div>
+            <div class="mk-multi-bar-actions">
+              <button class="mk-btn mk-btn-ghost" onclick="window.mkClearSelection && window.mkClearSelection()">Désélectionner</button>
+              <button class="mk-btn mk-btn-primary" onclick="window.mkExportSelected && window.mkExportSelected()">
+                ⬇ Télécharger PDF combiné (${selectedSheetIds.size} page${selectedSheetIds.size>1?'s':''})
+              </button>
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
+  }
+
+  // ── Raccourci ⌘N / Ctrl+N → Nouvelle fiche ──
+  let _mkKeyboardBound = false;
+  function bindMkKeyboardShortcutsOnce() {
+    if (_mkKeyboardBound) return;
+    _mkKeyboardBound = true;
+    document.addEventListener('keydown', function (e) {
+      // Pas de raccourci si on tape dans un champ
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      // Cmd+N (Mac) ou Ctrl+N (Win/Linux)
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'n' || e.key === 'N')) {
+        // Ne bloque que si on est sur la page marketing
+        const root = getRoot();
+        if (!root || !root.querySelector('.mk-home2')) return;
+        e.preventDefault();
+        try { window.mkStartBlank && window.mkStartBlank(); } catch (err) {}
+      }
+    });
   }
 
   function formatAgo(date) {

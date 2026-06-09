@@ -262,3 +262,35 @@ input, textarea, select {
   background: var(--accent);
   color: var(--accent-on);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   WAVE 4 — DESKTOP QUICK WINS
+   Foundation : density vars + desktop layout vars
+   Spec : refonte desktop "parfait pour ordi" (Will 2026-06-09)
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* Layout desktop — largeur max + padding fluide */
+  --max-content-w: 1440px;
+  --content-padding: clamp(20px, 4vw, 40px);
+  --section-gap: 32px;
+
+  /* Density — row height + padding cohérents (table, list rows) */
+  --row-h: 44px;
+  --row-pad-y: 12px;
+}
+
+:root[data-density="compact"] {
+  --row-h: 32px;
+  --row-pad-y: 6px;
+  --section-gap: 20px;
+}
+:root[data-density="cozy"] {
+  --row-h: 44px;
+  --row-pad-y: 12px;
+  --section-gap: 32px;
+}
+:root[data-density="spacious"] {
+  --row-h: 56px;
+  --row-pad-y: 18px;
+  --section-gap: 48px;
+}

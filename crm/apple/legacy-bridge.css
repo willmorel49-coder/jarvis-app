@@ -947,3 +947,103 @@ select:focus-visible,
   }
   .btn-loading::after { animation: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   WAVE 4 — DESKTOP QUICK WINS (override legacy)
+   1. focus-visible global accessible
+   2. KPI grid fixe 4 cols ≥1440px
+   3. Scrollbars discrètes desktop only
+   4. Density rows (table, list)
+   5. td-name Benchmark étendu desktop
+   6. Hover desktop cohérent (cards, pharma-item, pin)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 1. focus-visible global ─── */
+:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+  border-radius: var(--r-sm);
+}
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+/* ─── 2. KPI grid fixe 4 cols ≥1440px ─── */
+@media (min-width: 1440px) {
+  .kpi-grid,
+  .dash-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .kpi-grid,
+  .dash-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ─── 3. Scrollbars discrètes (desktop pointer fin uniquement) ─── */
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--label-quaternary);
+    border-radius: var(--r-full);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--label-tertiary);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+/* ─── 4. Density rows : table + list rows + sections ─── */
+table tbody tr {
+  height: var(--row-h) !important;
+}
+.a-list-row,
+.ig-row {
+  min-height: var(--row-h) !important;
+  padding-top: var(--row-pad-y) !important;
+  padding-bottom: var(--row-pad-y) !important;
+}
+section + section {
+  margin-top: var(--section-gap);
+}
+
+/* ─── 5. td-name Benchmark étendu desktop ─── */
+@media (min-width: 1280px) {
+  .td-name {
+    max-width: 320px !important;
+  }
+}
+
+/* ─── 6. Hover desktop cohérent (cards cliquables, pharma, pin) ─── */
+@media (hover: hover) and (pointer: fine) {
+  .a-card.is-link:hover,
+  .pharma-item:hover,
+  .pin-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-3);
+    transition: transform var(--dur-quick) var(--ease-spring),
+                box-shadow var(--dur-quick) var(--ease-standard);
+  }
+  *[data-clickable]:not([disabled]) {
+    cursor: pointer;
+  }
+}
