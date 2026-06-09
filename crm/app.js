@@ -8574,10 +8574,15 @@ async function initApp() {
     return;
   }
 
-  document.getElementById('sidebar-user-name').textContent = state.user.name;
-  document.getElementById('sidebar-user-role').textContent = state.user.role;
-  document.getElementById('sidebar-avatar').textContent = state.user.name.charAt(0);
-  document.getElementById('nav-admin').style.display = state.user.role === 'admin' ? 'flex' : 'none';
+  // Guards null safety : refonte sidebar a vire certains ID (nav-admin n'existe plus)
+  var elName = document.getElementById('sidebar-user-name');
+  if (elName) elName.textContent = state.user.name;
+  var elRole = document.getElementById('sidebar-user-role');
+  if (elRole) elRole.textContent = state.user.role;
+  var elAvatar = document.getElementById('sidebar-avatar');
+  if (elAvatar) elAvatar.textContent = state.user.name.charAt(0);
+  var elAdmin = document.getElementById('nav-admin');
+  if (elAdmin) elAdmin.style.display = state.user.role === 'admin' ? 'flex' : 'none';
 
   updateNavBadge();
   navigate('marketing');
