@@ -2153,11 +2153,18 @@ function renderPharmacies() {
   const wmlVisCRM = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
   const wmlNnMapCRM = new Map(wmlVisCRM.map(d => [(d.nom||'').trim().toUpperCase().replace(/\s+/g,' '), d]));
 
-  // Construire liste enrichie de toutes les pharmacies avec CA et delta
+  // Construire liste enrichie de toutes les pharmacies avec CA + marge MDL + opp
   const today = new Date(); today.setHours(0,0,0,0);
   let enriched = state.pharmacies.map(ph => {
-    const caCur  = sumCA(salesCur.filter(s => s.pharmacyId === ph.id));
+    const salesCurPh = salesCur.filter(s => s.pharmacyId === ph.id);
+    const allPhSales = getSales({ pharmacyId: ph.id });
+    const caCur  = sumCA(salesCurPh);
     const caPrev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
+    // Marge MDL : sur période courante (rapide)
+    const mdl = sumMargeMDL(salesCurPh);
+    // Nb produits commandés total (toutes périodes) + nb opportunités estimées
+    const cipsOrdered = new Set(allPhSales.map(s => String(s.artCode || '')).filter(c => c.length >= 7));
+    const nProdOrdered = cipsOrdered.size;
     const g      = caPrev > 0 ? (caCur - caPrev) / caPrev * 100 : null;
     const status = g === null ? 'new' : g > 20 ? 'up' : g >= -5 ? 'flat' : 'down';
     // Last import date
@@ -2192,7 +2199,7 @@ function renderPharmacies() {
         lastNoteDays = Math.round((today - maxTs) / 86400000);
       }
     } catch {}
-    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate, wmlEntry, lastNoteDays, noteCount };
+    return { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, prochaineVisiteDate, wmlEntry, lastNoteDays, noteCount, mdl, nProdOrdered };
   }).filter(e => e.caCur > 0 || e.caPrev > 0);
 
   // Filtre texte (nom + ville/CP depuis CLIENTS)
@@ -2266,7 +2273,7 @@ function renderPharmacies() {
 
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
-        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry, noteCount, lastNoteDays } = e;
+        const { ph, caCur, caPrev, g, status, lastImport, lastImportDays, prochaineVisite, wmlEntry, noteCount, lastNoteDays, mdl, nProdOrdered } = e;
         const chipHtml = status === 'up'   ? '<span class="status-chip status-up">● Croissance</span>'
                        : status === 'flat' ? '<span class="status-chip status-flat">● Stable</span>'
                        : status === 'down' ? '<span class="status-chip status-down">● Baisse</span>'
@@ -2313,11 +2320,20 @@ function renderPharmacies() {
                 ${wmlEntry ? `<span style="font-size:10px;color:#14B86A;background:rgba(20,184,106,.12);padding:1px 6px;border-radius:8px;font-weight:600">📦 WML ${fmt(wmlEntry.ca)}</span>` : ''}
               </div>
             </div>
-            <div style="flex:1;max-width:120px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
-            <div class="pharma-stats">
-              <div class="pharma-ca">${fmt(caCur)}</div>
+            <div style="flex:1;max-width:100px;padding:0 12px">${renderProgress(caCur, maxCA, ph.color)}</div>
+            <div class="pharma-stats" style="min-width:88px">
+              <div class="pharma-ca" style="font-family:'Geist Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums">${fmt(caCur)}</div>
               <div class="pharma-qte">CA net HT</div>
             </div>
+            <div style="min-width:96px;text-align:right;border-left:1px solid var(--border1);padding-left:12px">
+              <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--mint);font-variant-numeric:tabular-nums" title="Marge MDL générée pour cette pharma (officiel France, remboursables uniquement)">${fmt(mdl.margeTotale)}</div>
+              <div style="font-size:10px;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase">Marge MDL ${mdl.margePct > 0 ? mdl.margePct.toFixed(1) + '%' : ''}</div>
+            </div>
+            <div style="min-width:72px;text-align:right;border-left:1px solid var(--border1);padding-left:12px">
+              <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums" title="Nombre de références produit commandées (toutes périodes)">${nProdOrdered}</div>
+              <div style="font-size:10px;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase">Réfs</div>
+            </div>
+            <button onclick="event.stopPropagation();window.exportPharmaListingPDF && window.exportPharmaListingPDF('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Télécharger le listing PDF (Best + À travailler)" aria-label="PDF listing" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📄</button>
             <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:4px;transition:all .15s" title="Ouvrir la fiche de visite" data-tooltip="Ouvrir la fiche de visite" aria-label="Ouvrir la fiche de visite" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">📋</button>
             <div style="color:var(--text3);font-size:16px">›</div>
           </div>`;
@@ -3669,11 +3685,9 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   // (D) Best produits + À travailler par catégorie (avec bouton PDF)
   const __bestWorkHTML = __safeRender(() => renderBestAndWorkSectionsHTML(pharma, allPhSales), 'Best produits + À travailler');
   const __opportunitiesHTML = __bestWorkHTML + __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
-  // Marqueur de version visible — confirme que la dernière version est bien chargée
-  // Ultra-visible : bandeau bleu en haut, retiré après que Will ait confirmé
-  const __versionBadge = '<div style="position:sticky;top:0;z-index:100;background:linear-gradient(90deg,#0057FF 0%,#0070FF 100%);color:#fff;padding:10px 16px;border-radius:0;font-family:\'SF Mono\',Menlo,monospace;font-size:13px;font-weight:600;letter-spacing:0.04em;text-align:center;box-shadow:0 4px 12px rgba(0,87,255,0.30);margin:-16px -16px 20px"><span style="font-size:16px;margin-right:6px">✓</span> Listing pharma activé · v=20260609k · ' + new Date().toLocaleTimeString('fr-FR') + ' · si tu vois ce bandeau bleu la nouvelle version est chargée</div>';
-  // Log au démarrage pour debug console
-  try { console.log('[showPharmaDetail v20260609k] pharma=' + pharma.name + ' sales=' + allPhSales.length); } catch(e){}
+  // Bandeau version retiré (bug fixé). Console log reste pour debug optionnel.
+  const __versionBadge = '';
+  try { console.log('[showPharmaDetail] pharma=' + pharma.name + ' sales=' + allPhSales.length); } catch(e){}
 
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
