@@ -423,6 +423,87 @@ function sumMarge(sales) { return sales.reduce((a, s) => a + Math.max(0, (s.puBr
 function sumCaBrut(sales){ return sales.reduce((a, s) => a + (s.puBrut * s.qte), 0); }
 function margePct(sales) { const b = sumCaBrut(sales); return b > 0 ? sumMarge(sales) / b * 100 : 0; }
 
+// ════════════════════════════════════════════════════════════════════
+// MARGE OFFICIELLE MDL — Marge Dégressive Lissée pharmacie France
+// (validée Will 2026-06-09, barème officiel médicaments remboursables)
+// 0 — 4,33 €   → 0,18 € fixe par boîte
+// 4,33 — 468 € → 3,9 % du prix
+// > 468 €      → 19,50 € fixe par boîte
+// /!\ S'APPLIQUE UNIQUEMENT AUX PRODUITS REMBOURSÉS.
+// Les NR (Non Remboursés) ont une marge libre (PLM) non calculable ici.
+// ════════════════════════════════════════════════════════════════════
+function calcMargeBoiteMDL(prixNet) {
+  if (!(prixNet > 0)) return 0;
+  if (prixNet <= 4.33) return 0.18;
+  if (prixNet <= 468) return prixNet * 0.039;
+  return 19.50;
+}
+
+// Caches d'index remboursable / NR (init lazy)
+let __mdlRembIdx = null;
+let __mdlNrIdx = null;
+function _ensureMdlIndexes() {
+  if (__mdlRembIdx && __mdlNrIdx) return;
+  __mdlRembIdx = new Set();
+  __mdlNrIdx = new Set();
+  // NR depuis Sagitta SHORTLIST
+  if (typeof SAGITTA_SHORTLIST !== 'undefined' && SAGITTA_SHORTLIST.length) {
+    SAGITTA_SHORTLIST.forEach(p => {
+      const c = String(p.cip13 || p.cip || '');
+      if (c) __mdlNrIdx.add(c);
+    });
+  }
+  // Remboursables depuis BENCHMARK
+  if (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) {
+    BENCHMARK.forEach(b => {
+      if (b.has_ameli === true || b.is_remb === true) {
+        if (b.cip13)   __mdlRembIdx.add(String(b.cip13));
+        if (b.artcode) __mdlRembIdx.add(String(b.artcode));
+        if (b.ean)     __mdlRembIdx.add(String(b.ean));
+      }
+    });
+  }
+}
+function isMdlRemboursable(cip) {
+  const c = String(cip || '');
+  if (!c) return false;
+  _ensureMdlIndexes();
+  if (__mdlNrIdx.has(c)) return false; // NR explicite → marge libre
+  return __mdlRembIdx.has(c);
+}
+
+/**
+ * Calcule la marge MDL sur les ventes — uniquement produits remboursables.
+ * Retourne { margeTotale, caRembHT, caNrHT, margePct, lignesRemb, lignesNr }
+ * margePct = margeTotale / caRembHT × 100 (HT pharmacien)
+ */
+function sumMargeMDL(sales) {
+  let margeTotale = 0;
+  let caRembHT = 0;
+  let caNrHT = 0;
+  let lignesRemb = 0;
+  let lignesNr = 0;
+  for (const s of sales) {
+    const ca = s.mntNetHt || 0;
+    if (isMdlRemboursable(s.artCode)) {
+      margeTotale += calcMargeBoiteMDL(s.puNet || 0) * (s.qte || 0);
+      caRembHT += ca;
+      lignesRemb++;
+    } else {
+      caNrHT += ca;
+      lignesNr++;
+    }
+  }
+  return {
+    margeTotale,
+    caRembHT,
+    caNrHT,
+    margePct: caRembHT > 0 ? (margeTotale / caRembHT) * 100 : 0,
+    lignesRemb,
+    lignesNr,
+  };
+}
+
 function byCategory(sales) {
   const map = {};
   for (const s of sales) {
@@ -2956,6 +3037,12 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   const nRefCur  = new Set(salesCur.map(s => s.artCode)).size;
   const sectorCA = sumCA(curY ? getSales({ year: curY, month: curM }) : []);
   const pctOfSector = sectorCA > 0 ? caCur / sectorCA * 100 : 0;
+  // ── Marge MDL France (officielle, médicaments remboursables uniquement) ──
+  // Barème : 0-4,33€ → 0,18€/boîte | 4,33-468€ → 3,9% | >468€ → 19,50€/boîte
+  const mdlCur  = sumMargeMDL(salesCur);
+  const mdlPrev = sumMargeMDL(salesPrev);
+  const mdlAll  = sumMargeMDL(allPhSales);
+  const mdlDeltaPct = mdlPrev.margeTotale > 0 ? ((mdlCur.margeTotale - mdlPrev.margeTotale) / mdlPrev.margeTotale) * 100 : null;
 
   // ── WML groupement data for this pharmacy ────────
   const wmlVisDet = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
@@ -3184,6 +3271,36 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div class="kpi-value" style="color:var(--amber)">${pctOfSector.toFixed(1)}%</div>
           <div class="kpi-label">Part secteur</div>
           ${potentielGx > 0 ? `<div style="margin-top:6px;font-size:11px;color:var(--text3)">Pot. Gx ${fmt(potentielGx)}</div>` : ''}
+        </div>
+      </div>
+
+      <!-- Marge MDL pharmacie (officielle France, médicaments remboursables uniquement) -->
+      <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--mint);padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="font-size:11px;color:var(--mint);font-weight:700;text-transform:uppercase;letter-spacing:.06em">💰 Marge MDL pharmacie · ${curLabel}</div>
+          <div style="font-size:10px;color:var(--text3)">Barème officiel France · 0,18€ &lt;4,33€ · 3,9% jusqu'à 468€ · 19,50€ au-delà</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
+          <div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Marge MDL générée</div>
+            <div style="font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--mint);font-variant-numeric:tabular-nums">${fmt(mdlCur.margeTotale)}</div>
+            ${mdlDeltaPct !== null ? `<div style="font-size:11px;font-weight:600;color:${mdlDeltaPct >= 0 ? 'var(--mint)' : 'var(--rose)'};margin-top:2px">${mdlDeltaPct >= 0 ? '↑' : '↓'} ${Math.abs(mdlDeltaPct).toFixed(1)}% vs ${prevLabel}</div>` : ''}
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Taux marge / CA remb.</div>
+            <div style="font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums">${mdlCur.margePct.toFixed(2)}<span style="font-size:14px">%</span></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(mdlCur.caRembHT)} CA remb. ${curLabel}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">CA NR · marge libre</div>
+            <div style="font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums">${fmt(mdlCur.caNrHT)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Non remboursés · politique pharma</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Marge MDL cumulée</div>
+            <div style="font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">${fmt(mdlAll.margeTotale)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Toutes périodes · ${mdlAll.margePct.toFixed(2)}%</div>
+          </div>
         </div>
       </div>
 
