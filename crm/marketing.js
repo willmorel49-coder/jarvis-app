@@ -1559,13 +1559,16 @@
     const isNR    = (b) => sagittaCipSet.has(String(b.cip13 || '')) || (b.has_ameli === false);
 
     const defs = [
-      { id: 'cheap',  name: 'Petits prix',                 sub: '0 — 4,33 € · ambiant',                 cap: 100, filter: isCheap, accent: '#10B981' },
-      { id: 'mid',    name: 'Produits intermédiaires ambiants', sub: '4,33 — 468 €',                     cap: 500, filter: isMid,   accent: '#0057FF' },
-      { id: 'exp',    name: 'Produits chers',              sub: '> 468 €',                              cap: 100, filter: isExp,   accent: '#FF6B35' },
-      { id: 'cold',   name: 'Produits froids',             sub: 'chaîne du froid 2–8 °C',               cap: 200, filter: isFroid, accent: '#06B6D4' },
-      { id: 'gen',    name: 'Génériques',                  sub: 'EG · Mylan · Biogaran · Sandoz · Teva…', cap: 200, filter: isGen,  accent: '#A78BFA' },
-      { id: 'biosim', name: 'Biosimilaires',               sub: 'Truxima · Benepali · Remsima…',         cap: 50,  filter: isBio,  accent: '#EC4899' },
-      { id: 'nr',     name: 'Non remboursés',              sub: 'Sagitta SHORTLIST NR · ' + SAGITTA.length + ' réfs', cap: 500, filter: isNR, accent: '#F59E0B' },
+      { id: 'cheap',     name: 'Petits prix',                 sub: '0 — 4,33 € · ambiant',                 cap: 100, filter: isCheap, accent: '#10B981' },
+      { id: 'mid',       name: 'Produits intermédiaires ambiants', sub: '4,33 — 468 €',                     cap: 500, filter: isMid,   accent: '#0057FF' },
+      { id: 'exp',       name: 'Produits chers',              sub: '> 468 €',                              cap: 100, filter: isExp,   accent: '#FF6B35' },
+      { id: 'cold',      name: 'Produits froids',             sub: 'chaîne du froid 2–8 °C',               cap: 200, filter: isFroid, accent: '#06B6D4' },
+      { id: 'gen',       name: 'Génériques',                  sub: 'EG · Mylan · Biogaran · Sandoz · Teva…', cap: 200, filter: isGen,  accent: '#A78BFA' },
+      { id: 'biosim',    name: 'Biosimilaires',               sub: 'Truxima · Benepali · Remsima…',         cap: 50,  filter: isBio,  accent: '#EC4899' },
+      // Non remboursés : 3 sous-segments par tranches de prix (pas de comparaison Ameli — par définition pas dans Ameli)
+      { id: 'nr-cheap',  name: 'NR · Petits prix',            sub: '0 — 4,33 € · non remboursés',          cap: 100, filter: function (b) { return isNR(b) && isCheap(b); }, accent: '#F59E0B', noAmeli: true },
+      { id: 'nr-mid',    name: 'NR · Intermédiaires',         sub: '4,33 — 468 € · non remboursés',        cap: 500, filter: function (b) { return isNR(b) && isMid(b); },   accent: '#FBBF24', noAmeli: true },
+      { id: 'nr-exp',    name: 'NR · Chers',                  sub: '> 468 € · non remboursés',             cap: 100, filter: function (b) { return isNR(b) && isExp(b); },   accent: '#D97706', noAmeli: true },
     ];
 
     return defs.map(def => {
@@ -1582,10 +1585,12 @@
     });
   }
 
-  function renderSegmentRow(b, i) {
+  function renderSegmentRow(b, i, opts) {
+    opts = opts || {};
+    const noAmeli = !!opts.noAmeli;
     const ipQty = b.ip_qty || 0;
     const ameliQty = b.ameli_total || 0;
-    const r = ameliQty > 0 ? (ipQty / ameliQty) * 100 : null;
+    const r = (!noAmeli && ameliQty > 0) ? (ipQty / ameliQty) * 100 : null;
     const prixIP = (typeof b.prix_ip === 'number' && b.prix_ip > 0) ? b.prix_ip :
                    (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
     const designation = b.designation || '';
@@ -1596,8 +1601,10 @@
         <td class="mk-cat-cip">${escapeAttr(cipFormat(b.cip13 || ''))}</td>
         <td class="mk-cat-num">${prixIP > 0 ? prixIP.toFixed(2) + ' €' : '—'}</td>
         <td class="mk-cat-num">${ipQty.toLocaleString('fr-FR')}</td>
+        ${noAmeli ? '' : `
         <td class="mk-cat-num">${ameliQty > 0 ? fmtBigVol(ameliQty) : '—'}</td>
         <td class="mk-cat-num ${r != null ? 'mk-cat-ratio' : 'mk-cat-empty'}">${r != null ? r.toFixed(1) + '%' : '—'}</td>
+        `}
         <td><button class="mk-cat-addbtn" onclick="event.stopPropagation();window.mkQuickAddProduct('${escapeAttr(b.cip13 || '')}')" title="Ajouter à la fiche en cours">+</button></td>
       </tr>
     `;
@@ -1605,7 +1612,8 @@
 
   function renderSegmentCard(seg) {
     const isOpen = mkExpandedCategories.has(seg.id);
-    const ratio = seg.totalAmeli > 0 ? (seg.totalIpQty / seg.totalAmeli) * 100 : null;
+    const noAmeli = !!seg.noAmeli;
+    const ratio = (!noAmeli && seg.totalAmeli > 0) ? (seg.totalIpQty / seg.totalAmeli) * 100 : null;
     const initial = isOpen ? seg.items : seg.items.slice(0, 10);
 
     return `
@@ -1614,14 +1622,14 @@
           <span class="mk-cat-card-accent" style="background:${seg.accent}"></span>
           <div class="mk-cat-card-titles">
             <div class="mk-cat-card-name">${escapeAttr(seg.name)} <span class="mk-cat-card-cap">Top ${seg.cap}</span></div>
-            <div class="mk-cat-card-meta">${escapeAttr(seg.sub)} · ${seg.totalCount.toLocaleString('fr-FR')} produits · ${seg.matchedAmeli} matchs Ameli</div>
+            <div class="mk-cat-card-meta">${escapeAttr(seg.sub)} · ${seg.totalCount.toLocaleString('fr-FR')} produits${noAmeli ? '' : ' · ' + seg.matchedAmeli + ' matchs Ameli'}</div>
           </div>
           <div class="mk-cat-card-stats">
             <div class="mk-cat-stat">
               <span class="mk-cat-stat-v">${seg.totalIpQty.toLocaleString('fr-FR')}</span>
               <span class="mk-cat-stat-k">u IP vendues</span>
             </div>
-            ${seg.totalAmeli > 0 ? `
+            ${(!noAmeli && seg.totalAmeli > 0) ? `
             <div class="mk-cat-stat">
               <span class="mk-cat-stat-v">${fmtBigVol(seg.totalAmeli)}</span>
               <span class="mk-cat-stat-k">u Ameli France</span>
@@ -1631,6 +1639,12 @@
             <div class="mk-cat-stat mk-cat-stat-ratio-cell">
               <span class="mk-cat-stat-v">${ratio.toFixed(1)}%</span>
               <span class="mk-cat-stat-k">part IP / marché</span>
+            </div>
+            ` : ''}
+            ${noAmeli ? `
+            <div class="mk-cat-stat">
+              <span class="mk-cat-stat-v" style="font-size:11px;color:#71717A;text-transform:uppercase;letter-spacing:0.04em">n/a</span>
+              <span class="mk-cat-stat-k">Ameli (NR)</span>
             </div>
             ` : ''}
           </div>
@@ -1645,13 +1659,12 @@
                 <th>CIP13</th>
                 <th class="mk-cat-num-h">Prix net</th>
                 <th class="mk-cat-num-h">Vol IP</th>
-                <th class="mk-cat-num-h">Vol Ameli</th>
-                <th class="mk-cat-num-h">Part IP</th>
+                ${noAmeli ? '' : '<th class="mk-cat-num-h">Vol Ameli</th><th class="mk-cat-num-h">Part IP</th>'}
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              ${initial.map(renderSegmentRow).join('')}
+              ${initial.map(function (b, i) { return renderSegmentRow(b, i, { noAmeli: noAmeli }); }).join('')}
             </tbody>
           </table>
           ${!isOpen && seg.items.length > 10 ? `
@@ -1673,7 +1686,7 @@
         <div class="mk-section-head">
           <div>
             <div class="mk-section-title">📊 Top ventes IP × Ameli · par segment</div>
-            <div class="mk-section-sub">7 segments commerciaux · ${BENCH.length.toLocaleString('fr-FR')} produits IP · cliquer <code style="font-family:'Geist Mono',monospace;background:rgba(0,87,255,0.08);color:#0057FF;padding:1px 5px;border-radius:3px;font-size:11px">+</code> ajoute le produit à la fiche en cours</div>
+            <div class="mk-section-sub">${segments.length} segments commerciaux · ${BENCH.length.toLocaleString('fr-FR')} produits IP · cliquer <code style="font-family:'Geist Mono',monospace;background:rgba(0,87,255,0.08);color:#0057FF;padding:1px 5px;border-radius:3px;font-size:11px">+</code> ajoute le produit à la fiche en cours</div>
           </div>
         </div>
         <div class="mk-cat-list">
@@ -1682,6 +1695,59 @@
       </div>
     `;
   }
+
+  // Expose pour réutilisation depuis app.js (Catalogue IP, fiche pharmacie)
+  window.renderTopVentesSegmentsHTML = renderTopVentesCategoriesSection;
+  window.getMkSegments = getSegments;
+
+  /**
+   * Rend la section "Top ventes IP × Ameli · par segment" FILTRÉE :
+   * exclut les CIPs déjà commandés par la pharmacie pour révéler les opportunités.
+   * @param {Set<string>} excludedCipsSet - Set de CIPs (chaînes) à exclure
+   * @param {string} [titleOverride] - titre custom (optionnel)
+   * @param {string} [subOverride]   - sous-titre custom (optionnel)
+   */
+  window.renderTopVentesSegmentsForPharmaHTML = function (excludedCipsSet, titleOverride, subOverride) {
+    const BENCH = window.BENCHMARK || [];
+    if (!BENCH.length) return '';
+    const baseSegments = getSegments();
+    const cipSet = excludedCipsSet instanceof Set ? excludedCipsSet : new Set(excludedCipsSet || []);
+    // Pour chaque segment : filtrer items pour exclure les CIPs commandés, recalculer totaux
+    const opportunitySegments = baseSegments.map(function (seg) {
+      const filteredItems = seg.items.filter(function (b) {
+        return !cipSet.has(String(b.cip13 || ''));
+      });
+      const filteredTotalCount = BENCH.filter(seg.filter).filter(function (b) {
+        return !cipSet.has(String(b.cip13 || ''));
+      }).length;
+      return Object.assign({}, seg, {
+        items: filteredItems,
+        totalCount: filteredTotalCount,
+        totalIpQty: filteredItems.reduce(function (s, b) { return s + (b.ip_qty || 0); }, 0),
+        totalAmeli: filteredItems.reduce(function (s, b) { return s + (b.ameli_total || 0); }, 0),
+        matchedAmeli: filteredItems.filter(function (b) { return b.has_ameli; }).length,
+      });
+    });
+    // Garder uniquement les segments avec au moins 1 opportunité
+    const nonEmptySegments = opportunitySegments.filter(function (seg) { return seg.items.length > 0; });
+    const totalOpp = nonEmptySegments.reduce(function (s, seg) { return s + seg.totalCount; }, 0);
+    const title = titleOverride || '🎯 Opportunités commerciales · ce qu\'elle ne commande PAS';
+    const sub = subOverride || (totalOpp.toLocaleString('fr-FR') + ' produits IP non commandés par cette pharmacie · cliquer un segment pour voir le top, ' +
+                 '<code style="font-family:\'Geist Mono\',monospace;background:rgba(0,87,255,0.08);color:#0057FF;padding:1px 5px;border-radius:3px;font-size:11px">+</code> ajoute à la fiche en cours');
+    return `
+      <div class="mk-section mk-cat-section">
+        <div class="mk-section-head">
+          <div>
+            <div class="mk-section-title">${title}</div>
+            <div class="mk-section-sub">${sub}</div>
+          </div>
+        </div>
+        <div class="mk-cat-list">
+          ${nonEmptySegments.map(renderSegmentCard).join('')}
+        </div>
+      </div>
+    `;
+  };
 
   window.mkToggleSegment = function (segId) {
     if (mkExpandedCategories.has(segId)) mkExpandedCategories.delete(segId);
