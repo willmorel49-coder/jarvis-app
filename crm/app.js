@@ -3657,10 +3657,20 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
       )
     : '';
   // (C) Sur mesure : ce que ses peers commandent et qu'elle ne commande pas
-  const __peerRecsHTML = renderPeerRecommendationsHTML(pharma, allPhSales);
+  // Wrappers safe : si une fonction crash, on log et on continue avec ''
+  function __safeRender(fn, label) {
+    try { return fn() || ''; }
+    catch (e) {
+      console.error('[showPharmaDetail] ' + label + ' crashed:', e);
+      return '<div class="card" style="padding:14px;margin-top:20px;border-left:3px solid #FF3B30;background:#FFF5F5"><div style="font-weight:700;color:#B7281E;font-size:13px">⚠️ Section "' + label + '" en erreur</div><div style="font-size:11px;color:#5B6478;margin-top:4px">' + (e && e.message ? e.message : 'Erreur inconnue') + ' — recharge la page (⌘+Shift+R)</div></div>';
+    }
+  }
+  const __peerRecsHTML = __safeRender(() => renderPeerRecommendationsHTML(pharma, allPhSales), 'Sur mesure (peers)');
   // (D) Best produits + À travailler par catégorie (avec bouton PDF)
-  const __bestWorkHTML = renderBestAndWorkSectionsHTML(pharma, allPhSales);
+  const __bestWorkHTML = __safeRender(() => renderBestAndWorkSectionsHTML(pharma, allPhSales), 'Best produits + À travailler');
   const __opportunitiesHTML = __bestWorkHTML + __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
+  // Marqueur de version visible — confirme que la dernière version est bien chargée
+  const __versionBadge = '<div style="margin-top:24px;text-align:center;font-family:\'SF Mono\',Menlo,monospace;font-size:10px;letter-spacing:0.06em;color:#71717A">CRM Intégral Pharma · v=20260609j · listing pharma activé · ' + new Date().toLocaleTimeString('fr-FR') + '</div>';
 
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
@@ -4239,6 +4249,9 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
       <!-- Top ventes IP par segment FILTRÉ : opportunités commerciales pour cette pharmacie -->
       ${__opportunitiesHTML}
+
+      <!-- Marqueur de version (debug : visible pour valider le déploiement) -->
+      ${__versionBadge}
 
       <!-- Bouton flottant Nouvelle visite (DA Intégral Pharma) -->
       <button class="np-fab" onclick="showFicheVisite('${pharma.id}')" aria-label="Nouvelle visite">
