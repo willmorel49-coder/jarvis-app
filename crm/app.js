@@ -3014,6 +3014,435 @@ function renderPeerRecommendationsHTML(pharma, allPhSales) {
   '</section>';
 }
 
+// ════════════════════════════════════════════════════════════════════
+// BEST PRODUITS + À TRAVAILLER par catégorie + Export PDF
+// Validé Will 2026-06-09 : 10-30 best par cat, 20-50 à travailler par cat
+// ════════════════════════════════════════════════════════════════════
+const _CAT_DEFS = [
+  { id: 'froid',  emoji: '❄️', label: 'Chaîne du froid 2–8 °C',     accent: '#06B6D4' },
+  { id: 'biosim', emoji: '🧬', label: 'Biosimilaires',               accent: '#EC4899' },
+  { id: 'gen',    emoji: '💊', label: 'Génériques',                  accent: '#A78BFA' },
+  { id: 'cheap',  emoji: '🟢', label: 'Petits prix · 0 — 4,33 €',    accent: '#10B981' },
+  { id: 'mid',    emoji: '🔵', label: 'Intermédiaires · 4,33 — 468 €', accent: '#0057FF' },
+  { id: 'exp',    emoji: '🟠', label: 'Chers · > 468 €',             accent: '#FF6B35' },
+  { id: 'nr',     emoji: '🟡', label: 'Non remboursés (marge libre)', accent: '#F59E0B' },
+];
+const _GEN_RX = /\b(MYLAN|BIOGARAN|SANDOZ|TEVA|RATIOPHARM|EG|ZENTIVA|ARROW|VIATRIS|ACCORD|KRKA|BAILLY|CRISTERS|RANBAXY)\b/;
+const _BIO_RX = /\b(BIOSIMILAIRE|TRUXIMA|BENEPALI|REMSIMA|RIXATHON|RUXIENCE|MVASI|ZIRABEV|HULIO|HEFIYA|KANJINTI|IMRALDI|ZESSLY|FLIXABI|INHIXA)\b/;
+function _catOfProduct(r) {
+  // r doit avoir : designation, puNet?, is_froid?, has_ameli?, categorie?, famille?
+  const isFr = r.is_froid === true || r.famille === 'froid' || /FROID|RÉFRIGÉR|THERMOSENS/i.test(r.designation || '');
+  if (isFr) return 'froid';
+  const D = (r.designation || '').toUpperCase();
+  if (_BIO_RX.test(D)) return 'biosim';
+  if (_GEN_RX.test(D) || /générique/i.test(r.categorie || '')) return 'gen';
+  if (r.has_ameli === false) return 'nr';
+  const p = r.puNet || r.prix_ip || 0;
+  if (p > 0 && p <= 4.33) return 'cheap';
+  if (p > 4.33 && p <= 468) return 'mid';
+  if (p > 468) return 'exp';
+  return 'mid'; // fallback
+}
+
+function bestProductsByCategoryForPharma(allPhSales, capPerCat) {
+  capPerCat = capPerCat || { froid: 30, biosim: 15, gen: 30, cheap: 20, mid: 30, exp: 15, nr: 30 };
+  // Index BENCHMARK pour enrichir
+  const benchByCip = new Map();
+  if (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) {
+    BENCHMARK.forEach(b => {
+      if (b.cip13)   benchByCip.set(String(b.cip13),   b);
+      if (b.artcode) benchByCip.set(String(b.artcode), b);
+    });
+  }
+  // Agrège par CIP
+  const byCip = new Map();
+  for (const s of allPhSales) {
+    const cip = String(s.artCode || '');
+    if (!cip) continue;
+    let stat = byCip.get(cip);
+    if (!stat) {
+      stat = {
+        cip, designation: s.artDesignation || '', famille: s.artFamille || '',
+        puNet: s.puNet || 0, qte: 0, ca: 0, marge: 0, lignes: 0,
+      };
+      const b = benchByCip.get(cip);
+      if (b) {
+        stat.categorie = b.categorie;
+        stat.is_froid = b.is_froid;
+        stat.has_ameli = b.has_ameli;
+        stat.prix_ip = b.prix_ip;
+      }
+      byCip.set(cip, stat);
+    }
+    stat.qte += s.qte || 0;
+    stat.ca += s.mntNetHt || 0;
+    stat.marge += Math.max(0, (s.puBrut - s.puNet) * s.qte);
+    stat.lignes++;
+    if (!stat.puNet && s.puNet) stat.puNet = s.puNet;
+  }
+  // Ajoute marge MDL pour les remboursables
+  byCip.forEach(stat => {
+    if (isMdlRemboursable(stat.cip)) {
+      stat.margeMDL = calcMargeBoiteMDL(stat.puNet) * stat.qte;
+    } else {
+      stat.margeMDL = null;
+    }
+    stat.cat = _catOfProduct(stat);
+  });
+  const list = Array.from(byCip.values());
+  // Regroupe par catégorie + cap
+  return _CAT_DEFS.map(def => {
+    const filtered = list.filter(r => r.cat === def.id).sort((a, b) => b.ca - a.ca);
+    const cap = capPerCat[def.id] || 20;
+    return Object.assign({}, def, {
+      items: filtered.slice(0, cap),
+      totalCount: filtered.length,
+      totalCa: filtered.reduce((s, r) => s + r.ca, 0),
+      totalQte: filtered.reduce((s, r) => s + r.qte, 0),
+      totalMarge: filtered.reduce((s, r) => s + (r.marge || 0), 0),
+      totalMargeMDL: filtered.reduce((s, r) => s + (r.margeMDL || 0), 0),
+      cap,
+    });
+  });
+}
+
+/**
+ * Build "à travailler" = opportunités produits que CETTE pharma ne commande
+ * pas encore. Sources : (1) peer recs (autres pharmas similaires), (2) BENCHMARK
+ * top ventes IP non commandées par cette pharma. Enrichi catégorie.
+ */
+function workProductsByCategoryForPharma(orderedCipsSet, capPerCat) {
+  capPerCat = capPerCat || { froid: 50, biosim: 20, gen: 50, cheap: 30, mid: 50, exp: 20, nr: 50 };
+  if (typeof BENCHMARK === 'undefined' || !BENCHMARK.length) return [];
+  // Filtre BENCHMARK : produits IP avec ip_qty > 0 (IP vend déjà) et que cette pharma NE COMMANDE PAS
+  const candidates = BENCHMARK
+    .filter(b => (b.ip_qty || 0) > 0)
+    .filter(b => {
+      const c = String(b.cip13 || '');
+      const a = String(b.artcode || '');
+      return !orderedCipsSet.has(c) && !orderedCipsSet.has(a);
+    })
+    .map(b => ({
+      cip: String(b.cip13 || b.artcode || ''),
+      designation: b.designation || '',
+      categorie: b.categorie || '',
+      is_froid: b.is_froid,
+      has_ameli: b.has_ameli,
+      puNet: b.prix_ip || b.prix_ht || 0,
+      prix_ip: b.prix_ip,
+      ip_qty: b.ip_qty || 0,
+      ip_ca: b.ip_ca || 0,
+      ameli_total: b.ameli_total || 0,
+    }));
+  candidates.forEach(c => { c.cat = _catOfProduct(c); });
+  return _CAT_DEFS.map(def => {
+    const filtered = candidates.filter(r => r.cat === def.id).sort((a, b) => b.ip_qty - a.ip_qty);
+    const cap = capPerCat[def.id] || 30;
+    return Object.assign({}, def, {
+      items: filtered.slice(0, cap),
+      totalCount: filtered.length,
+      totalIpQty: filtered.reduce((s, r) => s + r.ip_qty, 0),
+      totalIpCa: filtered.reduce((s, r) => s + r.ip_ca, 0),
+      totalAmeli: filtered.reduce((s, r) => s + r.ameli_total, 0),
+      cap,
+    });
+  });
+}
+
+function _fmtEur(n) {
+  if (!isFinite(n) || n === 0) return '0 €';
+  return Math.round(n).toLocaleString('fr-FR') + ' €';
+}
+function _fmtNum(n) {
+  if (!isFinite(n) || n === 0) return '0';
+  return Math.round(n).toLocaleString('fr-FR');
+}
+
+function renderBestAndWorkSectionsHTML(pharma, allPhSales) {
+  const orderedCipsSet = new Set(
+    allPhSales.map(s => String(s.artCode || '')).filter(c => c.length >= 7)
+  );
+  const bestCats = bestProductsByCategoryForPharma(allPhSales).filter(s => s.items.length > 0);
+  const workCats = workProductsByCategoryForPharma(orderedCipsSet).filter(s => s.items.length > 0);
+
+  const bestRowHtml = (r, i) => `
+    <tr>
+      <td class="mk-cat-rk">${i + 1}</td>
+      <td class="mk-cat-name" title="${(r.designation || '').replace(/"/g, '&quot;')}">${(r.designation || '').slice(0, 44)}${(r.designation || '').length > 44 ? '…' : ''}</td>
+      <td class="mk-cat-cip">${r.cip}</td>
+      <td class="mk-cat-num">${r.puNet > 0 ? r.puNet.toFixed(2) + ' €' : '—'}</td>
+      <td class="mk-cat-num">${_fmtNum(r.qte)}</td>
+      <td class="mk-cat-num">${_fmtEur(r.ca)}</td>
+      <td class="mk-cat-num ${r.margeMDL != null ? 'mk-cat-ratio' : 'mk-cat-empty'}">${r.margeMDL != null ? _fmtEur(r.margeMDL) : 'NR'}</td>
+    </tr>
+  `;
+  const workRowHtml = (r, i) => `
+    <tr>
+      <td class="mk-cat-rk">${i + 1}</td>
+      <td class="mk-cat-name" title="${(r.designation || '').replace(/"/g, '&quot;')}">${(r.designation || '').slice(0, 44)}${(r.designation || '').length > 44 ? '…' : ''}</td>
+      <td class="mk-cat-cip">${r.cip}</td>
+      <td class="mk-cat-num">${r.puNet > 0 ? r.puNet.toFixed(2) + ' €' : '—'}</td>
+      <td class="mk-cat-num">${_fmtNum(r.ip_qty)}</td>
+      <td class="mk-cat-num">${r.ameli_total > 0 ? _fmtNum(r.ameli_total) : '—'}</td>
+      <td><button class="mk-cat-addbtn" onclick="event.stopPropagation();window.mkQuickAddProduct && window.mkQuickAddProduct('${r.cip}')" title="Ajouter à la fiche en cours">+</button></td>
+    </tr>
+  `;
+
+  const bestCardHtml = seg => {
+    const isOpen = (typeof mkExpandedCategories !== 'undefined' && mkExpandedCategories.has('best-' + seg.id));
+    const initial = isOpen ? seg.items : seg.items.slice(0, 10);
+    return `
+      <div class="mk-cat-card ${isOpen ? 'is-open' : ''}" data-seg-id="best-${seg.id}">
+        <button class="mk-cat-card-head" onclick="window.mkToggleSegment && window.mkToggleSegment('best-${seg.id}')">
+          <span class="mk-cat-card-accent" style="background:${seg.accent}"></span>
+          <div class="mk-cat-card-titles">
+            <div class="mk-cat-card-name">${seg.emoji} ${seg.label} <span class="mk-cat-card-cap">Top ${Math.min(seg.totalCount, seg.cap)}</span></div>
+            <div class="mk-cat-card-meta">${seg.totalCount} produits commandés · ${_fmtEur(seg.totalCa)} CA cumulé</div>
+          </div>
+          <div class="mk-cat-card-stats">
+            <div class="mk-cat-stat"><span class="mk-cat-stat-v">${_fmtNum(seg.totalQte)}</span><span class="mk-cat-stat-k">u vendues</span></div>
+            ${seg.totalMargeMDL > 0 ? `<div class="mk-cat-stat mk-cat-stat-ratio-cell"><span class="mk-cat-stat-v">${_fmtEur(seg.totalMargeMDL)}</span><span class="mk-cat-stat-k">marge MDL pharma</span></div>` : ''}
+          </div>
+          <svg class="mk-cat-card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="mk-cat-card-body">
+          <table class="mk-cat-table">
+            <thead><tr><th>#</th><th>Produit</th><th>CIP13</th><th class="mk-cat-num-h">Prix net</th><th class="mk-cat-num-h">Qté</th><th class="mk-cat-num-h">CA</th><th class="mk-cat-num-h">Marge pharma</th></tr></thead>
+            <tbody>${initial.map(bestRowHtml).join('')}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  };
+
+  const workCardHtml = seg => {
+    const isOpen = (typeof mkExpandedCategories !== 'undefined' && mkExpandedCategories.has('work-' + seg.id));
+    const initial = isOpen ? seg.items : seg.items.slice(0, 10);
+    return `
+      <div class="mk-cat-card ${isOpen ? 'is-open' : ''}" data-seg-id="work-${seg.id}">
+        <button class="mk-cat-card-head" onclick="window.mkToggleSegment && window.mkToggleSegment('work-${seg.id}')">
+          <span class="mk-cat-card-accent" style="background:${seg.accent}"></span>
+          <div class="mk-cat-card-titles">
+            <div class="mk-cat-card-name">${seg.emoji} ${seg.label} <span class="mk-cat-card-cap">Top ${Math.min(seg.totalCount, seg.cap)}</span></div>
+            <div class="mk-cat-card-meta">${seg.totalCount} produits IP non commandés · ${_fmtNum(seg.totalIpQty)} u marché à conquérir</div>
+          </div>
+          <div class="mk-cat-card-stats">
+            <div class="mk-cat-stat"><span class="mk-cat-stat-v">${_fmtNum(seg.totalIpQty)}</span><span class="mk-cat-stat-k">vol marché IP</span></div>
+            ${seg.totalAmeli > 0 ? `<div class="mk-cat-stat"><span class="mk-cat-stat-v">${_fmtNum(seg.totalAmeli)}</span><span class="mk-cat-stat-k">vol Ameli</span></div>` : ''}
+          </div>
+          <svg class="mk-cat-card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="mk-cat-card-body">
+          <table class="mk-cat-table">
+            <thead><tr><th>#</th><th>Produit</th><th>CIP13</th><th class="mk-cat-num-h">Prix net</th><th class="mk-cat-num-h">Vol marché IP</th><th class="mk-cat-num-h">Vol Ameli</th><th></th></tr></thead>
+            <tbody>${initial.map(workRowHtml).join('')}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  };
+
+  return `
+    ${bestCats.length ? `
+    <div class="mk-section mk-cat-section" style="margin-top:32px">
+      <div class="mk-section-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <div class="mk-section-title">🏆 Best produits · ce que cette pharmacie cartonne déjà</div>
+          <div class="mk-section-sub">${bestCats.length} catégories actives · top ${bestCats.reduce((s, c) => s + c.cap, 0).toLocaleString('fr-FR')} produits triés par CA décroissant</div>
+        </div>
+        <button class="a-btn a-btn-tinted" onclick="window.exportPharmaListingPDF('${pharma.id}')" style="white-space:nowrap;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Télécharger le listing PDF
+        </button>
+      </div>
+      <div class="mk-cat-list">${bestCats.map(bestCardHtml).join('')}</div>
+    </div>
+    ` : ''}
+
+    ${workCats.length ? `
+    <div class="mk-section mk-cat-section" style="margin-top:32px">
+      <div class="mk-section-head">
+        <div>
+          <div class="mk-section-title">🎯 À travailler · opportunités par catégorie</div>
+          <div class="mk-section-sub">${workCats.length} catégories d'opportunités · top ${workCats.reduce((s, c) => s + c.cap, 0).toLocaleString('fr-FR')} produits IP non commandés par cette pharmacie · cliquer + pour ajouter à la fiche en cours</div>
+        </div>
+      </div>
+      <div class="mk-cat-list">${workCats.map(workCardHtml).join('')}</div>
+    </div>
+    ` : ''}
+  `;
+}
+
+/**
+ * Génère le PDF du listing pharmacie (Best + À travailler + Marge MDL).
+ * Lazy-load html2pdf.js si nécessaire.
+ */
+window.exportPharmaListingPDF = function (pharmacyId) {
+  const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
+  if (!pharma) { showToast && showToast('Pharmacie introuvable', 'error'); return; }
+  const allPhSales = getSales({ pharmacyId: pharma.id });
+  if (!allPhSales.length) {
+    showToast && showToast('Pas encore de ventes pour générer le listing', 'warning');
+    return;
+  }
+  if (typeof window.ensureHtml2Pdf !== 'function') {
+    alert('Module PDF non disponible. Recharge la page.');
+    return;
+  }
+  showToast && showToast('Génération du PDF en cours…', 'info');
+  window.ensureHtml2Pdf().then(() => {
+    const html = buildPharmaListingPdfHTML(pharma, allPhSales);
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;font-family:Inter,system-ui,sans-serif;color:#0E0E10';
+    wrap.innerHTML = html;
+    document.body.appendChild(wrap);
+    const filename = `Listing-${pharma.name.replace(/[^A-Za-z0-9-]/g, '_')}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    window.html2pdf().from(wrap).set({
+      filename,
+      margin: [10, 10, 12, 10],
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    }).save().then(() => {
+      document.body.removeChild(wrap);
+      showToast && showToast('✓ PDF téléchargé', 'success');
+    }).catch(err => {
+      console.error(err);
+      document.body.removeChild(wrap);
+      showToast && showToast('Erreur génération PDF', 'error');
+    });
+  });
+};
+
+function buildPharmaListingPdfHTML(pharma, allPhSales) {
+  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const bestCats = bestProductsByCategoryForPharma(allPhSales).filter(s => s.items.length > 0);
+  const orderedCipsSet = new Set(allPhSales.map(s => String(s.artCode || '')).filter(c => c.length >= 7));
+  const workCats = workProductsByCategoryForPharma(orderedCipsSet).filter(s => s.items.length > 0);
+  const mdl = sumMargeMDL(allPhSales);
+  const clientInfo = typeof CLIENTS !== 'undefined'
+    ? CLIENTS.find(c => c.nom && c.nom.toUpperCase().trim() === pharma.name.toUpperCase().trim())
+    : null;
+  const adresseTxt = clientInfo && clientInfo.adresse
+    ? `${clientInfo.adresse}, ${clientInfo.cp || ''} ${clientInfo.ville || ''}` : '';
+
+  const bestRow = (r, i) => `
+    <tr>
+      <td style="padding:5px 6px;text-align:center;color:#71717A;font-size:9px">${i + 1}</td>
+      <td style="padding:5px 6px;font-size:10px;font-weight:500">${(r.designation || '').slice(0, 50).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</td>
+      <td style="padding:5px 6px;font-family:'SF Mono',Menlo,monospace;font-size:9px;color:#5B6478">${r.cip}</td>
+      <td style="padding:5px 6px;text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:10px">${r.puNet > 0 ? r.puNet.toFixed(2) + ' €' : '—'}</td>
+      <td style="padding:5px 6px;text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:10px">${_fmtNum(r.qte)}</td>
+      <td style="padding:5px 6px;text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:10px;font-weight:600">${_fmtEur(r.ca)}</td>
+      <td style="padding:5px 6px;text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:10px;color:${r.margeMDL != null ? '#10B981' : '#71717A'}">${r.margeMDL != null ? _fmtEur(r.margeMDL) : 'libre'}</td>
+    </tr>
+  `;
+  const workRow = (r, i) => `
+    <tr>
+      <td style="padding:5px 6px;text-align:center;color:#71717A;font-size:9px">${i + 1}</td>
+      <td style="padding:5px 6px;font-size:10px;font-weight:500">${(r.designation || '').slice(0, 50).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</td>
+      <td style="padding:5px 6px;font-family:'SF Mono',Menlo,monospace;font-size:9px;color:#5B6478">${r.cip}</td>
+      <td style="padding:5px 6px;text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:10px">${r.puNet > 0 ? r.puNet.toFixed(2) + ' €' : '—'}</td>
+      <td style="padding:5px 6px;text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:10px;font-weight:600">${_fmtNum(r.ip_qty)}</td>
+    </tr>
+  `;
+  const bestSection = bestCats.map(seg => `
+    <div style="margin-bottom:14px;page-break-inside:avoid">
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;background:linear-gradient(90deg, ${seg.accent}22 0%, transparent 100%);border-left:3px solid ${seg.accent};border-radius:4px;margin-bottom:6px">
+        <div style="font-size:12px;font-weight:700;color:#0A1F4E">${seg.emoji} ${seg.label}</div>
+        <div style="font-size:9px;color:#71717A;margin-left:auto;font-family:'SF Mono',Menlo,monospace">${seg.totalCount} produits · ${_fmtEur(seg.totalCa)} CA · ${seg.totalMargeMDL > 0 ? _fmtEur(seg.totalMargeMDL) + ' marge' : 'marge libre'}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#F2F2F7">
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:center;font-weight:600">#</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:left;font-weight:600">Produit</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:left;font-weight:600">CIP13</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:right;font-weight:600">Prix net</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:right;font-weight:600">Qté</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:right;font-weight:600">CA</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:right;font-weight:600">Marge</th>
+          </tr>
+        </thead>
+        <tbody>${seg.items.map(bestRow).join('')}</tbody>
+      </table>
+    </div>
+  `).join('');
+  const workSection = workCats.map(seg => `
+    <div style="margin-bottom:14px;page-break-inside:avoid">
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;background:linear-gradient(90deg, ${seg.accent}22 0%, transparent 100%);border-left:3px solid ${seg.accent};border-radius:4px;margin-bottom:6px">
+        <div style="font-size:12px;font-weight:700;color:#0A1F4E">${seg.emoji} ${seg.label}</div>
+        <div style="font-size:9px;color:#71717A;margin-left:auto;font-family:'SF Mono',Menlo,monospace">${seg.totalCount} opportunités · ${_fmtNum(seg.totalIpQty)} u marché IP</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#F2F2F7">
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:center;font-weight:600">#</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:left;font-weight:600">Produit</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:left;font-weight:600">CIP13</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:right;font-weight:600">Prix net</th>
+            <th style="padding:5px 6px;font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#71717A;text-align:right;font-weight:600">Vol marché IP</th>
+          </tr>
+        </thead>
+        <tbody>${seg.items.map(workRow).join('')}</tbody>
+      </table>
+    </div>
+  `).join('');
+
+  return `
+    <div style="padding:14px 18px;font-family:Inter,system-ui,sans-serif;color:#0E0E10">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #0057FF;padding-bottom:10px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#0057FF 0%,#003BB0 100%);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;letter-spacing:0.02em">IP</div>
+          <div>
+            <div style="font-size:9px;color:#71717A;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Intégral Pharma · Listing personnalisé</div>
+            <div style="font-size:18px;font-weight:700;color:#0A1F4E;letter-spacing:-0.01em">${(pharma.name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>
+            ${adresseTxt ? `<div style="font-size:10px;color:#5B6478">${adresseTxt.replace(/</g, '&lt;')}</div>` : ''}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:#71717A;text-transform:uppercase;letter-spacing:0.04em;font-weight:600">Édité le</div>
+          <div style="font-size:13px;font-weight:600;color:#0A1F4E;font-family:'SF Mono',Menlo,monospace">${today}</div>
+        </div>
+      </div>
+      <!-- KPIs Marge MDL -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px">
+        <div style="border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px">
+          <div style="font-size:8px;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">CA total IP</div>
+          <div style="font-size:18px;font-weight:700;color:#0057FF;font-family:'SF Mono',Menlo,monospace">${_fmtEur(mdl.caRembHT + mdl.caNrHT)}</div>
+        </div>
+        <div style="border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px">
+          <div style="font-size:8px;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Marge MDL générée</div>
+          <div style="font-size:18px;font-weight:700;color:#10B981;font-family:'SF Mono',Menlo,monospace">${_fmtEur(mdl.margeTotale)}</div>
+          <div style="font-size:9px;color:#5B6478;margin-top:2px">${mdl.margePct.toFixed(2)}% du CA remb.</div>
+        </div>
+        <div style="border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px">
+          <div style="font-size:8px;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">CA Non remboursés</div>
+          <div style="font-size:18px;font-weight:700;color:#F59E0B;font-family:'SF Mono',Menlo,monospace">${_fmtEur(mdl.caNrHT)}</div>
+          <div style="font-size:9px;color:#5B6478;margin-top:2px">Marge libre (PLM)</div>
+        </div>
+      </div>
+      <!-- BEST PRODUITS -->
+      <div style="margin-bottom:18px">
+        <h2 style="font-size:14px;font-weight:700;color:#0A1F4E;margin:0 0 8px;letter-spacing:-0.01em;border-bottom:1px solid #E5E7EB;padding-bottom:4px">🏆 Best produits · top ${bestCats.reduce((s, c) => s + c.cap, 0)} commandes par catégorie</h2>
+        ${bestSection}
+      </div>
+      <!-- À TRAVAILLER -->
+      <div>
+        <h2 style="font-size:14px;font-weight:700;color:#0A1F4E;margin:0 0 8px;letter-spacing:-0.01em;border-bottom:1px solid #E5E7EB;padding-bottom:4px">🎯 À travailler · top ${workCats.reduce((s, c) => s + c.cap, 0)} opportunités catalogue IP</h2>
+        ${workSection}
+      </div>
+      <!-- Footer -->
+      <div style="margin-top:18px;padding-top:8px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:8px;color:#71717A;letter-spacing:0.04em;text-transform:uppercase">
+        <div>Intégral Pharma · Normandie · Listing confidentiel</div>
+        <div>Barème MDL : 0,18€ &lt; 4,33€ · 3,9 % jusqu'à 468€ · 19,50€ au-delà</div>
+      </div>
+    </div>
+  `;
+}
+
 function showPharmaDetail(pharmacyId, overridePeriod) {
   if (overridePeriod !== undefined) pharmaDetailOverridePeriod = overridePeriod;
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
@@ -3200,7 +3629,9 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
     : '';
   // (C) Sur mesure : ce que ses peers commandent et qu'elle ne commande pas
   const __peerRecsHTML = renderPeerRecommendationsHTML(pharma, allPhSales);
-  const __opportunitiesHTML = __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
+  // (D) Best produits + À travailler par catégorie (avec bouton PDF)
+  const __bestWorkHTML = renderBestAndWorkSectionsHTML(pharma, allPhSales);
+  const __opportunitiesHTML = __bestWorkHTML + __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
 
   document.getElementById('pharma-content').innerHTML = `
     <div class="fade-up">
