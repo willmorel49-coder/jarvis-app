@@ -87,39 +87,39 @@
 
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260609v" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260609w" />
   <!-- Styles desktop -->
-  <link rel="stylesheet" href="style.css?v=20260609v" />
-  <link rel="stylesheet" href="style-classic.css?v=20260609v" />
+  <link rel="stylesheet" href="style.css?v=20260609w" />
+  <link rel="stylesheet" href="style-classic.css?v=20260609w" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260609v" />
-  <link rel="stylesheet" href="marketing-design-system.css?v=20260609v" />
+  <link rel="stylesheet" href="marketing.css?v=20260609w" />
+  <link rel="stylesheet" href="marketing-design-system.css?v=20260609w" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260609v" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260609v" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260609v" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260609v" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260609w" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260609w" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260609w" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260609w" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260609v" />
-  <link rel="stylesheet" href="native-headers.css?v=20260609v" />
-  <link rel="stylesheet" href="native-lists.css?v=20260609v" />
-  <link rel="stylesheet" href="native-motion.css?v=20260609v" />
-  <link rel="stylesheet" href="skeleton-loaders.css?v=20260609v" />
+  <link rel="stylesheet" href="native-shell.css?v=20260609w" />
+  <link rel="stylesheet" href="native-headers.css?v=20260609w" />
+  <link rel="stylesheet" href="native-lists.css?v=20260609w" />
+  <link rel="stylesheet" href="native-motion.css?v=20260609w" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260609w" />
 
   <!-- ════ APPLE MODE (refonte from scratch 2026-06-08) — override final ════ -->
-  <link rel="stylesheet" href="apple/tokens.css?v=20260609v" />
-  <link rel="stylesheet" href="apple/components.css?v=20260609v" />
-  <link rel="stylesheet" href="apple/legacy-bridge.css?v=20260609v" />
-  <link rel="stylesheet" href="apple/peer-recs.css?v=20260609v" />
-  <link rel="stylesheet" href="apple/vtable.css?v=20260609v" />
-  <link rel="stylesheet" href="apple/cmdk.css?v=20260609v" />
-  <script src="apple/icons.js?v=20260609v" defer></script>
-  <script src="apple/motion.js?v=20260609v" defer></script>
-  <script src="apple/vtable.js?v=20260609v" defer></script>
-  <script src="apple/cmdk.js?v=20260609v" defer></script>
-  <script src="apple/shortcuts.js?v=20260609v" defer></script>
-  <script src="apple/density.js?v=20260609v" defer></script>
+  <link rel="stylesheet" href="apple/tokens.css?v=20260609w" />
+  <link rel="stylesheet" href="apple/components.css?v=20260609w" />
+  <link rel="stylesheet" href="apple/legacy-bridge.css?v=20260609w" />
+  <link rel="stylesheet" href="apple/peer-recs.css?v=20260609w" />
+  <link rel="stylesheet" href="apple/vtable.css?v=20260609w" />
+  <link rel="stylesheet" href="apple/cmdk.css?v=20260609w" />
+  <script src="apple/icons.js?v=20260609w" defer></script>
+  <script src="apple/motion.js?v=20260609w" defer></script>
+  <script src="apple/vtable.js?v=20260609w" defer></script>
+  <script src="apple/cmdk.js?v=20260609w" defer></script>
+  <script src="apple/shortcuts.js?v=20260609w" defer></script>
+  <script src="apple/density.js?v=20260609w" defer></script>
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -156,10 +156,10 @@
        Les lourds (stock 1.7 MB, catalogue-ip 188 KB, client-products 84 KB,
        benchmark-data 3.6 MB, establishments-aggregate 4 MB, offilog 1.7 MB,
        drakkars 3.8 MB, cap3000 2.4 MB) sont LAZY via perf-boot.js. -->
-  <script src="clients-data.js?v=20260609v"></script>
-  <script src="pharmacies-geo.js?v=20260609v"></script>
-  <script src="groupements-data.js?v=20260609v"></script>
-  <script src="sales-detail.js?v=20260609v"></script>
+  <script src="clients-data.js?v=20260609w"></script>
+  <script src="pharmacies-geo.js?v=20260609w"></script>
+  <script src="groupements-data.js?v=20260609w"></script>
+  <script src="sales-detail.js?v=20260609w"></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -187,25 +187,25 @@
     });
   </script>
 
-  <script src="app.js?v=20260609v" defer></script>
-  <script src="dashboard-v2.js?v=20260609v" defer></script>
+  <script src="app.js?v=20260609w" defer></script>
+  <script src="dashboard-v2.js?v=20260609w" defer></script>
   <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
-  <script src="perf-boot.js?v=20260609v" defer></script>
-  <script src="classic-overrides.js?v=20260609v" defer></script>
-  <script src="mobile-shell.js?v=20260609v" defer></script>
+  <script src="perf-boot.js?v=20260609w" defer></script>
+  <script src="classic-overrides.js?v=20260609w" defer></script>
+  <script src="mobile-shell.js?v=20260609w" defer></script>
   <!-- Gestures iOS-native : swipe-back, pull-to-refresh, bottom-sheet swipe-down -->
-  <script src="mobile-gestures.js?v=20260609v" defer></script>
+  <script src="mobile-gestures.js?v=20260609w" defer></script>
   <!-- Native UI shell (bottom tab bar uniquement) -->
-  <script src="native-shell.js?v=20260609v" defer></script>
+  <script src="native-shell.js?v=20260609w" defer></script>
   <!-- DESACTIVES temporairement (debug : Will n'a aucune page qui s'affiche)
-       <script src="native-headers.js?v=20260609v" defer></script>
-       <script src="native-motion.js?v=20260609v" defer></script>
-       <script src="skeleton-loaders.js?v=20260609v" defer></script>
+       <script src="native-headers.js?v=20260609w" defer></script>
+       <script src="native-motion.js?v=20260609w" defer></script>
+       <script src="skeleton-loaders.js?v=20260609w" defer></script>
   -->
-  <script src="marketing-offers.js?v=20260609v" defer></script>
-  <script src="marketing-design-system.js?v=20260609v" defer></script>
-  <script src="marketing-monthly-pitches.js?v=20260609v" defer></script>
-  <script src="marketing.js?v=20260609v" defer></script>
+  <script src="marketing-offers.js?v=20260609w" defer></script>
+  <script src="marketing-design-system.js?v=20260609w" defer></script>
+  <script src="marketing-monthly-pitches.js?v=20260609w" defer></script>
+  <script src="marketing.js?v=20260609w" defer></script>
 </head>
 
 <body>
@@ -310,10 +310,6 @@
 
         <div class="a-sidebar-section">
           <div class="a-sidebar-section-label">Données</div>
-          <div class="a-sidebar-item" data-page="catalogue" data-tooltip="Catalogue IP" onclick="navigate('catalogue')">
-            <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <span class="a-sidebar-item-label">Catalogue IP</span>
-          </div>
           <div class="a-sidebar-item" data-page="benchmark" data-tooltip="Benchmark" onclick="navigate('benchmark')">
             <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
             <span class="a-sidebar-item-label">Benchmark</span>
