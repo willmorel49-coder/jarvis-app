@@ -3158,7 +3158,36 @@ function _fmtNum(n) {
   return Math.round(n).toLocaleString('fr-FR');
 }
 
+// Set local pour replier/déplier les cards Best/À travailler (scope app.js)
+window.__pharmaCatExpanded = window.__pharmaCatExpanded || new Set();
+window.togglePharmaCatExpanded = function (segId) {
+  if (window.__pharmaCatExpanded.has(segId)) window.__pharmaCatExpanded.delete(segId);
+  else window.__pharmaCatExpanded.add(segId);
+  // Re-render fiche pharma courante
+  const url = location.hash;
+  const m = document.querySelector('#pharma-content');
+  if (m && window.__currentPharmaId) showPharmaDetail(window.__currentPharmaId);
+};
+
 function renderBestAndWorkSectionsHTML(pharma, allPhSales) {
+  // Stocker l'ID pharma courante pour le toggle
+  window.__currentPharmaId = pharma.id;
+
+  // Empty state si pas de ventes du tout
+  if (!allPhSales || allPhSales.length === 0) {
+    return `
+      <div class="mk-section mk-cat-section" style="margin-top:32px">
+        <div class="mk-section-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div>
+            <div class="mk-section-title">🏆 Best produits + 🎯 À travailler par catégorie</div>
+            <div class="mk-section-sub">Pas encore de ventes IP pour cette pharmacie. Importe ton fichier Excel via la page Import pour activer le listing personnalisé + PDF.</div>
+          </div>
+          <button class="a-btn a-btn-tinted" onclick="navigate('import')" style="white-space:nowrap;flex-shrink:0">→ Importer mes ventes</button>
+        </div>
+      </div>
+    `;
+  }
+
   const orderedCipsSet = new Set(
     allPhSales.map(s => String(s.artCode || '')).filter(c => c.length >= 7)
   );
@@ -3189,11 +3218,11 @@ function renderBestAndWorkSectionsHTML(pharma, allPhSales) {
   `;
 
   const bestCardHtml = seg => {
-    const isOpen = (typeof mkExpandedCategories !== 'undefined' && mkExpandedCategories.has('best-' + seg.id));
+    const isOpen = window.__pharmaCatExpanded.has('best-' + seg.id);
     const initial = isOpen ? seg.items : seg.items.slice(0, 10);
     return `
       <div class="mk-cat-card ${isOpen ? 'is-open' : ''}" data-seg-id="best-${seg.id}">
-        <button class="mk-cat-card-head" onclick="window.mkToggleSegment && window.mkToggleSegment('best-${seg.id}')">
+        <button class="mk-cat-card-head" onclick="window.togglePharmaCatExpanded('best-${seg.id}')">
           <span class="mk-cat-card-accent" style="background:${seg.accent}"></span>
           <div class="mk-cat-card-titles">
             <div class="mk-cat-card-name">${seg.emoji} ${seg.label} <span class="mk-cat-card-cap">Top ${Math.min(seg.totalCount, seg.cap)}</span></div>
@@ -3216,11 +3245,11 @@ function renderBestAndWorkSectionsHTML(pharma, allPhSales) {
   };
 
   const workCardHtml = seg => {
-    const isOpen = (typeof mkExpandedCategories !== 'undefined' && mkExpandedCategories.has('work-' + seg.id));
+    const isOpen = window.__pharmaCatExpanded.has('work-' + seg.id);
     const initial = isOpen ? seg.items : seg.items.slice(0, 10);
     return `
       <div class="mk-cat-card ${isOpen ? 'is-open' : ''}" data-seg-id="work-${seg.id}">
-        <button class="mk-cat-card-head" onclick="window.mkToggleSegment && window.mkToggleSegment('work-${seg.id}')">
+        <button class="mk-cat-card-head" onclick="window.togglePharmaCatExpanded('work-${seg.id}')">
           <span class="mk-cat-card-accent" style="background:${seg.accent}"></span>
           <div class="mk-cat-card-titles">
             <div class="mk-cat-card-name">${seg.emoji} ${seg.label} <span class="mk-cat-card-cap">Top ${Math.min(seg.totalCount, seg.cap)}</span></div>
