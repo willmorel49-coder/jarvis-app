@@ -2653,103 +2653,272 @@ function segmentPeerRecommendations(recs) {
   return defs;
 }
 
+// ── Helpers locaux pour le rendu peer-recs ───────────────
+// Icône catégorie à partir d'un rec (emoji 24×24 ish)
+function _peerRecCatIcon(r) {
+  if (r.is_froid) return '❄️';
+  const cat = (r.categorie || '').toLowerCase();
+  if (cat === 'biosim' || /BIOSIMIL/i.test(r.designation || '')) return '🧬';
+  if (cat === 'gen' || /(MYLAN|BIOGARAN|SANDOZ|TEVA|EG|ZENTIVA|ARROW|VIATRIS|ACCORD|KRKA)/i.test(r.designation || '')) return '💊';
+  if (cat === 'derm' || /CRÈME|CREME|POMMADE|GEL/i.test(r.designation || '')) return '🧴';
+  if (cat === 'mi' || cat === 'ma') return '💉';
+  if (r.has_ameli) return '🏥';
+  return '📦';
+}
+
+// Badge HOT / WARM / COLD selon avg pct peers
+function _peerRecTempLabel(pct) {
+  if (pct > 0.60) return { cls: 'is-hot', label: 'HOT' };
+  if (pct >= 0.30) return { cls: 'is-warm', label: 'WARM' };
+  return { cls: 'is-cold', label: 'COLD' };
+}
+
+// Dots visuels Peers : n/total
+function _peerRecDots(n, total) {
+  // Max 7 dots affichés (sinon trop large)
+  const max = Math.min(7, total || 7);
+  const ratio = total > 0 ? n / total : 0;
+  const on = Math.round(ratio * max);
+  let html = '<span class="peer-rec-dots" aria-label="' + n + ' sur ' + total + ' peers">';
+  for (let i = 0; i < max; i++) {
+    html += '<span class="peer-rec-dot' + (i < on ? ' is-on' : '') + '"></span>';
+  }
+  html += '</span>';
+  return html;
+}
+
+// Toggle local pour les cards (sans dépendre de mkToggleSegment Marketing)
+if (!window.__peerRecToggle) {
+  window.__peerRecToggle = function (segId) {
+    const card = document.querySelector('.peer-rec-card[data-seg-id="' + segId + '"]');
+    if (!card) return;
+    card.classList.toggle('is-open');
+  };
+}
+
+// QuickAdd amélioré : animation pill -> check + toast
+if (!window.__peerRecQuickAdd) {
+  window.__peerRecQuickAdd = function (cip, btn) {
+    if (btn && !btn.classList.contains('is-added')) {
+      btn.classList.add('is-added');
+      const row = btn.closest('tr');
+      if (row) {
+        row.classList.add('is-pulse');
+        setTimeout(() => row.classList.remove('is-pulse'), 220);
+      }
+      setTimeout(() => btn.classList.remove('is-added'), 700);
+    }
+    if (typeof window.appleToast === 'function') {
+      try { window.appleToast('+ Produit ajouté', { variant: 'success' }); }
+      catch (e) { /* noop */ }
+    }
+    if (typeof window.mkQuickAddProduct === 'function') {
+      window.mkQuickAddProduct(cip);
+    }
+  };
+}
+
+// Création fiche RDV avec loading state + toast
+if (!window.__peerRecCreateFiche) {
+  window.__peerRecCreateFiche = function (recId, btn) {
+    if (!btn) return;
+    if (btn.classList.contains('is-loading')) return;
+    btn.classList.add('is-loading');
+    const lbl = btn.querySelector('.peer-rec-cta-label');
+    const prev = lbl ? lbl.textContent : '';
+    if (lbl) lbl.textContent = 'Génération de la fiche…';
+    // Compter les produits pour le toast
+    const store = window[recId];
+    const nProd = store && Array.isArray(store.recs) ? Math.min(store.recs.length, 12) : 0;
+    setTimeout(() => {
+      try {
+        if (typeof window.mkCreatePharmaOpportunityFiche === 'function') {
+          window.mkCreatePharmaOpportunityFiche(recId);
+        }
+        if (typeof window.appleToast === 'function') {
+          window.appleToast('✓ Fiche RDV prête · ' + nProd + ' produits chargés', { variant: 'success' });
+        }
+      } catch (e) { /* noop */ }
+      // Reset (au cas où la nav reste sur la page)
+      setTimeout(() => {
+        btn.classList.remove('is-loading');
+        if (lbl) lbl.textContent = prev || 'Créer la fiche RDV';
+      }, 200);
+    }, 600);
+  };
+}
+
+// SVG sparkles inline réutilisable
+const _PEER_REC_SPARKLES_SVG = '<svg class="peer-rec-cta-sparkle" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M19 14l.75 2.25L22 17l-2.25.75L19 20l-.75-2.25L16 17l2.25-.75L19 14z"/><path d="M5 14l.75 2.25L8 17l-2.25.75L5 20l-.75-2.25L2 17l2.25-.75L5 14z"/></svg>';
+
+function _peerRecEmptyShell(title, body, ctaLabel, ctaAction) {
+  const icon = ctaAction === 'groupements'
+    ? '<svg class="peer-rec-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+    : '<svg class="peer-rec-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>';
+  const ctaHtml = ctaLabel
+    ? '<button class="peer-rec-empty-cta" onclick="' + (ctaAction === 'groupements' ? "navigate('groupements')" : '') + '">' + ctaLabel + '</button>'
+    : '';
+  return '<section class="peer-rec-section"><div class="peer-rec-empty">' +
+    icon +
+    '<div class="peer-rec-empty-title">' + title + '</div>' +
+    '<div class="peer-rec-empty-body">' + body + '</div>' +
+    ctaHtml +
+    '</div></section>';
+}
+
 function renderPeerRecommendationsHTML(pharma, allPhSales) {
-  // Si pas de données de ventes → empty state simple
+  // Si pas de données de ventes → ne rien afficher (cohérent avec le reste de la fiche)
   if (!state.sales || state.sales.length === 0) return '';
 
   const peers = findPeerPharmacies(pharma);
-  if (peers.length < 2) return '';
+  if (peers.length < 2) {
+    return _peerRecEmptyShell(
+      'Pas encore de peers identifiés',
+      "Ajoute cette pharmacie à un groupement ou attends que d'autres officines de CA similaire soient importées.",
+      'Voir groupements',
+      'groupements'
+    );
+  }
 
   const recs = buildPeerRecommendations(pharma, peers, allPhSales);
-  if (recs.length === 0) return '';
+  if (recs.length === 0) {
+    return _peerRecEmptyShell(
+      'Bravo · catalogue complet',
+      'Cette pharmacie commande déjà tous les top produits de ses peers.',
+      '',
+      ''
+    );
+  }
 
   const segments = segmentPeerRecommendations(recs).filter(s => s.items.length > 0);
-  if (segments.length === 0) return '';
+  if (segments.length === 0) {
+    return _peerRecEmptyShell(
+      'Bravo · catalogue complet',
+      'Cette pharmacie commande déjà tous les top produits de ses peers.',
+      '',
+      ''
+    );
+  }
 
-  const sourceLabel = (() => {
+  // Source : groupement WML ou CA proche
+  const sourceInfo = (() => {
     const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
     const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
     const mine = wmlVis.find(d => nn(d.nom) === nn(pharma.name));
-    if (mine && mine.groupement) return 'groupement ' + mine.groupement;
-    return 'pharmacies de CA proche';
+    if (mine && mine.groupement) return { label: 'pharmacies du groupement ' + mine.groupement, chip: 'groupement ' + mine.groupement };
+    return { label: 'pharmacies de CA proche', chip: 'CA proche ±50 %' };
   })();
 
-  // Tag rec count pour stocker dans window pour création fiche
-  const recId = '__peer_recs_' + (pharma.id || '').toString().replace(/\W/g,'_');
+  // Stocker pour mkCreatePharmaOpportunityFiche
+  const recId = '__peer_recs_' + (pharma.id || '').toString().replace(/\W/g, '_');
   window[recId] = { pharma: pharma.name, recs: recs.slice(0, 60), segments: segments };
 
-  const cardsHtml = segments.map(seg => {
-    const isOpen = (typeof mkExpandedCategories !== 'undefined' && mkExpandedCategories.has(seg.id));
-    const initial = isOpen ? seg.items : seg.items.slice(0, 10);
-    return `
-      <div class="mk-cat-card ${isOpen ? 'is-open' : ''}" data-seg-id="${seg.id}">
-        <button class="mk-cat-card-head" onclick="window.mkToggleSegment('${seg.id}')">
-          <span class="mk-cat-card-accent" style="background:${seg.accent}"></span>
-          <div class="mk-cat-card-titles">
-            <div class="mk-cat-card-name">${seg.name} <span class="mk-cat-card-cap">${seg.totalCount} reco</span></div>
-            <div class="mk-cat-card-meta">${seg.sub} · ${Math.round(seg.avgPctPeers * 100)}% des peers commandent en moyenne</div>
-          </div>
-          <div class="mk-cat-card-stats">
-            <div class="mk-cat-stat">
-              <span class="mk-cat-stat-v">${seg.totalQte.toLocaleString('fr-FR')}</span>
-              <span class="mk-cat-stat-k">u peers vendent</span>
-            </div>
-            <div class="mk-cat-stat mk-cat-stat-ratio-cell">
-              <span class="mk-cat-stat-v">${seg.totalCount}</span>
-              <span class="mk-cat-stat-k">produits à proposer</span>
-            </div>
-          </div>
-          <svg class="mk-cat-card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="mk-cat-card-body">
-          <table class="mk-cat-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Produit</th>
-                <th>CIP13</th>
-                <th class="mk-cat-num-h">Prix net</th>
-                <th class="mk-cat-num-h">Peers</th>
-                <th class="mk-cat-num-h">% peers</th>
-                <th class="mk-cat-num-h">Qté moy.</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              ${initial.map((r, i) => `
-                <tr>
-                  <td class="mk-cat-rk">${i + 1}</td>
-                  <td class="mk-cat-name" title="${(r.designation || '').replace(/"/g,'&quot;')}">${(r.designation || '').slice(0, 44)}${(r.designation || '').length > 44 ? '…' : ''}</td>
-                  <td class="mk-cat-cip">${r.cip || ''}</td>
-                  <td class="mk-cat-num">${r.puNet > 0 ? r.puNet.toFixed(2) + ' €' : '—'}</td>
-                  <td class="mk-cat-num">${r.count_peers}/${peers.length}</td>
-                  <td class="mk-cat-num mk-cat-ratio">${Math.round(r.pct_peers * 100)}%</td>
-                  <td class="mk-cat-num">${Math.round(r.avg_qte).toLocaleString('fr-FR')}</td>
-                  <td><button class="mk-cat-addbtn" onclick="event.stopPropagation();window.mkQuickAddProduct('${r.cip}')" title="Ajouter à la fiche en cours">+</button></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
+  const escAttr = s => String(s || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const escHtml = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // KPIs header
+  const totalProds = recs.length;
+
+  const cardsHtml = segments.map((seg, segIdx) => {
+    const isOpen = segIdx === 0; // premier segment ouvert par défaut
+    const initial = seg.items.slice(0, 12);
+    const temp = _peerRecTempLabel(seg.avgPctPeers);
+    const pct = Math.round(seg.avgPctPeers * 100);
+
+    const rowsHtml = initial.map((r, i) => {
+      const cipAttr = escAttr(r.cip || '');
+      const desigShort = (r.designation || '').slice(0, 44) + ((r.designation || '').length > 44 ? '…' : '');
+      return '<tr>' +
+        '<td class="peer-rec-cat">' + _peerRecCatIcon(r) + '</td>' +
+        '<td class="peer-rec-rk">' + (i + 1) + '</td>' +
+        '<td class="peer-rec-name" title="' + escAttr(r.designation) + '">' + escHtml(desigShort) + '</td>' +
+        '<td class="peer-rec-cip">' + escHtml(r.cip || '') + '</td>' +
+        '<td class="peer-rec-num">' + (r.puNet > 0 ? r.puNet.toFixed(2) + ' €' : '—') + '</td>' +
+        '<td class="peer-rec-num">' + _peerRecDots(r.count_peers, peers.length) + '</td>' +
+        '<td class="peer-rec-num peer-rec-ratio">' + Math.round(r.pct_peers * 100) + '%</td>' +
+        '<td class="peer-rec-num">' + Math.round(r.avg_qte).toLocaleString('fr-FR') + '</td>' +
+        '<td class="peer-rec-action">' +
+          '<button class="peer-rec-info" title="Voir produit" onclick="event.stopPropagation()" aria-label="Voir produit">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>' +
+          '</button>' +
+          '<button class="peer-rec-add" onclick="event.stopPropagation();window.__peerRecQuickAdd(\'' + cipAttr + '\', this)" title="Ajouter à la fiche en cours">' +
+            '<span class="peer-rec-add-plus">+</span>' +
+          '</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div class="peer-rec-card is-visible ' + (isOpen ? 'is-open' : '') + '" data-seg-id="' + escAttr(seg.id) + '" style="--peer-pct:' + pct + '%; color:' + seg.accent + '">' +
+      '<button class="peer-rec-card-head" type="button" onclick="window.__peerRecToggle(\'' + escAttr(seg.id) + '\')">' +
+        '<span class="peer-rec-card-accent"></span>' +
+        '<div class="peer-rec-card-titles">' +
+          '<div class="peer-rec-card-name">' + seg.name + ' <span class="peer-rec-card-cap">' + seg.totalCount + ' reco</span></div>' +
+          '<div class="peer-rec-card-meta">' + seg.sub + ' · ' + pct + '% des peers commandent en moyenne</div>' +
+        '</div>' +
+        '<div class="peer-rec-card-stats">' +
+          '<div class="peer-rec-stat">' +
+            '<span class="peer-rec-stat-v">' + seg.totalQte.toLocaleString('fr-FR') + '</span>' +
+            '<span class="peer-rec-stat-k">u peers vendent</span>' +
+          '</div>' +
+          '<div class="peer-rec-stat">' +
+            '<span class="peer-rec-stat-v">' + seg.totalCount + '</span>' +
+            '<span class="peer-rec-stat-k">à proposer</span>' +
+          '</div>' +
+        '</div>' +
+        '<span class="peer-rec-temp ' + temp.cls + '">' + temp.label + '</span>' +
+        '<svg class="peer-rec-card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+      '</button>' +
+      '<div class="peer-rec-progress" aria-hidden="true"><div class="peer-rec-progress-fill"></div></div>' +
+      '<div class="peer-rec-card-body"><div class="peer-rec-card-body-inner">' +
+        '<div class="peer-rec-table-wrap">' +
+          '<table class="peer-rec-table">' +
+            '<thead><tr>' +
+              '<th></th><th>#</th><th>Produit</th><th>CIP13</th>' +
+              '<th class="is-num">Prix net</th>' +
+              '<th class="is-num">Peers</th>' +
+              '<th class="is-num">% peers</th>' +
+              '<th class="is-num">Qté moy.</th>' +
+              '<th></th>' +
+            '</tr></thead>' +
+            '<tbody>' + rowsHtml + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div></div>' +
+    '</div>';
   }).join('');
 
-  return `
-    <div class="mk-section mk-cat-section" style="margin-top:32px">
-      <div class="mk-section-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-        <div>
-          <div class="mk-section-title">🎁 Sur mesure pour cette pharmacie · top des peers</div>
-          <div class="mk-section-sub">${peers.length} pharmacies similaires (${sourceLabel}) commandent ${recs.length} produits que ${pharma.name} ne commande pas — répartis en ${segments.length} catégories</div>
-        </div>
-        <button class="a-btn a-btn-filled" onclick="window.mkCreatePharmaOpportunityFiche('${recId}')" style="white-space:nowrap;flex-shrink:0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Créer la fiche RDV
-        </button>
-      </div>
-      <div class="mk-cat-list">${cardsHtml}</div>
-    </div>
-  `;
+  return '<section class="peer-rec-section">' +
+    '<div class="peer-rec-head">' +
+      '<div class="peer-rec-head-left">' +
+        '<div class="peer-rec-eyebrow">Sur mesure pour ce RDV</div>' +
+        '<h2 class="peer-rec-title">Top des peers · ' + escHtml(pharma.name) + '</h2>' +
+        '<div class="peer-rec-sub">' + peers.length + ' ' + sourceInfo.label + ' commandent des produits absents de cette pharmacie. Sélectionne, prépare la fiche RDV, repars avec un argumentaire chiffré.</div>' +
+      '</div>' +
+      '<div class="peer-rec-head-right">' +
+        '<div class="peer-rec-kpis">' +
+          '<div class="peer-rec-kpi">' +
+            '<div class="peer-rec-kpi-top"><span class="peer-rec-kpi-icon">🎯</span><span class="peer-rec-kpi-val">' + peers.length + '</span></div>' +
+            '<div class="peer-rec-kpi-lbl">peers</div>' +
+            '<span class="peer-rec-kpi-chip">' + escHtml(sourceInfo.chip) + '</span>' +
+          '</div>' +
+          '<div class="peer-rec-kpi">' +
+            '<div class="peer-rec-kpi-top"><span class="peer-rec-kpi-icon">📦</span><span class="peer-rec-kpi-val">' + totalProds + '</span></div>' +
+            '<div class="peer-rec-kpi-lbl">produits</div>' +
+          '</div>' +
+          '<div class="peer-rec-kpi">' +
+            '<div class="peer-rec-kpi-top"><span class="peer-rec-kpi-icon">🗂️</span><span class="peer-rec-kpi-val">' + segments.length + '</span></div>' +
+            '<div class="peer-rec-kpi-lbl">catégories</div>' +
+          '</div>' +
+        '</div>' +
+        '<button class="peer-rec-cta" type="button" onclick="window.__peerRecCreateFiche(\'' + recId + '\', this)">' +
+          _PEER_REC_SPARKLES_SVG +
+          '<span class="peer-rec-cta-spinner" aria-hidden="true"></span>' +
+          '<span class="peer-rec-cta-label">Créer la fiche RDV</span>' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="peer-rec-body">' + cardsHtml + '</div>' +
+  '</section>';
 }
 
 function showPharmaDetail(pharmacyId, overridePeriod) {

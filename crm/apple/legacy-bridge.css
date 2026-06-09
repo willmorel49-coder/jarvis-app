@@ -476,3 +476,474 @@ table tbody tr:hover { background: var(--fill-4) !important; }
   box-shadow: var(--shadow-2) !important;
   border: none !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   WAVE 3 — polish premium (2026-06-09)
+   KPI cards, tables, chips, search, buttons, toasts, animations,
+   hover/active, sparklines, empty states.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 1. KPI CARDS premium ─── */
+.kpi-card {
+  aspect-ratio: 1 / 0.85 !important;
+  padding: 20px 24px !important;
+  border-left: 4px solid var(--label-quaternary) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  position: relative !important;
+  overflow: hidden !important;
+  animation: a-kpiIn 200ms var(--ease-emphasized) both !important;
+}
+.kpi-card[data-trend="up"]      { border-left-color: var(--success) !important; }
+.kpi-card[data-trend="down"]    { border-left-color: var(--danger)  !important; }
+.kpi-card[data-trend="neutral"] { border-left-color: var(--label-tertiary) !important; }
+
+.kpi-card .kpi-label,
+.kpi-card .metric-label,
+.kpi-card .metric-name,
+.kpi-card .kpi-name {
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  font-family: var(--font-mono) !important;
+  color: var(--label-secondary) !important;
+}
+
+.kpi-card .kpi-value,
+.kpi-card .metric-value,
+.kpi-card .metric-num,
+.kpi-card .kpi-num {
+  font-family: var(--font-display) !important;
+  font-size: 32px !important;
+  line-height: 1.1 !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums lining-nums !important;
+  color: var(--label-primary) !important;
+  letter-spacing: -0.5px !important;
+}
+
+.kpi-card .kpi-delta,
+.kpi-card .metric-delta,
+.kpi-card .kpi-trend {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  font-family: var(--font-mono) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.kpi-card[data-trend="up"]   .kpi-delta::before,
+.kpi-card[data-trend="up"]   .metric-delta::before { content: "↑ "; }
+.kpi-card[data-trend="down"] .kpi-delta::before,
+.kpi-card[data-trend="down"] .metric-delta::before { content: "↓ "; }
+.kpi-card[data-trend="up"]   .kpi-delta,
+.kpi-card[data-trend="up"]   .metric-delta { color: var(--success) !important; }
+.kpi-card[data-trend="down"] .kpi-delta,
+.kpi-card[data-trend="down"] .metric-delta { color: var(--danger)  !important; }
+.kpi-card[data-trend="neutral"] .kpi-delta,
+.kpi-card[data-trend="neutral"] .metric-delta { color: var(--label-secondary) !important; }
+
+.kpi-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-3) !important;
+  transition: transform var(--dur-quick) var(--ease-spring),
+              box-shadow var(--dur-quick) var(--ease-standard) !important;
+}
+
+@keyframes a-kpiIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.kpi-card:nth-child(1) { animation-delay: 0ms !important; }
+.kpi-card:nth-child(2) { animation-delay: 50ms !important; }
+.kpi-card:nth-child(3) { animation-delay: 100ms !important; }
+.kpi-card:nth-child(4) { animation-delay: 150ms !important; }
+.kpi-card:nth-child(5) { animation-delay: 200ms !important; }
+.kpi-card:nth-child(6) { animation-delay: 250ms !important; }
+.kpi-card:nth-child(7) { animation-delay: 300ms !important; }
+.kpi-card:nth-child(8) { animation-delay: 350ms !important; }
+
+/* ─── 2. TABLES iOS inset-grouped ─── */
+table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  padding: 10px 16px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  background: var(--material-bg-light) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+  backdrop-filter: saturate(180%) blur(20px) !important;
+  color: var(--label-secondary) !important;
+}
+
+table tbody td {
+  padding: 12px 16px !important;
+  transition: background 100ms ease !important;
+}
+
+table tbody tr {
+  transition: background 100ms ease !important;
+}
+table tbody tr:hover {
+  background: var(--fill-4) !important;
+}
+table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015) !important;
+}
+table tbody tr:nth-child(even):hover {
+  background: var(--fill-4) !important;
+}
+
+table tbody tr:last-child td:first-child { border-bottom-left-radius: 10px !important; }
+table tbody tr:last-child td:last-child  { border-bottom-right-radius: 10px !important; }
+
+table tbody tr.empty-state td {
+  padding: 40px 16px !important;
+  text-align: center !important;
+  color: var(--label-secondary) !important;
+  font-size: 15px !important;
+  background: transparent !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02) !important;
+  }
+  table thead th {
+    background: var(--material-bg-dark) !important;
+  }
+}
+
+/* ─── 3. FILTER CHIPS premium ─── */
+.filter-chips-group {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  padding: 4px !important;
+}
+
+.filter-chip,
+.cat-chip,
+.np-chip,
+.tab-pill,
+.mk-tab,
+.mk-pagetab {
+  transition: transform var(--dur-quick) var(--ease-spring),
+              background var(--dur-quick) var(--ease-standard),
+              box-shadow var(--dur-quick) var(--ease-standard) !important;
+}
+.filter-chip:hover,
+.cat-chip:hover,
+.np-chip:hover,
+.tab-pill:hover,
+.mk-tab:hover,
+.mk-pagetab:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-1) !important;
+}
+
+.filter-chip.active,
+.cat-chip.active,
+.np-chip.np-active,
+.tab-pill.active,
+.mk-tab.on,
+.mk-pagetab.on {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 100%, white 4%) 0%,
+    var(--accent) 100%
+  ) !important;
+  color: var(--accent-on) !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+.filter-chip.active:hover,
+.cat-chip.active:hover,
+.np-chip.np-active:hover,
+.tab-pill.active:hover,
+.mk-tab.on:hover,
+.mk-pagetab.on:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 40%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+/* ─── 4. SEARCH BOX style Spotlight ─── */
+.search-box,
+.search-input,
+.search-bar input,
+.global-search-input {
+  height: 36px !important;
+  padding-left: 36px !important;
+  padding-right: 14px !important;
+  border-radius: 18px !important;
+  background-color: var(--fill-1) !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/></svg>") !important;
+  background-repeat: no-repeat !important;
+  background-position: 12px 50% !important;
+  transition: background var(--dur-quick) var(--ease-standard),
+              box-shadow var(--dur-quick) var(--ease-standard) !important;
+}
+.search-box:focus,
+.search-input:focus,
+.search-bar input:focus,
+.global-search-input:focus {
+  background-color: var(--fill-2) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent) !important;
+  outline: none !important;
+}
+
+/* ─── 5. BUTTONS icon-only + loading ─── */
+.btn-icon {
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  border-radius: var(--r-full) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+.btn-icon-sm {
+  width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  border-radius: var(--r-full) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-loading {
+  pointer-events: none !important;
+  color: transparent !important;
+  position: relative !important;
+}
+.btn-loading::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  margin: auto !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  border: 2px solid currentColor !important;
+  border-top-color: transparent !important;
+  color: var(--accent-on) !important;
+  animation: a-spin 800ms linear infinite !important;
+}
+.btn-loading.btn-secondary::after,
+.btn-loading.btn-ghost::after,
+.btn-loading.btn-default::after {
+  color: var(--accent) !important;
+}
+
+@keyframes a-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ─── 6. TOAST Apple-mode amélioré ─── */
+.app-toast-host {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+.app-toast {
+  position: relative !important;
+  padding-right: 36px !important;
+  border-left: 3px solid var(--label-quaternary) !important;
+  animation: a-toastIn 320ms cubic-bezier(0.32, 0.72, 0, 1) both !important;
+}
+.app-toast.success,
+.app-toast[data-kind="success"] { border-left-color: var(--success) !important; }
+.app-toast.warning,
+.app-toast[data-kind="warning"] { border-left-color: var(--warning) !important; }
+.app-toast.danger,
+.app-toast.error,
+.app-toast[data-kind="danger"],
+.app-toast[data-kind="error"]   { border-left-color: var(--danger)  !important; }
+.app-toast.info,
+.app-toast[data-kind="info"]    { border-left-color: var(--info)    !important; }
+
+.app-toast .toast-close {
+  position: absolute !important;
+  top: 50% !important;
+  right: 10px !important;
+  transform: translateY(-50%) !important;
+  width: 20px !important;
+  height: 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: var(--r-full) !important;
+  color: var(--label-secondary) !important;
+  opacity: 0 !important;
+  cursor: pointer !important;
+  transition: opacity var(--dur-quick) var(--ease-standard),
+              background var(--dur-quick) var(--ease-standard) !important;
+}
+.app-toast .toast-close::before {
+  content: "" !important;
+  width: 12px !important;
+  height: 12px !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M18 6 6 18M6 6l12 12'/></svg>") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}
+.app-toast:hover .toast-close {
+  opacity: 1 !important;
+}
+.app-toast .toast-close:hover {
+  background: var(--fill-2) !important;
+  color: var(--label-primary) !important;
+}
+
+@keyframes a-toastIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── 7. PAGE transitions ─── */
+.a-page-in {
+  animation: a-pageIn 200ms cubic-bezier(0.2, 0, 0, 1) both !important;
+  will-change: opacity, transform !important;
+}
+@keyframes a-pageIn {
+  from { opacity: 0; transform: scale(0.985); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ─── 8. HOVER / ACTIVE / FOCUS uniformes ─── */
+button,
+.clickable,
+[role="button"],
+a,
+.nav-item {
+  transition: background var(--dur-quick) var(--ease-standard),
+              transform var(--dur-quick) var(--ease-spring),
+              color var(--dur-quick) var(--ease-standard),
+              box-shadow var(--dur-quick) var(--ease-standard) !important;
+}
+button:active,
+.clickable:active,
+[role="button"]:active,
+.nav-item:active {
+  transform: scale(0.97) !important;
+}
+button:focus-visible,
+.clickable:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+.nav-item:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+/* ─── 9. SPARKLINES mini ─── */
+.kpi-spark {
+  width: 100% !important;
+  height: 24px !important;
+  opacity: 0.6 !important;
+  transition: opacity var(--dur-quick) var(--ease-standard) !important;
+  display: block !important;
+}
+.kpi-card:hover .kpi-spark,
+.kpi-spark:hover {
+  opacity: 1 !important;
+}
+
+/* ─── 10. EMPTY STATE uniforme ─── */
+.empty-state-apple {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 48px 24px !important;
+  max-width: 360px !important;
+  margin: 0 auto !important;
+  gap: 8px !important;
+}
+.empty-state-apple .empty-state-icon {
+  width: 96px !important;
+  height: 96px !important;
+  color: var(--label-tertiary) !important;
+  stroke-width: 1.5 !important;
+  margin-bottom: 8px !important;
+}
+.empty-state-apple .empty-state-title {
+  font-family: var(--font-text) !important;
+  font-size: 17px !important;
+  line-height: 22px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.41px !important;
+  color: var(--label-primary) !important;
+  margin: 0 !important;
+}
+.empty-state-apple .empty-state-body {
+  font-family: var(--font-text) !important;
+  font-size: 17px !important;
+  line-height: 22px !important;
+  letter-spacing: -0.41px !important;
+  color: var(--label-secondary) !important;
+  margin: 0 !important;
+}
+.empty-state-apple .empty-state-cta {
+  margin-top: 20px !important;
+}
+
+/* ─── MOBILE (<=640px) ─── */
+@media (max-width: 640px) {
+  .kpi-spark { display: none !important; }
+  .kpi-card {
+    padding: 16px 18px !important;
+    aspect-ratio: auto !important;
+  }
+  .kpi-card .kpi-value,
+  .kpi-card .metric-value,
+  .kpi-card .metric-num,
+  .kpi-card .kpi-num {
+    font-size: 26px !important;
+  }
+  table thead th,
+  table tbody td { padding: 10px 12px !important; }
+  .empty-state-apple { padding: 32px 16px !important; }
+}
+
+/* ─── REDUCED MOTION (override propre des animations Wave 3) ─── */
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card,
+  .app-toast,
+  .a-page-in {
+    animation: none !important;
+  }
+  .kpi-card:hover,
+  .filter-chip:hover,
+  .cat-chip:hover,
+  .np-chip:hover,
+  .tab-pill:hover,
+  .mk-tab:hover,
+  .mk-pagetab:hover,
+  button:active,
+  .clickable:active,
+  [role="button"]:active,
+  .nav-item:active {
+    transform: none !important;
+  }
+  .btn-loading::after { animation: none !important; }
+}
