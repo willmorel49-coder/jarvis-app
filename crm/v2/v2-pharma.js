@@ -383,7 +383,8 @@
       : 'Télécharger le PDF RDV');
   }
 
-  // Coche / décoche un produit pour le PDF RDV (toggle ciblé, pas de re-render)
+  // Coche / décoche un produit (toggle ciblé, pas de re-render).
+  // Le ✓ sert au PDF RDV immédiat ET alimente la "fiche en cours" partagée.
   V2.pharmaToggleSel = function (btn) {
     if (!selCips) selCips = new Set();
     var cip = btn.getAttribute('data-cip');
@@ -391,10 +392,24 @@
       selCips.delete(cip);
       btn.classList.remove('on');
       btn.innerHTML = ICO('plus', 15);
+      if (V2.ficheCart) V2.ficheCart.remove(cip);
     } else {
       selCips.add(cip);
       btn.classList.add('on');
       btn.innerHTML = ICO('check', 15);
+      if (V2.ficheCart) {
+        var b = benchIndex().get(String(cip));
+        V2.ficheCart.add({
+          cip13: cip,
+          designation: b ? b.designation : cip,
+          prix_ip: b ? b.prix_ip : null,
+          prix_ht: b ? b.prix_ht : null,
+          remise_pct: b ? b.remise_pct : null,
+          is_froid: b ? b.is_froid : false,
+          src: 'opp'
+        });
+      }
+      V2.toast('✓ Retenu — ajouté à la fiche en cours');
     }
     refreshPdfBtn();
   };
