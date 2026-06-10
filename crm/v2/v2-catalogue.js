@@ -171,15 +171,13 @@
   V2.catAddToFiche = function (cip) {
     var b = benchByCip.get(String(cip));
     if (!b) return;
-    try {
-      var cur = JSON.parse(localStorage.getItem('v2_fiche_courante') || '{"products":[]}');
-      if (cur.products.some(function (p) { return String(p.cip13) === String(cip); })) {
-        V2.toast('Déjà dans la fiche en cours', 'warn'); return;
-      }
-      cur.products.push({ cip13: b.cip13, designation: b.designation, prix_ip: b.prix_ip, prix_ht: b.prix_ht, remise_pct: b.remise_pct, is_froid: b.is_froid });
-      localStorage.setItem('v2_fiche_courante', JSON.stringify(cur));
-      V2.toast('✓ Ajouté à la fiche en cours (' + cur.products.length + ')');
-    } catch (e) { V2.toast('Erreur', 'error'); }
+    if (!V2.ficheCart) { V2.toast('Module fiches indisponible', 'error'); return; }
+    if (V2.ficheCart.has(b.cip13)) { V2.toast('Déjà dans la fiche en cours', 'warn'); return; }
+    var n = V2.ficheCart.add({
+      cip13: b.cip13, designation: b.designation, prix_ip: b.prix_ip,
+      prix_ht: b.prix_ht, remise_pct: b.remise_pct, is_froid: b.is_froid, src: 'cat'
+    });
+    V2.toast('✓ Ajouté à la fiche en cours (' + n + ')');
   };
 
   function rerenderKeepFocus() {
