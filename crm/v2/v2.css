@@ -24,13 +24,14 @@
   --ease:cubic-bezier(.32,.72,0,1);
   --ease-soft:cubic-bezier(.4,0,.2,1);
   /* typo */
-  --font:'Inter',system-ui,-apple-system,sans-serif;
+  --font:'Satoshi','Inter',system-ui,-apple-system,sans-serif;
   --mono:'Geist Mono',ui-monospace,monospace;
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
 html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-body{font-family:var(--font);color:var(--ip-ink);background:var(--paper);min-height:100vh;position:relative}
+body{font-family:var(--font);color:var(--ip-ink);background:var(--paper);min-height:100vh;position:relative;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:"ss01","cv01","liga","kern"}
 /* grain de matière + halo studio (signature anti-flat) */
 body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.06 0 0 0 0 0.08 0 0 0 0 0.13 0 0 0 .025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
