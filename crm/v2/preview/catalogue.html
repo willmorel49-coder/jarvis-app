@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview · Catalogue grossiste IP · CRM V2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ip-blue:#0050E6;--ip-blue-d:#0034A0;--ip-ink:#10131C;--ip-ink-2:#2A2F3C;
+  --muted:#737A8C;--muted-2:#9AA1B2;--paper:#FBFCFE;--card:#FFFFFF;--card-2:#F7F9FC;
+  --line:rgba(16,19,28,.07);--line-2:rgba(16,19,28,.04);--halo:#E9F0FF;
+  --c-opp:#1E9E6A;--c-cat:#6D4FC4;--c-rose:#E0556E;--c-mint:#1E9E6A;--c-froid:#00B5D8;--c-amber:#C7791A;
+  --r-card:20px;--r-md:14px;--r-sm:10px;
+  --sh-1:0 1px 1px rgba(16,19,28,.04),0 2px 4px rgba(16,19,28,.04);
+  --sh-2:0 2px 4px rgba(16,19,28,.04),0 8px 18px rgba(16,19,28,.06),0 1px 0 rgba(255,255,255,.7) inset;
+  --sh-3:0 8px 16px rgba(16,19,28,.08),0 28px 56px rgba(16,19,28,.10);
+  --ease:cubic-bezier(.32,.72,0,1);--font:'Inter',system-ui,sans-serif;--mono:'Geist Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);color:var(--ip-ink);background:var(--paper);min-height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.06 0 0 0 0 0.08 0 0 0 0 0.13 0 0 0 .025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.banner{position:relative;z-index:2;background:var(--ip-ink);color:#fff;padding:9px 18px;font-size:12px;text-align:center}
+.banner b{color:#FFC24D}
+
+.top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:14px;padding:13px 26px;
+  background:rgba(251,252,254,.8);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line)}
+.back{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:8px 13px;font-size:13px;font-weight:600;color:var(--ip-ink-2);cursor:pointer;box-shadow:var(--sh-1)}
+.brand-t{font-weight:800;font-size:15px;letter-spacing:-.02em}
+
+.wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:28px 26px 70px;transition:margin-right .32s var(--ease)}
+.wrap.shifted{margin-right:372px}
+.ptitle{font-size:27px;font-weight:800;letter-spacing:-.03em}
+.psub{font-size:14px;color:var(--muted);margin:3px 0 22px}
+
+.search{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:14px 18px;margin-bottom:18px;box-shadow:var(--sh-2);transition:.2s var(--ease)}
+.search:focus-within{border-color:rgba(0,80,230,.4);box-shadow:0 0 0 4px var(--halo),var(--sh-2)}
+.search svg{color:var(--ip-blue);flex-shrink:0}
+.search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}
+
+.segs{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
+.seg{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:13px;border:1px solid var(--line);
+  background:var(--card);font-size:12.5px;font-weight:600;color:var(--ip-ink-2);cursor:pointer;transition:.18s var(--ease);box-shadow:var(--sh-1)}
+.seg:hover{transform:translateY(-1px)}
+.seg.on{background:var(--sc);color:#fff;border-color:transparent}
+.seg .sw{width:9px;height:9px;border-radius:50%;background:var(--sc)}
+.seg.on .sw{background:rgba(255,255,255,.7)}
+.seg .cnt{font-family:var(--mono);font-size:11px;opacity:.7}
+
+.cnt-line{font-size:12px;color:var(--muted);margin-bottom:12px}
+.cnt-line b{color:var(--ip-ink);font-family:var(--mono)}
+
+.tablecard{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;text-align:left;
+  padding:12px 14px;background:var(--card-2);border-bottom:1px solid var(--line)}
+thead th.num{text-align:right}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--line-2);font-size:13px}
+tbody td.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer;transition:background .12s}
+tbody tr:hover{background:var(--card-2)}
+tbody tr.sel{background:var(--halo)}
+.pname{font-weight:600;color:var(--ip-ink)}
+.cip{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.fam{display:inline-block;padding:3px 9px;border-radius:8px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.prix-ip{font-weight:700;color:var(--ip-blue)}
+.rem{color:var(--c-mint);font-weight:700}
+.offre{display:inline-block;padding:2px 7px;border-radius:7px;font-size:10px;font-weight:700;background:#FFF3E0;color:#C7791A;margin-left:6px}
+
+/* Inspecteur détail produit grossiste (PAS concurrents) */
+.insp{position:fixed;top:0;right:0;width:372px;height:100vh;background:var(--card);border-left:1px solid var(--line);
+  box-shadow:var(--sh-3);transform:translateX(100%);transition:transform .32s var(--ease);z-index:50;overflow-y:auto;display:flex;flex-direction:column}
+.insp.open{transform:translateX(0)}
+.insp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--line);
+  background:rgba(251,252,254,.7);backdrop-filter:blur(10px);position:sticky;top:0}
+.insp-close{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--card);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
+.insp-body{padding:20px}
+.insp-name{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.insp-cip{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:4px}
+.insp-fam{margin-top:8px}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.kpi{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+.kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:5px}
+.kpi-v{font-family:var(--mono);font-size:18px;font-weight:700}
+.pot{margin-top:18px;padding:14px;background:color-mix(in srgb,var(--ip-blue) 6%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 22%,transparent);border-radius:13px}
+.pot-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ip-blue);font-weight:700;margin-bottom:8px}
+.pot-bar{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:8px 0 6px}
+.pot-fill{height:100%;background:linear-gradient(90deg,var(--ip-blue),#3B82F6);border-radius:5px}
+.pot-txt{font-size:12px;color:var(--ip-ink-2)}
+.pot-txt b{font-family:var(--mono)}
+.insp-cta{margin-top:24px;display:flex;flex-direction:column;gap:9px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:12px;font-family:var(--font);
+  font-size:14px;font-weight:700;cursor:pointer;border:none;transition:.18s var(--ease)}
+.btn-primary{background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;box-shadow:0 4px 12px rgba(0,80,230,.28)}
+.btn-ghost{background:var(--card);border:1px solid var(--line);color:var(--ip-ink-2)}
+.note{margin-top:30px;padding:13px 18px;background:var(--card);border:1px solid var(--line);border-radius:14px;font-size:12px;color:var(--muted);text-align:center;box-shadow:var(--sh-1)}
+.note b{color:var(--ip-ink)}
+</style>
+</head>
+<body>
+<div class="banner">PREVIEW <b>Catalogue grossiste Intégral Pharma</b> · médicaments · données fictives · clique une ligne pour le détail produit · (les concurrents = pilier Offilog, pas ici)</div>
+
+<div class="top">
+  <button class="back">← Accueil</button>
+  <span class="brand-t">Catalogue Intégral Pharma</span>
+</div>
+
+<div class="wrap" id="wrap">
+  <div class="ptitle">Catalogue Intégral Pharma</div>
+  <div class="psub">10 500 références grossiste · filtre par tranches de prix et familles AFMCODE</div>
+
+  <div class="search">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="7"/><path d="m20 20-4.2-4.2"/></svg>
+    <input id="q" placeholder="Rechercher CIP13 ou désignation…" autocomplete="off">
+  </div>
+
+  <div class="segs" id="segs"></div>
+  <div class="cnt-line" id="cntline"></div>
+
+  <div class="tablecard">
+    <table>
+      <thead><tr>
+        <th>#</th><th>Produit</th><th>CIP13</th><th>Famille</th>
+        <th class="num">Prix HT</th><th class="num">Prix IP</th><th class="num">Remise</th><th class="num">Vol IP</th><th class="num">Vol Ameli</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="note">Maquette · <b>~20 produits fictifs</b> dans les 9 familles. Dans l'app : tes 10 500 vraies références grossiste, pagination 100/page.</div>
+</div>
+
+<!-- Inspecteur détail produit grossiste -->
+<div class="insp" id="insp">
+  <div class="insp-head">
+    <div><div class="insp-name" id="i-name"></div><div class="insp-cip" id="i-cip"></div><div class="insp-fam" id="i-fam"></div></div>
+    <button class="insp-close" onclick="closeInsp()">✕</button>
+  </div>
+  <div class="insp-body" id="i-body"></div>
+</div>
+
+<script>
+var CATS={
+  all:{label:'Tout',c:'#0050E6'},
+  pp:{label:'Princeps · 0–4,33€',c:'#1E9E6A'},
+  mi:{label:'Princeps · 4,33–468€',c:'#0050E6'},
+  ch:{label:'Princeps · >468€',c:'#C7791A'},
+  froid:{label:'Froid',c:'#00B5D8'},
+  gen:{label:'Génériques',c:'#737A8C'},
+  genp:{label:'Gén. partenaires',c:'#1E9E6A'},
+  bio:{label:'Biosimilaires',c:'#6D4FC4'},
+  nr:{label:'Non remboursés',c:'#C7791A'}
+};
+// {n,cip,cat,ht,ip,vol,ameli,offre}
+var DATA=[
+  {n:'DOLIPRANE 1000MG CPR BT8',cip:'3400935955838',cat:'pp',ht:1.06,ip:0.88,vol:1835165,ameli:170202893,offre:true},
+  {n:'SPASFON CPR BT30',cip:'3400930827963',cat:'pp',ht:2.10,ip:1.74,vol:412300,ameli:9870000},
+  {n:'KARDEGIC 75MG PDR SACH 30',cip:'3400933139827',cat:'pp',ht:1.95,ip:1.62,vol:298400,ameli:14200000},
+  {n:'ELIQUIS 5MG CPR BT60',cip:'3400927508165',cat:'mi',ht:79.50,ip:66.30,vol:382000,ameli:5400000,offre:true},
+  {n:'ENTRESTO 49/51MG CPR BT56',cip:'3400930085301',cat:'mi',ht:54.20,ip:45.10,vol:44200,ameli:980000},
+  {n:'VENTOLINE 100MCG INH 200D',cip:'3400930827512',cat:'mi',ht:5.40,ip:4.48,vol:116000,ameli:8900000},
+  {n:'XTANDI 40MG CPR BT112',cip:'3400927912344',cat:'ch',ht:3120.00,ip:2598.00,vol:39000,ameli:142000},
+  {n:'IMBRUVICA 420MG CPR BT30',cip:'3400927108211',cat:'ch',ht:2890.00,ip:2410.00,vol:6000,ameli:48000},
+  {n:'MOUNJARO 5MG KWIKPEN 2,4ML',cip:'3400930266144',cat:'froid',ht:212.00,ip:176.00,vol:225000,ameli:1900000,offre:true},
+  {n:'OZEMPIC 1MG INJ STYLO3ML',cip:'3400930151204',cat:'froid',ht:88.00,ip:73.20,vol:115000,ameli:3200000},
+  {n:'SHINGRIX INJ FL+FL',cip:'3400930140857',cat:'froid',ht:138.00,ip:114.50,vol:206000,ameli:2100000},
+  {n:'AMOXICILLINE BIOGARAN 1G',cip:'3400936789012',cat:'gen',ht:2.40,ip:1.99,vol:540000,ameli:22000000},
+  {n:'PARACETAMOL MYLAN 1G CPR',cip:'3400937012345',cat:'gen',ht:0.98,ip:0.81,vol:890000,ameli:48000000},
+  {n:'OMEPRAZOLE EG 20MG GELU',cip:'3400938123456',cat:'gen',ht:1.80,ip:1.49,vol:620000,ameli:19000000},
+  {n:'ATORVASTATINE ARROW 20MG',cip:'3400939234567',cat:'genp',ht:2.60,ip:2.16,vol:430000,ameli:15000000,offre:true},
+  {n:'IRBESARTAN ZENTIVA 150MG',cip:'3400939345678',cat:'genp',ht:3.10,ip:2.57,vol:310000,ameli:7800000},
+  {n:'TRUXIMA 500MG INJ FL50ML',cip:'3400930045671',cat:'bio',ht:980.00,ip:814.00,vol:8000,ameli:95000},
+  {n:'BENEPALI 50MG INJ STYLO',cip:'3400930088234',cat:'bio',ht:740.00,ip:614.00,vol:12000,ameli:128000},
+  {n:'THEALOSE SOL OPHT FL 15ML',cip:'3400927665431',cat:'nr',ht:9.20,ip:7.63,vol:1052000,ameli:0},
+  {n:'VITABACT 0,05% COLLY FL',cip:'3400930112233',cat:'nr',ht:5.10,ip:4.23,vol:340000,ameli:0}
+];
+DATA.forEach(function(d){ d.rem=Math.round((1-d.ip/d.ht)*1000)/10; });
+
+var activeCat='all', query='';
+function fmtEur(n){ return (n>=1000?Math.round(n).toLocaleString('fr-FR'):n.toFixed(2).replace('.',',')) + ' €'; }
+function fmtNum(n){ return Math.round(n).toLocaleString('fr-FR'); }
+function fmtBig(n){ if(n>=1e6)return (n/1e6).toFixed(1).replace('.0','').replace('.',',')+' M'; if(n>=1e3)return Math.round(n/1e3)+' k'; return fmtNum(n); }
+
+function counts(){var m={all:DATA.length};Object.keys(CATS).forEach(function(k){if(k!=='all')m[k]=0});DATA.forEach(function(d){m[d.cat]++});return m;}
+function renderSegs(){
+  var m=counts();
+  document.getElementById('segs').innerHTML=Object.keys(CATS).map(function(k){
+    return '<button class="seg'+(activeCat===k?' on':'')+'" style="--sc:'+CATS[k].c+'" onclick="setCat(\''+k+'\')">'+
+      '<span class="sw"></span>'+CATS[k].label+'<span class="cnt">'+(m[k]||0)+'</span></button>';
+  }).join('');
+}
+function filtered(){
+  return DATA.filter(function(d){
+    if(activeCat!=='all'&&d.cat!==activeCat)return false;
+    if(query){var q=query.toLowerCase();if(d.n.toLowerCase().indexOf(q)<0&&d.cip.indexOf(query)<0)return false;}
+    return true;
+  }).sort(function(a,b){return b.vol-a.vol});
+}
+function renderTable(){
+  var rows=filtered();
+  document.getElementById('cntline').innerHTML='<b>'+rows.length+'</b> références affichées';
+  document.getElementById('tbody').innerHTML=rows.map(function(d,i){
+    return '<tr onclick="openInsp(\''+d.cip+'\',this)" data-cip="'+d.cip+'">'+
+      '<td class="mono" style="color:var(--muted-2);font-size:11px">'+(i+1)+'</td>'+
+      '<td class="pname">'+d.n+(d.offre?'<span class="offre">OFFRE</span>':'')+'</td>'+
+      '<td class="cip">'+d.cip+'</td>'+
+      '<td><span class="fam" style="background:'+CATS[d.cat].c+'1e;color:'+CATS[d.cat].c+'">'+CATS[d.cat].label.replace('Princeps · ','').replace(' partenaires','. part')+'</span></td>'+
+      '<td class="num">'+fmtEur(d.ht)+'</td>'+
+      '<td class="num prix-ip">'+fmtEur(d.ip)+'</td>'+
+      '<td class="num rem">'+d.rem+'%</td>'+
+      '<td class="num">'+fmtNum(d.vol)+'</td>'+
+      '<td class="num" style="color:var(--muted)">'+(d.ameli?fmtBig(d.ameli):'—')+'</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--muted)">Aucune référence</td></tr>';
+}
+function setCat(k){activeCat=k;renderSegs();renderTable();}
+document.getElementById('q').addEventListener('input',function(e){query=e.target.value;renderTable();});
+
+function openInsp(cip,tr){
+  var d=DATA.find(function(x){return x.cip===cip});if(!d)return;
+  document.querySelectorAll('tbody tr').forEach(function(r){r.classList.toggle('sel',r.dataset.cip===cip)});
+  document.getElementById('i-name').textContent=d.n;
+  document.getElementById('i-cip').textContent='CIP '+d.cip;
+  document.getElementById('i-fam').innerHTML='<span class="fam" style="background:'+CATS[d.cat].c+'1e;color:'+CATS[d.cat].c+'">'+CATS[d.cat].label+'</span>'+(d.offre?'<span class="offre">OFFRE EN COURS</span>':'');
+  // potentiel = part IP / marché Ameli national
+  var potHtml='';
+  if(d.ameli>0){
+    var part=Math.min(100,(d.vol/d.ameli)*100);
+    potHtml='<div class="pot"><div class="pot-l">Potentiel marché</div>'+
+      '<div class="pot-bar"><div class="pot-fill" style="width:'+Math.max(2,part)+'%"></div></div>'+
+      '<div class="pot-txt">Tu vends <b>'+fmtNum(d.vol)+'</b> boîtes · le marché France (Ameli) est de <b>'+fmtBig(d.ameli)+'</b> · ta part : <b>'+part.toFixed(2)+'%</b></div></div>';
+  } else {
+    potHtml='<div class="pot" style="background:#FFF3E0;border-color:#F0C98A"><div class="pot-l" style="color:#C7791A">Non remboursé</div><div class="pot-txt">Pas de marché Ameli (produit hors remboursement). Marge libre pharmacien.</div></div>';
+  }
+  document.getElementById('i-body').innerHTML=
+    '<div class="kpi-grid">'+
+      '<div class="kpi"><div class="kpi-l">Prix HT</div><div class="kpi-v">'+fmtEur(d.ht)+'</div></div>'+
+      '<div class="kpi"><div class="kpi-l">Prix net IP</div><div class="kpi-v" style="color:var(--ip-blue)">'+fmtEur(d.ip)+'</div></div>'+
+      '<div class="kpi"><div class="kpi-l">Remise IP</div><div class="kpi-v" style="color:var(--c-mint)">'+d.rem+'%</div></div>'+
+      '<div class="kpi"><div class="kpi-l">Volume IP</div><div class="kpi-v">'+fmtNum(d.vol)+'</div></div>'+
+    '</div>'+
+    potHtml+
+    '<div class="insp-cta">'+
+      '<button class="btn btn-primary">+ Ajouter à une fiche commerciale</button>'+
+    '</div>';
+  document.getElementById('insp').classList.add('open');
+  document.getElementById('wrap').classList.add('shifted');
+}
+function closeInsp(){
+  document.getElementById('insp').classList.remove('open');
+  document.getElementById('wrap').classList.remove('shifted');
+  document.querySelectorAll('tbody tr').forEach(function(r){r.classList.remove('sel')});
+}
+renderSegs();renderTable();
+</script>
+</body>
+</html>
