@@ -629,7 +629,7 @@
     }).join('');
 
     var html = ''+
-      '<div style="font-family:Inter,Arial,sans-serif;color:#10131C;width:794px;box-sizing:border-box;padding:42px 44px;background:#fff">'+
+      '<div style="font-family:Satoshi,Inter,Arial,sans-serif;color:#10131C;width:794px;box-sizing:border-box;padding:42px 44px;background:#fff">'+
         '<div style="display:flex;align-items:center;gap:14px;padding-bottom:18px;border-bottom:2px solid #10131C">'+
           '<div style="width:44px;height:44px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative;flex-shrink:0">'+
             '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:20px;height:20px">'+
@@ -679,6 +679,8 @@
   function generatePdf(fiche) {
     V2.toast('Génération du PDF…');
     window.ensureHtml2Pdf().then(function () {
+      return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
+    }).then(function () {
       var node = buildPdfNode(fiche);
       document.body.appendChild(node);
       var fname = 'Fiche-' + fileSafe(fiche.title) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
