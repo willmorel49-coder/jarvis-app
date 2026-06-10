@@ -35,7 +35,7 @@
     for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
     return null;
   }
-  function createFiche() { return { id: 'f' + Date.now(), title: '', destId: null, products: [], created: Date.now() }; }
+  function createFiche() { return { id: 'f' + Date.now(), title: '', destId: null, note: '', validUntil: '', conditions: '', products: [], created: Date.now() }; }
   function saveFiche(fiche) {
     var all = getFiches(), found = false;
     for (var i = 0; i < all.length; i++) { if (all[i].id === fiche.id) { all[i] = fiche; found = true; break; } }
@@ -180,6 +180,17 @@
     'border:none;outline:none;background:none;padding:6px 0;border-bottom:2px solid var(--line);margin-bottom:18px;transition:.18s var(--ease)}'+
     '.fch-titlefield:focus{border-bottom-color:var(--ip-blue)}'+
     '.fch-titlefield::placeholder{color:var(--muted-2);font-weight:700}'+
+    '.fch-note{width:100%;font-family:var(--font);font-size:14px;line-height:1.55;color:var(--ip-ink-2);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin-bottom:16px;outline:none;resize:vertical;box-shadow:var(--sh-1);transition:.16s var(--ease)}'+
+    '.fch-note:focus{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}'+
+    '.fch-note::placeholder{color:var(--muted-2);font-style:italic}'+
+    '.fch-cond{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}'+
+    '.fch-cond-field{display:flex;flex-direction:column;gap:6px;min-width:170px}'+
+    '.fch-cond-l{display:flex;align-items:center;gap:6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}'+
+    '.fch-cond-l svg{color:var(--c-amber)}'+
+    '.fch-cond-date,.fch-cond-txt{font-family:var(--font);font-size:14px;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 13px;outline:none;box-shadow:var(--sh-1);transition:.16s var(--ease)}'+
+    '.fch-cond-date:focus,.fch-cond-txt:focus{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}'+
+    '.fch-cond-txt::placeholder{color:var(--muted-2)}'+
+    '.fch-icobtn-del:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}'+
     '.fch-dest{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:13px 16px;margin-bottom:22px;box-shadow:var(--sh-1)}'+
     '.fch-dest-ic{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-opp),#13794f)}'+
     '.fch-dest-l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}'+
@@ -302,7 +313,8 @@
             '<div class="fch-card-acts">'+
               '<button class="v2-btn v2-btn-ghost" onclick="V2.fiches.open(\'' + f.id + '\')">Ouvrir</button>'+
               '<button class="v2-btn v2-btn-primary" onclick="V2.fiches.pdfById(\'' + f.id + '\')">' + ICO('download', 15, 2) + 'PDF</button>'+
-              '<button class="fch-icobtn" title="Supprimer" onclick="V2.fiches.remove(\'' + f.id + '\')">' + ICO('close', 16, 2) + '</button>'+
+              '<button class="fch-icobtn" title="Dupliquer" onclick="V2.fiches.duplicate(\'' + f.id + '\')">' + ICO('grid', 16, 2) + '</button>'+
+              '<button class="fch-icobtn fch-icobtn-del" title="Supprimer" onclick="V2.fiches.remove(\'' + f.id + '\')">' + ICO('close', 16, 2) + '</button>'+
             '</div>'+
           '</div>';
       }).join('');
@@ -341,6 +353,7 @@
       if (!existing) { V2.toast('Fiche introuvable', 'error'); V2.go('fiches'); return; }
       if (!editingFiche || editingFiche.id !== existing.id) {
         editingFiche = { id: existing.id, title: existing.title, destId: existing.destId || null, created: existing.created,
+                         note: existing.note || '', validUntil: existing.validUntil || '', conditions: existing.conditions || '',
                          products: (existing.products || []).map(function (p) { return Object.assign({}, p); }) };
       }
     }
@@ -353,11 +366,25 @@
       '<div class="v2-wrap narrow">'+
         '<input class="fch-titlefield" id="fch-title" placeholder="Titre de la fiche…" value="' + esc(editingFiche.title) + '" '+
           'oninput="V2.fiches.setTitle(this.value)">'+
+        // Accroche / mot au pharmacien
+        '<textarea class="fch-note" id="fch-note" rows="2" placeholder="Un mot pour le pharmacien (optionnel) — ex : « Suite à notre échange, voici ma sélection pour votre officine. »" '+
+          'oninput="V2.fiches.setNote(this.value)">' + esc(editingFiche.note || '') + '</textarea>'+
         // Destinataire
         '<div class="fch-dest">'+
           '<div class="fch-dest-ic">' + ICO('pharma', 20, 1.8) + '</div>'+
           '<div><div class="fch-dest-l">Destinataire</div>' + destValHtml() + '</div>'+
           '<button class="fch-dest-change" onclick="V2.fiches.openDest()">' + (editingFiche.destId ? 'Changer' : 'Choisir une pharmacie') + '</button>'+
+        '</div>'+
+        // Conditions commerciales (validité + offres)
+        '<div class="fch-cond">'+
+          '<div class="fch-cond-field">'+
+            '<label class="fch-cond-l">' + ICO('cal', 14, 1.8) + ' Offre valable jusqu\'au</label>'+
+            '<input type="date" class="fch-cond-date" id="fch-valid" value="' + esc(editingFiche.validUntil || '') + '" oninput="V2.fiches.setValid(this.value)">'+
+          '</div>'+
+          '<div class="fch-cond-field" style="flex:1">'+
+            '<label class="fch-cond-l">' + ICO('spark', 14, 1.8) + ' Conditions commerciales</label>'+
+            '<input type="text" class="fch-cond-txt" id="fch-cond" placeholder="ex : Franco de port dès 300€ · 3+1 sur la gamme solaire" value="' + esc(editingFiche.conditions || '') + '" oninput="V2.fiches.setConditions(this.value)">'+
+          '</div>'+
         '</div>'+
         // Produits
         '<div class="v2-card">'+
@@ -628,25 +655,60 @@
         '</tr>';
     }).join('');
 
+    var note = (fiche.note || '').trim();
+    var conditions = (fiche.conditions || '').trim();
+    var validTxt = '';
+    if (fiche.validUntil) {
+      var dv = new Date(fiche.validUntil + 'T00:00:00');
+      validTxt = isNaN(dv.getTime()) ? fiche.validUntil : dv.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    }
+
+    var destBlock = dest ? (
+      '<div style="margin-top:18px;padding:13px 16px;background:#F7F9FC;border:1px solid #E8ECF4;border-radius:11px;display:flex;align-items:center;gap:12px">'+
+        '<div style="width:36px;height:36px;border-radius:10px;background:#EAF0FF;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+
+          '<svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M3 12h18" stroke="#0050E6" stroke-width="2.2" stroke-linecap="round"/></svg></div>'+
+        '<div><div style="font-size:8.5px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.06em;font-weight:700">À l\'attention de</div>'+
+          '<div style="font-size:14px;font-weight:800;color:#10131C">' + esc(dest.name) + '</div>'+
+          ((dest.ville || dest.code) ? '<div style="font-size:10.5px;color:#737A8C">' + esc(dest.ville || dest.code) + '</div>' : '') + '</div>'+
+      '</div>'
+    ) : '';
+
+    var noteBlock = note ? (
+      '<div style="margin-top:16px;padding:14px 18px;background:#FBFCFE;border-left:3px solid #0050E6;border-radius:0 10px 10px 0;font-size:12.5px;line-height:1.6;color:#2A2F3C;font-style:italic">' + esc(note) + '</div>'
+    ) : '';
+
+    var condBlock = (validTxt || conditions) ? (
+      '<div style="margin-top:20px;padding:14px 16px;background:linear-gradient(135deg,#FFF8EE,#FFFDF8);border:1px solid #F0D9A8;border-radius:12px">'+
+        '<div style="font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#C7791A;font-weight:800;margin-bottom:' + ((conditions || validTxt) ? '7px' : '0') + '">Conditions commerciales</div>'+
+        (conditions ? '<div style="font-size:12.5px;color:#10131C;line-height:1.5">' + esc(conditions) + '</div>' : '')+
+        (validTxt ? '<div style="font-size:11.5px;color:#8A6A2A;margin-top:' + (conditions ? '7px' : '0') + ';font-weight:700">Offre valable jusqu\'au ' + esc(validTxt) + '</div>' : '')+
+      '</div>'
+    ) : '';
+
     var html = ''+
-      '<div style="font-family:Satoshi,Inter,Arial,sans-serif;color:#10131C;width:794px;box-sizing:border-box;padding:42px 44px;background:#fff">'+
-        '<div style="display:flex;align-items:center;gap:14px;padding-bottom:18px;border-bottom:2px solid #10131C">'+
-          '<div style="width:44px;height:44px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative;flex-shrink:0">'+
-            '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:20px;height:20px">'+
-              '<div style="position:absolute;left:50%;top:0;width:2.6px;height:100%;background:#fff;transform:translateX(-50%);border-radius:2px"></div>'+
-              '<div style="position:absolute;top:50%;left:0;height:2.6px;width:100%;background:#fff;transform:translateY(-50%);border-radius:2px"></div>'+
+      '<div style="font-family:Satoshi,Inter,Arial,sans-serif;color:#10131C;width:794px;box-sizing:border-box;padding:40px 44px;background:#fff">'+
+        // En-tête : logo + marque + date
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:18px;border-bottom:2px solid #10131C">'+
+          '<div style="display:flex;align-items:center;gap:13px">'+
+            '<div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative;flex-shrink:0">'+
+              '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:24px;height:24px">'+
+                '<div style="position:absolute;left:50%;top:0;width:3px;height:100%;background:#fff;transform:translateX(-50%);border-radius:2px"></div>'+
+                '<div style="position:absolute;top:50%;left:0;height:3px;width:100%;background:#fff;transform:translateY(-50%);border-radius:2px"></div>'+
+              '</div>'+
             '</div>'+
+            '<div><div style="font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1">Intégral Pharma</div>'+
+              '<div style="font-size:11px;color:#737A8C;margin-top:3px">Proposition commerciale</div></div>'+
           '</div>'+
-          '<div style="flex:1">'+
-            '<div style="font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1">Intégral Pharma</div>'+
-            '<div style="font-size:11px;color:#737A8C;margin-top:3px">Fiche commerciale · ' + esc(dateStr) + '</div>'+
-          '</div>'+
-          (dest ? '<div style="text-align:right"><div style="font-size:8.5px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.06em;font-weight:700">Destinataire</div>'+
-            '<div style="font-size:13px;font-weight:800;color:#10131C">' + esc(dest.name) + '</div>'+
-            (dest.ville ? '<div style="font-size:10px;color:#737A8C">' + esc(dest.ville) + '</div>' : '') + '</div>' : '') +
+          '<div style="text-align:right"><div style="font-size:8.5px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.06em;font-weight:700">Édité le</div>'+
+            '<div style="font-size:12px;font-weight:700;color:#10131C">' + esc(dateStr) + '</div></div>'+
         '</div>'+
-        '<h1 style="font-size:23px;font-weight:800;letter-spacing:-.03em;margin:16px 0 4px">' + esc(title) + '</h1>'+
-        '<div style="font-size:12px;color:#737A8C;margin-bottom:20px">' + count + ' produit' + (count > 1 ? 's' : '') + ' sélectionné' + (count > 1 ? 's' : '') + '</div>'+
+        // Titre + destinataire + accroche
+        '<h1 style="font-size:24px;font-weight:800;letter-spacing:-.03em;margin:18px 0 4px">' + esc(title) + '</h1>'+
+        '<div style="font-size:12px;color:#737A8C">' + count + ' produit' + (count > 1 ? 's' : '') + ' sélectionné' + (count > 1 ? 's' : '') + '</div>'+
+        destBlock +
+        noteBlock +
+        '<div style="height:22px"></div>'+
+        // Tableau produits
         '<table style="width:100%;border-collapse:collapse">'+
           '<thead><tr style="background:#F7F9FC;border-bottom:1.5px solid #E2E7F0">'+
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:center">#</th>'+
@@ -658,14 +720,16 @@
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Marge MDL</th>'+
           '</tr></thead>'+
           '<tbody>' + (rows || '<tr><td colspan="7" style="padding:24px;text-align:center;color:#9AA1B2;font-size:12px">Aucun produit</td></tr>') + '</tbody>'+
-          (count ? '<tfoot><tr style="border-top:2px solid #E2E7F0;background:#FAFBFE">'+
-            '<td colspan="5" style="padding:11px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#10131C;text-align:right">Totaux (base 1 boîte / réf.)</td>'+
-            '<td style="padding:11px 12px;font-size:13px;font-weight:800;color:#0050E6;text-align:right;font-family:monospace">' + e2(totNet) + '</td>'+
-            '<td style="padding:11px 12px;font-size:13px;font-weight:800;color:#1E9E6A;text-align:right;font-family:monospace">' + e2(totMdl) + '</td>'+
+          (count ? '<tfoot><tr style="border-top:2px solid #10131C;background:#F4F8FF">'+
+            '<td colspan="5" style="padding:13px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#10131C;text-align:right">Totaux (base 1 boîte / réf.)</td>'+
+            '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:monospace">' + e2(totNet) + '</td>'+
+            '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#1E9E6A;text-align:right;font-family:monospace">' + e2(totMdl) + '</td>'+
           '</tr></tfoot>' : '') +
         '</table>'+
-        '<div style="margin-top:34px;padding-top:14px;border-top:1px solid #ECEFF5;display:flex;justify-content:space-between;font-size:9px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">'+
-          '<span>Intégral Pharma · Document commercial · Prix indicatifs HT</span>'+
+        condBlock +
+        // Footer
+        '<div style="margin-top:30px;padding-top:14px;border-top:1px solid #ECEFF5;display:flex;justify-content:space-between;font-size:9px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">'+
+          '<span>Intégral Pharma · Document commercial · Prix nets HT</span>'+
           '<span>Marge MDL : 0,18€ &lt;4,33€ · 3,9% &lt;468€ · 19,50€ au-delà</span>'+
         '</div>'+
       '</div>';
@@ -717,6 +781,22 @@
       if (confirm('Supprimer ' + label + ' ?')) { deleteFiche(id); V2.toast('Fiche supprimée'); V2.render(); }
     },
     setTitle: function (v) { if (editingFiche) editingFiche.title = v; },
+    setNote: function (v) { if (editingFiche) editingFiche.note = v; },
+    setValid: function (v) { if (editingFiche) editingFiche.validUntil = v; },
+    setConditions: function (v) { if (editingFiche) editingFiche.conditions = v; },
+    duplicate: function (id) {
+      var f = getFiche(id);
+      if (!f) { V2.toast('Fiche introuvable', 'error'); return; }
+      var copy = {
+        id: 'f' + Date.now(), created: Date.now(),
+        title: (f.title && f.title.trim() ? f.title : 'Fiche') + ' (copie)',
+        destId: f.destId || null, note: f.note || '', validUntil: f.validUntil || '', conditions: f.conditions || '',
+        products: (f.products || []).map(function (p) { return Object.assign({}, p); })
+      };
+      saveFiche(copy);
+      V2.toast('Fiche dupliquée');
+      V2.render();
+    },
     setPrice: function (i, v) { if (editingFiche && editingFiche.products[i]) { editingFiche.products[i].prix_ip = v === '' ? null : num(v); recalcRow(i); } },
     setRemise: function (i, v) { if (editingFiche && editingFiche.products[i]) { editingFiche.products[i].remise_pct = v === '' ? null : num(v); recalcRow(i); } },
     removeProduct: function (i) { if (editingFiche) { editingFiche.products.splice(i, 1); refreshProducts(); } },
@@ -729,6 +809,7 @@
       if (!editingFiche.title || !editingFiche.title.trim()) { editingFiche.title = 'Fiche du ' + fmtDate(Date.now()); }
       var fromCart = !!editingFiche._fromCart;
       var clean = { id: editingFiche.id, title: editingFiche.title, destId: editingFiche.destId || null,
+                    note: editingFiche.note || '', validUntil: editingFiche.validUntil || '', conditions: editingFiche.conditions || '',
                     created: editingFiche.created, products: editingFiche.products.map(function (p) { return Object.assign({}, p); }) };
       saveFiche(clean);
       if (fromCart) { V2.ficheCart.clear(); editingFiche._fromCart = false; }
