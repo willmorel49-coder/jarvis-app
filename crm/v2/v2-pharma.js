@@ -14,6 +14,9 @@
   // collapsed[catKey] === true → carte repliée. Par défaut : 1ère ouverte.
   var collapsed = {};
   var searchQuery = '';
+  // Sélection de produits cochés (bouton +) pour le PDF RDV — propre à une pharma
+  var selCips = null;   // Set des CIP cochés
+  var selPid = null;    // pharma à laquelle appartient la sélection courante
 
   // ── Définition des 8 catégories (ordre EXACT du brief) ─────────
   var CATS = [
@@ -176,9 +179,13 @@
   // ─────────────────────────────────────────────────────────────
   function listRowHtml(x) {
     var color = x.p.color || 'var(--ip-blue)';
+    var oppPill = (x.opp == null)
+      ? '<span class="v2-row-opp v2-row-opp-pending mono">…</span>'
+      : '<span class="v2-row-opp mono">' + V2.fmtNum(x.opp) + ' opp</span>';
     return '<a class="v2-row" onclick="V2.go(\'pharma\',\'' + V2.esc(String(x.p.id)) + '\')">' +
       '<span class="v2-row-dot" style="background:' + V2.esc(color) + '"></span>' +
       '<span class="v2-row-name">' + V2.esc(x.p.name) + '</span>' +
+      oppPill +
       '<span class="v2-row-meta">marge MDL</span>' +
       '<span class="v2-row-val mono" style="color:var(--c-opp)">' + V2.fmtEur(x.marge) + '</span>' +
       '<span class="v2-row-val mono" style="min-width:84px;text-align:right">' + V2.fmtEur(x.ca) + '</span>' +
@@ -187,10 +194,24 @@
   }
 
   function renderList(root) {
+    var marketReady = !!window.OPS_AGGREGATE;
     var phs = (V2.pharmacies || []).map(function (p) {
       var sales = pharmaSales(p.id);
-      return { p: p, ca: V2.sumCA(sales), marge: margeMDLpharma(sales) };
+      var x = { p: p, ca: V2.sumCA(sales), marge: margeMDLpharma(sales), opp: null };
+      if (marketReady) {
+        x.opp = buildOpportunities(p.id).reduce(function (s, o) { return s + o.oppCount; }, 0);
+      }
+      return x;
     }).sort(function (a, b) { return b.ca - a.ca; });
+
+    // Marché sectoriel pas encore chargé → on charge en tâche de fond puis on
+    // rafraîchit la liste pour afficher le compteur d'opportunités par officine.
+    if (!marketReady) {
+      V2.loadFiles(['establishments']).then(function () {
+        _marketCache = null;
+        if (V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render();
+      });
+    }
 
     function filterList() {
       var q = searchQuery.trim().toLowerCase();
@@ -264,6 +285,10 @@
       body = '<div class="v2-cat-empty">Aucune opportunité — cette officine couvre déjà cette catégorie.</div>';
     } else {
       var trs = o.rows.map(function (r, i) {
+        var on = !!(selCips && selCips.has(r.cip));
+        var addBtn = '<button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' +
+          V2.esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF RDV">' +
+          ICO(on ? 'check' : 'plus', 15) + '</button>';
         return '<tr>' +
           '<td class="num" style="color:var(--muted-2);width:34px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
           '<td><span class="v2-cat-prod">' + V2.esc(r.designation) + '</span></td>' +
@@ -273,6 +298,7 @@
           '<td class="num">' + (r.ops ? V2.fmtNum(r.ops) : '·') + '</td>' +
           '<td class="num">' + (r.cpr ? V2.fmtNum(r.cpr) : '·') + '</td>' +
           '<td class="num">' + (r.hp ? V2.fmtNum(r.hp) : '·') + '</td>' +
+          '<td style="width:46px;text-align:center">' + addBtn + '</td>' +
           '</tr>';
       }).join('');
       body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
@@ -280,6 +306,7 @@
           '<th class="num">#</th><th>Produit</th><th>CIP</th>' +
           '<th class="num">Prix IP</th><th class="num">Vol. marché</th>' +
           '<th class="num">OPS</th><th class="num">CPR</th><th class="num">HP</th>' +
+          '<th></th>' +
         '</tr></thead><tbody>' + trs + '</tbody></table></div>';
     }
 
@@ -297,6 +324,9 @@
       V2.loadFiles(['establishments']).then(function () { _marketCache = null; V2.render(); });
       return;
     }
+
+    // Nouvelle pharma → on repart d'une sélection vide
+    if (String(selPid) !== String(pid)) { selPid = String(pid); selCips = new Set(); }
 
     var sales = pharmaSales(pid);
     var ca = V2.sumCA(sales);
@@ -316,8 +346,10 @@
             '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + V2.esc(pharma.name) + '</div>' +
             (pharma.code ? '<div style="font-size:12px;color:var(--muted);margin-top:3px;font-family:var(--mono)">' + V2.esc(pharma.code) + '</div>' : '') +
           '</div>' +
-          '<button class="v2-btn v2-btn-primary" onclick="V2.pharmaDownloadPdf(\'' + V2.esc(String(pid)) + '\')">' +
-            ICO('download', 17) + 'Télécharger le listing PDF</button>' +
+          '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.pharmaDownloadPdf(\'' + V2.esc(String(pid)) + '\')">' +
+            ICO('download', 17) + (selCips && selCips.size
+              ? 'PDF RDV · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '')
+              : 'Télécharger le PDF RDV') + '</button>' +
         '</div>' +
         '<div class="v2-pharma-stats">' +
           stat('CA du mois', V2.fmtEur(ca), 'var(--c-fiche)') +
@@ -341,6 +373,32 @@
   }
 
   // ── Handlers exposés ───────────────────────────────────────────
+  // Met à jour le libellé du bouton PDF sans re-render (préserve le scroll)
+  function refreshPdfBtn() {
+    var b = document.getElementById('v2-opp-pdf');
+    if (!b) return;
+    var n = selCips ? selCips.size : 0;
+    b.innerHTML = ICO('download', 17) + (n
+      ? 'PDF RDV · ' + n + ' produit' + (n > 1 ? 's' : '')
+      : 'Télécharger le PDF RDV');
+  }
+
+  // Coche / décoche un produit pour le PDF RDV (toggle ciblé, pas de re-render)
+  V2.pharmaToggleSel = function (btn) {
+    if (!selCips) selCips = new Set();
+    var cip = btn.getAttribute('data-cip');
+    if (selCips.has(cip)) {
+      selCips.delete(cip);
+      btn.classList.remove('on');
+      btn.innerHTML = ICO('plus', 15);
+    } else {
+      selCips.add(cip);
+      btn.classList.add('on');
+      btn.innerHTML = ICO('check', 15);
+    }
+    refreshPdfBtn();
+  };
+
   V2.pharmaToggleCat = function (key) {
     var idx = -1;
     for (var i = 0; i < CATS.length; i++) { if (CATS[i].key === key) { idx = i; break; } }
@@ -362,8 +420,19 @@
     var today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     function esc(s) { return V2.esc(s); }
-    var catSections = opps.filter(function (o) { return o.rows.length; }).map(function (o) {
-      var rows = o.rows.slice(0, 15).map(function (r, i) {
+
+    // Si Will a coché des produits (bouton +) → le PDF ne contient QUE sa sélection.
+    // Sinon → top marché par catégorie (15 max), comportement par défaut.
+    var useSel = !!(selCips && selCips.size && String(selPid) === String(pid));
+    var sections = opps.map(function (o) {
+      var rows = useSel
+        ? o.rows.filter(function (r) { return selCips.has(r.cip); })
+        : o.rows.slice(0, 15);
+      return { cat: o.cat, rows: rows, oppCount: useSel ? rows.length : o.oppCount, totalQte: o.totalQte };
+    }).filter(function (o) { return o.rows.length; });
+
+    var catSections = sections.map(function (o) {
+      var rows = o.rows.map(function (r, i) {
         return '<tr>' +
           '<td style="padding:4px 6px;text-align:center;color:#9AA1B2;font-size:9px">' + (i + 1) + '</td>' +
           '<td style="padding:4px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + '</td>' +
@@ -406,7 +475,9 @@
           '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Références</div><div style="font-size:16px;font-weight:800;color:#6D4FC4;font-family:monospace">' + V2.fmtNum(nbRefs) + '</div></div>' +
           '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Opportunités</div><div style="font-size:16px;font-weight:800;color:#C7791A;font-family:monospace">' + V2.fmtNum(totalOpp) + '</div></div>' +
         '</div>' +
-        '<h2 style="font-size:14px;font-weight:800;margin:0 0 10px;border-bottom:1px solid #E5E9F2;padding-bottom:5px">Opportunités par catégorie · top marché OPS + HP + CPR</h2>' +
+        '<h2 style="font-size:14px;font-weight:800;margin:0 0 10px;border-bottom:1px solid #E5E9F2;padding-bottom:5px">' +
+          (useSel ? 'Sélection RDV · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') + ' retenus'
+                  : 'Opportunités par catégorie · top marché OPS + HP + CPR') + '</h2>' +
         catSections +
         '<div style="margin-top:16px;padding-top:8px;border-top:1px solid #E5E9F2;display:flex;justify-content:space-between;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">' +
           '<div>Intégral Pharma · Normandie · Document confidentiel</div><div>Marge MDL : 0,18€ &lt;4,33€ · 3,9% &lt;468€ · 19,50€ au-delà</div></div>' +
@@ -464,7 +535,15 @@
       '.v2-cat-chev.open{transform:rotate(90deg)}',
       '.v2-cat-table-wrap{overflow-x:auto;border-top:1px solid var(--line)}',
       '.v2-cat-prod{font-weight:600}',
-      '.v2-cat-empty{padding:22px 20px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}'
+      '.v2-cat-empty{padding:22px 20px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}',
+      // Badge "opportunités" dans la liste des officines
+      '.v2-row-opp{flex-shrink:0;font-size:11.5px;font-weight:700;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,transparent);border:1px solid color-mix(in srgb,var(--c-opp) 26%,transparent);border-radius:999px;padding:3px 10px;letter-spacing:-.01em}',
+      '.v2-row-opp-pending{color:var(--muted-2);background:var(--card-2);border-color:var(--line);font-weight:600}',
+      // Bouton + de sélection produit (devient ✓ vert une fois coché)
+      '.opp-add{width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s var(--ease);flex-shrink:0}',
+      '.opp-add:hover{border-color:var(--c-opp);color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 8%,transparent)}',
+      '.opp-add.on{background:var(--c-opp);border-color:var(--c-opp);color:#fff;box-shadow:0 2px 6px color-mix(in srgb,var(--c-opp) 40%,transparent)}',
+      '.opp-add.on:hover{background:var(--c-opp);color:#fff}'
     ].join('\n');
     document.head.appendChild(st);
   }
