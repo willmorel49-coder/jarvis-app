@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview · Opportunités pharmacie · CRM V2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ip-blue:#0050E6;--ip-blue-d:#0034A0;--ip-ink:#10131C;--ip-ink-2:#2A2F3C;
+  --muted:#737A8C;--muted-2:#9AA1B2;--paper:#FBFCFE;--card:#FFFFFF;--card-2:#F7F9FC;
+  --line:rgba(16,19,28,.07);--line-2:rgba(16,19,28,.04);--halo:#E9F0FF;
+  --c-opp:#1E9E6A;--c-cat:#6D4FC4;--c-rose:#E0556E;--c-mint:#1E9E6A;--c-froid:#00B5D8;--c-amber:#C7791A;
+  --r-card:20px;--r-md:14px;
+  --sh-1:0 1px 1px rgba(16,19,28,.04),0 2px 4px rgba(16,19,28,.04);
+  --sh-2:0 2px 4px rgba(16,19,28,.04),0 8px 18px rgba(16,19,28,.06),0 1px 0 rgba(255,255,255,.7) inset;
+  --sh-3:0 8px 16px rgba(16,19,28,.08),0 28px 56px rgba(16,19,28,.10);
+  --ease:cubic-bezier(.32,.72,0,1);--font:'Inter',system-ui,sans-serif;--mono:'Geist Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);color:var(--ip-ink);background:var(--paper);min-height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.06 0 0 0 0 0.08 0 0 0 0 0.13 0 0 0 .025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.banner{position:relative;z-index:2;background:var(--ip-ink);color:#fff;padding:9px 18px;font-size:12px;text-align:center}
+.banner b{color:#FFC24D}
+
+.top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:14px;padding:13px 26px;
+  background:rgba(251,252,254,.8);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line)}
+.back{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:8px 13px;font-size:13px;font-weight:600;color:var(--ip-ink-2);cursor:pointer;box-shadow:var(--sh-1)}
+.brand-t{font-weight:800;font-size:15px;letter-spacing:-.02em}
+
+.wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:28px 26px 70px}
+.ptitle{font-size:27px;font-weight:800;letter-spacing:-.03em}
+.psub{font-size:14px;color:var(--muted);margin:3px 0 22px}
+
+.search{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:14px 18px;margin-bottom:18px;box-shadow:var(--sh-2)}
+.search svg{color:var(--ip-blue);flex-shrink:0}
+.search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}
+
+/* liste officines */
+.listcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden}
+.row{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line-2);cursor:pointer;transition:background .12s}
+.row:last-child{border-bottom:none}
+.row:hover{background:var(--card-2)}
+.row-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.row-name{font-weight:700;flex:1;min-width:0;font-size:14.5px}
+.row-opp{font-size:11px;font-weight:700;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,#fff);padding:3px 9px;border-radius:11px}
+.row-stat{text-align:right;min-width:90px}
+.row-stat-v{font-family:var(--mono);font-weight:700;font-size:13px}
+.row-stat-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.row-chev{color:var(--muted-2)}
+
+/* fiche pharma */
+.hero{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden;margin-bottom:22px}
+.hero-top{display:flex;align-items:center;gap:14px;padding:20px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.hero-pin{width:46px;height:46px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 3px 9px rgba(16,19,28,.18),0 1px 0 rgba(255,255,255,.25) inset}
+.hero-name{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.hero-code{font-size:12px;color:var(--muted);margin-top:3px;font-family:var(--mono)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:12px;font-family:var(--font);
+  font-size:14px;font-weight:700;cursor:pointer;border:none;transition:.18s var(--ease)}
+.btn-primary{background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;box-shadow:0 4px 12px rgba(0,80,230,.28)}
+.btn-primary:hover{transform:translateY(-1px)}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)}
+@media(max-width:640px){.hero-stats{grid-template-columns:repeat(2,1fr)}}
+.hstat{background:var(--card);padding:15px 18px}
+.hstat-l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.hstat-v{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:5px}
+
+.sectitle{font-size:21px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.secsub{font-size:13px;color:var(--muted);margin-bottom:18px}
+
+/* catégorie opportunité */
+.cat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden;margin-bottom:13px}
+.cat-head{display:flex;align-items:center;gap:14px;padding:15px 20px;cursor:pointer;user-select:none;transition:background .14s}
+.cat-head:hover{background:var(--card-2)}
+.cat-accent{width:4px;align-self:stretch;border-radius:3px;background:var(--cc)}
+.cat-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--cc) 12%,#fff);color:var(--cc);flex-shrink:0}
+.cat-t{font-size:15px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.cat-sub{font-size:11px;color:var(--muted);font-weight:600;font-family:var(--mono)}
+.cat-meta{margin-left:auto;font-size:11px;color:var(--muted);font-family:var(--mono);text-align:right}
+.cat-meta b{color:var(--ip-ink)}
+.cat-chev{color:var(--muted-2);transition:transform .25s var(--ease)}
+.cat.open .cat-chev{transform:rotate(90deg)}
+.cat-body{display:none}
+.cat.open .cat-body{display:block}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;text-align:left;padding:9px 12px;background:var(--card-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+thead th.num{text-align:right}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--line-2);font-size:12.5px}
+tbody td.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--card-2)}
+.pname{font-weight:600}
+.cip{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.add{width:28px;height:28px;border-radius:8px;border:1px solid var(--ip-blue);background:var(--ip-blue);color:#fff;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;transition:.15s var(--ease)}
+.add:hover{transform:scale(1.08)}
+.add.done{background:var(--c-mint);border-color:var(--c-mint)}
+.note{margin-top:30px;padding:13px 18px;background:var(--card);border:1px solid var(--line);border-radius:14px;font-size:12px;color:var(--muted);text-align:center;box-shadow:var(--sh-1)}
+.note b{color:var(--ip-ink)}
+</style>
+</head>
+<body>
+<div class="banner">PREVIEW <b>Opportunités pharmacie</b> · le cœur de tes RDV · clique une officine → ses opportunités par catégorie · données fictives</div>
+
+<div class="top">
+  <button class="back" id="backbtn" onclick="showList()">← Accueil</button>
+  <span class="brand-t" id="topttl">Mes officines</span>
+</div>
+
+<div class="wrap" id="wrap"></div>
+
+<div class="note" style="max-width:1000px;margin:0 auto 40px"><b>Comment ça marche :</b> chaque catégorie liste ce que le marché (OPS+HP+CPR cumulé) commande fort et que CETTE pharmacie ne commande pas encore. Top 20-30 par catégorie. Tu coches, tu sors le PDF.</div>
+
+<script>
+var PHARMS=[
+  {id:'p1',name:'Pharmacie des Câlins',code:'CIP 2900123',color:'#1E9E6A',ca:14200,marge:980,refs:142,opp:87},
+  {id:'p2',name:'Grande Pharmacie du Centre',code:'CIP 2900456',color:'#0050E6',ca:38600,marge:2740,refs:310,opp:54},
+  {id:'p3',name:'Pharmacie du Port',code:'CIP 2900789',color:'#C7791A',ca:8900,marge:610,refs:98,opp:112},
+  {id:'p4',name:'Pharmacie Lafayette',code:'CIP 2901012',color:'#6D4FC4',ca:22100,marge:1580,refs:204,opp:71}
+];
+var ICO={
+  opp:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="13" r="7.5"/><circle cx="11" cy="13" r="3.4"/><path d="M11 13 17.5 6.5"/><path d="M15 5.4h3.1v3.1"/></svg>',
+  pharma:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5 12 4l8 5.5"/><path d="M5.5 9v10.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9"/><path d="M12 11.5v4M10 13.5h4"/></svg>',
+  chev:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  dl:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M8 10.5l4 4 4-4"/><path d="M5 18.5h14"/></svg>'
+};
+// 8 catégories avec produits fictifs
+var CATS=[
+  {k:'pp',label:'Princeps · Petits prix',sub:'0 – 4,33 €',c:'#1E9E6A',prods:[
+    ['DOLIPRANE 1000MG CPR BT8','3400935955838',0.88,4200,1800,1400,1000],
+    ['SPASFON CPR BT30','3400930827963',1.74,2100,900,700,500],
+    ['DAFALGAN 1G CPR EFF 8','3400930085301',0.92,1850,800,650,400]]},
+  {k:'mi',label:'Princeps · Intermédiaires',sub:'4,33 – 468 €',c:'#0050E6',prods:[
+    ['ELIQUIS 5MG CPR BT60','3400927508165',66.30,3800,1600,1300,900],
+    ['XARELTO 20MG CPR BT28','3400930140123',58.10,2400,1000,800,600]]},
+  {k:'ch',label:'Princeps · Chers',sub:'> 468 €',c:'#C7791A',prods:[
+    ['XTANDI 40MG CPR BT112','3400927912344',2598.00,180,80,60,40]]},
+  {k:'froid',label:'Froid',sub:'chaîne du froid',c:'#00B5D8',prods:[
+    ['MOUNJARO 5MG KWIKPEN','3400930266144',176.00,3200,1400,1100,700],
+    ['OZEMPIC 1MG STYLO3ML','3400930151204',73.20,2800,1200,900,700],
+    ['SHINGRIX INJ FL+FL','3400930140857',114.50,2100,900,750,450]]},
+  {k:'gen',label:'Génériques',sub:'',c:'#737A8C',prods:[
+    ['AMOXICILLINE BIOGARAN 1G','3400936789012',1.99,5400,2300,1900,1200],
+    ['OMEPRAZOLE EG 20MG','3400938123456',1.49,4100,1700,1400,1000]]},
+  {k:'genp',label:'Génériques partenaires',sub:'',c:'#1E9E6A',prods:[
+    ['ATORVASTATINE ARROW 20MG','3400939234567',2.16,3400,1500,1100,800]]},
+  {k:'bio',label:'Biosimilaires',sub:'',c:'#6D4FC4',prods:[
+    ['TRUXIMA 500MG INJ','3400930045671',814.00,90,40,30,20],
+    ['BENEPALI 50MG STYLO','3400930088234',614.00,120,55,40,25]]},
+  {k:'nr',label:'Non remboursés',sub:'marge libre',c:'#C7791A',prods:[
+    ['THEALOSE COLLY FL 15ML','3400927665431',7.63,10500,4400,3700,2400]]}
+];
+function fmtEur(n){return (n>=1000?Math.round(n).toLocaleString('fr-FR'):n.toFixed(2).replace('.',','))+' €';}
+function fmtNum(n){return Math.round(n).toLocaleString('fr-FR');}
+var openCats={pp:true};
+
+function showList(){
+  document.getElementById('backbtn').textContent='← Accueil';
+  document.getElementById('topttl').textContent='Mes officines';
+  var rows=PHARMS.map(function(p){
+    return '<div class="row" onclick="showPharma(\''+p.id+'\')">'+
+      '<span class="row-dot" style="background:'+p.color+'"></span>'+
+      '<span class="row-name">'+p.name+'</span>'+
+      '<span class="row-opp">'+p.opp+' opportunités</span>'+
+      '<span class="row-stat"><div class="row-stat-v" style="color:var(--c-opp)">'+fmtEur(p.marge)+'</div><div class="row-stat-l">marge MDL</div></span>'+
+      '<span class="row-stat"><div class="row-stat-v">'+fmtEur(p.ca)+'</div><div class="row-stat-l">CA mois</div></span>'+
+      '<span class="row-chev">'+ICO.chev+'</span></div>';
+  }).join('');
+  document.getElementById('wrap').innerHTML=
+    '<div class="ptitle">Mes officines</div>'+
+    '<div class="psub">'+PHARMS.length+' pharmacies · clique pour voir les opportunités</div>'+
+    '<div class="search"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="7"/><path d="m20 20-4.2-4.2"/></svg><input placeholder="Rechercher une officine…"></div>'+
+    '<div class="listcard">'+rows+'</div>';
+  window.scrollTo({top:0});
+}
+
+function showPharma(pid){
+  var p=PHARMS.find(function(x){return x.id===pid});if(!p)return;
+  document.getElementById('backbtn').textContent='← Officines';
+  document.getElementById('backbtn').setAttribute('onclick','showList()');
+  document.getElementById('topttl').textContent=p.name;
+  var totalOpp=CATS.reduce(function(s,c){return s+c.prods.length},0);
+  var hero='<div class="hero"><div class="hero-top">'+
+    '<span class="hero-pin" style="background:'+p.color+'">'+ICO.pharma+'</span>'+
+    '<div style="flex:1;min-width:160px"><div class="hero-name">'+p.name+'</div><div class="hero-code">'+p.code+'</div></div>'+
+    '<button class="btn btn-primary">'+ICO.dl+' Télécharger le PDF RDV</button></div>'+
+    '<div class="hero-stats">'+
+      '<div class="hstat"><div class="hstat-l">CA du mois</div><div class="hstat-v" style="color:var(--ip-blue)">'+fmtEur(p.ca)+'</div></div>'+
+      '<div class="hstat"><div class="hstat-l">Marge MDL</div><div class="hstat-v" style="color:var(--c-opp)">'+fmtEur(p.marge)+'</div></div>'+
+      '<div class="hstat"><div class="hstat-l">Références</div><div class="hstat-v" style="color:var(--c-cat)">'+p.refs+'</div></div>'+
+      '<div class="hstat"><div class="hstat-l">Opportunités</div><div class="hstat-v" style="color:var(--c-amber)">'+p.opp+'</div></div>'+
+    '</div></div>';
+  var cats=CATS.map(function(c){
+    var open=openCats[c.k]?' open':'';
+    var rows=c.prods.map(function(pr){
+      return '<tr><td class="pname">'+pr[0]+'</td><td class="cip">'+pr[1]+'</td>'+
+        '<td class="num" style="color:var(--ip-blue);font-weight:700">'+fmtEur(pr[2])+'</td>'+
+        '<td class="num" style="color:var(--c-mint);font-weight:700">'+fmtNum(pr[3])+'</td>'+
+        '<td class="num" style="color:var(--muted)">'+fmtNum(pr[4])+'</td>'+
+        '<td class="num" style="color:var(--muted)">'+fmtNum(pr[5])+'</td>'+
+        '<td class="num" style="color:var(--muted)">'+fmtNum(pr[6])+'</td>'+
+        '<td style="text-align:center"><button class="add" onclick="event.stopPropagation();this.classList.add(\'done\');this.textContent=\'✓\'">+</button></td></tr>';
+    }).join('');
+    var totalQ=c.prods.reduce(function(s,pr){return s+pr[3]},0);
+    return '<div class="cat'+open+'" id="cat-'+c.k+'">'+
+      '<div class="cat-head" onclick="toggleCat(\''+c.k+'\')">'+
+        '<span class="cat-accent" style="--cc:'+c.c+'"></span>'+
+        '<span class="cat-ico" style="--cc:'+c.c+'">'+ICO.opp+'</span>'+
+        '<div><div class="cat-t">'+c.label+(c.sub?' <span class="cat-sub">'+c.sub+'</span>':'')+'</div></div>'+
+        '<div class="cat-meta"><b>'+c.prods.length+'</b> opp · <b>'+fmtNum(totalQ)+'</b> u marché</div>'+
+        '<span class="cat-chev">'+ICO.chev+'</span>'+
+      '</div>'+
+      '<div class="cat-body"><table><thead><tr>'+
+        '<th>Produit</th><th>CIP13</th><th class="num">Prix IP</th><th class="num">Vol marché</th>'+
+        '<th class="num">OPS</th><th class="num">CPR</th><th class="num">HP</th><th></th></tr></thead>'+
+        '<tbody>'+rows+'</tbody></table></div></div>';
+  }).join('');
+  document.getElementById('wrap').innerHTML=hero+
+    '<div class="sectitle">Opportunités par catégorie</div>'+
+    '<div class="secsub">ce que le marché commande (OPS + HP + CPR cumulé) et que cette officine n\'a pas encore</div>'+
+    cats;
+  window.scrollTo({top:0});
+}
+function toggleCat(k){openCats[k]=!openCats[k];var el=document.getElementById('cat-'+k);if(el)el.classList.toggle('open');}
+showList();
+</script>
+</body>
+</html>
