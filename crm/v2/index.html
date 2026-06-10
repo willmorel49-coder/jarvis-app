@@ -26,9 +26,13 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+  <!-- Satoshi (texte/titres) via Fontshare + Geist Mono (chiffres) via Google -->
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
-  <link rel="stylesheet" href="v2.css?v=20260610v2f" />
+  <link rel="stylesheet" href="v2.css?v=20260610v2g" />
 
   <!-- Supabase + config (même backend que l'app actuelle) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -50,15 +54,15 @@
   <div class="v2" id="v2-root"></div>
 
   <!-- Socle -->
-  <script src="v2-icons.js?v=20260610v2f"></script>
-  <script src="v2-boot.js?v=20260610v2f"></script>
+  <script src="v2-icons.js?v=20260610v2g"></script>
+  <script src="v2-boot.js?v=20260610v2g"></script>
   <!-- Piliers (chargés avant app pour enregistrer V2.pages.*) -->
-  <script src="v2-pharma.js?v=20260610v2f"></script>
-  <script src="v2-catalogue.js?v=20260610v2f"></script>
-  <script src="v2-offilog.js?v=20260610v2f"></script>
-  <script src="v2-fiches.js?v=20260610v2f"></script>
-  <script src="v2-pilotage.js?v=20260610v2f"></script>
+  <script src="v2-pharma.js?v=20260610v2g"></script>
+  <script src="v2-catalogue.js?v=20260610v2g"></script>
+  <script src="v2-offilog.js?v=20260610v2g"></script>
+  <script src="v2-fiches.js?v=20260610v2g"></script>
+  <script src="v2-pilotage.js?v=20260610v2g"></script>
   <!-- App (boot en dernier) -->
-  <script src="v2-app.js?v=20260610v2f"></script>
+  <script src="v2-app.js?v=20260610v2g"></script>
 </body>
 </html>
