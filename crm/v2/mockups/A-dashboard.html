@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maquette A — Dashboard commercial · CRM V2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F6F8; --surface:#FFFFFF; --ink:#0A0A0F; --muted:#6B7280;
+  --line:rgba(10,10,15,.07); --blue:#0057FF; --blue-d:#003BB0;
+  --mint:#0FB67E; --amber:#F59E0B; --rose:#EF4444; --violet:#7C3AED;
+  --r:14px; --r-sm:10px;
+  --sh:0 1px 2px rgba(10,10,15,.04),0 4px 16px rgba(10,10,15,.05);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+.mono{font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums}
+.banner{background:#0A0A0F;color:#fff;padding:9px 18px;font-size:12px;text-align:center;letter-spacing:.02em}
+.banner b{color:#FFB020}
+
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+/* SIDEBAR */
+.sb{background:var(--surface);border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+.sb-brand{display:flex;align-items:center;gap:10px;padding:6px 8px 20px}
+.sb-logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue-d));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+.sb-brand-txt{font-weight:700;font-size:15px;letter-spacing:-.01em}
+.sb-sec{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;padding:14px 8px 5px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13.5px;font-weight:500;color:#374151;cursor:pointer}
+.sb-item svg{width:18px;height:18px;stroke-width:1.8;stroke:currentColor;fill:none}
+.sb-item.on{background:var(--blue);color:#fff}
+.sb-item:not(.on):hover{background:#F0F1F4}
+.sb-foot{margin-top:auto;display:flex;align-items:center;gap:9px;padding:8px;border-top:1px solid var(--line);padding-top:14px}
+.sb-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--amber),#FF6B35);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+
+/* MAIN */
+.main{padding:26px 32px 48px;overflow:auto}
+.h-top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:14px}
+.h-title{font-size:30px;font-weight:800;letter-spacing:-.025em}
+.h-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.h-search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:13px;color:var(--muted);box-shadow:var(--sh);cursor:pointer;min-width:280px}
+.h-search kbd{margin-left:auto;font-family:'Geist Mono',monospace;font-size:10px;background:#F0F1F4;padding:2px 6px;border-radius:4px;color:#374151}
+
+/* KPI ROW */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:var(--surface);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.kpi.b1::before{background:var(--blue)} .kpi.b2::before{background:var(--mint)} .kpi.b3::before{background:var(--amber)} .kpi.b4::before{background:var(--violet)}
+.kpi-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.kpi-val{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:7px;font-family:'Geist Mono',monospace}
+.kpi-dlt{font-size:12px;font-weight:600;margin-top:5px}
+.kpi-dlt.up{color:var(--mint)} .kpi-dlt.dn{color:var(--rose)}
+
+/* GRID 2col */
+.grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:20px}
+.col{display:flex;flex-direction:column;gap:18px}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--line)}
+.card-t{font-size:14px;font-weight:700}
+.card-link{font-size:12px;color:var(--blue);font-weight:600;cursor:pointer}
+.row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--line);font-size:13px}
+.row:last-child{border-bottom:none}
+.row:hover{background:#FAFBFC}
+.row-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.row-name{font-weight:600;flex:1}
+.row-meta{color:var(--muted);font-size:11px}
+.row-val{font-family:'Geist Mono',monospace;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:14px;font-size:11px;font-weight:600}
+.chip.g{background:rgba(15,182,126,.12);color:var(--mint)}
+.chip.a{background:rgba(245,158,11,.14);color:#B45309}
+.chip.r{background:rgba(239,68,68,.12);color:var(--rose)}
+/* quick actions */
+.qa{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:18px}
+.qa-btn{display:flex;align-items:center;gap:11px;padding:14px;border-radius:var(--r-sm);background:#F7F8FA;border:1px solid var(--line);cursor:pointer;transition:.15s}
+.qa-btn:hover{background:#fff;border-color:var(--blue);transform:translateY(-1px)}
+.qa-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.qa-txt{font-size:13px;font-weight:700}
+.qa-sub{font-size:11px;color:var(--muted);font-weight:500}
+.note{margin-top:30px;padding:14px 18px;background:rgba(0,87,255,.05);border:1px dashed rgba(0,87,255,.25);border-radius:var(--r);font-size:12px;color:#374151;text-align:center}
+</style>
+</head>
+<body>
+<div class="banner">Maquette <b>A — Dashboard commercial</b> · vue d'ensemble dense, tout visible d'un coup (esprit Linear / Vercel)</div>
+<div class="app">
+  <aside class="sb">
+    <div class="sb-brand"><div class="sb-logo">IP</div><div class="sb-brand-txt">Intégral Pharma</div></div>
+    <div class="sb-item on"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>Pilotage</div>
+    <div class="sb-item"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4M15 22v-4"/></svg>Pharmacies</div>
+    <div class="sb-item"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>Fiches commerciales</div>
+    <div class="sb-sec">Données</div>
+    <div class="sb-item"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Catalogue IP</div>
+    <div class="sb-item"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>Parapharma</div>
+    <div class="sb-foot"><div class="sb-av">WM</div><div><div style="font-size:12.5px;font-weight:600">William Morel</div><div style="font-size:10.5px;color:var(--muted)">Commercial</div></div></div>
+  </aside>
+  <main class="main">
+    <div class="h-top">
+      <div><div class="h-title">Bonjour Will 👋</div><div class="h-sub">Mardi 10 juin 2026 · Secteur Normandie</div></div>
+      <div class="h-search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Rechercher pharmacie, produit…<kbd>⌘K</kbd></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi b1"><div class="kpi-lbl">CA du mois</div><div class="kpi-val">182 k€</div><div class="kpi-dlt up">▲ 8,4% vs mai</div></div>
+      <div class="kpi b2"><div class="kpi-lbl">Marge MDL générée</div><div class="kpi-val">7 240 €</div><div class="kpi-dlt up">▲ 5,1%</div></div>
+      <div class="kpi b3"><div class="kpi-lbl">Pharmacies actives</div><div class="kpi-val">47<span style="font-size:14px;color:var(--muted)">/68</span></div><div class="kpi-dlt up">▲ 3 ce mois</div></div>
+      <div class="kpi b4"><div class="kpi-lbl">Alertes prix</div><div class="kpi-val">12</div><div class="kpi-dlt dn">conc. moins cher</div></div>
+    </div>
+    <div class="grid2">
+      <div class="col">
+        <div class="card">
+          <div class="card-h"><div class="card-t">🎯 Opportunités du jour</div><div class="card-link">Tout voir →</div></div>
+          <div class="row"><span class="row-dot" style="background:var(--mint)"></span><span class="row-name">Pharmacie des Câlins</span><span class="chip g">14 opp. froid</span><span class="row-val">+2 100 €</span></div>
+          <div class="row"><span class="row-dot" style="background:var(--amber)"></span><span class="row-name">Pharmacie du Port</span><span class="chip a">8 génériques</span><span class="row-val">+1 450 €</span></div>
+          <div class="row"><span class="row-dot" style="background:var(--blue)"></span><span class="row-name">Grande Pharmacie Centre</span><span class="chip g">22 princeps</span><span class="row-val">+3 800 €</span></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">📅 Comparaison mai → juin</div><div class="card-link">Détail →</div></div>
+          <div class="row"><span class="row-name">Solaire SPF50+</span><span class="row-meta">3 pharma</span><span class="row-val" style="color:var(--mint)">▲ 1 240 €</span></div>
+          <div class="row"><span class="row-name">Biosimilaires</span><span class="row-meta">5 pharma</span><span class="row-val" style="color:var(--mint)">▲ 890 €</span></div>
+          <div class="row"><span class="row-name">Génériques EG</span><span class="row-meta">8 pharma</span><span class="row-val" style="color:var(--rose)">▼ 320 €</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-h"><div class="card-t">⚡ Actions rapides</div></div>
+          <div class="qa">
+            <div class="qa-btn"><div class="qa-ico" style="background:rgba(0,87,255,.1)">📋</div><div><div class="qa-txt">Nouvelle fiche</div><div class="qa-sub">Fiche commerciale PDF</div></div></div>
+            <div class="qa-btn"><div class="qa-ico" style="background:rgba(15,182,126,.1)">🎯</div><div><div class="qa-txt">Fiche RDV</div><div class="qa-sub">Opportunités pharma</div></div></div>
+            <div class="qa-btn"><div class="qa-ico" style="background:rgba(245,158,11,.12)">📦</div><div><div class="qa-txt">Catalogue</div><div class="qa-sub">10 500 réf. IP</div></div></div>
+            <div class="qa-btn"><div class="qa-ico" style="background:rgba(124,58,237,.1)">🧴</div><div><div class="qa-txt">Concurrents</div><div class="qa-sub">Comparer les prix</div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">🗓️ Prochaines visites</div><div class="card-link">Agenda →</div></div>
+          <div class="row"><span class="chip g">Auj.</span><span class="row-name">Pharmacie du Marché</span></div>
+          <div class="row"><span class="chip a">J+2</span><span class="row-name">Pharmacie Lafayette</span></div>
+          <div class="row"><span class="chip a">J+3</span><span class="row-name">Pharmacie de la Gare</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">Maquette d'illustration · données fictives · tu choisis la direction, je construis ensuite avec tes vraies données</div>
+  </main>
+</div>
+</body>
+</html>
