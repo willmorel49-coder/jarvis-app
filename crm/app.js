@@ -5118,6 +5118,10 @@ function openEmailClient(email, subject, body) {
 // ── PRODUITS ──────────────────────────────────
 let prodSearch  = '';
 let prodFamille = 'tous';
+let prodCatAfm = 'all';        // catalogue grossiste IP : filtre AFMCODE/famille
+let prodCatSearch = '';        // catalogue grossiste IP : recherche
+let prodCatPage = 1;           // catalogue grossiste IP : pagination
+const PROD_CAT_PER_PAGE = 100;
 let prodSortCol = 'ca';
 let prodSortAsc = false;
 let prodPharmaFilter = 'tous'; // 'tous' or pharmacyId
@@ -5353,7 +5357,141 @@ function renderProduits() {
     </tr>`;
   }).join('');
 
+  // ════════════════════════════════════════════════════════════
+  // CATALOGUE GROSSISTE INTÉGRAL PHARMA — tout BENCHMARK filtré par AFMCODE
+  // Will : "on doit retrouver tout le catalogue grossiste integral pharma
+  // filtrer par AFMCODE" (2026-06-10).
+  // ════════════════════════════════════════════════════════════
+  const __BENCH_CAT = window.BENCHMARK || [];
+  const __familleOfBench = (b) => {
+    if (b.is_froid) return 'froid';
+    const n = (b.artnature || '').trim();
+    if (n === 'Biosimilaire') return 'biosim';
+    if (n === 'Generique') return 'generique';
+    if (n === 'Generique Partenaire') return 'gen_partenaire';
+    if (!b.has_ameli) return 'nr';
+    return 'princeps';
+  };
+  // Index lazy : compte par famille pour les badges des chips
+  const __benchCountByFam = (() => {
+    const m = { all: __BENCH_CAT.length, princeps: 0, biosim: 0, generique: 0, gen_partenaire: 0, nr: 0, froid: 0 };
+    for (const b of __BENCH_CAT) m[__familleOfBench(b)]++;
+    return m;
+  })();
+  // Catégories prix IP (CATS : pp/mi/ch)
+  const __benchFilter = __BENCH_CAT.filter(b => {
+    if (prodCatAfm !== 'all' && __familleOfBench(b) !== prodCatAfm) return false;
+    if (prodCatSearch) {
+      const q = prodCatSearch.toLowerCase();
+      if (!(b.designation || '').toLowerCase().includes(q) && !(b.cip13 || '').includes(q)) return false;
+    }
+    return true;
+  }).sort((a, b) => (a.ip_rank_qty || 99999) - (b.ip_rank_qty || 99999));
+  const __benchTotalPages = Math.max(1, Math.ceil(__benchFilter.length / PROD_CAT_PER_PAGE));
+  if (prodCatPage > __benchTotalPages) prodCatPage = 1;
+  const __benchPage = __benchFilter.slice((prodCatPage - 1) * PROD_CAT_PER_PAGE, prodCatPage * PROD_CAT_PER_PAGE);
+
+  const __afmChips = [
+    { key: 'all',            label: 'Tout',                 color: '#0057FF' },
+    { key: 'princeps',       label: 'Princeps',             color: '#0057FF' },
+    { key: 'biosim',         label: '🧬 Biosimilaires',     color: '#7C3AED' },
+    { key: 'generique',      label: '💊 Génériques',        color: '#94A3B8' },
+    { key: 'gen_partenaire', label: '✓ Gén. partenaires',   color: '#14B86A' },
+    { key: 'nr',             label: '🔴 Non remboursés',    color: '#FF9F1C' },
+    { key: 'froid',          label: '❄️ Froid',             color: '#00C6FF' },
+  ];
+  const __afmChipsHtml = __afmChips.map(c => {
+    const active = prodCatAfm === c.key;
+    const count = __benchCountByFam[c.key] || 0;
+    return `<button onclick="prodCatAfm='${c.key}';prodCatPage=1;renderProduits()" style="
+      padding:6px 14px;border-radius:20px;border:1px solid ${active ? c.color : 'var(--border2)'};
+      background:${active ? c.color : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};
+      cursor:pointer;font-size:12px;font-weight:${active ? '700' : '500'};white-space:nowrap;transition:all .15s;
+      display:inline-flex;align-items:center;gap:6px
+    ">${c.label}<span style="font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;opacity:.85">${count.toLocaleString('fr-FR')}</span></button>`;
+  }).join('');
+
+  const __famBadge = (b) => {
+    const f = __familleOfBench(b);
+    const def = __afmChips.find(c => c.key === f);
+    if (!def) return '';
+    return `<span style="display:inline-block;padding:2px 6px;border-radius:6px;background:${def.color}22;color:${def.color};font-size:10px;font-weight:600;letter-spacing:0.02em">${def.label.replace(/^[^\s]+\s?/, '')}</span>`;
+  };
+
+  const __pagBtns = (() => {
+    const ps = Math.max(1, prodCatPage - 2);
+    const pe = Math.min(__benchTotalPages, prodCatPage + 2);
+    const btns = [];
+    if (prodCatPage > 1) btns.push(`<button onclick="prodCatPage=1;renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:11px">«</button>`);
+    if (prodCatPage > 1) btns.push(`<button onclick="prodCatPage=${prodCatPage-1};renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:11px">‹</button>`);
+    for (let p = ps; p <= pe; p++) btns.push(`<button onclick="prodCatPage=${p};renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid ${p===prodCatPage?'var(--blue)':'var(--border2)'};background:${p===prodCatPage?'var(--blue)':'transparent'};color:${p===prodCatPage?'#fff':'var(--text2)'};cursor:pointer;font-size:11px;font-weight:${p===prodCatPage?'700':'400'}">${p}</button>`);
+    if (prodCatPage < __benchTotalPages) btns.push(`<button onclick="prodCatPage=${prodCatPage+1};renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:11px">›</button>`);
+    if (prodCatPage < __benchTotalPages) btns.push(`<button onclick="prodCatPage=${__benchTotalPages};renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:11px">»</button>`);
+    return btns.join('');
+  })();
+
+  const __catalogueGrossisteHtml = `
+    <div class="card fade-up" style="margin-bottom:24px;padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:700">Catalogue grossiste</div>
+          <div style="font-size:20px;font-weight:800;color:var(--text);letter-spacing:-0.01em">📦 Catalogue Intégral Pharma</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${__BENCH_CAT.length.toLocaleString('fr-FR')} références IP · filtrable par AFMCODE / famille</div>
+        </div>
+        <div style="flex:1;min-width:200px;display:flex;justify-content:flex-end;gap:8px;align-items:center">
+          <div style="position:relative;min-width:240px">
+            <input type="text" placeholder="Rechercher CIP13, désignation…" value="${prodCatSearch.replace(/"/g, '&quot;')}"
+              oninput="prodCatSearch=this.value;prodCatPage=1;renderProduits()"
+              style="width:100%;padding:8px 32px 8px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);font-size:13px;color:var(--text);outline:none">
+            ${prodCatSearch ? `<button onclick="prodCatSearch='';prodCatPage=1;renderProduits()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 6px">×</button>` : ''}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${__afmChipsHtml}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">
+        <strong>${__benchFilter.length.toLocaleString('fr-FR')}</strong> produits · page <strong>${prodCatPage}</strong> / ${__benchTotalPages.toLocaleString('fr-FR')}
+      </div>
+      <div style="overflow-x:auto;border-radius:10px;border:0.5px solid var(--border1)">
+        <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',system-ui,sans-serif">
+          <thead>
+            <tr style="background:var(--bg2)">
+              <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Rang IP</th>
+              <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Produit</th>
+              <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">CIP13</th>
+              <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Famille AFMCODE</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Prix HT</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Prix IP</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Remise</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Vol IP</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Vol Ameli</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">YoY Jan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${__benchPage.map(b => `
+              <tr style="border-bottom:0.5px solid var(--border1)">
+                <td style="padding:8px 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text3)">#${b.ip_rank_qty || '—'}</td>
+                <td style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--text);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(b.designation || '').replace(/"/g, '&quot;')}">${b.designation || ''}</td>
+                <td style="padding:8px 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text2)">${b.cip13 || ''}</td>
+                <td style="padding:8px 12px">${__famBadge(b)}</td>
+                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--text2)">${b.prix_ht ? b.prix_ht.toFixed(2) + ' €' : '—'}</td>
+                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;font-weight:700;color:var(--blue)">${b.prix_ip ? b.prix_ip.toFixed(2) + ' €' : '—'}</td>
+                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:${b.remise_pct > 0 ? 'var(--mint)' : 'var(--text3)'}">${b.remise_pct > 0 ? b.remise_pct.toFixed(1) + '%' : '—'}</td>
+                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--text2)">${(b.ip_qty || 0).toLocaleString('fr-FR')}</td>
+                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text3)">${b.ameli_total ? (b.ameli_total >= 1e6 ? (b.ameli_total/1e6).toFixed(1).replace('.0','') + ' M' : b.ameli_total >= 1e3 ? (b.ameli_total/1e3).toFixed(0) + ' k' : b.ameli_total.toLocaleString('fr-FR')) : '—'}</td>
+                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px">${b.yoy_jan !== null && b.yoy_jan !== undefined ? `<span style="color:${b.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'};font-weight:700">${b.yoy_jan >= 0 ? '▲' : '▼'} ${Math.abs(b.yoy_jan).toFixed(1)}%</span>` : '—'}</td>
+              </tr>
+            `).join('') || '<tr><td colspan="10" style="padding:40px;text-align:center;color:var(--text3);font-size:13px">Aucun produit ne correspond aux filtres.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      ${__benchTotalPages > 1 ? `<div style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap">${__pagBtns}</div>` : ''}
+    </div>
+  `;
+
   document.getElementById('prod-content').innerHTML = `
+    ${__catalogueGrossisteHtml}
+
     ${familyKpis.length ? `
     <div class="kpi-grid fade-up" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:24px">
       ${familyKpiHtml}
