@@ -5363,6 +5363,11 @@ function renderProduits() {
   // filtrer par AFMCODE" (2026-06-10).
   // ════════════════════════════════════════════════════════════
   const __BENCH_CAT = window.BENCHMARK || [];
+  // Will (2026-06-10) : Princeps doit être éclaté en 3 tranches de prix MDL
+  // (0-4,33€ petits prix / 4,33-468€ intermédiaires / >468€ chers), suivi
+  // de Froid, Génériques, Gén. partenaires, Biosimilaires, NR.
+  const __priceOfBench = (b) => (typeof b.prix_ip === 'number' && b.prix_ip > 0) ? b.prix_ip :
+                                (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
   const __familleOfBench = (b) => {
     if (b.is_froid) return 'froid';
     const n = (b.artnature || '').trim();
@@ -5370,11 +5375,16 @@ function renderProduits() {
     if (n === 'Generique') return 'generique';
     if (n === 'Generique Partenaire') return 'gen_partenaire';
     if (!b.has_ameli) return 'nr';
-    return 'princeps';
+    // Princeps : décliné en 3 tranches MDL
+    const p = __priceOfBench(b);
+    if (p > 0 && p <= 4.33) return 'princeps_pp';
+    if (p > 4.33 && p <= 468) return 'princeps_mi';
+    if (p > 468) return 'princeps_ch';
+    return 'princeps_pp'; // fallback si prix manquant
   };
   // Index lazy : compte par famille pour les badges des chips
   const __benchCountByFam = (() => {
-    const m = { all: __BENCH_CAT.length, princeps: 0, biosim: 0, generique: 0, gen_partenaire: 0, nr: 0, froid: 0 };
+    const m = { all: __BENCH_CAT.length, princeps_pp: 0, princeps_mi: 0, princeps_ch: 0, froid: 0, generique: 0, gen_partenaire: 0, biosim: 0, nr: 0 };
     for (const b of __BENCH_CAT) m[__familleOfBench(b)]++;
     return m;
   })();
@@ -5391,14 +5401,18 @@ function renderProduits() {
   if (prodCatPage > __benchTotalPages) prodCatPage = 1;
   const __benchPage = __benchFilter.slice((prodCatPage - 1) * PROD_CAT_PER_PAGE, prodCatPage * PROD_CAT_PER_PAGE);
 
+  // Ordre demandé Will (2026-06-10) : Tout, Princeps × 3 tranches, Froid,
+  // Génériques, Gén. partenaires, Biosimilaires, Non remboursés.
   const __afmChips = [
-    { key: 'all',            label: 'Tout',                 color: '#0057FF' },
-    { key: 'princeps',       label: 'Princeps',             color: '#0057FF' },
-    { key: 'biosim',         label: '🧬 Biosimilaires',     color: '#7C3AED' },
-    { key: 'generique',      label: '💊 Génériques',        color: '#94A3B8' },
-    { key: 'gen_partenaire', label: '✓ Gén. partenaires',   color: '#14B86A' },
-    { key: 'nr',             label: '🔴 Non remboursés',    color: '#FF9F1C' },
-    { key: 'froid',          label: '❄️ Froid',             color: '#00C6FF' },
+    { key: 'all',            label: 'Tout',                          color: '#0057FF' },
+    { key: 'princeps_pp',    label: 'Princeps · 0 — 4,33 €',          color: '#10B981' },
+    { key: 'princeps_mi',    label: 'Princeps · 4,33 — 468 €',        color: '#0057FF' },
+    { key: 'princeps_ch',    label: 'Princeps · > 468 €',             color: '#FF6B35' },
+    { key: 'froid',          label: '❄️ Froid',                       color: '#00C6FF' },
+    { key: 'generique',      label: '💊 Génériques',                  color: '#94A3B8' },
+    { key: 'gen_partenaire', label: '✓ Gén. partenaires',             color: '#14B86A' },
+    { key: 'biosim',         label: '🧬 Biosimilaires',               color: '#7C3AED' },
+    { key: 'nr',             label: '🔴 Non remboursés',              color: '#FF9F1C' },
   ];
   const __afmChipsHtml = __afmChips.map(c => {
     const active = prodCatAfm === c.key;
