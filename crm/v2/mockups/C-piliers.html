@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maquette C — Hub par piliers · CRM V2</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAF9F6; --surface:#FFFFFF; --ink:#1A1A22; --muted:#787480;
+  --line:rgba(26,26,34,.08); --blue:#0057FF; --blue-d:#003BB0;
+  --mint:#0FB67E; --amber:#F59E0B; --orange:#FF6B35; --violet:#7C3AED;
+  --r:20px;
+  --sh:0 2px 8px rgba(26,26,34,.05),0 12px 32px rgba(26,26,34,.06);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh}
+.mono{font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums}
+.serif{font-family:Fraunces,serif}
+.banner{background:#1A1A22;color:#fff;padding:9px 18px;font-size:12px;text-align:center;letter-spacing:.02em}
+.banner b{color:var(--orange)}
+
+.wrap{max-width:1100px;margin:0 auto;padding:40px 28px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:44px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-d));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.brand-t{font-weight:700;font-size:16px}
+.top-right{display:flex;align-items:center;gap:14px}
+.srch{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 14px;font-size:13px;color:var(--muted);cursor:pointer;box-shadow:var(--sh)}
+.srch kbd{font-family:'Geist Mono',monospace;font-size:10px;background:#F0EFEB;padding:2px 6px;border-radius:4px}
+.av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--orange));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+
+.hero{margin-bottom:38px}
+.hero-eye{font-family:'Geist Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:600;margin-bottom:10px}
+.hero h1{font-family:Fraunces,serif;font-size:46px;font-weight:600;letter-spacing:-.02em;line-height:1.05}
+.hero h1 em{font-style:italic;color:var(--orange)}
+.hero p{font-size:15px;color:var(--muted);margin-top:10px;max-width:520px}
+
+/* 4 GRANDES CARTES PILIERS */
+.piliers{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:34px}
+.pil{background:var(--surface);border-radius:var(--r);padding:28px;box-shadow:var(--sh);cursor:pointer;transition:.2s;position:relative;overflow:hidden;border:1px solid transparent}
+.pil:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 6px 16px rgba(26,26,34,.08),0 20px 48px rgba(26,26,34,.1)}
+.pil.p1{--accent:var(--blue)} .pil.p2{--accent:var(--mint)} .pil.p3{--accent:var(--violet)} .pil.p4{--accent:var(--amber)}
+.pil-ico{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:18px}
+.pil.p1 .pil-ico{background:rgba(0,87,255,.1)} .pil.p2 .pil-ico{background:rgba(15,182,126,.1)} .pil.p3 .pil-ico{background:rgba(124,58,237,.1)} .pil.p4 .pil-ico{background:rgba(245,158,11,.12)}
+.pil-t{font-family:Fraunces,serif;font-size:22px;font-weight:600;letter-spacing:-.01em;margin-bottom:7px}
+.pil-d{font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:18px}
+.pil-foot{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--accent)}
+.pil-stat{position:absolute;top:28px;right:28px;font-family:'Geist Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);padding:4px 10px;border-radius:8px}
+.pil-arrow{transition:.2s}
+.pil:hover .pil-arrow{transform:translateX(4px)}
+
+/* STRIP du jour */
+.strip{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh);padding:20px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.strip-t{font-family:Fraunces,serif;font-size:16px;font-weight:600;flex-shrink:0}
+.strip-items{display:flex;gap:22px;flex-wrap:wrap;flex:1}
+.strip-i{display:flex;flex-direction:column;gap:2px}
+.strip-i-v{font-family:'Geist Mono',monospace;font-size:18px;font-weight:700}
+.strip-i-l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.note{margin-top:30px;padding:14px 18px;background:rgba(0,87,255,.05);border:1px dashed rgba(0,87,255,.25);border-radius:14px;font-size:12px;color:#374151;text-align:center}
+</style>
+</head>
+<body>
+<div class="banner">Maquette <b>C — Hub par piliers</b> · 4 grandes portes d'entrée, éditorial premium (esprit iOS + magazine, serif Fraunces)</div>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="logo">IP</div><div class="brand-t">Intégral Pharma</div></div>
+    <div class="top-right">
+      <div class="srch"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Rechercher<kbd>⌘K</kbd></div>
+      <div class="av">WM</div>
+    </div>
+  </div>
+  <div class="hero">
+    <div class="hero-eye">Mardi 10 juin 2026 · Secteur Normandie</div>
+    <h1>Bonjour Will,<br>par où on <em>commence</em> ?</h1>
+    <p>Tes 4 outils du quotidien, à portée de clic. Chaque carte est une porte d'entrée vers ton métier.</p>
+  </div>
+  <div class="piliers">
+    <div class="pil p1">
+      <div class="pil-stat">PDF</div>
+      <div class="pil-ico">📋</div>
+      <div class="pil-t">Fiches commerciales</div>
+      <div class="pil-d">Crée une fiche produit PDF sur-mesure à montrer ou envoyer au pharmacien pendant le RDV.</div>
+      <div class="pil-foot">Créer une fiche <span class="pil-arrow">→</span></div>
+    </div>
+    <div class="pil p2">
+      <div class="pil-stat">RDV</div>
+      <div class="pil-ico">🎯</div>
+      <div class="pil-t">Opportunités pharmacie</div>
+      <div class="pil-d">Arrive sur une officine → vois direct quoi proposer, par catégorie et tranche de prix.</div>
+      <div class="pil-foot">Choisir une pharmacie <span class="pil-arrow">→</span></div>
+    </div>
+    <div class="pil p3">
+      <div class="pil-stat mono">10 500</div>
+      <div class="pil-ico">📦</div>
+      <div class="pil-t">Catalogue & concurrents</div>
+      <div class="pil-d">Catalogue IP par tranches AFMCODE, comparé aux prix Leclerc, Drakkars, Cap3000.</div>
+      <div class="pil-foot">Explorer le catalogue <span class="pil-arrow">→</span></div>
+    </div>
+    <div class="pil p4">
+      <div class="pil-stat mono">182 k€</div>
+      <div class="pil-ico">📊</div>
+      <div class="pil-t">Pilotage CA & marge</div>
+      <div class="pil-d">Ton CA, ta marge MDL, tes objectifs, qui commande quoi. Le tableau de bord de ta tournée.</div>
+      <div class="pil-foot">Voir mon pilotage <span class="pil-arrow">→</span></div>
+    </div>
+  </div>
+  <div class="strip">
+    <div class="strip-t">📍 Ta journée</div>
+    <div class="strip-items">
+      <div class="strip-i"><span class="strip-i-v">3</span><span class="strip-i-l">visites prévues</span></div>
+      <div class="strip-i"><span class="strip-i-v" style="color:var(--mint)">+7 350 €</span><span class="strip-i-l">opportunités détectées</span></div>
+      <div class="strip-i"><span class="strip-i-v" style="color:var(--rose,#EF4444)">12</span><span class="strip-i-l">alertes prix conc.</span></div>
+      <div class="strip-i"><span class="strip-i-v">47<span style="font-size:13px;color:var(--muted)">/68</span></span><span class="strip-i-l">pharma actives</span></div>
+    </div>
+  </div>
+  <div class="note">Maquette d'illustration · données fictives · tu choisis la direction, je construis ensuite avec tes vraies données</div>
+</div>
+</body>
+</html>

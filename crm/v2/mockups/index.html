@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM V2 — Choisis ta direction</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F5F6F8;--ink:#0A0A0F;--muted:#6B7280;--blue:#0057FF;--line:rgba(10,10,15,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+.hero{text-align:center;padding:56px 24px 36px;max-width:760px;margin:0 auto}
+.eye{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:700;margin-bottom:14px}
+h1{font-family:Fraunces,serif;font-size:clamp(32px,5vw,52px);font-weight:600;letter-spacing:-.02em;line-height:1.05;margin-bottom:16px}
+.lead{font-size:17px;color:var(--muted);line-height:1.5}
+.cards{max-width:1080px;margin:0 auto;padding:0 24px 60px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:880px){.cards{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 2px 8px rgba(10,10,15,.05),0 12px 32px rgba(10,10,15,.06);text-decoration:none;color:inherit;transition:.2s;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(10,10,15,.1),0 24px 60px rgba(10,10,15,.12);border-color:rgba(0,87,255,.2)}
+.prev{height:200px;position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+.prev-A{background:linear-gradient(135deg,#EEF1F6,#FFF)}
+.prev-B{background:#0A0E1A;background-image:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(59,130,246,.3),transparent)}
+.prev-C{background:linear-gradient(135deg,#FAF9F6,#FFF)}
+.prev-mini{position:absolute;inset:18px;border-radius:10px;display:flex;flex-direction:column;gap:6px;padding:14px}
+/* mini A : sidebar + kpis */
+.mA{flex-direction:row;gap:8px;inset:18px}
+.mA-sb{width:38px;background:#fff;border-radius:6px;border:1px solid var(--line)}
+.mA-main{flex:1;display:flex;flex-direction:column;gap:6px}
+.mA-kpis{display:flex;gap:5px}
+.mA-k{flex:1;height:34px;background:#fff;border-radius:5px;border:1px solid var(--line);border-left:3px solid var(--blue)}
+.mA-k:nth-child(2){border-left-color:#0FB67E}.mA-k:nth-child(3){border-left-color:#F59E0B}
+.mA-row{flex:1;background:#fff;border-radius:5px;border:1px solid var(--line)}
+/* mini B : search center */
+.mB{align-items:center;justify-content:center;gap:10px}
+.mB-search{width:80%;height:40px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:11px}
+.mB-grid{width:80%;display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.mB-c{height:34px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:9px}
+/* mini C : 4 cards */
+.mC{display:grid;grid-template-columns:1fr 1fr;gap:7px;inset:22px}
+.mC-c{background:#fff;border-radius:9px;border:1px solid var(--line);border-top:3px solid var(--blue)}
+.mC-c:nth-child(2){border-top-color:#0FB67E}.mC-c:nth-child(3){border-top-color:#7C3AED}.mC-c:nth-child(4){border-top-color:#F59E0B}
+.body{padding:20px 22px 22px;flex:1;display:flex;flex-direction:column}
+.tag{display:inline-block;font-size:11px;font-weight:700;color:var(--blue);background:rgba(0,87,255,.08);padding:3px 9px;border-radius:10px;margin-bottom:11px;align-self:flex-start}
+.ct{font-family:Fraunces,serif;font-size:22px;font-weight:600;margin-bottom:7px;letter-spacing:-.01em}
+.cd{font-size:13.5px;color:var(--muted);line-height:1.5;margin-bottom:16px;flex:1}
+.cta{font-size:13px;font-weight:700;color:var(--blue);display:flex;align-items:center;gap:6px}
+.foot{text-align:center;padding:0 24px 50px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="eye">CRM Intégral Pharma · Reconstruction V2</div>
+  <h1>Choisis la direction de ta nouvelle app</h1>
+  <p class="lead">3 écrans d'accueil, 3 philosophies. Ouvre chacun, regarde lequel te parle. Une fois choisi, je construis toute l'app dans cet esprit — avec tes vraies données.</p>
+</div>
+<div class="cards">
+  <a class="card" href="A-dashboard.html">
+    <div class="prev prev-A"><div class="prev-mini mA"><div class="mA-sb"></div><div class="mA-main"><div class="mA-kpis"><div class="mA-k"></div><div class="mA-k"></div><div class="mA-k"></div></div><div class="mA-row"></div><div class="mA-row"></div></div></div></div>
+    <div class="body"><span class="tag">Option A</span><div class="ct">Dashboard commercial</div><div class="cd">Tout visible d'un coup : KPIs, opportunités du jour, actions rapides, prochaines visites. Dense et efficace, esprit Linear / Vercel.</div><div class="cta">Ouvrir la maquette A →</div></div>
+  </a>
+  <a class="card" href="B-terrain.html">
+    <div class="prev prev-B"><div class="prev-mini mB"><div class="mB-search"></div><div class="mB-grid"><div class="mB-c"></div><div class="mB-c"></div><div class="mB-c"></div><div class="mB-c"></div></div></div></div>
+    <div class="body"><span class="tag">Option B</span><div class="ct">Action terrain</div><div class="cd">La recherche pharmacie au centre, geste rapide pour le RDV. Épuré, thème sombre, esprit Raycast / Spotlight. Pensé mobilité.</div><div class="cta">Ouvrir la maquette B →</div></div>
+  </a>
+  <a class="card" href="C-piliers.html">
+    <div class="prev prev-C"><div class="prev-mini mC"><div class="mC-c"></div><div class="mC-c"></div><div class="mC-c"></div><div class="mC-c"></div></div></div>
+    <div class="body"><span class="tag">Option C</span><div class="ct">Hub par piliers</div><div class="cd">4 grandes portes d'entrée (Fiches / Opportunités / Catalogue / Pilotage). Éditorial premium, serif élégante, esprit iOS + magazine.</div><div class="cta">Ouvrir la maquette C →</div></div>
+  </a>
+</div>
+<div class="foot">Maquettes statiques · données fictives · rien n'est encore construit · ton app actuelle reste intacte</div>
+</body>
+</html>
