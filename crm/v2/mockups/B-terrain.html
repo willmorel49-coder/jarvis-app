@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maquette B — Action terrain · CRM V2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E1A; --surface:rgba(255,255,255,.06); --surface-2:rgba(255,255,255,.09);
+  --ink:#F2F4F8; --muted:#8B93A7; --line:rgba(255,255,255,.10);
+  --blue:#3B82F6; --blue-br:#60A5FA; --mint:#34D399; --amber:#FBBF24; --rose:#FB7185;
+  --r:18px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;
+  background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(59,130,246,.18),transparent),radial-gradient(ellipse 60% 50% at 90% 10%,rgba(124,58,237,.12),transparent)}
+.mono{font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums}
+.banner{background:rgba(0,0,0,.4);color:#fff;padding:9px 18px;font-size:12px;text-align:center;letter-spacing:.02em;border-bottom:1px solid var(--line)}
+.banner b{color:var(--amber)}
+
+.wrap{max-width:920px;margin:0 auto;padding:48px 24px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:38px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--blue),#1D4ED8);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;box-shadow:0 4px 14px rgba(59,130,246,.4)}
+.brand-t{font-weight:800;font-size:17px;letter-spacing:-.01em}
+.brand-s{font-size:11px;color:var(--muted)}
+.av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--amber),#F97316);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#1A1205}
+
+.hero{text-align:center;margin-bottom:34px}
+.hero h1{font-size:34px;font-weight:900;letter-spacing:-.03em;margin-bottom:8px}
+.hero p{font-size:15px;color:var(--muted)}
+
+/* SEARCH GEANTE */
+.search{display:flex;align-items:center;gap:14px;background:var(--surface);backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:var(--r);padding:20px 24px;margin-bottom:14px;box-shadow:0 8px 40px rgba(0,0,0,.3);cursor:text;transition:.2s}
+.search:hover{border-color:var(--blue);background:var(--surface-2)}
+.search svg{width:24px;height:24px;stroke:var(--blue-br);stroke-width:2;fill:none;flex-shrink:0}
+.search-txt{font-size:18px;font-weight:500;color:var(--muted);flex:1}
+.search kbd{font-family:'Geist Mono',monospace;font-size:12px;background:rgba(255,255,255,.1);padding:5px 9px;border-radius:7px;color:var(--ink)}
+
+.recent{display:flex;gap:8px;justify-content:center;margin-bottom:40px;flex-wrap:wrap}
+.recent-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;background:var(--surface);border:1px solid var(--line);border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.recent-chip:hover{background:var(--surface-2);border-color:var(--blue)}
+.recent-chip .d{width:7px;height:7px;border-radius:50%}
+
+/* 4 PILIERS */
+.piliers{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.pil{background:var(--surface);backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:var(--r);padding:24px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.pil:hover{transform:translateY(-3px);background:var(--surface-2);border-color:var(--blue)}
+.pil-ico{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
+.pil-t{font-size:18px;font-weight:800;letter-spacing:-.01em;margin-bottom:5px}
+.pil-d{font-size:13px;color:var(--muted);line-height:1.5}
+.pil-stat{position:absolute;top:22px;right:24px;font-family:'Geist Mono',monospace;font-size:13px;font-weight:700;color:var(--blue-br)}
+.note{margin-top:34px;padding:14px 18px;background:rgba(59,130,246,.08);border:1px dashed rgba(59,130,246,.3);border-radius:14px;font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="banner">Maquette <b>B — Action terrain</b> · recherche au centre, geste rapide RDV (esprit Raycast / Spotlight, thème sombre)</div>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="logo">IP</div><div><div class="brand-t">Intégral Pharma</div><div class="brand-s">CRM commercial · Normandie</div></div></div>
+    <div class="av">WM</div>
+  </div>
+  <div class="hero">
+    <h1>Quelle pharmacie aujourd'hui ?</h1>
+    <p>Cherche une officine, ou attaque directement une de tes actions</p>
+  </div>
+  <div class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <span class="search-txt">Pharmacie des Câlins, Doliprane, SPF50…</span>
+    <kbd>⌘K</kbd>
+  </div>
+  <div class="recent">
+    <div class="recent-chip"><span class="d" style="background:var(--mint)"></span>Pharmacie du Marché</div>
+    <div class="recent-chip"><span class="d" style="background:var(--amber)"></span>Grande Pharmacie Centre</div>
+    <div class="recent-chip"><span class="d" style="background:var(--blue-br)"></span>Pharmacie Lafayette</div>
+    <div class="recent-chip" style="color:var(--muted)">+ récentes</div>
+  </div>
+  <div class="piliers">
+    <div class="pil">
+      <div class="pil-stat">RDV</div>
+      <div class="pil-ico" style="background:rgba(15,182,126,.15)">🎯</div>
+      <div class="pil-t">Opportunités pharmacie</div>
+      <div class="pil-d">Arrive sur une officine → vois direct quoi proposer : best, ce qu'elle ne commande pas, par catégorie et tranche de prix.</div>
+    </div>
+    <div class="pil">
+      <div class="pil-stat">PDF</div>
+      <div class="pil-ico" style="background:rgba(59,130,246,.15)">📋</div>
+      <div class="pil-t">Fiches commerciales</div>
+      <div class="pil-d">Crée et sors une fiche produit PDF sur-mesure à montrer ou envoyer au pharmacien pendant le RDV.</div>
+    </div>
+    <div class="pil">
+      <div class="pil-stat mono">10 500</div>
+      <div class="pil-ico" style="background:rgba(124,58,237,.15)">📦</div>
+      <div class="pil-t">Catalogue + concurrents</div>
+      <div class="pil-d">Catalogue IP par tranches AFMCODE. Compare instantanément aux prix Leclerc, Drakkars, Cap3000.</div>
+    </div>
+    <div class="pil">
+      <div class="pil-stat mono">182 k€</div>
+      <div class="pil-ico" style="background:rgba(245,158,11,.15)">📊</div>
+      <div class="pil-t">Pilotage CA & marge</div>
+      <div class="pil-d">Ton CA, ta marge MDL, tes objectifs, qui commande quoi. Le tableau de bord de ta tournée.</div>
+    </div>
+  </div>
+  <div class="note">Maquette d'illustration · données fictives · tu choisis la direction, je construis ensuite avec tes vraies données</div>
+</div>
+</body>
+</html>
