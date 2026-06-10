@@ -2387,6 +2387,183 @@
    * @param {string} [titleOverride]
    * @param {string} [subOverride]
    */
+  // ════════════════════════════════════════════════════════════
+  // TOP OPS+HP+CPR PAR CATÉGORIE (AFMCODE + tranches prix Princeps)
+  // Validé Will 2026-06-10 : "des opportunités produits par categrories de
+  // prix et catégories au moins un listing par catagories de 20 à 30
+  // produits qui se base sur les meilleurs ventes tous confondu des 3
+  // établissement cumulées".
+  // ════════════════════════════════════════════════════════════
+  window.renderTopOpsCprHpByCategoryForPharmaHTML = function (excludedCipsSet, titleOverride, subOverride) {
+    const ops = window.OPS_AGGREGATE || {};
+    const cpr = window.CPR_AGGREGATE || {};
+    const hp  = window.HP_AGGREGATE  || {};
+    if (Object.keys(ops).length + Object.keys(cpr).length + Object.keys(hp).length === 0) return '';
+
+    const BENCH = window.BENCHMARK || [];
+    const SAGITTA = window.SAGITTA_SHORTLIST || [];
+    const sagittaCipSet = new Set(SAGITTA.map(p => String(p.cip13 || p.cip || '')));
+    const excluded = (excludedCipsSet instanceof Set) ? excludedCipsSet :
+                     (Array.isArray(excludedCipsSet) ? new Set(excludedCipsSet.map(String)) : new Set());
+
+    // Index BENCHMARK par cip13/ean/artcode (pour designation/prix/famille)
+    const benchIdx = new Map();
+    for (let i = 0; i < BENCH.length; i++) {
+      const b = BENCH[i];
+      if (b.cip13) benchIdx.set(String(b.cip13), b);
+      if (b.ean) benchIdx.set(String(b.ean), b);
+      if (b.artcode) benchIdx.set(String(b.artcode), b);
+    }
+
+    // Fusion OPS + CPR + HP par code (cumul qte/ca)
+    const fused = new Map();
+    function addSrc(src, name) {
+      for (const code in src) {
+        if (!Object.prototype.hasOwnProperty.call(src, code)) continue;
+        const codeStr = String(code);
+        const p = src[code];
+        const ean = String(p.ean || '');
+        // Skip si commandé par cette pharma
+        if (excluded.has(codeStr) || (ean && excluded.has(ean))) continue;
+
+        let existing = fused.get(codeStr);
+        if (!existing) {
+          existing = {
+            artcode: codeStr,
+            ean: ean,
+            cip13: ean.length === 13 ? ean : (codeStr.length === 13 ? codeStr : ean || codeStr),
+            designation: p.designation || '',
+            marque: p.marque || '',
+            ca: 0, qte: 0,
+            sources: { ops: 0, cpr: 0, hp: 0 },
+          };
+          fused.set(codeStr, existing);
+        }
+        existing.ca += (p.ca || 0);
+        existing.qte += (p.qte || 0);
+        existing.sources[name] += (p.qte || 0);
+      }
+    }
+    addSrc(ops, 'ops');
+    addSrc(cpr, 'cpr');
+    addSrc(hp,  'hp');
+
+    // Enrichir avec BENCHMARK + classifier par catégorie AFMCODE
+    const list = [];
+    fused.forEach((stat) => {
+      const b = benchIdx.get(stat.artcode) || benchIdx.get(stat.ean) || benchIdx.get(stat.cip13);
+      if (b) {
+        if (!stat.designation && b.designation) stat.designation = b.designation;
+        stat.prix_ip = b.prix_ip;
+        stat.prix_ht = b.prix_ht;
+        stat.remise_pct = b.remise_pct;
+        stat.artnature = b.artnature;
+        stat.is_froid = b.is_froid;
+        stat.has_ameli = b.has_ameli;
+        stat.cip13 = b.cip13 || stat.cip13;
+        stat.ip_qty = b.ip_qty || 0;
+      }
+      // Classification (AFMCODE + tranches prix pour Princeps)
+      const sagittaNR = sagittaCipSet.has(String(stat.cip13)) || sagittaCipSet.has(stat.ean);
+      if (stat.is_froid) stat.cat = 'froid';
+      else if (stat.artnature === 'Biosimilaire') stat.cat = 'biosim';
+      else if (stat.artnature === 'Generique') stat.cat = 'generique';
+      else if (stat.artnature === 'Generique Partenaire') stat.cat = 'gen_partenaire';
+      else if (sagittaNR || stat.has_ameli === false) stat.cat = 'nr';
+      else {
+        const p = stat.prix_ip || (stat.qte > 0 ? stat.ca / stat.qte : 0);
+        if (p > 0 && p <= 4.33) stat.cat = 'princeps_pp';
+        else if (p > 4.33 && p <= 468) stat.cat = 'princeps_mi';
+        else if (p > 468) stat.cat = 'princeps_ch';
+        else stat.cat = 'princeps_pp'; // fallback
+      }
+      list.push(stat);
+    });
+
+    // 8 catégories dans l'ordre Will (Princeps par tranches + autres familles)
+    const cats = [
+      { id: 'princeps_pp',    name: 'Princeps · Petits prix',     sub: '0 — 4,33 €',                 cap: 30, accent: '#10B981' },
+      { id: 'princeps_mi',    name: 'Princeps · Intermédiaires',  sub: '4,33 — 468 €',               cap: 30, accent: '#0057FF' },
+      { id: 'princeps_ch',    name: 'Princeps · Chers',           sub: '> 468 €',                    cap: 20, accent: '#FF6B35' },
+      { id: 'froid',          name: '❄️ Froid',                   sub: 'chaîne du froid 2–8 °C',     cap: 30, accent: '#00C6FF' },
+      { id: 'generique',      name: '💊 Génériques',              sub: 'EG · Mylan · Biogaran…',     cap: 30, accent: '#94A3B8' },
+      { id: 'gen_partenaire', name: '✓ Génériques partenaires',   sub: 'partenariat IP',             cap: 30, accent: '#14B86A' },
+      { id: 'biosim',         name: '🧬 Biosimilaires',           sub: 'Truxima · Benepali · Remsima…', cap: 20, accent: '#7C3AED' },
+      { id: 'nr',             name: '🔴 Non remboursés',          sub: 'Sagitta SHORTLIST NR',       cap: 30, accent: '#FF9F1C' },
+    ];
+
+    cats.forEach(cat => {
+      const filtered = list.filter(r => r.cat === cat.id).sort((a, b) => b.qte - a.qte);
+      cat.items = filtered.slice(0, cat.cap);
+      cat.totalCount = filtered.length;
+      cat.totalQte = filtered.reduce((s, r) => s + r.qte, 0);
+      cat.totalCa = filtered.reduce((s, r) => s + r.ca, 0);
+    });
+
+    const nonEmptyCats = cats.filter(c => c.items.length > 0);
+    if (nonEmptyCats.length === 0) return '';
+
+    const cardsHtml = nonEmptyCats.map(cat => `
+      <div style="margin-bottom:14px;background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.06);overflow:hidden">
+        <div style="padding:14px 18px;background:linear-gradient(90deg, ${cat.accent}22 0%, transparent 100%);border-left:4px solid ${cat.accent};display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+          <div style="font-size:15px;font-weight:800;color:#0A1F4E;letter-spacing:-0.01em">${cat.name}</div>
+          <div style="font-size:11px;color:#71717A;font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:0.04em">${cat.sub}</div>
+          <div style="margin-left:auto;font-size:11px;color:#71717A;font-family:'Geist Mono',monospace">
+            <strong style="color:#0057FF">${cat.items.length}/${cat.cap}</strong> top ·
+            <strong style="color:#0A1F4E">${cat.totalCount.toLocaleString('fr-FR')}</strong> opp. ·
+            <strong style="color:#10B981">${cat.totalQte.toLocaleString('fr-FR')} u</strong> marché
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',system-ui,sans-serif">
+            <thead>
+              <tr style="background:#F9F9FB">
+                <th style="padding:8px 10px;font-size:9px;text-align:center;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:800">#</th>
+                <th style="padding:8px 10px;font-size:9px;text-align:left;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:800">Produit</th>
+                <th style="padding:8px 10px;font-size:9px;text-align:left;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:800">CIP / EAN</th>
+                <th style="padding:8px 10px;font-size:9px;text-align:right;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:800">Prix IP</th>
+                <th style="padding:8px 10px;font-size:9px;text-align:right;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:800">Vol marché</th>
+                <th style="padding:8px 10px;font-size:9px;text-align:right;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:800">OPS</th>
+                <th style="padding:8px 10px;font-size:9px;text-align:right;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:800">CPR</th>
+                <th style="padding:8px 10px;font-size:9px;text-align:right;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;font-weight:800">HP</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${cat.items.map((r, i) => `
+                <tr style="border-bottom:0.5px solid #EEF1F5;transition:background .12s" onmouseenter="this.style.background='#F9F9FB'" onmouseleave="this.style.background='transparent'">
+                  <td style="padding:7px 10px;text-align:center;color:#71717A;font-family:'Geist Mono',monospace;font-size:10px;font-weight:600">${i + 1}</td>
+                  <td style="padding:7px 10px;font-size:12px;font-weight:600;color:#0A1F4E;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.designation || '').replace(/"/g, '&quot;')}">${(r.designation || '').slice(0, 44)}</td>
+                  <td style="padding:7px 10px;font-family:'Geist Mono',monospace;font-size:10px;color:#5B6478">${r.cip13 || r.ean || r.artcode || ''}</td>
+                  <td style="padding:7px 10px;text-align:right;font-family:'Geist Mono',monospace;font-size:12px;font-weight:700;color:#0057FF">${r.prix_ip ? r.prix_ip.toFixed(2) + ' €' : (r.qte > 0 ? (r.ca / r.qte).toFixed(2) + ' €' : '—')}</td>
+                  <td style="padding:7px 10px;text-align:right;font-family:'Geist Mono',monospace;font-size:12px;font-weight:700;color:#10B981">${r.qte.toLocaleString('fr-FR')}</td>
+                  <td style="padding:7px 10px;text-align:right;font-family:'Geist Mono',monospace;font-size:11px;color:#5B6478">${(r.sources.ops || 0).toLocaleString('fr-FR')}</td>
+                  <td style="padding:7px 10px;text-align:right;font-family:'Geist Mono',monospace;font-size:11px;color:#5B6478">${(r.sources.cpr || 0).toLocaleString('fr-FR')}</td>
+                  <td style="padding:7px 10px;text-align:right;font-family:'Geist Mono',monospace;font-size:11px;color:#5B6478">${(r.sources.hp || 0).toLocaleString('fr-FR')}</td>
+                  <td style="padding:7px 10px;text-align:center"><button onclick="event.stopPropagation();window.mkQuickAddProduct && window.mkQuickAddProduct('${(r.cip13 || r.ean || r.artcode || '').replace(/'/g, '')}')" style="padding:4px 9px;border-radius:5px;border:1px solid #0057FF;background:#0057FF;color:#fff;cursor:pointer;font-size:11px;font-weight:700">+</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `).join('');
+
+    const totalOpps = nonEmptyCats.reduce((s, c) => s + c.totalCount, 0);
+    const title = titleOverride || '🎯 Opportunités par catégorie · top ventes marché OPS + HP + CPR';
+    const sub = subOverride || (totalOpps.toLocaleString('fr-FR') + ' opportunités au total · 20-30 produits par catégorie · cumulé sur les 3 grossistes concurrents · cette pharma ne commande pas ces références');
+    return `
+      <div class="mk-section" style="margin-top:32px">
+        <div style="margin-bottom:18px">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#0057FF;font-weight:800">Top ventes marché cumulées</div>
+          <div style="font-size:22px;font-weight:800;color:#0A1F4E;letter-spacing:-0.01em;margin-top:2px">${title}</div>
+          <div style="font-size:13px;color:#71717A;margin-top:4px">${sub}</div>
+        </div>
+        ${cardsHtml}
+      </div>
+    `;
+  };
+
   window.renderOpsOpportunitiesHTML = function (excludedCipsSet, titleOverride, subOverride) {
     const ops = window.OPS_AGGREGATE;
     if (!ops || Object.keys(ops).length === 0) {

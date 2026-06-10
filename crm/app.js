@@ -4208,7 +4208,13 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   const __peerRecsHTML = __safeRender(() => renderPeerRecommendationsHTML(pharma, allPhSales), 'Sur mesure (peers)');
   // (D) Best produits + À travailler par catégorie (avec bouton PDF)
   const __bestWorkHTML = __safeRender(() => renderBestAndWorkSectionsHTML(pharma, allPhSales), 'Best produits + À travailler');
-  const __opportunitiesHTML = __bestWorkHTML + __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
+  // (E) Top OPS+HP+CPR cumulé par catégorie (Will 2026-06-10) : 20-30 produits par cat
+  const __topOpsByCatHTML = __safeRender(() => {
+    return typeof window.renderTopOpsCprHpByCategoryForPharmaHTML === 'function'
+      ? window.renderTopOpsCprHpByCategoryForPharmaHTML(__orderedCipsSet)
+      : '';
+  }, 'Top OPS+HP+CPR par catégorie');
+  const __opportunitiesHTML = __bestWorkHTML + __topOpsByCatHTML + __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
   // Bandeau version retiré (bug fixé). Console log reste pour debug optionnel.
   const __versionBadge = '';
   try { console.log('[showPharmaDetail] pharma=' + pharma.name + ' sales=' + allPhSales.length); } catch(e){}
@@ -4874,7 +4880,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   // ── Split __opportunitiesHTML : Best&Work va dans tab "best", le reste va dans "opp" ──
   // Préservation du marker __opportunitiesHTML (toujours calculé en amont)
   const __bestPanelHtml = __bestWorkHTML;
-  const __oppExtraHtml = __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
+  const __oppExtraHtml = __topOpsByCatHTML + __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
 
   // ── Tabbar sticky ──
   const __tabbarHtml = `
