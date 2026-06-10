@@ -5362,7 +5362,12 @@ function renderProduits() {
   // Will : "on doit retrouver tout le catalogue grossiste integral pharma
   // filtrer par AFMCODE" (2026-06-10).
   // ════════════════════════════════════════════════════════════
-  const __BENCH_CAT = window.BENCHMARK || [];
+  const __BENCH_CAT = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ? BENCHMARK :
+                      (window.BENCHMARK && window.BENCHMARK.length) ? window.BENCHMARK : [];
+  // Indicateur de chargement si BENCHMARK pas encore prêt (lazy load via perf-boot)
+  const __benchLoadingNotice = __BENCH_CAT.length === 0
+    ? '<div class="card fade-up" style="margin-bottom:24px;padding:18px 20px;background:linear-gradient(135deg,rgba(0,87,255,0.08) 0%,rgba(124,58,237,0.05) 100%);border-left:3px solid var(--blue)"><div style="display:flex;align-items:center;gap:14px"><div style="width:32px;height:32px;border-radius:8px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px">📦</div><div><div style="font-size:14px;font-weight:700;color:var(--text)">Catalogue Intégral Pharma — chargement…</div><div style="font-size:12px;color:var(--text3);margin-top:2px">Les 10 500 références IP sont en cours de chargement. Recharge la page dans quelques secondes pour voir le filtre AFMCODE complet.</div></div></div></div>'
+    : '';
   // Will (2026-06-10) : Princeps doit être éclaté en 3 tranches de prix MDL
   // (0-4,33€ petits prix / 4,33-468€ intermédiaires / >468€ chers), suivi
   // de Froid, Génériques, Gén. partenaires, Biosimilaires, NR.
@@ -5504,7 +5509,8 @@ function renderProduits() {
   `;
 
   document.getElementById('prod-content').innerHTML = `
-    ${__catalogueGrossisteHtml}
+    ${__benchLoadingNotice}
+    ${__BENCH_CAT.length > 0 ? __catalogueGrossisteHtml : ''}
 
     ${familyKpis.length ? `
     <div class="kpi-grid fade-up" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:24px">
