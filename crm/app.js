@@ -1300,6 +1300,26 @@ function renderDashboard() {
   const __dpSelectedMonth = __dpMode === 'month'
     ? `${state.dashboardPeriod.year}-${state.dashboardPeriod.month}`
     : '';
+  const __quickActionsHtml = (() => {
+    const acts = [
+      { icon: '📦', label: 'Catalogue IP',     onclick: "navigate('produits')" },
+      { icon: '🏥', label: 'Mes pharmacies',   onclick: "navigate('pharmacies')" },
+      { icon: '📋', label: 'Nouvelle fiche',   onclick: "window.mkStartBlank && window.mkStartBlank()" },
+      { icon: '🧴', label: 'Offilog',          onclick: "navigate('offilog')" },
+      { icon: '🔍', label: 'Recherche (⌘K)',   onclick: "window.appleOpenCmdk && window.appleOpenCmdk()" },
+    ];
+    return `
+    <section class="dash-quick-actions fade-up" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">
+      ${acts.map(a => `
+        <button onclick="${a.onclick}"
+          style="display:inline-flex;align-items:center;gap:10px;padding:14px 18px;border-radius:12px;border:none;background:var(--bg-elevated, var(--card, #11161f));box-shadow:var(--shadow-2, 0 1px 3px rgba(0,0,0,.18));color:var(--text);cursor:pointer;font-size:14px;font-weight:600;transition:transform var(--dur-quick,140ms) ease, box-shadow var(--dur-quick,140ms) ease"
+          onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow-3, 0 6px 18px rgba(0,0,0,.28))'"
+          onmouseleave="this.style.transform='none';this.style.boxShadow='var(--shadow-2, 0 1px 3px rgba(0,0,0,.18))'">
+          <span aria-hidden="true" style="font-size:18px;line-height:1">${a.icon}</span><span>${a.label}</span>
+        </button>`).join('')}
+    </section>`;
+  })();
+
   const __periodBarHtml = `
     <div class="dash-period-bar fade-up">
       <div class="dpb-label">Période</div>
@@ -1321,6 +1341,7 @@ function renderDashboard() {
     </div>`;
 
   document.getElementById('dash-content').innerHTML = `
+    ${__quickActionsHtml}
     ${__periodBarHtml}
 
     <!-- Row 1 : 4 KPI cards égales (DA Intégral Pharma) -->
@@ -2603,9 +2624,9 @@ function renderPharmacies() {
           </div>`;
         const actions = `
           <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:12px">
-            <button onclick="event.stopPropagation();window.exportPharmaPeerRecsPDF && window.exportPharmaPeerRecsPDF('${ph.id}')" style="width:32px;height:32px;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center" title="Fiche RDV opportunités sur mesure (basée sur ce que les peers commandent)">🎯</button>
-            <button onclick="event.stopPropagation();window.exportPharmaListingPDF && window.exportPharmaListingPDF('${ph.id}')" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center" title="Télécharger le listing PDF (Best + À travailler)">📄</button>
-            <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center" title="Ouvrir la fiche de visite">📋</button>
+            <button onclick="event.stopPropagation();window.exportPharmaPeerRecsPDF && window.exportPharmaPeerRecsPDF('${ph.id}')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:16px;border:none;background:var(--blue, #0057FF);color:#fff;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap" title="Fiche RDV opportunités sur mesure (basée sur ce que les pharmacies similaires commandent)">🎯 RDV opp.</button>
+            <button onclick="event.stopPropagation();window.exportPharmaListingPDF && window.exportPharmaListingPDF('${ph.id}')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:16px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap" title="Télécharger le listing PDF (Best + À travailler)">📄 PDF</button>
+            <button onclick="event.stopPropagation();showFicheVisite('${ph.id}')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:16px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap" title="Ouvrir la fiche de visite">📋 Visite</button>
             <div style="color:var(--text3);font-size:16px;margin-left:2px">›</div>
           </div>`;
         return `
@@ -3966,8 +3987,8 @@ function buildPharmaListingPdfHTML(pharma, allPhSales) {
 let __pharmaTab = (() => {
   try {
     const v = localStorage.getItem('a-pharma-last-tab');
-    return ['overview','best','opp','history','notes'].includes(v) ? v : 'overview';
-  } catch { return 'overview'; }
+    return ['overview','best','opp','history','notes'].includes(v) ? v : 'best';
+  } catch { return 'best'; }
 })();
 let __pharmaTabLastPharmaId = null;
 window.__pharmaSwitchTab = function(tab) {
@@ -4008,10 +4029,10 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   if (overridePeriod !== undefined) pharmaDetailOverridePeriod = overridePeriod;
   const pharma = state.pharmacies.find(p => String(p.id) === String(pharmacyId));
   if (!pharma) return;
-  // Réinitialise sur 'overview' si on change de pharmacie
+  // Réinitialise sur 'best' si on change de pharmacie
   if (__pharmaTabLastPharmaId && __pharmaTabLastPharmaId !== String(pharma.id)) {
-    __pharmaTab = 'overview';
-    try { localStorage.setItem('a-pharma-last-tab', 'overview'); } catch {}
+    __pharmaTab = 'best';
+    try { localStorage.setItem('a-pharma-last-tab', 'best'); } catch {}
   }
   __pharmaTabLastPharmaId = String(pharma.id);
   window.__currentPharmaId = pharma.id;
@@ -4879,15 +4900,15 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
   // ── Split __opportunitiesHTML : Best&Work va dans tab "best", le reste va dans "opp" ──
   // Préservation du marker __opportunitiesHTML (toujours calculé en amont)
-  const __bestPanelHtml = __bestWorkHTML;
-  const __oppExtraHtml = __topOpsByCatHTML + __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
+  const __bestPanelHtml = __bestWorkHTML + __topOpsByCatHTML;
+  const __oppExtraHtml = __peerRecsHTML + __opsOpportunitiesHTML + __catalogueGapsHTML;
 
   // ── Tabbar sticky ──
   const __tabbarHtml = `
     <nav class="a-pharma-tabs" role="tablist">
-      <button class="a-pharma-tab ${__pharmaTab==='overview'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('overview')">Vue d'ensemble</button>
       <button class="a-pharma-tab ${__pharmaTab==='best'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('best')">🏆 Best & À travailler</button>
-      <button class="a-pharma-tab ${__pharmaTab==='opp'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('opp')">🎁 Opportunités</button>
+      <button class="a-pharma-tab ${__pharmaTab==='opp'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('opp')">🎯 Opportunités</button>
+      <button class="a-pharma-tab ${__pharmaTab==='overview'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('overview')">Vue d'ensemble</button>
       <button class="a-pharma-tab ${__pharmaTab==='history'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('history')">📊 Historique</button>
       <button class="a-pharma-tab ${__pharmaTab==='notes'?'is-active':''}" role="tab" onclick="window.__pharmaSwitchTab('notes')">📝 Notes & Visites</button>
     </nav>`;
