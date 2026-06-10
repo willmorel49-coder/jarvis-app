@@ -5362,35 +5362,33 @@ function renderProduits() {
   // Will : "on doit retrouver tout le catalogue grossiste integral pharma
   // filtrer par AFMCODE" (2026-06-10).
   // ════════════════════════════════════════════════════════════
+  // Bridge robuste : tenter le bridge BENCHMARK -> window.BENCHMARK à chaque appel
+  // (benchmark-data.js est defer, donc BENCHMARK arrive APRÈS le bridge initial)
+  try { if (typeof BENCHMARK !== 'undefined' && !window.BENCHMARK) window.BENCHMARK = BENCHMARK; } catch(e){}
   const __BENCH_CAT = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ? BENCHMARK :
                       (window.BENCHMARK && window.BENCHMARK.length) ? window.BENCHMARK : [];
-  // Auto-retry : si BENCHMARK pas encore chargé, force perf-boot à charger et re-render
-  if (__BENCH_CAT.length === 0 && !window.__prodRetryArmed) {
-    window.__prodRetryArmed = true;
-    try {
-      if (window.__perfBoot && typeof window.__perfBoot.loadBundle === 'function') {
-        window.__perfBoot.loadBundle('produits').then(() => {
-          window.__prodRetryArmed = false;
-          if (state.currentPage === 'produits' && typeof renderProduits === 'function') {
-            renderProduits();
-          }
-        }).catch(() => { window.__prodRetryArmed = false; });
-      } else {
-        // Fallback : charge benchmark-data.js directement
-        const s = document.createElement('script');
-        s.src = 'benchmark-data.js?v=20260610d';
-        s.defer = true;
-        s.onload = () => {
-          try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch(e){}
-          window.__prodRetryArmed = false;
-          if (state.currentPage === 'produits' && typeof renderProduits === 'function') {
-            renderProduits();
-          }
-        };
-        s.onerror = () => { window.__prodRetryArmed = false; };
-        document.head.appendChild(s);
+  // Auto-retry : poll BENCHMARK toutes les 500ms si pas encore là
+  if (__BENCH_CAT.length === 0 && !window.__prodPollArmed) {
+    window.__prodPollArmed = true;
+    let __polls = 0;
+    const __poll = setInterval(() => {
+      __polls++;
+      // Re-tente le bridge à chaque poll (benchmark-data.js peut arriver à tout moment)
+      try { if (typeof BENCHMARK !== 'undefined' && !window.BENCHMARK) window.BENCHMARK = BENCHMARK; } catch(e){}
+      const ok = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ||
+                 (window.BENCHMARK && window.BENCHMARK.length);
+      if (ok) {
+        clearInterval(__poll);
+        window.__prodPollArmed = false;
+        if (state.currentPage === 'produits' && typeof renderProduits === 'function') {
+          renderProduits();
+        }
+      } else if (__polls > 60) { // 30s timeout
+        clearInterval(__poll);
+        window.__prodPollArmed = false;
+        console.warn('[Produits] BENCHMARK timeout 30s — benchmark-data.js ne charge pas');
       }
-    } catch (e) { window.__prodRetryArmed = false; }
+    }, 500);
   }
   // Indicateur de chargement si BENCHMARK pas encore prêt
   const __benchLoadingNotice = __BENCH_CAT.length === 0
