@@ -5364,9 +5364,37 @@ function renderProduits() {
   // ════════════════════════════════════════════════════════════
   const __BENCH_CAT = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ? BENCHMARK :
                       (window.BENCHMARK && window.BENCHMARK.length) ? window.BENCHMARK : [];
-  // Indicateur de chargement si BENCHMARK pas encore prêt (lazy load via perf-boot)
+  // Auto-retry : si BENCHMARK pas encore chargé, force perf-boot à charger et re-render
+  if (__BENCH_CAT.length === 0 && !window.__prodRetryArmed) {
+    window.__prodRetryArmed = true;
+    try {
+      if (window.__perfBoot && typeof window.__perfBoot.loadBundle === 'function') {
+        window.__perfBoot.loadBundle('produits').then(() => {
+          window.__prodRetryArmed = false;
+          if (state.currentPage === 'produits' && typeof renderProduits === 'function') {
+            renderProduits();
+          }
+        }).catch(() => { window.__prodRetryArmed = false; });
+      } else {
+        // Fallback : charge benchmark-data.js directement
+        const s = document.createElement('script');
+        s.src = 'benchmark-data.js?v=20260610d';
+        s.defer = true;
+        s.onload = () => {
+          try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch(e){}
+          window.__prodRetryArmed = false;
+          if (state.currentPage === 'produits' && typeof renderProduits === 'function') {
+            renderProduits();
+          }
+        };
+        s.onerror = () => { window.__prodRetryArmed = false; };
+        document.head.appendChild(s);
+      }
+    } catch (e) { window.__prodRetryArmed = false; }
+  }
+  // Indicateur de chargement si BENCHMARK pas encore prêt
   const __benchLoadingNotice = __BENCH_CAT.length === 0
-    ? '<div class="card fade-up" style="margin-bottom:24px;padding:18px 20px;background:linear-gradient(135deg,rgba(0,87,255,0.08) 0%,rgba(124,58,237,0.05) 100%);border-left:3px solid var(--blue)"><div style="display:flex;align-items:center;gap:14px"><div style="width:32px;height:32px;border-radius:8px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px">📦</div><div><div style="font-size:14px;font-weight:700;color:var(--text)">Catalogue Intégral Pharma — chargement…</div><div style="font-size:12px;color:var(--text3);margin-top:2px">Les 10 500 références IP sont en cours de chargement. Recharge la page dans quelques secondes pour voir le filtre AFMCODE complet.</div></div></div></div>'
+    ? '<div class="card fade-up" style="margin-bottom:24px;padding:18px 20px;background:linear-gradient(135deg,rgba(0,87,255,0.08) 0%,rgba(124,58,237,0.05) 100%);border-left:3px solid var(--blue)"><div style="display:flex;align-items:center;gap:14px"><div style="width:32px;height:32px;border-radius:8px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;animation:spin 1.2s linear infinite">📦</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">Catalogue Intégral Pharma — chargement en cours…</div><div style="font-size:12px;color:var(--text3);margin-top:2px">Les 10 500 références IP (3,6 Mo) se téléchargent. Cette section s\'actualisera automatiquement.</div></div><button onclick="renderProduits()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;font-size:12px;font-weight:700">🔄 Recharger</button></div><style>@keyframes spin {from{transform:rotate(0)}to{transform:rotate(360deg)}}</style></div>'
     : '';
   // Will (2026-06-10) : Princeps doit être éclaté en 3 tranches de prix MDL
   // (0-4,33€ petits prix / 4,33-468€ intermédiaires / >468€ chers), suivi
