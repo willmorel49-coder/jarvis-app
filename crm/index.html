@@ -87,39 +87,39 @@
 
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260610i" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260610j" />
   <!-- Styles desktop -->
-  <link rel="stylesheet" href="style.css?v=20260610i" />
-  <link rel="stylesheet" href="style-classic.css?v=20260610i" />
+  <link rel="stylesheet" href="style.css?v=20260610j" />
+  <link rel="stylesheet" href="style-classic.css?v=20260610j" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260610i" />
-  <link rel="stylesheet" href="marketing-design-system.css?v=20260610i" />
+  <link rel="stylesheet" href="marketing.css?v=20260610j" />
+  <link rel="stylesheet" href="marketing-design-system.css?v=20260610j" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260610i" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260610i" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260610i" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260610i" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260610j" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260610j" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260610j" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260610j" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260610i" />
-  <link rel="stylesheet" href="native-headers.css?v=20260610i" />
-  <link rel="stylesheet" href="native-lists.css?v=20260610i" />
-  <link rel="stylesheet" href="native-motion.css?v=20260610i" />
-  <link rel="stylesheet" href="skeleton-loaders.css?v=20260610i" />
+  <link rel="stylesheet" href="native-shell.css?v=20260610j" />
+  <link rel="stylesheet" href="native-headers.css?v=20260610j" />
+  <link rel="stylesheet" href="native-lists.css?v=20260610j" />
+  <link rel="stylesheet" href="native-motion.css?v=20260610j" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260610j" />
 
   <!-- ════ APPLE MODE (refonte from scratch 2026-06-08) — override final ════ -->
-  <link rel="stylesheet" href="apple/tokens.css?v=20260610i" />
-  <link rel="stylesheet" href="apple/components.css?v=20260610i" />
-  <link rel="stylesheet" href="apple/legacy-bridge.css?v=20260610i" />
-  <link rel="stylesheet" href="apple/peer-recs.css?v=20260610i" />
-  <link rel="stylesheet" href="apple/vtable.css?v=20260610i" />
-  <link rel="stylesheet" href="apple/cmdk.css?v=20260610i" />
-  <script src="apple/icons.js?v=20260610i" defer></script>
-  <script src="apple/motion.js?v=20260610i" defer></script>
-  <script src="apple/vtable.js?v=20260610i" defer></script>
-  <script src="apple/cmdk.js?v=20260610i" defer></script>
-  <script src="apple/shortcuts.js?v=20260610i" defer></script>
-  <script src="apple/density.js?v=20260610i" defer></script>
+  <link rel="stylesheet" href="apple/tokens.css?v=20260610j" />
+  <link rel="stylesheet" href="apple/components.css?v=20260610j" />
+  <link rel="stylesheet" href="apple/legacy-bridge.css?v=20260610j" />
+  <link rel="stylesheet" href="apple/peer-recs.css?v=20260610j" />
+  <link rel="stylesheet" href="apple/vtable.css?v=20260610j" />
+  <link rel="stylesheet" href="apple/cmdk.css?v=20260610j" />
+  <script src="apple/icons.js?v=20260610j" defer></script>
+  <script src="apple/motion.js?v=20260610j" defer></script>
+  <script src="apple/vtable.js?v=20260610j" defer></script>
+  <script src="apple/cmdk.js?v=20260610j" defer></script>
+  <script src="apple/shortcuts.js?v=20260610j" defer></script>
+  <script src="apple/density.js?v=20260610j" defer></script>
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -156,14 +156,14 @@
        Les lourds (stock 1.7 MB, catalogue-ip 188 KB, client-products 84 KB,
        benchmark-data 3.6 MB, establishments-aggregate 4 MB, offilog 1.7 MB,
        drakkars 3.8 MB, cap3000 2.4 MB) sont LAZY via perf-boot.js. -->
-  <script src="clients-data.js?v=20260610i"></script>
-  <script src="pharmacies-geo.js?v=20260610i"></script>
-  <script src="groupements-data.js?v=20260610i"></script>
-  <script src="sales-detail.js?v=20260610i"></script>
+  <script src="clients-data.js?v=20260610j"></script>
+  <script src="pharmacies-geo.js?v=20260610j"></script>
+  <script src="groupements-data.js?v=20260610j"></script>
+  <script src="sales-detail.js?v=20260610j"></script>
   <!-- Will 2026-06-10 : benchmark-data.js (3,6 Mo) charge en EAGER (non-lazy)
        car onglet Produits affiche le catalogue grossiste complet. Sans cette
        ligne, BENCHMARK = undefined au render initial -> section invisible. -->
-  <script src="benchmark-data.js?v=20260610i" defer></script>
+  <script src="benchmark-data.js?v=20260610j" defer></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -191,28 +191,37 @@
     });
   </script>
 
-  <script src="app.js?v=20260610i" defer></script>
-  <script src="dashboard-v2.js?v=20260610i" defer></script>
+  <script src="app.js?v=20260610j" defer></script>
+  <script src="dashboard-v2.js?v=20260610j" defer></script>
   <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
-  <script src="perf-boot.js?v=20260610i" defer></script>
-  <script src="classic-overrides.js?v=20260610i" defer></script>
-  <script src="mobile-shell.js?v=20260610i" defer></script>
+  <script src="perf-boot.js?v=20260610j" defer></script>
+  <script src="classic-overrides.js?v=20260610j" defer></script>
+  <script src="mobile-shell.js?v=20260610j" defer></script>
   <!-- Gestures iOS-native : swipe-back, pull-to-refresh, bottom-sheet swipe-down -->
-  <script src="mobile-gestures.js?v=20260610i" defer></script>
+  <script src="mobile-gestures.js?v=20260610j" defer></script>
   <!-- Native UI shell (bottom tab bar uniquement) -->
-  <script src="native-shell.js?v=20260610i" defer></script>
+  <script src="native-shell.js?v=20260610j" defer></script>
   <!-- DESACTIVES temporairement (debug : Will n'a aucune page qui s'affiche)
-       <script src="native-headers.js?v=20260610i" defer></script>
-       <script src="native-motion.js?v=20260610i" defer></script>
-       <script src="skeleton-loaders.js?v=20260610i" defer></script>
+       <script src="native-headers.js?v=20260610j" defer></script>
+       <script src="native-motion.js?v=20260610j" defer></script>
+       <script src="skeleton-loaders.js?v=20260610j" defer></script>
   -->
-  <script src="marketing-offers.js?v=20260610i" defer></script>
-  <script src="marketing-design-system.js?v=20260610i" defer></script>
-  <script src="marketing-monthly-pitches.js?v=20260610i" defer></script>
-  <script src="marketing.js?v=20260610i" defer></script>
+  <script src="marketing-offers.js?v=20260610j" defer></script>
+  <script src="marketing-design-system.js?v=20260610j" defer></script>
+  <script src="marketing-monthly-pitches.js?v=20260610j" defer></script>
+  <script src="marketing.js?v=20260610j" defer></script>
 </head>
 
 <body>
+
+  <!-- DEBUG BANDEAU VERSION : visible si la nouvelle version est chargee -->
+  <div id="__version_banner" style="position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(90deg,#10B981 0%,#34C759 100%);color:#fff;padding:8px 16px;font-family:-apple-system,system-ui,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.18);text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:14px">
+    <span>✅ VERSION v=20260610j CHARGÉE</span>
+    <span style="opacity:0.85;font-weight:500;text-transform:none;letter-spacing:0">Si tu vois ce bandeau VERT, les nouvelles features sont actives.</span>
+    <button onclick="this.parentNode.style.display='none';document.body.style.paddingTop='0'" style="margin-left:auto;background:rgba(255,255,255,0.22);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:14px;font-weight:700">×</button>
+  </div>
+  <script>document.addEventListener('DOMContentLoaded',function(){document.body.style.paddingTop='38px'});</script>
+
 
   <!-- Bandeau debug retire (bug nav-admin fixe). Error handler global reste actif. -->
 
