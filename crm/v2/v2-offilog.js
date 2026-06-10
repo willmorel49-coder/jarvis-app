@@ -108,6 +108,46 @@
     return c;
   }
 
+  // ── Agrégats statistiques sur un périmètre (tout Offilog ou filtre) ──
+  function computeAgg(rows) {
+    var a = { refs: rows.length, nbOff: 0, nbAlert: 0, nbConc: 0, nbFort: 0,
+              achatSum: 0, achatN: 0, pubSum: 0, pubN: 0, margeSum: 0, margeN: 0, ecartSum: 0, ecartN: 0 };
+    for (var i = 0; i < rows.length; i++) {
+      var p = rows[i];
+      if (p._inOff) a.nbOff++;
+      if (p._alert) a.nbAlert++;
+      if (p._conc) a.nbConc++;
+      if (p._fort) a.nbFort++;
+      var ach = numOr0(p.prix_offilog); if (ach > 0) { a.achatSum += ach; a.achatN++; }
+      var pub = numOr0(p.prix_maxi); if (pub > 0) { a.pubSum += pub; a.pubN++; }
+      if (typeof p.marge_pct === 'number' && isFinite(p.marge_pct)) { a.margeSum += p.marge_pct; a.margeN++; }
+      if (typeof p.ecart === 'number' && isFinite(p.ecart)) { a.ecartSum += p.ecart; a.ecartN++; }
+    }
+    a.achatMoy = a.achatN ? a.achatSum / a.achatN : 0;
+    a.pubMoy = a.pubN ? a.pubSum / a.pubN : 0;
+    a.margeMoy = a.margeN ? a.margeSum / a.margeN : 0;
+    a.ecartMoy = a.ecartN ? a.ecartSum / a.ecartN : 0;
+    return a;
+  }
+  function kpiCard(k, l, v, d, vcol) {
+    return '<div class="v2-kpi ' + k + '"><div class="v2-kpi-l">' + l + '</div>' +
+      '<div class="v2-kpi-v mono"' + (vcol ? ' style="color:' + vcol + '"' : '') + '>' + v + '</div>' +
+      (d ? '<div class="v2-kpi-d" style="color:var(--muted)">' + d + '</div>' : '') + '</div>';
+  }
+  function statBand(agg) {
+    return '<div class="v2-kpis off-kpis">' +
+      kpiCard('k1', 'Produits', V2.fmtNum(agg.refs),
+        agg.nbOff + ' dans Offilog' + (agg.nbFort ? ' · ' + agg.nbFort + ' potentiel fort' : '')) +
+      kpiCard('k2', 'Veille prix', V2.fmtNum(agg.nbAlert),
+        agg.nbConc ? 'sur ' + V2.fmtNum(agg.nbConc) + ' comparable' + (agg.nbConc > 1 ? 's' : '') : 'aucun comparable',
+        agg.nbAlert > 0 ? 'var(--c-rose)' : null) +
+      kpiCard('k3', 'Prix achat IP moyen', agg.achatMoy > 0 ? V2.fmtEur(agg.achatMoy) : '—',
+        agg.pubMoy > 0 ? 'public moyen ' + V2.fmtEur(agg.pubMoy) : '') +
+      kpiCard('k4', 'Marge moyenne', agg.margeN ? agg.margeMoy.toFixed(1).replace('.', ',') + ' %' : '—',
+        agg.ecartN ? 'écart moyen ' + V2.fmtEur(agg.ecartMoy) : '') +
+    '</div>';
+  }
+
   // ── Inspecteur DÉTAIL (panneau latéral) ────────
   function priceCmpRows(p) {
     var achat = numOr0(p.prix_offilog);
@@ -246,6 +286,8 @@
       '.off-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}',
       '.off-search .clr{border:none;background:none;cursor:pointer;color:var(--muted);display:flex;padding:2px}',
       '.off-count{font-size:12px;color:var(--muted);margin-bottom:12px}',
+      '.off-stats-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:18px 0 12px}',
+      '.off-kpis{margin-bottom:18px}',
       '.off-tablewrap{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden}',
       '.off-table-scroll{overflow-x:auto}',
       '.off-pname{font-weight:600;color:var(--ip-ink)}',
@@ -360,6 +402,8 @@
           '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
           '<div class="v2-segs">' + chips + '</div>' +
+          '<div class="off-stats-l">' + (S.chip === 'all' ? (S.q ? 'Statistiques · résultats « ' + esc(S.q) + ' »' : 'Statistiques · tout Offilog') : 'Statistiques · ' + esc(CHIP_BY_KEY[S.chip].label)) + '</div>' +
+          statBand(computeAgg(filtered)) +
           '<div class="off-count"><b style="color:var(--ip-ink);font-family:var(--mono)">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + (S.chip !== 'all' ? ' · ' + esc(CHIP_BY_KEY[S.chip].label) : '') + '</div>' +
           tableHtml +
         '</div>' + insHtml;
