@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview · Fiches commerciales · CRM V2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ip-blue:#0050E6;--ip-blue-d:#0034A0;--ip-ink:#10131C;--ip-ink-2:#2A2F3C;
+  --muted:#737A8C;--muted-2:#9AA1B2;--paper:#FBFCFE;--card:#FFFFFF;--card-2:#F7F9FC;
+  --line:rgba(16,19,28,.07);--line-2:rgba(16,19,28,.04);--halo:#E9F0FF;
+  --c-opp:#1E9E6A;--c-cat:#6D4FC4;--c-rose:#E0556E;--c-mint:#1E9E6A;--c-froid:#00B5D8;--c-amber:#C7791A;--c-fiche:#0050E6;
+  --r-card:20px;--r-md:14px;
+  --sh-1:0 1px 1px rgba(16,19,28,.04),0 2px 4px rgba(16,19,28,.04);
+  --sh-2:0 2px 4px rgba(16,19,28,.04),0 8px 18px rgba(16,19,28,.06),0 1px 0 rgba(255,255,255,.7) inset;
+  --sh-3:0 8px 16px rgba(16,19,28,.08),0 28px 56px rgba(16,19,28,.10);
+  --sh-pop:0 12px 28px rgba(16,19,28,.16),0 40px 80px rgba(16,19,28,.2);
+  --ease:cubic-bezier(.32,.72,0,1);--font:'Inter',system-ui,sans-serif;--mono:'Geist Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);color:var(--ip-ink);background:var(--paper);min-height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.06 0 0 0 0 0.08 0 0 0 0 0.13 0 0 0 .025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+.banner{position:relative;z-index:2;background:var(--ip-ink);color:#fff;padding:9px 18px;font-size:12px;text-align:center}
+.banner b{color:#FFC24D}
+
+.top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:14px;padding:13px 26px;
+  background:rgba(251,252,254,.8);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line)}
+.back{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:8px 13px;font-size:13px;font-weight:600;color:var(--ip-ink-2);cursor:pointer;box-shadow:var(--sh-1)}
+.back:hover{background:var(--card-2)}
+.brand-t{font-weight:800;font-size:15px;letter-spacing:-.02em}
+.brand-d{font-size:11px;color:var(--muted);margin-left:auto}
+
+.wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:28px 26px 120px}
+.wrap.narrow{max-width:820px}
+.ptitle{font-size:27px;font-weight:800;letter-spacing:-.03em}
+.psub{font-size:14px;color:var(--muted);margin:3px 0 0}
+.hrow{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:12px;font-family:var(--font);
+  font-size:14px;font-weight:700;cursor:pointer;border:none;transition:.18s var(--ease)}
+.btn-primary{background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;box-shadow:0 4px 12px rgba(0,80,230,.28)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(0,80,230,.34)}
+.btn-ghost{background:var(--card);border:1px solid var(--line);color:var(--ip-ink-2);box-shadow:var(--sh-1)}
+.btn-ghost:hover{background:var(--card-2)}
+.btn svg{flex-shrink:0}
+
+/* ── Fiche en cours (panier alimenté catalogue + opportunités) ── */
+.encours{background:linear-gradient(135deg,#fff, #F2F7FF);border:1px solid color-mix(in srgb,var(--ip-blue) 24%,var(--line));
+  border-radius:var(--r-card);box-shadow:var(--sh-2);padding:20px 22px;margin-bottom:26px;position:relative;overflow:hidden}
+.encours::after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(0,80,230,.10),transparent 70%)}
+.ec-tag{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--ip-blue);margin-bottom:9px}
+.ec-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--ip-blue);box-shadow:0 0 0 4px rgba(0,80,230,.14);animation:pulse 2s var(--ease) infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(0,80,230,0)}}
+.ec-title{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.ec-sub{font-size:13px;color:var(--muted);margin:3px 0 14px}
+.ec-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.ec-chip{font-size:12px;font-weight:600;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 10px;display:flex;align-items:center;gap:7px}
+.ec-chip .src{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:1px 5px;border-radius:5px}
+.ec-chip .src.cat{color:var(--c-cat);background:color-mix(in srgb,var(--c-cat) 12%,#fff)}
+.ec-chip .src.opp{color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,#fff)}
+.ec-acts{display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+
+/* ── Cartes fiches sauvegardées ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.fcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);padding:20px;display:flex;flex-direction:column;transition:.2s var(--ease);cursor:pointer}
+.fcard:hover{transform:translateY(-3px);box-shadow:var(--sh-3);border-color:rgba(0,80,230,.22)}
+.fcard-t{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.fcard-dest{font-size:12.5px;color:var(--ip-blue);font-weight:600;margin-top:3px;display:flex;align-items:center;gap:6px}
+.fcard-dest.none{color:var(--muted-2);font-weight:500}
+.fcard-m{font-size:12px;color:var(--muted);display:flex;gap:9px;align-items:center;margin:13px 0 14px}
+.fcard-m .sep{width:3px;height:3px;border-radius:50%;background:var(--muted-2)}
+.fcard-foot{display:flex;align-items:center;gap:1px;background:var(--line);border-radius:12px;overflow:hidden;margin-top:auto}
+.fcard-kpi{flex:1;background:var(--card-2);padding:9px 12px}
+.fcard-kpi .l{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.fcard-kpi .v{font-family:var(--mono);font-weight:700;font-size:14px;margin-top:2px}
+
+/* ── Éditeur ── */
+.titlefield{width:100%;font-family:var(--font);font-size:26px;font-weight:800;letter-spacing:-.03em;color:var(--ip-ink);
+  border:none;outline:none;background:none;padding:6px 0;border-bottom:2px solid var(--line);margin-bottom:18px;transition:.18s var(--ease)}
+.titlefield:focus{border-bottom-color:var(--ip-blue)}
+.titlefield::placeholder{color:var(--muted-2);font-weight:700}
+
+.dest{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:13px 16px;margin-bottom:22px;box-shadow:var(--sh-1)}
+.dest-ic{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-opp),#13794f)}
+.dest-l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.dest-v{font-size:15px;font-weight:700;margin-top:1px}
+.dest-v.none{color:var(--muted-2);font-weight:500}
+.dest-change{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--ip-blue);cursor:pointer;background:none;border:none}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden}
+.card-head{display:flex;align-items:center;gap:9px;padding:15px 20px;border-bottom:1px solid var(--line);font-weight:800;font-size:15px;letter-spacing:-.01em}
+.card-head svg{color:var(--ip-blue)}
+.card-head .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+
+.prow{display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--line-2)}
+.prow:last-child{border-bottom:none}
+.prow-idx{font-family:var(--mono);font-size:12px;color:var(--muted-2);width:20px;text-align:right;flex-shrink:0}
+.prow-main{flex:1;min-width:0}
+.prow-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.tagf{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid);background:color-mix(in srgb,var(--c-froid) 13%,#fff);flex-shrink:0}
+.prow-cip{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+.pricewrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.pricelab{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.price{width:88px;text-align:right;font-family:var(--mono);font-size:14px;font-weight:700;color:var(--ip-ink);
+  border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:var(--card-2);outline:none;transition:.16s var(--ease)}
+.price:focus{border-color:var(--ip-blue);background:#fff;box-shadow:0 0 0 3px var(--halo)}
+.price.rem{width:60px}
+.mdl{text-align:right;min-width:78px}
+.mdl-l{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.mdl-v{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--c-opp);margin-top:3px}
+.rmbtn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 auto;border-radius:9px;
+  border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;transition:.16s var(--ease)}
+.rmbtn:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}
+
+.empty{padding:46px 20px;text-align:center}
+.empty svg{color:var(--muted-2);opacity:.7}
+.empty-d{font-size:13.5px;color:var(--muted);margin-top:12px}
+
+.editbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+
+/* ── Barre de totaux flottante ── */
+.totals{position:sticky;bottom:18px;margin-top:24px;background:var(--ip-ink);color:#fff;border-radius:16px;
+  box-shadow:0 14px 34px rgba(16,19,28,.3);display:flex;align-items:center;gap:2px;overflow:hidden;padding:4px}
+.tot{flex:1;padding:13px 18px}
+.tot-l{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.55);font-weight:700}
+.tot-v{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:3px}
+.tot-v.green{color:#46D399}
+.tot-v.blue{color:#79A8FF}
+.tot-sep{width:1px;align-self:stretch;background:rgba(255,255,255,.12);margin:10px 0}
+
+/* ── Sélecteur produit ── */
+.sel-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,.34);backdrop-filter:blur(7px);
+  display:flex;align-items:flex-start;justify-content:center;padding-top:9vh;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}
+.sel-bd.open{opacity:1;pointer-events:auto}
+.sel{width:min(620px,93vw);max-height:74vh;background:var(--card);border-radius:18px;box-shadow:var(--sh-pop);
+  display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);opacity:0;transition:transform .24s var(--ease),opacity .18s}
+.sel-bd.open .sel{transform:scale(1);opacity:1}
+.sel-search{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.sel-search svg{color:var(--ip-blue);flex-shrink:0}
+.sel-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}
+.sel-list{overflow-y:auto;padding:8px}
+.sel-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;cursor:pointer;transition:background .12s}
+.sel-item:hover{background:var(--halo)}
+.sel-item .ic{width:34px;height:34px;border-radius:9px;background:var(--card-2);display:flex;align-items:center;justify-content:center;color:var(--ip-blue);flex-shrink:0}
+.sel-item .nm{flex:1;min-width:0}
+.sel-item .nm b{display:block;font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sel-item .nm span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sel-item .pr{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--c-mint);flex-shrink:0}
+.sel-item.added{opacity:.4;pointer-events:none}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="banner">Aperçu maquette — <b>Fiches commerciales</b> · données fictives · à valider avant intégration dans la vraie app</div>
+
+<div class="top">
+  <button class="back" id="backBtn" onclick="showList()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="backLbl">Accueil</span></button>
+  <div class="brand-t">Intégral Pharma · CRM</div>
+  <div class="brand-d">Fiches commerciales</div>
+</div>
+
+<!-- ════════ VUE LISTE ════════ -->
+<div class="wrap" id="viewList">
+  <div class="hrow">
+    <div>
+      <div class="ptitle">Fiches commerciales</div>
+      <div class="psub">Tes listes de produits sur-mesure à présenter en rendez-vous</div>
+    </div>
+    <button class="btn btn-primary" onclick="openFiche('new')">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Nouvelle fiche</button>
+  </div>
+
+  <!-- Fiche en cours : panier rempli depuis catalogue + opportunités -->
+  <div class="encours" id="encours">
+    <div class="ec-tag"><span class="dot"></span>Fiche en cours de constitution</div>
+    <div class="ec-title">Sélection en cours</div>
+    <div class="ec-sub">Les produits que tu ajoutes depuis le <b>catalogue</b> et les <b>opportunités pharmacie</b> arrivent ici.</div>
+    <div class="ec-chips" id="ecChips"></div>
+    <div class="ec-acts">
+      <button class="btn btn-primary" onclick="openFiche('encours')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Finaliser cette fiche</button>
+      <button class="btn btn-ghost" onclick="clearEncours()">Vider</button>
+    </div>
+  </div>
+
+  <div class="grid" id="savedGrid"></div>
+</div>
+
+<!-- ════════ VUE ÉDITEUR ════════ -->
+<div class="wrap narrow hidden" id="viewEdit">
+  <input class="titlefield" id="fTitle" placeholder="Titre de la fiche…" oninput="state.cur.title=this.value">
+
+  <!-- Destinataire -->
+  <div class="dest">
+    <div class="dest-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 11a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.3 3.1-5 7-5s7 1.7 7 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <div>
+      <div class="dest-l">Destinataire</div>
+      <div class="dest-v none" id="destV">Aucune pharmacie</div>
+    </div>
+    <button class="dest-change" onclick="openDestPicker()">Choisir une pharmacie</button>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 7h14l-1 12H6L5 7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7a3 3 0 016 0" stroke="currentColor" stroke-width="1.8"/></svg>
+      Produits de la fiche
+      <span class="cnt" id="prodCnt">0 produit</span>
+    </div>
+    <div id="prodList"></div>
+  </div>
+
+  <div class="editbar">
+    <button class="btn btn-ghost" onclick="openSelector()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Ajouter un produit</button>
+    <button class="btn btn-ghost" onclick="alert('(maquette) Fiche enregistrée')"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Enregistrer</button>
+    <button class="btn btn-primary" onclick="alert('(maquette) Génération du PDF A4 — en-tête IP, destinataire, tableau produits prix net + marge MDL, footer barème.')"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Télécharger le PDF</button>
+  </div>
+
+  <!-- Barre totaux -->
+  <div class="totals" id="totals">
+    <div class="tot"><div class="tot-l">Produits</div><div class="tot-v" id="totN">0</div></div>
+    <div class="tot-sep"></div>
+    <div class="tot"><div class="tot-l">Total prix net IP <span style="opacity:.6">(1 boîte / réf.)</span></div><div class="tot-v blue" id="totNet">0,00 €</div></div>
+    <div class="tot-sep"></div>
+    <div class="tot"><div class="tot-l">Marge MDL totale</div><div class="tot-v green" id="totMdl">0,00 €</div></div>
+  </div>
+</div>
+
+<!-- Sélecteur produit -->
+<div class="sel-bd" id="selBd" onclick="closeSelector()">
+  <div class="sel" onclick="event.stopPropagation()">
+    <div class="sel-search">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="selInput" placeholder="Rechercher un produit (désignation ou CIP)…" autocomplete="off" oninput="renderSelList()">
+      <button class="rmbtn" onclick="closeSelector()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="sel-list" id="selList"></div>
+  </div>
+</div>
+
+<!-- Sélecteur destinataire -->
+<div class="sel-bd" id="destBd" onclick="closeDestPicker()">
+  <div class="sel" onclick="event.stopPropagation()">
+    <div class="sel-search">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="destInput" placeholder="Rechercher une officine…" autocomplete="off" oninput="renderDestList()">
+      <button class="rmbtn" onclick="closeDestPicker()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="sel-list" id="destList"></div>
+  </div>
+</div>
+
+<script>
+// ───────── Données fictives ─────────
+var CATALOG = [
+  {cip:'3400930000001', name:'DOLIPRANE 1000mg cpr B/8', prix:1.92, rem:2.5, froid:false},
+  {cip:'3400930000002', name:'SPASFON LYOC 80mg B/10', prix:2.41, rem:0, froid:false},
+  {cip:'3400930000003', name:'SMECTA orange B/30', prix:3.18, rem:5, froid:false},
+  {cip:'3400930000004', name:'AMOXICILLINE BIOGARAN 1g B/14', prix:1.74, rem:0, froid:false},
+  {cip:'3400930000005', name:'LEVOTHYROX 75µg B/30', prix:2.05, rem:0, froid:false},
+  {cip:'3400930000006', name:'OZEMPIC 1mg stylo', prix:71.40, rem:0, froid:true},
+  {cip:'3400930000007', name:'EUPRESSYL 30mg B/30', prix:6.62, rem:3, froid:false},
+  {cip:'3400930000008', name:'CRESTOR 10mg B/30', prix:5.13, rem:0, froid:false},
+  {cip:'3400930000009', name:'HUMIRA 40mg seringue', prix:492.80, rem:0, froid:true},
+  {cip:'3400930000010', name:'VOLTARENE EMULGEL 2% T/100g', prix:4.05, rem:8, froid:false},
+  {cip:'3400930000011', name:'GAVISCON menthe susp B/24', prix:2.88, rem:0, froid:false},
+  {cip:'3400930000012', name:'KARDEGIC 75mg B/30', prix:1.66, rem:0, froid:false}
+];
+var PHARMS = [
+  {id:'p1', name:'Pharmacie des Câlins', city:'Caen', color:'#1E9E6A'},
+  {id:'p2', name:'Grande Pharmacie du Centre', city:'Rouen', color:'#0050E6'},
+  {id:'p3', name:'Pharmacie du Port', city:'Le Havre', color:'#C7791A'},
+  {id:'p4', name:'Pharmacie Lafayette', city:'Cherbourg', color:'#6D4FC4'}
+];
+
+// Fiches sauvegardées (exemples)
+var SAVED = [
+  {id:'f1', title:'Génériques manquants — T1', destId:'p1', created:'12/05/2026',
+   products:[byCip('3400930000004'),byCip('3400930000005'),byCip('3400930000008')]},
+  {id:'f2', title:'Spécialités froid à pousser', destId:null, created:'02/06/2026',
+   products:[byCip('3400930000006'),byCip('3400930000009')]}
+];
+
+// Panier "fiche en cours" (simule un remplissage catalogue + opportunités)
+var ENCOURS = [
+  Object.assign({src:'cat'}, byCip('3400930000001')),
+  Object.assign({src:'opp'}, byCip('3400930000003')),
+  Object.assign({src:'opp'}, byCip('3400930000007')),
+  Object.assign({src:'cat'}, byCip('3400930000010'))
+];
+
+function byCip(c){ var x=CATALOG.find(function(p){return p.cip===c;}); return x?{cip:x.cip,name:x.name,prix:x.prix,rem:x.rem,froid:x.froid}:null; }
+
+// ───────── Marge MDL (barème officiel) ─────────
+function margeMDL(prixNet){
+  var p = +prixNet||0;
+  if (p<=0) return 0;
+  if (p<=4.33) return 0.18;
+  if (p<=468) return p*0.039;
+  return 19.50;
+}
+function eur(v){ return (v||0).toFixed(2).replace('.',',')+'  €'.replace(' ',' '); }
+function eur2(v){ return (v||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
+
+// ───────── State ─────────
+var state = { cur:null, mode:null };
+
+// ───────── VUE LISTE ─────────
+function renderEncours(){
+  var box=document.getElementById('encours');
+  var chips=document.getElementById('ecChips');
+  if (!ENCOURS.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  chips.innerHTML = ENCOURS.map(function(p){
+    return '<span class="ec-chip"><span class="src '+(p.src==='opp'?'opp':'cat')+'">'+(p.src==='opp'?'Opp':'Catal.')+'</span>'+esc(shorten(p.name))+'</span>';
+  }).join('');
+  document.querySelector('#encours .ec-title').textContent = ENCOURS.length+' produit'+(ENCOURS.length>1?'s':'')+' en attente';
+}
+function renderSaved(){
+  var g=document.getElementById('savedGrid');
+  g.innerHTML = SAVED.map(function(f){
+    var dest = f.destId ? PHARMS.find(function(p){return p.id===f.destId;}) : null;
+    var totNet = f.products.reduce(function(s,p){return s+netPrice(p);},0);
+    var totMdl = f.products.reduce(function(s,p){return s+margeMDL(netPrice(p));},0);
+    return '<div class="fcard" onclick="openFiche(\''+f.id+'\')">'+
+      '<div class="fcard-t">'+esc(f.title)+'</div>'+
+      (dest ? '<div class="fcard-dest"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 10-14 0c0 5.4 7 11 7 11z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="2"/></svg>'+esc(dest.name)+'</div>'
+            : '<div class="fcard-dest none">Sans destinataire</div>')+
+      '<div class="fcard-m"><span>'+f.products.length+' produit'+(f.products.length>1?'s':'')+'</span><span class="sep"></span><span>'+f.created+'</span></div>'+
+      '<div class="fcard-foot">'+
+        '<div class="fcard-kpi"><div class="l">Total prix net</div><div class="v">'+eur2(totNet)+'</div></div>'+
+        '<div class="fcard-kpi"><div class="l">Marge MDL</div><div class="v" style="color:var(--c-opp)">'+eur2(totMdl)+'</div></div>'+
+      '</div></div>';
+  }).join('');
+}
+function showList(){
+  document.getElementById('viewEdit').classList.add('hidden');
+  document.getElementById('viewList').classList.remove('hidden');
+  document.getElementById('backLbl').textContent='Accueil';
+  renderEncours(); renderSaved();
+  window.scrollTo(0,0);
+}
+function clearEncours(){ if(confirm('Vider la sélection en cours ?')){ ENCOURS=[]; renderEncours(); } }
+
+// ───────── VUE ÉDITEUR ─────────
+function openFiche(which){
+  if (which==='new'){ state.cur={title:'',destId:null,products:[]}; }
+  else if (which==='encours'){ state.cur={title:'',destId:null,products:ENCOURS.map(cloneP)}; }
+  else { var f=SAVED.find(function(x){return x.id===which;}); state.cur={title:f.title,destId:f.destId,products:f.products.map(cloneP)}; }
+  document.getElementById('viewList').classList.add('hidden');
+  document.getElementById('viewEdit').classList.remove('hidden');
+  document.getElementById('backLbl').textContent='Fiches';
+  document.getElementById('fTitle').value=state.cur.title;
+  renderEditor(); window.scrollTo(0,0);
+}
+function cloneP(p){ return {cip:p.cip,name:p.name,prix:p.prix,rem:p.rem,froid:p.froid}; }
+function netPrice(p){ return (+p.prix||0)*(1-((+p.rem||0)/100)); }
+
+function renderEditor(){
+  renderDest();
+  var list=document.getElementById('prodList');
+  var ps=state.cur.products;
+  document.getElementById('prodCnt').textContent = ps.length+' produit'+(ps.length>1?'s':'');
+  if (!ps.length){
+    list.innerHTML='<div class="empty"><svg width="46" height="46" viewBox="0 0 24 24" fill="none"><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/></svg><div class="empty-d">Aucun produit. Ajoute des références depuis le catalogue, les opportunités, ou le bouton ci-dessous.</div></div>';
+  } else {
+    list.innerHTML = ps.map(function(p,i){
+      var net=netPrice(p), mdl=margeMDL(net);
+      return '<div class="prow">'+
+        '<div class="prow-idx">'+(i+1)+'</div>'+
+        '<div class="prow-main"><div class="prow-name">'+esc(p.name)+(p.froid?'<span class="tagf">FROID</span>':'')+'</div>'+
+          '<div class="prow-cip">CIP '+esc(p.cip)+' · net '+eur2(net)+'</div></div>'+
+        '<div class="pricewrap"><span class="pricelab">Prix IP €</span>'+
+          '<input class="price" type="number" step="0.01" min="0" value="'+p.prix+'" oninput="setPrice('+i+',this.value)"></div>'+
+        '<div class="pricewrap"><span class="pricelab">Remise %</span>'+
+          '<input class="price rem" type="number" step="0.1" min="0" value="'+p.rem+'" oninput="setRem('+i+',this.value)"></div>'+
+        '<div class="mdl"><div class="mdl-l">Marge MDL</div><div class="mdl-v">'+eur2(mdl)+'</div></div>'+
+        '<button class="rmbtn" onclick="removeP('+i+')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>'+
+      '</div>';
+    }).join('');
+  }
+  renderTotals();
+}
+function renderTotals(){
+  var ps=state.cur.products;
+  var net=ps.reduce(function(s,p){return s+netPrice(p);},0);
+  var mdl=ps.reduce(function(s,p){return s+margeMDL(netPrice(p));},0);
+  document.getElementById('totN').textContent=ps.length;
+  document.getElementById('totNet').textContent=eur2(net);
+  document.getElementById('totMdl').textContent=eur2(mdl);
+}
+function renderDest(){
+  var v=document.getElementById('destV');
+  var d=state.cur.destId?PHARMS.find(function(p){return p.id===state.cur.destId;}):null;
+  if (d){ v.textContent=d.name+' · '+d.city; v.classList.remove('none'); }
+  else { v.textContent='Aucune pharmacie'; v.classList.add('none'); }
+}
+function setPrice(i,v){ state.cur.products[i].prix=parseFloat(v)||0; renderEditor(); }
+function setRem(i,v){ state.cur.products[i].rem=parseFloat(v)||0; renderEditor(); }
+function removeP(i){ state.cur.products.splice(i,1); renderEditor(); }
+
+// ───────── Sélecteur produit ─────────
+function openSelector(){ document.getElementById('selBd').classList.add('open'); document.getElementById('selInput').value=''; renderSelList(); setTimeout(function(){document.getElementById('selInput').focus();},60); }
+function closeSelector(){ document.getElementById('selBd').classList.remove('open'); }
+function renderSelList(){
+  var q=(document.getElementById('selInput').value||'').toLowerCase();
+  var res=CATALOG.filter(function(p){ return !q || p.name.toLowerCase().indexOf(q)>=0 || p.cip.indexOf(q)>=0; }).slice(0,30);
+  var inFiche={}; state.cur.products.forEach(function(p){inFiche[p.cip]=true;});
+  var box=document.getElementById('selList');
+  if(!res.length){ box.innerHTML='<div class="empty"><div class="empty-d">Aucun produit pour « '+esc(q)+' »</div></div>'; return; }
+  box.innerHTML=res.map(function(p){
+    var added=inFiche[p.cip];
+    return '<div class="sel-item'+(added?' added':'')+'" onclick="addProd(\''+p.cip+'\')">'+
+      '<span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="9" width="18" height="6" rx="3" transform="rotate(-45 12 12)" stroke="currentColor" stroke-width="1.7"/></svg></span>'+
+      '<span class="nm"><b>'+esc(p.name)+'</b><span>CIP '+esc(p.cip)+'</span></span>'+
+      '<span class="pr">'+eur2(p.prix)+'</span></div>';
+  }).join('');
+}
+function addProd(cip){
+  if (state.cur.products.some(function(p){return p.cip===cip;})) return;
+  state.cur.products.push(cloneP(byCip(cip)));
+  renderEditor(); renderSelList();
+}
+
+// ───────── Sélecteur destinataire ─────────
+function openDestPicker(){ document.getElementById('destBd').classList.add('open'); document.getElementById('destInput').value=''; renderDestList(); setTimeout(function(){document.getElementById('destInput').focus();},60); }
+function closeDestPicker(){ document.getElementById('destBd').classList.remove('open'); }
+function renderDestList(){
+  var q=(document.getElementById('destInput').value||'').toLowerCase();
+  var res=PHARMS.filter(function(p){return !q||p.name.toLowerCase().indexOf(q)>=0||p.city.toLowerCase().indexOf(q)>=0;});
+  document.getElementById('destList').innerHTML=res.map(function(p){
+    return '<div class="sel-item" onclick="pickDest(\''+p.id+'\')">'+
+      '<span class="ic" style="background:'+p.color+';color:#fff"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M3 12h18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>'+
+      '<span class="nm"><b>'+esc(p.name)+'</b><span>'+esc(p.city)+'</span></span></div>';
+  }).join('');
+}
+function pickDest(id){ state.cur.destId=id; renderDest(); closeDestPicker(); }
+
+// ───────── utils ─────────
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function shorten(s){ return s.length>26?s.slice(0,24)+'…':s; }
+
+// init
+showList();
+</script>
+</body>
+</html>
