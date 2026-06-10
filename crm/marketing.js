@@ -1398,6 +1398,17 @@
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   };
 
+  // Ferme définitivement la carte d'onboarding "Voici où tout se trouve"
+  window.mkDismissGuide = function () {
+    try { localStorage.setItem('mk_seen_guide_v3', '1'); } catch (e) {}
+    const card = document.getElementById('__onboardingCard');
+    if (card && card.parentNode) {
+      card.parentNode.removeChild(card);
+    } else {
+      try { if (typeof window.renderMarketing === 'function') window.renderMarketing(); } catch (e) {}
+    }
+  };
+
   window.mkSetLibrarySearch = debounce(function (val) {
     mkLibrarySearch = (val || '').trim().toLowerCase();
     try { if (typeof window.renderMarketing === 'function') window.renderMarketing(); } catch (e) {}
@@ -1463,7 +1474,122 @@
         </nav>
       `;
 
+      // ── Carte d'onboarding "Voici où trouver quoi" (dismissable, 1 seule fois) ──
+      let onboardingHTML = '';
+      let showOnboarding = false;
+      try { showOnboarding = !localStorage.getItem('mk_seen_guide_v3'); } catch (e) { showOnboarding = false; }
+      if (showOnboarding) {
+        const guideTiles = [
+          { emoji: '📦', titre: 'Catalogue IP complet', ou: 'Onglet Produits (menu de gauche). 10 500 références, filtre par tranches de prix et par familles.' },
+          { emoji: '🏆', titre: "Best produits d'une pharmacie", ou: 'Clique une pharmacie puis ouvre l\'onglet « Best & À travailler ».' },
+          { emoji: '🎯', titre: 'Opportunités produits', ou: 'Sur une fiche pharmacie, onglet « Opportunités ». Les top ventes que la pharma ne commande pas encore, par catégorie.' },
+          { emoji: '💰', titre: 'Marge MDL pharmacie', ou: 'Visible directement dans la liste des pharmacies et sur chaque fiche.' },
+          { emoji: '📄', titre: 'PDF listing pour RDV', ou: 'Bouton PDF sur chaque ligne pharmacie ou dans sa fiche. Génère un document à envoyer au pharmacien.' },
+          { emoji: '🔍', titre: 'Recherche rapide', ou: 'Appuie sur ⌘K (Cmd+K) n\'importe où pour chercher une pharmacie, un produit, ou aller à une page.' },
+          { emoji: '📊', titre: 'Pilotage', ou: 'Onglet Pilotage : ton tableau de bord CA, marge et alertes, avec sélecteur de période.' },
+          { emoji: '🧴', titre: 'Comparaison prix concurrents', ou: 'Onglet Offilog, clique un produit : compare Offilog, Drakkars, Cap3000 et Leclerc.' },
+        ];
+        onboardingHTML = `
+          <div class="mk-onboard" id="__onboardingCard">
+            <div class="mk-onboard-head">
+              <h2 class="mk-onboard-title">👋 Bonjour Will — voici où tout se trouve</h2>
+              <p class="mk-onboard-sub">Tes nouveautés, classées par où cliquer. Ferme quand tu veux.</p>
+            </div>
+            <div class="mk-onboard-grid">
+              ${guideTiles.map(t => `
+                <div class="mk-onboard-tile">
+                  <div class="mk-onboard-tile-emoji">${t.emoji}</div>
+                  <div class="mk-onboard-tile-titre">${escapeAttr(t.titre)}</div>
+                  <div class="mk-onboard-tile-ou">${escapeAttr(t.ou)}</div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="mk-onboard-foot">
+              <button class="mk-onboard-ok" onclick="window.mkDismissGuide && window.mkDismissGuide()">OK, j'ai compris 👍</button>
+            </div>
+          </div>
+          <style>
+            .mk-onboard{
+              background:var(--bg-elevated,#fff);
+              border-radius:var(--r-3xl,16px);
+              box-shadow:var(--shadow-3,0 8px 30px rgba(0,0,0,.12));
+              padding:28px;
+              margin-bottom:28px;
+              overflow:hidden;
+            }
+            .mk-onboard-head{
+              margin:-28px -28px 20px;
+              padding:24px 28px;
+              background:linear-gradient(135deg,#0057FF,#003BB0);
+              color:#fff;
+            }
+            .mk-onboard-title{
+              margin:0;
+              font-family:'Fraunces',var(--font-display,'Space Grotesk',serif);
+              font-size:24px;
+              font-weight:600;
+              color:#fff;
+              line-height:1.2;
+            }
+            .mk-onboard-sub{
+              margin:8px 0 0;
+              font-family:var(--font-text,'Inter',sans-serif);
+              font-size:15px;
+              color:rgba(255,255,255,.85);
+            }
+            .mk-onboard-grid{
+              display:grid;
+              grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+              gap:14px;
+            }
+            .mk-onboard-tile{
+              background:var(--bg-grouped-secondary,#f9f9f9);
+              border-radius:12px;
+              padding:16px;
+              transition:transform .15s ease,box-shadow .15s ease;
+            }
+            .mk-onboard-tile:hover{
+              transform:translateY(-3px);
+              box-shadow:0 6px 18px rgba(0,0,0,.10);
+            }
+            .mk-onboard-tile-emoji{ font-size:24px; line-height:1; margin-bottom:8px; }
+            .mk-onboard-tile-titre{
+              font-family:var(--font-display,'Space Grotesk',sans-serif);
+              font-weight:600;
+              font-size:15px;
+              margin-bottom:4px;
+            }
+            .mk-onboard-tile-ou{
+              font-family:var(--font-text,'Inter',sans-serif);
+              font-size:13px;
+              line-height:1.45;
+              color:var(--text-secondary,#666);
+            }
+            .mk-onboard-foot{ margin-top:20px; text-align:right; }
+            .mk-onboard-ok{
+              background:linear-gradient(135deg,#0057FF,#003BB0);
+              color:#fff;
+              border:none;
+              border-radius:12px;
+              padding:12px 22px;
+              font-family:var(--font-text,'Inter',sans-serif);
+              font-size:15px;
+              font-weight:600;
+              cursor:pointer;
+              transition:transform .12s ease,filter .12s ease;
+            }
+            .mk-onboard-ok:hover{ transform:translateY(-2px); filter:brightness(1.05); }
+            @media (max-width:640px){
+              .mk-onboard-grid{ grid-template-columns:1fr; }
+              .mk-onboard-foot{ text-align:center; }
+              .mk-onboard-ok{ width:100%; }
+            }
+          </style>
+        `;
+      }
+
       root.innerHTML = `
+        ${onboardingHTML}
         <div class="mk-home2 mk-home2-v3">
           <header class="mk-home2-head">
             <div>
