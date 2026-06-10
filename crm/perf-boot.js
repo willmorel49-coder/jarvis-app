@@ -25,8 +25,8 @@
     ],
     produits: [
       'stock.js',
-      'client-products.js',
-      'benchmark-data.js'   // Will 2026-06-10 : Catalogue grossiste IP affiche tout BENCHMARK
+      'client-products.js'
+      // benchmark-data.js : RETIRE (charge en eager dans index.html depuis 2026-06-10 pour Catalogue grossiste)
     ],
     catalogue: [
       'catalogue-ip.js',    // 188 KB — catalogue IP avec remises
@@ -39,7 +39,7 @@
       'stock.js',
       'client-products.js',
       'catalogue-ip.js',
-      'benchmark-data.js',
+      // benchmark-data.js : RETIRE (eager via index.html)
       'establishments-aggregate.js',
       'benchmark-multibench.js',
       'benchmark-focus.js',
@@ -52,7 +52,7 @@
     // OPS+CPR+HP utilises pour la section 'Mes meilleures ventes par categorie').
     marketing: [
       'catalogue-ip.js',
-      'benchmark-data.js',
+      // benchmark-data.js : RETIRE (eager via index.html)
       'establishments-aggregate.js',
       'offilog-data.js',
       'sagitta-shortlist-data.js',
