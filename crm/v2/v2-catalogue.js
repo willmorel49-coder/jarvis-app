@@ -86,6 +86,52 @@
     return '<span class="cat-badge" style="--bc:' + f.sc + '">' + esc(lbl) + '</span>';
   }
 
+  // remboursable = a un marché Ameli ET pas NR Sagitta (marge MDL applicable)
+  function isRemb(b) {
+    return b.has_ameli === true && !(sagittaSet && sagittaSet.has(String(b.cip13)));
+  }
+
+  // ── Agrégats statistiques sur un périmètre (catalogue entier ou catégorie) ──
+  function computeAgg(rows) {
+    var a = { refs: rows.length, volIP: 0, caIP: 0, ameli: 0, mdl: 0,
+              priceSum: 0, priceN: 0, remSum: 0, remN: 0, nbFroid: 0, nbOffre: 0, nbRemb: 0 };
+    for (var i = 0; i < rows.length; i++) {
+      var b = rows[i];
+      a.volIP += b.ip_qty || 0;
+      a.caIP += b.ip_ca || 0;
+      a.ameli += b.ameli_total || 0;
+      var ip = (typeof b.prix_ip === 'number' && b.prix_ip > 0) ? b.prix_ip : 0;
+      var ht = (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
+      if (ip > 0) { a.priceSum += ip; a.priceN++; }
+      var rem = (ht > 0 && ip > 0) ? (1 - ip / ht) * 100 : (b.remise_pct || 0);
+      if (rem > 0) { a.remSum += rem; a.remN++; }
+      if (b.is_froid) a.nbFroid++;
+      if (b.offre_ip != null && b.offre_ip > 0) a.nbOffre++;
+      if (isRemb(b)) { a.nbRemb++; if (ip > 0) a.mdl += V2.margeMDLboite(ip) * (b.ip_qty || 0); }
+    }
+    a.prixMoy = a.priceN ? a.priceSum / a.priceN : 0;
+    a.remMoy = a.remN ? a.remSum / a.remN : 0;
+    a.part = a.ameli > 0 ? (a.volIP / a.ameli * 100) : null;
+    return a;
+  }
+  function kpiCard(k, l, v, d) {
+    return '<div class="v2-kpi ' + k + '"><div class="v2-kpi-l">' + l + '</div>' +
+      '<div class="v2-kpi-v mono">' + v + '</div>' +
+      (d ? '<div class="v2-kpi-d" style="color:var(--muted)">' + d + '</div>' : '') + '</div>';
+  }
+  function statBand(agg) {
+    return '<div class="v2-kpis cat-kpis">' +
+      kpiCard('k1', 'Références', V2.fmtNum(agg.refs),
+        agg.nbRemb + ' remboursable' + (agg.nbRemb > 1 ? 's' : '') + (agg.nbFroid ? ' · ' + agg.nbFroid + ' froid' : '') + (agg.nbOffre ? ' · ' + agg.nbOffre + ' offre' + (agg.nbOffre > 1 ? 's' : '') : '')) +
+      kpiCard('k2', 'Volume IP', fmtBig(agg.volIP) + ' btes',
+        agg.part != null ? agg.part.toFixed(2).replace('.', ',') + ' % du marché Ameli' : 'hors remboursement') +
+      kpiCard('k3', 'CA IP', V2.fmtEur(agg.caIP),
+        agg.prixMoy > 0 ? 'prix net moyen ' + V2.fmtEur(agg.prixMoy) : '') +
+      kpiCard('k4', 'Marge MDL potentielle', V2.fmtEur(agg.mdl),
+        agg.remMoy > 0 ? 'remise moyenne ' + agg.remMoy.toFixed(1).replace('.', ',') + ' %' : 'sur remboursables') +
+    '</div>';
+  }
+
   // ── Inspecteur DÉTAIL PRODUIT (panneau latéral) ──
   function inspector(b) {
     var ht = (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
@@ -109,6 +155,26 @@
     function kpi(l, v, col) {
       return '<div class="cat-kpi"><div class="cat-kpi-l">' + l + '</div><div class="cat-kpi-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + v + '</div></div>';
     }
+
+    // ── Section performance produit (rang, CA IP, marge MDL/boîte, évol. Ameli) ──
+    var rang = (b.ip_rank_qty != null && b.ip_rank_qty > 0) ? '#' + V2.fmtNum(b.ip_rank_qty) : '—';
+    var caIp = (typeof b.ip_ca === 'number' && b.ip_ca > 0) ? V2.fmtEur(b.ip_ca) : '—';
+    var mdlBte = (isRemb(b) && ip > 0) ? V2.fmtEur(V2.margeMDLboite(ip)) : 'marge libre';
+    var mdlTot = (isRemb(b) && ip > 0 && vol > 0) ? V2.margeMDLboite(ip) * vol : 0;
+    var yoy = (typeof b.yoy_jan === 'number' && isFinite(b.yoy_jan)) ? b.yoy_jan : null;
+    var yoyHtml = yoy != null
+      ? '<span style="color:' + (yoy >= 0 ? 'var(--c-mint)' : 'var(--c-rose)') + '">' + (yoy >= 0 ? '+' : '') + yoy.toFixed(1).replace('.', ',') + ' %</span>'
+      : '—';
+    var perfHtml =
+      '<div class="cat-perf-l">Performance produit</div>' +
+      '<div class="cat-kpi-grid">' +
+        kpi('Rang ventes IP', rang) +
+        kpi('CA IP', caIp) +
+        kpi('Marge MDL / boîte', mdlBte, isRemb(b) ? 'var(--c-mint)' : 'var(--c-amber)') +
+        kpi('Évol. Ameli (jan.)', yoyHtml) +
+      '</div>' +
+      (mdlTot > 0 ? '<div class="cat-perf-note">Marge MDL générée par ton volume actuel : <b>' + V2.fmtEur(mdlTot) + '</b></div>' : '');
+
     return '<div class="cat-insp' + (S.sel != null ? ' open' : '') + '">' +
       '<div class="cat-insp-head">' +
         '<div style="min-width:0"><div class="cat-insp-name">' + esc(b.designation || '') + '</div>' +
@@ -123,6 +189,7 @@
           kpi('Remise IP', rem > 0 ? rem + '%' : '—', 'var(--c-mint)') +
           kpi('Volume IP', V2.fmtNum(vol)) +
         '</div>' +
+        perfHtml +
         potHtml +
         '<div class="cat-insp-cta"><button class="v2-btn v2-btn-primary" onclick="V2.catAddToFiche(\'' + esc(b.cip13) + '\')">' + ICO('plus', 17) + ' Ajouter à une fiche commerciale</button></div>' +
       '</div>' +
@@ -197,6 +264,11 @@
       '.cat-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}',
       '.cat-search .clr{border:none;background:none;cursor:pointer;color:var(--muted);display:flex;padding:2px}',
       '.cat-count{font-size:12px;color:var(--muted);margin-bottom:12px}',
+      '.cat-stats-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:18px 0 12px}',
+      '.cat-kpis{margin-bottom:18px}',
+      '.cat-perf-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:20px 0 10px}',
+      '.cat-perf-note{margin-top:12px;padding:11px 14px;background:color-mix(in srgb,var(--c-mint) 8%,#fff);border:1px solid color-mix(in srgb,var(--c-mint) 24%,transparent);border-radius:11px;font-size:12.5px;color:var(--ip-ink-2);line-height:1.5}',
+      '.cat-perf-note b{font-family:var(--mono);color:var(--c-mint)}',
       '.cat-badge{display:inline-block;padding:3px 9px;border-radius:8px;font-size:10.5px;font-weight:700;white-space:nowrap;background:color-mix(in srgb,var(--bc) 13%,#fff);color:var(--bc)}',
       '.cat-tablewrap{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden}',
       '.cat-table-scroll{overflow-x:auto}',
@@ -299,6 +371,8 @@
           '<div class="cat-search">' + ICO('search', 19, 2) +
             '<input id="cat-search-input" autocomplete="off" placeholder="Rechercher par CIP13 ou désignation…" value="' + qVal + '" oninput="V2.catSearch(this.value)">' + clrBtn + '</div>' +
           '<div class="v2-segs">' + chips + '</div>' +
+          '<div class="cat-stats-l">' + (S.chip === 'all' ? (S.q ? 'Statistiques · résultats « ' + esc(S.q) + ' »' : 'Statistiques · tout le catalogue grossiste') : 'Statistiques · ' + esc(FAM_BY_KEY[S.chip].label)) + '</div>' +
+          statBand(computeAgg(filtered)) +
           '<div class="cat-count"><b style="color:var(--ip-ink);font-family:var(--mono)">' + V2.fmtNum(total) + '</b> référence' + (total > 1 ? 's' : '') + (S.chip !== 'all' ? ' · ' + esc(FAM_BY_KEY[S.chip].label) : '') + '</div>' +
           tableHtml +
         '</div>' + insHtml;
