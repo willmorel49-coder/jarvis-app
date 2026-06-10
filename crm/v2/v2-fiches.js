@@ -15,7 +15,11 @@
   'use strict';
   var V2 = window.V2;
   if (!V2) return;
-  var esc = V2.esc;
+  // V2.esc est défini dans v2-app.js (chargé APRÈS ce fichier) → on défère au runtime
+  var esc = function (s) {
+    return V2.esc ? V2.esc(s)
+      : String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
 
   var LS_KEY = 'v2_fiches';
   var CART_KEY = 'v2_fiche_courante';
