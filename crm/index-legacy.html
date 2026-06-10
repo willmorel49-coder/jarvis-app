@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#007AFF" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>JARVIS · Intégral Pharma</title>
+
+  <!-- DEBUG : capteur d'erreurs JS global, affiche l'erreur en grand sur la page -->
+  <script>
+    (function () {
+      function showErrPanel(title, body) {
+        var p = document.getElementById('__js_err_panel');
+        if (!p) {
+          p = document.createElement('div');
+          p.id = '__js_err_panel';
+          p.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#FFE5E5;color:#7A0000;padding:14px 20px;font-family:-apple-system,system-ui,sans-serif;font-size:13px;line-height:1.4;border-bottom:3px solid #FF3B30;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:50vh;overflow-y:auto;white-space:pre-wrap;font-weight:500';
+          document.body && document.body.appendChild(p);
+          if (!document.body) document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(p); });
+        }
+        p.innerHTML += '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(122,0,0,0.2)">'
+          + '<div style="font-weight:700;color:#B7281E;margin-bottom:4px">⚠️ ' + title + '</div>'
+          + '<div style="font-family:ui-monospace,monospace;font-size:11px;color:#5B0000">' + body + '</div>'
+          + '<button onclick="document.getElementById(\'__js_err_panel\').style.display=\'none\'" style="margin-top:6px;padding:4px 10px;background:#FF3B30;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;font-weight:600">Fermer</button>'
+          + '</div>';
+      }
+      window.addEventListener('error', function (e) {
+        var msg = (e.message || 'Erreur inconnue') + (e.filename ? '\n→ ' + e.filename.split('/').pop() + ':' + (e.lineno||'?') : '');
+        if (e.error && e.error.stack) msg += '\n\n' + String(e.error.stack).slice(0, 500);
+        showErrPanel('Erreur JS', msg);
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        var msg = (e.reason && (e.reason.message || e.reason)) || 'Promise rejection';
+        var stack = '';
+        if (e.reason && e.reason.stack) stack = '\n\n' + String(e.reason.stack).slice(0, 800);
+        showErrPanel('Promise rejected', String(msg).slice(0, 500) + stack);
+      });
+      window.__showJsErr = showErrPanel;
+    })();
+  </script>
+
+  <!-- Mode classique force (JARVIS retire). -->
+  <script>
+    document.documentElement.dataset.mode = 'classic';
+    window.__JARVIS_MODE__ = 'classic';
+    window.__JARVIS_SHELL_ACTIVE__ = false;
+
+    // Cleanup ServiceWorkers fantomes herites d'anciennes versions (opso/sw.js
+    // enregistre sur cette origine GitHub Pages a pu bloquer le chargement chez
+    // certains clients Safari). One-shot a l'init, silencieux.
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) { r.unregister(); });
+        }).catch(function () {});
+      }
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (k) { caches.delete(k); });
+        }).catch(function () {});
+      }
+    } catch (e) {}
+  </script>
+
+  <!-- DNS prefetch + preconnect CDN (perf boot) -->
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+  <link rel="dns-prefetch" href="https://unpkg.com" />
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+  <!-- weserv : CDN proxy d'images pour OFFILOG/Sagitta/Drakkars/Cap3000 -->
+  <!-- preconnect economise ~150-300ms sur la 1re image (TCP + TLS handshake) -->
+  <link rel="dns-prefetch" href="https://images.weserv.nl" />
+  <link rel="preconnect" href="https://images.weserv.nl" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+
+  <!-- Fonts (DM Sans pour mode classique, Inter pour JARVIS) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet : retire (JARVIS map supprimee, aucune carte utilisee aujourd'hui) -->
+  <!-- ~300 KB economises au boot -->
+
+
+  <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
+  <link rel="stylesheet" href="native-tokens.css?v=20260610m" />
+  <!-- Styles desktop -->
+  <link rel="stylesheet" href="style.css?v=20260610m" />
+  <link rel="stylesheet" href="style-classic.css?v=20260610m" />
+  <link rel="stylesheet" href="styles-pharmacies.css" />
+  <link rel="stylesheet" href="styles-offilog.css" />
+  <link rel="stylesheet" href="marketing.css?v=20260610m" />
+  <link rel="stylesheet" href="marketing-design-system.css?v=20260610m" />
+  <!-- Mobile cavalerie -->
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260610m" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260610m" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260610m" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260610m" />
+  <!-- Native UI refonte (charge EN DERNIER pour override final) -->
+  <link rel="stylesheet" href="native-shell.css?v=20260610m" />
+  <link rel="stylesheet" href="native-headers.css?v=20260610m" />
+  <link rel="stylesheet" href="native-lists.css?v=20260610m" />
+  <link rel="stylesheet" href="native-motion.css?v=20260610m" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260610m" />
+
+  <!-- ════ APPLE MODE (refonte from scratch 2026-06-08) — override final ════ -->
+  <link rel="stylesheet" href="apple/tokens.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/components.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/legacy-bridge.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/peer-recs.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/vtable.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/cmdk.css?v=20260610m" />
+  <script src="apple/icons.js?v=20260610m" defer></script>
+  <script src="apple/motion.js?v=20260610m" defer></script>
+  <script src="apple/vtable.js?v=20260610m" defer></script>
+  <script src="apple/cmdk.js?v=20260610m" defer></script>
+  <script src="apple/shortcuts.js?v=20260610m" defer></script>
+  <script src="apple/density.js?v=20260610m" defer></script>
+
+  <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="np-pin" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor" />
+        <path d="M7 14l3-3 3 2 4-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      </symbol>
+      <symbol id="np-cross" viewBox="0 0 32 32">
+        <rect x="2" y="2" width="28" height="28" rx="6" fill="currentColor" />
+        <text x="16" y="22" text-anchor="middle" fill="#fff" font-family="DM Sans, sans-serif" font-weight="800" font-size="14">IP</text>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- CDN libs critiques (defer = charge en parallele, execute apres DOM ready) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+  <!-- SheetJS (1.4 MB) : RETIRE (Will n'importe pas d'Excel via l'app).
+       html2pdf (0.6 MB) : lazy load au click Telecharger PDF Marketing. -->
+  <script>
+    window.ensureHtml2Pdf = function () {
+      if (window.html2pdf) return Promise.resolve();
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    };
+  </script>
+
+  <!-- Données critiques au boot (~810 KB total) — necessaires au dashboard.
+       Les lourds (stock 1.7 MB, catalogue-ip 188 KB, client-products 84 KB,
+       benchmark-data 3.6 MB, establishments-aggregate 4 MB, offilog 1.7 MB,
+       drakkars 3.8 MB, cap3000 2.4 MB) sont LAZY via perf-boot.js. -->
+  <script src="clients-data.js?v=20260610m"></script>
+  <script src="pharmacies-geo.js?v=20260610m"></script>
+  <script src="groupements-data.js?v=20260610m"></script>
+  <script src="sales-detail.js?v=20260610m"></script>
+  <!-- Will 2026-06-10 : benchmark-data.js (3,6 Mo) charge en EAGER (non-lazy)
+       car onglet Produits affiche le catalogue grossiste complet. Sans cette
+       ligne, BENCHMARK = undefined au render initial -> section invisible. -->
+  <script src="benchmark-data.js?v=20260610m" defer></script>
+
+  <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
+       Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
+       qui n'est PAS accessible via window dans un module strict. -->
+  <script>
+    try { if (typeof CLIENTS    !== 'undefined') window.CLIENTS    = CLIENTS;    } catch(e){}
+    try { if (typeof BENCHMARK  !== 'undefined') window.BENCHMARK  = BENCHMARK;  } catch(e){}
+    try { if (typeof OFFILOG    !== 'undefined') window.OFFILOG    = OFFILOG;    } catch(e){}
+    try { if (typeof DRAKKARS   !== 'undefined') window.DRAKKARS   = DRAKKARS;   } catch(e){}
+    try { if (typeof CAP3000    !== 'undefined') window.CAP3000    = CAP3000;    } catch(e){}
+    try { if (typeof GROUPEMENTS!== 'undefined') window.GROUPEMENTS= GROUPEMENTS;} catch(e){}
+    console.log('[JARVIS BRIDGE] CLIENTS=' + (window.CLIENTS||[]).length + ' OFFILOG=' + (window.OFFILOG||[]).length);
+  </script>
+
+  <script>
+    window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
+    window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
+    // Chart.defaults defere : Chart.js charge en defer, donc on attend qu'il existe
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof Chart !== 'undefined') {
+        Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
+        Chart.defaults.color = '#64748B';
+        Chart.defaults.borderColor = 'rgba(0,87,255,0.08)';
+      }
+    });
+  </script>
+
+  <script src="app.js?v=20260610m" defer></script>
+  <script src="dashboard-v2.js?v=20260610m" defer></script>
+  <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
+  <script src="perf-boot.js?v=20260610m" defer></script>
+  <script src="classic-overrides.js?v=20260610m" defer></script>
+  <script src="mobile-shell.js?v=20260610m" defer></script>
+  <!-- Gestures iOS-native : swipe-back, pull-to-refresh, bottom-sheet swipe-down -->
+  <script src="mobile-gestures.js?v=20260610m" defer></script>
+  <!-- Native UI shell (bottom tab bar uniquement) -->
+  <script src="native-shell.js?v=20260610m" defer></script>
+  <!-- DESACTIVES temporairement (debug : Will n'a aucune page qui s'affiche)
+       <script src="native-headers.js?v=20260610m" defer></script>
+       <script src="native-motion.js?v=20260610m" defer></script>
+       <script src="skeleton-loaders.js?v=20260610m" defer></script>
+  -->
+  <script src="marketing-offers.js?v=20260610m" defer></script>
+  <script src="marketing-design-system.js?v=20260610m" defer></script>
+  <script src="marketing-monthly-pitches.js?v=20260610m" defer></script>
+  <script src="marketing.js?v=20260610m" defer></script>
+  <style>
+    /* Découvrabilité topbar : bouton recherche label + raccourci → icône seule sur mobile */
+    @media (max-width:768px) {
+      .a-navbar-search-btn .a-navbar-search-label,
+      .a-navbar-search-btn kbd { display:none !important; }
+      .a-navbar-search-btn { padding:7px 9px !important; gap:0 !important; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Bandeau debug retire (version confirmee chargee cote Will 2026-06-10). -->
+
+
+  <!-- Bandeau debug retire (bug nav-admin fixe). Error handler global reste actif. -->
+
+  <!-- ══════════ SHELL CLASSIQUE ══════════ -->
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-logo" aria-hidden="true">IP</div>
+      <div class="login-title">Intégral Pharma</div>
+      <div class="login-tagline">Performance commerciale</div>
+      <div class="login-sub">Espace équipe commerciale · CRM</div>
+
+      <form id="login-form">
+        <div class="field">
+          <label>Email</label>
+          <input id="login-email" type="email" placeholder="prenom@integralpharma.fr" autocomplete="email" required />
+        </div>
+        <div class="field">
+          <label>Mot de passe</label>
+          <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+        <button class="login-btn" type="submit">Se connecter →</button>
+        <div id="login-error" class="login-error"></div>
+        <div style="text-align:center;margin-top:14px">
+          <button type="button" onclick="showResetForm()" style="background:none;border:none;color:var(--text2);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">Mot de passe oublié ?</button>
+        </div>
+      </form>
+
+      <form id="reset-form" style="display:none">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Entrez votre email pour recevoir un lien de réinitialisation.</div>
+        <div class="field">
+          <label>Email</label>
+          <input id="reset-email" type="email" placeholder="prenom@integralpharma.fr" autocomplete="email" required />
+        </div>
+        <button class="login-btn" type="submit">Envoyer le lien →</button>
+        <div id="reset-msg" style="margin-top:12px;font-size:12px;text-align:center;color:var(--blue);display:none">Email envoyé ! Vérifiez votre boîte mail.</div>
+        <div style="text-align:center;margin-top:14px">
+          <button type="button" onclick="showLoginForm()" style="background:none;border:none;color:var(--text2);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">← Retour connexion</button>
+        </div>
+      </form>
+
+      <form id="newpass-form" style="display:none">
+        <div style="font-size:13px;color:var(--blue);font-weight:700;margin-bottom:16px">✓ Lien valide — choisissez un nouveau mot de passe</div>
+        <div class="field">
+          <label>Nouveau mot de passe</label>
+          <input id="newpass-input" type="password" placeholder="Min. 6 caractères" minlength="6" required />
+        </div>
+        <button class="login-btn" type="submit">Enregistrer →</button>
+        <div id="newpass-error" class="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP (sidebar + topbar + pages) -->
+  <div id="app">
+    <!-- Backdrop pour overlay mobile (click = ferme) -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="closeSidebarMobile()" aria-hidden="true"></div>
+
+    <nav class="a-sidebar" id="sidebar">
+      <div class="a-sidebar-header">
+        <div class="a-sidebar-brand">
+          <div class="a-sidebar-brand-mark" aria-hidden="true">IP</div>
+          <span>Intégral Pharma</span>
+        </div>
+        <button class="a-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Réduire le menu (⌘B)" aria-label="Réduire le menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <button class="sidebar-close-mobile" onclick="closeSidebarMobile()" aria-label="Fermer le menu" style="display:none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="a-sidebar-nav">
+
+        <div class="a-sidebar-section">
+          <div class="a-sidebar-section-label">Marketing</div>
+          <div class="a-sidebar-item active" data-page="marketing" data-tooltip="Marketing" onclick="navigate('marketing')">
+            <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            <span class="a-sidebar-item-label">Fiches commerciales</span>
+          </div>
+        </div>
+
+        <div class="a-sidebar-section">
+          <div class="a-sidebar-section-label">Pilotage</div>
+          <div class="a-sidebar-item" data-page="dashboard" data-tooltip="Pilotage" onclick="navigate('dashboard')">
+            <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+            <span class="a-sidebar-item-label">Pilotage</span>
+          </div>
+          <div class="a-sidebar-item" data-page="pharmacies" data-tooltip="Pharmacies" onclick="navigate('pharmacies')">
+            <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="22" x2="9" y2="18"/><line x1="15" y1="22" x2="15" y2="18"/></svg>
+            <span class="a-sidebar-item-label">Pharmacies</span>
+          </div>
+          <div class="a-sidebar-item" data-page="produits" data-tooltip="Catalogue Intégral Pharma" onclick="navigate('produits')">
+            <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span class="a-sidebar-item-label">Catalogue IP</span>
+          </div>
+        </div>
+
+        <div class="a-sidebar-section">
+          <div class="a-sidebar-section-label">Données</div>
+          <div class="a-sidebar-item" data-page="benchmark" data-tooltip="Benchmark" onclick="navigate('benchmark')">
+            <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <span class="a-sidebar-item-label">Benchmark</span>
+          </div>
+          <div class="a-sidebar-item" data-page="simulateur" data-tooltip="Simulateur" onclick="navigate('simulateur')">
+            <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <span class="a-sidebar-item-label">Simulateur</span>
+          </div>
+        </div>
+
+        <div class="a-sidebar-section">
+          <div class="a-sidebar-section-label">Parapharmacie</div>
+          <div class="a-sidebar-item" data-page="offilog" data-tooltip="Offilog" onclick="navigate('offilog')">
+            <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            <span class="a-sidebar-item-label">Offilog</span>
+          </div>
+        </div>
+
+        <div class="a-sidebar-section">
+          <div class="a-sidebar-section-label">Groupements</div>
+          <div class="a-sidebar-item" data-page="groupements" data-tooltip="Suivi adhérents" onclick="navigate('groupements')">
+            <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="a-sidebar-item-label">Suivi adhérents</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="a-sidebar-footer">
+        <div class="a-sidebar-user" onclick="logout()">
+          <div class="a-sidebar-avatar" id="sidebar-avatar">W</div>
+          <div class="a-sidebar-user-info">
+            <div class="a-sidebar-user-name" id="sidebar-user-name">Utilisateur</div>
+            <div class="a-sidebar-user-role" id="sidebar-user-role">role</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="color:var(--label-tertiary)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+      </div>
+    </nav>
+
+    <div class="a-main">
+      <header class="a-navbar" data-scroll="rest">
+        <div class="a-navbar-inline">
+          <div class="a-navbar-leading">
+            <button class="a-navbar-icon-btn" onclick="openSidebarMobile()" title="Menu" aria-label="Ouvrir le menu" style="display:none" id="topbar-hamburger">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <button class="a-navbar-back" id="topbar-back-btn" onclick="navBack()" title="Retour" style="display:none">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              <span>Retour</span>
+            </button>
+            <!-- Slot breadcrumb : rempli par JS en Round 2 (contextuel par page) -->
+            <div id="topbar-slot-breadcrumb"></div>
+          </div>
+          <h1 class="a-navbar-title-inline" id="topbar-title-inline">Marketing</h1>
+          <div class="a-navbar-trailing">
+            <!-- Slot quick actions : rempli par JS, contextuel par page -->
+            <div id="topbar-slot-quick-actions"></div>
+            <!-- Slot density toggle : segmented control compact/cozy/spacious -->
+            <div id="topbar-slot-density">
+              <div class="a-seg a-seg-density" data-density-toggle>
+                <button type="button" data-density="compact" title="Affichage compact (voir plus)" aria-label="Densité compact" style="font-size:11px;padding:4px 10px">Compact</button>
+                <button type="button" data-density="cozy" class="is-active" title="Affichage confort" aria-label="Densité confort" style="font-size:11px;padding:4px 10px">Confort</button>
+                <button type="button" data-density="spacious" title="Affichage espacé" aria-label="Densité spacious" style="font-size:11px;padding:4px 10px">Espacé</button>
+              </div>
+            </div>
+            <button class="a-navbar-search-btn" onclick="window.appleOpenCmdk ? window.appleOpenCmdk() : showGlobalSearch()" title="Rechercher pharmacie, produit, page" aria-label="Recherche" style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:10px;border:1px solid var(--separator-non-opaque, rgba(60,60,67,.2));background:var(--fill-2, rgba(120,120,128,.12));color:var(--label-secondary, #71717a);cursor:pointer;font-size:13px;font-weight:500">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="a-navbar-search-label">Rechercher</span>
+              <kbd style="font-family:ui-monospace,monospace;font-size:11px;background:var(--bg-elevated,#fff);padding:2px 6px;border-radius:4px;border:1px solid var(--separator-non-opaque,rgba(0,0,0,.1))">⌘K</kbd>
+            </button>
+            <button class="a-navbar-icon-btn" onclick="showShortcutsHelp()" title="Raccourcis (?)" aria-label="Raccourcis">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </button>
+            <button class="a-navbar-icon-btn" onclick="if(confirm('Te déconnecter ?')) logout()" title="Déconnexion" aria-label="Déconnexion">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+          </div>
+        </div>
+        <h1 class="a-navbar-title-large" id="topbar-title">Marketing</h1>
+      </header>
+
+      <div class="a-page-content page-content">
+        <div class="page active" id="page-dashboard"><div id="dash-content"></div></div>
+        <div class="page" id="page-pharmacies"><div id="pharma-content"></div></div>
+        <div class="page" id="page-produits"><div id="prod-content"></div></div>
+        <div class="page" id="page-catalogue"><div id="cat-content"></div></div>
+        <div class="page" id="page-offilog"><div id="offilog-content"></div></div>
+        <div class="page" id="page-benchmark"><div id="bench-content"></div></div>
+        <div class="page" id="page-simulateur"><div id="simul-content"></div></div>
+        <div class="page" id="page-groupements"><div id="groupements-content"></div></div>
+        <div class="page" id="page-marketing"><div id="marketing-content"></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <script>
+    function showLoginForm() {
+      document.getElementById('login-form').style.display = '';
+      document.getElementById('reset-form').style.display = 'none';
+      document.getElementById('newpass-form').style.display = 'none';
+    }
+    function showResetForm() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('reset-form').style.display = '';
+      document.getElementById('newpass-form').style.display = 'none';
+      document.getElementById('reset-email').focus();
+    }
+    function showNewPassForm() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('reset-form').style.display = 'none';
+      document.getElementById('newpass-form').style.display = '';
+      document.getElementById('newpass-input').focus();
+    }
+
+    // Topbar date
+    document.addEventListener('DOMContentLoaded', function () {
+      const el = document.getElementById('topbar-date');
+      if (el) {
+        const d = new Date();
+        el.textContent = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+      }
+    });
+  </script>
+</body>
+</html>
