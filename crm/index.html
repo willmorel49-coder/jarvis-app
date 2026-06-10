@@ -87,39 +87,39 @@
 
 
   <!-- Native design tokens (charge EN PREMIER pour etablir les fondamentaux iOS) -->
-  <link rel="stylesheet" href="native-tokens.css?v=20260610k" />
+  <link rel="stylesheet" href="native-tokens.css?v=20260610m" />
   <!-- Styles desktop -->
-  <link rel="stylesheet" href="style.css?v=20260610k" />
-  <link rel="stylesheet" href="style-classic.css?v=20260610k" />
+  <link rel="stylesheet" href="style.css?v=20260610m" />
+  <link rel="stylesheet" href="style-classic.css?v=20260610m" />
   <link rel="stylesheet" href="styles-pharmacies.css" />
   <link rel="stylesheet" href="styles-offilog.css" />
-  <link rel="stylesheet" href="marketing.css?v=20260610k" />
-  <link rel="stylesheet" href="marketing-design-system.css?v=20260610k" />
+  <link rel="stylesheet" href="marketing.css?v=20260610m" />
+  <link rel="stylesheet" href="marketing-design-system.css?v=20260610m" />
   <!-- Mobile cavalerie -->
-  <link rel="stylesheet" href="style-mobile-shell.css?v=20260610k" />
-  <link rel="stylesheet" href="style-mobile-layout.css?v=20260610k" />
-  <link rel="stylesheet" href="style-mobile-tables.css?v=20260610k" />
-  <link rel="stylesheet" href="style-mobile-touch.css?v=20260610k" />
+  <link rel="stylesheet" href="style-mobile-shell.css?v=20260610m" />
+  <link rel="stylesheet" href="style-mobile-layout.css?v=20260610m" />
+  <link rel="stylesheet" href="style-mobile-tables.css?v=20260610m" />
+  <link rel="stylesheet" href="style-mobile-touch.css?v=20260610m" />
   <!-- Native UI refonte (charge EN DERNIER pour override final) -->
-  <link rel="stylesheet" href="native-shell.css?v=20260610k" />
-  <link rel="stylesheet" href="native-headers.css?v=20260610k" />
-  <link rel="stylesheet" href="native-lists.css?v=20260610k" />
-  <link rel="stylesheet" href="native-motion.css?v=20260610k" />
-  <link rel="stylesheet" href="skeleton-loaders.css?v=20260610k" />
+  <link rel="stylesheet" href="native-shell.css?v=20260610m" />
+  <link rel="stylesheet" href="native-headers.css?v=20260610m" />
+  <link rel="stylesheet" href="native-lists.css?v=20260610m" />
+  <link rel="stylesheet" href="native-motion.css?v=20260610m" />
+  <link rel="stylesheet" href="skeleton-loaders.css?v=20260610m" />
 
   <!-- ════ APPLE MODE (refonte from scratch 2026-06-08) — override final ════ -->
-  <link rel="stylesheet" href="apple/tokens.css?v=20260610k" />
-  <link rel="stylesheet" href="apple/components.css?v=20260610k" />
-  <link rel="stylesheet" href="apple/legacy-bridge.css?v=20260610k" />
-  <link rel="stylesheet" href="apple/peer-recs.css?v=20260610k" />
-  <link rel="stylesheet" href="apple/vtable.css?v=20260610k" />
-  <link rel="stylesheet" href="apple/cmdk.css?v=20260610k" />
-  <script src="apple/icons.js?v=20260610k" defer></script>
-  <script src="apple/motion.js?v=20260610k" defer></script>
-  <script src="apple/vtable.js?v=20260610k" defer></script>
-  <script src="apple/cmdk.js?v=20260610k" defer></script>
-  <script src="apple/shortcuts.js?v=20260610k" defer></script>
-  <script src="apple/density.js?v=20260610k" defer></script>
+  <link rel="stylesheet" href="apple/tokens.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/components.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/legacy-bridge.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/peer-recs.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/vtable.css?v=20260610m" />
+  <link rel="stylesheet" href="apple/cmdk.css?v=20260610m" />
+  <script src="apple/icons.js?v=20260610m" defer></script>
+  <script src="apple/motion.js?v=20260610m" defer></script>
+  <script src="apple/vtable.js?v=20260610m" defer></script>
+  <script src="apple/cmdk.js?v=20260610m" defer></script>
+  <script src="apple/shortcuts.js?v=20260610m" defer></script>
+  <script src="apple/density.js?v=20260610m" defer></script>
 
   <!-- SVG SIGNATURES Intégral Pharma (mode classique) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -156,14 +156,14 @@
        Les lourds (stock 1.7 MB, catalogue-ip 188 KB, client-products 84 KB,
        benchmark-data 3.6 MB, establishments-aggregate 4 MB, offilog 1.7 MB,
        drakkars 3.8 MB, cap3000 2.4 MB) sont LAZY via perf-boot.js. -->
-  <script src="clients-data.js?v=20260610k"></script>
-  <script src="pharmacies-geo.js?v=20260610k"></script>
-  <script src="groupements-data.js?v=20260610k"></script>
-  <script src="sales-detail.js?v=20260610k"></script>
+  <script src="clients-data.js?v=20260610m"></script>
+  <script src="pharmacies-geo.js?v=20260610m"></script>
+  <script src="groupements-data.js?v=20260610m"></script>
+  <script src="sales-detail.js?v=20260610m"></script>
   <!-- Will 2026-06-10 : benchmark-data.js (3,6 Mo) charge en EAGER (non-lazy)
        car onglet Produits affiche le catalogue grossiste complet. Sans cette
        ligne, BENCHMARK = undefined au render initial -> section invisible. -->
-  <script src="benchmark-data.js?v=20260610k" defer></script>
+  <script src="benchmark-data.js?v=20260610m" defer></script>
 
   <!-- BRIDGE : expose les `const X` globals vers `window.X` pour les modules ES.
        Les anciens data files (clients-data.js etc.) déclarent `const CLIENTS = [...]`
@@ -191,25 +191,33 @@
     });
   </script>
 
-  <script src="app.js?v=20260610k" defer></script>
-  <script src="dashboard-v2.js?v=20260610k" defer></script>
+  <script src="app.js?v=20260610m" defer></script>
+  <script src="dashboard-v2.js?v=20260610m" defer></script>
   <!-- Lazy-loader (charge benchmark-*.js + data lourdes a la demande) -->
-  <script src="perf-boot.js?v=20260610k" defer></script>
-  <script src="classic-overrides.js?v=20260610k" defer></script>
-  <script src="mobile-shell.js?v=20260610k" defer></script>
+  <script src="perf-boot.js?v=20260610m" defer></script>
+  <script src="classic-overrides.js?v=20260610m" defer></script>
+  <script src="mobile-shell.js?v=20260610m" defer></script>
   <!-- Gestures iOS-native : swipe-back, pull-to-refresh, bottom-sheet swipe-down -->
-  <script src="mobile-gestures.js?v=20260610k" defer></script>
+  <script src="mobile-gestures.js?v=20260610m" defer></script>
   <!-- Native UI shell (bottom tab bar uniquement) -->
-  <script src="native-shell.js?v=20260610k" defer></script>
+  <script src="native-shell.js?v=20260610m" defer></script>
   <!-- DESACTIVES temporairement (debug : Will n'a aucune page qui s'affiche)
-       <script src="native-headers.js?v=20260610k" defer></script>
-       <script src="native-motion.js?v=20260610k" defer></script>
-       <script src="skeleton-loaders.js?v=20260610k" defer></script>
+       <script src="native-headers.js?v=20260610m" defer></script>
+       <script src="native-motion.js?v=20260610m" defer></script>
+       <script src="skeleton-loaders.js?v=20260610m" defer></script>
   -->
-  <script src="marketing-offers.js?v=20260610k" defer></script>
-  <script src="marketing-design-system.js?v=20260610k" defer></script>
-  <script src="marketing-monthly-pitches.js?v=20260610k" defer></script>
-  <script src="marketing.js?v=20260610k" defer></script>
+  <script src="marketing-offers.js?v=20260610m" defer></script>
+  <script src="marketing-design-system.js?v=20260610m" defer></script>
+  <script src="marketing-monthly-pitches.js?v=20260610m" defer></script>
+  <script src="marketing.js?v=20260610m" defer></script>
+  <style>
+    /* Découvrabilité topbar : bouton recherche label + raccourci → icône seule sur mobile */
+    @media (max-width:768px) {
+      .a-navbar-search-btn .a-navbar-search-label,
+      .a-navbar-search-btn kbd { display:none !important; }
+      .a-navbar-search-btn { padding:7px 9px !important; gap:0 !important; }
+    }
+  </style>
 </head>
 
 <body>
@@ -309,9 +317,9 @@
             <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="22" x2="9" y2="18"/><line x1="15" y1="22" x2="15" y2="18"/></svg>
             <span class="a-sidebar-item-label">Pharmacies</span>
           </div>
-          <div class="a-sidebar-item" data-page="produits" data-tooltip="Produits" onclick="navigate('produits')">
+          <div class="a-sidebar-item" data-page="produits" data-tooltip="Catalogue Intégral Pharma" onclick="navigate('produits')">
             <svg class="a-sidebar-item-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-            <span class="a-sidebar-item-label">Produits</span>
+            <span class="a-sidebar-item-label">Catalogue IP</span>
           </div>
         </div>
 
@@ -378,13 +386,15 @@
             <!-- Slot density toggle : segmented control compact/cozy/spacious -->
             <div id="topbar-slot-density">
               <div class="a-seg a-seg-density" data-density-toggle>
-                <button type="button" data-density="compact" title="Compact (⌘/ pour cycler)" aria-label="Densité compact">◐</button>
-                <button type="button" data-density="cozy" class="is-active" title="Confort" aria-label="Densité confort">◑</button>
-                <button type="button" data-density="spacious" title="Spacious" aria-label="Densité spacious">◒</button>
+                <button type="button" data-density="compact" title="Affichage compact (voir plus)" aria-label="Densité compact" style="font-size:11px;padding:4px 10px">Compact</button>
+                <button type="button" data-density="cozy" class="is-active" title="Affichage confort" aria-label="Densité confort" style="font-size:11px;padding:4px 10px">Confort</button>
+                <button type="button" data-density="spacious" title="Affichage espacé" aria-label="Densité spacious" style="font-size:11px;padding:4px 10px">Espacé</button>
               </div>
             </div>
-            <button class="a-navbar-icon-btn" onclick="showGlobalSearch()" title="Recherche (⌘K)" aria-label="Recherche">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <button class="a-navbar-search-btn" onclick="window.appleOpenCmdk ? window.appleOpenCmdk() : showGlobalSearch()" title="Rechercher pharmacie, produit, page" aria-label="Recherche" style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:10px;border:1px solid var(--separator-non-opaque, rgba(60,60,67,.2));background:var(--fill-2, rgba(120,120,128,.12));color:var(--label-secondary, #71717a);cursor:pointer;font-size:13px;font-weight:500">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="a-navbar-search-label">Rechercher</span>
+              <kbd style="font-family:ui-monospace,monospace;font-size:11px;background:var(--bg-elevated,#fff);padding:2px 6px;border-radius:4px;border:1px solid var(--separator-non-opaque,rgba(0,0,0,.1))">⌘K</kbd>
             </button>
             <button class="a-navbar-icon-btn" onclick="showShortcutsHelp()" title="Raccourcis (?)" aria-label="Raccourcis">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
