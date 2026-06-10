@@ -5131,272 +5131,44 @@ let prodWmlFilter = false;  // filtre: produits présents dans données WML
 const PROD_TABLE_PER_PAGE = 50;
 
 function renderProduits() {
-  const rawSales = getSales();
-  const allPeriods = [...new Set(rawSales.map(s => `${s.year}-${String(s.month).padStart(2,'0')}`))]
-    .sort().reverse();
-  let filteredByPeriod = rawSales;
-  if (prodPeriodFilter !== 'all') {
-    const [y, m] = prodPeriodFilter.split('-');
-    filteredByPeriod = rawSales.filter(s => s.year === +y && s.month === +m);
-  }
-  const sales = prodPharmaFilter === 'tous' ? filteredByPeriod : filteredByPeriod.filter(s => s.pharmacyId === prodPharmaFilter);
-
-  // ── KPIs par famille ─────────────────────────
-  const familyKpis = Object.keys(CATS).map(k => {
-    const fSales = sales.filter(s => classifyProduct(s) === k);
-    return {
-      key: k, ...CATS[k],
-      ca:    sumCA(fSales),
-      marge: sumMarge(fSales),
-      taux:  margePct(fSales),
-      nb:    new Set(fSales.map(s => s.artDesignation)).size,
-    };
-  }).filter(f => f.ca > 0).sort((a, b) => b.ca - a.ca);
-
-  // ── Top produits pour le graphique ───────────
-  let chartProds = topProducts(sales, 500);
-  if (prodFamille === 'froid') {
-    chartProds = chartProds.filter(p => p.froid);
-  } else if (prodFamille !== 'tous') {
-    chartProds = chartProds.filter(p => p.cat === prodFamille);
-  }
-  chartProds = chartProds
-    .map(p => ({ ...p, taux: (p.ca + p.marge) > 0 ? p.marge / (p.ca + p.marge) * 100 : 0 }))
-    .sort((a, b) => b.ca - a.ca)
-    .slice(0, 10);
-
-  const selCat = prodFamille !== 'tous' && prodFamille !== 'froid' ? CATS[prodFamille] : null;
-  const chartColor = selCat ? selCat.color : '#0057FF';
-  const chartTitle = prodFamille === 'tous' ? 'Top 10 produits — Toutes familles'
-    : prodFamille === 'froid' ? 'Top 10 produits ❄️ Froid'
-    : `Top 10 produits — ${selCat.label}`;
-
-  // ── Opportunités sous-exploitées ─────────────
-  const ourNorms = new Set(topProducts(sales, 1000).map(p => p.name.trim().toUpperCase().replace(/\s+/g,' ')));
-  const opps = sales.length && typeof BENCHMARK !== 'undefined'
-    ? BENCHMARK
-        .filter(b => b.rot_pharma_jan26 > 3 && !ourNorms.has(b.designation.trim().toUpperCase().replace(/\s+/g,' ')))
-        .sort((a, b) => b.rot_pharma_jan26 - a.rot_pharma_jan26)
-        .slice(0, 10)
-    : [];
-
-  // ── Chips famille ─────────────────────────────
-  const familles = [
-    { key: 'tous',      label: 'Vue globale', color: '#8899BB' },
-    { key: 'pp',        label: 'PP',          color: CATS.pp.color },
-    { key: 'mi',        label: 'MI',          color: CATS.mi.color },
-    { key: 'ch',        label: 'CH',          color: CATS.ch.color },
-    { key: 'biosim',    label: 'Biosim',      color: CATS.biosim.color },
-    { key: 'generique', label: 'Générique',   color: CATS.generique.color },
-    { key: 'nr',        label: 'NR',          color: CATS.nr.color },
-    { key: 'froid',     label: '❄️ Froid',    color: '#00C6FF' },
-  ];
-  const chipsHtml = familles.map(f => {
-    const active = prodFamille === f.key;
-    return `<button onclick="prodFamille='${f.key}';renderProduits()" style="
-      padding:5px 14px;border-radius:20px;border:1px solid ${active ? f.color : 'var(--border2)'};
-      background:${active ? f.color + '22' : 'transparent'};color:${active ? f.color : 'var(--text2)'};
-      cursor:pointer;font-size:12px;font-weight:${active ? '600' : '400'};white-space:nowrap;transition:all .15s
-    ">${f.label}</button>`;
-  }).join('');
-
-  // ── WML chip ────────────────────────────
-  const nnWmlProd = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
-  const wmlVisP = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
-  const wmlOppMapCRM = new Map();
-  for (const d of wmlVisP) {
-    const seen = new Set();
-    for (const pr of (d.pr || [])) {
-      const nom = Array.isArray(pr) ? pr[0] : pr;
-      const k = nnWmlProd(nom);
-      if (k && !seen.has(k)) { seen.add(k); wmlOppMapCRM.set(k, (wmlOppMapCRM.get(k) || 0) + 1); }
-    }
-  }
-
-  // ── Family KPI cards ───────────────────────────
-  const familyKpiHtml = familyKpis.map(f => `
-    <div class="kpi-card" style="cursor:pointer;border-top:3px solid ${f.color};${prodFamille === f.key ? 'box-shadow:0 0 0 2px '+f.color+'55' : ''}" onclick="prodFamille='${f.key}';renderProduits()">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="font-size:18px">${f.icon}</span>
-        <span style="font-size:12px;font-weight:700;color:${f.color};text-transform:uppercase;letter-spacing:.5px">${f.label}</span>
-      </div>
-      <div style="font-size:20px;font-weight:800;color:var(--text1)">${fmt(f.ca)}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px">CA HT</div>
-      <div style="display:flex;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border2)">
-        <div><div style="font-size:13px;font-weight:700;color:var(--mint)">${fmt(f.marge)}</div><div style="font-size:10px;color:var(--text3)">Marge</div></div>
-        <div><div style="font-size:13px;font-weight:700;color:${f.taux > 15 ? 'var(--mint)' : 'var(--amber)'}">${f.taux.toFixed(1)}%</div><div style="font-size:10px;color:var(--text3)">Taux</div></div>
-        <div><div style="font-size:13px;font-weight:700;color:var(--text2)">${f.nb}</div><div style="font-size:10px;color:var(--text3)">Réfs</div></div>
-      </div>
-    </div>`).join('');
-
-  // ── Accélération MoM ─────────────────────────
-  const allSalesForAccel = getSales();
-  const { year: acY, month: acM } = getCurrentPeriod(allSalesForAccel);
-  const { year: acPY, month: acPM } = getPrevPeriod(acY, acM);
-  const acCur  = acY  ? getSales({ year: acY,  month: acM  }) : [];
-  const acPrev = acPY ? getSales({ year: acPY, month: acPM }) : [];
-  const accelRows = (() => {
-    if (!acCur.length || !acPrev.length) return [];
-    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
-    const curMap = {}, prevMap = {};
-    for (const s of acCur)  { const k = nn(s.artDesignation); if (!curMap[k])  curMap[k]  = { label: s.artDesignation, cat: classifyProduct(s), ca: 0 }; curMap[k].ca  += s.mntNetHt; }
-    for (const s of acPrev) { const k = nn(s.artDesignation); if (!prevMap[k]) prevMap[k] = { ca: 0 }; prevMap[k].ca += s.mntNetHt; }
-    return Object.entries(curMap)
-      .filter(([k, v]) => v.ca > 50 && prevMap[k]?.ca > 50)
-      .map(([k, v]) => ({ ...v, prev: prevMap[k].ca, delta: v.ca - prevMap[k].ca, pct: (v.ca - prevMap[k].ca) / prevMap[k].ca * 100 }))
-      .filter(r => r.pct > 10)
-      .sort((a, b) => b.delta - a.delta)
-      .slice(0, 8);
-  })();
-
-  // ── Déclinants MoM ───────────────────────────
-  const declineRows = (() => {
-    if (!acCur.length || !acPrev.length) return [];
-    const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
-    const curMap = {}, prevMap = {};
-    for (const s of acCur)  { const k = nn(s.artDesignation); if (!curMap[k])  curMap[k]  = { label: s.artDesignation, cat: classifyProduct(s), ca: 0 }; curMap[k].ca  += s.mntNetHt; }
-    for (const s of acPrev) { const k = nn(s.artDesignation); if (!prevMap[k]) prevMap[k] = { ca: 0 }; prevMap[k].ca += s.mntNetHt; }
-    return Object.entries(prevMap)
-      .filter(([k, v]) => v.ca > 50 && curMap[k]?.ca > 0)
-      .map(([k, v]) => {
-        const cur = curMap[k] || { label: k, cat: 'mi', ca: 0 };
-        return { label: cur.label, cat: cur.cat, prev: v.ca, ca: cur.ca, delta: cur.ca - v.ca, pct: (cur.ca - v.ca) / v.ca * 100 };
-      })
-      .filter(r => r.pct < -10)
-      .sort((a, b) => a.delta - b.delta)
-      .slice(0, 8);
-  })();
-
-  // ── Momentum CA par produit (M vs M-1) ───────
-  const prevMomMap = {};
-  const curMomMap  = {};
-  for (const s of acPrev) {
-    const k = (s.artDesignation || '').trim().toUpperCase();
-    if (k) prevMomMap[k] = (prevMomMap[k] || 0) + s.mntNetHt;
-  }
-  for (const s of acCur) {
-    const k = (s.artDesignation || '').trim().toUpperCase();
-    if (k) curMomMap[k]  = (curMomMap[k]  || 0) + s.mntNetHt;
-  }
-
-  // ── Table complète produits ────────────────────
-  const prodTableMap = {};
-  for (const s of sales) {
-    const k = (s.artDesignation || '').trim().toUpperCase();
-    if (!k) continue;
-    if (!prodTableMap[k]) prodTableMap[k] = {
-      label: s.artDesignation, ca: 0, qte: 0, marge: 0,
-      cat: classifyProduct(s), froid: isFroid(s), pharmas: new Set(),
-    };
-    prodTableMap[k].ca     += s.mntNetHt;
-    prodTableMap[k].qte    += s.qte;
-    prodTableMap[k].marge  += (s.mntNetHt - s.puNet * s.qte);
-    prodTableMap[k].pharmas.add(s.pharmacyId);
-  }
-  let prodTableAll = Object.values(prodTableMap).map(p => {
-    const nk = p.label.trim().toUpperCase();
-    const curCa  = curMomMap[nk]  || 0;
-    const prevCa = prevMomMap[nk] || 0;
-    const momPct = (prevCa > 0 && curCa > 0) ? (curCa - prevCa) / prevCa * 100 : null;
-    return { ...p, pharmaCount: p.pharmas.size, momPct };
-  });
-  // WML chip: count products present in WML data (must be after prodTableMap is built)
-  const wmlProdsAllCRM = prodTableAll.filter(p => wmlOppMapCRM.has(nnWmlProd(p.label || '')));
-  const wmlNbProdCRM = wmlProdsAllCRM.length;
-  const wmlChipHtml = wmlNbProdCRM > 0
-    ? `<button onclick="prodWmlFilter=!prodWmlFilter;prodTablePage=1;renderProduits()" style="
-        padding:5px 14px;border-radius:20px;border:1px solid ${prodWmlFilter ? 'var(--mint)' : 'var(--border2)'};
-        background:${prodWmlFilter ? 'rgba(0,229,160,.18)' : 'transparent'};
-        color:${prodWmlFilter ? 'var(--mint)' : 'var(--text2)'};
-        cursor:pointer;font-size:12px;font-weight:${prodWmlFilter ? '600' : '400'};white-space:nowrap;transition:all .15s
-      ">📦 WML (${wmlNbProdCRM})</button>`
-    : '';
-  if (prodFamille !== 'tous') {
-    if (prodFamille === 'froid') prodTableAll = prodTableAll.filter(p => p.froid);
-    else prodTableAll = prodTableAll.filter(p => p.cat === prodFamille);
-  }
-  if (prodWmlFilter) {
-    prodTableAll = prodTableAll.filter(p => wmlOppMapCRM.has(nnWmlProd(p.label || '')));
-  }
-  if (prodTableQuery) {
-    const q2 = prodTableQuery.toLowerCase();
-    prodTableAll = prodTableAll.filter(p => p.label.toLowerCase().includes(q2));
-  }
-  prodTableAll.sort((a, b) => {
-    const av = a[prodTableSort] ?? 0, bv = b[prodTableSort] ?? 0;
-    return prodTableSortAsc ? av - bv : bv - av;
-  });
-  const prodTableTotalPages = Math.max(1, Math.ceil(prodTableAll.length / PROD_TABLE_PER_PAGE));
-  if (prodTablePage > prodTableTotalPages) prodTablePage = prodTableTotalPages;
-  const prodTableSlice = prodTableAll.slice((prodTablePage - 1) * PROD_TABLE_PER_PAGE, prodTablePage * PROD_TABLE_PER_PAGE);
-  const sortIcon = col => prodTableSort === col ? (prodTableSortAsc ? ' ▲' : ' ▼') : '';
-
-  // ── Tendance mensuelle ────────────────────────
-  const allSales = getSales();
-  const monthMap = {};
-  for (const s of allSales) {
-    const k = `${s.year}-${String(s.month).padStart(2,'0')}`;
-    if (!monthMap[k]) monthMap[k] = { ca: 0, marge: 0 };
-    monthMap[k].ca    += s.mntNetHt;
-    monthMap[k].marge += (s.mntNetHt - s.puNet * s.qte);
-  }
-  const trendMonths = Object.keys(monthMap).sort();
-  const showTrend = trendMonths.length >= 2;
-
-  // ── Opportunités HTML ─────────────────────────
-  const oppsHtml = opps.map((b, i) => {
-    const cat = CATS[b.categorie] || CATS.mi;
-    const fd = b.is_froid ? ' <span style="font-size:11px">❄️</span>' : '';
-    return `<tr>
-      <td>${renderRank(i)}</td>
-      <td class="td-name">${b.designation}${fd}</td>
-      <td><span style="font-size:11px;padding:2px 7px;border-radius:4px;background:${cat.color}22;color:${cat.color}">${cat.label}</span></td>
-      <td class="td-num" style="text-align:right">${b.rot_pharma_jan26.toFixed(1)}</td>
-      <td class="td-num" style="text-align:right">${fmt(b.prix_ip)}</td>
-      <td class="td-num" style="text-align:right">${b.yoy_jan !== null ? `<span style="color:${b.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'}">${b.yoy_jan >= 0 ? '▲' : '▼'} ${Math.abs(b.yoy_jan).toFixed(1)}%</span>` : '—'}</td>
-    </tr>`;
-  }).join('');
-
-  // ════════════════════════════════════════════════════════════
-  // CATALOGUE GROSSISTE INTÉGRAL PHARMA — tout BENCHMARK filtré par AFMCODE
-  // Will : "on doit retrouver tout le catalogue grossiste integral pharma
-  // filtrer par AFMCODE" (2026-06-10).
-  // ════════════════════════════════════════════════════════════
-  // Bridge robuste : tenter le bridge BENCHMARK -> window.BENCHMARK à chaque appel
-  // (benchmark-data.js est defer, donc BENCHMARK arrive APRÈS le bridge initial)
+  // Bridge robuste BENCHMARK (defer race condition)
   try { if (typeof BENCHMARK !== 'undefined' && !window.BENCHMARK) window.BENCHMARK = BENCHMARK; } catch(e){}
   const __BENCH_CAT = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ? BENCHMARK :
                       (window.BENCHMARK && window.BENCHMARK.length) ? window.BENCHMARK : [];
-  // Auto-retry : poll BENCHMARK toutes les 500ms si pas encore là
+
+  // Auto-retry si BENCHMARK pas encore chargé
   if (__BENCH_CAT.length === 0 && !window.__prodPollArmed) {
     window.__prodPollArmed = true;
     let __polls = 0;
     const __poll = setInterval(() => {
       __polls++;
-      // Re-tente le bridge à chaque poll (benchmark-data.js peut arriver à tout moment)
       try { if (typeof BENCHMARK !== 'undefined' && !window.BENCHMARK) window.BENCHMARK = BENCHMARK; } catch(e){}
       const ok = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ||
                  (window.BENCHMARK && window.BENCHMARK.length);
       if (ok) {
         clearInterval(__poll);
         window.__prodPollArmed = false;
-        if (state.currentPage === 'produits' && typeof renderProduits === 'function') {
-          renderProduits();
-        }
-      } else if (__polls > 60) { // 30s timeout
+        if (state.currentPage === 'produits' && typeof renderProduits === 'function') renderProduits();
+      } else if (__polls > 60) {
         clearInterval(__poll);
         window.__prodPollArmed = false;
-        console.warn('[Produits] BENCHMARK timeout 30s — benchmark-data.js ne charge pas');
       }
     }, 500);
   }
-  // Indicateur de chargement si BENCHMARK pas encore prêt
-  const __benchLoadingNotice = __BENCH_CAT.length === 0
-    ? '<div class="card fade-up" style="margin-bottom:24px;padding:18px 20px;background:linear-gradient(135deg,rgba(0,87,255,0.08) 0%,rgba(124,58,237,0.05) 100%);border-left:3px solid var(--blue)"><div style="display:flex;align-items:center;gap:14px"><div style="width:32px;height:32px;border-radius:8px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;animation:spin 1.2s linear infinite">📦</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">Catalogue Intégral Pharma — chargement en cours…</div><div style="font-size:12px;color:var(--text3);margin-top:2px">Les 10 500 références IP (3,6 Mo) se téléchargent. Cette section s\'actualisera automatiquement.</div></div><button onclick="renderProduits()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;font-size:12px;font-weight:700">🔄 Recharger</button></div><style>@keyframes spin {from{transform:rotate(0)}to{transform:rotate(360deg)}}</style></div>'
-    : '';
-  // Will (2026-06-10) : Princeps doit être éclaté en 3 tranches de prix MDL
-  // (0-4,33€ petits prix / 4,33-468€ intermédiaires / >468€ chers), suivi
-  // de Froid, Génériques, Gén. partenaires, Biosimilaires, NR.
+
+  if (__BENCH_CAT.length === 0) {
+    document.getElementById('prod-content').innerHTML = `
+      <div class="card fade-up" style="margin:24px 0;padding:30px 24px;text-align:center;background:linear-gradient(135deg,rgba(0,87,255,0.08) 0%,rgba(124,58,237,0.05) 100%);border-left:3px solid var(--blue)">
+        <div style="font-size:36px;margin-bottom:14px;animation:spin 1.2s linear infinite;display:inline-block">📦</div>
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px">Catalogue Intégral Pharma — chargement…</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:18px">Les 10 500 références IP (3,6 Mo) se téléchargent. Patiente quelques secondes.</div>
+        <button onclick="renderProduits()" style="padding:10px 20px;border-radius:10px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer">🔄 Recharger</button>
+        <style>@keyframes spin {from{transform:rotate(0)}to{transform:rotate(360deg)}}</style>
+      </div>`;
+    return;
+  }
+
+  // ── Classification AFMCODE / famille ──────────
   const __priceOfBench = (b) => (typeof b.prix_ip === 'number' && b.prix_ip > 0) ? b.prix_ip :
                                 (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
   const __familleOfBench = (b) => {
@@ -5406,20 +5178,21 @@ function renderProduits() {
     if (n === 'Generique') return 'generique';
     if (n === 'Generique Partenaire') return 'gen_partenaire';
     if (!b.has_ameli) return 'nr';
-    // Princeps : décliné en 3 tranches MDL
     const p = __priceOfBench(b);
     if (p > 0 && p <= 4.33) return 'princeps_pp';
     if (p > 4.33 && p <= 468) return 'princeps_mi';
     if (p > 468) return 'princeps_ch';
-    return 'princeps_pp'; // fallback si prix manquant
+    return 'princeps_pp';
   };
-  // Index lazy : compte par famille pour les badges des chips
+
+  // Compteurs par famille (calculés une fois)
   const __benchCountByFam = (() => {
     const m = { all: __BENCH_CAT.length, princeps_pp: 0, princeps_mi: 0, princeps_ch: 0, froid: 0, generique: 0, gen_partenaire: 0, biosim: 0, nr: 0 };
     for (const b of __BENCH_CAT) m[__familleOfBench(b)]++;
     return m;
   })();
-  // Catégories prix IP (CATS : pp/mi/ch)
+
+  // Filtre + tri
   const __benchFilter = __BENCH_CAT.filter(b => {
     if (prodCatAfm !== 'all' && __familleOfBench(b) !== prodCatAfm) return false;
     if (prodCatSearch) {
@@ -5428,12 +5201,12 @@ function renderProduits() {
     }
     return true;
   }).sort((a, b) => (a.ip_rank_qty || 99999) - (b.ip_rank_qty || 99999));
+
   const __benchTotalPages = Math.max(1, Math.ceil(__benchFilter.length / PROD_CAT_PER_PAGE));
   if (prodCatPage > __benchTotalPages) prodCatPage = 1;
   const __benchPage = __benchFilter.slice((prodCatPage - 1) * PROD_CAT_PER_PAGE, prodCatPage * PROD_CAT_PER_PAGE);
 
-  // Ordre demandé Will (2026-06-10) : Tout, Princeps × 3 tranches, Froid,
-  // Génériques, Gén. partenaires, Biosimilaires, Non remboursés.
+  // Chips (ordre Will 2026-06-10)
   const __afmChips = [
     { key: 'all',            label: 'Tout',                          color: '#0057FF' },
     { key: 'princeps_pp',    label: 'Princeps · 0 — 4,33 €',          color: '#10B981' },
@@ -5445,362 +5218,101 @@ function renderProduits() {
     { key: 'biosim',         label: '🧬 Biosimilaires',               color: '#7C3AED' },
     { key: 'nr',             label: '🔴 Non remboursés',              color: '#FF9F1C' },
   ];
+
   const __afmChipsHtml = __afmChips.map(c => {
     const active = prodCatAfm === c.key;
     const count = __benchCountByFam[c.key] || 0;
     return `<button onclick="prodCatAfm='${c.key}';prodCatPage=1;renderProduits()" style="
-      padding:6px 14px;border-radius:20px;border:1px solid ${active ? c.color : 'var(--border2)'};
+      padding:8px 16px;border-radius:22px;border:1.5px solid ${active ? c.color : 'var(--border2)'};
       background:${active ? c.color : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};
-      cursor:pointer;font-size:12px;font-weight:${active ? '700' : '500'};white-space:nowrap;transition:all .15s;
-      display:inline-flex;align-items:center;gap:6px
-    ">${c.label}<span style="font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;opacity:.85">${count.toLocaleString('fr-FR')}</span></button>`;
+      cursor:pointer;font-size:13px;font-weight:${active ? '700' : '500'};white-space:nowrap;transition:all .15s;
+      display:inline-flex;align-items:center;gap:8px
+    ">${c.label}<span style="font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;opacity:.85;font-weight:600">${count.toLocaleString('fr-FR')}</span></button>`;
   }).join('');
 
   const __famBadge = (b) => {
     const f = __familleOfBench(b);
     const def = __afmChips.find(c => c.key === f);
     if (!def) return '';
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:6px;background:${def.color}22;color:${def.color};font-size:10px;font-weight:600;letter-spacing:0.02em">${def.label.replace(/^[^\s]+\s?/, '')}</span>`;
+    return `<span style="display:inline-block;padding:3px 8px;border-radius:6px;background:${def.color}22;color:${def.color};font-size:11px;font-weight:700;letter-spacing:0.02em;white-space:nowrap">${def.label.replace(/^[^\s]+\s?/, '')}</span>`;
   };
 
   const __pagBtns = (() => {
     const ps = Math.max(1, prodCatPage - 2);
     const pe = Math.min(__benchTotalPages, prodCatPage + 2);
     const btns = [];
-    if (prodCatPage > 1) btns.push(`<button onclick="prodCatPage=1;renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:11px">«</button>`);
-    if (prodCatPage > 1) btns.push(`<button onclick="prodCatPage=${prodCatPage-1};renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:11px">‹</button>`);
-    for (let p = ps; p <= pe; p++) btns.push(`<button onclick="prodCatPage=${p};renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid ${p===prodCatPage?'var(--blue)':'var(--border2)'};background:${p===prodCatPage?'var(--blue)':'transparent'};color:${p===prodCatPage?'#fff':'var(--text2)'};cursor:pointer;font-size:11px;font-weight:${p===prodCatPage?'700':'400'}">${p}</button>`);
-    if (prodCatPage < __benchTotalPages) btns.push(`<button onclick="prodCatPage=${prodCatPage+1};renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:11px">›</button>`);
-    if (prodCatPage < __benchTotalPages) btns.push(`<button onclick="prodCatPage=${__benchTotalPages};renderProduits()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:11px">»</button>`);
+    if (prodCatPage > 1) btns.push(`<button onclick="prodCatPage=1;renderProduits()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:12px">«</button>`);
+    if (prodCatPage > 1) btns.push(`<button onclick="prodCatPage=${prodCatPage-1};renderProduits()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:12px">‹</button>`);
+    for (let p = ps; p <= pe; p++) btns.push(`<button onclick="prodCatPage=${p};renderProduits()" style="padding:6px 12px;border-radius:8px;border:1px solid ${p===prodCatPage?'var(--blue)':'var(--border2)'};background:${p===prodCatPage?'var(--blue)':'transparent'};color:${p===prodCatPage?'#fff':'var(--text2)'};cursor:pointer;font-size:12px;font-weight:${p===prodCatPage?'700':'400'}">${p}</button>`);
+    if (prodCatPage < __benchTotalPages) btns.push(`<button onclick="prodCatPage=${prodCatPage+1};renderProduits()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:12px">›</button>`);
+    if (prodCatPage < __benchTotalPages) btns.push(`<button onclick="prodCatPage=${__benchTotalPages};renderProduits()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:12px">»</button>`);
     return btns.join('');
   })();
 
-  const __catalogueGrossisteHtml = `
-    <div class="card fade-up" style="margin-bottom:24px;padding:16px 20px">
-      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
-        <div>
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:700">Catalogue grossiste</div>
-          <div style="font-size:20px;font-weight:800;color:var(--text);letter-spacing:-0.01em">📦 Catalogue Intégral Pharma</div>
-          <div style="font-size:12px;color:var(--text3);margin-top:2px">${__BENCH_CAT.length.toLocaleString('fr-FR')} références IP · filtrable par AFMCODE / famille</div>
+  document.getElementById('prod-content').innerHTML = `
+    <div class="card fade-up" style="margin:24px 0;padding:24px 28px">
+      <!-- Header -->
+      <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+        <div style="flex:1;min-width:240px">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--blue);font-weight:800;margin-bottom:4px">Catalogue grossiste</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.02em">📦 Catalogue Intégral Pharma</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:4px">${__BENCH_CAT.length.toLocaleString('fr-FR')} références IP · filtrable par AFMCODE</div>
         </div>
-        <div style="flex:1;min-width:200px;display:flex;justify-content:flex-end;gap:8px;align-items:center">
-          <div style="position:relative;min-width:240px">
-            <input type="text" placeholder="Rechercher CIP13, désignation…" value="${prodCatSearch.replace(/"/g, '&quot;')}"
-              oninput="prodCatSearch=this.value;prodCatPage=1;renderProduits()"
-              style="width:100%;padding:8px 32px 8px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);font-size:13px;color:var(--text);outline:none">
-            ${prodCatSearch ? `<button onclick="prodCatSearch='';prodCatPage=1;renderProduits()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 6px">×</button>` : ''}
-          </div>
+        <div style="position:relative;min-width:280px;flex:1;max-width:420px">
+          <input type="text" placeholder="Rechercher CIP13, désignation…" value="${prodCatSearch.replace(/"/g, '&quot;')}"
+            oninput="prodCatSearch=this.value;prodCatPage=1;renderProduits()"
+            style="width:100%;padding:11px 36px 11px 14px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg2);font-size:14px;color:var(--text);outline:none;font-family:'DM Sans',system-ui,sans-serif">
+          ${prodCatSearch ? `<button onclick="prodCatSearch='';prodCatPage=1;renderProduits()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:2px 8px">×</button>` : ''}
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${__afmChipsHtml}</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">
-        <strong>${__benchFilter.length.toLocaleString('fr-FR')}</strong> produits · page <strong>${prodCatPage}</strong> / ${__benchTotalPages.toLocaleString('fr-FR')}
+
+      <!-- Chips AFMCODE -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border1)">${__afmChipsHtml}</div>
+
+      <!-- Compteur -->
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <strong style="color:var(--text);font-size:14px;font-family:'Geist Mono',ui-monospace,monospace">${__benchFilter.length.toLocaleString('fr-FR')}</strong>
+        produits · page <strong style="color:var(--text)">${prodCatPage}</strong> / ${__benchTotalPages.toLocaleString('fr-FR')}
       </div>
-      <div style="overflow-x:auto;border-radius:10px;border:0.5px solid var(--border1)">
+
+      <!-- Table -->
+      <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border1)">
         <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',system-ui,sans-serif">
           <thead>
             <tr style="background:var(--bg2)">
-              <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Rang IP</th>
-              <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Produit</th>
-              <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">CIP13</th>
-              <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Famille AFMCODE</th>
-              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Prix HT</th>
-              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Prix IP</th>
-              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Remise</th>
-              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Vol IP</th>
-              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">Vol Ameli</th>
-              <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);font-weight:700">YoY Jan</th>
+              <th style="padding:12px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">Rang IP</th>
+              <th style="padding:12px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">Produit</th>
+              <th style="padding:12px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">CIP13</th>
+              <th style="padding:12px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">Famille AFMCODE</th>
+              <th style="padding:12px 14px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">Prix HT</th>
+              <th style="padding:12px 14px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">Prix IP</th>
+              <th style="padding:12px 14px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">Remise</th>
+              <th style="padding:12px 14px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">Vol IP</th>
+              <th style="padding:12px 14px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">Vol Ameli</th>
+              <th style="padding:12px 14px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:800">YoY Jan</th>
             </tr>
           </thead>
           <tbody>
             ${__benchPage.map(b => `
-              <tr style="border-bottom:0.5px solid var(--border1)">
-                <td style="padding:8px 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text3)">#${b.ip_rank_qty || '—'}</td>
-                <td style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--text);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(b.designation || '').replace(/"/g, '&quot;')}">${b.designation || ''}</td>
-                <td style="padding:8px 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text2)">${b.cip13 || ''}</td>
-                <td style="padding:8px 12px">${__famBadge(b)}</td>
-                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--text2)">${b.prix_ht ? b.prix_ht.toFixed(2) + ' €' : '—'}</td>
-                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;font-weight:700;color:var(--blue)">${b.prix_ip ? b.prix_ip.toFixed(2) + ' €' : '—'}</td>
-                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:${b.remise_pct > 0 ? 'var(--mint)' : 'var(--text3)'}">${b.remise_pct > 0 ? b.remise_pct.toFixed(1) + '%' : '—'}</td>
-                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--text2)">${(b.ip_qty || 0).toLocaleString('fr-FR')}</td>
-                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text3)">${b.ameli_total ? (b.ameli_total >= 1e6 ? (b.ameli_total/1e6).toFixed(1).replace('.0','') + ' M' : b.ameli_total >= 1e3 ? (b.ameli_total/1e3).toFixed(0) + ' k' : b.ameli_total.toLocaleString('fr-FR')) : '—'}</td>
-                <td style="padding:8px 12px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px">${b.yoy_jan !== null && b.yoy_jan !== undefined ? `<span style="color:${b.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'};font-weight:700">${b.yoy_jan >= 0 ? '▲' : '▼'} ${Math.abs(b.yoy_jan).toFixed(1)}%</span>` : '—'}</td>
+              <tr style="border-bottom:1px solid var(--border1);transition:background .15s" onmouseenter="this.style.background='var(--bg2)'" onmouseleave="this.style.background='transparent'">
+                <td style="padding:10px 14px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text3);font-weight:600">#${b.ip_rank_qty || '—'}</td>
+                <td style="padding:10px 14px;font-size:13px;font-weight:600;color:var(--text);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(b.designation || '').replace(/"/g, '&quot;')}">${b.designation || ''}</td>
+                <td style="padding:10px 14px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text2)">${b.cip13 || ''}</td>
+                <td style="padding:10px 14px">${__famBadge(b)}</td>
+                <td style="padding:10px 14px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--text2)">${b.prix_ht ? b.prix_ht.toFixed(2) + ' €' : '—'}</td>
+                <td style="padding:10px 14px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:13px;font-weight:700;color:var(--blue)">${b.prix_ip ? b.prix_ip.toFixed(2) + ' €' : '—'}</td>
+                <td style="padding:10px 14px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:${b.remise_pct > 0 ? 'var(--mint)' : 'var(--text3)'};font-weight:700">${b.remise_pct > 0 ? b.remise_pct.toFixed(1) + '%' : '—'}</td>
+                <td style="padding:10px 14px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--text2)">${(b.ip_qty || 0).toLocaleString('fr-FR')}</td>
+                <td style="padding:10px 14px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text3)">${b.ameli_total ? (b.ameli_total >= 1e6 ? (b.ameli_total/1e6).toFixed(1).replace('.0','') + ' M' : b.ameli_total >= 1e3 ? (b.ameli_total/1e3).toFixed(0) + ' k' : b.ameli_total.toLocaleString('fr-FR')) : '—'}</td>
+                <td style="padding:10px 14px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px">${b.yoy_jan !== null && b.yoy_jan !== undefined ? `<span style="color:${b.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'};font-weight:700">${b.yoy_jan >= 0 ? '▲' : '▼'} ${Math.abs(b.yoy_jan).toFixed(1)}%</span>` : '—'}</td>
               </tr>
-            `).join('') || '<tr><td colspan="10" style="padding:40px;text-align:center;color:var(--text3);font-size:13px">Aucun produit ne correspond aux filtres.</td></tr>'}
+            `).join('') || '<tr><td colspan="10" style="padding:50px;text-align:center;color:var(--text3);font-size:14px">Aucun produit ne correspond aux filtres.</td></tr>'}
           </tbody>
         </table>
       </div>
-      ${__benchTotalPages > 1 ? `<div style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap">${__pagBtns}</div>` : ''}
+      ${__benchTotalPages > 1 ? `<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:18px;flex-wrap:wrap">${__pagBtns}</div>` : ''}
     </div>
   `;
-
-  document.getElementById('prod-content').innerHTML = `
-    ${__benchLoadingNotice}
-    ${__BENCH_CAT.length > 0 ? __catalogueGrossisteHtml : ''}
-
-    ${familyKpis.length ? `
-    <div class="kpi-grid fade-up" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:24px">
-      ${familyKpiHtml}
-    </div>` : ''}
-
-    ${!sales.length ? emptyState('chart', 'Aucune donnée à afficher', 'Importez des fichiers Excel pour analyser votre portefeuille produits.') : `
-    <div class="card fade-up" style="margin-bottom:24px">
-      <div class="card-header" style="flex-wrap:wrap;gap:12px">
-        <div>
-          <div class="card-title">${chartTitle}</div>
-          <div class="card-subtitle">CA HT vs Marge · cliquez une famille pour zoomer${prodPharmaFilter !== 'tous' ? ' · ' + (state.pharmacies.find(p=>p.id===prodPharmaFilter)?.name||'') : ''}</div>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-          <select onchange="prodPeriodFilter=this.value;prodTablePage=1;renderProduits()"
-            style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
-            <option value="all">Toutes les périodes</option>
-            ${allPeriods.map(p => { const [y,m] = p.split('-'); return `<option value="${p}" ${prodPeriodFilter===p?'selected':''}>${monthName(+m)} ${y}</option>`; }).join('')}
-          </select>
-          <select onchange="prodPharmaFilter=this.value;renderProduits()"
-            style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);cursor:pointer">
-            <option value="tous">Toutes les pharmacies</option>
-            ${state.pharmacies.map(ph => `<option value="${ph.id}" ${prodPharmaFilter===ph.id?'selected':''}>${ph.name}</option>`).join('')}
-          </select>
-          ${chipsHtml}
-          ${wmlChipHtml}
-        </div>
-      </div>
-      <div class="card-body">
-        ${chartProds.length
-          ? '<div class="chart-wrap" style="height:300px"><canvas id="chart-produits-bar"></canvas></div>'
-          : emptyState('box', 'Aucun produit dans cette famille', 'Sélectionnez une autre famille ou élargissez vos filtres.')}
-      </div>
-    </div>`}
-
-    ${showTrend ? `
-    <div class="card fade-up" style="margin-bottom:24px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Évolution mensuelle du CA</div>
-          <div class="card-subtitle">${trendMonths.length} période${trendMonths.length > 1 ? 's' : ''} · ${prodPharmaFilter === 'tous' ? 'toutes pharmacies' : (state.pharmacies.find(p=>p.id===prodPharmaFilter)?.name||'')}</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="chart-wrap" style="height:240px"><canvas id="chart-trend-line"></canvas></div>
-      </div>
-    </div>` : ''}
-
-    ${accelRows.length ? `
-    <div class="card fade-up" style="margin-bottom:24px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Produits en accélération</div>
-          <div class="card-subtitle">${monthName(acPM)} ${acPY} → ${monthName(acM)} ${acY} · CA ≥ 50 €</div>
-        </div>
-        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(0,229,160,.12);color:var(--mint);font-weight:700">${accelRows.length} produit${accelRows.length > 1 ? 's' : ''}</span>
-      </div>
-      ${accelRows.map((r, i) => {
-        const cat = CATS[r.cat] || CATS.mi;
-        return `<div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid var(--border1)">
-          <div style="font-size:12px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.label}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(r.prev)} → <span style="font-weight:700;color:var(--mint)">${fmt(r.ca)}</span></div>
-          </div>
-          <span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon} ${cat.label}</span>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:14px;font-weight:800;color:var(--mint)">+${fmt(r.delta)}</div>
-            <div style="font-size:10px;color:var(--mint);font-weight:700">▲ ${r.pct.toFixed(0)}%</div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>` : ''}
-
-    ${declineRows.length ? `
-    <div class="card fade-up" style="margin-bottom:24px;border-left:3px solid var(--rose)">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Produits en déclin</div>
-          <div class="card-subtitle">${monthName(acPM)} ${acPY} → ${monthName(acM)} ${acY} · CA ≥ 50 € · baisse &gt; 10%</div>
-        </div>
-        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(255,77,109,.12);color:var(--rose);font-weight:700">${declineRows.length} produit${declineRows.length > 1 ? 's' : ''}</span>
-      </div>
-      ${declineRows.map((r, i) => {
-        const cat = CATS[r.cat] || CATS.mi;
-        return `<div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid var(--border1)">
-          <div style="font-size:12px;font-weight:800;color:var(--text3);width:20px;text-align:right;flex-shrink:0">${i+1}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.label}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px"><span style="font-weight:700;color:var(--rose)">${fmt(r.ca)}</span> vs ${fmt(r.prev)}</div>
-          </div>
-          <span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${cat.color}18;color:${cat.color};font-weight:700;flex-shrink:0">${cat.icon} ${cat.label}</span>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:14px;font-weight:800;color:var(--rose)">${fmt(r.delta)}</div>
-            <div style="font-size:10px;color:var(--rose);font-weight:700">▼ ${Math.abs(r.pct).toFixed(0)}%</div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>` : ''}
-
-    ${opps.length ? `
-    <div class="card fade-up" style="margin-bottom:24px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Opportunités sous-exploitées</div>
-          <div class="card-subtitle">Produits IP à forte rotation nationale absents de votre portefeuille</div>
-        </div>
-        <span class="badge badge-blue" style="background:rgba(0,87,255,.12);color:var(--blue)">${opps.length} produits</span>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="data-table">
-          <thead><tr>
-            <th>#</th><th>Désignation</th><th>Famille</th>
-            <th style="text-align:right">Rot./pharma/mois</th>
-            <th style="text-align:right">Prix IP HT</th>
-            <th style="text-align:right">YoY Jan</th>
-          </tr></thead>
-          <tbody>${oppsHtml}</tbody>
-        </table>
-      </div>
-    </div>` : ''}
-
-    <!-- Table complète tous produits -->
-    ${prodTableAll.length ? `
-    <div class="card fade-up">
-      <div class="card-header" style="flex-wrap:wrap;gap:10px">
-        <div>
-          <div class="card-title">Tous les produits — détail complet</div>
-          <div class="card-subtitle">${prodTableAll.length} références · page ${prodTablePage}/${prodTableTotalPages}</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" placeholder="Rechercher…" value="${prodTableQuery}"
-            oninput="prodTableQuery=this.value;prodTablePage=1;renderProduits()"
-            style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;color:var(--text);width:160px">
-          <button onclick="prodExportCSV()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-weight:600">⬇ CSV</button>
-        </div>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th style="cursor:pointer" onclick="prodTableSort='label';prodTableSortAsc=prodTableSort==='label'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Désignation${sortIcon('label')}</th>
-              <th>Famille</th>
-              <th style="text-align:right;cursor:pointer" onclick="prodTableSort='ca';prodTableSortAsc=prodTableSort==='ca'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">CA HT${sortIcon('ca')}</th>
-              <th style="text-align:right;cursor:pointer" onclick="prodTableSort='qte';prodTableSortAsc=prodTableSort==='qte'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Qtés${sortIcon('qte')}</th>
-              <th style="text-align:right;cursor:pointer" onclick="prodTableSort='pharmaCount';prodTableSortAsc=prodTableSort==='pharmaCount'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Pharmas${sortIcon('pharmaCount')}</th>
-              <th style="text-align:right">PU moyen</th>
-              <th style="text-align:right;cursor:pointer;white-space:nowrap" onclick="prodTableSort='momPct';prodTableSortAsc=prodTableSort==='momPct'?!prodTableSortAsc:false;prodTablePage=1;renderProduits()">Tendance${sortIcon('momPct')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${prodTableSlice.map((p, i) => {
-              const cat = CATS[p.cat] || CATS.mi;
-              const rank = (prodTablePage - 1) * PROD_TABLE_PER_PAGE + i + 1;
-              const puMoyen = p.qte > 0 ? p.ca / p.qte : 0;
-              const escapedLabel = (p.label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-              const momBadge = p.momPct !== null
-                ? `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:${p.momPct >= 0 ? 'rgba(0,229,160,.12)' : 'rgba(255,77,109,.12)'};color:${p.momPct >= 0 ? 'var(--mint)' : 'var(--rose)'}">${p.momPct >= 0 ? '▲' : '▼'} ${Math.abs(p.momPct).toFixed(1)}%</span>`
-                : `<span style="color:var(--text3);font-size:10px">—</span>`;
-              const wmlRowPopCRM = wmlOppMapCRM.get(nnWmlProd(p.label || '')) || 0;
-              const wmlRowBadgeCRM = wmlRowPopCRM > 0 ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(0,229,160,.13);color:var(--mint);margin-left:4px;font-weight:600">📦×${wmlRowPopCRM}</span>` : '';
-              return `<tr onclick="showProductBreakdown('${escapedLabel}')" style="cursor:pointer" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-                <td style="font-size:12px">
-                  <span style="color:var(--text3);font-size:11px;margin-right:6px">${rank}</span>
-                  ${p.label}${wmlRowBadgeCRM}
-                </td>
-                <td><span style="font-size:10px;padding:1px 5px;border-radius:4px;background:${cat.color}18;color:${cat.color};font-weight:700">${cat.icon}</span></td>
-                <td class="td-num" style="text-align:right;font-weight:700">${fmt(p.ca)}</td>
-                <td class="td-num" style="text-align:right">${fmtNum(Math.round(p.qte))}</td>
-                <td class="td-num" style="text-align:right">${p.pharmaCount}</td>
-                <td class="td-num" style="text-align:right;color:var(--text3)">${fmtP(puMoyen)}</td>
-                <td style="text-align:right;white-space:nowrap">${momBadge}</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-      ${prodTableTotalPages > 1 ? `
-      <div style="display:flex;justify-content:center;align-items:center;gap:8px;padding:14px">
-        ${prodTablePage > 1 ? `<button onclick="prodTablePage--;renderProduits()" style="padding:5px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12px">← Préc</button>` : ''}
-        <span style="font-size:12px;color:var(--text3)">Page ${prodTablePage} / ${prodTableTotalPages}</span>
-        ${prodTablePage < prodTableTotalPages ? `<button onclick="prodTablePage++;renderProduits()" style="padding:5px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12px">Suiv →</button>` : ''}
-      </div>` : ''}
-    </div>` : ''}
-  `;
-
-  if (showTrend) {
-    setTimeout(() => {
-      const tCtx = document.getElementById('chart-trend-line');
-      if (!tCtx) return;
-      if (state.charts['trend-line']) state.charts['trend-line'].destroy();
-      const monthLabels = trendMonths.map(k => {
-        const [y, m] = k.split('-');
-        return monthName(parseInt(m)) + ' ' + y;
-      });
-      state.charts['trend-line'] = new Chart(tCtx, {
-        type: 'line',
-        data: {
-          labels: monthLabels,
-          datasets: [
-            {
-              label: 'CA HT',
-              data: trendMonths.map(k => +monthMap[k].ca.toFixed(2)),
-              borderColor: '#0057FF',
-              backgroundColor: 'rgba(0,87,255,.08)',
-              borderWidth: 2.5,
-              fill: true,
-              tension: 0.35,
-              pointRadius: 4,
-              pointBackgroundColor: '#0057FF',
-            },
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: c => ' ' + fmt(c.parsed.y) } },
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
-            y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
-          }
-        }
-      });
-    }, 50);
-  }
-
-  if (chartProds.length && sales.length) {
-    setTimeout(() => {
-      const ctx = document.getElementById('chart-produits-bar');
-      if (!ctx) return;
-      if (state.charts['produits-bar']) state.charts['produits-bar'].destroy();
-      const sorted = [...chartProds].sort((a, b) => a.ca - b.ca);
-      state.charts['produits-bar'] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: sorted.map(p => p.name.length > 38 ? p.name.slice(0, 38) + '…' : p.name),
-          datasets: [
-            { label: 'CA HT', data: sorted.map(p => +p.ca.toFixed(2)), backgroundColor: chartColor + 'BB', borderColor: chartColor, borderWidth: 2, borderRadius: 5 },
-            { label: 'Marge', data: sorted.map(p => +p.marge.toFixed(2)), backgroundColor: '#00E5A0BB', borderColor: '#00E5A0', borderWidth: 2, borderRadius: 5 },
-          ]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top', labels: { color: '#64748B', font: { size: 11 }, boxWidth: 12 } },
-            tooltip: { callbacks: { label: c => ' ' + fmt(c.parsed.x) } }
-          },
-          scales: {
-            x: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
-            y: { grid: { display: false }, ticks: { color: '#0F172A', font: { size: 11 } } },
-          },
-          onClick(evt, elements) {
-            if (!elements.length) return;
-            const name = sorted[elements[0].index].name;
-            showProductBreakdown(name);
-          }
-        }
-      });
-      ctx.style.cursor = 'pointer';
-    }, 50);
-  }
 }
 
 function prodExportCSV() {
