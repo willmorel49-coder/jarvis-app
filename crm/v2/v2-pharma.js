@@ -472,7 +472,7 @@
     }).join('');
 
     var html =
-      '<div style="padding:16px 20px;font-family:Inter,system-ui,sans-serif;color:#10131C">' +
+      '<div style="padding:16px 20px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #0050E6;padding-bottom:11px;margin-bottom:15px">' +
           '<div style="display:flex;align-items:center;gap:12px">' +
             '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative">' +
@@ -499,6 +499,8 @@
       '</div>';
 
     window.ensureHtml2Pdf().then(function () {
+      return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
+    }).then(function () {
       var wrap = document.createElement('div');
       wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
       wrap.innerHTML = html;
