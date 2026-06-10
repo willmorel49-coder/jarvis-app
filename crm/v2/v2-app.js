@@ -101,11 +101,12 @@
       var P = [
         { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Opportunités pharmacie', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas, classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
         { k: 'fiches', cls: 'p2', ico: 'fiche', tag: 'PDF', t: 'Fiches commerciales', d: 'Crée une fiche produit sur-mesure et sors-la en PDF à montrer ou envoyer au pharmacien pendant le rendez-vous.', go: 'Créer une fiche' },
-        { k: 'catalogue', cls: 'p3', ico: 'cat', tag: (window.BENCHMARK ? V2.fmtNum(window.BENCHMARK.length) : '10 500'), t: 'Catalogue & concurrents', d: 'Tout le catalogue IP par tranches AFMCODE, comparé en direct aux prix Leclerc, Drakkars et Cap3000.', go: 'Explorer le catalogue' },
+        { k: 'catalogue', cls: 'p3', ico: 'cat', tag: (window.BENCHMARK ? V2.fmtNum(window.BENCHMARK.length) : '10 500'), t: 'Catalogue grossiste', d: 'Tout le catalogue médicaments IP par tranches de prix et familles AFMCODE, avec ton volume et le marché Ameli.', go: 'Explorer le catalogue' },
+        { k: 'offilog', cls: 'p5', accent: 'var(--c-froid)', ico: 'spark', tag: 'Veille', t: 'Offilog & concurrents', d: 'Ta parapharma : ton prix d\'achat IP comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000. Repère où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
         { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: V2.fmtK(caTotal) + ' €', t: 'Pilotage CA & marge', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
       ];
       var pilHtml = P.map(function (p) {
-        return '<a class="v2-pil ' + p.cls + '" onclick="V2.go(\'' + p.k + '\')">' +
+        return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onclick="V2.go(\'' + p.k + '\')">' +
           '<div class="v2-pil-head"><div class="v2-pil-ico">' + ICO(p.ico, 26) + '</div><span class="v2-pil-num">' + p.tag + '</span></div>' +
           '<div class="v2-pil-t">' + p.t + '</div><div class="v2-pil-d">' + p.d + '</div>' +
           '<div class="v2-pil-go">' + p.go + ' <span class="arrow">→</span></div></a>';
@@ -135,7 +136,7 @@
   function buildCmdkIndex() {
     var idx = [];
     // Pages
-    [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['fiches', 'Fiches commerciales', 'fiche'], ['catalogue', 'Catalogue & concurrents', 'cat'], ['pilotage', 'Pilotage CA & marge', 'pilo']]
+    [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['fiches', 'Fiches commerciales', 'fiche'], ['catalogue', 'Catalogue grossiste', 'cat'], ['offilog', 'Offilog & concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']]
       .forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
     // Pharmacies
     (V2.pharmacies || []).forEach(function (p) {
