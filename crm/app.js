@@ -6569,9 +6569,276 @@ function benchSparkline(months, width=60, height=18) {
   return '<svg width="'+width+'" height="'+height+'" viewBox="0 0 '+width+' '+height+'" style="display:block">'+bars+'</svg>';
 }
 
+// ── BENCHMARK STYLES (multipane layout) ─────────
+function __ensureBenchmarkStyles() {
+  if (document.getElementById('bench-multipane-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'bench-multipane-styles';
+  style.textContent = `
+.bench-multipane {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  height: calc(100vh - 200px);
+  min-height: 560px;
+  margin: 0 -16px;
+}
+@media (min-width: 1280px) {
+  .bench-multipane {
+    grid-template-columns: 1fr 400px;
+    gap: 16px;
+    margin: 0;
+  }
+}
+.bench-col-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; gap: 14px; }
+.bench-col-aside {
+  background: var(--bg-elevated, var(--bg2, #fff));
+  border-radius: 14px;
+  box-shadow: var(--shadow-2, 0 4px 24px rgba(0,0,0,.08));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border2, rgba(60,60,67,.18));
+}
+@media (max-width: 1279px) {
+  .bench-col-aside {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 80;
+    border-radius: 14px 14px 0 0;
+    max-height: 75vh;
+    transform: translateY(100%);
+    transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -12px 48px rgba(0,0,0,.22);
+  }
+  .bench-col-aside[data-open="true"] { transform: translateY(0); }
+  .bench-aside-grip {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--border2, rgba(60,60,67,.36));
+    margin: 8px auto 0;
+    display: block;
+  }
+}
+@media (min-width: 1280px) { .bench-aside-grip { display: none; } }
+.bench-toolbar-sticky {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--material-bg-light, rgba(255,255,255,.85));
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--separator-non-opaque, rgba(60,60,67,.36));
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  border-radius: 14px 14px 0 0;
+}
+.bench-vtable-wrap {
+  flex: 1; min-height: 0;
+  background: var(--bg-elevated, var(--bg2, #fff));
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-2, 0 4px 24px rgba(0,0,0,.06));
+  display: flex; flex-direction: column;
+  border: 1px solid var(--border2, rgba(60,60,67,.12));
+}
+.bench-vtable-host { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.bench-vtable-host .a-vtable { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.bench-vtable-host .a-vtable-viewport { flex: 1; min-height: 0; overflow-y: auto; }
+
+.bench-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 110px 96px 80px 76px 64px 100px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: var(--row-h, 48px);
+  font: 400 13px/18px var(--font-text, 'Inter', system-ui, sans-serif);
+  cursor: pointer;
+  border-bottom: 0.5px solid var(--separator-non-opaque, rgba(60,60,67,.18));
+  transition: background 120ms ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+.bench-row:hover { background: var(--fill-4, rgba(0,0,0,.03)); }
+.bench-row.is-selected {
+  background: var(--brand-ip-tint, rgba(0,87,255,.08));
+  box-shadow: inset 3px 0 0 var(--blue, #0057FF);
+}
+.bench-row-rank {
+  font-family: var(--font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
+  font-size: 11px;
+  color: var(--label-secondary, var(--text3, #71717a));
+  font-weight: 600;
+}
+.bench-row-name {
+  font-weight: 600;
+  color: var(--label-primary, var(--text, #000));
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+}
+.bench-row-num {
+  text-align: right;
+  font-family: var(--font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--label-primary, var(--text2));
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bench-row-num-strong { font-weight: 700; color: var(--blue, #0057FF); }
+.bench-row-pill {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: 4px;
+  font-size: 10px; font-weight: 700;
+}
+.bench-row-yoy { font-size: 11px; font-weight: 600; text-align: right; }
+.bench-header {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 110px 96px 80px 76px 64px 100px;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--material-bg-light, rgba(255,255,255,.85));
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 0.5px solid var(--separator-non-opaque, rgba(60,60,67,.36));
+  font: 600 10px/13px var(--font-text, 'Inter', system-ui, sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--label-secondary, var(--text3, #71717a));
+  position: sticky; top: 0; z-index: 2;
+  box-sizing: border-box;
+}
+.bench-header-cell {
+  cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 4px;
+  transition: color 120ms ease;
+}
+.bench-header-cell[data-align="right"] { justify-content: flex-end; }
+.bench-header-cell[data-align="center"] { justify-content: center; }
+.bench-header-cell:hover { color: var(--blue, #0057FF); }
+.bench-header-cell.is-active { color: var(--blue, #0057FF); }
+
+.bench-inspector-header {
+  padding: 18px 20px;
+  border-bottom: 0.5px solid var(--separator-non-opaque, rgba(60,60,67,.18));
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 12px;
+}
+.bench-inspector-close {
+  width: 28px; height: 28px; border-radius: 8px;
+  border: 1px solid var(--border2, rgba(60,60,67,.18));
+  background: var(--bg2, transparent);
+  cursor: pointer; font-size: 14px;
+  color: var(--text2, #333);
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 120ms ease;
+}
+.bench-inspector-close:hover { background: var(--fill-4, rgba(0,0,0,.04)); }
+.bench-inspector-empty {
+  padding: 60px 32px;
+  text-align: center;
+  color: var(--label-secondary, var(--text3, #71717a));
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex; flex-direction: column; gap: 12px;
+  align-items: center; justify-content: center;
+  flex: 1;
+}
+.bench-inspector-empty-icon { font-size: 36px; opacity: .35; }
+.bench-inspector-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.bench-inspector-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bench-inspector-kpi {
+  background: var(--bg2, rgba(0,0,0,.03));
+  padding: 10px 12px; border-radius: 10px; text-align: center;
+}
+.bench-inspector-kpi-v {
+  font-size: 16px; font-weight: 800;
+  color: var(--text, #000);
+  font-family: var(--font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.bench-inspector-kpi-l {
+  font-size: 10px; color: var(--text3, #71717a);
+  margin-top: 2px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.bench-amalu-bars {
+  display: flex; align-items: flex-end;
+  gap: 3px;
+  height: 80px;
+  margin: 8px 0 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--separator-non-opaque, rgba(60,60,67,.12));
+}
+.bench-amalu-bar {
+  flex: 1;
+  background: var(--blue, #0057FF);
+  border-radius: 2px 2px 0 0;
+  min-height: 4px;
+  transition: opacity 200ms;
+}
+.bench-amalu-bar:hover { opacity: 0.7; }
+.bench-amalu-bar.is-prev { background: rgba(0,87,255,.4); }
+.bench-amalu-labels {
+  display: flex; gap: 3px; font-size: 9px;
+  color: var(--text3, #71717a);
+  font-family: var(--font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
+}
+.bench-amalu-labels span { flex: 1; text-align: center; }
+.bench-inspector-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; padding-top: 4px;
+}
+.bench-inspector-actions button {
+  flex: 1; min-width: 120px;
+  padding: 9px 14px; border-radius: 10px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--border2, rgba(60,60,67,.18));
+  background: var(--bg2, transparent);
+  color: var(--text2, #333);
+  transition: all 120ms ease;
+}
+.bench-inspector-actions button.is-primary {
+  background: var(--blue, #0057FF); color: #fff; border-color: var(--blue, #0057FF);
+}
+.bench-inspector-actions button:hover { transform: translateY(-1px); }
+`;
+  document.head.appendChild(style);
+}
+
 function renderBenchmark() {
-  if (typeof BENCHMARK === 'undefined') {
-    document.getElementById('bench-content').innerHTML = emptyState('chart', 'Données Benchmark indisponibles', 'Le fichier benchmark-data.js n\'est pas chargé. Vérifiez votre import.');
+  __ensureBenchmarkStyles();
+
+  // Bridge BENCHMARK (defer race condition + retry comme renderProduits)
+  try { if (typeof BENCHMARK !== 'undefined' && !window.BENCHMARK) window.BENCHMARK = BENCHMARK; } catch(e){}
+  const __BM = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ? BENCHMARK :
+               (window.BENCHMARK && window.BENCHMARK.length) ? window.BENCHMARK : [];
+
+  if (!__BM.length && !window.__benchPollArmed) {
+    window.__benchPollArmed = true;
+    let __polls = 0;
+    const __poll = setInterval(() => {
+      __polls++;
+      try { if (typeof BENCHMARK !== 'undefined' && !window.BENCHMARK) window.BENCHMARK = BENCHMARK; } catch(e){}
+      const ok = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ||
+                 (window.BENCHMARK && window.BENCHMARK.length);
+      if (ok) {
+        clearInterval(__poll);
+        window.__benchPollArmed = false;
+        if (state.currentPage === 'benchmark') renderBenchmark();
+      } else if (__polls > 60) {
+        clearInterval(__poll);
+        window.__benchPollArmed = false;
+      }
+    }, 500);
+  }
+
+  if (!__BM.length) {
+    document.getElementById('bench-content').innerHTML = `
+      <div class="card fade-up" style="margin:24px 0;padding:30px 24px;text-align:center;background:linear-gradient(135deg,rgba(0,87,255,0.08) 0%,rgba(124,58,237,0.05) 100%);border-left:3px solid var(--blue)">
+        <div style="font-size:36px;margin-bottom:14px;animation:spin 1.2s linear infinite;display:inline-block">📊</div>
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px">Benchmark Marché — chargement…</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:18px">Les 10 500 références IP se chargent. Quelques secondes.</div>
+        <button onclick="renderBenchmark()" style="padding:10px 20px;border-radius:10px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer">🔄 Recharger</button>
+        <style>@keyframes spin {from{transform:rotate(0)}to{transform:rotate(360deg)}}</style>
+      </div>`;
     return;
   }
 
@@ -6586,8 +6853,8 @@ function renderBenchmark() {
     salesMap[k].ca  += s.mntNetHt;
     salesMap[k].qte += s.qte;
   }
-  const nVendus    = BENCHMARK.filter(d => salesMap[nnBench(d.designation)]?.ca > 0).length;
-  const nNonVendus = BENCHMARK.length - nVendus;
+  const nVendus    = __BM.filter(d => salesMap[nnBench(d.designation)]?.ca > 0).length;
+  const nNonVendus = __BM.length - nVendus;
 
   // Per-product pharmacy count map
   const pharmPerProd = new Map();
@@ -6611,7 +6878,7 @@ function renderBenchmark() {
   }
 
   // Filter
-  let data = [...BENCHMARK];
+  let data = [...__BM];
   if (benchCat === 'froid')          data = data.filter(d => isFroidBench(d));
   else if (benchCat === 'generique') data = data.filter(d => isGenerique(d));
   else if (benchCat === 'biosim')    data = data.filter(d => isBiosim(d));
@@ -6636,12 +6903,18 @@ function renderBenchmark() {
     const av = a[benchSortCol] ?? 0, bv = b[benchSortCol] ?? 0;
     return benchSortAsc ? av - bv : bv - av;
   });
-  benchCurrentData = data.slice(0, 200);
+  // B6 fix : on garde TOUTE la liste filtrée (vtable s'occupe du virtual scroll)
+  benchCurrentData = data;
 
-  // Stats globales
-  const totalIPQty = BENCHMARK.reduce((s, d) => s + d.ip_qty, 0);
-  const totalIPCa  = BENCHMARK.reduce((s, d) => s + d.ip_ca, 0);
-  const withAmeli  = BENCHMARK.filter(d => d.has_ameli).length;
+  // Stats globales (KPI header)
+  const totalIPCa  = __BM.reduce((s, d) => s + d.ip_ca, 0);
+  const rotMoy = (() => {
+    const withA = __BM.filter(d => d.has_ameli && d.rot_pharma_jan26 != null);
+    return withA.length ? withA.reduce((s, d) => s + d.rot_pharma_jan26, 0) / withA.length : 0;
+  })();
+  const croissantCount = __BM.filter(d => d.yoy_jan != null && d.yoy_jan > 0).length;
+
+  // Famille chips
   const cats = [
     { key: 'tous',      label: 'Tous' },
     { key: 'pp',        label: 'PP <4.8€' },
@@ -6652,133 +6925,91 @@ function renderBenchmark() {
     { key: 'biosim',    label: 'Biosim' },
     { key: 'generique', label: 'Génériques' },
   ];
-
   const chipsHtml = cats.map(c => {
     const active = benchCat === c.key;
     return `<button onclick="benchCat='${c.key}';renderBenchmark()"
-      onmouseover="if(!${active})this.style.background='var(--bg3)';this.style.borderColor='var(--blue)'"
-      onmouseout="if(!${active}){this.style.background='transparent';this.style.borderColor='var(--border2)'}"
-      style="padding:5px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};
-      background:${active ? 'var(--blue-bg)' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
+      style="padding:6px 14px;border-radius:20px;border:1px solid ${active ? 'var(--blue)' : 'var(--border2)'};
+      background:${active ? 'var(--blue-bg, rgba(0,87,255,.1))' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--text2)'};
       cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:all .15s
     ">${c.label}</button>`;
   }).join('');
 
-  function thB(col, label, align='right') {
-    const active = benchSortCol === col;
-    const arrow = active ? `<span style="color:var(--blue);margin-left:3px">${benchSortAsc ? '↑' : '↓'}</span>` : '';
-    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--blue)':'var(--text2)'};font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
-  }
+  // B2 fix : sort headers avec feedback visuel clair
+  const headerCols = [
+    { key: 'ip_rank_qty',      label: 'Rang',    align: 'left',   sortable: true },
+    { key: '__name',           label: 'Produit', align: 'left',   sortable: false },
+    { key: 'cip13',            label: 'CIP13',   align: 'left',   sortable: false },
+    { key: 'ip_qty',           label: 'Qté',     align: 'right',  sortable: true },
+    { key: 'ip_ca',            label: 'CA',      align: 'right',  sortable: true },
+    { key: 'prix_ip',          label: 'Prix',    align: 'right',  sortable: true },
+    { key: 'yoy_jan',          label: 'YoY',     align: 'right',  sortable: true },
+    { key: 'rot_pharma_jan26', label: 'Rot/m',   align: 'right',  sortable: true },
+  ];
+  const headerHTML = headerCols.map(c => {
+    const active = c.sortable && benchSortCol === c.key;
+    const arrow = active ? (benchSortAsc ? ' ↑' : ' ↓') : '';
+    if (!c.sortable) {
+      return `<div class="bench-header-cell" data-align="${c.align}" style="cursor:default">${c.label}</div>`;
+    }
+    const handler = `benchSortCol='${c.key}';benchSortAsc=${active ? !benchSortAsc : false};renderBenchmark()`;
+    return `<div class="bench-header-cell${active ? ' is-active' : ''}" data-align="${c.align}" onclick="${handler}">${c.label}${arrow}</div>`;
+  }).join('');
 
-  const rowsHtml = data.slice(0, 200).map((d, i) => {
-    const rotColor = d.rot_pharma_jan26 > 10 ? 'var(--mint)' : d.rot_pharma_jan26 > 1 ? 'var(--amber)' : 'var(--text3)';
+  // Row renderer (B1 fix : nom prend minmax(0,1fr) → truncate propre)
+  const selectedCip = window.__benchSelectedCip || null;
+  const renderBenchRow = (d) => {
     const cc = (CATS[d.categorie] || CATS.mi).color;
     const froidTag = isFroidBench(d) ? ' <span title="Thermosensible" style="font-size:11px">❄️</span>' : '';
-    const yoy = d.yoy_jan != null
-      ? `<span style="font-size:11px;font-weight:600;color:${d.yoy_jan > 5 ? 'var(--mint)' : d.yoy_jan < -5 ? 'var(--rose)' : 'var(--text3)'}">${d.yoy_jan > 0 ? '▲' : '▼'} ${Math.abs(d.yoy_jan).toFixed(0)}%</span>`
-      : '<span style="color:var(--text4);font-size:11px">—</span>';
-    const prixDisplay = d.prix_ip > 0
-      ? `<span style="font-size:11px;color:var(--blue)">${fmtP(d.prix_ip)}</span>`
-      : '<span style="color:var(--text4);font-size:11px">—</span>';
-    const sv = salesMap[nnBench(d.designation)];
-    const partIP = (sv?.ca > 0 && d.ip_ca > 0) ? (sv.ca / d.ip_ca * 100) : null;
-    const pharmSet = pharmPerProd.get(nnBench(d.designation));
-    const nPharmaB = pharmSet ? pharmSet.size : 0;
-    const penetPct = nTotalPharma > 0 ? Math.round(nPharmaB / nTotalPharma * 100) : 0;
-    const penetBadge = nPharmaB > 0
-      ? `<div style="font-size:10px;color:${nPharmaB === nTotalPharma ? 'var(--mint)' : nPharmaB >= 2 ? 'var(--amber)' : 'var(--text3)'};font-weight:600">${nPharmaB}/${nTotalPharma} pharma</div>`
-      : '';
-    const nosVentesHtml = sv?.ca > 0
-      ? `<div style="text-align:right">
-          <div style="font-size:11px;font-weight:700;color:var(--mint)">${fmt(sv.ca)}</div>
-          <div style="font-size:10px;color:var(--text3)">${fmtNum(Math.round(sv.qte))} u.</div>
-          ${partIP !== null ? `<div style="font-size:10px;color:var(--blue);font-weight:600">${partIP.toFixed(2)}% du CA IP</div>` : ''}
-          ${penetBadge}
-        </div>`
-      : salesAll.length > 0
-        ? `<span style="font-size:10px;color:var(--text3);background:rgba(239,68,68,.08);padding:2px 6px;border-radius:6px;font-weight:600">Non vendu</span>`
-        : `<span style="color:var(--text4);font-size:11px">—</span>`;
-    return `<tr style="transition:background .12s;cursor:pointer" onclick="showBenchDetail(${i})" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-      <td style="color:var(--text3);font-size:12px">${d.ip_rank_qty}</td>
-      <td class="td-name" style="font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}${froidTag}</td>
-      <td><span style="font-size:10px;padding:2px 7px;border-radius:4px;background:${cc}22;color:${cc}">${d.categorie.toUpperCase()}</span></td>
-      <td class="td-num" style="text-align:right">${fmtNum(d.ip_qty)}</td>
-      <td class="td-num" style="text-align:right">${fmt(d.ip_ca)}</td>
-      <td style="text-align:right">${prixDisplay}</td>
-      <td class="td-num" style="text-align:right;color:${rotColor}">${d.has_ameli ? d.rot_pharma_jan26.toFixed(1) : '—'}</td>
-      <td style="text-align:right">${yoy}</td>
-      <td style="text-align:right;font-size:11px;color:var(--text3)">${d.has_ameli ? fmtNum(d.ameli_jan26) : '—'}</td>
-      <td style="padding:6px 10px">${nosVentesHtml}</td>
-      <td style="padding:4px 8px">${d.has_ameli && d.ameli_months ? benchSparkline(d.ameli_months) : ''}</td>
-      ${wmlBenchMapCRM.size > 0 ? `<td style="text-align:center">${wmlBenchMapCRM.get(nnBench(d.designation)) > 0 ? `<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--mint);font-weight:700">📦 ×${wmlBenchMapCRM.get(nnBench(d.designation))}</span>` : ''}</td>` : ''}
-    </tr>`;
-  }).join('');
+    const yoyCol = d.yoy_jan == null ? 'var(--text3)'
+      : d.yoy_jan > 5 ? 'var(--mint)'
+      : d.yoy_jan < -5 ? 'var(--rose)'
+      : 'var(--text3)';
+    const yoyStr = d.yoy_jan == null ? '—'
+      : (d.yoy_jan > 0 ? '▲' : '▼') + ' ' + Math.abs(d.yoy_jan).toFixed(0) + '%';
+    const rotCol = d.has_ameli && d.rot_pharma_jan26 != null
+      ? (d.rot_pharma_jan26 > 10 ? 'var(--mint)' : d.rot_pharma_jan26 > 1 ? 'var(--amber)' : 'var(--text3)')
+      : 'var(--text4)';
+    const rotStr = d.has_ameli && d.rot_pharma_jan26 != null ? d.rot_pharma_jan26.toFixed(1) : '—';
+    const selCls = (selectedCip && d.cip13 === selectedCip) ? ' is-selected' : '';
+    const cipSafe = (d.cip13 || '').replace(/'/g, '');
+    return `<div class="bench-row${selCls}" data-cip="${cipSafe}" onclick="window.benchSelectProduct('${cipSafe}')">
+      <span class="bench-row-rank">#${d.ip_rank_qty || '—'}</span>
+      <span class="bench-row-name" title="${(d.designation || '').replace(/"/g, '&quot;')}">
+        <span class="bench-row-pill" style="background:${cc}22;color:${cc};flex-shrink:0">${(d.categorie || '').toUpperCase()}</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.designation}${froidTag}</span>
+      </span>
+      <span class="bench-row-num" style="text-align:left">${d.cip13 || '—'}</span>
+      <span class="bench-row-num">${fmtNum(d.ip_qty)}</span>
+      <span class="bench-row-num bench-row-num-strong">${fmt(d.ip_ca)}</span>
+      <span class="bench-row-num">${d.prix_ip > 0 ? fmtP(d.prix_ip) : '—'}</span>
+      <span class="bench-row-yoy" style="color:${yoyCol}">${yoyStr}</span>
+      <span class="bench-row-num" style="color:${rotCol}">${rotStr}</span>
+    </div>`;
+  };
 
-  const rotMoy = (() => {
-    const withA = BENCHMARK.filter(d => d.has_ameli && d.rot_pharma_jan26 != null);
-    return withA.length ? withA.reduce((s, d) => s + d.rot_pharma_jan26, 0) / withA.length : 0;
-  })();
-  const croissantCount = BENCHMARK.filter(d => d.yoy_jan != null && d.yoy_jan > 0).length;
+  // Crossfilter buttons (WML / vendus / non vendus)
+  const crossBtns = salesAll.length > 0 ? `
+    <span style="width:1px;height:20px;background:var(--border2);margin:0 2px"></span>
+    ${[
+      { key: 'tous', label: `Tous (${fmtNum(__BM.length)})`, color: '#64748B' },
+      { key: 'vendus', label: `Nos ventes (${fmtNum(nVendus)})`, color: '#00E5A0' },
+      { key: 'non_vendus', label: `Non vendus (${fmtNum(nNonVendus)})`, color: '#EF4444' },
+      ...(wmlBenchMapCRM.size > 0 ? [{ key: 'wml', label: `WML OPSO (${fmtNum(__BM.filter(d => wmlBenchMapCRM.has(nnBench(d.designation))).length)})`, color: '#00E5A0' }] : []),
+    ].map(t => {
+      const active = benchCrossFilter === t.key;
+      return `<button onclick="benchCrossFilter='${t.key}';renderBenchmark()"
+        style="padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid ${active ? t.color : 'var(--border2)'};background:${active ? t.color + '18' : 'transparent'};color:${active ? t.color : 'var(--text2)'};cursor:pointer;transition:all .15s;white-space:nowrap">${t.label}</button>`;
+    }).join('')}
+  ` : '';
 
-  const catKeys = ['pp','mi','ch','biosim','generique','nr'];
-  const catCardsHtml = catKeys.map(key => {
-    const cat = CATS[key] || CATS.mi;
-    const prods = key === 'biosim'    ? BENCHMARK.filter(d => isBiosim(d))
-      : key === 'generique' ? BENCHMARK.filter(d => isGenerique(d))
-      : key === 'nr'        ? BENCHMARK.filter(d => isNonRembourse(d))
-      : BENCHMARK.filter(d => d.categorie === key);
-    const prodCount = prods.length;
-    const caTotal = prods.reduce((s, d) => s + (d.ip_ca || 0), 0);
-    const ameliProds = prods.filter(d => d.has_ameli && d.rot_pharma_jan26 != null);
-    const rotAvg = ameliProds.length ? ameliProds.reduce((s, d) => s + d.rot_pharma_jan26, 0) / ameliProds.length : null;
-    const yoyProds = prods.filter(d => d.yoy_jan != null);
-    const yoyAvg = yoyProds.length ? yoyProds.reduce((s, d) => s + d.yoy_jan, 0) / yoyProds.length : null;
-    const cc = cat.color;
-    return `
-      <div style="border-radius:var(--rs);overflow:hidden;background:var(--glass2);border:1px solid var(--border2)">
-        <div style="padding:10px 14px;background:${cc}22;border-bottom:1px solid ${cc}44;display:flex;align-items:center;gap:8px">
-          <span style="font-size:16px">${cat.icon}</span>
-          <span style="font-size:12px;font-weight:700;color:${cc};text-transform:uppercase;letter-spacing:.5px">${cat.label}</span>
-        </div>
-        <div style="padding:12px 14px;display:flex;flex-direction:column;gap:6px">
-          <div style="display:flex;justify-content:space-between;font-size:12px">
-            <span style="color:var(--text3)">Produits IP</span>
-            <span style="font-weight:600">${fmtNum(prodCount)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:12px">
-            <span style="color:var(--text3)">CA IP</span>
-            <span style="font-weight:600">${fmt(caTotal)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:12px">
-            <span style="color:var(--text3)">Rotation moy.</span>
-            <span style="font-weight:600;color:var(--amber)">${rotAvg != null ? rotAvg.toFixed(1)+' boîtes' : '—'}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:12px">
-            <span style="color:var(--text3)">YoY moy.</span>
-            <span style="font-weight:600;color:${yoyAvg != null ? (yoyAvg > 0 ? 'var(--mint)' : 'var(--rose)') : 'var(--text3)'}">${yoyAvg != null ? (yoyAvg > 0 ? '+' : '') + yoyAvg.toFixed(1) + '%' : '—'}</span>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-
-  const ameliOnly = BENCHMARK.filter(d => d.has_ameli && d.rot_pharma_jan26 != null);
-  const top3rot = [...ameliOnly].sort((a,b) => b.rot_pharma_jan26 - a.rot_pharma_jan26).slice(0,3);
-  const yoyAll = BENCHMARK.filter(d => d.yoy_jan != null);
-  const top3yoyUp = [...yoyAll].sort((a,b) => b.yoy_jan - a.yoy_jan).slice(0,3);
-  const top3yoyDown = [...yoyAll].sort((a,b) => a.yoy_jan - b.yoy_jan).slice(0,3);
-
-  const insightFeed = [
-    ...top3rot.map(d => `<div class="alert-item"><div class="alert-icon" style="background:rgba(0,229,160,.1);color:var(--mint)">↑</div><div class="alert-body"><div class="alert-title">Top rotation : ${d.designation}</div><div class="alert-sub">${d.rot_pharma_jan26.toFixed(1)} boîtes/pharma/mois</div></div></div>`),
-    ...top3yoyUp.map(d => `<div class="alert-item"><div class="alert-icon" style="background:rgba(0,229,160,.1);color:var(--mint)">▲</div><div class="alert-body"><div class="alert-title">Plus forte croissance : ${d.designation}</div><div class="alert-sub">+${d.yoy_jan.toFixed(1)}% YoY</div></div></div>`),
-    ...top3yoyDown.map(d => `<div class="alert-item"><div class="alert-icon" style="background:rgba(255,77,109,.1);color:var(--rose)">▼</div><div class="alert-body"><div class="alert-title">Plus forte baisse : ${d.designation}</div><div class="alert-sub">${d.yoy_jan.toFixed(1)}% YoY</div></div></div>`),
-  ].join('');
-
+  // ── Render shell : KPIs + multipane ──
   document.getElementById('bench-content').innerHTML = `
     <div class="fade-up">
-      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:28px">
+      <!-- HEADER : KPIs (4 cards) -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
         <div class="kpi-card kc-b">
           <div class="kpi-icon">📦</div>
-          <div class="kpi-value">${fmtNum(BENCHMARK.length)}</div>
+          <div class="kpi-value">${fmtNum(__BM.length)}</div>
           <div class="kpi-label">Produits référencés IP</div>
         </div>
         <div class="kpi-card kc-g">
@@ -6798,79 +7029,283 @@ function renderBenchmark() {
         </div>
       </div>
 
-      <div class="card fade-up" style="margin-bottom:24px">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Répartition du portefeuille IP par famille</div>
-            <div class="card-subtitle">Analyse par catégorie — CA, rotation Ameli et tendance YoY</div>
+      <!-- MULTI-PANE LAYOUT -->
+      <div class="bench-multipane">
+        <!-- COL MAIN : toolbar sticky + vtable -->
+        <div class="bench-col-main">
+          <div class="bench-vtable-wrap">
+            <div class="bench-toolbar-sticky">
+              <input type="text" placeholder="Rechercher CIP, désignation, ATC2…"
+                value="${(benchSearch || '').replace(/"/g, '&quot;')}"
+                oninput="benchSearch=this.value;renderBenchmark()"
+                style="flex:1;min-width:220px;padding:9px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);font-size:13px;color:var(--text)"/>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${chipsHtml}</div>
+              ${crossBtns}
+              <button onclick="benchExportCSV()" title="Exporter en CSV" style="padding:7px 12px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">⬇ CSV</button>
+              <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono, monospace);margin-left:auto">
+                <strong style="color:var(--blue)">${data.length.toLocaleString('fr-FR')}</strong> / ${__BM.length.toLocaleString('fr-FR')}
+              </span>
+            </div>
+            <div id="bench-vtable-host" class="bench-vtable-host"></div>
           </div>
         </div>
-        <div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-          ${catCardsHtml}
+
+        <!-- COL ASIDE : inspector contextuel -->
+        <aside class="bench-col-aside" id="bench-aside" ${selectedCip && typeof window !== 'undefined' && window.innerWidth < 1280 ? 'data-open="true"' : ''}>
+          <span class="bench-aside-grip"></span>
+          <div id="bench-inspector-content"></div>
+        </aside>
+      </div>
+    </div>
+  `;
+
+  // ── Mount vtable (10 500 lignes, virtual scroll) ────────────
+  const host = document.getElementById('bench-vtable-host');
+  if (host) {
+    if (typeof window.appleCreateVTable === 'function') {
+      host.style.setProperty('--row-h', '48px');
+      // Détruire l'ancienne vtable si présente
+      if (window.__benchVTable && typeof window.__benchVTable.destroy === 'function') {
+        try { window.__benchVTable.destroy(); } catch(e){}
+      }
+      window.__benchVTable = window.appleCreateVTable({
+        container: host,
+        items: data,
+        rowHeight: 48,
+        header: `<div class="bench-header">${headerHTML}</div>`,
+        renderRow: renderBenchRow,
+        emptyState: `<div style="padding:48px 24px;text-align:center;color:var(--text3)">
+          <div style="font-size:32px;opacity:.4;margin-bottom:10px">🔍</div>
+          <div style="font-size:14px;font-weight:600">Aucun produit ne correspond</div>
+          <div style="font-size:12px;margin-top:4px">Modifie la recherche ou les filtres.</div>
+        </div>`,
+      });
+    } else {
+      // Fallback : pas de vtable → rendu classique, slice MAX 500
+      const slice = data.slice(0, 500);
+      host.innerHTML = `
+        <div style="background:transparent;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+          <div class="bench-header">${headerHTML}</div>
+          <div style="overflow-y:auto;flex:1">
+            ${slice.map(renderBenchRow).join('')}
+            ${data.length > 500 ? `<div style="padding:14px 20px;font-size:12px;color:var(--text3);text-align:center;border-top:1px solid var(--border2)">${fmtNum(data.length)} résultats · affichage limité à 500 (vtable indisponible) — affinez la recherche.</div>` : ''}
+          </div>
+        </div>`;
+    }
+  }
+
+  // ── Render inspector (col droite / sheet mobile) ────────────
+  // Données complémentaires pour l'inspector (top rotation, top YoY)
+  // → exposés via état global pour __renderBenchInspector si nécessaire
+  __renderBenchInspector();
+}
+
+// ── BENCHMARK : Inspector contextuel ────────────────────
+// B4 fix : insights ne sont plus enterrés en bas — l'inspector affiche directement
+// les KPIs + mini-chart Ameli + concurrence pour le produit cliqué.
+function __renderBenchInspector() {
+  const slot = document.getElementById('bench-inspector-content');
+  if (!slot) return;
+  const cip = window.__benchSelectedCip || null;
+  const __BM = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ? BENCHMARK :
+               (window.BENCHMARK && window.BENCHMARK.length) ? window.BENCHMARK : [];
+  const d = cip ? __BM.find(b => b.cip13 === cip) : null;
+
+  if (!d) {
+    slot.innerHTML = `
+      <div class="bench-inspector-empty">
+        <div class="bench-inspector-empty-icon">👆</div>
+        <div style="font-weight:700;color:var(--text2);font-size:14px">Sélectionne un produit</div>
+        <div>Clique sur une ligne pour voir son détail : prix, rotation Ameli 13 mois, concurrence (Drakkars / Cap3000 / Leclerc), et ventes IP.</div>
+      </div>`;
+    return;
+  }
+
+  // Croisement ventes IP
+  const nnB = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const allS = getSales();
+  const matching = allS.filter(s => nnB(s.artDesignation) === nnB(d.designation));
+  const sv = matching.reduce((acc, s) => ({ ca: acc.ca + s.mntNetHt, qte: acc.qte + s.qte }), { ca: 0, qte: 0 });
+
+  // Concurrence : EAN sur Drakkars / Cap3000 / Leclerc
+  const concPrices = [];
+  try {
+    const ean = d.cip13;
+    if (ean) {
+      if (typeof DRAKKARS !== 'undefined' && Array.isArray(DRAKKARS)) {
+        const dr = DRAKKARS.find(x => x.ean === ean);
+        if (dr && dr.prix) concPrices.push({ name: 'Drakkars', value: dr.prix, color: '#FF4D6D' });
+      }
+      if (typeof CAP3000 !== 'undefined' && Array.isArray(CAP3000)) {
+        const cp = CAP3000.find(x => x.ean === ean);
+        if (cp && cp.prix) concPrices.push({ name: 'Cap3000', value: cp.prix, color: '#FFB020' });
+      }
+      if (typeof LECLERC_PRICES !== 'undefined' && Array.isArray(LECLERC_PRICES)) {
+        const lc = LECLERC_PRICES.find(x => x.ean === ean);
+        if (lc && lc.prix) concPrices.push({ name: 'E.Leclerc', value: lc.prix, color: '#00E5A0' });
+      }
+    }
+  } catch (e) { /* sources concurrentielles optionnelles */ }
+
+  // Ameli mini-chart 13 mois (CSS bars)
+  const ameliLabels = ['J25','F','M','A','M','J','J','A','S','O','N','D','J26'];
+  const months = (d.has_ameli && Array.isArray(d.ameli_months)) ? d.ameli_months : null;
+  let ameliBarsHtml = '';
+  if (months && months.length) {
+    const mx = Math.max(...months, 1);
+    ameliBarsHtml = `
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Ameli — 13 mois</div>
+        <div class="bench-amalu-bars">
+          ${months.map((v, i) => {
+            const h = Math.max(4, Math.round(v / mx * 64));
+            const cls = i === months.length - 1 ? '' : 'is-prev';
+            return `<div class="bench-amalu-bar ${cls}" style="height:${h}px" title="${ameliLabels[i]} : ${fmtNum(v)} disp."></div>`;
+          }).join('')}
         </div>
+        <div class="bench-amalu-labels">
+          ${ameliLabels.map(l => `<span>${l}</span>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  const cat = CATS[d.categorie] || CATS.mi;
+  const cc = cat.color;
+
+  slot.innerHTML = `
+    <div class="bench-inspector-header">
+      <div style="min-width:0;flex:1">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <span class="bench-row-pill" style="background:${cc}22;color:${cc}">${(d.categorie || '').toUpperCase()}</span>
+          ${d.is_froid ? `<span class="bench-row-pill" style="background:#dbeafe;color:#1d4ed8">❄️ Froid</span>` : ''}
+          ${d.has_ameli ? `<span class="bench-row-pill" style="background:rgba(0,229,160,.12);color:#00a36a">SS Remb.</span>` : ''}
+          ${d.atc2 ? `<span style="font-size:10px;color:var(--text3);font-family:var(--font-mono, monospace)">${d.atc2}</span>` : ''}
+        </div>
+        <div style="font-size:15px;font-weight:800;line-height:1.3;color:var(--text);word-break:break-word">${d.designation}</div>
+        ${d.cip13 ? `<div style="font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--font-mono, monospace)">CIP13 ${d.cip13} · Rang IP #${d.ip_rank_qty || '—'}</div>` : ''}
+      </div>
+      <button class="bench-inspector-close" onclick="window.benchSelectProduct(null)" title="Fermer">✕</button>
+    </div>
+
+    <div class="bench-inspector-body">
+      <!-- KPIs principaux -->
+      <div class="bench-inspector-kpis">
+        <div class="bench-inspector-kpi">
+          <div class="bench-inspector-kpi-v" style="color:var(--blue)">${d.prix_ip > 0 ? fmtP(d.prix_ip) : '—'}</div>
+          <div class="bench-inspector-kpi-l">Prix IP</div>
+        </div>
+        <div class="bench-inspector-kpi">
+          <div class="bench-inspector-kpi-v">${d.prix_ht > 0 ? fmtP(d.prix_ht) : '—'}</div>
+          <div class="bench-inspector-kpi-l">Prix HT</div>
+        </div>
+        ${d.remise_pct > 0 ? `<div class="bench-inspector-kpi" style="background:rgba(0,229,160,.06)">
+          <div class="bench-inspector-kpi-v" style="color:var(--mint)">−${d.remise_pct.toFixed(1)}%</div>
+          <div class="bench-inspector-kpi-l">Remise</div>
+        </div>` : ''}
+        ${d.ip_rank_qty ? `<div class="bench-inspector-kpi">
+          <div class="bench-inspector-kpi-v">#${d.ip_rank_qty}</div>
+          <div class="bench-inspector-kpi-l">Rang Qté IP</div>
+        </div>` : ''}
       </div>
 
-      <div class="card fade-up" style="margin-bottom:24px">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Signaux marché</div>
-            <div class="card-subtitle">Top rotations, plus fortes croissances et baisses — Jan 2026</div>
-          </div>
+      <!-- Stats IP -->
+      <div style="background:var(--bg2);padding:12px 14px;border-radius:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px">
+          <span style="color:var(--text3)">Qté IP totale</span>
+          <span style="font-weight:700;font-family:var(--font-mono, monospace)">${fmtNum(d.ip_qty)}</span>
         </div>
-        <div class="alert-feed" style="padding:8px 20px 16px">${insightFeed}</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px">
+          <span style="color:var(--text3)">CA IP total</span>
+          <span style="font-weight:700;color:var(--blue);font-family:var(--font-mono, monospace)">${fmt(d.ip_ca)}</span>
+        </div>
+        ${d.has_ameli && d.rot_pharma_jan26 != null ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px">
+          <span style="color:var(--text3)">Rotation/pharma/mois</span>
+          <span style="font-weight:700;color:var(--amber);font-family:var(--font-mono, monospace)">${d.rot_pharma_jan26.toFixed(1)}</span>
+        </div>` : ''}
+        ${d.yoy_jan != null ? `<div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:var(--text3)">Tendance YoY</span>
+          <span style="font-weight:700;color:${d.yoy_jan >= 0 ? 'var(--mint)' : 'var(--rose)'};font-family:var(--font-mono, monospace)">${d.yoy_jan >= 0 ? '+' : ''}${d.yoy_jan.toFixed(1)}%</span>
+        </div>` : ''}
       </div>
 
-      <div class="card fade-up">
-        <div class="card-header" style="flex-wrap:wrap;gap:12px">
-          <div>
-            <div class="card-title">Référentiel produits IP</div>
-            <div class="card-subtitle">${fmtNum(BENCHMARK.length)} produits · rotation nationale Jan 2026 ÷ 19 000 pharmacies</div>
-          </div>
-          <div class="search-wrap" style="width:260px">
-            <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Rechercher un produit..." value="${benchSearch}"
-              oninput="benchSearch=this.value;renderBenchmark()" />
-          </div>
-          <button onclick="benchExportCSV()" style="padding:7px 12px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">⬇ CSV</button>
+      <!-- Mini-chart Ameli 13 mois (CSS) -->
+      ${ameliBarsHtml}
+
+      <!-- Concurrence (prix public TTC) -->
+      ${concPrices.length ? `<div style="background:var(--bg2);padding:12px 14px;border-radius:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Prix concurrence (TTC)</div>
+        ${concPrices.map(c => `<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px">
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${c.color}"></span>${c.name}</span>
+          <span style="font-weight:700;font-family:var(--font-mono, monospace)">${fmtP(c.value)}</span>
+        </div>`).join('')}
+      </div>` : ''}
+
+      <!-- Nos ventes -->
+      ${sv.ca > 0 ? `<div style="background:rgba(0,229,160,.06);padding:12px 14px;border-radius:12px;border:1px solid rgba(0,229,160,.15)">
+        <div style="font-size:11px;font-weight:700;color:#00a36a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nos ventes</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
+          <span style="color:var(--text3)">CA réalisé</span>
+          <span style="font-weight:800;color:#00a36a;font-family:var(--font-mono, monospace)">${fmt(sv.ca)}</span>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px 4px;align-items:center">
-          ${chipsHtml}
-          ${salesAll.length > 0 ? `<span style="width:1px;height:20px;background:var(--border2);margin:0 4px"></span>
-          ${[
-            { key: 'tous', label: `Tous (${fmtNum(BENCHMARK.length)})`, color: '#64748B' },
-            { key: 'vendus', label: `Nos ventes (${fmtNum(nVendus)})`, color: '#00E5A0' },
-            { key: 'non_vendus', label: `Non vendus (${fmtNum(nNonVendus)})`, color: '#EF4444' },
-            ...(wmlBenchMapCRM.size > 0 ? [{ key: 'wml', label: `WML OPSO (${fmtNum(BENCHMARK.filter(d => wmlBenchMapCRM.has(nnBench(d.designation))).length)})`, color: '#00E5A0' }] : []),
-          ].map(t => {
-            const active = benchCrossFilter === t.key;
-            return `<button onclick="benchCrossFilter='${t.key}';renderBenchmark()"
-              style="padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid ${active ? t.color : 'var(--border2)'};background:${active ? t.color + '18' : 'transparent'};color:${active ? t.color : 'var(--text2)'};cursor:pointer;transition:all .15s;white-space:nowrap">${t.label}</button>`;
-          }).join('')}` : ''}
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:var(--text3)">Quantité</span>
+          <span style="font-weight:700;font-family:var(--font-mono, monospace)">${fmtNum(Math.round(sv.qte))} u.</span>
         </div>
-        <div style="overflow-x:auto">
-          <table class="data-table">
-            <thead><tr>
-              ${thB('ip_rank_qty','Rang','left')}
-              <th>Produit</th>
-              <th>Cat.</th>
-              ${thB('ip_qty','Qté IP')}
-              ${thB('ip_ca','CA IP')}
-              <th style="text-align:right">Prix IP</th>
-              ${thB('rot_pharma_jan26','Rot./pharma/mois')}
-              ${thB('yoy_jan','YoY Jan')}
-              <th style="text-align:right">France Jan26</th>
-              ${salesAll.length > 0 ? thB('notre_ca', 'Nos ventes CA') : ''}
-              <th style="text-align:center;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px" title="Tendance Ameli 12 mois">Tendance</th>
-              ${wmlBenchMapCRM.size > 0 ? '<th style="text-align:center;color:var(--mint);font-size:11px" title="Nb pharmacies OPSO achetant via WML">WML OPSO</th>' : ''}
-            </tr></thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-          ${data.length > 200 ? `<div style="padding:12px 20px;font-size:12px;color:var(--text3)">${fmtNum(data.length)} résultats · affichage limité à 200 — affinez la recherche.</div>` : `<div style="padding:8px 20px;font-size:12px;color:var(--text3)">${fmtNum(data.length)} résultat${data.length !== 1 ? 's' : ''}</div>`}
-        </div>
+      </div>` : ''}
+
+      <!-- Actions -->
+      <div class="bench-inspector-actions">
+        <button class="is-primary" onclick="window.benchAddToSim('${(d.cip13 || '').replace(/'/g, '')}')">+ Simulateur</button>
+        <button onclick="window.benchOpenFiche('${(d.cip13 || '').replace(/'/g, '')}')">+ Fiche commerciale</button>
       </div>
     </div>
   `;
 }
+
+// ── BENCHMARK : Sélection produit (table → inspector) ──
+window.benchSelectProduct = function (cip13) {
+  // Si cip13 est falsy (chaîne vide, null, undefined), on désélectionne
+  window.__benchSelectedCip = cip13 ? String(cip13) : null;
+  const aside = document.getElementById('bench-aside');
+  if (window.__benchSelectedCip) {
+    if (aside && window.innerWidth < 1280) aside.setAttribute('data-open', 'true');
+  } else {
+    if (aside) aside.removeAttribute('data-open');
+  }
+  // Re-render léger : inspector + classes sélection sur la table (pas de re-render complet)
+  __renderBenchInspector();
+  document.querySelectorAll('.bench-row').forEach(row => {
+    if (window.__benchSelectedCip && row.getAttribute('data-cip') === window.__benchSelectedCip) {
+      row.classList.add('is-selected');
+    } else {
+      row.classList.remove('is-selected');
+    }
+  });
+};
+
+// ── BENCHMARK : Actions inspector ──
+window.benchAddToSim = function (cip13) {
+  const __BM = (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) ? BENCHMARK :
+               (window.BENCHMARK && window.BENCHMARK.length) ? window.BENCHMARK : [];
+  const b = __BM.find(x => x.cip13 === cip13);
+  if (!b) return;
+  const already = state.sim.items.find(it => it.designation.toUpperCase() === b.designation.toUpperCase());
+  if (already) { already.qty += 1; showToast(`"${b.designation.slice(0,28)}" (qté +1)`, 'info'); return; }
+  const puNet = b.prix_ip > 0 ? b.prix_ip : (b.ip_qty > 0 ? b.ip_ca / b.ip_qty : 0);
+  state.sim.items.push({
+    designation: b.designation, code: b.cip13 || '',
+    cat: b.categorie || 'mi', froid: b.is_froid || false,
+    puNet, puBrut: puNet * 1.05, qty: 1,
+  });
+  showToast(`"${b.designation.slice(0,28)}…" ajouté au simulateur ✓`, 'success');
+};
+
+window.benchOpenFiche = function (cip13) {
+  // Fallback : ouvre le modal détail existant
+  const idx = (benchCurrentData || []).findIndex(b => b.cip13 === cip13);
+  if (idx >= 0 && typeof showBenchDetail === 'function') showBenchDetail(idx);
+  else showToast('Fiche commerciale indisponible pour ce produit', 'warning');
+};
 
 // ── BENCHMARK PRODUCT DETAIL MODAL ────────────
 function showBenchDetail(idx) {
@@ -8180,6 +8615,9 @@ function univMeta(u) {
   return UNIVERS_META[u] || { color:'#90A4AE', bg:'#f5f7f9', icon:'📦' };
 }
 let offiQuery = '', offiRole = 'tous', offiUnivers = 'tous', offiMarque = 'tous', offiSaison = 'tous', offiPageNum = 1, offiView = 'cards', offiSort = 'alpha';
+let offiUniversOpen = false; // accordéon univers (replié par défaut si > 6)
+let offiRoleOpen = false;    // accordéon role chips (replié par défaut)
+window.__offiSelectedEan = window.__offiSelectedEan || null;
 
 const OFFI_FAV_KEY = 'ip_crm_offi_favs';
 function getOffiFavs() { try { return new Set(JSON.parse(localStorage.getItem(OFFI_FAV_KEY)||'[]')); } catch { return new Set(); } }
@@ -8335,12 +8773,131 @@ function npSparklineSvg(months, w = 70, h = 22) {
 }
 function npEscape(s) { return (s || '').toString().replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 
+// ── Multi-pane layout styles (injectés une seule fois) ──
+function __ensureOffilogStyles() {
+  if (document.getElementById('offi-multipane-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'offi-multipane-styles';
+  style.textContent = `
+.offi-multipane{display:grid;grid-template-columns:1fr;gap:0;margin:0}
+@media (min-width:1280px){.offi-multipane{grid-template-columns:minmax(0,1fr) 380px;gap:16px}}
+.offi-col-main{display:flex;flex-direction:column;min-width:0}
+.offi-col-aside{background:var(--bg-elevated,#fff);border-radius:14px;box-shadow:var(--shadow-2,0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.06));overflow-y:auto;border:1px solid var(--np-border,#e5e7eb)}
+@media (min-width:1280px){.offi-col-aside{position:sticky;top:12px;align-self:start;max-height:calc(100vh - 24px)}}
+@media (max-width:1279px){.offi-col-aside{position:fixed;bottom:0;left:0;right:0;z-index:80;border-radius:14px 14px 0 0;max-height:70vh;transform:translateY(100%);transition:transform 320ms cubic-bezier(.32,.72,0,1);box-shadow:0 -8px 32px rgba(0,0,0,.18)}.offi-col-aside[data-open="true"]{transform:translateY(0)}}
+.offi-aside-handle{display:none;width:36px;height:4px;background:var(--np-border,#d4d4d8);border-radius:2px;margin:8px auto 4px}
+@media (max-width:1279px){.offi-aside-handle{display:block}}
+.offi-aside-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:var(--np-text,#0a0a0a);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
+.offi-aside-close:hover{background:rgba(0,0,0,.12)}
+.offi-toolbar-sticky{position:sticky;top:0;z-index:10;background:var(--material-bg-light,rgba(255,255,255,.88));backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);padding:12px 16px;border-bottom:.5px solid var(--separator-non-opaque,rgba(0,0,0,.08));display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-radius:14px 14px 0 0}
+.offi-toolbar-sticky input,.offi-toolbar-sticky select{padding:9px 12px;border-radius:10px;border:1px solid var(--np-border,#d4d4d8);background:#fff;font:500 13px/16px var(--font-text,'DM Sans',-apple-system,sans-serif);color:var(--np-text,#0a0a0a);outline:none;transition:border-color 120ms}
+.offi-toolbar-sticky input:focus,.offi-toolbar-sticky select:focus{border-color:var(--np-blue,#0057ff)}
+.offi-toolbar-sticky input{flex:1;min-width:240px}
+.offi-toolbar-sticky select{cursor:pointer;max-width:240px}
+.offi-grid-prod{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:16px;max-width:100%}
+@media (min-width:1280px){.offi-grid-prod{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}}
+@media (min-width:1600px){.offi-grid-prod{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.offi-view-toggle{display:inline-flex;gap:2px;background:var(--fill-1,#f1f1f3);border-radius:8px;padding:2px}
+.offi-view-toggle button{border:none;background:transparent;padding:6px 12px;border-radius:6px;font:600 12px/16px var(--font-text,'DM Sans',-apple-system,sans-serif);color:var(--label-secondary,#525252);cursor:pointer;transition:all 120ms}
+.offi-view-toggle button.is-active{background:var(--bg-elevated,#fff);color:var(--label-primary,#0a0a0a);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.offi-inspector-empty{padding:60px 32px;text-align:center;color:var(--label-secondary,#525252)}
+.offi-inspector-empty .offi-empty-icon{font-size:48px;opacity:.3;margin-bottom:12px}
+.offi-inspector-empty .offi-empty-title{font:600 15px/20px var(--font-text,'DM Sans',-apple-system,sans-serif);color:var(--label-primary,#0a0a0a);margin-bottom:6px}
+.offi-inspector-empty .offi-empty-sub{font:400 13px/18px var(--font-text,'DM Sans',-apple-system,sans-serif);color:var(--label-secondary,#525252)}
+.offi-inspector-head{padding:18px 18px 12px;border-bottom:1px solid var(--separator-non-opaque,rgba(0,0,0,.08));position:relative}
+.offi-inspector-img{width:100%;height:180px;background:linear-gradient(180deg,#f9fafb,#f3f4f6);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;overflow:hidden}
+.offi-inspector-img img{max-width:100%;max-height:100%;object-fit:contain}
+.offi-inspector-img .offi-img-letter{font:800 56px/1 var(--font-text,'DM Sans',-apple-system,sans-serif);color:var(--np-blue,#0057ff);opacity:.35}
+.offi-inspector-name{font:700 15px/20px var(--font-text,'DM Sans',-apple-system,sans-serif);color:var(--label-primary,#0a0a0a);margin-bottom:6px}
+.offi-inspector-meta{font:500 11px/15px var(--font-text,'DM Sans',-apple-system,sans-serif);color:var(--label-secondary,#525252);display:flex;flex-wrap:wrap;gap:4px 8px;margin-bottom:4px}
+.offi-inspector-ean{font:500 10px/14px var(--font-mono,'SF Mono',Menlo,monospace);color:var(--label-tertiary,#737373);letter-spacing:.04em}
+.offi-inspector-body{padding:14px 18px 18px}
+.offi-section-title{font:700 11px/14px var(--font-text,'DM Sans',-apple-system,sans-serif);text-transform:uppercase;letter-spacing:.08em;color:var(--label-secondary,#525252);margin:0 0 10px}
+.offi-conc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.offi-conc-card{background:var(--bg-grouped-secondary,#f9f9f9);border-radius:10px;padding:10px 12px;border:1px solid var(--separator-non-opaque,rgba(0,0,0,.08));transition:all 160ms}
+.offi-conc-card[data-best="true"]{border-color:var(--mint,#00e5a0);background:rgba(0,229,160,.08)}
+.offi-conc-card[data-worst="true"]{opacity:.7}
+.offi-conc-card[data-empty="true"]{background:rgba(0,0,0,.02);border-style:dashed}
+.offi-conc-source{font:700 10px/13px var(--font-text,'DM Sans',-apple-system,sans-serif);text-transform:uppercase;letter-spacing:.06em;color:var(--label-secondary,#525252);margin-bottom:4px}
+.offi-conc-price{font-family:var(--font-mono,'SF Mono',Menlo,monospace);font-size:17px;font-weight:700;color:var(--label-primary,#0a0a0a);font-variant-numeric:tabular-nums}
+.offi-conc-price.is-empty{color:var(--label-tertiary,#a3a3a3);font-size:15px;font-weight:500}
+.offi-conc-delta{font-size:11px;font-family:var(--font-mono,'SF Mono',Menlo,monospace);font-variant-numeric:tabular-nums;margin-top:2px;font-weight:600}
+.offi-conc-delta.is-cheaper{color:var(--mint,#00b87a)}
+.offi-conc-delta.is-pricier{color:var(--rose,#ff4d6d)}
+.offi-conc-delta.is-best{color:var(--mint,#00b87a)}
+.offi-inspector-actions{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.offi-inspector-actions button{padding:10px 14px;border-radius:10px;border:none;font:600 13px/16px var(--font-text,'DM Sans',-apple-system,sans-serif);cursor:pointer;transition:all 120ms}
+.offi-inspector-actions .offi-btn-primary{background:var(--np-blue,#0057ff);color:#fff}
+.offi-inspector-actions .offi-btn-primary:hover{background:#003fb8}
+.offi-inspector-actions .offi-btn-ghost{background:rgba(0,87,255,.08);color:var(--np-blue,#0057ff)}
+.offi-inspector-actions .offi-btn-ghost:hover{background:rgba(0,87,255,.14)}
+.offi-prod-card-mini{position:relative;cursor:pointer}
+.offi-prod-card-mini.is-selected{outline:2px solid var(--np-blue,#0057ff);outline-offset:-1px;box-shadow:0 4px 14px rgba(0,87,255,.15)}
+.offi-accordion-toggle{background:transparent;border:1px dashed var(--np-border,#d4d4d8);border-radius:8px;padding:7px 12px;font:600 11.5px/14px var(--font-text,'DM Sans',-apple-system,sans-serif);color:var(--label-secondary,#525252);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.offi-accordion-toggle:hover{border-color:var(--np-blue,#0057ff);color:var(--np-blue,#0057ff)}
+.offi-hero-strip{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 18px;margin-bottom:14px;background:linear-gradient(135deg,var(--np-blue,#0057ff) 0%,#0048d4 100%);border-radius:14px;color:#fff}
+.offi-hero-title{font:700 18px/22px var(--font-text,'DM Sans',-apple-system,sans-serif);margin:0 0 2px}
+.offi-hero-sub{font:500 12px/16px var(--font-text,'DM Sans',-apple-system,sans-serif);opacity:.85}
+.offi-hero-kpis{display:flex;gap:14px;flex-wrap:wrap}
+.offi-hero-kpi{text-align:right;min-width:70px}
+.offi-hero-kpi .v{font:700 18px/22px var(--font-mono,'SF Mono',Menlo,monospace);font-variant-numeric:tabular-nums}
+.offi-hero-kpi .l{font:600 10px/13px var(--font-text,'DM Sans',-apple-system,sans-serif);text-transform:uppercase;letter-spacing:.08em;opacity:.8}
+.offi-hero-kpi.is-alert .v{color:#ffe8ed}
+@media (max-width:639px){.offi-hero-strip{padding:12px 14px}.offi-hero-title{font-size:16px}.offi-hero-kpi .v{font-size:15px}}
+`;
+  document.head.appendChild(style);
+}
+
+// ── Sélection produit pour l'inspector ──────
+window.offiSelectProduct = function(ean) {
+  if (!ean) return;
+  window.__offiSelectedEan = ean;
+  renderOffilog();
+  if (window.innerWidth < 1280) {
+    const aside = document.querySelector('.offi-col-aside');
+    if (aside) aside.setAttribute('data-open', 'true');
+  }
+};
+window.offiCloseInspector = function() {
+  const aside = document.querySelector('.offi-col-aside');
+  if (aside) aside.removeAttribute('data-open');
+  window.__offiSelectedEan = null;
+  renderOffilog();
+};
+
 function renderOffilog() {
   const container = document.getElementById('offilog-content');
   if (!container) return;
 
+  __ensureOffilogStyles();
+
+  // ── Lazy load polling : OFFILOG est chargé via perf-boot.js ──
   if (typeof OFFILOG === 'undefined' || !OFFILOG.length) {
-    container.innerHTML = `<div class="np-scope"><div class="np-empty"><div class="np-empty-pin">${npPinSvg(22)}</div><div class="np-empty-title">Catalogue Offilog non chargé</div><div class="np-empty-sub">Le fichier offilog-data.js est manquant.</div></div></div>`;
+    if (!window.__offiPollArmed) {
+      window.__offiPollArmed = true;
+      let __polls = 0;
+      const __poll = setInterval(() => {
+        __polls++;
+        try { if (typeof OFFILOG !== 'undefined' && !window.OFFILOG) window.OFFILOG = OFFILOG; } catch(e){}
+        const ok = (typeof OFFILOG !== 'undefined' && OFFILOG.length) ||
+                   (window.OFFILOG && window.OFFILOG.length);
+        if (ok) {
+          clearInterval(__poll);
+          window.__offiPollArmed = false;
+          if (state && state.currentPage === 'offilog') renderOffilog();
+        } else if (__polls > 60) {
+          clearInterval(__poll);
+          window.__offiPollArmed = false;
+        }
+      }, 500);
+    }
+    container.innerHTML = `<div class="np-scope">
+      <div class="card fade-up" style="margin:24px 0;padding:30px 24px;text-align:center;background:linear-gradient(135deg,rgba(0,87,255,.08) 0%,rgba(124,58,237,.05) 100%);border-left:3px solid var(--np-blue,#0057ff);border-radius:14px">
+        <div style="font-size:36px;margin-bottom:14px;animation:spin 1.2s linear infinite;display:inline-block">📦</div>
+        <div style="font-size:16px;font-weight:800;color:var(--np-text,#0a0a0a);margin-bottom:6px">Catalogue Offilog — chargement…</div>
+        <div style="font-size:13px;color:var(--np-text-muted,#525252)">3 520 références parapharmacie (1,7 Mo). Quelques secondes…</div>
+      </div>
+    </div>`;
     return;
   }
 
@@ -8477,8 +9034,12 @@ function renderOffilog() {
     ].filter(Boolean).join('');
 
     const favOn = p.ean && offiFavs.has(p.ean);
+    const isSelected = p.ean && window.__offiSelectedEan === p.ean;
+    const clickHandler = p.ean
+      ? `offiSelectProduct('${npEscape(p.ean)}')`
+      : `showOffiDetail(${startIdx + i})`;
 
-    return `<div class="np-prod-card ${isAlerte ? 'np-alerte' : ''}" onclick="showOffiDetail(${startIdx + i})">
+    return `<div class="np-prod-card offi-prod-card-mini ${isAlerte ? 'np-alerte' : ''} ${isSelected ? 'is-selected' : ''}" onclick="${clickHandler}">
       <div class="np-prod-photo">
         ${hasImg
           ? `<img src="${p.img}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
@@ -8529,7 +9090,9 @@ function renderOffilog() {
             const cellWarn = v => v && prixRef && v < prixRef
               ? `<td class="np-num" style="color:var(--np-pink);font-weight:700">${fmtP(v)}</td>`
               : (v ? `<td class="np-num">${fmtP(v)}</td>` : `<td class="np-num" style="color:var(--np-text-muted)">—</td>`);
-            return `<tr onclick="showOffiDetail(${startIdx + i})" style="${isAlerte ? 'background:#fff8fb' : ''}">
+            const tClick = p.ean ? `offiSelectProduct('${npEscape(p.ean)}')` : `showOffiDetail(${startIdx + i})`;
+            const tSelected = p.ean && window.__offiSelectedEan === p.ean;
+            return `<tr onclick="${tClick}" style="${isAlerte ? 'background:#fff8fb' : ''}${tSelected ? 'box-shadow:inset 3px 0 0 var(--np-blue,#0057ff);background:rgba(0,87,255,.04);' : ''}">
               <td>
                 <div style="display:flex;align-items:center">
                   ${img}
@@ -8614,84 +9177,201 @@ function renderOffilog() {
   // ── Container final (charte NP) ───────────────
   const hasFilters = offiQuery || offiRole !== 'tous' || offiUnivers !== 'tous' || offiMarque !== 'tous' || offiSaison !== 'tous' || offiSort !== 'alpha';
 
+  // ── Inspector droit : comparaison concurrents pour le produit sélectionné ──
+  const selectedEan = window.__offiSelectedEan;
+  let inspectorHtml = '';
+  if (selectedEan) {
+    const sel = OFFILOG.find(p => p.ean === selectedEan);
+    if (sel) {
+      const hasImg = sel.img && sel.img.length > 0;
+      const brandInitial = (sel.marque || sel.produit || '?').charAt(0).toUpperCase();
+      const prixIP = sel.prix_live || sel.prix_offilog;
+
+      // 4 sources prix : Offilog, Drakkars, Cap3000, Leclerc
+      const sources = [
+        { key: 'offilog',  src: 'Offilog',   val: prixIP,            note: sel.prix_live ? 'Live' : (sel.prix_offilog ? 'Pré-calc' : null) },
+        { key: 'drakkars', src: 'Drakkars',  val: sel.prix_drakkars, note: null },
+        { key: 'cap3000',  src: 'Cap 3000',  val: sel.prix_cap3000,  note: null },
+        { key: 'leclerc',  src: 'E.Leclerc', val: sel.prix_leclerc,  note: null },
+      ];
+      const withVal = sources.filter(s => s.val != null && s.val > 0);
+      const minVal  = withVal.length ? Math.min(...withVal.map(s => s.val)) : null;
+      const maxVal  = withVal.length ? Math.max(...withVal.map(s => s.val)) : null;
+
+      const concCards = sources.map(s => {
+        if (s.val == null || s.val <= 0) {
+          return `<div class="offi-conc-card" data-empty="true">
+            <div class="offi-conc-source">${s.src}</div>
+            <div class="offi-conc-price is-empty">—</div>
+            <div class="offi-conc-delta" style="color:var(--label-tertiary,#a3a3a3)">non disponible</div>
+          </div>`;
+        }
+        const isBest = minVal != null && s.val === minVal && withVal.length > 1;
+        const isWorst = maxVal != null && s.val === maxVal && withVal.length > 1 && !isBest;
+        let deltaHtml = '';
+        if (withVal.length > 1 && minVal != null) {
+          if (isBest) {
+            deltaHtml = `<div class="offi-conc-delta is-best">★ Meilleur prix</div>`;
+          } else {
+            const diff = s.val - minVal;
+            const pct  = minVal > 0 ? (diff / minVal) * 100 : 0;
+            deltaHtml = `<div class="offi-conc-delta is-pricier">+${diff.toFixed(2)}€ · +${pct.toFixed(1)}%</div>`;
+          }
+        }
+        return `<div class="offi-conc-card" ${isBest ? 'data-best="true"' : ''} ${isWorst ? 'data-worst="true"' : ''}>
+          <div class="offi-conc-source">${s.src}${s.note ? ` · <span style="text-transform:none;letter-spacing:0;font-weight:500;opacity:.7">${s.note}</span>` : ''}</div>
+          <div class="offi-conc-price">${fmtP(s.val)}</div>
+          ${deltaHtml}
+        </div>`;
+      }).join('');
+
+      const idxInList = offiCurrentData.indexOf(sel);
+      const tags = [
+        sel.univers ? `<span>${sel.univers.split(' / ')[0]}</span>` : '',
+        sel.role ? `<span>${sel.role}</span>` : '',
+        sel.dans_offilog ? `<span style="color:var(--np-blue,#0057ff);font-weight:700">IP</span>` : '',
+        sel.rang_vente != null ? `<span style="color:#FFB020;font-weight:700">Top #${sel.rang_vente}</span>` : '',
+      ].filter(Boolean).join('');
+
+      inspectorHtml = `
+        <div class="offi-aside-handle"></div>
+        <button class="offi-aside-close" onclick="offiCloseInspector()" title="Fermer">✕</button>
+        <div class="offi-inspector-head">
+          <div class="offi-inspector-img">
+            ${hasImg
+              ? `<img src="${sel.img}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="offi-img-letter" style="display:none">${brandInitial}</div>`
+              : `<div class="offi-img-letter">${brandInitial}</div>`
+            }
+          </div>
+          <div class="offi-inspector-name">${sel.produit}</div>
+          <div class="offi-inspector-meta">${sel.marque ? `<span style="font-weight:700;color:var(--label-primary,#0a0a0a)">${sel.marque}</span>` : ''}${tags}</div>
+          ${sel.ean ? `<div class="offi-inspector-ean">CIP13/EAN · ${sel.ean}</div>` : ''}
+        </div>
+        <div class="offi-inspector-body">
+          <h3 class="offi-section-title">Comparaison prix · 4 sources</h3>
+          <div class="offi-conc-grid">${concCards}</div>
+          ${withVal.length > 1 && minVal !== maxVal ? `
+            <div style="background:rgba(0,87,255,.04);border-radius:8px;padding:10px 12px;margin-bottom:14px;font:500 12px/16px var(--font-text,'DM Sans',-apple-system,sans-serif);color:var(--label-secondary,#525252)">
+              Écart max : <strong style="color:var(--np-text,#0a0a0a);font-family:var(--font-mono,'SF Mono',Menlo,monospace)">${(maxVal - minVal).toFixed(2)}€</strong> · ${minVal > 0 ? (((maxVal - minVal)/minVal)*100).toFixed(0) : 0}%
+            </div>` : ''}
+          <div class="offi-inspector-actions">
+            ${idxInList >= 0 ? `<button class="offi-btn-primary" onclick="showOffiDetail(${idxInList})">Voir comparateur complet</button>` : ''}
+            ${sel.ean ? `<button class="offi-btn-ghost" onclick="(typeof mkQuickAddProduct==='function')?mkQuickAddProduct('${npEscape(sel.ean)}'):showToast('Ouvrir une fiche pour ajouter','info')">+ Ajouter à fiche commerciale</button>` : ''}
+          </div>
+        </div>`;
+    } else {
+      // EAN ne correspond plus → reset
+      window.__offiSelectedEan = null;
+    }
+  }
+
+  if (!inspectorHtml) {
+    inspectorHtml = `
+      <div class="offi-inspector-empty">
+        <div class="offi-empty-icon">🔍</div>
+        <div class="offi-empty-title">Aucun produit sélectionné</div>
+        <div class="offi-empty-sub">Clique sur un produit dans la liste pour comparer les prix concurrents (Offilog, Drakkars, Cap 3000, Leclerc).</div>
+      </div>`;
+  }
+
+  // ── Univers tiles repliables si > 6 ──
+  const universTotal = universSet.length + 1; // +1 pour 'Tous'
+  const universCollapsible = universTotal > 6;
+  // Pour replier on coupe au 6e tile via wrapper CSS — plus simple : recalcul subset
+  const univTiles6Html = (() => {
+    if (!universCollapsible || offiUniversOpen) return univTiles;
+    const subset = [{ key: 'tous', label: 'Tout voir', count: nTotal, icon: '◉' }]
+      .concat(universSet.slice(0, 5).map(u => { const m = univMeta(u); return { key: u, label: u, count: universCount[u], icon: m.icon }; }));
+    return subset.map(t => {
+      const active = offiUnivers === t.key;
+      return `<button class="np-univers-tile ${active ? 'np-active' : ''}" onclick="offiSetUnivers('${npEscape(t.key)}')">
+        <span class="np-ut-icon">${t.icon}</span>
+        <span class="np-ut-label">${t.label.split(' / ')[0].split(' &')[0]}</span>
+        <span class="np-ut-count">${fmtNum(t.count)}</span>
+      </button>`;
+    }).join('');
+  })();
+
+  // Hero compact (strip)
+  const heroCompactHtml = `
+    <div class="offi-hero-strip">
+      <div>
+        <div class="offi-hero-title">Offilog · Veille concurrentielle</div>
+        <div class="offi-hero-sub">${fmtNum(nTotal)} références · ${universSet.length} univers · ${fmtNum(nImg)} avec photo · marge moy. ${margeMoy.toFixed(0)}%</div>
+      </div>
+      <div class="offi-hero-kpis">
+        <div class="offi-hero-kpi"><div class="v">${fmtNum(nOff)}</div><div class="l">Dans Offilog</div></div>
+        <div class="offi-hero-kpi"><div class="v">${fmtNum(nLive)}</div><div class="l">Prix live</div></div>
+        <div class="offi-hero-kpi"><div class="v">${fmtNum(nLeclerc)}</div><div class="l">E.Leclerc</div></div>
+        ${nAlerteConc > 0 ? `<div class="offi-hero-kpi is-alert" style="cursor:pointer" onclick="offiSetRole('alerte_conc')" title="Concurrent < achat IP"><div class="v">${fmtNum(nAlerteConc)}</div><div class="l">Alertes prix</div></div>` : ''}
+      </div>
+    </div>`;
+
+  // Toolbar sticky : recherche + univers + marque + tri + view toggle + compteur
+  const toolbarStickyHtml = `
+    <div class="offi-toolbar-sticky">
+      <input type="text" placeholder="Rechercher nom, EAN, marque…" value="${offiQuery.replace(/"/g,'&quot;')}"
+        oninput="offiQuery=this.value;offiPageNum=1;renderOffilog()" autocomplete="off">
+      <select onchange="offiSetUnivers(this.value)" title="Univers">
+        <option value="tous">Tous univers (${fmtNum(nTotal)})</option>
+        ${universSet.map(u => `<option value="${u.replace(/"/g,'&quot;')}" ${offiUnivers===u?'selected':''}>${u.split(' / ')[0].split(' &')[0]} (${fmtNum(universCount[u])})</option>`).join('')}
+      </select>
+      <select onchange="offiSetMarque(this.value)" title="Marque">
+        <option value="tous">Toutes marques</option>
+        ${marqueSet.map(m => `<option value="${m.replace(/"/g,'&quot;')}" ${offiMarque===m?'selected':''}>${m}</option>`).join('')}
+      </select>
+      <select onchange="offiSort=this.value;offiPageNum=1;renderOffilog()" title="Tri">
+        <option value="alpha"     ${offiSort==='alpha'?'selected':''}>A → Z</option>
+        <option value="prix_asc"  ${offiSort==='prix_asc'?'selected':''}>Prix ↑</option>
+        <option value="prix_desc" ${offiSort==='prix_desc'?'selected':''}>Prix ↓</option>
+        <option value="marge_desc"${offiSort==='marge_desc'?'selected':''}>Marge ↓</option>
+        <option value="ecart"     ${offiSort==='ecart'?'selected':''}>Écart concurrent</option>
+      </select>
+      <div class="offi-view-toggle" role="tablist" aria-label="Vue">
+        <button data-view="cards" class="${offiView==='cards'?'is-active':''}" onclick="offiView='cards';renderOffilog()" aria-pressed="${offiView==='cards'}">⊞ Grille</button>
+        <button data-view="table" class="${offiView==='table'?'is-active':''}" onclick="offiView='table';renderOffilog()" aria-pressed="${offiView==='table'}">≣ Table</button>
+      </div>
+      <span style="font-size:11px;color:var(--label-secondary,#525252);font-family:var(--font-mono,'SF Mono',Menlo,monospace);font-variant-numeric:tabular-nums;white-space:nowrap">
+        ${fmtNum(offiCurrentData.length)} / ${fmtNum(OFFILOG.length)}
+      </span>
+      ${hasFilters ? `<button class="np-btn np-btn-danger" onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiSaison='tous';offiSort='alpha';offiPageNum=1;renderOffilog()" style="padding:7px 12px;font-size:12px">✕ Reset</button>` : ''}
+      <button class="np-btn np-btn-ghost" onclick="offiExportCSV()" title="Exporter CSV" style="padding:7px 12px;font-size:12px">⬇ CSV</button>
+    </div>`;
+
+  // Universe tiles + role chips (repliables)
+  const filtersExtraHtml = `
+    <div class="np-univers-strip" style="margin-top:0;padding:10px 16px 4px;border-radius:0">
+      <div class="np-univers-row">${univTiles6Html}</div>
+      ${universCollapsible ? `<div style="margin-top:8px"><button class="offi-accordion-toggle" onclick="offiUniversOpen=${!offiUniversOpen};renderOffilog()">${offiUniversOpen ? '▴ Replier univers' : `▾ Voir tous les univers (${universTotal})`}</button></div>` : ''}
+    </div>
+    <div style="padding:6px 16px 10px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+      <button class="offi-accordion-toggle" onclick="offiRoleOpen=${!offiRoleOpen};renderOffilog()">${offiRoleOpen ? '▴ Masquer rôles & filtres rapides' : `▾ Rôles & filtres rapides (${roleTabs.length})`}</button>
+      ${offiRoleOpen ? `<div class="np-toolbar-row" style="flex:1;min-width:280px;display:flex;gap:6px;flex-wrap:wrap">${roleChips}</div>` : (offiRole !== 'tous' ? `<span style="font-size:11.5px;font-weight:600;color:var(--np-blue,#0057ff);padding:6px 10px;background:rgba(0,87,255,.08);border-radius:8px">Filtre actif : ${roleTabs.find(t=>t.key===offiRole)?.label || offiRole} <a href="javascript:void(0)" onclick="offiSetRole('tous')" style="margin-left:4px;color:inherit;text-decoration:underline">retirer</a></span>` : '')}
+    </div>`;
+
   container.innerHTML = `
   <div class="np-scope">
-    <!-- Hero header Intégral Pharma -->
-    <div class="np-hero">
-      <div class="np-hero-inner" style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
-        <div>
-          <div class="np-hero-eyebrow">Intégral Pharma · Catalogue parapharmacie</div>
-          <h1 class="np-hero-title">Offilog<br><span class="np-accent">veille concurrentielle</span></h1>
-          <div class="np-hero-tagline">${fmtNum(nTotal)} références · ${universSet.length} univers · ${fmtNum(nImg)} avec photo</div>
-        </div>
-        <div class="np-hero-stats">
-          <div class="np-hero-stat"><div class="np-hs-val">${fmtNum(nOff)}</div><div class="np-hs-lbl">Dans Offilog</div></div>
-          <div class="np-hero-stat np-lime"><div class="np-hs-val">${fmtNum(nLive)}</div><div class="np-hs-lbl">Prix live</div></div>
-          <div class="np-hero-stat"><div class="np-hs-val">${fmtNum(nLeclerc)}</div><div class="np-hs-lbl">E.Leclerc</div></div>
-          ${nAlerteConc > 0 ? `<div class="np-hero-stat np-pink" onclick="offiSetRole('alerte_conc')" title="Alertes prix concurrent < achat IP"><div class="np-hs-val">${fmtNum(nAlerteConc)}</div><div class="np-hs-lbl">Alertes prix</div></div>` : ''}
-          <div class="np-hero-stat"><div class="np-hs-val">${margeMoy.toFixed(0)}%</div><div class="np-hs-lbl">Marge moy.</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI grid pin-cards -->
-    <div class="np-kpi-grid">
-      <div class="np-kpi"><div class="np-kpi-icon">${npPinSvg(18)}</div><div class="np-kpi-value">${fmtNum(nTotal)}</div><div class="np-kpi-label">Total références</div></div>
-      <div class="np-kpi np-kpi-pink"><div class="np-kpi-icon">${npAlertSvg(18)}</div><div class="np-kpi-value">${fmtNum(nAlerteConc)}</div><div class="np-kpi-label">En alerte prix</div></div>
-      <div class="np-kpi np-kpi-lime"><div class="np-kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div><div class="np-kpi-value">${fmtNum(nLeclerc)}</div><div class="np-kpi-label">Référencés Leclerc</div></div>
-      <div class="np-kpi np-kpi-gray"><div class="np-kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="np-kpi-value">${fmtNum(nPharma)}</div><div class="np-kpi-label">Pharmacies clientes</div></div>
-    </div>
-
+    ${heroCompactHtml}
     ${alertsHtml}
 
-    <!-- Univers navigator -->
-    <div class="np-univers-strip">
-      <div class="np-univers-row">${univTiles}</div>
-    </div>
-
-    <!-- Search & filter toolbar -->
-    <div class="np-toolbar">
-      <div class="np-toolbar-row">
-        <div class="np-search-wrap">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" placeholder="Rechercher une référence, marque, CIP13/EAN…" value="${offiQuery}"
-            oninput="offiQuery=this.value;offiPageNum=1;renderOffilog()" autocomplete="off">
-          ${offiQuery ? `<button class="np-search-clear" onclick="offiQuery='';offiPageNum=1;renderOffilog()">✕</button>` : ''}
+    <div class="offi-multipane">
+      <div class="offi-col-main" style="background:var(--bg-elevated,#fff);border-radius:14px;box-shadow:var(--shadow-2,0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04));overflow:hidden;border:1px solid var(--np-border,#e5e7eb)">
+        ${toolbarStickyHtml}
+        ${filtersExtraHtml}
+        <div class="np-meta-bar" style="padding:8px 16px;border-bottom:1px solid var(--separator-non-opaque,rgba(0,0,0,.06));margin:0">
+          <div style="font-size:11.5px"><strong>${fmtNum(offiCurrentData.length)}</strong> réf · page ${offiPageNum} / ${totalPages}</div>
+          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--np-blue,#0057ff)">Intégral Pharma</div>
         </div>
-        <select onchange="offiSetMarque(this.value)">
-          <option value="tous">Toutes marques</option>
-          ${marqueSet.map(m => `<option value="${m.replace(/"/g,'&quot;')}" ${offiMarque===m?'selected':''}>${m}</option>`).join('')}
-        </select>
-        <select onchange="offiSort=this.value;offiPageNum=1;renderOffilog()">
-          <option value="alpha"     ${offiSort==='alpha'?'selected':''}>Tri A → Z</option>
-          <option value="prix_asc"  ${offiSort==='prix_asc'?'selected':''}>Prix croissant</option>
-          <option value="prix_desc" ${offiSort==='prix_desc'?'selected':''}>Prix décroissant</option>
-          <option value="marge_desc"${offiSort==='marge_desc'?'selected':''}>Marge décroissante</option>
-          <option value="ecart"     ${offiSort==='ecart'?'selected':''}>Écart vs concurrent</option>
-        </select>
-        <div class="np-view-toggle">
-          <button class="${offiView==='cards'?'np-active':''}" onclick="offiView='cards';renderOffilog()" title="Vue grille">⊞</button>
-          <button class="${offiView==='table'?'np-active':''}" onclick="offiView='table';renderOffilog()" title="Vue tableau">☰</button>
-        </div>
-        <button class="np-btn np-btn-ghost" onclick="offiExportCSV()" title="Exporter en CSV">⬇ CSV</button>
-        ${hasFilters ? `<button class="np-btn np-btn-danger" onclick="offiQuery='';offiRole='tous';offiUnivers='tous';offiMarque='tous';offiSaison='tous';offiSort='alpha';offiPageNum=1;renderOffilog()">✕ Réinitialiser</button>` : ''}
+        ${offiView === 'table'
+          ? `<div style="padding:0 8px">${tableHtml}</div>`
+          : `<div class="offi-grid-prod">${cardsHtml}</div>`
+        }
+        ${pagHtml}
       </div>
-      <div class="np-toolbar-row">
-        ${roleChips}
-      </div>
+      <aside class="offi-col-aside" ${selectedEan ? 'data-open="true"' : ''}>
+        ${inspectorHtml}
+      </aside>
     </div>
-
-    <div class="np-meta-bar">
-      <div><strong>${fmtNum(offiCurrentData.length)}</strong> référence${offiCurrentData.length>1?'s':''} · page ${offiPageNum} / ${totalPages}</div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--np-blue)">Intégral Pharma</div>
-    </div>
-
-    ${offiView === 'table'
-      ? tableHtml
-      : `<div class="np-card-grid">${cardsHtml}</div>`
-    }
-
-    ${pagHtml}
   </div>`;
 }
 
