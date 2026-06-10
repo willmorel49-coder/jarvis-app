@@ -349,8 +349,83 @@
     V2.render();
   };
 
-  V2.pharmaDownloadPdf = function () {
-    V2.toast('PDF bientôt disponible', 'warn');
+  V2.pharmaDownloadPdf = function (pid) {
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    if (!pharma) { V2.toast('Pharmacie introuvable', 'error'); return; }
+    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+    V2.toast('Génération du PDF…');
+    var sales = pharmaSales(pid);
+    var ca = V2.sumCA(sales), marge = margeMDLpharma(sales);
+    var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); }).filter(function (c) { return c.length >= 7; })).size;
+    var opps = buildOpportunities(pid);
+    var totalOpp = opps.reduce(function (s, o) { return s + o.oppCount; }, 0);
+    var today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    function esc(s) { return V2.esc(s); }
+    var catSections = opps.filter(function (o) { return o.rows.length; }).map(function (o) {
+      var rows = o.rows.slice(0, 15).map(function (r, i) {
+        return '<tr>' +
+          '<td style="padding:4px 6px;text-align:center;color:#9AA1B2;font-size:9px">' + (i + 1) + '</td>' +
+          '<td style="padding:4px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + '</td>' +
+          '<td style="padding:4px 6px;font-family:monospace;font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
+          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + (r.prix_ip ? r.prix_ip.toFixed(2) + ' €' : '—') + '</td>' +
+          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#1E9E6A">' + V2.fmtNum(r.marketQte) + '</td>' +
+          '</tr>';
+      }).join('');
+      return '<div style="margin-bottom:13px;page-break-inside:avoid">' +
+        '<div style="display:flex;align-items:center;gap:9px;padding:7px 11px;background:linear-gradient(90deg,' + o.cat.color + '22,transparent);border-left:4px solid ' + o.cat.color + ';border-radius:5px;margin-bottom:5px">' +
+          '<div style="font-size:12px;font-weight:800;color:#10131C">' + esc(o.cat.label) + '</div>' +
+          '<div style="font-size:9px;color:#737A8C;margin-left:auto;font-family:monospace">' + o.oppCount + ' opp · ' + V2.fmtNum(o.totalQte) + ' u marché</div>' +
+        '</div>' +
+        '<table style="width:100%;border-collapse:collapse">' +
+          '<thead><tr style="background:#F4F6FB">' +
+            '<th style="padding:5px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;text-align:center">#</th>' +
+            '<th style="padding:5px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;text-align:left">Produit</th>' +
+            '<th style="padding:5px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;text-align:left">CIP13</th>' +
+            '<th style="padding:5px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;text-align:right">Prix IP</th>' +
+            '<th style="padding:5px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;text-align:right">Vol marché</th>' +
+          '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+    }).join('');
+
+    var html =
+      '<div style="padding:16px 20px;font-family:Inter,system-ui,sans-serif;color:#10131C">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #0050E6;padding-bottom:11px;margin-bottom:15px">' +
+          '<div style="display:flex;align-items:center;gap:12px">' +
+            '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative">' +
+              '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>' +
+            '<div><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · Opportunités</div>' +
+              '<div style="font-size:18px;font-weight:800;color:#10131C">' + esc(pharma.name) + '</div>' +
+              (pharma.code ? '<div style="font-size:10px;color:#737A8C;font-family:monospace">' + esc(pharma.code) + '</div>' : '') + '</div>' +
+          '</div>' +
+          '<div style="text-align:right"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Édité le</div>' +
+            '<div style="font-size:12px;font-weight:700;font-family:monospace">' + today + '</div></div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px">' +
+          '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">CA du mois</div><div style="font-size:16px;font-weight:800;color:#0050E6;font-family:monospace">' + V2.fmtEur(ca) + '</div></div>' +
+          '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Marge MDL</div><div style="font-size:16px;font-weight:800;color:#1E9E6A;font-family:monospace">' + V2.fmtEur(marge) + '</div></div>' +
+          '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Références</div><div style="font-size:16px;font-weight:800;color:#6D4FC4;font-family:monospace">' + V2.fmtNum(nbRefs) + '</div></div>' +
+          '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Opportunités</div><div style="font-size:16px;font-weight:800;color:#C7791A;font-family:monospace">' + V2.fmtNum(totalOpp) + '</div></div>' +
+        '</div>' +
+        '<h2 style="font-size:14px;font-weight:800;margin:0 0 10px;border-bottom:1px solid #E5E9F2;padding-bottom:5px">Opportunités par catégorie · top marché OPS + HP + CPR</h2>' +
+        catSections +
+        '<div style="margin-top:16px;padding-top:8px;border-top:1px solid #E5E9F2;display:flex;justify-content:space-between;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">' +
+          '<div>Intégral Pharma · Normandie · Document confidentiel</div><div>Marge MDL : 0,18€ &lt;4,33€ · 3,9% &lt;468€ · 19,50€ au-delà</div></div>' +
+      '</div>';
+
+    window.ensureHtml2Pdf().then(function () {
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
+      wrap.innerHTML = html;
+      document.body.appendChild(wrap);
+      var fn = 'Opportunites-' + (pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+      window.html2pdf().from(wrap).set({
+        filename: fn, margin: [10, 10, 12, 10], image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      }).save().then(function () {
+        document.body.removeChild(wrap); V2.toast('✓ PDF téléchargé');
+      }).catch(function (e) { console.error(e); document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
+    });
   };
 
   // ── Enregistrement dans le registry ────────────────────────────
