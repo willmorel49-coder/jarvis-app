@@ -25,7 +25,8 @@
     ],
     produits: [
       'stock.js',
-      'client-products.js'
+      'client-products.js',
+      'benchmark-data.js'   // Will 2026-06-10 : Catalogue grossiste IP affiche tout BENCHMARK
     ],
     catalogue: [
       'catalogue-ip.js',    // 188 KB — catalogue IP avec remises
