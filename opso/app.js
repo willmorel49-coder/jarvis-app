@@ -549,13 +549,14 @@ async function importMultiPharmaFile(file, month, year) {
   const importedPharmas = [];
 
   const opsoAllowed = opsoAdherentNoms();
-  const opsoCIPs    = new Set((typeof OPSO_ADHERENTS !== 'undefined' ? OPSO_ADHERENTS : []).map(a => String(a.cip || '')).filter(Boolean));
+  const opsoCIPs    = opsoListingCIPs();
+  const normCip = c => String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, '');
 
   for (const group of pharmacyGroups) {
-    // Vérifier listing OPSO : par nom normalisé OU par code CIP (TIRCODE)
-    if (opsoAllowed) {
-      const nameOk = opsoAllowed.has(normPhName(group.name));
-      const cipOk  = group.code && opsoCIPs.has(String(group.code));
+    // Vérifier listing OPSO : par code CIP (fiable) OU par nom normalisé
+    if (opsoAllowed || opsoCIPs) {
+      const nameOk = opsoAllowed && opsoAllowed.has(normPhName(group.name));
+      const cipOk  = opsoCIPs && normCip(group.code) && opsoCIPs.has(normCip(group.code));
       if (!nameOk && !cipOk) {
         console.log(`[OPSO] Pharmacie ignorée (hors listing) : ${group.name} [${group.code}]`);
         continue;
@@ -654,10 +655,16 @@ async function importFile(file) {
   catch(e) { return { ok: false, error: 'Erreur lecture fichier' }; }
   if (!rows.length) return { ok: false, error: 'Fichier vide' };
 
-  // 1. Vérifier que la pharmacie est dans le listing OPSO
+  // 1. Vérifier que la pharmacie est dans le listing OPSO (par CIP, sinon par nom)
   const opsoAllowedSingle = opsoAdherentNoms();
-  if (opsoAllowedSingle && !opsoAllowedSingle.has(normPhName(name))) {
-    return { ok: false, error: `Pharmacie "${name}" non reconnue dans le listing OPSO Santé. Vérifiez le nom du fichier ou contactez votre administrateur.` };
+  const opsoCIPsSingle = opsoListingCIPs();
+  const nCip = String(code == null ? '' : code).replace(/\D/g, '').replace(/^0+/, '');
+  if (opsoAllowedSingle || opsoCIPsSingle) {
+    const okCip = opsoCIPsSingle && nCip && opsoCIPsSingle.has(nCip);
+    const okNom = opsoAllowedSingle && opsoAllowedSingle.has(normPhName(name));
+    if (!okCip && !okNom) {
+      return { ok: false, error: `Pharmacie "${name}" non reconnue dans le listing OPSO Santé. Vérifiez le nom du fichier ou contactez votre administrateur.` };
+    }
   }
 
   // 2. Find or create pharmacy in Supabase
