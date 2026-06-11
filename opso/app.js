@@ -206,20 +206,33 @@ async function load() {
   } catch(e) {
     console.warn('[OPSO] Supabase load failed, continuing with static data:', e);
   }
-  const allPharmas = (pharmacies || []).map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
+  const allPharmas = (pharmacies || []).map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color, ville: p.ville, cp: p.cp }));
   // Périmètre OPSO Santé = listing officiel des adhérents (OPSO_LISTING_2026, 129 officines).
-  // Filtrage prioritaire par CODE CIP (clé fiable) ; repli par nom si le CIP manque.
+  // On affiche TOUTES les officines du listing, reliées aux données existantes par CODE CIP.
+  // Celles présentes dans la base (= qui commandent déjà) sont marquées inDb=true.
   const listing = (typeof OPSO_LISTING_2026 !== 'undefined' && OPSO_LISTING_2026.length)
     ? OPSO_LISTING_2026
     : (typeof OPSO_ADHERENTS !== 'undefined' ? OPSO_ADHERENTS : []);
   if (listing.length) {
     const norm = c => String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, '');
-    const opsoCIPs  = new Set(listing.map(a => norm(a.cip || a.code)).filter(Boolean));
-    const opsoNames = new Set(listing.map(a => (a.nom || a.name || '').trim().toUpperCase()).filter(Boolean));
-    state.pharmacies = allPharmas.filter(p => {
-      const cip = norm(p.code);
-      if (cip) return opsoCIPs.has(cip);                 // CIP présent -> match strict par CIP
-      return opsoNames.has((p.name || '').trim().toUpperCase()); // sinon repli nom
+    const byCip = {}, byName = {};
+    allPharmas.forEach(p => {
+      const c = norm(p.code); if (c && !byCip[c]) byCip[c] = p;
+      const n = (p.name || '').trim().toUpperCase(); if (n && !byName[n]) byName[n] = p;
+    });
+    state.pharmacies = listing.map(a => {
+      const cip = norm(a.cip || a.code);
+      const db = byCip[cip] || byName[(a.nom || a.name || '').trim().toUpperCase()];
+      return {
+        id: db ? db.id : ('LST-' + (cip || (a.nom || a.name || '').trim())),
+        name: (db && db.name) || a.nom || a.name || '',
+        code: cip || (db && db.code) || '',
+        color: (db && db.color) || '#9aa0a3',
+        ville: a.ville || (db && db.ville) || '',
+        cp: a.cp || (db && db.cp) || '',
+        perimetre: a.perimetre || '',
+        inDb: !!db,
+      };
     });
   } else {
     state.pharmacies = allPharmas;
@@ -1606,6 +1619,8 @@ let pharmaDetailOverridePeriod = null; // {year, month} or null → use auto-det
 
 function renderPharmacies() {
   const allSalesRaw = getSales();
+  // Officines qui COMMANDENT DÉJÀ (présentes dans les ventes ou la base) → mises en évidence
+  const withSales = new Set(allSalesRaw.map(s => s.pharmacyId));
   const { year: curY, month: curM } = getCurrentPeriod(allSalesRaw);
   const { year: prevY, month: prevM } = getPrevPeriod(curY, curM);
 
@@ -1739,6 +1754,10 @@ function renderPharmacies() {
   const listHtml = enriched.length
     ? enriched.map((e, i) => {
         const { ph, caCur, caPrev, g, lastImportDays, prochaineVisiteDate, wmlEntry } = e;
+        const actif = withSales.has(ph.id) || ph.inDb || caCur > 0;
+        const clientBadge = actif
+          ? '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(17,166,60,.16);color:var(--opso-green);font-weight:800;white-space:nowrap">✓ Cliente</span>'
+          : '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--text3);font-weight:700;white-space:nowrap">Prospect</span>';
         // Badge prioritaire UNIQUE : visite urgente > import vieux > potentiel WML
         let priorityBadge = '';
         if (prochaineVisiteDate) {
@@ -1769,11 +1788,12 @@ function renderPharmacies() {
           : '';
         const pct = maxCA ? Math.round(caCur / maxCA * 100) : 0;
         return `
-          <div class="pharma-item pharma-list-row" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
+          <div class="pharma-item pharma-list-row" onclick="showPharmaDetail('${ph.id}')" style="box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s;border-left:3px solid ${actif?'var(--opso-green)':'transparent'};opacity:${actif?'1':'.66'}" onmouseenter="this.style.boxShadow='0 6px 24px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.transform='translateY(0)'">
             <div class="pharma-dot" style="background:${ph.color}"></div>
             <div class="pharma-info">
               <div class="pharma-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <span>${titleCase(ph.name)}</span>
+                ${clientBadge}
                 ${priorityBadge}
                 ${prospectBadge}
                 ${noteIndicator}
