@@ -138,7 +138,7 @@
   function card(it) {
     var sel = (S.sel != null && String(it.id) === String(S.sel)) ? ' sel' : '';
     var img = it.img
-      ? '<img class="off-card-img" src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.style.visibility=\'hidden\'">'
+      ? '<img class="off-card-img" src="' + esc(it.img) + '" loading="lazy" alt="" onerror="V2.offImgFail(this)">'
       : '<div class="off-card-noimg">' + ICO('pill', 30, 1.4) + '</div>';
     var onMkt = mktSel.has(String(it.id));
     return '<div class="off-card' + sel + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
@@ -176,8 +176,9 @@
   function inspector(it) {
     var img = it.img ? '<div class="off-insp-img"><img src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '';
     function kpi(l, v, col) { return '<div class="off-kpi"><div class="off-kpi-l">' + l + '</div><div class="off-kpi-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + v + '</div></div>'; }
+    var gap = (it.achat > 0 && it.minConc > 0) ? (it.achat - it.minConc) : 0;
     var alertBanner = it.alert
-      ? '<div class="off-alert"><span class="off-alert-ic">' + ICO('alert', 18, 2) + '</span><div><b>Veille prix</b> — un concurrent vend au public sous ton prix d\'achat IP. La pharmacie ne peut pas s\'aligner sans perdre.</div></div>'
+      ? '<div class="off-alert"><span class="off-alert-ic">' + ICO('alert', 18, 2) + '</span><div><b>Veille prix</b> — un concurrent vend à <b>' + V2.fmtEur(it.minConc) + '</b> au public, soit <b>' + V2.fmtEur(gap) + ' sous</b> ton prix d\'achat IP (' + V2.fmtEur(it.achat) + '). La pharmacie ne peut pas s\'aligner sans perdre.</div></div>'
       : '';
     var badges = '<span class="off-badge" style="--bc:#0050E6">#' + it.rank + ' ventes</span>' +
       (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + CHIP_BY_KEY[it.cat].sc + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
@@ -207,6 +208,19 @@
   }
 
   // ── Handlers ──────────────────────────────────
+  // photo cassée → placeholder propre (jamais de case blanche)
+  V2.offImgFail = function (img) {
+    try {
+      img.onerror = null;
+      var m = img.parentNode; if (!m) return;
+      if (img.remove) img.remove(); else m.removeChild(img);
+      var d = document.createElement('div');
+      d.className = 'off-card-noimg';
+      d.innerHTML = ICO('pill', 30, 1.4);
+      m.appendChild(d);
+    } catch (e) {}
+  };
+
   V2.offFilter = function (k) { S.chip = k; S.page = 0; V2.render(); };
   V2.offSearch = function (val) { S.q = val || ''; S.page = 0; rerenderKeepFocus(); };
   V2.offSort = function (v) { S.sort = v; S.page = 0; V2.render(); };
@@ -225,7 +239,7 @@
       prix_ip: it.achat || it.price || null, prix_ht: it.price || null,
       remise_pct: null, is_froid: false, src: 'offilog'
     });
-    V2.toast('✓ Ajouté à la fiche en cours (' + n + ')');
+    V2.toast('Ajouté à la fiche en cours (' + n + ')');
   };
 
   function rerenderKeepFocus() {
@@ -407,7 +421,7 @@
           pagebreak: { mode: ['css', 'legacy'] }
         }).save().then(function () {
           if (wrap.parentNode) document.body.removeChild(wrap);
-          V2.toast('✓ Fiche marketing téléchargée');
+          V2.toast('Fiche marketing téléchargée');
         });
       }).catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
     });

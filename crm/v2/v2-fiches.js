@@ -8,6 +8,7 @@
      finalisable en vraie fiche.
    · Destinataire pharmacie (optionnel) — porté sur la fiche + le PDF.
    · Marge MDL par ligne + barre de totaux (prix net IP + marge MDL).
+   · Quantités par ligne — total réaliste (boîtes × prix net).
 
    Persistance fiches : localStorage 'v2_fiches'. Aucun emoji : ICO() seul.
    ═══════════════════════════════════════════════════════════════════ */
@@ -804,7 +805,7 @@
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
       }).from(node.firstChild).save().then(function () {
         if (node.parentNode) node.parentNode.removeChild(node);
         V2.toast('PDF téléchargé');
