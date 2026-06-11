@@ -270,7 +270,9 @@
     var title = mktTitleVal();
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
     var cards = sel.map(function (it) {
-      var img = proxImg(it.img);
+      // dataURL local (offilog-img-data.js) si dispo → marche dans le PDF ;
+      // sinon URL brute Offilog (affichage écran OK, mais absente du PDF)
+      var img = (window.OFFILOG_IMG && window.OFFILOG_IMG[it.id]) ? window.OFFILOG_IMG[it.id] : it.img;
       var price = it.price > 0 ? V2.fmtEur(it.price) : '';
       return '<div style="break-inside:avoid;page-break-inside:avoid;border:1px solid #ECEFF5;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(16,19,28,.05)">' +
         '<div style="height:148px;background:#FBFCFE;display:flex;align-items:center;justify-content:center;padding:12px">' +
