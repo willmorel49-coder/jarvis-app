@@ -92,13 +92,21 @@
       '<path d="M6 8 Q60 38 114 8"/></svg>';
   }
 
-  // Logo Normandie Pharma reconstitué (wordmark + baseline)
-  function npLogo(scale) {
+  // Croix pharmacie officielle OPSO (2 rectangles arrondis)
+  function crossSvg(color, size) {
+    size = size || 26;
+    return '<svg viewBox="0 0 32 32" width="' + size + '" height="' + size + '" fill="' + (color || '#fff') + '">' +
+      '<rect x="12" y="3" width="8" height="26" rx="3"/><rect x="3" y="12" width="26" height="8" rx="3"/></svg>';
+  }
+
+  // Logo OPSO Santé (tuile verte + croix blanche + nom + baseline)
+  function opsoLogo(scale) {
     scale = scale || 1;
     return '<div class="np-logo" style="--s:' + scale + '">' +
-      '<div class="np-logo-1">NORMANDIE</div>' +
-      '<div class="np-logo-2">PHAR<span>M</span>A</div>' +
-      smileSvg(NP.green, 132 * scale) +
+      '<div class="np-logo-row">' +
+        '<span class="np-logo-mark">' + crossSvg('#fff', Math.round(24 * scale)) + '</span>' +
+        '<span class="np-logo-name">OPSO Santé</span>' +
+      '</div>' +
       '<div class="np-logo-base">On prend soin de vous !</div>' +
     '</div>';
   }
@@ -137,12 +145,7 @@
     return '<div class="np-sheet" style="--np-accent:' + theme + '">' +
       // ── HEADER vert ──
       '<header class="np-head">' +
-        '<div class="np-head-mark">' +
-          '<svg viewBox="0 0 64 64" width="58" height="58" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">' +
-            '<circle cx="29" cy="27" r="22"/><path d="M29 16v22M18 27h22" stroke-width="7"/>' +
-            '<path d="M44 44 56 58" /><path d="M48 40 56 48 50 54 42 46Z" fill="#fff" stroke="none"/>' +
-          '</svg>' +
-        '</div>' +
+        '<div class="np-head-mark">' + crossSvg('#fff', 54) + '</div>' +
         '<div class="np-head-txt">' +
           '<div class="np-eyebrow">SÉLECTION' + (sel.month ? ' · ' + esc(sel.month) : '') + '</div>' +
           '<h1>' + esc(sel.title || 'La sélection') + '</h1>' +
@@ -159,7 +162,7 @@
 
       // ── FOOTER ──
       '<footer class="np-foot">' +
-        npLogo(0.8) +
+        opsoLogo(1) +
         '<div class="np-foot-note">' +
           'Sélection négociée par <b>Intégral Pharma</b> pour les adhérents <b>OPSO Santé</b>.<br>' +
           'Prix indicatifs HT · document réservé aux adhérents.' +
@@ -233,12 +236,11 @@
       '.np-foot{margin-top:auto;padding:10mm 16mm 14mm;border-top:2px solid var(--np-accent);display:flex;align-items:flex-end;justify-content:space-between;gap:14px}',
       '.np-foot-note{text-align:right;font-size:8.5pt;line-height:1.45;color:#9aa0a3;max-width:90mm}',
       // logo reconstitué
-      '.np-logo{position:relative;line-height:.92}',
-      '.np-logo-1{font-size:calc(11pt*var(--s,1));font-weight:700;letter-spacing:.04em;color:' + NP.gray + '}',
-      '.np-logo-2{font-size:calc(22pt*var(--s,1));font-weight:700;letter-spacing:.02em;color:' + NP.gray + '}',
-      '.np-logo-2 span{color:' + NP.gray + '}',
-      '.np-logo .np-smile{display:block;margin-top:-6px;margin-left:2px}',
-      '.np-logo-base{margin-top:1mm;font-size:calc(9.5pt*var(--s,1));font-weight:700;color:' + NP.green + ";font-family:'Caveat','Varela Round',cursive}",
+      '.np-logo{position:relative;line-height:1}',
+      '.np-logo-row{display:flex;align-items:center;gap:3mm}',
+      '.np-logo-mark{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(150deg,' + NP.green + ',' + NP.greenD + ');border-radius:3mm;padding:calc(2mm*var(--s,1))}',
+      '.np-logo-name{font-size:calc(20pt*var(--s,1));font-weight:400;letter-spacing:-.3px;color:#2a2d2f}',
+      '.np-logo-base{margin-top:1.5mm;font-size:calc(13pt*var(--s,1));font-weight:700;color:' + NP.green + ";font-family:'Caveat','Varela Round',cursive}",
       '.np-head .np-smile{margin-top:3mm}'
     ].join('\n');
     var st = document.createElement('style');
