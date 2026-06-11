@@ -138,6 +138,18 @@
         // App JARVIS : espace Marketing de Pauline & Will (supports + sélections à pousser)
         P.splice(2, 0, { k: 'marketing', cls: 'p6', accent: '#E0556E', ico: 'spark', tag: 'Pauline & Will', t: 'Marketing', d: 'Fabriquez vos supports (flyers produits avec photos et prix) et vos sélections à pousser aux pharmacies. À deux, au même endroit.', go: 'Ouvrir le marketing' });
       }
+      // Mode OPSO : le suivi groupement passe en tête (1ʳᵉ tuile de l'accueil)
+      if (window.V2_BRAND && window.V2_BRAND.opso) {
+        var piIdx = P.map(function (x) { return x.k; }).indexOf('pilotage');
+        if (piIdx >= 0) {
+          var pil = P.splice(piIdx, 1)[0];
+          pil.t = 'Suivi groupement';
+          pil.d = 'Le tableau de bord OPSO Santé : taux d\'activation des adhérents, CA du groupement, répartition par périmètre et détail par officine.';
+          pil.go = 'Voir le suivi';
+          pil.tag = V2.fmtK(caTotal) + ' €';
+          P.unshift(pil);
+        }
+      }
       var pilHtml = P.map(function (p) {
         return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onclick="V2.go(\'' + p.k + '\')">' +
           '<div class="v2-pil-head"><div class="v2-pil-ico">' + ICO(p.ico, 26) + '</div><span class="v2-pil-num">' + p.tag + '</span></div>' +
