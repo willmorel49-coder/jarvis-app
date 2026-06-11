@@ -450,8 +450,8 @@
           '</div>' +
           '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.pharmaDownloadPdf(\'' + V2.esc(String(pid)) + '\')">' +
             ICO('download', 17) + (selCips && selCips.size
-              ? 'PDF RDV · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '')
-              : 'Télécharger le PDF RDV') + '</button>' +
+              ? 'Prépa RDV · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '')
+              : 'Préparer le RDV (PDF)') + '</button>' +
         '</div>' +
         '<div class="v2-pharma-stats">' +
           stat('CA cumulé', V2.fmtEur(ca), 'var(--c-fiche)') +
@@ -482,8 +482,8 @@
     if (!b) return;
     var n = selCips ? selCips.size : 0;
     b.innerHTML = ICO('download', 17) + (n
-      ? 'PDF RDV · ' + n + ' produit' + (n > 1 ? 's' : '')
-      : 'Télécharger le PDF RDV');
+      ? 'Prépa RDV · ' + n + ' produit' + (n > 1 ? 's' : '')
+      : 'Préparer le RDV (PDF)');
   }
 
   // Coche / décoche un produit (toggle ciblé, pas de re-render).
@@ -574,30 +574,85 @@
           '</tr></thead><tbody>' + rows + '</tbody></table></div>';
     }).join('');
 
+    // ── Portrait : CA/mois + commandé par tranche ──
+    var months = monthlyCA(sales);
+    var maxM = months.reduce(function (m, x) { return Math.max(m, x.ca); }, 1);
+    var monthBars = months.map(function (m) {
+      var h = m.ca > 0 ? Math.max(6, Math.round(m.ca / maxM * 62)) : 0;
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">' +
+        '<div style="font-size:8px;font-weight:700;color:#2A2F3C;font-family:monospace">' + V2.fmtK(m.ca) + '</div>' +
+        '<div style="width:100%;max-width:34px;height:62px;display:flex;align-items:flex-end;background:#EEF1F6;border-radius:5px 5px 2px 2px;overflow:hidden"><div style="width:100%;height:' + h + 'px;background:linear-gradient(180deg,#0050E6,#0034A0)"></div></div>' +
+        '<div style="font-size:8px;color:#737A8C;font-weight:600">' + cap(MN_SHORT[m.month - 1]) + '</div>' +
+      '</div>';
+    }).join('');
+    var oc = ownedByCat(sales);
+    var trRows = CATS.map(function (c) { var b = oc.buckets[c.key]; return { c: c, refs: b.refs.size, ca: b.ca, mdl: b.mdl }; })
+      .filter(function (r) { return r.refs > 0; }).sort(function (a, b) { return b.ca - a.ca; })
+      .map(function (r) {
+        return '<tr style="border-bottom:1px solid #F0F2F7">' +
+          '<td style="padding:4px 7px;font-size:9.5px;font-weight:600;color:#10131C"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + r.c.color + ';margin-right:6px;vertical-align:middle"></span>' + esc(r.c.label) + '</td>' +
+          '<td style="padding:4px 7px;text-align:right;font-size:9.5px;font-family:monospace">' + V2.fmtNum(r.refs) + '</td>' +
+          '<td style="padding:4px 7px;text-align:right;font-size:9.5px;font-family:monospace;font-weight:700">' + V2.fmtEur(r.ca) + '</td>' +
+          '<td style="padding:4px 7px;text-align:right;font-size:9.5px;font-family:monospace;color:#1E9E6A;font-weight:700">' + (r.mdl > 0 ? V2.fmtEur(r.mdl) : '—') + '</td>' +
+        '</tr>';
+      }).join('');
+    var ident = [pharma.code, pharma.ville, pharma.tel].filter(function (x) { return x; }).map(esc).join('  ·  ');
+    var pot = (pharma.potentiel != null && pharma.potentiel !== '') ? ('Potentiel ' + esc(String(pharma.potentiel))) : '';
+    function kpiTile(l, v, col) {
+      return '<div style="border:1px solid #E5E9F2;border-radius:9px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">' + l + '</div><div style="font-size:15px;font-weight:800;color:' + col + ';font-family:monospace">' + v + '</div></div>';
+    }
+
     var html =
-      '<div style="padding:16px 20px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
-        '<div style="display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #0050E6;padding-bottom:11px;margin-bottom:15px">' +
-          '<div style="display:flex;align-items:center;gap:12px">' +
-            '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative">' +
-              '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>' +
-            '<div><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · Opportunités</div>' +
-              '<div style="font-size:18px;font-weight:800;color:#10131C">' + esc(pharma.name) + '</div>' +
-              (pharma.code ? '<div style="font-size:10px;color:#737A8C;font-family:monospace">' + esc(pharma.code) + '</div>' : '') + '</div>' +
+      '<div style="padding:18px 22px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
+        // En-tête identité
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:13px;border-bottom:2px solid #10131C;margin-bottom:16px">' +
+          '<div style="display:flex;align-items:center;gap:13px">' +
+            '<div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative;flex-shrink:0"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>' +
+            '<div><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.1em;font-weight:800">Préparation rendez-vous · Intégral Pharma</div>' +
+              '<div style="font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + esc(pharma.name) + '</div>' +
+              (ident ? '<div style="font-size:10.5px;color:#737A8C;margin-top:3px">' + ident + '</div>' : '') + '</div>' +
           '</div>' +
-          '<div style="text-align:right"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Édité le</div>' +
-            '<div style="font-size:12px;font-weight:700;font-family:monospace">' + today + '</div></div>' +
+          '<div style="text-align:right;flex-shrink:0">' +
+            (pharma.groupement ? '<div style="display:inline-block;font-size:9px;font-weight:800;color:#0050E6;background:#EAF0FF;border-radius:6px;padding:3px 8px">' + esc(pharma.groupement) + '</div>' : '') +
+            (pot ? '<div style="font-size:10px;color:#737A8C;margin-top:5px;font-weight:700">' + pot + '</div>' : '') +
+            '<div style="font-size:10px;color:#9AA1B2;margin-top:5px;font-family:monospace">' + today + '</div>' +
+          '</div>' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px">' +
-          '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">CA du mois</div><div style="font-size:16px;font-weight:800;color:#0050E6;font-family:monospace">' + V2.fmtEur(ca) + '</div></div>' +
-          '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Marge MDL</div><div style="font-size:16px;font-weight:800;color:#1E9E6A;font-family:monospace">' + V2.fmtEur(marge) + '</div></div>' +
-          '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Références</div><div style="font-size:16px;font-weight:800;color:#6D4FC4;font-family:monospace">' + V2.fmtNum(nbRefs) + '</div></div>' +
-          '<div style="border:1px solid #E5E9F2;border-radius:8px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Opportunités</div><div style="font-size:16px;font-weight:800;color:#C7791A;font-family:monospace">' + V2.fmtNum(totalOpp) + '</div></div>' +
+        // KPI
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px">' +
+          kpiTile('CA cumulé (5 mois)', V2.fmtEur(ca), '#0050E6') +
+          kpiTile('Marge MDL', V2.fmtEur(marge), '#1E9E6A') +
+          kpiTile('Références', V2.fmtNum(nbRefs), '#6D4FC4') +
+          kpiTile('Opportunités', V2.fmtNum(totalOpp), '#C7791A') +
         '</div>' +
+        // Portrait 2 colonnes
+        '<div style="display:grid;grid-template-columns:1fr 1.15fr;gap:12px;margin-bottom:18px;page-break-inside:avoid">' +
+          '<div style="border:1px solid #E5E9F2;border-radius:11px;padding:12px 14px">' +
+            '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:10px">CA par mois</div>' +
+            '<div style="display:flex;align-items:flex-end;gap:7px">' + (monthBars || '<div style="font-size:10px;color:#9AA1B2">—</div>') + '</div>' +
+          '</div>' +
+          '<div style="border:1px solid #E5E9F2;border-radius:11px;padding:12px 14px">' +
+            '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:8px">Ce qu\'elle commande · par tranche</div>' +
+            (trRows ? '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
+              '<th style="text-align:left;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Tranche</th>' +
+              '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Réfs</th>' +
+              '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">CA</th>' +
+              '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">MDL</th>' +
+              '</tr></thead><tbody>' + trRows + '</tbody></table>' : '<div style="font-size:10px;color:#9AA1B2">Aucune commande identifiée.</div>') +
+          '</div>' +
+        '</div>' +
+        // Opportunités à présenter
         '<h2 style="font-size:14px;font-weight:800;margin:0 0 10px;border-bottom:1px solid #E5E9F2;padding-bottom:5px">' +
-          (useSel ? 'Sélection RDV · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') + ' retenus'
-                  : 'Opportunités par catégorie · top marché OPS + HP + CPR') + '</h2>' +
+          (useSel ? 'À présenter · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') + ' retenus'
+                  : 'Opportunités à présenter · top marché OPS + HP + CPR') + '</h2>' +
         catSections +
-        '<div style="margin-top:16px;padding-top:8px;border-top:1px solid #E5E9F2;display:flex;justify-content:space-between;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">' +
+        // Notes
+        '<div style="margin-top:16px;page-break-inside:avoid">' +
+          '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:7px">Notes du rendez-vous</div>' +
+          '<div style="border:1px solid #E5E9F2;border-radius:10px;height:96px;background:repeating-linear-gradient(#fff,#fff 23px,#EEF1F6 23px,#EEF1F6 24px)"></div>' +
+        '</div>' +
+        // Footer
+        '<div style="margin-top:14px;padding-top:8px;border-top:1px solid #E5E9F2;display:flex;justify-content:space-between;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">' +
           '<div>Intégral Pharma · Normandie · Document confidentiel</div><div>Marge MDL : 0,18€ &lt;4,33€ · 3,9% &lt;468€ · 19,50€ au-delà</div></div>' +
       '</div>';
 
@@ -608,7 +663,7 @@
       wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
       wrap.innerHTML = html;
       document.body.appendChild(wrap);
-      var fn = 'Opportunites-' + (pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+      var fn = 'Prepa-RDV-' + (pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       window.html2pdf().from(wrap).set({
         filename: fn, margin: [10, 10, 12, 10], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
