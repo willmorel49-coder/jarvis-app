@@ -50,6 +50,36 @@
     location.reload();
   };
 
+  // ── Périmètre OPSO Santé (mode multi-marque) ────
+  // Si window.OPSO_LISTING_2026 est chargé (app opso/v2/), on restreint le
+  // périmètre aux 129 officines du listing officiel (par CODE CIP) et on
+  // marque celles présentes dans les données (inDb = "commande déjà").
+  V2.applyOpsoPerimeter = function () {
+    var listing = window.OPSO_LISTING_2026;
+    if (!listing || !listing.length) return;
+    var norm = function (c) { return String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, ''); };
+    var byCip = {}, byName = {};
+    (V2.pharmacies || []).forEach(function (p) {
+      var c = norm(p.code || p.id); if (c && !byCip[c]) byCip[c] = p;
+      var n = (p.name || '').trim().toUpperCase(); if (n && !byName[n]) byName[n] = p;
+    });
+    V2.pharmacies = listing.map(function (a) {
+      var cip = norm(a.cip || a.code);
+      var db = byCip[cip] || byName[(a.nom || a.name || '').trim().toUpperCase()];
+      return {
+        id: db ? db.id : ('LST-' + (cip || (a.nom || a.name || '').trim())),
+        name: (db && db.name) || a.nom || a.name || '',
+        code: cip || (db && db.code) || '',
+        color: (db && db.color) || '#11a63c',
+        ville: a.ville || (db && db.ville) || '', cp: a.cp || (db && db.cp) || '',
+        tel: a.tel || (db && db.tel) || '', perimetre: a.perimetre || '',
+        groupement: 'OPSO SANTE', potentiel: (db && db.potentiel) || 0, inDb: !!db,
+      };
+    });
+    var ids = {}; V2.pharmacies.forEach(function (p) { ids[String(p.id)] = 1; });
+    V2.sales = (V2.sales || []).filter(function (s) { return ids[String(s.pharmacyId)]; });
+  };
+
   // ── DONNÉES : WML (source de vérité) sinon Supabase ────
   V2.loadData = async function () {
     // Source de vérité = fichiers WML (officines + ventes, 5 mois) générés
