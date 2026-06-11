@@ -193,6 +193,50 @@
   }
 
   // ─────────────────────────────────────────────────────────────
+  // ── Analyse VOLUMES IP : best-sellers IP (par volume) que la pharma ne prend pas
+  function buildIpVolumeReco(pid, limit) {
+    var B = window.BENCHMARK || [];
+    if (!B.length) return null;
+    var bought = {};
+    pharmaSales(pid).forEach(function (s) {
+      var c = String(s.artCode == null ? '' : s.artCode).trim();
+      if (c) bought[c] = (bought[c] || 0) + (s.qte || 0);
+    });
+    var top = B.filter(function (b) { return (+b.ip_qty || 0) > 0; })
+      .sort(function (a, b) { return (+b.ip_qty || 0) - (+a.ip_qty || 0); });
+    var manque = [];
+    for (var i = 0; i < top.length && manque.length < (limit || 40); i++) {
+      var b = top[i];
+      var q = bought[String(b.cip13 == null ? '' : b.cip13).trim()] || 0;
+      if (q === 0) manque.push(b);
+    }
+    return { manque: manque, total: top.length };
+  }
+
+  function ipVolumeSection(pid) {
+    var reco = buildIpVolumeReco(pid, 40);
+    if (!reco || !reco.manque.length) return '';
+    var rows = reco.manque.map(function (b) {
+      var rank = b.ip_rank_qty ? ('#' + b.ip_rank_qty) : '';
+      var cip = String(b.cip13 == null ? '' : b.cip13).trim();
+      var on = selCips && selCips.has(cip);
+      return '<div class="ipv-row">' +
+        '<span class="ipv-rank">' + rank + '</span>' +
+        '<span class="ipv-name">' + esc(cap((b.designation || '').toLowerCase())) + '</span>' +
+        '<span class="ipv-vol mono">' + V2.fmtNum(+b.ip_qty || 0) + ' u<small>/an IP</small></span>' +
+        '<button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(cip) +
+          '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF RDV">' + (on ? '✓' : '+') + '</button>' +
+        '</div>';
+    }).join('');
+    return '<div style="margin-top:26px">' +
+      '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap">' +
+        '<div class="v2-page-title" style="margin:0;font-size:22px">Best-sellers IP à pousser</div>' +
+        '<div style="font-size:13px;color:var(--muted)">les produits qui sortent le plus chez Intégral Pharma (volume) que cette officine ne commande pas</div>' +
+      '</div>' +
+      '<div class="v2-card" style="padding:6px 0">' + rows + '</div>' +
+      '</div>';
+  }
+
   // VUE A — Liste des officines
   // ─────────────────────────────────────────────────────────────
   function listRowHtml(x) {
@@ -533,11 +577,11 @@
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
     if (!pharma) { renderList(root); return; }
 
-    // Agrégats marché chargés ? sinon lazy-load + état loading
-    if (!window.OPS_AGGREGATE) {
+    // Agrégats marché + catalogue IP chargés ? sinon lazy-load + état loading
+    if (!window.OPS_AGGREGATE || !window.BENCHMARK) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
         '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du marché sectoriel…</div></div>';
-      V2.loadFiles(['establishments']).then(function () { _marketCache = null; V2.render(); });
+      V2.loadFiles(['establishments', 'bench']).then(function () { _marketCache = null; V2.render(); });
       return;
     }
 
@@ -730,6 +774,27 @@
       return '<div style="border:1px solid #E5E9F2;border-radius:9px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">' + l + '</div><div style="font-size:15px;font-weight:800;color:' + col + ';font-family:monospace">' + v + '</div></div>';
     }
 
+    // Top 5 commandé par catégorie (en valeur) — cartes 2 colonnes
+    var tops = ownedTopByCat(sales, 5);
+    var topCards = tops.map(function (o) {
+      var rws = o.rows.map(function (r, i) {
+        return '<div style="display:flex;align-items:center;gap:7px;padding:3px 9px;border-top:1px solid #F4F6FB">' +
+          '<span style="font-size:8px;color:#9AA1B2;font-family:monospace;width:10px">' + (i + 1) + '</span>' +
+          '<span style="flex:1;font-size:9.5px;font-weight:600;color:#10131C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc((r.designation || '').slice(0, 34)) + '</span>' +
+          '<span style="font-size:9px;font-family:monospace;font-weight:700;color:#10131C">' + V2.fmtEur(r.ca) + '</span></div>';
+      }).join('');
+      return '<div style="border:1px solid #E5E9F2;border-radius:9px;overflow:hidden;page-break-inside:avoid">' +
+        '<div style="display:flex;align-items:center;gap:7px;padding:6px 9px;background:linear-gradient(90deg,' + o.cat.color + '18,transparent)">' +
+          '<span style="width:7px;height:7px;border-radius:50%;background:' + o.cat.color + '"></span>' +
+          '<span style="font-size:10px;font-weight:800;color:#10131C;flex:1">' + esc(o.cat.label) + '</span>' +
+          '<span style="font-size:8px;color:#737A8C;font-family:monospace">' + V2.fmtNum(o.total) + ' réf.</span></div>' +
+        rws + '</div>';
+    }).join('');
+    var topCatBlock = tops.length
+      ? '<h2 style="font-size:14px;font-weight:800;margin:0 0 10px;border-bottom:1px solid #E5E9F2;padding-bottom:5px">Top 5 commandé · par catégorie (en valeur)</h2>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px">' + topCards + '</div>'
+      : '';
+
     var html =
       '<div style="padding:18px 22px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
         // En-tête identité
@@ -769,6 +834,8 @@
               '</tr></thead><tbody>' + trRows + '</tbody></table>' : '<div style="font-size:10px;color:#9AA1B2">Aucune commande identifiée.</div>') +
           '</div>' +
         '</div>' +
+        // Top 5 commandé par catégorie
+        topCatBlock +
         // Opportunités à présenter
         '<h2 style="font-size:14px;font-weight:800;margin:0 0 10px;border-bottom:1px solid #E5E9F2;padding-bottom:5px">' +
           (useSel ? 'À présenter · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') + ' retenus'
