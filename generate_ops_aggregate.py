@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Produit crm/ops-aggregate.js depuis STATS/OPS_Pharmas_agregation.xlsx.
+Produit crm/ops-aggregate.js depuis STATS/OPS_NETTOYE_agregation.xlsx.
 Données : agrégat des ventes sur l'établissement OPS Nantes par produit (5114 lignes).
 Colonnes : ARTCODEBARRE, ARTCODE, PLVDESIGNATION, ARTMARQUE, ARTNATURE, ARTSOUSFAMILLE, ARTCOLLECTION, AFMCODE, CA_NET_HT, QTE_TOTALE.
 
@@ -11,7 +11,7 @@ import json
 import openpyxl
 from pathlib import Path
 
-SRC = 'STATS/OPS_Pharmas_agregation.xlsx'
+SRC = 'STATS/OPS_NETTOYE_agregation.xlsx'
 OUT = Path('crm/ops-aggregate.js')
 
 
@@ -25,24 +25,30 @@ def clean(v):
 def main():
     wb = openpyxl.load_workbook(SRC, read_only=True, data_only=True)
     ws = wb['Agrégation']
+    rows = ws.iter_rows(values_only=True)
+    header = [clean(c).upper() for c in next(rows)]
+    col = {h: i for i, h in enumerate(header)}
+    def g(row, name):
+        i = col.get(name)
+        return row[i] if i is not None and i < len(row) else None
     products = {}
     total_ca = 0.0
     total_qte = 0
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        artcode = clean(row[1])
+    for row in rows:
+        artcode = clean(g(row, 'ARTCODE'))
         if not artcode: continue
-        ca = float(row[8] or 0)
-        qte = int(row[9] or 0)
+        ca = float(g(row, 'CA_NET_HT') or 0)
+        qte = int(g(row, 'QTE_TOTALE') or 0)
         total_ca += ca
         total_qte += qte
         products[artcode] = {
-            'ean': clean(row[0]),
-            'designation': clean(row[2]),
-            'marque': clean(row[3]),
-            'nature': clean(row[4]),
-            'sousfamille': clean(row[5]),
-            'collection': clean(row[6]),
-            'afmcode': clean(row[7]),
+            'ean': clean(g(row, 'ARTCODEBARRE')),
+            'designation': clean(g(row, 'PLVDESIGNATION')),
+            'marque': clean(g(row, 'ARTMARQUE')),
+            'nature': clean(g(row, 'ARTNATURE')),
+            'sousfamille': clean(g(row, 'ARTSOUSFAMILLE')),
+            'collection': clean(g(row, 'ARTCOLLECTION')),
+            'afmcode': clean(g(row, 'AFMCODE')),
             'ca': round(ca, 2),
             'qte': qte,
         }
@@ -67,7 +73,7 @@ def main():
 
     out = (
         '// OPS Pharmas agregation · benchmark Etablissement OPS Nantes\n'
-        '// Source : STATS/OPS_Pharmas_agregation.xlsx\n'
+        '// Source : STATS/OPS_NETTOYE_agregation.xlsx\n'
         f'// {len(products)} produits agreges (TOUS exposes) · CA total {total_ca:,.0f} EUR · QTE {total_qte:,}\n\n'
         f'window.OPS_TOTAL = {json.dumps({"ca": round(total_ca,2), "qte": total_qte, "nb_produits": len(products), "nb_labos": len(ops_by_labo)}, ensure_ascii=False, indent=2)};\n\n'
         f'window.OPS_BY_LABO = {json.dumps(ops_by_labo, ensure_ascii=False, indent=2)};\n\n'
