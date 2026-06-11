@@ -325,12 +325,50 @@
         topProdHtml +
       '</div>';
 
+    // ── Détail par officine cliente (classé par CA sur la période) ──
+    var refsByPh = {};
+    salesCur.forEach(function (s) {
+      var k = String(s.artCode || s.artDesignation || '');
+      (refsByPh[s.pharmacyId] = refsByPh[s.pharmacyId] || {})[k] = 1;
+    });
+    var officines = pharmacies.filter(function (p) { return p.inDb; })
+      .map(function (p) {
+        return { p: p, ca: caByPh[p.id] || 0, refs: refsByPh[p.id] ? Object.keys(refsByPh[p.id]).length : 0 };
+      })
+      .sort(function (a, b) { return b.ca - a.ca; });
+    var maxOffCa = officines.length ? Math.max(officines[0].ca, 1) : 1;
+    var SHOWN = 20;
+    var offRows = officines.slice(0, SHOWN).map(function (o) {
+      var col = perimColor((o.p.perimetre || '').trim());
+      var w = Math.max(2, o.ca / maxOffCa * 100);
+      var goId = o.p.id;
+      return '<div class="v2-row" onclick="V2.go(\'pharma\',\'' + goId + '\')" style="cursor:pointer">' +
+        '<span class="opso-perim-badge" style="background:color-mix(in srgb,' + col + ' 14%,#fff);color:' + col + ';flex-shrink:0">' + esc((o.p.perimetre || '–').trim() || '–') + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="v2-row-name">' + esc(o.p.name) + (o.p.hasStats ? ' <span class="opso-new-tag">nouv.</span>' : '') + '</div>' +
+          '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + w.toFixed(1) + '" style="width:0;background:' + col + '"></span></div>' +
+        '</div>' +
+        '<div class="pilo-vals">' +
+          '<div class="v2-row-val mono">' + V2.fmtEur(o.ca) + '</div>' +
+          '<div class="v2-row-meta mono">' + o.refs + ' réf.' + (o.p.ville ? ' · ' + esc(o.p.ville) : '') + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    var officinesCard = officines.length ?
+      '<div class="v2-card" style="margin-bottom:14px">' +
+        '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pharma', 17) + 'Officines clientes — détail</div>' +
+          '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + officines.length + ' clientes' +
+          (officines.length > SHOWN ? ' · top ' + SHOWN : '') + '</span></div>' +
+        offRows +
+      '</div>' : '';
+
     return {
       html: '<div class="opso-section">' +
               '<div class="opso-section-head">' + ICO('pharma', 16) + 'Groupement OPSO Santé</div>' +
               kpiActivation +
               kpiGrp +
               (perimCard || '') +
+              officinesCard +
               topProdCard +
             '</div>',
     };
@@ -659,7 +697,8 @@
       '.opso-perim-row{margin-bottom:16px}.opso-perim-row:last-child{margin-bottom:4px}' +
       '.opso-perim-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}' +
       '.opso-perim-badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:.01em}' +
-      '.opso-perim-nums{display:flex;align-items:center;flex-wrap:wrap}';
+      '.opso-perim-nums{display:flex;align-items:center;flex-wrap:wrap}' +
+      '.opso-new-tag{display:inline-block;margin-left:6px;vertical-align:middle;font-size:9.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:#0d8530;background:color-mix(in srgb,#11a63c 14%,transparent);border:1px solid color-mix(in srgb,#11a63c 30%,transparent);border-radius:999px;padding:1px 7px}';
 
     var st = document.createElement('style');
     st.id = 'pilo-styles'; st.textContent = css;
