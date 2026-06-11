@@ -99,14 +99,13 @@
       '<rect x="12" y="3" width="8" height="26" rx="3"/><rect x="3" y="12" width="26" height="8" rx="3"/></svg>';
   }
 
-  // Logo OPSO Santé (tuile verte + croix blanche + nom + baseline)
-  function opsoLogo(scale) {
-    scale = scale || 1;
-    return '<div class="np-logo" style="--s:' + scale + '">' +
-      '<div class="np-logo-row">' +
-        '<span class="np-logo-mark">' + crossSvg('#fff', Math.round(24 * scale)) + '</span>' +
-        '<span class="np-logo-name">OPSO Santé</span>' +
-      '</div>' +
+  // Chemin du logo officiel OPSO Santé (fichier image, relatif à la page)
+  function brandLogo() { return (window.V2_BRAND && window.V2_BRAND.logo) || 'assets/opsosante-logo.png'; }
+
+  // Bloc logo OPSO Santé (vrai logo) + baseline
+  function opsoLogo() {
+    return '<div class="np-logo">' +
+      '<img class="np-logo-img" src="' + brandLogo() + '" alt="Groupe OPSO Santé" crossorigin="anonymous">' +
       '<div class="np-logo-base">On prend soin de vous !</div>' +
     '</div>';
   }
@@ -145,7 +144,7 @@
     return '<div class="np-sheet" style="--np-accent:' + theme + '">' +
       // ── HEADER vert ──
       '<header class="np-head">' +
-        '<div class="np-head-mark">' + crossSvg('#fff', 54) + '</div>' +
+        '<div class="np-head-mark"><img src="' + brandLogo() + '" alt="OPSO Santé" crossorigin="anonymous"></div>' +
         '<div class="np-head-txt">' +
           '<div class="np-eyebrow">SÉLECTION' + (sel.month ? ' · ' + esc(sel.month) : '') + '</div>' +
           '<h1>' + esc(sel.title || 'La sélection') + '</h1>' +
@@ -213,8 +212,9 @@
       // ════ LA FICHE (charte Normandie Pharma) ════
       '.np-sheet{width:210mm;min-height:297mm;background:#fff;color:' + NP.gray + ";font-family:'Varela Round',var(--font,system-ui),sans-serif;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.18)}",
       '.np-sheet *{box-sizing:border-box}',
-      '.np-head{position:relative;background:var(--np-accent);color:#fff;padding:26mm 16mm 14mm;display:flex;align-items:flex-start;gap:14px;overflow:hidden}',
-      '.np-head-mark{flex-shrink:0;opacity:.96}',
+      '.np-head{position:relative;background:var(--np-accent);color:#fff;padding:22mm 16mm 14mm;display:flex;align-items:flex-start;gap:6mm;overflow:hidden}',
+      '.np-head-mark{flex-shrink:0;background:#fff;border-radius:4mm;padding:3mm 4mm;box-shadow:0 4px 14px rgba(0,0,0,.12)}',
+      '.np-head-mark img{display:block;height:20mm;width:auto}',
       '.np-head-txt{flex:1;min-width:0}',
       '.np-eyebrow{font-size:11pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;opacity:.92;margin-bottom:4mm}',
       '.np-head h1{margin:0;font-size:30pt;line-height:1.02;font-weight:700;letter-spacing:-.01em}',
@@ -236,12 +236,9 @@
       '.np-foot{margin-top:auto;padding:10mm 16mm 14mm;border-top:2px solid var(--np-accent);display:flex;align-items:flex-end;justify-content:space-between;gap:14px}',
       '.np-foot-note{text-align:right;font-size:8.5pt;line-height:1.45;color:#9aa0a3;max-width:90mm}',
       // logo reconstitué
-      '.np-logo{position:relative;line-height:1}',
-      '.np-logo-row{display:flex;align-items:center;gap:3mm}',
-      '.np-logo-mark{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(150deg,' + NP.green + ',' + NP.greenD + ');border-radius:3mm;padding:calc(2mm*var(--s,1))}',
-      '.np-logo-name{font-size:calc(20pt*var(--s,1));font-weight:400;letter-spacing:-.3px;color:#2a2d2f}',
-      '.np-logo-base{margin-top:1.5mm;font-size:calc(13pt*var(--s,1));font-weight:700;color:' + NP.green + ";font-family:'Caveat','Varela Round',cursive}",
-      '.np-head .np-smile{margin-top:3mm}'
+      '.np-logo{position:relative;line-height:1;display:flex;align-items:center;gap:4mm}',
+      '.np-logo-img{display:block;height:18mm;width:auto}',
+      '.np-logo-base{font-size:15pt;font-weight:700;color:' + NP.green + ";font-family:'Caveat','Varela Round',cursive}"
     ].join('\n');
     var st = document.createElement('style');
     st.id = 'mkt-styles';
