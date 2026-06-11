@@ -1,9 +1,152 @@
-/* Override thème OPSO Santé (vert) par-dessus crm/v2/v2.css.
-   On bascule la couleur primaire bleue IP vers le vert OPSO. */
-:root{
-  --ip-blue:#11a63c; --ip-blue-d:#0d8530;
-  --halo:#E6F7EC;
-  --c-fiche:#11a63c;
+/* ═══════════════════════════════════════════════════════════════════
+   OPSO Normandie Pharma · Override thème vert (par-dessus crm/v2/v2.css)
+   Bascule la couleur primaire IP bleue → vert OPSO #11a63c.
+   Ne redéfinit PAS la mise en page V2 — uniquement les accents couleur.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* Primaire vert OPSO */
+  --ip-blue:   #11a63c;
+  --ip-blue-d: #0d8530;
+
+  /* Halo vert pâle (remplace --halo bleu) */
+  --halo: #E6F7EC;
+
+  /* c-fiche suit le primaire en mode OPSO */
+  --c-fiche: #11a63c;
+
+  /* Ombres colorées cohérentes (remplace rgba(0,80,230,...)) */
+  --sh-opso-glow: 0 4px 12px rgba(17,166,60,.26), 0 1px 0 rgba(255,255,255,.2) inset;
+  --sh-opso-hover: 0 6px 18px rgba(17,166,60,.36);
 }
-/* halo de fond verdâtre */
-.v2-halo{background:radial-gradient(60% 50% at 50% 0%, #E6F7EC 0%, transparent 70%) !important;}
+
+/* ── Halo de fond verdâtre ──────────────────────────────────────── */
+.v2-halo {
+  background: radial-gradient(ellipse 55% 100% at 50% 0%, #E6F7EC, transparent 70%) !important;
+}
+
+/* ── Logo / avatar gradient vert ──────────────────────────────── */
+.v2-logo {
+  background: linear-gradient(150deg, var(--ip-blue), var(--ip-blue-d)) !important;
+  box-shadow: var(--sh-opso-glow) !important;
+}
+
+/* ── Bouton primaire vert ──────────────────────────────────────── */
+.v2-btn-primary {
+  background: linear-gradient(150deg, var(--ip-blue), var(--ip-blue-d)) !important;
+  box-shadow: var(--sh-opso-glow) !important;
+}
+.v2-btn-primary:hover {
+  box-shadow: var(--sh-opso-hover) !important;
+}
+
+/* ── Tab active vert ───────────────────────────────────────────── */
+.v2-tab.on {
+  background: var(--ip-blue) !important;
+  box-shadow: 0 2px 8px rgba(17,166,60,.28) !important;
+}
+
+/* ── Onglet segment actif (v2-seg) ─────────────────────────────── */
+.v2-seg.on {
+  background: var(--sc, var(--ip-blue)) !important;
+}
+
+/* ── Eyebrow / chip de hero ────────────────────────────────────── */
+.v2-eyebrow {
+  color: var(--ip-blue) !important;
+  background: var(--halo) !important;
+}
+
+/* ── Barre de recherche top : icône + focus ring ───────────────── */
+.v2-top-search svg,
+.v2-cmdk-search svg,
+.v2-search svg {
+  color: var(--ip-blue) !important;
+}
+.v2-top-search:hover,
+.v2-search:hover,
+.v2-search:focus-within {
+  border-color: rgba(17,166,60,.4) !important;
+  box-shadow: 0 0 0 4px var(--halo), var(--sh-2) !important;
+}
+
+/* ── Bouton Retour : hover border ──────────────────────────────── */
+.v2-back:hover {
+  border-color: rgba(17,166,60,.3) !important;
+}
+
+/* ── Pilier card : hover border ────────────────────────────────── */
+.v2-pil:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line)) !important;
+}
+
+/* ── Spinner de chargement ─────────────────────────────────────── */
+.v2-spinner {
+  border-top-color: var(--ip-blue) !important;
+}
+
+/* ── Barres mensuelles : dégradé vert ──────────────────────────── */
+.ph-mbar-fill {
+  background: linear-gradient(180deg, var(--ip-blue), var(--ip-blue-d)) !important;
+}
+
+/* ── Bouton opp-add coché : vert OPSO ──────────────────────────── */
+.opp-add.on {
+  background: var(--ip-blue) !important;
+  border-color: var(--ip-blue) !important;
+  box-shadow: 0 2px 6px rgba(17,166,60,.38) !important;
+}
+.opp-add:hover {
+  border-color: var(--ip-blue) !important;
+  color: var(--ip-blue) !important;
+  background: color-mix(in srgb, var(--ip-blue) 8%, transparent) !important;
+}
+
+/* ── Badge "opp" dans la liste ─────────────────────────────────── */
+.v2-row-opp {
+  color: var(--ip-blue) !important;
+  background: color-mix(in srgb, var(--ip-blue) 11%, transparent) !important;
+  border-color: color-mix(in srgb, var(--ip-blue) 26%, transparent) !important;
+}
+
+/* ── Card link (ex : "marge MDL") ─────────────────────────────── */
+.v2-card-link {
+  color: var(--ip-blue) !important;
+}
+
+/* ── Command palette : item sélectionné ───────────────────────── */
+.v2-cmdk-item.sel,
+.v2-cmdk-item:hover {
+  background: var(--halo) !important;
+}
+.v2-cmdk-item .ico {
+  color: var(--ip-blue) !important;
+}
+
+/* ── Chip .b (blue chip → vert) ───────────────────────────────── */
+.v2-chip.b {
+  background: var(--halo) !important;
+  color: var(--ip-blue) !important;
+}
+
+/* ── Numéro de pilier ──────────────────────────────────────────── */
+.v2-pil-num {
+  color: var(--accent) !important;
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent) !important;
+  background: color-mix(in srgb, var(--accent) 7%, transparent) !important;
+}
+
+/* ── Badges OPSO : surcharge couleur cliente pour cohérence token ─ */
+.opso-badge-cliente {
+  color: var(--ip-blue-d) !important;
+  background: color-mix(in srgb, var(--ip-blue) 13%, transparent) !important;
+  border-color: color-mix(in srgb, var(--ip-blue) 28%, transparent) !important;
+}
+.opso-row-cliente {
+  background: color-mix(in srgb, var(--ip-blue) 4%, transparent) !important;
+}
+.opso-row-cliente:hover {
+  background: color-mix(in srgb, var(--ip-blue) 8%, transparent) !important;
+}
+.opso-counter-cliente {
+  color: var(--ip-blue-d) !important;
+}
