@@ -320,6 +320,19 @@
     });
   }
 
+  // charge le fichier de vignettes base64 (pour photos dans le PDF) si présent
+  var imgLoading = false;
+  function ensureImg(cb) {
+    if (window.OFFILOG_IMG) { cb(); return; }
+    if (imgLoading) { setTimeout(function () { ensureImg(cb); }, 300); return; }
+    imgLoading = true;
+    var sc = document.createElement('script');
+    sc.src = 'offilog-img-data.js?v=20260611a';
+    sc.onload = function () { imgLoading = false; cb(); };
+    sc.onerror = function () { imgLoading = false; cb(); }; // pas grave : repli URL brute
+    document.head.appendChild(sc);
+  }
+
   // ── Aperçu (modal) avant génération ──
   function fitMktSheet() {
     var scroll = document.getElementById('off-mkt-scroll');
@@ -354,13 +367,15 @@
   }
   V2.offMktPreview = function () {
     if (!mktSel.size) { V2.toast('Sélectionne au moins un produit', 'warn'); return; }
-    var bd = ensureMktModal();
-    var sheet = bd.querySelector('#off-mkt-sheet');
-    sheet.innerHTML = buildMarketingHtml();
-    bd.classList.add('open');
-    requestAnimationFrame(function () { requestAnimationFrame(fitMktSheet); });
-    waitImages(sheet, 9000).then(fitMktSheet);
-    if (!V2._mktResize) { window.addEventListener('resize', fitMktSheet); V2._mktResize = true; }
+    ensureImg(function () {
+      var bd = ensureMktModal();
+      var sheet = bd.querySelector('#off-mkt-sheet');
+      sheet.innerHTML = buildMarketingHtml();
+      bd.classList.add('open');
+      requestAnimationFrame(function () { requestAnimationFrame(fitMktSheet); });
+      waitImages(sheet, 9000).then(fitMktSheet);
+      if (!V2._mktResize) { window.addEventListener('resize', fitMktSheet); V2._mktResize = true; }
+    });
   };
   V2.offMktClosePreview = function () {
     var bd = document.getElementById('off-mkt-modal'); if (bd) bd.classList.remove('open');
@@ -371,6 +386,9 @@
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
     var title = mktTitleVal();
     V2.toast('Génération du PDF…');
+    ensureImg(function () { doGeneratePdf(title); });
+  };
+  function doGeneratePdf(title) {
     var html = buildMarketingHtml();
     window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
