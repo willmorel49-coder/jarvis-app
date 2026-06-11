@@ -420,6 +420,52 @@
     return { buckets: buckets, other: other };
   }
 
+  // ── Top N produits commandés (en valeur/CA) par catégorie ──
+  function ownedTopByCat(sales, n) {
+    var bIdx = benchIndex();
+    var byCat = {}; CATS.forEach(function (c) { byCat[c.key] = {}; });
+    sales.forEach(function (s) {
+      var cip = String(s.artCode || ''); if (cip.length < 7) return;
+      var b = bIdx.get(cip); var cat = b ? classify(b, cip) : null;
+      if (!cat || !byCat[cat]) return;
+      var m = byCat[cat], e = m[cip];
+      if (!e) { e = m[cip] = { cip: cip, designation: (b && b.designation) || s.artDesignation || cip, ca: 0, qte: 0 }; }
+      e.ca += s.mntNetHt || 0;
+      e.qte += s.qte || 0;
+    });
+    return CATS.map(function (c) {
+      var arr = Object.keys(byCat[c.key]).map(function (k) { return byCat[c.key][k]; })
+        .sort(function (a, b) { return b.ca - a.ca; });
+      return { cat: c, rows: arr.slice(0, n || 5), total: arr.length };
+    }).filter(function (o) { return o.rows.length; });
+  }
+
+  function topByCatSection(sales) {
+    var data = ownedTopByCat(sales, 5);
+    if (!data.length) return '';
+    var cards = data.map(function (o) {
+      var rows = o.rows.map(function (r, i) {
+        return '<div class="ph-top-row">' +
+          '<span class="ph-top-rank mono">' + (i + 1) + '</span>' +
+          '<span class="ph-top-name">' + esc(r.designation) + '</span>' +
+          '<span class="ph-top-val mono">' + V2.fmtEur(r.ca) + '<span class="ph-top-q"> · ' + V2.fmtNum(r.qte) + ' u</span></span>' +
+        '</div>';
+      }).join('');
+      return '<div class="ph-top-card">' +
+        '<div class="ph-top-head"><span class="ph-top-dot" style="background:' + o.cat.color + '"></span>' +
+          '<span class="ph-top-t">' + esc(o.cat.label) + '</span>' +
+          '<span class="ph-top-n mono">' + V2.fmtNum(o.total) + ' réf.</span></div>' +
+        rows + '</div>';
+    }).join('');
+    return '<div class="ph-topcats">' +
+        '<div style="display:flex;align-items:baseline;gap:10px;margin:26px 0 14px;flex-wrap:wrap">' +
+          '<div class="v2-page-title" style="margin:0;font-size:22px">Top 5 par catégorie</div>' +
+          '<div style="font-size:13px;color:var(--muted)">ses meilleures références commandées, en valeur (CA)</div>' +
+        '</div>' +
+        '<div class="ph-top-grid">' + cards + '</div>' +
+      '</div>';
+  }
+
   function activitySection(sales, marge, ca) {
     // 1. CA par mois
     var months = monthlyCA(sales);
@@ -540,6 +586,7 @@
       '<div class="v2-wrap">' +
         hero +
         activitySection(sales, marge, ca) +
+        topByCatSection(sales) +
         '<div style="display:flex;align-items:baseline;gap:10px;margin:26px 0 16px;flex-wrap:wrap">' +
           '<div class="v2-page-title" style="margin:0;font-size:22px">Opportunités par catégorie</div>' +
           '<div style="font-size:13px;color:var(--muted)">ce que le marché commande et que cette officine n\'a pas encore</div>' +
@@ -806,6 +853,19 @@
       '.ph-tr-sub{font-size:11px;color:var(--muted);font-family:var(--mono);font-weight:500;margin-left:2px}',
       '.ph-tr-bar{height:4px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:6px}',
       '.ph-tr-bar span{display:block;height:100%;border-radius:999px}',
+      // ── Top 5 par catégorie ──
+      '.ph-top-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}',
+      '.ph-top-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden}',
+      '.ph-top-head{display:flex;align-items:center;gap:9px;padding:12px 15px;border-bottom:1px solid var(--line)}',
+      '.ph-top-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}',
+      '.ph-top-t{font-weight:800;font-size:13.5px;letter-spacing:-.01em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.ph-top-n{font-size:11px;color:var(--muted);flex-shrink:0}',
+      '.ph-top-row{display:flex;align-items:center;gap:10px;padding:8px 15px;border-bottom:1px solid var(--line-2)}',
+      '.ph-top-row:last-child{border-bottom:none}',
+      '.ph-top-rank{font-size:11px;color:var(--muted-2);width:14px;flex-shrink:0;text-align:right}',
+      '.ph-top-name{flex:1;min-width:0;font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.ph-top-val{font-size:12px;font-weight:700;color:var(--ip-ink-2);flex-shrink:0}',
+      '.ph-top-q{color:var(--muted);font-weight:500}',
       // Badge "opportunités" dans la liste des officines
       '.v2-row-opp{flex-shrink:0;font-size:11.5px;font-weight:700;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,transparent);border:1px solid color-mix(in srgb,var(--c-opp) 26%,transparent);border-radius:999px;padding:3px 10px;letter-spacing:-.01em}',
       '.v2-row-opp-pending{color:var(--muted-2);background:var(--card-2);border-color:var(--line);font-weight:600}',
