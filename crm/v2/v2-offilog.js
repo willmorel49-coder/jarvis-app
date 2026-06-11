@@ -15,6 +15,10 @@
   var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes' };
   var PER_PAGE = 60;
 
+  // Sélection pour la fiche marketing parapharma
+  var mktSel = new Set();
+  var mktTitle = '';
+
   var CHIPS = [
     { k: 'all',         label: 'Tout',           sc: '#0050E6' },
     { k: 'alerte',      label: 'Veille prix',    sc: '#E0556E' },
@@ -34,7 +38,7 @@
   ];
 
   // ── Index ─────────────────────────────────────
-  var idxBuilt = false, items = null, byEan = null;
+  var idxBuilt = false, items = null, byEan = null, itemsById = null;
   function norm(s) { return String(s == null ? '' : s).toLowerCase(); }
   function numOr0(v) { return (typeof v === 'number' && isFinite(v) && v > 0) ? v : 0; }
 
@@ -72,7 +76,8 @@
       };
     });
     byEan = new Map();
-    items.forEach(function (it) { if (it.ean) byEan.set(String(it.ean), it); });
+    itemsById = new Map();
+    items.forEach(function (it) { if (it.ean) byEan.set(String(it.ean), it); itemsById.set(String(it.id), it); });
     idxBuilt = true;
   }
 
@@ -135,10 +140,12 @@
     var img = it.img
       ? '<img class="off-card-img" src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.style.visibility=\'hidden\'">'
       : '<div class="off-card-noimg">' + ICO('pill', 30, 1.4) + '</div>';
+    var onMkt = mktSel.has(String(it.id));
     return '<div class="off-card' + sel + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
       '<div class="off-card-media">' +
         '<span class="off-rank mono">#' + it.rank + '</span>' +
         (it.alert ? '<span class="off-card-alert" title="Veille prix">' + ICO('alert', 13, 2.4) + '</span>' : '') +
+        '<button class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + esc(it.id) + '\',this)" title="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
         img +
       '</div>' +
       '<div class="off-card-body">' +
@@ -227,6 +234,91 @@
     if (inp) { inp.focus(); var v = inp.value; try { inp.setSelectionRange(v.length, v.length); } catch (e) {} }
   }
 
+  // ── Fiche marketing parapharma (sélection + PDF peps) ──
+  function updateMktBar() {
+    var bar = document.getElementById('off-mktbar');
+    if (!bar) return;
+    var n = mktSel.size;
+    bar.classList.toggle('hidden', n === 0);
+    var ns = document.getElementById('off-mkt-n');
+    if (ns) ns.textContent = n + ' produit' + (n > 1 ? 's' : '');
+  }
+  V2.offMktToggle = function (id, btn) {
+    id = String(id);
+    if (mktSel.has(id)) { mktSel.delete(id); if (btn) { btn.classList.remove('on'); btn.innerHTML = ICO('plus', 15); } }
+    else { mktSel.add(id); if (btn) { btn.classList.add('on'); btn.innerHTML = ICO('check', 15); } }
+    updateMktBar();
+  };
+  V2.offMktTitle = function (v) { mktTitle = v; };
+  V2.offMktClear = function () { mktSel.clear(); V2.render(); };
+
+  function proxImg(u) {
+    if (!u) return '';
+    return 'https://images.weserv.nl/?url=' + encodeURIComponent(u.replace(/^https?:\/\//, '')) + '&w=380&output=jpg';
+  }
+
+  V2.offMktGenerate = function () {
+    if (!mktSel.size) { V2.toast('Sélectionne au moins un produit', 'warn'); return; }
+    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+    var sel = [];
+    mktSel.forEach(function (id) { var it = itemsById.get(String(id)); if (it) sel.push(it); });
+    if (!sel.length) { V2.toast('Sélection introuvable', 'error'); return; }
+    var title = (mktTitle && mktTitle.trim()) ? mktTitle.trim() : 'Notre sélection bien-être';
+    var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    V2.toast('Génération de la fiche…');
+
+    var cards = sel.map(function (it) {
+      var img = proxImg(it.img);
+      var price = it.price > 0 ? V2.fmtEur(it.price) : '';
+      return '<div style="break-inside:avoid;page-break-inside:avoid;border:1px solid #ECEFF5;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(16,19,28,.05)">' +
+        '<div style="height:148px;background:#FBFCFE;display:flex;align-items:center;justify-content:center;padding:12px">' +
+          (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="max-width:100%;max-height:100%;object-fit:contain">' : '') +
+        '</div>' +
+        '<div style="padding:11px 13px 13px">' +
+          (it.brand ? '<div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2;font-weight:800">' + esc(it.brand) + '</div>' : '') +
+          '<div style="font-size:11.5px;font-weight:700;color:#10131C;line-height:1.32;min-height:30px;margin-top:2px">' + esc((it.name || '').slice(0, 70)) + '</div>' +
+          '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-top:8px">' +
+            '<span style="font-size:19px;font-weight:800;color:#E0556E;letter-spacing:-.02em">' + esc(price) + '</span>' +
+            (it.ean ? '<span style="font-size:8px;color:#9AA1B2;font-family:monospace">' + esc(it.ean) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    var html =
+      '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:#fff;color:#10131C">' +
+        '<div style="background:linear-gradient(120deg,#6D4FC4 0%,#0050E6 45%,#00B5D8 100%);border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden">' +
+          '<div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' +
+          '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;opacity:.9">Intégral Pharma · Parapharmacie</div>' +
+          '<div style="font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:8px;line-height:1.05">' + esc(title) + '</div>' +
+          '<div style="font-size:13px;opacity:.92;margin-top:8px">' + sel.length + ' produit' + (sel.length > 1 ? 's' : '') + ' sélectionné' + (sel.length > 1 ? 's' : '') + ' · ' + esc(dateStr) + '</div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">' + cards + '</div>' +
+        '<div style="margin-top:26px;padding-top:14px;border-top:1px solid #ECEFF5;display:flex;justify-content:space-between;font-size:9px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.05em">' +
+          '<span>Intégral Pharma · Sélection parapharmacie</span>' +
+          '<span>Prix indicatifs TTC · ' + esc(dateStr) + '</span>' +
+        '</div>' +
+      '</div>';
+
+    window.ensureHtml2Pdf().then(function () {
+      return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
+    }).then(function () {
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;background:#fff';
+      wrap.innerHTML = html;
+      document.body.appendChild(wrap);
+      var fn = 'Fiche-marketing-' + (title.replace(/[^A-Za-z0-9-]/g, '_')).slice(0, 40) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+      window.html2pdf().from(wrap.firstChild).set({
+        filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      }).save().then(function () {
+        document.body.removeChild(wrap); V2.toast('✓ Fiche marketing téléchargée');
+      }).catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
+    });
+  };
+
   function pager(total, pages) {
     if (pages <= 1) return '';
     var from = S.page * PER_PAGE + 1, to = Math.min(total, (S.page + 1) * PER_PAGE);
@@ -276,7 +368,21 @@
       '.off-card-img{max-width:100%;max-height:100%;object-fit:contain}',
       '.off-card-noimg{color:var(--muted-2)}',
       '.off-rank{position:absolute;top:8px;left:8px;background:rgba(16,19,28,.82);color:#fff;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:8px;backdrop-filter:blur(4px)}',
-      '.off-card-alert{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:8px;background:var(--c-rose);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px color-mix(in srgb,var(--c-rose) 45%,transparent)}',
+      '.off-card-alert{position:absolute;bottom:8px;left:8px;width:24px;height:24px;border-radius:8px;background:var(--c-rose);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px color-mix(in srgb,var(--c-rose) 45%,transparent)}',
+      '.off-mkt-add{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.94);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-1);transition:.14s var(--ease);z-index:2}',
+      '.off-mkt-add:hover{color:var(--c-opp);border-color:var(--c-opp)}',
+      '.off-mkt-add.on{background:var(--c-opp);border-color:var(--c-opp);color:#fff;box-shadow:0 2px 7px color-mix(in srgb,var(--c-opp) 45%,transparent)}',
+      // barre flottante fiche marketing
+      '.off-mktbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:13px;background:var(--ip-ink);color:#fff;border-radius:16px;padding:10px 12px 10px 18px;box-shadow:0 16px 42px rgba(16,19,28,.36);max-width:94vw}',
+      '.off-mktbar.hidden{display:none}',
+      '.off-mktbar .ic{color:#79A8FF;display:flex;flex-shrink:0}',
+      '.off-mktbar .n{font-weight:700;font-size:14px;white-space:nowrap}',
+      '.off-mktbar .ttl{border:none;outline:none;background:rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:9px 13px;font-family:var(--font);font-size:13px;width:230px}',
+      '.off-mktbar .ttl::placeholder{color:rgba(255,255,255,.5)}',
+      '.off-mktbar .v2-btn{white-space:nowrap}',
+      '.off-mktbar .clr{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;display:flex;padding:4px}',
+      '.off-mktbar .clr:hover{color:#fff}',
+      '@media(max-width:680px){.off-mktbar .ttl{width:130px}}',
       '.off-card-body{padding:11px 13px 14px;display:flex;flex-direction:column;gap:3px;flex:1}',
       '.off-card-brand{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.off-card-name{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--ip-ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}',
@@ -396,7 +502,14 @@
             '<div class="off-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>' +
           '</div>' +
           gridHtml +
-        '</div>' + insHtml;
+        '</div>' + insHtml +
+        '<div class="off-mktbar' + (mktSel.size ? '' : ' hidden') + '" id="off-mktbar">' +
+          '<span class="ic">' + ICO('spark', 18, 2) + '</span>' +
+          '<span class="n" id="off-mkt-n">' + mktSel.size + ' produit' + (mktSel.size > 1 ? 's' : '') + '</span>' +
+          '<input class="ttl" id="off-mkt-title" placeholder="Titre de la fiche marketing…" value="' + esc(mktTitle) + '" oninput="V2.offMktTitle(this.value)">' +
+          '<button class="v2-btn v2-btn-primary" onclick="V2.offMktGenerate()">' + ICO('download', 16, 2) + ' Générer la fiche</button>' +
+          '<button class="clr" onclick="V2.offMktClear()" title="Vider">' + ICO('close', 16, 2) + '</button>' +
+        '</div>';
     }
   };
 })();
