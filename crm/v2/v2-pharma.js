@@ -223,7 +223,7 @@
       return '<div class="ipv-row">' +
         '<span class="ipv-rank">' + rank + '</span>' +
         '<span class="ipv-name">' + esc(cap((b.designation || '').toLowerCase())) + '</span>' +
-        '<span class="ipv-vol mono">' + V2.fmtNum(+b.ip_qty || 0) + ' u<small>/an IP</small></span>' +
+        '<span class="ipv-vol">' + V2.fmtNum(+b.ip_qty || 0) + ' u<small>/an IP</small></span>' +
         '<button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(cip) +
           '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF RDV">' + (on ? '✓' : '+') + '</button>' +
         '</div>';
@@ -631,6 +631,7 @@
         hero +
         activitySection(sales, marge, ca) +
         topByCatSection(sales) +
+        ipVolumeSection(pid) +
         '<div style="display:flex;align-items:baseline;gap:10px;margin:26px 0 16px;flex-wrap:wrap">' +
           '<div class="v2-page-title" style="margin:0;font-size:22px">Opportunités par catégorie</div>' +
           '<div style="font-size:13px;color:var(--muted)">ce que le marché commande et que cette officine n\'a pas encore</div>' +
@@ -941,6 +942,13 @@
       '.opp-add:hover{border-color:var(--c-opp);color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 8%,transparent)}',
       '.opp-add.on{background:var(--c-opp);border-color:var(--c-opp);color:#fff;box-shadow:0 2px 6px color-mix(in srgb,var(--c-opp) 40%,transparent)}',
       '.opp-add.on:hover{background:var(--c-opp);color:#fff}',
+      // ── Best-sellers IP à pousser (analyse volumes) ──
+      '.ipv-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line)}',
+      '.ipv-row:last-child{border-bottom:none}',
+      '.ipv-rank{flex-shrink:0;width:44px;font-size:12px;font-weight:700;color:var(--ip-blue);font-variant-numeric:tabular-nums}',
+      '.ipv-name{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.ipv-vol{flex-shrink:0;font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}',
+      '.ipv-vol small{font-weight:500;color:var(--muted-2);font-size:11px}',
       // ── Badges OPSO (clientes / prospects) — uniquement en mode OPSO ──
       '.opso-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.01em;flex-shrink:0;vertical-align:middle}',
       '.opso-badge-cliente{color:#0d8530;background:color-mix(in srgb,#11a63c 13%,transparent);border:1px solid color-mix(in srgb,#11a63c 28%,transparent)}',
