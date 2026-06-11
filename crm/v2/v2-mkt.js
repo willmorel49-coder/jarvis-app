@@ -29,6 +29,7 @@
   var items = null;          // null = pas encore chargé
   var backend = 'local';     // 'supabase' | 'local'
   var editing = null;
+  var pickSrc = 'gros';      // source du sélecteur : 'gros' (médicaments) | 'offilog'
 
   // ════════════════════════════════════════════
   // STORE (Supabase partagé + repli local)
@@ -106,9 +107,18 @@
     s.onload = function () { imgLoading = false; cb(); }; s.onerror = function () { imgLoading = false; cb(); };
     document.head.appendChild(s);
   }
+  function ensureBench(cb) {
+    if (window.BENCHMARK) { cb(); return; }
+    if (V2.loadFiles) { V2.loadFiles(['bench']).then(cb); } else cb();
+  }
   function prodImg(p, forPdf) {
     if (forPdf && window.OFFILOG_IMG && p.id && window.OFFILOG_IMG[p.id]) return window.OFFILOG_IMG[p.id];
     return p.img || '';
+  }
+  function refPriceB(b) { return (b.prix_ip != null && b.prix_ip > 0) ? b.prix_ip : ((b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0); }
+  function remiseB(b) {
+    if (b.prix_ht > 0 && b.prix_ip > 0) return Math.round((1 - b.prix_ip / b.prix_ht) * 1000) / 10;
+    return b.remise_pct || 0;
   }
 
   // ════════════════════════════════════════════
@@ -212,10 +222,15 @@
     wirePicker();
   }
   function prodRow(p, i) {
-    var img = p.img ? '<span class="mkt-prow-img" style="background-image:url(' + esc(p.img) + ')"></span>' : '<span class="mkt-prow-img mkt-th-x"></span>';
+    var img = p.img
+      ? '<span class="mkt-prow-img" style="background-image:url(' + esc(p.img) + ')"></span>'
+      : '<span class="mkt-prow-img mkt-prow-pill">' + ICO('pill', 18, 1.6) + '</span>';
+    var sub = p.src === 'gros'
+      ? ('CIP ' + esc(p.cip || '—') + (p.remise > 0 ? ' · remise ' + String(p.remise).replace('.', ',') + '%' : '') + (p.froid ? ' · FROID' : ''))
+      : ((p.brand ? esc(p.brand) + ' · ' : '') + (p.ean ? 'EAN ' + esc(p.ean) : ''));
     return '<div class="mkt-prow">' + img +
       '<div class="mkt-prow-main"><div class="mkt-prow-name">' + esc(p.name) + '</div>' +
-        '<div class="mkt-prow-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + (p.ean ? 'EAN ' + esc(p.ean) : '') + '</div></div>' +
+        '<div class="mkt-prow-sub">' + sub + '</div></div>' +
       '<div class="mkt-prow-price mono">' + (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</div>' +
       '<button class="mkt-prow-x" onclick="V2.mkt.removeProduct(' + i + ')" title="Retirer">' + ICO('close', 15, 2) + '</button>' +
     '</div>';
@@ -232,28 +247,49 @@
     return '<div id="mkt-picker" class="mkt-pick-bd">' +
       '<div class="mkt-pick" onclick="event.stopPropagation()">' +
         '<div class="mkt-pick-search">' + ICO('search', 21, 2) +
-          '<input id="mkt-pick-input" placeholder="Rechercher un produit (nom, marque, EAN)…" autocomplete="off">' +
+          '<input id="mkt-pick-input" placeholder="Rechercher (désignation, CIP, EAN)…" autocomplete="off">' +
           '<button class="mkt-prow-x" onclick="V2.mkt.closePicker()">' + ICO('close', 16, 2) + '</button></div>' +
+        '<div class="mkt-pick-src">' +
+          '<button class="mkt-srcbtn' + (pickSrc === 'gros' ? ' on' : '') + '" onclick="V2.mkt.setPickSrc(\'gros\')">Catalogue grossiste</button>' +
+          '<button class="mkt-srcbtn' + (pickSrc === 'offilog' ? ' on' : '') + '" onclick="V2.mkt.setPickSrc(\'offilog\')">Parapharma Offilog</button>' +
+        '</div>' +
         '<div id="mkt-pick-list" class="mkt-pick-list"></div>' +
       '</div></div>';
   }
   function renderPickList() {
     var box = document.getElementById('mkt-pick-list'); if (!box) return;
     var inp = document.getElementById('mkt-pick-input'); var q = (inp ? inp.value : '').trim().toLowerCase();
-    var B = window.OFFILOG_BEST || [];
-    var res = [];
-    for (var i = 0; i < B.length && res.length < 40; i++) {
-      var b = B[i];
-      if (!q || (b.name || '').toLowerCase().indexOf(q) >= 0 || (b.brand || '').toLowerCase().indexOf(q) >= 0 || (b.ean || '').indexOf(q) >= 0) res.push(b);
+    var have = {}; editing.products.forEach(function (p) { have[String(p.key)] = 1; });
+    var html = '', i, b, added;
+    if (pickSrc === 'offilog') {
+      var O = window.OFFILOG_BEST || [], res = [];
+      for (i = 0; i < O.length && res.length < 40; i++) {
+        b = O[i];
+        if (!q || (b.name || '').toLowerCase().indexOf(q) >= 0 || (b.brand || '').toLowerCase().indexOf(q) >= 0 || (b.ean || '').indexOf(q) >= 0) res.push(b);
+      }
+      html = res.map(function (b) {
+        added = have['o' + b.id];
+        return '<div class="mkt-pick-item' + (added ? ' added' : '') + '" onclick="V2.mkt.addProduct(\'offilog\',\'' + esc(b.id) + '\')">' +
+          (b.img ? '<span class="mkt-pick-img" style="background-image:url(' + esc(b.img) + ')"></span>' : '<span class="mkt-pick-img mkt-th-x"></span>') +
+          '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + (b.brand ? esc(b.brand) : '') + '</span></span>' +
+          '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span></div>';
+      }).join('');
+    } else {
+      var B = window.BENCHMARK || [], r2 = [];
+      for (i = 0; i < B.length && r2.length < 40; i++) {
+        b = B[i];
+        if (!q || (b.designation || '').toLowerCase().indexOf(q) >= 0 || String(b.cip13 || '').indexOf(q) >= 0) r2.push(b);
+      }
+      html = r2.map(function (b) {
+        added = have['g' + b.cip13];
+        var price = refPriceB(b), rem = remiseB(b);
+        return '<div class="mkt-pick-item' + (added ? ' added' : '') + '" onclick="V2.mkt.addProduct(\'gros\',\'' + esc(b.cip13) + '\')">' +
+          '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>' +
+          '<span class="mkt-pick-nm"><b>' + esc(b.designation) + '</b><span>CIP ' + esc(b.cip13 || '—') + (rem > 0 ? ' · remise ' + String(rem).replace('.', ',') + '%' : '') + '</span></span>' +
+          '<span class="mkt-pick-pr mono">' + (price > 0 ? V2.fmtEur(price) : '') + '</span></div>';
+      }).join('');
     }
-    var have = {}; editing.products.forEach(function (p) { have[String(p.id)] = 1; });
-    box.innerHTML = res.map(function (b) {
-      var added = have[String(b.id)];
-      return '<div class="mkt-pick-item' + (added ? ' added' : '') + '" onclick="V2.mkt.addProduct(\'' + esc(b.id) + '\')">' +
-        (b.img ? '<span class="mkt-pick-img" style="background-image:url(' + esc(b.img) + ')"></span>' : '<span class="mkt-pick-img mkt-th-x"></span>') +
-        '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + (b.brand ? esc(b.brand) : '') + '</span></span>' +
-        '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span></div>';
-    }).join('') || '<div class="mkt-empty" style="border:none">Aucun produit trouvé.</div>';
+    box.innerHTML = html || '<div class="mkt-empty" style="border:none">Aucun produit trouvé.</div>';
   }
   function wirePicker() {
     var bd = document.getElementById('mkt-picker'); if (!bd) return;
@@ -261,8 +297,9 @@
     var inp = document.getElementById('mkt-pick-input');
     if (inp) { inp.addEventListener('input', renderPickList); inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePicker(); }); }
   }
+  function ensureSrc(cb) { if (pickSrc === 'offilog') ensureBest(cb); else ensureBench(cb); }
   function openPicker() {
-    ensureBest(function () {
+    ensureSrc(function () {
       var bd = document.getElementById('mkt-picker'); if (!bd) return;
       bd.classList.add('open');
       var inp = document.getElementById('mkt-pick-input'); if (inp) { inp.value = ''; setTimeout(function () { inp.focus(); }, 60); }
@@ -282,19 +319,35 @@
     var grad = it.type === 'selection'
       ? 'linear-gradient(120deg,#1E9E6A 0%,#0050E6 60%,#00B5D8 100%)'
       : 'linear-gradient(120deg,#E0556E 0%,#6D4FC4 55%,#0050E6 100%)';
-    var cards = (it.products || []).map(function (p) {
+    var anyImg = (it.products || []).some(function (p) { return p.img; });
+    var rows = (it.products || []).map(function (p, i) {
       var img = prodImg(p, forPdf);
-      return '<div style="break-inside:avoid;page-break-inside:avoid;border:1px solid #ECEFF5;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(16,19,28,.05)">' +
-        '<div style="height:146px;background:#FBFCFE;display:flex;align-items:center;justify-content:center;padding:12px">' +
-          (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="max-width:100%;max-height:100%;object-fit:contain">' : '') + '</div>' +
-        '<div style="padding:11px 13px 13px">' +
-          (p.brand ? '<div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2;font-weight:800">' + esc(p.brand) + '</div>' : '') +
-          '<div style="font-size:11.5px;font-weight:700;color:#10131C;line-height:1.32;min-height:30px;margin-top:2px">' + esc((p.name || '').slice(0, 70)) + '</div>' +
-          '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-top:8px">' +
-            '<span style="font-size:19px;font-weight:800;color:#E0556E;letter-spacing:-.02em">' + (p.price > 0 ? V2.fmtEur(p.price) : '') + '</span>' +
-            (p.ean ? '<span style="font-size:8px;color:#9AA1B2;font-family:monospace">' + esc(p.ean) + '</span>' : '') + '</div>' +
-        '</div></div>';
+      var thumb = anyImg
+        ? '<td style="padding:6px 8px;width:40px;text-align:center">' + (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : '') + '</td>'
+        : '';
+      var ref = p.cip ? esc(p.cip) : (p.ean ? esc(p.ean) : '—');
+      var rem = (p.remise > 0) ? String(p.remise).replace('.', ',') + ' %' : '—';
+      return '<tr style="border-bottom:1px solid #ECEFF5;page-break-inside:avoid">' + thumb +
+        '<td style="padding:7px 10px;text-align:center;font-size:9px;color:#9AA1B2;font-family:monospace;width:24px">' + (i + 1) + '</td>' +
+        '<td style="padding:7px 10px;font-size:11.5px;font-weight:600;color:#10131C">' + esc((p.name || '').slice(0, 62)) +
+          (p.brand ? ' <span style="color:#9AA1B2;font-weight:500">· ' + esc(p.brand) + '</span>' : '') +
+          (p.froid ? ' <span style="font-size:7.5px;color:#00B5D8;border:1px solid #b8edf7;border-radius:4px;padding:0 3px;vertical-align:middle">FROID</span>' : '') + '</td>' +
+        '<td style="padding:7px 10px;font-family:monospace;font-size:10px;color:#737A8C">' + ref + '</td>' +
+        '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:800;color:#0050E6">' + (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</td>' +
+        '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;font-weight:700;color:#1E9E6A">' + rem + '</td>' +
+      '</tr>';
     }).join('');
+    var body = rows
+      ? '<table style="width:100%;border-collapse:collapse">' +
+          '<thead><tr style="background:#F7F9FC;border-bottom:1.5px solid #E2E7F0">' +
+            (anyImg ? '<th></th>' : '') +
+            '<th style="padding:6px 10px;text-align:center;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">#</th>' +
+            '<th style="padding:6px 10px;text-align:left;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">Produit</th>' +
+            '<th style="padding:6px 10px;text-align:left;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">Réf (CIP/EAN)</th>' +
+            '<th style="padding:6px 10px;text-align:right;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">Prix IP</th>' +
+            '<th style="padding:6px 10px;text-align:right;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">Remise</th>' +
+          '</tr></thead><tbody>' + rows + '</tbody></table>'
+      : '<div style="text-align:center;color:#9AA1B2;font-size:13px;padding:40px">Aucun produit.</div>';
     return '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:#fff;color:#10131C">' +
         '<div style="background:' + grad + ';border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden">' +
           '<div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' +
@@ -302,11 +355,9 @@
           '<div style="font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:8px;line-height:1.05">' + esc(title) + '</div>' +
           (it.accroche && it.accroche.trim() ? '<div style="font-size:13.5px;opacity:.95;margin-top:9px;max-width:560px">' + esc(it.accroche.trim()) + '</div>' : '') +
           '<div style="font-size:12px;opacity:.85;margin-top:9px">' + (it.products || []).length + ' produit' + ((it.products || []).length > 1 ? 's' : '') + ' · ' + esc(dateStr) + '</div>' +
-        '</div>' +
-        (cards ? '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">' + cards + '</div>'
-               : '<div style="text-align:center;color:#9AA1B2;font-size:13px;padding:40px">Aucun produit.</div>') +
+        '</div>' + body +
         '<div style="margin-top:26px;padding-top:14px;border-top:1px solid #ECEFF5;display:flex;justify-content:space-between;font-size:9px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.05em">' +
-          '<span>Intégral Pharma · ' + esc(t.plural) + '</span><span>Prix indicatifs TTC · ' + esc(dateStr) + '</span></div>' +
+          '<span>Intégral Pharma · ' + esc(t.plural) + '</span><span>Prix nets HT indicatifs · ' + esc(dateStr) + '</span></div>' +
       '</div>';
   }
   function previewMarkup() {
@@ -353,13 +404,26 @@
       if (btn) btn.classList.add('on');
     },
     openPicker: openPicker, closePicker: closePicker,
-    addProduct: function (id) {
-      var B = window.OFFILOG_BEST || [], b = null;
-      for (var i = 0; i < B.length; i++) if (String(B[i].id) === String(id)) { b = B[i]; break; }
-      if (!b) return;
-      if (editing.products.some(function (p) { return String(p.id) === String(id); })) return;
-      editing.products.push({ id: b.id, name: b.name, brand: b.brand || '', price: b.price || 0, ean: b.ean || '', img: b.img || '', cat: b.cat || '' });
-      refreshProducts(); renderPickList();
+    setPickSrc: function (s) {
+      pickSrc = s;
+      Array.prototype.forEach.call(document.querySelectorAll('.mkt-srcbtn'), function (b, i) { b.classList.toggle('on', (i === 0) === (s === 'gros')); });
+      ensureSrc(function () { renderPickList(); var inp = document.getElementById('mkt-pick-input'); if (inp) inp.focus(); });
+    },
+    addProduct: function (src, key) {
+      var p = null;
+      if (src === 'offilog') {
+        var O = window.OFFILOG_BEST || [], b = null;
+        for (var i = 0; i < O.length; i++) if (String(O[i].id) === String(key)) { b = O[i]; break; }
+        if (!b) return;
+        p = { src: 'offilog', key: 'o' + b.id, id: b.id, name: b.name, brand: b.brand || '', ean: b.ean || '', cip: '', price: b.price || 0, remise: 0, img: b.img || '', froid: false };
+      } else {
+        var B = window.BENCHMARK || [], g = null;
+        for (var j = 0; j < B.length; j++) if (String(B[j].cip13) === String(key)) { g = B[j]; break; }
+        if (!g) return;
+        p = { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: refPriceB(g), remise: remiseB(g), img: '', froid: !!g.is_froid };
+      }
+      if (editing.products.some(function (x) { return String(x.key) === String(p.key); })) return;
+      editing.products.push(p); refreshProducts(); renderPickList();
     },
     removeProduct: function (i) { if (editing) { editing.products.splice(i, 1); refreshProducts(); } },
     save: function () {
@@ -486,6 +550,11 @@
       '.mkt-pick-search{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}',
       '.mkt-pick-search svg{color:var(--ip-blue);flex-shrink:0}',
       '.mkt-pick-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}',
+      '.mkt-pick-src{display:flex;gap:6px;padding:10px 16px 4px}',
+      '.mkt-srcbtn{flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 10px;font-family:var(--font);font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}',
+      '.mkt-srcbtn.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.mkt-pick-ic{width:40px;height:40px;border-radius:9px;background:var(--card-2);display:flex;align-items:center;justify-content:center;color:var(--ip-blue);flex-shrink:0}',
+      '.mkt-prow-pill{display:flex;align-items:center;justify-content:center;color:var(--ip-blue);background:var(--card-2)}',
       '.mkt-pick-list{overflow-y:auto;padding:8px}',
       '.mkt-pick-item{display:flex;align-items:center;gap:12px;padding:8px 11px;border-radius:11px;cursor:pointer;transition:background .12s}',
       '.mkt-pick-item:hover{background:var(--halo)}',
