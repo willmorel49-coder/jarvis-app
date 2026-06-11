@@ -17,7 +17,7 @@ import openpyxl
 from pathlib import Path
 
 ESTABLISHMENTS = [
-    {'key': 'OPS', 'name': 'OPS Nantes',           'src': 'STATS/OPS_Pharmas_agregation.xlsx'},
+    {'key': 'OPS', 'name': 'OPS Nantes',           'src': 'STATS/OPS_NETTOYE_agregation.xlsx'},
     {'key': 'CPR', 'name': 'CPR',                  'src': 'STATS/CPR_Pharmas_agregation.xlsx'},
     {'key': 'HP',  'name': 'HP',                   'src': 'STATS/HP_Pharmas_agregation.xlsx'},
 ]
@@ -35,24 +35,30 @@ def parse_establishment(src):
     """Lit un fichier xlsx d'agregation IP et renvoie (products_dict, by_labo, totals)."""
     wb = openpyxl.load_workbook(src, read_only=True, data_only=True)
     ws = wb['Agrégation']
+    rows = ws.iter_rows(values_only=True)
+    header = [clean(c).upper() for c in next(rows)]
+    col = {h: i for i, h in enumerate(header)}
+    def g(row, name):
+        i = col.get(name)
+        return row[i] if i is not None and i < len(row) else None
     products = {}
     total_ca = 0.0
     total_qte = 0
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        artcode = clean(row[1])
+    for row in rows:
+        artcode = clean(g(row, 'ARTCODE'))
         if not artcode: continue
-        ca = float(row[8] or 0)
-        qte = int(row[9] or 0)
+        ca = float(g(row, 'CA_NET_HT') or 0)
+        qte = int(g(row, 'QTE_TOTALE') or 0)
         total_ca += ca
         total_qte += qte
         products[artcode] = {
-            'ean': clean(row[0]),
-            'designation': clean(row[2]),
-            'marque': clean(row[3]),
-            'nature': clean(row[4]),
-            'sousfamille': clean(row[5]),
-            'collection': clean(row[6]),
-            'afmcode': clean(row[7]),
+            'ean': clean(g(row, 'ARTCODEBARRE')),
+            'designation': clean(g(row, 'PLVDESIGNATION')),
+            'marque': clean(g(row, 'ARTMARQUE')),
+            'nature': clean(g(row, 'ARTNATURE')),
+            'sousfamille': clean(g(row, 'ARTSOUSFAMILLE')),
+            'collection': clean(g(row, 'ARTCOLLECTION')),
+            'afmcode': clean(g(row, 'AFMCODE')),
             'ca': round(ca, 2),
             'qte': qte,
         }
