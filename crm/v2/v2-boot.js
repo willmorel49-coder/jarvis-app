@@ -72,12 +72,15 @@
       var c = norm(r.cip); if (!c) return;
       (statsByCip[c] = statsByCip[c] || []).push(r);
     });
-    // Période de référence = dernier mois présent dans les ventes WML (pour que
-    // ces achats cumulés soient pris en compte dans les vues mois/3 mois/année)
-    var maxK = -1, refY = 2026, refM = 1;
+    // Mois présents dans les ventes WML : on répartit les achats cumulés des
+    // fichiers STATISTIQUES sur TOUS ces mois (1 fichier = cumul de la période),
+    // pour que le CA soit juste en vue mois / 3 mois / année.
+    var seenK = {}, refMonths = [];
     (V2.sales || []).forEach(function (s) {
-      if (s.month && s.year) { var k = s.year * 12 + s.month; if (k > maxK) { maxK = k; refY = s.year; refM = s.month; } }
+      if (s.month && s.year) { var k = s.year * 12 + s.month; if (!seenK[k]) { seenK[k] = 1; refMonths.push({ year: s.year, month: s.month }); } }
     });
+    if (!refMonths.length) refMonths = [{ year: 2026, month: 1 }];
+    var nMonths = refMonths.length;
 
     V2.pharmacies = listing.map(function (a) {
       var cip = norm(a.cip || a.code);
@@ -100,10 +103,14 @@
     Object.keys(statsByCip).forEach(function (c) {
       var ph = phByCip[c]; if (!ph) return;
       statsByCip[c].forEach(function (r) {
-        V2.sales.push({
-          id: null, importId: null, pharmacyId: String(ph.id), month: refM, year: refY,
-          artDesignation: r.artDesignation, artCode: r.artCode, artFamille: null,
-          qte: r.qte || 0, puBrut: r.puBrut || 0, puNet: r.puNet || 0, mntNetHt: r.mntNetHt || 0,
+        // réparti à parts égales sur chaque mois de la période
+        refMonths.forEach(function (m) {
+          V2.sales.push({
+            id: null, importId: null, pharmacyId: String(ph.id), month: m.month, year: m.year,
+            artDesignation: r.artDesignation, artCode: r.artCode, artFamille: null,
+            qte: (r.qte || 0) / nMonths, puBrut: r.puBrut || 0, puNet: r.puNet || 0,
+            mntNetHt: (r.mntNetHt || 0) / nMonths,
+          });
         });
       });
     });
