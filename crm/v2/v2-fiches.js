@@ -74,6 +74,7 @@
         prix_ht: p.prix_ht != null ? p.prix_ht : null,
         remise_pct: p.remise_pct != null ? p.remise_pct : null,
         is_froid: !!p.is_froid,
+        qty: p.qty != null ? p.qty : 1,
         src: p.src || 'cat'
       });
       writeCart(c);
@@ -101,6 +102,9 @@
     var rem = (p.remise_pct != null && p.remise_pct !== '') ? +p.remise_pct : 0;
     return prix * (1 - (rem / 100));
   }
+  // Quantité + total ligne (utilisé dans totaux et PDF)
+  function lineQty(p) { var q = (p.qty != null && p.qty !== '') ? +p.qty : 1; return (isFinite(q) && q >= 1) ? Math.round(q) : 1; }
+  function lineTotal(p) { return netPrice(p) * lineQty(p); }
 
   // ── Helpers ───────────────────────────────────
   function fmtDate(ts) {
@@ -111,38 +115,54 @@
     return String(s || 'fiche').trim().replace(/[^\wÀ-ſ-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'fiche';
   }
   function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
+  // debounce pour limiter les re-renders de l'aperçu pendant la frappe
+  var _pvTimer = null;
+  function debouncedRefreshPreview() {
+    if (_pvTimer) clearTimeout(_pvTimer);
+    _pvTimer = setTimeout(refreshPreview, 280);
+  }
   function pharmaById(id) { return (V2.pharmacies || []).find(function (p) { return String(p.id) === String(id); }) || null; }
   function pharmaLabel(p) { return p ? (p.name + (p.code ? ' · ' + p.code : (p.ville ? ' · ' + p.ville : ''))) : ''; }
 
   // une seule rangée produit (réutilisée au render initial + refresh)
   function productRow(p, i) {
-    var net = netPrice(p), mdl = margeMDL(net);
+    var net = netPrice(p), mdl = margeMDL(net), qty = lineQty(p);
+    var tot = net * qty;
     return ''+
       '<div class="fch-prow">'+
         '<div class="fch-prow-idx mono">' + (i + 1) + '</div>'+
         '<div class="fch-prow-main">'+
           '<div class="fch-prow-name">' + esc(p.designation) +
             (p.is_froid ? '<span class="fch-tagf">FROID</span>' : '') + '</div>'+
-          '<div class="fch-prow-cip">CIP ' + esc(p.cip13 || '—') + ' · net <span id="fch-net-' + i + '">' + V2.fmtEur(net) + '</span></div>'+
+          '<div class="fch-prow-cip">CIP ' + esc(p.cip13 || '—') + ' · net <span id="fch-net-' + i + '">' + V2.fmtEur(net) + '</span>'+
+            (qty > 1 ? ' · total <span id="fch-tot-line-' + i + '" style="color:var(--ip-blue);font-weight:700">' + V2.fmtEur(tot) + '</span>' : '<span id="fch-tot-line-' + i + '" style="display:none">' + V2.fmtEur(tot) + '</span>') +
+          '</div>'+
         '</div>'+
         '<div class="fch-pricewrap">'+
           '<span class="fch-pricelab">Prix IP €</span>'+
-          '<input class="fch-price" type="number" step="0.01" min="0" value="' + (p.prix_ip != null ? p.prix_ip : '') + '" '+
+          '<input class="fch-price" type="number" step="0.01" min="0" aria-label="Prix IP ligne ' + (i+1) + '" value="' + (p.prix_ip != null ? p.prix_ip : '') + '" '+
             'oninput="V2.fiches.setPrice(' + i + ',this.value)">'+
         '</div>'+
         '<div class="fch-pricewrap">'+
           '<span class="fch-pricelab">Remise %</span>'+
-          '<input class="fch-price fch-rem" type="number" step="0.1" min="0" value="' + (p.remise_pct != null ? p.remise_pct : '') + '" '+
+          '<input class="fch-price fch-rem" type="number" step="0.1" min="0" aria-label="Remise % ligne ' + (i+1) + '" value="' + (p.remise_pct != null ? p.remise_pct : '') + '" '+
             'oninput="V2.fiches.setRemise(' + i + ',this.value)">'+
         '</div>'+
+        '<div class="fch-pricewrap">'+
+          '<span class="fch-pricelab">Qté</span>'+
+          '<input class="fch-price fch-qty" type="number" step="1" min="1" aria-label="Quantité ligne ' + (i+1) + '" value="' + qty + '" '+
+            'oninput="V2.fiches.setQty(' + i + ',this.value)">'+
+        '</div>'+
         '<div class="fch-mdl"><div class="fch-mdl-l">Marge MDL</div><div class="fch-mdl-v mono" id="fch-mdl-' + i + '">' + V2.fmtEur(mdl) + '</div></div>'+
-        '<button class="fch-rmbtn" title="Retirer" onclick="V2.fiches.removeProduct(' + i + ')">' + ICO('close', 15, 2) + '</button>'+
+        '<button class="fch-rmbtn" title="Retirer ce produit" aria-label="Retirer ' + esc(p.designation) + '" onclick="V2.fiches.removeProduct(' + i + ')">' + ICO('close', 15, 2) + '</button>'+
       '</div>';
   }
   function emptyProducts() {
     return '<div class="v2-empty" style="padding:36px 20px">'+
       '<div class="v2-empty-ico" style="width:50px;height:50px">' + ICO('pill', 50, 1.4) + '</div>'+
-      '<div class="v2-empty-d" style="margin-bottom:0">Aucun produit. Ajoute des références depuis le catalogue, les opportunités, ou le bouton ci-dessous.</div>'+
+      '<div class="v2-empty-t" style="font-size:15px;font-weight:700;margin-bottom:6px">Aucun produit dans la fiche</div>'+
+      '<div class="v2-empty-d" style="margin-bottom:16px">Utilise le bouton ci-dessous, ou ajoute des références depuis le catalogue ou les opportunités pharmacie.</div>'+
+      '<button class="v2-btn v2-btn-ghost" style="margin:0 auto" onclick="V2.fiches.openSelector()">' + ICO('plus', 16, 2) + 'Ajouter un produit</button>'+
       '</div>';
   }
 
@@ -167,7 +187,7 @@
     'border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;box-shadow:var(--sh-1);transition:.16s var(--ease)}'+
     '.fch-icobtn:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}'+
     // fiche en cours
-    '.fch-encours{background:linear-gradient(135deg,#fff,#F2F7FF);border:1px solid color-mix(in srgb,var(--ip-blue) 24%,var(--line));border-radius:var(--r-card);box-shadow:var(--sh-2);padding:20px 22px;margin-bottom:26px;position:relative;overflow:hidden}'+
+    '.fch-encours{background:linear-gradient(135deg,var(--card),var(--halo));border:1px solid color-mix(in srgb,var(--ip-blue) 24%,var(--line));border-radius:var(--r-card);box-shadow:var(--sh-2);padding:20px 22px;margin-bottom:26px;position:relative;overflow:hidden}'+
     '.fch-encours::after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(0,80,230,.10),transparent 70%)}'+
     '.fch-ec-tag{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--ip-blue);margin-bottom:9px}'+
     '.fch-ec-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--ip-blue);box-shadow:0 0 0 4px rgba(0,80,230,.14);animation:fchPulse 2s var(--ease) infinite}'+
@@ -203,7 +223,7 @@
     '@media(max-width:980px){.fch-pv-pane{position:static}}'+
     '.fch-pv-bar{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:12px}'+
     '.fch-pv-bar::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c-opp);box-shadow:0 0 0 4px color-mix(in srgb,var(--c-opp) 18%,transparent);animation:fchPulse 2s var(--ease) infinite}'+
-    '.fch-paper-holder{background:#EBEEF4;border:1px solid var(--line);border-radius:18px;padding:22px;overflow:hidden;transition:height .18s var(--ease)}'+
+    '.fch-paper-holder{background:var(--card-2,#EBEEF4);border:1px solid var(--line);border-radius:18px;padding:22px;overflow:hidden;transition:height .18s var(--ease)}'+
     '.fch-paper{width:794px;transform-origin:top left;box-shadow:0 14px 44px rgba(16,19,28,.20),0 4px 12px rgba(16,19,28,.10);border-radius:7px;overflow:hidden;background:#fff}'+
     '.fch-dest{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:13px 16px;margin-bottom:22px;box-shadow:var(--sh-1)}'+
     '.fch-dest-ic{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-opp),#13794f)}'+
@@ -216,7 +236,7 @@
     '.fch-prow-idx{font-size:12px;color:var(--muted-2);width:20px;text-align:right;flex-shrink:0}'+
     '.fch-prow-main{flex:1;min-width:0}'+
     '.fch-prow-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:8px}'+
-    '.fch-tagf{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid);background:color-mix(in srgb,var(--c-froid) 13%,#fff);flex-shrink:0}'+
+    '.fch-tagf{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid,#00B5D8);background:color-mix(in srgb,var(--c-froid,#00B5D8) 13%,#fff);flex-shrink:0}'+
     '.fch-prow-cip{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px}'+
     '.fch-pricewrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px}'+
     '.fch-pricelab{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}'+
@@ -224,6 +244,7 @@
     'border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:var(--card-2);outline:none;transition:.16s var(--ease)}'+
     '.fch-price:focus{border-color:var(--ip-blue);background:#fff;box-shadow:0 0 0 3px var(--halo)}'+
     '.fch-rem{width:60px}'+
+    '.fch-qty{width:54px}'+
     '.fch-mdl{text-align:right;min-width:74px}'+
     '.fch-mdl-l{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}'+
     '.fch-mdl-v{font-size:14px;font-weight:700;color:var(--c-opp);margin-top:3px}'+
@@ -308,8 +329,8 @@
         var prods = f.products || [];
         var title = f.title && f.title.trim() ? f.title : 'Fiche sans titre';
         var dest = f.destId ? pharmaById(f.destId) : null;
-        var totNet = prods.reduce(function (s, p) { return s + netPrice(p); }, 0);
-        var totMdl = prods.reduce(function (s, p) { return s + margeMDL(netPrice(p)); }, 0);
+        var totNet = prods.reduce(function (s, p) { return s + lineTotal(p); }, 0);
+        var totMdl = prods.reduce(function (s, p) { return s + margeMDL(netPrice(p)) * lineQty(p); }, 0);
         return ''+
           '<div class="fch-card">'+
             '<div class="fch-card-t">' + esc(title) + '</div>'+
@@ -360,7 +381,7 @@
         var cart = readCart();
         editingFiche = createFiche();
         editingFiche._fromCart = true;
-        editingFiche.products = cart.products.map(function (p) { return Object.assign({}, p); });
+        editingFiche.products = cart.products.map(function (p) { var c = Object.assign({}, p); if (c.qty == null) c.qty = 1; return c; });
       }
     } else {
       var existing = getFiche(param);
@@ -410,9 +431,9 @@
           '<div id="fch-prodlist">' + prodHtml + '</div>'+
         '</div>'+
         '<div class="fch-editbar">'+
-          '<button class="v2-btn v2-btn-ghost" onclick="V2.fiches.openSelector()">' + ICO('plus', 17, 2) + 'Ajouter un produit</button>'+
-          '<button class="v2-btn v2-btn-ghost" onclick="V2.fiches.save()">' + ICO('check', 17, 2) + 'Enregistrer</button>'+
-          '<button class="v2-btn v2-btn-primary" onclick="V2.fiches.downloadPdf()">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>'+
+          '<button class="v2-btn v2-btn-ghost" onclick="V2.fiches.openSelector()" aria-label="Ajouter un produit depuis le catalogue">' + ICO('plus', 17, 2) + 'Ajouter un produit</button>'+
+          '<button class="v2-btn v2-btn-ghost" id="fch-save-btn" onclick="V2.fiches.save()" aria-label="Enregistrer la fiche">' + ICO('check', 17, 2) + 'Enregistrer</button>'+
+          '<button class="v2-btn v2-btn-primary" onclick="V2.fiches.downloadPdf()" aria-label="Télécharger la fiche en PDF">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>'+
         '</div>'+
         // Totaux
         totalsHtml() +
@@ -462,13 +483,14 @@
   }
   function totalsHtml() {
     var ps = editingFiche.products;
-    var net = ps.reduce(function (s, p) { return s + netPrice(p); }, 0);
-    var mdl = ps.reduce(function (s, p) { return s + margeMDL(netPrice(p)); }, 0);
+    var net = ps.reduce(function (s, p) { return s + lineTotal(p); }, 0);
+    var mdl = ps.reduce(function (s, p) { return s + margeMDL(netPrice(p)) * lineQty(p); }, 0);
+    var hasQty = ps.some(function (p) { return lineQty(p) > 1; });
     return ''+
       '<div class="fch-totals" id="fch-totals">'+
         '<div class="fch-tot"><div class="fch-tot-l">Produits</div><div class="fch-tot-v" id="fch-tot-n">' + ps.length + '</div></div>'+
         '<div class="fch-tot-sep"></div>'+
-        '<div class="fch-tot"><div class="fch-tot-l">Total prix net IP <span style="opacity:.6">(1 boîte / réf.)</span></div><div class="fch-tot-v blue" id="fch-tot-net">' + V2.fmtEur(net) + '</div></div>'+
+        '<div class="fch-tot"><div class="fch-tot-l">Total prix net IP <span style="opacity:.6" id="fch-tot-sub">' + (hasQty ? '(qté incluse)' : '(1 boîte / réf.)') + '</span></div><div class="fch-tot-v blue" id="fch-tot-net">' + V2.fmtEur(net) + '</div></div>'+
         '<div class="fch-tot-sep"></div>'+
         '<div class="fch-tot"><div class="fch-tot-l">Marge MDL totale</div><div class="fch-tot-v green" id="fch-tot-mdl">' + V2.fmtEur(mdl) + '</div></div>'+
       '</div>';
@@ -485,23 +507,30 @@
     recalcTotals();
   }
 
-  // recalcule la barre de totaux (sans toucher aux lignes) + l'aperçu
+  // recalcule la barre de totaux (sans toucher aux lignes) + l'aperçu (debounced)
   function recalcTotals() {
-    refreshPreview();
+    debouncedRefreshPreview();
     var ps = editingFiche.products, n = ps.length;
-    var net = ps.reduce(function (s, p) { return s + netPrice(p); }, 0);
-    var mdl = ps.reduce(function (s, p) { return s + margeMDL(netPrice(p)); }, 0);
+    var net = ps.reduce(function (s, p) { return s + lineTotal(p); }, 0);
+    var mdl = ps.reduce(function (s, p) { return s + margeMDL(netPrice(p)) * lineQty(p); }, 0);
+    var hasQty = ps.some(function (p) { return lineQty(p) > 1; });
     var en = document.getElementById('fch-tot-n'); if (en) en.textContent = n;
     var enet = document.getElementById('fch-tot-net'); if (enet) enet.textContent = V2.fmtEur(net);
     var emdl = document.getElementById('fch-tot-mdl'); if (emdl) emdl.textContent = V2.fmtEur(mdl);
+    var esub = document.getElementById('fch-tot-sub'); if (esub) esub.textContent = hasQty ? '(qté incluse)' : '(1 boîte / réf.)';
   }
 
   // maj ciblée d'une ligne pendant la frappe (préserve le focus du champ)
   function recalcRow(i) {
     var p = editingFiche.products[i]; if (!p) return;
-    var net = netPrice(p), mdl = margeMDL(net);
+    var net = netPrice(p), mdl = margeMDL(net), qty = lineQty(p), tot = net * qty;
     var em = document.getElementById('fch-mdl-' + i); if (em) em.textContent = V2.fmtEur(mdl);
     var en = document.getElementById('fch-net-' + i); if (en) en.textContent = V2.fmtEur(net);
+    var et = document.getElementById('fch-tot-line-' + i);
+    if (et) {
+      et.textContent = V2.fmtEur(tot);
+      et.style.display = qty > 1 ? '' : 'none';
+    }
     recalcTotals();
   }
 
@@ -570,7 +599,13 @@
     var inp = document.getElementById('fch-sel-input');
     if (inp) {
       inp.addEventListener('input', renderSelectorList);
-      inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSelector(); });
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { closeSelector(); return; }
+        if (e.key === 'Enter') {
+          var first = document.querySelector('#fch-sel-list .fch-sel-item:not(.added)');
+          if (first && first.dataset.cip) { addProductByCip(first.dataset.cip); }
+        }
+      });
     }
   }
   function openSelector() {
@@ -595,7 +630,8 @@
       prix_ip: b.prix_ip != null ? b.prix_ip : (b.prix_ht != null ? b.prix_ht : null),
       prix_ht: b.prix_ht != null ? b.prix_ht : null,
       remise_pct: b.remise_pct != null ? b.remise_pct : null,
-      is_froid: !!b.is_froid
+      is_froid: !!b.is_froid,
+      qty: 1
     });
     refreshProducts();
     renderSelectorList();
@@ -682,12 +718,13 @@
     var prods = fiche.products || [];
     var count = prods.length;
     var dest = fiche.destId ? pharmaById(fiche.destId) : null;
-    var totNet = prods.reduce(function (s, p) { return s + netPrice(p); }, 0);
-    var totMdl = prods.reduce(function (s, p) { return s + margeMDL(netPrice(p)); }, 0);
+    var totNet = prods.reduce(function (s, p) { return s + lineTotal(p); }, 0);
+    var totMdl = prods.reduce(function (s, p) { return s + margeMDL(netPrice(p)) * lineQty(p); }, 0);
 
     function e2(v) { return num(v).toFixed(2).replace('.', ',') + ' €'; }
+    var hasQtyPdf = prods.some(function (p) { return lineQty(p) > 1; });
     var rows = prods.map(function (p, i) {
-      var net = netPrice(p), mdl = margeMDL(net);
+      var net = netPrice(p), mdl = margeMDL(net), qty = lineQty(p), tot = net * qty;
       var prix = (p.prix_ip != null && p.prix_ip !== '') ? e2(p.prix_ip) : '—';
       var rem = (p.remise_pct != null && p.remise_pct !== '' && +p.remise_pct > 0) ? String(p.remise_pct).replace('.', ',') + ' %' : '—';
       return ''+
@@ -698,8 +735,10 @@
           '<td style="padding:9px 12px;font-size:11px;color:#737A8C;font-family:monospace">' + esc(p.cip13 || '—') + '</td>'+
           '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#10131C;text-align:right;font-family:monospace">' + prix + '</td>'+
           '<td style="padding:9px 12px;font-size:12px;color:#737A8C;text-align:right;font-family:monospace">' + rem + '</td>'+
+          (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;color:#737A8C;text-align:center;font-family:monospace">' + qty + '</td>' : '') +
           '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;font-family:monospace">' + e2(net) + '</td>'+
-          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#1E9E6A;text-align:right;font-family:monospace">' + e2(mdl) + '</td>'+
+          (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;font-family:monospace">' + e2(tot) + '</td>' : '') +
+          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#1E9E6A;text-align:right;font-family:monospace">' + e2(hasQtyPdf ? mdl * qty : mdl) + '</td>'+
         '</tr>';
     }).join('');
 
@@ -744,7 +783,7 @@
                 '<div style="position:absolute;top:50%;left:0;height:3px;width:100%;background:#fff;transform:translateY(-50%);border-radius:2px"></div>'+
               '</div>'+
             '</div>'+
-            '<div><div style="font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1">Intégral Pharma</div>'+
+            '<div><div style="font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</div>'+
               '<div style="font-size:11px;color:#737A8C;margin-top:3px">Proposition commerciale</div></div>'+
           '</div>'+
           '<div style="text-align:right"><div style="font-size:8.5px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.06em;font-weight:700">Édité le</div>'+
@@ -764,20 +803,23 @@
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:left">CIP 13</th>'+
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Prix IP</th>'+
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Remise</th>'+
+            (hasQtyPdf ? '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:center">Qté</th>' : '') +
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Prix net</th>'+
+            (hasQtyPdf ? '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Total</th>' : '') +
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Marge MDL</th>'+
           '</tr></thead>'+
-          '<tbody>' + (rows || '<tr><td colspan="7" style="padding:24px;text-align:center;color:#9AA1B2;font-size:12px">Aucun produit</td></tr>') + '</tbody>'+
+          '<tbody>' + (rows || '<tr><td colspan="' + (hasQtyPdf ? 9 : 7) + '" style="padding:24px;text-align:center;color:#9AA1B2;font-size:12px">Aucun produit</td></tr>') + '</tbody>'+
           (count ? '<tfoot><tr style="border-top:2px solid #10131C;background:#F4F8FF">'+
-            '<td colspan="5" style="padding:13px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#10131C;text-align:right">Totaux (base 1 boîte / réf.)</td>'+
+            '<td colspan="' + (hasQtyPdf ? 7 : 5) + '" style="padding:13px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#10131C;text-align:right">Totaux ' + (hasQtyPdf ? '(quantités incluses)' : '(base 1 boîte / réf.)') + '</td>'+
             '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:monospace">' + e2(totNet) + '</td>'+
+            (hasQtyPdf ? '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:monospace"></td>' : '') +
             '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#1E9E6A;text-align:right;font-family:monospace">' + e2(totMdl) + '</td>'+
           '</tr></tfoot>' : '') +
         '</table>'+
         condBlock +
         // Footer
         '<div style="margin-top:30px;padding-top:14px;border-top:1px solid #ECEFF5;display:flex;justify-content:space-between;font-size:9px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">'+
-          '<span>Intégral Pharma · Document commercial · Prix nets HT</span>'+
+          '<span>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + ' · Document commercial · Prix nets HT</span>'+
           '<span>Marge MDL : 0,18€ &lt;4,33€ · 3,9% &lt;468€ · 19,50€ au-delà</span>'+
         '</div>'+
       '</div>';
@@ -832,10 +874,10 @@
       var label = f && f.title && f.title.trim() ? '« ' + f.title + ' »' : 'cette fiche';
       if (confirm('Supprimer ' + label + ' ?')) { deleteFiche(id); V2.toast('Fiche supprimée'); V2.render(); }
     },
-    setTitle: function (v) { if (editingFiche) { editingFiche.title = v; refreshPreview(); } },
-    setNote: function (v) { if (editingFiche) { editingFiche.note = v; refreshPreview(); } },
-    setValid: function (v) { if (editingFiche) { editingFiche.validUntil = v; refreshPreview(); } },
-    setConditions: function (v) { if (editingFiche) { editingFiche.conditions = v; refreshPreview(); } },
+    setTitle: function (v) { if (editingFiche) { editingFiche.title = v; debouncedRefreshPreview(); } },
+    setNote: function (v) { if (editingFiche) { editingFiche.note = v; debouncedRefreshPreview(); } },
+    setValid: function (v) { if (editingFiche) { editingFiche.validUntil = v; debouncedRefreshPreview(); } },
+    setConditions: function (v) { if (editingFiche) { editingFiche.conditions = v; debouncedRefreshPreview(); } },
     duplicate: function (id) {
       var f = getFiche(id);
       if (!f) { V2.toast('Fiche introuvable', 'error'); return; }
@@ -851,6 +893,7 @@
     },
     setPrice: function (i, v) { if (editingFiche && editingFiche.products[i]) { editingFiche.products[i].prix_ip = v === '' ? null : num(v); recalcRow(i); } },
     setRemise: function (i, v) { if (editingFiche && editingFiche.products[i]) { editingFiche.products[i].remise_pct = v === '' ? null : num(v); recalcRow(i); } },
+    setQty: function (i, v) { if (editingFiche && editingFiche.products[i]) { editingFiche.products[i].qty = v === '' ? 1 : Math.max(1, Math.round(num(v))); recalcRow(i); } },
     removeProduct: function (i) { if (editingFiche) { editingFiche.products.splice(i, 1); refreshProducts(); } },
     openSelector: openSelector,
     closeSelector: closeSelector,
