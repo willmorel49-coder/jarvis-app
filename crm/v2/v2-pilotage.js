@@ -2,6 +2,7 @@
    CRM V2 · Pilier 4 — PILOTAGE (tableau de bord commercial)
    À partir de V2.sales : CA net HT, marge MDL, familles, top pharma.
    Graphes en CSS/SVG pur — aucune dépendance externe. Zéro emoji.
+   Mode OPSO : section groupement (taux activation, périmètres, top produits).
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -153,6 +154,188 @@
       (up ? '+' : '') + d.toFixed(1).replace('.', ',') + ' % vs ' + esc(prevLabel || 'préc.') + '</div>';
   }
 
+  // ── Détection mode OPSO ───────────────────────
+  function isOpso() {
+    return !!(window.V2_BRAND && window.V2_BRAND.opso);
+  }
+
+  // ── Top produits par CA (période courante) ────
+  // Agrège par artDesignation (label produit), renvoie top N
+  function buildTopProducts(salesArr, n) {
+    var byProd = {};
+    salesArr.forEach(function (s) {
+      var key = (s.artDesignation || s.artCode || 'Inconnu').trim();
+      if (!byProd[key]) byProd[key] = { label: key, ca: 0, qte: 0 };
+      byProd[key].ca += (s.mntNetHt || 0);
+      byProd[key].qte += (s.qte || 0);
+    });
+    return Object.keys(byProd).map(function (k) { return byProd[k]; })
+      .sort(function (a, b) { return b.ca - a.ca; })
+      .slice(0, n || 10);
+  }
+
+  // ════════════════════════════════════════════
+  // SECTION OPSO — groupement
+  // ════════════════════════════════════════════
+  function buildOpsoSection(salesCur, salesPrev, pf) {
+    var pharmacies = V2.pharmacies || [];
+    var total = pharmacies.length;
+
+    // Taux d'activation : officines inDb (commandent déjà)
+    var clientes = pharmacies.filter(function (p) { return p.inDb; }).length;
+    var prospects = total - clientes;
+    var tauxPct = total > 0 ? (clientes / total * 100) : 0;
+
+    // CA groupement (période)
+    var caGrp = V2.sumCA(salesCur);
+    var caGrpPrev = V2.sumCA(salesPrev);
+
+    // Officines avec CA > 0 sur la période
+    var caByPh = {};
+    salesCur.forEach(function (s) {
+      caByPh[s.pharmacyId] = (caByPh[s.pharmacyId] || 0) + (s.mntNetHt || 0);
+    });
+    var nbActif = Object.keys(caByPh).filter(function (id) { return caByPh[id] > 0; }).length;
+
+    // Répartition par périmètre (NP / BP / OPSO / autre)
+    var perims = {};
+    pharmacies.forEach(function (p) {
+      var per = (p.perimetre || '').trim() || 'Autre';
+      if (!perims[per]) perims[per] = { label: per, total: 0, actives: 0, ca: 0 };
+      perims[per].total++;
+      if (p.inDb) perims[per].actives++;
+    });
+    // rattacher le CA par périmètre
+    salesCur.forEach(function (s) {
+      var ph = pharmacies.filter(function (x) { return x.id === s.pharmacyId; })[0];
+      if (!ph) return;
+      var per = (ph.perimetre || '').trim() || 'Autre';
+      if (perims[per]) perims[per].ca += (s.mntNetHt || 0);
+    });
+    var perimList = Object.keys(perims).map(function (k) { return perims[k]; })
+      .sort(function (a, b) { return b.ca - a.ca; });
+
+    // Couleurs périmètre
+    var PERIM_COLORS = { 'NP': '#11a63c', 'BP': '#0057FF', 'OPSO': '#C7791A' };
+    function perimColor(lbl) { return PERIM_COLORS[lbl] || 'var(--muted-2)'; }
+
+    // Top 8 produits groupement
+    var topProds = buildTopProducts(salesCur, 8);
+    var maxProd = topProds.length ? topProds[0].ca : 1;
+
+    // ── HTML ───────────────────────────────────
+
+    // KPI taux d'activation
+    var tauxBar = Math.round(tauxPct);
+    var kpiActivation =
+      '<div class="v2-card opso-act-card" style="margin-bottom:14px;padding:20px 22px">' +
+        '<div class="v2-card-t" style="margin-bottom:16px">' + ICO('pharma', 17) + 'Taux d\'activation groupement</div>' +
+        '<div class="opso-act-body">' +
+          '<div class="opso-act-gauge">' +
+            '<div class="opso-gauge-track">' +
+              '<div class="opso-gauge-fill" data-w="' + tauxBar + '" style="width:0"></div>' +
+            '</div>' +
+            '<div class="opso-gauge-labels">' +
+              '<span class="mono" style="font-size:13px;font-weight:700;color:var(--ip-blue)">' + tauxBar + ' %</span>' +
+              '<span style="font-size:12px;color:var(--muted)">' + total + ' officines au listing</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="opso-act-chips">' +
+            '<div class="opso-chip-stat active">' +
+              '<div class="opso-chip-n mono">' + clientes + '</div>' +
+              '<div class="opso-chip-l">Clientes</div>' +
+            '</div>' +
+            '<div class="opso-chip-stat prospect">' +
+              '<div class="opso-chip-n mono">' + prospects + '</div>' +
+              '<div class="opso-chip-l">Prospects</div>' +
+            '</div>' +
+            '<div class="opso-chip-stat actif">' +
+              '<div class="opso-chip-n mono">' + nbActif + '</div>' +
+              '<div class="opso-chip-l">Actives / période</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    // KPIs groupement CA
+    var kpiGrp =
+      '<div class="v2-kpis opso-kpi-grp" style="margin-bottom:14px">' +
+        '<div class="v2-kpi k1">' +
+          '<div class="v2-kpi-l">CA groupement</div>' +
+          '<div class="v2-kpi-v mono">' + V2.fmtEur(caGrp) + '</div>' +
+          deltaHtml(caGrp, caGrpPrev, pf && pf.prevLabel) +
+        '</div>' +
+        '<div class="v2-kpi k4">' +
+          '<div class="v2-kpi-l">Panier moyen clientes actives</div>' +
+          '<div class="v2-kpi-v mono">' + V2.fmtEur(nbActif > 0 ? caGrp / nbActif : 0) + '</div>' +
+          '<div class="v2-kpi-d" style="color:var(--muted)">par officine active</div>' +
+        '</div>' +
+      '</div>';
+
+    // Répartition périmètre
+    var hasPerim = perimList.length > 0 && perimList.some(function (p) { return p.label !== 'Autre'; });
+    var perimCard = '';
+    if (hasPerim) {
+      var maxPerimTotal = perimList.reduce(function (a, p) { return Math.max(a, p.total); }, 1);
+      var perimRows = perimList.map(function (p) {
+        var actPct = p.total > 0 ? Math.round(p.actives / p.total * 100) : 0;
+        var barW = Math.max(2, p.total / maxPerimTotal * 100);
+        var col = perimColor(p.label);
+        return '<div class="opso-perim-row">' +
+          '<div class="opso-perim-top">' +
+            '<span class="opso-perim-badge" style="background:color-mix(in srgb,' + col + ' 14%,#fff);color:' + col + '">' + esc(p.label) + '</span>' +
+            '<div class="opso-perim-nums">' +
+              '<span class="mono" style="font-weight:700;font-size:13.5px">' + p.actives + '<span style="color:var(--muted);font-weight:500">/' + p.total + '</span></span>' +
+              '<span class="v2-chip ' + (actPct >= 50 ? 'g' : 'a') + '" style="margin-left:8px">' + actPct + ' %</span>' +
+              (p.ca > 0 ? '<span class="mono" style="font-size:12px;color:var(--muted);margin-left:12px">' + V2.fmtEur(p.ca) + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="pilo-bar" style="margin-top:8px"><span class="pilo-bar-fill" data-w="' + barW.toFixed(1) + '" style="width:0;background:' + col + '"></span></div>' +
+        '</div>';
+      }).join('');
+      perimCard =
+        '<div class="v2-card" style="padding:18px 22px;margin-bottom:14px">' +
+          '<div class="v2-card-t" style="margin-bottom:16px">' + ICO('grid', 17) + 'Répartition par périmètre</div>' +
+          perimRows +
+        '</div>';
+    }
+
+    // Top produits groupement
+    var topProdHtml = topProds.length ?
+      topProds.map(function (r, i) {
+        var pct = maxProd > 0 ? Math.max(2, r.ca / maxProd * 100) : 0;
+        return '<div class="v2-row" style="cursor:default">' +
+          '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div class="v2-row-name">' + esc(r.label) + '</div>' +
+            '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--ip-blue)"></span></div>' +
+          '</div>' +
+          '<div class="pilo-vals">' +
+            '<div class="v2-row-val mono">' + V2.fmtEur(r.ca) + '</div>' +
+            '<div class="v2-row-meta mono">' + V2.fmtNum(r.qte) + ' unités</div>' +
+          '</div>' +
+        '</div>';
+      }).join('')
+      : '<div class="v2-empty"><div class="v2-empty-d">Aucune vente sur la période.</div></div>';
+
+    var topProdCard =
+      '<div class="v2-card" style="margin-bottom:14px">' +
+        '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'Top produits groupement</div>' +
+          '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + (pf ? esc(pf.label) : '') + '</span></div>' +
+        topProdHtml +
+      '</div>';
+
+    return {
+      html: '<div class="opso-section">' +
+              '<div class="opso-section-head">' + ICO('pharma', 16) + 'Groupement OPSO Santé</div>' +
+              kpiActivation +
+              kpiGrp +
+              (perimCard || '') +
+              topProdCard +
+            '</div>',
+    };
+  }
+
   // ════════════════════════════════════════════
   // PAGE
   // ════════════════════════════════════════════
@@ -162,16 +345,18 @@
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
       injectStyles();
 
+      var opso = isOpso();
+
       // ── Empty state ──
       if (!sales.length) {
         root.innerHTML = top +
           '<div class="v2-wrap">' +
             '<div class="v2-page-title">Pilotage</div>' +
-            '<div class="v2-page-sub">Ton chiffre d\'affaires, ta marge MDL et tes familles produits.</div>' +
+            '<div class="v2-page-sub">' + (opso ? 'Tableau de bord groupement OPSO Santé.' : 'Ton chiffre d\'affaires, ta marge MDL et tes familles produits.') + '</div>' +
             '<div class="v2-card"><div class="v2-empty">' +
               '<div class="v2-empty-ico">' + ICO('pilo', 64, 1.4) + '</div>' +
               '<div class="v2-empty-t">Pas encore de ventes importées</div>' +
-              '<div class="v2-empty-d">Importe tes relevés de ventes pour voir ton CA, ta marge MDL et l\'évolution sur 13 mois.</div>' +
+              '<div class="v2-empty-d">Importe tes relevés de ventes pour voir le CA, la marge MDL et l\'évolution sur 13 mois.</div>' +
             '</div></div>' +
           '</div>';
         return;
@@ -302,6 +487,9 @@
           (mdlHtml || '<div class="v2-empty"><div class="v2-empty-d">Aucune marge MDL sur la période (pas de ventes remboursables).</div></div>') +
         '</div>';
 
+      // ── Section OPSO groupement (conditionnelle) ──
+      var opsoSect = opso ? buildOpsoSection(cur, prev, pf) : null;
+
       // ── Segmented period ──
       function seg(mode, lbl) {
         return '<button class="pilo-segbtn' + (PERIOD === mode ? ' on' : '') + '" data-p="' + mode + '">' + lbl + '</button>';
@@ -310,7 +498,7 @@
         '<div class="pilo-head">' +
           '<div>' +
             '<div class="v2-page-title">Pilotage</div>' +
-            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + ' · ton tableau de bord commercial</div>' +
+            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (opso ? ' · Groupement OPSO Santé' : ' · ton tableau de bord commercial') + '</div>' +
           '</div>' +
           '<div class="pilo-seg">' + seg('current', 'Mois courant') + seg('3m', '3 mois') + seg('year', 'Année') + '</div>' +
         '</div>';
@@ -318,6 +506,7 @@
       root.innerHTML = top +
         '<div class="v2-wrap">' +
           header +
+          (opsoSect ? opsoSect.html : '') +
           kpis +
           chart.html +
           '<div class="pilo-grid2">' + topCaCard + famCard + '</div>' +
@@ -337,6 +526,10 @@
           });
           Array.prototype.forEach.call(root.querySelectorAll('.pilo-cbar-fill'), function (el) {
             el.style.height = (el.dataset.h || 0) + '%';
+          });
+          // jauge activation OPSO
+          Array.prototype.forEach.call(root.querySelectorAll('.opso-gauge-fill'), function (el) {
+            el.style.width = (el.dataset.w || 0) + '%';
           });
         });
       });
@@ -444,7 +637,30 @@
       '.pilo-cbar-lbl{font-size:10.5px;color:var(--muted);font-weight:600;font-family:var(--mono)}' +
       '.pilo-tip{position:absolute;top:-6px;transform:translateX(-50%);background:var(--ip-ink);color:#fff;font-size:12px;font-weight:600;' +
         'padding:7px 11px;border-radius:9px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:var(--sh-pop);z-index:5;font-family:var(--mono)}' +
-      '.pilo-tip.show{opacity:1}';
+      '.pilo-tip.show{opacity:1}' +
+      // ── OPSO section ──────────────────────────────
+      '.opso-section{margin-bottom:10px}' +
+      '.opso-section-head{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;' +
+        'font-weight:700;color:var(--ip-blue);margin-bottom:14px;padding:0 2px}' +
+      '.opso-act-body{display:flex;flex-direction:column;gap:18px}' +
+      '.opso-gauge-track{height:10px;border-radius:999px;background:var(--line);overflow:hidden;margin-bottom:8px}' +
+      '.opso-gauge-fill{height:100%;border-radius:999px;background:var(--ip-blue);transition:width .9s var(--ease)}' +
+      '.opso-gauge-labels{display:flex;align-items:center;justify-content:space-between}' +
+      '.opso-act-chips{display:flex;gap:12px;flex-wrap:wrap}' +
+      '.opso-chip-stat{flex:1;min-width:80px;background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-align:center}' +
+      '.opso-chip-stat.active{border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line));background:color-mix(in srgb,var(--ip-blue) 5%,var(--card))}' +
+      '.opso-chip-stat.prospect{border-color:color-mix(in srgb,var(--c-amber) 30%,var(--line));background:color-mix(in srgb,var(--c-amber) 5%,var(--card))}' +
+      '.opso-chip-n{font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--ip-ink)}' +
+      '.opso-chip-l{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:3px}' +
+      '.opso-chip-stat.active .opso-chip-n{color:var(--ip-blue)}' +
+      '.opso-chip-stat.prospect .opso-chip-n{color:var(--c-amber)}' +
+      '.opso-kpi-grp{grid-template-columns:repeat(2,1fr) !important}' +
+      '@media(max-width:600px){.opso-kpi-grp{grid-template-columns:1fr !important}}' +
+      '.opso-perim-row{margin-bottom:16px}.opso-perim-row:last-child{margin-bottom:4px}' +
+      '.opso-perim-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}' +
+      '.opso-perim-badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:.01em}' +
+      '.opso-perim-nums{display:flex;align-items:center;flex-wrap:wrap}';
+
     var st = document.createElement('style');
     st.id = 'pilo-styles'; st.textContent = css;
     document.head.appendChild(st);

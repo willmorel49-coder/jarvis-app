@@ -21,6 +21,20 @@
   // Sélection de produits cochés (bouton +) pour le PDF RDV — propre à une pharma
   var selCips = null;   // Set des CIP cochés
   var selPid = null;    // pharma à laquelle appartient la sélection courante
+  // Filtre segment OPSO : 'all' | 'cliente' | 'prospect'
+  var opsoFilter = 'all';
+
+  // ── Helpers OPSO ──────────────────────────────────────────────
+  function isOpso() { return !!(window.V2_BRAND && window.V2_BRAND.opso); }
+
+  // Badge HTML cliente / prospect (OPSO uniquement)
+  function opsoBadge(p) {
+    if (!isOpso()) return '';
+    if (p.inDb) {
+      return '<span class="opso-badge opso-badge-cliente">Cliente</span>';
+    }
+    return '<span class="opso-badge opso-badge-prospect">Prospect</span>';
+  }
 
   // ── Définition des 8 catégories (ordre EXACT du brief) ─────────
   var CATS = [
@@ -186,9 +200,11 @@
     var oppPill = (x.opp == null)
       ? '<span class="v2-row-opp v2-row-opp-pending mono">…</span>'
       : '<span class="v2-row-opp mono">' + V2.fmtNum(x.opp) + ' opp</span>';
-    return '<a class="v2-row" onclick="V2.go(\'pharma\',\'' + V2.esc(String(x.p.id)) + '\')">' +
+    var badge = opsoBadge(x.p);
+    return '<a class="v2-row' + (isOpso() && x.p.inDb ? ' opso-row-cliente' : '') + '" onclick="V2.go(\'pharma\',\'' + V2.esc(String(x.p.id)) + '\')">' +
       '<span class="v2-row-dot" style="background:' + V2.esc(color) + '"></span>' +
       '<span class="v2-row-name">' + V2.esc(x.p.name) + '</span>' +
+      badge +
       oppPill +
       '<span class="v2-row-meta">marge MDL</span>' +
       '<span class="v2-row-val mono" style="color:var(--c-opp)">' + V2.fmtEur(x.marge) + '</span>' +
@@ -206,7 +222,19 @@
         x.opp = buildOpportunities(p.id).reduce(function (s, o) { return s + o.oppCount; }, 0);
       }
       return x;
-    }).sort(function (a, b) { return b.ca - a.ca; });
+    });
+
+    // ── Tri OPSO : clientes d'abord, puis par CA desc ──
+    if (isOpso()) {
+      phs.sort(function (a, b) {
+        var ac = a.p.inDb ? 1 : 0;
+        var bc = b.p.inDb ? 1 : 0;
+        if (bc !== ac) return bc - ac;   // clientes (1) avant prospects (0)
+        return b.ca - a.ca;
+      });
+    } else {
+      phs.sort(function (a, b) { return b.ca - a.ca; });
+    }
 
     // Marché sectoriel pas encore chargé → on charge en tâche de fond puis on
     // rafraîchit la liste pour afficher le compteur d'opportunités par officine.
@@ -217,27 +245,69 @@
       });
     }
 
-    function filterList() {
-      var q = searchQuery.trim().toLowerCase();
-      return q ? phs.filter(function (x) { return x.p.name.toLowerCase().indexOf(q) >= 0; }) : phs;
+    // ── Compteurs OPSO ──
+    var nbClientes = 0, nbProspects = 0;
+    if (isOpso()) {
+      phs.forEach(function (x) { if (x.p.inDb) nbClientes++; else nbProspects++; });
     }
 
-    var filtered = filterList();
-    var rowsHtml = filtered.length
-      ? filtered.map(listRowHtml).join('')
-      : '<div class="v2-empty"><div class="v2-empty-t">Aucune officine</div><div class="v2-empty-d">' +
-        (searchQuery ? 'Aucun résultat pour « ' + V2.esc(searchQuery) + ' ».' : 'Aucune pharmacie chargée.') +
-        '</div></div>';
+    function applyFilters(list) {
+      var q = searchQuery.trim().toLowerCase();
+      return list.filter(function (x) {
+        if (q && x.p.name.toLowerCase().indexOf(q) < 0) return false;
+        if (isOpso() && opsoFilter === 'cliente' && !x.p.inDb) return false;
+        if (isOpso() && opsoFilter === 'prospect' && x.p.inDb) return false;
+        return true;
+      });
+    }
+
+    function cardHtml(filtered) {
+      return filtered.length
+        ? filtered.map(listRowHtml).join('')
+        : '<div class="v2-empty"><div class="v2-empty-t">Aucune officine</div><div class="v2-empty-d">' +
+          (searchQuery ? 'Aucun résultat pour « ' + V2.esc(searchQuery) + ' ».' : 'Aucune pharmacie chargée.') +
+          '</div></div>';
+    }
+
+    // ── Barre de filtres OPSO (segment clientes / prospects) ──
+    var opsoFilterBar = '';
+    if (isOpso()) {
+      function segBtn(val, label, count) {
+        var on = (opsoFilter === val) ? ' on' : '';
+        var sc = val === 'cliente' ? 'var(--ip-blue)' : (val === 'prospect' ? 'var(--muted)' : 'var(--ip-blue)');
+        return '<button type="button" class="v2-seg' + on + '" style="--sc:' + sc + '" ' +
+          'onclick="V2.pharmaOpsoFilter(\'' + val + '\')">' +
+          label + '<span class="cnt">' + count + '</span></button>';
+      }
+      opsoFilterBar =
+        '<div class="v2-segs" style="margin-bottom:14px">' +
+          segBtn('all',      'Toutes',    phs.length) +
+          segBtn('cliente',  'Clientes',  nbClientes) +
+          segBtn('prospect', 'Prospects', nbProspects) +
+        '</div>';
+
+      var counterHtml =
+        '<div class="opso-counter">' +
+          '<span class="opso-counter-item opso-counter-cliente">' + nbClientes + ' cliente' + (nbClientes > 1 ? 's' : '') + '</span>' +
+          '<span class="opso-counter-sep">·</span>' +
+          '<span class="opso-counter-item opso-counter-prospect">' + nbProspects + ' prospect' + (nbProspects > 1 ? 's' : '') + '</span>' +
+        '</div>';
+
+      opsoFilterBar = counterHtml + opsoFilterBar;
+    }
+
+    var filtered = applyFilters(phs);
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap">' +
         '<div class="v2-page-title">Mes officines</div>' +
         '<div class="v2-page-sub">' + phs.length + ' pharmacie' + (phs.length > 1 ? 's' : '') +
           ' · clique pour voir les opportunités</div>' +
+        opsoFilterBar +
         '<div class="v2-search" style="margin-bottom:20px;padding:14px 18px">' + ICO('search', 20, 2) +
           '<input id="v2-pharma-search" placeholder="Rechercher une officine…" autocomplete="off" value="' +
           V2.esc(searchQuery) + '"></div>' +
-        '<div class="v2-card" id="v2-pharma-card">' + rowsHtml + '</div>' +
+        '<div class="v2-card" id="v2-pharma-card">' + cardHtml(filtered) + '</div>' +
       '</div>';
 
     // Recherche live : on ne re-render QUE la liste pour préserver le focus
@@ -247,10 +317,8 @@
         searchQuery = inp.value;
         var card = document.getElementById('v2-pharma-card');
         if (!card) return;
-        var f = filterList();
-        card.innerHTML = f.length
-          ? f.map(listRowHtml).join('')
-          : '<div class="v2-empty"><div class="v2-empty-t">Aucun résultat</div></div>';
+        var f = applyFilters(phs);
+        card.innerHTML = cardHtml(f);
       });
     }
   }
@@ -439,13 +507,18 @@
     var opps = buildOpportunities(pid);
     var totalOpp = opps.reduce(function (s, o) { return s + o.oppCount; }, 0);
 
+    // Badge OPSO dans la fiche (à côté du nom)
+    var ficheBadge = isOpso() ? ' ' + opsoBadge(pharma) : '';
+
     var hero =
       '<div class="v2-card" style="margin-bottom:22px;padding:0">' +
         '<div style="display:flex;align-items:center;gap:14px;padding:20px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap">' +
           '<span class="v2-pharma-pin" style="background:' + V2.esc(pharma.color || 'var(--ip-blue)') + '">' +
             ICO('pharma', 22) + '</span>' +
           '<div style="flex:1;min-width:160px">' +
-            '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + V2.esc(pharma.name) + '</div>' +
+            '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+              V2.esc(pharma.name) + ficheBadge +
+            '</div>' +
             (pharma.code ? '<div style="font-size:12px;color:var(--muted);margin-top:3px;font-family:var(--mono)">' + V2.esc(pharma.code) + '</div>' : '') +
           '</div>' +
           '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.pharmaDownloadPdf(\'' + V2.esc(String(pid)) + '\')">' +
@@ -512,7 +585,7 @@
           src: 'opp'
         });
       }
-      V2.toast('✓ Retenu — ajouté à la fiche en cours');
+      V2.toast('Retenu — ajouté à la fiche en cours');
     }
     refreshPdfBtn();
   };
@@ -522,6 +595,14 @@
     for (var i = 0; i < CATS.length; i++) { if (CATS[i].key === key) { idx = i; break; } }
     var cur = (key in collapsed) ? collapsed[key] : (idx !== 0);
     collapsed[key] = !cur;
+    var y = window.scrollY || window.pageYOffset || 0; // préserve la position de lecture
+    V2.render();
+    try { window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { window.scrollTo(0, y); }
+  };
+
+  // ── Handler filtre OPSO (segment clientes / prospects) ──
+  V2.pharmaOpsoFilter = function (val) {
+    opsoFilter = val;
     V2.render();
   };
 
@@ -669,7 +750,7 @@
         html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       }).save().then(function () {
-        document.body.removeChild(wrap); V2.toast('✓ PDF téléchargé');
+        document.body.removeChild(wrap); V2.toast('PDF téléchargé');
       }).catch(function (e) { console.error(e); document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
     });
   };
@@ -732,7 +813,19 @@
       '.opp-add{width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s var(--ease);flex-shrink:0}',
       '.opp-add:hover{border-color:var(--c-opp);color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 8%,transparent)}',
       '.opp-add.on{background:var(--c-opp);border-color:var(--c-opp);color:#fff;box-shadow:0 2px 6px color-mix(in srgb,var(--c-opp) 40%,transparent)}',
-      '.opp-add.on:hover{background:var(--c-opp);color:#fff}'
+      '.opp-add.on:hover{background:var(--c-opp);color:#fff}',
+      // ── Badges OPSO (clientes / prospects) — uniquement en mode OPSO ──
+      '.opso-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.01em;flex-shrink:0;vertical-align:middle}',
+      '.opso-badge-cliente{color:#0d8530;background:color-mix(in srgb,#11a63c 13%,transparent);border:1px solid color-mix(in srgb,#11a63c 28%,transparent)}',
+      '.opso-badge-prospect{color:var(--muted);background:var(--card-2);border:1px solid var(--line)}',
+      // Ligne cliente légèrement mise en relief
+      '.opso-row-cliente{background:color-mix(in srgb,#11a63c 4%,transparent)}',
+      '.opso-row-cliente:hover{background:color-mix(in srgb,#11a63c 8%,transparent)}',
+      // ── Compteur clientes / prospects (bandeau au-dessus des filtres) ──
+      '.opso-counter{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;font-weight:600;color:var(--muted)}',
+      '.opso-counter-sep{color:var(--muted-2)}',
+      '.opso-counter-cliente{color:#0d8530;font-weight:700}',
+      '.opso-counter-prospect{color:var(--muted);font-weight:600}'
     ].join('\n');
     document.head.appendChild(st);
   }
