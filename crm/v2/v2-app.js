@@ -10,6 +10,9 @@
 
   var $app = function () { return document.getElementById('v2-root'); };
 
+  // Symbole de la touche modificatrice selon l'OS (⌘ sur Mac, Ctrl ailleurs)
+  var MOD = (/Mac|iPhone|iPad|iPod/.test((navigator.platform || '') + ' ' + (navigator.userAgent || ''))) ? '⌘' : 'Ctrl';
+
   // ── TOAST ─────────────────────────────────────
   V2.toast = function (msg, variant) {
     var host = document.getElementById('v2-toast-host');
@@ -50,14 +53,37 @@
         (back ||
          '<a class="v2-brand" onclick="V2.go(\'home\')"><span class="v2-logo">' + ICO('logo', 22) + '</span>' +
          '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span></a>') +
-        '<div class="v2-top-search" onclick="V2.openCmdk()">' + ICO('search', 15, 2) + 'Rechercher<kbd>⌘K</kbd></div>' +
+        '<div class="v2-top-search" onclick="V2.openCmdk()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>' +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
   }
   V2.topbar = topbar;
 
   V2.userMenu = function () {
-    if (confirm('Te déconnecter ?')) V2.signOut();
+    var ex = document.getElementById('v2-usermenu');
+    if (ex) { ex.parentNode.removeChild(ex); return; }
+    var m = document.createElement('div');
+    m.id = 'v2-usermenu';
+    m.className = 'v2-usermenu';
+    m.innerHTML =
+      '<div class="v2-um-head">' +
+        '<div class="v2-um-name">' + esc(V2.user ? V2.user.name : 'Utilisateur') + '</div>' +
+        (V2.user && V2.user.email ? '<div class="v2-um-mail">' + esc(V2.user.email) + '</div>' : '') +
+      '</div>' +
+      '<button class="v2-um-item" onclick="V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>';
+    document.body.appendChild(m);
+    requestAnimationFrame(function () { m.classList.add('open'); });
+    setTimeout(function () {
+      function close(e) {
+        if (e.type === 'keydown' && e.key !== 'Escape') return;
+        if (e.type === 'click' && m.contains(e.target)) return;
+        if (m.parentNode) m.parentNode.removeChild(m);
+        document.removeEventListener('click', close, true);
+        document.removeEventListener('keydown', close, true);
+      }
+      document.addEventListener('click', close, true);
+      document.addEventListener('keydown', close, true);
+    }, 0);
   };
 
   // ── RENDER (routeur) ──────────────────────────
@@ -122,7 +148,7 @@
             '<p>Cherche une pharmacie, ou ouvre directement un de tes outils</p>' +
           '</div>' +
           '<div class="v2-search" onclick="V2.openCmdk()">' + ICO('search', 24, 2) +
-            '<input readonly placeholder="Pharmacie, produit, page…" style="cursor:pointer"><kbd>⌘K</kbd></div>' +
+            '<input readonly placeholder="Pharmacie, produit, page…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           '<div class="v2-recent">' + recentHtml + '</div>' +
           '<div class="v2-piliers">' + pilHtml + '</div>' +
         '</div>';
@@ -264,6 +290,9 @@
       V2.signIn(em, pw).then(function (r) {
         if (r.ok) { V2.boot(); }
         else { err.textContent = r.msg || 'Identifiants incorrects'; btn.textContent = 'Se connecter'; btn.disabled = false; }
+      }).catch(function () {
+        err.textContent = 'Connexion impossible — vérifie ta connexion internet.';
+        btn.textContent = 'Se connecter'; btn.disabled = false;
       });
     }
     btn.onclick = submit;
