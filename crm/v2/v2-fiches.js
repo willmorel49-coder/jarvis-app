@@ -195,6 +195,15 @@
     '.fch-cond-date:focus,.fch-cond-txt:focus{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}'+
     '.fch-cond-txt::placeholder{color:var(--muted-2)}'+
     '.fch-icobtn-del:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}'+
+    // éditeur 2 colonnes + aperçu A4 live
+    '.fch-edit-grid{display:grid;grid-template-columns:minmax(320px,1fr) minmax(360px,500px);gap:32px;align-items:start}'+
+    '@media(max-width:980px){.fch-edit-grid{grid-template-columns:1fr;gap:24px}}'+
+    '.fch-pv-pane{position:sticky;top:84px}'+
+    '@media(max-width:980px){.fch-pv-pane{position:static}}'+
+    '.fch-pv-bar{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:12px}'+
+    '.fch-pv-bar::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c-opp);box-shadow:0 0 0 4px color-mix(in srgb,var(--c-opp) 18%,transparent);animation:fchPulse 2s var(--ease) infinite}'+
+    '.fch-paper-holder{background:#EBEEF4;border:1px solid var(--line);border-radius:18px;padding:22px;overflow:hidden;transition:height .18s var(--ease)}'+
+    '.fch-paper{width:794px;transform-origin:top left;box-shadow:0 14px 44px rgba(16,19,28,.20),0 4px 12px rgba(16,19,28,.10);border-radius:7px;overflow:hidden;background:#fff}'+
     '.fch-dest{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:13px 16px;margin-bottom:22px;box-shadow:var(--sh-1)}'+
     '.fch-dest-ic{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-opp),#13794f)}'+
     '.fch-dest-l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}'+
@@ -367,7 +376,8 @@
     var prodHtml = n ? editingFiche.products.map(productRow).join('') : emptyProducts();
 
     root.innerHTML = head + STY +
-      '<div class="v2-wrap narrow">'+
+      '<div class="v2-wrap">'+
+        '<div class="fch-edit-grid"><div class="fch-edit-col">'+
         '<input class="fch-titlefield" id="fch-title" placeholder="Titre de la fiche…" value="' + esc(editingFiche.title) + '" '+
           'oninput="V2.fiches.setTitle(this.value)">'+
         // Accroche / mot au pharmacien
@@ -405,11 +415,42 @@
         '</div>'+
         // Totaux
         totalsHtml() +
+        '</div>'+ // fin colonne édition
+        // ── Colonne aperçu A4 live ──
+        '<div class="fch-pv-col"><div class="fch-pv-pane">'+
+          '<div class="fch-pv-bar">Aperçu en direct · ce que verra le pharmacien</div>'+
+          '<div class="fch-paper-holder" id="fch-paper-holder">'+
+            '<div class="fch-paper" id="fch-paper">' + buildSheetHtml(editingFiche) + '</div>'+
+          '</div>'+
+        '</div></div>'+
+        '</div>'+ // fin grille
       '</div>' +
       selectorMarkup() + destMarkup();
 
     wireSelector();
     wireDest();
+    requestAnimationFrame(fitPreview);
+    if (!_pvResizeBound) { window.addEventListener('resize', fitPreview); _pvResizeBound = true; }
+  }
+
+  // ── Aperçu live : régénère la feuille + l'ajuste à la colonne ──
+  var _pvResizeBound = false;
+  function fitPreview() {
+    var holder = document.getElementById('fch-paper-holder');
+    var paper = document.getElementById('fch-paper');
+    if (!holder || !paper) return;
+    var pad = 22;
+    var avail = holder.clientWidth - pad * 2;
+    if (avail <= 0) return;
+    var scale = Math.min(1, avail / 794);
+    paper.style.transform = 'scale(' + scale + ')';
+    holder.style.height = (paper.offsetHeight * scale + pad * 2) + 'px';
+  }
+  function refreshPreview() {
+    var paper = document.getElementById('fch-paper');
+    if (!paper || !editingFiche) return;
+    paper.innerHTML = buildSheetHtml(editingFiche);
+    fitPreview();
   }
 
   function destValHtml() {
@@ -443,8 +484,9 @@
     recalcTotals();
   }
 
-  // recalcule la barre de totaux (sans toucher aux lignes)
+  // recalcule la barre de totaux (sans toucher aux lignes) + l'aperçu
   function recalcTotals() {
+    refreshPreview();
     var ps = editingFiche.products, n = ps.length;
     var net = ps.reduce(function (s, p) { return s + netPrice(p); }, 0);
     var mdl = ps.reduce(function (s, p) { return s + margeMDL(netPrice(p)); }, 0);
@@ -627,12 +669,13 @@
     var btn = document.querySelector('.fch-dest-change');
     if (btn) btn.textContent = editingFiche.destId ? 'Changer' : 'Choisir une pharmacie';
     closeDest();
+    refreshPreview();
   }
 
   // ════════════════════════════════════════════
-  // PDF
+  // DOCUMENT (HTML partagé : aperçu live + PDF)
   // ════════════════════════════════════════════
-  function buildPdfNode(fiche) {
+  function buildSheetHtml(fiche) {
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
     var title = fiche.title && fiche.title.trim() ? fiche.title : 'Fiche commerciale';
     var prods = fiche.products || [];
@@ -738,9 +781,13 @@
         '</div>'+
       '</div>';
 
+    return html;
+  }
+
+  function buildPdfNode(fiche) {
     var node = document.createElement('div');
     node.style.cssText = 'position:fixed;left:-10000px;top:0';
-    node.innerHTML = html;
+    node.innerHTML = buildSheetHtml(fiche);
     return node;
   }
 
@@ -784,10 +831,10 @@
       var label = f && f.title && f.title.trim() ? '« ' + f.title + ' »' : 'cette fiche';
       if (confirm('Supprimer ' + label + ' ?')) { deleteFiche(id); V2.toast('Fiche supprimée'); V2.render(); }
     },
-    setTitle: function (v) { if (editingFiche) editingFiche.title = v; },
-    setNote: function (v) { if (editingFiche) editingFiche.note = v; },
-    setValid: function (v) { if (editingFiche) editingFiche.validUntil = v; },
-    setConditions: function (v) { if (editingFiche) editingFiche.conditions = v; },
+    setTitle: function (v) { if (editingFiche) { editingFiche.title = v; refreshPreview(); } },
+    setNote: function (v) { if (editingFiche) { editingFiche.note = v; refreshPreview(); } },
+    setValid: function (v) { if (editingFiche) { editingFiche.validUntil = v; refreshPreview(); } },
+    setConditions: function (v) { if (editingFiche) { editingFiche.conditions = v; refreshPreview(); } },
     duplicate: function (id) {
       var f = getFiche(id);
       if (!f) { V2.toast('Fiche introuvable', 'error'); return; }
