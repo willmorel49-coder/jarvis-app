@@ -64,9 +64,25 @@
       var c = norm(p.code || p.id); if (c && !byCip[c]) byCip[c] = p;
       var n = (p.name || '').trim().toUpperCase(); if (n && !byName[n]) byName[n] = p;
     });
+
+    // Achats par officine déposés dans opso/STATISTIQUES (opso-stats-data.js)
+    var statsRows = (typeof window !== 'undefined' && window.OPSO_STATS_SALES) ? window.OPSO_STATS_SALES : [];
+    var statsByCip = {};
+    statsRows.forEach(function (r) {
+      var c = norm(r.cip); if (!c) return;
+      (statsByCip[c] = statsByCip[c] || []).push(r);
+    });
+    // Période de référence = dernier mois présent dans les ventes WML (pour que
+    // ces achats cumulés soient pris en compte dans les vues mois/3 mois/année)
+    var maxK = -1, refY = 2026, refM = 1;
+    (V2.sales || []).forEach(function (s) {
+      if (s.month && s.year) { var k = s.year * 12 + s.month; if (k > maxK) { maxK = k; refY = s.year; refM = s.month; } }
+    });
+
     V2.pharmacies = listing.map(function (a) {
       var cip = norm(a.cip || a.code);
       var db = byCip[cip] || byName[(a.nom || a.name || '').trim().toUpperCase()];
+      var hasStats = !!statsByCip[cip];
       return {
         id: db ? db.id : ('LST-' + (cip || (a.nom || a.name || '').trim())),
         name: (db && db.name) || a.nom || a.name || '',
@@ -74,9 +90,24 @@
         color: (db && db.color) || '#11a63c',
         ville: a.ville || (db && db.ville) || '', cp: a.cp || (db && db.cp) || '',
         tel: a.tel || (db && db.tel) || '', perimetre: a.perimetre || '',
-        groupement: 'OPSO SANTE', potentiel: (db && db.potentiel) || 0, inDb: !!db,
+        groupement: 'OPSO SANTE', potentiel: (db && db.potentiel) || 0,
+        inDb: !!db || hasStats, hasStats: hasStats,
       };
     });
+
+    // Injecte les ventes "stats officine" sur la bonne pharmacie (par CIP)
+    var phByCip = {}; V2.pharmacies.forEach(function (p) { var c = norm(p.code); if (c) phByCip[c] = p; });
+    Object.keys(statsByCip).forEach(function (c) {
+      var ph = phByCip[c]; if (!ph) return;
+      statsByCip[c].forEach(function (r) {
+        V2.sales.push({
+          id: null, importId: null, pharmacyId: String(ph.id), month: refM, year: refY,
+          artDesignation: r.artDesignation, artCode: r.artCode, artFamille: null,
+          qte: r.qte || 0, puBrut: r.puBrut || 0, puNet: r.puNet || 0, mntNetHt: r.mntNetHt || 0,
+        });
+      });
+    });
+
     var ids = {}; V2.pharmacies.forEach(function (p) { ids[String(p.id)] = 1; });
     V2.sales = (V2.sales || []).filter(function (s) { return ids[String(s.pharmacyId)]; });
   };
