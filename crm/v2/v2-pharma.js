@@ -611,7 +611,7 @@
             '</div>' +
             (pharma.code ? '<div style="font-size:12px;color:var(--muted);margin-top:3px;font-family:var(--mono)">' + V2.esc(pharma.code) + '</div>' : '') +
           '</div>' +
-          '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.pharmaDownloadPdf(\'' + V2.esc(String(pid)) + '\')">' +
+          '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.pharmaPrepaPreview(\'' + V2.esc(String(pid)) + '\')">' +
             ICO('download', 17) + (selCips && selCips.size
               ? 'Prépa RDV · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '')
               : 'Préparer le RDV (PDF)') + '</button>' +
@@ -698,11 +698,9 @@
     V2.render();
   };
 
-  V2.pharmaDownloadPdf = function (pid) {
+  function buildPrepaHtml(pid) {
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
-    if (!pharma) { V2.toast('Pharmacie introuvable', 'error'); return; }
-    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
-    V2.toast('Génération du PDF…');
+    if (!pharma) return null;
     var sales = pharmaSales(pid);
     var ca = V2.sumCA(sales), marge = margeMDLpharma(sales);
     var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); }).filter(function (c) { return c.length >= 7; })).size;
@@ -852,22 +850,69 @@
           '<div>Intégral Pharma · Normandie · Document confidentiel</div><div>Marge MDL : 0,18€ &lt;4,33€ · 3,9% &lt;468€ · 19,50€ au-delà</div></div>' +
       '</div>';
 
+    return { html: html, pharma: pharma };
+  }
+
+  // Génère le PDF de la prépa RDV (pagebreak propre → multi-pages OK)
+  V2.pharmaDownloadPdf = function (pid) {
+    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+    var built = buildPrepaHtml(pid);
+    if (!built) { V2.toast('Pharmacie introuvable', 'error'); return; }
+    V2.toast('Génération du PDF…');
     window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
     }).then(function () {
       var wrap = document.createElement('div');
       wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
-      wrap.innerHTML = html;
+      wrap.innerHTML = built.html;
       document.body.appendChild(wrap);
-      var fn = 'Prepa-RDV-' + (pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
-      window.html2pdf().from(wrap).set({
-        filename: fn, margin: [10, 10, 12, 10], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      var fn = 'Prepa-RDV-' + (built.pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+      window.html2pdf().from(wrap.firstChild).set({
+        filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
       }).save().then(function () {
-        document.body.removeChild(wrap); V2.toast('PDF téléchargé');
-      }).catch(function (e) { console.error(e); document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
+        if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('PDF téléchargé');
+      }).catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
     });
+  };
+
+  // Aperçu visuel (modal) de la prépa RDV avant téléchargement — WYSIWYG
+  function fitPrepaSheet() {
+    var scroll = document.getElementById('prepa-scroll'), holder = document.getElementById('prepa-holder'), sheet = document.getElementById('prepa-sheet');
+    if (!scroll || !holder || !sheet) return;
+    var avail = scroll.clientWidth - 48; if (avail <= 0) return;
+    var scale = Math.min(1, avail / 794);
+    sheet.style.transform = 'scale(' + scale + ')';
+    var h = sheet.firstChild ? sheet.firstChild.offsetHeight : sheet.offsetHeight;
+    holder.style.width = (794 * scale) + 'px'; holder.style.height = (h * scale) + 'px';
+  }
+  V2.pharmaPrepaClose = function () { var bd = document.getElementById('prepa-modal'); if (bd) bd.classList.remove('open'); };
+  V2.pharmaPrepaPreview = function (pid) {
+    var built = buildPrepaHtml(pid);
+    if (!built) { V2.toast('Pharmacie introuvable', 'error'); return; }
+    var bd = document.getElementById('prepa-modal');
+    if (!bd) {
+      bd = document.createElement('div');
+      bd.id = 'prepa-modal'; bd.className = 'prepa-modal';
+      bd.innerHTML =
+        '<div class="prepa-dialog" onclick="event.stopPropagation()">' +
+          '<div class="prepa-top">' +
+            '<div class="prepa-tt">' + ICO('fiche', 17, 2) + ' Aperçu · Préparation rendez-vous</div>' +
+            '<button class="v2-btn v2-btn-primary" id="prepa-dl">' + ICO('download', 16) + ' Télécharger le PDF</button>' +
+            '<button class="prepa-x" onclick="V2.pharmaPrepaClose()" title="Fermer">' + ICO('close', 18, 2) + '</button>' +
+          '</div>' +
+          '<div class="prepa-scroll" id="prepa-scroll"><div class="prepa-holder" id="prepa-holder"><div class="prepa-sheet" id="prepa-sheet"></div></div></div>' +
+        '</div>';
+      bd.onclick = function () { V2.pharmaPrepaClose(); };
+      document.body.appendChild(bd);
+    }
+    bd.querySelector('#prepa-sheet').innerHTML = built.html;
+    bd.querySelector('#prepa-dl').onclick = function () { V2.pharmaDownloadPdf(pid); };
+    bd.classList.add('open');
+    requestAnimationFrame(function () { requestAnimationFrame(fitPrepaSheet); });
+    if (!V2._prepaResize) { window.addEventListener('resize', fitPrepaSheet); V2._prepaResize = true; }
   };
 
   // ── Enregistrement dans le registry ────────────────────────────
@@ -934,6 +979,20 @@
       '.ph-top-name{flex:1;min-width:0;font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.ph-top-val{font-size:12px;font-weight:700;color:var(--ip-ink-2);flex-shrink:0}',
       '.ph-top-q{color:var(--muted);font-weight:500}',
+      // ── Modal aperçu prépa RDV ──
+      '.prepa-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
+      '.prepa-modal.open{opacity:1;pointer-events:auto}',
+      '.prepa-dialog{width:min(900px,96vw);max-height:92vh;background:var(--card);border-radius:20px;box-shadow:var(--sh-pop);display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:transform .24s var(--ease)}',
+      '.prepa-modal.open .prepa-dialog{transform:scale(1)}',
+      '.prepa-top{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(251,252,254,.85)}',
+      '.prepa-tt{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.01em;flex:1}',
+      '.prepa-tt svg{color:var(--ip-blue)}',
+      '.prepa-x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.16s var(--ease)}',
+      '.prepa-x:hover{color:var(--ip-ink);transform:rotate(90deg)}',
+      '.prepa-scroll{overflow-y:auto;overflow-x:hidden;padding:24px;background:#EBEEF4;flex:1}',
+      '.prepa-holder{margin:0 auto;overflow:hidden;border-radius:8px;box-shadow:0 14px 44px rgba(16,19,28,.2)}',
+      '.prepa-sheet{width:794px;transform-origin:top left;background:#fff}',
+      '@media(max-width:560px){.prepa-top{flex-wrap:wrap}.prepa-top .v2-btn{order:3;width:100%}}',
       // Badge "opportunités" dans la liste des officines
       '.v2-row-opp{flex-shrink:0;font-size:11.5px;font-weight:700;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,transparent);border:1px solid color-mix(in srgb,var(--c-opp) 26%,transparent);border-radius:999px;padding:3px 10px;letter-spacing:-.01em}',
       '.v2-row-opp-pending{color:var(--muted-2);background:var(--card-2);border-color:var(--line);font-weight:600}',
