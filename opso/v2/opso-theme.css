@@ -1,0 +1,9 @@
+/* Override thème OPSO Santé (vert) par-dessus crm/v2/v2.css.
+   On bascule la couleur primaire bleue IP vers le vert OPSO. */
+:root{
+  --ip-blue:#11a63c; --ip-blue-d:#0d8530;
+  --halo:#E6F7EC;
+  --c-fiche:#11a63c;
+}
+/* halo de fond verdâtre */
+.v2-halo{background:radial-gradient(60% 50% at 50% 0%, #E6F7EC 0%, transparent 70%) !important;}

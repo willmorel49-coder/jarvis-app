@@ -49,7 +49,7 @@
       '<div class="v2-top">' +
         (back ||
          '<a class="v2-brand" onclick="V2.go(\'home\')"><span class="v2-logo">' + ICO('logo', 22) + '</span>' +
-         '<span><span class="v2-brand-t">Intégral Pharma</span><br><span class="v2-brand-s">Espace commercial</span></span></a>') +
+         '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span></a>') +
         '<div class="v2-top-search" onclick="V2.openCmdk()">' + ICO('search', 15, 2) + 'Rechercher<kbd>⌘K</kbd></div>' +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
@@ -248,7 +248,7 @@
     var root = $app();
     root.innerHTML = '<div class="v2-login"><div class="v2-login-card">' +
       '<div class="v2-login-logo">' + ICO('logo', 30) + '</div>' +
-      '<h1>Intégral Pharma</h1><p>Espace commercial · CRM</p>' +
+      '<h1>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</h1><p>' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial · CRM') + '</p>' +
       '<input class="v2-field" id="v2-email" type="email" placeholder="Email" autocomplete="username">' +
       '<input class="v2-field" id="v2-pass" type="password" placeholder="Mot de passe" autocomplete="current-password">' +
       '<button class="v2-btn v2-btn-primary" id="v2-login-btn">Se connecter</button>' +

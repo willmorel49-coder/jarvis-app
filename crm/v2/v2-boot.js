@@ -55,7 +55,8 @@
   // périmètre aux 129 officines du listing officiel (par CODE CIP) et on
   // marque celles présentes dans les données (inDb = "commande déjà").
   V2.applyOpsoPerimeter = function () {
-    var listing = window.OPSO_LISTING_2026;
+    var listing = (typeof OPSO_LISTING_2026 !== 'undefined' && OPSO_LISTING_2026) ? OPSO_LISTING_2026
+      : (typeof window !== 'undefined' && window.OPSO_LISTING_2026) ? window.OPSO_LISTING_2026 : null;
     if (!listing || !listing.length) return;
     var norm = function (c) { return String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, ''); };
     var byCip = {}, byName = {};
@@ -95,6 +96,7 @@
                  qte: s.qte || 0, puBrut: s.puBrut || 0, puNet: s.puNet || 0, mntNetHt: s.mntNetHt || 0 };
       });
       V2.imports = [];
+      V2.applyOpsoPerimeter();
       V2.ready = true;
       return;
     }
@@ -121,6 +123,7 @@
       var allowed = new Set(V2.user.pharmacyIds.map(String));
       V2.sales = V2.sales.filter(function (s) { return allowed.has(String(s.pharmacyId)); });
     }
+    V2.applyOpsoPerimeter();
     V2.ready = true;
   };
 
@@ -151,7 +154,7 @@
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     var V = '?v=20260610v2a';
     var promises = keys.map(function (k) {
-      var src = '../' + DATA_FILES[k];
+      var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();
       if (pending[src]) return pending[src];
       var p = new Promise(function (resolve) {
