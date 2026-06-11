@@ -50,8 +50,25 @@
     location.reload();
   };
 
-  // ── DONNÉES Supabase (pharmacies + ventes) ────
+  // ── DONNÉES : WML (source de vérité) sinon Supabase ────
   V2.loadData = async function () {
+    // Source de vérité = fichiers WML (officines + ventes, 5 mois) générés
+    // depuis WML_pharmacies + WML_01..05. Chargés en statique avant le boot.
+    if (window.WML_OFFICINES && window.WML_SALES) {
+      V2.pharmacies = window.WML_OFFICINES.map(function (p) {
+        return { id: String(p.id), name: p.name, code: p.code, color: p.color,
+                 ville: p.ville, cp: p.cp, tel: p.tel, groupement: p.groupement, potentiel: p.potentiel };
+      });
+      V2.sales = window.WML_SALES.map(function (s) {
+        return { id: null, importId: null, pharmacyId: String(s.pharmacyId), month: s.month, year: s.year,
+                 artDesignation: s.artDesignation, artCode: s.artCode, artFamille: s.artFamille || null,
+                 qte: s.qte || 0, puBrut: s.puBrut || 0, puNet: s.puNet || 0, mntNetHt: s.mntNetHt || 0 };
+      });
+      V2.imports = [];
+      V2.ready = true;
+      return;
+    }
+
     var c = getSb(); if (!c) return;
     var res = await Promise.all([
       c.from('pharmacies').select('*').order('name'),
