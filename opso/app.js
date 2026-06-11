@@ -207,9 +207,20 @@ async function load() {
     console.warn('[OPSO] Supabase load failed, continuing with static data:', e);
   }
   const allPharmas = (pharmacies || []).map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
-  if (typeof OPSO_ADHERENTS !== 'undefined' && OPSO_ADHERENTS.length) {
-    const opsoNames = new Set(OPSO_ADHERENTS.map(a => a.nom.trim().toUpperCase()));
-    state.pharmacies = allPharmas.filter(p => opsoNames.has((p.name || '').trim().toUpperCase()));
+  // Périmètre OPSO Santé = listing officiel des adhérents (OPSO_LISTING_2026, 129 officines).
+  // Filtrage prioritaire par CODE CIP (clé fiable) ; repli par nom si le CIP manque.
+  const listing = (typeof OPSO_LISTING_2026 !== 'undefined' && OPSO_LISTING_2026.length)
+    ? OPSO_LISTING_2026
+    : (typeof OPSO_ADHERENTS !== 'undefined' ? OPSO_ADHERENTS : []);
+  if (listing.length) {
+    const norm = c => String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, '');
+    const opsoCIPs  = new Set(listing.map(a => norm(a.cip || a.code)).filter(Boolean));
+    const opsoNames = new Set(listing.map(a => (a.nom || a.name || '').trim().toUpperCase()).filter(Boolean));
+    state.pharmacies = allPharmas.filter(p => {
+      const cip = norm(p.code);
+      if (cip) return opsoCIPs.has(cip);                 // CIP présent -> match strict par CIP
+      return opsoNames.has((p.name || '').trim().toUpperCase()); // sinon repli nom
+    });
   } else {
     state.pharmacies = allPharmas;
   }
@@ -9418,15 +9429,29 @@ function normPhName(s) {
 }
 
 // Retourne le Set des noms normalisés des adhérents OPSO (depuis opso-adherents.js)
+function opsoListing() {
+  if (typeof OPSO_LISTING_2026 !== 'undefined' && OPSO_LISTING_2026.length) return OPSO_LISTING_2026;
+  if (typeof OPSO_ADHERENTS !== 'undefined' && OPSO_ADHERENTS.length) return OPSO_ADHERENTS;
+  return null;
+}
+function opsoListingCIPs() {
+  const l = opsoListing(); if (!l) return null;
+  return new Set(l.map(a => String(a.cip || a.code || '').replace(/\D/g, '').replace(/^0+/, '')).filter(Boolean));
+}
 function opsoAdherentNoms() {
-  if (typeof OPSO_ADHERENTS === 'undefined' || !OPSO_ADHERENTS.length) return null;
-  return new Set(OPSO_ADHERENTS.map(a => normPhName(a.nom)));
+  const l = opsoListing(); if (!l) return null;
+  return new Set(l.map(a => normPhName(a.nom || a.name)));
 }
 
 function filterToOpsoScope() {
-  const allowed = opsoAdherentNoms();
-  if (!allowed) return;
-  state.pharmacies = state.pharmacies.filter(p => allowed.has(normPhName(p.name)));
+  const cips = opsoListingCIPs(); const allowed = opsoAdherentNoms();
+  if (!cips && !allowed) return;
+  const norm = c => String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, '');
+  state.pharmacies = state.pharmacies.filter(p => {
+    const cip = norm(p.code);
+    if (cip && cips) return cips.has(cip);
+    return allowed ? allowed.has(normPhName(p.name)) : false;
+  });
   const ids = new Set(state.pharmacies.map(p => p.id));
   state.imports = state.imports.filter(i => ids.has(i.pharmacyId));
   state.sales   = state.sales.filter(s => ids.has(s.pharmacyId));

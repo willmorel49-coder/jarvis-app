@@ -252,21 +252,23 @@
   V2.offMktTitle = function (v) { mktTitle = v; };
   V2.offMktClear = function () { mktSel.clear(); V2.render(); };
 
+  // proxy CORS (weserv) pour que les photos s'affichent dans le PDF/canvas
   function proxImg(u) {
     if (!u) return '';
-    return 'https://images.weserv.nl/?url=' + encodeURIComponent(u.replace(/^https?:\/\//, '')) + '&w=380&output=jpg';
+    return 'https://images.weserv.nl/?url=ssl:' + encodeURIComponent(u.replace(/^https?:\/\//, '')) + '&w=420&output=jpg';
   }
-
-  V2.offMktGenerate = function () {
-    if (!mktSel.size) { V2.toast('Sélectionne au moins un produit', 'warn'); return; }
-    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+  function mktSelection() {
     var sel = [];
-    mktSel.forEach(function (id) { var it = itemsById.get(String(id)); if (it) sel.push(it); });
-    if (!sel.length) { V2.toast('Sélection introuvable', 'error'); return; }
-    var title = (mktTitle && mktTitle.trim()) ? mktTitle.trim() : 'Notre sélection bien-être';
-    var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    V2.toast('Génération de la fiche…');
+    mktSel.forEach(function (id) { var it = itemsById && itemsById.get(String(id)); if (it) sel.push(it); });
+    return sel;
+  }
+  function mktTitleVal() { return (mktTitle && mktTitle.trim()) ? mktTitle.trim() : 'Notre sélection bien-être'; }
 
+  // HTML du document (partagé aperçu + PDF) — feuille 794px
+  function buildMarketingHtml() {
+    var sel = mktSelection();
+    var title = mktTitleVal();
+    var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
     var cards = sel.map(function (it) {
       var img = proxImg(it.img);
       var price = it.price > 0 ? V2.fmtEur(it.price) : '';
@@ -284,9 +286,7 @@
         '</div>' +
       '</div>';
     }).join('');
-
-    var html =
-      '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:#fff;color:#10131C">' +
+    return '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:#fff;color:#10131C">' +
         '<div style="background:linear-gradient(120deg,#6D4FC4 0%,#0050E6 45%,#00B5D8 100%);border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden">' +
           '<div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' +
           '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;opacity:.9">Intégral Pharma · Parapharmacie</div>' +
@@ -299,7 +299,77 @@
           '<span>Prix indicatifs TTC · ' + esc(dateStr) + '</span>' +
         '</div>' +
       '</div>';
+  }
 
+  // attend que toutes les <img> du noeud soient chargées (ou timeout)
+  function waitImages(node, timeout) {
+    var imgs = Array.prototype.slice.call(node.querySelectorAll('img'));
+    if (!imgs.length) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var left = imgs.length, done = false;
+      function fin() { if (!done) { done = true; resolve(); } }
+      var to = setTimeout(fin, timeout || 9000);
+      function tick() { if (--left <= 0) { clearTimeout(to); fin(); } }
+      imgs.forEach(function (im) {
+        if (im.complete && im.naturalWidth > 0) { tick(); return; }
+        im.addEventListener('load', tick);
+        im.addEventListener('error', tick);
+      });
+    });
+  }
+
+  // ── Aperçu (modal) avant génération ──
+  function fitMktSheet() {
+    var scroll = document.getElementById('off-mkt-scroll');
+    var holder = document.getElementById('off-mkt-holder');
+    var sheet = document.getElementById('off-mkt-sheet');
+    if (!scroll || !holder || !sheet) return;
+    var avail = scroll.clientWidth - 48;
+    if (avail <= 0) return;
+    var scale = Math.min(1, avail / 794);
+    sheet.style.transform = 'scale(' + scale + ')';
+    var h = sheet.firstChild ? sheet.firstChild.offsetHeight : sheet.offsetHeight;
+    holder.style.width = (794 * scale) + 'px';
+    holder.style.height = (h * scale) + 'px';
+  }
+  function ensureMktModal() {
+    var bd = document.getElementById('off-mkt-modal');
+    if (bd) return bd;
+    bd = document.createElement('div');
+    bd.id = 'off-mkt-modal'; bd.className = 'off-mkt-modal';
+    bd.innerHTML =
+      '<div class="off-mkt-dialog" onclick="event.stopPropagation()">' +
+        '<div class="off-mkt-top">' +
+          '<div class="t">' + ICO('spark', 17, 2) + ' Aperçu de la fiche marketing</div>' +
+          '<button class="v2-btn v2-btn-primary" onclick="V2.offMktGenerate()">' + ICO('download', 16, 2) + ' Télécharger le PDF</button>' +
+          '<button class="off-mkt-x" onclick="V2.offMktClosePreview()" title="Fermer">' + ICO('close', 18, 2) + '</button>' +
+        '</div>' +
+        '<div class="off-mkt-scroll" id="off-mkt-scroll"><div class="off-mkt-holder" id="off-mkt-holder"><div class="off-mkt-sheet" id="off-mkt-sheet"></div></div></div>' +
+      '</div>';
+    bd.onclick = function () { V2.offMktClosePreview(); };
+    document.body.appendChild(bd);
+    return bd;
+  }
+  V2.offMktPreview = function () {
+    if (!mktSel.size) { V2.toast('Sélectionne au moins un produit', 'warn'); return; }
+    var bd = ensureMktModal();
+    var sheet = bd.querySelector('#off-mkt-sheet');
+    sheet.innerHTML = buildMarketingHtml();
+    bd.classList.add('open');
+    requestAnimationFrame(function () { requestAnimationFrame(fitMktSheet); });
+    waitImages(sheet, 9000).then(fitMktSheet);
+    if (!V2._mktResize) { window.addEventListener('resize', fitMktSheet); V2._mktResize = true; }
+  };
+  V2.offMktClosePreview = function () {
+    var bd = document.getElementById('off-mkt-modal'); if (bd) bd.classList.remove('open');
+  };
+
+  V2.offMktGenerate = function () {
+    if (!mktSel.size) { V2.toast('Sélectionne au moins un produit', 'warn'); return; }
+    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+    var title = mktTitleVal();
+    V2.toast('Génération du PDF…');
+    var html = buildMarketingHtml();
     window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
     }).then(function () {
@@ -307,14 +377,18 @@
       wrap.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;background:#fff';
       wrap.innerHTML = html;
       document.body.appendChild(wrap);
-      var fn = 'Fiche-marketing-' + (title.replace(/[^A-Za-z0-9-]/g, '_')).slice(0, 40) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
-      window.html2pdf().from(wrap.firstChild).set({
-        filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).save().then(function () {
-        document.body.removeChild(wrap); V2.toast('✓ Fiche marketing téléchargée');
+      // IMPORTANT : attendre le chargement des photos (proxy CORS) avant le rendu
+      return waitImages(wrap, 12000).then(function () {
+        var fn = 'Fiche-marketing-' + (title.replace(/[^A-Za-z0-9-]/g, '_')).slice(0, 40) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+        return window.html2pdf().from(wrap.firstChild).set({
+          filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        }).save().then(function () {
+          if (wrap.parentNode) document.body.removeChild(wrap);
+          V2.toast('✓ Fiche marketing téléchargée');
+        });
       }).catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
     });
   };
@@ -383,6 +457,20 @@
       '.off-mktbar .clr{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;display:flex;padding:4px}',
       '.off-mktbar .clr:hover{color:#fff}',
       '@media(max-width:680px){.off-mktbar .ttl{width:130px}}',
+      // modal aperçu fiche marketing
+      '.off-mkt-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
+      '.off-mkt-modal.open{opacity:1;pointer-events:auto}',
+      '.off-mkt-dialog{width:min(900px,96vw);max-height:92vh;background:var(--card);border-radius:20px;box-shadow:var(--sh-pop);display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:transform .24s var(--ease)}',
+      '.off-mkt-modal.open .off-mkt-dialog{transform:scale(1)}',
+      '.off-mkt-top{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(251,252,254,.8);backdrop-filter:blur(8px)}',
+      '.off-mkt-top .t{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.01em;flex:1}',
+      '.off-mkt-top .t svg{color:var(--ip-blue)}',
+      '.off-mkt-x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.16s var(--ease)}',
+      '.off-mkt-x:hover{color:var(--ip-ink);transform:rotate(90deg)}',
+      '.off-mkt-scroll{overflow-y:auto;overflow-x:hidden;padding:24px;background:#EBEEF4;flex:1}',
+      '.off-mkt-holder{margin:0 auto;overflow:hidden;border-radius:8px;box-shadow:0 14px 44px rgba(16,19,28,.2)}',
+      '.off-mkt-sheet{width:794px;transform-origin:top left;background:#fff}',
+      '@media(max-width:560px){.off-mkt-top{flex-wrap:wrap}.off-mkt-top .v2-btn{order:3;width:100%}}',
       '.off-card-body{padding:11px 13px 14px;display:flex;flex-direction:column;gap:3px;flex:1}',
       '.off-card-brand{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.off-card-name{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--ip-ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}',
@@ -507,7 +595,7 @@
           '<span class="ic">' + ICO('spark', 18, 2) + '</span>' +
           '<span class="n" id="off-mkt-n">' + mktSel.size + ' produit' + (mktSel.size > 1 ? 's' : '') + '</span>' +
           '<input class="ttl" id="off-mkt-title" placeholder="Titre de la fiche marketing…" value="' + esc(mktTitle) + '" oninput="V2.offMktTitle(this.value)">' +
-          '<button class="v2-btn v2-btn-primary" onclick="V2.offMktGenerate()">' + ICO('download', 16, 2) + ' Générer la fiche</button>' +
+          '<button class="v2-btn v2-btn-primary" onclick="V2.offMktPreview()">' + ICO('grid', 16, 2) + ' Aperçu de la fiche</button>' +
           '<button class="clr" onclick="V2.offMktClear()" title="Vider">' + ICO('close', 16, 2) + '</button>' +
         '</div>';
     }
