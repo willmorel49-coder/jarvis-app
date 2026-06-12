@@ -445,17 +445,26 @@
   }
 
   // ── Chargement du fichier best-sellers (lazy, dans crm/v2/) ──
-  var bestLoading = false;
+  var bestLoading = false, bestFail = false, offTried = false;
   function ensureBest(cb) {
     if (window.OFFILOG_BEST) { cb(); return; }
     if (bestLoading) return;
     bestLoading = true;
-    var sc = document.createElement('script');
-    sc.src = MOD_BASE + 'offilog-bestsellers-data.js?v=20260610v2m';
-    sc.onload = function () { bestLoading = false; cb(); };
-    sc.onerror = function () { bestLoading = false; cb(); };
-    document.head.appendChild(sc);
+    function inject(src, onfail) {
+      var sc = document.createElement('script');
+      sc.src = src;
+      sc.onload = function () { bestLoading = false; cb(); };
+      sc.onerror = onfail;
+      document.head.appendChild(sc);
+    }
+    // 1) chemin du module (MOD_BASE) → 2) repli chemin relatif → 3) échec
+    inject(MOD_BASE + 'offilog-bestsellers-data.js?v=20260610v2m', function () {
+      inject('offilog-bestsellers-data.js?v=20260610v2m', function () {
+        bestLoading = false; bestFail = true; cb();
+      });
+    });
   }
+  V2.offRetry = function () { bestFail = false; offTried = false; V2.render(); };
 
   // ── CSS ───────────────────────────────────────
   function injectCss() {
@@ -566,18 +575,26 @@
       injectCss();
       if (param != null && param !== '' && String(param) !== String(S.sel)) S.sel = param;
 
-      // Données : meilleures ventes (obligatoire) + OFFILOG (veille, optionnel)
+      // Données : meilleures ventes (requis) + OFFILOG (veille, optionnel, en fond)
       if (!window.OFFILOG_BEST) {
+        if (bestFail) {
+          root.innerHTML = V2.topbar({ back: true }) +
+            '<div class="v2-wrap"><div class="v2-empty">' +
+              '<div class="v2-empty-ico">' + ICO('alert', 64, 1.4) + '</div>' +
+              '<div class="v2-empty-t">Chargement impossible</div>' +
+              '<div class="v2-empty-d">Les meilleures ventes Offilog n\'ont pas pu être chargées (connexion ?).</div>' +
+              '<button class="v2-btn v2-btn-primary" onclick="V2.offRetry()">' + ICO('back', 16, 2) + ' Réessayer</button>' +
+            '</div></div>';
+          return;
+        }
         root.innerHTML = V2.topbar({ back: true }) +
           '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des meilleures ventes Offilog…</div></div>';
-        ensureBest(function () {
-          if (!window.OFFILOG) { V2.loadFiles(['offilog']).then(function () { idxBuilt = false; V2.render(); }); }
-          else { idxBuilt = false; V2.render(); }
-        });
+        ensureBest(function () { idxBuilt = false; V2.render(); }); // on rend dès que les ventes sont là
         return;
       }
-      if (!window.OFFILOG) {
-        // best dispo, on charge la veille en tâche de fond puis on rerender
+      // Veille concurrents : chargée UNE SEULE FOIS en tâche de fond (n'empêche pas l'affichage)
+      if (!window.OFFILOG && !offTried) {
+        offTried = true;
         V2.loadFiles(['offilog']).then(function () { idxBuilt = false; V2.render(); });
       }
       buildIndex();
