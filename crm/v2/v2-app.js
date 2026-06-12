@@ -138,6 +138,10 @@
         // App JARVIS : espace Marketing de Pauline & Will (supports + sélections à pousser)
         P.splice(2, 0, { k: 'marketing', cls: 'p6', accent: '#E0556E', ico: 'spark', tag: 'Pauline & Will', t: 'Marketing', d: 'Fabriquez vos supports (flyers produits avec photos et prix) et vos sélections à pousser aux pharmacies. À deux, au même endroit.', go: 'Ouvrir le marketing' });
       }
+      // Pilier Groupements (carte de prospection) si présent
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) {
+        P.push({ k: 'groupements', cls: 'p7', accent: '#0034A0', ico: 'grid', tag: 'Carte', t: 'Groupements', d: 'La carte de prospection des groupements et pharmacies : qui est où, quel groupement, quels décideurs. Pour préparer ta tournée.', go: 'Ouvrir la carte' });
+      }
       // Mode OPSO : le suivi groupement passe en tête (1ʳᵉ tuile de l'accueil)
       if (window.V2_BRAND && window.V2_BRAND.opso) {
         var piIdx = P.map(function (x) { return x.k; }).indexOf('pilotage');
@@ -184,6 +188,7 @@
     var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['fiches', 'Fiches commerciales', 'fiche'], ['catalogue', 'Catalogue grossiste', 'cat'], ['offilog', 'Offilog & concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) PAGES.push(['groupements', 'Groupements (carte)', 'grid']);
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
     // Pharmacies
     (V2.pharmacies || []).forEach(function (p) {
