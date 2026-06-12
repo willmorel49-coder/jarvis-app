@@ -26,6 +26,20 @@
   ];
   function statusOf(k) { for (var i = 0; i < STATUSES.length; i++) if (STATUSES[i].k === k) return STATUSES[i]; return STATUSES[0]; }
 
+  // ── Charte / personnalisation ──
+  var ACCENTS = ['#0050E6', '#0034A0', '#E0556E', '#6D4FC4', '#1E9E6A', '#C7791A', '#00B5D8', '#10131C'];
+  var BGS = ['#FFFFFF', '#FFFDF7', '#F2F7FF', '#F4F6FB', '#FBF5F7', '#F3FAF6'];
+  function defaultTheme(type) {
+    return { accent: type === 'selection' ? '#1E9E6A' : '#0050E6', bg: '#FFFFFF', showPrice: true, showRemise: true };
+  }
+  function darken(hex, f) {
+    hex = String(hex || '#0050E6').replace('#', '');
+    if (hex.length === 3) hex = hex.replace(/./g, '$&$&');
+    var n = parseInt(hex, 16); if (isNaN(n)) return '#0034A0';
+    var r = Math.round(((n >> 16) & 255) * f), g = Math.round(((n >> 8) & 255) * f), b = Math.round((n & 255) * f);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
   var items = null;          // null = pas encore chargé
   var backend = 'local';     // 'supabase' | 'local'
   var editing = null;
@@ -38,13 +52,13 @@
   function localAll() { try { var a = JSON.parse(localStorage.getItem(LS) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
   function localWrite(a) { try { localStorage.setItem(LS, JSON.stringify(a)); } catch (e) {} }
   function fromRow(r) {
-    return { id: r.id, type: r.type || 'support', title: r.title || '', accroche: r.accroche || '',
-             status: r.status || 'brouillon', products: r.products || [], owner: r.owner || '',
+    return { id: r.id, type: r.type || 'support', title: r.title || '', accroche: r.accroche || '', footer: r.footer || '',
+             status: r.status || 'brouillon', products: r.products || [], theme: r.theme || null, owner: r.owner || '',
              updated: r.updated_at ? new Date(r.updated_at).getTime() : Date.now() };
   }
   function toRow(it) {
-    return { id: it.id, type: it.type, title: it.title, accroche: it.accroche, status: it.status,
-             products: it.products, owner: it.owner || (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
+    return { id: it.id, type: it.type, title: it.title, accroche: it.accroche, footer: it.footer || '', status: it.status,
+             products: it.products, theme: it.theme || null, owner: it.owner || (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
   function loadItems() {
     var c = sb();
@@ -184,14 +198,15 @@
     if (id === 'new-support' || id === 'new-selection') {
       var ty = id === 'new-selection' ? 'selection' : 'support';
       if (!editing || editing._new !== ty) {
-        editing = { id: newId(), type: ty, title: '', accroche: '', status: 'brouillon', products: [], owner: (V2.user && V2.user.email) || '', _new: ty };
+        editing = { id: newId(), type: ty, title: '', accroche: '', footer: '', status: 'brouillon', products: [], theme: defaultTheme(ty), owner: (V2.user && V2.user.email) || '', _new: ty };
       }
     } else {
       var ex = (items || []).filter(function (x) { return x.id === id; })[0];
       if (!ex) { V2.toast('Support introuvable', 'error'); V2.go('marketing'); return; }
       if (!editing || editing.id !== ex.id) {
-        editing = { id: ex.id, type: ex.type, title: ex.title, accroche: ex.accroche, status: ex.status,
-                    products: (ex.products || []).map(function (p) { return Object.assign({}, p); }), owner: ex.owner };
+        editing = { id: ex.id, type: ex.type, title: ex.title, accroche: ex.accroche, footer: ex.footer || '', status: ex.status,
+                    products: (ex.products || []).map(function (p) { return Object.assign({}, p); }),
+                    theme: Object.assign(defaultTheme(ex.type), ex.theme || {}), owner: ex.owner };
       }
     }
     var t = TYPES[editing.type] || TYPES.support;
@@ -206,6 +221,7 @@
         '<div class="mkt-edit-head">' + badge(editing.type) +
           '<input class="mkt-titlefield" id="mkt-title" placeholder="Titre du ' + esc(t.label.toLowerCase()) + '…" value="' + esc(editing.title) + '" oninput="V2.mkt.setTitle(this.value)"></div>' +
         '<textarea class="mkt-accroche" id="mkt-accroche" rows="2" placeholder="Accroche / message (ex : Notre sélection solaires de l\'été)…" oninput="V2.mkt.setAccroche(this.value)">' + esc(editing.accroche || '') + '</textarea>' +
+        personalizePanel() +
         '<div class="mkt-statusrow"><span class="mkt-statusl">Statut</span>' + statusChips + '</div>' +
         '<div class="v2-card">' +
           '<div class="v2-card-head"><div class="v2-card-t">' + ICO('cart', 17, 1.8) + 'Produits</div>' +
@@ -316,9 +332,11 @@
     var t = TYPES[it.type] || TYPES.support;
     var title = (it.title && it.title.trim()) ? it.title.trim() : t.plural;
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    var grad = it.type === 'selection'
-      ? 'linear-gradient(120deg,#1E9E6A 0%,#0050E6 60%,#00B5D8 100%)'
-      : 'linear-gradient(120deg,#E0556E 0%,#6D4FC4 55%,#0050E6 100%)';
+    var th = it.theme || defaultTheme(it.type);
+    var acc = th.accent || '#0050E6';
+    var grad = 'linear-gradient(120deg,' + acc + ' 0%,' + darken(acc, 0.6) + ' 100%)';
+    var bg = th.bg || '#FFFFFF';
+    var showPrice = th.showPrice !== false, showRemise = th.showRemise !== false;
     var anyImg = (it.products || []).some(function (p) { return p.img; });
     var rows = (it.products || []).map(function (p, i) {
       var img = prodImg(p, forPdf);
@@ -333,22 +351,20 @@
           (p.brand ? ' <span style="color:#9AA1B2;font-weight:500">· ' + esc(p.brand) + '</span>' : '') +
           (p.froid ? ' <span style="font-size:7.5px;color:#00B5D8;border:1px solid #b8edf7;border-radius:4px;padding:0 3px;vertical-align:middle">FROID</span>' : '') + '</td>' +
         '<td style="padding:7px 10px;font-family:monospace;font-size:10px;color:#737A8C">' + ref + '</td>' +
-        '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:800;color:#0050E6">' + (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</td>' +
-        '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;font-weight:700;color:#1E9E6A">' + rem + '</td>' +
+        (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:800;color:' + acc + '">' + (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</td>' : '') +
+        (showRemise ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;font-weight:700;color:#1E9E6A">' + rem + '</td>' : '') +
       '</tr>';
     }).join('');
+    function thh(lbl, al) { return '<th style="padding:6px 10px;text-align:' + al + ';font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">' + lbl + '</th>'; }
     var body = rows
-      ? '<table style="width:100%;border-collapse:collapse">' +
+      ? '<table style="width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden">' +
           '<thead><tr style="background:#F7F9FC;border-bottom:1.5px solid #E2E7F0">' +
-            (anyImg ? '<th></th>' : '') +
-            '<th style="padding:6px 10px;text-align:center;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">#</th>' +
-            '<th style="padding:6px 10px;text-align:left;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">Produit</th>' +
-            '<th style="padding:6px 10px;text-align:left;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">Réf (CIP/EAN)</th>' +
-            '<th style="padding:6px 10px;text-align:right;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">Prix IP</th>' +
-            '<th style="padding:6px 10px;text-align:right;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">Remise</th>' +
+            (anyImg ? '<th></th>' : '') + thh('#', 'center') + thh('Produit', 'left') + thh('Réf (CIP/EAN)', 'left') +
+            (showPrice ? thh('Prix IP', 'right') : '') + (showRemise ? thh('Remise', 'right') : '') +
           '</tr></thead><tbody>' + rows + '</tbody></table>'
       : '<div style="text-align:center;color:#9AA1B2;font-size:13px;padding:40px">Aucun produit.</div>';
-    return '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:#fff;color:#10131C">' +
+    var footer = (it.footer && it.footer.trim()) ? esc(it.footer.trim()) : ('Prix nets HT indicatifs · ' + esc(dateStr));
+    return '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:' + bg + ';color:#10131C">' +
         '<div style="background:' + grad + ';border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden">' +
           '<div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' +
           '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;opacity:.9">Intégral Pharma · ' + esc(t.label) + '</div>' +
@@ -356,10 +372,42 @@
           (it.accroche && it.accroche.trim() ? '<div style="font-size:13.5px;opacity:.95;margin-top:9px;max-width:560px">' + esc(it.accroche.trim()) + '</div>' : '') +
           '<div style="font-size:12px;opacity:.85;margin-top:9px">' + (it.products || []).length + ' produit' + ((it.products || []).length > 1 ? 's' : '') + ' · ' + esc(dateStr) + '</div>' +
         '</div>' + body +
-        '<div style="margin-top:26px;padding-top:14px;border-top:1px solid #ECEFF5;display:flex;justify-content:space-between;font-size:9px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.05em">' +
-          '<span>Intégral Pharma · ' + esc(t.plural) + '</span><span>Prix nets HT indicatifs · ' + esc(dateStr) + '</span></div>' +
+        '<div style="margin-top:26px;padding-top:14px;border-top:1px solid rgba(16,19,28,.1);display:flex;justify-content:space-between;gap:14px;font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em">' +
+          '<span>Intégral Pharma · ' + esc(t.plural) + '</span><span style="text-align:right">' + footer + '</span></div>' +
       '</div>';
   }
+  // ── Panneau de personnalisation (charte) ──
+  function personalizePanel() {
+    var th = editing.theme || defaultTheme(editing.type);
+    var accSw = ACCENTS.map(function (c) {
+      return '<button class="mkt-sw mkt-sw-acc' + (th.accent === c ? ' on' : '') + '" data-c="' + c + '" style="background:' + c + '" onclick="V2.mkt.setAccent(\'' + c + '\')"></button>';
+    }).join('');
+    var bgSw = BGS.map(function (c) {
+      return '<button class="mkt-sw mkt-sw-bg' + (th.bg === c ? ' on' : '') + '" data-c="' + c + '" style="background:' + c + '" onclick="V2.mkt.setBg(\'' + c + '\')"></button>';
+    }).join('');
+    return '<div class="v2-card mkt-perso">' +
+      '<div class="v2-card-head"><div class="v2-card-t">' + ICO('spark', 17, 1.8) + 'Personnalisation</div>' +
+        '<span class="v2-card-link" style="cursor:default;color:var(--muted)">charte graphique</span></div>' +
+      '<div class="mkt-perso-body">' +
+        '<div class="mkt-perso-row"><span class="mkt-perso-l">Couleur</span><div class="mkt-sws">' + accSw +
+          '<label class="mkt-sw mkt-sw-pick" title="Couleur libre"><input type="color" value="' + esc(th.accent) + '" oninput="V2.mkt.setAccent(this.value)"></label></div></div>' +
+        '<div class="mkt-perso-row"><span class="mkt-perso-l">Fond</span><div class="mkt-sws">' + bgSw +
+          '<label class="mkt-sw mkt-sw-pick" title="Fond libre"><input type="color" value="' + esc(th.bg) + '" oninput="V2.mkt.setBg(this.value)"></label></div></div>' +
+        '<div class="mkt-perso-row"><span class="mkt-perso-l">Affichage</span><div class="mkt-toggles">' +
+          '<button class="mkt-tg' + (th.showPrice !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showPrice\',this)">Prix</button>' +
+          '<button class="mkt-tg' + (th.showRemise !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showRemise\',this)">Remises</button>' +
+        '</div></div>' +
+        '<div class="mkt-perso-row"><span class="mkt-perso-l">Mentions</span>' +
+          '<input class="mkt-foot" id="mkt-footer" placeholder="ex : Offre valable jusqu\'au 31/07 · contact@integralpharma.fr" value="' + esc(editing.footer || '') + '" oninput="V2.mkt.setFooter(this.value)"></div>' +
+      '</div></div>';
+  }
+  function refreshPreviewIfOpen() {
+    var bd = document.getElementById('mkt-modal');
+    if (bd && bd.classList.contains('open')) {
+      var sh = bd.querySelector('#mkt-msheet'); if (sh) { sh.innerHTML = buildFlyerHtml(false); fitSheet(); }
+    }
+  }
+
   function previewMarkup() {
     return '<div id="mkt-modal" class="mkt-modal">' +
       '<div class="mkt-dialog" onclick="event.stopPropagation()">' +
@@ -398,6 +446,23 @@
     open: function (id) { editing = null; V2.go('marketing', id); },
     setTitle: function (v) { if (editing) editing.title = v; },
     setAccroche: function (v) { if (editing) editing.accroche = v; },
+    setFooter: function (v) { if (editing) { editing.footer = v; refreshPreviewIfOpen(); } },
+    setAccent: function (c) {
+      if (!editing) return; editing.theme = editing.theme || defaultTheme(editing.type); editing.theme.accent = c;
+      Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-acc'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === c); });
+      refreshPreviewIfOpen();
+    },
+    setBg: function (c) {
+      if (!editing) return; editing.theme = editing.theme || defaultTheme(editing.type); editing.theme.bg = c;
+      Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-bg'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === c); });
+      refreshPreviewIfOpen();
+    },
+    toggle: function (key, btn) {
+      if (!editing) return; editing.theme = editing.theme || defaultTheme(editing.type);
+      editing.theme[key] = editing.theme[key] === false ? true : false;
+      if (btn) btn.classList.toggle('on', editing.theme[key] !== false);
+      refreshPreviewIfOpen();
+    },
     setStatus: function (k, btn) {
       if (!editing) return; editing.status = k;
       Array.prototype.forEach.call(document.querySelectorAll('.mkt-stbtn'), function (b) { b.classList.remove('on'); });
@@ -429,7 +494,8 @@
     save: function () {
       if (!editing) return;
       if (!editing.title || !editing.title.trim()) { editing.title = (TYPES[editing.type] || TYPES.support).plural + ' du ' + new Date().toLocaleDateString('fr-FR'); }
-      var clean = { id: editing.id, type: editing.type, title: editing.title, accroche: editing.accroche, status: editing.status,
+      var clean = { id: editing.id, type: editing.type, title: editing.title, accroche: editing.accroche, footer: editing.footer || '',
+                    status: editing.status, theme: Object.assign({}, editing.theme || defaultTheme(editing.type)),
                     products: editing.products.map(function (p) { return Object.assign({}, p); }), owner: editing.owner };
       V2.toast('Enregistrement…');
       saveItem(clean).then(function () { V2.toast('Enregistré' + (backend === 'supabase' ? ' (partagé)' : '')); var tf = document.getElementById('mkt-title'); if (tf) tf.value = editing.title; });
@@ -531,6 +597,20 @@
       '.mkt-statusl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-right:4px}',
       '.mkt-stbtn{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 13px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}',
       '.mkt-stbtn.on{border-color:var(--sc);color:#fff;background:var(--sc)}',
+      '.mkt-perso-body{padding:14px 18px;display:flex;flex-direction:column;gap:13px}',
+      '.mkt-perso-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}',
+      '.mkt-perso-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;width:82px;flex-shrink:0}',
+      '.mkt-sws{display:flex;gap:6px;flex-wrap:wrap;align-items:center}',
+      '.mkt-sw{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);cursor:pointer;padding:0;transition:.14s var(--ease)}',
+      '.mkt-sw.on{border-color:var(--ip-ink);box-shadow:0 0 0 2px #fff inset}',
+      '.mkt-sw-bg{box-shadow:inset 0 0 0 1px rgba(16,19,28,.07)}',
+      '.mkt-sw-pick{display:inline-flex;align-items:center;justify-content:center;overflow:hidden;background:conic-gradient(#f44,#fd0,#4d4,#0cf,#46f,#d4f,#f44)}',
+      '.mkt-sw-pick input{opacity:0;width:130%;height:130%;cursor:pointer;border:none;padding:0}',
+      '.mkt-toggles{display:flex;gap:8px}',
+      '.mkt-tg{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 15px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}',
+      '.mkt-tg.on{border-color:var(--c-opp);color:#fff;background:var(--c-opp)}',
+      '.mkt-foot{flex:1;min-width:200px;font-family:var(--font);font-size:13px;color:var(--ip-ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:none;background:var(--card)}',
+      '.mkt-foot:focus{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}',
       '.mkt-prow{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line-2)}',
       '.mkt-prow:last-child{border-bottom:none}',
       '.mkt-prow-img{width:42px;height:42px;border-radius:9px;background:#F0F2F7 center/cover no-repeat;border:1px solid var(--line);flex-shrink:0}',
