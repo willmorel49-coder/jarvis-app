@@ -29,6 +29,7 @@
   var CHIPS = [
     { k: 'all',         label: 'Tout',           sc: '#0050E6' },
     { k: 'alerte',      label: 'Concurrent moins cher', sc: '#6D4FC4' },
+    { k: 'pzcheaper',   label: 'Moins cher sur Pharmazon', sc: '#0034A0' },
     { k: 'sante',       label: 'Santé',          sc: '#1E9E6A' },
     { k: 'beaute-et-soins', label: 'Beauté & soins', sc: '#6D4FC4' },
     { k: 'hygiene',     label: 'Hygiène',        sc: '#00B5D8' },
@@ -63,9 +64,22 @@
     return mm;
   }
 
+  // index Pharmazon par EAN (prix d'achat sur l'autre plateforme)
+  function pzIndex() {
+    var m = new Map();
+    (window.PHARMAZON || []).forEach(function (p) {
+      if (p.ean && p.prix_final != null) {
+        var e = String(p.ean);
+        if (!m.has(e)) m.set(e, { price: numOr0(p.prix_final), cat: numOr0(p.prix_catalogue), labo: p.labo || '', name: p.name || '' });
+      }
+    });
+    return m;
+  }
+
   function buildIndex() {
     if (idxBuilt) return;
     var offByEan = offIndex();
+    var pzByEan = pzIndex();
     items = (window.OFFILOG_BEST || []).map(function (b) {
       var o = b.ean ? offByEan.get(String(b.ean)) : null;
       var achat = o ? numOr0(o.prix_offilog) : 0;
@@ -75,11 +89,16 @@
         CONC.forEach(function (c) { var v = numOr0(o[c.key]); conc[c.key] = v; if (v > 0) { hasC = true; if (mc === 0 || v < mc) mc = v; } });
       }
       var alert = achat > 0 && mc > 0 && mc < achat;
+      var price = numOr0(b.price);
+      var pz = b.ean ? pzByEan.get(String(b.ean)) : null;
+      // comparaison achat Offilog vs Pharmazon
+      var pzCheaper = !!(pz && pz.price > 0 && price > 0 && pz.price < price);
       return {
         rank: b.rank, id: b.id, name: b.name, brand: b.brand || '',
-        price: numOr0(b.price), ean: b.ean || '', img: b.img || '', cat: b.cat || '',
+        price: price, ean: b.ean || '', img: b.img || '', cat: b.cat || '',
         url: b.url || '', univers: o ? (o.univers || '') : '',
-        achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o
+        achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
+        pz: pz || null, pzCheaper: pzCheaper
       };
     });
     byEan = new Map();
@@ -91,6 +110,7 @@
   function matchChip(it, k) {
     if (k === 'all') return true;
     if (k === 'alerte') return it.alert;
+    if (k === 'pzcheaper') return it.pzCheaper;
     return it.cat === k;
   }
   function filteredBase() {
@@ -109,11 +129,12 @@
     return a;
   }
   function counts(base) {
-    var c = { all: base.length, alerte: 0 };
-    CHIPS.forEach(function (ch) { if (ch.k !== 'all' && ch.k !== 'alerte') c[ch.k] = 0; });
+    var c = { all: base.length, alerte: 0, pzcheaper: 0 };
+    CHIPS.forEach(function (ch) { if (c[ch.k] == null) c[ch.k] = 0; });
     for (var i = 0; i < base.length; i++) {
       var it = base[i];
       if (it.alert) c.alerte++;
+      if (it.pzCheaper) c.pzcheaper++;
       if (c[it.cat] != null) c[it.cat]++;
     }
     return c;
@@ -157,7 +178,8 @@
       '<div class="off-card-body">' +
         (it.brand ? '<div class="off-card-brand">' + esc(it.brand) + '</div>' : '<div class="off-card-brand">&nbsp;</div>') +
         '<div class="off-card-name">' + esc(it.name) + '</div>' +
-        '<div class="off-card-price mono">' + (it.price > 0 ? V2.fmtEur(it.price) : '—') + '</div>' +
+        '<div class="off-card-price mono">' + (it.price > 0 ? V2.fmtEur(it.price) : '—') +
+          (it.pz && it.pz.price > 0 ? '<span class="off-card-pz' + (it.pzCheaper ? ' win' : '') + '">Pharmazon ' + V2.fmtEur(it.pz.price) + '</span>' : '') + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -183,6 +205,20 @@
     var img = it.img ? '<div class="off-insp-img"><img src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '';
     function kpi(l, v, col) { return '<div class="off-kpi"><div class="off-kpi-l">' + l + '</div><div class="off-kpi-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + v + '</div></div>'; }
     var alertBanner = ''; // alerte rouge retirée (à la demande) — la comparaison de prix reste affichée
+    var pzBlock = '';
+    if (it.pz && it.pz.price > 0) {
+      var oP = it.price, pP = it.pz.price;
+      var cheaper = (pP < oP) ? 'Pharmazon' : (oP < pP ? 'Offilog' : '');
+      var diff = Math.abs(oP - pP);
+      pzBlock = '<div class="off-pz">' +
+        '<div class="off-pz-l">Comparatif d\'achat · Offilog vs Pharmazon</div>' +
+        '<div class="off-pz-row">' +
+          '<div class="off-pz-cell' + (cheaper === 'Offilog' ? ' win' : '') + '"><span>Offilog</span><b class="mono">' + (oP > 0 ? V2.fmtEur(oP) : '—') + '</b></div>' +
+          '<div class="off-pz-cell' + (cheaper === 'Pharmazon' ? ' win' : '') + '"><span>Pharmazon' + (it.pz.labo ? ' · ' + esc(it.pz.labo) : '') + '</span><b class="mono">' + V2.fmtEur(pP) + '</b></div>' +
+        '</div>' +
+        (cheaper ? '<div class="off-pz-note">Moins cher sur <b>' + cheaper + '</b> · écart ' + V2.fmtEur(diff) + '</div>' : '<div class="off-pz-note">Même prix sur les deux plateformes</div>') +
+      '</div>';
+    }
     var badges = '<span class="off-badge" style="--bc:#0050E6">#' + it.rank + ' ventes</span>' +
       (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + CHIP_BY_KEY[it.cat].sc + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
       (it.univers && it.univers !== 'Non classé' ? '<span class="off-badge" style="--bc:#6D4FC4">' + esc(it.univers) + '</span>' : '');
@@ -203,6 +239,7 @@
           kpi('Achat IP (HT)', it.achat > 0 ? V2.fmtEur(it.achat) : '—', it.achat > 0 ? 'var(--c-mint)' : 'var(--muted-2)') +
           kpi('Concurrent mini', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', '') +
         '</div>' +
+        pzBlock +
         '<div class="off-cmp"><div class="off-cmp-l">Prix public concurrents <span>(TTC)</span></div>' + priceCmpRows(it) + '</div>' +
         '<div class="off-insp-cta"><button class="v2-btn v2-btn-primary" onclick="V2.offAddToFiche(\'' + esc(it.ean || it.id) + '\')">' + ICO('plus', 17) + ' Ajouter à une fiche commerciale</button>' +
           (it.url ? '<a class="v2-btn v2-btn-ghost" href="' + esc(it.url) + '" target="_blank" rel="noopener" style="margin-top:8px">Voir sur Offilog</a>' : '') + '</div>' +
@@ -349,6 +386,20 @@
     sc.onerror = function () { imgLoading = false; cb(); }; // pas grave : repli URL brute
     document.head.appendChild(sc);
   }
+  var pzLoading = false;
+  function ensurePz(cb) {
+    if (window.PHARMAZON) { cb(); return; }
+    if (pzLoading) return;
+    pzLoading = true;
+    function inject(src, onfail) {
+      var sc = document.createElement('script'); sc.src = src;
+      sc.onload = function () { pzLoading = false; cb(); }; sc.onerror = onfail;
+      document.head.appendChild(sc);
+    }
+    inject(MOD_BASE + 'pharmazon-data.js?v=20260612a', function () {
+      inject('pharmazon-data.js?v=20260612a', function () { pzLoading = false; cb(); });
+    });
+  }
 
   // ── Aperçu (modal) avant génération ──
   function fitMktSheet() {
@@ -441,7 +492,7 @@
   }
 
   // ── Chargement du fichier best-sellers (lazy, dans crm/v2/) ──
-  var bestLoading = false, bestFail = false, offTried = false;
+  var bestLoading = false, bestFail = false, offTried = false, pzTried = false;
   function ensureBest(cb) {
     if (window.OFFILOG_BEST) { cb(); return; }
     if (bestLoading) return;
@@ -520,7 +571,20 @@
       '.off-card-body{padding:11px 13px 14px;display:flex;flex-direction:column;gap:3px;flex:1}',
       '.off-card-brand{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.off-card-name{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--ip-ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}',
-      '.off-card-price{font-size:16px;font-weight:800;color:var(--ip-blue);margin-top:5px}',
+      '.off-card-price{font-size:16px;font-weight:800;color:var(--ip-blue);margin-top:5px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}',
+      '.off-card-pz{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:1px 6px}',
+      '.off-card-pz.win{color:#0034A0;background:color-mix(in srgb,#0034A0 10%,#fff);border-color:color-mix(in srgb,#0034A0 28%,transparent)}',
+      // comparatif Offilog vs Pharmazon (inspecteur)
+      '.off-pz{margin-top:18px;padding:15px;background:color-mix(in srgb,#0034A0 5%,#fff);border:1px solid color-mix(in srgb,#0034A0 22%,transparent);border-radius:13px}',
+      '.off-pz-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#0034A0;font-weight:800;margin-bottom:11px}',
+      '.off-pz-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
+      '.off-pz-cell{border:1px solid var(--line);border-radius:11px;padding:11px 13px;background:var(--card);display:flex;flex-direction:column;gap:3px}',
+      '.off-pz-cell span{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}',
+      '.off-pz-cell b{font-size:18px;color:var(--ip-ink)}',
+      '.off-pz-cell.win{border-color:#0034A0;background:color-mix(in srgb,#0034A0 8%,#fff);box-shadow:0 0 0 2px color-mix(in srgb,#0034A0 18%,transparent)}',
+      '.off-pz-cell.win b{color:#0034A0}',
+      '.off-pz-note{font-size:12.5px;color:var(--ip-ink-2);margin-top:10px;font-weight:600}',
+      '.off-pz-note b{color:#0034A0}',
       '.off-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0 0;flex-wrap:wrap}',
       '.off-pg{padding:8px 14px;font-size:13px}',
       '.off-pg-info{font-size:12px;color:var(--muted)}',
@@ -593,6 +657,11 @@
         offTried = true;
         V2.loadFiles(['offilog']).then(function () { idxBuilt = false; V2.render(); });
       }
+      // Prix Pharmazon (comparaison achat) : chargés UNE SEULE FOIS en tâche de fond
+      if (!window.PHARMAZON && !pzTried) {
+        pzTried = true;
+        ensurePz(function () { idxBuilt = false; V2.render(); });
+      }
       buildIndex();
 
       var base = filteredBase();
@@ -608,7 +677,7 @@
 
       var chips = CHIPS.map(function (f) {
         var n = c[f.k] || 0;
-        if (f.k !== 'all' && f.k !== 'alerte' && n === 0) return '';
+        if (f.k !== 'all' && f.k !== 'alerte' && f.k !== 'pzcheaper' && n === 0) return '';
         var on = S.chip === f.k ? ' on' : '';
         return '<button class="v2-seg' + on + '" style="--sc:' + f.sc + '" onclick="V2.offFilter(\'' + f.k + '\')">' +
           (f.k === 'all' ? '' : '<span class="sw"></span>') + esc(f.label) + '<span class="cnt">' + V2.fmtNum(n) + '</span></button>';
