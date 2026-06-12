@@ -12,6 +12,13 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
 
+  // Dossier de CE module (crm/v2/) — pour charger ses fichiers data même quand
+  // la page hôte est ailleurs (ex : app OPSO opso/v2/ qui charge depuis ../../crm/v2/).
+  var MOD_BASE = (function () {
+    try { var s = document.currentScript; if (s && s.src) return s.src.replace(/[?#].*$/, '').replace(/[^/]+$/, ''); } catch (e) {}
+    return '';
+  })();
+
   var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes' };
   var PER_PAGE = 60;
 
@@ -341,7 +348,7 @@
     if (imgLoading) { setTimeout(function () { ensureImg(cb); }, 300); return; }
     imgLoading = true;
     var sc = document.createElement('script');
-    sc.src = 'offilog-img-data.js?v=20260611a';
+    sc.src = MOD_BASE + 'offilog-img-data.js?v=20260611a';
     sc.onload = function () { imgLoading = false; cb(); };
     sc.onerror = function () { imgLoading = false; cb(); }; // pas grave : repli URL brute
     document.head.appendChild(sc);
@@ -444,7 +451,7 @@
     if (bestLoading) return;
     bestLoading = true;
     var sc = document.createElement('script');
-    sc.src = 'offilog-bestsellers-data.js?v=20260610v2m';
+    sc.src = MOD_BASE + 'offilog-bestsellers-data.js?v=20260610v2m';
     sc.onload = function () { bestLoading = false; cb(); };
     sc.onerror = function () { bestLoading = false; cb(); };
     document.head.appendChild(sc);
