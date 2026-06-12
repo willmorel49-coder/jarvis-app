@@ -28,7 +28,7 @@
 
   var CHIPS = [
     { k: 'all',         label: 'Tout',           sc: '#0050E6' },
-    { k: 'alerte',      label: 'Veille prix',    sc: '#E0556E' },
+    { k: 'alerte',      label: 'Concurrent moins cher', sc: '#6D4FC4' },
     { k: 'sante',       label: 'Santé',          sc: '#1E9E6A' },
     { k: 'beaute-et-soins', label: 'Beauté & soins', sc: '#6D4FC4' },
     { k: 'hygiene',     label: 'Hygiène',        sc: '#00B5D8' },
@@ -135,7 +135,7 @@
     }
     return '<div class="v2-kpis off-kpis">' +
       kpiCard('k1', 'Produits', V2.fmtNum(n), 'meilleures ventes Offilog') +
-      kpiCard('k2', 'Veille prix', V2.fmtNum(nAlert), nAlert ? 'concurrent sous ton achat' : 'aucune alerte', nAlert ? 'var(--c-rose)' : null) +
+      kpiCard('k2', 'Concurrent moins cher', V2.fmtNum(nAlert), 'produits où un concurrent est sous ton achat') +
       kpiCard('k3', 'Prix Offilog moyen', pN ? V2.fmtEur(pSum / pN) : '—', 'sur la sélection') +
       kpiCard('k4', 'Réf. croisées', V2.fmtNum(nMatch), 'avec données concurrents') +
     '</div>';
@@ -151,7 +151,6 @@
     return '<div class="off-card' + sel + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
       '<div class="off-card-media">' +
         '<span class="off-rank mono">#' + it.rank + '</span>' +
-        (it.alert ? '<span class="off-card-alert" title="Veille prix">' + ICO('alert', 13, 2.4) + '</span>' : '') +
         '<button class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + esc(it.id) + '\',this)" title="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
         img +
       '</div>' +
@@ -183,10 +182,7 @@
   function inspector(it) {
     var img = it.img ? '<div class="off-insp-img"><img src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '';
     function kpi(l, v, col) { return '<div class="off-kpi"><div class="off-kpi-l">' + l + '</div><div class="off-kpi-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + v + '</div></div>'; }
-    var gap = (it.achat > 0 && it.minConc > 0) ? (it.achat - it.minConc) : 0;
-    var alertBanner = it.alert
-      ? '<div class="off-alert"><span class="off-alert-ic">' + ICO('alert', 18, 2) + '</span><div><b>Veille prix</b> — un concurrent vend à <b>' + V2.fmtEur(it.minConc) + '</b> au public, soit <b>' + V2.fmtEur(gap) + ' sous</b> ton prix d\'achat IP (' + V2.fmtEur(it.achat) + '). La pharmacie ne peut pas s\'aligner sans perdre.</div></div>'
-      : '';
+    var alertBanner = ''; // alerte rouge retirée (à la demande) — la comparaison de prix reste affichée
     var badges = '<span class="off-badge" style="--bc:#0050E6">#' + it.rank + ' ventes</span>' +
       (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + CHIP_BY_KEY[it.cat].sc + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
       (it.univers && it.univers !== 'Non classé' ? '<span class="off-badge" style="--bc:#6D4FC4">' + esc(it.univers) + '</span>' : '');
@@ -205,7 +201,7 @@
           kpi('Prix Offilog', it.price > 0 ? V2.fmtEur(it.price) : '—', 'var(--ip-blue)') +
           kpi('Rang ventes', '#' + it.rank) +
           kpi('Achat IP (HT)', it.achat > 0 ? V2.fmtEur(it.achat) : '—', it.achat > 0 ? 'var(--c-mint)' : 'var(--muted-2)') +
-          kpi('Concurrent mini', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', it.alert ? 'var(--c-rose)' : '') +
+          kpi('Concurrent mini', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', '') +
         '</div>' +
         '<div class="off-cmp"><div class="off-cmp-l">Prix public concurrents <span>(TTC)</span></div>' + priceCmpRows(it) + '</div>' +
         '<div class="off-insp-cta"><button class="v2-btn v2-btn-primary" onclick="V2.offAddToFiche(\'' + esc(it.ean || it.id) + '\')">' + ICO('plus', 17) + ' Ajouter à une fiche commerciale</button>' +
