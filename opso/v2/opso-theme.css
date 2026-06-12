@@ -150,3 +150,96 @@
 .opso-counter-cliente {
   color: var(--ip-blue-d) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANIMATIONS OPSO — doux & élégant (tuiles accueil + loader marque)
+   Tout respire, rien de brusque. Désactivé si "réduire les animations".
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Tuiles de l'accueil : apparition en cascade ──────────────────── */
+@keyframes opso-pil-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.v2-piliers .v2-pil {
+  animation: opso-pil-in .5s cubic-bezier(.22, .61, .36, 1) both;
+  transition: transform .26s cubic-bezier(.22, .61, .36, 1),
+              box-shadow .26s cubic-bezier(.22, .61, .36, 1),
+              border-color .26s ease !important;
+  will-change: transform;
+}
+.v2-piliers .v2-pil:nth-child(1) { animation-delay: .03s; }
+.v2-piliers .v2-pil:nth-child(2) { animation-delay: .09s; }
+.v2-piliers .v2-pil:nth-child(3) { animation-delay: .15s; }
+.v2-piliers .v2-pil:nth-child(4) { animation-delay: .21s; }
+.v2-piliers .v2-pil:nth-child(5) { animation-delay: .27s; }
+.v2-piliers .v2-pil:nth-child(6) { animation-delay: .33s; }
+.v2-piliers .v2-pil:nth-child(7) { animation-delay: .39s; }
+
+/* Survol : léger soulèvement + ombre verte douce */
+.v2-piliers .v2-pil:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 14px 30px rgba(17, 166, 60, .15), 0 2px 6px rgba(17, 166, 60, .08) !important;
+}
+.v2-piliers .v2-pil:active {
+  transform: translateY(-1px) scale(.995) !important;
+}
+/* L'icône de la tuile réagit doucement */
+.v2-piliers .v2-pil .v2-pil-ico {
+  transition: transform .26s cubic-bezier(.22, .61, .36, 1);
+}
+.v2-piliers .v2-pil:hover .v2-pil-ico {
+  transform: scale(1.08) rotate(-2deg);
+}
+/* La flèche "→" avance au survol */
+.v2-piliers .v2-pil .v2-pil-go .arrow {
+  display: inline-block;
+  transition: transform .26s cubic-bezier(.22, .61, .36, 1);
+}
+.v2-piliers .v2-pil:hover .v2-pil-go .arrow {
+  transform: translateX(4px);
+}
+
+/* ── Loader OPSO : le pin croix vert qui respire ──────────────────── */
+.v2-spinner {
+  border: none !important;
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(150deg, var(--ip-blue), var(--ip-blue-d)) !important;
+  position: relative !important;
+  animation: opso-pin-breathe 1.25s ease-in-out infinite !important;
+}
+.v2-spinner::before,
+.v2-spinner::after {
+  content: '';
+  position: absolute;
+  background: #fff;
+  border-radius: 3px;
+}
+.v2-spinner::before { /* barre verticale de la croix */
+  left: 50%; top: 22%;
+  width: 8px; height: 56%;
+  transform: translateX(-50%);
+}
+.v2-spinner::after {  /* barre horizontale de la croix */
+  top: 50%; left: 22%;
+  height: 8px; width: 56%;
+  transform: translateY(-50%);
+}
+@keyframes opso-pin-breathe {
+  0%, 100% { transform: scale(.9);  box-shadow: 0 6px 18px rgba(17, 166, 60, .22); }
+  50%      { transform: scale(1.06); box-shadow: 0 12px 28px rgba(17, 166, 60, .42); }
+}
+
+/* ── Accessibilité : respecter "réduire les animations" ───────────── */
+@media (prefers-reduced-motion: reduce) {
+  .v2-piliers .v2-pil,
+  .v2-piliers .v2-pil .v2-pil-ico,
+  .v2-piliers .v2-pil .v2-pil-go .arrow,
+  .v2-spinner {
+    animation: none !important;
+    transition: none !important;
+  }
+  .v2-piliers .v2-pil:hover { transform: none !important; }
+}
