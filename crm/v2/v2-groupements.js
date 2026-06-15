@@ -127,10 +127,13 @@
   V2.grpView = function (v) { view = v; V2.render(); };
   V2.psFilter = function (q) {
     if (!window.PHARMASMILE) return;
-    q = (q || '').toLowerCase().trim();
-    _rows = q ? window.PHARMASMILE.filter(function (r) {
-      return ((r[2] || '') + ' ' + (r[5] || '') + ' ' + (r[4] || '')).toLowerCase().indexOf(q) >= 0;
-    }) : window.PHARMASMILE;
+    q = (q || '').trim();
+    var isNum = /^\d+$/.test(q); // chiffres = département / préfixe code postal
+    var ql = q.toLowerCase();
+    _rows = !q ? window.PHARMASMILE : window.PHARMASMILE.filter(function (r) {
+      if (isNum) return String(r[4] || '').replace(/\s/g, '').indexOf(q) === 0; // CP commence par
+      return ((r[2] || '') + ' ' + (r[5] || '') + ' ' + (r[3] || '')).toLowerCase().indexOf(ql) >= 0;
+    });
     addMarkers(_rows);
     buildList(_rows);
     var c = document.getElementById('ps-count'); if (c) c.textContent = _rows.length.toLocaleString('fr') + ' pharmacies';
@@ -152,7 +155,7 @@
           '<div class="grp-sub"><span class="grp-sub-l">Grossiste</span>' +
             '<button class="grp-chip on">Sagitta' + (nb ? ' · ' + nb.toLocaleString('fr') : '') + '</button></div>' +
           '<div class="ps-bar">' + ICO('search', 16, 2) +
-            '<input id="ps-search" placeholder="Filtrer par nom, ville ou CP…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
+            '<input id="ps-search" placeholder="Filtrer par département (ex : 49), ville ou nom…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
             '<span class="ps-count" id="ps-count">chargement…</span></div>' +
           '<div class="sag-split">' +
             '<div class="sag-list" id="sag-list"><div class="grp-load"><div class="v2-spinner"></div>Chargement…</div></div>' +
