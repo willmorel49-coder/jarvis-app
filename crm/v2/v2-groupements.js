@@ -12,7 +12,7 @@
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
 
   var view = 'app';
-  var leafletLoading = false, _map = null, _cluster = null;
+  var leafletLoading = false, _map = null, _cluster = null, _rows = [];
 
   if (!document.getElementById('v2-grp-css')) {
     var st = document.createElement('style'); st.id = 'v2-grp-css';
@@ -32,6 +32,18 @@
       '.grp-chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 15px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}' +
       '.grp-chip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}' +
       '.ps-map{width:100%;height:calc(100vh - 210px);background:#EAEEF3;position:relative}' +
+      '.sag-split{display:flex;height:calc(100vh - 210px)}' +
+      '@media(max-width:820px){.sag-split{flex-direction:column;height:auto}}' +
+      '.sag-list{width:380px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--line);background:var(--card)}' +
+      '@media(max-width:820px){.sag-list{width:100%;max-height:42vh;border-right:none;border-bottom:1px solid var(--line)}}' +
+      '.sag-map{flex:1;min-width:0;background:#EAEEF3;position:relative}' +
+      '@media(max-width:820px){.sag-map{height:52vh}}' +
+      '.sag-row{padding:10px 16px;border-bottom:1px solid var(--line-2);cursor:pointer;transition:background .12s}' +
+      '.sag-row:hover{background:var(--card-2)}' +
+      '.sag-row-n{font-weight:700;font-size:13.5px;color:var(--ip-ink);letter-spacing:-.01em}' +
+      '.sag-row-a{font-size:12px;color:var(--muted);margin-top:2px}' +
+      '.sag-row-t{font-size:11.5px;color:var(--ip-blue);margin-top:2px}' +
+      '.sag-more{padding:14px 16px;text-align:center;font-size:12px;color:var(--muted)}' +
       '.ps-map .leaflet-popup-content{font:13px/1.45 var(--font, sans-serif);margin:10px 12px}' +
       '.grp-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;gap:10px}';
     document.head.appendChild(st);
@@ -73,6 +85,29 @@
     });
     _cluster.addLayers(ms);
   }
+  // listing complet (synchronisé avec la carte)
+  function buildList(rows) {
+    var box = document.getElementById('sag-list'); if (!box) return;
+    if (!rows.length) { box.innerHTML = '<div class="grp-load">Aucune pharmacie.</div>'; return; }
+    var max = 1500, shown = rows.slice(0, max);
+    var html = shown.map(function (r, i) {
+      return '<div class="sag-row" onclick="V2.psFocus(' + i + ')">' +
+        '<div class="sag-row-n">' + esc(r[2] || '—') + '</div>' +
+        '<div class="sag-row-a">' + esc(r[3] || '') + (r[3] && (r[4] || r[5]) ? ' · ' : '') + esc(r[4] || '') + ' ' + esc(r[5] || '') + '</div>' +
+        (r[6] ? '<div class="sag-row-t mono">' + esc(r[6]) + '</div>' : '') +
+        '</div>';
+    }).join('');
+    if (rows.length > max) html += '<div class="sag-more">+ ' + (rows.length - max).toLocaleString('fr') + ' autres — affine la recherche</div>';
+    box.innerHTML = html;
+    box.scrollTop = 0;
+  }
+  V2.psFocus = function (i) {
+    var r = _rows[i]; if (!r || !_map) return;
+    _map.setView([r[0], r[1]], 15);
+    window.L.popup().setLatLng([r[0], r[1]])
+      .setContent('<b>' + esc(r[2]) + '</b><br>' + esc(r[3]) + '<br>' + esc(r[4]) + ' ' + esc(r[5]) + (r[6] ? '<br>☎ ' + esc(r[6]) : ''))
+      .openOn(_map);
+  };
   function initMap() {
     var el = document.getElementById('ps-map'); if (!el) return;
     if (!window.L) { el.innerHTML = '<div class="grp-load">Carte indisponible — vérifie ta connexion internet.</div>'; return; }
@@ -82,20 +117,23 @@
     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
       { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(_map);
     _cluster = window.L.markerClusterGroup({ chunkedLoading: true, spiderfyOnMaxZoom: true });
-    addMarkers(window.PHARMASMILE || []);
+    _rows = window.PHARMASMILE || [];
+    addMarkers(_rows);
+    buildList(_rows);
     _map.addLayer(_cluster);
     setTimeout(function () { try { _map.invalidateSize(); } catch (e) {} }, 120);
   }
 
   V2.grpView = function (v) { view = v; V2.render(); };
   V2.psFilter = function (q) {
-    if (!window.PHARMASMILE || !_cluster) return;
+    if (!window.PHARMASMILE) return;
     q = (q || '').toLowerCase().trim();
-    var rows = q ? window.PHARMASMILE.filter(function (r) {
+    _rows = q ? window.PHARMASMILE.filter(function (r) {
       return ((r[2] || '') + ' ' + (r[5] || '') + ' ' + (r[4] || '')).toLowerCase().indexOf(q) >= 0;
     }) : window.PHARMASMILE;
-    addMarkers(rows);
-    var c = document.getElementById('ps-count'); if (c) c.textContent = rows.length.toLocaleString('fr') + ' pharmacies';
+    addMarkers(_rows);
+    buildList(_rows);
+    var c = document.getElementById('ps-count'); if (c) c.textContent = _rows.length.toLocaleString('fr') + ' pharmacies';
   };
 
   function tabs() {
@@ -116,7 +154,10 @@
           '<div class="ps-bar">' + ICO('search', 16, 2) +
             '<input id="ps-search" placeholder="Filtrer par nom, ville ou CP…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
             '<span class="ps-count" id="ps-count">chargement…</span></div>' +
-          '<div id="ps-map" class="ps-map"><div class="grp-load"><div class="v2-spinner"></div>Chargement de la carte…</div></div>';
+          '<div class="sag-split">' +
+            '<div class="sag-list" id="sag-list"><div class="grp-load"><div class="v2-spinner"></div>Chargement…</div></div>' +
+            '<div id="ps-map" class="sag-map"><div class="grp-load"><div class="v2-spinner"></div>Chargement de la carte…</div></div>' +
+          '</div>';
         ensureData(function () {
           ensureLeaflet(function () {
             initMap();
