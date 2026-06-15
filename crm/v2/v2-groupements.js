@@ -13,6 +13,14 @@
 
   var view = 'app';
   var leafletLoading = false, _map = null, _cluster = null, _rows = [];
+  var deptSel = '', txtSel = '';
+
+  var DEPT_NAMES = { '01': 'Ain', '02': 'Aisne', '03': 'Allier', '04': 'Alpes-de-Hte-Provence', '05': 'Hautes-Alpes', '06': 'Alpes-Maritimes', '07': 'Ardèche', '08': 'Ardennes', '09': 'Ariège', '10': 'Aube', '11': 'Aude', '12': 'Aveyron', '13': 'Bouches-du-Rhône', '14': 'Calvados', '15': 'Cantal', '16': 'Charente', '17': 'Charente-Maritime', '18': 'Cher', '19': 'Corrèze', '21': "Côte-d'Or", '22': "Côtes-d'Armor", '23': 'Creuse', '24': 'Dordogne', '25': 'Doubs', '26': 'Drôme', '27': 'Eure', '28': 'Eure-et-Loir', '29': 'Finistère', '2A': 'Corse-du-Sud', '2B': 'Haute-Corse', '30': 'Gard', '31': 'Haute-Garonne', '32': 'Gers', '33': 'Gironde', '34': 'Hérault', '35': 'Ille-et-Vilaine', '36': 'Indre', '37': 'Indre-et-Loire', '38': 'Isère', '39': 'Jura', '40': 'Landes', '41': 'Loir-et-Cher', '42': 'Loire', '43': 'Haute-Loire', '44': 'Loire-Atlantique', '45': 'Loiret', '46': 'Lot', '47': 'Lot-et-Garonne', '48': 'Lozère', '49': 'Maine-et-Loire', '50': 'Manche', '51': 'Marne', '52': 'Haute-Marne', '53': 'Mayenne', '54': 'Meurthe-et-Moselle', '55': 'Meuse', '56': 'Morbihan', '57': 'Moselle', '58': 'Nièvre', '59': 'Nord', '60': 'Oise', '61': 'Orne', '62': 'Pas-de-Calais', '63': 'Puy-de-Dôme', '64': 'Pyrénées-Atlantiques', '65': 'Hautes-Pyrénées', '66': 'Pyrénées-Orientales', '67': 'Bas-Rhin', '68': 'Haut-Rhin', '69': 'Rhône', '70': 'Haute-Saône', '71': 'Saône-et-Loire', '72': 'Sarthe', '73': 'Savoie', '74': 'Haute-Savoie', '75': 'Paris', '76': 'Seine-Maritime', '77': 'Seine-et-Marne', '78': 'Yvelines', '79': 'Deux-Sèvres', '80': 'Somme', '81': 'Tarn', '82': 'Tarn-et-Garonne', '83': 'Var', '84': 'Vaucluse', '85': 'Vendée', '86': 'Vienne', '87': 'Haute-Vienne', '88': 'Vosges', '89': 'Yonne', '90': 'Belfort', '91': 'Essonne', '92': 'Hauts-de-Seine', '93': 'Seine-St-Denis', '94': 'Val-de-Marne', '95': "Val-d'Oise", '971': 'Guadeloupe', '972': 'Martinique', '973': 'Guyane', '974': 'La Réunion', '976': 'Mayotte' };
+  function deptOf(cp) {
+    cp = String(cp || '').replace(/\s/g, '');
+    if (/^9[78]\d/.test(cp)) return cp.slice(0, 3);
+    return cp.slice(0, 2);
+  }
 
   if (!document.getElementById('v2-grp-css')) {
     var st = document.createElement('style'); st.id = 'v2-grp-css';
@@ -27,6 +35,8 @@
       '.ps-bar svg{color:var(--ip-blue);flex-shrink:0}' +
       '.ps-bar input{border:none;outline:none;background:none;font-family:var(--font);font-size:15px;flex:1;color:var(--ip-ink)}' +
       '.ps-count{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ip-ink-2);white-space:nowrap}' +
+      '.ps-dept{font-family:var(--font);font-size:14px;font-weight:600;color:var(--ip-ink);background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:8px 11px;outline:none;cursor:pointer;max-width:230px}' +
+      '.ps-dept:focus{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}' +
       '.grp-sub{display:flex;align-items:center;gap:10px;padding:9px 26px;background:var(--card);border-bottom:1px solid var(--line)}' +
       '.grp-sub-l{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}' +
       '.grp-chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 15px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}' +
@@ -117,27 +127,40 @@
     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
       { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(_map);
     _cluster = window.L.markerClusterGroup({ chunkedLoading: true, spiderfyOnMaxZoom: true });
-    _rows = window.PHARMASMILE || [];
-    addMarkers(_rows);
-    buildList(_rows);
     _map.addLayer(_cluster);
+    applyFilter();
     setTimeout(function () { try { _map.invalidateSize(); } catch (e) {} }, 120);
   }
 
-  V2.grpView = function (v) { view = v; V2.render(); };
-  V2.psFilter = function (q) {
+  function applyFilter() {
     if (!window.PHARMASMILE) return;
-    q = (q || '').trim();
-    var isNum = /^\d+$/.test(q); // chiffres = département / préfixe code postal
-    var ql = q.toLowerCase();
-    _rows = !q ? window.PHARMASMILE : window.PHARMASMILE.filter(function (r) {
-      if (isNum) return String(r[4] || '').replace(/\s/g, '').indexOf(q) === 0; // CP commence par
-      return ((r[2] || '') + ' ' + (r[5] || '') + ' ' + (r[3] || '')).toLowerCase().indexOf(ql) >= 0;
+    var ql = (txtSel || '').toLowerCase().trim();
+    _rows = window.PHARMASMILE.filter(function (r) {
+      if (deptSel && deptOf(r[4]) !== deptSel) return false;
+      if (ql && ((r[2] || '') + ' ' + (r[5] || '') + ' ' + (r[3] || '')).toLowerCase().indexOf(ql) < 0) return false;
+      return true;
     });
     addMarkers(_rows);
     buildList(_rows);
     var c = document.getElementById('ps-count'); if (c) c.textContent = _rows.length.toLocaleString('fr') + ' pharmacies';
-  };
+    if (deptSel && _rows.length && _map) {
+      try { _map.fitBounds(_rows.map(function (r) { return [r[0], r[1]]; }), { padding: [30, 30], maxZoom: 11 }); } catch (e) {}
+    }
+  }
+  function fillDeptSelect() {
+    var sel = document.getElementById('ps-dept'); if (!sel || !window.PHARMASMILE) return;
+    var by = {};
+    window.PHARMASMILE.forEach(function (r) { var d = deptOf(r[4]); if (d) by[d] = (by[d] || 0) + 1; });
+    var codes = Object.keys(by).sort();
+    var opts = '<option value="">Tous les départements (' + window.PHARMASMILE.length.toLocaleString('fr') + ')</option>';
+    opts += codes.map(function (d) {
+      return '<option value="' + d + '"' + (d === deptSel ? ' selected' : '') + '>' + d + (DEPT_NAMES[d] ? ' · ' + esc(DEPT_NAMES[d]) : '') + ' (' + by[d] + ')</option>';
+    }).join('');
+    sel.innerHTML = opts;
+  }
+  V2.grpView = function (v) { view = v; V2.render(); };
+  V2.psDept = function (v) { deptSel = v || ''; applyFilter(); };
+  V2.psFilter = function (q) { txtSel = q || ''; applyFilter(); };
 
   function tabs() {
     return '<div class="grp-tabs">' +
@@ -154,19 +177,18 @@
         root.innerHTML = top + tabs() +
           '<div class="grp-sub"><span class="grp-sub-l">Grossiste</span>' +
             '<button class="grp-chip on">Sagitta' + (nb ? ' · ' + nb.toLocaleString('fr') : '') + '</button></div>' +
-          '<div class="ps-bar">' + ICO('search', 16, 2) +
-            '<input id="ps-search" placeholder="Filtrer par département (ex : 49), ville ou nom…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
+          '<div class="ps-bar">' +
+            '<select id="ps-dept" class="ps-dept" onchange="V2.psDept(this.value)"><option value="">Tous les départements</option></select>' +
+            ICO('search', 16, 2) +
+            '<input id="ps-search" placeholder="ville ou nom…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
             '<span class="ps-count" id="ps-count">chargement…</span></div>' +
           '<div class="sag-split">' +
             '<div class="sag-list" id="sag-list"><div class="grp-load"><div class="v2-spinner"></div>Chargement…</div></div>' +
             '<div id="ps-map" class="sag-map"><div class="grp-load"><div class="v2-spinner"></div>Chargement de la carte…</div></div>' +
           '</div>';
         ensureData(function () {
-          ensureLeaflet(function () {
-            initMap();
-            var c = document.getElementById('ps-count');
-            if (c) c.textContent = (window.PHARMASMILE || []).length.toLocaleString('fr') + ' pharmacies';
-          });
+          fillDeptSelect();
+          ensureLeaflet(function () { initMap(); });
         });
       } else {
         root.innerHTML = top + tabs() +
