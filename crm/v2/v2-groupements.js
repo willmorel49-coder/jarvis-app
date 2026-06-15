@@ -27,7 +27,11 @@
       '.ps-bar svg{color:var(--ip-blue);flex-shrink:0}' +
       '.ps-bar input{border:none;outline:none;background:none;font-family:var(--font);font-size:15px;flex:1;color:var(--ip-ink)}' +
       '.ps-count{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ip-ink-2);white-space:nowrap}' +
-      '.ps-map{width:100%;height:calc(100vh - 164px);background:#EAEEF3;position:relative}' +
+      '.grp-sub{display:flex;align-items:center;gap:10px;padding:9px 26px;background:var(--card);border-bottom:1px solid var(--line)}' +
+      '.grp-sub-l{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}' +
+      '.grp-chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 15px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}' +
+      '.grp-chip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}' +
+      '.ps-map{width:100%;height:calc(100vh - 210px);background:#EAEEF3;position:relative}' +
       '.ps-map .leaflet-popup-content{font:13px/1.45 var(--font, sans-serif);margin:10px 12px}' +
       '.grp-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;gap:10px}';
     document.head.appendChild(st);
@@ -96,16 +100,19 @@
 
   function tabs() {
     return '<div class="grp-tabs">' +
-      '<button class="grp-tab' + (view === 'app' ? ' on' : '') + '" onclick="V2.grpView(\'app\')">Carte groupements</button>' +
-      '<button class="grp-tab' + (view === 'pharmasmile' ? ' on' : '') + '" onclick="V2.grpView(\'pharmasmile\')">PharmaSmile · 2 011 pharmacies</button>' +
+      '<button class="grp-tab' + (view === 'app' ? ' on' : '') + '" onclick="V2.grpView(\'app\')">Groupements</button>' +
+      '<button class="grp-tab' + (view === 'grossistes' ? ' on' : '') + '" onclick="V2.grpView(\'grossistes\')">Grossistes</button>' +
       '</div>';
   }
 
   V2.pages.groupements = {
     render: function (root) {
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
-      if (view === 'pharmasmile') {
+      if (view === 'grossistes') {
+        var nb = (window.PHARMASMILE || []).length;
         root.innerHTML = top + tabs() +
+          '<div class="grp-sub"><span class="grp-sub-l">Grossiste</span>' +
+            '<button class="grp-chip on">Sagitta' + (nb ? ' · ' + nb.toLocaleString('fr') : '') + '</button></div>' +
           '<div class="ps-bar">' + ICO('search', 16, 2) +
             '<input id="ps-search" placeholder="Filtrer par nom, ville ou CP…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
             '<span class="ps-count" id="ps-count">chargement…</span></div>' +
