@@ -14,13 +14,12 @@ import openpyxl
 BASE = '/Users/williammorel/JARVIS/APP'
 STATS = os.path.join(BASE, 'STATS')
 PHARM_FILE = os.path.join(STATS, 'WML_pharmacies.xlsx')
-MONTHS = [
-    (os.path.join(STATS, 'WML_01_2026.xlsx'), 1, 2026),
-    (os.path.join(STATS, 'WML_02_2026.xlsx'), 2, 2026),
-    (os.path.join(STATS, 'WML_03_2026.xlsx'), 3, 2026),
-    (os.path.join(STATS, 'WML_04_2026.xlsx'), 4, 2026),
-    (os.path.join(STATS, 'WML_05_2026.xlsx'), 5, 2026),
+# (commercial, préfixe fichier) — chaque source = 5 mois
+SOURCES = [
+    ('Will', 'WML'),
+    ('Pauline', 'PGN'),
 ]
+MONTHS_NUM = [1, 2, 3, 4, 5]
 OUT = os.path.join(BASE, 'crm', 'v2', 'wml-officines-data.js')
 PALETTE = ['#1E9E6A', '#0050E6', '#C7791A', '#6D4FC4', '#00B5D8',
            '#E0556E', '#0034A0', '#13794F', '#A65F12', '#4F3A99']
@@ -80,52 +79,56 @@ for r in rows:
     }
 wb.close()
 
-# ── 2. Ventes (5 mois) ──
+# ── 2. Ventes (Will=WML + Pauline=PGN, 5 mois chacun) ──
 sales = []
-active = {}  # code -> nom (depuis les ventes, fallback)
-for path, mois, annee in MONTHS:
-    if not os.path.exists(path):
-        print('  [skip] absent :', path)
-        continue
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    ws = wb.active
-    it = ws.iter_rows(values_only=True)
-    h = next(it)
-    hi = {name: i for i, name in enumerate(h)}
-
-    def c(row, name):
-        i = hi.get(name)
-        return row[i] if (i is not None and i < len(row)) else None
-
-    n = 0
-    for r in it:
-        tir = c(r, 'TIRCODE')
-        if tir is None:
+active = {}  # code -> nom (fallback)
+comms = {}   # code -> set des commerciaux
+for comm, prefix in SOURCES:
+    for mois in MONTHS_NUM:
+        path = os.path.join(STATS, '%s_%02d_2026.xlsx' % (prefix, mois))
+        if not os.path.exists(path):
+            print('  [skip] absent :', path)
             continue
-        try:
-            code = str(int(float(tir)))
-        except (TypeError, ValueError):
-            code = s(tir)
-        if not code:
-            continue
-        if code not in active:
-            active[code] = s(c(r, 'TIRSOCIETE'))
-        sales.append({
-            'pharmacyId': code,
-            'month': mois, 'year': annee,
-            'artDesignation': s(c(r, 'PLVDESIGNATION')),
-            'artCode': cip13(c(r, 'ARTCODEBARRE')),
-            'artFamille': s(c(r, 'ARTSOUSFAMILLE')) or None,
-            'qte': num(c(r, 'PLVQTE')),
-            'puBrut': num(c(r, 'PLVPUBRUT')),
-            'puNet': num(c(r, 'PLVPUNET')),
-            'mntNetHt': num(c(r, 'PLVMNTNETHT')),
-        })
-        n += 1
-    wb.close()
-    print('  {} : {} lignes'.format(os.path.basename(path), n))
+        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+        ws = wb.active
+        it = ws.iter_rows(values_only=True)
+        h = next(it)
+        hi = {name: i for i, name in enumerate(h)}
 
-# ── 3. Officines actives (avec ventes) ──
+        def c(row, name, _hi=hi):
+            i = _hi.get(name)
+            return row[i] if (i is not None and i < len(row)) else None
+
+        n = 0
+        for r in it:
+            tir = c(r, 'TIRCODE')
+            if tir is None:
+                continue
+            try:
+                code = str(int(float(tir)))
+            except (TypeError, ValueError):
+                code = s(tir)
+            if not code:
+                continue
+            if code not in active:
+                active[code] = s(c(r, 'TIRSOCIETE'))
+            comms.setdefault(code, set()).add(comm)
+            sales.append({
+                'pharmacyId': code,
+                'month': mois, 'year': 2026, 'comm': comm,
+                'artDesignation': s(c(r, 'PLVDESIGNATION')),
+                'artCode': cip13(c(r, 'ARTCODEBARRE')),
+                'artFamille': s(c(r, 'ARTSOUSFAMILLE')) or None,
+                'qte': num(c(r, 'PLVQTE')),
+                'puBrut': num(c(r, 'PLVPUBRUT')),
+                'puNet': num(c(r, 'PLVPUNET')),
+                'mntNetHt': num(c(r, 'PLVMNTNETHT')),
+            })
+            n += 1
+        wb.close()
+        print('  {} ({}) : {} lignes'.format(os.path.basename(path), comm, n))
+
+# ── 3. Officines actives (avec ventes), taguées commercial ──
 officines = []
 for i, code in enumerate(sorted(active.keys())):
     info = pharm.get(code, {})
@@ -138,6 +141,7 @@ for i, code in enumerate(sorted(active.keys())):
         'tel': info.get('tel', ''),
         'groupement': info.get('groupement', ''),
         'potentiel': info.get('potentiel'),
+        'comms': sorted(comms.get(code, [])),
         'color': PALETTE[i % len(PALETTE)],
     })
 
