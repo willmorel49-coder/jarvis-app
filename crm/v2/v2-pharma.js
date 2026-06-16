@@ -1071,6 +1071,28 @@
             ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
         '</div>' +
       '</div>';
+    // ── Pharmacies membres du groupement ──
+    var members = (V2.pharmacies || []).filter(function (p) {
+      if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return false;
+      return groupName(p) === grpName;
+    }).map(function (p) {
+      var ps = pharmaSales(p.id);
+      return { p: p, ca: V2.sumCA(ps), active: ps.length > 0 };
+    }).sort(function (a, b) { return (b.active - a.active) || (b.ca - a.ca); });
+    var memRows = members.map(function (m) {
+      return '<a class="v2-row" onclick="V2.go(\'pharma\',\'' + esc(String(m.p.id)) + '\')">' +
+        '<span class="v2-row-dot" style="background:' + esc(m.p.color || 'var(--c-cat)') + '"></span>' +
+        '<span class="v2-row-name">' + esc(m.p.name) + (m.p.ville ? ' <span style="color:var(--muted);font-weight:500">· ' + esc(m.p.ville) + '</span>' : '') + '</span>' +
+        (m.active ? '<span class="v2-row-val mono">' + V2.fmtEur(m.ca) + '</span>' : '<span class="v2-row-meta">non cliente</span>') +
+        '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
+      '</a>';
+    }).join('');
+    var membersCard =
+      '<div class="v2-card" style="margin-bottom:22px">' +
+        '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pharma', 17) + 'Pharmacies du groupement</div>' +
+          '<span class="v2-card-link" style="cursor:default;color:var(--muted)">' + members.length + ' · ' + data.panel + ' cliente' + (data.panel > 1 ? 's' : '') + '</span></div>' +
+        (memRows || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie de ce groupement dans tes données.</div></div>') +
+      '</div>';
     var catsHtml = data.cats.length
       ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel); }).join('')
       : '<div class="v2-empty"><div class="v2-empty-d">Aucun achat identifié pour ce groupement.</div></div>';
@@ -1078,6 +1100,7 @@
       '<div class="v2-wrap">' +
         '<button class="v2-back" style="margin-bottom:16px" onclick="V2.pharmaGroupBack()">' + ICO('back', 16) + 'Tous les groupements</button>' +
         hero +
+        membersCard +
         '<div style="display:flex;align-items:baseline;gap:10px;margin:6px 0 16px;flex-wrap:wrap">' +
           '<div class="v2-page-title" style="margin:0;font-size:22px">Liste d\'achats idéale</div>' +
           '<div style="font-size:13px;color:var(--muted)">produits triés par nombre de pharmacies qui les commandent (Sortie)</div>' +
