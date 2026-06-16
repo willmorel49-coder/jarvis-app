@@ -25,6 +25,37 @@ def _cipkey(code):
     except (TypeError, ValueError):
         m = _re.match(r'\d+', str(code or ''))
         return m.group(0) if m else str(code or '').strip()
+def load_enseignes():
+    """CIP -> enseigne/groupement depuis les fichiers géoloc (colonne TIRENSEIGNE)."""
+    import glob
+    m = {}
+    # on prend le géoloc le plus récent par commercial
+    files = {}
+    for p in glob.glob(os.path.join(STATS, '*_geolocalisation_*.xlsx')):
+        pref = os.path.basename(p).split('_geoloc')[0]
+        if pref not in files or p > files[pref]:
+            files[pref] = p
+    for p in files.values():
+        try:
+            wb = openpyxl.load_workbook(p, read_only=True, data_only=True); ws = wb.active
+            it = ws.iter_rows(values_only=True); h = next(it)
+            hi = {n: i for i, n in enumerate(h)}
+            ti, ei = hi.get('TIRCODE'), hi.get('TIRENSEIGNE')
+            if ti is None or ei is None:
+                wb.close(); continue
+            for r in it:
+                code = r[ti] if ti < len(r) else None
+                ens = r[ei] if ei < len(r) else None
+                ens = (str(ens).strip() if ens else '')
+                if not code or not ens:
+                    continue
+                m[_cipkey(code)] = ens
+            wb.close()
+        except Exception as e:
+            print('  [ens] err', p, e)
+    print('  [ens] {} CIP -> enseigne (géoloc)'.format(len(m)))
+    return m
+
 def load_groupements():
     cipm, namem = {}, {}
     if not os.path.exists(GRP_DB):
@@ -159,13 +190,15 @@ for comm, prefix in SOURCES:
         print('  {} ({}) : {} lignes'.format(os.path.basename(path), comm, n))
 
 # ── 3. Officines actives (avec ventes), taguées commercial + groupement ──
+enseignes = load_enseignes()
 grp_cip, grp_name = load_groupements()
 officines = []
 nb_grp = 0
 for i, code in enumerate(sorted(active.keys())):
     info = pharm.get(code, {})
     nm = info.get('name') or active[code] or ''
-    grp = grp_cip.get(_cipkey(code)) or grp_name.get(_norm_name(nm)) or info.get('groupement', '') or ''
+    # priorité : enseigne géoloc (officiel) > scraping CIP > scraping nom > WML_pharmacies
+    grp = enseignes.get(_cipkey(code)) or grp_cip.get(_cipkey(code)) or grp_name.get(_norm_name(nm)) or info.get('groupement', '') or ''
     if grp:
         nb_grp += 1
     officines.append({
