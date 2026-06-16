@@ -95,38 +95,6 @@
     return V2.margeMDLboite(sale.puNet) * (sale.qte || 0);
   }
 
-  // famille d'un produit benchmark (même logique que familyOf, sans 'sale')
-  function benchFamily(b) {
-    if (b.is_froid) return 'froid';
-    if (b.artnature === 'biosimilaire') return 'biosim';
-    if (b.artnature === 'generique' || b.artnature === 'generique_partenaire') return 'generiques';
-    return 'princeps'; // les produits Ameli non NR = princeps/autre
-  }
-
-  // Croissance annuelle du marché Ameli par famille.
-  // On AGRÈGE les volumes (Jan2026 vs Jan2025) puis on fait le ratio — robuste
-  // (la moyenne de % YoY explose dès qu'un produit part d'une base quasi nulle).
-  // ameli_months = 13 mois Jan2025→Jan2026 : [0]=Jan25, dernier=Jan26.
-  var _mfy = null;
-  function marketFamYoy() {
-    if (_mfy) return _mfy;
-    var B = window.BENCHMARK || [];
-    var acc = {};
-    B.forEach(function (b) {
-      if (!b.has_ameli) return;
-      var m = b.ameli_months;
-      if (!m || !m.length || m.length < 2) return;
-      var j25 = +m[0] || 0, j26 = +m[m.length - 1] || 0;
-      if (j25 <= 0) return;
-      var f = benchFamily(b);
-      var a = acc[f] || (acc[f] = { a25: 0, a26: 0 });
-      a.a25 += j25; a.a26 += j26;
-    });
-    var out = {};
-    Object.keys(acc).forEach(function (f) { out[f] = acc[f].a25 > 0 ? (acc[f].a26 - acc[f].a25) / acc[f].a25 * 100 : null; });
-    _mfy = out; return out;
-  }
-
   // petit chip d'évolution signé (+ vert / − rose)
   function trendChip(pct, naLabel) {
     if (pct == null || !isFinite(pct)) return '<span class="v2-chip" style="color:var(--muted);background:var(--line-2)">' + (naLabel || '—') + '</span>';
@@ -672,54 +640,7 @@
           '</div>';
       }
 
-      // ── #1 Ta dynamique vs le marché Ameli (par famille) ──
-      // Ta dynamique = 2nde moitié vs 1ère moitié de tes mois (réel).
-      // Marché = évolution annuelle Ameli (yoy_jan, Jan2026 vs Jan2025, réel).
-      var vsCard = '';
-      var allMv = availableMonths(sales);
-      if (allMv.length >= 2 && (window.BENCHMARK || []).length) {
-        var cutV = Math.ceil(allMv.length / 2);
-        var earlyV = {}, lateV = {};
-        allMv.forEach(function (m, i) { (i < cutV ? earlyV : lateV)[mkey(m.year, m.month)] = 1; });
-        var nEarlyV = cutV, nLateV = allMv.length - cutV;
-        var famE = {}, famL = {}, famC = {};
-        FAM.forEach(function (f) { famE[f.key] = 0; famL[f.key] = 0; famC[f.key] = 0; });
-        sales.forEach(function (s) {
-          var f = familyOf(s, idx), k = mkey(s.year, s.month), v = s.mntNetHt || 0;
-          if (earlyV[k]) famE[f] += v; else if (lateV[k]) famL[f] += v;
-        });
-        cur.forEach(function (s) { famC[familyOf(s, idx)] += (s.mntNetHt || 0); });
-        var mkt = marketFamYoy();
-        var vsRows = FAM.slice().filter(function (f) { return famC[f.key] > 0 || famE[f.key] > 0 || famL[f.key] > 0; })
-          .sort(function (a, b) { return famC[b.key] - famC[a.key]; })
-          .map(function (f) {
-            var em = nEarlyV ? famE[f.key] / nEarlyV : 0, lm = nLateV ? famL[f.key] / nLateV : 0;
-            var myTrend = em > 0 ? (lm - em) / em * 100 : null;
-            var mY = (f.key === 'nr') ? null : (mkt[f.key] != null ? mkt[f.key] : null);
-            var verdict = '';
-            if (myTrend != null && mY != null) {
-              var over = myTrend >= mY;
-              verdict = '<span class="v2-chip ' + (over ? 'g' : 'a') + '" style="margin-left:8px">' + (over ? 'tu surperformes' : 'en retard') + '</span>';
-            }
-            return '<div class="pilo-vs-row">' +
-              '<span class="pilo-vs-fam"><span class="pilo-fam-ico" style="color:' + f.color + '">' + ICO(f.key === 'froid' ? 'froid' : 'pill', 14) + '</span>' + f.label + '</span>' +
-              '<div class="pilo-vs-vals">' +
-                '<div class="pilo-vs-cell"><span class="pilo-vs-lbl">Toi</span>' + trendChip(myTrend, 'nouv.') + verdict + '</div>' +
-                '<div class="pilo-vs-cell"><span class="pilo-vs-lbl">Marché Ameli</span>' + trendChip(mY, 'non suivi') + '</div>' +
-                '<div class="pilo-vs-ca mono">' + V2.fmtEur(famC[f.key]) + '</div>' +
-              '</div>' +
-            '</div>';
-          }).join('');
-        vsCard =
-          '<div class="v2-card" style="margin-bottom:14px">' +
-            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'Ta dynamique vs le marché Ameli</div>' +
-              '<span class="v2-card-link" style="color:var(--muted);cursor:default">par famille</span></div>' +
-            vsRows +
-            '<div class="pilo-ameli-sub" style="margin:12px 0 0;font-weight:500;color:var(--muted-2)">Toi = 2ⁿᵈᵉ moitié vs 1ʳᵉ moitié de tes mois · Marché = évolution annuelle Ameli (réelle)</div>' +
-          '</div>';
-      }
-
-      // ── #2 Substitution génériques / biosimilaires (progression mensuelle) ──
+      // ── Substitution génériques / biosimilaires (progression mensuelle) ──
       var gxCard = '';
       var allMg = availableMonths(sales);
       if (allMg.length >= 1) {
@@ -836,7 +757,6 @@
           chart.html +
           '<div class="pilo-grid2">' + topCaCard + famCard + '</div>' +
           (grpCard ? ('<div class="pilo-grid2">' + tierCard + grpCard + '</div>') : tierCard) +
-          vsCard +
           gxCard +
           ameliCard +
           mdlCard +
@@ -963,16 +883,7 @@
       '.pilo-tier-dot{display:inline-block;width:9px;height:9px;border-radius:3px;flex-shrink:0}' +
       '.pilo-tier-meta{font-size:10.5px;color:var(--muted-2);margin-top:4px}' +
       '.pilo-ameli-sub{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.005em}' +
-      // #1 dynamique vs marché
-      '.pilo-vs-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}' +
-      '.pilo-vs-row:last-of-type{border-bottom:none}' +
-      '.pilo-vs-fam{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px;min-width:120px}' +
-      '.pilo-vs-vals{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:flex-end;flex:1}' +
-      '.pilo-vs-cell{display:flex;align-items:center;gap:7px}' +
-      '.pilo-vs-lbl{font-size:11px;color:var(--muted);font-weight:600}' +
-      '.pilo-vs-ca{font-size:13.5px;font-weight:700;min-width:84px;text-align:right}' +
-      '@media(max-width:640px){.pilo-vs-row{flex-direction:column;align-items:flex-start;gap:7px}.pilo-vs-vals{justify-content:flex-start}.pilo-vs-ca{text-align:left}}' +
-      // #2 substitution Gx/biosim
+      // substitution Gx/biosim
       '.pilo-gx-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap}' +
       '.pilo-gx-big{font-size:30px;font-weight:700;letter-spacing:-.03em;color:#5a6172}' +
       '.pilo-gx-cap{font-size:12.5px;color:var(--muted);font-weight:600}' +
