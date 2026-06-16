@@ -269,3 +269,39 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .v2-login-err{font-size:13px;color:var(--c-rose);margin-top:12px;min-height:18px}
 
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ─────────────────────────────────────────────────────────
+   MOBILE / TÉLÉPHONE — passe responsive globale
+   ───────────────────────────────────────────────────────── */
+@media (max-width:640px){
+  /* topbar compacte : recherche réduite à l'icône */
+  .v2-top{padding:10px 14px;gap:10px}
+  .v2-top-search{font-size:0;padding:9px 11px;gap:0}
+  .v2-top-search kbd{display:none}
+  .v2-brand-t{font-size:14px}
+  .v2-brand-s{font-size:10.5px}
+  .v2-av{width:34px;height:34px}
+  .v2-back{padding:7px 11px;font-size:12.5px}
+
+  /* contenu : marges réduites, titres plus petits */
+  .v2-wrap{padding:18px 14px 64px;margin-right:0 !important}
+  .v2-wrap.narrow{padding:18px 14px 64px}
+  .v2-hero h1{font-size:26px}
+  .v2-hero p{font-size:14px}
+  .v2-page-title{font-size:22px}
+  .v2-kpis{grid-template-columns:repeat(2,1fr);gap:10px}
+  .v2-kpi-v{font-size:21px}
+
+  /* panneaux latéraux (inspecteurs) → plein écran */
+  .cat-insp,.off-insp{width:100% !important;max-width:100% !important}
+
+  /* éditeur fiches : aperçu sous l'édition (déjà géré >980, on force ici) */
+  .fch-edit-grid{grid-template-columns:1fr !important}
+
+  /* barre de filtre Sagitta : passe à la ligne */
+  .ps-bar{flex-wrap:wrap}
+  .ps-dept{max-width:100%;flex:1 1 100%;order:-1}
+
+  /* tables : scroll horizontal fluide */
+  .v2-table{font-size:12.5px}
+}
