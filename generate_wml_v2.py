@@ -275,6 +275,26 @@ from collections import Counter as _C
 _c = _C(o['groupement'] for o in officines if o.get('groupement'))
 print('  groupements après fusion : {} distincts'.format(len(_c)))
 
+# ── 3ter. Logos par groupement (même canonicalisation appliquée aux noms de logos) ──
+def _canon(g):
+    n = _gkey(g)
+    return MERGE.get(n) or alias.get(n) or disp.get(n) or g
+LOGOS_JSON = '/Users/williammorel/JARVIS/GROUPEMENTS/data/sources/logos.json'
+grp_logos = {}
+try:
+    raw_logos = json.load(open(LOGOS_JSON, encoding='utf-8'))
+    canon_logo = {}
+    for name, b64 in raw_logos.items():
+        c = _canon(name)
+        if c and c not in canon_logo:
+            canon_logo[c] = b64
+    for g in set(o['groupement'] for o in officines if o.get('groupement')):
+        if g in canon_logo:
+            grp_logos[g] = canon_logo[g]
+    print('  logos rattachés : {}/{} groupements'.format(len(grp_logos), len(_c)))
+except Exception as e:
+    print('  [logos] err', e)
+
 # ── 4. Écriture JS ──
 months_lbl = 'Jan-Mai 2026'
 with open(OUT, 'w', encoding='utf-8') as f:
@@ -285,7 +305,8 @@ with open(OUT, 'w', encoding='utf-8') as f:
     f.write('// WML_SALES format compact : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]\n')
     f.write('const WML_OFFICINES = ' + json.dumps(officines, ensure_ascii=False, separators=(',', ':')) + ';\n')
     f.write('const WML_SALES = ' + json.dumps(sales, ensure_ascii=False, separators=(',', ':')) + ';\n')
-    f.write('try{window.WML_OFFICINES=WML_OFFICINES;window.WML_SALES=WML_SALES;}catch(e){}\n')
+    f.write('const GRP_LOGOS = ' + json.dumps(grp_logos, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    f.write('try{window.WML_OFFICINES=WML_OFFICINES;window.WML_SALES=WML_SALES;window.GRP_LOGOS=GRP_LOGOS;}catch(e){}\n')
 
 size = os.path.getsize(OUT)
 print('\nOK -> {}'.format(OUT))

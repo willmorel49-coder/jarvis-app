@@ -952,6 +952,14 @@
     '</div>';
   }
   function groupName(p) { return (String(p.groupement || '').trim()) || '— Sans groupement'; }
+  function grpLogo(name, big) {
+    var l = window.GRP_LOGOS && window.GRP_LOGOS[name];
+    var cls = 'grp-logo' + (big ? ' grp-logo-big' : '');
+    if (l) return '<span class="' + cls + '"><img src="' + esc(l) + '" alt=""></span>';
+    var ini = String(name || '?').replace(/[^A-Za-zÀ-ÿ0-9]+/g, ' ').trim().split(/\s+/).slice(0, 2)
+      .map(function (w) { return w.charAt(0); }).join('').toUpperCase() || '?';
+    return '<span class="' + cls + ' grp-logo-x">' + esc(ini) + '</span>';
+  }
   function groupementList() {
     var byG = {};
     (V2.pharmacies || []).forEach(function (p) {
@@ -1003,7 +1011,7 @@
     var list = groupementList();
     var rows = list.map(function (g) {
       return '<a class="v2-row" onclick="V2.pharmaGroup(\'' + encodeURIComponent(g.name) + '\')">' +
-        '<span class="v2-row-dot" style="background:var(--c-cat)"></span>' +
+        grpLogo(g.name) +
         '<span class="v2-row-name">' + esc(g.name) + '</span>' +
         '<span class="v2-row-opp mono">' + g.active + ' / ' + g.nb + ' actives</span>' +
         '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
@@ -1062,7 +1070,7 @@
     var hero =
       '<div class="v2-card" style="margin-bottom:22px;padding:0">' +
         '<div style="display:flex;align-items:center;gap:14px;padding:20px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap">' +
-          '<span class="v2-pharma-pin" style="background:var(--c-cat)">' + ICO('grid', 22) + '</span>' +
+          grpLogo(grpName, true) +
           '<div style="flex:1;min-width:160px">' +
             '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + esc(grpName) + '</div>' +
             '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + data.panel + ' pharmacie' + (data.panel > 1 ? 's' : '') + ' active' + (data.panel > 1 ? 's' : '') + ' · ' + total + ' produits commandés</div>' +
@@ -1253,6 +1261,12 @@
       '.ph-vtab svg{color:currentColor}',
       '.ph-vtab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 3px 9px rgba(0,80,230,.26)}',
       '.ph-froid{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid);background:color-mix(in srgb,var(--c-froid) 13%,#fff)}',
+      // logo groupement (image réelle ou badge initiales)
+      '.grp-logo{width:38px;height:38px;border-radius:10px;flex-shrink:0;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:var(--sh-1)}',
+      '.grp-logo img{max-width:100%;max-height:100%;object-fit:contain}',
+      '.grp-logo-x{background:var(--c-cat);color:#fff;font-weight:800;font-size:14px;border:none}',
+      '.grp-logo-big{width:48px;height:48px;border-radius:13px}',
+      '.grp-logo-big.grp-logo-x{font-size:17px}',
       // ── Modal aperçu prépa RDV ──
       '.prepa-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
       '.prepa-modal.open{opacity:1;pointer-events:auto}',
