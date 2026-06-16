@@ -283,15 +283,42 @@ LOGOS_JSON = '/Users/williammorel/JARVIS/GROUPEMENTS/data/sources/logos.json'
 grp_logos = {}
 try:
     raw_logos = json.load(open(LOGOS_JSON, encoding='utf-8'))
-    canon_logo = {}
+    # Matching conservateur : clé normalisée (_gkey) + retrait d'un mot
+    # générique en préfixe/suffixe + match par token entier (>=5 car.).
+    # AUCUNE inclusion approximative (un mauvais logo est pire que pas de
+    # logo). Jamais un mot générique seul.
+    _GENERIC = {'PHARMACIE', 'PHARMACIES', 'PHARMA', 'GROUPE', 'GROUPEMENT', 'SANTE', 'RESEAU', 'LES'}
+    _STOP = {'PHARMA', 'PHARMACIE', 'PHARMACIES', 'SANTE', 'GROUPE', 'GROUPEMENT'}
+
+    def _logo_variants(gk):
+        vs = {gk}
+        for n in _GENERIC:
+            if gk.endswith(n) and len(gk) - len(n) >= 4:
+                vs.add(gk[:-len(n)])
+            if gk.startswith(n) and len(gk) - len(n) >= 4:
+                vs.add(gk[len(n):])
+        return vs
+
+    logo_idx = {}
     for name, b64 in raw_logos.items():
-        c = _canon(name)
-        if c and c not in canon_logo:
-            canon_logo[c] = b64
-    for g in set(o['groupement'] for o in officines if o.get('groupement')):
-        if g in canon_logo:
-            grp_logos[g] = canon_logo[g]
-    print('  logos rattachés : {}/{} groupements'.format(len(grp_logos), len(_c)))
+        for v in _logo_variants(_gkey(name)):
+            if v and v not in _STOP:
+                logo_idx.setdefault(v, b64)
+
+    grps_all = set(o['groupement'] for o in officines if o.get('groupement'))
+    for g in grps_all:
+        hit = None
+        for v in _logo_variants(_gkey(g)):
+            if v in logo_idx and v not in _STOP:
+                hit = logo_idx[v]; break
+        if not hit:
+            for tok in _re.split(r'[\s&/,\-]+', g):
+                tk = _gkey(tok)
+                if len(tk) >= 5 and tk not in _STOP and tk in logo_idx:
+                    hit = logo_idx[tk]; break
+        if hit:
+            grp_logos[g] = hit
+    print('  logos rattachés : {}/{} groupements'.format(len(grp_logos), len(grps_all)))
 except Exception as e:
     print('  [logos] err', e)
 
