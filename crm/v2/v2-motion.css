@@ -1,0 +1,191 @@
+/* ============================================================
+   v2-motion.css — Global motion layer for JARVIS CRM v2
+   Additive only. Animates transform/opacity. No layout/spacing.
+   Matches existing DA (Satoshi, light B-craft, Geist Mono).
+   The JS layer toggles .is-in / .mo-view-in and sets --mo-i.
+   ============================================================ */
+
+/* --- Motion tokens (shared with the JS layer, do not rename) --- */
+:root{
+  --mo-ease-out: cubic-bezier(.22,1,.36,1);
+  --mo-ease-spring: cubic-bezier(.34,1.4,.5,1);
+  --mo-ease-soft: cubic-bezier(.4,0,.2,1);
+  --mo-dur-fast: 140ms;
+  --mo-dur: 240ms;
+  --mo-dur-slow: 420ms;
+}
+
+/* ============================================================
+   1. Reveal primitive
+   Base hidden state; JS adds .is-in to play. Stagger via --mo-i.
+   ============================================================ */
+[data-reveal]{
+  opacity:0;
+  transform:translateY(8px);
+  transition:opacity var(--mo-dur-slow) var(--mo-ease-out),
+             transform var(--mo-dur-slow) var(--mo-ease-out);
+  transition-delay:calc(var(--mo-i, 0) * 40ms);
+  will-change:opacity, transform;
+}
+[data-reveal].is-in{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* ============================================================
+   2. Card hover lift — gentle, transform/shadow only
+   v2.css gives static cards; we add a soft lift on hover only.
+   ============================================================ */
+.v2-card{
+  transition:transform var(--mo-dur) var(--mo-ease-out),
+             box-shadow var(--mo-dur) var(--mo-ease-out);
+}
+/* Lift only cards meant to be interactive (links/clickable). */
+.v2-card.v2-card-link:hover,
+.v2-card[onclick]:hover,
+a.v2-card:hover{
+  transform:translateY(-2px);
+  box-shadow:var(--sh-3);
+}
+
+/* ============================================================
+   3. Row hover — chevron nudge for clickable list rows
+   v2.css already eases the row background; we add the chevron.
+   ============================================================ */
+.v2-row{
+  transition:background var(--mo-dur) var(--mo-ease-soft);
+}
+.v2-row-chev{
+  transition:transform var(--mo-dur) var(--mo-ease-out);
+}
+.v2-row:hover .v2-row-chev{
+  transform:translateX(2px);
+}
+
+/* ============================================================
+   4. Buttons / segmented controls / tabs — press feedback
+   Smooth color/transform; tactile scale on :active.
+   ============================================================ */
+.v2-btn,
+.pilo-segbtn,
+.ph-vtab,
+.grp-tab,
+.v2-seg,
+.v2-chip,
+.v2-rchip{
+  transition:background var(--mo-dur) var(--mo-ease-soft),
+             color var(--mo-dur) var(--mo-ease-soft),
+             border-color var(--mo-dur) var(--mo-ease-soft),
+             transform var(--mo-dur-fast) var(--mo-ease-out),
+             box-shadow var(--mo-dur) var(--mo-ease-out);
+}
+.v2-btn:active,
+.pilo-segbtn:active,
+.ph-vtab:active,
+.grp-tab:active,
+.v2-seg:active,
+.v2-chip:active,
+.v2-rchip:active{
+  transform:scale(.97);
+}
+
+/* ============================================================
+   5. Modal / overlay entrances
+   The modals (.mkt-modal/.prepa-modal) already animate via .open
+   in their own CSS. We only provide a reusable pop-in keyframe
+   for any panel that opts in with .mo-pop (no clobbering existing).
+   ============================================================ */
+@keyframes mo-pop-in{
+  from{ opacity:0; transform:translateY(12px) scale(.98); }
+  to{   opacity:1; transform:translateY(0)    scale(1);   }
+}
+.mo-pop{
+  animation:mo-pop-in var(--mo-dur-slow) var(--mo-ease-spring) both;
+}
+@keyframes mo-fade-in{
+  from{ opacity:0; }
+  to{   opacity:1; }
+}
+.mo-fade{
+  animation:mo-fade-in var(--mo-dur) var(--mo-ease-soft) both;
+}
+
+/* ============================================================
+   6. Skeleton shimmer — cosmetic loading placeholder (opt-in)
+   Uses background-position sweep (cheap), not layout props.
+   ============================================================ */
+.mo-skeleton{
+  position:relative;
+  overflow:hidden;
+  background:var(--card-2);
+  border-radius:8px;
+}
+.mo-skeleton::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  transform:translateX(-100%);
+  background:linear-gradient(90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.55) 50%,
+    rgba(255,255,255,0) 100%);
+  animation:mo-shimmer 1.4s var(--mo-ease-soft) infinite;
+}
+@keyframes mo-shimmer{
+  100%{ transform:translateX(100%); }
+}
+
+/* ============================================================
+   7. KPI value emphasis — subtle scale-in on reveal
+   Plays when its reveal container becomes visible.
+   ============================================================ */
+[data-reveal] .v2-kpi-v{
+  transform:scale(.98);
+  opacity:.0001;
+  transition:transform var(--mo-dur-slow) var(--mo-ease-spring),
+             opacity var(--mo-dur) var(--mo-ease-soft);
+  transition-delay:calc(var(--mo-i, 0) * 40ms + 60ms);
+}
+[data-reveal].is-in .v2-kpi-v{
+  transform:scale(1);
+  opacity:1;
+}
+
+/* ============================================================
+   8. View / tab switch — gentle fade-up on render
+   JS adds .mo-view-in on the page root (.v2-wrap) each render.
+   ============================================================ */
+@keyframes mo-view-in{
+  from{ opacity:0; transform:translateY(6px); }
+  to{   opacity:1; transform:translateY(0); }
+}
+.v2-wrap.mo-view-in,
+.mo-view-in{
+  animation:mo-view-in var(--mo-dur) var(--mo-ease-out) both;
+}
+
+/* ============================================================
+   9. Focus-visible — smooth, tasteful ring (does not replace
+   existing focus styles, just eases their appearance).
+   ============================================================ */
+.v2-btn:focus-visible,
+.pilo-segbtn:focus-visible,
+.ph-vtab:focus-visible,
+.grp-tab:focus-visible,
+.v2-seg:focus-visible,
+.v2-chip:focus-visible,
+.v2-rchip:focus-visible,
+.v2-card-link:focus-visible,
+.v2-row:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px var(--halo, rgba(0,80,230,.22));
+  transition:box-shadow var(--mo-dur-fast) var(--mo-ease-soft);
+}
+
+/* ============================================================
+   10. Reduced-motion killswitch — full stop, accessibility.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+  [data-reveal]{opacity:1 !important; transform:none !important;}
+}

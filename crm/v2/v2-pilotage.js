@@ -21,6 +21,21 @@
     { key: 'princeps',   label: 'Princeps',      color: '#0050E6' },
   ];
 
+  // ── Tranches de prix (prix net grossiste / achat unitaire) ────
+  var TIERS = [
+    { label: '0 – 4,33 €',     sub: 'petits prix',     color: '#11a63c' },
+    { label: '4,33 – 468 €',   sub: 'intermédiaires',  color: '#0050E6' },
+    { label: '468 – 2 000 €',  sub: 'chers',           color: '#C7791A' },
+    { label: '> 2 000 €',      sub: 'très chers',      color: '#C7283D' },
+  ];
+  function priceTier(pu) {
+    pu = +pu || 0;
+    if (pu < 4.33) return 0;
+    if (pu < 468) return 1;
+    if (pu < 2000) return 2;
+    return 3;
+  }
+
   // ── Index produit cip13 → {has_ameli, is_froid, artnature, isNR} ──
   var _idx = null, _idxStamp = null;
   function normCip(c) { return String(c == null ? '' : c).replace(/\D/g, ''); }
@@ -501,6 +516,123 @@
           famHtml +
         '</div>';
 
+      // ── Répartition par tranche de prix (prix net unitaire) ──
+      var tierCA = [0, 0, 0, 0], tierRefs = [{}, {}, {}, {}];
+      cur.forEach(function (s) {
+        var t = priceTier(s.puNet);
+        tierCA[t] += (s.mntNetHt || 0);
+        tierRefs[t][normCip(s.artCode)] = 1;
+      });
+      var tierTotal = tierCA.reduce(function (a, b) { return a + b; }, 0) || 1;
+      var tierHtml = TIERS.map(function (t, i) {
+        var v = tierCA[i], pct = v / tierTotal * 100, nref = Object.keys(tierRefs[i]).length;
+        return '<div class="pilo-fam">' +
+          '<div class="pilo-fam-top">' +
+            '<span class="pilo-fam-l"><span class="pilo-tier-dot" style="background:' + t.color + '"></span>' + t.label +
+              ' <span style="color:var(--muted);font-weight:500;font-size:11.5px">· ' + t.sub + '</span></span>' +
+            '<span class="pilo-fam-v"><span class="mono" style="font-weight:700">' + V2.fmtEur(v) + '</span>' +
+              '<span class="mono pilo-fam-pct">' + pct.toFixed(1).replace('.', ',') + ' %</span></span>' +
+          '</div>' +
+          '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:' + t.color + '"></span></div>' +
+          '<div class="pilo-tier-meta mono">' + nref + ' référence' + (nref > 1 ? 's' : '') + '</div>' +
+        '</div>';
+      }).join('');
+      var tierCard =
+        '<div class="v2-card" style="padding:18px 20px">' +
+          '<div class="v2-card-t" style="margin-bottom:16px">' + ICO('cat', 17) + 'Répartition par tranche de prix</div>' +
+          tierHtml +
+        '</div>';
+
+      // ── CA & marge par groupement ──
+      var phById = {}; (V2.pharmacies || []).forEach(function (p) { phById[p.id] = p; });
+      function grpKey(ph) { return (ph && (ph.groupement || '').trim()) || 'Indépendants'; }
+      var grpAgg = {};
+      cur.forEach(function (s) {
+        var ph = phById[s.pharmacyId]; if (!ph) return;
+        var g = grpKey(ph);
+        var o = grpAgg[g] || (grpAgg[g] = { name: g, ca: 0, mdl: 0, prev: 0, ph: {} });
+        o.ca += (s.mntNetHt || 0); o.mdl += mdlOf(s, idx); o.ph[s.pharmacyId] = 1;
+      });
+      prev.forEach(function (s) {
+        var ph = phById[s.pharmacyId]; if (!ph) return;
+        var o = grpAgg[grpKey(ph)]; if (o) o.prev += (s.mntNetHt || 0);
+      });
+      var grpList = Object.keys(grpAgg).map(function (k) { return grpAgg[k]; })
+        .sort(function (a, b) { return b.ca - a.ca; });
+      var grpCard = '';
+      if (grpList.length >= 2 && !opso) {
+        var topG = grpList.slice(0, 10);
+        var maxG = Math.max(topG[0].ca, 1);
+        var grpHtml = topG.map(function (g, i) {
+          var pct = Math.max(2, g.ca / maxG * 100);
+          var nb = Object.keys(g.ph).length;
+          return '<div class="v2-row" style="cursor:default">' +
+            '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="v2-row-name">' + esc(g.name) + '</div>' +
+              '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--ip-blue)"></span></div>' +
+            '</div>' +
+            '<div class="pilo-vals">' +
+              '<div class="v2-row-val mono">' + V2.fmtEur(g.ca) + '</div>' +
+              '<div class="v2-row-meta mono">' + nb + ' off. · MDL ' + V2.fmtEur(g.mdl) + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+        grpCard =
+          '<div class="v2-card">' +
+            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('grid', 17) + 'CA &amp; marge par groupement</div>' +
+              '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + grpList.length + ' groupements</span></div>' +
+            grpHtml +
+          '</div>';
+      }
+
+      // ── Pénétration du marché Ameli (couverture de gamme + marchés non couverts) ──
+      var B = window.BENCHMARK || [];
+      var ameliMkt = {};
+      B.forEach(function (b) {
+        if (!b.has_ameli) return;
+        var c = normCip(b.cip13); if (!c) return;
+        ameliMkt[c] = { desc: (b.designation || c), market: +b.ameli_total || 0 };
+      });
+      var ameliCips = Object.keys(ameliMkt);
+      var ameliCard = '';
+      if (ameliCips.length) {
+        var myQ = {}; cur.forEach(function (s) { var c = normCip(s.artCode); if (c) myQ[c] = (myQ[c] || 0) + (s.qte || 0); });
+        var coveredN = 0; ameliCips.forEach(function (c) { if (myQ[c] > 0) coveredN++; });
+        var totalN = ameliCips.length;
+        var covBar = Math.round(totalN ? coveredN / totalN * 100 : 0);
+        var gaps = ameliCips.filter(function (c) { return !myQ[c] && ameliMkt[c].market > 0; })
+          .map(function (c) { return ameliMkt[c]; })
+          .sort(function (a, b) { return b.market - a.market; }).slice(0, 10);
+        var maxGap = gaps.length ? Math.max(gaps[0].market, 1) : 1;
+        var gapHtml = gaps.length ? gaps.map(function (r, i) {
+          var pct = Math.max(3, r.market / maxGap * 100);
+          return '<div class="v2-row" style="cursor:default">' +
+            '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="v2-row-name">' + esc(r.desc) + '</div>' +
+              '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--c-amber)"></span></div>' +
+            '</div>' +
+            '<div class="pilo-vals">' +
+              '<div class="v2-row-val mono">' + V2.fmtNum(r.market) + '</div>' +
+              '<div class="v2-row-meta mono" style="color:var(--c-amber)">non commandé</div>' +
+            '</div>' +
+          '</div>';
+        }).join('') : '<div class="v2-empty"><div class="v2-empty-d">Tu couvres tous les marchés Ameli disponibles.</div></div>';
+        ameliCard =
+          '<div class="v2-card" style="margin-bottom:14px">' +
+            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'Pénétration du marché Ameli</div>' +
+              '<span class="v2-card-link" style="color:var(--muted);cursor:default">couverture de gamme</span></div>' +
+            '<div class="opso-gauge-track" style="margin-top:2px"><div class="opso-gauge-fill" data-w="' + covBar + '" style="width:0;background:var(--ip-blue)"></div></div>' +
+            '<div class="opso-gauge-labels" style="margin-bottom:18px">' +
+              '<span class="mono" style="font-size:13px;font-weight:700;color:var(--ip-blue)">' + covBar + ' %</span>' +
+              '<span style="font-size:12px;color:var(--muted)">' + V2.fmtNum(coveredN) + ' / ' + V2.fmtNum(totalN) + ' produits Ameli commandés</span>' +
+            '</div>' +
+            '<div class="pilo-ameli-sub">Plus gros marchés Ameli que tu ne commandes pas <span style="color:var(--muted-2)">— volume national</span></div>' +
+            gapHtml +
+          '</div>';
+      }
+
       // ── Alerte : Top 10 pharmacies en BAISSE (CA décline sur les mois) ──
       // Compare la 2e moitié des mois disponibles à la 1re (moyenne mensuelle).
       var allMonths = availableMonths(sales);
@@ -580,6 +712,8 @@
           kpis +
           chart.html +
           '<div class="pilo-grid2">' + topCaCard + famCard + '</div>' +
+          (grpCard ? ('<div class="pilo-grid2">' + tierCard + grpCard + '</div>') : tierCard) +
+          ameliCard +
           mdlCard +
         '</div>';
 
@@ -700,6 +834,10 @@
       '.pilo-fam-ico{display:inline-flex;align-items:center}' +
       '.pilo-fam-v{display:flex;align-items:baseline;gap:9px}' +
       '.pilo-fam-pct{font-size:11.5px;color:var(--muted)}' +
+      // tranches de prix
+      '.pilo-tier-dot{display:inline-block;width:9px;height:9px;border-radius:3px;flex-shrink:0}' +
+      '.pilo-tier-meta{font-size:10.5px;color:var(--muted-2);margin-top:4px}' +
+      '.pilo-ameli-sub{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.005em}' +
       // chart 13 mois
       '.pilo-chart{position:relative;display:flex;align-items:flex-end;gap:6px;height:160px;padding-top:8px}' +
       '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;cursor:default;min-width:0}' +
