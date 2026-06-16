@@ -9,7 +9,33 @@ Python 3.9 compatible.
 """
 import json
 import os
+import sqlite3
 import openpyxl
+
+# Mapping CIP -> groupement issu du scraping (projet GROUPEMENTS)
+GRP_DB = '/Users/williammorel/JARVIS/GROUPEMENTS/data/output/pharmacies.sqlite'
+def load_groupements():
+    m = {}
+    if not os.path.exists(GRP_DB):
+        print('  [grp] base absente :', GRP_DB); return m
+    try:
+        c = sqlite3.connect(GRP_DB)
+        for code, g25, gact in c.execute(
+                "select code_phirst, groupement_2025, groupement_actuel from pharmacies"):
+            g = (g25 or gact or '').strip()
+            if not code or not g:
+                continue
+            try:
+                key = str(int(float(code)))
+            except (TypeError, ValueError):
+                key = str(code).strip()
+            if key and key not in m:
+                m[key] = g
+        c.close()
+    except Exception as e:
+        print('  [grp] erreur :', e)
+    print('  [grp] {} CIP -> groupement chargés'.format(len(m)))
+    return m
 
 BASE = '/Users/williammorel/JARVIS/APP'
 STATS = os.path.join(BASE, 'STATS')
@@ -128,10 +154,15 @@ for comm, prefix in SOURCES:
         wb.close()
         print('  {} ({}) : {} lignes'.format(os.path.basename(path), comm, n))
 
-# ── 3. Officines actives (avec ventes), taguées commercial ──
+# ── 3. Officines actives (avec ventes), taguées commercial + groupement ──
+grp_map = load_groupements()
 officines = []
+nb_grp = 0
 for i, code in enumerate(sorted(active.keys())):
     info = pharm.get(code, {})
+    grp = grp_map.get(code) or info.get('groupement', '') or ''
+    if grp:
+        nb_grp += 1
     officines.append({
         'id': code,
         'code': code,
@@ -139,11 +170,12 @@ for i, code in enumerate(sorted(active.keys())):
         'ville': info.get('ville', ''),
         'cp': info.get('cp', ''),
         'tel': info.get('tel', ''),
-        'groupement': info.get('groupement', ''),
+        'groupement': grp,
         'potentiel': info.get('potentiel'),
         'comms': sorted(comms.get(code, [])),
         'color': PALETTE[i % len(PALETTE)],
     })
+print('  officines avec groupement : {}/{}'.format(nb_grp, len(officines)))
 
 # ── 4. Écriture JS ──
 months_lbl = 'Jan-Mai 2026'
