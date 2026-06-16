@@ -23,6 +23,10 @@
   var selPid = null;    // pharma à laquelle appartient la sélection courante
   // Filtre segment OPSO : 'all' | 'cliente' | 'prospect'
   var opsoFilter = 'all';
+  // Sous-onglet Opportunités : 'officines' | 'groupements'
+  var pharmaView = 'officines';
+  var selGroup = null;        // groupement ouvert
+  var grpCollapsed = {};      // repli des catégories en vue groupement
 
   // ── Helpers OPSO ──────────────────────────────────────────────
   function isOpso() { return !!(window.V2_BRAND && window.V2_BRAND.opso); }
@@ -361,6 +365,7 @@
         '<div class="v2-page-title">Mes officines</div>' +
         '<div class="v2-page-sub">' + phs.length + ' pharmacie' + (phs.length > 1 ? 's' : '') +
           ' · clique pour voir les opportunités</div>' +
+        pharmaTabs('officines') +
         commBar +
         opsoFilterBar +
         '<div class="v2-search" style="margin-bottom:20px;padding:14px 18px">' + ICO('search', 20, 2) +
@@ -661,9 +666,10 @@
     var b = document.getElementById('v2-opp-pdf');
     if (!b) return;
     var n = selCips ? selCips.size : 0;
+    var grp = (String(selPid).indexOf('GRP:') === 0);
     b.innerHTML = ICO('download', 17) + (n
-      ? 'Prépa RDV · ' + n + ' produit' + (n > 1 ? 's' : '')
-      : 'Préparer le RDV (PDF)');
+      ? (grp ? 'Liste · ' : 'Prépa RDV · ') + n + ' produit' + (n > 1 ? 's' : '')
+      : (grp ? 'Liste d\'achats (PDF)' : 'Préparer le RDV (PDF)'));
   }
 
   // Coche / décoche un produit (toggle ciblé, pas de re-render).
@@ -935,10 +941,230 @@
   };
 
   // ── Enregistrement dans le registry ────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // SOUS-ONGLET GROUPEMENTS — listes d'achats idéales par groupement
+  // (produits commandés, triés par nb de pharmacies qui commandent)
+  // ═══════════════════════════════════════════════════════════════
+  function pharmaTabs(active) {
+    return '<div class="ph-vtabs">' +
+      '<button class="ph-vtab' + (active === 'officines' ? ' on' : '') + '" onclick="V2.pharmaView(\'officines\')">' + ICO('pharma', 15, 2) + 'Officines</button>' +
+      '<button class="ph-vtab' + (active === 'groupements' ? ' on' : '') + '" onclick="V2.pharmaView(\'groupements\')">' + ICO('grid', 15, 2) + 'Groupements</button>' +
+    '</div>';
+  }
+  function groupName(p) { return (String(p.groupement || '').trim()) || '— Sans groupement'; }
+  function groupementList() {
+    var byG = {};
+    (V2.pharmacies || []).forEach(function (p) {
+      if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return;
+      var g = groupName(p);
+      (byG[g] = byG[g] || { name: g, members: [] }).members.push(p);
+    });
+    return Object.keys(byG).map(function (g) {
+      var o = byG[g];
+      o.nb = o.members.length;
+      o.active = o.members.filter(function (p) { return pharmaSales(p.id).length > 0; }).length;
+      return o;
+    }).sort(function (a, b) { return b.active - a.active || b.nb - a.nb; });
+  }
+  function groupementProducts(grpName) {
+    var ids = {};
+    (V2.pharmacies || []).forEach(function (p) {
+      if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return;
+      if (groupName(p) === grpName) ids[String(p.id)] = 1;
+    });
+    var bIdx = benchIndex(), byCip = {}, activeSet = {};
+    (V2.sales || []).forEach(function (s) {
+      if (!ids[String(s.pharmacyId)]) return;
+      if (V2.commFilter && s.commercial !== V2.commFilter) return;
+      var cip = String(s.artCode || ''); if (cip.length < 7) return;
+      activeSet[String(s.pharmacyId)] = 1;
+      var e = byCip[cip] || (byCip[cip] = { ph: {}, qte: 0, ca: 0 });
+      e.ph[String(s.pharmacyId)] = 1; e.qte += s.qte || 0; e.ca += s.mntNetHt || 0;
+    });
+    var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
+    Object.keys(byCip).forEach(function (cip) {
+      var b = bIdx.get(cip); if (!b) return;
+      var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
+      var e = byCip[cip], ht = (b.prix_ht > 0) ? b.prix_ht : 0, ip = (b.prix_ip > 0) ? b.prix_ip : 0;
+      var rem = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
+      buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: ht, prix_ip: ip, remise: rem,
+                          froid: !!b.is_froid, sortie: Object.keys(e.ph).length, qte: e.qte });
+    });
+    return {
+      panel: Object.keys(activeSet).length,
+      members: Object.keys(ids).length,
+      cats: CATS.map(function (c) {
+        return { cat: c, rows: buckets[c.key].sort(function (a, b) { return b.sortie - a.sortie || b.qte - a.qte; }) };
+      }).filter(function (o) { return o.rows.length; })
+    };
+  }
+
+  function renderGroupementsList(root) {
+    var list = groupementList();
+    var rows = list.map(function (g) {
+      return '<a class="v2-row" onclick="V2.pharmaGroup(\'' + encodeURIComponent(g.name) + '\')">' +
+        '<span class="v2-row-dot" style="background:var(--c-cat)"></span>' +
+        '<span class="v2-row-name">' + esc(g.name) + '</span>' +
+        '<span class="v2-row-opp mono">' + g.active + ' / ' + g.nb + ' actives</span>' +
+        '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
+      '</a>';
+    }).join('') || '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement.</div></div>';
+    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+      '<div class="v2-wrap">' +
+        '<div class="v2-page-title">Opportunités pharmacie</div>' +
+        '<div class="v2-page-sub">Par groupement · ce que commandent les pharmacies adhérentes</div>' +
+        pharmaTabs('groupements') +
+        '<div class="v2-card" style="margin-top:16px">' + rows + '</div>' +
+      '</div>';
+  }
+
+  function renderGrpCatCard(o, idx, panel) {
+    var c = o.cat, key = 'g_' + c.key;
+    var collapsed = (key in grpCollapsed) ? grpCollapsed[key] : (idx !== 0);
+    var head =
+      '<div class="v2-cat-head" onclick="V2.grpToggleCat(\'' + c.key + '\')">' +
+        '<span class="v2-cat-accent" style="background:' + c.color + '"></span>' +
+        '<div class="v2-cat-titles"><div class="v2-cat-t">' + c.label +
+          (c.sub ? '<span class="v2-cat-sub">' + c.sub + '</span>' : '') + '</div>' +
+          '<div class="v2-cat-meta mono">' + o.rows.length + ' produits commandés</div></div>' +
+        '<span class="v2-cat-chev' + (collapsed ? '' : ' open') + '">' + ICO('chev', 18) + '</span>' +
+      '</div>';
+    if (collapsed) return '<div class="v2-card v2-cat">' + head + '</div>';
+    var trs = o.rows.slice(0, 60).map(function (r, i) {
+      var on = !!(selCips && selCips.has(r.cip));
+      return '<tr>' +
+        '<td class="num" style="color:var(--muted-2);width:30px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
+        '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + '</td>' +
+        '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip) + '</td>' +
+        '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) : '—') + '</td>' +
+        '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
+        '<td class="num" style="font-weight:800">' + r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + panel + '</span></td>' +
+        '<td class="num">' + V2.fmtNum(r.qte) + '</td>' +
+        '<td style="width:46px;text-align:center"><button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
+      '</tr>';
+    }).join('');
+    var body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
+      '<thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">Remise</th>' +
+      '<th class="num">Sortie</th><th class="num">Volume</th><th></th></tr></thead><tbody>' + trs + '</tbody></table></div>';
+    return '<div class="v2-card v2-cat open">' + head + body + '</div>';
+  }
+
+  function renderGroupementDetail(root, grpName) {
+    if (!window.BENCHMARK) {
+      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+        '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du catalogue…</div></div>';
+      V2.loadFiles(['bench', 'sagitta']).then(function () { V2.render(); });
+      return;
+    }
+    if (String(selPid) !== 'GRP:' + grpName) { selPid = 'GRP:' + grpName; selCips = new Set(); }
+    var data = groupementProducts(grpName);
+    var total = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
+    var hero =
+      '<div class="v2-card" style="margin-bottom:22px;padding:0">' +
+        '<div style="display:flex;align-items:center;gap:14px;padding:20px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap">' +
+          '<span class="v2-pharma-pin" style="background:var(--c-cat)">' + ICO('grid', 22) + '</span>' +
+          '<div style="flex:1;min-width:160px">' +
+            '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + esc(grpName) + '</div>' +
+            '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + data.panel + ' pharmacie' + (data.panel > 1 ? 's' : '') + ' active' + (data.panel > 1 ? 's' : '') + ' · ' + total + ' produits commandés</div>' +
+          '</div>' +
+          '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName) + '\')">' +
+            ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
+        '</div>' +
+      '</div>';
+    var catsHtml = data.cats.length
+      ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel); }).join('')
+      : '<div class="v2-empty"><div class="v2-empty-d">Aucun achat identifié pour ce groupement.</div></div>';
+    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+      '<div class="v2-wrap">' +
+        '<button class="v2-back" style="margin-bottom:16px" onclick="V2.pharmaGroupBack()">' + ICO('back', 16) + 'Tous les groupements</button>' +
+        hero +
+        '<div style="display:flex;align-items:baseline;gap:10px;margin:6px 0 16px;flex-wrap:wrap">' +
+          '<div class="v2-page-title" style="margin:0;font-size:22px">Liste d\'achats idéale</div>' +
+          '<div style="font-size:13px;color:var(--muted)">produits triés par nombre de pharmacies qui les commandent (Sortie)</div>' +
+        '</div>' +
+        catsHtml +
+      '</div>';
+  }
+
+  // ── Handlers groupements ──
+  V2.pharmaView = function (v) { pharmaView = v; selGroup = null; V2.render(); };
+  V2.pharmaGroup = function (enc) { try { selGroup = decodeURIComponent(enc); } catch (e) { selGroup = enc; } V2.render(); window.scrollTo(0, 0); };
+  V2.pharmaGroupBack = function () { selGroup = null; V2.render(); };
+  V2.grpDownloadPdf = function (enc) {
+    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+    var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
+    var data = groupementProducts(grpName);
+    var useSel = !!(selCips && selCips.size && selPid === 'GRP:' + grpName);
+    var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    V2.toast('Génération du PDF…');
+    function e2(v) { return (v ? v.toFixed(2).replace('.', ',') : '0,00') + ' €'; }
+    var sections = data.cats.map(function (o) {
+      var rows = useSel ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows.slice(0, 20);
+      return { cat: o.cat, rows: rows };
+    }).filter(function (o) { return o.rows.length; });
+    var catHtml = sections.map(function (o) {
+      var trs = o.rows.map(function (r, i) {
+        return '<tr style="border-bottom:1px solid #ECEFF5">' +
+          '<td style="padding:4px 6px;text-align:center;color:#9AA1B2;font-size:9px">' + (i + 1) + '</td>' +
+          '<td style="padding:4px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.designation || '').slice(0, 50)) + (r.froid ? ' ❄' : '') + '</td>' +
+          '<td style="padding:4px 6px;font-family:monospace;font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
+          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
+          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#1E9E6A">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
+          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:800">' + r.sortie + '/' + data.panel + '</td>' +
+          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px">' + V2.fmtNum(r.qte) + '</td>' +
+          '</tr>';
+      }).join('');
+      return '<div style="margin-bottom:13px;page-break-inside:avoid">' +
+        '<div style="display:flex;align-items:center;gap:9px;padding:7px 11px;background:linear-gradient(90deg,' + o.cat.color + '22,transparent);border-left:4px solid ' + o.cat.color + ';border-radius:5px;margin-bottom:5px">' +
+          '<div style="font-size:12px;font-weight:800;color:#10131C">' + esc(o.cat.label) + '</div></div>' +
+        '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#F4F6FB">' +
+          ['#', 'Produit', 'CIP13', 'Prix net', 'Remise', 'Sortie', 'Volume'].map(function (h, k) {
+            return '<th style="padding:5px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;text-align:' + (k < 3 ? 'left' : 'right') + '">' + h + '</th>';
+          }).join('') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
+    }).join('');
+    var html = '<div style="padding:18px 22px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
+      '<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #10131C;padding-bottom:12px;margin-bottom:15px">' +
+        '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>' +
+        '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · Liste d\'achats groupement</div>' +
+          '<div style="font-size:19px;font-weight:800">' + esc(grpName) + '</div>' +
+          '<div style="font-size:10px;color:#737A8C">' + data.panel + ' pharmacies du panel · trié par nb de pharmacies qui commandent</div></div>' +
+        '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + dateStr + '</div>' +
+      '</div>' + (catHtml || '<div style="color:#9AA1B2;padding:30px;text-align:center">Aucun produit</div>') +
+      '<div style="margin-top:16px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · Document confidentiel · « Sortie » = nombre de pharmacies du groupement qui commandent le produit</div>' +
+    '</div>';
+    window.ensureHtml2Pdf().then(function () {
+      return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
+    }).then(function () {
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
+      wrap.innerHTML = html; document.body.appendChild(wrap);
+      var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+      window.html2pdf().from(wrap.firstChild).set({
+        filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }
+      }).save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('PDF téléchargé'); })
+        .catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
+    });
+  };
+  V2.grpToggleCat = function (catKey) {
+    var key = 'g_' + catKey, idx = -1;
+    for (var i = 0; i < CATS.length; i++) { if (CATS[i].key === catKey) { idx = i; break; } }
+    var cur = (key in grpCollapsed) ? grpCollapsed[key] : (idx !== 0);
+    grpCollapsed[key] = !cur;
+    var y = window.scrollY || 0; V2.render();
+    try { window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { window.scrollTo(0, y); }
+  };
+
   V2.pages.pharma = {
     render: function (root, param) {
-      if (param) renderDetail(root, param);
-      else renderList(root);
+      if (param) { renderDetail(root, param); return; }
+      if (pharmaView === 'groupements') {
+        if (selGroup) renderGroupementDetail(root, selGroup);
+        else renderGroupementsList(root);
+        return;
+      }
+      renderList(root);
     }
   };
 
@@ -998,6 +1224,12 @@
       '.ph-top-name{flex:1;min-width:0;font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.ph-top-val{font-size:12px;font-weight:700;color:var(--ip-ink-2);flex-shrink:0}',
       '.ph-top-q{color:var(--muted);font-weight:500}',
+      // onglets Officines / Groupements
+      '.ph-vtabs{display:flex;gap:6px;margin:6px 0 18px}',
+      '.ph-vtab{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 16px;font-family:var(--font);font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;box-shadow:var(--sh-1);transition:.16s var(--ease)}',
+      '.ph-vtab svg{color:currentColor}',
+      '.ph-vtab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 3px 9px rgba(0,80,230,.26)}',
+      '.ph-froid{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid);background:color-mix(in srgb,var(--c-froid) 13%,#fff)}',
       // ── Modal aperçu prépa RDV ──
       '.prepa-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
       '.prepa-modal.open{opacity:1;pointer-events:auto}',
