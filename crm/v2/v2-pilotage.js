@@ -501,29 +501,52 @@
           famHtml +
         '</div>';
 
-      // ── Marge MDL par pharmacie (top 10) ──
-      var mdlRows = phRows.slice().filter(function (r) { return r.mdl > 0; })
-        .sort(function (a, b) { return b.mdl - a.mdl; }).slice(0, 10);
-      var maxMdl = mdlRows.length ? mdlRows[0].mdl : 1;
-      var mdlHtml = mdlRows.map(function (r, i) {
-        var pct = maxMdl > 0 ? Math.max(2, r.mdl / maxMdl * 100) : 0;
-        return '<a class="v2-row" onclick="V2.go(\'pharma\',\'' + esc(r.id) + '\')">' +
-          '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
-          '<span class="v2-row-dot" style="background:var(--c-mint)"></span>' +
-          '<div style="flex:1;min-width:0">' +
-            '<div class="v2-row-name">' + esc(pharmaName(r.id)) + '</div>' +
-            '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--c-mint)"></span></div>' +
-          '</div>' +
-          '<div class="v2-row-val mono" style="flex-shrink:0">' + V2.fmtEur(r.mdl) + '</div>' +
-          '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
-        '</a>';
-      }).join('');
-      var mdlCard =
-        '<div class="v2-card">' +
-          '<div class="v2-card-head"><div class="v2-card-t">' + ICO('euro', 17) + 'Marge MDL par pharmacie</div>' +
-            '<span class="v2-card-link" style="color:var(--muted);cursor:default">remboursables</span></div>' +
-          (mdlHtml || '<div class="v2-empty"><div class="v2-empty-d">Aucune marge MDL sur la période (pas de ventes remboursables).</div></div>') +
-        '</div>';
+      // ── Alerte : Top 10 pharmacies en BAISSE (CA décline sur les mois) ──
+      // Compare la 2e moitié des mois disponibles à la 1re (moyenne mensuelle).
+      var allMonths = availableMonths(sales);
+      var mdlCard;
+      if (allMonths.length >= 2) {
+        var nM = allMonths.length, cut = Math.ceil(nM / 2);
+        var earlyK = {}, lateK = {};
+        allMonths.forEach(function (m, i) { (i < cut ? earlyK : lateK)[mkey(m.year, m.month)] = 1; });
+        var nEarly = cut, nLate = nM - cut;
+        var eByPh = {}, lByPh = {};
+        sales.forEach(function (s) {
+          var k = mkey(s.year, s.month), v = s.mntNetHt || 0;
+          if (earlyK[k]) eByPh[s.pharmacyId] = (eByPh[s.pharmacyId] || 0) + v;
+          else if (lateK[k]) lByPh[s.pharmacyId] = (lByPh[s.pharmacyId] || 0) + v;
+        });
+        var decl = Object.keys(eByPh).map(function (id) {
+          var em = (eByPh[id] || 0) / nEarly, lm = (lByPh[id] || 0) / nLate;
+          return { id: id, em: em, lm: lm, drop: lm - em, pct: em > 0 ? (lm - em) / em * 100 : 0 };
+        }).filter(function (r) { return r.em > 0 && r.drop < 0; })
+          .sort(function (a, b) { return a.drop - b.drop; }).slice(0, 10);
+        var maxDrop = decl.length ? Math.abs(decl[0].drop) : 1;
+        var declHtml = decl.map(function (r, i) {
+          var pct = maxDrop > 0 ? Math.max(3, Math.abs(r.drop) / maxDrop * 100) : 0;
+          return '<a class="v2-row" onclick="V2.go(\'pharma\',\'' + esc(r.id) + '\')">' +
+            '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
+            '<span class="v2-row-dot" style="background:var(--c-rose)"></span>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="v2-row-name">' + esc(pharmaName(r.id)) + '</div>' +
+              '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--c-rose)"></span></div>' +
+            '</div>' +
+            '<div class="pilo-vals">' +
+              '<div class="v2-row-val mono" style="color:var(--c-rose)">▼ ' + V2.fmtEur(Math.abs(r.drop)) + '/mois</div>' +
+              '<div class="v2-row-meta mono">' + r.pct.toFixed(0).replace('-', '−') + ' %</div>' +
+            '</div>' +
+            '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
+          '</a>';
+        }).join('');
+        mdlCard =
+          '<div class="v2-card">' +
+            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('alert', 17) + 'Pharmacies en baisse · à relancer</div>' +
+              '<span class="v2-card-link" style="color:var(--muted);cursor:default">2nde moitié vs 1ère</span></div>' +
+            (declHtml || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie en recul sur la période.</div></div>') +
+          '</div>';
+      } else {
+        mdlCard = '';
+      }
 
       // ── Section OPSO groupement (conditionnelle) ──
       var opsoSect = opso ? buildOpsoSection(cur, prev, pf) : null;
