@@ -95,13 +95,6 @@
     return V2.margeMDLboite(sale.puNet) * (sale.qte || 0);
   }
 
-  // petit chip d'évolution signé (+ vert / − rose)
-  function trendChip(pct, naLabel) {
-    if (pct == null || !isFinite(pct)) return '<span class="v2-chip" style="color:var(--muted);background:var(--line-2)">' + (naLabel || '—') + '</span>';
-    var up = pct >= 0;
-    return '<span class="v2-chip ' + (up ? 'g' : 'r') + '">' + (up ? '▲ +' : '▼ ') + Math.abs(pct).toFixed(1).replace('.', ',') + ' %</span>';
-  }
-
   // ── Périodes ──────────────────────────────────
   // clé mois absolue (pour tri/comparaison)
   function mkey(year, month) { return year * 12 + (month - 1); }
@@ -640,43 +633,6 @@
           '</div>';
       }
 
-      // ── Substitution génériques / biosimilaires (progression mensuelle) ──
-      var gxCard = '';
-      var allMg = availableMonths(sales);
-      if (allMg.length >= 1) {
-        var MNg = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-        var monTot = {}, monGx = {}, monBio = {};
-        sales.forEach(function (s) {
-          var k = mkey(s.year, s.month), v = s.mntNetHt || 0, f = familyOf(s, idx);
-          monTot[k] = (monTot[k] || 0) + v;
-          if (f === 'generiques') monGx[k] = (monGx[k] || 0) + v;
-          else if (f === 'biosim') monBio[k] = (monBio[k] || 0) + v;
-        });
-        var gxBars = allMg.map(function (m) {
-          var k = mkey(m.year, m.month), tot = monTot[k] || 0;
-          var gx = (monGx[k] || 0) + (monBio[k] || 0);
-          return { lbl: MNg[m.month - 1], pct: tot > 0 ? gx / tot * 100 : 0 };
-        });
-        var firstPct = gxBars.length ? gxBars[0].pct : 0;
-        var lastPct = gxBars.length ? gxBars[gxBars.length - 1].pct : 0;
-        var deltaPts = lastPct - firstPct;
-        var gxRowsHtml = gxBars.map(function (b) {
-          return '<div class="pilo-gx-row">' +
-            '<span class="pilo-gx-mon mono">' + cap(b.lbl) + '</span>' +
-            '<div class="pilo-bar" style="flex:1;margin-top:0"><span class="pilo-bar-fill" data-w="' + b.pct.toFixed(1) + '" style="width:0;background:#737A8C"></span></div>' +
-            '<span class="pilo-gx-pct mono">' + b.pct.toFixed(1).replace('.', ',') + ' %</span>' +
-          '</div>';
-        }).join('');
-        gxCard =
-          '<div class="v2-card" style="padding:18px 20px;margin-bottom:14px">' +
-            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pill', 17) + 'Substitution génériques &amp; biosimilaires</div>' +
-              trendChip(allMg.length >= 2 ? deltaPts : null, '—') + '</div>' +
-            '<div class="pilo-gx-head"><span class="mono pilo-gx-big">' + lastPct.toFixed(1).replace('.', ',') + ' %</span>' +
-              '<span class="pilo-gx-cap">du CA en Gx + biosim' + (allMg.length >= 2 ? (deltaPts >= 0 ? ' · en hausse de ' : ' · en baisse de ') + Math.abs(deltaPts).toFixed(1).replace('.', ',') + ' pts sur la période' : '') + '</span></div>' +
-            gxRowsHtml +
-          '</div>';
-      }
-
       // ── Alerte : Top 10 pharmacies en BAISSE (CA décline sur les mois) ──
       // Compare la 2e moitié des mois disponibles à la 1re (moyenne mensuelle).
       var allMonths = availableMonths(sales);
@@ -749,17 +705,24 @@
           '</div>' +
         '</div>';
 
+      // ── Mise en page sectionnée (Proposition A) ──
+      function sec(label) { return '<div class="pilo-sec">' + esc(label) + '</div>'; }
+      var classements = grpCard ? ('<div class="pilo-grid2">' + topCaCard + grpCard + '</div>') : topCaCard;
+      var marche = (ameliCard && mdlCard) ? ('<div class="pilo-grid2">' + ameliCard + mdlCard + '</div>')
+        : (ameliCard || mdlCard || '');
+
       root.innerHTML = top +
         '<div class="v2-wrap">' +
           header +
           (opsoSect ? opsoSect.html : '') +
+          sec('Vue d\'ensemble') +
           kpis +
           chart.html +
-          '<div class="pilo-grid2">' + topCaCard + famCard + '</div>' +
-          (grpCard ? ('<div class="pilo-grid2">' + tierCard + grpCard + '</div>') : tierCard) +
-          gxCard +
-          ameliCard +
-          mdlCard +
+          sec('Répartition du chiffre d\'affaires') +
+          '<div class="pilo-grid2">' + famCard + tierCard + '</div>' +
+          sec('Classements') +
+          classements +
+          (marche ? (sec('Marché & alertes') + marche) : '') +
         '</div>';
 
       // ── Bind segmented ──
@@ -883,14 +846,10 @@
       '.pilo-tier-dot{display:inline-block;width:9px;height:9px;border-radius:3px;flex-shrink:0}' +
       '.pilo-tier-meta{font-size:10.5px;color:var(--muted-2);margin-top:4px}' +
       '.pilo-ameli-sub{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.005em}' +
-      // substitution Gx/biosim
-      '.pilo-gx-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap}' +
-      '.pilo-gx-big{font-size:30px;font-weight:700;letter-spacing:-.03em;color:#5a6172}' +
-      '.pilo-gx-cap{font-size:12.5px;color:var(--muted);font-weight:600}' +
-      '.pilo-gx-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}' +
-      '.pilo-gx-row:last-child{margin-bottom:0}' +
-      '.pilo-gx-mon{font-size:11.5px;color:var(--muted);font-weight:600;width:42px;flex-shrink:0}' +
-      '.pilo-gx-pct{font-size:12.5px;font-weight:700;width:54px;text-align:right;flex-shrink:0}' +
+      // libellés de section (mise en page sectionnée)
+      '.pilo-sec{display:flex;align-items:center;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:26px 2px 13px}' +
+      '.pilo-sec::after{content:"";flex:1;height:1px;background:var(--line)}' +
+      '.v2-wrap .pilo-sec:first-of-type{margin-top:6px}' +
       // chart 13 mois
       '.pilo-chart{position:relative;display:flex;align-items:flex-end;gap:6px;height:160px;padding-top:8px}' +
       '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;cursor:default;min-width:0}' +
