@@ -217,25 +217,34 @@
     var prodHtml = n ? editing.products.map(prodRow).join('') : '<div class="mkt-empty" style="border:none">Aucun produit. Ajoute des références ci-dessous.</div>';
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-      '<div class="v2-wrap narrow">' +
-        '<div class="mkt-edit-head">' + badge(editing.type) +
-          '<input class="mkt-titlefield" id="mkt-title" placeholder="Titre du ' + esc(t.label.toLowerCase()) + '…" value="' + esc(editing.title) + '" oninput="V2.mkt.setTitle(this.value)"></div>' +
-        '<textarea class="mkt-accroche" id="mkt-accroche" rows="2" placeholder="Accroche / message (ex : Notre sélection solaires de l\'été)…" oninput="V2.mkt.setAccroche(this.value)">' + esc(editing.accroche || '') + '</textarea>' +
-        personalizePanel() +
-        '<div class="mkt-statusrow"><span class="mkt-statusl">Statut</span>' + statusChips + '</div>' +
-        '<div class="v2-card">' +
-          '<div class="v2-card-head"><div class="v2-card-t">' + ICO('cart', 17, 1.8) + 'Produits</div>' +
-            '<span class="v2-card-link" id="mkt-count" style="cursor:default">' + n + ' produit' + (n > 1 ? 's' : '') + '</span></div>' +
-          '<div id="mkt-prodlist">' + prodHtml + '</div>' +
+      '<div class="v2-wrap">' +
+        '<div class="mkt-edit-grid"><div class="mkt-edit-col">' +
+          '<div class="mkt-edit-head">' + badge(editing.type) +
+            '<input class="mkt-titlefield" id="mkt-title" placeholder="Titre du ' + esc(t.label.toLowerCase()) + '…" value="' + esc(editing.title) + '" oninput="V2.mkt.setTitle(this.value)"></div>' +
+          '<textarea class="mkt-accroche" id="mkt-accroche" rows="2" placeholder="Accroche / message (ex : Notre sélection solaires de l\'été)…" oninput="V2.mkt.setAccroche(this.value)">' + esc(editing.accroche || '') + '</textarea>' +
+          personalizePanel() +
+          '<div class="mkt-statusrow"><span class="mkt-statusl">Statut</span>' + statusChips + '</div>' +
+          '<div class="v2-card">' +
+            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('cart', 17, 1.8) + 'Produits</div>' +
+              '<span class="v2-card-link" id="mkt-count" style="cursor:default">' + n + ' produit' + (n > 1 ? 's' : '') + '</span></div>' +
+            '<div id="mkt-prodlist">' + prodHtml + '</div>' +
+          '</div>' +
+          '<div class="mkt-editbar">' +
+            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.openPicker()">' + ICO('plus', 17, 2) + 'Ajouter des produits</button>' +
+            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.save()">' + ICO('check', 17, 2) + 'Enregistrer</button>' +
+            '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.downloadPdf()">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>' +
+            '<button class="mkt-del" onclick="V2.mkt.remove()" title="Supprimer">' + ICO('close', 17, 2) + '</button>' +
+          '</div>' +
         '</div>' +
-        '<div class="mkt-editbar">' +
-          '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.openPicker()">' + ICO('plus', 17, 2) + 'Ajouter des produits</button>' +
-          '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.save()">' + ICO('check', 17, 2) + 'Enregistrer</button>' +
-          '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.preview()">' + ICO('grid', 17, 2) + 'Aperçu &amp; PDF</button>' +
-          '<button class="mkt-del" onclick="V2.mkt.remove()" title="Supprimer">' + ICO('close', 17, 2) + '</button>' +
+        '<div class="mkt-pv-col"><div class="mkt-pv-pane">' +
+          '<div class="mkt-pv-bar">Aperçu en direct</div>' +
+          '<div class="mkt-mscroll" id="mkt-mscroll"><div class="mkt-mholder" id="mkt-mholder"><div class="mkt-msheet" id="mkt-msheet"></div></div></div>' +
+        '</div></div>' +
         '</div>' +
-      '</div>' + pickerMarkup() + previewMarkup();
+      '</div>' + pickerMarkup();
     wirePicker();
+    refreshPreview();
+    if (!V2._mktFitBound) { window.addEventListener('resize', fitSheet); V2._mktFitBound = true; }
   }
   function prodRow(p, i) {
     var img = p.img
@@ -256,6 +265,7 @@
     var n = editing.products.length;
     box.innerHTML = n ? editing.products.map(prodRow).join('') : '<div class="mkt-empty" style="border:none">Aucun produit. Ajoute des références ci-dessous.</div>';
     var c = document.getElementById('mkt-count'); if (c) c.textContent = n + ' produit' + (n > 1 ? 's' : '');
+    refreshPreview();
   }
 
   // ── Sélecteur de produits (Offilog best-sellers) ──
@@ -401,11 +411,12 @@
           '<input class="mkt-foot" id="mkt-footer" placeholder="ex : Offre valable jusqu\'au 31/07 · contact@integralpharma.fr" value="' + esc(editing.footer || '') + '" oninput="V2.mkt.setFooter(this.value)"></div>' +
       '</div></div>';
   }
-  function refreshPreviewIfOpen() {
-    var bd = document.getElementById('mkt-modal');
-    if (bd && bd.classList.contains('open')) {
-      var sh = bd.querySelector('#mkt-msheet'); if (sh) { sh.innerHTML = buildFlyerHtml(false); fitSheet(); }
-    }
+  // aperçu live inline (toujours visible dans l'éditeur)
+  function refreshPreview() {
+    var sh = document.getElementById('mkt-msheet'); if (!sh || !editing) return;
+    sh.innerHTML = buildFlyerHtml(false); // false = images via URL réseau (écran)
+    fitSheet();
+    waitImages(sh, 6000).then(fitSheet);
   }
 
   function previewMarkup() {
@@ -444,24 +455,24 @@
   V2.mkt = {
     create: function (type) { editing = null; V2.go('marketing', type === 'selection' ? 'new-selection' : 'new-support'); },
     open: function (id) { editing = null; V2.go('marketing', id); },
-    setTitle: function (v) { if (editing) editing.title = v; },
-    setAccroche: function (v) { if (editing) editing.accroche = v; },
-    setFooter: function (v) { if (editing) { editing.footer = v; refreshPreviewIfOpen(); } },
+    setTitle: function (v) { if (editing) { editing.title = v; refreshPreview(); } },
+    setAccroche: function (v) { if (editing) { editing.accroche = v; refreshPreview(); } },
+    setFooter: function (v) { if (editing) { editing.footer = v; refreshPreview(); } },
     setAccent: function (c) {
       if (!editing) return; editing.theme = editing.theme || defaultTheme(editing.type); editing.theme.accent = c;
       Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-acc'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === c); });
-      refreshPreviewIfOpen();
+      refreshPreview();
     },
     setBg: function (c) {
       if (!editing) return; editing.theme = editing.theme || defaultTheme(editing.type); editing.theme.bg = c;
       Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-bg'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === c); });
-      refreshPreviewIfOpen();
+      refreshPreview();
     },
     toggle: function (key, btn) {
       if (!editing) return; editing.theme = editing.theme || defaultTheme(editing.type);
       editing.theme[key] = editing.theme[key] === false ? true : false;
       if (btn) btn.classList.toggle('on', editing.theme[key] !== false);
-      refreshPreviewIfOpen();
+      refreshPreview();
     },
     setStatus: function (k, btn) {
       if (!editing) return; editing.status = k;
@@ -621,6 +632,14 @@
       '.mkt-prow-x{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.16s var(--ease)}',
       '.mkt-prow-x:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
       '.mkt-editbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}',
+      // éditeur 2 colonnes + aperçu live
+      '.mkt-edit-grid{display:grid;grid-template-columns:minmax(320px,1fr) minmax(360px,520px);gap:30px;align-items:start}',
+      '@media(max-width:980px){.mkt-edit-grid{grid-template-columns:1fr;gap:22px}}',
+      '.mkt-pv-pane{position:sticky;top:84px}',
+      '@media(max-width:980px){.mkt-pv-pane{position:static}}',
+      '.mkt-pv-bar{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:12px}',
+      '.mkt-pv-bar::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c-opp);box-shadow:0 0 0 4px color-mix(in srgb,var(--c-opp) 18%,transparent)}',
+      '.mkt-pv-pane .mkt-mscroll{flex:none;max-height:calc(100vh - 132px);border-radius:16px;border:1px solid var(--line)}',
       '.mkt-del{margin-left:auto;width:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.16s var(--ease)}',
       '.mkt-del:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
       '.mkt-pick-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,.34);backdrop-filter:blur(7px);display:flex;align-items:flex-start;justify-content:center;padding-top:8vh;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
