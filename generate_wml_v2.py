@@ -190,6 +190,12 @@ for comm, prefix in SOURCES:
         print('  {} ({}) : {} lignes'.format(os.path.basename(path), comm, n))
 
 # ── 3. Officines actives (avec ventes), taguées commercial + groupement ──
+# Corrections manuelles (CIP -> groupement), trouvées dans le scraping par nom/ville
+OVERRIDE = {
+    '2128227': 'Giphar',        # Pharmacie de Canclaux (Nantes)
+    '2088724': 'Pharm-Upp',     # Pharmacie de Beauvallon (26800)
+    '2035185': 'Positive Pharma',  # Pharmacie Vitton (Zola), Lyon 6 — à confirmer
+}
 enseignes = load_enseignes()
 grp_cip, grp_name = load_groupements()
 officines = []
@@ -197,8 +203,8 @@ nb_grp = 0
 for i, code in enumerate(sorted(active.keys())):
     info = pharm.get(code, {})
     nm = info.get('name') or active[code] or ''
-    # priorité : enseigne géoloc (officiel) > scraping CIP > scraping nom > WML_pharmacies
-    grp = enseignes.get(_cipkey(code)) or grp_cip.get(_cipkey(code)) or grp_name.get(_norm_name(nm)) or info.get('groupement', '') or ''
+    # priorité : enseigne géoloc (officiel) > override scraping > scraping CIP/nom > WML_pharmacies
+    grp = enseignes.get(_cipkey(code)) or OVERRIDE.get(_cipkey(code)) or grp_cip.get(_cipkey(code)) or grp_name.get(_norm_name(nm)) or info.get('groupement', '') or ''
     if grp:
         nb_grp += 1
     officines.append({
