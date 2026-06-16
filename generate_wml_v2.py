@@ -55,6 +55,7 @@ PHARM_FILE = os.path.join(STATS, 'WML_pharmacies.xlsx')
 SOURCES = [
     ('Will', 'WML'),
     ('Pauline', 'PGN'),
+    ('Karine', 'KV'),
 ]
 MONTHS_NUM = [1, 2, 3, 4, 5]
 OUT = os.path.join(BASE, 'crm', 'v2', 'wml-officines-data.js')
@@ -150,17 +151,9 @@ for comm, prefix in SOURCES:
             if code not in active:
                 active[code] = s(c(r, 'TIRSOCIETE'))
             comms.setdefault(code, set()).add(comm)
-            sales.append({
-                'pharmacyId': code,
-                'month': mois, 'year': 2026, 'comm': comm,
-                'artDesignation': s(c(r, 'PLVDESIGNATION')),
-                'artCode': cip13(c(r, 'ARTCODEBARRE')),
-                'artFamille': s(c(r, 'ARTSOUSFAMILLE')) or None,
-                'qte': num(c(r, 'PLVQTE')),
-                'puBrut': num(c(r, 'PLVPUBRUT')),
-                'puNet': num(c(r, 'PLVPUNET')),
-                'mntNetHt': num(c(r, 'PLVMNTNETHT')),
-            })
+            # format compact (tableau) : [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
+            sales.append([code, mois, comm, cip13(c(r, 'ARTCODEBARRE')),
+                          num(c(r, 'PLVQTE')), num(c(r, 'PLVPUNET')), num(c(r, 'PLVMNTNETHT'))])
             n += 1
         wb.close()
         print('  {} ({}) : {} lignes'.format(os.path.basename(path), comm, n))
@@ -196,8 +189,9 @@ with open(OUT, 'w', encoding='utf-8') as f:
     f.write('// {} officines actives · {} lignes de ventes · {}\n'.format(
         len(officines), len(sales), months_lbl))
     f.write('// Généré par generate_wml_v2.py depuis STATS/WML_pharmacies + WML_01..05_2026\n')
-    f.write('const WML_OFFICINES = ' + json.dumps(officines, ensure_ascii=False) + ';\n')
-    f.write('const WML_SALES = ' + json.dumps(sales, ensure_ascii=False) + ';\n')
+    f.write('// WML_SALES format compact : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]\n')
+    f.write('const WML_OFFICINES = ' + json.dumps(officines, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    f.write('const WML_SALES = ' + json.dumps(sales, ensure_ascii=False, separators=(',', ':')) + ';\n')
     f.write('try{window.WML_OFFICINES=WML_OFFICINES;window.WML_SALES=WML_SALES;}catch(e){}\n')
 
 size = os.path.getsize(OUT)

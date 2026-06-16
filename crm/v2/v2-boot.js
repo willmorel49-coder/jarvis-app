@@ -139,10 +139,11 @@
                  ville: p.ville, cp: p.cp, tel: p.tel, groupement: p.groupement, potentiel: p.potentiel,
                  comms: p.comms || [] };
       });
+      // format compact tableau : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]
       V2.sales = window.WML_SALES.map(function (s) {
-        return { id: null, importId: null, pharmacyId: String(s.pharmacyId), month: s.month, year: s.year,
-                 commercial: s.comm || '', artDesignation: s.artDesignation, artCode: s.artCode, artFamille: s.artFamille || null,
-                 qte: s.qte || 0, puBrut: s.puBrut || 0, puNet: s.puNet || 0, mntNetHt: s.mntNetHt || 0 };
+        return { id: null, importId: null, pharmacyId: String(s[0]), month: s[1], year: 2026,
+                 commercial: s[2] || '', artDesignation: '', artCode: s[3], artFamille: null,
+                 qte: s[4] || 0, puBrut: 0, puNet: s[5] || 0, mntNetHt: s[6] || 0 };
       });
       V2.imports = [];
       V2.applyOpsoPerimeter();
