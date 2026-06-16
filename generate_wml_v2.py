@@ -221,6 +221,60 @@ for i, code in enumerate(sorted(active.keys())):
     })
 print('  officines avec groupement : {}/{}'.format(nb_grp, len(officines)))
 
+# ── 3bis. Normalisation / fusion des groupements ──
+# Fusionne : casse+accents+ponctuation (GIPHAR=Giphar), alias officiels,
+# + règles métier (Aelia=Co&Pharm, Normandie/Bretagne Pharma=OPSO Santé).
+import csv as _csv
+ALIAS_CSV = '/Users/williammorel/JARVIS/GROUPEMENTS/config/groupements_alias.csv'
+def _gkey(s):
+    s = _ud.normalize('NFKD', str(s or '')).encode('ascii', 'ignore').decode().upper()
+    return _re.sub(r'[^A-Z0-9]', '', s)
+MERGE = {  # règles métier (clé normalisée -> nom canonique)
+    'AELIA': 'Co&Pharm', 'COPHARM': 'Co&Pharm',
+    'NORMANDIEPHARMA': 'OPSO Santé', 'BRETAGNEPHARMA': 'OPSO Santé',
+    'BRETAGNENORMANDIEPHARMA': 'OPSO Santé', 'BRETAGNEETNORMANDIEPHARMA': 'OPSO Santé',
+    'OPSOSANTE': 'OPSO Santé',
+    'UPP07': 'UPP', 'UPP38': 'UPP', 'UPP26': 'UPP', 'UPPCOTESDURHONE': 'UPP',
+}
+alias = {}
+try:
+    with open(ALIAS_CSV, encoding='utf-8') as f:
+        rdr = _csv.reader(f, delimiter=';'); next(rdr, None)
+        for row in rdr:
+            if not row or not row[0].strip():
+                continue
+            off = row[0].strip()
+            for v in [off] + ((row[1] if len(row) > 1 else '').split('|')):
+                v = v.strip()
+                if v:
+                    alias.setdefault(_gkey(v), off)
+except Exception as e:
+    print('  [alias] err', e)
+# label d'affichage par clé normalisée (depuis nos données)
+disp = {}
+for o in officines:
+    g = o.get('groupement')
+    if not g:
+        continue
+    n = _gkey(g)
+    if n in MERGE:
+        continue
+    if n in alias:
+        disp[n] = alias[n]
+    else:
+        cur = disp.get(n)
+        if cur is None or (cur.isupper() and not g.isupper()):
+            disp[n] = g  # préfère une casse non tout-majuscule
+for o in officines:
+    g = o.get('groupement')
+    if not g:
+        continue
+    n = _gkey(g)
+    o['groupement'] = MERGE.get(n) or disp.get(n) or g
+from collections import Counter as _C
+_c = _C(o['groupement'] for o in officines if o.get('groupement'))
+print('  groupements après fusion : {} distincts'.format(len(_c)))
+
 # ── 4. Écriture JS ──
 months_lbl = 'Jan-Mai 2026'
 with open(OUT, 'w', encoding='utf-8') as f:
