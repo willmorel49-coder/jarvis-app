@@ -12,30 +12,41 @@ import os
 import sqlite3
 import openpyxl
 
-# Mapping CIP -> groupement issu du scraping (projet GROUPEMENTS)
+# Mapping CIP/nom -> groupement issu du scraping (projet GROUPEMENTS)
+import re as _re, unicodedata as _ud
 GRP_DB = '/Users/williammorel/JARVIS/GROUPEMENTS/data/output/pharmacies.sqlite'
+def _norm_name(s):
+    s = _ud.normalize('NFKD', str(s or '')).encode('ascii', 'ignore').decode().upper()
+    s = _re.sub(r'\bPHARMACIE\b|\bPHIE\b|\bSELARL\b|\bSARL\b', '', s)
+    return _re.sub(r'[^A-Z0-9]+', ' ', s).strip()
+def _cipkey(code):
+    try:
+        return str(int(float(code)))
+    except (TypeError, ValueError):
+        m = _re.match(r'\d+', str(code or ''))
+        return m.group(0) if m else str(code or '').strip()
 def load_groupements():
-    m = {}
+    cipm, namem = {}, {}
     if not os.path.exists(GRP_DB):
-        print('  [grp] base absente :', GRP_DB); return m
+        print('  [grp] base absente :', GRP_DB); return cipm, namem
     try:
         c = sqlite3.connect(GRP_DB)
-        for code, g25, gact in c.execute(
-                "select code_phirst, groupement_2025, groupement_actuel from pharmacies"):
+        for code, nom, g25, gact in c.execute(
+                "select code_phirst, nom, groupement_2025, groupement_actuel from pharmacies"):
             g = (g25 or gact or '').strip()
-            if not code or not g:
+            if not g:
                 continue
-            try:
-                key = str(int(float(code)))
-            except (TypeError, ValueError):
-                key = str(code).strip()
-            if key and key not in m:
-                m[key] = g
+            k = _cipkey(code)
+            if k and k not in cipm:
+                cipm[k] = g
+            nm = _norm_name((nom or '').split('|')[0])
+            if nm and len(nm) >= 4 and nm not in namem:
+                namem[nm] = g
         c.close()
     except Exception as e:
         print('  [grp] erreur :', e)
-    print('  [grp] {} CIP -> groupement chargés'.format(len(m)))
-    return m
+    print('  [grp] {} CIP + {} noms -> groupement'.format(len(cipm), len(namem)))
+    return cipm, namem
 
 BASE = '/Users/williammorel/JARVIS/APP'
 STATS = os.path.join(BASE, 'STATS')
@@ -155,12 +166,13 @@ for comm, prefix in SOURCES:
         print('  {} ({}) : {} lignes'.format(os.path.basename(path), comm, n))
 
 # ── 3. Officines actives (avec ventes), taguées commercial + groupement ──
-grp_map = load_groupements()
+grp_cip, grp_name = load_groupements()
 officines = []
 nb_grp = 0
 for i, code in enumerate(sorted(active.keys())):
     info = pharm.get(code, {})
-    grp = grp_map.get(code) or info.get('groupement', '') or ''
+    nm = info.get('name') or active[code] or ''
+    grp = grp_cip.get(_cipkey(code)) or grp_name.get(_norm_name(nm)) or info.get('groupement', '') or ''
     if grp:
         nb_grp += 1
     officines.append({
