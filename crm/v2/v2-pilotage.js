@@ -379,7 +379,7 @@
   // ════════════════════════════════════════════
   V2.pages.pilotage = {
     render: function (root) {
-      var sales = V2.sales || [];
+      var sales = V2.commSales ? V2.commSales() : (V2.sales || []);
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
       injectStyles();
 
@@ -532,13 +532,22 @@
       function seg(mode, lbl) {
         return '<button class="pilo-segbtn' + (PERIOD === mode ? ' on' : '') + '" data-p="' + mode + '">' + lbl + '</button>';
       }
+      // sélecteur commercial (Tous / Will / Pauline) si plusieurs
+      var comms = V2.commercials ? V2.commercials() : [];
+      var commSeg = '';
+      if (comms.length > 1) {
+        var cb = function (val, lbl) { return '<button class="pilo-segbtn pilo-commbtn' + (V2.commFilter === val ? ' on' : '') + '" data-c="' + val + '">' + lbl + '</button>'; };
+        commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb('', 'Tous') + comms.map(function (cm) { return cb(cm, cm); }).join('') + '</div>';
+      }
       var header =
         '<div class="pilo-head">' +
           '<div>' +
             '<div class="v2-page-title">Pilotage</div>' +
-            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (opso ? ' · Groupement OPSO Santé' : ' · ton tableau de bord commercial') + '</div>' +
+            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement OPSO Santé' : ' · ton tableau de bord commercial')) + '</div>' +
           '</div>' +
-          '<div class="pilo-seg">' + seg('current', 'Mois courant') + seg('3m', '3 mois') + seg('year', 'Année') + '</div>' +
+          '<div style="display:flex;gap:0;flex-wrap:wrap;align-items:center">' + commSeg +
+            '<div class="pilo-seg">' + seg('current', 'Mois courant') + seg('3m', '3 mois') + seg('year', 'Année') + '</div>' +
+          '</div>' +
         '</div>';
 
       root.innerHTML = top +
@@ -553,7 +562,11 @@
 
       // ── Bind segmented ──
       Array.prototype.forEach.call(root.querySelectorAll('.pilo-segbtn'), function (b) {
-        b.onclick = function () { PERIOD = b.dataset.p; V2.render(); };
+        b.onclick = function () {
+          if (b.classList.contains('pilo-commbtn')) { V2.commFilter = b.dataset.c || ''; }
+          else { PERIOD = b.dataset.p; }
+          V2.render();
+        };
       });
 
       // ── Animate bars at mount ──

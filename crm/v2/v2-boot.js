@@ -12,6 +12,16 @@
   V2.imports = [];
   V2.sales = [];
   V2.ready = false;
+  V2.commFilter = '';   // '' = tous | 'Will' | 'Pauline'
+  // ventes du commercial filtré (ou toutes)
+  V2.commSales = function () {
+    return V2.commFilter ? V2.sales.filter(function (s) { return s.commercial === V2.commFilter; }) : V2.sales;
+  };
+  // y a-t-il plusieurs commerciaux dans les données ?
+  V2.commercials = function () {
+    var set = {}; (V2.sales || []).forEach(function (s) { if (s.commercial) set[s.commercial] = 1; });
+    return Object.keys(set).sort();
+  };
 
   var sb = null;
   function getSb() {
@@ -126,11 +136,12 @@
     if (window.WML_OFFICINES && window.WML_SALES) {
       V2.pharmacies = window.WML_OFFICINES.map(function (p) {
         return { id: String(p.id), name: p.name, code: p.code, color: p.color,
-                 ville: p.ville, cp: p.cp, tel: p.tel, groupement: p.groupement, potentiel: p.potentiel };
+                 ville: p.ville, cp: p.cp, tel: p.tel, groupement: p.groupement, potentiel: p.potentiel,
+                 comms: p.comms || [] };
       });
       V2.sales = window.WML_SALES.map(function (s) {
         return { id: null, importId: null, pharmacyId: String(s.pharmacyId), month: s.month, year: s.year,
-                 artDesignation: s.artDesignation, artCode: s.artCode, artFamille: s.artFamille || null,
+                 commercial: s.comm || '', artDesignation: s.artDesignation, artCode: s.artCode, artFamille: s.artFamille || null,
                  qte: s.qte || 0, puBrut: s.puBrut || 0, puNet: s.puNet || 0, mntNetHt: s.mntNetHt || 0 };
       });
       V2.imports = [];

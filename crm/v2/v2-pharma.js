@@ -95,7 +95,9 @@
 
   // ── Ventes d'une pharma ────────────────────────────────────────
   function pharmaSales(pid) {
-    return (V2.sales || []).filter(function (s) { return String(s.pharmacyId) === String(pid); });
+    return (V2.sales || []).filter(function (s) {
+      return String(s.pharmacyId) === String(pid) && (!V2.commFilter || s.commercial === V2.commFilter);
+    });
   }
 
   // ── Classement d'un produit benchmark dans une des 8 catégories ──
@@ -298,11 +300,23 @@
     function applyFilters(list) {
       var q = searchQuery.trim().toLowerCase();
       return list.filter(function (x) {
+        if (V2.commFilter && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
         if (q && x.p.name.toLowerCase().indexOf(q) < 0) return false;
         if (isOpso() && opsoFilter === 'cliente' && !x.p.inDb) return false;
         if (isOpso() && opsoFilter === 'prospect' && x.p.inDb) return false;
         return true;
       });
+    }
+
+    // ── Barre commercial (Tous / Will / Pauline) — si plusieurs commerciaux ──
+    var commBar = '';
+    var comms = V2.commercials ? V2.commercials() : [];
+    if (comms.length > 1) {
+      var cseg = function (val, label) {
+        return '<button type="button" class="v2-seg' + (V2.commFilter === val ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSetComm(\'' + val + '\')">' + label + '</button>';
+      };
+      commBar = '<div class="v2-segs" style="margin-bottom:14px">' + cseg('', 'Tous') +
+        comms.map(function (cm) { return cseg(cm, cm); }).join('') + '</div>';
     }
 
     function cardHtml(filtered) {
@@ -347,6 +361,7 @@
         '<div class="v2-page-title">Mes officines</div>' +
         '<div class="v2-page-sub">' + phs.length + ' pharmacie' + (phs.length > 1 ? 's' : '') +
           ' · clique pour voir les opportunités</div>' +
+        commBar +
         opsoFilterBar +
         '<div class="v2-search" style="margin-bottom:20px;padding:14px 18px">' + ICO('search', 20, 2) +
           '<input id="v2-pharma-search" placeholder="Rechercher une officine…" autocomplete="off" value="' +
@@ -695,6 +710,10 @@
   // ── Handler filtre OPSO (segment clientes / prospects) ──
   V2.pharmaOpsoFilter = function (val) {
     opsoFilter = val;
+    V2.render();
+  };
+  V2.pharmaSetComm = function (val) {
+    V2.commFilter = val || '';
     V2.render();
   };
 
