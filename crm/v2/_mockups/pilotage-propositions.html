@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pilotage · propositions d'harmonisation</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ip-blue:#0050E6;--ip-blue-d:#0034A0;--ip-ink:#10131C;--ip-ink-2:#2A2F3C;
+  --muted:#737A8C;--muted-2:#9AA1B2;--card:#FFFFFF;--card-2:#F7F9FC;
+  --line:rgba(16,19,28,.07);--line-2:rgba(16,19,28,.04);--line-strong:rgba(16,19,28,.12);
+  --halo:#E9F0FF;--c-rose:#E0556E;--c-mint:#1E9E6A;--c-amber:#C7791A;
+  --r-card:20px;
+  --sh-1:0 1px 1px rgba(16,19,28,.04), 0 2px 4px rgba(16,19,28,.04);
+  --sh-2:0 2px 4px rgba(16,19,28,.04), 0 8px 18px rgba(16,19,28,.06), 0 1px 0 rgba(255,255,255,.7) inset;
+  --font:'Satoshi','Inter',system-ui,sans-serif;--mono:'Geist Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:#EEF2F8;color:var(--ip-ink);-webkit-font-smoothing:antialiased;padding:0 0 80px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* barre de sélection des propositions */
+.picker{position:sticky;top:0;z-index:20;background:rgba(238,242,248,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:16px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.picker h1{font-size:15px;font-weight:900;letter-spacing:-.01em}
+.picker .seg{display:inline-flex;gap:3px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:4px;box-shadow:var(--sh-1)}
+.picker button{border:none;background:transparent;border-radius:9px;padding:9px 16px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:.18s}
+.picker button.on{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px rgba(0,80,230,.28)}
+.picker .note{font-size:12.5px;color:var(--muted);font-weight:600;margin-left:auto}
+
+.stage{max-width:1080px;margin:26px auto 0;padding:0 28px}
+.view{display:none}.view.on{display:block;animation:fade .4s cubic-bezier(.22,1,.36,1)}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.page-title{font-size:27px;font-weight:900;letter-spacing:-.025em}
+.page-sub{font-size:13.5px;color:var(--muted);font-weight:600;margin-top:3px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.seg2{display:inline-flex;gap:3px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:4px;box-shadow:var(--sh-1)}
+.seg2 b{border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.seg2 b.on{background:var(--ip-blue);color:#fff}
+
+/* carte générique */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);padding:20px 22px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-t{display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+.card-t .ic{width:24px;height:24px;border-radius:8px;background:var(--halo);color:var(--ip-blue);display:grid;place-items:center;font-size:13px;font-weight:900}
+.card-link{font-size:12.5px;color:var(--ip-blue);font-weight:700;cursor:pointer}
+.card-link.mut{color:var(--muted);cursor:default;font-weight:600}
+
+/* libellé de section (proposition A) */
+.section-h{display:flex;align-items:center;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:26px 2px 13px}
+.section-h::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh-1);padding:16px 17px}
+.kpi-l{font-size:12px;color:var(--muted);font-weight:700}
+.kpi-v{font-size:24px;font-weight:900;letter-spacing:-.03em;margin-top:7px}
+.kpi-d{font-size:11.5px;font-weight:700;margin-top:5px}
+.kpi-d.up{color:var(--c-mint)}.kpi-d.dn{color:var(--c-rose)}.kpi-d.mut{color:var(--muted)}
+.kpi.accent{background:linear-gradient(160deg,#fff, #F4F8FF);border-color:color-mix(in srgb,var(--ip-blue) 22%,var(--line))}
+@media(max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}}
+
+/* grilles */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.stack>*{margin-bottom:14px}
+@media(max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* bento (proposition B) */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:14px}
+.bento .c2{grid-column:span 2}.bento .c3{grid-column:span 3}.bento .c4{grid-column:span 4}.bento .c6{grid-column:span 6}
+@media(max-width:860px){.bento{grid-template-columns:1fr}.bento>*{grid-column:1/-1 !important}}
+
+/* mini-bar horizontale */
+.bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:7px}
+.bar>span{display:block;height:100%;border-radius:999px}
+.row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line-2)}
+.row:last-child{border-bottom:none}
+.rank{font-family:var(--mono);font-size:12px;color:var(--muted-2);width:16px;text-align:center}
+.dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.rname{font-size:13.5px;font-weight:600}
+.rvals{margin-left:auto;text-align:right;flex-shrink:0}
+.rv{font-size:13.5px;font-weight:700;font-family:var(--mono)}
+.rm{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:13px;font-size:11px;font-weight:800}
+.chip.g{background:color-mix(in srgb,var(--c-mint) 13%,#fff);color:var(--c-mint)}
+.chip.r{background:color-mix(in srgb,var(--c-rose) 12%,#fff);color:var(--c-rose)}
+.chip.a{background:color-mix(in srgb,var(--c-amber) 15%,#fff);color:var(--c-amber)}
+
+/* familles / tranches */
+.famrow{margin-bottom:14px}.famrow:last-child{margin-bottom:0}
+.famtop{display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.faml{display:flex;align-items:center;gap:8px;font-weight:700}
+.famv{font-family:var(--mono);font-weight:700;font-size:13px}
+.fampct{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:8px}
+
+/* chart 13 mois */
+.chart{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:6px}
+.cb{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%}
+.cb-tr{flex:1;width:100%;max-width:30px;display:flex;align-items:flex-end;border-radius:7px 7px 3px 3px;overflow:hidden;background:var(--line-2)}
+.cb-fl{width:100%;border-radius:7px 7px 3px 3px;background:color-mix(in srgb,var(--ip-blue) 72%,#fff)}
+.cb-fl.cur{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}
+.cb-lb{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+.gxhead{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.gxbig{font-family:var(--mono);font-size:28px;font-weight:700;color:#5a6172;letter-spacing:-.03em}
+.gxcap{font-size:12px;color:var(--muted);font-weight:600}
+.gxrow{display:flex;align-items:center;gap:12px;margin-bottom:9px}
+.gxmon{font-family:var(--mono);font-size:11px;color:var(--muted);width:40px}
+.gxpct{font-family:var(--mono);font-size:12px;font-weight:700;width:50px;text-align:right}
+
+.gauge{height:9px;border-radius:999px;background:var(--line);overflow:hidden;margin:2px 0 8px}
+.gauge>span{display:block;height:100%;background:var(--ip-blue);border-radius:999px}
+.gaugelb{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.cap{font-size:12px;color:var(--muted);font-weight:600;margin:4px 0 10px}
+</style>
+</head>
+<body>
+
+<div class="picker">
+  <h1>Pilotage — 3 propositions de mise en page</h1>
+  <div class="seg">
+    <button data-v="A" class="on">A · Sectionné</button>
+    <button data-v="B">B · Bento</button>
+    <button data-v="C">C · Épuré</button>
+  </div>
+  <span class="note" id="note">Même contenu, 3 organisations. Dis-moi laquelle te parle.</span>
+</div>
+
+<div class="stage">
+  <div class="view on" id="vA"></div>
+  <div class="view" id="vB"></div>
+  <div class="view" id="vC"></div>
+</div>
+
+<script>
+/* ── briques de cartes (mêmes données partout) ───────────────── */
+function ic(t){return '<span class="ic">'+t+'</span>';}
+
+function kpis(accent){
+  function k(l,v,d,cls,acc){return '<div class="kpi'+(acc?' accent':'')+'"><div class="kpi-l">'+l+'</div><div class="kpi-v mono">'+v+'</div><div class="kpi-d '+cls+'">'+d+'</div></div>';}
+  return '<div class="kpis">'+
+    k('CA net HT','284 120 €','▲ +6,2 % vs mois préc.','up',accent)+
+    k('Marge MDL générée','21 480 €','7,6 % du CA','mut')+
+    k('Pharmacies actives','148','sur 276 au total','mut')+
+    k('Panier moyen','1 920 €','par officine active','mut')+
+  '</div>';
+}
+function chart(){
+  var H=[42,55,38,61,49,72,58,80,66,74,69,88,100],L=['J','F','M','A','M','J','J','A','S','O','N','D','J'];
+  var b=H.map(function(h,i){return '<div class="cb"><div class="cb-tr"><div class="cb-fl'+(i===12?' cur':'')+'" style="height:'+h+'%"></div></div><div class="cb-lb">'+L[i]+'</div></div>';}).join('');
+  return '<div class="card"><div class="card-head"><div class="card-t">'+ic('↗')+'Évolution du CA · 13 mois</div></div><div class="chart">'+b+'</div></div>';
+}
+function topPharma(){
+  var d=[['Grande Pharmacie du Centre','#0050E6','18 420 €','MDL 1 510 €'],['Pharmacie des Halles','#1E9E6A','15 240 €','MDL 1 180 €'],['Pharmacie Lafayette Nantes','#C7791A','12 980 €','MDL 940 €'],['Pharmacie de la Gare','#6D4FC4','11 100 €','MDL 870 €'],['Pharmacie Saint-Michel','#E0556E','9 640 €','MDL 720 €']];
+  var w=[100,83,70,60,52];
+  var rows=d.map(function(r,i){return '<div class="row"><span class="rank">'+(i+1)+'</span><span class="dot" style="background:'+r[1]+'"></span><div style="flex:1;min-width:0"><div class="rname">'+r[0]+'</div><div class="bar"><span style="width:'+w[i]+'%;background:'+r[1]+'"></span></div></div><div class="rvals"><div class="rv">'+r[2]+'</div><div class="rm">'+r[3]+'</div></div></div>';}).join('');
+  return '<div class="card"><div class="card-head"><div class="card-t">'+ic('☆')+'Top 10 pharmacies par CA</div><span class="card-link">Toutes</span></div>'+rows+'</div>';
+}
+function familles(){
+  var d=[['Princeps','#0050E6','148 200 €','52,1'],['Génériques','#737A8C','62 400 €','22,0'],['Froid','#00B5D8','41 800 €','14,7'],['Biosimilaires','#6D4FC4','19 300 €','6,8'],['NR','#C7791A','12 420 €','4,4']];
+  var rows=d.map(function(r){return '<div class="famrow"><div class="famtop"><span class="faml"><span class="dot" style="background:'+r[1]+'"></span>'+r[0]+'</span><span><span class="famv">'+r[2]+'</span><span class="fampct">'+r[3]+' %</span></span></div><div class="bar"><span style="width:'+r[3]+'%;background:'+r[1]+'"></span></div></div>';}).join('');
+  return '<div class="card"><div class="card-head"><div class="card-t">'+ic('◧')+'Répartition par famille</div></div>'+rows+'</div>';
+}
+function tranches(){
+  var d=[['0 – 4,33 €','petits prix','#1E9E6A','58 900 €','20,7'],['4,33 – 468 €','intermédiaires','#0050E6','196 400 €','69,1'],['468 – 2 000 €','chers','#C7791A','22 600 €','8,0'],['> 2 000 €','très chers','#E0556E','6 220 €','2,2']];
+  var rows=d.map(function(r){return '<div class="famrow"><div class="famtop"><span class="faml"><span class="dot" style="background:'+r[2]+'"></span>'+r[0]+' <span style="color:var(--muted);font-weight:500;font-size:11px">· '+r[1]+'</span></span><span><span class="famv">'+r[3]+'</span><span class="fampct">'+r[4]+' %</span></span></div><div class="bar"><span style="width:'+r[4]+'%;background:'+r[2]+'"></span></div></div>';}).join('');
+  return '<div class="card"><div class="card-head"><div class="card-t">'+ic('€')+'Répartition par tranche de prix</div></div>'+rows+'</div>';
+}
+function groupement(){
+  var d=[['Giphar','42 100 €','12 off. · MDL 3 200 €',100],['OPSO Santé','38 400 €','9 off. · MDL 2 980 €',91],['Co&Pharm','27 600 €','7 off. · MDL 2 050 €',66],['Pharmabest','19 200 €','5 off. · MDL 1 410 €',46],['Unipharm','12 800 €','4 off. · MDL 940 €',30]];
+  var rows=d.map(function(r,i){return '<div class="row"><span class="rank">'+(i+1)+'</span><div style="flex:1;min-width:0"><div class="rname">'+r[0]+'</div><div class="bar"><span style="width:'+r[3]+'%;background:var(--ip-blue)"></span></div></div><div class="rvals"><div class="rv">'+r[1]+'</div><div class="rm">'+r[2]+'</div></div></div>';}).join('');
+  return '<div class="card"><div class="card-head"><div class="card-t">'+ic('▦')+'CA &amp; marge par groupement</div><span class="card-link mut">14 groupements</span></div>'+rows+'</div>';
+}
+function substitution(){
+  var d=[['Janv.',18.2],['Févr.',19.0],['Mars',20.4],['Avr.',21.1],['Mai',22.8]];
+  var rows=d.map(function(r){return '<div class="gxrow"><span class="gxmon">'+r[0]+'</span><div class="bar" style="flex:1;margin-top:0"><span style="width:'+(r[1]*3)+'%;background:#737A8C"></span></div><span class="gxpct">'+String(r[1]).replace('.',',')+' %</span></div>';}).join('');
+  return '<div class="card"><div class="card-head"><div class="card-t">'+ic('℞')+'Substitution génériques &amp; biosim</div><span class="chip g">▲ +4,6 pts</span></div><div class="gxhead"><span class="gxbig">22,8 %</span><span class="gxcap">du CA en Gx + biosim · en hausse de 4,6 pts sur la période</span></div>'+rows+'</div>';
+}
+function penetration(){
+  var d=[['TAHOR 40MG','1 240 000'],['CRESTOR 10MG','980 400'],['INEXIUM 20MG','870 100'],['LEVOTHYROX 100','812 000'],['KARDEGIC 75','645 300']];
+  var rows=d.map(function(r,i){var w=[100,79,70,65,52][i];return '<div class="row"><span class="rank">'+(i+1)+'</span><div style="flex:1;min-width:0"><div class="rname">'+r[0]+'</div><div class="bar"><span style="width:'+w+'%;background:var(--c-amber)"></span></div></div><div class="rvals"><div class="rv">'+r[1]+'</div><div class="rm" style="color:var(--c-amber)">non commandé</div></div></div>';}).join('');
+  return '<div class="card"><div class="card-head"><div class="card-t">'+ic('◎')+'Pénétration du marché Ameli</div><span class="card-link mut">couverture de gamme</span></div><div class="gauge"><span style="width:34%"></span></div><div class="gaugelb"><span class="mono" style="font-size:13px;font-weight:700;color:var(--ip-blue)">34 %</span><span style="font-size:12px;color:var(--muted)">372 / 1 090 produits Ameli commandés</span></div><div class="cap">Plus gros marchés Ameli que tu ne commandes pas</div>'+rows+'</div>';
+}
+function baisse(){
+  var d=[['Pharmacie du Marché','▼ 2 100 €/mois','−32 %'],['Pharmacie Centrale','▼ 1 640 €/mois','−24 %'],['Pharmacie de l\'Église','▼ 1 200 €/mois','−19 %'],['Pharmacie des Écoles','▼ 940 €/mois','−15 %']];
+  var rows=d.map(function(r,i){var w=[100,78,57,45][i];return '<div class="row"><span class="rank">'+(i+1)+'</span><span class="dot" style="background:var(--c-rose)"></span><div style="flex:1;min-width:0"><div class="rname">'+r[0]+'</div><div class="bar"><span style="width:'+w+'%;background:var(--c-rose)"></span></div></div><div class="rvals"><div class="rv" style="color:var(--c-rose)">'+r[1]+'</div><div class="rm">'+r[2]+'</div></div></div>';}).join('');
+  return '<div class="card"><div class="card-head"><div class="card-t">'+ic('⚠')+'Pharmacies en baisse · à relancer</div><span class="card-link mut">2ⁿᵈᵉ moitié vs 1ʳᵉ</span></div>'+rows+'</div>';
+}
+
+function header(){
+  return '<div class="head"><div><div class="page-title">Pilotage</div><div class="page-sub">Mai 2026 · ton tableau de bord commercial</div></div>'+
+    '<div style="display:flex;gap:8px"><div class="seg2"><b>Tous</b><b>Will</b><b>Pauline</b><b>Karine</b></div>'+
+    '<div class="seg2"><b class="on">Mois</b><b>3 mois</b><b>Année</b></div></div></div>';
+}
+
+/* ── Proposition A : sectionné (libellés de section, rythme clair) ── */
+document.getElementById('vA').innerHTML = header()+
+  '<div class="section-h">Vue d\'ensemble</div>'+ kpis(true)+ chart()+
+  '<div class="section-h">Répartition du chiffre d\'affaires</div>'+
+  '<div class="grid3">'+familles()+tranches()+substitution()+'</div>'+
+  '<div class="section-h">Classements</div>'+
+  '<div class="grid2">'+topPharma()+groupement()+'</div>'+
+  '<div class="section-h">Marché &amp; alertes</div>'+
+  '<div class="grid2">'+penetration()+baisse()+'</div>';
+
+/* ── Proposition B : bento (tuiles de tailles harmonisées) ── */
+document.getElementById('vB').innerHTML = header()+
+  kpis(true)+
+  '<div class="bento">'+
+    '<div class="c4">'+chart()+'</div>'+
+    '<div class="c2">'+substitution()+'</div>'+
+    '<div class="c3">'+familles()+'</div>'+
+    '<div class="c3">'+tranches()+'</div>'+
+    '<div class="c3">'+topPharma()+'</div>'+
+    '<div class="c3">'+groupement()+'</div>'+
+    '<div class="c3">'+penetration()+'</div>'+
+    '<div class="c3">'+baisse()+'</div>'+
+  '</div>';
+
+/* ── Proposition C : épuré une colonne (calme, type rapport) ── */
+document.getElementById('vC').innerHTML = header()+
+  '<div class="stack">'+ kpis(false)+ chart()+
+    '<div class="grid2">'+familles()+tranches()+'</div>'+
+    substitution()+ topPharma()+ groupement()+ penetration()+ baisse()+
+  '</div>';
+
+/* tabs */
+var notes={A:'A · Sectionné : libellés de section, lecture guidée, le plus structuré.',B:'B · Bento : tuiles compactes, très moderne, beaucoup d\'info en un écran.',C:'C · Épuré : une colonne calme, généreux, façon rapport.'};
+Array.prototype.forEach.call(document.querySelectorAll('.picker button'),function(b){
+  b.onclick=function(){
+    Array.prototype.forEach.call(document.querySelectorAll('.picker button'),function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    Array.prototype.forEach.call(document.querySelectorAll('.view'),function(v){v.classList.remove('on');});
+    document.getElementById('v'+b.dataset.v).classList.add('on');
+    document.getElementById('note').textContent=notes[b.dataset.v];
+  };
+});
+</script>
+</body>
+</html>
