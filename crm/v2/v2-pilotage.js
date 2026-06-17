@@ -633,98 +633,6 @@
           '</div>';
       }
 
-      // ── Couverture produit : combien de TES officines (période) commandent chaque CIP ──
-      var covByCip = {};
-      cur.forEach(function (s) { var c = normCip(s.artCode); if (!c) return; (covByCip[c] = covByCip[c] || {})[s.pharmacyId] = 1; });
-      function covOf(c) { return covByCip[c] ? Object.keys(covByCip[c]).length : 0; }
-      var _B = window.BENCHMARK || [];
-
-      // ── Commercial #2 : Radar des marchés qui montent (marché Ameli en croissance + peu couverts par toi) ──
-      var radarCard = '';
-      if (_B.length) {
-        var radar = [];
-        _B.forEach(function (b) {
-          if (!b.has_ameli) return;
-          var m = b.ameli_months; if (!m || m.length < 2) return;
-          var j25 = +m[0] || 0, j26 = +m[m.length - 1] || 0; if (j25 <= 0) return;
-          var yoy = (j26 - j25) / j25 * 100;
-          if (yoy < 8) return;                       // marché clairement en croissance
-          var mkt = +b.ameli_total || 0; if (mkt <= 0) return;
-          var c = normCip(b.cip13); if (!c) return;
-          radar.push({ desc: b.designation || c, yoy: yoy, mkt: mkt, cov: covOf(c) });
-        });
-        // score : gros marché + forte croissance + faible couverture chez toi
-        radar.sort(function (a, b) { return (b.yoy * Math.log(b.mkt + 1) / (b.cov + 1)) - (a.yoy * Math.log(a.mkt + 1) / (a.cov + 1)); });
-        radar = radar.slice(0, 10);
-        var maxYoy = radar.length ? Math.max.apply(null, radar.map(function (r) { return r.yoy; })) : 1;
-        var radarRows = radar.map(function (r, i) {
-          var w = Math.max(6, Math.min(100, r.yoy / maxYoy * 100));
-          return '<div class="v2-row" style="cursor:default">' +
-            '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
-            '<div style="flex:1;min-width:0">' +
-              '<div class="v2-row-name">' + esc(r.desc) + '</div>' +
-              '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + w.toFixed(1) + '" style="width:0;background:var(--c-mint)"></span></div>' +
-            '</div>' +
-            '<div class="pilo-vals">' +
-              '<div class="v2-row-val mono" style="color:var(--c-mint)">▲ +' + r.yoy.toFixed(0) + ' %/an</div>' +
-              '<div class="v2-row-meta mono">' + (r.cov === 0 ? 'aucune de tes officines' : r.cov + ' de tes officines') + '</div>' +
-            '</div>' +
-          '</div>';
-        }).join('');
-        if (radar.length) radarCard =
-          '<div class="v2-card">' +
-            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'Marchés porteurs · à pousser</div>' +
-              '<span class="v2-card-link" style="color:var(--muted);cursor:default">marché Ameli en croissance</span></div>' +
-            '<div class="pilo-ameli-sub" style="margin-bottom:8px">Le marché national grimpe et peu de tes officines commandent — prends-les avant la concurrence.</div>' +
-            radarRows +
-          '</div>';
-      }
-
-      // ── Commercial #5 : Saisonnalité — « à pousser maintenant » (produits en pic ce mois-ci, non commandés) ──
-      var saisonCard = '';
-      if (_B.length) {
-        var MNs = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-        var curMonth = (new Date()).getMonth() + 1;     // 1..12
-        var mi = curMonth - 1;                           // index ameli_months (réf. 2025 : Jan=0…Déc=11)
-        var saison = [];
-        _B.forEach(function (b) {
-          if (!b.has_ameli) return;
-          var m = b.ameli_months; if (!m || m.length < 12) return;
-          var sum = 0; for (var i = 0; i < 12; i++) sum += (+m[i] || 0);
-          var avg = sum / 12; if (avg <= 0) return;
-          var v = +m[mi] || 0;
-          var ratio = v / avg;
-          if (ratio < 1.2) return;                        // pic saisonnier net ce mois-ci
-          var c = normCip(b.cip13); if (!c) return;
-          if (covOf(c) > 0) return;                       // que tu ne commandes pas encore
-          saison.push({ desc: b.designation || c, ratio: ratio, mkt: +b.ameli_total || 0 });
-        });
-        saison.sort(function (a, b) { return (b.ratio * Math.log(b.mkt + 1)) - (a.ratio * Math.log(a.mkt + 1)); });
-        saison = saison.slice(0, 10);
-        var maxR = saison.length ? Math.max.apply(null, saison.map(function (r) { return r.ratio; })) : 1;
-        var saisonRows = saison.map(function (r, i) {
-          var w = Math.max(6, Math.min(100, r.ratio / maxR * 100));
-          return '<div class="v2-row" style="cursor:default">' +
-            '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
-            '<div style="flex:1;min-width:0">' +
-              '<div class="v2-row-name">' + esc(r.desc) + '</div>' +
-              '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + w.toFixed(1) + '" style="width:0;background:var(--c-amber)"></span></div>' +
-            '</div>' +
-            '<div class="pilo-vals">' +
-              '<div class="v2-row-val mono" style="color:var(--c-amber)">×' + r.ratio.toFixed(1).replace('.', ',') + ' ce mois</div>' +
-              '<div class="v2-row-meta mono">marché ' + V2.fmtNum(r.mkt) + '</div>' +
-            '</div>' +
-          '</div>';
-        }).join('');
-        if (saison.length) saisonCard =
-          '<div class="v2-card">' +
-            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'À pousser en ' + MNs[mi] + '</div>' +
-              '<span class="v2-card-link" style="color:var(--muted);cursor:default">pic saisonnier</span></div>' +
-            '<div class="pilo-ameli-sub" style="margin-bottom:8px">Produits dont le marché entre en pic ce mois-ci et que tes officines ne commandent pas encore — place le stock avant la demande.</div>' +
-            saisonRows +
-          '</div>';
-      }
-
       // ── Alerte : Top 10 pharmacies en BAISSE (CA décline sur les mois) ──
       // Compare la 2e moitié des mois disponibles à la 1re (moyenne mensuelle).
       var allMonths = availableMonths(sales);
@@ -802,8 +710,6 @@
       var classements = grpCard ? ('<div class="pilo-grid2">' + topCaCard + grpCard + '</div>') : topCaCard;
       var marche = (ameliCard && mdlCard) ? ('<div class="pilo-grid2">' + ameliCard + mdlCard + '</div>')
         : (ameliCard || mdlCard || '');
-      var porteurs = (radarCard && saisonCard) ? ('<div class="pilo-grid2">' + radarCard + saisonCard + '</div>')
-        : (radarCard || saisonCard || '');
 
       root.innerHTML = top +
         '<div class="v2-wrap">' +
@@ -816,7 +722,6 @@
           '<div class="pilo-grid2">' + famCard + tierCard + '</div>' +
           sec('Classements') +
           classements +
-          (porteurs ? (sec('Opportunités marché') + porteurs) : '') +
           (marche ? (sec('Marché & alertes') + marche) : '') +
         '</div>';
 
