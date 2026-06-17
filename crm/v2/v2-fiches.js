@@ -348,6 +348,7 @@
             '<div class="fch-card-acts">'+
               '<button class="v2-btn v2-btn-ghost" onclick="V2.fiches.open(\'' + f.id + '\')">Ouvrir</button>'+
               '<button class="v2-btn v2-btn-primary" onclick="V2.fiches.pdfById(\'' + f.id + '\')">' + ICO('download', 15, 2) + 'PDF</button>'+
+              (V2.canShareFiles && V2.canShareFiles() ? '<button class="fch-icobtn" title="Partager" onclick="V2.fiches.pdfById(\'' + f.id + '\',\'share\')">' + ICO('spark', 16, 2) + '</button>' : '')+
               '<button class="fch-icobtn" title="Dupliquer" onclick="V2.fiches.duplicate(\'' + f.id + '\')">' + ICO('grid', 16, 2) + '</button>'+
               '<button class="fch-icobtn fch-icobtn-del" title="Supprimer" onclick="V2.fiches.remove(\'' + f.id + '\')">' + ICO('close', 16, 2) + '</button>'+
             '</div>'+
@@ -434,6 +435,7 @@
           '<button class="v2-btn v2-btn-ghost" onclick="V2.fiches.openSelector()" aria-label="Ajouter un produit depuis le catalogue">' + ICO('plus', 17, 2) + 'Ajouter un produit</button>'+
           '<button class="v2-btn v2-btn-ghost" id="fch-save-btn" onclick="V2.fiches.save()" aria-label="Enregistrer la fiche">' + ICO('check', 17, 2) + 'Enregistrer</button>'+
           '<button class="v2-btn v2-btn-primary" onclick="V2.fiches.downloadPdf()" aria-label="Télécharger la fiche en PDF">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>'+
+          (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.fiches.downloadPdf(\'share\')" aria-label="Partager la fiche">' + ICO('spark', 16, 2) + 'Partager</button>' : '')+
         '</div>'+
         // Totaux
         totalsHtml() +
@@ -836,7 +838,7 @@
     return node;
   }
 
-  function generatePdf(fiche) {
+  function generatePdf(fiche, mode) {
     V2.toast('Génération du PDF…');
     window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
@@ -844,13 +846,20 @@
       var node = buildPdfNode(fiche);
       document.body.appendChild(node);
       var fname = 'Fiche-' + fileSafe(fiche.title) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
-      window.html2pdf().set({
+      var worker = window.html2pdf().set({
         margin: 0, filename: fname,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
-      }).from(node.firstChild).save().then(function () {
+      }).from(node.firstChild);
+      if (mode === 'share' && V2.shareOrSaveBlob) {
+        worker.outputPdf('blob').then(function (blob) { return V2.shareOrSaveBlob(blob, fname, fiche.title || 'Fiche commerciale'); })
+          .then(function () { if (node.parentNode) node.parentNode.removeChild(node); V2.toast('PDF prêt à partager'); })
+          .catch(function (e) { if (node.parentNode) node.parentNode.removeChild(node); console.error('[V2 fiches share]', e); V2.toast('Échec du PDF', 'error'); });
+        return;
+      }
+      worker.save().then(function () {
         if (node.parentNode) node.parentNode.removeChild(node);
         V2.toast('PDF téléchargé');
       }).catch(function (e) {
@@ -914,16 +923,16 @@
       V2.toast('Fiche enregistrée');
       var tf = document.getElementById('fch-title'); if (tf) tf.value = editingFiche.title;
     },
-    downloadPdf: function () {
+    downloadPdf: function (mode) {
       if (!editingFiche) return;
       if (!editingFiche.products.length) { V2.toast('Ajoute au moins un produit', 'warn'); return; }
-      generatePdf(editingFiche);
+      generatePdf(editingFiche, mode);
     },
-    pdfById: function (id) {
+    pdfById: function (id, mode) {
       var f = getFiche(id);
       if (!f) { V2.toast('Fiche introuvable', 'error'); return; }
       if (!(f.products || []).length) { V2.toast('Cette fiche n\'a aucun produit', 'warn'); return; }
-      generatePdf(f);
+      generatePdf(f, mode);
     }
   };
 

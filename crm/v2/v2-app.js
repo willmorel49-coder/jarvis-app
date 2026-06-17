@@ -89,6 +89,26 @@
     }, 0);
   };
 
+  // ── Partage d'un PDF (mail/WhatsApp sur mobile, sinon téléchargement) ──
+  V2.canShareFiles = function () {
+    try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'])], 'x.pdf', { type: 'application/pdf' })] })); } catch (e) { return false; }
+  };
+  V2.shareOrSaveBlob = function (blob, filename, title) {
+    try {
+      if (navigator.share && navigator.canShare) {
+        var file = new File([blob], filename, { type: 'application/pdf' });
+        if (navigator.canShare({ files: [file] })) {
+          return navigator.share({ files: [file], title: title || filename }).catch(function () {});
+        }
+      }
+    } catch (e) {}
+    // repli : téléchargement classique
+    var u = URL.createObjectURL(blob); var a = document.createElement('a');
+    a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(u); }, 2000);
+    return Promise.resolve();
+  };
+
   // ── Installation PWA (écran d'accueil) ────────
   V2.installApp = function () {
     var ex = document.getElementById('v2-usermenu'); if (ex && ex.parentNode) ex.parentNode.removeChild(ex);
