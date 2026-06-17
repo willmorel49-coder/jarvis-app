@@ -145,10 +145,11 @@
   function viewTransition(scope) {
     if (RM) return;
     var wrap = scope.querySelector('.v2-wrap') || scope;
-    wrap.classList.remove('mo-view-in');
+    var cls = (window.__navDir === 'back') ? 'mo-view-back' : 'mo-view-in';
+    wrap.classList.remove('mo-view-in', 'mo-view-back');
     // force reflow puis re-add pour relancer l'animation CSS
     void wrap.offsetWidth;
-    wrap.classList.add('mo-view-in');
+    wrap.classList.add(cls);
   }
 
   // ── Press / ripple subtil sur .v2-btn (délégué, une seule fois) ─────

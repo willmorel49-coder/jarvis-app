@@ -70,6 +70,14 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
   border-radius:14px;box-shadow:var(--sh-pop);overflow:hidden;transform:translateY(-6px) scale(.97);opacity:0;
   transform-origin:top right;transition:transform .18s var(--ease),opacity .15s var(--ease)}
 .v2-usermenu.open{transform:translateY(0) scale(1);opacity:1}
+/* Panier flottant (produits retenus pour une fiche) */
+.v2-cartbar{position:fixed;left:0;right:0;bottom:0;z-index:115;display:flex;justify-content:center;padding:0 14px calc(14px + env(safe-area-inset-bottom));pointer-events:none;transform:translateY(140%);transition:transform .32s cubic-bezier(.22,1,.36,1)}
+.v2-cartbar.show{transform:translateY(0)}
+.v2-cartbar-in{pointer-events:auto;display:flex;align-items:center;gap:12px;background:var(--ip-ink);color:#fff;border-radius:16px;padding:10px 12px 10px 16px;box-shadow:var(--sh-pop);max-width:560px;width:100%}
+.v2-cartbar-badge{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 7px;border-radius:9px;background:var(--ip-blue);color:#fff;font-size:14px;font-weight:800}
+.v2-cartbar-lbl{flex:1;font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.v2-cartbar-go{flex-shrink:0}
+@media(max-width:520px){.v2-cartbar-lbl{font-size:12.5px}}
 .v2-um-head{padding:13px 16px;border-bottom:1px solid var(--line)}
 .v2-um-name{font-weight:700;font-size:14px;letter-spacing:-.01em}
 .v2-um-mail{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

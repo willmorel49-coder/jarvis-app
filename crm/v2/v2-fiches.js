@@ -78,15 +78,17 @@
         src: p.src || 'cat'
       });
       writeCart(c);
+      if (V2.updateCartBar) V2.updateCartBar();
       return c.products.length;
     },
     remove: function (cip) {
       var c = readCart();
       c.products = c.products.filter(function (p) { return String(p.cip13) !== String(cip); });
       writeCart(c);
+      if (V2.updateCartBar) V2.updateCartBar();
       return c.products.length;
     },
-    clear: function () { writeCart({ products: [] }); }
+    clear: function () { writeCart({ products: [] }); if (V2.updateCartBar) V2.updateCartBar(); }
   };
 
   // ── Marge MDL (barème officiel France, remboursables) ──
