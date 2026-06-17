@@ -43,7 +43,8 @@
   var idxBuilt = false, sagittaSet = null, sortedBench = null, benchByCip = null;
   function norm(s) { return String(s == null ? '' : s).toLowerCase(); }
   function refPrice(b) {
-    var p = (b.prix_ip != null && b.prix_ip > 0) ? b.prix_ip : b.prix_ht;
+    var bp = V2.bestPrice(b);            // prix le plus bas (offre labo incluse)
+    var p = (bp.ip != null) ? bp.ip : b.prix_ht;
     return (typeof p === 'number' && isFinite(p)) ? p : 0;
   }
   function classify(b) {
@@ -147,10 +148,11 @@
       a.volIP += b.ip_qty || 0;
       a.caIP += b.ip_ca || 0;
       a.ameli += b.ameli_total || 0;
-      var ip = (typeof b.prix_ip === 'number' && b.prix_ip > 0) ? b.prix_ip : 0;
-      var ht = (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
+      var bpA = V2.bestPrice(b);
+      var ip = bpA.ip || 0;
+      var ht = bpA.ht || 0;
       if (ip > 0) { a.priceSum += ip; a.priceN++; }
-      var rem = (ht > 0 && ip > 0) ? (1 - ip / ht) * 100 : (b.remise_pct || 0);
+      var rem = bpA.remise;
       if (rem > 0) { a.remSum += rem; a.remN++; }
       if (b.is_froid) a.nbFroid++;
       if (b.offre_ip != null && b.offre_ip > 0) a.nbOffre++;
@@ -181,12 +183,13 @@
 
   // ── Inspecteur DÉTAIL PRODUIT (panneau latéral) ──
   function inspector(b) {
-    var ht = (typeof b.prix_ht === 'number' && b.prix_ht > 0) ? b.prix_ht : 0;
-    var ip = (typeof b.prix_ip === 'number' && b.prix_ip > 0) ? b.prix_ip : 0;
-    var rem = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
+    var bpI = V2.bestPrice(b);           // prix le plus bas (offre labo incluse)
+    var ht = bpI.ht || 0;
+    var ip = bpI.ip || 0;
+    var rem = bpI.remise;
     var vol = b.ip_qty || 0;
     var ameli = b.ameli_total || 0;
-    var hasOffre = b.offre_ip != null && b.offre_ip > 0;
+    var hasOffre = bpI.offre;
 
     // ── Section potentiel marché enrichie ───────────
     var potHtml;
@@ -295,11 +298,12 @@
   // ── Table rows ────────────────────────
   function rowsHtml(rows, pageOffset) {
     return rows.map(function (b, i) {
-      var ht = (b.prix_ht > 0) ? b.prix_ht : 0;
-      var ip = (b.prix_ip > 0) ? b.prix_ip : 0;
-      var rem = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
+      var bpR = V2.bestPrice(b);          // prix le plus bas (offre labo incluse)
+      var ht = bpR.ht || 0;
+      var ip = bpR.ip || 0;
+      var rem = bpR.remise;
       var sel = (S.sel != null && String(b.cip13) === String(S.sel)) ? ' sel' : '';
-      var hasOffre = b.offre_ip != null && b.offre_ip > 0;
+      var hasOffre = bpR.offre;
       var rank_qty = b.ip_rank_qty || 0;
       var rankBadge = rankBadgeHtml(rank_qty);
       var rankDisp = rank_qty > 0 ? V2.fmtNum(rank_qty) : '—';
@@ -368,9 +372,10 @@
     if (!b) return;
     if (!V2.ficheCart) { V2.toast('Module fiches indisponible', 'error'); return; }
     if (V2.ficheCart.has(b.cip13)) { V2.toast('Déjà dans la fiche en cours', 'warn'); return; }
+    var bpc = V2.bestPrice(b);
     var n = V2.ficheCart.add({
-      cip13: b.cip13, designation: b.designation, prix_ip: b.prix_ip,
-      prix_ht: b.prix_ht, remise_pct: b.remise_pct, is_froid: b.is_froid, src: 'cat'
+      cip13: b.cip13, designation: b.designation, prix_ip: bpc.ip,
+      prix_ht: bpc.ht, remise_pct: bpc.remise, is_froid: b.is_froid, src: 'cat'
     });
     V2.toast('Ajouté à la fiche en cours (' + n + ')');
   };
