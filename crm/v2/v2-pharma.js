@@ -103,6 +103,10 @@
       return String(s.pharmacyId) === String(pid) && (!V2.commFilter || s.commercial === V2.commFilter);
     });
   }
+  // toutes ventes d'une pharma, TOUS commerciaux (vue groupements = vue d'équipe)
+  function pharmaSalesAll(pid) {
+    return (V2.sales || []).filter(function (s) { return String(s.pharmacyId) === String(pid); });
+  }
 
   // ── Classement d'un produit benchmark dans une des 8 catégories ──
   // Priorité : NR > biosim > gen.part > gen > froid > princeps(pp/mi/ch)
@@ -960,30 +964,29 @@
       .map(function (w) { return w.charAt(0); }).join('').toUpperCase() || '?';
     return '<span class="' + cls + ' grp-logo-x">' + esc(ini) + '</span>';
   }
+  // Vue Groupements = vue d'équipe : TOUJOURS toutes les pharmacies des 4
+  // commerciaux, sans tenir compte du filtre commercial.
   function groupementList() {
     var byG = {};
     (V2.pharmacies || []).forEach(function (p) {
-      if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return;
       var g = groupName(p);
       (byG[g] = byG[g] || { name: g, members: [] }).members.push(p);
     });
     return Object.keys(byG).map(function (g) {
       var o = byG[g];
       o.nb = o.members.length;
-      o.active = o.members.filter(function (p) { return pharmaSales(p.id).length > 0; }).length;
+      o.active = o.members.filter(function (p) { return pharmaSalesAll(p.id).length > 0; }).length;
       return o;
     }).sort(function (a, b) { return b.active - a.active || b.nb - a.nb; });
   }
   function groupementProducts(grpName) {
     var ids = {};
     (V2.pharmacies || []).forEach(function (p) {
-      if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return;
       if (groupName(p) === grpName) ids[String(p.id)] = 1;
     });
     var bIdx = benchIndex(), byCip = {}, activeSet = {};
     (V2.sales || []).forEach(function (s) {
       if (!ids[String(s.pharmacyId)]) return;
-      if (V2.commFilter && s.commercial !== V2.commFilter) return;
       var cip = String(s.artCode || ''); if (cip.length < 7) return;
       activeSet[String(s.pharmacyId)] = 1;
       var e = byCip[cip] || (byCip[cip] = { ph: {}, qte: 0, ca: 0 });
@@ -1081,10 +1084,9 @@
       '</div>';
     // ── Pharmacies membres du groupement ──
     var members = (V2.pharmacies || []).filter(function (p) {
-      if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return false;
       return groupName(p) === grpName;
     }).map(function (p) {
-      var ps = pharmaSales(p.id);
+      var ps = pharmaSalesAll(p.id);
       return { p: p, ca: V2.sumCA(ps), active: ps.length > 0 };
     }).sort(function (a, b) { return (b.active - a.active) || (b.ca - a.ca); });
     var memRows = members.map(function (m) {
