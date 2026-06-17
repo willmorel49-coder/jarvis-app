@@ -23,6 +23,21 @@
     return Object.keys(set).sort();
   };
 
+  // ── Prix le plus bas (offre labo Sanofi/UPSA… via offre_ip) ─────
+  // Renvoie { ip, ht, remise, offre } : on prend l'offre labo si elle existe
+  // et est inférieure au prix net standard. La remise est recalculée sur ce
+  // prix le plus bas. Utilisé partout où on affiche un prix IP.
+  V2.bestPrice = function (b) {
+    if (!b) return { ip: null, ht: null, remise: 0, offre: false };
+    var ht = (b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0;
+    var ip0 = (b.prix_ip != null && b.prix_ip > 0) ? b.prix_ip : 0;
+    var off = (b.offre_ip != null && b.offre_ip > 0) ? b.offre_ip : 0;
+    var offre = off > 0 && (ip0 === 0 || off < ip0);
+    var ip = offre ? off : ip0;
+    var remise = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
+    return { ip: ip > 0 ? ip : null, ht: ht > 0 ? ht : null, remise: remise, offre: offre };
+  };
+
   var sb = null;
   function getSb() {
     if (!sb && window.supabase && window.SUPABASE_URL) {

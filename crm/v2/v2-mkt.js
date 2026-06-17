@@ -129,11 +129,8 @@
     if (forPdf && window.OFFILOG_IMG && p.id && window.OFFILOG_IMG[p.id]) return window.OFFILOG_IMG[p.id];
     return p.img || '';
   }
-  function refPriceB(b) { return (b.prix_ip != null && b.prix_ip > 0) ? b.prix_ip : ((b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0); }
-  function remiseB(b) {
-    if (b.prix_ht > 0 && b.prix_ip > 0) return Math.round((1 - b.prix_ip / b.prix_ht) * 1000) / 10;
-    return b.remise_pct || 0;
-  }
+  function refPriceB(b) { var bp = V2.bestPrice(b); return (bp.ip != null) ? bp.ip : ((b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0); }
+  function remiseB(b) { return V2.bestPrice(b).remise; }
 
   // ════════════════════════════════════════════
   // VUE LISTE

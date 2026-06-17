@@ -580,7 +580,8 @@
     (editingFiche.products || []).forEach(function (p) { inFiche[String(p.cip13)] = true; });
     box.innerHTML = results.map(function (b) {
       var added = inFiche[String(b.cip13)];
-      var price = b.prix_ip != null ? V2.fmtEur(b.prix_ip) : (b.prix_ht != null ? V2.fmtEur(b.prix_ht) : '');
+      var _bp = V2.bestPrice(b);
+      var price = _bp.ip != null ? V2.fmtEur(_bp.ip) : (b.prix_ht != null ? V2.fmtEur(b.prix_ht) : '');
       return ''+
         '<div class="fch-sel-item' + (added ? ' added' : '') + '" data-cip="' + esc(b.cip13) + '">'+
           '<span class="ic">' + ICO('pill', 18, 1.7) + '</span>'+
@@ -625,11 +626,12 @@
     for (var i = 0; i < B.length; i++) { if (String(B[i].cip13) === String(cip)) { b = B[i]; break; } }
     if (!b) return;
     if (editingFiche.products.some(function (p) { return String(p.cip13) === String(cip); })) return;
+    var _bpf = V2.bestPrice(b);
     editingFiche.products.push({
       cip13: b.cip13, designation: b.designation,
-      prix_ip: b.prix_ip != null ? b.prix_ip : (b.prix_ht != null ? b.prix_ht : null),
-      prix_ht: b.prix_ht != null ? b.prix_ht : null,
-      remise_pct: b.remise_pct != null ? b.remise_pct : null,
+      prix_ip: _bpf.ip != null ? _bpf.ip : (b.prix_ht != null ? b.prix_ht : null),
+      prix_ht: _bpf.ht != null ? _bpf.ht : null,
+      remise_pct: _bpf.remise,
       is_froid: !!b.is_froid,
       qty: 1
     });
