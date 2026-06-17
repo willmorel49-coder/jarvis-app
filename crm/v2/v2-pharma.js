@@ -1095,8 +1095,11 @@
             '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + esc(grpName) + '</div>' +
             '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + data.panel + ' pharmacie' + (data.panel > 1 ? 's' : '') + ' active' + (data.panel > 1 ? 's' : '') + ' · ' + total + ' produits commandés · ' + periodLabel() + '</div>' +
           '</div>' +
-          '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName) + '\')">' +
-            ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+            '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName) + '\')">' +
+              ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
+            (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName) + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
+          '</div>' +
         '</div>' +
       '</div>';
     // ── Pharmacies membres du groupement ──
@@ -1140,7 +1143,7 @@
   V2.pharmaView = function (v) { pharmaView = v; selGroup = null; V2.render(); };
   V2.pharmaGroup = function (enc) { try { selGroup = decodeURIComponent(enc); } catch (e) { selGroup = enc; } V2.render(); window.scrollTo(0, 0); };
   V2.pharmaGroupBack = function () { selGroup = null; V2.render(); };
-  V2.grpDownloadPdf = function (enc) {
+  V2.grpDownloadPdf = function (enc, mode) {
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
     var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
     var data = groupementProducts(grpName);
@@ -1189,12 +1192,20 @@
       wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
       wrap.innerHTML = html; document.body.appendChild(wrap);
       var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
-      window.html2pdf().from(wrap.firstChild).set({
+      var worker = window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }
-      }).save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('PDF téléchargé'); })
-        .catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
+      });
+      function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); }
+      if (mode === 'share' && V2.shareOrSaveBlob) {
+        worker.outputPdf('blob').then(function (blob) { return V2.shareOrSaveBlob(blob, fn, 'Liste d\'achats · ' + grpName); })
+          .then(function () { cleanup(); V2.toast('PDF prêt à partager'); })
+          .catch(function (e) { console.error(e); cleanup(); V2.toast('Erreur PDF', 'error'); });
+      } else {
+        worker.save().then(function () { cleanup(); V2.toast('PDF téléchargé'); })
+          .catch(function (e) { console.error(e); cleanup(); V2.toast('Erreur PDF', 'error'); });
+      }
     });
   };
   V2.grpToggleCat = function (catKey) {
