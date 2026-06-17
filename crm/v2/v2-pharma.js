@@ -107,6 +107,16 @@
   function pharmaSalesAll(pid) {
     return (V2.sales || []).filter(function (s) { return String(s.pharmacyId) === String(pid); });
   }
+  // libellé période couverte par les données (ex. "cumul 5 mois · janv.–mai 2026")
+  function periodLabel() {
+    var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    var ms = {}, yr = null;
+    (V2.sales || []).forEach(function (s) { if (s.month) { ms[s.month] = 1; if (s.year) yr = s.year; } });
+    var ks = Object.keys(ms).map(Number).sort(function (a, b) { return a - b; });
+    if (!ks.length) return '';
+    var span = MN[ks[0] - 1] + '–' + MN[ks[ks.length - 1] - 1] + (yr ? ' ' + yr : '');
+    return 'cumul ' + ks.length + ' mois · ' + span;
+  }
 
   // ── Classement d'un produit benchmark dans une des 8 catégories ──
   // Priorité : NR > biosim > gen.part > gen > froid > princeps(pp/mi/ch)
@@ -184,10 +194,12 @@
       if (!b) return;                        // pas dans le catalogue IP → on ignore
       var cat = classify(b, cip);
       if (!cat || !buckets[cat]) return;
+      var bp = V2.bestPrice(b);
       buckets[cat].push({
         cip: cip,
         designation: b.designation || m.designation || '',
-        prix_ip: b.prix_ip,
+        prix_ip: bp.ip,
+        offre: bp.offre,
         marketQte: m.qte,
         ops: m.ops, cpr: m.cpr, hp: m.hp
       });
@@ -433,7 +445,7 @@
           '<td class="num" style="color:var(--muted-2);width:34px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
           '<td><span class="v2-cat-prod">' + V2.esc(r.designation) + '</span></td>' +
           '<td class="mono" style="color:var(--muted);font-size:12px">' + V2.esc(r.cip) + '</td>' +
-          '<td class="num">' + (r.prix_ip != null && r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) : '—') + '</td>' +
+          '<td class="num">' + (r.prix_ip != null && r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
           '<td class="num" style="font-weight:700">' + V2.fmtNum(r.marketQte) + '</td>' +
           '<td class="num">' + (r.ops ? V2.fmtNum(r.ops) : '·') + '</td>' +
           '<td class="num">' + (r.cpr ? V2.fmtNum(r.cpr) : '·') + '</td>' +
@@ -692,12 +704,13 @@
       btn.innerHTML = ICO('check', 15);
       if (V2.ficheCart) {
         var b = benchIndex().get(String(cip));
+        var bp = V2.bestPrice(b);
         V2.ficheCart.add({
           cip13: cip,
           designation: b ? b.designation : cip,
-          prix_ip: b ? b.prix_ip : null,
-          prix_ht: b ? b.prix_ht : null,
-          remise_pct: b ? b.remise_pct : null,
+          prix_ip: bp.ip,
+          prix_ht: bp.ht,
+          remise_pct: bp.remise,
           is_froid: b ? b.is_froid : false,
           src: 'opp'
         });
@@ -1080,7 +1093,7 @@
           grpLogo(grpName, true) +
           '<div style="flex:1;min-width:160px">' +
             '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + esc(grpName) + '</div>' +
-            '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + data.panel + ' pharmacie' + (data.panel > 1 ? 's' : '') + ' active' + (data.panel > 1 ? 's' : '') + ' · ' + total + ' produits commandés</div>' +
+            '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + data.panel + ' pharmacie' + (data.panel > 1 ? 's' : '') + ' active' + (data.panel > 1 ? 's' : '') + ' · ' + total + ' produits commandés · ' + periodLabel() + '</div>' +
           '</div>' +
           '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName) + '\')">' +
             ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
@@ -1164,7 +1177,7 @@
         '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>' +
         '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · Liste d\'achats groupement</div>' +
           '<div style="font-size:19px;font-weight:800">' + esc(grpName) + '</div>' +
-          '<div style="font-size:10px;color:#737A8C">' + data.panel + ' pharmacies du panel · trié par nb de pharmacies qui commandent</div></div>' +
+          '<div style="font-size:10px;color:#737A8C">' + data.panel + ' pharmacies du panel · ' + periodLabel() + ' · trié par nb de pharmacies qui commandent</div></div>' +
         '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + dateStr + '</div>' +
       '</div>' + (catHtml || '<div style="color:#9AA1B2;padding:30px;text-align:center">Aucun produit</div>') +
       '<div style="margin-top:16px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · Document confidentiel · « Sortie » = nombre de pharmacies du groupement qui commandent le produit</div>' +
