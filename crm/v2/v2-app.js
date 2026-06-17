@@ -62,7 +62,7 @@
         (back ||
          '<a class="v2-brand" onclick="V2.go(\'home\')"><span class="v2-logo">' + ICO('logo', 22) + '</span>' +
          '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span></a>') +
-        '<div class="v2-top-search" onclick="V2.openCmdk()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>' +
+        '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>' +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
   }
@@ -157,12 +157,30 @@
     requestAnimationFrame(function () { ex.classList.add('show'); });
   };
 
+  // Accent de PILIER courant : chaque écran a SA lumière (halo de tête + liserés).
+  // Mappe la route vers le token var(--pil-*) correspondant ; défaut = bleu marque.
+  var ROUTE_ACCENT = {
+    home: 'var(--accent)', pharma: 'var(--pil-opp)', fiches: 'var(--pil-fiche)',
+    catalogue: 'var(--pil-cat)', pilotage: 'var(--pil-pilo)', offilog: 'var(--pil-froid)',
+    groupements: 'var(--pil-fiche)'
+  };
+  function accentFor(name) {
+    if (name === 'marketing') return (window.V2_BRAND && window.V2_BRAND.opso) ? 'var(--pil-fiche)' : 'var(--pil-rose)';
+    return ROUTE_ACCENT[name] || 'var(--accent)';
+  }
+
   // ── RENDER (routeur) ──────────────────────────
   V2.render = function () {
     var root = $app(); if (!root) return;
+    injectShellStyles();
     var page = V2.pages[V2.route.name];
     if (!page) { V2.route.name = 'home'; page = V2.pages.home; }
     if (!page) { root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>'; return; }
+    // Pose la lumière du pilier courant à la racine : le halo de tête (.v2-halo,
+    // frère de .v2) et tous les liserés contextuels de l'écran lisent var(--accent).
+    try {
+      document.documentElement.style.setProperty('--accent', V2.route.name === 'home' ? 'var(--info)' : accentFor(V2.route.name));
+    } catch (e) {}
     try {
       page.render(root, V2.route.param);
     } catch (e) {
@@ -242,7 +260,7 @@
             '<h1>Bonjour ' + esc(firstName) + ', par où on commence ?</h1>' +
             '<p>Cherche une pharmacie, ou ouvre directement un de tes outils</p>' +
           '</div>' +
-          '<div class="v2-search" onclick="V2.openCmdk()">' + ICO('search', 24, 2) +
+          '<div class="v2-search" onclick="V2.onTopSearch()">' + ICO('search', 24, 2) +
             '<input readonly placeholder="Pharmacie, produit, page…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           '<div class="v2-recent">' + recentHtml + '</div>' +
           '<div class="v2-piliers">' + pilHtml + '</div>' +
@@ -308,6 +326,25 @@
     inp.value = ''; cmdkSel = 0; cmdkResults = cmdkSearch(''); renderCmdkResults();
     setTimeout(function () { inp.focus(); }, 60);
   };
+  // Détection terrain : sur mobile (tactile), on ouvre la recherche et on focus
+  // l'input DANS le geste tactile (les navigateurs mobiles bloquent un focus
+  // différé hors interaction → le clavier ne montait pas). Desktop garde le ⌘K.
+  function isMobileField() {
+    try { return window.matchMedia && window.matchMedia('(max-width:640px), (pointer:coarse)').matches; } catch (e) { return false; }
+  }
+  V2.onTopSearch = function () {
+    if (isMobileField()) {
+      var bd = document.getElementById('v2-cmdk');
+      var inp = document.getElementById('v2-cmdk-input');
+      if (bd && inp) {
+        bd.classList.add('open');
+        inp.value = ''; cmdkSel = 0; cmdkResults = cmdkSearch(''); renderCmdkResults();
+        try { inp.focus(); } catch (e) {}   // focus synchrone = clavier mobile garanti
+        return;
+      }
+    }
+    V2.openCmdk();
+  };
   V2.closeCmdk = function () { var bd = document.getElementById('v2-cmdk'); if (bd) bd.classList.remove('open'); };
   function mountCmdk() {
     if (document.getElementById('v2-cmdk')) return;
@@ -343,6 +380,47 @@
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
   V2.esc = esc; V2.cap = cap;
 
+  // ── SIGNATURE SHELL (styles injectés localement, idempotent) ──────────
+  // Trois gestes invariants posés ici pour le chrome global : (1) la donnée a
+  // sa voix mono ; (2) le wordmark devient marque-outil ; (3) le login est un
+  // manifeste sobre. On ne touche ni structure ni classes : on raffine.
+  function injectShellStyles() {
+    if (document.getElementById('v2-shell-styles')) return;
+    var css =
+      // (2) Wordmark signature : la baseline banale devient marque-outil mono.
+      '.v2-brand-s{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;' +
+        'font-size:9.5px;font-weight:500;color:var(--muted);line-height:1}' +
+      '@media(max-width:640px){.v2-brand-s{font-size:9px;letter-spacing:.1em}}' +
+      // Liseré 3px de tête sur la topbar : seule grammaire d'appartenance,
+      // teinté par la lumière du pilier courant (var(--accent)).
+      '.v2-top{position:relative}' +
+      '.v2-top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;' +
+        'background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 34%,transparent),transparent 60%);' +
+        'pointer-events:none}' +
+      // Pastille recherche topbar : cible tactile terrain >= --tap-min sous mobile,
+      // sans grossir le glyphe (la hit-area s\'étend, l\'icône reste).
+      '@media(max-width:640px){.v2-top-search{min-width:var(--tap-min);min-height:var(--tap-min);' +
+        'justify-content:center}}' +
+      // (3) LOGIN — manifeste de marque. Halo signature + baseline mono.
+      '.v2-login{overflow:hidden}' +
+      '.v2-login::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;' +
+        'background:radial-gradient(ellipse 70% 55% at 50% 0%,' +
+        'color-mix(in srgb,var(--info) 14%,var(--halo)),transparent 62%)}' +
+      '.v2-login-card{position:relative;z-index:1}' +
+      // Le monogramme arrive en mo-pop (settle spring réservé aux accents) ;
+      // l\'icône glisse sur la courbe d\'entrée canonique, jamais clinquant.
+      '.v2-login-logo{animation:v2-login-mono var(--mo-dur,300ms) var(--mo-ease-in,cubic-bezier(.32,.72,0,1)) both}' +
+      '@keyframes v2-login-mono{from{opacity:0;transform:translateY(6px) scale(.92)}to{opacity:1;transform:none}}' +
+      // Baseline login en mono uppercase = même voix que le wordmark topbar.
+      '.v2-login p{font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;font-size:10.5px}' +
+      '@media (prefers-reduced-motion:reduce){.v2-login-logo{animation:none}}';
+    var st = document.createElement('style');
+    st.id = 'v2-shell-styles';
+    st.textContent = css;
+    document.head.appendChild(st);
+  }
+  V2.injectShellStyles = injectShellStyles;
+
   // ════════════════════════════════════════════
   // BOOT
   // ════════════════════════════════════════════
@@ -370,7 +448,10 @@
   // ── LOGIN ─────────────────────────────────────
   V2.renderLogin = function () {
     var root = $app();
-    root.innerHTML = '<div class="v2-login"><div class="v2-login-card">' +
+    injectShellStyles();
+    // Login = scène marque : la lumière neutre/info (bleu marque) pour le halo signature.
+    try { document.documentElement.style.setProperty('--accent', 'var(--info)'); } catch (e) {}
+    root.innerHTML = '<div class="v2-login"><div class="v2-login-card mo-pop">' +
       '<div class="v2-login-logo">' + ICO('logo', 30) + '</div>' +
       '<h1>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</h1><p>' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial · CRM') + '</p>' +
       '<input class="v2-field" id="v2-email" type="email" placeholder="Email" autocomplete="username">' +

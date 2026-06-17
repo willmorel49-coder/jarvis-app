@@ -20,6 +20,7 @@
   var COUNT_MS    = 600;   // durée du count-up
   var REVEAL_SEL  = '.v2-hero, .v2-pil, .v2-kpi, .v2-card'; // blocs de 1er niveau, classes réelles
   var COUNT_SEL   = '.v2-kpi-v.mono, .opso-chip-n.mono';    // chiffres « titres » uniquement
+  var INSP_SEL    = '.cat-insp.open, .off-insp.open';       // panneaux inspecteur glissés
 
   // prefers-reduced-motion : lu une fois, mais on respecte aussi un changement live
   var RM = false;
@@ -32,6 +33,36 @@
   } catch (e) {}
 
   var raf = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
+
+  // ── Styles locaux du module (injectés une fois) ────────────────────
+  // On ne (re)définit AUCUN token global ici : on aligne seulement la
+  // grammaire de mouvement de ce module sur la durée canonique --mo-dur
+  // (300ms) et on fournit l'état « above-the-fold » sans transition.
+  var stylesInjected = false;
+  function injectStyles() {
+    if (stylesInjected) return;
+    stylesInjected = true;
+    var css = [
+      /* Stagger reveal ramené à ~30ms (cohérent --mo-dur 300ms) */
+      '[data-reveal]{transition-delay:calc(var(--mo-i, 0) * 30ms)}',
+      '[data-reveal] .v2-kpi-v{transition-delay:calc(var(--mo-i, 0) * 30ms + 50ms)}',
+      /* Above-the-fold : déjà visible au render → pas de double-anim     */
+      /* (reveal + mo-view-in). On force l'état final SANS transition.    */
+      '[data-reveal].mo-instant{transition:none !important;transition-delay:0s !important;opacity:1;transform:none}',
+      '[data-reveal].mo-instant .v2-kpi-v{transition:none !important;transition-delay:0s !important}',
+      /* Stagger du contenu d\'un panneau inspecteur une fois glissé.     */
+      /* Le panneau garde sa propre translateX ; on n\'anime QUE le       */
+      /* contenu interne (head/body/cta) en transform/opacity.           */
+      '.cat-insp [data-reveal],.off-insp [data-reveal]{transform:translateY(6px)}',
+      '.cat-insp [data-reveal].is-in,.off-insp [data-reveal].is-in{transform:translateY(0)}'
+    ].join('');
+    try {
+      var tag = document.createElement('style');
+      tag.setAttribute('data-mo', 'motion-js');
+      tag.appendChild(document.createTextNode(css));
+      (document.head || document.documentElement).appendChild(tag);
+    } catch (e) { stylesInjected = false; }
+  }
 
   // ── IntersectionObserver partagé, créé UNE seule fois ──────────────
   // (on ne le déconnecte jamais : les nœuds retirés du DOM lors d'un
@@ -58,8 +89,31 @@
     countUpWithin(el); // déclenche le count-up des chiffres révélés
   }
 
+  // révèle SANS transition (above-the-fold) : évite la double-anim
+  // reveal + mo-view-in à l'ouverture d'une vue. Le bloc atterrit déjà
+  // dans son état final ; seul le wrapper joue mo-view-in.
+  function revealInstant(el) {
+    if (!el || el.classList.contains('is-in')) return;
+    el.classList.add('mo-instant');
+    el.classList.add('is-in');
+    countUpWithin(el);
+  }
+
+  // un bloc est-il (au moins en partie) dans le viewport au moment du render ?
+  function inViewport(el) {
+    try {
+      var r = el.getBoundingClientRect();
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      var vw = window.innerWidth || document.documentElement.clientWidth;
+      return r.bottom > 0 && r.right > 0 && r.top < vh && r.left < vw;
+    } catch (e) { return true; } // en cas de doute : révéler tout de suite
+  }
+
   // ── Reveal : marque les blocs, assigne le stagger, observe ──────────
-  function passReveal(scope) {
+  // immediate=true au 1er passage post-render : les blocs déjà visibles
+  // se révèlent sans transition ; seuls les blocs hors-écran restent
+  // animés au scroll (via l'IntersectionObserver).
+  function passReveal(scope, immediate) {
     var els = scope.querySelectorAll(REVEAL_SEL);
     if (!els.length) return;
     var idx = 0;
@@ -72,9 +126,47 @@
       if (RM || !io) {
         // reduced-motion ou pas d'IO : visible immédiatement, sans anim
         revealEl(el);
+      } else if (immediate && inViewport(el)) {
+        // above-the-fold : déjà à l'écran → état final direct, pas de reveal
+        revealInstant(el);
       } else {
-        io.observe(el);
+        io.observe(el); // hors-écran : reveal animé au scroll
       }
+    }
+  }
+
+  // ── Stagger du contenu des panneaux inspecteur (cat-insp / off-insp) ─
+  // Continuité spatiale : une fois le panneau glissé, son head/body/CTA
+  // se posent en cascade (--mo-i 0/1/2). Tagué une seule fois par panneau.
+  function passInspector(scope) {
+    if (RM || !io) return;
+    var panels = scope.querySelectorAll(INSP_SEL);
+    for (var p = 0; p < panels.length; p++) {
+      var panel = panels[p];
+      if (panel.getAttribute('data-mo-insp') === '1') continue;
+      panel.setAttribute('data-mo-insp', '1');
+      var pre = panel.classList.contains('cat-insp') ? 'cat' : 'off';
+      var parts = [
+        panel.querySelector('.' + pre + '-insp-head'),
+        panel.querySelector('.' + pre + '-insp-body'),
+        panel.querySelector('.' + pre + '-insp-cta')
+      ];
+      var staged = [];
+      var k = 0;
+      for (var j = 0; j < parts.length; j++) {
+        var part = parts[j];
+        if (!part || part.hasAttribute('data-reveal')) continue;
+        part.setAttribute('data-reveal', ''); // état caché (opacity/translateY)
+        part.style.setProperty('--mo-i', k++);
+        staged.push(part);
+      }
+      if (!staged.length) continue;
+      void panel.offsetWidth; // fige l'état initial avant de jouer la cascade
+      raf(function (list) {
+        return function () {
+          for (var n = 0; n < list.length; n++) revealEl(list[n]);
+        };
+      }(staged));
     }
   }
 
@@ -175,9 +267,11 @@
       if (!root) return;
       ensureObserver(); // créé une seule fois ; jamais déconnecté
       viewTransition(root);
-      passReveal(root);
-      // les blocs déjà dans le viewport au render se révèlent à la frame suivante
-      // (IntersectionObserver émet de façon asynchrone — géré nativement).
+      // 1er passage post-render : les blocs above-the-fold se révèlent
+      // sans transition (pas de double-anim avec mo-view-in) ; les blocs
+      // hors-écran restent animés au scroll via l'IntersectionObserver.
+      passReveal(root, true);
+      passInspector(root); // cascade interne des panneaux inspecteur glissés
     } catch (e) { /* une passe ne doit jamais bloquer l'app */ }
   }
 
@@ -213,6 +307,7 @@
 
   // ── Bootstrap ───────────────────────────────────────────────────────
   function start() {
+    injectStyles();
     bindPress();
     // tente d'envelopper render ; si pas prêt, réessaie quelques frames
     var tries = 0;

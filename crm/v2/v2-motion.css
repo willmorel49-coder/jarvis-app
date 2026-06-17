@@ -5,14 +5,23 @@
    The JS layer toggles .is-in / .mo-view-in and sets --mo-i.
    ============================================================ */
 
-/* --- Motion tokens (shared with the JS layer, do not rename) --- */
+/* --- Motion tokens (shared with the JS layer, do not rename) ---
+   Easings et durées canoniques vivent désormais dans v2.css :root.
+   On ne RE-déclare ici que les durées locales (fast/slow) qui n'y sont
+   pas, et on aligne tout le reste sur les tokens globaux via var().
+   - --mo-ease-in  : courbe d'ENTRÉE canonique (reveal, view, panneaux)
+   - --mo-ease-spring : settle réservé aux SEULS accents (KPI, press, pop)
+   - --mo-ease-soft : doublon fusionné avec --ease-soft (un seul token)
+   - --mo-dur (~300ms) : durée d'entrée alignée sur la famille .3s
+   - --mo-lift (-3px) : amplitude UNIQUE du hover-lift (signature survol) */
 :root{
-  --mo-ease-out: cubic-bezier(.22,1,.36,1);
-  --mo-ease-spring: cubic-bezier(.34,1.4,.5,1);
-  --mo-ease-soft: cubic-bezier(.4,0,.2,1);
-  --mo-dur-fast: 140ms;
-  --mo-dur: 240ms;
-  --mo-dur-slow: 420ms;
+  --mo-ease-out: var(--mo-ease-in);   /* hérite de la courbe d'entrée canonique */
+  --mo-dur-fast: 140ms;               /* press/focus : feedback immédiat */
+  --mo-dur-slow: 380ms;               /* réservé aux mouvements amples (view) */
+  /* settle spring — SEULE physique d'accent (KPI, press, pop). Léger
+     overshoot puis recalage. Défini ici car v2.css n'expose pas ce token ;
+     sans lui le shorthand animation retombait silencieusement sur `ease`. */
+  --mo-ease-spring: cubic-bezier(.34,1.4,.64,1);
 }
 
 /* ============================================================
@@ -22,9 +31,9 @@
 [data-reveal]{
   opacity:0;
   transform:translateY(8px);
-  transition:opacity var(--mo-dur-slow) var(--mo-ease-out),
-             transform var(--mo-dur-slow) var(--mo-ease-out);
-  transition-delay:calc(var(--mo-i, 0) * 40ms);
+  transition:opacity var(--mo-dur) var(--mo-ease-in),
+             transform var(--mo-dur) var(--mo-ease-in);
+  transition-delay:calc(var(--mo-i, 0) * 30ms);
   will-change:opacity, transform;
 }
 [data-reveal].is-in{
@@ -36,15 +45,26 @@
    2. Card hover lift — gentle, transform/shadow only
    v2.css gives static cards; we add a soft lift on hover only.
    ============================================================ */
-.v2-card{
-  transition:transform var(--mo-dur) var(--mo-ease-out),
-             box-shadow var(--mo-dur) var(--mo-ease-out);
+.v2-card,
+.v2-pil,
+.fch-card,
+.off-card{
+  transition:transform var(--mo-dur) var(--mo-ease-in),
+             box-shadow var(--mo-dur) var(--mo-ease-in);
 }
-/* Lift only cards meant to be interactive (links/clickable). */
+/* Lift only cards meant to be interactive (links/clickable).
+   Une seule physique de survol pour toute l'app : amplitude --mo-lift,
+   courbe d'entrée canonique. fch-card/off-card sont des cartes de pilier
+   toujours navigables ; les piliers (.v2-pil) lèvent au survol. */
 .v2-card.v2-card-link:hover,
 .v2-card[onclick]:hover,
-a.v2-card:hover{
-  transform:translateY(-2px);
+a.v2-card:hover,
+.v2-pil:hover,
+.fch-card[onclick]:hover,
+a.fch-card:hover,
+.off-card[onclick]:hover,
+a.off-card:hover{
+  transform:translateY(var(--mo-lift));
   box-shadow:var(--sh-3);
 }
 
@@ -56,7 +76,7 @@ a.v2-card:hover{
   transition:background var(--mo-dur) var(--mo-ease-soft);
 }
 .v2-row-chev{
-  transition:transform var(--mo-dur) var(--mo-ease-out);
+  transition:transform var(--mo-dur) var(--mo-ease-in);
 }
 .v2-row:hover .v2-row-chev{
   transform:translateX(2px);
@@ -76,8 +96,8 @@ a.v2-card:hover{
   transition:background var(--mo-dur) var(--mo-ease-soft),
              color var(--mo-dur) var(--mo-ease-soft),
              border-color var(--mo-dur) var(--mo-ease-soft),
-             transform var(--mo-dur-fast) var(--mo-ease-out),
-             box-shadow var(--mo-dur) var(--mo-ease-out);
+             transform var(--mo-dur-fast) var(--mo-ease-in),
+             box-shadow var(--mo-dur) var(--mo-ease-in);
 }
 .v2-btn:active,
 .pilo-segbtn:active,
@@ -87,6 +107,20 @@ a.v2-card:hover{
 .v2-chip:active,
 .v2-rchip:active{
   transform:scale(.97);
+}
+
+/* --- .mo-press : settle spring signature (câblé en JS) ---------------
+   Feedback tactile de l'outil terrain : au relâchement du doigt, l'élément
+   « se cale » avec un micro-rebond. Distinct du :active plat ci-dessus.
+   JS ajoute la classe puis la retire après l'animation. Une seule physique
+   d'accent (spring) dans toute l'app — réservée aux accents. */
+@keyframes mo-press-settle{
+  0%{   transform:scale(.96);  }
+  55%{  transform:scale(1.015);}
+  100%{ transform:scale(1);    }
+}
+.mo-press{
+  animation:mo-press-settle 220ms var(--mo-ease-spring) both;
 }
 
 /* ============================================================
@@ -114,13 +148,19 @@ a.v2-card:hover{
    6. Skeleton shimmer — cosmetic loading placeholder (opt-in)
    Uses background-position sweep (cheap), not layout props.
    ============================================================ */
-.mo-skeleton{
+/* Le squelette remplace le spinner sur les SURFACES LOURDES (listes,
+   grilles de cartes, tables des piliers). Le spinner reste réservé au
+   boot/connexion. Les piliers posent .mo-skeleton (ou [data-skeleton])
+   sur leurs placeholders de markup ; ici on les rend simplement vivants. */
+.mo-skeleton,
+[data-skeleton]{
   position:relative;
   overflow:hidden;
-  background:var(--card-2);
-  border-radius:8px;
+  background:var(--surf-sunken);
+  border-radius:var(--r-control);
 }
-.mo-skeleton::after{
+.mo-skeleton::after,
+[data-skeleton]::after{
   content:"";
   position:absolute;
   inset:0;
@@ -142,9 +182,9 @@ a.v2-card:hover{
 [data-reveal] .v2-kpi-v{
   transform:scale(.98);
   opacity:.0001;
-  transition:transform var(--mo-dur-slow) var(--mo-ease-spring),
+  transition:transform var(--mo-dur) var(--mo-ease-spring),
              opacity var(--mo-dur) var(--mo-ease-soft);
-  transition-delay:calc(var(--mo-i, 0) * 40ms + 60ms);
+  transition-delay:calc(var(--mo-i, 0) * 30ms + 60ms);
 }
 [data-reveal].is-in .v2-kpi-v{
   transform:scale(1);
@@ -156,20 +196,20 @@ a.v2-card:hover{
    JS adds .mo-view-in on the page root (.v2-wrap) each render.
    ============================================================ */
 @keyframes mo-view-in{
-  from{ opacity:0; transform:translateX(12px); }
+  from{ opacity:0; transform:translateX(20px); }
   to{   opacity:1; transform:translateX(0); }
 }
 .v2-wrap.mo-view-in,
 .mo-view-in{
-  animation:mo-view-in var(--mo-dur-slow) var(--mo-ease-out) both;
+  animation:mo-view-in var(--mo-dur) var(--mo-ease-in) both;
 }
 /* Retour : glissé inverse (sensation « je reviens en arrière ») */
 @keyframes mo-view-back{
-  from{ opacity:0; transform:translateX(-12px); }
+  from{ opacity:0; transform:translateX(-20px); }
   to{   opacity:1; transform:translateX(0); }
 }
 .v2-wrap.mo-view-back{
-  animation:mo-view-back var(--mo-dur-slow) var(--mo-ease-out) both;
+  animation:mo-view-back var(--mo-dur) var(--mo-ease-in) both;
 }
 
 /* ============================================================
