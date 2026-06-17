@@ -996,9 +996,13 @@
     Object.keys(byCip).forEach(function (cip) {
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
-      var e = byCip[cip], ht = (b.prix_ht > 0) ? b.prix_ht : 0, ip = (b.prix_ip > 0) ? b.prix_ip : 0;
+      var e = byCip[cip], ht = (b.prix_ht > 0) ? b.prix_ht : 0, ip0 = (b.prix_ip > 0) ? b.prix_ip : 0;
+      // prix le plus bas : on prend l'offre labo (Sanofi, UPSA…) si elle existe et est inférieure
+      var off = (b.offre_ip > 0) ? b.offre_ip : 0;
+      var hasOffer = off > 0 && (ip0 === 0 || off < ip0);
+      var ip = hasOffer ? off : ip0;
       var rem = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
-      buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: ht, prix_ip: ip, remise: rem,
+      buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: ht, prix_ip: ip, offre: hasOffer, remise: rem,
                           froid: !!b.is_froid, sortie: Object.keys(e.ph).length, qte: e.qte });
     });
     return {
@@ -1047,7 +1051,7 @@
         '<td class="num" style="color:var(--muted-2);width:30px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
         '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + '</td>' +
         '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip) + '</td>' +
-        '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) : '—') + '</td>' +
+        '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
         '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
         '<td class="num" style="font-weight:800">' + r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + panel + '</span></td>' +
         '<td class="num">' + V2.fmtNum(r.qte) + '</td>' +
@@ -1141,7 +1145,7 @@
           '<td style="padding:4px 6px;text-align:center;color:#9AA1B2;font-size:9px">' + (i + 1) + '</td>' +
           '<td style="padding:4px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.designation || '').slice(0, 50)) + (r.froid ? ' ❄' : '') + '</td>' +
           '<td style="padding:4px 6px;font-family:monospace;font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
+          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + (r.prix_ip ? e2(r.prix_ip) + (r.offre ? ' <span style="font-family:Satoshi,sans-serif;font-size:7px;font-weight:800;color:#C7791A;background:#FBEEDD;padding:1px 4px;border-radius:4px;vertical-align:middle">OFFRE</span>' : '') : '—') + '</td>' +
           '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#1E9E6A">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
           '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:800">' + r.sortie + '/' + data.panel + '</td>' +
           '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px">' + V2.fmtNum(r.qte) + '</td>' +
@@ -1263,6 +1267,7 @@
       '.ph-vtab svg{color:currentColor}',
       '.ph-vtab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 3px 9px rgba(0,80,230,.26)}',
       '.ph-froid{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid);background:color-mix(in srgb,var(--c-froid) 13%,#fff)}',
+      '.ph-offre{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 14%,#fff);text-transform:uppercase}',
       // logo groupement (image réelle ou badge initiales)
       '.grp-logo{width:38px;height:38px;border-radius:10px;flex-shrink:0;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:var(--sh-1)}',
       '.grp-logo img{max-width:100%;max-height:100%;object-fit:contain}',
