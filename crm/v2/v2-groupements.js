@@ -12,7 +12,7 @@
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
 
   var view = 'app';
-  var leafletLoading = false, _map = null, _cluster = null, _rows = [];
+  var leafletLoading = false, _map = null, _cluster = null, _deptLayer = null, _rows = [];
   var deptSel = '', txtSel = '';
 
   var DEPT_NAMES = { '01': 'Ain', '02': 'Aisne', '03': 'Allier', '04': 'Alpes-de-Hte-Provence', '05': 'Hautes-Alpes', '06': 'Alpes-Maritimes', '07': 'Ardèche', '08': 'Ardennes', '09': 'Ariège', '10': 'Aube', '11': 'Aude', '12': 'Aveyron', '13': 'Bouches-du-Rhône', '14': 'Calvados', '15': 'Cantal', '16': 'Charente', '17': 'Charente-Maritime', '18': 'Cher', '19': 'Corrèze', '21': "Côte-d'Or", '22': "Côtes-d'Armor", '23': 'Creuse', '24': 'Dordogne', '25': 'Doubs', '26': 'Drôme', '27': 'Eure', '28': 'Eure-et-Loir', '29': 'Finistère', '2A': 'Corse-du-Sud', '2B': 'Haute-Corse', '30': 'Gard', '31': 'Haute-Garonne', '32': 'Gers', '33': 'Gironde', '34': 'Hérault', '35': 'Ille-et-Vilaine', '36': 'Indre', '37': 'Indre-et-Loire', '38': 'Isère', '39': 'Jura', '40': 'Landes', '41': 'Loir-et-Cher', '42': 'Loire', '43': 'Haute-Loire', '44': 'Loire-Atlantique', '45': 'Loiret', '46': 'Lot', '47': 'Lot-et-Garonne', '48': 'Lozère', '49': 'Maine-et-Loire', '50': 'Manche', '51': 'Marne', '52': 'Haute-Marne', '53': 'Mayenne', '54': 'Meurthe-et-Moselle', '55': 'Meuse', '56': 'Morbihan', '57': 'Moselle', '58': 'Nièvre', '59': 'Nord', '60': 'Oise', '61': 'Orne', '62': 'Pas-de-Calais', '63': 'Puy-de-Dôme', '64': 'Pyrénées-Atlantiques', '65': 'Hautes-Pyrénées', '66': 'Pyrénées-Orientales', '67': 'Bas-Rhin', '68': 'Haut-Rhin', '69': 'Rhône', '70': 'Haute-Saône', '71': 'Saône-et-Loire', '72': 'Sarthe', '73': 'Savoie', '74': 'Haute-Savoie', '75': 'Paris', '76': 'Seine-Maritime', '77': 'Seine-et-Marne', '78': 'Yvelines', '79': 'Deux-Sèvres', '80': 'Somme', '81': 'Tarn', '82': 'Tarn-et-Garonne', '83': 'Var', '84': 'Vaucluse', '85': 'Vendée', '86': 'Vienne', '87': 'Haute-Vienne', '88': 'Vosges', '89': 'Yonne', '90': 'Belfort', '91': 'Essonne', '92': 'Hauts-de-Seine', '93': 'Seine-St-Denis', '94': 'Val-de-Marne', '95': "Val-d'Oise", '971': 'Guadeloupe', '972': 'Martinique', '973': 'Guyane', '974': 'La Réunion', '976': 'Mayotte' };
@@ -55,7 +55,13 @@
       '.sag-row-t{font-size:11.5px;color:var(--ip-blue);margin-top:2px}' +
       '.sag-more{padding:14px 16px;text-align:center;font-size:12px;color:var(--muted)}' +
       '.ps-map .leaflet-popup-content{font:13px/1.45 var(--font, sans-serif);margin:10px 12px}' +
-      '.grp-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;gap:10px}';
+      '.grp-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;gap:10px}' +
+      // bulles par département
+      '.ps-deptbubble-wrap{background:transparent;border:none}' +
+      '.ps-deptbubble{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;box-shadow:0 3px 10px rgba(0,80,230,.35),0 0 0 3px rgba(255,255,255,.7);cursor:pointer;line-height:1;transition:transform .15s var(--ease)}' +
+      '.ps-deptbubble:hover{transform:scale(1.08)}' +
+      '.ps-deptbubble-d{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:-.02em}' +
+      '.ps-deptbubble-n{font-size:10px;font-weight:600;opacity:.92;margin-top:1px}';
     document.head.appendChild(st);
   }
 
@@ -95,6 +101,34 @@
     });
     _cluster.addLayers(ms);
   }
+  // Bulles agrégées par département : n° + nombre de pharmacies, au centroïde
+  function addDeptBubbles(rows) {
+    if (!_deptLayer) return;
+    _deptLayer.clearLayers();
+    var agg = {};
+    rows.forEach(function (r) {
+      var d = deptOf(r[4]); if (!d) return;
+      var a = agg[d] || (agg[d] = { la: 0, lo: 0, n: 0 });
+      a.la += r[0]; a.lo += r[1]; a.n++;
+    });
+    var maxN = 1;
+    Object.keys(agg).forEach(function (d) { if (agg[d].n > maxN) maxN = agg[d].n; });
+    Object.keys(agg).forEach(function (d) {
+      var a = agg[d], lat = a.la / a.n, lng = a.lo / a.n;
+      var sz = Math.round(36 + Math.sqrt(a.n / maxN) * 28); // 36..64 px selon le nombre
+      var ic = window.L.divIcon({
+        className: 'ps-deptbubble-wrap',
+        html: '<div class="ps-deptbubble" style="width:' + sz + 'px;height:' + sz + 'px">' +
+                '<span class="ps-deptbubble-d">' + d + '</span>' +
+                '<span class="ps-deptbubble-n">' + a.n + '</span>' +
+              '</div>',
+        iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2]
+      });
+      var m = window.L.marker([lat, lng], { icon: ic, title: d + (DEPT_NAMES[d] ? ' · ' + DEPT_NAMES[d] : '') + ' — ' + a.n + ' pharmacies' });
+      m.on('click', function () { V2.psDeptZoom(d); });
+      _deptLayer.addLayer(m);
+    });
+  }
   // listing complet (synchronisé avec la carte)
   function buildList(rows) {
     var box = document.getElementById('sag-list'); if (!box) return;
@@ -128,6 +162,8 @@
       { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(_map);
     _cluster = window.L.markerClusterGroup({ chunkedLoading: true, spiderfyOnMaxZoom: true });
     _map.addLayer(_cluster);
+    _deptLayer = window.L.layerGroup();
+    _map.addLayer(_deptLayer);
     applyFilter();
     setTimeout(function () { try { _map.invalidateSize(); } catch (e) {} }, 120);
   }
@@ -140,10 +176,17 @@
       if (ql && ((r[2] || '') + ' ' + (r[5] || '') + ' ' + (r[3] || '')).toLowerCase().indexOf(ql) < 0) return false;
       return true;
     });
-    addMarkers(_rows);
+    // Vue par défaut (aucun dépt, aucune recherche) = bulles par département.
+    // Dès qu'on choisit un département ou qu'on cherche = points individuels.
+    var bubbles = !deptSel && !ql;
+    if (_cluster) _cluster.clearLayers();
+    if (_deptLayer) _deptLayer.clearLayers();
+    if (bubbles) addDeptBubbles(_rows); else addMarkers(_rows);
     buildList(_rows);
     var c = document.getElementById('ps-count'); if (c) c.textContent = _rows.length.toLocaleString('fr') + ' pharmacies';
-    if (deptSel && _rows.length && _map) {
+    if (bubbles && _map) {
+      try { _map.setView([46.7, 2.4], 6); } catch (e) {}
+    } else if (deptSel && _rows.length && _map) {
       try { _map.fitBounds(_rows.map(function (r) { return [r[0], r[1]]; }), { padding: [30, 30], maxZoom: 11 }); } catch (e) {}
     }
   }
@@ -160,6 +203,11 @@
   }
   V2.grpView = function (v) { view = v; V2.render(); };
   V2.psDept = function (v) { deptSel = v || ''; applyFilter(); };
+  V2.psDeptZoom = function (d) {
+    deptSel = d || '';
+    var sel = document.getElementById('ps-dept'); if (sel) sel.value = deptSel;
+    applyFilter();
+  };
   V2.psFilter = function (q) { txtSel = q || ''; applyFilter(); };
 
   function tabs() {
