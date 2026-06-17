@@ -56,12 +56,12 @@
       '.sag-more{padding:14px 16px;text-align:center;font-size:12px;color:var(--muted)}' +
       '.ps-map .leaflet-popup-content{font:13px/1.45 var(--font, sans-serif);margin:10px 12px}' +
       '.grp-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;gap:10px}' +
-      // bulles par département
+      // pastilles par département (horizontales, ultra lisibles)
       '.ps-deptbubble-wrap{background:transparent;border:none}' +
-      '.ps-deptbubble{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;box-shadow:0 3px 10px rgba(0,80,230,.35),0 0 0 3px rgba(255,255,255,.7);cursor:pointer;line-height:1;transition:transform .15s var(--ease)}' +
-      '.ps-deptbubble:hover{transform:scale(1.08)}' +
-      '.ps-deptbubble-d{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:-.02em}' +
-      '.ps-deptbubble-n{font-size:10px;font-weight:600;opacity:.92;margin-top:1px}';
+      '.ps-deptbubble{display:inline-flex;align-items:stretch;height:26px;background:#fff;border:2px solid var(--ip-blue);border-radius:999px;box-shadow:0 2px 8px rgba(16,19,28,.35);overflow:hidden;cursor:pointer;font-family:var(--font);font-variant-numeric:tabular-nums;transition:transform .12s var(--ease)}' +
+      '.ps-deptbubble:hover{transform:scale(1.1)}' +
+      '.ps-deptbubble-d{display:flex;align-items:center;background:var(--ip-blue);color:#fff;font-weight:800;font-size:13.5px;letter-spacing:-.01em;padding:0 7px}' +
+      '.ps-deptbubble-n{display:flex;align-items:center;color:var(--ip-ink);font-weight:800;font-size:13.5px;padding:0 8px}';
     document.head.appendChild(st);
   }
 
@@ -111,20 +111,21 @@
       var a = agg[d] || (agg[d] = { la: 0, lo: 0, n: 0 });
       a.la += r[0]; a.lo += r[1]; a.n++;
     });
-    var maxN = 1;
-    Object.keys(agg).forEach(function (d) { if (agg[d].n > maxN) maxN = agg[d].n; });
     Object.keys(agg).forEach(function (d) {
       var a = agg[d], lat = a.la / a.n, lng = a.lo / a.n;
-      var sz = Math.round(36 + Math.sqrt(a.n / maxN) * 28); // 36..64 px selon le nombre
+      var cnt = '' + a.n;
+      // largeur estimée de la pastille (puce dépt + nombre) pour bien centrer
+      var w = 14 + d.length * 8.5 + 16 + cnt.length * 8.5, h = 26;
       var ic = window.L.divIcon({
         className: 'ps-deptbubble-wrap',
-        html: '<div class="ps-deptbubble" style="width:' + sz + 'px;height:' + sz + 'px">' +
-                '<span class="ps-deptbubble-d">' + d + '</span>' +
-                '<span class="ps-deptbubble-n">' + a.n + '</span>' +
-              '</div>',
-        iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2]
+        html: '<div class="ps-deptbubble"><span class="ps-deptbubble-d">' + d + '</span><span class="ps-deptbubble-n">' + cnt + '</span></div>',
+        iconSize: [Math.round(w), h], iconAnchor: [Math.round(w / 2), h / 2]
       });
-      var m = window.L.marker([lat, lng], { icon: ic, title: d + (DEPT_NAMES[d] ? ' · ' + DEPT_NAMES[d] : '') + ' — ' + a.n + ' pharmacies' });
+      var m = window.L.marker([lat, lng], {
+        icon: ic, riseOnHover: true,
+        zIndexOffset: a.n,   // les départements avec le plus de pharmacies passent au-dessus
+        title: d + (DEPT_NAMES[d] ? ' · ' + DEPT_NAMES[d] : '') + ' — ' + a.n + ' pharmacies'
+      });
       m.on('click', function () { V2.psDeptZoom(d); });
       _deptLayer.addLayer(m);
     });
