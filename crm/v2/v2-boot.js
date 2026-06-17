@@ -38,6 +38,14 @@
     return { ip: ip > 0 ? ip : null, ht: ht > 0 ? ht : null, remise: remise, offre: offre };
   };
 
+  // ── Couleur « bon / à surveiller / faible » selon des seuils ───
+  // v >= good → vert (mint) · v >= mid → ambre · sinon → rose
+  V2.tint = function (v, mid, good) {
+    if (v >= good) return 'var(--c-mint)';
+    if (v >= mid) return 'var(--c-amber)';
+    return 'var(--c-rose)';
+  };
+
   var sb = null;
   function getSb() {
     if (!sb && window.supabase && window.SUPABASE_URL) {

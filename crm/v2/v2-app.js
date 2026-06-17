@@ -27,7 +27,16 @@
   };
 
   // ── NAVIGATION ────────────────────────────────
+  V2._navStack = V2._navStack || ['home'];
   V2.go = function (name, param) {
+    // sens de navigation (pour la transition) : si on revient sur l'écran
+    // précédent de la pile → 'back', sinon → 'fwd'
+    try {
+      var key = name + (param ? '/' + param : '');
+      var st = V2._navStack;
+      if (st.length >= 2 && st[st.length - 2] === key) { st.pop(); window.__navDir = 'back'; }
+      else { st.push(key); if (st.length > 30) st.shift(); window.__navDir = 'fwd'; }
+    } catch (e) { window.__navDir = 'fwd'; }
     V2.route = { name: name, param: param || null };
     try { location.hash = '#' + name + (param ? '/' + encodeURIComponent(param) : ''); } catch (e) {}
     V2.render();
@@ -132,6 +141,22 @@
     document.body.appendChild(o);
   };
 
+  // ── Panier flottant (produits retenus pour une fiche) ─────────
+  V2.updateCartBar = function () {
+    var n = (V2.ficheCart && V2.ficheCart.count) ? V2.ficheCart.count() : 0;
+    var ex = document.getElementById('v2-cartbar');
+    var onFiches = V2.route && V2.route.name === 'fiches';
+    if (n <= 0 || onFiches) { if (ex) ex.classList.remove('show'); return; }
+    if (!ex) { ex = document.createElement('div'); ex.id = 'v2-cartbar'; ex.className = 'v2-cartbar'; document.body.appendChild(ex); }
+    ex.innerHTML =
+      '<div class="v2-cartbar-in">' +
+        '<span class="v2-cartbar-badge mono">' + n + '</span>' +
+        '<span class="v2-cartbar-lbl">produit' + (n > 1 ? 's' : '') + ' retenu' + (n > 1 ? 's' : '') + ' pour ta fiche</span>' +
+        '<button class="v2-btn v2-btn-primary v2-cartbar-go" onclick="V2.go(\'fiches\')">Voir la fiche ' + ICO('chev', 15) + '</button>' +
+      '</div>';
+    requestAnimationFrame(function () { ex.classList.add('show'); });
+  };
+
   // ── RENDER (routeur) ──────────────────────────
   V2.render = function () {
     var root = $app(); if (!root) return;
@@ -144,6 +169,7 @@
       console.error('[V2 render ' + V2.route.name + ']', e);
       root.innerHTML = topbar({ back: true }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-t">Une erreur est survenue</div><div class="v2-empty-d">' + (e && e.message ? e.message : '') + '</div><button class="v2-btn v2-btn-primary" onclick="V2.go(\'home\')">Retour à l\'accueil</button></div></div>';
     }
+    if (V2.updateCartBar) V2.updateCartBar();
   };
 
   // ════════════════════════════════════════════

@@ -156,12 +156,20 @@ a.v2-card:hover{
    JS adds .mo-view-in on the page root (.v2-wrap) each render.
    ============================================================ */
 @keyframes mo-view-in{
-  from{ opacity:0; transform:translateY(6px); }
-  to{   opacity:1; transform:translateY(0); }
+  from{ opacity:0; transform:translateX(12px); }
+  to{   opacity:1; transform:translateX(0); }
 }
 .v2-wrap.mo-view-in,
 .mo-view-in{
-  animation:mo-view-in var(--mo-dur) var(--mo-ease-out) both;
+  animation:mo-view-in var(--mo-dur-slow) var(--mo-ease-out) both;
+}
+/* Retour : glissé inverse (sensation « je reviens en arrière ») */
+@keyframes mo-view-back{
+  from{ opacity:0; transform:translateX(-12px); }
+  to{   opacity:1; transform:translateX(0); }
+}
+.v2-wrap.mo-view-back{
+  animation:mo-view-back var(--mo-dur-slow) var(--mo-ease-out) both;
 }
 
 /* ============================================================
