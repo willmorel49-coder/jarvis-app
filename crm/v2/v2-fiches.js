@@ -142,18 +142,22 @@
         '</div>'+
         '<div class="fch-pricewrap">'+
           '<span class="fch-pricelab">Prix IP €</span>'+
-          '<input class="fch-price" type="number" step="0.01" min="0" aria-label="Prix IP ligne ' + (i+1) + '" value="' + (p.prix_ip != null ? p.prix_ip : '') + '" '+
+          '<input class="fch-price" type="number" inputmode="decimal" step="0.01" min="0" aria-label="Prix IP ligne ' + (i+1) + '" value="' + (p.prix_ip != null ? p.prix_ip : '') + '" '+
             'oninput="V2.fiches.setPrice(' + i + ',this.value)">'+
         '</div>'+
         '<div class="fch-pricewrap">'+
           '<span class="fch-pricelab">Remise %</span>'+
-          '<input class="fch-price fch-rem" type="number" step="0.1" min="0" aria-label="Remise % ligne ' + (i+1) + '" value="' + (p.remise_pct != null ? p.remise_pct : '') + '" '+
+          '<input class="fch-price fch-rem" type="number" inputmode="decimal" step="0.1" min="0" aria-label="Remise % ligne ' + (i+1) + '" value="' + (p.remise_pct != null ? p.remise_pct : '') + '" '+
             'oninput="V2.fiches.setRemise(' + i + ',this.value)">'+
         '</div>'+
         '<div class="fch-pricewrap">'+
           '<span class="fch-pricelab">Qté</span>'+
-          '<input class="fch-price fch-qty" type="number" step="1" min="1" aria-label="Quantité ligne ' + (i+1) + '" value="' + qty + '" '+
-            'oninput="V2.fiches.setQty(' + i + ',this.value)">'+
+          '<div class="fch-qtywrap">'+
+            '<button type="button" class="fch-qstep" aria-label="Diminuer la quantité ligne ' + (i+1) + '" onclick="V2.fiches.stepQty(' + i + ',-1)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg></button>'+
+            '<input class="fch-price fch-qty" type="number" inputmode="numeric" step="1" min="1" aria-label="Quantité ligne ' + (i+1) + '" value="' + qty + '" '+
+              'oninput="V2.fiches.setQty(' + i + ',this.value)">'+
+            '<button type="button" class="fch-qstep" aria-label="Augmenter la quantité ligne ' + (i+1) + '" onclick="V2.fiches.stepQty(' + i + ',1)">' + ICO('plus', 15, 2.2) + '</button>'+
+          '</div>'+
         '</div>'+
         '<div class="fch-mdl"><div class="fch-mdl-l">Marge MDL</div><div class="fch-mdl-v mono" id="fch-mdl-' + i + '">' + V2.fmtEur(mdl) + '</div></div>'+
         '<button class="fch-rmbtn" title="Retirer ce produit" aria-label="Retirer ' + esc(p.designation) + '" onclick="V2.fiches.removeProduct(' + i + ')">' + ICO('close', 15, 2) + '</button>'+
@@ -186,7 +190,7 @@
     '.fch-card-acts{display:flex;gap:8px;margin-top:14px}'+
     '.fch-card-acts .v2-btn{flex:1;padding:9px 10px;font-size:13px}'+
     '.fch-icobtn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 auto;'+
-    'border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;box-shadow:var(--sh-1);transition:.16s var(--ease)}'+
+    'border-radius:var(--r-btn);border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;box-shadow:var(--sh-1);transition:.16s var(--ease)}'+
     '.fch-icobtn:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}'+
     // fiche en cours
     '.fch-encours{background:linear-gradient(135deg,var(--card),var(--halo));border:1px solid color-mix(in srgb,var(--ip-blue) 24%,var(--line));border-radius:var(--r-card);box-shadow:var(--sh-2);padding:20px 22px;margin-bottom:26px;position:relative;overflow:hidden}'+
@@ -207,7 +211,7 @@
     'border:none;outline:none;background:none;padding:6px 0;border-bottom:2px solid var(--line);margin-bottom:18px;transition:.18s var(--ease)}'+
     '.fch-titlefield:focus{border-bottom-color:var(--ip-blue)}'+
     '.fch-titlefield::placeholder{color:var(--muted-2);font-weight:700}'+
-    '.fch-note{width:100%;font-family:var(--font);font-size:14px;line-height:1.55;color:var(--ip-ink-2);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin-bottom:16px;outline:none;resize:vertical;box-shadow:var(--sh-1);transition:.16s var(--ease)}'+
+    '.fch-note{width:100%;font-family:var(--font);font-size:14px;line-height:1.55;color:var(--ip-ink-2);background:var(--card);border:1px solid var(--line);border-radius:var(--r-control);padding:12px 15px;margin-bottom:16px;outline:none;resize:vertical;box-shadow:var(--sh-1);transition:.16s var(--ease)}'+
     '.fch-note:focus{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}'+
     '.fch-note::placeholder{color:var(--muted-2);font-style:italic}'+
     '.fch-cond{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}'+
@@ -243,16 +247,28 @@
     '.fch-pricewrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px}'+
     '.fch-pricelab{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}'+
     '.fch-price{width:90px;text-align:right;font-family:var(--mono);font-size:14px;font-weight:700;color:var(--ip-ink);'+
-    'border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:var(--card-2);outline:none;transition:.16s var(--ease)}'+
+    'border:1px solid var(--line);border-radius:var(--r-control);padding:7px 9px;background:var(--card-2);outline:none;transition:.16s var(--ease)}'+
     '.fch-price:focus{border-color:var(--ip-blue);background:#fff;box-shadow:0 0 0 3px var(--halo)}'+
     '.fch-rem{width:60px}'+
-    '.fch-qty{width:54px}'+
+    '.fch-qtywrap{display:flex;align-items:center;gap:4px}'+
+    '.fch-qty{width:46px;-moz-appearance:textfield}'+
+    '.fch-qty::-webkit-outer-spin-button,.fch-qty::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}'+
+    '.fch-qstep{display:inline-flex;align-items:center;justify-content:center;width:28px;height:32px;flex:0 0 auto;'+
+    'border:1px solid var(--line);border-radius:var(--r-control);background:var(--card-2);color:var(--muted);cursor:pointer;transition:transform .16s var(--ease),color .16s var(--ease),border-color .16s var(--ease)}'+
+    '.fch-qstep:hover{color:var(--ip-blue);border-color:color-mix(in srgb,var(--ip-blue) 36%,var(--line))}'+
+    '.fch-qstep:active{transform:scale(.92)}'+
     '.fch-mdl{text-align:right;min-width:74px}'+
     '.fch-mdl-l{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}'+
     '.fch-mdl-v{font-size:14px;font-weight:700;color:var(--c-opp);margin-top:3px}'+
-    '.fch-rmbtn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 auto;border-radius:9px;'+
+    '.fch-rmbtn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 auto;border-radius:var(--r-control);'+
     'border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;transition:.16s var(--ease)}'+
     '.fch-rmbtn:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}'+
+    // terrain : cibles tactiles confortables sous mobile (sans grossir les glyphes)
+    '@media(max-width:640px){'+
+      '.fch-qty{min-height:var(--tap-min)}'+
+      '.fch-qstep{height:var(--tap-min);width:var(--tap-min)}'+
+      '.fch-rmbtn{width:var(--tap-min);height:var(--tap-min)}'+
+    '}'+
     '.fch-editbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}'+
     // barre totaux
     '.fch-totals{position:sticky;bottom:18px;margin-top:24px;background:var(--ip-ink);color:#fff;border-radius:16px;box-shadow:0 14px 34px rgba(16,19,28,.3);display:flex;align-items:center;gap:2px;overflow:hidden;padding:4px}'+
@@ -735,16 +751,16 @@
       var rem = (p.remise_pct != null && p.remise_pct !== '' && +p.remise_pct > 0) ? String(p.remise_pct).replace('.', ',') + ' %' : '—';
       return ''+
         '<tr style="border-bottom:1px solid #ECEFF5">'+
-          '<td style="padding:9px 12px;font-size:10px;color:#9AA1B2;font-family:monospace;text-align:center;width:28px">' + (i + 1) + '</td>'+
+          '<td style="padding:9px 12px;font-size:10px;color:#9AA1B2;font-family:var(--mono);text-align:center;width:28px">' + (i + 1) + '</td>'+
           '<td style="padding:9px 12px;font-size:12px;font-weight:600;color:#10131C">' + esc(p.designation) +
             (p.is_froid ? ' <span style="font-size:8px;color:#00B5D8;border:1px solid #b8edf7;border-radius:5px;padding:1px 4px;vertical-align:middle">FROID</span>' : '') + '</td>'+
-          '<td style="padding:9px 12px;font-size:11px;color:#737A8C;font-family:monospace">' + esc(p.cip13 || '—') + '</td>'+
-          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#10131C;text-align:right;font-family:monospace">' + prix + '</td>'+
-          '<td style="padding:9px 12px;font-size:12px;color:#737A8C;text-align:right;font-family:monospace">' + rem + '</td>'+
-          (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;color:#737A8C;text-align:center;font-family:monospace">' + qty + '</td>' : '') +
-          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;font-family:monospace">' + e2(net) + '</td>'+
-          (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;font-family:monospace">' + e2(tot) + '</td>' : '') +
-          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#1E9E6A;text-align:right;font-family:monospace">' + e2(hasQtyPdf ? mdl * qty : mdl) + '</td>'+
+          '<td style="padding:9px 12px;font-size:11px;color:#737A8C;font-family:var(--mono)">' + esc(p.cip13 || '—') + '</td>'+
+          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#10131C;text-align:right;font-family:var(--mono)">' + prix + '</td>'+
+          '<td style="padding:9px 12px;font-size:12px;color:#737A8C;text-align:right;font-family:var(--mono)">' + rem + '</td>'+
+          (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;color:#737A8C;text-align:center;font-family:var(--mono)">' + qty + '</td>' : '') +
+          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(net) + '</td>'+
+          (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(tot) + '</td>' : '') +
+          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#1E9E6A;text-align:right;font-family:var(--mono)">' + e2(hasQtyPdf ? mdl * qty : mdl) + '</td>'+
         '</tr>';
     }).join('');
 
@@ -817,9 +833,9 @@
           '<tbody>' + (rows || '<tr><td colspan="' + (hasQtyPdf ? 9 : 7) + '" style="padding:24px;text-align:center;color:#9AA1B2;font-size:12px">Aucun produit</td></tr>') + '</tbody>'+
           (count ? '<tfoot><tr style="border-top:2px solid #10131C;background:#F4F8FF">'+
             '<td colspan="' + (hasQtyPdf ? 7 : 5) + '" style="padding:13px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#10131C;text-align:right">Totaux ' + (hasQtyPdf ? '(quantités incluses)' : '(base 1 boîte / réf.)') + '</td>'+
-            '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:monospace">' + e2(totNet) + '</td>'+
-            (hasQtyPdf ? '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:monospace"></td>' : '') +
-            '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#1E9E6A;text-align:right;font-family:monospace">' + e2(totMdl) + '</td>'+
+            '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(totNet) + '</td>'+
+            (hasQtyPdf ? '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:var(--mono)"></td>' : '') +
+            '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#1E9E6A;text-align:right;font-family:var(--mono)">' + e2(totMdl) + '</td>'+
           '</tr></tfoot>' : '') +
         '</table>'+
         condBlock +
@@ -907,6 +923,14 @@
     setPrice: function (i, v) { if (editingFiche && editingFiche.products[i]) { editingFiche.products[i].prix_ip = v === '' ? null : num(v); recalcRow(i); } },
     setRemise: function (i, v) { if (editingFiche && editingFiche.products[i]) { editingFiche.products[i].remise_pct = v === '' ? null : num(v); recalcRow(i); } },
     setQty: function (i, v) { if (editingFiche && editingFiche.products[i]) { editingFiche.products[i].qty = v === '' ? 1 : Math.max(1, Math.round(num(v))); recalcRow(i); } },
+    stepQty: function (i, d) {
+      if (!editingFiche || !editingFiche.products[i]) return;
+      var nq = Math.max(1, lineQty(editingFiche.products[i]) + (d || 0));
+      editingFiche.products[i].qty = nq;
+      var inp = document.querySelector('.fch-prow:nth-child(' + (i + 1) + ') .fch-qty');
+      if (inp) inp.value = nq;
+      recalcRow(i);
+    },
     removeProduct: function (i) { if (editingFiche) { editingFiche.products.splice(i, 1); refreshProducts(); } },
     openSelector: openSelector,
     closeSelector: closeSelector,

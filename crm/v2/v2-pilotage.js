@@ -12,21 +12,23 @@
   // ── State période (local module) ──────────────
   var PERIOD = 'current';            // 'current' | '3m' | 'year'
 
-  // ── Couleurs familles (spec) ──────────────────
+  // ── Couleurs familles → tokens de séries (spec signature) ─────
+  // froid->cyan · biosim->violet cat · nr->ambre · princeps->bleu fiche · génériques->muted
   var FAM = [
-    { key: 'froid',      label: 'Froid',         color: '#00B5D8' },
-    { key: 'generiques', label: 'Génériques',    color: '#737A8C' },
-    { key: 'biosim',     label: 'Biosimilaires', color: '#6D4FC4' },
-    { key: 'nr',         label: 'NR',            color: '#C7791A' },
-    { key: 'princeps',   label: 'Princeps',      color: '#0050E6' },
+    { key: 'froid',      label: 'Froid',         color: 'var(--c-froid)' },
+    { key: 'generiques', label: 'Génériques',    color: 'var(--muted)' },
+    { key: 'biosim',     label: 'Biosimilaires', color: 'var(--c-cat)' },
+    { key: 'nr',         label: 'NR',            color: 'var(--c-amber)' },
+    { key: 'princeps',   label: 'Princeps',      color: 'var(--c-fiche)' },
   ];
 
   // ── Tranches de prix (prix net grossiste / achat unitaire) ────
+  // petits->ok · intermédiaires->info · chers->ambre · très chers->bad-d (critique)
   var TIERS = [
-    { label: '0 – 4,33 €',     sub: 'petits prix',     color: '#11a63c' },
-    { label: '4,33 – 468 €',   sub: 'intermédiaires',  color: '#0050E6' },
-    { label: '468 – 2 000 €',  sub: 'chers',           color: '#C7791A' },
-    { label: '> 2 000 €',      sub: 'très chers',      color: '#C7283D' },
+    { label: '0 – 4,33 €',     sub: 'petits prix',     color: 'var(--ok)' },
+    { label: '4,33 – 468 €',   sub: 'intermédiaires',  color: 'var(--info)' },
+    { label: '468 – 2 000 €',  sub: 'chers',           color: 'var(--c-amber)' },
+    { label: '> 2 000 €',      sub: 'très chers',      color: 'var(--bad-d)' },
   ];
   function priceTier(pu) {
     pu = +pu || 0;
@@ -230,8 +232,8 @@
     var perimList = Object.keys(perims).map(function (k) { return perims[k]; })
       .sort(function (a, b) { return b.ca - a.ca; });
 
-    // Couleurs périmètre
-    var PERIM_COLORS = { 'NP': '#11a63c', 'BP': '#0057FF', 'OPSO': '#C7791A' };
+    // Couleurs périmètre — tokens de séries (sépare les périmètres sans clinquant)
+    var PERIM_COLORS = { 'NP': 'var(--c-fiche)', 'BP': 'var(--c-cat)', 'OPSO': 'var(--c-amber)' };
     function perimColor(lbl) { return PERIM_COLORS[lbl] || 'var(--muted-2)'; }
 
     // Top 8 produits groupement
@@ -248,7 +250,7 @@
         '<div class="opso-act-body">' +
           '<div class="opso-act-gauge">' +
             '<div class="opso-gauge-track">' +
-              '<div class="opso-gauge-fill" data-w="' + tauxBar + '" style="width:0;background:' + V2.tint(tauxBar, 30, 60) + '"></div>' +
+              '<div class="opso-gauge-fill" data-w="' + tauxBar + '" style="width:0"></div>' +
             '</div>' +
             '<div class="opso-gauge-labels">' +
               '<span class="mono" style="font-size:13px;font-weight:700;color:' + V2.tint(tauxBar, 30, 60) + '">' + tauxBar + ' %</span>' +
@@ -623,7 +625,7 @@
           '<div class="v2-card" style="margin-bottom:14px">' +
             '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'Pénétration du marché Ameli</div>' +
               '<span class="v2-card-link" style="color:var(--muted);cursor:default">couverture de gamme</span></div>' +
-            '<div class="opso-gauge-track" style="margin-top:2px"><div class="opso-gauge-fill" data-w="' + covBar + '" style="width:0;background:' + V2.tint(covBar, 30, 60) + '"></div></div>' +
+            '<div class="opso-gauge-track" style="margin-top:2px"><div class="opso-gauge-fill" data-w="' + covBar + '" style="width:0"></div></div>' +
             '<div class="opso-gauge-labels" style="margin-bottom:18px">' +
               '<span class="mono" style="font-size:13px;font-weight:700;color:' + V2.tint(covBar, 30, 60) + '">' + covBar + ' %</span>' +
               '<span style="font-size:12px;color:var(--muted)">' + V2.fmtNum(coveredN) + ' / ' + V2.fmtNum(totalN) + ' produits Ameli commandés</span>' +
@@ -823,6 +825,9 @@
   function injectStyles() {
     if (document.getElementById('pilo-styles')) return;
     var css =
+      // ── Voix data (signature n°1) : tout chiffre mono, tabular, aligné ──
+      '.pilo-vals .mono,.pilo-fam-v .mono,.pilo-rank,.pilo-cbar-lbl,.pilo-tier-meta,.pilo-tip,.opso-chip-n,.opso-perim-nums .mono,.opso-gauge-labels .mono{font-feature-settings:"tnum" 1,"lnum" 1;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.02em}' +
+      '.pilo-vals .v2-row-val,.pilo-vals .v2-row-meta{font-variant-numeric:tabular-nums lining-nums}' +
       '.pilo-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}' +
       '.pilo-seg{display:inline-flex;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:4px;box-shadow:var(--sh-1)}' +
       '.pilo-segbtn{border:none;background:transparent;border-radius:9px;padding:8px 15px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:.18s var(--ease);white-space:nowrap}' +
@@ -832,9 +837,9 @@
       '@media(max-width:820px){.pilo-grid2{grid-template-columns:1fr}}' +
       '.pilo-rank{color:var(--muted-2);font-size:12px;width:18px;flex-shrink:0;text-align:center}' +
       '.pilo-vals{text-align:right;flex-shrink:0}' +
-      // progress bars (horizontales)
-      '.pilo-bar{margin-top:6px;height:5px;border-radius:999px;background:var(--line);overflow:hidden}' +
-      '.pilo-bar-fill{display:block;height:100%;border-radius:999px;transition:width .7s var(--ease)}' +
+      // progress bars (horizontales) — track creux, signature de profondeur par ton
+      '.pilo-bar{margin-top:6px;height:5px;border-radius:999px;background:var(--surf-sunken);overflow:hidden;box-shadow:inset 0 1px 1px rgba(16,19,28,.05)}' +
+      '.pilo-bar-fill{display:block;height:100%;border-radius:999px;transition:width var(--mo-dur) var(--mo-ease-in)}' +
       // familles
       '.pilo-fam{margin-bottom:15px}.pilo-fam:last-child{margin-bottom:2px}' +
       '.pilo-fam-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;font-size:13.5px}' +
@@ -847,14 +852,14 @@
       '.pilo-tier-meta{font-size:10.5px;color:var(--muted-2);margin-top:4px}' +
       '.pilo-ameli-sub{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.005em}' +
       // libellés de section (mise en page sectionnée)
-      '.pilo-sec{display:flex;align-items:center;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:26px 2px 13px}' +
-      '.pilo-sec::after{content:"";flex:1;height:1px;background:var(--line)}' +
+      '.pilo-sec{display:flex;align-items:center;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:var(--section-gap) 2px 13px}' +
+      '.pilo-sec::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 32%,var(--line)),var(--line) 38%)}' +
       '.v2-wrap .pilo-sec:first-of-type{margin-top:6px}' +
       // chart 13 mois
       '.pilo-chart{position:relative;display:flex;align-items:flex-end;gap:6px;height:160px;padding-top:8px}' +
       '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;cursor:default;min-width:0}' +
-      '.pilo-cbar-track{flex:1;width:100%;max-width:34px;display:flex;align-items:flex-end;border-radius:7px 7px 3px 3px;overflow:hidden;background:var(--line-2)}' +
-      '.pilo-cbar-fill{display:block;width:100%;border-radius:7px 7px 3px 3px;background:color-mix(in srgb,var(--ip-blue) 78%,#fff);transition:height .7s var(--ease)}' +
+      '.pilo-cbar-track{flex:1;width:100%;max-width:34px;display:flex;align-items:flex-end;border-radius:7px 7px 3px 3px;overflow:hidden;background:var(--surf-sunken);box-shadow:inset 0 1px 2px rgba(16,19,28,.05)}' +
+      '.pilo-cbar-fill{display:block;width:100%;border-radius:7px 7px 3px 3px;background:color-mix(in srgb,var(--ip-blue) 78%,#fff);transition:height var(--mo-dur) var(--mo-ease-in)}' +
       '.pilo-cbar-fill.cur{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}' +
       '.pilo-cbar:hover .pilo-cbar-fill{background:var(--c-pilo)}' +
       '.pilo-cbar:hover .pilo-cbar-fill.cur{background:linear-gradient(180deg,var(--c-pilo),#A65F12)}' +
@@ -867,8 +872,8 @@
       '.opso-section-head{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;' +
         'font-weight:700;color:var(--ip-blue);margin-bottom:14px;padding:0 2px}' +
       '.opso-act-body{display:flex;flex-direction:column;gap:18px}' +
-      '.opso-gauge-track{height:10px;border-radius:999px;background:var(--line);overflow:hidden;margin-bottom:8px}' +
-      '.opso-gauge-fill{height:100%;border-radius:999px;background:var(--ip-blue);transition:width .9s var(--ease)}' +
+      '.opso-gauge-track{height:10px;border-radius:999px;background:var(--surf-sunken);overflow:hidden;margin-bottom:8px;box-shadow:inset 0 1px 2px rgba(16,19,28,.06)}' +
+      '.opso-gauge-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--ip-blue),var(--ip-blue-d));transition:width var(--mo-dur) var(--mo-ease-in)}' +
       '.opso-gauge-labels{display:flex;align-items:center;justify-content:space-between}' +
       '.opso-act-chips{display:flex;gap:12px;flex-wrap:wrap}' +
       '.opso-chip-stat{flex:1;min-width:80px;background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-align:center}' +
@@ -884,7 +889,7 @@
       '.opso-perim-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}' +
       '.opso-perim-badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:.01em}' +
       '.opso-perim-nums{display:flex;align-items:center;flex-wrap:wrap}' +
-      '.opso-new-tag{display:inline-block;margin-left:6px;vertical-align:middle;font-size:9.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:#0d8530;background:color-mix(in srgb,#11a63c 14%,transparent);border:1px solid color-mix(in srgb,#11a63c 30%,transparent);border-radius:999px;padding:1px 7px}';
+      '.opso-new-tag{display:inline-block;margin-left:6px;vertical-align:middle;font-size:9.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent);border-radius:999px;padding:1px 7px;font-family:var(--mono)}';
 
     var st = document.createElement('style');
     st.id = 'pilo-styles'; st.textContent = css;

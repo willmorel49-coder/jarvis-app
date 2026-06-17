@@ -14,8 +14,46 @@
   /* accents piliers (sourds, sophistiqués) */
   --c-opp:#1E9E6A; --c-fiche:#0050E6; --c-cat:#6D4FC4; --c-pilo:#C7791A;
   --c-rose:#E0556E; --c-mint:#1E9E6A; --c-amber:#C7791A;
+  --c-froid:#00B5D8; /* chaîne du froid / pilier Offilog — réparait un vide en prod (consommé par .ph-froid + accent Offilog sans fallback) */
+
+  /* ── Couleurs de PILIER (identité / navigation) ──
+     "chaque outil a sa lumière". Alias vers les valeurs ci-dessus :
+     sépare le rôle nav du rôle sémantique, sans changer aucun rendu. */
+  --pil-opp:var(--c-opp); --pil-fiche:var(--c-fiche); --pil-cat:var(--c-cat);
+  --pil-pilo:var(--c-pilo); --pil-froid:var(--c-froid); --pil-rose:var(--c-rose);
+  /* Accent du PILIER COURANT — posé dynamiquement sur .v2 par V2.render()
+     selon V2.route.name (= la var(--pil-*) correspondante). Pilote le halo
+     de tête et les liserés contextuels. Défaut = bleu marque. */
+  --accent:var(--ip-blue);
+
+  /* ── Couleurs SÉMANTIQUES (signal, jamais nav) ──
+     quand une de ces couleurs apparaît, elle veut TOUJOURS dire la même chose. */
+  --ok:var(--c-mint);    /* positif : data up, remise OK, remboursable */
+  --warn:var(--c-amber); /* à surveiller */
+  --bad:var(--c-rose);   /* négatif — SACRÉ : concurrent sous le prix d'achat IP + vrais signaux */
+  --bad-d:#C7283D;       /* critique foncé : tranche "très chers", états critiques */
+  --info:var(--ip-blue); /* neutre / info (≠ bleu pilier fiche) */
+
   /* radius */
   --r-card:20px; --r-md:14px; --r-sm:10px; --r-pill:999px;
+  /* Discipline radius : 3 marches strictes. --r-control 10 (inputs/petits boutons),
+     --r-btn 12 (boutons standard), --r-md 14, --r-card 20, --r-pill. */
+  --r-control:10px; --r-btn:12px;
+
+  /* ── Échelle d'espacement base-4 (source de vérité des gaps/paddings) ── */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:20px; --sp-6:24px; --sp-7:32px; --sp-8:48px;
+  /* dérivés sémantiques d'espacement */
+  --card-pad:var(--sp-5) var(--sp-6); /* padding interne carte "contenu" unifié */
+  --gap-grid:var(--sp-4);   /* gap standard des grilles de cartes */
+  --gap-tight:var(--sp-2);  /* gap serré : chips, métas */
+  --section-gap:var(--sp-7);/* rythme vertical constant entre sections */
+
+  /* ── Surfaces & layout ── */
+  --surf-sunken:#F4F6FB; /* "creux" : tracks de jauges/barres, inputs, media off-card */
+  --topbar-h:60px;       /* hauteur topbar de référence pour offsets sticky robustes */
+  --tap-min:44px;        /* cible tactile minimale terrain (Apple/Material) */
+  --mo-lift:-3px;        /* amplitude UNIQUE du hover-lift = signature de survol */
   /* ombres physiques en couches (lumière du haut) */
   --sh-1:0 1px 1px rgba(16,19,28,.04), 0 2px 4px rgba(16,19,28,.04);
   --sh-2:0 2px 4px rgba(16,19,28,.04), 0 8px 18px rgba(16,19,28,.06), 0 1px 0 rgba(255,255,255,.7) inset;
@@ -23,6 +61,13 @@
   --sh-pop:0 12px 28px rgba(16,19,28,.14), 0 40px 80px rgba(16,19,28,.16);
   --ease:cubic-bezier(.32,.72,0,1);
   --ease-soft:cubic-bezier(.4,0,.2,1);
+  /* ── MOTION : une seule physique de mouvement = signature ──
+     --mo-ease-in = courbe d'ENTRÉE canonique de toute l'app (reveal, view-transition,
+     panneaux). --mo-ease-soft fusionne le doublon historique avec --ease-soft.
+     Le spring reste réservé aux seuls accents (KPI, press, panneau). */
+  --mo-ease-in:var(--ease);
+  --mo-ease-soft:var(--ease-soft);
+  --mo-dur:300ms; /* durée d'entrée alignée sur la famille .3s dominante (snappy) */
   /* typo */
   --font:'Satoshi','Inter',system-ui,-apple-system,sans-serif;
   --mono:'Geist Mono',ui-monospace,monospace;
@@ -40,8 +85,11 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 
 /* ─── App shell ─── */
 .v2{position:relative;z-index:1;min-height:100vh}
+/* halo de tête teinté par le pilier courant : la lumière de chaque outil,
+   effet subliminal. La teinte d'accent s'éteint vers le halo neutre puis transparent. */
 .v2-halo{position:fixed;top:0;left:0;right:0;height:380px;pointer-events:none;z-index:0;
-  background:radial-gradient(ellipse 55% 100% at 50% 0%,var(--halo),transparent 70%)}
+  background:radial-gradient(ellipse 55% 100% at 50% 0%,
+    color-mix(in srgb,var(--accent) 8%,var(--halo)),var(--halo) 38%,transparent 72%)}
 
 /* ─── Top bar persistante ─── */
 .v2-top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:16px;
@@ -105,6 +153,13 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .v2-page-title{font-size:28px;font-weight:800;letter-spacing:-.03em;margin-bottom:4px}
 .v2-page-sub{font-size:14px;color:var(--muted);margin-bottom:24px}
 
+/* ─── En-tête de section partagé (remplace les blocs flex inline recopiés) ─── */
+.v2-section-head{display:flex;align-items:baseline;gap:var(--sp-3);flex-wrap:wrap;
+  margin:var(--section-gap) 0 var(--sp-4)}
+.v2-section-head > h2,.v2-section-head .v2-sh-t{font-size:22px;font-weight:800;letter-spacing:-.025em;line-height:1.1}
+.v2-section-head .v2-sh-s{font-size:13px;color:var(--muted);font-weight:450}
+.v2-section-head .v2-sh-end{margin-left:auto}
+
 /* ─── Search géante (accueil) ─── */
 .v2-search{display:flex;align-items:center;gap:15px;background:var(--card);border:1px solid var(--line);
   border-radius:var(--r-card);padding:18px 22px;margin-bottom:15px;box-shadow:var(--sh-2);cursor:text;
@@ -153,7 +208,13 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .v2-pil:hover .v2-pil-go .arrow{transform:translateX(5px)}
 
 /* ─── Cartes génériques ─── */
-.v2-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden}
+/* Padding par défaut = var(--card-pad) pour les cartes "contenu".
+   Pour les cartes table/liste edge-to-edge, neutraliser avec padding:0
+   (les .v2-card-head / .v2-row / .v2-table portent déjà leur propre padding). */
+.v2-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden;padding:var(--card-pad)}
+/* cartes structurées (head + table/row) : restent edge-to-edge.
+   .v2-empty porte déjà son propre padding généreux → pas de double-inset. */
+.v2-card:has(> .v2-card-head),.v2-card:has(> .v2-table),.v2-card:has(> .v2-row),.v2-card:has(> .v2-empty){padding:0}
 .v2-card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
 .v2-card-t{font-size:15px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
 .v2-card-link{font-size:12.5px;font-weight:700;color:var(--ip-blue);cursor:pointer}
@@ -279,9 +340,23 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ─────────────────────────────────────────────────────────
+   BREAKPOINTS FIGÉS (convention app, à respecter dans chaque pilier) :
+     ≤640px  = mobile (téléphone, usage terrain debout)
+     ≤900px  = tablette
+     ≤1120px = desktop
+   ─────────────────────────────────────────────────────────
    MOBILE / TÉLÉPHONE — passe responsive globale
+   Lisibilité plein soleil : plancher typo ≥12.5px, métas porteuses d'info
+   assombries (--muted-2 → --muted, --muted → --ip-ink-2).
    ───────────────────────────────────────────────────────── */
 @media (max-width:640px){
+  /* plancher typo + métas assombries pour la lecture debout au soleil */
+  .v2-row-meta,.v2-kpi-l,.v2-cmdk-grp,.v2-table thead th{font-size:12.5px}
+  .v2-row-meta{color:var(--ip-ink-2)}
+  .v2-row-chev{color:var(--muted)}
+  .v2-kpi-l,.v2-table thead th,.v2-cmdk-grp{color:var(--muted)}
+  .v2-empty-ico{color:var(--muted)}
+
   /* topbar compacte : recherche réduite à l'icône */
   .v2-top{padding:10px 14px;gap:10px}
   .v2-top-search{font-size:0;padding:9px 11px;gap:0}

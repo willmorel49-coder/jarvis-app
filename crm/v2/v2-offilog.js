@@ -32,7 +32,7 @@
     { k: 'pzcheaper',   label: 'Moins cher sur Pharmazon', sc: '#0034A0' },
     { k: 'sante',       label: 'Santé',          sc: '#1E9E6A' },
     { k: 'beaute-et-soins', label: 'Beauté & soins', sc: '#6D4FC4' },
-    { k: 'hygiene',     label: 'Hygiène',        sc: '#00B5D8' },
+    { k: 'hygiene',     label: 'Hygiène',        sc: 'var(--c-froid)' },
     { k: 'bebe',        label: 'Bébé',           sc: '#C7791A' },
     { k: 'solaires',    label: 'Solaires',       sc: '#C7791A' },
     { k: 'veterinaire', label: 'Vétérinaire',    sc: '#737A8C' },
@@ -162,6 +162,24 @@
     '</div>';
   }
 
+  // ── Squelette de grille (forme des futures cartes) ──
+  // Remplace le spinner sur la surface lourde ; shimmer global (.mo-skeleton)
+  function skeletonGrid(n) {
+    var one =
+      '<div class="off-sk-card">' +
+        '<div class="off-sk-media mo-skeleton"></div>' +
+        '<div class="off-sk-body">' +
+          '<div class="off-sk-line mo-skeleton" style="width:42%"></div>' +
+          '<div class="off-sk-line mo-skeleton" style="width:88%"></div>' +
+          '<div class="off-sk-line mo-skeleton" style="width:64%"></div>' +
+          '<div class="off-sk-price mo-skeleton"></div>' +
+        '</div>' +
+      '</div>';
+    var out = '';
+    for (var i = 0; i < (n || 12); i++) out += one;
+    return '<div class="off-grid" aria-busy="true">' + out + '</div>';
+  }
+
   // ── Carte produit (grille, avec photo) ────────
   function card(it) {
     var sel = (S.sel != null && String(it.id) === String(S.sel)) ? ' sel' : '';
@@ -169,7 +187,11 @@
       ? '<img class="off-card-img" src="' + esc(it.img) + '" loading="lazy" alt="" onerror="V2.offImgFail(this)">'
       : '<div class="off-card-noimg">' + ICO('pill', 30, 1.4) + '</div>';
     var onMkt = mktSel.has(String(it.id));
-    return '<div class="off-card' + sel + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
+    var alertCls = it.alert ? ' alert' : '';
+    // prix concurrent mini affiché en rouge SACRÉ uniquement quand il passe sous l'achat IP
+    var concBelow = it.alert && it.minConc > 0
+      ? '<span class="off-card-conc mono">conc. ' + V2.fmtEur(it.minConc) + '</span>' : '';
+    return '<div class="off-card' + sel + alertCls + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
       '<div class="off-card-media">' +
         '<span class="off-rank mono">#' + it.rank + '</span>' +
         '<button class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + esc(it.id) + '\',this)" title="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
@@ -179,7 +201,8 @@
         (it.brand ? '<div class="off-card-brand">' + esc(it.brand) + '</div>' : '<div class="off-card-brand">&nbsp;</div>') +
         '<div class="off-card-name">' + esc(it.name) + '</div>' +
         '<div class="off-card-price mono">' + (it.price > 0 ? V2.fmtEur(it.price) : '—') +
-          (it.pz && it.pz.price > 0 ? '<span class="off-card-pz' + (it.pzCheaper ? ' win' : '') + '">Pharmazon ' + V2.fmtEur(it.pz.price) + '</span>' : '') + '</div>' +
+          (it.pz && it.pz.price > 0 ? '<span class="off-card-pz' + (it.pzCheaper ? ' win' : '') + '">Pharmazon ' + V2.fmtEur(it.pz.price) + '</span>' : '') +
+          concBelow + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -219,7 +242,7 @@
         (cheaper ? '<div class="off-pz-note">Moins cher sur <b>' + cheaper + '</b> · écart ' + V2.fmtEur(diff) + '</div>' : '<div class="off-pz-note">Même prix sur les deux plateformes</div>') +
       '</div>';
     }
-    var badges = '<span class="off-badge" style="--bc:#0050E6">#' + it.rank + ' ventes</span>' +
+    var badges = '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes</span>' +
       (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + CHIP_BY_KEY[it.cat].sc + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
       (it.univers && it.univers !== 'Non classé' ? '<span class="off-badge" style="--bc:#6D4FC4">' + esc(it.univers) + '</span>' : '');
     return '<div class="off-insp' + (S.sel != null ? ' open' : '') + '">' +
@@ -234,9 +257,9 @@
         '<div class="off-badges">' + badges + '</div>' +
         alertBanner +
         '<div class="off-kpi-grid">' +
-          kpi('Prix Offilog', it.price > 0 ? V2.fmtEur(it.price) : '—', 'var(--ip-blue)') +
+          kpi('Prix Offilog', it.price > 0 ? V2.fmtEur(it.price) : '—', 'var(--pil-froid)') +
           kpi('Rang ventes', '#' + it.rank) +
-          kpi('Achat IP (HT)', it.achat > 0 ? V2.fmtEur(it.achat) : '—', it.achat > 0 ? 'var(--c-mint)' : 'var(--muted-2)') +
+          kpi('Achat IP (HT)', it.achat > 0 ? V2.fmtEur(it.achat) : '—', it.achat > 0 ? 'var(--ok)' : 'var(--muted-2)') +
           kpi('Concurrent mini', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', '') +
         '</div>' +
         pzBlock +
@@ -519,30 +542,45 @@
     var s = document.createElement('style'); s.id = 'v2-off-css';
     s.textContent = [
       '.off-search{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--sh-2);transition:.2s var(--ease)}',
-      '.off-search:focus-within{border-color:rgba(0,80,230,.4);box-shadow:0 0 0 4px var(--halo),var(--sh-2)}',
-      '.off-search svg{color:var(--ip-blue);flex-shrink:0}',
+      '.off-search:focus-within{border-color:color-mix(in srgb,var(--pil-froid) 42%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--pil-froid) 16%,transparent),var(--sh-2)}',
+      '.off-search svg{color:var(--pil-froid);flex-shrink:0}',
       '.off-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}',
       '.off-search .clr{border:none;background:none;cursor:pointer;color:var(--muted);display:flex;padding:2px}',
       '.off-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}',
       '.off-count{font-size:12px;color:var(--muted)}',
       '.off-sort{display:inline-flex;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px;box-shadow:var(--sh-1)}',
       '.off-sortbtn{border:none;background:transparent;border-radius:8px;padding:6px 11px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.16s var(--ease);white-space:nowrap}',
-      '.off-sortbtn.on{background:var(--ip-blue);color:#fff}',
+      '.off-sortbtn.on{background:var(--pil-froid);color:#fff}',
       '.off-stats-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:18px 0 12px}',
       '.off-kpis{margin-bottom:18px}',
       // grille de cartes photo
       '.off-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:16px}',
       '.off-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:var(--sh-1);transition:.18s var(--ease);display:flex;flex-direction:column}',
-      '.off-card:hover{transform:translateY(-4px);box-shadow:var(--sh-3);border-color:rgba(0,80,230,.22)}',
-      '.off-card.sel{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo),var(--sh-2)}',
-      '.off-card-media{position:relative;height:150px;background:#fff;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line-2);padding:10px}',
+      '.off-card{will-change:transform}',
+      '.off-card:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-3);border-color:color-mix(in srgb,var(--pil-froid) 22%,transparent)}',
+      '.off-card:active{transform:scale(.99)}',
+      '.off-card.sel{border-color:var(--pil-froid);box-shadow:0 0 0 3px color-mix(in srgb,var(--pil-froid) 16%,transparent),var(--sh-2)}',
+      // signature pilier : liseré 3px var(--bad) sur la carte en alerte (concurrent < achat IP) — seul usage du rouge
+      '.off-card.alert{position:relative}',
+      '.off-card.alert::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bad);border-radius:3px 0 0 3px;z-index:3}',
+      '.off-card-conc{font-size:10.5px;font-weight:700;color:var(--bad);font-variant-numeric:tabular-nums}',
+      '.off-card-media{position:relative;height:150px;background:var(--surf-sunken);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line-2);padding:10px}',
       '.off-card-img{max-width:100%;max-height:100%;object-fit:contain}',
       '.off-card-noimg{color:var(--muted-2)}',
+      // squelette de chargement (forme des cartes à venir)
+      '.off-sk-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--sh-1);display:flex;flex-direction:column}',
+      '.off-sk-media{height:150px;border-radius:0}',
+      '.off-sk-body{padding:11px 13px 14px;display:flex;flex-direction:column;gap:8px}',
+      '.off-sk-line{height:10px;border-radius:var(--r-control)}',
+      '.off-sk-price{height:16px;width:52px;border-radius:var(--r-control);margin-top:4px}',
       '.off-rank{position:absolute;top:8px;left:8px;background:rgba(16,19,28,.82);color:#fff;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:8px;backdrop-filter:blur(4px)}',
       '.off-card-alert{position:absolute;bottom:8px;left:8px;width:24px;height:24px;border-radius:8px;background:var(--c-rose);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px color-mix(in srgb,var(--c-rose) 45%,transparent)}',
-      '.off-mkt-add{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.94);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-1);transition:.14s var(--ease);z-index:2}',
+      '.off-mkt-add{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.94);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-1);transition:transform .14s var(--ease),color .14s var(--ease),border-color .14s var(--ease),background .14s var(--ease);z-index:2}',
       '.off-mkt-add:hover{color:var(--c-opp);border-color:var(--c-opp)}',
+      '.off-mkt-add:active{transform:scale(.97)}',
       '.off-mkt-add.on{background:var(--c-opp);border-color:var(--c-opp);color:#fff;box-shadow:0 2px 7px color-mix(in srgb,var(--c-opp) 45%,transparent)}',
+      // hit-area terrain : on étend la cible tactile sans grossir le glyphe (pseudo-élément invisible)
+      '@media(max-width:640px){.off-mkt-add::before,.off-insp-x::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:var(--tap-min);height:var(--tap-min)}}',
       // barre flottante fiche marketing
       '.off-mktbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:13px;background:var(--ip-ink);color:#fff;border-radius:16px;padding:10px 12px 10px 18px;box-shadow:0 16px 42px rgba(16,19,28,.36);max-width:94vw}',
       '.off-mktbar.hidden{display:none}',
@@ -561,7 +599,7 @@
       '.off-mkt-modal.open .off-mkt-dialog{transform:scale(1)}',
       '.off-mkt-top{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(251,252,254,.8);backdrop-filter:blur(8px)}',
       '.off-mkt-top .t{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.01em;flex:1}',
-      '.off-mkt-top .t svg{color:var(--ip-blue)}',
+      '.off-mkt-top .t svg{color:var(--pil-froid)}',
       '.off-mkt-x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.16s var(--ease)}',
       '.off-mkt-x:hover{color:var(--ip-ink);transform:rotate(90deg)}',
       '.off-mkt-scroll{overflow-y:auto;overflow-x:hidden;padding:24px;background:#EBEEF4;flex:1}',
@@ -571,7 +609,7 @@
       '.off-card-body{padding:11px 13px 14px;display:flex;flex-direction:column;gap:3px;flex:1}',
       '.off-card-brand{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.off-card-name{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--ip-ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}',
-      '.off-card-price{font-size:16px;font-weight:800;color:var(--ip-blue);margin-top:5px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}',
+      '.off-card-price{font-size:16px;font-weight:800;color:var(--pil-froid);margin-top:5px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}',
       '.off-card-pz{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:1px 6px}',
       '.off-card-pz.win{color:#0034A0;background:color-mix(in srgb,#0034A0 10%,#fff);border-color:color-mix(in srgb,#0034A0 28%,transparent)}',
       // comparatif Offilog vs Pharmazon (inspecteur)
@@ -595,10 +633,11 @@
       '.off-insp-name{font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.25}',
       '.off-insp-sub{font-size:12.5px;color:var(--ip-ink-2);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.03em}',
       '.off-insp-cip{font-size:11.5px;color:var(--muted);margin-top:3px}',
-      '.off-insp-x{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;transition:.18s var(--ease)}',
+      '.off-insp-x{position:relative;width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;transition:.18s var(--ease)}',
       '.off-insp-x:hover{color:var(--ip-ink);transform:rotate(90deg)}',
+      '.off-insp-x:active{transform:scale(.97)}',
       '.off-insp-body{padding:20px}',
-      '.off-insp-img{width:100%;height:180px;border-radius:13px;overflow:hidden;background:#fff;border:1px solid var(--line);margin-bottom:16px;display:flex;align-items:center;justify-content:center;padding:12px}',
+      '.off-insp-img{width:100%;height:180px;border-radius:13px;overflow:hidden;background:var(--surf-sunken);border:1px solid var(--line);margin-bottom:16px;display:flex;align-items:center;justify-content:center;padding:12px}',
       '.off-insp-img img{max-width:100%;max-height:100%;object-fit:contain}',
       '.off-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}',
       '.off-badge{display:inline-block;padding:3px 9px;border-radius:8px;font-size:10.5px;font-weight:700;background:color-mix(in srgb,var(--bc) 13%,#fff);color:var(--bc)}',
@@ -618,10 +657,10 @@
       '.off-cmp-src{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;flex:1}',
       '.off-cmp-src .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}',
       '.off-cmp-price{font-size:14px;font-weight:700}',
-      '.off-cmp-price.bad{color:var(--c-rose)}',
+      '.off-cmp-price.bad{color:var(--bad)}',
       '.off-cmp-na{font-size:12px;color:var(--muted);font-style:italic}',
       '.off-cmp-delta{font-size:11px;font-weight:700;font-family:var(--mono);min-width:74px;text-align:right}',
-      '.off-cmp-delta.bad{color:var(--c-rose)}.off-cmp-delta.ok{color:var(--c-mint)}',
+      '.off-cmp-delta.bad{color:var(--bad)}.off-cmp-delta.ok{color:var(--ok)}',
       '.off-insp-cta{margin-top:20px;display:flex;flex-direction:column}',
       '.off-insp-cta .v2-btn{width:100%}',
       '@media(max-width:1100px){.off-insp{width:350px}}',
@@ -647,8 +686,13 @@
             '</div></div>';
           return;
         }
+        // squelette (forme des futures cartes) au lieu du spinner sur la grille lourde
         root.innerHTML = V2.topbar({ back: true }) +
-          '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des meilleures ventes Offilog…</div></div>';
+          '<div class="v2-wrap">' +
+            '<div class="v2-page-title">Offilog &amp; concurrents</div>' +
+            '<div class="v2-page-sub">Chargement des meilleures ventes Offilog…</div>' +
+            skeletonGrid(12) +
+          '</div>';
         ensureBest(function () { idxBuilt = false; V2.render(); }); // on rend dès que les ventes sont là
         return;
       }

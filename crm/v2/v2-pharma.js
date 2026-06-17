@@ -17,6 +17,10 @@
   // ── State local module (toggle cartes catégories + recherche) ──
   // collapsed[catKey] === true → carte repliée. Par défaut : 1ère ouverte.
   var collapsed = {};
+  // Repli des sections secondaires de la fiche (Top 5, Best-sellers IP).
+  // true = repliée. Par défaut repliées (cf. sectionOpen()).
+  var sectionCollapsed = {};
+  function sectionOpen(key) { return (key in sectionCollapsed) ? !sectionCollapsed[key] : false; }
   var searchQuery = '';
   // Sélection de produits cochés (bouton +) pour le PDF RDV — propre à une pharma
   var selCips = null;   // Set des CIP cochés
@@ -250,12 +254,12 @@
           '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF RDV">' + (on ? '✓' : '+') + '</button>' +
         '</div>';
     }).join('');
-    return '<div style="margin-top:26px">' +
-      '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap">' +
-        '<div class="v2-page-title" style="margin:0;font-size:22px">Best-sellers IP à pousser</div>' +
-        '<div style="font-size:13px;color:var(--muted)">les produits qui sortent le plus chez Intégral Pharma (volume) que cette officine ne commande pas</div>' +
-      '</div>' +
-      '<div class="v2-card" style="padding:6px 0">' + rows + '</div>' +
+    var open = sectionOpen('ipv');
+    return '<div class="ph-section">' +
+      sectionHead('Best-sellers IP à pousser',
+        'les produits qui sortent le plus chez Intégral Pharma (volume) que cette officine ne commande pas',
+        'ipv', open) +
+      (open ? '<div class="v2-card" style="padding:6px 0">' + rows + '</div>' : '') +
       '</div>';
   }
 
@@ -412,6 +416,19 @@
       '<div class="v2-pharma-stat-v mono">' + value + '</div></div>';
   }
 
+  // En-tête de section unifié — réutilise le composant partagé v2.css (.v2-section-head
+  // + .v2-sh-t / .v2-sh-s / .v2-sh-end) au lieu des 5 blocs flex inline recopiés.
+  // toggleKey/open → section repliable (Top 5, Best-sellers IP repliés par défaut).
+  function sectionHead(title, desc, toggleKey, open) {
+    var tog = toggleKey != null;
+    return '<div class="v2-section-head' + (tog ? ' ph-sh-toggle' : '') + '"' +
+      (tog ? ' onclick="V2.pharmaToggleSection(\'' + toggleKey + '\')"' : '') + '>' +
+      '<h2 class="v2-sh-t">' + esc(title) + '</h2>' +
+      (desc ? '<span class="v2-sh-s">' + esc(desc) + '</span>' : '') +
+      (tog ? '<span class="v2-sh-end v2-section-chev' + (open ? ' open' : '') + '">' + ICO('chev', 16) + '</span>' : '') +
+      '</div>';
+  }
+
   function renderCatCard(o, idx) {
     var c = o.cat;
     var key = c.key;
@@ -453,7 +470,7 @@
           '<td style="width:46px;text-align:center">' + addBtn + '</td>' +
           '</tr>';
       }).join('');
-      body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
+      body = '<div class="v2-cat-table-wrap ph-opp-tbl"><table class="v2-table">' +
         '<thead><tr>' +
           '<th class="num">#</th><th>Produit</th><th>CIP</th>' +
           '<th class="num">Prix IP</th><th class="num">Vol. marché</th>' +
@@ -537,12 +554,10 @@
           '<span class="ph-top-n mono">' + V2.fmtNum(o.total) + ' réf.</span></div>' +
         rows + '</div>';
     }).join('');
-    return '<div class="ph-topcats">' +
-        '<div style="display:flex;align-items:baseline;gap:10px;margin:26px 0 14px;flex-wrap:wrap">' +
-          '<div class="v2-page-title" style="margin:0;font-size:22px">Top 5 par catégorie</div>' +
-          '<div style="font-size:13px;color:var(--muted)">ses meilleures références commandées, en valeur (CA)</div>' +
-        '</div>' +
-        '<div class="ph-top-grid">' + cards + '</div>' +
+    var open = sectionOpen('top5');
+    return '<div class="ph-topcats ph-section">' +
+        sectionHead('Top 5 par catégorie', 'ses meilleures références commandées, en valeur (CA)', 'top5', open) +
+        (open ? '<div class="ph-top-grid">' + cards + '</div>' : '') +
       '</div>';
   }
 
@@ -600,13 +615,45 @@
           : '<div class="v2-cat-empty">Aucun produit commandé identifié.</div>') +
       '</div>';
 
-    return '<div class="ph-activity">' +
-        '<div style="display:flex;align-items:baseline;gap:10px;margin:4px 0 14px;flex-wrap:wrap">' +
-          '<div class="v2-page-title" style="margin:0;font-size:22px">Activité de l\'officine</div>' +
-          '<div style="font-size:13px;color:var(--muted)">son CA, ce qu\'elle commande et sa marge</div>' +
-        '</div>' +
+    return '<div class="ph-activity ph-section">' +
+        sectionHead('Activité de l\'officine', 'son CA, ce qu\'elle commande et sa marge') +
         '<div class="ph-act-grid">' + chartCard + trCard + '</div>' +
       '</div>';
+  }
+
+  // ── Rangée d'actions natives (44px) sous le nom : appeler / mailer / itinéraire ──
+  // Friction terrain n°1 levée : un commercial debout en pharmacie appelle/route d'un pouce.
+  // Chaque lien n'apparaît que si la donnée existe au modèle (tel/email/ville/cp).
+  // Glyphes inline (stroke 1.7, bouts arrondis = même grammaire que v2-icons.js).
+  function actIco(d) {
+    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  }
+  var ACT_GLYPH = {
+    phone: '<path d="M6.5 3.5h3l1.4 4-2 1.3a11 11 0 0 0 5.3 5.3l1.3-2 4 1.4v3a2 2 0 0 1-2.2 2A15.5 15.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5z"/>',
+    mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4.5 7 7.5 5.5L19.5 7"/>',
+    map: '<path d="M12 21s6.5-5.4 6.5-10.5a6.5 6.5 0 0 0-13 0C5.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.4"/>'
+  };
+  function contactActions(p) {
+    var tel = (p.tel == null ? '' : String(p.tel)).trim();
+    var email = (p.email == null ? '' : String(p.email)).trim();
+    var locParts = [p.name, p.adresse, p.cp, p.ville].filter(function (x) { return x; });
+    var loc = locParts.join(' ').trim();
+    var links = [];
+    if (tel) {
+      links.push('<a class="v2-btn v2-btn-ghost ph-act-link" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) +
+        '">' + actIco(ACT_GLYPH.phone) + 'Appeler</a>');
+    }
+    if (email) {
+      links.push('<a class="v2-btn v2-btn-ghost ph-act-link" href="mailto:' + esc(email) +
+        '">' + actIco(ACT_GLYPH.mail) + 'E-mail</a>');
+    }
+    if (loc) {
+      links.push('<a class="v2-btn v2-btn-ghost ph-act-link" href="https://www.google.com/maps/search/?api=1&query=' +
+        encodeURIComponent(loc) + '" target="_blank" rel="noopener">' + actIco(ACT_GLYPH.map) + 'Itinéraire</a>');
+    }
+    if (!links.length) return '';
+    return '<div class="ph-contact-row">' + links.join('') + '</div>';
   }
 
   function renderDetail(root, pid) {
@@ -637,8 +684,8 @@
     var ficheBadge = isOpso() ? ' ' + opsoBadge(pharma) : '';
 
     var hero =
-      '<div class="v2-card" style="margin-bottom:22px;padding:0">' +
-        '<div style="display:flex;align-items:center;gap:14px;padding:20px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap">' +
+      '<div class="v2-card" style="margin-bottom:0;padding:0">' +
+        '<div style="display:flex;align-items:center;gap:14px;padding:var(--sp-5) var(--sp-6);border-bottom:1px solid var(--line);flex-wrap:wrap">' +
           '<span class="v2-pharma-pin" style="background:' + V2.esc(pharma.color || 'var(--ip-blue)') + '">' +
             ICO('pharma', 22) + '</span>' +
           '<div style="flex:1;min-width:160px">' +
@@ -652,6 +699,7 @@
               ? 'Prépa RDV · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '')
               : 'Préparer le RDV (PDF)') + '</button>' +
         '</div>' +
+        contactActions(pharma) +
         '<div class="v2-pharma-stats">' +
           stat('CA cumulé', V2.fmtEur(ca), 'var(--c-fiche)') +
           stat('Marge MDL générée', V2.fmtEur(marge), 'var(--c-opp)') +
@@ -662,18 +710,56 @@
 
     var catsHtml = opps.map(renderCatCard).join('');
 
+    // Liseré / halo contextuel : le pilier Opportunités porte SA lumière (--pil-opp).
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
-      '<div class="v2-wrap">' +
+      '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
         hero +
         activitySection(sales, marge, ca) +
         topByCatSection(sales) +
         ipVolumeSection(pid) +
-        '<div style="display:flex;align-items:baseline;gap:10px;margin:26px 0 16px;flex-wrap:wrap">' +
-          '<div class="v2-page-title" style="margin:0;font-size:22px">Opportunités par catégorie</div>' +
-          '<div style="font-size:13px;color:var(--muted)">ce que le marché commande et que cette officine n\'a pas encore</div>' +
-        '</div>' +
+        sectionHead('Opportunités par catégorie', 'ce que le marché commande et que cette officine n\'a pas encore') +
         catsHtml +
-      '</div>';
+      '</div>' +
+      pharmaCartbar();
+
+    refreshCartbar();
+  }
+
+  // ── Barre d'action collante (pattern .v2-cartbar maison) ──────────
+  // Apparaît dès qu'un produit est coché : le CTA Prépa RDV reste atteignable
+  // au pouce après scroll, sans dupliquer la logique (réutilise pharmaPrepaPreview).
+  function pharmaCartbar() {
+    return '<div class="v2-cartbar" id="ph-cartbar">' +
+      '<div class="v2-cartbar-in">' +
+        '<span class="v2-cartbar-badge mono" id="ph-cartbar-n">0</span>' +
+        '<span class="v2-cartbar-lbl" id="ph-cartbar-lbl">produit retenu</span>' +
+        '<button class="v2-btn v2-btn-primary v2-cartbar-go" id="ph-cartbar-go">' +
+          ICO('download', 16) + 'Préparer le RDV</button>' +
+      '</div></div>';
+  }
+  // Affiche/masque la barre + synchronise compteur et action (sans re-render).
+  function refreshCartbar() {
+    var bar = document.getElementById('ph-cartbar');
+    if (!bar) return;
+    var n = selCips ? selCips.size : 0;
+    var grp = (String(selPid).indexOf('GRP:') === 0);
+    if (n > 0) {
+      var nEl = document.getElementById('ph-cartbar-n');
+      var lEl = document.getElementById('ph-cartbar-lbl');
+      var gEl = document.getElementById('ph-cartbar-go');
+      if (nEl) nEl.textContent = n;
+      if (lEl) lEl.textContent = 'produit' + (n > 1 ? 's' : '') + ' retenu' + (n > 1 ? 's' : '');
+      if (gEl) {
+        gEl.innerHTML = ICO('download', 16) + (grp ? 'Liste d\'achats' : 'Préparer le RDV');
+        gEl.onclick = function () {
+          if (grp) { V2.grpDownloadPdf(encodeURIComponent(String(selPid).slice(4))); }
+          else { V2.pharmaPrepaPreview(String(selPid)); }
+        };
+      }
+      bar.classList.add('show');
+    } else {
+      bar.classList.remove('show');
+    }
   }
 
   // ── Handlers exposés ───────────────────────────────────────────
@@ -718,6 +804,16 @@
       V2.toast('Retenu — ajouté à la fiche en cours');
     }
     refreshPdfBtn();
+    refreshCartbar();
+  };
+
+  // Replie / déplie une section secondaire (Top 5, Best-sellers IP) sans perdre le scroll.
+  V2.pharmaToggleSection = function (key) {
+    var cur = (key in sectionCollapsed) ? sectionCollapsed[key] : true;
+    sectionCollapsed[key] = !cur;
+    var y = window.scrollY || window.pageYOffset || 0;
+    V2.render();
+    try { window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { window.scrollTo(0, y); }
   };
 
   V2.pharmaToggleCat = function (key) {
@@ -1127,16 +1223,16 @@
       ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel); }).join('')
       : '<div class="v2-empty"><div class="v2-empty-d">Aucun achat identifié pour ce groupement.</div></div>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap">' +
+      '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
         '<button class="v2-back" style="margin-bottom:16px" onclick="V2.pharmaGroupBack()">' + ICO('back', 16) + 'Tous les groupements</button>' +
         hero +
         membersCard +
-        '<div style="display:flex;align-items:baseline;gap:10px;margin:6px 0 16px;flex-wrap:wrap">' +
-          '<div class="v2-page-title" style="margin:0;font-size:22px">Liste d\'achats idéale</div>' +
-          '<div style="font-size:13px;color:var(--muted)">produits triés par nombre de pharmacies qui les commandent (Sortie)</div>' +
-        '</div>' +
+        sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies qui les commandent (Sortie)') +
         catsHtml +
-      '</div>';
+      '</div>' +
+      pharmaCartbar();
+
+    refreshCartbar();
   }
 
   // ── Handlers groupements ──
@@ -1159,7 +1255,7 @@
       var trs = o.rows.map(function (r, i) {
         return '<tr style="border-bottom:1px solid #ECEFF5">' +
           '<td style="padding:4px 6px;text-align:center;color:#9AA1B2;font-size:9px">' + (i + 1) + '</td>' +
-          '<td style="padding:4px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.designation || '').slice(0, 50)) + (r.froid ? ' ❄' : '') + '</td>' +
+          '<td style="padding:4px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.designation || '').slice(0, 50)) + (r.froid ? ' <span style="font-size:7px;font-weight:800;color:#00B5D8;background:#E3F7FB;padding:1px 4px;border-radius:4px;vertical-align:middle">FROID</span>' : '') + '</td>' +
           '<td style="padding:4px 6px;font-family:monospace;font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
           '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + (r.prix_ip ? e2(r.prix_ip) + (r.offre ? ' <span style="font-family:Satoshi,sans-serif;font-size:7px;font-weight:800;color:#C7791A;background:#FBEEDD;padding:1px 4px;border-radius:4px;vertical-align:middle">OFFRE</span>' : '') : '—') + '</td>' +
           '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#1E9E6A">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
@@ -1338,7 +1434,43 @@
       '.opso-counter{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;font-weight:600;color:var(--muted)}',
       '.opso-counter-sep{color:var(--muted-2)}',
       '.opso-counter-cliente{color:#0d8530;font-weight:700}',
-      '.opso-counter-prospect{color:var(--muted);font-weight:600}'
+      '.opso-counter-prospect{color:var(--muted);font-weight:600}',
+      // ── Barre RDV collante du pilier : empilée AU-DESSUS de la barre fiche globale (#v2-cartbar) ──
+      // pharmaToggleSel alimente aussi V2.ficheCart → la barre globale est présente ;
+      // on décale la nôtre vers le haut pour éviter le chevauchement, lumière du pilier sur le badge.
+      '#ph-cartbar{bottom:calc(64px + env(safe-area-inset-bottom))}',
+      '#ph-cartbar .v2-cartbar-badge{background:var(--accent,var(--ip-blue))}',
+      '#ph-cartbar .v2-cartbar-go:active{transform:scale(.97)}',
+      // ── Lumière du pilier Opportunités : liseré 3px contextuel (grammaire d\'appartenance) ──
+      '.ph-detail .v2-card{position:relative}',
+      // Hero = 1er .v2-card direct, qu\'il soit le 1er enfant (fiche pharma) ou précédé du bouton retour (fiche groupement).
+      '.ph-detail>.v2-card:first-child::before,.ph-detail>.v2-back:first-child+.v2-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--accent,var(--ip-blue));opacity:.9}',
+      // ── Rangée d\'actions natives (appeler / e-mail / itinéraire) ──
+      '.ph-contact-row{display:flex;gap:var(--gap-tight);flex-wrap:wrap;padding:var(--sp-3) var(--sp-6)}',
+      '.ph-act-link{flex:1;min-width:120px;min-height:var(--tap-min);justify-content:center;gap:8px;font-weight:700;text-decoration:none}',
+      '.ph-act-link svg{flex-shrink:0}',
+      '.ph-act-link:active{transform:scale(.97)}',
+      '@media(max-width:560px){.ph-act-link{min-width:0;padding-left:10px;padding-right:10px}}',
+      // ── Sections repliables (toggle) : étend le composant partagé .v2-section-head ──
+      '.v2-section-head.ph-sh-toggle{cursor:pointer;user-select:none;align-items:center}',
+      '.v2-section-head.ph-sh-toggle:hover .v2-sh-t{color:var(--accent,var(--ip-blue))}',
+      '.v2-section-chev{display:inline-flex;color:var(--muted-2);flex-shrink:0;transition:transform .25s var(--ease)}',
+      '.v2-section-chev.open{transform:rotate(90deg)}',
+      // ── Étend la hit-area du bouton + à 44px sous 640px (glyphe inchangé) ──
+      '.opp-add{position:relative}',
+      '.opp-add:active{transform:scale(.97)}',
+      '@media(max-width:640px){.opp-add::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:var(--tap-min);height:var(--tap-min)}}',
+      // ── Table opportunités : sous mobile, replier OPS/CPR/HP, épingler produit + action ──
+      // Ciblé .ph-opp-tbl uniquement (n\'affecte pas la table groupements à 7 colonnes data).
+      '@media(max-width:640px){' +
+        '.ph-opp-tbl .v2-table th:nth-child(6),.ph-opp-tbl .v2-table td:nth-child(6),' +
+        '.ph-opp-tbl .v2-table th:nth-child(7),.ph-opp-tbl .v2-table td:nth-child(7),' +
+        '.ph-opp-tbl .v2-table th:nth-child(8),.ph-opp-tbl .v2-table td:nth-child(8){display:none}' +
+        '.ph-opp-tbl .v2-table th:nth-child(2),.ph-opp-tbl .v2-table td:nth-child(2){position:sticky;left:34px;z-index:1;background:var(--card)}' +
+        '.ph-opp-tbl .v2-table thead th:nth-child(2){background:var(--card-2)}' +
+        '.ph-opp-tbl .v2-table th:last-child,.ph-opp-tbl .v2-table td:last-child{position:sticky;right:0;z-index:1;background:var(--card);box-shadow:-6px 0 8px -6px rgba(16,19,28,.14)}' +
+        '.ph-opp-tbl .v2-table thead th:last-child{background:var(--card-2)}' +
+      '}'
     ].join('\n');
     document.head.appendChild(st);
   }
