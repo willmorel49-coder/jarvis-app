@@ -85,8 +85,9 @@ PHARM_FILE = os.path.join(STATS, 'WML_pharmacies.xlsx')
 # (commercial, préfixe fichier) — chaque source = 5 mois
 SOURCES = [
     ('Will', 'WML'),
-    ('Pauline', 'PGN'),
+    ('Pauline G.', 'PGN'),   # Pauline Guillaumin
     ('Karine', 'KV'),
+    ('Pauline S.', 'PSA'),   # Pauline Soldevila
 ]
 MONTHS_NUM = [1, 2, 3, 4, 5]
 OUT = os.path.join(BASE, 'crm', 'v2', 'wml-officines-data.js')
