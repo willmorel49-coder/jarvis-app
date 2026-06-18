@@ -296,6 +296,7 @@
           '</div>' +
           '<div class="mkt-editbar">' +
             '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.openPicker()">' + ICO('plus', 17, 2) + 'Ajouter des produits</button>' +
+            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.addCustom()">' + ICO('plus', 17, 2) + 'Produit libre</button>' +
             '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.save()">' + ICO('check', 17, 2) + 'Enregistrer</button>' +
             '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.downloadPdf()">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>' +
             '<button class="mkt-del" onclick="V2.mkt.remove()" title="Supprimer">' + ICO('close', 17, 2) + '</button>' +
@@ -315,13 +316,14 @@
     var img = p.img
       ? '<span class="mkt-prow-img" style="background-image:url(' + esc(p.img) + ')"></span>'
       : '<span class="mkt-prow-img mkt-prow-pill">' + ICO('pill', 18, 1.6) + '</span>';
-    var sub = p.src === 'gros'
-      ? ('CIP ' + esc(p.cip || '—') + (p.remise > 0 ? ' · remise ' + String(p.remise).replace('.', ',') + '%' : '') + (p.froid ? ' · FROID' : ''))
-      : ((p.brand ? esc(p.brand) + ' · ' : '') + (p.ean ? 'EAN ' + esc(p.ean) : ''));
+    var sub = p.cip ? ('CIP ' + esc(p.cip)) : (p.brand ? esc(p.brand) : (p.src === 'custom' ? 'produit libre' : (p.ean ? 'EAN ' + esc(p.ean) : '')));
     return '<div class="mkt-prow">' + img +
-      '<div class="mkt-prow-main"><div class="mkt-prow-name">' + esc(p.name) + '</div>' +
-        '<div class="mkt-prow-sub">' + sub + '</div></div>' +
-      '<div class="mkt-prow-price mono">' + (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</div>' +
+      '<div class="mkt-prow-main">' +
+        '<input class="mkt-prow-namei" value="' + esc(p.name || '') + '" placeholder="Nom du produit" aria-label="Nom" oninput="V2.mkt.setProd(' + i + ',\'name\',this.value)">' +
+        '<div class="mkt-prow-sub">' + (sub || 'produit libre') + (p.froid ? ' · FROID' : '') + '</div>' +
+      '</div>' +
+      '<label class="mkt-prow-f"><span>Prix €</span><input type="number" inputmode="decimal" step="0.01" min="0" value="' + (p.price != null && p.price !== 0 ? p.price : '') + '" aria-label="Prix" oninput="V2.mkt.setProd(' + i + ',\'price\',this.value)"></label>' +
+      '<label class="mkt-prow-f"><span>Remise %</span><input type="number" inputmode="decimal" step="0.1" min="0" value="' + (p.remise != null && p.remise !== 0 ? p.remise : '') + '" aria-label="Remise" oninput="V2.mkt.setProd(' + i + ',\'remise\',this.value)"></label>' +
       '<button class="mkt-prow-x" onclick="V2.mkt.removeProduct(' + i + ')" title="Retirer">' + ICO('close', 15, 2) + '</button>' +
     '</div>';
   }
@@ -540,6 +542,21 @@
   V2.mkt = {
     create: function (type) { editing = null; V2.go('marketing', type === 'selection' ? 'new-selection' : 'new-support'); },
     open: function (id) { editing = null; V2.go('marketing', id); },
+    setProd: function (i, field, v) {
+      if (!editing || !editing.products[i]) return;
+      var p = editing.products[i];
+      if (field === 'name') p.name = v;
+      else if (field === 'price') p.price = (v === '' ? 0 : (parseFloat(String(v).replace(',', '.')) || 0));
+      else if (field === 'remise') p.remise = (v === '' ? 0 : (parseFloat(String(v).replace(',', '.')) || 0));
+      refreshPreview();   // n'écrase pas la ligne en cours d'édition (pas de refreshProducts)
+    },
+    addCustom: function () {
+      if (!editing) return;
+      editing.products.push({ src: 'custom', key: 'c' + Date.now() + Math.round(Math.random() * 999),
+        id: '', name: '', brand: '', ean: '', cip: '', price: 0, remise: 0, img: '', froid: false });
+      refreshProducts();
+      setTimeout(function () { var inp = document.querySelectorAll('.mkt-prow-namei'); if (inp.length) inp[inp.length - 1].focus(); }, 40);
+    },
     setTitle: function (v) { if (editing) { editing.title = v; refreshPreview(); } },
     setAccroche: function (v) { if (editing) { editing.accroche = v; refreshPreview(); } },
     setFooter: function (v) { if (editing) { editing.footer = v; refreshPreview(); } },
@@ -724,6 +741,14 @@
       '.mkt-prow:last-child{border-bottom:none}',
       '.mkt-prow-img{width:42px;height:42px;border-radius:9px;background:#F0F2F7 center/cover no-repeat;border:1px solid var(--line);flex-shrink:0}',
       '.mkt-prow-main{flex:1;min-width:0}',
+      '.mkt-prow-namei{width:100%;border:1px solid transparent;background:transparent;border-radius:8px;padding:5px 7px;margin:-5px -7px 0;font-family:var(--font);font-size:13.5px;font-weight:600;color:var(--ip-ink)}',
+      '.mkt-prow-namei:hover{border-color:var(--line)}',
+      '.mkt-prow-namei:focus{outline:none;border-color:var(--ip-blue);background:#fff;box-shadow:0 0 0 3px var(--halo)}',
+      '.mkt-prow-f{display:flex;flex-direction:column;gap:2px;flex-shrink:0;width:74px}',
+      '.mkt-prow-f span{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}',
+      '.mkt-prow-f input{width:100%;border:1px solid var(--line);border-radius:var(--r-control,9px);padding:6px 8px;font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ip-ink);text-align:right;background:var(--card)}',
+      '.mkt-prow-f input:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}',
+      '@media(max-width:560px){.mkt-prow{flex-wrap:wrap}.mkt-prow-f{width:auto;flex:1}}',
       '.mkt-prow-name{font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.mkt-prow-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}',
       '.mkt-prow-price{font-size:14px;font-weight:800;color:var(--ip-blue);flex-shrink:0}',
