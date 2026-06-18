@@ -298,7 +298,7 @@
           '<div class="pres-hero">' +
             '<div class="pres-logo">' + logoSvg + '</div>' +
             '<div class="pres-h1">Intégral Pharma</div>' +
-            '<div class="pres-tag">Votre grossiste-répartiteur partenaire : un large catalogue, des prix négociés et un accompagnement humain pour faire grandir votre officine.</div>' +
+            '<div class="pres-tag">Un groupe de grossistes français à vos côtés. Acteur de la santé depuis plus de 20 ans, partenaire de proximité pour améliorer durablement la rentabilité de votre officine.</div>' +
             '<div class="pres-kpis">' +
               '<div><div class="pres-kpi-v">' + nbRef + '</div><div class="pres-kpi-l">médicaments au catalogue</div></div>' +
               '<div><div class="pres-kpi-v">' + nf(nbPara) + '</div><div class="pres-kpi-l">références parapharmacie</div></div>' +
@@ -319,18 +319,18 @@
 
           '<div class="pres-sec-t">Pourquoi travailler avec nous</div>' +
           '<div class="pres-grid">' +
-            card('var(--c-cat)', 'cat', 'Un catalogue complet', nf(nbRefN) + ' médicaments + ' + nf(nbPara) + ' références de parapharmacie : princeps, génériques, biosimilaires et chaîne du froid — du petit prix au produit le plus cher. Un seul partenaire pour tout commander.') +
-            card('var(--c-opp)', 'spark', 'Des prix négociés & offres labo', 'En ce moment, ' + nf(nbOffre) + ' produits bénéficient d\'une offre laboratoire (Sanofi, UPSA…). Sur un remboursable à marge réglementée, chaque centime gratté à l\'achat tombe à 100 % dans votre poche.') +
-            card('var(--c-froid)', 'spark', 'Le comparateur de prix intégré', 'On compare en direct votre prix d\'achat aux prix publics concurrents (E.Leclerc, Drakkars, Cap3000) et aux portails pro. Vous savez toujours si vous êtes au bon prix — la transparence, pas la promesse.') +
-            card('var(--c-pilo)', 'pilo', 'Un accompagnement chiffré', 'Votre commercial vient avec VOS chiffres : ce que commandent les officines comparables, vos opportunités de marge par catégorie, et une commande déjà préparée. Des données, pas du blabla.') +
+            card('var(--c-mint)', 'spark', 'Plus de marge, sur tout le catalogue', 'Meilleure marge sur l\'intégralité du catalogue, des prix nets sur facture et une optimisation dès la première boîte. La transparence des conditions, pas les paliers cachés.') +
+            card('var(--c-fiche)', 'spark', 'Ni franco, ni engagement', 'Aucun minimum de commande imposé, aucun engagement de chiffre d\'affaires. Vous commandez ce que vous voulez, quand vous voulez. Livraison en 72 h.') +
+            card('var(--c-cat)', 'cat', 'Une centrale parapharmacie unique', 'Via Offilog : la plus grande collection de parapharmacie de France, +14 000 produits, +430 laboratoires, sans coût d\'adhésion et au meilleur prix à l\'unité, sans paliers.') +
+            card('var(--c-pilo)', 'pilo', 'Un accompagnement chiffré & de proximité', 'Votre commercial vient avec VOS chiffres : meilleures ventes du marché, opportunités de marge, commande déjà préparée. Service réactif et transparent.') +
           '</div>' +
 
-          '<div class="pres-sec-t">Ce que ça change pour votre marge</div>' +
+          '<div class="pres-sec-t">Vos conditions</div>' +
           '<div class="pres-card">' +
             '<div class="pres-card-d" style="font-size:14px">' +
-              '<b>Remboursables :</b> la marge est réglementée (barème MDL), donc tout se joue sur le <b>prix d\'achat</b>. Nos offres labo le font baisser → votre marge monte, mécaniquement.<br><br>' +
-              '<b>Non remboursables & parapharma :</b> marge libre. On vous positionne au <b>bon prix face à la concurrence</b> (comparateur intégré) pour défendre votre marge sans perdre la vente.<br><br>' +
-              '<b>Gamme large = un seul fournisseur :</b> moins de commandes éclatées, moins de frais, des conditions globales meilleures.' +
+              '<b>Remise constatée de 6 % à 9 %</b> sur le prix PFHT, en prix nets sur facture. Barème par tranche : <b>&lt; 4,33 €</b> → 4,5 % à 30 % · <b>4,33–468 €</b> → 3,89 % · <b>&gt; 468 €</b> → 19,50 € fixe.<br><br>' +
+              '<b>Génériques :</b> remises remontées dès la 1ère boîte, jusqu\'à <b>27 %</b>.<br>' +
+              '<b>Catalogue :</b> ' + nf(nbRefN) + ' médicaments + ' + nf(nbPara) + ' réfs parapharma · ' + nf(nbOffre) + ' offres labo en ce moment (L\'Intégral, ITP, UPSA, Sanofi).' +
             '</div>' +
           '</div>' +
 
@@ -346,9 +346,10 @@
           '<div class="pres-contact">' +
             '<div class="pres-logo" style="width:46px;height:46px;border-radius:13px;margin:0;background:linear-gradient(150deg,#0050E6,#0034A0)"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>' +
             '<div><div class="pres-contact-n">' + esc(u.name || 'Votre commercial Intégral Pharma') + '</div>' +
-              '<div class="pres-contact-r">Intégral Pharma · votre interlocuteur dédié</div></div>' +
+              '<div class="pres-contact-r">Délégué pharmaceutique référent</div></div>' +
             '<div class="pres-contact-c">' + (u.email ? '<a href="mailto:' + esc(u.email) + '">' + esc(u.email) + '</a>' : 'Intégral Pharma') + '</div>' +
           '</div>' +
+          '<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:12px">Ouest Pharma Services · Saint-Étienne-de-Montluc (44) — Service client 02 49 62 50 55</div>' +
           '<div style="height:30px"></div>' +
         '</div>';
     }
