@@ -30,7 +30,7 @@
   var ACCENTS = ['#0050E6', '#0034A0', '#E0556E', '#6D4FC4', '#1E9E6A', '#C7791A', '#00B5D8', '#10131C'];
   var BGS = ['#FFFFFF', '#FFFDF7', '#F2F7FF', '#F4F6FB', '#FBF5F7', '#F3FAF6'];
   function defaultTheme(type) {
-    return { accent: type === 'selection' ? '#1E9E6A' : '#0050E6', bg: '#FFFFFF', showPrice: true, showRemise: true };
+    return { accent: type === 'selection' ? '#1E9E6A' : '#0050E6', bg: '#FFFFFF', showPrice: true, showRemise: true, showImg: true };
   }
   function darken(hex, f) {
     hex = String(hex || '#0050E6').replace('#', '');
@@ -496,7 +496,8 @@
     var grad = 'linear-gradient(120deg,' + acc + ' 0%,' + darken(acc, 0.6) + ' 100%)';
     var bg = th.bg || '#FFFFFF';
     var showPrice = th.showPrice !== false, showRemise = th.showRemise !== false;
-    var anyImg = (it.products || []).some(function (p) { return p.img; });
+    var showImg = th.showImg !== false;
+    var anyImg = showImg && (it.products || []).some(function (p) { return p.img; });
     var cols = (anyImg ? 1 : 0) + 3 + (showPrice ? 1 : 0) + (showRemise ? 1 : 0);
     function prodTr(p, n) {
       var img = prodImg(p, forPdf);
@@ -572,6 +573,7 @@
         '<div class="mkt-perso-row"><span class="mkt-perso-l">Affichage</span><div class="mkt-toggles">' +
           '<button class="mkt-tg' + (th.showPrice !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showPrice\',this)">Prix</button>' +
           '<button class="mkt-tg' + (th.showRemise !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showRemise\',this)">Remises</button>' +
+          '<button class="mkt-tg' + (th.showImg !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showImg\',this)">Photos</button>' +
         '</div></div>' +
         '<div class="mkt-perso-row"><span class="mkt-perso-l">Mentions</span>' +
           '<input class="mkt-foot" id="mkt-footer" placeholder="ex : Offre valable jusqu\'au 31/07 · contact@integralpharma.fr" value="' + esc(editing.footer || '') + '" oninput="V2.mkt.setFooter(this.value)"></div>' +
