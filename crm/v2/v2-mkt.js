@@ -44,6 +44,7 @@
   var backend = 'local';     // 'supabase' | 'local'
   var editing = null;
   var pickSrc = 'mix';       // source : 'mix' (sélection grossiste) | 'gros' (catalogue méd.) | 'offilog'
+  var catSrc = 'integral';   // section Catalogues grossiste : 'integral' | 'itp' | 'best'
 
   // ════════════════════════════════════════════
   // STORE (Supabase partagé + repli local)
@@ -197,12 +198,61 @@
           '<div class="v2-page-sub" style="margin-bottom:0">L\'espace de Pauline &amp; Will — supports et sélections produits</div></div>' +
           shareNote +
         '</div>' +
+        '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'catalogues\')">' +
+          '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
+          '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Catalogues grossiste — L\'Intégral &amp; ITP</span>' +
+          '<span class="mkt-cat-s">Ta parapharma L\'Intégral par spécialité + les pansements/DM ITP (avec marge), classés par sorties. Consulter &amp; télécharger.</span></span>' +
+          '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
+        '</a>' +
         section('support', supports) +
         section('selection', selections) +
         (backend === 'local'
           ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Activer le partage entre vous</b><br>' +
             'Pour l\'instant les supports sont enregistrés sur cet appareil. Pour que Pauline et toi voyiez les mêmes, il faut créer une table dans Supabase (une seule fois). Demande-moi le script SQL, il est prêt.</div></div>'
           : '') +
+      '</div>';
+  }
+
+  // ════════════════════════════════════════════
+  // CATALOGUES GROSSISTE (L'Intégral + ITP + Top ventes)
+  // ════════════════════════════════════════════
+  function renderCatalogues(root) {
+    var M = window.MKT_MIX || {}, total = M.total || 0;
+    var srcs = [
+      { k: 'integral', label: 'L\'Intégral', data: M.integral || [], pdf: 'catalogue-integral.pdf' },
+      { k: 'itp', label: 'ITP', data: M.itp || [], pdf: 'catalogue-itp.pdf' },
+      { k: 'best', label: 'Top ventes', data: M.bestsellers || [], pdf: null },
+    ];
+    var cur = srcs.filter(function (s) { return s.k === catSrc; })[0] || srcs[0];
+    var tabs = srcs.map(function (s) { return '<button class="mkt-srcbtn' + (s.k === catSrc ? ' on' : '') + '" onclick="V2.mkt.catSrc(\'' + s.k + '\')">' + esc(s.label) + '</button>'; }).join('');
+    var offre = ' <span style="font-size:8.5px;font-weight:800;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 14%,#fff);padding:1px 5px;border-radius:5px;text-transform:uppercase">offre</span>';
+    var cats = cur.data.map(function (c) {
+      var trs = (c.rows || []).map(function (r, i) {
+        var price = (r.p > 0) ? V2.fmtEur(r.p) : '—';
+        var last = (cur.k === 'itp')
+          ? '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.marge ? V2.fmtEur(r.marge) : '—') + '</td>'
+          : '<td class="num" style="font-weight:700">' + (r.sortie > 0 ? r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + total + '</span>' : '—') + '</td>';
+        return '<tr>' +
+          '<td class="num" style="color:var(--muted-2);width:28px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
+          '<td><span class="mkt-cat-prod">' + esc(r.d) + '</span>' + (r.o ? offre : '') + '</td>' +
+          '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip || '—') + '</td>' +
+          '<td class="num" style="color:var(--ip-blue);font-weight:700">' + price + '</td>' + last +
+        '</tr>';
+      }).join('');
+      var lastTh = (cur.k === 'itp') ? 'Marge/bte' : 'Sorties';
+      return '<div class="v2-card" style="margin-bottom:14px;padding:16px 18px">' +
+        '<div class="v2-card-t" style="margin-bottom:10px">' + esc(c.cat) + ' <span style="color:var(--muted);font-weight:500">· ' + (c.rows || []).length + '</span></div>' +
+        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + lastTh + '</th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
+      '</div>';
+    }).join('');
+    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+      '<div class="v2-wrap">' +
+        '<button class="v2-back" style="margin-bottom:16px" onclick="V2.go(\'marketing\')">' + ICO('back', 16) + 'Marketing</button>' +
+        '<div class="v2-page-title">Catalogues grossiste</div>' +
+        '<div class="v2-page-sub">L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent</div>' +
+        '<div class="mkt-pick-src" style="margin:16px 0 14px">' + tabs + '</div>' +
+        (cur.pdf ? '<div style="margin-bottom:16px"><a class="v2-btn v2-btn-primary" href="' + cur.pdf + '" download>' + ICO('download', 16) + 'Télécharger le catalogue ' + esc(cur.label) + ' (PDF)</a></div>' : '') +
+        (cats || '<div class="v2-empty"><div class="v2-empty-d">Catalogue indisponible.</div></div>') +
       '</div>';
   }
 
@@ -514,6 +564,7 @@
       Array.prototype.forEach.call(document.querySelectorAll('.mkt-stbtn'), function (b) { b.classList.remove('on'); });
       if (btn) btn.classList.add('on');
     },
+    catSrc: function (s) { catSrc = s; V2.render(); },
     openPicker: openPicker, closePicker: closePicker,
     setPickSrc: function (s) {
       pickSrc = s;
@@ -605,7 +656,8 @@
         loadItems().then(function () { V2.render(); });
         return;
       }
-      if (param) renderEditor(root, param); else renderList(root);
+      if (param === 'catalogues') renderCatalogues(root);
+      else if (param) renderEditor(root, param); else renderList(root);
     }
   };
   V2.mktReload = function () { items = null; };
@@ -621,6 +673,12 @@
       '.mkt-share.ok{color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,#fff)}',
       '.mkt-share.local{color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 12%,#fff)}',
       '.mkt-section{margin-top:26px}',
+      '.mkt-cat-banner{display:flex;align-items:center;gap:14px;margin-top:14px;padding:16px 18px;background:linear-gradient(150deg,color-mix(in srgb,var(--c-cat) 8%,#fff),var(--card));border:1px solid color-mix(in srgb,var(--c-cat) 22%,var(--line));border-radius:var(--r-card);box-shadow:var(--sh-1);cursor:pointer;text-decoration:none;color:inherit;transition:.16s var(--ease)}',
+      '.mkt-cat-banner:hover{box-shadow:var(--sh-2);transform:translateY(-1px)}',
+      '.mkt-cat-ic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-cat),#4d35a0)}',
+      '.mkt-cat-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
+      '.mkt-cat-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}',
+      '.mkt-cat-prod{font-weight:600;font-size:13.5px}',
       '.mkt-sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}',
       '.mkt-sec-t{font-size:18px;font-weight:800;letter-spacing:-.02em}',
       '.mkt-sec-s{font-size:12.5px;color:var(--muted);margin-top:2px}',
