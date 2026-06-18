@@ -4,7 +4,40 @@
 → crue dans crm/v2/marketing-mix-data.js (window.MKT_MIX), source de l'onglet Marketing.
 Nécessite pdftotext (les .txt sont régénérés ici). Python 3.9.
 """
-import re, json, os, subprocess
+import re, json, os, subprocess, unicodedata
+
+
+def norm_name(s):
+    s = unicodedata.normalize('NFKD', str(s or '')).encode('ascii', 'ignore').decode().upper()
+    return re.sub(r'[^A-Z0-9]', '', s)
+
+
+def root_name(s):
+    # racine = lettres avant le 1er chiffre (marque/produit), ex "ABUFEN 400MG" -> "ABUFEN"
+    s = unicodedata.normalize('NFKD', str(s or '')).encode('ascii', 'ignore').decode().upper()
+    m = re.match(r'([A-Z][A-Z &\-]{2,})', s)
+    return re.sub(r'[^A-Z0-9]', '', m.group(1)) if m else ''
+
+
+# index nom/racine -> nb de pharmacies qui commandent (via benchmark : nom -> cip13 -> sortie)
+def bench_name_index(sortie):
+    txt = open('crm/benchmark-data.js', encoding='utf-8', errors='ignore').read()
+    objs = re.findall(r'\{[^{}]*?\}', txt)
+    full, root = {}, {}
+    for o in objs:
+        if 'designation:' not in o:
+            continue
+        mc = re.search(r'cip13:"([^"]*)"', o); md = re.search(r'designation:"([^"]*)"', o)
+        if not mc or not md:
+            continue
+        st = sortie.get(mc.group(1), 0)
+        if st <= 0:
+            continue
+        k = norm_name(md.group(1))
+        if k and st > full.get(k, 0): full[k] = st
+        rk = root_name(md.group(1))
+        if rk and len(rk) >= 4 and st > root.get(rk, 0): root[rk] = st
+    return full, root
 
 MK = 'MARKETING'
 INTEGRAL_PDF = os.path.join(MK, "L'integral.pdf")
@@ -134,15 +167,40 @@ def parse_bestsellers(sortie, total):
 
 
 sortie, total = load_sorties()
+fullIdx, rootIdx = bench_name_index(sortie)
+
+
+def attach_sortie(name, cip):
+    # priorité : CIP exact > nom normalisé exact > racine de marque
+    st = sortie.get(str(cip), 0)
+    if not st:
+        st = fullIdx.get(norm_name(name), 0)
+    if not st:
+        st = rootIdx.get(root_name(name), 0)
+    return st
+
+
 integral = parse_integral()
-# attache la sortie réseau aux produits L'Intégral dont le CIP matche nos ventes, et trie
+matched_i = 0
 for c in integral:
     for r in c['rows']:
-        r['sortie'] = sortie.get(str(r['cip']), 0); r['total'] = total
+        r['sortie'] = attach_sortie(r['d'], r.get('cip'))
+        r['total'] = total
+        if r['sortie']:
+            matched_i += 1
     c['rows'].sort(key=lambda r: r['sortie'], reverse=True)
+
+itp = parse_itp()
+for c in itp:
+    for r in c['rows']:
+        r['sortie'] = attach_sortie(r['d'], '')
+        r['total'] = total
+    c['rows'].sort(key=lambda r: (r['sortie'], r['marge'] or 0), reverse=True)
+
+print('  [match nom] L\'Intégral : %d produits rattachés à des ventes' % matched_i)
 data = {
     'integral': integral,
-    'itp': parse_itp(),
+    'itp': itp,
     'bestsellers': parse_bestsellers(sortie, total),
     'total': total,
 }
