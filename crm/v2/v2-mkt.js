@@ -225,6 +225,10 @@
   // ════════════════════════════════════════════
   // CATALOGUES GROSSISTE (L'Intégral + ITP + Top ventes)
   // ════════════════════════════════════════════
+  function catImg(cip) {
+    var M = window.MKT_IMG; if (!M || !cip) return '';
+    return M[String(cip)] || '';
+  }
   function updateCatBar() {
     var bar = document.getElementById('mkt-catbar'); if (!bar) return;
     var n = catSel.length;
@@ -253,12 +257,17 @@
           : '<td class="num" style="font-weight:700">' + (r.sortie > 0 ? r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + total + '</span>' : '—') + '</td>';
         var volCol = '<td class="num" style="font-weight:800;color:var(--ip-ink)">' + (r.vol > 0 ? V2.fmtNum(r.vol) : '—') + '</td>';
         var fi = catRows.length;
-        catRows.push({ d: r.d, cip: r.cip, p: r.p, froid: false, cat: c.cat });
+        var pic = catImg(r.cip);
+        catRows.push({ d: r.d, cip: r.cip, p: r.p, froid: false, cat: c.cat, img: pic });
         var selKey = String(r.cip || r.d);
         var added = catSel.some(function (x) { return x.key === selKey; });
         var addBtn = '<td style="width:36px;text-align:center"><button class="mkt-catadd' + (added ? ' on' : '') + '" id="mkt-ca-' + fi + '" title="' + (added ? 'Retirer de ma sélection' : 'Ajouter à une fiche') + '" onclick="V2.mkt.catAdd(' + fi + ')">' + ICO(added ? 'check' : 'plus', 15, 2.4) + '</button></td>';
+        var thumb = pic
+          ? '<td style="width:46px"><span class="mkt-cat-thumb" style="background-image:url(' + esc(pic) + ')"></span></td>'
+          : '<td style="width:46px"><span class="mkt-cat-thumb mkt-cat-thumb-ph">' + ICO('pill', 18, 1.5) + '</span></td>';
         return '<tr>' +
           '<td class="num" style="color:var(--muted-2);width:28px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
+          thumb +
           '<td><span class="mkt-cat-prod">' + esc(r.d) + '</span>' + (r.o ? offre : '') + '</td>' +
           '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip || '—') + '</td>' +
           '<td class="num" style="color:var(--ip-blue);font-weight:700">' + price + '</td>' + midCol + volCol + addBtn +
@@ -267,7 +276,7 @@
       var midTh = (cur.k === 'itp') ? 'Marge/bte' : 'Sorties';
       return '<div class="v2-card" style="margin-bottom:14px;padding:16px 18px">' +
         '<div class="v2-card-t" style="margin-bottom:10px">' + esc(c.cat) + ' <span style="color:var(--muted);font-weight:500">· ' + (c.rows || []).length + '</span></div>' +
-        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th><th></th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
+        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th></th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th><th></th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
       '</div>';
     }).join('');
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
@@ -658,7 +667,7 @@
       var key = String(row.cip || row.d);
       var at = -1; for (var i = 0; i < catSel.length; i++) { if (catSel[i].key === key) { at = i; break; } }
       if (at >= 0) catSel.splice(at, 1);
-      else catSel.push({ src: 'cat', key: key, id: '', name: row.d, brand: '', ean: '', cip: row.cip ? String(row.cip) : '', price: row.p || 0, remise: 0, img: '', froid: !!row.froid, cat: row.cat || '' });
+      else catSel.push({ src: 'cat', key: key, id: '', name: row.d, brand: '', ean: '', cip: row.cip ? String(row.cip) : '', price: row.p || 0, remise: 0, img: row.img || '', froid: !!row.froid, cat: row.cat || '' });
       var on = at < 0;
       var btn = document.getElementById('mkt-ca-' + fi);
       if (btn) { btn.classList.toggle('on', on); btn.title = on ? 'Retirer de ma sélection' : 'Ajouter à une fiche'; btn.innerHTML = ICO(on ? 'check' : 'plus', 15, 2.4); }
@@ -924,6 +933,8 @@
       '.mkt-pick-src{display:flex;gap:6px;padding:10px 16px 4px}',
       '.mkt-srcbtn{flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 10px;font-family:var(--font);font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}',
       '.mkt-srcbtn.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.mkt-cat-thumb{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1px solid var(--line);background:#fff center/cover no-repeat;flex-shrink:0}',
+      '.mkt-cat-thumb-ph{background:var(--card-2);color:var(--muted-2)}',
       '.mkt-catadd{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ip-blue);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.14s var(--ease)}',
       '.mkt-catadd:hover{border-color:var(--ip-blue);background:var(--halo)}',
       '.mkt-catadd.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
