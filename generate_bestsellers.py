@@ -47,13 +47,14 @@ for o in objs:
     if qty <= 0:
         continue
     ip = num(o, 'prix_ip'); off = num(o, 'offre_ip')
-    best = off if (off > 0 and (ip <= 0 or off < ip)) else ip
+    # offre valide seulement si remise <= 50% (au-delà = offre_ip aberrante)
+    best = off if (off > 0 and ip > 0 and off < ip and off >= ip * 0.5) else ip
     buckets[fam].append({
         'd': sval(o, 'designation'),
         'c': sval(o, 'cip13'),
         'q': int(qty),
         'p': round(best, 2) if best > 0 else None,
-        'o': bool(off > 0 and (ip <= 0 or off < ip)),
+        'o': bool(off > 0 and ip > 0 and off < ip and off >= ip * 0.5),
     })
 
 cats = []

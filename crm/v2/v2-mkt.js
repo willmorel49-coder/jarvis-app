@@ -177,6 +177,7 @@
         remise: r.remise || 0, sortie: r.sortie || 0, total: r.total || (M.total || 0),
         ppht: r.ppht || 0, marge: r.marge || 0 });
     }
+    (M.rotations || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('rota', c.cat, r); }); });
     (M.bestsellers || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('best', c.cat, r); }); });
     (M.integral || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('integral', c.cat, r); }); });
     (M.itp || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('itp', c.cat, r); }); });
@@ -219,9 +220,10 @@
   function renderCatalogues(root) {
     var M = window.MKT_MIX || {}, total = M.total || 0;
     var srcs = [
+      { k: 'rota', label: 'Top rotations France', data: M.rotations || [], pdf: null },
       { k: 'integral', label: 'L\'Intégral', data: M.integral || [], pdf: 'catalogue-integral.pdf' },
       { k: 'itp', label: 'ITP', data: M.itp || [], pdf: 'catalogue-itp.pdf' },
-      { k: 'best', label: 'Top ventes', data: M.bestsellers || [], pdf: null },
+      { k: 'best', label: 'Top ventes (familles)', data: M.bestsellers || [], pdf: null },
     ];
     var cur = srcs.filter(function (s) { return s.k === catSrc; })[0] || srcs[0];
     var tabs = srcs.map(function (s) { return '<button class="mkt-srcbtn' + (s.k === catSrc ? ' on' : '') + '" onclick="V2.mkt.catSrc(\'' + s.k + '\')">' + esc(s.label) + '</button>'; }).join('');
@@ -363,7 +365,7 @@
       }
       html = r3.map(function (b) {
         added = have['m' + b.id];
-        var tag = b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral');
+        var tag = b.group === 'rota' ? 'Top rotation France' : (b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral'));
         // chip à droite : sortie (nb pharmacies) ou, pour ITP, la marge/boîte
         var chip = (b.sortie > 0)
           ? '<span class="mkt-pick-sortie" title="commandé par ' + b.sortie + ' pharmacies sur ' + b.total + '">' + b.sortie + '/' + b.total + '</span>'
