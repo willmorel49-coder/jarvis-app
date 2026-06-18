@@ -370,7 +370,7 @@
           '<div class="pres-reassure">' +
             '<div class="pres-reassure-i">' + ICOCHK + 'Ni franco</div>' +
             '<div class="pres-reassure-i">' + ICOCHK + 'Ni engagement de CA</div>' +
-            '<div class="pres-reassure-i">' + ICOCHK + 'Livraison 72 h</div>' +
+            '<div class="pres-reassure-i">' + ICOCHK + 'Livraison 2×/sem. à 1×/jour</div>' +
           '</div>' +
 
           '<div class="pres-sec-t">Ce que vous gagnez</div>' +
@@ -378,6 +378,7 @@
             card('var(--c-mint)', 'spark', 'Plus de marge, sur tout le catalogue', 'Meilleure marge sur l\'intégralité du catalogue, des prix nets sur facture et une optimisation dès la première boîte. La transparence des conditions, pas les paliers cachés.') +
             card('var(--c-cat)', 'cat', 'Une centrale parapharmacie unique', 'Via Offilog : la plus grande collection de parapharmacie de France, +14 000 produits, +430 laboratoires, sans coût d\'adhésion et au meilleur prix à l\'unité, sans paliers.') +
             card('var(--c-pilo)', 'pilo', 'Un accompagnement chiffré & de proximité', 'Votre commercial vient avec VOS chiffres : meilleures ventes du marché, opportunités de marge, commande déjà préparée. Service réactif et transparent.') +
+            card('var(--c-fiche)', 'spark', 'Travaillez en toute sérénité', 'Pas de franco ni d\'engagement de CA imposé. L\'objectif se fixe ensemble, en bonne intelligence et avec bon sens, entre vous et votre commercial — un partenariat équilibré, jamais une contrainte.') +
           '</div>' +
 
           '<div class="pres-sec-t">Vos conditions — la preuve chiffrée</div>' +
@@ -392,7 +393,8 @@
               '<div class="pres-tier"><div class="pres-tier-r">4,33 – 468 €</div><div class="pres-tier-v">3,89 %</div><div class="pres-tier-l">intermédiaires</div></div>' +
               '<div class="pres-tier"><div class="pres-tier-r">&gt; 468 €</div><div class="pres-tier-v">19,50 €</div><div class="pres-tier-l">forfait fixe</div></div>' +
             '</div>' +
-            '<div class="pres-card-d" style="font-size:12.5px;color:var(--muted);margin-top:12px">Catalogue : ' + nf(nbRefN) + ' médicaments + ' + nf(nbPara) + ' réfs parapharma · ' + nf(nbOffre) + ' offres labo en ce moment (L\'Intégral, ITP, UPSA, Sanofi).</div>' +
+            '<div class="pres-card-d" style="font-size:12.5px;color:var(--muted);margin-top:12px">Génériques : jusqu\'à 27 % dès la 1ère boîte. Livraison adaptée au secteur (de 2×/semaine à 1×/jour). Ni franco ni engagement imposé — l\'objectif se fixe ensemble, en bonne intelligence.</div>' +
+            '<div class="pres-card-d" style="font-size:12.5px;color:var(--muted);margin-top:6px">Catalogue : ' + nf(nbRefN) + ' médicaments + ' + nf(nbPara) + ' réfs parapharma · ' + nf(nbOffre) + ' offres labo en ce moment (L\'Intégral, ITP, UPSA, Sanofi).</div>' +
             '<div class="pres-cta-line" style="cursor:default">Ces conditions vous intéressent ? Ouvrez un compte ci-dessous ↓</div>' +
           '</div>' +
 
