@@ -364,11 +364,14 @@
       html = r3.map(function (b) {
         added = have['m' + b.id];
         var tag = b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral');
-        var sub = b.sortie > 0 ? ('commandé par ' + b.sortie + '/' + b.total + ' pharmacies') : esc(b.cat);
-        if (b.group === 'itp' && b.marge > 0) sub += ' · marge ' + V2.fmtEur(b.marge) + '/bte';
+        // chip à droite : sortie (nb pharmacies) ou, pour ITP, la marge/boîte
+        var chip = (b.sortie > 0)
+          ? '<span class="mkt-pick-sortie" title="commandé par ' + b.sortie + ' pharmacies sur ' + b.total + '">' + b.sortie + '/' + b.total + '</span>'
+          : (b.group === 'itp' && b.marge > 0 ? '<span class="mkt-pick-sortie marge" title="marge par boîte">marge ' + V2.fmtEur(b.marge) + '</span>' : '');
         return '<div class="mkt-pick-item' + (added ? ' added' : '') + '" onclick="V2.mkt.addProduct(\'mix\',\'' + b.id + '\')">' +
           '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>' +
-          '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + ' · ' + sub + '</span></span>' +
+          '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + (b.cip ? ' · CIP ' + esc(b.cip) : ' · ' + esc(b.cat)) + '</span></span>' +
+          chip +
           '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span></div>';
       }).join('');
     } else if (pickSrc === 'offilog') {
@@ -786,6 +789,8 @@
       '.mkt-pick-nm b{display:block;font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.mkt-pick-nm span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}',
       '.mkt-pick-pr{font-size:13px;font-weight:700;color:var(--c-mint);flex-shrink:0}',
+      '.mkt-pick-sortie{flex-shrink:0;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:999px;padding:3px 8px;margin-right:2px;white-space:nowrap}',
+      '.mkt-pick-sortie.marge{color:var(--c-mint);background:color-mix(in srgb,var(--c-mint) 12%,#fff)}',
       '.mkt-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,.45);backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
       '.mkt-modal.open{opacity:1;pointer-events:auto}',
       '.mkt-dialog{width:min(900px,96vw);max-height:92vh;background:var(--card);border-radius:20px;box-shadow:var(--sh-pop);display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:transform .24s var(--ease)}',
