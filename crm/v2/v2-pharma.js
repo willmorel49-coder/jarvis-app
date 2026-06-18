@@ -1115,6 +1115,15 @@
   function ovWrite(key, ov) { var a = ovAll(); a[key] = { removed: ov.removed, added: ov.added }; ovSave(a); }
   function ovRemoveProduct(key, cip) { var ov = overridesGet(key); delete ov.added[cip]; ov.removed[cip] = 1; ovWrite(key, ov); }
   function ovAddProduct(key, cip) { var ov = overridesGet(key); delete ov.removed[cip]; ov.added[cip] = 1; ovWrite(key, ov); }
+  function ovRestoreAll(key) { var ov = overridesGet(key); ov.removed = {}; ovWrite(key, ov); }
+  // barre d'outils produits (réafficher les masqués + ajouter un produit)
+  function prodToolbar(ovKey) {
+    var rm = Object.keys(overridesGet(ovKey).removed).length, enc = encodeURIComponent(ovKey);
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:-4px 0 12px;flex-wrap:wrap">' +
+      (rm ? '<button class="v2-btn v2-btn-ghost" onclick="V2.itemRestoreAll(\'' + enc + '\')">' + ICO('back', 15) + rm + ' produit' + (rm > 1 ? 's' : '') + ' masqué' + (rm > 1 ? 's' : '') + ' · réafficher</button>' : '<span></span>') +
+      '<button class="v2-btn v2-btn-ghost" onclick="V2.itemAddOpen(\'' + enc + '\')">' + ICO('plus', 16) + 'Ajouter un produit</button>' +
+    '</div>';
+  }
 
   // Agrégation des achats pour un ENSEMBLE de pharmacies (ids = {pharmacyId:1}).
   // Mutualisé par les groupements ET les listes personnalisées.
@@ -1262,7 +1271,7 @@
         hero +
         membersCard +
         sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies qui les commandent (Sortie)') +
-        '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-ghost" onclick="V2.itemAddOpen(\'' + encodeURIComponent(data.ovKey) + '\')">' + ICO('plus', 16) + 'Ajouter un produit</button></div>' +
+        prodToolbar(data.ovKey) +
         catsHtml +
       '</div>' +
       pharmaCartbar();
@@ -1324,6 +1333,12 @@
     ovRemoveProduct(key, cip);
     keepScroll(function () { V2.render(); });
     V2.toast('Produit retiré');
+  };
+  V2.itemRestoreAll = function (enc) {
+    var key; try { key = decodeURIComponent(enc); } catch (e) { key = enc; }
+    ovRestoreAll(key);
+    keepScroll(function () { V2.render(); });
+    V2.toast('Produits masqués réaffichés');
   };
   var prodPick = { q: '', key: '', set: null };
   V2.itemAddOpen = function (enc) {
@@ -1550,7 +1565,7 @@
         hero +
         membersCard +
         (nb ? sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies de la liste qui les commandent (Sortie)') : '') +
-        (nb ? '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-ghost" onclick="V2.itemAddOpen(\'' + encodeURIComponent(data.ovKey) + '\')">' + ICO('plus', 16) + 'Ajouter un produit</button></div>' : '') +
+        (nb ? prodToolbar(data.ovKey) : '') +
         catsHtml +
       '</div>' +
       pharmaCartbar();
