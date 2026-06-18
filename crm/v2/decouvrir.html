@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0050E6" />
+<title>Découvrir Intégral Pharma — votre grossiste-répartiteur partenaire</title>
+<meta name="description" content="Intégral Pharma : catalogue complet, prix négociés et offres labo, accompagnement chiffré. Découvrez nos meilleures ventes et comment ouvrir un compte." />
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#0050E6;--blue-d:#0034A0;--ink:#10131C;--ink2:#2A2F3C;--muted:#737A8C;--muted2:#9AA1B2;
+  --card:#fff;--card2:#F7F9FC;--line:rgba(16,19,28,.08);--halo:#E9F0FF;--mint:#1E9E6A;--amber:#C7791A;--froid:#00B5D8;--cat:#6D4FC4;
+  --r:20px;--font:'Satoshi','Inter',system-ui,sans-serif;--mono:'Geist Mono',ui-monospace,monospace;
+  --sh:0 2px 4px rgba(16,19,28,.04),0 10px 24px rgba(16,19,28,.07)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);color:var(--ink);background:#EEF2F8;-webkit-font-smoothing:antialiased;line-height:1.5}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:900px;margin:0 auto;padding:0 18px 60px}
+.hero{position:relative;text-align:center;color:#fff;background:linear-gradient(160deg,#0050E6,#0034A0);padding:48px 24px 40px;overflow:hidden}
+.hlogo{width:66px;height:66px;border-radius:18px;margin:0 auto 18px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.25) inset}
+.hero h1{font-size:34px;font-weight:900;letter-spacing:-.03em}
+.hero p{font-size:16px;opacity:.93;max-width:600px;margin:12px auto 0}
+.kpis{display:flex;justify-content:center;gap:34px;margin-top:28px;flex-wrap:wrap}
+.kpi b{font-family:var(--mono);font-size:26px;font-weight:700;display:block}
+.kpi span{font-size:12px;opacity:.85;font-weight:600}
+.sec{margin-top:36px}
+.sec-h{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:0 2px 14px;display:flex;align-items:center;gap:10px}
+.sec-h::after{content:"";flex:1;height:1px;background:var(--line)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:680px){.grid{grid-template-columns:1fr}.hero h1{font-size:27px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:22px 24px}
+.card .ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:13px;font-size:20px}
+.card h3{font-size:16px;font-weight:800;margin-bottom:6px;letter-spacing:-.01em}
+.card p{font-size:13.5px;color:var(--ink2)}
+.step{display:flex;gap:15px;padding:14px 0;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:none}
+.step .n{width:30px;height:30px;border-radius:50%;background:var(--halo);color:var(--blue);font-weight:800;font-family:var(--mono);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step b{font-size:14.5px}.step .d{font-size:13px;color:var(--muted);margin-top:2px}
+.bs-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.bs-tab{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 15px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}
+.bs-tab.on{background:var(--blue);border-color:var(--blue);color:#fff}
+table{width:100%;border-collapse:collapse}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th.num,td.num{text-align:right}
+td{padding:9px 10px;border-bottom:1px solid var(--line);font-size:13px}
+td:last-child,th:last-child{text-align:right}
+.pname{font-weight:600}
+.cip{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.price{font-family:var(--mono);font-weight:700;color:var(--blue)}
+.offre{font-size:8.5px;font-weight:800;color:var(--amber);background:#FBEEDD;padding:1px 5px;border-radius:5px;text-transform:uppercase;margin-left:5px}
+.note{background:color-mix(in srgb,var(--blue) 5%,#fff);border:1px solid color-mix(in srgb,var(--blue) 18%,var(--line));border-radius:14px;padding:16px 18px;font-size:13.5px;color:var(--ink2)}
+.contact{display:flex;align-items:center;gap:16px;background:var(--ink);color:#fff;border-radius:var(--r);padding:22px 24px;flex-wrap:wrap}
+.contact .nm{font-size:17px;font-weight:800}.contact .r{font-size:13px;opacity:.85}
+.contact .c{margin-left:auto;text-align:right;font-family:var(--mono);font-size:14px;line-height:1.8}
+.contact .c a{color:#fff;text-decoration:none}
+.cta{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--blue);font-weight:800;border-radius:12px;padding:12px 20px;text-decoration:none;margin-top:22px;font-size:14px}
+.foot{text-align:center;color:var(--muted2);font-size:11.5px;margin-top:30px}
+@media print{.noprint{display:none}body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hlogo"><svg width="36" height="36" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+  <h1>Intégral Pharma</h1>
+  <p>Votre grossiste-répartiteur partenaire : un catalogue complet, des prix négociés et un accompagnement humain pour faire grandir votre officine.</p>
+  <div class="kpis">
+    <div class="kpi"><b>10 500</b><span>médicaments au catalogue</span></div>
+    <div class="kpi"><b>3 500+</b><span>références parapharmacie</span></div>
+    <div class="kpi"><b>+150</b><span>offres labo en permanence</span></div>
+  </div>
+  <a class="cta noprint" href="#contact">Ouvrir un compte →</a>
+</div>
+
+<div class="wrap">
+
+  <div class="sec">
+    <div class="sec-h">Ce que vous gagnez</div>
+    <div class="grid">
+      <div class="card"><div class="ic" style="background:var(--cat)">▦</div><h3>Un seul partenaire pour tout</h3><p>Médicaments (princeps, génériques, biosimilaires, chaîne du froid) et parapharmacie au même endroit. Moins de commandes éclatées, de meilleures conditions globales.</p></div>
+      <div class="card"><div class="ic" style="background:var(--mint)">€</div><h3>Plus de marge</h3><p>Sur les remboursables, la marge est réglementée : tout se joue sur le prix d'achat. Nos offres labo (Sanofi, UPSA…) le font baisser → votre marge monte, mécaniquement.</p></div>
+      <div class="card"><div class="ic" style="background:var(--froid)">◎</div><h3>Le bon prix, prouvé</h3><p>On compare votre prix d'achat aux prix publics concurrents et aux portails pro. Vous savez toujours si vous êtes au bon prix — la transparence, pas la promesse.</p></div>
+      <div class="card"><div class="ic" style="background:var(--amber)">☆</div><h3>Un accompagnement chiffré</h3><p>Votre commercial vient avec des données : les meilleures ventes du marché, vos opportunités de marge, et des propositions adaptées à votre officine.</p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">Comment ouvrir un compte</div>
+    <div class="card" style="padding:6px 24px">
+      <div class="step"><div class="n">1</div><div><b>Un échange</b><div class="d">On fait connaissance et on comprend votre officine, vos volumes et vos priorités.</div></div></div>
+      <div class="step"><div class="n">2</div><div><b>Votre proposition</b><div class="d">Conditions commerciales et sélection de produits adaptées, chiffrées et transparentes.</div></div></div>
+      <div class="step"><div class="n">3</div><div><b>Première commande, sans engagement</b><div class="d">Vous jugez sur pièce : prix, délais, service.</div></div></div>
+      <div class="step"><div class="n">4</div><div><b>Un suivi dans la durée</b><div class="d">Visites régulières, offres du moment et optimisation continue de votre marge.</div></div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">Nos meilleures ventes en France, par catégorie</div>
+    <div class="bs-tabs" id="bs-tabs"></div>
+    <div class="card" id="bs-table" style="padding:6px 8px"></div>
+    <div style="font-size:11.5px;color:var(--muted2);margin-top:8px;padding:0 4px">Prix net indicatif. « offre » = offre laboratoire en cours. Tarifs personnalisés selon votre activité.</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">Tarifs & conditions</div>
+    <div class="note">Vos conditions (remises, franco de port, délais de livraison) sont <b>personnalisées selon votre volume et votre activité</b>. Votre commercial vous établit une proposition claire et chiffrée dès le premier rendez-vous.</div>
+  </div>
+
+  <div class="sec" id="contact">
+    <div class="sec-h">Votre contact</div>
+    <div class="contact">
+      <div class="hlogo" style="width:46px;height:46px;border-radius:13px;margin:0;background:linear-gradient(150deg,#0050E6,#0034A0)"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+      <div><div class="nm" id="c-name">Intégral Pharma</div><div class="r">Votre interlocuteur dédié</div></div>
+      <div class="c" id="c-coord"></div>
+    </div>
+  </div>
+
+  <div class="foot">Intégral Pharma — document commercial. © 2026</div>
+</div>
+
+<script src="bestsellers-data.js"></script>
+<script>
+(function(){
+  // contact personnalisable via ?rep=Nom&mail=...&tel=...
+  var qs=new URLSearchParams(location.search);
+  var rep=qs.get('rep'), mail=qs.get('mail'), tel=qs.get('tel');
+  if(rep){ document.getElementById('c-name').textContent=rep; }
+  var coord=[];
+  if(mail) coord.push('<a href="mailto:'+mail+'">'+mail+'</a>');
+  if(tel) coord.push('<a href="tel:'+tel.replace(/\s/g,'')+'">'+tel+'</a>');
+  document.getElementById('c-coord').innerHTML = coord.join('<br>') || 'Contactez votre commercial Intégral Pharma';
+
+  // meilleures ventes par catégorie (onglets)
+  var data=(window.BESTSELLERS&&window.BESTSELLERS.cats)||[];
+  var tabs=document.getElementById('bs-tabs'), table=document.getElementById('bs-table');
+  function eur(p){ return p==null?'—':(p.toFixed(2).replace('.',',')+' €'); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function render(i){
+    Array.prototype.forEach.call(tabs.children,function(b,k){ b.className='bs-tab'+(k===i?' on':''); });
+    var c=data[i]; if(!c){ table.innerHTML=''; return; }
+    var rows=c.rows.map(function(r,k){
+      return '<tr><td class="num" style="color:var(--muted2);width:26px">'+(k+1)+'</td>'+
+        '<td><span class="pname">'+esc(r.d)+'</span></td>'+
+        '<td class="cip">'+esc(r.c)+'</td>'+
+        '<td class="num"><span class="price">'+eur(r.p)+'</span>'+(r.o?'<span class="offre">offre</span>':'')+'</td></tr>';
+    }).join('');
+    table.innerHTML='<table><thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  data.forEach(function(c,i){
+    var b=document.createElement('button'); b.className='bs-tab'; b.textContent=c.label;
+    b.onclick=function(){ render(i); }; tabs.appendChild(b);
+  });
+  render(0);
+})();
+</script>
+</body>
+</html>
