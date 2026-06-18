@@ -128,9 +128,17 @@
     if (window.BENCHMARK) { cb(); return; }
     if (V2.loadFiles) { V2.loadFiles(['bench']).then(cb); } else cb();
   }
+  // Proxy CORS pour le rendu PDF/canvas (les CDN n'envoient pas d'en-tête CORS).
+  // Les images locales (pimg/) et data: passent direct (même origine = PDF-safe).
+  function proxify(u) {
+    if (!u) return '';
+    if (!/^https?:\/\//.test(u)) return u;                 // relatif (pimg/) ou data:
+    if (u.indexOf('images.weserv.nl') !== -1) return u;
+    return 'https://images.weserv.nl/?url=ssl:' + u.replace(/^https?:\/\//, '') + '&w=240&output=jpg';
+  }
   function prodImg(p, forPdf) {
-    if (forPdf && window.OFFILOG_IMG && p.id && window.OFFILOG_IMG[p.id]) return window.OFFILOG_IMG[p.id];
-    return p.img || '';
+    if (forPdf && window.OFFILOG_IMG && p.id && window.OFFILOG_IMG[p.id]) return proxify(window.OFFILOG_IMG[p.id]);
+    return proxify(p.img || '');
   }
   function refPriceB(b) { var bp = V2.bestPrice(b); return (bp.ip != null) ? bp.ip : ((b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0); }
   function remiseB(b) { return V2.bestPrice(b).remise; }
@@ -500,8 +508,10 @@
     var cols = (anyImg ? 1 : 0) + 3 + (showPrice ? 1 : 0) + (showRemise ? 1 : 0);
     function prodTr(p, n) {
       var img = prodImg(p, forPdf);
+      var ph = '<div style="width:34px;height:34px;border-radius:6px;background:#F1F4F9;display:flex;align-items:center;justify-content:center">' +
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B6BFCE" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L4 21"/></svg></div>';
       var thumb = anyImg
-        ? '<td style="padding:6px 8px;width:40px;text-align:center">' + (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : '') + '</td>'
+        ? '<td style="padding:6px 8px;width:40px;text-align:center">' + (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : ph) + '</td>'
         : '';
       var ref = p.cip ? esc(p.cip) : (p.ean ? esc(p.ean) : '—');
       var rem = (p.remise > 0) ? String(p.remise).replace('.', ',') + ' %' : '—';
