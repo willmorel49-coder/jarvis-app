@@ -27,10 +27,21 @@
   var selPid = null;    // pharma à laquelle appartient la sélection courante
   // Filtre segment OPSO : 'all' | 'cliente' | 'prospect'
   var opsoFilter = 'all';
-  // Sous-onglet Opportunités : 'officines' | 'groupements'
+  // Sous-onglet Opportunités : 'officines' | 'groupements' | 'listes'
   var pharmaView = 'officines';
   var selGroup = null;        // groupement ouvert
-  var grpCollapsed = {};      // repli des catégories en vue groupement
+  var selList = null;         // liste personnalisée ouverte (id)
+  var grpCollapsed = {};      // repli des catégories en vue groupement / liste
+
+  // ── Listes personnalisées (Big pharma, PDA, NR…) — localStorage ──
+  var LISTS_KEY = 'v2_pharma_lists';
+  function listsGet() { try { return JSON.parse(localStorage.getItem(LISTS_KEY) || '[]'); } catch (e) { return []; } }
+  function listsSave(a) { try { localStorage.setItem(LISTS_KEY, JSON.stringify(a)); } catch (e) {} }
+  function listGet(id) { var a = listsGet(); for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; }
+  function listUpsert(l) { var a = listsGet(), f = false; for (var i = 0; i < a.length; i++) { if (a[i].id === l.id) { a[i] = l; f = true; } } if (!f) a.push(l); listsSave(a); }
+  function listIdsObj(l) { var o = {}; (l && l.ids || []).forEach(function (id) { o[String(id)] = 1; }); return o; }
+  // état temporaire du sélecteur d'ajout de pharmacies
+  var plPick = { q: '', grp: '', set: null };
 
   // ── Helpers OPSO ──────────────────────────────────────────────
   function isOpso() { return !!(window.V2_BRAND && window.V2_BRAND.opso); }
@@ -1062,6 +1073,7 @@
     return '<div class="ph-vtabs">' +
       '<button class="ph-vtab' + (active === 'officines' ? ' on' : '') + '" onclick="V2.pharmaView(\'officines\')">' + ICO('pharma', 15, 2) + 'Officines</button>' +
       '<button class="ph-vtab' + (active === 'groupements' ? ' on' : '') + '" onclick="V2.pharmaView(\'groupements\')">' + ICO('grid', 15, 2) + 'Groupements</button>' +
+      '<button class="ph-vtab' + (active === 'listes' ? ' on' : '') + '" onclick="V2.pharmaView(\'listes\')">' + ICO('fiche', 15, 2) + 'Mes listes</button>' +
     '</div>';
   }
   function groupName(p) { return (String(p.groupement || '').trim()) || '— Sans groupement'; }
@@ -1093,6 +1105,11 @@
     (V2.pharmacies || []).forEach(function (p) {
       if (groupName(p) === grpName) ids[String(p.id)] = 1;
     });
+    return productsForIds(ids);
+  }
+  // Agrégation des achats pour un ENSEMBLE de pharmacies (ids = {pharmacyId:1}).
+  // Mutualisé par les groupements ET les listes personnalisées.
+  function productsForIds(ids) {
     var bIdx = benchIndex(), byCip = {}, activeSet = {};
     (V2.sales || []).forEach(function (s) {
       if (!ids[String(s.pharmacyId)]) return;
@@ -1236,14 +1253,55 @@
   }
 
   // ── Handlers groupements ──
-  V2.pharmaView = function (v) { pharmaView = v; selGroup = null; V2.render(); };
+  V2.pharmaView = function (v) { pharmaView = v; selGroup = null; selList = null; V2.render(); };
   V2.pharmaGroup = function (enc) { try { selGroup = decodeURIComponent(enc); } catch (e) { selGroup = enc; } V2.render(); window.scrollTo(0, 0); };
   V2.pharmaGroupBack = function () { selGroup = null; V2.render(); };
-  V2.grpDownloadPdf = function (enc, mode) {
+
+  // ── Handlers LISTES personnalisées ──
+  V2.pharmaListOpen = function (id) { selList = id; V2.render(); window.scrollTo(0, 0); };
+  V2.pharmaListBack = function () { selList = null; V2.render(); };
+  V2.pharmaListNew = function () {
+    var name = (window.prompt('Nom de la liste (ex : Big pharma, Pharma PDA, Liste NR) :') || '').trim();
+    if (!name) return;
+    var l = { id: 'L' + (V2._lid = (V2._lid || 0) + 1) + '_' + (listsGet().length + 1) + '_' + name.replace(/\W+/g, '').slice(0, 6), name: name, ids: [] };
+    listUpsert(l); selList = l.id; V2.render(); window.scrollTo(0, 0);
+  };
+  V2.pharmaListRename = function (id) {
+    var l = listGet(id); if (!l) return;
+    var name = (window.prompt('Renommer la liste :', l.name) || '').trim(); if (!name) return;
+    l.name = name; listUpsert(l); V2.render();
+  };
+  V2.pharmaListDelete = function (id) {
+    var l = listGet(id); if (!l) return;
+    if (!window.confirm('Supprimer la liste « ' + l.name + ' » ? (les pharmacies ne sont pas supprimées, juste la liste)')) return;
+    listsSave(listsGet().filter(function (x) { return x.id !== id; }));
+    selList = null; V2.toast('Liste supprimée'); V2.render();
+  };
+  V2.pharmaListRemovePh = function (id, pid) {
+    var l = listGet(id); if (!l) return;
+    l.ids = (l.ids || []).filter(function (x) { return String(x) !== String(pid); });
+    listUpsert(l); V2.render();
+  };
+  // — Sélecteur d'ajout de pharmacies (modale) —
+  V2.pharmaListAddOpen = function (id) {
+    var l = listGet(id); if (!l) return;
+    plPick = { q: '', grp: '', set: {} };
+    renderPickModal(l);
+  };
+  V2.plPickSearch = function (q) { plPick.q = q || ''; refreshPickList(); };
+  V2.plPickGrp = function (g) { plPick.grp = g || ''; refreshPickList(); };
+  V2.plPickToggle = function (pid) { if (plPick.set[pid]) delete plPick.set[pid]; else plPick.set[pid] = 1; refreshPickList(); refreshPickCount(); };
+  V2.plPickClose = function () { var m = document.getElementById('pl-pick'); if (m && m.parentNode) m.parentNode.removeChild(m); };
+  V2.plPickConfirm = function (id) {
+    var l = listGet(id); if (!l) return;
+    var have = {}; (l.ids || []).forEach(function (x) { have[String(x)] = 1; });
+    Object.keys(plPick.set).forEach(function (pid) { if (!have[pid]) l.ids.push(pid); });
+    listUpsert(l); V2.plPickClose(); V2.toast('Pharmacies ajoutées'); V2.render();
+  };
+  // Générateur PDF générique « liste d'achats » (groupement OU liste perso)
+  function achatsPdf(title, data, useSel, mode) {
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
-    var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
-    var data = groupementProducts(grpName);
-    var useSel = !!(selCips && selCips.size && selPid === 'GRP:' + grpName);
+    var grpName = title;
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
     V2.toast('Génération du PDF…');
     function e2(v) { return (v ? v.toFixed(2).replace('.', ',') : '0,00') + ' €'; }
@@ -1274,12 +1332,12 @@
     var html = '<div style="padding:18px 22px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
       '<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #10131C;padding-bottom:12px;margin-bottom:15px">' +
         '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>' +
-        '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · Liste d\'achats groupement</div>' +
+        '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · Liste d\'achats</div>' +
           '<div style="font-size:19px;font-weight:800">' + esc(grpName) + '</div>' +
           '<div style="font-size:10px;color:#737A8C">' + data.panel + ' pharmacies du panel · ' + periodLabel() + ' · trié par nb de pharmacies qui commandent</div></div>' +
         '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + dateStr + '</div>' +
       '</div>' + (catHtml || '<div style="color:#9AA1B2;padding:30px;text-align:center">Aucun produit</div>') +
-      '<div style="margin-top:16px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · Document confidentiel · « Sortie » = nombre de pharmacies du groupement qui commandent le produit</div>' +
+      '<div style="margin-top:16px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · Document confidentiel · « Sortie » = nombre de pharmacies du panel qui commandent le produit</div>' +
     '</div>';
     window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
@@ -1303,6 +1361,14 @@
           .catch(function (e) { console.error(e); cleanup(); V2.toast('Erreur PDF', 'error'); });
       }
     });
+  }
+  V2.grpDownloadPdf = function (enc, mode) {
+    var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
+    achatsPdf(grpName, groupementProducts(grpName), !!(selCips && selCips.size && selPid === 'GRP:' + grpName), mode);
+  };
+  V2.listDownloadPdf = function (id, mode) {
+    var l = listGet(id); if (!l) return;
+    achatsPdf(l.name, productsForIds(listIdsObj(l)), !!(selCips && selCips.size && selPid === 'LST:' + id), mode);
   };
   V2.grpToggleCat = function (catKey) {
     var key = 'g_' + catKey, idx = -1;
@@ -1313,12 +1379,161 @@
     try { window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { window.scrollTo(0, y); }
   };
 
+  // ════════════════════════════════════════════
+  // LISTES PERSONNALISÉES (Big pharma, PDA, NR…)
+  // ════════════════════════════════════════════
+  function renderListesList(root) {
+    var lists = listsGet();
+    var cards = lists.map(function (l) {
+      var ids = listIdsObj(l), ca = 0, actSet = {};
+      (V2.sales || []).forEach(function (s) { if (ids[String(s.pharmacyId)]) { ca += s.mntNetHt || 0; actSet[String(s.pharmacyId)] = 1; } });
+      var nb = (l.ids || []).length, active = Object.keys(actSet).length;
+      return '<a class="v2-row" onclick="V2.pharmaListOpen(\'' + esc(l.id) + '\')">' +
+        '<span class="pl-badge">' + ICO('fiche', 16) + '</span>' +
+        '<div style="flex:1;min-width:0"><div class="v2-row-name">' + esc(l.name) + '</div>' +
+          '<div class="v2-row-meta mono">' + nb + ' pharmacie' + (nb > 1 ? 's' : '') + ' · ' + active + ' active' + (active > 1 ? 's' : '') + '</div></div>' +
+        '<span class="v2-row-val mono">' + V2.fmtEur(ca) + '</span>' +
+        '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
+      '</a>';
+    }).join('');
+    var empty = '<div class="v2-empty"><div class="v2-empty-t">Aucune liste pour l\'instant</div>' +
+      '<div class="v2-empty-d">Crée des listes sur-mesure (ex : Big pharma, Pharma PDA, Liste NR) en piochant des pharmacies dans n\'importe quel groupement. Tu retrouves leurs achats agrégés et l\'export PDF, exactement comme pour un groupement.</div></div>';
+    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+      '<div class="v2-wrap">' +
+        '<div class="v2-page-title">Opportunités pharmacie</div>' +
+        '<div class="v2-page-sub">Mes listes sur-mesure · des pharmacies que tu regroupes toi-même</div>' +
+        pharmaTabs('listes') +
+        '<div style="display:flex;justify-content:flex-end;margin:2px 0 12px"><button class="v2-btn v2-btn-primary" onclick="V2.pharmaListNew()">' + ICO('plus', 16) + ' Nouvelle liste</button></div>' +
+        (lists.length ? '<div class="v2-card">' + cards + '</div>' : empty) +
+      '</div>';
+  }
+
+  function renderListeDetail(root, id) {
+    var l = listGet(id);
+    if (!l) { selList = null; renderListesList(root); return; }
+    if (!window.BENCHMARK) {
+      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+        '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du catalogue…</div></div>';
+      V2.loadFiles(['bench', 'sagitta']).then(function () { V2.render(); });
+      return;
+    }
+    if (String(selPid) !== 'LST:' + id) { selPid = 'LST:' + id; selCips = new Set(); }
+    var ids = listIdsObj(l);
+    var data = productsForIds(ids);
+    var total = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
+    var nb = (l.ids || []).length;
+    var hero =
+      '<div class="v2-card" style="margin-bottom:22px;padding:0">' +
+        '<div style="display:flex;align-items:center;gap:14px;padding:20px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap">' +
+          '<span class="pl-badge pl-badge-big">' + ICO('fiche', 22) + '</span>' +
+          '<div style="flex:1;min-width:160px">' +
+            '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + esc(l.name) +
+              ' <button class="pl-rename" title="Renommer" onclick="V2.pharmaListRename(\'' + esc(id) + '\')">' + ICO('fiche', 13) + '</button></div>' +
+            '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + nb + ' pharmacie' + (nb > 1 ? 's' : '') + ' · ' + data.panel + ' active' + (data.panel > 1 ? 's' : '') + ' · ' + total + ' produits commandés · ' + periodLabel() + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+            '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaListAddOpen(\'' + esc(id) + '\')">' + ICO('plus', 16) + 'Ajouter des pharmacies</button>' +
+            (total ? '<button class="v2-btn v2-btn-primary" onclick="V2.listDownloadPdf(\'' + esc(id) + '\')">' + ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' : '') +
+            (total && V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.listDownloadPdf(\'' + esc(id) + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    var members = (V2.pharmacies || []).filter(function (p) { return ids[String(p.id)]; }).map(function (p) {
+      var ps = pharmaSalesAll(p.id);
+      return { p: p, ca: V2.sumCA(ps), active: ps.length > 0 };
+    }).sort(function (a, b) { return (b.active - a.active) || (b.ca - a.ca); });
+    var memRows = members.map(function (m) {
+      return '<div class="v2-row pl-mem" onclick="V2.go(\'pharma\',\'' + esc(String(m.p.id)) + '\')">' +
+        '<span class="v2-row-dot" style="background:' + esc(m.p.color || 'var(--c-cat)') + '"></span>' +
+        '<span class="v2-row-name">' + esc(m.p.name) + (m.p.ville ? ' <span style="color:var(--muted);font-weight:500">· ' + esc(m.p.ville) + '</span>' : '') +
+          (m.p.groupement ? ' <span class="pl-mem-grp">' + esc(groupName(m.p)) + '</span>' : '') + '</span>' +
+        (m.active ? '<span class="v2-row-val mono">' + V2.fmtEur(m.ca) + '</span>' : '<span class="v2-row-meta">non cliente</span>') +
+        '<button class="pl-rm" title="Retirer de la liste" onclick="event.stopPropagation();V2.pharmaListRemovePh(\'' + esc(id) + '\',\'' + esc(String(m.p.id)) + '\')">' + ICO('close', 15, 2) + '</button>' +
+      '</div>';
+    }).join('');
+    var membersCard =
+      '<div class="v2-card" style="margin-bottom:22px">' +
+        '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pharma', 17) + 'Pharmacies de la liste</div>' +
+          '<span class="v2-card-link" onclick="V2.pharmaListAddOpen(\'' + esc(id) + '\')">+ Ajouter</span></div>' +
+        (memRows || '<div class="v2-empty"><div class="v2-empty-d">Liste vide. Clique « Ajouter des pharmacies » pour piocher des officines (filtre par groupement disponible).</div></div>') +
+      '</div>';
+    var catsHtml = data.cats.length
+      ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel); }).join('')
+      : (nb ? '<div class="v2-empty"><div class="v2-empty-d">Aucun achat identifié pour ces pharmacies.</div></div>' : '');
+    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+      '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap">' +
+          '<button class="v2-back" onclick="V2.pharmaListBack()">' + ICO('back', 16) + 'Mes listes</button>' +
+          '<button class="v2-btn v2-btn-ghost pl-del" onclick="V2.pharmaListDelete(\'' + esc(id) + '\')">' + ICO('close', 15, 2) + 'Supprimer la liste</button>' +
+        '</div>' +
+        hero +
+        membersCard +
+        (data.cats.length ? sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies de la liste qui les commandent (Sortie)') : '') +
+        catsHtml +
+      '</div>' +
+      pharmaCartbar();
+    refreshCartbar();
+  }
+
+  // ── Sélecteur d'ajout de pharmacies (modale) ──
+  function renderPickModal(l) {
+    var ex = document.getElementById('pl-pick'); if (ex) ex.parentNode.removeChild(ex);
+    var grps = {}; (V2.pharmacies || []).forEach(function (p) { var g = groupName(p); grps[g] = 1; });
+    var grpOpts = '<option value="">Tous les groupements</option>' +
+      Object.keys(grps).sort().map(function (g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join('');
+    var m = document.createElement('div'); m.id = 'pl-pick'; m.className = 'pl-pick-ov';
+    m.innerHTML =
+      '<div class="pl-pick-card" onclick="event.stopPropagation()">' +
+        '<div class="pl-pick-top"><div class="pl-pick-t">Ajouter à « ' + esc(l.name) + ' »</div>' +
+          '<button class="prepa-x" onclick="V2.plPickClose()" title="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
+        '<div class="pl-pick-filters">' +
+          '<input class="pl-pick-search" placeholder="Rechercher (nom, ville, CP)…" oninput="V2.plPickSearch(this.value)">' +
+          '<select class="pl-pick-grp" onchange="V2.plPickGrp(this.value)">' + grpOpts + '</select>' +
+        '</div>' +
+        '<div class="pl-pick-list" id="pl-pick-list"></div>' +
+        '<div class="pl-pick-foot"><span id="pl-pick-count" class="mono">0 sélectionnée</span>' +
+          '<button class="v2-btn v2-btn-primary" onclick="V2.plPickConfirm(\'' + esc(l.id) + '\')">Ajouter à la liste</button></div>' +
+      '</div>';
+    m.addEventListener('click', function (e) { if (e.target === m) V2.plPickClose(); });
+    document.body.appendChild(m);
+    refreshPickList(); refreshPickCount();
+  }
+  function refreshPickList() {
+    var box = document.getElementById('pl-pick-list'); if (!box) return;
+    var l = selList ? listGet(selList) : null;
+    var have = {}; (l && l.ids || []).forEach(function (x) { have[String(x)] = 1; });
+    var ql = (plPick.q || '').toLowerCase().trim();
+    var rows = (V2.pharmacies || []).filter(function (p) {
+      if (plPick.grp && groupName(p) !== plPick.grp) return false;
+      if (ql && ((p.name || '') + ' ' + (p.ville || '') + ' ' + (p.cp || '')).toLowerCase().indexOf(ql) < 0) return false;
+      return true;
+    }).slice(0, 500);
+    box.innerHTML = rows.map(function (p) {
+      var pid = String(p.id), inList = !!have[pid], sel = !!plPick.set[pid];
+      return '<div class="pl-pick-row' + (inList ? ' in' : '') + '"' + (inList ? '' : ' onclick="V2.plPickToggle(\'' + esc(pid) + '\')"') + '>' +
+        '<span class="pl-pick-chk' + (sel || inList ? ' on' : '') + '">' + ((sel || inList) ? ICO('check', 13, 2.4) : '') + '</span>' +
+        '<div style="flex:1;min-width:0"><div class="pl-pick-n">' + esc(p.name) + '</div>' +
+          '<div class="pl-pick-a">' + esc(p.ville || '') + (p.groupement ? ' · ' + esc(groupName(p)) : '') + '</div></div>' +
+        (inList ? '<span class="pl-pick-tag">déjà</span>' : '') +
+      '</div>';
+    }).join('') || '<div style="padding:22px;text-align:center;color:var(--muted)">Aucune pharmacie.</div>';
+  }
+  function refreshPickCount() {
+    var n = Object.keys(plPick.set || {}).length, c = document.getElementById('pl-pick-count');
+    if (c) c.textContent = n + ' sélectionnée' + (n > 1 ? 's' : '');
+  }
+
   V2.pages.pharma = {
     render: function (root, param) {
       if (param) { renderDetail(root, param); return; }
       if (pharmaView === 'groupements') {
         if (selGroup) renderGroupementDetail(root, selGroup);
         else renderGroupementsList(root);
+        return;
+      }
+      if (pharmaView === 'listes') {
+        if (selList) renderListeDetail(root, selList);
+        else renderListesList(root);
         return;
       }
       renderList(root);
@@ -1388,6 +1603,34 @@
       '.ph-vtab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 3px 9px rgba(0,80,230,.26)}',
       '.ph-froid{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid);background:color-mix(in srgb,var(--c-froid) 13%,#fff)}',
       '.ph-offre{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 14%,#fff);text-transform:uppercase}',
+      // ── Listes personnalisées ──
+      '.pl-badge{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--pil-opp),#16804f);box-shadow:0 3px 9px rgba(30,158,106,.28),0 1px 0 rgba(255,255,255,.25) inset}',
+      '.pl-badge-big{width:48px;height:48px;border-radius:13px}',
+      '.pl-rename{border:none;background:transparent;color:var(--muted-2);cursor:pointer;padding:2px;vertical-align:middle;border-radius:6px;transition:.15s var(--ease)}',
+      '.pl-rename:hover{color:var(--ip-blue);background:var(--halo)}',
+      '.pl-mem{cursor:pointer}',
+      '.pl-mem-grp{font-size:10.5px;font-weight:700;color:var(--muted-2);background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}',
+      '.pl-rm{flex-shrink:0;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:8px;transition:.15s var(--ease)}',
+      '.pl-rm:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 35%,var(--line));background:color-mix(in srgb,var(--c-rose) 8%,#fff)}',
+      '.pl-del{color:var(--c-rose) !important}',
+      // modale d\'ajout de pharmacies
+      '.pl-pick-ov{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;padding:4vh 16px;background:rgba(16,19,28,.45);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}',
+      '.pl-pick-card{width:min(560px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--card);border-radius:20px;box-shadow:var(--sh-pop);overflow:hidden}',
+      '.pl-pick-top{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}',
+      '.pl-pick-t{flex:1;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
+      '.pl-pick-filters{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}',
+      '.pl-pick-search{flex:1;min-width:160px;border:1px solid var(--line);border-radius:var(--r-control);padding:9px 12px;font-family:var(--font);font-size:13.5px;background:var(--surf-sunken)}',
+      '.pl-pick-grp{border:1px solid var(--line);border-radius:var(--r-control);padding:9px 12px;font-family:var(--font);font-size:13px;background:var(--card);max-width:200px}',
+      '.pl-pick-list{flex:1;overflow-y:auto;padding:6px 0}',
+      '.pl-pick-row{display:flex;align-items:center;gap:11px;padding:9px 16px;cursor:pointer;transition:background .12s}',
+      '.pl-pick-row:hover{background:var(--card-2)}',
+      '.pl-pick-row.in{opacity:.6;cursor:default}',
+      '.pl-pick-chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-strong);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;transition:.12s var(--ease)}',
+      '.pl-pick-chk.on{background:var(--ip-blue);border-color:var(--ip-blue)}',
+      '.pl-pick-n{font-size:13.5px;font-weight:700;letter-spacing:-.01em}',
+      '.pl-pick-a{font-size:11.5px;color:var(--muted);margin-top:1px}',
+      '.pl-pick-tag{font-size:10px;font-weight:700;color:var(--muted-2);background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:2px 8px;flex-shrink:0}',
+      '.pl-pick-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-top:1px solid var(--line);background:var(--card-2)}',
       // logo groupement (image réelle ou badge initiales)
       '.grp-logo{width:38px;height:38px;border-radius:10px;flex-shrink:0;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:var(--sh-1)}',
       '.grp-logo img{max-width:100%;max-height:100%;object-fit:contain}',
