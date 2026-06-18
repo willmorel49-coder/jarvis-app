@@ -231,7 +231,26 @@
   V2.pages.presentation = {
     render: function (root) {
       injectPresStyles();
-      var nbRef = window.BENCHMARK ? V2.fmtNum(window.BENCHMARK.length) : '10 500';
+      // charge le catalogue pour des chiffres réels (sinon valeurs de repli)
+      if (!window.BENCHMARK && V2.loadFiles) {
+        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+          '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>';
+        V2.loadFiles(['bench']).then(function () { V2.render(); });
+        return;
+      }
+      var B = window.BENCHMARK || [];
+      var nf = function (n) { return V2.fmtNum(n); };
+      var nbRefN = B.length || 10500;
+      var nbRemb = 0, nbOffre = 0, nbFroid = 0, nbGx = 0, nbBio = 0;
+      B.forEach(function (b) {
+        if (b.has_ameli) nbRemb++;
+        if (b.offre_ip > 0 && (!(b.prix_ip > 0) || b.offre_ip < b.prix_ip)) nbOffre++;
+        if (b.is_froid) nbFroid++;
+        if (b.artnature === 'generique' || b.artnature === 'generique_partenaire') nbGx++;
+        else if (b.artnature === 'biosimilaire') nbBio++;
+      });
+      var nbPara = (window.OFFILOG && window.OFFILOG.length) || (window.OFFILOG_BEST && window.OFFILOG_BEST.length) || 3520;
+      var nbRef = nf(nbRefN);
       var logoSvg = '<svg width="34" height="34" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
       var u = V2.user || {};
       var card = function (color, ico, t, d) {
@@ -248,18 +267,27 @@
             '<div class="pres-h1">Intégral Pharma</div>' +
             '<div class="pres-tag">Votre grossiste-répartiteur partenaire : un large catalogue, des prix négociés et un accompagnement humain pour faire grandir votre officine.</div>' +
             '<div class="pres-kpis">' +
-              '<div><div class="pres-kpi-v">' + nbRef + '</div><div class="pres-kpi-l">références au catalogue</div></div>' +
-              '<div><div class="pres-kpi-v">100 %</div><div class="pres-kpi-l">remboursables + parapharma</div></div>' +
-              '<div><div class="pres-kpi-v">1 contact</div><div class="pres-kpi-l">dédié à votre officine</div></div>' +
+              '<div><div class="pres-kpi-v">' + nbRef + '</div><div class="pres-kpi-l">médicaments au catalogue</div></div>' +
+              '<div><div class="pres-kpi-v">' + nf(nbPara) + '</div><div class="pres-kpi-l">références parapharmacie</div></div>' +
+              '<div><div class="pres-kpi-v">' + nf(nbOffre) + '</div><div class="pres-kpi-l">offres labo en ce moment</div></div>' +
             '</div>' +
           '</div>' +
 
           '<div class="pres-sec-t">Pourquoi travailler avec nous</div>' +
           '<div class="pres-grid">' +
-            card('var(--c-cat)', 'cat', 'Un catalogue complet', 'Tout le médicament (princeps, génériques, biosimilaires, chaîne du froid) et la parapharmacie, au même endroit — vous commandez tout chez un seul partenaire.') +
-            card('var(--c-opp)', 'spark', 'Des prix négociés & offres labo', 'Nous négocions pour vous les meilleures conditions et faisons remonter les offres laboratoires (Sanofi, UPSA…) : chaque euro gratté à l\'achat reste dans votre marge.') +
-            card('var(--c-pilo)', 'pilo', 'Un accompagnement chiffré', 'Votre commercial vient avec vos chiffres : ce que commandent les officines comparables, vos opportunités de marge, et une commande déjà préparée. Pas de blabla, des données.') +
-            card('var(--c-froid)', 'pharma', 'La proximité & la réactivité', 'Un interlocuteur unique qui connaît votre officine, des livraisons fiables et un service à taille humaine. On décroche, on suit, on s\'engage.') +
+            card('var(--c-cat)', 'cat', 'Un catalogue complet', nf(nbRefN) + ' médicaments + ' + nf(nbPara) + ' références de parapharmacie : princeps, génériques, biosimilaires et chaîne du froid — du petit prix au produit le plus cher. Un seul partenaire pour tout commander.') +
+            card('var(--c-opp)', 'spark', 'Des prix négociés & offres labo', 'En ce moment, ' + nf(nbOffre) + ' produits bénéficient d\'une offre laboratoire (Sanofi, UPSA…). Sur un remboursable à marge réglementée, chaque centime gratté à l\'achat tombe à 100 % dans votre poche.') +
+            card('var(--c-froid)', 'spark', 'Le comparateur de prix intégré', 'On compare en direct votre prix d\'achat aux prix publics concurrents (E.Leclerc, Drakkars, Cap3000) et aux portails pro. Vous savez toujours si vous êtes au bon prix — la transparence, pas la promesse.') +
+            card('var(--c-pilo)', 'pilo', 'Un accompagnement chiffré', 'Votre commercial vient avec VOS chiffres : ce que commandent les officines comparables, vos opportunités de marge par catégorie, et une commande déjà préparée. Des données, pas du blabla.') +
+          '</div>' +
+
+          '<div class="pres-sec-t">Ce que ça change pour votre marge</div>' +
+          '<div class="pres-card">' +
+            '<div class="pres-card-d" style="font-size:14px">' +
+              '<b>Remboursables :</b> la marge est réglementée (barème MDL), donc tout se joue sur le <b>prix d\'achat</b>. Nos offres labo le font baisser → votre marge monte, mécaniquement.<br><br>' +
+              '<b>Non remboursables & parapharma :</b> marge libre. On vous positionne au <b>bon prix face à la concurrence</b> (comparateur intégré) pour défendre votre marge sans perdre la vente.<br><br>' +
+              '<b>Gamme large = un seul fournisseur :</b> moins de commandes éclatées, moins de frais, des conditions globales meilleures.' +
+            '</div>' +
           '</div>' +
 
           '<div class="pres-sec-t">Comment on démarre ensemble</div>' +
