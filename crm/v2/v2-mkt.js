@@ -43,7 +43,7 @@
   var items = null;          // null = pas encore chargé
   var backend = 'local';     // 'supabase' | 'local'
   var editing = null;
-  var pickSrc = 'gros';      // source du sélecteur : 'gros' (médicaments) | 'offilog'
+  var pickSrc = 'mix';       // source : 'mix' (sélection grossiste) | 'gros' (catalogue méd.) | 'offilog'
 
   // ════════════════════════════════════════════
   // STORE (Supabase partagé + repli local)
@@ -165,6 +165,24 @@
       '<div class="mkt-grid">' + cards + '</div>' +
     '</div>';
   }
+  // ── Sélection grossiste (mix L'Intégral + ITP + meilleures ventes) ──
+  // Classé par NB DE PHARMACIES qui commandent (sortie réseau) — données bakées.
+  var _mixFlat = null;
+  function mixFlat() {
+    if (_mixFlat) return _mixFlat;
+    var M = window.MKT_MIX || {}, out = [], id = 0;
+    function push(group, cat, r) {
+      out.push({ id: id++, group: group, cat: cat, name: r.d, cip: r.cip || '', price: r.p || 0,
+        remise: r.remise || 0, sortie: r.sortie || 0, total: r.total || (M.total || 0),
+        ppht: r.ppht || 0, marge: r.marge || 0 });
+    }
+    (M.bestsellers || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('best', c.cat, r); }); });
+    (M.integral || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('integral', c.cat, r); }); });
+    (M.itp || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('itp', c.cat, r); }); });
+    out.sort(function (a, b) { return b.sortie - a.sortie; });   // nb pharmacies qui commandent
+    _mixFlat = out; return out;
+  }
+
   function renderList(root) {
     var supports = (items || []).filter(function (x) { return x.type !== 'selection'; });
     var selections = (items || []).filter(function (x) { return x.type === 'selection'; });
@@ -273,8 +291,9 @@
           '<input id="mkt-pick-input" placeholder="Rechercher (désignation, CIP, EAN)…" autocomplete="off">' +
           '<button class="mkt-prow-x" onclick="V2.mkt.closePicker()">' + ICO('close', 16, 2) + '</button></div>' +
         '<div class="mkt-pick-src">' +
-          '<button class="mkt-srcbtn' + (pickSrc === 'gros' ? ' on' : '') + '" onclick="V2.mkt.setPickSrc(\'gros\')">Catalogue grossiste</button>' +
-          '<button class="mkt-srcbtn' + (pickSrc === 'offilog' ? ' on' : '') + '" onclick="V2.mkt.setPickSrc(\'offilog\')">Parapharma Offilog</button>' +
+          '<button class="mkt-srcbtn' + (pickSrc === 'mix' ? ' on' : '') + '" data-src="mix" onclick="V2.mkt.setPickSrc(\'mix\')">Sélection grossiste</button>' +
+          '<button class="mkt-srcbtn' + (pickSrc === 'gros' ? ' on' : '') + '" data-src="gros" onclick="V2.mkt.setPickSrc(\'gros\')">Catalogue grossiste</button>' +
+          '<button class="mkt-srcbtn' + (pickSrc === 'offilog' ? ' on' : '') + '" data-src="offilog" onclick="V2.mkt.setPickSrc(\'offilog\')">Parapharma Offilog</button>' +
         '</div>' +
         '<div id="mkt-pick-list" class="mkt-pick-list"></div>' +
       '</div></div>';
@@ -284,7 +303,23 @@
     var inp = document.getElementById('mkt-pick-input'); var q = (inp ? inp.value : '').trim().toLowerCase();
     var have = {}; editing.products.forEach(function (p) { have[String(p.key)] = 1; });
     var html = '', i, b, added;
-    if (pickSrc === 'offilog') {
+    if (pickSrc === 'mix') {
+      var L = mixFlat(), r3 = [];
+      for (i = 0; i < L.length && r3.length < 60; i++) {
+        b = L[i];
+        if (!q || (b.name || '').toLowerCase().indexOf(q) >= 0 || String(b.cip).indexOf(q) >= 0) r3.push(b);
+      }
+      html = r3.map(function (b) {
+        added = have['m' + b.id];
+        var tag = b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral');
+        var sub = b.sortie > 0 ? ('commandé par ' + b.sortie + '/' + b.total + ' pharmacies') : esc(b.cat);
+        if (b.group === 'itp' && b.marge > 0) sub += ' · marge ' + V2.fmtEur(b.marge) + '/bte';
+        return '<div class="mkt-pick-item' + (added ? ' added' : '') + '" onclick="V2.mkt.addProduct(\'mix\',\'' + b.id + '\')">' +
+          '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>' +
+          '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + ' · ' + sub + '</span></span>' +
+          '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span></div>';
+      }).join('');
+    } else if (pickSrc === 'offilog') {
       var O = window.OFFILOG_BEST || [], res = [];
       for (i = 0; i < O.length && res.length < 40; i++) {
         b = O[i];
@@ -320,7 +355,10 @@
     var inp = document.getElementById('mkt-pick-input');
     if (inp) { inp.addEventListener('input', renderPickList); inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePicker(); }); }
   }
-  function ensureSrc(cb) { if (pickSrc === 'offilog') ensureBest(cb); else ensureBench(cb); }
+  function ensureSrc(cb) {
+    if (pickSrc === 'mix') { cb(); return; }   // window.MKT_MIX chargé via index.html
+    if (pickSrc === 'offilog') ensureBest(cb); else ensureBench(cb);
+  }
   function openPicker() {
     ensureSrc(function () {
       var bd = document.getElementById('mkt-picker'); if (!bd) return;
@@ -479,12 +517,17 @@
     openPicker: openPicker, closePicker: closePicker,
     setPickSrc: function (s) {
       pickSrc = s;
-      Array.prototype.forEach.call(document.querySelectorAll('.mkt-srcbtn'), function (b, i) { b.classList.toggle('on', (i === 0) === (s === 'gros')); });
+      Array.prototype.forEach.call(document.querySelectorAll('.mkt-srcbtn'), function (b) { b.classList.toggle('on', b.getAttribute('data-src') === s); });
       ensureSrc(function () { renderPickList(); var inp = document.getElementById('mkt-pick-input'); if (inp) inp.focus(); });
     },
     addProduct: function (src, key) {
       var p = null;
-      if (src === 'offilog') {
+      if (src === 'mix') {
+        var L = mixFlat(), gm = null;
+        for (var m = 0; m < L.length; m++) if (String(L[m].id) === String(key)) { gm = L[m]; break; }
+        if (!gm) return;
+        p = { src: 'mix', key: 'm' + gm.id, id: '', name: gm.name, brand: (gm.group === 'itp' ? 'ITP' : (gm.group === 'integral' ? 'L\'Intégral' : '')), ean: '', cip: gm.cip, price: gm.price, remise: gm.remise, img: '', froid: false };
+      } else if (src === 'offilog') {
         var O = window.OFFILOG_BEST || [], b = null;
         for (var i = 0; i < O.length; i++) if (String(O[i].id) === String(key)) { b = O[i]; break; }
         if (!b) return;
