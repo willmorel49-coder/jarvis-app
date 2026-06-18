@@ -261,7 +261,10 @@
         '<div class="v2-page-title">Catalogues grossiste</div>' +
         '<div class="v2-page-sub">L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent</div>' +
         '<div class="mkt-pick-src" style="margin:16px 0 14px">' + tabs + '</div>' +
-        (cur.pdf ? '<div style="margin-bottom:16px"><a class="v2-btn v2-btn-primary" href="' + cur.pdf + '" download>' + ICO('download', 16) + 'Télécharger le catalogue ' + esc(cur.label) + ' (PDF)</a></div>' : '') +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
+          '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.catPdf(\'' + cur.k + '\')">' + ICO('download', 16) + 'Générer le doc marketing (PDF)</button>' +
+          (cur.pdf ? '<a class="v2-btn v2-btn-ghost" href="' + cur.pdf + '" download>' + ICO('download', 16) + 'Catalogue ' + esc(cur.label) + ' d\'origine</a>' : '') +
+        '</div>' +
         (cats || '<div class="v2-empty"><div class="v2-empty-d">Catalogue indisponible.</div></div>') +
       '</div>';
   }
@@ -596,6 +599,59 @@
       if (btn) btn.classList.add('on');
     },
     catSrc: function (s) { catSrc = s; V2.render(); },
+    catPdf: function (srcKey) {
+      if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+      var M = window.MKT_MIX || {};
+      var map = { nr: ['nr', 'Catalogue NR — non remboursable & parapharmacie'], rota: ['rotations', 'Top rotations France'],
+        integral: ['integral', 'Catalogue L\'Intégral'], itp: ['itp', 'Pansements & dispositifs ITP'], best: ['bestsellers', 'Top ventes par famille'] };
+      var conf = map[srcKey] || map.nr;
+      var data = M[conf[0]] || [];
+      if (!data.length) { V2.toast('Catalogue vide', 'warn'); return; }
+      var isItp = (srcKey === 'itp');
+      var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+      var e2 = function (v) { return (v ? (+v).toFixed(2).replace('.', ',') : '—') + (v ? ' €' : ''); };
+      V2.toast('Génération du PDF…');
+      var secs = data.map(function (c) {
+        var trs = (c.rows || []).map(function (r, i) {
+          var metric = isItp
+            ? '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;color:#1E9E6A;font-weight:700">' + (r.marge ? e2(r.marge) : '—') + '</td>'
+            : '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:800">' + (r.vol > 0 ? r.vol.toLocaleString('fr') : '—') + '</td>';
+          return '<tr style="border-bottom:1px solid #EEF1F6">' +
+            '<td style="padding:3px 6px;color:#9AA1B2;font-size:9px;text-align:right">' + (i + 1) + '</td>' +
+            '<td style="padding:3px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.d || '').slice(0, 52)) + (r.o ? ' <span style="color:#C7791A;font-size:7px;font-weight:800">OFFRE</span>' : '') + '</td>' +
+            '<td style="padding:3px 6px;font-family:monospace;font-size:8.5px;color:#737A8C">' + esc(r.cip || '') + '</td>' +
+            '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + e2(r.p) + '</td>' + metric +
+            '</tr>';
+        }).join('');
+        return '<div style="margin-bottom:13px;page-break-inside:avoid">' +
+          '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(90deg,#0050E622,transparent);border-left:4px solid #0050E6;border-radius:5px;margin-bottom:4px">' +
+            '<div style="font-size:12px;font-weight:800;color:#10131C">' + esc(c.cat) + '</div>' +
+            '<div style="font-size:9px;color:#737A8C">' + (c.rows || []).length + ' réf.</div></div>' +
+          '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#F4F6FB">' +
+            ['#', 'Produit', 'CIP', 'Prix net', (isItp ? 'Marge/bte' : 'Volume vendu')].map(function (h, k) {
+              return '<th style="padding:4px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#737A8C;text-align:' + (k < 3 ? 'left' : 'right') + '">' + h + '</th>';
+            }).join('') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
+      }).join('');
+      var html = '<div style="padding:18px 22px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
+        '<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #10131C;padding-bottom:12px;margin-bottom:14px">' +
+          '<div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>' +
+          '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · sélection grossiste</div>' +
+            '<div style="font-size:18px;font-weight:800">' + esc(conf[1]) + '</div>' +
+            '<div style="font-size:10px;color:#737A8C">Classé par rayon · trié par volume vendu (5 mois) · prix net indicatif</div></div>' +
+          '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + dateStr + '</div>' +
+        '</div>' + secs +
+        '<div style="margin-top:14px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · document commercial · « Volume vendu » = quantités écoulées sur 5 mois</div>' +
+      '</div>';
+      window.ensureHtml2Pdf().then(function () { return (document.fonts && document.fonts.ready) ? document.fonts.ready : null; }).then(function () {
+        var wrap = document.createElement('div'); wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
+        wrap.innerHTML = html; document.body.appendChild(wrap);
+        var fn = (conf[1].replace(/[^A-Za-z0-9]/g, '_')).slice(0, 40) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+        window.html2pdf().from(wrap.firstChild).set({ filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } })
+          .save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Doc marketing téléchargé'); })
+          .catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
+      });
+    },
     openPicker: openPicker, closePicker: closePicker,
     setPickSrc: function (s) {
       pickSrc = s;

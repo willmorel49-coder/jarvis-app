@@ -224,27 +224,47 @@ def load_sales_index():
     return {'total': total, 'cip': byCip, 'full': full, 'root': root, 'bd': bd, 'br': br, 'desig': byDesig}
 
 
-# ── Catalogue NR : nos sorties NON remboursables (para / DM / méd. NR) ──
-NR_LAB = {'PARA': 'Parapharmacie', 'DM': 'Dispositifs médicaux', 'DM_20': 'Dispositifs médicaux',
-          'MED010': 'Médicaments NR', 'MED021': 'Médicaments NR'}
+# ── Catalogue NR : nos sorties NON remboursables, classées par RAYON pharmacien ──
+RAYONS = [
+    ('Ophtalmologie', ['COLLY', 'OPHT', 'OCUL', 'LARM', 'THEALOSE', 'VISMED', 'HYLO', 'OPTIVE', 'SKIACOL', 'NEOVIS', 'BLEPHA', 'SYSTANE', 'DACUDOSE', 'VITABACT', 'GTT OCUL', 'SOFTACORT', 'REFRESH', 'MONOPROST', 'CATIONORM', 'DESOMEDINE', 'ARTELAC', 'ELIXYA', 'CY DOS', 'CY FL']),
+    ('Antalgiques & douleur', ['DOLIPRANE', 'DAFALGAN', 'EFFERALGAN', 'IBUPRO', 'IBUFETUM', 'SPIFEN', 'NUROFEN', 'LAMALINE', 'IZALGI', 'ANTADYS', 'FLECTOR', 'PARACETAMOL', 'ASPIRINE', 'ASPEGIC', 'NIFLU', 'KETUM', 'VOLTAREN', 'CODOLIPRANE']),
+    ('Diabète & autosurveillance', ['BANDELETTE', 'ACCU-CHEK', 'ACCU CHEK', 'FREESTYLE', 'LANCETTE', 'AUTOPIQUEUR', 'ELECTRODE', 'GLYCEMIE', 'GLUCO', 'DEXTRO', 'AUTOPIQ', 'ONETOUCH', 'MOUNJARO', 'OZEMPIC', 'TRULICITY', 'VICTOZA', 'METFORMINE', 'STAGID']),
+    ('ORL · Nez & gorge', ['NASAL', 'RHINO', 'NARIN', 'GORGE', 'SINUS', 'MOUCHE', 'DERINOX', 'STERIMAR', 'HUMER', 'PHYSIOMER', 'PASTILLE', 'NAS ', 'NAS.', 'NAS,', 'TOUX']),
+    ('Pansements & cicatrisation', ['PANS', 'COMPRESS', 'MEPILEX', 'ALLEVYN', 'AQUACEL', 'JELONET', 'CONVAFOAM', 'HYDROCELL', 'HYDROFIBRE', 'ALGOSTERIL', 'URGO', 'MEPORE', 'TULLE', 'SPARADRAP', 'BIATAIN', 'BANDE ']),
+    ('Dermatologie', ['CREME', 'POMM', 'BIAFINE', 'CICATRI', 'BRULURE', 'EMUL CUTA', 'DERMI', 'EPIDUO', 'SOOLANTRA', 'KERATO', 'CR TB', 'CR FL']),
+    ('Circulation veineuse', ['VEIN', 'PHLEB', 'CONTENTION', 'VARICE', 'AETOXISCLEROL', 'VEINAMITOL']),
+    ('Digestif & transit', ['LAXAT', 'TRANSIT', 'NORMACOL', 'CONSTIP', 'GAVISCON', 'METEO', 'SPASFON', 'HEMORRO', 'DELIPROCT', 'SUPP', 'LAVEMENT', 'BEDELIX']),
+    ('Compléments & vitamines', ['VIT ', 'VITAM', 'MAGNES', 'MAGNE', 'FER ', 'ZINC', 'B12', 'OMEGA', 'OLIGO', 'BIOTINE', 'BEPANTHENE', 'PROBIO', 'TARDYFERON', 'NICOBION', 'PRINCI-B', 'BOP CPR']),
+    ('Hygiène · Bébé · Sérum phy', ['SERUM PHY', 'PHYSIO', 'VERSOL', 'LAVAGE', 'BEBE', 'NETTOY', 'HYGIEN', 'SAVON', 'CHLOR NA', 'SOL IRR', 'PHYLARM']),
+    ('Sevrage tabac', ['NICOR', 'NICOPATCH', 'NICOTINE', 'NIQUITIN', 'TABAC']),
+    ('Sommeil · Stress', ['SOMMEIL', 'MELATON', 'EUPHYT', 'ANXEM', 'SERESTA', 'STRESAM', 'CARDIOCALM', 'LIBRAX']),
+    ('Contraception & gynéco', ['OEDIEN', 'QLAIRA', 'SLINDA', 'ZOELY', 'EVRA', 'TRIAFEMI', 'OVUL', 'ABUFEN', 'CANDAZOL']),
+    ('Vétérinaire', ['VETO', ' CHIEN', ' CHAT', 'ANIMAL']),
+]
+def classify_rayon(d):
+    up = ' ' + unicodedata.normalize('NFKD', str(d or '')).encode('ascii', 'ignore').decode().upper() + ' '
+    for lab, kws in RAYONS:
+        for kw in kws:
+            if kw in up:
+                return lab
+    return 'Autres produits NR'
 def nr_catalogue(SI):
     groups = {}
     for d, rec in SI['desig'].items():
         afm = rec[2]
         if not afm or afm == 'REMBSS':
             continue                      # remboursable → exclu du catalogue NR
-        lab = NR_LAB.get(afm, 'Autres NR')
         vol = int(round(rec[0]))
         if vol <= 0:
             continue
+        lab = classify_rayon(d)
         groups.setdefault(lab, []).append({'d': d, 'cip': rec[4], 'p': (rec[3] or None),
                                            'vol': vol, 'sortie': len(rec[1]), 'total': SI['total']})
-    order = ['Parapharmacie', 'Médicaments NR', 'Dispositifs médicaux', 'Autres NR']
+    # rayons triés par volume total (le plus vendu en tête = le plus pertinent)
     cats = []
-    for lab in order + [k for k in groups if k not in order]:
-        if lab in groups:
-            rows = sorted(groups[lab], key=lambda r: r['vol'], reverse=True)[:120]
-            cats.append({'cat': lab, 'rows': rows})
+    for lab in sorted(groups, key=lambda k: -sum(r['vol'] for r in groups[k])):
+        rows = sorted(groups[lab], key=lambda r: r['vol'], reverse=True)[:120]
+        cats.append({'cat': lab, 'rows': rows})
     return cats
 
 
