@@ -17,13 +17,19 @@
 body{font-family:var(--font);color:var(--ink);background:#EEF2F8;-webkit-font-smoothing:antialiased;line-height:1.5}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .wrap{max-width:900px;margin:0 auto;padding:0 18px 60px}
-.hero{position:relative;text-align:center;color:#fff;background:linear-gradient(160deg,#0050E6,#0034A0);padding:48px 24px 40px;overflow:hidden}
-.hlogo{width:66px;height:66px;border-radius:18px;margin:0 auto 18px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.25) inset}
+.hero{position:relative;text-align:center;color:#fff;background:radial-gradient(circle at 82% -12%,rgba(255,255,255,.16),transparent 60%),linear-gradient(160deg,#0050E6,#0034A0);padding:48px 24px 40px;overflow:hidden}
+.hlogo{width:72px;height:50px;border-radius:18px;margin:0 auto 18px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 6px 18px rgba(11,31,77,.18);padding:0 14px}
+.hlogo svg{width:100%;height:auto}
+.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:800;opacity:.82;margin-bottom:10px}
 .hero h1{font-size:34px;font-weight:900;letter-spacing:-.03em}
-.hero p{font-size:16px;opacity:.93;max-width:600px;margin:12px auto 0}
-.kpis{display:flex;justify-content:center;gap:34px;margin-top:28px;flex-wrap:wrap}
+.hero .lead{font-size:18px;font-weight:700;max-width:560px;margin:12px auto 0;letter-spacing:-.01em}
+.hero p{font-size:14px;opacity:.82;max-width:560px;margin:9px auto 0}
+.kpis{display:flex;justify-content:center;gap:0;margin-top:28px;flex-wrap:wrap}
+.kpi{padding:0 28px}
+.kpi+.kpi{border-left:1px solid rgba(255,255,255,.18)}
 .kpi b{font-family:var(--mono);font-size:26px;font-weight:700;display:block}
-.kpi span{font-size:12px;opacity:.85;font-weight:600}
+.kpi.mid b{font-size:30px}
+.kpi span{font-size:12px;opacity:.85;font-weight:600;display:block;margin-top:2px}
 .sec{margin-top:36px}
 .sec-h{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:0 2px 14px;display:flex;align-items:center;gap:10px}
 .sec-h::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -54,22 +60,87 @@ td:last-child,th:last-child{text-align:right}
 .contact .nm{font-size:17px;font-weight:800}.contact .r{font-size:13px;opacity:.85}
 .contact .c{margin-left:auto;text-align:right;font-family:var(--mono);font-size:14px;line-height:1.8}
 .contact .c a{color:#fff;text-decoration:none}
-.cta{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--blue);font-weight:800;border-radius:12px;padding:12px 20px;text-decoration:none;margin-top:22px;font-size:14px}
+.cta{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--blue);font-weight:800;border-radius:12px;padding:12px 20px;text-decoration:none;margin-top:22px;font-size:14px;transition:transform .18s ease,box-shadow .18s ease}
+.cta:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(0,0,0,.16)}
 .foot{text-align:center;color:var(--muted2);font-size:11.5px;margin-top:30px}
-@media print{.noprint{display:none}body{background:#fff}}
+
+/* Bande de réassurance no-risk */
+.reassure{display:flex;justify-content:center;align-items:center;gap:10px 28px;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--line);padding:16px 18px}
+.reassure .ri{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--ink2)}
+.reassure .ri svg{flex-shrink:0}
+.reassure .chk{width:20px;height:20px;border-radius:50%;background:color-mix(in srgb,var(--mint) 14%,#fff);display:inline-flex;align-items:center;justify-content:center}
+
+/* Chiffres héros (section conditions) */
+.proof-hero{display:flex;gap:14px;flex-wrap:wrap;margin:4px 0 16px}
+.proof-hero .ph{flex:1;min-width:200px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.proof-hero .ph b{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--blue);display:block;letter-spacing:-.02em}
+.proof-hero .ph span{font-size:13px;color:var(--ink2);font-weight:600;display:block;margin-top:4px}
+.bareme-lab{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;color:var(--muted);margin:2px 2px 8px}
+.cta-line{display:inline-flex;align-items:center;gap:6px;color:var(--blue);font-weight:800;font-size:13.5px;text-decoration:none;margin-top:14px}
+.cta-line:hover{text-decoration:underline}
+
+/* Boutons (étape e-mail, contact) */
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:11px;padding:10px 16px;text-decoration:none;font-weight:800;font-size:13.5px;transition:transform .18s ease,box-shadow .18s ease;border:1px solid transparent}
+.btn:hover{transform:translateY(-1px)}
+.btn-p{background:var(--blue);color:#fff;box-shadow:0 6px 16px rgba(0,80,230,.22)}
+.btn-s{background:#fff;color:var(--blue);border-color:color-mix(in srgb,var(--blue) 26%,var(--line))}
+.btn-ghost{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.28)}
+.step-cta{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap}
+.step .ok{width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--mint) 14%,#fff);color:var(--mint);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.contact .clogo{background:#fff;box-shadow:0 6px 16px rgba(11,31,77,.18)}
+.c-actions{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+
+@media(max-width:480px){
+  .cip{display:none}
+  td{font-size:14px;padding:11px 8px}
+  th{font-size:10.5px}
+  .offre{display:block;margin:3px 0 0;width:max-content}
+  .price{font-size:15px}
+  .bs-tab{padding:10px 16px;gap:8px}
+  .bs-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .card p,.step b,.step .d,.note{font-size:14px;line-height:1.55}
+  .card h3{font-size:16px}
+  .cta{width:100%;justify-content:center}
+  .kpi{padding:0 18px}
+  .contact{flex-direction:column;align-items:flex-start}
+  .contact .c-actions{margin-left:0;justify-content:flex-start;width:100%}
+  .contact .btn{flex:1;justify-content:center}
+  .proof-hero .ph b{font-size:26px}
+}
+
+@media(prefers-reduced-motion:no-preference){
+  @keyframes ipRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .hero .hlogo,.hero .eyebrow,.hero h1,.hero .lead,.hero p:not(.lead),.kpis,.hero>.cta{opacity:0;animation:ipRise .5s cubic-bezier(.16,.84,.44,1) forwards}
+  .hero .hlogo{animation-delay:0ms}
+  .hero .eyebrow{animation-delay:80ms}
+  .hero h1{animation-delay:160ms}
+  .hero .lead{animation-delay:240ms}
+  .hero p:not(.lead){animation-delay:300ms}
+  .kpis{animation-delay:340ms}
+  .hero>.cta{animation-delay:440ms}
+}
+@media print{.noprint{display:none}body{background:#fff}.hero{background:#0050E6 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 </head>
 <body>
 <div class="hero">
-  <div class="hlogo"><svg width="36" height="36" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+  <div class="hlogo"><svg viewBox="0 0 48 28" role="img" aria-label="Intégral Pharma"><rect x="2" y="1.5" width="9" height="5.5" rx="2.75" fill="#0B1F4D"/><rect x="2" y="8.5" width="9" height="18" rx="4.5" fill="#0B1F4D"/><rect x="14" y="6.5" width="11" height="12" rx="5.5" fill="#C9A961"/><rect x="17" y="9.5" width="5" height="6" rx="2.5" fill="#FFFFFF"/><rect x="14" y="6.5" width="4" height="21" rx="2" fill="#C9A961"/></svg></div>
+  <div class="eyebrow">Grossiste-répartiteur · +20 ans</div>
   <h1>Intégral Pharma</h1>
-  <p>Un groupe de grossistes français à vos côtés. Acteur de la santé depuis plus de 20 ans, partenaire de proximité pour améliorer durablement la rentabilité de votre officine.</p>
+  <p class="lead">Plus de marge sur chaque boîte. Sans franco, sans engagement.</p>
+  <p>Un groupe de grossistes français à vos côtés, acteur de la santé depuis plus de 20 ans. Un partenaire de proximité pour améliorer durablement la rentabilité de votre officine.</p>
   <div class="kpis">
-    <div class="kpi"><b>+20 ans</b><span>acteur de la santé</span></div>
-    <div class="kpi"><b>6 – 9 %</b><span>de remise constatée</span></div>
-    <div class="kpi"><b>+14 000</b><span>réfs parapharmacie</span></div>
+    <div class="kpi"><b>0 €</b><span>ni franco ni engagement</span></div>
+    <div class="kpi mid"><b>6 – 9 %</b><span>de marge, nets sur facture</span></div>
+    <div class="kpi"><b>+14 000</b><span>réfs parapharma, sans adhésion</span></div>
   </div>
-  <a class="cta noprint" href="#contact">Ouvrir un compte →</a>
+  <a class="cta noprint" href="ouverture-compte-integral-pharma-2026.pdf" download>Télécharger le formulaire 2026 →</a>
+</div>
+
+<div class="reassure noprint">
+  <span class="ri"><span class="chk"><svg width="12" height="12" viewBox="0 0 14 14"><path d="M2.5 7.4l2.8 2.8L11.5 4" fill="none" stroke="#1E9E6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Ni franco</span>
+  <span class="ri"><span class="chk"><svg width="12" height="12" viewBox="0 0 14 14"><path d="M2.5 7.4l2.8 2.8L11.5 4" fill="none" stroke="#1E9E6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Ni engagement de CA</span>
+  <span class="ri"><span class="chk"><svg width="12" height="12" viewBox="0 0 14 14"><path d="M2.5 7.4l2.8 2.8L11.5 4" fill="none" stroke="#1E9E6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Livraison 72 h</span>
 </div>
 
 <div class="wrap">
@@ -78,48 +149,51 @@ td:last-child,th:last-child{text-align:right}
     <div class="sec-h">Ce que vous gagnez</div>
     <div class="grid">
       <div class="card"><div class="ic" style="background:var(--mint)">€</div><h3>Plus de marge, sur tout le catalogue</h3><p>Meilleure marge sur l'intégralité du catalogue, des <b>prix nets sur facture</b> et une optimisation <b>dès la première boîte</b>. La transparence des conditions, pas les paliers cachés.</p></div>
-      <div class="card"><div class="ic" style="background:var(--blue)">✓</div><h3>Ni franco, ni engagement</h3><p>Pas de minimum de commande imposé, <b>aucun engagement de chiffre d'affaires</b>. Vous commandez ce que vous voulez, quand vous voulez. Livraison en 72 h.</p></div>
       <div class="card"><div class="ic" style="background:var(--cat)">▦</div><h3>Une centrale parapharmacie unique</h3><p>Via Offilog : la plus grande collection de parapharmacie de France, <b>+14 000 produits</b>, <b>+430 laboratoires</b>, sans coût d'adhésion et au meilleur prix à l'unité <b>sans paliers</b>.</p></div>
       <div class="card"><div class="ic" style="background:var(--amber)">☆</div><h3>Un partenaire de proximité</h3><p>Une équipe commerciale de terrain, un service client réactif et transparent. Notre ambition : devenir un partenaire <b>utile et durable</b> pour votre officine.</p></div>
     </div>
   </div>
 
   <div class="sec">
-    <div class="sec-h">Comment ouvrir un compte</div>
-    <div class="card" style="padding:6px 24px">
-      <div class="step"><div class="n">1</div><div><b>Un échange</b><div class="d">On fait connaissance et on comprend votre officine, vos volumes et vos priorités.</div></div></div>
-      <div class="step"><div class="n">2</div><div><b>Votre proposition</b><div class="d">Conditions commerciales et sélection de produits adaptées, chiffrées et transparentes.</div></div></div>
-      <div class="step"><div class="n">3</div><div><b>Première commande, sans engagement</b><div class="d">Vous jugez sur pièce : prix, délais, service.</div></div></div>
-      <div class="step"><div class="n">4</div><div><b>Un suivi dans la durée</b><div class="d">Visites régulières, offres du moment et optimisation continue de votre marge.</div></div></div>
+    <div class="sec-h">Vos conditions — la preuve chiffrée</div>
+    <div class="note">
+      <b style="font-size:15px;display:block;margin-bottom:12px">Concrètement, ce que vous gagnez</b>
+      <div class="proof-hero">
+        <div class="ph"><b>6 – 9 %</b><span>de marge, nets sur facture, sur tout le catalogue</span></div>
+        <div class="ph"><b>jusqu'à 27 %</b><span>sur les génériques, dès la 1ère boîte</span></div>
+      </div>
+      <div class="bareme-lab">Barème par tranche (prix PFHT)</div>
+      <div style="display:flex;gap:10px;margin:0 0 4px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700">&lt; 4,33 €</div><div style="font-family:var(--mono);font-weight:700;color:var(--blue);margin-top:3px">4,5 % à 30 %</div></div>
+        <div style="flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700">4,33 € – 468 €</div><div style="font-family:var(--mono);font-weight:700;color:var(--blue);margin-top:3px">3,89 %</div></div>
+        <div style="flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700">&gt; 468 €</div><div style="font-family:var(--mono);font-weight:700;color:var(--blue);margin-top:3px">19,50 € fixe</div></div>
+      </div>
+      <a class="cta-line noprint" href="#ouvrir">Ces conditions vous intéressent ? Ouvrir un compte →</a>
     </div>
   </div>
 
   <div class="sec">
     <div class="sec-h">Nos meilleures ventes en France, par catégorie</div>
     <div class="bs-tabs" id="bs-tabs"></div>
-    <div class="card" id="bs-table" style="padding:6px 8px"></div>
-    <div style="font-size:11.5px;color:var(--muted2);margin-top:8px;padding:0 4px">Prix net indicatif. « offre » = offre laboratoire en cours. Tarifs personnalisés selon votre activité.</div>
+    <div class="card" id="bs-table" style="padding:6px 8px;overflow-x:auto"></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px;padding:0 4px">Prix net indicatif. « offre » = offre laboratoire en cours. Tarifs personnalisés selon votre activité.</div>
   </div>
 
-  <div class="sec">
-    <div class="sec-h">Vos conditions</div>
-    <div class="note">
-      <b>Remise constatée de 6 % à 9 %</b> sur le prix PFHT, en prix nets sur facture. Barème par tranche :
-      <div style="display:flex;gap:10px;margin:12px 0;flex-wrap:wrap">
-        <div style="flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700">&lt; 4,33 €</div><div style="font-family:var(--mono);font-weight:700;color:var(--blue);margin-top:3px">4,5 % à 30 %</div></div>
-        <div style="flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700">4,33 € – 468 €</div><div style="font-family:var(--mono);font-weight:700;color:var(--blue);margin-top:3px">3,89 %</div></div>
-        <div style="flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700">&gt; 468 €</div><div style="font-family:var(--mono);font-weight:700;color:var(--blue);margin-top:3px">19,50 € fixe</div></div>
-      </div>
-      <b>Génériques :</b> remises remontées dès la 1ère boîte, jusqu'à <b>27 %</b>. <b>Livraison en 72 h</b>, ni franco ni engagement de chiffre d'affaires.
+  <div class="sec" id="ouvrir">
+    <div class="sec-h">Ouvrir un compte en 3 étapes</div>
+    <div class="card" style="padding:6px 24px">
+      <div class="step"><div class="n">1</div><div style="flex:1"><b>Téléchargez et remplissez le formulaire 2026</b><div class="d">Le formulaire d'ouverture de compte Intégral Pharma, à compléter en quelques minutes.</div><div class="step-cta"><a class="btn btn-p noprint" href="ouverture-compte-integral-pharma-2026.pdf" download><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Télécharger le formulaire 2026</a></div></div></div>
+      <div class="step"><div class="n">2</div><div style="flex:1"><b>Renvoyez-le par e-mail avec votre RIB et votre Kbis</b><div class="d">Joignez vos pièces justificatives (formulaire rempli + RIB + Kbis) et envoyez le tout par e-mail.</div><div class="step-cta"><a class="btn btn-s noprint" id="step-mail" href="#contact">Préparer l'e-mail d'ouverture</a></div></div></div>
+      <div class="step"><div class="n ok"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2.5 7.4l2.8 2.8L11.5 4" fill="none" stroke="#1E9E6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1"><b>Vous recevez votre code PharmaML</b><div class="d">Votre compte est ouvert : vous pouvez commander.</div></div></div>
     </div>
   </div>
 
   <div class="sec" id="contact">
     <div class="sec-h">Votre contact</div>
     <div class="contact">
-      <div class="hlogo" style="width:46px;height:46px;border-radius:13px;margin:0;background:linear-gradient(150deg,#0050E6,#0034A0)"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>
-      <div><div class="nm" id="c-name">Intégral Pharma</div><div class="r">Votre délégué pharmaceutique référent</div></div>
-      <div class="c" id="c-coord"></div>
+      <div class="hlogo clogo" style="width:54px;height:38px;border-radius:12px;margin:0;padding:0 9px"><svg viewBox="0 0 48 28" role="img" aria-label="Intégral Pharma"><rect x="2" y="1.5" width="9" height="5.5" rx="2.75" fill="#0B1F4D"/><rect x="2" y="8.5" width="9" height="18" rx="4.5" fill="#0B1F4D"/><rect x="14" y="6.5" width="11" height="12" rx="5.5" fill="#C9A961"/><rect x="17" y="9.5" width="5" height="6" rx="2.5" fill="#FFFFFF"/><rect x="14" y="6.5" width="4" height="21" rx="2" fill="#C9A961"/></svg></div>
+      <div><div class="nm" id="c-name">Intégral Pharma</div><div class="r">Votre délégué pharmaceutique référent</div><div class="c" id="c-coord" style="margin:6px 0 0;text-align:left;font-size:13px"></div></div>
+      <div class="c-actions noprint" id="c-actions"></div>
     </div>
     <div style="text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px">
       <b>Ouest Pharma Services</b> · Saint-Étienne-de-Montluc (44) — Service client : <b>02 49 62 50 55</b> · serviceclient@ouestpharmaservices.fr
@@ -137,9 +211,23 @@ td:last-child,th:last-child{text-align:right}
   var rep=qs.get('rep'), mail=qs.get('mail'), tel=qs.get('tel');
   if(rep){ document.getElementById('c-name').textContent=rep; }
   var coord=[];
-  if(mail) coord.push('<a href="mailto:'+mail+'">'+mail+'</a>');
-  if(tel) coord.push('<a href="tel:'+tel.replace(/\s/g,'')+'">'+tel+'</a>');
-  document.getElementById('c-coord').innerHTML = coord.join('<br>') || 'Contactez votre commercial Intégral Pharma';
+  if(mail) coord.push('<a href="mailto:'+mail+'" style="color:#fff;text-decoration:none">'+mail+'</a>');
+  if(tel) coord.push('<a href="tel:'+tel.replace(/\s/g,'')+'" style="color:#fff;text-decoration:none">'+tel+'</a>');
+  document.getElementById('c-coord').innerHTML = coord.join(' · ') || 'Contactez votre commercial Intégral Pharma';
+
+  // mailto pré-rempli (ouverture de compte) + tel — pas de nouveau handler, simple génération de chaîne
+  var dest = mail || 'serviceclient@ouestpharmaservices.fr';
+  var subject = encodeURIComponent('Ouverture de compte Intégral Pharma');
+  var body = encodeURIComponent('Bonjour,\n\nJe souhaite ouvrir un compte Intégral Pharma.\nVous trouverez ci-joint mon formulaire d’ouverture rempli, mon RIB et mon Kbis.\n\nCordialement,');
+  var mailtoHref = 'mailto:'+dest+'?subject='+subject+'&body='+body;
+  var stepMail = document.getElementById('step-mail');
+  if(stepMail){ stepMail.setAttribute('href', mailtoHref); }
+  var actions = document.getElementById('c-actions');
+  if(actions){
+    var html = '<a class="btn btn-p" href="'+mailtoHref+'">Demander l’ouverture de mon compte</a>';
+    if(tel){ html += '<a class="btn btn-ghost" href="tel:'+tel.replace(/\s/g,'')+'">Être rappelé</a>'; }
+    actions.innerHTML = html;
+  }
 
   // meilleures ventes par catégorie (onglets)
   var data=(window.BESTSELLERS&&window.BESTSELLERS.cats)||[];
