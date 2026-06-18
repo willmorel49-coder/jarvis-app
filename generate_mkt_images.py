@@ -89,7 +89,41 @@ with ThreadPoolExecutor(max_workers=6) as ex:
 print('2. Cap3000/Drakkars : +%d photos' % added2)
 
 
-# ── 3) mesoigner (médicaments & para OTC), nom + vérif marque & dosage ──
+# ── 3) pharma-gdd : recherche par CIP -> REDIRECTION vers la fiche EXACTE ──
+# La recherche par CIP redirige vers la fiche produit quand le CIP matche (= exact).
+# Sinon elle reste sur /search (résultats) => on rejette. pharma-gdd bloque le
+# scraping en rafale : faible concurrence + délai.
+import time
+
+def pharmagdd(cip):
+    time.sleep(0.5)
+    try:
+        req = urllib.request.Request('https://www.pharma-gdd.com/fr/search?q=' + cip, headers=UA)
+        r = urllib.request.urlopen(req, timeout=16)
+        final = r.geturl(); html = r.read().decode('utf-8', 'ignore')
+    except Exception:
+        return None
+    if '/search' in final or final.rstrip('/').endswith('/fr'):   # pas de fiche exacte
+        return None
+    m = re.search(r'og:image"?\s+content="([^"]+)"', html)
+    if not m:
+        return None
+    img = m.group(1)
+    if 'cdn.pharma-gdd.com' not in img or 'brand_show' in img:
+        return None
+    return img
+
+stage_gdd = [e for e in cat_eans if e not in ean_img]
+print('3. pharma-gdd : %d CIP à chercher (redirection = fiche exacte)…' % len(stage_gdd))
+addedg = 0
+with ThreadPoolExecutor(max_workers=2) as ex:
+    for e, img in ex.map(lambda e: (e, pharmagdd(e)), stage_gdd):
+        if img:
+            ean_img[e] = img; addedg += 1
+print('   +%d photos' % addedg)
+
+
+# ── 4) mesoigner (médicaments & para OTC), nom + vérif marque & dosage ──
 def toks(s):
     s = unicodedata.normalize('NFKD', str(s or '')).encode('ascii', 'ignore').decode().lower().replace('-', ' ')
     return re.findall(r'[a-z]+|\d+', s)
@@ -163,7 +197,7 @@ def meso(desig):
     return None
 
 stage3 = [e for e in cat_eans if e not in ean_img]
-print('3. mesoigner : %d produits à chercher par nom…' % len(stage3))
+print('4. mesoigner : %d produits à chercher par nom…' % len(stage3))
 added3 = 0
 with ThreadPoolExecutor(max_workers=6) as ex:
     for e, img in ex.map(lambda e: (e, meso(cat[e])), stage3):
