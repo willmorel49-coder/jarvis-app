@@ -19,6 +19,37 @@ def root_name(s):
     return re.sub(r'[^A-Z0-9]', '', m.group(1)) if m else ''
 
 
+def brand_name(s):
+    # 1er mot-marque (ex "AQUACEL FOAM Pansement..." -> "AQUACEL")
+    s = unicodedata.normalize('NFKD', str(s or '')).encode('ascii', 'ignore').decode().upper().strip()
+    m = re.match(r'([A-Z]{3,})', s)
+    return m.group(1) if m else ''
+
+
+def dim_sig(s):
+    # signature de taille "8X8", "20X24" (ignore cm/virgules) pour matcher les pansements
+    s = unicodedata.normalize('NFKD', str(s or '')).encode('ascii', 'ignore').decode().upper()
+    m = re.search(r'(\d+)(?:[.,]\d+)?\s*(?:CM)?\s*X\s*(\d+)(?:[.,]\d+)?', s)
+    return (m.group(1) + 'X' + m.group(2)) if m else ''
+
+
+# index marque / marque+dimension -> metric (pour pansements ITP au nom très différent)
+def bench_brand_index(byCip):
+    txt = open('crm/benchmark-data.js', encoding='utf-8', errors='ignore').read()
+    bd, br = {}, {}
+    for o in re.findall(r'\{[^{}]*?\}', txt):
+        mc = re.search(r'cip13:"([^"]*)"', o); md = re.search(r'designation:"([^"]*)"', o)
+        if not mc or not md:
+            continue
+        v = byCip.get(mc.group(1), 0)
+        if v <= 0:
+            continue
+        b = brand_name(md.group(1)); dm = dim_sig(md.group(1))
+        if b and dm: bd[(b, dm)] = max(bd.get((b, dm), 0), v)
+        if b: br[b] = max(br.get(b, 0), v)
+    return bd, br
+
+
 # index nom/racine -> nb de pharmacies qui commandent (via benchmark : nom -> cip13 -> sortie)
 def bench_name_index(sortie):
     txt = open('crm/benchmark-data.js', encoding='utf-8', errors='ignore').read()
@@ -244,12 +275,19 @@ for c in integral:
     c['rows'].sort(key=lambda r: (r['vol'], r['sortie']), reverse=True)   # tri par volume vendu
 
 itp = parse_itp()
+bdV, brV = bench_brand_index(vol)        # marque(+dim) -> volume
+bdS, brS = bench_brand_index(sortie)     # marque(+dim) -> nb pharmacies
+matched_t = 0
 for c in itp:
     for r in c['rows']:
-        r['sortie'] = attach_metric(r['d'], '', sortie, fullIdx, rootIdx)
-        r['vol'] = attach_metric(r['d'], '', vol, fullVol, rootVol)
+        b, dm = brand_name(r['d']), dim_sig(r['d'])
+        r['vol'] = bdV.get((b, dm), 0) or (brV.get(b, 0) if b else 0)
+        r['sortie'] = bdS.get((b, dm), 0) or (brS.get(b, 0) if b else 0)
         r['total'] = total
+        if r['vol']:
+            matched_t += 1
     c['rows'].sort(key=lambda r: (r['vol'], r['marge'] or 0), reverse=True)
+print('  [match marque] ITP : %d produits rattachés à un volume' % matched_t)
 
 print('  [match nom] L\'Intégral : %d produits rattachés à un volume' % matched_i)
 rotations = parse_rotations(sortie, vol, total, fullIdx, rootIdx)
