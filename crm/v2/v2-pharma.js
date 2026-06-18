@@ -1105,11 +1105,21 @@
     (V2.pharmacies || []).forEach(function (p) {
       if (groupName(p) === grpName) ids[String(p.id)] = 1;
     });
-    return productsForIds(ids);
+    return productsForIds(ids, 'GRP:' + grpName);
   }
+  // ── Overrides produits par liste/groupement (retirés / ajoutés à la main) ──
+  var OV_KEY = 'v2_list_overrides';
+  function ovAll() { try { return JSON.parse(localStorage.getItem(OV_KEY) || '{}'); } catch (e) { return {}; } }
+  function ovSave(o) { try { localStorage.setItem(OV_KEY, JSON.stringify(o)); } catch (e) {} }
+  function overridesGet(key) { var o = ovAll()[key] || {}; return { removed: o.removed || {}, added: o.added || {} }; }
+  function ovWrite(key, ov) { var a = ovAll(); a[key] = { removed: ov.removed, added: ov.added }; ovSave(a); }
+  function ovRemoveProduct(key, cip) { var ov = overridesGet(key); delete ov.added[cip]; ov.removed[cip] = 1; ovWrite(key, ov); }
+  function ovAddProduct(key, cip) { var ov = overridesGet(key); delete ov.removed[cip]; ov.added[cip] = 1; ovWrite(key, ov); }
+
   // Agrégation des achats pour un ENSEMBLE de pharmacies (ids = {pharmacyId:1}).
   // Mutualisé par les groupements ET les listes personnalisées.
-  function productsForIds(ids) {
+  // ovKey (optionnel) : applique les produits retirés/ajoutés à la main.
+  function productsForIds(ids, ovKey) {
     var bIdx = benchIndex(), byCip = {}, activeSet = {};
     (V2.sales || []).forEach(function (s) {
       if (!ids[String(s.pharmacyId)]) return;
@@ -1118,8 +1128,12 @@
       var e = byCip[cip] || (byCip[cip] = { ph: {}, qte: 0, ca: 0 });
       e.ph[String(s.pharmacyId)] = 1; e.qte += s.qte || 0; e.ca += s.mntNetHt || 0;
     });
+    var ov = ovKey ? overridesGet(ovKey) : { removed: {}, added: {} };
+    // produits ajoutés manuellement et non commandés par le panel : entrée vide (sortie 0)
+    Object.keys(ov.added).forEach(function (cip) { if (!byCip[cip]) byCip[cip] = { ph: {}, qte: 0, ca: 0, manual: true }; });
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     Object.keys(byCip).forEach(function (cip) {
+      if (ov.removed[cip]) return;                       // produit retiré à la main
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       var e = byCip[cip], ht = (b.prix_ht > 0) ? b.prix_ht : 0, ip0 = (b.prix_ip > 0) ? b.prix_ip : 0;
@@ -1129,11 +1143,12 @@
       var ip = hasOffer ? off : ip0;
       var rem = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
       buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: ht, prix_ip: ip, offre: hasOffer, remise: rem,
-                          froid: !!b.is_froid, sortie: Object.keys(e.ph).length, qte: e.qte });
+                          froid: !!b.is_froid, sortie: Object.keys(e.ph).length, qte: e.qte, manual: !!e.manual });
     });
     return {
       panel: Object.keys(activeSet).length,
       members: Object.keys(ids).length,
+      ovKey: ovKey || '',
       cats: CATS.map(function (c) {
         return { cat: c, rows: buckets[c.key].sort(function (a, b) { return b.sortie - a.sortie || b.qte - a.qte; }) };
       }).filter(function (o) { return o.rows.length; })
@@ -1159,34 +1174,36 @@
       '</div>';
   }
 
-  function renderGrpCatCard(o, idx, panel) {
+  function renderGrpCatCard(o, idx, panel, ovKey) {
     var c = o.cat, key = 'g_' + c.key;
+    var enc = ovKey ? encodeURIComponent(ovKey) : '';
     var collapsed = (key in grpCollapsed) ? grpCollapsed[key] : (idx !== 0);
     var head =
       '<div class="v2-cat-head" onclick="V2.grpToggleCat(\'' + c.key + '\')">' +
         '<span class="v2-cat-accent" style="background:' + c.color + '"></span>' +
         '<div class="v2-cat-titles"><div class="v2-cat-t">' + c.label +
           (c.sub ? '<span class="v2-cat-sub">' + c.sub + '</span>' : '') + '</div>' +
-          '<div class="v2-cat-meta mono">' + o.rows.length + ' produits commandés</div></div>' +
+          '<div class="v2-cat-meta mono">' + o.rows.length + ' produits</div></div>' +
         '<span class="v2-cat-chev' + (collapsed ? '' : ' open') + '">' + ICO('chev', 18) + '</span>' +
       '</div>';
     if (collapsed) return '<div class="v2-card v2-cat">' + head + '</div>';
-    var trs = o.rows.slice(0, 60).map(function (r, i) {
+    var trs = o.rows.slice(0, 80).map(function (r, i) {
       var on = !!(selCips && selCips.has(r.cip));
       return '<tr>' +
         '<td class="num" style="color:var(--muted-2);width:30px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
-        '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + '</td>' +
+        '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + (r.manual ? ' <span class="ph-manual">ajouté</span>' : '') + '</td>' +
         '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip) + '</td>' +
         '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
         '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
         '<td class="num" style="font-weight:800">' + r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + panel + '</span></td>' +
         '<td class="num">' + V2.fmtNum(r.qte) + '</td>' +
-        '<td style="width:46px;text-align:center"><button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
+        '<td style="width:46px;text-align:center"><button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Sélectionner pour le PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
+        (enc ? '<td style="width:38px;text-align:center"><button type="button" class="ph-rmprod" title="Retirer ce produit de la liste" onclick="V2.itemRemove(\'' + enc + '\',\'' + esc(r.cip) + '\')">' + ICO('close', 14, 2) + '</button></td>' : '') +
       '</tr>';
     }).join('');
     var body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
       '<thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">Remise</th>' +
-      '<th class="num">Sortie</th><th class="num">Volume</th><th></th></tr></thead><tbody>' + trs + '</tbody></table></div>';
+      '<th class="num">Sortie</th><th class="num">Volume</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
     return '<div class="v2-card v2-cat open">' + head + body + '</div>';
   }
 
@@ -1237,7 +1254,7 @@
         (memRows || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie de ce groupement dans tes données.</div></div>') +
       '</div>';
     var catsHtml = data.cats.length
-      ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel); }).join('')
+      ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel, data.ovKey); }).join('')
       : '<div class="v2-empty"><div class="v2-empty-d">Aucun achat identifié pour ce groupement.</div></div>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
@@ -1245,6 +1262,7 @@
         hero +
         membersCard +
         sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies qui les commandent (Sortie)') +
+        '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-ghost" onclick="V2.itemAddOpen(\'' + encodeURIComponent(data.ovKey) + '\')">' + ICO('plus', 16) + 'Ajouter un produit</button></div>' +
         catsHtml +
       '</div>' +
       pharmaCartbar();
@@ -1298,6 +1316,69 @@
     Object.keys(plPick.set).forEach(function (pid) { if (!have[pid]) l.ids.push(pid); });
     listUpsert(l); V2.plPickClose(); V2.toast('Pharmacies ajoutées'); V2.render();
   };
+
+  // ── Curation des produits d'une liste d'achats (retirer / ajouter) ──
+  function keepScroll(fn) { var y = window.scrollY || 0; fn(); try { window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { window.scrollTo(0, y); } }
+  V2.itemRemove = function (enc, cip) {
+    var key; try { key = decodeURIComponent(enc); } catch (e) { key = enc; }
+    ovRemoveProduct(key, cip);
+    keepScroll(function () { V2.render(); });
+    V2.toast('Produit retiré');
+  };
+  var prodPick = { q: '', key: '', set: null };
+  V2.itemAddOpen = function (enc) {
+    var key; try { key = decodeURIComponent(enc); } catch (e) { key = enc; }
+    if (!window.BENCHMARK) { V2.toast('Catalogue en cours de chargement…'); V2.loadFiles(['bench']).then(function () {}); return; }
+    prodPick = { q: '', key: key, set: {} };
+    renderProdPick();
+  };
+  V2.prodPickSearch = function (q) { prodPick.q = q || ''; refreshProdList(); };
+  V2.prodPickToggle = function (cip) { if (prodPick.set[cip]) delete prodPick.set[cip]; else prodPick.set[cip] = 1; refreshProdList(); refreshProdCount(); };
+  V2.prodPickClose = function () { var m = document.getElementById('prod-pick'); if (m && m.parentNode) m.parentNode.removeChild(m); };
+  V2.prodPickConfirm = function () {
+    var k = prodPick.key, n = 0;
+    Object.keys(prodPick.set).forEach(function (cip) { ovAddProduct(k, cip); n++; });
+    V2.prodPickClose();
+    keepScroll(function () { V2.render(); });
+    if (n) V2.toast(n + ' produit' + (n > 1 ? 's' : '') + ' ajouté' + (n > 1 ? 's' : ''));
+  };
+  function renderProdPick() {
+    var ex = document.getElementById('prod-pick'); if (ex) ex.parentNode.removeChild(ex);
+    var m = document.createElement('div'); m.id = 'prod-pick'; m.className = 'pl-pick-ov';
+    m.innerHTML =
+      '<div class="pl-pick-card" onclick="event.stopPropagation()">' +
+        '<div class="pl-pick-top"><div class="pl-pick-t">Ajouter un produit à la liste</div>' +
+          '<button class="prepa-x" onclick="V2.prodPickClose()" title="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
+        '<div class="pl-pick-filters"><input class="pl-pick-search" placeholder="Rechercher un produit (nom ou CIP)…" oninput="V2.prodPickSearch(this.value)"></div>' +
+        '<div class="pl-pick-list" id="prod-pick-list"></div>' +
+        '<div class="pl-pick-foot"><span id="prod-pick-count" class="mono">0 sélectionné</span>' +
+          '<button class="v2-btn v2-btn-primary" onclick="V2.prodPickConfirm()">Ajouter à la liste</button></div>' +
+      '</div>';
+    m.addEventListener('click', function (e) { if (e.target === m) V2.prodPickClose(); });
+    document.body.appendChild(m);
+    refreshProdList(); refreshProdCount();
+  }
+  function refreshProdList() {
+    var box = document.getElementById('prod-pick-list'); if (!box) return;
+    var B = window.BENCHMARK || [], ql = (prodPick.q || '').toLowerCase().trim();
+    if (ql.length < 2) { box.innerHTML = '<div style="padding:22px;text-align:center;color:var(--muted)">Tape au moins 2 lettres pour chercher un produit du catalogue.</div>'; return; }
+    var out = [], n = 0;
+    for (var i = 0; i < B.length && n < 400; i++) {
+      var b = B[i], hay = ((b.designation || '') + ' ' + (b.cip13 || '')).toLowerCase();
+      if (hay.indexOf(ql) < 0) continue;
+      var cip = String(b.cip13 || ''), sel = !!prodPick.set[cip], bp = V2.bestPrice(b);
+      out.push('<div class="pl-pick-row" onclick="V2.prodPickToggle(\'' + esc(cip) + '\')">' +
+        '<span class="pl-pick-chk' + (sel ? ' on' : '') + '">' + (sel ? ICO('check', 13, 2.4) : '') + '</span>' +
+        '<div style="flex:1;min-width:0"><div class="pl-pick-n">' + esc(b.designation || cip) + '</div>' +
+          '<div class="pl-pick-a">' + esc(cip) + (bp.ip != null ? ' · ' + V2.fmtEur(bp.ip) : '') + '</div></div>' +
+      '</div>'); n++;
+    }
+    box.innerHTML = out.join('') || '<div style="padding:22px;text-align:center;color:var(--muted)">Aucun produit trouvé.</div>';
+  }
+  function refreshProdCount() {
+    var n = Object.keys(prodPick.set || {}).length, c = document.getElementById('prod-pick-count');
+    if (c) c.textContent = n + ' sélectionné' + (n > 1 ? 's' : '');
+  }
   // Générateur PDF générique « liste d'achats » (groupement OU liste perso)
   function achatsPdf(title, data, useSel, mode) {
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
@@ -1368,7 +1449,7 @@
   };
   V2.listDownloadPdf = function (id, mode) {
     var l = listGet(id); if (!l) return;
-    achatsPdf(l.name, productsForIds(listIdsObj(l)), !!(selCips && selCips.size && selPid === 'LST:' + id), mode);
+    achatsPdf(l.name, productsForIds(listIdsObj(l), 'LST:' + id), !!(selCips && selCips.size && selPid === 'LST:' + id), mode);
   };
   V2.grpToggleCat = function (catKey) {
     var key = 'g_' + catKey, idx = -1;
@@ -1419,7 +1500,7 @@
     }
     if (String(selPid) !== 'LST:' + id) { selPid = 'LST:' + id; selCips = new Set(); }
     var ids = listIdsObj(l);
-    var data = productsForIds(ids);
+    var data = productsForIds(ids, 'LST:' + id);
     var total = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
     var nb = (l.ids || []).length;
     var hero =
@@ -1458,7 +1539,7 @@
         (memRows || '<div class="v2-empty"><div class="v2-empty-d">Liste vide. Clique « Ajouter des pharmacies » pour piocher des officines (filtre par groupement disponible).</div></div>') +
       '</div>';
     var catsHtml = data.cats.length
-      ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel); }).join('')
+      ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel, data.ovKey); }).join('')
       : (nb ? '<div class="v2-empty"><div class="v2-empty-d">Aucun achat identifié pour ces pharmacies.</div></div>' : '');
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
@@ -1468,7 +1549,8 @@
         '</div>' +
         hero +
         membersCard +
-        (data.cats.length ? sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies de la liste qui les commandent (Sortie)') : '') +
+        (nb ? sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies de la liste qui les commandent (Sortie)') : '') +
+        (nb ? '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-ghost" onclick="V2.itemAddOpen(\'' + encodeURIComponent(data.ovKey) + '\')">' + ICO('plus', 16) + 'Ajouter un produit</button></div>' : '') +
         catsHtml +
       '</div>' +
       pharmaCartbar();
@@ -1603,6 +1685,9 @@
       '.ph-vtab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 3px 9px rgba(0,80,230,.26)}',
       '.ph-froid{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid);background:color-mix(in srgb,var(--c-froid) 13%,#fff)}',
       '.ph-offre{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 14%,#fff);text-transform:uppercase}',
+      '.ph-manual{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--pil-opp);background:color-mix(in srgb,var(--pil-opp) 13%,#fff);text-transform:uppercase}',
+      '.ph-rmprod{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s var(--ease)}',
+      '.ph-rmprod:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 35%,var(--line));background:color-mix(in srgb,var(--c-rose) 8%,#fff)}',
       // ── Listes personnalisées ──
       '.pl-badge{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--pil-opp),#16804f);box-shadow:0 3px 9px rgba(30,158,106,.28),0 1px 0 rgba(255,255,255,.25) inset}',
       '.pl-badge-big{width:48px;height:48px;border-radius:13px}',
