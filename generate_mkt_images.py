@@ -129,9 +129,16 @@ def toks(s):
     return re.findall(r'[a-z]+|\d+', s)
 
 
-def dosage(d):
-    m = re.search(r'(\d+(?:[.,]\d+)?)\s*(mg|mcg|ug|g|ml|l|ui|%)', d, re.I)
-    return float(m.group(1).replace(',', '.')) if m else None
+def dosages(d):
+    """TOUTES les forces réelles (mg/mcg/g/ui/%), volume 'ml/l' EXCLU (non discriminant).
+    Gère les combos 'a/b unité' (ex EPIDUO 0,1/2,5% -> {0.1, 2.5})."""
+    vals = set()
+    for grp, _u in re.findall(r'((?:\d+(?:[.,]\d+)?)(?:\s*/\s*\d+(?:[.,]\d+)?)+)\s*(mg|mcg|ug|g|ui|%)', d, re.I):
+        for n in re.split(r'\s*/\s*', grp):
+            vals.add(float(n.replace(',', '.')))
+    for n, _u in re.findall(r'(\d+(?:[.,]\d+)?)\s*(mg|mcg|ug|g|ui|%)', d, re.I):
+        vals.add(float(n.replace(',', '.')))
+    return vals
 
 
 def slug_doses(slug):
@@ -161,6 +168,18 @@ def slug_of(u):
     return m.group(1) if m else ''
 
 
+def dim_sig(s):
+    """signature dimensions d'un pansement/DM : paires NxN sinon nombres collés à 'cm'."""
+    s = s.lower().replace('-', ' ')
+    pairs = re.findall(r'(\d+)\s*[x×]\s*(\d+)', s)
+    if pairs:
+        out = []
+        for a, b in pairs:
+            out += [int(a), int(b)]
+        return sorted(out)
+    return sorted(int(n) for n in re.findall(r'(\d+)\s*cm', s))
+
+
 def accept(desig, slug, n):
     t = toks(desig)
     if not t:
@@ -168,10 +187,13 @@ def accept(desig, slug, n):
     b = t[0]
     if len(b) < 5 or b not in set(toks(slug)):
         return False
-    dose = dosage(desig)
-    if dose is not None:
-        return dose in slug_doses(slug)
-    return n == 1
+    dd = dosages(desig)
+    if dd:
+        return dd <= slug_doses(slug)           # médicament : TOUTES les forces présentes
+    ds = dim_sig(desig)
+    if ds:
+        return ds == dim_sig(slug)              # pansement/DM : dimensions exactes
+    return n == 1                                # sinon : accepté si non ambigu
 
 
 def meso(desig):
