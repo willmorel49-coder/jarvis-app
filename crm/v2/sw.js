@@ -10,7 +10,7 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20260611v2AS';
+var VER = '20260611v2AT';
 var CACHE = 'jarvis-' + VER;
 
 self.addEventListener('install', function (e) {
