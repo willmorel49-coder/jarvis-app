@@ -169,7 +169,7 @@ def parse_integral():
 def load_sales_index():
     import glob as _g
     files = _g.glob('STATS/*_0[1-5]_2026.xlsx')
-    byDesig = {}     # désignation vendue -> [vol, set(pharma)]
+    byDesig = {}     # désignation -> [vol, set(pharma), afm, prix_net, cip]
     byCip = {}       # cip13 -> [vol, set(pharma)]
     allph = set()
     for p in files:
@@ -177,20 +177,29 @@ def load_sales_index():
             wb = openpyxl.load_workbook(p, read_only=True, data_only=True); ws = wb.active
             it = ws.iter_rows(values_only=True); h = next(it); hi = {n: i for i, n in enumerate(h)}
             di, qi, ti, ci = hi.get('PLVDESIGNATION'), hi.get('PLVQTE'), hi.get('TIRCODE'), hi.get('ARTCODEBARRE')
+            ai, pi = hi.get('AFMCODE'), hi.get('PLVPUNET')
             for r in it:
                 t = r[ti] if (ti is not None and ti < len(r)) else None
                 if t is not None: allph.add(str(t))
                 q = (r[qi] or 0) if (qi is not None and qi < len(r)) else 0
-                d = r[di] if (di is not None and di < len(r)) else None
-                if d:
-                    e = byDesig.setdefault(str(d).strip(), [0, set()]); e[0] += q
-                    if t is not None: e[1].add(str(t))
+                afm = (r[ai] if (ai is not None and ai < len(r)) else None) or ''
+                punet = (r[pi] or 0) if (pi is not None and pi < len(r)) else 0
                 cip = r[ci] if (ci is not None and ci < len(r)) else None
+                ck = ''
                 if cip:
                     try: ck = str(int(float(cip)))
                     except (TypeError, ValueError): ck = str(cip)
-                    e = byCip.setdefault(ck, [0, set()]); e[0] += q
+                d = r[di] if (di is not None and di < len(r)) else None
+                if d:
+                    e = byDesig.setdefault(str(d).strip(), [0, set(), '', 0, ''])
+                    e[0] += q
                     if t is not None: e[1].add(str(t))
+                    if afm: e[2] = str(afm)
+                    if punet and punet > e[3]: e[3] = round(float(punet), 2)
+                    if ck: e[4] = ck
+                if ck:
+                    e2 = byCip.setdefault(ck, [0, set()]); e2[0] += q
+                    if t is not None: e2[1].add(str(t))
             wb.close()
         except Exception as ex:
             print('  [ventes] err', p, ex)
@@ -198,21 +207,45 @@ def load_sales_index():
 
     def mk(keyfn):
         idx = {}
-        for d, (v, ph) in byDesig.items():
+        for d, rec in byDesig.items():
             k = keyfn(d)
             if not k: continue
-            e = idx.setdefault(k, [0, set()]); e[0] += v; e[1] |= ph
+            e = idx.setdefault(k, [0, set()]); e[0] += rec[0]; e[1] |= rec[1]
         return idx
     full = mk(norm_name); root = mk(root_name)
     bd, br = {}, {}
-    for d, (v, ph) in byDesig.items():
+    for d, rec in byDesig.items():
         b = brand_name(d); dm = dim_sig(d)
         if b and dm:
-            e = bd.setdefault((b, dm), [0, set()]); e[0] += v; e[1] |= ph
+            e = bd.setdefault((b, dm), [0, set()]); e[0] += rec[0]; e[1] |= rec[1]
         if b:
-            e = br.setdefault(b, [0, set()]); e[0] += v; e[1] |= ph
+            e = br.setdefault(b, [0, set()]); e[0] += rec[0]; e[1] |= rec[1]
     print('  [ventes] %d désignations vendues · %d CIP · %d officines' % (len(byDesig), len(byCip), total))
-    return {'total': total, 'cip': byCip, 'full': full, 'root': root, 'bd': bd, 'br': br}
+    return {'total': total, 'cip': byCip, 'full': full, 'root': root, 'bd': bd, 'br': br, 'desig': byDesig}
+
+
+# ── Catalogue NR : nos sorties NON remboursables (para / DM / méd. NR) ──
+NR_LAB = {'PARA': 'Parapharmacie', 'DM': 'Dispositifs médicaux', 'DM_20': 'Dispositifs médicaux',
+          'MED010': 'Médicaments NR', 'MED021': 'Médicaments NR'}
+def nr_catalogue(SI):
+    groups = {}
+    for d, rec in SI['desig'].items():
+        afm = rec[2]
+        if not afm or afm == 'REMBSS':
+            continue                      # remboursable → exclu du catalogue NR
+        lab = NR_LAB.get(afm, 'Autres NR')
+        vol = int(round(rec[0]))
+        if vol <= 0:
+            continue
+        groups.setdefault(lab, []).append({'d': d, 'cip': rec[4], 'p': (rec[3] or None),
+                                           'vol': vol, 'sortie': len(rec[1]), 'total': SI['total']})
+    order = ['Parapharmacie', 'Médicaments NR', 'Dispositifs médicaux', 'Autres NR']
+    cats = []
+    for lab in order + [k for k in groups if k not in order]:
+        if lab in groups:
+            rows = sorted(groups[lab], key=lambda r: r['vol'], reverse=True)[:120]
+            cats.append({'cat': lab, 'rows': rows})
+    return cats
 
 
 def sales_match(name, cip, SI):
@@ -323,8 +356,11 @@ print('  [ventes] ITP : %d/%d produits rattachés à un volume' % (matched_t, su
 
 print('  [match nom] L\'Intégral : %d produits rattachés à un volume' % matched_i)
 rotations = parse_rotations(SI)
+nr = nr_catalogue(SI)
+print('  [NR] %d produits NR/para (catalogue)' % sum(len(c['rows']) for c in nr))
 data = {
     'rotations': rotations,
+    'nr': nr,
     'integral': integral,
     'itp': itp,
     'bestsellers': parse_bestsellers(),
