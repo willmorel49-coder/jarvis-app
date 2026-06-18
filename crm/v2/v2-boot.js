@@ -32,7 +32,9 @@
     var ht = (b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0;
     var ip0 = (b.prix_ip != null && b.prix_ip > 0) ? b.prix_ip : 0;
     var off = (b.offre_ip != null && b.offre_ip > 0) ? b.offre_ip : 0;
-    var offre = off > 0 && (ip0 === 0 || off < ip0);
+    // offre valide UNIQUEMENT si remise raisonnable (≤ 50%). Au-delà = donnée
+    // aberrante du champ offre_ip (ex. vaccins à 0,78€) → on ignore.
+    var offre = off > 0 && ip0 > 0 && off < ip0 && off >= ip0 * 0.5;
     var ip = offre ? off : ip0;
     var remise = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
     return { ip: ip > 0 ? ip : null, ht: ht > 0 ? ht : null, remise: remise, offre: offre };
