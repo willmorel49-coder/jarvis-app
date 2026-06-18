@@ -193,6 +193,33 @@
   // ════════════════════════════════════════════
   // PAGE HOME (accueil réel B-signature)
   // ════════════════════════════════════════════
+  // ── Envoi du kit prospect (lien public + email pré-rempli) ──
+  V2.prospectLink = function () {
+    var u = V2.user || {};
+    var base = location.origin + location.pathname.replace(/[^/]*$/, 'decouvrir.html');
+    var p = [];
+    if (u.name) p.push('rep=' + encodeURIComponent(u.name));
+    if (u.email) p.push('mail=' + encodeURIComponent(u.email));
+    return base + (p.length ? ('?' + p.join('&')) : '');
+  };
+  V2.prospectEmail = function () {
+    var inp = document.getElementById('prospect-mail');
+    var to = (inp && inp.value || '').trim();
+    var u = V2.user || {}, link = V2.prospectLink();
+    var subj = 'Intégral Pharma — faire connaissance';
+    var body = 'Bonjour,\n\nSuite à notre échange, voici une courte présentation d\'Intégral Pharma : qui nous sommes, ce que vous gagnez à travailler avec nous, comment ouvrir un compte, et nos meilleures ventes par catégorie.\n\n' +
+      link + '\n\nJe reste à votre disposition pour établir une proposition adaptée à votre officine.\n\nBien à vous,\n' +
+      (u.name || '') + (u.email ? '\n' + u.email : '') + '\nIntégral Pharma';
+    window.location.href = 'mailto:' + to + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+  };
+  V2.prospectCopy = function () {
+    var link = V2.prospectLink();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(function () { V2.toast('Lien copié'); }, function () { window.prompt('Copie ce lien :', link); });
+    } else { window.prompt('Copie ce lien :', link); }
+  };
+  V2.prospectOpen = function () { window.open(V2.prospectLink(), '_blank'); };
+
   // ════════════════════════════════════════════
   // PAGE PRÉSENTATION — pitch prospect au comptoir
   // ════════════════════════════════════════════
@@ -224,7 +251,13 @@
       '.pres-contact-n{font-size:17px;font-weight:800}',
       '.pres-contact-r{font-size:13px;opacity:.85;margin-top:2px}',
       '.pres-contact-c{margin-left:auto;text-align:right;font-family:var(--mono);font-size:13.5px;line-height:1.7}',
-      '.pres-contact-c a{color:#fff;text-decoration:none}'
+      '.pres-contact-c a{color:#fff;text-decoration:none}',
+      '.pres-send{margin-top:18px;background:color-mix(in srgb,var(--ip-blue) 5%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 20%,var(--line));border-radius:var(--r-card);padding:18px 20px}',
+      '.pres-send-t{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.01em}',
+      '.pres-send-t svg{color:var(--ip-blue)}',
+      '.pres-send-d{font-size:13px;color:var(--ip-ink-2);margin:6px 0 12px;line-height:1.5}',
+      '.pres-send-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}',
+      '.pres-send-in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:var(--r-control);padding:10px 13px;font-family:var(--font);font-size:14px;background:#fff}'
     ].join('');
     document.head.appendChild(st);
   }
@@ -270,6 +303,17 @@
               '<div><div class="pres-kpi-v">' + nbRef + '</div><div class="pres-kpi-l">médicaments au catalogue</div></div>' +
               '<div><div class="pres-kpi-v">' + nf(nbPara) + '</div><div class="pres-kpi-l">références parapharmacie</div></div>' +
               '<div><div class="pres-kpi-v">' + nf(nbOffre) + '</div><div class="pres-kpi-l">offres labo en ce moment</div></div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="pres-send">' +
+            '<div class="pres-send-t">' + ICO('spark', 16) + ' Envoyer le kit à un prospect</div>' +
+            '<div class="pres-send-d">Après ta visite : saisis l\'email de la pharmacie → on lui envoie un lien (qui on est, comment ouvrir un compte, ce qu\'elle gagne, tarifs, top ventes par catégorie). Le lien est déjà à ton nom.</div>' +
+            '<div class="pres-send-row">' +
+              '<input id="prospect-mail" type="email" inputmode="email" placeholder="email de la pharmacie" class="pres-send-in" />' +
+              '<button class="v2-btn v2-btn-primary" onclick="V2.prospectEmail()">' + ICO('fiche', 16) + 'Préparer l\'email</button>' +
+              '<button class="v2-btn v2-btn-ghost" onclick="V2.prospectCopy()">Copier le lien</button>' +
+              '<button class="v2-btn v2-btn-ghost" onclick="V2.prospectOpen()">Aperçu</button>' +
             '</div>' +
           '</div>' +
 
