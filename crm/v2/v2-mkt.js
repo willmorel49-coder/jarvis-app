@@ -240,7 +240,6 @@
     var M = window.MKT_MIX || {}, total = M.total || 0;
     var srcs = [
       { k: 'nr', label: 'Catalogue NR', data: M.nr || [], pdf: null },
-      { k: 'rota', label: 'Top rotations France', data: M.rotations || [], pdf: null },
       { k: 'integral', label: 'L\'Intégral', data: M.integral || [], pdf: 'catalogue-integral.pdf' },
       { k: 'itp', label: 'ITP', data: M.itp || [], pdf: 'catalogue-itp.pdf' },
       { k: 'best', label: 'Top ventes (familles)', data: M.bestsellers || [], pdf: null },
