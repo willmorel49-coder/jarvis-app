@@ -33,6 +33,16 @@ def dim_sig(s):
     return (m.group(1) + 'X' + m.group(2)) if m else ''
 
 
+def merge_key(d):
+    # clé de regroupement « même produit » : même réf (marque+réf) sinon nom normalisé.
+    # Fusionne les doublons (même produit, CIP/désignation différents).
+    up = unicodedata.normalize('NFKD', str(d or '')).encode('ascii', 'ignore').decode().upper()
+    m = re.search(r'R[EÉ]F\.?\s*[:.]?\s*(\d{4,7})', up)
+    if m:
+        return 'REF:' + brand_name(d) + ':' + m.group(1)
+    return 'N:' + re.sub(r'[^A-Z0-9]', '', up)
+
+
 # index marque / marque+dimension -> metric (pour pansements ITP au nom très différent)
 def bench_brand_index(byCip):
     txt = open('crm/benchmark-data.js', encoding='utf-8', errors='ignore').read()
@@ -191,12 +201,16 @@ def load_sales_index():
                     except (TypeError, ValueError): ck = str(cip)
                 d = r[di] if (di is not None and di < len(r)) else None
                 if d:
-                    e = byDesig.setdefault(str(d).strip(), [0, set(), '', 0, ''])
+                    nm = str(d).strip()
+                    mk_ = merge_key(nm)
+                    # rec : [vol, set(pharma), afm, prix, cip, nom représentatif]
+                    e = byDesig.setdefault(mk_, [0, set(), '', 0, '', nm])
                     e[0] += q
                     if t is not None: e[1].add(str(t))
                     if afm: e[2] = str(afm)
                     if punet and punet > e[3]: e[3] = round(float(punet), 2)
                     if ck: e[4] = ck
+                    if len(nm) > len(e[5]): e[5] = nm   # garde la désignation la plus complète
                 if ck:
                     e2 = byCip.setdefault(ck, [0, set()]); e2[0] += q
                     if t is not None: e2[1].add(str(t))
@@ -207,15 +221,15 @@ def load_sales_index():
 
     def mk(keyfn):
         idx = {}
-        for d, rec in byDesig.items():
-            k = keyfn(d)
+        for rec in byDesig.values():
+            k = keyfn(rec[5])
             if not k: continue
             e = idx.setdefault(k, [0, set()]); e[0] += rec[0]; e[1] |= rec[1]
         return idx
     full = mk(norm_name); root = mk(root_name)
     bd, br = {}, {}
-    for d, rec in byDesig.items():
-        b = brand_name(d); dm = dim_sig(d)
+    for rec in byDesig.values():
+        b = brand_name(rec[5]); dm = dim_sig(rec[5])
         if b and dm:
             e = bd.setdefault((b, dm), [0, set()]); e[0] += rec[0]; e[1] |= rec[1]
         if b:
@@ -250,15 +264,16 @@ def classify_rayon(d):
     return 'Autres produits NR'
 def nr_catalogue(SI):
     groups = {}
-    for d, rec in SI['desig'].items():
+    for rec in SI['desig'].values():
         afm = rec[2]
         if not afm or afm == 'REMBSS':
             continue                      # remboursable → exclu du catalogue NR
         vol = int(round(rec[0]))
         if vol <= 0:
             continue
-        lab = classify_rayon(d)
-        groups.setdefault(lab, []).append({'d': d, 'cip': rec[4], 'p': (rec[3] or None),
+        nm = rec[5]
+        lab = classify_rayon(nm)
+        groups.setdefault(lab, []).append({'d': nm, 'cip': rec[4], 'p': (rec[3] or None),
                                            'vol': vol, 'sortie': len(rec[1]), 'total': SI['total']})
     # rayons triés par volume total (le plus vendu en tête = le plus pertinent)
     cats = []
