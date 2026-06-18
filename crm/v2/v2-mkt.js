@@ -174,14 +174,15 @@
     var M = window.MKT_MIX || {}, out = [], id = 0;
     function push(group, cat, r) {
       out.push({ id: id++, group: group, cat: cat, name: r.d, cip: r.cip || '', price: r.p || 0,
-        remise: r.remise || 0, sortie: r.sortie || 0, total: r.total || (M.total || 0),
+        remise: r.remise || 0, sortie: r.sortie || 0, vol: r.vol || 0, total: r.total || (M.total || 0),
         ppht: r.ppht || 0, marge: r.marge || 0 });
     }
+    // tri par VOLUME vendu (puis sortie)
     (M.rotations || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('rota', c.cat, r); }); });
     (M.bestsellers || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('best', c.cat, r); }); });
     (M.integral || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('integral', c.cat, r); }); });
     (M.itp || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('itp', c.cat, r); }); });
-    out.sort(function (a, b) { return b.sortie - a.sortie; });   // nb pharmacies qui commandent
+    out.sort(function (a, b) { return (b.vol - a.vol) || (b.sortie - a.sortie); });   // volume vendu puis nb pharmacies
     _mixFlat = out; return out;
   }
 
@@ -231,20 +232,21 @@
     var cats = cur.data.map(function (c) {
       var trs = (c.rows || []).map(function (r, i) {
         var price = (r.p > 0) ? V2.fmtEur(r.p) : '—';
-        var last = (cur.k === 'itp')
+        var midCol = (cur.k === 'itp')
           ? '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.marge ? V2.fmtEur(r.marge) : '—') + '</td>'
           : '<td class="num" style="font-weight:700">' + (r.sortie > 0 ? r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + total + '</span>' : '—') + '</td>';
+        var volCol = '<td class="num" style="font-weight:800;color:var(--ip-ink)">' + (r.vol > 0 ? V2.fmtNum(r.vol) : '—') + '</td>';
         return '<tr>' +
           '<td class="num" style="color:var(--muted-2);width:28px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
           '<td><span class="mkt-cat-prod">' + esc(r.d) + '</span>' + (r.o ? offre : '') + '</td>' +
           '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip || '—') + '</td>' +
-          '<td class="num" style="color:var(--ip-blue);font-weight:700">' + price + '</td>' + last +
+          '<td class="num" style="color:var(--ip-blue);font-weight:700">' + price + '</td>' + midCol + volCol +
         '</tr>';
       }).join('');
-      var lastTh = (cur.k === 'itp') ? 'Marge/bte' : 'Sorties';
+      var midTh = (cur.k === 'itp') ? 'Marge/bte' : 'Sorties';
       return '<div class="v2-card" style="margin-bottom:14px;padding:16px 18px">' +
         '<div class="v2-card-t" style="margin-bottom:10px">' + esc(c.cat) + ' <span style="color:var(--muted);font-weight:500">· ' + (c.rows || []).length + '</span></div>' +
-        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + lastTh + '</th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
+        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
       '</div>';
     }).join('');
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
@@ -366,13 +368,14 @@
       html = r3.map(function (b) {
         added = have['m' + b.id];
         var tag = b.group === 'rota' ? 'Top rotation France' : (b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral'));
-        // chip à droite : sortie (nb pharmacies) ou, pour ITP, la marge/boîte
-        var chip = (b.sortie > 0)
-          ? '<span class="mkt-pick-sortie" title="commandé par ' + b.sortie + ' pharmacies sur ' + b.total + '">' + b.sortie + '/' + b.total + '</span>'
+        // chip à droite : VOLUME vendu en priorité, sinon marge (ITP)
+        var chip = (b.vol > 0)
+          ? '<span class="mkt-pick-sortie" title="volume vendu (unités)">' + V2.fmtNum(b.vol) + ' vendus</span>'
           : (b.group === 'itp' && b.marge > 0 ? '<span class="mkt-pick-sortie marge" title="marge par boîte">marge ' + V2.fmtEur(b.marge) + '</span>' : '');
+        var subm = b.sortie > 0 ? ' · ' + b.sortie + '/' + b.total + ' pharm' : (b.cip ? ' · CIP ' + esc(b.cip) : ' · ' + esc(b.cat));
         return '<div class="mkt-pick-item' + (added ? ' added' : '') + '" onclick="V2.mkt.addProduct(\'mix\',\'' + b.id + '\')">' +
           '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>' +
-          '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + (b.cip ? ' · CIP ' + esc(b.cip) : ' · ' + esc(b.cat)) + '</span></span>' +
+          '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + subm + '</span></span>' +
           chip +
           '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span></div>';
       }).join('');
