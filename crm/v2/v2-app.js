@@ -227,13 +227,35 @@
     if (document.getElementById('v2-pres-style')) return;
     var st = document.createElement('style'); st.id = 'v2-pres-style';
     st.textContent = [
-      '.pres-hero{position:relative;text-align:center;padding:40px 24px 30px;border-radius:var(--r-card);overflow:hidden;background:linear-gradient(160deg,#0050E6,#0034A0);color:#fff;box-shadow:0 18px 40px rgba(0,52,160,.32)}',
-      '.pres-logo{width:64px;height:64px;border-radius:18px;margin:0 auto 16px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.25) inset}',
+      '.pres-hero{position:relative;text-align:center;padding:40px 24px 32px;border-radius:var(--r-card);overflow:hidden;background:radial-gradient(circle at 82% -12%,rgba(255,255,255,.16),transparent 60%),linear-gradient(160deg,#0050E6,#0034A0);color:#fff;box-shadow:0 18px 40px rgba(0,52,160,.32)}',
+      '.pres-logo{width:64px;height:64px;border-radius:18px;margin:0 auto 16px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 6px 16px rgba(0,30,90,.18)}',
+      '.pres-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:800;opacity:.82;margin-bottom:12px}',
       '.pres-h1{font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1.05}',
-      '.pres-tag{font-size:15px;font-weight:600;opacity:.92;margin-top:10px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.45}',
-      '.pres-kpis{display:flex;justify-content:center;gap:30px;margin-top:24px;flex-wrap:wrap}',
+      '.pres-lead{font-size:18px;font-weight:700;margin-top:12px;letter-spacing:-.01em}',
+      '.pres-tag{font-size:13.5px;font-weight:500;opacity:.82;margin-top:10px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.5}',
+      '.pres-kpis{display:flex;justify-content:center;gap:0;margin-top:26px;flex-wrap:wrap}',
+      '.pres-kpi{padding:0 26px}',
+      '.pres-kpi+.pres-kpi{border-left:1px solid rgba(255,255,255,.18)}',
+      '.pres-kpi.mid .pres-kpi-v{font-size:30px}',
       '.pres-kpi-v{font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:-.02em}',
       '.pres-kpi-l{font-size:11.5px;opacity:.85;font-weight:600;margin-top:2px}',
+      '.pres-reassure{display:flex;justify-content:center;flex-wrap:wrap;gap:10px 14px;margin:16px 0 6px}',
+      '.pres-reassure-i{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:9px 16px;font-size:13.5px;font-weight:700;color:var(--ip-ink);box-shadow:var(--sh-1)}',
+      '.pres-reassure-i svg{color:var(--c-mint);flex-shrink:0}',
+      '.pres-proof{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px}',
+      '.pres-proof-h{flex:1;min-width:200px;background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;border-radius:var(--r-card);padding:20px 22px;box-shadow:0 12px 28px rgba(0,52,160,.22)}',
+      '.pres-proof-v{font-family:var(--mono);font-size:27px;font-weight:700;letter-spacing:-.02em;line-height:1.1}',
+      '.pres-proof-l{font-size:13px;font-weight:600;opacity:.9;margin-top:6px;line-height:1.4}',
+      '.pres-tiers{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}',
+      '.pres-tier{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}',
+      '.pres-tier-r{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ip-blue)}',
+      '.pres-tier-v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:4px}',
+      '.pres-tier-l{font-size:12px;color:var(--muted);margin-top:3px}',
+      '.pres-cta-line{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:14px;font-weight:700;color:var(--ip-blue);text-decoration:none;cursor:pointer}',
+      '.pres-cta-line:hover{text-decoration:underline}',
+      '.pres-step-cta{margin:12px 0 2px 45px}',
+      '.pres-step-ok{width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--c-mint) 14%,#fff);color:var(--c-mint);display:flex;align-items:center;justify-content:center;flex-shrink:0}',
+      '.pres-dl{margin-top:6px}',
       '.pres-sec-t{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:30px 2px 14px;display:flex;align-items:center;gap:10px}',
       '.pres-sec-t::after{content:"";flex:1;height:1px;background:var(--line)}',
       '.pres-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}',
@@ -257,7 +279,28 @@
       '.pres-send-t svg{color:var(--ip-blue)}',
       '.pres-send-d{font-size:13px;color:var(--ip-ink-2);margin:6px 0 12px;line-height:1.5}',
       '.pres-send-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}',
-      '.pres-send-in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:var(--r-control);padding:10px 13px;font-family:var(--font);font-size:14px;background:#fff}'
+      '.pres-send-in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:var(--r-control);padding:10px 13px;font-family:var(--font);font-size:14px;background:#fff}',
+      '@media print{.pres-hero .noprint,.pres-send.noprint,.pres-contact-act.noprint,.pres-step-cta .noprint{display:none!important}}',
+      '.pres-contact-act{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}',
+      '.pres-contact .v2-btn-ghost{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28);color:#fff}',
+      '.pres-contact .v2-btn-ghost:hover{background:rgba(255,255,255,.2)}',
+      '@media(max-width:480px){' +
+        '.pres-h1{font-size:25px}.pres-lead{font-size:16px}.pres-tag{font-size:13px}' +
+        '.pres-kpis{gap:0}.pres-kpi{padding:0 18px}.pres-kpi-v{font-size:21px}.pres-kpi.mid .pres-kpi-v{font-size:25px}' +
+        '.pres-reassure-i{font-size:13px;padding:8px 13px}' +
+        '.pres-proof-v{font-size:23px}' +
+        '.pres-step-cta{margin-left:0}' +
+        '.pres-contact{flex-direction:column;align-items:stretch}.pres-contact-c{margin-left:0;text-align:left}' +
+        '.pres-contact-act{margin-left:0;justify-content:stretch}.pres-contact-act .v2-btn{flex:1}' +
+        '.pres-send-row{flex-direction:column}.pres-send-in,.pres-send-row .v2-btn{width:100%}' +
+      '}',
+      '@media(prefers-reduced-motion:no-preference){' +
+        '@keyframes presIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}' +
+        '@keyframes presLogoIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}' +
+        '.pres-hero .pres-logo{opacity:0;animation:presLogoIn .5s ease-out forwards}' +
+        '.pres-eyebrow,.pres-h1,.pres-lead,.pres-kpis,.pres-reassure{opacity:0;animation:presIn .5s ease-out forwards}' +
+        '.pres-eyebrow{animation-delay:.08s}.pres-h1{animation-delay:.16s}.pres-lead{animation-delay:.24s}.pres-kpis{animation-delay:.32s}.pres-reassure{animation-delay:.42s}' +
+      '}'
     ].join('');
     document.head.appendChild(st);
   }
@@ -284,8 +327,24 @@
       });
       var nbPara = (window.OFFILOG && window.OFFILOG.length) || (window.OFFILOG_BEST && window.OFFILOG_BEST.length) || 3520;
       var nbRef = nf(nbRefN);
-      var logoSvg = '<svg width="34" height="34" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
+      // Logo capsule "ip" inliné (zéro requête réseau, fiable à l'impression)
+      var capsule = function (w, h) {
+        return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 48 28" role="img" aria-label="Intégral Pharma">' +
+          '<rect x="2" y="1.5" width="9" height="5.5" rx="2.75" fill="#0B1F4D"/>' +
+          '<rect x="2" y="8.5" width="9" height="18" rx="4.5" fill="#0B1F4D"/>' +
+          '<rect x="14" y="6.5" width="11" height="12" rx="5.5" fill="#C9A961"/>' +
+          '<rect x="17" y="9.5" width="5" height="6" rx="2.5" fill="#FFFFFF"/>' +
+          '<rect x="14" y="6.5" width="4" height="21" rx="2" fill="#C9A961"/></svg>';
+      };
+      var logoSvg = capsule(40, 24);
       var u = V2.user || {};
+      // E-mail pré-rempli ouverture de compte (réutilise u.email/u.name, fallback service client)
+      var openMail = u.email || 'serviceclient@ouestpharmaservices.fr';
+      var openSubj = 'Ouverture de compte Intégral Pharma';
+      var openBody = 'Bonjour,\n\nJe souhaite ouvrir un compte Intégral Pharma.\nVous trouverez ci-joint mon formulaire d\'ouverture rempli, mon RIB et mon Kbis.\n\nCordialement,';
+      var openHref = 'mailto:' + openMail + '?subject=' + encodeURIComponent(openSubj) + '&body=' + encodeURIComponent(openBody);
+      var ICODL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18.5h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      var ICOCHK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       var card = function (color, ico, t, d) {
         return '<div class="pres-card"><div class="pres-card-ic" style="background:' + color + '">' + ICO(ico, 22) + '</div>' +
           '<div class="pres-card-t">' + t + '</div><div class="pres-card-d">' + d + '</div></div>';
@@ -297,16 +356,72 @@
         '<div class="v2-wrap">' +
           '<div class="pres-hero">' +
             '<div class="pres-logo">' + logoSvg + '</div>' +
+            '<div class="pres-eyebrow">Grossiste-répartiteur · +20 ans</div>' +
             '<div class="pres-h1">Intégral Pharma</div>' +
+            '<div class="pres-lead">Plus de marge sur chaque boîte. Sans franco, sans engagement.</div>' +
             '<div class="pres-tag">Un groupe de grossistes français à vos côtés. Acteur de la santé depuis plus de 20 ans, partenaire de proximité pour améliorer durablement la rentabilité de votre officine.</div>' +
             '<div class="pres-kpis">' +
-              '<div><div class="pres-kpi-v">' + nbRef + '</div><div class="pres-kpi-l">médicaments au catalogue</div></div>' +
-              '<div><div class="pres-kpi-v">' + nf(nbPara) + '</div><div class="pres-kpi-l">références parapharmacie</div></div>' +
-              '<div><div class="pres-kpi-v">' + nf(nbOffre) + '</div><div class="pres-kpi-l">offres labo en ce moment</div></div>' +
+              '<div class="pres-kpi mid"><div class="pres-kpi-v">6–9 %</div><div class="pres-kpi-l">de marge, nets sur facture</div></div>' +
+              '<div class="pres-kpi"><div class="pres-kpi-v">0 €</div><div class="pres-kpi-l">ni franco ni engagement</div></div>' +
+              '<div class="pres-kpi"><div class="pres-kpi-v">' + nf(nbPara) + '</div><div class="pres-kpi-l">réfs parapharma, sans adhésion</div></div>' +
             '</div>' +
           '</div>' +
 
-          '<div class="pres-send">' +
+          '<div class="pres-reassure">' +
+            '<div class="pres-reassure-i">' + ICOCHK + 'Ni franco</div>' +
+            '<div class="pres-reassure-i">' + ICOCHK + 'Ni engagement de CA</div>' +
+            '<div class="pres-reassure-i">' + ICOCHK + 'Livraison 72 h</div>' +
+          '</div>' +
+
+          '<div class="pres-sec-t">Ce que vous gagnez</div>' +
+          '<div class="pres-grid">' +
+            card('var(--c-mint)', 'spark', 'Plus de marge, sur tout le catalogue', 'Meilleure marge sur l\'intégralité du catalogue, des prix nets sur facture et une optimisation dès la première boîte. La transparence des conditions, pas les paliers cachés.') +
+            card('var(--c-cat)', 'cat', 'Une centrale parapharmacie unique', 'Via Offilog : la plus grande collection de parapharmacie de France, +14 000 produits, +430 laboratoires, sans coût d\'adhésion et au meilleur prix à l\'unité, sans paliers.') +
+            card('var(--c-pilo)', 'pilo', 'Un accompagnement chiffré & de proximité', 'Votre commercial vient avec VOS chiffres : meilleures ventes du marché, opportunités de marge, commande déjà préparée. Service réactif et transparent.') +
+          '</div>' +
+
+          '<div class="pres-sec-t">Vos conditions — la preuve chiffrée</div>' +
+          '<div class="pres-proof">' +
+            '<div class="pres-proof-h"><div class="pres-proof-v">jusqu\'à 27 %</div><div class="pres-proof-l">sur les génériques, dès la 1ère boîte</div></div>' +
+            '<div class="pres-proof-h"><div class="pres-proof-v">6–9 %</div><div class="pres-proof-l">de remise constatée, nets sur facture (PFHT)</div></div>' +
+          '</div>' +
+          '<div class="pres-card">' +
+            '<div class="pres-card-d" style="font-size:13px;color:var(--muted)">Barème par tranche, en prix nets sur facture :</div>' +
+            '<div class="pres-tiers">' +
+              '<div class="pres-tier"><div class="pres-tier-r">&lt; 4,33 €</div><div class="pres-tier-v">4,5 – 30 %</div><div class="pres-tier-l">petits prix</div></div>' +
+              '<div class="pres-tier"><div class="pres-tier-r">4,33 – 468 €</div><div class="pres-tier-v">3,89 %</div><div class="pres-tier-l">intermédiaires</div></div>' +
+              '<div class="pres-tier"><div class="pres-tier-r">&gt; 468 €</div><div class="pres-tier-v">19,50 €</div><div class="pres-tier-l">forfait fixe</div></div>' +
+            '</div>' +
+            '<div class="pres-card-d" style="font-size:12.5px;color:var(--muted);margin-top:12px">Catalogue : ' + nf(nbRefN) + ' médicaments + ' + nf(nbPara) + ' réfs parapharma · ' + nf(nbOffre) + ' offres labo en ce moment (L\'Intégral, ITP, UPSA, Sanofi).</div>' +
+            '<div class="pres-cta-line" style="cursor:default">Ces conditions vous intéressent ? Ouvrez un compte ci-dessous ↓</div>' +
+          '</div>' +
+
+          '<div class="pres-sec-t">Ouvrir un compte en 3 étapes</div>' +
+          '<div class="pres-card" style="padding:6px 22px 18px">' +
+            step('1', 'Téléchargez et remplissez le formulaire 2026', 'Le formulaire d\'ouverture de compte Intégral Pharma 2026.') +
+            '<div class="pres-step-cta pres-dl"><a class="v2-btn v2-btn-primary noprint" href="ouverture-compte-integral-pharma-2026.pdf" download>' + ICODL + 'Télécharger le formulaire 2026</a></div>' +
+            step('2', 'Renvoyez-le par e-mail avec votre RIB et votre Kbis', 'Joignez le formulaire rempli, votre RIB et votre Kbis (et pièces justificatives).') +
+            '<div class="pres-step-cta"><a class="v2-btn v2-btn-ghost noprint" href="' + openHref + '">' + ICO('fiche', 16) + 'Envoyer par e-mail</a></div>' +
+            '<div class="pres-step"><div class="pres-step-ok">' + ICOCHK + '</div><div><div class="pres-step-t">Vous recevez votre code PharmaML</div><div class="pres-step-d">Votre compte est ouvert : vous pouvez commander.</div></div></div>' +
+          '</div>' +
+
+          '<div class="pres-sec-t">Vos meilleures ventes par catégorie</div>' +
+          '<div class="pres-card"><div class="pres-card-d" style="font-size:13.5px">Au comptoir, votre commercial vous présente les <b>meilleures ventes réelles du marché par catégorie</b>, avec le prix net Intégral Pharma et les offres labo du moment — la preuve concrète de la marge sur vos références à plus forte rotation.</div></div>' +
+
+          '<div class="pres-sec-t">Votre contact</div>' +
+          '<div class="pres-contact">' +
+            '<div class="pres-logo" style="width:46px;height:46px;border-radius:13px;margin:0">' + capsule(30, 18) + '</div>' +
+            '<div><div class="pres-contact-n">' + esc(u.name || 'Votre commercial Intégral Pharma') + '</div>' +
+              '<div class="pres-contact-r">Délégué pharmaceutique référent</div></div>' +
+            '<div class="pres-contact-act noprint">' +
+              '<a class="v2-btn v2-btn-primary" href="' + openHref + '">' + ICO('fiche', 16) + 'Demander l\'ouverture de mon compte</a>' +
+              '<a class="v2-btn v2-btn-ghost" href="tel:0249625055">Être rappelé</a>' +
+            '</div>' +
+          '</div>' +
+          (u.email ? '<div class="pres-contact-c" style="text-align:center;font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:10px"><a href="mailto:' + esc(u.email) + '" style="color:var(--ip-blue);text-decoration:none">' + esc(u.email) + '</a></div>' : '') +
+          '<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px">Ouest Pharma Services · Saint-Étienne-de-Montluc (44) — Service client 02 49 62 50 55 · serviceclient@ouestpharmaservices.fr</div>' +
+
+          '<div class="pres-send noprint">' +
             '<div class="pres-send-t">' + ICO('spark', 16) + ' Envoyer le kit à un prospect</div>' +
             '<div class="pres-send-d">Après ta visite : saisis l\'email de la pharmacie → on lui envoie un lien (qui on est, comment ouvrir un compte, ce qu\'elle gagne, tarifs, top ventes par catégorie). Le lien est déjà à ton nom.</div>' +
             '<div class="pres-send-row">' +
@@ -317,39 +432,7 @@
             '</div>' +
           '</div>' +
 
-          '<div class="pres-sec-t">Pourquoi travailler avec nous</div>' +
-          '<div class="pres-grid">' +
-            card('var(--c-mint)', 'spark', 'Plus de marge, sur tout le catalogue', 'Meilleure marge sur l\'intégralité du catalogue, des prix nets sur facture et une optimisation dès la première boîte. La transparence des conditions, pas les paliers cachés.') +
-            card('var(--c-fiche)', 'spark', 'Ni franco, ni engagement', 'Aucun minimum de commande imposé, aucun engagement de chiffre d\'affaires. Vous commandez ce que vous voulez, quand vous voulez. Livraison en 72 h.') +
-            card('var(--c-cat)', 'cat', 'Une centrale parapharmacie unique', 'Via Offilog : la plus grande collection de parapharmacie de France, +14 000 produits, +430 laboratoires, sans coût d\'adhésion et au meilleur prix à l\'unité, sans paliers.') +
-            card('var(--c-pilo)', 'pilo', 'Un accompagnement chiffré & de proximité', 'Votre commercial vient avec VOS chiffres : meilleures ventes du marché, opportunités de marge, commande déjà préparée. Service réactif et transparent.') +
-          '</div>' +
-
-          '<div class="pres-sec-t">Vos conditions</div>' +
-          '<div class="pres-card">' +
-            '<div class="pres-card-d" style="font-size:14px">' +
-              '<b>Remise constatée de 6 % à 9 %</b> sur le prix PFHT, en prix nets sur facture. Barème par tranche : <b>&lt; 4,33 €</b> → 4,5 % à 30 % · <b>4,33–468 €</b> → 3,89 % · <b>&gt; 468 €</b> → 19,50 € fixe.<br><br>' +
-              '<b>Génériques :</b> remises remontées dès la 1ère boîte, jusqu\'à <b>27 %</b>.<br>' +
-              '<b>Catalogue :</b> ' + nf(nbRefN) + ' médicaments + ' + nf(nbPara) + ' réfs parapharma · ' + nf(nbOffre) + ' offres labo en ce moment (L\'Intégral, ITP, UPSA, Sanofi).' +
-            '</div>' +
-          '</div>' +
-
-          '<div class="pres-sec-t">Comment on démarre ensemble</div>' +
-          '<div class="pres-card" style="padding:6px 22px">' +
-            step('1', 'On fait connaissance', 'Un rendez-vous pour comprendre votre officine, vos volumes et vos priorités.') +
-            step('2', 'On vous fait une proposition', 'Conditions commerciales et sélection de produits adaptées à votre activité, chiffrées et transparentes.') +
-            step('3', 'Vous testez sans engagement', 'Une première commande pour juger sur pièce : prix, délais, service.') +
-            step('4', 'On vous suit dans la durée', 'Visites régulières, offres du moment et optimisation continue de votre marge.') +
-          '</div>' +
-
-          '<div class="pres-sec-t">Votre contact</div>' +
-          '<div class="pres-contact">' +
-            '<div class="pres-logo" style="width:46px;height:46px;border-radius:13px;margin:0;background:linear-gradient(150deg,#0050E6,#0034A0)"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>' +
-            '<div><div class="pres-contact-n">' + esc(u.name || 'Votre commercial Intégral Pharma') + '</div>' +
-              '<div class="pres-contact-r">Délégué pharmaceutique référent</div></div>' +
-            '<div class="pres-contact-c">' + (u.email ? '<a href="mailto:' + esc(u.email) + '">' + esc(u.email) + '</a>' : 'Intégral Pharma') + '</div>' +
-          '</div>' +
-          '<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:12px">Ouest Pharma Services · Saint-Étienne-de-Montluc (44) — Service client 02 49 62 50 55</div>' +
+          '<div style="text-align:center;font-size:11px;color:var(--muted-2);margin-top:18px" class="noprint">Document commercial Intégral Pharma — sous réserve des conditions générales.</div>' +
           '<div style="height:30px"></div>' +
         '</div>';
     }
