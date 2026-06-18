@@ -193,6 +193,95 @@
   // ════════════════════════════════════════════
   // PAGE HOME (accueil réel B-signature)
   // ════════════════════════════════════════════
+  // ════════════════════════════════════════════
+  // PAGE PRÉSENTATION — pitch prospect au comptoir
+  // ════════════════════════════════════════════
+  function injectPresStyles() {
+    if (document.getElementById('v2-pres-style')) return;
+    var st = document.createElement('style'); st.id = 'v2-pres-style';
+    st.textContent = [
+      '.pres-hero{position:relative;text-align:center;padding:40px 24px 30px;border-radius:var(--r-card);overflow:hidden;background:linear-gradient(160deg,#0050E6,#0034A0);color:#fff;box-shadow:0 18px 40px rgba(0,52,160,.32)}',
+      '.pres-logo{width:64px;height:64px;border-radius:18px;margin:0 auto 16px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.25) inset}',
+      '.pres-h1{font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1.05}',
+      '.pres-tag{font-size:15px;font-weight:600;opacity:.92;margin-top:10px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.45}',
+      '.pres-kpis{display:flex;justify-content:center;gap:30px;margin-top:24px;flex-wrap:wrap}',
+      '.pres-kpi-v{font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:-.02em}',
+      '.pres-kpi-l{font-size:11.5px;opacity:.85;font-weight:600;margin-top:2px}',
+      '.pres-sec-t{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:30px 2px 14px;display:flex;align-items:center;gap:10px}',
+      '.pres-sec-t::after{content:"";flex:1;height:1px;background:var(--line)}',
+      '.pres-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}',
+      '@media(max-width:720px){.pres-grid{grid-template-columns:1fr}}',
+      '.pres-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:20px 22px}',
+      '.pres-card-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:13px}',
+      '.pres-card-t{font-size:16px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}',
+      '.pres-card-d{font-size:13.5px;color:var(--ip-ink-2);line-height:1.5}',
+      '.pres-step{display:flex;gap:15px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}',
+      '.pres-step:last-child{border-bottom:none}',
+      '.pres-step-n{width:30px;height:30px;border-radius:50%;background:var(--halo);color:var(--ip-blue);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono)}',
+      '.pres-step-t{font-weight:700;font-size:14.5px}',
+      '.pres-step-d{font-size:13px;color:var(--muted);margin-top:2px}',
+      '.pres-contact{display:flex;align-items:center;gap:16px;background:var(--ip-ink);color:#fff;border-radius:var(--r-card);padding:20px 24px;flex-wrap:wrap}',
+      '.pres-contact-n{font-size:17px;font-weight:800}',
+      '.pres-contact-r{font-size:13px;opacity:.85;margin-top:2px}',
+      '.pres-contact-c{margin-left:auto;text-align:right;font-family:var(--mono);font-size:13.5px;line-height:1.7}',
+      '.pres-contact-c a{color:#fff;text-decoration:none}'
+    ].join('');
+    document.head.appendChild(st);
+  }
+  V2.pages.presentation = {
+    render: function (root) {
+      injectPresStyles();
+      var nbRef = window.BENCHMARK ? V2.fmtNum(window.BENCHMARK.length) : '10 500';
+      var logoSvg = '<svg width="34" height="34" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
+      var u = V2.user || {};
+      var card = function (color, ico, t, d) {
+        return '<div class="pres-card"><div class="pres-card-ic" style="background:' + color + '">' + ICO(ico, 22) + '</div>' +
+          '<div class="pres-card-t">' + t + '</div><div class="pres-card-d">' + d + '</div></div>';
+      };
+      var step = function (n, t, d) {
+        return '<div class="pres-step"><div class="pres-step-n">' + n + '</div><div><div class="pres-step-t">' + t + '</div><div class="pres-step-d">' + d + '</div></div></div>';
+      };
+      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+        '<div class="v2-wrap">' +
+          '<div class="pres-hero">' +
+            '<div class="pres-logo">' + logoSvg + '</div>' +
+            '<div class="pres-h1">Intégral Pharma</div>' +
+            '<div class="pres-tag">Votre grossiste-répartiteur partenaire : un large catalogue, des prix négociés et un accompagnement humain pour faire grandir votre officine.</div>' +
+            '<div class="pres-kpis">' +
+              '<div><div class="pres-kpi-v">' + nbRef + '</div><div class="pres-kpi-l">références au catalogue</div></div>' +
+              '<div><div class="pres-kpi-v">100 %</div><div class="pres-kpi-l">remboursables + parapharma</div></div>' +
+              '<div><div class="pres-kpi-v">1 contact</div><div class="pres-kpi-l">dédié à votre officine</div></div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="pres-sec-t">Pourquoi travailler avec nous</div>' +
+          '<div class="pres-grid">' +
+            card('var(--c-cat)', 'cat', 'Un catalogue complet', 'Tout le médicament (princeps, génériques, biosimilaires, chaîne du froid) et la parapharmacie, au même endroit — vous commandez tout chez un seul partenaire.') +
+            card('var(--c-opp)', 'spark', 'Des prix négociés & offres labo', 'Nous négocions pour vous les meilleures conditions et faisons remonter les offres laboratoires (Sanofi, UPSA…) : chaque euro gratté à l\'achat reste dans votre marge.') +
+            card('var(--c-pilo)', 'pilo', 'Un accompagnement chiffré', 'Votre commercial vient avec vos chiffres : ce que commandent les officines comparables, vos opportunités de marge, et une commande déjà préparée. Pas de blabla, des données.') +
+            card('var(--c-froid)', 'pharma', 'La proximité & la réactivité', 'Un interlocuteur unique qui connaît votre officine, des livraisons fiables et un service à taille humaine. On décroche, on suit, on s\'engage.') +
+          '</div>' +
+
+          '<div class="pres-sec-t">Comment on démarre ensemble</div>' +
+          '<div class="pres-card" style="padding:6px 22px">' +
+            step('1', 'On fait connaissance', 'Un rendez-vous pour comprendre votre officine, vos volumes et vos priorités.') +
+            step('2', 'On vous fait une proposition', 'Conditions commerciales et sélection de produits adaptées à votre activité, chiffrées et transparentes.') +
+            step('3', 'Vous testez sans engagement', 'Une première commande pour juger sur pièce : prix, délais, service.') +
+            step('4', 'On vous suit dans la durée', 'Visites régulières, offres du moment et optimisation continue de votre marge.') +
+          '</div>' +
+
+          '<div class="pres-sec-t">Votre contact</div>' +
+          '<div class="pres-contact">' +
+            '<div class="pres-logo" style="width:46px;height:46px;border-radius:13px;margin:0;background:linear-gradient(150deg,#0050E6,#0034A0)"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>' +
+            '<div><div class="pres-contact-n">' + esc(u.name || 'Votre commercial Intégral Pharma') + '</div>' +
+              '<div class="pres-contact-r">Intégral Pharma · votre interlocuteur dédié</div></div>' +
+            '<div class="pres-contact-c">' + (u.email ? '<a href="mailto:' + esc(u.email) + '">' + esc(u.email) + '</a>' : 'Intégral Pharma') + '</div>' +
+          '</div>' +
+          '<div style="height:30px"></div>' +
+        '</div>';
+    }
+  };
+
   V2.pages.home = {
     render: function (root) {
       var phs = V2.pharmacies || [];
@@ -231,6 +320,10 @@
       // Pilier Groupements (carte de prospection) si présent
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) {
         P.push({ k: 'groupements', cls: 'p7', accent: '#0034A0', ico: 'grid', tag: 'Carte', t: 'Groupements', d: 'La carte de prospection des groupements et pharmacies : qui est où, quel groupement, quels décideurs. Pour préparer ta tournée.', go: 'Ouvrir la carte' });
+      }
+      // Mode prospection : pitch à montrer au comptoir
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) {
+        P.push({ k: 'presentation', cls: 'p1', accent: 'var(--c-opp)', ico: 'pharma', tag: 'Prospect', t: 'Présentation Intégral Pharma', d: 'Le pitch à montrer au comptoir : qui est Intégral Pharma et comment travailler avec nous. Pour convaincre un prospect en 2 minutes.', go: 'Lancer la présentation' });
       }
       // Mode OPSO : le suivi groupement passe en tête (1ʳᵉ tuile de l'accueil)
       if (window.V2_BRAND && window.V2_BRAND.opso) {

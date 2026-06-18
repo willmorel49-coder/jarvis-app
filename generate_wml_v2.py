@@ -56,6 +56,112 @@ def load_enseignes():
     print('  [ens] {} CIP -> enseigne (géoloc)'.format(len(m)))
     return m
 
+
+def _cpfmt(v):
+    if v is None or v == '':
+        return ''
+    try:
+        return str(int(float(v))).zfill(5)
+    except (TypeError, ValueError):
+        return str(v).strip()
+
+
+def load_geoloc_addr():
+    """CIP -> {cp, ville} depuis les fichiers géoloc (ADRCODEPOSTAL / ADRVILLE)."""
+    import glob
+    m = {}
+    files = {}
+    for p in glob.glob(os.path.join(STATS, '*_geolocalisation_*.xlsx')):
+        pref = os.path.basename(p).split('_geoloc')[0]
+        if pref not in files or p > files[pref]:
+            files[pref] = p
+    for p in files.values():
+        try:
+            wb = openpyxl.load_workbook(p, read_only=True, data_only=True); ws = wb.active
+            it = ws.iter_rows(values_only=True); h = next(it)
+            hi = {n: i for i, n in enumerate(h)}
+            ti = hi.get('TIRCODE'); ci = hi.get('ADRCODEPOSTAL'); vi = hi.get('ADRVILLE')
+            if ti is None:
+                wb.close(); continue
+            for r in it:
+                code = r[ti] if ti < len(r) else None
+                if not code:
+                    continue
+                k = _cipkey(code)
+                if k in m:
+                    continue
+                cp = r[ci] if (ci is not None and ci < len(r)) else None
+                ville = r[vi] if (vi is not None and vi < len(r)) else None
+                m[k] = {'cp': _cpfmt(cp), 'ville': (str(ville).strip() if ville else '')}
+            wb.close()
+        except Exception as e:
+            print('  [addr] err', p, e)
+    print('  [addr] {} CIP -> adresse (géoloc)'.format(len(m)))
+    return m
+
+
+def geocode_officines(officines):
+    """Ajoute lat/lng aux officines via l'API BAN (gratuite, sans clé), avec cache."""
+    import subprocess, csv as _csv2, io
+    GEO_CACHE = os.path.join(STATS, 'geocode_cache.json')
+    cache = {}
+    if os.path.exists(GEO_CACHE):
+        try:
+            cache = json.load(open(GEO_CACHE, encoding='utf-8'))
+        except Exception:
+            cache = {}
+    # adresses à géocoder (cp + ville présents, pas déjà en cache)
+    todo = {}
+    for o in officines:
+        cp, ville = (o.get('cp') or ''), (o.get('ville') or '')
+        if not cp and not ville:
+            continue
+        q = (cp + ' ' + ville).strip()
+        if q and q not in cache:
+            todo[q] = 1
+    qs = list(todo.keys())
+    if qs:
+        print('  [geo] géocodage de {} adresses (BAN)...'.format(len(qs)))
+        # CSV d'entrée
+        buf = io.StringIO(); w = _csv2.writer(buf); w.writerow(['adresse'])
+        for q in qs:
+            w.writerow([q])
+        inpath = os.path.join(STATS, '_geo_in.csv')
+        open(inpath, 'w', encoding='utf-8').write(buf.getvalue())
+        try:
+            out = subprocess.run(
+                ['curl', '-s', '-X', 'POST', '-F', 'data=@' + inpath, '-F', 'columns=adresse',
+                 'https://api-adresse.data.gouv.fr/search/csv/', '--max-time', '120'],
+                capture_output=True, timeout=150)
+            txt = out.stdout.decode('utf-8', 'ignore')
+            rd = _csv2.DictReader(io.StringIO(txt))
+            n = 0
+            for row in rd:
+                q = row.get('adresse', '')
+                lat, lng = row.get('latitude', ''), row.get('longitude', '')
+                try:
+                    if lat and lng:
+                        cache[q] = [round(float(lat), 5), round(float(lng), 5)]; n += 1
+                except ValueError:
+                    pass
+            print('  [geo] {} adresses géocodées'.format(n))
+            json.dump(cache, open(GEO_CACHE, 'w', encoding='utf-8'), ensure_ascii=False)
+        except Exception as e:
+            print('  [geo] err', e)
+        finally:
+            try:
+                os.remove(inpath)
+            except OSError:
+                pass
+    # attache lat/lng
+    hit = 0
+    for o in officines:
+        q = ((o.get('cp') or '') + ' ' + (o.get('ville') or '')).strip()
+        c = cache.get(q)
+        if c:
+            o['lat'], o['lng'] = c[0], c[1]; hit += 1
+    print('  [geo] {}/{} officines avec coordonnées'.format(hit, len(officines)))
+
 def load_groupements():
     cipm, namem = {}, {}
     if not os.path.exists(GRP_DB):
@@ -198,6 +304,7 @@ OVERRIDE = {
     '2035185': 'Positive Pharma',  # Pharmacie Vitton (Zola), Lyon 6 — à confirmer
 }
 enseignes = load_enseignes()
+addr = load_geoloc_addr()
 grp_cip, grp_name = load_groupements()
 officines = []
 nb_grp = 0
@@ -212,8 +319,8 @@ for i, code in enumerate(sorted(active.keys())):
         'id': code,
         'code': code,
         'name': info.get('name') or active[code] or ('Officine ' + code),
-        'ville': info.get('ville', ''),
-        'cp': info.get('cp', ''),
+        'ville': info.get('ville', '') or (addr.get(_cipkey(code), {}).get('ville', '')),
+        'cp': info.get('cp', '') or (addr.get(_cipkey(code), {}).get('cp', '')),
         'tel': info.get('tel', ''),
         'groupement': grp,
         'potentiel': info.get('potentiel'),
@@ -322,6 +429,9 @@ try:
     print('  logos rattachés : {}/{} groupements'.format(len(grp_logos), len(grps_all)))
 except Exception as e:
     print('  [logos] err', e)
+
+# ── 3quater. Géocodage des officines (carte de secteur) ──
+geocode_officines(officines)
 
 # ── 4. Écriture JS ──
 months_lbl = 'Jan-Mai 2026'

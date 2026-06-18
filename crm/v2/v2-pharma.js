@@ -729,6 +729,7 @@
         topByCatSection(sales) +
         ipVolumeSection(pid) +
         sectionHead('Opportunités par catégorie', 'ce que le marché commande et que cette officine n\'a pas encore') +
+        '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-primary" onclick="V2.pharmaRecoOrder(\'' + esc(String(pid)) + '\')">' + ICO('fiche', 16) + 'Générer la commande recommandée</button></div>' +
         catsHtml +
       '</div>' +
       pharmaCartbar();
@@ -1074,6 +1075,7 @@
       '<button class="ph-vtab' + (active === 'officines' ? ' on' : '') + '" onclick="V2.pharmaView(\'officines\')">' + ICO('pharma', 15, 2) + 'Officines</button>' +
       '<button class="ph-vtab' + (active === 'groupements' ? ' on' : '') + '" onclick="V2.pharmaView(\'groupements\')">' + ICO('grid', 15, 2) + 'Groupements</button>' +
       '<button class="ph-vtab' + (active === 'listes' ? ' on' : '') + '" onclick="V2.pharmaView(\'listes\')">' + ICO('fiche', 15, 2) + 'Mes listes</button>' +
+      '<button class="ph-vtab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.pharmaView(\'carte\')">' + ICO('grid', 15, 2) + 'Carte secteur</button>' +
     '</div>';
   }
   function groupName(p) { return (String(p.groupement || '').trim()) || '— Sans groupement'; }
@@ -1281,6 +1283,24 @@
 
   // ── Handlers groupements ──
   V2.pharmaView = function (v) { pharmaView = v; selGroup = null; selList = null; V2.render(); };
+  // ── Commande recommandée : pré-remplit une fiche avec les meilleures opportunités ──
+  V2.pharmaRecoOrder = function (pid) {
+    if (!window.BENCHMARK) { V2.toast('Catalogue en cours de chargement…'); V2.loadFiles(['bench']).then(function () {}); return; }
+    if (!V2.fiches || !V2.fiches.createFrom) { V2.toast('Module fiches indisponible', 'error'); return; }
+    var cats = buildOpportunities(pid), rows = [];
+    cats.forEach(function (o) { (o.rows || []).forEach(function (r) { rows.push(r); }); });
+    rows.sort(function (a, b) { return b.marketQte - a.marketQte; });
+    rows = rows.slice(0, 20);
+    if (!rows.length) { V2.toast('Aucune opportunité à recommander pour cette officine', 'warn'); return; }
+    var bIdx = benchIndex();
+    var products = rows.map(function (r) {
+      var b = bIdx.get(r.cip), bp = b ? V2.bestPrice(b) : { ip: r.prix_ip, ht: null, remise: 0 };
+      return { cip13: r.cip, designation: r.designation, prix_ip: bp.ip, prix_ht: bp.ht, remise_pct: bp.remise, is_froid: b ? !!b.is_froid : false, qty: 1 };
+    });
+    var ph = (V2.pharmacies || []).filter(function (p) { return String(p.id) === String(pid); })[0];
+    V2.fiches.createFrom({ title: 'Commande recommandée — ' + (ph ? ph.name : ''), destId: String(pid), products: products });
+    V2.toast(rows.length + ' produits recommandés');
+  };
   V2.pharmaGroup = function (enc) { try { selGroup = decodeURIComponent(enc); } catch (e) { selGroup = enc; } V2.render(); window.scrollTo(0, 0); };
   V2.pharmaGroupBack = function () { selGroup = null; V2.render(); };
 
@@ -1620,6 +1640,80 @@
     if (c) c.textContent = n + ' sélectionnée' + (n > 1 ? 's' : '');
   }
 
+  // ════════════════════════════════════════════
+  // CARTE DE MON SECTEUR
+  // ════════════════════════════════════════════
+  var _secMap = null;
+  function ensureLeafletP(cb) {
+    if (window.L && window.L.map) { cb(); return; }
+    if (window.__leafletLoadingP) { setTimeout(function () { ensureLeafletP(cb); }, 200); return; }
+    window.__leafletLoadingP = true;
+    var css = document.createElement('link'); css.rel = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
+    var s = document.createElement('script'); s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload = function () { cb(); }; s.onerror = function () { cb(); }; document.head.appendChild(s);
+  }
+  // CA total d'une officine (respecte le filtre commercial)
+  function caOfPharma(pid) { return V2.sumCA(pharmaSales(pid)); }
+  // palette par CA : prospect (gris) → client (bleu de + en + foncé)
+  function secStyle(ca) {
+    if (ca <= 0) return { r: 5, color: '#9AA1B2', fill: '#C4CAD6' };
+    if (ca < 3000) return { r: 7, color: '#0050E6', fill: '#7FB0FF' };
+    if (ca < 12000) return { r: 9, color: '#0050E6', fill: '#3D86FF' };
+    if (ca < 35000) return { r: 12, color: '#0034A0', fill: '#0050E6' };
+    return { r: 16, color: '#0034A0', fill: '#0034A0' };
+  }
+  function renderCarte(root) {
+    var comms = V2.commercials ? V2.commercials() : [];
+    var commBar = '';
+    if (comms.length > 1) {
+      var cb = function (val, lbl) { return '<button type="button" class="v2-seg' + (V2.commFilter === val ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSetComm(\'' + val + '\')">' + lbl + '</button>'; };
+      commBar = '<div class="v2-segs" style="margin-bottom:12px">' + cb('', 'Tous') + comms.map(function (c) { return cb(c, c); }).join('') + '</div>';
+    }
+    var withGeo = (V2.pharmacies || []).filter(function (p) {
+      if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return false;
+      return typeof p.lat === 'number' && typeof p.lng === 'number';
+    });
+    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+      '<div class="v2-wrap">' +
+        '<div class="v2-page-title">Opportunités pharmacie</div>' +
+        '<div class="v2-page-sub">Carte de mon secteur · ' + withGeo.length + ' officines localisées</div>' +
+        pharmaTabs('carte') + commBar +
+        '<div class="sec-mapwrap"><div class="sec-map" id="sec-map"></div>' +
+          '<div class="sec-legend">' +
+            '<div class="sec-legend-t">Chiffre d\'affaires</div>' +
+            '<div class="sec-legend-row"><span class="sec-dot" style="width:8px;height:8px;background:#C4CAD6;border-color:#9AA1B2"></span>prospect / pas de vente</div>' +
+            '<div class="sec-legend-row"><span class="sec-dot" style="width:10px;height:10px;background:#7FB0FF;border-color:#0050E6"></span>jusqu\'à 3 k€</div>' +
+            '<div class="sec-legend-row"><span class="sec-dot" style="width:13px;height:13px;background:#3D86FF;border-color:#0050E6"></span>3 – 12 k€</div>' +
+            '<div class="sec-legend-row"><span class="sec-dot" style="width:16px;height:16px;background:#0050E6;border-color:#0034A0"></span>12 – 35 k€</div>' +
+            '<div class="sec-legend-row"><span class="sec-dot" style="width:20px;height:20px;background:#0034A0;border-color:#0034A0"></span>35 k€ et +</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    ensureLeafletP(function () { initSecteurMap(withGeo); });
+  }
+  function initSecteurMap(list) {
+    var el = document.getElementById('sec-map'); if (!el) return;
+    if (!window.L) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">Carte indisponible — vérifie ta connexion internet.</div>'; return; }
+    if (_secMap) { try { _secMap.remove(); } catch (e) {} _secMap = null; }
+    el.innerHTML = '';
+    _secMap = window.L.map(el, { scrollWheelZoom: true, preferCanvas: true }).setView([46.7, 2.4], 6);
+    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(_secMap);
+    var pts = [];
+    list.forEach(function (p) {
+      var ca = caOfPharma(p.id), st = secStyle(ca);
+      var mk = window.L.circleMarker([p.lat, p.lng], { radius: st.r, color: st.color, weight: 1.5, fillColor: st.fill, fillOpacity: .82 });
+      var pop = '<b>' + esc(p.name) + '</b>' + (p.ville ? '<br>' + esc(p.cp || '') + ' ' + esc(p.ville) : '') +
+        (p.groupement ? '<br><span style="color:#737A8C">' + esc(groupName(p)) + '</span>' : '') +
+        '<br><b style="color:#0050E6">' + V2.fmtEur(ca) + '</b> de CA' +
+        '<br><a href="#" onclick="V2.go(\'pharma\',\'' + esc(String(p.id)) + '\');return false" style="color:#0050E6;font-weight:700">Ouvrir la fiche →</a>';
+      mk.bindPopup(pop); mk.addTo(_secMap); pts.push([p.lat, p.lng]);
+    });
+    if (pts.length) { try { _secMap.fitBounds(pts, { padding: [40, 40], maxZoom: 11 }); } catch (e) {} }
+    setTimeout(function () { try { _secMap.invalidateSize(); } catch (e) {} }, 120);
+  }
+
   V2.pages.pharma = {
     render: function (root, param) {
       if (param) { renderDetail(root, param); return; }
@@ -1633,6 +1727,7 @@
         else renderListesList(root);
         return;
       }
+      if (pharmaView === 'carte') { renderCarte(root); return; }
       renderList(root);
     }
   };
@@ -1731,6 +1826,14 @@
       '.pl-pick-a{font-size:11.5px;color:var(--muted);margin-top:1px}',
       '.pl-pick-tag{font-size:10px;font-weight:700;color:var(--muted-2);background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:2px 8px;flex-shrink:0}',
       '.pl-pick-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-top:1px solid var(--line);background:var(--card-2)}',
+      // carte de secteur
+      '.sec-mapwrap{position:relative;border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-1)}',
+      '.sec-map{width:100%;height:calc(100vh - 280px);min-height:420px;background:#EAEEF3}',
+      '.sec-legend{position:absolute;right:14px;bottom:14px;z-index:500;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--sh-2);font-size:11.5px}',
+      '.sec-legend-t{font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:7px}',
+      '.sec-legend-row{display:flex;align-items:center;gap:8px;color:var(--ip-ink-2);margin-bottom:4px;font-weight:600}',
+      '.sec-dot{display:inline-block;border-radius:50%;border:1.5px solid;flex-shrink:0}',
+      '.sec-map .leaflet-popup-content{font:13px/1.45 var(--font,sans-serif);margin:10px 12px}',
       // logo groupement (image réelle ou badge initiales)
       '.grp-logo{width:38px;height:38px;border-radius:10px;flex-shrink:0;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:var(--sh-1)}',
       '.grp-logo img{max-width:100%;max-height:100%;object-fit:contain}',

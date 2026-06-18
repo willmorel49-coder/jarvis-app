@@ -160,6 +160,7 @@
       V2.pharmacies = window.WML_OFFICINES.map(function (p) {
         return { id: String(p.id), name: p.name, code: p.code, color: p.color,
                  ville: p.ville, cp: p.cp, tel: p.tel, groupement: p.groupement, potentiel: p.potentiel,
+                 lat: (typeof p.lat === 'number' ? p.lat : null), lng: (typeof p.lng === 'number' ? p.lng : null),
                  comms: p.comms || [] };
       });
       // format compact tableau : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]
