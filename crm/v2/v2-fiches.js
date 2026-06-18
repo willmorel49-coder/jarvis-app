@@ -893,6 +893,22 @@
   // ════════════════════════════════════════════
   V2.fiches = {
     open: function (id) { editingFiche = null; V2.go('fiches', id); },
+    // Crée une fiche pré-remplie (ex : commande recommandée) et l'ouvre dans l'éditeur
+    createFrom: function (opts) {
+      opts = opts || {};
+      var f = createFiche();
+      f.title = opts.title || 'Commande recommandée';
+      f.destId = opts.destId || null;
+      f.products = (opts.products || []).map(function (p) {
+        return { cip13: p.cip13, designation: p.designation,
+          prix_ip: (p.prix_ip != null ? p.prix_ip : null), prix_ht: (p.prix_ht != null ? p.prix_ht : null),
+          remise_pct: (p.remise_pct != null ? p.remise_pct : null), is_froid: !!p.is_froid, qty: (p.qty != null ? p.qty : 1) };
+      });
+      saveFiche(f);
+      editingFiche = null;
+      V2.go('fiches', f.id);
+      return f.id;
+    },
     openCart: function () { editingFiche = null; V2.go('fiches', 'cart'); },
     clearCart: function () {
       if (!V2.ficheCart.count()) return;
