@@ -44,7 +44,7 @@
   var backend = 'local';     // 'supabase' | 'local'
   var editing = null;
   var pickSrc = 'mix';       // source : 'mix' (sélection grossiste) | 'gros' (catalogue méd.) | 'offilog'
-  var catSrc = 'integral';   // section Catalogues grossiste : 'integral' | 'itp' | 'best'
+  var catSrc = 'nr';   // section Catalogues grossiste : 'integral' | 'itp' | 'best'
 
   // ════════════════════════════════════════════
   // STORE (Supabase partagé + repli local)
@@ -171,13 +171,18 @@
   var _mixFlat = null;
   function mixFlat() {
     if (_mixFlat) return _mixFlat;
-    var M = window.MKT_MIX || {}, out = [], id = 0;
+    var M = window.MKT_MIX || {}, out = [], id = 0, seen = {};
     function push(group, cat, r) {
+      // dédoublonnage : par CIP sinon par nom normalisé (1ère source = NR prioritaire)
+      var nk = String(r.cip || '') || (r.d || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (nk && seen[nk]) return;
+      if (nk) seen[nk] = 1;
       out.push({ id: id++, group: group, cat: cat, name: r.d, cip: r.cip || '', price: r.p || 0,
         remise: r.remise || 0, sortie: r.sortie || 0, vol: r.vol || 0, total: r.total || (M.total || 0),
         ppht: r.ppht || 0, marge: r.marge || 0 });
     }
     // tri par VOLUME vendu (puis sortie)
+    (M.nr || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('nr', c.cat, r); }); });
     (M.rotations || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('rota', c.cat, r); }); });
     (M.bestsellers || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('best', c.cat, r); }); });
     (M.integral || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('integral', c.cat, r); }); });
@@ -221,6 +226,7 @@
   function renderCatalogues(root) {
     var M = window.MKT_MIX || {}, total = M.total || 0;
     var srcs = [
+      { k: 'nr', label: 'Catalogue NR', data: M.nr || [], pdf: null },
       { k: 'rota', label: 'Top rotations France', data: M.rotations || [], pdf: null },
       { k: 'integral', label: 'L\'Intégral', data: M.integral || [], pdf: 'catalogue-integral.pdf' },
       { k: 'itp', label: 'ITP', data: M.itp || [], pdf: 'catalogue-itp.pdf' },
@@ -367,7 +373,7 @@
       }
       html = r3.map(function (b) {
         added = have['m' + b.id];
-        var tag = b.group === 'rota' ? 'Top rotation France' : (b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral'));
+        var tag = b.group === 'nr' ? 'NR / Para' : (b.group === 'rota' ? 'Top rotation France' : (b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral')));
         // chip à droite : VOLUME vendu en priorité, sinon marge (ITP)
         var chip = (b.vol > 0)
           ? '<span class="mkt-pick-sortie" title="volume vendu (unités)">' + V2.fmtNum(b.vol) + ' vendus</span>'
