@@ -64,7 +64,7 @@ def bench_pc_index():
 
 
 # ── TOP ROTATIONS FRANCE : ce qui tourne le plus (qty), matché nom -> CIP/prix/sortie ──
-def parse_rotations(sortie, total, fI, rI):
+def parse_rotations(sortie, vol, total, fI, rI):
     f = 'TOP rotations France 2025 (1).xlsx'
     if not os.path.exists(f):
         return []
@@ -81,10 +81,11 @@ def parse_rotations(sortie, total, fI, rI):
         nm = str(d).strip()
         pc = fullPC.get(norm_name(nm)) or rootPC.get(root_name(nm)) or {}
         st = sortie.get(pc.get('cip', ''), 0) or fI.get(norm_name(nm), 0) or rI.get(root_name(nm), 0)
-        rows.append({'d': nm, 'cip': pc.get('cip', ''), 'p': pc.get('p'), 'q': qty, 'sortie': st, 'total': total})
-    rows.sort(key=lambda x: x['q'], reverse=True)
-    rows = rows[:100]
-    return [{'cat': 'Top rotations France 2025 (par quantité)', 'rows': rows}]
+        # volume = quantité nationale du fichier rotations
+        rows.append({'d': nm, 'cip': pc.get('cip', ''), 'p': pc.get('p'), 'vol': qty, 'sortie': st, 'total': total})
+    rows.sort(key=lambda x: x['vol'], reverse=True)
+    rows = rows[:120]
+    return [{'cat': 'Top rotations France 2025 (par volume vendu)', 'rows': rows}]
 
 MK = 'MARKETING'
 INTEGRAL_PDF = os.path.join(MK, "L'integral.pdf")
@@ -139,17 +140,18 @@ def load_sorties():
     mo = re.search(r'WML_OFFICINES\s*=\s*(\[.*?\]);\s*\nconst WML_SALES', t, re.S)
     ms = re.search(r'WML_SALES\s*=\s*(\[.*?\]);', t, re.S)
     total = len(json.loads(mo.group(1))) if mo else 0
-    sortie = {}
+    sortie, vol = {}, {}
     if ms:
         seen = {}
         for s in json.loads(ms.group(1)):
             # [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
-            pid, cip = str(s[0]), str(s[3])
+            pid, cip, q = str(s[0]), str(s[3]), (s[4] or 0)
             seen.setdefault(cip, set()).add(pid)
+            vol[cip] = vol.get(cip, 0) + q
         for cip, st in seen.items():
             sortie[cip] = len(st)
-    print('  [sorties] %d CIP avec commandes · total %d officines' % (len(sortie), total))
-    return sortie, total
+    print('  [sorties] %d CIP commandés · total %d officines' % (len(sortie), total))
+    return sortie, vol, total
 
 
 # ── ITP : pansements / dispositifs (marge = PPHT - prix remisé) ──
@@ -189,7 +191,7 @@ def parse_itp():
 
 
 # ── BEST-SELLERS : classés par NB DE PHARMACIES qui commandent (sortie réseau) ──
-def parse_bestsellers(sortie, total):
+def parse_bestsellers(sortie, vol, total):
     txt = open(BENCH, encoding='utf-8', errors='ignore').read()
     objs = re.findall(r'\{[^{}]*?\}', txt)
     def num(o, k):
@@ -209,55 +211,53 @@ def parse_bestsellers(sortie, total):
         best = best_price(ip, off)
         cip = sv(o, 'cip13')
         buckets[fam].append({'cip': cip, 'd': sv(o, 'designation'),
-                             'p': best, 'q': int(q),
+                             'p': best, 'q': int(q), 'vol': vol.get(cip, 0),
                              'sortie': sortie.get(cip, 0), 'total': total,
                              'o': bool(off > 0 and ip > 0 and off < ip and off >= ip * 0.5)})
     cats = []
     for key, label in FAMS:
-        # tri par NB DE PHARMACIES qui commandent (puis volume), top 15
-        rows = sorted(buckets[key], key=lambda r: (r['sortie'], r['q']), reverse=True)[:15]
+        # tri par volume vendu (puis nb pharmacies), top 15
+        rows = sorted(buckets[key], key=lambda r: (r['vol'], r['sortie']), reverse=True)[:15]
         if rows: cats.append({'cat': label, 'rows': rows})
     return cats
 
 
-sortie, total = load_sorties()
-fullIdx, rootIdx = bench_name_index(sortie)
+sortie, vol, total = load_sorties()
+fullIdx, rootIdx = bench_name_index(sortie)        # nom -> nb pharmacies
+fullVol, rootVol = bench_name_index(vol)           # nom -> volume vendu (qté)
 
 
-def attach_sortie(name, cip):
+def attach_metric(name, cip, byCip, fIdx, rIdx):
     # priorité : CIP exact > nom normalisé exact > racine de marque
-    st = sortie.get(str(cip), 0)
-    if not st:
-        st = fullIdx.get(norm_name(name), 0)
-    if not st:
-        st = rootIdx.get(root_name(name), 0)
-    return st
+    return byCip.get(str(cip), 0) or fIdx.get(norm_name(name), 0) or rIdx.get(root_name(name), 0)
 
 
 integral = parse_integral()
 matched_i = 0
 for c in integral:
     for r in c['rows']:
-        r['sortie'] = attach_sortie(r['d'], r.get('cip'))
+        r['sortie'] = attach_metric(r['d'], r.get('cip'), sortie, fullIdx, rootIdx)
+        r['vol'] = attach_metric(r['d'], r.get('cip'), vol, fullVol, rootVol)
         r['total'] = total
-        if r['sortie']:
+        if r['vol']:
             matched_i += 1
-    c['rows'].sort(key=lambda r: r['sortie'], reverse=True)
+    c['rows'].sort(key=lambda r: (r['vol'], r['sortie']), reverse=True)   # tri par volume vendu
 
 itp = parse_itp()
 for c in itp:
     for r in c['rows']:
-        r['sortie'] = attach_sortie(r['d'], '')
+        r['sortie'] = attach_metric(r['d'], '', sortie, fullIdx, rootIdx)
+        r['vol'] = attach_metric(r['d'], '', vol, fullVol, rootVol)
         r['total'] = total
-    c['rows'].sort(key=lambda r: (r['sortie'], r['marge'] or 0), reverse=True)
+    c['rows'].sort(key=lambda r: (r['vol'], r['marge'] or 0), reverse=True)
 
-print('  [match nom] L\'Intégral : %d produits rattachés à des ventes' % matched_i)
-rotations = parse_rotations(sortie, total, fullIdx, rootIdx)
+print('  [match nom] L\'Intégral : %d produits rattachés à un volume' % matched_i)
+rotations = parse_rotations(sortie, vol, total, fullIdx, rootIdx)
 data = {
     'rotations': rotations,
     'integral': integral,
     'itp': itp,
-    'bestsellers': parse_bestsellers(sortie, total),
+    'bestsellers': parse_bestsellers(sortie, vol, total),
     'total': total,
 }
 with open(OUT, 'w', encoding='utf-8') as fh:
