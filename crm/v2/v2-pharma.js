@@ -1148,9 +1148,10 @@
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       var e = byCip[cip], ht = (b.prix_ht > 0) ? b.prix_ht : 0, ip0 = (b.prix_ip > 0) ? b.prix_ip : 0;
-      // prix le plus bas : on prend l'offre labo (Sanofi, UPSA…) si elle existe et est inférieure
+      // prix le plus bas : offre labo (Sanofi, UPSA…) valide si remise ≤ 50%
+      // (au-delà = donnée offre_ip aberrante → ignorée)
       var off = (b.offre_ip > 0) ? b.offre_ip : 0;
-      var hasOffer = off > 0 && (ip0 === 0 || off < ip0);
+      var hasOffer = off > 0 && ip0 > 0 && off < ip0 && off >= ip0 * 0.5;
       var ip = hasOffer ? off : ip0;
       var rem = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
       buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: ht, prix_ip: ip, offre: hasOffer, remise: rem,

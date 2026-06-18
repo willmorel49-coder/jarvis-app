@@ -4,7 +4,7 @@
 → crue dans crm/v2/marketing-mix-data.js (window.MKT_MIX), source de l'onglet Marketing.
 Nécessite pdftotext (les .txt sont régénérés ici). Python 3.9.
 """
-import re, json, os, subprocess, unicodedata
+import re, json, os, subprocess, unicodedata, openpyxl
 
 
 def norm_name(s):
@@ -39,6 +39,53 @@ def bench_name_index(sortie):
         if rk and len(rk) >= 4 and st > root.get(rk, 0): root[rk] = st
     return full, root
 
+
+# index nom/racine -> {cip, prix le plus bas} pour retrouver CIP & prix par nom
+def bench_pc_index():
+    txt = open('crm/benchmark-data.js', encoding='utf-8', errors='ignore').read()
+    objs = re.findall(r'\{[^{}]*?\}', txt)
+    full, root = {}, {}
+    for o in objs:
+        if 'designation:' not in o:
+            continue
+        mc = re.search(r'cip13:"([^"]*)"', o); md = re.search(r'designation:"([^"]*)"', o)
+        if not mc or not md:
+            continue
+        def n(k):
+            mm = re.search(k + r':(-?[\d.]+)', o); return float(mm.group(1)) if mm else 0.0
+        ip = n('prix_ip'); off = n('offre_ip')
+        best = best_price(ip, off)
+        rec = {'cip': mc.group(1), 'p': best}
+        k = norm_name(md.group(1))
+        if k and k not in full: full[k] = rec
+        rk = root_name(md.group(1))
+        if rk and len(rk) >= 4 and rk not in root: root[rk] = rec
+    return full, root
+
+
+# ── TOP ROTATIONS FRANCE : ce qui tourne le plus (qty), matché nom -> CIP/prix/sortie ──
+def parse_rotations(sortie, total, fI, rI):
+    f = 'TOP rotations France 2025 (1).xlsx'
+    if not os.path.exists(f):
+        return []
+    fullPC, rootPC = bench_pc_index()
+    wb = openpyxl.load_workbook(f, read_only=True, data_only=True); ws = wb.active
+    it = ws.iter_rows(values_only=True); next(it)
+    rows = []
+    for r in it:
+        d = r[0]
+        if not d:
+            continue
+        try: qty = int(r[2] or 0)
+        except (TypeError, ValueError): qty = 0
+        nm = str(d).strip()
+        pc = fullPC.get(norm_name(nm)) or rootPC.get(root_name(nm)) or {}
+        st = sortie.get(pc.get('cip', ''), 0) or fI.get(norm_name(nm), 0) or rI.get(root_name(nm), 0)
+        rows.append({'d': nm, 'cip': pc.get('cip', ''), 'p': pc.get('p'), 'q': qty, 'sortie': st, 'total': total})
+    rows.sort(key=lambda x: x['q'], reverse=True)
+    rows = rows[:100]
+    return [{'cat': 'Top rotations France 2025 (par quantité)', 'rows': rows}]
+
 MK = 'MARKETING'
 INTEGRAL_PDF = os.path.join(MK, "L'integral.pdf")
 ITP_PDF = os.path.join(MK, 'CATALOGUE ITP JUIN 2026 REPART2.pdf')
@@ -54,6 +101,13 @@ def pdftext(pdf, dst):
 def f(x):
     try: return round(float(str(x).replace(',', '.').replace(' ', '')), 2)
     except (TypeError, ValueError): return None
+
+
+def best_price(ip, off):
+    # offre valide seulement si remise <= 50% (au-delà = offre_ip aberrante)
+    if off and off > 0 and ip and ip > 0 and off < ip and off >= ip * 0.5:
+        return round(off, 2)
+    return round(ip, 2) if ip and ip > 0 else None
 
 
 # ── L'INTÉGRAL : parapharma par catégorie (cip, désignation, prix net HT) ──
@@ -152,12 +206,12 @@ def parse_bestsellers(sortie, total):
         q = num(o, 'ip_qty')
         if q <= 0: continue
         ip = num(o, 'prix_ip'); off = num(o, 'offre_ip')
-        best = off if (off > 0 and (ip <= 0 or off < ip)) else ip
+        best = best_price(ip, off)
         cip = sv(o, 'cip13')
         buckets[fam].append({'cip': cip, 'd': sv(o, 'designation'),
-                             'p': round(best, 2) if best > 0 else None, 'q': int(q),
+                             'p': best, 'q': int(q),
                              'sortie': sortie.get(cip, 0), 'total': total,
-                             'o': bool(off > 0 and (ip <= 0 or off < ip))})
+                             'o': bool(off > 0 and ip > 0 and off < ip and off >= ip * 0.5)})
     cats = []
     for key, label in FAMS:
         # tri par NB DE PHARMACIES qui commandent (puis volume), top 15
@@ -198,7 +252,9 @@ for c in itp:
     c['rows'].sort(key=lambda r: (r['sortie'], r['marge'] or 0), reverse=True)
 
 print('  [match nom] L\'Intégral : %d produits rattachés à des ventes' % matched_i)
+rotations = parse_rotations(sortie, total, fullIdx, rootIdx)
 data = {
+    'rotations': rotations,
     'integral': integral,
     'itp': itp,
     'bestsellers': parse_bestsellers(sortie, total),
