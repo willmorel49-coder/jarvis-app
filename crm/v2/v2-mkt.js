@@ -306,6 +306,7 @@
             '<div class="v2-card-head"><div class="v2-card-t">' + ICO('cart', 17, 1.8) + 'Produits</div>' +
               '<span class="v2-card-link" id="mkt-count" style="cursor:default">' + n + ' produit' + (n > 1 ? 's' : '') + '</span></div>' +
             '<div id="mkt-prodlist">' + prodHtml + '</div>' +
+            catDatalist() +
           '</div>' +
           '<div class="mkt-editbar">' +
             '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.openPicker()">' + ICO('plus', 17, 2) + 'Ajouter des produits</button>' +
@@ -325,6 +326,16 @@
     refreshPreview();
     if (!V2._mktFitBound) { window.addEventListener('resize', fitSheet); V2._mktFitBound = true; }
   }
+  var CAT_SUGG = ['Antalgiques & douleur', 'ORL · Nez & gorge', 'Digestif & transit', 'Dermatologie', 'Circulation veineuse', 'Compléments & vitamines', 'Diabète & autosurveillance', 'Ophtalmologie', 'Pansements & cicatrisation', 'Hygiène · Bébé · Sérum phy', 'Sommeil · Stress', 'Sevrage tabac', 'Contraception & gynéco', 'Solaire', 'Minceur', 'Vétérinaire'];
+  function catDatalist() {
+    var seen = {}, opts = '';
+    (editing && editing.products || []).forEach(function (p) {
+      var c = (p.cat || '').trim();
+      if (c && !seen[c]) { seen[c] = 1; opts += '<option value="' + esc(c) + '">'; }
+    });
+    CAT_SUGG.forEach(function (c) { if (!seen[c]) { seen[c] = 1; opts += '<option value="' + esc(c) + '">'; } });
+    return '<datalist id="mkt-cats">' + opts + '</datalist>';
+  }
   function prodRow(p, i) {
     var img = p.img
       ? '<span class="mkt-prow-img" style="background-image:url(' + esc(p.img) + ')"></span>'
@@ -333,7 +344,10 @@
     return '<div class="mkt-prow">' + img +
       '<div class="mkt-prow-main">' +
         '<input class="mkt-prow-namei" value="' + esc(p.name || '') + '" placeholder="Nom du produit" aria-label="Nom" oninput="V2.mkt.setProd(' + i + ',\'name\',this.value)">' +
-        '<div class="mkt-prow-sub">' + (sub || 'produit libre') + (p.froid ? ' · FROID' : '') + '</div>' +
+        '<div class="mkt-prow-sub2">' +
+          '<input class="mkt-prow-cati" list="mkt-cats" value="' + esc(p.cat || '') + '" placeholder="Catégorie…" aria-label="Catégorie" oninput="V2.mkt.setProd(' + i + ',\'cat\',this.value)">' +
+          '<span class="mkt-prow-sub">' + (sub || 'produit libre') + (p.froid ? ' · FROID' : '') + '</span>' +
+        '</div>' +
       '</div>' +
       '<label class="mkt-prow-f"><span>Prix €</span><input type="number" inputmode="decimal" step="0.01" min="0" value="' + (p.price != null && p.price !== 0 ? p.price : '') + '" aria-label="Prix" oninput="V2.mkt.setProd(' + i + ',\'price\',this.value)"></label>' +
       '<label class="mkt-prow-f"><span>Remise %</span><input type="number" inputmode="decimal" step="0.1" min="0" value="' + (p.remise != null && p.remise !== 0 ? p.remise : '') + '" aria-label="Remise" oninput="V2.mkt.setProd(' + i + ',\'remise\',this.value)"></label>' +
@@ -452,7 +466,8 @@
     var bg = th.bg || '#FFFFFF';
     var showPrice = th.showPrice !== false, showRemise = th.showRemise !== false;
     var anyImg = (it.products || []).some(function (p) { return p.img; });
-    var rows = (it.products || []).map(function (p, i) {
+    var cols = (anyImg ? 1 : 0) + 3 + (showPrice ? 1 : 0) + (showRemise ? 1 : 0);
+    function prodTr(p, n) {
       var img = prodImg(p, forPdf);
       var thumb = anyImg
         ? '<td style="padding:6px 8px;width:40px;text-align:center">' + (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : '') + '</td>'
@@ -460,7 +475,7 @@
       var ref = p.cip ? esc(p.cip) : (p.ean ? esc(p.ean) : '—');
       var rem = (p.remise > 0) ? String(p.remise).replace('.', ',') + ' %' : '—';
       return '<tr style="border-bottom:1px solid #ECEFF5;page-break-inside:avoid">' + thumb +
-        '<td style="padding:7px 10px;text-align:center;font-size:9px;color:#9AA1B2;font-family:monospace;width:24px">' + (i + 1) + '</td>' +
+        '<td style="padding:7px 10px;text-align:center;font-size:9px;color:#9AA1B2;font-family:monospace;width:24px">' + n + '</td>' +
         '<td style="padding:7px 10px;font-size:11.5px;font-weight:600;color:#10131C">' + esc((p.name || '').slice(0, 62)) +
           (p.brand ? ' <span style="color:#9AA1B2;font-weight:500">· ' + esc(p.brand) + '</span>' : '') +
           (p.froid ? ' <span style="font-size:7.5px;color:#00B5D8;border:1px solid #b8edf7;border-radius:4px;padding:0 3px;vertical-align:middle">FROID</span>' : '') + '</td>' +
@@ -468,7 +483,23 @@
         (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:800;color:' + acc + '">' + (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</td>' : '') +
         (showRemise ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;font-weight:700;color:#1E9E6A">' + rem + '</td>' : '') +
       '</tr>';
-    }).join('');
+    }
+    // regroupe par catégorie (ordre d'apparition) ; sous-titres si plusieurs catégories
+    var order = [], gmap = {};
+    (it.products || []).forEach(function (p) {
+      var c = ((p.cat || '').trim()) || '—';
+      if (!gmap[c]) { gmap[c] = []; order.push(c); }
+      gmap[c].push(p);
+    });
+    var hasCats = order.length > 1 || (order.length === 1 && order[0] !== '—');
+    var rows = '', nn = 0;
+    order.forEach(function (c) {
+      if (hasCats) {
+        rows += '<tr><td colspan="' + cols + '" style="padding:10px 10px 5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:' + acc + ';background:#F4F6FB;border-top:1px solid #E2E7F0">' +
+          esc(c === '—' ? 'Autres' : c) + ' <span style="color:#9AA1B2;font-weight:600">· ' + gmap[c].length + '</span></td></tr>';
+      }
+      gmap[c].forEach(function (p) { nn++; rows += prodTr(p, nn); });
+    });
     function thh(lbl, al) { return '<th style="padding:6px 10px;text-align:' + al + ';font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">' + lbl + '</th>'; }
     var body = rows
       ? '<table style="width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden">' +
@@ -565,6 +596,7 @@
       if (field === 'name') p.name = v;
       else if (field === 'price') p.price = (v === '' ? 0 : (parseFloat(String(v).replace(',', '.')) || 0));
       else if (field === 'remise') p.remise = (v === '' ? 0 : (parseFloat(String(v).replace(',', '.')) || 0));
+      else if (field === 'cat') p.cat = v;
       refreshPreview();   // n'écrase pas la ligne en cours d'édition (pas de refreshProducts)
     },
     addCustom: function () {
@@ -664,17 +696,17 @@
         var L = mixFlat(), gm = null;
         for (var m = 0; m < L.length; m++) if (String(L[m].id) === String(key)) { gm = L[m]; break; }
         if (!gm) return;
-        p = { src: 'mix', key: 'm' + gm.id, id: '', name: gm.name, brand: (gm.group === 'itp' ? 'ITP' : (gm.group === 'integral' ? 'L\'Intégral' : '')), ean: '', cip: gm.cip, price: gm.price, remise: gm.remise, img: '', froid: false };
+        p = { src: 'mix', key: 'm' + gm.id, id: '', name: gm.name, brand: (gm.group === 'itp' ? 'ITP' : (gm.group === 'integral' ? 'L\'Intégral' : '')), ean: '', cip: gm.cip, price: gm.price, remise: gm.remise, img: '', froid: false, cat: gm.cat || '' };
       } else if (src === 'offilog') {
         var O = window.OFFILOG_BEST || [], b = null;
         for (var i = 0; i < O.length; i++) if (String(O[i].id) === String(key)) { b = O[i]; break; }
         if (!b) return;
-        p = { src: 'offilog', key: 'o' + b.id, id: b.id, name: b.name, brand: b.brand || '', ean: b.ean || '', cip: '', price: b.price || 0, remise: 0, img: b.img || '', froid: false };
+        p = { src: 'offilog', key: 'o' + b.id, id: b.id, name: b.name, brand: b.brand || '', ean: b.ean || '', cip: '', price: b.price || 0, remise: 0, img: b.img || '', froid: false, cat: 'Parapharmacie' };
       } else {
         var B = window.BENCHMARK || [], g = null;
         for (var j = 0; j < B.length; j++) if (String(B[j].cip13) === String(key)) { g = B[j]; break; }
         if (!g) return;
-        p = { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: refPriceB(g), remise: remiseB(g), img: '', froid: !!g.is_froid };
+        p = { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: refPriceB(g), remise: remiseB(g), img: '', froid: !!g.is_froid, cat: '' };
       }
       if (editing.products.some(function (x) { return String(x.key) === String(p.key); })) return;
       editing.products.push(p); refreshProducts(); renderPickList();
@@ -820,7 +852,12 @@
       '.mkt-prow-f input:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}',
       '@media(max-width:560px){.mkt-prow{flex-wrap:wrap}.mkt-prow-f{width:auto;flex:1}}',
       '.mkt-prow-name{font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.mkt-prow-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}',
+      '.mkt-prow-sub{font-size:11px;color:var(--muted);font-family:var(--mono)}',
+      '.mkt-prow-sub2{display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap}',
+      '.mkt-prow-cati{border:1px solid var(--line);background:var(--card);border-radius:7px;padding:3px 8px;font-family:var(--font);font-size:11px;font-weight:600;color:var(--ip-blue);max-width:200px}',
+      '.mkt-prow-cati:hover{border-color:var(--ip-blue)}',
+      '.mkt-prow-cati:focus{outline:none;border-color:var(--ip-blue);background:#fff;box-shadow:0 0 0 3px var(--halo)}',
+      '.mkt-prow-cati::placeholder{color:var(--muted-2);font-weight:500}',
       '.mkt-prow-price{font-size:14px;font-weight:800;color:var(--ip-blue);flex-shrink:0}',
       '.mkt-prow-x{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.16s var(--ease)}',
       '.mkt-prow-x:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
