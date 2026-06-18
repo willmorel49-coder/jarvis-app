@@ -101,3 +101,12 @@ STATS/*.zip
 STATS/*.CSV.gz
 STATS/OPEN_MEDIC_2025.CSV
 STATS/NB_2025_cip13_reg.CSV
+
+# ── PDF sources/privés à la RACINE (jamais sur Git : lourds + perso) ──
+# Les PDF hébergés volontairement sont dans crm/v2/ (catalogue-*.pdf, ouverture-compte-*.pdf)
+/*.pdf
+GRIPAMEL*.pdf
+William_MOREL.pdf
+2026 OUVERTURE DE COMPTE*.pdf
+CATALOGUE ITP*.pdf
+L'INTEGRAL COMPLET*.pdf
