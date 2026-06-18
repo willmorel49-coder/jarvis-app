@@ -1,0 +1,159 @@
+# -*- coding: utf-8 -*-
+"""Mix marketing grossiste : catalogue L'Intégral (parapharma par catégorie)
++ catalogue ITP (pansements/DM avec marge) + best-sellers (sorties IP).
+→ crue dans crm/v2/marketing-mix-data.js (window.MKT_MIX), source de l'onglet Marketing.
+Nécessite pdftotext (les .txt sont régénérés ici). Python 3.9.
+"""
+import re, json, os, subprocess
+
+MK = 'MARKETING'
+INTEGRAL_PDF = os.path.join(MK, "L'integral.pdf")
+ITP_PDF = os.path.join(MK, 'CATALOGUE ITP JUIN 2026 REPART2.pdf')
+BENCH = 'crm/benchmark-data.js'
+OUT = 'crm/v2/marketing-mix-data.js'
+
+
+def pdftext(pdf, dst):
+    subprocess.run(['pdftotext', '-layout', pdf, dst], check=False)
+    return open(dst, encoding='utf-8', errors='ignore').read().splitlines()
+
+
+def f(x):
+    try: return round(float(str(x).replace(',', '.').replace(' ', '')), 2)
+    except (TypeError, ValueError): return None
+
+
+# ── L'INTÉGRAL : parapharma par catégorie (cip, désignation, prix net HT) ──
+def parse_integral():
+    lines = pdftext(INTEGRAL_PDF, '/tmp/integral.txt')
+    rx = re.compile(r'^\s*(\d{6,13})\s+(.+?)\s+([\d.,]+)\s*€')
+    cats = []  # [(label, [rows])]
+    cur = None
+    for ln in lines:
+        s = ln.strip(); up = s.upper()
+        if s and not re.search(r'\d', s) and 4 < len(s) < 42 and re.match(r"^[A-ZÉÈÀÂÊÎÔÛÇ'&/\- ]+$", s) \
+           and 'PRIX NET' not in up and 'PHARMAML' not in up and 'CATALOGUE' not in up and 'MARS' not in up:
+            label = re.sub(r'^[\-\s]+', '', s).strip()
+            if 'TEGRA' in up or label == 'L':   # reste de la couverture « L'INTÉGRAL »
+                label = 'OPHTALMOLOGIE'
+            cur = {'cat': label, 'rows': []}; cats.append(cur); continue
+        m = rx.match(ln)
+        if m and cur is not None:
+            cur['rows'].append({'cip': m.group(1), 'd': m.group(2).strip(), 'p': f(m.group(3))})
+    # 1ère catégorie réelle = ophtalmo (cover « L MARS » filtrée → produits orphelins avant 1ère cat)
+    cats = [c for c in cats if c['rows']]
+    return cats
+
+
+# ── Sorties réelles : nb de pharmacies (de notre réseau) qui commandent chaque CIP ──
+def load_sorties():
+    src = 'crm/v2/wml-officines-data.js'
+    t = open(src, encoding='utf-8', errors='ignore').read()
+    mo = re.search(r'WML_OFFICINES\s*=\s*(\[.*?\]);\s*\nconst WML_SALES', t, re.S)
+    ms = re.search(r'WML_SALES\s*=\s*(\[.*?\]);', t, re.S)
+    total = len(json.loads(mo.group(1))) if mo else 0
+    sortie = {}
+    if ms:
+        seen = {}
+        for s in json.loads(ms.group(1)):
+            # [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
+            pid, cip = str(s[0]), str(s[3])
+            seen.setdefault(cip, set()).add(pid)
+        for cip, st in seen.items():
+            sortie[cip] = len(st)
+    print('  [sorties] %d CIP avec commandes · total %d officines' % (len(sortie), total))
+    return sortie, total
+
+
+# ── ITP : pansements / dispositifs (marge = PPHT - prix remisé) ──
+def parse_itp():
+    lines = pdftext(ITP_PDF, '/tmp/itp.txt')
+    out = []; cur = 'Pansements & dispositifs'
+    i = 0
+    while i < len(lines):
+        s = lines[i].strip()
+        if re.match(r'^[A-ZÉÈ].{0,42}$', s) and any(k in s.upper() for k in ('PANSEMENT', 'COMPRESS', 'BANDE', 'SUTURE', 'CONTENTION')) and 'PPHT' not in s:
+            cur = re.sub(r'\s+', ' ', s).replace('–', '-'); i += 1; continue
+        m = re.search(r'PPHT\s*=\s*([\d.,]+)\s*€.*?LPPR\s*=\s*([\d.,]+)\s*€', lines[i])
+        if m:
+            name = re.sub(r'\s+', ' ', lines[i][:m.start()]).strip()
+            ppht, lppr = f(m.group(1)), f(m.group(2))
+            rem = pr = None; desc = ''
+            for j in range(i + 1, min(i + 6, len(lines))):
+                mr = re.search(r'Remise\s*([\d.,]+)\s*%', lines[j])
+                mp = re.search(r'remis[ée]\s*:?\s*([\d.,]+)\s*€', lines[j])
+                if mr: rem = f(mr.group(1))
+                if mp: pr = f(mp.group(1))
+                t = lines[j].strip()
+                if t and not mr and not mp and 'EAN' not in t and 'Packaging' not in t and 'PPHT' not in t and not desc:
+                    desc = re.sub(r'\s+', ' ', t)
+            if name and ppht and pr:
+                out.append({'cat': cur, 'd': (name + (' ' + desc if desc else '')).strip()[:70],
+                            'ppht': ppht, 'lppr': lppr, 'remise': rem, 'p': pr,
+                            'marge': round(ppht - pr, 2)})
+        i += 1
+    # regroupe par catégorie
+    cats = []
+    for p in out:
+        c = next((x for x in cats if x['cat'] == p['cat']), None)
+        if not c: c = {'cat': p['cat'], 'rows': []}; cats.append(c)
+        c['rows'].append({k: p[k] for k in ('d', 'ppht', 'lppr', 'remise', 'p', 'marge')})
+    return cats
+
+
+# ── BEST-SELLERS : classés par NB DE PHARMACIES qui commandent (sortie réseau) ──
+def parse_bestsellers(sortie, total):
+    txt = open(BENCH, encoding='utf-8', errors='ignore').read()
+    objs = re.findall(r'\{[^{}]*?\}', txt)
+    def num(o, k):
+        m = re.search(k + r':(-?[\d.]+)', o); return float(m.group(1)) if m else 0.0
+    def sv(o, k):
+        m = re.search(k + r':"([^"]*)"', o); return m.group(1) if m else ''
+    FAMS = [('froid', 'Chaîne du froid'), ('biosim', 'Biosimilaires'),
+            ('generiques', 'Génériques'), ('princeps', 'Princeps & spécialités')]
+    buckets = {k: [] for k, _ in FAMS}
+    for o in objs:
+        if 'designation:' not in o: continue
+        nat = sv(o, 'artnature')
+        fam = 'froid' if 'is_froid:true' in o else ('biosim' if nat == 'biosimilaire' else ('generiques' if nat in ('generique', 'generique_partenaire') else 'princeps'))
+        q = num(o, 'ip_qty')
+        if q <= 0: continue
+        ip = num(o, 'prix_ip'); off = num(o, 'offre_ip')
+        best = off if (off > 0 and (ip <= 0 or off < ip)) else ip
+        cip = sv(o, 'cip13')
+        buckets[fam].append({'cip': cip, 'd': sv(o, 'designation'),
+                             'p': round(best, 2) if best > 0 else None, 'q': int(q),
+                             'sortie': sortie.get(cip, 0), 'total': total,
+                             'o': bool(off > 0 and (ip <= 0 or off < ip))})
+    cats = []
+    for key, label in FAMS:
+        # tri par NB DE PHARMACIES qui commandent (puis volume), top 15
+        rows = sorted(buckets[key], key=lambda r: (r['sortie'], r['q']), reverse=True)[:15]
+        if rows: cats.append({'cat': label, 'rows': rows})
+    return cats
+
+
+sortie, total = load_sorties()
+integral = parse_integral()
+# attache la sortie réseau aux produits L'Intégral dont le CIP matche nos ventes, et trie
+for c in integral:
+    for r in c['rows']:
+        r['sortie'] = sortie.get(str(r['cip']), 0); r['total'] = total
+    c['rows'].sort(key=lambda r: r['sortie'], reverse=True)
+data = {
+    'integral': integral,
+    'itp': parse_itp(),
+    'bestsellers': parse_bestsellers(sortie, total),
+    'total': total,
+}
+with open(OUT, 'w', encoding='utf-8') as fh:
+    fh.write('// Mix marketing grossiste (L\'Intégral + ITP + best-sellers) — generate_marketing_mix.py\n')
+    fh.write('window.MKT_MIX = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
+
+ni = sum(len(c['rows']) for c in data['integral'])
+nt = sum(len(c['rows']) for c in data['itp'])
+nb = sum(len(c['rows']) for c in data['bestsellers'])
+print('OK ->', OUT)
+print('  L\'Intégral : %d produits / %d catégories' % (ni, len(data['integral'])))
+print('  ITP        : %d produits / %d catégories' % (nt, len(data['itp'])))
+print('  Best-sellers: %d produits / %d familles' % (nb, len(data['bestsellers'])))
