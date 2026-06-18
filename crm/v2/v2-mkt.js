@@ -45,6 +45,8 @@
   var editing = null;
   var pickSrc = 'mix';       // source : 'mix' (sélection grossiste) | 'gros' (catalogue méd.) | 'offilog'
   var catSrc = 'nr';   // section Catalogues grossiste : 'integral' | 'itp' | 'best'
+  var catSel = [];     // panier : produits cochés (+) dans le catalogue grossiste
+  var catRows = [];     // index plat des lignes affichées (pour les boutons +)
 
   // ════════════════════════════════════════════
   // STORE (Supabase partagé + repli local)
@@ -223,6 +225,13 @@
   // ════════════════════════════════════════════
   // CATALOGUES GROSSISTE (L'Intégral + ITP + Top ventes)
   // ════════════════════════════════════════════
+  function updateCatBar() {
+    var bar = document.getElementById('mkt-catbar'); if (!bar) return;
+    var n = catSel.length;
+    var lbl = document.getElementById('mkt-catbar-n');
+    if (lbl) lbl.textContent = n + ' produit' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '');
+    bar.classList.toggle('on', n > 0);
+  }
   function renderCatalogues(root) {
     var M = window.MKT_MIX || {}, total = M.total || 0;
     var srcs = [
@@ -235,6 +244,7 @@
     var cur = srcs.filter(function (s) { return s.k === catSrc; })[0] || srcs[0];
     var tabs = srcs.map(function (s) { return '<button class="mkt-srcbtn' + (s.k === catSrc ? ' on' : '') + '" onclick="V2.mkt.catSrc(\'' + s.k + '\')">' + esc(s.label) + '</button>'; }).join('');
     var offre = ' <span style="font-size:8.5px;font-weight:800;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 14%,#fff);padding:1px 5px;border-radius:5px;text-transform:uppercase">offre</span>';
+    catRows = [];
     var cats = cur.data.map(function (c) {
       var trs = (c.rows || []).map(function (r, i) {
         var price = (r.p > 0) ? V2.fmtEur(r.p) : '—';
@@ -242,30 +252,42 @@
           ? '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.marge ? V2.fmtEur(r.marge) : '—') + '</td>'
           : '<td class="num" style="font-weight:700">' + (r.sortie > 0 ? r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + total + '</span>' : '—') + '</td>';
         var volCol = '<td class="num" style="font-weight:800;color:var(--ip-ink)">' + (r.vol > 0 ? V2.fmtNum(r.vol) : '—') + '</td>';
+        var fi = catRows.length;
+        catRows.push({ d: r.d, cip: r.cip, p: r.p, froid: false, cat: c.cat });
+        var selKey = String(r.cip || r.d);
+        var added = catSel.some(function (x) { return x.key === selKey; });
+        var addBtn = '<td style="width:36px;text-align:center"><button class="mkt-catadd' + (added ? ' on' : '') + '" id="mkt-ca-' + fi + '" title="' + (added ? 'Retirer de ma sélection' : 'Ajouter à une fiche') + '" onclick="V2.mkt.catAdd(' + fi + ')">' + ICO(added ? 'check' : 'plus', 15, 2.4) + '</button></td>';
         return '<tr>' +
           '<td class="num" style="color:var(--muted-2);width:28px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
           '<td><span class="mkt-cat-prod">' + esc(r.d) + '</span>' + (r.o ? offre : '') + '</td>' +
           '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip || '—') + '</td>' +
-          '<td class="num" style="color:var(--ip-blue);font-weight:700">' + price + '</td>' + midCol + volCol +
+          '<td class="num" style="color:var(--ip-blue);font-weight:700">' + price + '</td>' + midCol + volCol + addBtn +
         '</tr>';
       }).join('');
       var midTh = (cur.k === 'itp') ? 'Marge/bte' : 'Sorties';
       return '<div class="v2-card" style="margin-bottom:14px;padding:16px 18px">' +
         '<div class="v2-card-t" style="margin-bottom:10px">' + esc(c.cat) + ' <span style="color:var(--muted);font-weight:500">· ' + (c.rows || []).length + '</span></div>' +
-        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
+        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th><th></th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
       '</div>';
     }).join('');
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap">' +
         '<button class="v2-back" style="margin-bottom:16px" onclick="V2.go(\'marketing\')">' + ICO('back', 16) + 'Marketing</button>' +
         '<div class="v2-page-title">Catalogues grossiste</div>' +
-        '<div class="v2-page-sub">L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent</div>' +
+        '<div class="v2-page-sub">L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent. Coche les <b>+</b> pour bâtir une fiche.</div>' +
         '<div class="mkt-pick-src" style="margin:16px 0 14px">' + tabs + '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
           '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.catPdf(\'' + cur.k + '\')">' + ICO('download', 16) + 'Générer le doc marketing (PDF)</button>' +
           (cur.pdf ? '<a class="v2-btn v2-btn-ghost" href="' + cur.pdf + '" download>' + ICO('download', 16) + 'Catalogue ' + esc(cur.label) + ' d\'origine</a>' : '') +
         '</div>' +
         (cats || '<div class="v2-empty"><div class="v2-empty-d">Catalogue indisponible.</div></div>') +
+        '<div class="mkt-catbar' + (catSel.length ? ' on' : '') + '" id="mkt-catbar">' +
+          '<span id="mkt-catbar-n">' + catSel.length + ' produit' + (catSel.length > 1 ? 's' : '') + ' sélectionné' + (catSel.length > 1 ? 's' : '') + '</span>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.catClear()">Vider</button>' +
+            '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.catBuildFiche()">' + ICO('plus', 15) + 'Créer une fiche marketing</button>' +
+          '</div>' +
+        '</div>' +
       '</div>';
   }
 
@@ -631,6 +653,26 @@
       if (btn) btn.classList.add('on');
     },
     catSrc: function (s) { catSrc = s; V2.render(); },
+    catAdd: function (fi) {
+      var row = catRows[fi]; if (!row) return;
+      var key = String(row.cip || row.d);
+      var at = -1; for (var i = 0; i < catSel.length; i++) { if (catSel[i].key === key) { at = i; break; } }
+      if (at >= 0) catSel.splice(at, 1);
+      else catSel.push({ src: 'cat', key: key, id: '', name: row.d, brand: '', ean: '', cip: row.cip ? String(row.cip) : '', price: row.p || 0, remise: 0, img: '', froid: !!row.froid, cat: row.cat || '' });
+      var on = at < 0;
+      var btn = document.getElementById('mkt-ca-' + fi);
+      if (btn) { btn.classList.toggle('on', on); btn.title = on ? 'Retirer de ma sélection' : 'Ajouter à une fiche'; btn.innerHTML = ICO(on ? 'check' : 'plus', 15, 2.4); }
+      updateCatBar();
+    },
+    catClear: function () { catSel = []; V2.render(); },
+    catBuildFiche: function () {
+      if (!catSel.length) { V2.toast('Coche au moins un produit (+)', 'warn'); return; }
+      editing = { id: newId(), type: 'selection', title: '', accroche: '', footer: '', status: 'brouillon',
+                  products: catSel.map(function (p) { return Object.assign({}, p); }),
+                  theme: defaultTheme('selection'), owner: (V2.user && V2.user.email) || '', _new: 'selection' };
+      catSel = [];
+      V2.go('marketing', 'new-selection');
+    },
     catPdf: function (srcKey) {
       if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
       var M = window.MKT_MIX || {};
@@ -882,6 +924,12 @@
       '.mkt-pick-src{display:flex;gap:6px;padding:10px 16px 4px}',
       '.mkt-srcbtn{flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 10px;font-family:var(--font);font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}',
       '.mkt-srcbtn.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.mkt-catadd{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ip-blue);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.14s var(--ease)}',
+      '.mkt-catadd:hover{border-color:var(--ip-blue);background:var(--halo)}',
+      '.mkt-catadd.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.mkt-catbar{position:sticky;bottom:14px;display:none;align-items:center;justify-content:space-between;gap:14px;margin-top:18px;padding:12px 16px;border-radius:14px;background:var(--ip-ink);color:#fff;box-shadow:0 12px 34px rgba(8,16,40,.28)}',
+      '.mkt-catbar.on{display:flex}',
+      '.mkt-catbar #mkt-catbar-n{font-weight:700;font-size:13.5px}',
       '.mkt-pick-ic{width:40px;height:40px;border-radius:9px;background:var(--card-2);display:flex;align-items:center;justify-content:center;color:var(--ip-blue);flex-shrink:0}',
       '.mkt-prow-pill{display:flex;align-items:center;justify-content:center;color:var(--ip-blue);background:var(--card-2)}',
       '.mkt-pick-list{overflow-y:auto;padding:8px}',

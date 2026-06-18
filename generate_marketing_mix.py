@@ -239,29 +239,7 @@ def load_sales_index():
 
 
 # ── Catalogue NR : nos sorties NON remboursables, classées par RAYON pharmacien ──
-RAYONS = [
-    ('Ophtalmologie', ['COLLY', 'OPHT', 'OCUL', 'LARM', 'THEALOSE', 'VISMED', 'HYLO', 'OPTIVE', 'SKIACOL', 'NEOVIS', 'BLEPHA', 'SYSTANE', 'DACUDOSE', 'VITABACT', 'GTT OCUL', 'SOFTACORT', 'REFRESH', 'MONOPROST', 'CATIONORM', 'DESOMEDINE', 'ARTELAC', 'ELIXYA', 'CY DOS', 'CY FL']),
-    ('Antalgiques & douleur', ['DOLIPRANE', 'DAFALGAN', 'EFFERALGAN', 'IBUPRO', 'IBUFETUM', 'SPIFEN', 'NUROFEN', 'LAMALINE', 'IZALGI', 'ANTADYS', 'FLECTOR', 'PARACETAMOL', 'ASPIRINE', 'ASPEGIC', 'NIFLU', 'KETUM', 'VOLTAREN', 'CODOLIPRANE']),
-    ('Diabète & autosurveillance', ['BANDELETTE', 'ACCU-CHEK', 'ACCU CHEK', 'FREESTYLE', 'LANCETTE', 'AUTOPIQUEUR', 'ELECTRODE', 'GLYCEMIE', 'GLUCO', 'DEXTRO', 'AUTOPIQ', 'ONETOUCH', 'MOUNJARO', 'OZEMPIC', 'TRULICITY', 'VICTOZA', 'METFORMINE', 'STAGID']),
-    ('ORL · Nez & gorge', ['NASAL', 'RHINO', 'NARIN', 'GORGE', 'SINUS', 'MOUCHE', 'DERINOX', 'STERIMAR', 'HUMER', 'PHYSIOMER', 'PASTILLE', 'NAS ', 'NAS.', 'NAS,', 'TOUX']),
-    ('Pansements & cicatrisation', ['PANS', 'COMPRESS', 'MEPILEX', 'ALLEVYN', 'AQUACEL', 'JELONET', 'CONVAFOAM', 'HYDROCELL', 'HYDROFIBRE', 'ALGOSTERIL', 'URGO', 'MEPORE', 'TULLE', 'SPARADRAP', 'BIATAIN', 'BANDE ']),
-    ('Dermatologie', ['CREME', 'POMM', 'BIAFINE', 'CICATRI', 'BRULURE', 'EMUL CUTA', 'DERMI', 'EPIDUO', 'SOOLANTRA', 'KERATO', 'CR TB', 'CR FL']),
-    ('Circulation veineuse', ['VEIN', 'PHLEB', 'CONTENTION', 'VARICE', 'AETOXISCLEROL', 'VEINAMITOL']),
-    ('Digestif & transit', ['LAXAT', 'TRANSIT', 'NORMACOL', 'CONSTIP', 'GAVISCON', 'METEO', 'SPASFON', 'HEMORRO', 'DELIPROCT', 'SUPP', 'LAVEMENT', 'BEDELIX']),
-    ('Compléments & vitamines', ['VIT ', 'VITAM', 'MAGNES', 'MAGNE', 'FER ', 'ZINC', 'B12', 'OMEGA', 'OLIGO', 'BIOTINE', 'BEPANTHENE', 'PROBIO', 'TARDYFERON', 'NICOBION', 'PRINCI-B', 'BOP CPR']),
-    ('Hygiène · Bébé · Sérum phy', ['SERUM PHY', 'PHYSIO', 'VERSOL', 'LAVAGE', 'BEBE', 'NETTOY', 'HYGIEN', 'SAVON', 'CHLOR NA', 'SOL IRR', 'PHYLARM']),
-    ('Sevrage tabac', ['NICOR', 'NICOPATCH', 'NICOTINE', 'NIQUITIN', 'TABAC']),
-    ('Sommeil · Stress', ['SOMMEIL', 'MELATON', 'EUPHYT', 'ANXEM', 'SERESTA', 'STRESAM', 'CARDIOCALM', 'LIBRAX']),
-    ('Contraception & gynéco', ['OEDIEN', 'QLAIRA', 'SLINDA', 'ZOELY', 'EVRA', 'TRIAFEMI', 'OVUL', 'ABUFEN', 'CANDAZOL']),
-    ('Vétérinaire', ['VETO', ' CHIEN', ' CHAT', 'ANIMAL']),
-]
-def classify_rayon(d):
-    up = ' ' + unicodedata.normalize('NFKD', str(d or '')).encode('ascii', 'ignore').decode().upper() + ' '
-    for lab, kws in RAYONS:
-        for kw in kws:
-            if kw in up:
-                return lab
-    return 'Autres produits NR'
+from mkt_rayons import classify_rayon, RAYONS  # noqa: E402  (source de vérité partagée)
 def nr_catalogue(SI):
     groups = {}
     for rec in SI['desig'].values():
