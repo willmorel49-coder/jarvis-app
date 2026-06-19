@@ -9,6 +9,7 @@ Python 3.9 compatible.
 """
 import json
 import os
+import glob
 import sqlite3
 import openpyxl
 
@@ -187,7 +188,9 @@ def load_groupements():
 
 BASE = '/Users/williammorel/JARVIS/APP'
 STATS = os.path.join(BASE, 'STATS')
-PHARM_FILE = os.path.join(STATS, 'WML_pharmacies.xlsx')
+# Tous les masters pharmacies (WML + MD + futurs commerciaux) — WML d'abord (prioritaire)
+PHARM_FILES = sorted(glob.glob(os.path.join(STATS, '*_pharmacies.xlsx')),
+                     key=lambda p: (not os.path.basename(p).startswith('WML_'), p))
 # (commercial, préfixe fichier) — chaque source = 5 mois
 SOURCES = [
     ('Will', 'WML'),
@@ -223,38 +226,51 @@ def cip13(v):
         return s(v)
 
 
-# ── 1. Master officines (WML_pharmacies) : code CIP -> infos ──
+# ── 1. Master officines (tous les *_pharmacies.xlsx) : code CIP -> infos ──
 pharm = {}
-wb = openpyxl.load_workbook(PHARM_FILE, read_only=True, data_only=True)
-ws = wb.active
-rows = ws.iter_rows(values_only=True)
-hdr = next(rows)
-idx = {name: i for i, name in enumerate(hdr)}
+for pf in PHARM_FILES:
+    wb = openpyxl.load_workbook(pf, read_only=True, data_only=True)
+    ws = wb.active
+    rows = ws.iter_rows(values_only=True)
+    hdr = next(rows)
+    idx = {name: i for i, name in enumerate(hdr)}
 
+    def col(row, name, _idx=idx):
+        i = _idx.get(name)
+        return row[i] if (i is not None and i < len(row)) else None
 
-def col(row, name):
-    i = idx.get(name)
-    return row[i] if (i is not None and i < len(row)) else None
-
-
-for r in rows:
-    code = s(col(r, 'Code CIP'))
-    if not code:
-        continue
-    try:
-        code = str(int(float(code)))
-    except (TypeError, ValueError):
-        pass
-    pharm[code] = {
-        'name': s(col(r, 'Nom abrégé')) or ('Officine ' + code),
-        'ville': s(col(r, 'Ville')),
-        'cp': s(col(r, 'Code Postal')),
-        'tel': s(col(r, 'Téléphone')),
-        'groupement': s(col(r, 'Groupement Partenaire')),
-        'grossiste': s(col(r, 'Grossiste Principal')),
-        'potentiel': col(r, 'Potentiel'),
-    }
-wb.close()
+    added = 0
+    for r in rows:
+        code = s(col(r, 'Code CIP'))
+        if not code:
+            continue
+        try:
+            code = str(int(float(code)))
+        except (TypeError, ValueError):
+            pass
+        rec = {
+            'name': s(col(r, 'Nom abrégé')) or ('Officine ' + code),
+            'ville': s(col(r, 'Ville')),
+            'cp': s(col(r, 'Code Postal')),
+            'tel': s(col(r, 'Téléphone')),
+            'groupement': s(col(r, 'Groupement Partenaire')),
+            'grossiste': s(col(r, 'Grossiste Principal')),
+            'potentiel': col(r, 'Potentiel'),
+        }
+        if code not in pharm:
+            pharm[code] = rec
+            added += 1
+        else:                              # fusion : on complète les champs vides
+            ex = pharm[code]
+            for k in ('ville', 'cp', 'tel', 'groupement', 'grossiste'):
+                if not ex.get(k) and rec.get(k):
+                    ex[k] = rec[k]
+            if ex.get('potentiel') in (None, '') and rec.get('potentiel') not in (None, ''):
+                ex['potentiel'] = rec['potentiel']
+            if (not ex.get('name') or ex['name'].startswith('Officine ')) and not rec['name'].startswith('Officine '):
+                ex['name'] = rec['name']
+    wb.close()
+    print('  [master] %s : +%d officines (total %d)' % (os.path.basename(pf), added, len(pharm)))
 
 # ── 2. Ventes (Will=WML + Pauline=PGN, 5 mois chacun) ──
 sales = []
