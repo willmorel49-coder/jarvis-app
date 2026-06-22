@@ -240,6 +240,28 @@ def load_sales_index():
 
 # ── Catalogue NR : nos sorties NON remboursables, classées par RAYON pharmacien ──
 from mkt_rayons import classify_rayon, RAYONS  # noqa: E402  (source de vérité partagée)
+def load_ppht():
+    """CIP13 -> PPHT (tarif grossiste officiel) depuis STATS/stock et prix*.xlsx."""
+    import glob as _g
+    cands = sorted(_g.glob('STATS/stock et prix*.xlsx'), key=os.path.getmtime, reverse=True)
+    if not cands:
+        return {}
+    ws = openpyxl.load_workbook(cands[0], read_only=True, data_only=True).active
+    hdr = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
+    ix = {h: i for i, h in enumerate(hdr) if h}
+    out = {}
+    for r in ws.iter_rows(min_row=2, values_only=True):
+        cip = str((r[ix['artcodebarre']] if 'artcodebarre' in ix else '') or '').strip()
+        p = r[ix['ppht']] if 'ppht' in ix else None
+        if cip.isdigit() and isinstance(p, (int, float)) and p > 0:
+            out[cip] = round(float(p), 2)
+    print('  [ppht] %d prix tarif chargés' % len(out))
+    return out
+
+
+PPHT = load_ppht()
+
+
 def nr_catalogue(SI):
     groups = {}
     for rec in SI['desig'].values():
@@ -251,7 +273,8 @@ def nr_catalogue(SI):
             continue
         nm = rec[5]
         lab = classify_rayon(nm)
-        groups.setdefault(lab, []).append({'d': nm, 'cip': rec[4], 'p': (rec[3] or None),
+        price = PPHT.get(str(rec[4]), rec[3] or None)   # PPHT officiel sinon prix vente
+        groups.setdefault(lab, []).append({'d': nm, 'cip': rec[4], 'p': price,
                                            'vol': vol, 'sortie': len(rec[1]), 'total': SI['total']})
     # rayons triés par volume total (le plus vendu en tête = le plus pertinent)
     cats = []
