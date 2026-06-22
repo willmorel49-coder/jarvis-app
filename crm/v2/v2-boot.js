@@ -214,6 +214,27 @@
     clients: 'clients-data.js',
   };
   var loaded = {}, pending = {};
+  // Corrige le prix NR au tarif officiel PPHT (window.PPHT) directement dans le
+  // benchmark : impacte partout (groupements, fiches, catalogue, listes).
+  V2.applyPPHT = function () {
+    if (V2._pphtDone) return;
+    var P = window.PPHT, B = window.BENCHMARK;
+    if (!P || !B || !B.length) return;
+    var n = 0;
+    for (var i = 0; i < B.length; i++) {
+      var b = B[i], c = b && b.cip13 ? String(b.cip13) : '';
+      if (c && P[c] != null) {
+        var pp = P[c];
+        b.prix_ht = pp;                         // tarif grossiste officiel (HT)
+        // prix IP net : on aligne sur le PPHT pour les NR (pas de remise NR fiable),
+        // sauf si une vraie offre labo (offre_ip) reste en dessous.
+        if (!(b.prix_ip > 0 && b.prix_ip < pp)) b.prix_ip = pp;
+        n++;
+      }
+    }
+    V2._pphtDone = true;
+    try { console.log('[V2] PPHT appliqué à ' + n + ' produits NR'); } catch (e) {}
+  };
   function bridge() {
     try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch (e) {}
     try { if (typeof OFFILOG !== 'undefined') window.OFFILOG = OFFILOG; } catch (e) {}
@@ -225,6 +246,7 @@
     try { if (typeof OPS_AGGREGATE !== 'undefined') window.OPS_AGGREGATE = OPS_AGGREGATE; } catch (e) {}
     try { if (typeof CPR_AGGREGATE !== 'undefined') window.CPR_AGGREGATE = CPR_AGGREGATE; } catch (e) {}
     try { if (typeof HP_AGGREGATE !== 'undefined') window.HP_AGGREGATE = HP_AGGREGATE; } catch (e) {}
+    V2.applyPPHT();
   }
   V2.loadFiles = function (keys) {
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
