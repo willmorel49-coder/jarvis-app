@@ -36,7 +36,7 @@
     // aberrante du champ offre_ip (ex. vaccins à 0,78€) → on ignore.
     var offre = off > 0 && ip0 > 0 && off < ip0 && off >= ip0 * 0.5;
     var ip = offre ? off : ip0;
-    var remise = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
+    var remise = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
     return { ip: ip > 0 ? ip : null, ht: ht > 0 ? ht : null, remise: remise, offre: offre };
   };
 
@@ -218,22 +218,24 @@
   // benchmark : impacte partout (groupements, fiches, catalogue, listes).
   V2.applyPPHT = function () {
     if (V2._pphtDone) return;
-    var P = window.PPHT, B = window.BENCHMARK;
+    var P = window.PPHT, NR = window.PPHT_NR || {}, B = window.BENCHMARK;
     if (!P || !B || !B.length) return;
     var n = 0;
     for (var i = 0; i < B.length; i++) {
       var b = B[i], c = b && b.cip13 ? String(b.cip13) : '';
-      if (c && P[c] != null) {
-        var pp = P[c];
-        b.prix_ht = pp;                         // tarif grossiste officiel (HT)
-        // prix IP net : on aligne sur le PPHT pour les NR (pas de remise NR fiable),
-        // sauf si une vraie offre labo (offre_ip) reste en dessous.
-        if (!(b.prix_ip > 0 && b.prix_ip < pp)) b.prix_ip = pp;
-        n++;
-      }
+      if (!c || P[c] == null) continue;
+      var pp = P[c];
+      b.prix_ht = pp;                           // tarif grossiste officiel (HT) — corrige les prix_ht=0
+      // NR : pas de remise NR fiable -> on aligne le prix IP sur le PPHT
+      // (sauf vraie offre labo plus basse). Remboursable : on garde le prix_ip réel.
+      if (NR[c] && !(b.prix_ip > 0 && b.prix_ip < pp)) b.prix_ip = pp;
+      // recalcule la remise (évite les % aberrants pré-calculés quand prix_ht était 0)
+      b.remise_pct = (b.prix_ht > 0 && b.prix_ip > 0 && b.prix_ip <= b.prix_ht)
+        ? Math.round((1 - b.prix_ip / b.prix_ht) * 1000) / 10 : 0;
+      n++;
     }
     V2._pphtDone = true;
-    try { console.log('[V2] PPHT appliqué à ' + n + ' produits NR'); } catch (e) {}
+    try { console.log('[V2] PPHT appliqué à ' + n + ' produits'); } catch (e) {}
   };
   function bridge() {
     try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch (e) {}

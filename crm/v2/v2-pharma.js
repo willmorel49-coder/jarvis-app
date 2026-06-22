@@ -1153,7 +1153,7 @@
       var off = (b.offre_ip > 0) ? b.offre_ip : 0;
       var hasOffer = off > 0 && ip0 > 0 && off < ip0 && off >= ip0 * 0.5;
       var ip = hasOffer ? off : ip0;
-      var rem = (ht > 0 && ip > 0) ? Math.round((1 - ip / ht) * 1000) / 10 : (b.remise_pct || 0);
+      var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: ht, prix_ip: ip, offre: hasOffer, remise: rem,
                           froid: !!b.is_froid, sortie: Object.keys(e.ph).length, qte: e.qte, manual: !!e.manual });
     });
