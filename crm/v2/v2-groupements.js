@@ -245,7 +245,7 @@
             '<span>Prospection groupements &amp; pharmacies</span>' +
             '<a href="groupements.html" target="_blank" rel="noopener" style="margin-left:auto">Ouvrir en plein écran ↗</a>' +
           '</div>' +
-          '<iframe class="grp-frame" src="groupements.html?v=20260612a" title="Prospection groupements"></iframe>';
+          '<iframe class="grp-frame" src="groupements.html?v=20260622b" title="Prospection groupements"></iframe>';
       }
     }
   };
