@@ -27,8 +27,8 @@ def g(row, name):
     return row[i] if (i is not None and i < len(row)) else None
 
 
-ppht = {}
-allp = {}
+allp = {}      # tous les produits (corrige prix_ht=0 partout, y compris remboursables)
+nr = {}        # NR uniquement (on aligne aussi le prix_ip dessus)
 for r in ws.iter_rows(min_row=2, values_only=True):
     cip = str(g(r, 'artcodebarre') or '').strip()
     p = g(r, 'ppht')
@@ -39,11 +39,12 @@ for r in ws.iter_rows(min_row=2, values_only=True):
         continue
     p = round(float(p), 2)
     allp[cip] = p
-    if afm != 'REMBSS':                 # NR uniquement
-        ppht[cip] = p
+    if afm != 'REMBSS':
+        nr[cip] = 1
 
 with open(OUT, 'w', encoding='utf-8') as f:
-    f.write('// Prix PPHT (tarif grossiste HT) par CIP13 — produits NR — generate_ppht.py\n')
-    f.write('window.PPHT = ' + json.dumps(ppht, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    f.write('// Prix PPHT (tarif grossiste HT) par CIP13 — TOUS produits + set NR — generate_ppht.py\n')
+    f.write('window.PPHT = ' + json.dumps(allp, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    f.write('window.PPHT_NR = ' + json.dumps(nr, ensure_ascii=False, separators=(',', ':')) + ';\n')
 
-print('OK -> %s : %d prix NR (sur %d prix total)' % (OUT, len(ppht), len(allp)))
+print('OK -> %s : %d prix (dont %d NR)' % (OUT, len(allp), len(nr)))
