@@ -468,6 +468,10 @@
         { k: 'offilog', cls: 'p5', accent: 'var(--c-froid)', ico: 'spark', tag: 'Veille', t: 'Offilog & concurrents', d: 'Ta parapharma : ton prix d\'achat IP comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000. Repère où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
         { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: V2.fmtK(caTotal) + ' €', t: 'Pilotage CA & marge', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
       ];
+      // Pilier Molécules (analyse réseau : rotation + marge pharmacien) — app JARVIS
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) {
+        P.push({ k: 'molecules', cls: 'p3', accent: '#7C3AED', ico: 'cat', tag: 'Réseau', t: 'Par molécule', d: 'Ce qu\'une pharmacie moyenne fait sur chaque molécule : rotation, marge pharmacien et ta remise. Pour chiffrer ce que ça rapporte au comptoir.', go: 'Voir les molécules' });
+      }
       // Pilier marketing : uniquement en mode OPSO (module v2-marketing chargé)
       if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) {
         P.splice(2, 0, { k: 'marketing', cls: 'p2', ico: 'fiche', tag: 'A4', t: 'Fiches marketing OPSO', d: 'Crée une sélection de produits négociée par Intégral Pharma, en charte Normandie Pharma, prête à imprimer pour tes adhérents.', go: 'Créer une sélection' });
