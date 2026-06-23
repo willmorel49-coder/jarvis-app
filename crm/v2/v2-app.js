@@ -499,12 +499,32 @@
           P.unshift(pil);
         }
       }
-      var pilHtml = P.map(function (p) {
+      function tile(p) {
         return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onclick="V2.go(\'' + p.k + '\')">' +
           '<div class="v2-pil-head"><div class="v2-pil-ico">' + ICO(p.ico, 26) + '</div><span class="v2-pil-num">' + p.tag + '</span></div>' +
           '<div class="v2-pil-t">' + p.t + '</div><div class="v2-pil-d">' + p.d + '</div>' +
           '<div class="v2-pil-go">' + p.go + ' <span class="arrow">→</span></div></a>';
-      }).join('');
+      }
+      // Accueil regroupé "par moment d'usage" (hors OPSO qui garde son ordre suivi-groupement)
+      var pilHtml;
+      if (window.V2_BRAND && window.V2_BRAND.opso) {
+        pilHtml = '<div class="v2-piliers">' + P.map(tile).join('') + '</div>';
+      } else {
+        var MOMENTS = [
+          { n: 1, lbl: 'Préparer ma tournée', c: 'var(--ip-blue)', keys: ['pharma', 'groupements', 'pilotage'] },
+          { n: 2, lbl: 'En rendez-vous', c: 'var(--c-mint)', keys: ['catalogue', 'molecules', 'offilog', 'fiches', 'presentation'] },
+          { n: 3, lbl: 'Marketing & suivi', c: 'var(--c-rose)', keys: ['marketing'] },
+        ];
+        var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
+        var used = {};
+        pilHtml = MOMENTS.map(function (m) {
+          var tiles = m.keys.map(function (k) { if (!pmap[k]) return ''; used[k] = 1; return tile(pmap[k]); }).filter(Boolean).join('');
+          if (!tiles) return '';
+          return '<section class="v2-moment"><div class="v2-moment-h" style="--mc:' + m.c + '"><span class="v2-moment-n">' + m.n + '</span>' + m.lbl + '</div><div class="v2-piliers">' + tiles + '</div></section>';
+        }).join('');
+        var rest = P.filter(function (p) { return !used[p.k]; }).map(tile).join('');
+        if (rest) pilHtml += '<section class="v2-moment"><div class="v2-moment-h">Autres outils</div><div class="v2-piliers">' + rest + '</div></section>';
+      }
 
       var firstName = (V2.user && V2.user.name ? V2.user.name.split(' ')[0] : 'Will');
 
@@ -518,7 +538,7 @@
           '<div class="v2-search" onclick="V2.onTopSearch()">' + ICO('search', 24, 2) +
             '<input readonly placeholder="Pharmacie, produit, page…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           '<div class="v2-recent">' + recentHtml + '</div>' +
-          '<div class="v2-piliers">' + pilHtml + '</div>' +
+          pilHtml +
         '</div>';
     }
   };
