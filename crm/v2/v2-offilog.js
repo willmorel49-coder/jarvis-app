@@ -744,7 +744,7 @@
       var clrBtn = S.q ? '<button class="clr" onclick="V2.offSearch(\'\')">' + ICO('close', 16, 2) + '</button>' : '';
 
       root.innerHTML = V2.topbar({ back: true }) +
-        '<div class="v2-wrap"' + (S.sel != null ? ' style="margin-right:392px"' : '') + '>' +
+        '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           '<div class="v2-page-title">Offilog &amp; concurrents</div>' +
           '<div class="v2-page-sub">' + V2.fmtNum(nbTotal) + ' meilleures ventes Offilog (prix + photos) · ton achat IP comparé aux prix publics E.Leclerc, Drakkars et Cap3000</div>' +
           '<div class="off-search">' + ICO('search', 19, 2) +

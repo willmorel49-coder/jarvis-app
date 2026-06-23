@@ -223,7 +223,7 @@
     var n = 0;
     for (var i = 0; i < B.length; i++) {
       var b = B[i], c = b && b.cip13 ? String(b.cip13) : '';
-      if (!c || P[c] == null) continue;
+      if (!c || !(P[c] > 0)) continue;          // ignore PPHT absent ou ≤ 0 (ex Shingrix=0) → jamais de prix à 0
       var pp = P[c];
       b.prix_ht = pp;                           // tarif grossiste officiel (HT) — corrige les prix_ht=0
       // NR : pas de remise NR fiable -> on aligne le prix IP sur le PPHT
@@ -252,7 +252,8 @@
   }
   V2.loadFiles = function (keys) {
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
-    var V = '?v=20260610v2a';
+    // ⚠️ DOIT être bumpé en même temps que la version globale (sinon le SW ressert les vieilles données)
+    var V = '?v=20260611v2CD';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();
@@ -276,7 +277,8 @@
   // ── Helpers métier partagés ───────────────────
   V2.sumCA = function (sales) { return sales.reduce(function (a, s) { return a + (s.mntNetHt || 0); }, 0); };
   V2.fmtEur = function (n) {
-    if (!isFinite(n) || !n) return '0 €';
+    if (typeof n !== 'number' || !isFinite(n)) return '—';   // prix inconnu → tiret (pas "0 €" trompeur)
+    if (n === 0) return '0 €';
     if (Math.abs(n) >= 1000) return Math.round(n).toLocaleString('fr-FR') + ' €';
     return n.toFixed(2).replace('.', ',') + ' €';
   };
