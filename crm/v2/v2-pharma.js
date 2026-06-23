@@ -31,6 +31,7 @@
   var pharmaView = 'officines';
   var selGroup = null;        // groupement ouvert
   var netScope = 'reseau';    // réf. de la reco fiche : 'reseau' (réseau IP) | 'groupement' (son groupement)
+  var recoFam = null;         // famille active dans la fiche officine (master-détail)
   var selList = null;         // liste personnalisée ouverte (id)
   var grpCollapsed = {};      // repli des catégories en vue groupement / liste
 
@@ -878,61 +879,113 @@
     var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); })
       .filter(function (c) { return c.length >= 7; })).size;
 
-    // Liste à pousser, calée sur la référence choisie (réseau IP / son groupement) —
-    // même présentation que l'onglet groupement : catégories, cases à cocher, PDF.
+    // Liste à pousser, calée sur la référence choisie (réseau IP / son groupement).
+    // Présentation MASTER-DÉTAIL : rail gauche (officine + familles + réf.) / panneau droit (produits).
     var tog = recoScopeToggle(pid);
     var data = buildRecoCats(pid, tog.scope);
     var totalOpp = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
 
-    // Badge OPSO dans la fiche (à côté du nom)
+    // Famille active (master-détail) : défaut = 1ère famille non vide.
+    var famKeys = data.cats.map(function (o) { return o.cat.key; });
+    if (!recoFam || famKeys.indexOf(recoFam) < 0) recoFam = famKeys[0] || null;
+    var active = data.cats.filter(function (o) { return o.cat.key === recoFam; })[0] || data.cats[0] || null;
+
     var ficheBadge = isOpso() ? ' ' + opsoBadge(pharma) : '';
+    var loc = [pharma.cp, pharma.ville].filter(function (x) { return x; }).join(' ');
+    var tel = (pharma.tel == null ? '' : String(pharma.tel)).trim();
+    var email = (pharma.email == null ? '' : String(pharma.email)).trim();
 
-    var hero =
-      '<div class="v2-card" style="margin-bottom:0;padding:0">' +
-        '<div style="display:flex;align-items:center;gap:14px;padding:var(--sp-5) var(--sp-6);border-bottom:1px solid var(--line);flex-wrap:wrap">' +
-          '<span class="v2-pharma-pin" style="background:' + V2.esc(pharma.color || 'var(--ip-blue)') + '">' +
-            ICO('pharma', 22) + '</span>' +
-          '<div style="flex:1;min-width:160px">' +
-            '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-              V2.esc(pharma.name) + ficheBadge +
+    // ── Rail gauche : entête officine (bandeau bleu) ──
+    var rail =
+      '<aside class="phf-rail">' +
+        '<div class="phf-offhead">' +
+          (pharma.code ? '<span class="phf-code">' + esc(String(pharma.code)) + '</span>' : '') +
+          '<h2 class="phf-offname">' + esc(pharma.name) + ficheBadge + '</h2>' +
+          (loc ? '<div class="phf-offloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
+          ((tel || email) ? '<div class="phf-contacts">' +
+            (tel ? '<a class="phf-cbtn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
+            (email ? '<a class="phf-cbtn" href="mailto:' + esc(email) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
+          '</div>' : '') +
+        '</div>' +
+        // KPIs
+        '<div class="phf-kpis">' +
+          '<div class="phf-kpi"><span class="phf-kpi-l">CA cumulé</span><span class="phf-kpi-v mono">' + V2.fmtEur(ca) + '</span></div>' +
+          '<div class="phf-kpi"><span class="phf-kpi-l">Marge MDL générée</span><span class="phf-kpi-v phf-pos mono">' + V2.fmtEur(marge) + '</span></div>' +
+          '<div class="phf-kpi"><span class="phf-kpi-l">Références commandées</span><span class="phf-kpi-v mono">' + V2.fmtNum(nbRefs) + '</span></div>' +
+          '<div class="phf-kpi"><span class="phf-kpi-l">Produits à pousser</span><span class="phf-kpi-v phf-push mono">' + V2.fmtNum(totalOpp) + '</span></div>' +
+        '</div>' +
+        // Familles (master)
+        (data.cats.length ? '<div class="phf-fam-title">Familles à pousser</div><nav class="phf-famlist">' +
+          data.cats.map(function (o) {
+            return '<button class="phf-fam' + (o.cat.key === recoFam ? ' on' : '') + '" onclick="V2.pharmaRecoFam(\'' + o.cat.key + '\')">' +
+              '<span class="phf-dot" style="background:' + o.cat.color + '"></span>' +
+              '<span class="phf-fam-nm">' + esc(o.cat.label) + '</span>' +
+              '<span class="phf-fam-ct mono">' + o.rows.length + '</span></button>';
+          }).join('') + '</nav>' : '') +
+        // Référence
+        '<div class="phf-refbox"><div class="phf-ref-h">Comparer avec</div>' +
+          '<button class="phf-ref' + (tog.scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')"><span class="phf-radio"></span><span><span class="phf-ref-t">Réseau Intégral Pharma</span><span class="phf-ref-s">toutes les pharmacies IP</span></span></button>' +
+          (tog.name ? '<button class="phf-ref' + (tog.scope === 'groupement' ? ' on' : '') + '" onclick="V2.setNetScope(\'groupement\')"><span class="phf-radio"></span><span><span class="phf-ref-t">Son groupement · ' + esc(tog.name) + '</span><span class="phf-ref-s">pharmacies du groupement</span></span></button>' : '') +
+        '</div>' +
+      '</aside>';
+
+    // ── Panneau droit : produits de la famille active ──
+    var panel;
+    if (!active) {
+      panel = '<section class="phf-panel"><div class="phf-empty">' +
+        (tog.scope === 'groupement' ? 'Pas assez de pharmacies de ce groupement dans tes données. Bascule sur « Réseau Intégral Pharma ».' : 'Cette officine commande déjà l\'essentiel du catalogue réseau.') +
+        '</div></section>';
+    } else {
+      var subt = (tog.scope === 'groupement' ? 'Produits que les pharmacies de ' + esc(tog.name) + ' commandent' : 'Produits que le réseau Intégral Pharma commande') +
+        ' et que cette officine n\'a pas — triés par nombre de pharmacies (Sortie).';
+      var fambar = data.cats.map(function (o) {
+        return '<button class="phf-fchip' + (o.cat.key === recoFam ? ' on' : '') + '" onclick="V2.pharmaRecoFam(\'' + o.cat.key + '\')">' +
+          '<span class="phf-dot" style="background:' + o.cat.color + '"></span>' + esc(o.cat.label) + '<span class="phf-fam-ct mono">' + o.rows.length + '</span></button>';
+      }).join('');
+      var trs = active.rows.map(function (r) {
+        var on = !!(selCips && selCips.has(r.cip));
+        var pct = data.panel ? Math.round(r.sortie / data.panel * 100) : 0;
+        var badges = (r.froid ? '<span class="phf-bdg phf-bdg-froid">Froid</span>' : '') + (r.offre ? '<span class="phf-bdg phf-bdg-offre">Offre</span>' : '');
+        if (!badges) badges = '<span class="phf-bdg-empty">—</span>';
+        return '<tr' + (on ? ' class="phf-picked"' : '') + ' data-cip="' + esc(r.cip) + '">' +
+          '<td class="phf-td-l"><div class="phf-desig">' + esc(cap((r.designation || '').toLowerCase())) + '</div><div class="phf-cip">' + esc(r.cip) + '</div></td>' +
+          '<td><span class="phf-price">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) : '—') + '</span></td>' +
+          '<td><span class="phf-rem' + (r.remise > 0 ? '' : ' phf-none') + '">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</span></td>' +
+          '<td class="phf-tc"><span class="phf-sortie"><span class="mono phf-sortie-n">' + r.sortie + '/' + data.panel + '</span><span class="phf-bar"><i style="width:' + pct + '%"></i></span></span></td>' +
+          '<td><span class="phf-vol mono">' + V2.fmtNum(r.qte) + '</span></td>' +
+          '<td class="phf-tc"><span class="phf-badges">' + badges + '</span></td>' +
+          '<td class="phf-td-check"><button type="button" class="phf-check' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
+        '</tr>';
+      }).join('');
+      panel =
+        '<section class="phf-panel">' +
+          '<div class="phf-fambar">' + fambar + '</div>' +
+          '<div class="phf-phead">' +
+            '<div><div class="phf-ptitle"><span class="phf-pdot" style="background:' + active.cat.color + '"></span>' + esc(active.cat.label) +
+              (active.cat.sub ? ' <span class="phf-prange mono">(' + esc(active.cat.sub) + ')</span>' : '') + '</div>' +
+              '<div class="phf-psub">' + subt + '</div></div>' +
+            '<div class="phf-pright">' +
+              '<span class="phf-selcount" id="phf-selcount">Sélection <b class="mono">' + (selCips ? selCips.size : 0) + '</b>/' + totalOpp + '</span>' +
+              '<button id="v2-opp-pdf" class="phf-pdf" onclick="V2.pharmaPrepaPreview(\'' + esc(String(pid)) + '\')">' + ICO('download', 16) + 'Liste d\'achats (PDF)</button>' +
             '</div>' +
-            (pharma.code ? '<div style="font-size:12px;color:var(--muted);margin-top:3px;font-family:var(--mono)">' + V2.esc(pharma.code) + '</div>' : '') +
           '</div>' +
-          '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.pharmaPrepaPreview(\'' + V2.esc(String(pid)) + '\')">' +
-            ICO('download', 17) + (selCips && selCips.size
-              ? 'Prépa RDV · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '')
-              : 'Préparer le RDV (PDF)') + '</button>' +
-        '</div>' +
-        contactActions(pharma) +
-        '<div class="v2-pharma-stats">' +
-          stat('CA cumulé', V2.fmtEur(ca), 'var(--c-fiche)') +
-          stat('Marge MDL générée', V2.fmtEur(marge), 'var(--c-opp)') +
-          stat('Références commandées', V2.fmtNum(nbRefs), 'var(--c-cat)') +
-          stat('Opportunités détectées', V2.fmtNum(totalOpp), 'var(--c-amber)') +
-        '</div>' +
-      '</div>';
-
-    var subt = tog.scope === 'groupement'
-      ? 'produits que les pharmacies de ' + esc(tog.name) + ' commandent et que cette officine n\'a pas — triés par nombre de pharmacies (Sortie)'
-      : 'produits que le réseau Intégral Pharma commande et que cette officine n\'a pas — triés par nombre de pharmacies (Sortie)';
-    var catsHtml = data.cats.length
-      ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel, ''); }).join('')
-      : '<div class="v2-empty"><div class="v2-empty-d">' +
-          (tog.scope === 'groupement' ? 'Pas assez de pharmacies de ce groupement dans tes données. Bascule sur « Réseau Intégral Pharma ».' : 'Cette officine commande déjà l\'essentiel du catalogue réseau.') +
-        '</div></div>';
+          '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
+            '<th class="phf-tl">Désignation</th><th>Prix net IP</th><th>Remise</th><th class="phf-tc">Sortie</th><th>Volume</th><th class="phf-tc">Type</th><th class="phf-th-check">PDF</th>' +
+          '</tr></thead><tbody>' + trs + '</tbody></table></div>' +
+          '<div class="phf-foot">' + ICO('spark', 14) + ' Famille <b style="margin:0 4px">' + esc(active.cat.label) + '</b> — ' + active.rows.length + ' référence' + (active.rows.length > 1 ? 's' : '') + ' à pousser sur ' + totalOpp + ' au total. Coche pour ajouter à la liste d\'achats.</div>' +
+        '</section>';
+    }
 
     // Liseré / halo contextuel : le pilier Opportunités porte SA lumière (--pil-opp).
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
-        hero +
-        sectionHead('Liste à pousser : ce qu\'elle ne commande pas', subt) +
-        '<div style="margin:-2px 0 14px">' + tog.html + '</div>' +
-        catsHtml +
+        '<div class="phf-shell">' + rail + panel + '</div>' +
       '</div>' +
       pharmaCartbar();
 
     refreshCartbar();
   }
+  V2.pharmaRecoFam = function (k) { recoFam = k; V2.render(); };
 
   // ── Barre d'action collante (pattern .v2-cartbar maison) ──────────
   // Apparaît dès qu'un produit est coché : le CTA Prépa RDV reste atteignable
@@ -978,6 +1031,13 @@
     if (!b) return;
     var n = selCips ? selCips.size : 0;
     var grp = (String(selPid).indexOf('GRP:') === 0);
+    // Fiche officine (master-détail) : bouton libellé « Liste d'achats », compteur séparé.
+    if (b.classList.contains('phf-pdf')) {
+      b.innerHTML = ICO('download', 16) + 'Liste d\'achats (PDF)';
+      var sc = document.getElementById('phf-selcount');
+      if (sc) { var bb = sc.querySelector('b'); if (bb) bb.textContent = n; }
+      return;
+    }
     b.innerHTML = ICO('download', 17) + (n
       ? (grp ? 'Liste · ' : 'Prépa RDV · ') + n + ' produit' + (n > 1 ? 's' : '')
       : (grp ? 'Liste d\'achats (PDF)' : 'Préparer le RDV (PDF)'));
@@ -1012,6 +1072,9 @@
       }
       V2.toast('Retenu — ajouté à la fiche en cours');
     }
+    // Surlignage de la ligne (fiche officine master-détail)
+    var tr = btn.closest && btn.closest('tr.phf-picked, tr[data-cip]');
+    if (tr) tr.classList.toggle('phf-picked', selCips.has(cip));
     refreshPdfBtn();
     refreshCartbar();
   };
@@ -2067,6 +2130,96 @@
       '.net-scope-b{flex:0 1 auto;padding:7px 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);font-family:var(--font);font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,border-color .15s}',
       '.net-scope-b:hover{color:var(--ip-ink)}',
       '.net-scope-b.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}',
+      /* ===== Fiche officine master-détail (phf-) ===== */
+      '.phf-shell{display:grid;grid-template-columns:312px 1fr;gap:18px;align-items:start}',
+      '.phf-rail{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden;position:sticky;top:74px}',
+      '.phf-offhead{padding:20px;background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;position:relative;overflow:hidden}',
+      '.phf-offhead::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)}',
+      '.phf-code{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;background:rgba(255,255,255,.16);color:#fff;padding:4px 9px;border-radius:var(--r-pill);margin-bottom:11px}',
+      '.phf-offname{font-size:19px;font-weight:800;line-height:1.15;letter-spacing:-.01em;margin:0;position:relative;z-index:1}',
+      '.phf-offloc{font-size:13px;font-weight:500;opacity:.85;margin-top:5px;display:flex;align-items:center;gap:5px;position:relative;z-index:1}',
+      '.phf-offloc svg{opacity:.9}',
+      '.phf-contacts{display:flex;gap:8px;margin-top:14px;position:relative;z-index:1}',
+      '.phf-cbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:var(--r-btn);padding:9px 10px;cursor:pointer;transition:background .15s;text-decoration:none}',
+      '.phf-cbtn:hover{background:rgba(255,255,255,.26)}',
+      '.phf-kpis{padding:8px 20px 14px;border-bottom:1px solid var(--line)}',
+      '.phf-kpi{display:flex;align-items:baseline;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line)}',
+      '.phf-kpi:last-child{border-bottom:0}',
+      '.phf-kpi-l{font-size:12.5px;color:var(--muted);font-weight:500}',
+      '.phf-kpi-v{font-size:16px;font-weight:800;letter-spacing:-.01em}',
+      '.phf-kpi-v.phf-pos{color:var(--c-opp)}',
+      '.phf-kpi-v.phf-push{color:var(--ip-blue)}',
+      '.phf-fam-title{padding:15px 20px 8px;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted-2)}',
+      '.phf-famlist{padding:0 12px 6px;display:flex;flex-direction:column;gap:3px}',
+      '.phf-fam{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 12px;border:1px solid transparent;border-radius:var(--r-md);background:none;cursor:pointer;font:inherit;color:var(--ip-ink);transition:background .14s,border-color .14s}',
+      '.phf-fam:hover{background:var(--surf-sunken)}',
+      '.phf-fam.on{background:var(--card-2);border-color:var(--line-strong);box-shadow:var(--sh-1)}',
+      '.phf-dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(0,0,0,.03)}',
+      '.phf-fam-nm{flex:1;font-size:13.5px;font-weight:600;line-height:1.25}',
+      '.phf-fam.on .phf-fam-nm{font-weight:800}',
+      '.phf-fam-ct{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);background:var(--surf-sunken);border-radius:var(--r-pill);padding:2px 9px;min-width:28px;text-align:center}',
+      '.phf-fam.on .phf-fam-ct{background:var(--ip-blue);color:#fff}',
+      '.phf-refbox{margin:10px 12px 14px;padding:13px;background:var(--surf-sunken);border:1px solid var(--line);border-radius:var(--r-md)}',
+      '.phf-ref-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);margin-bottom:9px}',
+      '.phf-ref{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:10px 11px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:var(--card);cursor:pointer;margin-bottom:7px;font:inherit;color:var(--ip-ink);transition:border-color .15s,box-shadow .15s}',
+      '.phf-ref:last-child{margin-bottom:0}',
+      '.phf-ref.on{border-color:var(--ip-blue);box-shadow:0 0 0 3px rgba(0,80,230,.10)}',
+      '.phf-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--muted-2);flex:none;margin-top:1px;position:relative;transition:border-color .15s}',
+      '.phf-ref.on .phf-radio{border-color:var(--ip-blue)}',
+      '.phf-ref.on .phf-radio::after{content:"";position:absolute;inset:2px;border-radius:50%;background:var(--ip-blue)}',
+      '.phf-ref-t{font-size:13px;font-weight:700;line-height:1.2;display:block}',
+      '.phf-ref-s{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px;display:block}',
+      '.phf-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden;min-width:0}',
+      '.phf-phead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}',
+      '.phf-ptitle{font-size:18px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}',
+      '.phf-pdot{width:11px;height:11px;border-radius:50%;flex:none}',
+      '.phf-prange{color:var(--muted);font-weight:600;font-size:14px}',
+      '.phf-psub{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;max-width:560px;line-height:1.4}',
+      '.phf-pright{display:flex;align-items:center;gap:12px}',
+      '.phf-selcount{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}',
+      '.phf-selcount b{font-family:var(--mono);color:var(--ip-blue);font-weight:800}',
+      '.phf-pdf{display:inline-flex;align-items:center;gap:8px;background:var(--ip-blue);color:#fff;border:0;border-radius:var(--r-btn);padding:11px 17px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-2);transition:background .15s,transform .1s}',
+      '.phf-pdf:hover{background:var(--ip-blue-d)}',
+      '.phf-pdf:active{transform:translateY(1px)}',
+      '.phf-fambar{display:none}',
+      '.phf-tablewrap{overflow-x:auto}',
+      '.phf-tbl{width:100%;border-collapse:collapse;font-size:13px}',
+      '.phf-tbl thead th{background:var(--card-2);font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:11px 12px;border-bottom:1px solid var(--line-strong);white-space:nowrap}',
+      '.phf-tbl thead th.phf-tl{text-align:left}',
+      '.phf-tbl thead th.phf-tc{text-align:center}',
+      '.phf-tbl tbody td{padding:12px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}',
+      '.phf-tbl tbody tr:last-child td{border-bottom:0}',
+      '.phf-tbl tbody tr{transition:background .12s}',
+      '.phf-tbl tbody tr:hover{background:var(--surf-sunken)}',
+      '.phf-tbl tbody tr.phf-picked{background:rgba(30,158,106,.06)}',
+      '.phf-td-l{text-align:left}',
+      '.phf-desig{font-weight:700;line-height:1.25}',
+      '.phf-cip{font-family:var(--mono);font-size:11px;color:var(--muted-2);font-weight:500;margin-top:2px}',
+      '.phf-price{font-family:var(--mono);font-weight:700;font-size:13.5px}',
+      '.phf-rem{font-family:var(--mono);font-weight:700;color:var(--c-opp)}',
+      '.phf-rem.phf-none{color:var(--muted-2);font-weight:500}',
+      '.phf-vol{font-family:var(--mono);color:var(--muted);font-weight:600}',
+      '.phf-sortie{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end}',
+      '.phf-sortie-n{font-weight:700;font-size:12.5px;white-space:nowrap}',
+      '.phf-bar{width:46px;height:6px;border-radius:var(--r-pill);background:var(--surf-sunken);overflow:hidden;flex:none}',
+      '.phf-bar i{display:block;height:100%;border-radius:var(--r-pill);background:var(--ip-blue)}',
+      '.phf-badges{display:inline-flex;gap:5px;justify-content:center;flex-wrap:wrap}',
+      '.phf-bdg{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:var(--r-pill);white-space:nowrap}',
+      '.phf-bdg-froid{background:rgba(0,181,216,.13);color:#0086a3}',
+      '.phf-bdg-offre{background:rgba(30,158,106,.13);color:var(--c-opp)}',
+      '.phf-bdg-empty{color:var(--muted-2)}',
+      '.phf-check{width:26px;height:26px;border-radius:8px;border:1.5px solid var(--line-strong);background:var(--card);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--muted-2);transition:all .14s;line-height:1}',
+      '.phf-check:hover{border-color:var(--ip-blue);color:var(--ip-blue)}',
+      '.phf-check.on{background:var(--c-opp);border-color:var(--c-opp);color:#fff}',
+      '.phf-th-check,.phf-td-check{text-align:center;width:50px}',
+      '.phf-foot{padding:13px 22px;background:var(--card-2);border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:7px}',
+      '.phf-empty{padding:48px 24px;text-align:center;color:var(--muted);font-size:14px}',
+      '@media(max-width:900px){.phf-shell{grid-template-columns:1fr}.phf-rail{position:static}.phf-fam-title,.phf-famlist{display:none}' +
+        '.phf-fambar{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}' +
+        '.phf-fchip{flex:none;display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid var(--line-strong);border-radius:var(--r-pill);background:var(--card);font:inherit;font-size:13px;font-weight:600;color:var(--ip-ink);cursor:pointer;white-space:nowrap}' +
+        '.phf-fchip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}' +
+        '.phf-fchip.on .phf-fam-ct{background:rgba(255,255,255,.22);color:#fff}}',
+      '@media(max-width:640px){.phf-phead{flex-direction:column;align-items:stretch}.phf-pright{justify-content:space-between}.phf-pdf{flex:1;justify-content:center}}',
       '.ipv-rank{flex-shrink:0;width:44px;font-size:12px;font-weight:700;color:var(--ip-blue);font-variant-numeric:tabular-nums}',
       '.ipv-name{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.ipv-vol{flex-shrink:0;font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}',
