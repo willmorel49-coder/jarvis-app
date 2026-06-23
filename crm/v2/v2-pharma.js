@@ -401,6 +401,47 @@
       '</div>';
   }
 
+  // Liste catégorisée (même moule que l'onglet groupement) : produits que la
+  // référence (réseau IP ou son groupement) commande et que cette officine n'a PAS.
+  function buildRecoCats(pid, scope) {
+    cipStats();
+    var st, total;
+    if (scope === 'groupement') {
+      var g = groupementPids(pid);
+      if (!g.set || g.set.size < 2) return { cats: [], panel: 0, total: 0 };
+      st = computeStats('grp:' + g.name, g.set); total = st.total;
+    } else { st = computeStats('__net__', null); total = st.total; }
+    var stats = st.map, bIdx = benchIndex();
+    var owned = new Set();
+    pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
+    var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
+    stats.forEach(function (e, cip) {
+      if (owned.has(cip)) return;
+      var b = bIdx.get(cip); if (!b) return;
+      var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
+      var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
+      var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
+      buckets[cat].push({ cip: cip, designation: b.designation || '', prix_ht: ht, prix_ip: ip, offre: bp.offre,
+                          remise: rem, froid: !!b.is_froid, sortie: e.ph.size, qte: e.qte });
+    });
+    return {
+      panel: total, total: total,
+      cats: CATS.map(function (c) {
+        return { cat: c, rows: buckets[c.key].sort(function (a, b) { return b.sortie - a.sortie || b.qte - a.qte; }) };
+      }).filter(function (o) { return o.rows.length; })
+    };
+  }
+  // Sélecteur de référence réutilisé (réseau IP / son groupement)
+  function recoScopeToggle(pid) {
+    var g = groupementPids(pid);
+    var scope = (netScope === 'groupement' && g.set && g.set.size >= 2) ? 'groupement' : 'reseau';
+    var html = '<div class="net-scope">' +
+      '<button type="button" class="net-scope-b' + (scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')">Réseau Intégral Pharma</button>' +
+      (g.name ? '<button type="button" class="net-scope-b' + (scope === 'groupement' ? ' on' : '') + '" onclick="V2.setNetScope(\'groupement\')">Son groupement · ' + esc(g.name) + '</button>' : '') +
+      '</div>';
+    return { scope: scope, name: g.name, html: html };
+  }
+
   // Résumé "par molécule" (réseau) sur la fiche : ce qu'une molécule rapporte.
   function molSummarySection() {
     var M = window.PROD_STATS; if (!M || !M.length) return '';
@@ -837,8 +878,11 @@
     var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); })
       .filter(function (c) { return c.length >= 7; })).size;
 
-    var opps = buildOpportunities(pid);
-    var totalOpp = opps.reduce(function (s, o) { return s + o.oppCount; }, 0);
+    // Liste à pousser, calée sur la référence choisie (réseau IP / son groupement) —
+    // même présentation que l'onglet groupement : catégories, cases à cocher, PDF.
+    var tog = recoScopeToggle(pid);
+    var data = buildRecoCats(pid, tog.scope);
+    var totalOpp = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
 
     // Badge OPSO dans la fiche (à côté du nom)
     var ficheBadge = isOpso() ? ' ' + opsoBadge(pharma) : '';
@@ -868,19 +912,21 @@
         '</div>' +
       '</div>';
 
-    var catsHtml = opps.map(renderCatCard).join('');
+    var subt = tog.scope === 'groupement'
+      ? 'produits que les pharmacies de ' + esc(tog.name) + ' commandent et que cette officine n\'a pas — triés par nombre de pharmacies (Sortie)'
+      : 'produits que le réseau Intégral Pharma commande et que cette officine n\'a pas — triés par nombre de pharmacies (Sortie)';
+    var catsHtml = data.cats.length
+      ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel, ''); }).join('')
+      : '<div class="v2-empty"><div class="v2-empty-d">' +
+          (tog.scope === 'groupement' ? 'Pas assez de pharmacies de ce groupement dans tes données. Bascule sur « Réseau Intégral Pharma ».' : 'Cette officine commande déjà l\'essentiel du catalogue réseau.') +
+        '</div></div>';
 
     // Liseré / halo contextuel : le pilier Opportunités porte SA lumière (--pil-opp).
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
         hero +
-        activitySection(sales, marge, ca) +
-        topByCatSection(sales) +
-        networkRecoSection(pid) +
-        molSummarySection() +
-        ipVolumeSection(pid) +
-        sectionHead('Opportunités par catégorie', 'ce que le marché commande et que cette officine n\'a pas encore') +
-        '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-primary" onclick="V2.pharmaRecoOrder(\'' + esc(String(pid)) + '\')">' + ICO('fiche', 16) + 'Générer la commande recommandée</button></div>' +
+        sectionHead('Liste à pousser : ce qu\'elle ne commande pas', subt) +
+        '<div style="margin:-2px 0 14px">' + tog.html + '</div>' +
         catsHtml +
       '</div>' +
       pharmaCartbar();
