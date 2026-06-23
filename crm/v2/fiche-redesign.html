@@ -1,0 +1,2562 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiche officine — 6 designs · Intégral Pharma</title>
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,800,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ip-blue:#0050E6; --ip-blue-d:#0034A0; --ip-ink:#10131C; --ip-ink-2:#2A2F3C;
+  --muted:#737A8C; --muted-2:#9AA1B2;
+  --paper:#FBFCFE; --card:#FFFFFF; --card-2:#F7F9FC; --surf-sunken:#F4F6FB;
+  --line:rgba(16,19,28,.07); --line-2:rgba(16,19,28,.04); --line-strong:rgba(16,19,28,.12);
+  --halo:#E9F0FF;
+  --c-opp:#1E9E6A; --c-fiche:#0050E6; --c-cat:#6D4FC4; --c-pilo:#C7791A;
+  --c-rose:#E0556E; --c-mint:#1E9E6A; --c-amber:#C7791A; --c-froid:#00B5D8;
+  --ok:#1E9E6A; --warn:#C7791A; --bad:#E0556E; --bad-d:#C7283D; --info:#0050E6;
+  --r-card:20px; --r-md:14px; --r-sm:10px; --r-pill:999px; --r-control:10px; --r-btn:12px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:32px; --sp-8:48px;
+  --sh-1:0 1px 1px rgba(16,19,28,.04), 0 2px 4px rgba(16,19,28,.04);
+  --sh-2:0 2px 4px rgba(16,19,28,.04), 0 8px 18px rgba(16,19,28,.06), 0 1px 0 rgba(255,255,255,.7) inset;
+  --sh-3:0 8px 16px rgba(16,19,28,.08), 0 28px 56px rgba(16,19,28,.10), 0 1px 0 rgba(255,255,255,.8) inset;
+  --ease:cubic-bezier(.32,.72,0,1);
+}
+.sw-wrap *{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper);font-family:'Satoshi',system-ui,sans-serif;color:var(--ip-ink);-webkit-font-smoothing:antialiased}
+.switch{position:sticky;top:0;z-index:200;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:12px 18px}
+.switch-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;max-width:1120px;margin:0 auto}
+.switch-lbl{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-right:6px}
+.switch-b{height:34px;min-width:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--card);font-family:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:.15s}
+.switch-b:hover{color:var(--ip-ink);border-color:var(--ip-blue)}
+.switch-b.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}
+.meta{max-width:1120px;margin:18px auto 0;padding:0 18px}
+.meta-n{font-family:'Geist Mono',monospace;font-size:12px;font-weight:600;color:var(--ip-blue);background:var(--halo);padding:3px 9px;border-radius:999px;display:inline-block;margin-bottom:8px}
+.meta-t{font-size:22px;font-weight:900;letter-spacing:-.02em}
+.meta-s{font-size:13.5px;color:var(--muted);font-weight:500;margin-top:4px;max-width:780px}
+.stage{max-width:1120px;margin:14px auto 70px;padding:0 18px}
+.variant{display:none}
+.variant.on{display:block;animation:fz .3s var(--ease)}
+@keyframes fz{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ===== VARIANT 1 : Liste focus plein écran ===== */
+#variant-1{
+  --v1-gap:14px;
+  font-family:"Satoshi",system-ui,sans-serif;
+  color:var(--ip-ink);
+  background:var(--paper);
+  display:flex;flex-direction:column;
+  min-height:100%;
+  position:relative;
+  padding-bottom:88px;
+}
+#variant-1 *{box-sizing:border-box;}
+#variant-1 .v1-mono{font-family:"Geist Mono",ui-monospace,monospace;font-feature-settings:"tnum" 1;}
+
+/* ===== HEADER COMPACT ===== */
+#variant-1 .v1-head{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--r-card);
+  box-shadow:var(--sh-1);
+  padding:16px 18px;
+  margin:16px 16px 0;
+}
+#variant-1 .v1-head-top{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+#variant-1 .v1-id{display:flex;align-items:center;gap:12px;min-width:0;}
+#variant-1 .v1-avatar{
+  width:42px;height:42px;flex:0 0 42px;border-radius:13px;
+  background:linear-gradient(140deg,var(--ip-blue),var(--ip-blue-d));
+  color:#fff;display:grid;place-items:center;font-weight:800;font-size:17px;
+  box-shadow:0 4px 12px rgba(0,80,230,.28);
+}
+#variant-1 .v1-name{font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.1;}
+#variant-1 .v1-sub{display:flex;align-items:center;gap:8px;margin-top:3px;color:var(--muted);font-size:12.5px;font-weight:500;}
+#variant-1 .v1-code{
+  font-family:"Geist Mono",monospace;font-size:11px;font-weight:600;
+  background:var(--surf-sunken);color:var(--ip-blue-d);
+  padding:2px 7px;border-radius:var(--r-pill);border:1px solid var(--line);
+}
+#variant-1 .v1-contacts{display:flex;gap:8px;}
+#variant-1 .v1-cbtn{
+  display:inline-flex;align-items:center;gap:6px;
+  height:34px;padding:0 12px;border-radius:var(--r-btn);
+  background:var(--card-2);border:1px solid var(--line-strong);
+  color:var(--ip-ink);font-size:12.5px;font-weight:600;cursor:pointer;
+  transition:.15s;text-decoration:none;
+}
+#variant-1 .v1-cbtn:hover{background:#fff;border-color:var(--ip-blue);color:var(--ip-blue-d);box-shadow:var(--sh-1);}
+
+/* KPIs ligne */
+#variant-1 .v1-kpis{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  margin-top:16px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;
+}
+#variant-1 .v1-kpi{background:var(--card);padding:11px 14px;}
+#variant-1 .v1-kpi-l{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.01em;white-space:nowrap;}
+#variant-1 .v1-kpi-v{font-size:19px;font-weight:800;margin-top:2px;letter-spacing:-.02em;}
+#variant-1 .v1-kpi-v small{font-size:12px;font-weight:600;color:var(--muted-2);margin-left:1px;}
+#variant-1 .v1-kpi.is-marge .v1-kpi-v{color:var(--c-opp);}
+#variant-1 .v1-kpi.is-push .v1-kpi-v{color:var(--ip-blue);}
+
+/* ===== SEGMENTED CONTROL ===== */
+#variant-1 .v1-refbar{margin:14px 16px 0;}
+#variant-1 .v1-seg{
+  display:inline-flex;padding:4px;gap:4px;
+  background:var(--surf-sunken);border:1px solid var(--line);
+  border-radius:var(--r-btn);width:100%;max-width:560px;
+}
+#variant-1 .v1-seg-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  height:40px;padding:0 14px;border-radius:9px;border:0;cursor:pointer;
+  background:transparent;color:var(--muted);font-size:13px;font-weight:700;font-family:inherit;
+  transition:.18s;white-space:nowrap;
+}
+#variant-1 .v1-seg-btn .v1-dot{
+  width:13px;height:13px;border-radius:50%;border:2px solid var(--muted-2);flex:0 0 13px;
+}
+#variant-1 .v1-seg-btn.is-active{
+  background:var(--card);color:var(--ip-ink);box-shadow:var(--sh-1);
+}
+#variant-1 .v1-seg-btn.is-active .v1-dot{
+  border-color:var(--ip-blue);background:radial-gradient(circle at center,var(--ip-blue) 0 42%,transparent 46%);
+}
+#variant-1 .v1-seg-btn .v1-seg-meta{font-weight:500;font-size:11.5px;color:var(--muted-2);}
+#variant-1 .v1-refsub{
+  margin:10px 2px 0;font-size:12.5px;color:var(--muted);font-weight:500;line-height:1.45;
+}
+#variant-1 .v1-refsub b{color:var(--ip-ink);font-weight:700;}
+
+/* ===== ACCORDION ===== */
+#variant-1 .v1-list{margin:14px 16px 0;display:flex;flex-direction:column;gap:10px;}
+#variant-1 .v1-fam{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-md);overflow:hidden;box-shadow:var(--sh-1);
+}
+#variant-1 .v1-fam-head{
+  display:flex;align-items:center;gap:12px;width:100%;
+  padding:13px 16px;background:none;border:0;cursor:pointer;font-family:inherit;text-align:left;
+  border-left:4px solid var(--fam,var(--muted));
+}
+#variant-1 .v1-fam-head:hover{background:var(--card-2);}
+#variant-1 .v1-fam-icn{
+  width:9px;height:9px;border-radius:3px;background:var(--fam,var(--muted));flex:0 0 9px;
+}
+#variant-1 .v1-fam-title{font-size:14px;font-weight:800;letter-spacing:-.01em;flex:1;min-width:0;}
+#variant-1 .v1-fam-range{font-weight:500;color:var(--muted-2);font-size:12px;margin-left:6px;}
+#variant-1 .v1-fam-count{
+  font-family:"Geist Mono",monospace;font-size:11px;font-weight:600;color:var(--muted);
+  background:var(--surf-sunken);padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--line);
+}
+#variant-1 .v1-chev{
+  width:18px;height:18px;flex:0 0 18px;color:var(--muted-2);transition:transform .2s;
+  display:grid;place-items:center;
+}
+#variant-1 .v1-chev::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);}
+#variant-1 .v1-fam[open] .v1-chev{transform:rotate(180deg);}
+#variant-1 .v1-fam-head::-webkit-details-marker{display:none;}
+#variant-1 details.v1-fam>summary{list-style:none;}
+#variant-1 details.v1-fam>summary::-webkit-details-marker{display:none;}
+
+/* table */
+#variant-1 .v1-fam-body{border-top:1px solid var(--line);}
+#variant-1 .v1-row{
+  display:grid;
+  grid-template-columns:34px 1fr 100px 64px 78px;
+  align-items:center;gap:10px;
+  padding:10px 16px;border-bottom:1px solid var(--line);
+  transition:background .12s;
+}
+#variant-1 .v1-row:last-child{border-bottom:0;}
+#variant-1 .v1-row:hover{background:var(--card-2);}
+#variant-1 .v1-colhead{
+  background:var(--surf-sunken);font-size:10.5px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.04em;padding:7px 16px;
+}
+#variant-1 .v1-colhead .v1-r,#variant-1 .v1-row .v1-r{text-align:right;}
+#variant-1 .v1-colhead .v1-c,#variant-1 .v1-row .v1-c{text-align:center;}
+
+/* checkbox */
+#variant-1 .v1-check{
+  width:24px;height:24px;border-radius:7px;border:1.5px solid var(--line-strong);
+  background:var(--card);cursor:pointer;display:grid;place-items:center;transition:.15s;
+  position:relative;
+}
+#variant-1 .v1-check::before{content:"+";font-size:16px;font-weight:700;color:var(--muted-2);line-height:1;}
+#variant-1 .v1-check.is-on{background:var(--ip-blue);border-color:var(--ip-blue);}
+#variant-1 .v1-check.is-on::before{content:"✓";font-size:13px;color:#fff;}
+#variant-1 .v1-row.is-on{background:rgba(0,80,230,.045);}
+
+/* designation */
+#variant-1 .v1-desig{min-width:0;}
+#variant-1 .v1-dname{font-size:13.5px;font-weight:700;letter-spacing:-.01em;line-height:1.2;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+#variant-1 .v1-cip{font-family:"Geist Mono",monospace;font-size:11px;color:var(--muted-2);margin-top:3px;font-weight:500;}
+#variant-1 .v1-tag{
+  font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  padding:2px 7px;border-radius:var(--r-pill);line-height:1.4;
+}
+#variant-1 .v1-tag.t-froid{background:rgba(0,181,216,.13);color:#0086a3;}
+#variant-1 .v1-tag.t-offre{background:rgba(30,158,106,.13);color:var(--c-opp);}
+
+/* price cell */
+#variant-1 .v1-price{text-align:right;}
+#variant-1 .v1-pval{font-family:"Geist Mono",monospace;font-size:13.5px;font-weight:700;letter-spacing:-.01em;}
+#variant-1 .v1-rem{font-size:11px;font-weight:700;margin-top:2px;}
+#variant-1 .v1-rem.has{color:var(--c-opp);}
+#variant-1 .v1-rem.none{color:var(--muted-2);font-weight:500;}
+
+/* sortie */
+#variant-1 .v1-sortie{text-align:center;}
+#variant-1 .v1-sval{font-family:"Geist Mono",monospace;font-size:13px;font-weight:700;}
+#variant-1 .v1-sval small{color:var(--muted-2);font-weight:500;font-size:10.5px;}
+#variant-1 .v1-sbar{
+  height:4px;border-radius:2px;background:var(--surf-sunken);margin-top:5px;overflow:hidden;border:1px solid var(--line);
+}
+#variant-1 .v1-sbar i{display:block;height:100%;background:var(--ip-blue);border-radius:2px;}
+
+/* volume */
+#variant-1 .v1-vol{text-align:right;}
+#variant-1 .v1-vval{font-family:"Geist Mono",monospace;font-size:13px;font-weight:700;}
+#variant-1 .v1-vlab{font-size:10px;color:var(--muted-2);font-weight:500;}
+
+/* ===== STICKY PDF BAR ===== */
+#variant-1 .v1-pdfbar{
+  position:sticky;bottom:0;left:0;right:0;z-index:20;
+  margin:16px -0 0;
+  background:rgba(255,255,255,.86);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line-strong);
+  box-shadow:0 -6px 24px rgba(16,19,28,.06);
+  padding:12px 18px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+}
+#variant-1 .v1-selinfo{display:flex;align-items:center;gap:10px;min-width:0;}
+#variant-1 .v1-selcount{
+  font-family:"Geist Mono",monospace;font-weight:800;font-size:16px;color:var(--ip-blue-d);
+  background:rgba(0,80,230,.1);border:1px solid rgba(0,80,230,.18);
+  width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:0 0 38px;
+}
+#variant-1 .v1-seltxt{font-size:12.5px;font-weight:600;color:var(--ip-ink);line-height:1.3;}
+#variant-1 .v1-seltxt span{display:block;color:var(--muted);font-weight:500;font-size:11.5px;}
+#variant-1 .v1-pdfbtn{
+  display:inline-flex;align-items:center;gap:9px;
+  height:46px;padding:0 22px;border-radius:var(--r-btn);border:0;cursor:pointer;
+  background:linear-gradient(140deg,var(--ip-blue),var(--ip-blue-d));
+  color:#fff;font-family:inherit;font-size:14px;font-weight:800;letter-spacing:-.01em;
+  box-shadow:0 6px 18px rgba(0,52,160,.32);transition:.18s;white-space:nowrap;
+}
+#variant-1 .v1-pdfbtn:hover{transform:translateY(-1px);box-shadow:0 9px 24px rgba(0,52,160,.4);}
+#variant-1 .v1-pdfbtn::before{content:"⤓";font-size:18px;line-height:1;}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width:640px){
+  #variant-1{padding-bottom:96px;}
+  #variant-1 .v1-head{margin:12px 12px 0;padding:14px;}
+  #variant-1 .v1-kpis{grid-template-columns:repeat(2,1fr);}
+  #variant-1 .v1-refbar,#variant-1 .v1-list{margin-left:12px;margin-right:12px;}
+  #variant-1 .v1-seg{flex-direction:column;}
+  #variant-1 .v1-seg-btn{justify-content:flex-start;height:auto;padding:9px 12px;flex-wrap:wrap;}
+  #variant-1 .v1-colhead{display:none;}
+  #variant-1 .v1-row{
+    grid-template-columns:34px 1fr auto;
+    grid-template-areas:"chk desig price" "chk meta meta";
+    row-gap:8px;padding:12px 14px;
+  }
+  #variant-1 .v1-row>.v1-check{grid-area:chk;align-self:start;}
+  #variant-1 .v1-desig{grid-area:desig;}
+  #variant-1 .v1-price{grid-area:price;}
+  #variant-1 .v1-sortie,#variant-1 .v1-vol{
+    grid-area:meta;display:inline-flex;align-items:center;gap:6px;text-align:left;
+  }
+  #variant-1 .v1-row .v1-sortie{margin-right:14px;}
+  #variant-1 .v1-sbar{display:none;}
+  #variant-1 .v1-sval,#variant-1 .v1-vval{font-size:12px;}
+  #variant-1 .v1-vlab::before{content:"· ";}
+  #variant-1 .v1-pdfbar{padding:10px 14px;}
+  #variant-1 .v1-pdfbtn{height:44px;padding:0 16px;font-size:13px;}
+  #variant-1 .v1-seltxt{display:none;}
+}
+/* ===== VARIANT 2 : Master-détail deux colonnes ===== */
+#variant-2{--v2-pad:22px;color:var(--ip-ink);font-family:"Satoshi",system-ui,sans-serif;font-weight:500}
+#variant-2 *{box-sizing:border-box}
+#variant-2 .v2-num{font-family:"Geist Mono","SF Mono",monospace;font-variant-numeric:tabular-nums}
+
+#variant-2 .v2-shell{display:grid;grid-template-columns:312px 1fr;gap:18px;align-items:start}
+
+/* ====== LEFT RAIL ====== */
+#variant-2 .v2-rail{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden;position:sticky;top:14px}
+#variant-2 .v2-offhead{padding:var(--v2-pad);background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;position:relative}
+#variant-2 .v2-offhead::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)}
+#variant-2 .v2-code{display:inline-block;font-family:"Geist Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.04em;background:rgba(255,255,255,.16);color:#fff;padding:4px 9px;border-radius:var(--r-pill);margin-bottom:11px}
+#variant-2 .v2-offname{font-size:20px;font-weight:800;line-height:1.15;letter-spacing:-.01em;margin:0}
+#variant-2 .v2-offloc{font-size:13px;font-weight:500;opacity:.82;margin-top:4px;display:flex;align-items:center;gap:5px}
+#variant-2 .v2-contacts{display:flex;gap:8px;margin-top:14px;position:relative;z-index:1}
+#variant-2 .v2-cbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:var(--r-btn);padding:9px 10px;cursor:pointer;transition:background .15s;text-decoration:none}
+#variant-2 .v2-cbtn:hover{background:rgba(255,255,255,.26)}
+
+/* KPIs vertical */
+#variant-2 .v2-kpis{padding:14px var(--v2-pad);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+#variant-2 .v2-kpi{display:flex;align-items:baseline;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line)}
+#variant-2 .v2-kpi:last-child{border-bottom:0}
+#variant-2 .v2-kpi-l{font-size:12.5px;color:var(--muted);font-weight:500}
+#variant-2 .v2-kpi-v{font-size:17px;font-weight:800;letter-spacing:-.01em}
+#variant-2 .v2-kpi-v.v2-pos{color:var(--c-opp)}
+#variant-2 .v2-kpi-v.v2-push{color:var(--ip-blue)}
+
+/* family list */
+#variant-2 .v2-fam-title{padding:15px var(--v2-pad) 8px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2)}
+#variant-2 .v2-famlist{padding:0 12px 12px;display:flex;flex-direction:column;gap:3px}
+#variant-2 .v2-fam{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 12px;border:1px solid transparent;border-radius:var(--r-md);background:none;cursor:pointer;font:inherit;color:var(--ip-ink);transition:background .14s,border-color .14s}
+#variant-2 .v2-fam:hover{background:var(--surf-sunken)}
+#variant-2 .v2-fam.v2-on{background:var(--card-2);border-color:var(--line-strong);box-shadow:var(--sh-1)}
+#variant-2 .v2-dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(0,0,0,.03)}
+#variant-2 .v2-fam-nm{flex:1;font-size:13.5px;font-weight:600;line-height:1.25}
+#variant-2 .v2-fam-ct{font-family:"Geist Mono",monospace;font-size:12px;font-weight:700;color:var(--muted);background:var(--surf-sunken);border-radius:var(--r-pill);padding:2px 9px;min-width:30px;text-align:center}
+#variant-2 .v2-fam.v2-on .v2-fam-ct{background:var(--ip-blue);color:#fff}
+#variant-2 .v2-fam.v2-on .v2-fam-nm{font-weight:800}
+
+/* reference selector */
+#variant-2 .v2-refbox{margin:0 12px 16px;padding:13px;background:var(--surf-sunken);border:1px solid var(--line);border-radius:var(--r-md)}
+#variant-2 .v2-ref-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);margin-bottom:9px}
+#variant-2 .v2-ref{display:flex;align-items:flex-start;gap:10px;padding:10px 11px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:var(--card);cursor:pointer;margin-bottom:7px;transition:border-color .15s,box-shadow .15s}
+#variant-2 .v2-ref:last-child{margin-bottom:0}
+#variant-2 .v2-ref.v2-on{border-color:var(--ip-blue);box-shadow:0 0 0 3px rgba(0,80,230,.10)}
+#variant-2 .v2-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--muted-2);flex:none;margin-top:1px;position:relative;transition:border-color .15s}
+#variant-2 .v2-ref.v2-on .v2-radio{border-color:var(--ip-blue)}
+#variant-2 .v2-ref.v2-on .v2-radio::after{content:"";position:absolute;inset:2px;border-radius:50%;background:var(--ip-blue)}
+#variant-2 .v2-ref-t{font-size:13px;font-weight:700;line-height:1.2}
+#variant-2 .v2-ref-s{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px}
+
+/* ====== RIGHT PANEL ====== */
+#variant-2 .v2-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden}
+#variant-2 .v2-phead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+#variant-2 .v2-ptitle{font-size:18px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+#variant-2 .v2-pdot{width:11px;height:11px;border-radius:50%}
+#variant-2 .v2-psub{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;max-width:560px;line-height:1.4}
+#variant-2 .v2-pright{display:flex;align-items:center;gap:12px}
+#variant-2 .v2-selcount{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+#variant-2 .v2-selcount b{font-family:"Geist Mono",monospace;color:var(--ip-blue);font-weight:800}
+#variant-2 .v2-pdf{display:inline-flex;align-items:center;gap:8px;background:var(--ip-blue);color:#fff;border:0;border-radius:var(--r-btn);padding:11px 17px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-2);transition:background .15s,transform .1s}
+#variant-2 .v2-pdf:hover{background:var(--ip-blue-d)}
+#variant-2 .v2-pdf:active{transform:translateY(1px)}
+
+/* mobile family bar (hidden desktop) */
+#variant-2 .v2-fambar{display:none}
+
+/* table */
+#variant-2 .v2-tablewrap{overflow-x:auto}
+#variant-2 .v2-tbl{width:100%;border-collapse:collapse;font-size:13px}
+#variant-2 .v2-tbl thead th{position:sticky;top:0;background:var(--card-2);font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:11px 12px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+#variant-2 .v2-tbl thead th.v2-tl{text-align:left}
+#variant-2 .v2-tbl thead th.v2-tc{text-align:center}
+#variant-2 .v2-tbl tbody td{padding:12px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
+#variant-2 .v2-tbl tbody tr:last-child td{border-bottom:0}
+#variant-2 .v2-tbl tbody tr{transition:background .12s}
+#variant-2 .v2-tbl tbody tr:hover{background:var(--surf-sunken)}
+#variant-2 .v2-tbl tbody tr.v2-picked{background:rgba(30,158,106,.05)}
+#variant-2 .v2-td-l{text-align:left}
+#variant-2 .v2-desig{font-weight:700;line-height:1.25}
+#variant-2 .v2-cip{font-family:"Geist Mono",monospace;font-size:11px;color:var(--muted-2);font-weight:500;margin-top:2px;letter-spacing:.01em}
+#variant-2 .v2-price{font-family:"Geist Mono",monospace;font-weight:700;font-size:13.5px}
+#variant-2 .v2-rem{font-family:"Geist Mono",monospace;font-weight:700;color:var(--c-opp)}
+#variant-2 .v2-rem.v2-none{color:var(--muted-2);font-weight:500}
+#variant-2 .v2-vol{font-family:"Geist Mono",monospace;color:var(--muted);font-weight:600}
+
+/* sortie bar */
+#variant-2 .v2-sortie{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end}
+#variant-2 .v2-sortie-n{font-family:"Geist Mono",monospace;font-weight:700;font-size:12.5px;white-space:nowrap}
+#variant-2 .v2-bar{width:46px;height:6px;border-radius:var(--r-pill);background:var(--surf-sunken);overflow:hidden;flex:none}
+#variant-2 .v2-bar i{display:block;height:100%;border-radius:var(--r-pill);background:var(--ip-blue)}
+
+/* badges */
+#variant-2 .v2-badges{display:inline-flex;gap:5px;justify-content:center;flex-wrap:wrap}
+#variant-2 .v2-bdg{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:var(--r-pill);white-space:nowrap}
+#variant-2 .v2-bdg-froid{background:rgba(0,181,216,.12);color:var(--c-froid)}
+#variant-2 .v2-bdg-offre{background:rgba(30,158,106,.12);color:var(--c-opp)}
+#variant-2 .v2-bdg-empty{color:var(--muted-2)}
+
+/* select checkbox */
+#variant-2 .v2-check{width:24px;height:24px;border-radius:8px;border:1.5px solid var(--line-strong);background:var(--card);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--muted-2);transition:all .14s;line-height:1}
+#variant-2 .v2-check:hover{border-color:var(--ip-blue);color:var(--ip-blue)}
+#variant-2 .v2-check.v2-on{background:var(--c-opp);border-color:var(--c-opp);color:#fff}
+#variant-2 .v2-th-check,#variant-2 .v2-td-check{text-align:center;width:46px}
+
+/* footer note */
+#variant-2 .v2-foot{padding:13px 22px;background:var(--card-2);border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
+
+/* ====== RESPONSIVE ====== */
+@media(max-width:900px){
+  #variant-2 .v2-shell{grid-template-columns:1fr}
+  #variant-2 .v2-rail{position:static}
+  /* family list -> horizontal scroll bar on mobile */
+  #variant-2 .v2-fam-title,#variant-2 .v2-famlist{display:none}
+  #variant-2 .v2-fambar{display:flex;gap:8px;overflow-x:auto;padding:12px var(--v2-pad);border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}
+  #variant-2 .v2-fchip{flex:none;display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid var(--line-strong);border-radius:var(--r-pill);background:var(--card);font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  #variant-2 .v2-fchip.v2-on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}
+  #variant-2 .v2-fchip .v2-dot{box-shadow:0 0 0 3px rgba(255,255,255,.18)}
+  #variant-2 .v2-fchip .v2-fam-ct{background:var(--surf-sunken);font-size:11px;padding:1px 7px;border-radius:var(--r-pill)}
+  #variant-2 .v2-fchip.v2-on .v2-fam-ct{background:rgba(255,255,255,.22);color:#fff}
+}
+@media(max-width:640px){
+  #variant-2 .v2-phead{flex-direction:column;align-items:stretch}
+  #variant-2 .v2-pright{justify-content:space-between}
+  #variant-2 .v2-pdf{flex:1;justify-content:center}
+}
+/* ===== VARIANT 3 : Cartes par famille (triage visuel) ===== */
+#variant-3{--v3-gap:18px;color:var(--ip-ink);font-family:Satoshi,system-ui,sans-serif;font-weight:500}
+#variant-3 *{box-sizing:border-box}
+#variant-3 .v3-mono{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* ===== HEADER ===== */
+#variant-3 .v3-head{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:22px 24px;margin-bottom:var(--v3-gap)}
+#variant-3 .v3-head-top{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
+#variant-3 .v3-id{flex:1;min-width:220px}
+#variant-3 .v3-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+#variant-3 .v3-eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c-opp);box-shadow:0 0 0 3px rgba(30,158,106,.16)}
+#variant-3 .v3-title{font-size:25px;font-weight:900;letter-spacing:-.02em;line-height:1.1;margin:0}
+#variant-3 .v3-sub{margin-top:6px;font-size:13px;color:var(--muted)}
+#variant-3 .v3-sub .v3-mono{color:var(--ip-ink);font-weight:600}
+#variant-3 .v3-contacts{display:flex;gap:9px}
+#variant-3 .v3-cbtn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px;border-radius:var(--r-btn);border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+#variant-3 .v3-cbtn:hover{background:var(--surf-sunken);border-color:var(--ip-blue)}
+
+/* ===== KPIs ===== */
+#variant-3 .v3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+#variant-3 .v3-kpi{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:13px 15px;position:relative;overflow:hidden}
+#variant-3 .v3-kpi::after{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:2px;background:var(--muted-2)}
+#variant-3 .v3-kpi.is-ca::after{background:var(--ip-blue)}
+#variant-3 .v3-kpi.is-marge::after{background:var(--c-opp)}
+#variant-3 .v3-kpi.is-push::after{background:var(--c-amber)}
+#variant-3 .v3-kpi-l{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+#variant-3 .v3-kpi-v{font-size:21px;font-weight:800;letter-spacing:-.02em;margin-top:5px}
+#variant-3 .v3-kpi.is-marge .v3-kpi-v{color:var(--c-opp)}
+#variant-3 .v3-kpi.is-push .v3-kpi-v{color:var(--c-amber)}
+
+/* ===== CONTROL BAR ===== */
+#variant-3 .v3-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:16px 20px;margin-bottom:var(--v3-gap)}
+#variant-3 .v3-seg{display:flex;flex-direction:column;gap:9px;flex:1;min-width:280px}
+#variant-3 .v3-seg-lab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#variant-3 .v3-toggle{display:inline-flex;background:var(--surf-sunken);border:1px solid var(--line);border-radius:var(--r-pill);padding:4px;gap:4px}
+#variant-3 .v3-opt{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:var(--r-pill);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:0;background:transparent;font-family:inherit;white-space:nowrap;transition:.15s}
+#variant-3 .v3-opt .v3-dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--muted-2);flex:none}
+#variant-3 .v3-opt.is-on{background:var(--card);color:var(--ip-ink);box-shadow:var(--sh-1)}
+#variant-3 .v3-opt.is-on .v3-dot{border-color:var(--ip-blue);background:radial-gradient(circle,var(--ip-blue) 0 42%,transparent 46%)}
+#variant-3 .v3-opt small{font-weight:500;color:var(--muted-2)}
+#variant-3 .v3-bar-actions{display:flex;align-items:center;gap:14px;margin-left:auto}
+#variant-3 .v3-count{font-size:13px;color:var(--muted);font-weight:600}
+#variant-3 .v3-count b{font-family:"Geist Mono",monospace;color:var(--ip-blue);font-size:15px}
+#variant-3 .v3-pdf{display:inline-flex;align-items:center;gap:9px;height:44px;padding:0 22px;border-radius:var(--r-btn);border:0;background:var(--ip-blue);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,80,230,.28);transition:.15s}
+#variant-3 .v3-pdf:hover{background:var(--ip-blue-d);transform:translateY(-1px)}
+
+/* ===== GRID OF FAMILY CARDS ===== */
+#variant-3 .v3-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:var(--v3-gap)}
+#variant-3 .v3-fcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden;display:flex;flex-direction:column;--fam:var(--muted)}
+#variant-3 .v3-fcard.fam-petits{--fam:#1E9E6A}
+#variant-3 .v3-fcard.fam-inter{--fam:#0050E6}
+#variant-3 .v3-fcard.fam-froid{--fam:#00B5D8}
+#variant-3 .v3-fcard.fam-nr{--fam:#C7791A}
+#variant-3 .v3-fhead{position:relative;padding:16px 18px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,color-mix(in srgb,var(--fam) 7%,transparent),transparent)}
+#variant-3 .v3-fhead::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--fam)}
+#variant-3 .v3-fcat{display:flex;align-items:center;gap:9px}
+#variant-3 .v3-fchip{width:10px;height:10px;border-radius:3px;background:var(--fam);flex:none}
+#variant-3 .v3-fname{font-size:15px;font-weight:800;letter-spacing:-.01em}
+#variant-3 .v3-frange{font-size:12px;color:var(--muted);margin-top:3px;padding-left:19px}
+#variant-3 .v3-fmeta{display:flex;gap:14px;margin-top:11px;padding-left:19px}
+#variant-3 .v3-fmeta span{font-size:11px;color:var(--muted);font-weight:600}
+#variant-3 .v3-fmeta b{font-family:"Geist Mono",monospace;color:var(--ip-ink);font-weight:700}
+
+/* ===== PRODUCT ROW ===== */
+#variant-3 .v3-list{padding:7px 8px;flex:1}
+#variant-3 .v3-prod{display:grid;grid-template-columns:28px 1fr auto;gap:11px;align-items:center;padding:9px 10px;border-radius:var(--r-sm);cursor:pointer;transition:.12s}
+#variant-3 .v3-prod:hover{background:var(--surf-sunken)}
+#variant-3 .v3-prod.is-sel{background:color-mix(in srgb,var(--fam) 8%,transparent)}
+#variant-3 .v3-check{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--line-strong);background:var(--card);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--muted-2);transition:.12s}
+#variant-3 .v3-prod:hover .v3-check{border-color:var(--fam)}
+#variant-3 .v3-prod.is-sel .v3-check{background:var(--fam);border-color:var(--fam);color:#fff}
+#variant-3 .v3-prod.is-sel .v3-check::after{content:"✓"}
+#variant-3 .v3-prod:not(.is-sel) .v3-check::after{content:"+"}
+#variant-3 .v3-pmain{min-width:0}
+#variant-3 .v3-pname{font-size:13px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:7px}
+#variant-3 .v3-pcip{font-family:"Geist Mono",monospace;font-size:10.5px;color:var(--muted-2);margin-top:3px;letter-spacing:.01em}
+#variant-3 .v3-tag{display:inline-flex;align-items:center;height:16px;padding:0 6px;border-radius:5px;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;flex:none}
+#variant-3 .v3-tag.t-froid{background:rgba(0,181,216,.14);color:#0090ad}
+#variant-3 .v3-tag.t-offre{background:rgba(30,158,106,.15);color:#157a51}
+#variant-3 .v3-pright{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+#variant-3 .v3-price{font-family:"Geist Mono",monospace;font-size:14px;font-weight:700;letter-spacing:-.02em}
+#variant-3 .v3-pstats{display:flex;align-items:center;gap:7px}
+#variant-3 .v3-rem{font-family:"Geist Mono",monospace;font-size:10.5px;font-weight:700;color:var(--c-opp);background:rgba(30,158,106,.1);padding:1px 5px;border-radius:5px}
+#variant-3 .v3-rem.is-free{color:var(--c-amber);background:rgba(199,121,26,.1)}
+#variant-3 .v3-sortie{display:inline-flex;align-items:center;gap:5px;font-family:"Geist Mono",monospace;font-size:10.5px;font-weight:600;color:var(--muted)}
+#variant-3 .v3-bar-mini{width:34px;height:5px;border-radius:3px;background:var(--surf-sunken);overflow:hidden}
+#variant-3 .v3-bar-mini i{display:block;height:100%;background:var(--fam);border-radius:3px}
+#variant-3 .v3-pvol{font-size:10.5px;color:var(--muted-2);font-weight:500}
+#variant-3 .v3-pvol .v3-mono{color:var(--muted)}
+
+/* ===== CARD FOOTER ===== */
+#variant-3 .v3-ffoot{border-top:1px solid var(--line);padding:11px 14px;display:flex;align-items:center;justify-content:space-between;background:var(--card-2)}
+#variant-3 .v3-fmore{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--fam);background:none;border:0;cursor:pointer;font-family:inherit}
+#variant-3 .v3-fmore::after{content:"→";font-weight:800}
+#variant-3 .v3-fhidden{font-size:11px;color:var(--muted-2);font-weight:500}
+#variant-3 .v3-fhidden b{font-family:"Geist Mono",monospace;color:var(--muted)}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width:640px){
+ #variant-3 .v3-kpis{grid-template-columns:repeat(2,1fr)}
+ #variant-3 .v3-grid{grid-template-columns:1fr}
+ #variant-3 .v3-bar-actions{margin-left:0;width:100%;justify-content:space-between}
+ #variant-3 .v3-pdf{flex:1;justify-content:center}
+ #variant-3 .v3-title{font-size:21px}
+}
+/* ===== VARIANT 4 : Priorité — top opportunités ===== */
+
+#variant-4{ color:var(--ip-ink); font-family:Satoshi, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+#variant-4 *{ box-sizing:border-box; }
+#variant-4 .v4-mono{ font-family:"Geist Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+
+/* ===== Header ===== */
+#variant-4 .v4-head{ background:var(--card); border:1px solid var(--line); border-radius:var(--r-card); padding:22px 24px; box-shadow:var(--sh-1); }
+#variant-4 .v4-head-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:18px; flex-wrap:wrap; }
+#variant-4 .v4-ph-id{ display:flex; align-items:center; gap:14px; }
+#variant-4 .v4-ph-badge{ width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,var(--ip-blue),var(--ip-blue-d)); color:#fff; display:grid; place-items:center; font-weight:900; font-size:18px; box-shadow:var(--sh-2); flex:none; }
+#variant-4 .v4-ph-name{ font-size:21px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+#variant-4 .v4-ph-meta{ color:var(--muted); font-size:13px; font-weight:500; margin-top:3px; }
+#variant-4 .v4-ph-meta b{ color:var(--ip-ink); font-weight:700; }
+#variant-4 .v4-contacts{ display:flex; gap:8px; }
+#variant-4 .v4-cbtn{ display:inline-flex; align-items:center; gap:7px; background:var(--card-2); border:1px solid var(--line-strong); color:var(--ip-ink); font-family:inherit; font-weight:600; font-size:13px; padding:9px 14px; border-radius:var(--r-btn); cursor:pointer; transition:.15s; }
+#variant-4 .v4-cbtn:hover{ background:#fff; border-color:var(--ip-blue); color:var(--ip-blue); box-shadow:var(--sh-1); }
+
+#variant-4 .v4-kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; margin-top:20px; background:var(--line); border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; }
+#variant-4 .v4-kpi{ background:var(--card); padding:14px 16px; }
+#variant-4 .v4-kpi-l{ color:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+#variant-4 .v4-kpi-v{ font-size:22px; font-weight:800; letter-spacing:-.02em; margin-top:5px; }
+#variant-4 .v4-kpi-v.v4-pos{ color:var(--c-opp); }
+#variant-4 .v4-kpi-v.v4-push{ color:var(--ip-blue); }
+
+/* ===== Priority hero ===== */
+#variant-4 .v4-prio{ margin-top:18px; background:linear-gradient(180deg, rgba(30,158,106,.07), rgba(30,158,106,.02) 60%, transparent); border:1px solid rgba(30,158,106,.22); border-radius:var(--r-card); padding:20px 22px 22px; box-shadow:var(--sh-1); }
+#variant-4 .v4-prio-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:4px; }
+#variant-4 .v4-prio-title{ display:flex; align-items:center; gap:10px; font-size:16px; font-weight:800; letter-spacing:-.01em; }
+#variant-4 .v4-prio-title .v4-spark{ width:26px; height:26px; border-radius:8px; background:var(--c-opp); color:#fff; display:grid; place-items:center; font-size:14px; }
+#variant-4 .v4-prio-sub{ color:var(--muted); font-size:12.5px; font-weight:500; margin-top:2px; }
+#variant-4 .v4-prio-tot{ text-align:right; }
+#variant-4 .v4-prio-tot-l{ color:var(--c-opp); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+#variant-4 .v4-prio-tot-v{ font-size:26px; font-weight:900; color:var(--c-opp); letter-spacing:-.02em; line-height:1; }
+
+#variant-4 .v4-prio-list{ margin-top:16px; display:flex; flex-direction:column; gap:9px; }
+#variant-4 .v4-prio-row{ display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-radius:var(--r-md); padding:12px 14px; transition:.15s; }
+#variant-4 .v4-prio-row:hover{ border-color:rgba(30,158,106,.4); box-shadow:var(--sh-1); transform:translateY(-1px); }
+#variant-4 .v4-rank{ width:24px; height:24px; flex:none; border-radius:7px; background:var(--surf-sunken); color:var(--muted); font-weight:800; font-size:12px; display:grid; place-items:center; }
+#variant-4 .v4-prio-row:nth-child(1) .v4-rank{ background:var(--c-opp); color:#fff; }
+#variant-4 .v4-prio-row:nth-child(2) .v4-rank{ background:rgba(30,158,106,.7); color:#fff; }
+#variant-4 .v4-prio-row:nth-child(3) .v4-rank{ background:rgba(30,158,106,.45); color:#fff; }
+#variant-4 .v4-prio-main{ flex:1; min-width:0; }
+#variant-4 .v4-prio-name{ font-weight:700; font-size:14px; letter-spacing:-.01em; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#variant-4 .v4-prio-detail{ color:var(--muted); font-size:12px; font-weight:500; margin-top:3px; display:flex; gap:10px; flex-wrap:wrap; }
+#variant-4 .v4-prio-detail .v4-mono{ color:var(--ip-ink); font-weight:600; }
+#variant-4 .v4-prio-gain{ text-align:right; flex:none; }
+#variant-4 .v4-prio-gain-v{ font-size:18px; font-weight:900; color:var(--c-opp); letter-spacing:-.02em; }
+#variant-4 .v4-prio-gain-l{ font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+#variant-4 .v4-pick{ flex:none; width:30px; height:30px; border-radius:9px; border:1.5px solid var(--line-strong); background:var(--card); cursor:pointer; display:grid; place-items:center; color:var(--muted); font-weight:800; transition:.15s; }
+#variant-4 .v4-pick:hover{ border-color:var(--c-opp); color:var(--c-opp); }
+#variant-4 .v4-pick.v4-on{ background:var(--c-opp); border-color:var(--c-opp); color:#fff; }
+
+/* ===== Toolbar / reference selector ===== */
+#variant-4 .v4-bar{ margin-top:20px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+#variant-4 .v4-seg{ display:inline-flex; background:var(--surf-sunken); border:1px solid var(--line); border-radius:var(--r-pill); padding:4px; gap:2px; }
+#variant-4 .v4-seg-opt{ display:inline-flex; align-items:center; gap:8px; padding:8px 15px; border-radius:var(--r-pill); font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; transition:.15s; border:none; background:transparent; font-family:inherit; }
+#variant-4 .v4-seg-opt .v4-dot{ width:11px; height:11px; border-radius:50%; border:2px solid var(--muted-2); flex:none; }
+#variant-4 .v4-seg-opt.v4-active{ background:var(--card); color:var(--ip-ink); box-shadow:var(--sh-1); }
+#variant-4 .v4-seg-opt.v4-active .v4-dot{ border-color:var(--ip-blue); background:var(--ip-blue); box-shadow:inset 0 0 0 2px var(--card); }
+#variant-4 .v4-seg-opt small{ color:var(--muted-2); font-weight:500; }
+
+#variant-4 .v4-actions{ display:flex; align-items:center; gap:10px; }
+#variant-4 .v4-count{ font-size:12.5px; color:var(--muted); font-weight:600; }
+#variant-4 .v4-count b{ color:var(--ip-blue); }
+#variant-4 .v4-pdf{ display:inline-flex; align-items:center; gap:8px; background:var(--ip-blue); color:#fff; border:none; font-family:inherit; font-weight:700; font-size:13.5px; padding:11px 18px; border-radius:var(--r-btn); cursor:pointer; box-shadow:0 4px 14px rgba(0,80,230,.28); transition:.15s; }
+#variant-4 .v4-pdf:hover{ background:var(--ip-blue-d); }
+
+#variant-4 .v4-listsub{ color:var(--muted); font-size:12.5px; font-weight:500; margin:14px 2px 6px; }
+
+/* ===== Families (collapsible) ===== */
+#variant-4 .v4-fam{ margin-top:12px; background:var(--card); border:1px solid var(--line); border-radius:var(--r-card); overflow:hidden; box-shadow:var(--sh-1); }
+#variant-4 .v4-fam-head{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:12px; padding:14px 18px; user-select:none; }
+#variant-4 .v4-fam-head::-webkit-details-marker{ display:none; }
+#variant-4 .v4-fam-chev{ color:var(--muted); font-size:12px; transition:transform .2s; flex:none; }
+#variant-4 details[open] .v4-fam-chev{ transform:rotate(90deg); }
+#variant-4 .v4-fam-bar{ width:4px; height:18px; border-radius:4px; flex:none; }
+#variant-4 .v4-fam-name{ font-weight:800; font-size:14px; letter-spacing:-.01em; }
+#variant-4 .v4-fam-tag{ color:var(--muted); font-weight:500; font-size:12px; }
+#variant-4 .v4-fam-cnt{ margin-left:auto; font-size:12px; font-weight:700; color:var(--muted); background:var(--surf-sunken); padding:3px 10px; border-radius:var(--r-pill); }
+
+#variant-4 .v4-tbl{ border-top:1px solid var(--line); }
+#variant-4 .v4-trow{ display:grid; grid-template-columns:34px 1fr 96px 70px 78px 64px; align-items:center; gap:10px; padding:11px 18px; border-top:1px solid var(--line); transition:background .12s; }
+#variant-4 .v4-trow:first-child{ border-top:none; }
+#variant-4 .v4-trow:hover{ background:var(--card-2); }
+#variant-4 .v4-trow.v4-hcol{ background:var(--card-2); padding-top:8px; padding-bottom:8px; }
+#variant-4 .v4-th{ font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted-2); font-weight:700; }
+#variant-4 .v4-th.v4-r, #variant-4 .v4-cell.v4-r{ text-align:right; }
+
+#variant-4 .v4-prod{ min-width:0; }
+#variant-4 .v4-prod-n{ font-weight:700; font-size:13.5px; letter-spacing:-.01em; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+#variant-4 .v4-prod-c{ color:var(--muted-2); font-size:11.5px; font-weight:500; margin-top:2px; }
+#variant-4 .v4-cell{ font-size:13px; font-weight:600; }
+#variant-4 .v4-cell .v4-small{ display:block; font-size:10px; color:var(--muted-2); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+#variant-4 .v4-rem{ color:var(--c-opp); font-weight:800; }
+#variant-4 .v4-rem.v4-na{ color:var(--muted-2); font-weight:600; }
+#variant-4 .v4-sortie{ color:var(--ip-ink); }
+
+#variant-4 .v4-pill{ font-size:9.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:2px 7px; border-radius:var(--r-pill); line-height:1.5; }
+#variant-4 .v4-pill.v4-froid{ color:var(--c-froid); background:rgba(0,181,216,.12); }
+#variant-4 .v4-pill.v4-offre{ color:var(--c-amber); background:rgba(199,121,26,.12); }
+#variant-4 .v4-pill.v4-nr{ color:var(--c-amber); background:rgba(199,121,26,.1); }
+
+#variant-4 .v4-pk{ width:26px; height:26px; border-radius:8px; border:1.5px solid var(--line-strong); background:var(--card); cursor:pointer; display:grid; place-items:center; color:var(--muted-2); font-weight:800; font-size:13px; transition:.15s; }
+#variant-4 .v4-pk:hover{ border-color:var(--ip-blue); color:var(--ip-blue); }
+#variant-4 .v4-pk.v4-on{ background:var(--ip-blue); border-color:var(--ip-blue); color:#fff; }
+
+/* family color bars via util */
+#variant-4 .v4-c-pp{ background:#1E9E6A; } #variant-4 .v4-c-int{ background:#0050E6; }
+#variant-4 .v4-c-froid{ background:#00B5D8; } #variant-4 .v4-c-nr{ background:#C7791A; }
+
+@media (max-width:640px){
+  #variant-4 .v4-kpis{ grid-template-columns:repeat(2,1fr); }
+  #variant-4 .v4-prio-row{ flex-wrap:wrap; }
+  #variant-4 .v4-prio-gain{ text-align:left; }
+  #variant-4 .v4-bar{ flex-direction:column; align-items:stretch; }
+  #variant-4 .v4-seg{ width:100%; }
+  #variant-4 .v4-seg-opt{ flex:1; justify-content:center; }
+  #variant-4 .v4-actions{ justify-content:space-between; }
+  #variant-4 .v4-trow{ grid-template-columns:30px 1fr auto; grid-auto-rows:auto; row-gap:6px; }
+  #variant-4 .v4-trow.v4-hcol{ display:none; }
+  #variant-4 .v4-cell.v4-prix, #variant-4 .v4-cell.v4-vol{ grid-column:2; font-size:12px; color:var(--muted); }
+  #variant-4 .v4-cell.v4-remcell{ grid-column:3; }
+  #variant-4 .v4-cell.v4-sortiecell{ grid-column:2; font-size:12px; }
+}
+
+/* ===== VARIANT 5 : Mode tournée checklist mobile ===== */
+#variant-5{
+  font-family:"Satoshi",system-ui,sans-serif;
+  color:var(--ip-ink);
+  background:var(--paper);
+  -webkit-font-smoothing:antialiased;
+  max-width:560px;
+  margin:0 auto;
+  padding:0 0 100px;
+}
+#variant-5 *{box-sizing:border-box;}
+#variant-5 .v5-mono{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+
+/* ===== En-tête officine ===== */
+#variant-5 .v5-head{
+  background:var(--card);
+  border-bottom:1px solid var(--line);
+  padding:18px 16px 16px;
+}
+#variant-5 .v5-offrow{display:flex;align-items:flex-start;gap:12px;}
+#variant-5 .v5-officon{
+  width:46px;height:46px;flex:0 0 46px;border-radius:var(--r-md);
+  background:linear-gradient(140deg,var(--ip-blue),var(--ip-blue-d));
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:22px;box-shadow:var(--sh-1);
+}
+#variant-5 .v5-offmeta{flex:1;min-width:0;}
+#variant-5 .v5-offname{font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.15;}
+#variant-5 .v5-offsub{font-size:13px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+#variant-5 .v5-code{
+  font-family:"Geist Mono",monospace;font-size:11px;font-weight:600;
+  background:var(--surf-sunken);color:var(--ip-blue-d);
+  padding:2px 7px;border-radius:var(--r-pill);
+}
+#variant-5 .v5-contacts{display:flex;gap:8px;flex:0 0 auto;}
+#variant-5 .v5-cbtn{
+  width:42px;height:42px;border-radius:var(--r-btn);
+  border:1px solid var(--line-strong);background:var(--card-2);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  text-decoration:none;color:var(--ip-ink);transition:.15s;
+}
+#variant-5 .v5-cbtn:active{transform:scale(.94);background:var(--surf-sunken);}
+
+/* ===== KPIs ===== */
+#variant-5 .v5-kpis{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px;
+}
+#variant-5 .v5-kpi{
+  background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:9px 8px;text-align:center;
+}
+#variant-5 .v5-kpi-v{font-family:"Geist Mono",monospace;font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1;}
+#variant-5 .v5-kpi-l{font-size:9.5px;color:var(--muted);margin-top:5px;line-height:1.2;text-transform:uppercase;letter-spacing:.03em;}
+#variant-5 .v5-kpi.v5-push .v5-kpi-v{color:var(--c-opp);}
+
+/* ===== Sélecteur de référence ===== */
+#variant-5 .v5-ref{padding:16px 16px 0;}
+#variant-5 .v5-ref-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+#variant-5 .v5-seg{
+  display:flex;gap:6px;background:var(--surf-sunken);
+  border-radius:var(--r-btn);padding:5px;border:1px solid var(--line);
+}
+#variant-5 .v5-segbtn{
+  flex:1;border:0;background:transparent;cursor:pointer;border-radius:9px;
+  padding:11px 10px;text-align:left;display:flex;align-items:center;gap:9px;
+  color:var(--muted);font-family:inherit;transition:.15s;min-width:0;
+}
+#variant-5 .v5-segbtn.v5-on{background:var(--card);box-shadow:var(--sh-1);color:var(--ip-ink);}
+#variant-5 .v5-dot{
+  width:16px;height:16px;flex:0 0 16px;border-radius:50%;
+  border:2px solid var(--muted-2);position:relative;
+}
+#variant-5 .v5-segbtn.v5-on .v5-dot{border-color:var(--ip-blue);}
+#variant-5 .v5-segbtn.v5-on .v5-dot::after{
+  content:"";position:absolute;inset:2px;border-radius:50%;background:var(--ip-blue);
+}
+#variant-5 .v5-seg-t{font-size:13px;font-weight:700;line-height:1.15;}
+#variant-5 .v5-seg-s{font-size:10.5px;color:var(--muted);margin-top:1px;line-height:1.15;}
+#variant-5 .v5-ref-cap{
+  font-size:12.5px;color:var(--muted);line-height:1.4;margin:11px 2px 0;
+}
+#variant-5 .v5-ref-cap strong{color:var(--ip-ink);font-weight:700;}
+
+/* ===== Séparateur famille ===== */
+#variant-5 .v5-fam{
+  display:flex;align-items:center;gap:8px;
+  padding:22px 18px 9px;
+}
+#variant-5 .v5-fam-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;}
+#variant-5 .v5-fam-t{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+#variant-5 .v5-fam-c{font-size:11px;color:var(--muted-2);font-family:"Geist Mono",monospace;}
+#variant-5 .v5-fam-line{flex:1;height:1px;background:var(--line);}
+
+/* ===== Cartes produit ===== */
+#variant-5 .v5-list{padding:0 12px;}
+#variant-5 .v5-card{
+  display:flex;align-items:stretch;gap:0;
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-md);margin-bottom:9px;overflow:hidden;
+  box-shadow:var(--sh-1);transition:.15s;
+}
+#variant-5 .v5-card.v5-checked{
+  border-color:var(--c-opp);
+  box-shadow:0 0 0 1.5px var(--c-opp),var(--sh-1);
+}
+#variant-5 .v5-body{flex:1;min-width:0;padding:13px 12px 13px 14px;}
+#variant-5 .v5-pname{font-size:14.5px;font-weight:800;letter-spacing:-.01em;line-height:1.2;}
+#variant-5 .v5-cip{font-family:"Geist Mono",monospace;font-size:11px;color:var(--muted-2);margin-top:3px;}
+
+#variant-5 .v5-stats{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:9px;}
+#variant-5 .v5-price{
+  font-family:"Geist Mono",monospace;font-size:15px;font-weight:700;
+  letter-spacing:-.02em;color:var(--ip-ink);
+}
+#variant-5 .v5-rem{
+  font-family:"Geist Mono",monospace;font-size:11.5px;font-weight:700;
+  color:var(--c-opp);background:rgba(30,158,106,.1);
+  padding:2px 7px;border-radius:var(--r-pill);
+}
+#variant-5 .v5-rem.v5-free{color:var(--c-amber);background:rgba(199,121,26,.1);}
+#variant-5 .v5-sortie{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11.5px;color:var(--muted);
+}
+#variant-5 .v5-sortie b{font-family:"Geist Mono",monospace;color:var(--ip-ink);font-weight:700;}
+#variant-5 .v5-bar{
+  width:38px;height:4px;border-radius:2px;background:var(--surf-sunken);overflow:hidden;
+}
+#variant-5 .v5-bar i{display:block;height:100%;background:var(--ip-blue);border-radius:2px;}
+#variant-5 .v5-vol{font-size:11px;color:var(--muted-2);font-family:"Geist Mono",monospace;}
+#variant-5 .v5-tags{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
+#variant-5 .v5-tag{
+  font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  padding:3px 7px;border-radius:var(--r-pill);
+}
+#variant-5 .v5-tag.v5-froid{color:var(--c-froid);background:rgba(0,181,216,.12);}
+#variant-5 .v5-tag.v5-offre{color:var(--c-opp);background:rgba(30,158,106,.12);}
+
+/* grosse case à cocher */
+#variant-5 .v5-check{
+  flex:0 0 66px;display:flex;align-items:center;justify-content:center;
+  border-left:1px solid var(--line);background:var(--card-2);cursor:pointer;
+  transition:.15s;
+}
+#variant-5 .v5-checked .v5-check{background:var(--c-opp);border-left-color:var(--c-opp);}
+#variant-5 .v5-box{
+  width:34px;height:34px;border-radius:var(--r-sm);
+  border:2px solid var(--line-strong);background:var(--card);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:800;color:var(--muted-2);transition:.15s;
+}
+#variant-5 .v5-checked .v5-box{
+  background:#fff;border-color:#fff;color:var(--c-opp);
+}
+#variant-5 .v5-box::before{content:"+";}
+#variant-5 .v5-checked .v5-box::before{content:"\2713";}
+#variant-5 .v5-check:active .v5-box{transform:scale(.88);}
+
+/* ===== Barre flottante compteur + PDF ===== */
+#variant-5 .v5-bardock{
+  position:sticky;bottom:0;left:0;right:0;margin-top:18px;
+  background:rgba(251,252,254,.86);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line-strong);
+  padding:11px 14px calc(11px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:12px;
+  box-shadow:0 -6px 20px rgba(16,19,28,.06);
+}
+#variant-5 .v5-count{flex:1;min-width:0;}
+#variant-5 .v5-count-n{font-size:14px;font-weight:800;line-height:1.1;}
+#variant-5 .v5-count-n b{font-family:"Geist Mono",monospace;color:var(--ip-blue);}
+#variant-5 .v5-count-g{font-size:12px;color:var(--muted);margin-top:2px;}
+#variant-5 .v5-count-g b{font-family:"Geist Mono",monospace;color:var(--c-opp);font-weight:700;}
+#variant-5 .v5-pdf{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;
+  background:linear-gradient(140deg,var(--ip-blue),var(--ip-blue-d));
+  color:#fff;border:0;cursor:pointer;font-family:inherit;
+  font-size:14px;font-weight:800;letter-spacing:-.01em;
+  padding:14px 18px;border-radius:var(--r-btn);
+  box-shadow:0 6px 16px rgba(0,80,230,.32);transition:.15s;
+}
+#variant-5 .v5-pdf:active{transform:translateY(1px) scale(.99);}
+#variant-5 .v5-pdf-ic{font-size:17px;}
+
+/* ===== Responsive ≤640 ===== */
+@media (max-width:640px){
+  #variant-5 .v5-contacts{flex-direction:column;}
+  #variant-5 .v5-kpis{grid-template-columns:repeat(2,1fr);}
+  #variant-5 .v5-pdf span.v5-pdf-txt{display:none;}
+  #variant-5 .v5-pdf{padding:14px 16px;}
+}
+/* ===== VARIANT 6 : Tableau pro dense ===== */
+#variant-6{
+  --v6-fr-pp:#1E9E6A; --v6-fr-int:#0050E6; --v6-fr-cher:#C7791A;
+  --v6-fr-froid:#00B5D8; --v6-fr-nr:#C7791A;
+  color:var(--ip-ink);
+  font-family:"Satoshi",system-ui,sans-serif;
+  background:var(--paper);
+  -webkit-font-smoothing:antialiased;
+}
+#variant-6 *{box-sizing:border-box;}
+#variant-6 .v6-wrap{
+  max-width:1180px;margin:0 auto;padding:18px;
+  display:flex;flex-direction:column;gap:14px;
+}
+
+/* ---------- HEADER ---------- */
+#variant-6 .v6-head{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-card);padding:18px 20px;box-shadow:var(--sh-1);
+  display:flex;flex-direction:column;gap:16px;
+}
+#variant-6 .v6-head-top{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:18px;flex-wrap:wrap;
+}
+#variant-6 .v6-ident{display:flex;align-items:center;gap:14px;min-width:0;}
+#variant-6 .v6-avatar{
+  width:48px;height:48px;flex:0 0 48px;border-radius:14px;
+  background:linear-gradient(135deg,var(--ip-blue),var(--ip-blue-d));
+  color:#fff;font-weight:900;font-size:18px;
+  display:flex;align-items:center;justify-content:center;letter-spacing:.5px;
+  box-shadow:var(--sh-1);
+}
+#variant-6 .v6-name{font-size:21px;font-weight:800;letter-spacing:-.3px;line-height:1.1;}
+#variant-6 .v6-sub{
+  font-size:12.5px;color:var(--muted);margin-top:3px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+#variant-6 .v6-code{
+  font-family:"Geist Mono",monospace;font-size:11px;font-weight:600;
+  color:var(--ip-blue-d);background:rgba(0,80,230,.08);
+  padding:2px 8px;border-radius:var(--r-pill);
+}
+#variant-6 .v6-contacts{display:flex;gap:8px;flex-shrink:0;}
+#variant-6 .v6-cbtn{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:600;color:var(--ip-ink);
+  background:var(--card-2);border:1px solid var(--line-strong);
+  padding:8px 13px;border-radius:var(--r-btn);cursor:pointer;
+  transition:.15s;
+}
+#variant-6 .v6-cbtn:hover{background:#fff;border-color:var(--ip-blue);color:var(--ip-blue-d);}
+
+/* ---------- KPIs ---------- */
+#variant-6 .v6-kpis{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+}
+#variant-6 .v6-kpi{
+  background:var(--card-2);border:1px solid var(--line);
+  border-radius:var(--r-md);padding:12px 14px;position:relative;overflow:hidden;
+}
+#variant-6 .v6-kpi::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--muted-2);
+}
+#variant-6 .v6-kpi.v6-k-ca::before{background:var(--ip-blue);}
+#variant-6 .v6-kpi.v6-k-marge::before{background:var(--c-opp);}
+#variant-6 .v6-kpi.v6-k-ref::before{background:var(--c-cat);}
+#variant-6 .v6-kpi.v6-k-push::before{background:var(--c-amber);}
+#variant-6 .v6-klabel{
+  font-size:11px;color:var(--muted);font-weight:600;
+  text-transform:uppercase;letter-spacing:.4px;
+}
+#variant-6 .v6-kval{
+  font-family:"Geist Mono",monospace;font-size:21px;font-weight:700;
+  margin-top:4px;letter-spacing:-.5px;line-height:1;
+}
+#variant-6 .v6-kpi.v6-k-marge .v6-kval{color:var(--c-opp);}
+#variant-6 .v6-kpi.v6-k-push .v6-kval{color:var(--c-amber);}
+
+/* ---------- REFERENCE SELECTOR ---------- */
+#variant-6 .v6-refbar{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-card);padding:16px 18px;box-shadow:var(--sh-1);
+}
+#variant-6 .v6-reftitle{
+  font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;
+}
+#variant-6 .v6-refchoices{display:flex;gap:10px;flex-wrap:wrap;}
+#variant-6 .v6-refopt{
+  flex:1;min-width:230px;display:flex;align-items:center;gap:11px;
+  border:1.5px solid var(--line-strong);border-radius:var(--r-md);
+  padding:12px 14px;cursor:pointer;transition:.15s;background:var(--card-2);
+}
+#variant-6 .v6-refopt:hover{border-color:var(--ip-blue);}
+#variant-6 .v6-refopt.v6-active{
+  border-color:var(--ip-blue);background:rgba(0,80,230,.05);
+  box-shadow:0 0 0 3px rgba(0,80,230,.08);
+}
+#variant-6 .v6-radio{
+  width:18px;height:18px;flex:0 0 18px;border-radius:50%;
+  border:2px solid var(--muted-2);position:relative;
+}
+#variant-6 .v6-refopt.v6-active .v6-radio{border-color:var(--ip-blue);}
+#variant-6 .v6-refopt.v6-active .v6-radio::after{
+  content:"";position:absolute;inset:3px;border-radius:50%;background:var(--ip-blue);
+}
+#variant-6 .v6-reflbl{font-size:14px;font-weight:700;line-height:1.2;}
+#variant-6 .v6-refmeta{font-size:11.5px;color:var(--muted);margin-top:2px;}
+#variant-6 .v6-refdesc{
+  font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.45;
+  padding-top:12px;border-top:1px solid var(--line);
+}
+#variant-6 .v6-refdesc b{color:var(--ip-ink);font-weight:700;}
+
+/* ---------- TOOLBAR ---------- */
+#variant-6 .v6-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:14px;flex-wrap:wrap;
+}
+#variant-6 .v6-chips{display:flex;gap:7px;flex-wrap:wrap;}
+#variant-6 .v6-chip{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;font-weight:600;color:var(--muted);
+  background:var(--card);border:1px solid var(--line-strong);
+  padding:7px 13px;border-radius:var(--r-pill);cursor:pointer;transition:.15s;
+}
+#variant-6 .v6-chip:hover{color:var(--ip-ink);border-color:var(--muted-2);}
+#variant-6 .v6-chip.v6-on{
+  background:var(--ip-ink);color:#fff;border-color:var(--ip-ink);
+}
+#variant-6 .v6-chip .v6-dot{
+  width:8px;height:8px;border-radius:50%;flex:0 0 8px;
+}
+#variant-6 .v6-chip .v6-cnt{
+  font-family:"Geist Mono",monospace;font-size:11px;opacity:.7;
+}
+#variant-6 .v6-chip.v6-on .v6-cnt{opacity:.85;}
+
+/* ---------- SELECTION BAR + PDF ---------- */
+#variant-6 .v6-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+#variant-6 .v6-selcount{
+  font-size:12.5px;color:var(--muted);
+  display:inline-flex;align-items:center;gap:6px;
+}
+#variant-6 .v6-selcount b{
+  font-family:"Geist Mono",monospace;color:var(--ip-blue-d);font-weight:700;
+}
+#variant-6 .v6-pdf{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:13.5px;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,var(--ip-blue),var(--ip-blue-d));
+  border:none;padding:10px 18px;border-radius:var(--r-btn);cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,80,230,.28);transition:.15s;
+}
+#variant-6 .v6-pdf:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,80,230,.35);}
+
+/* ---------- TABLE ---------- */
+#variant-6 .v6-tablewrap{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden;
+}
+#variant-6 .v6-scroll{overflow-x:auto;}
+#variant-6 table.v6-tbl{
+  width:100%;border-collapse:collapse;font-size:13px;min-width:760px;
+}
+#variant-6 .v6-tbl thead th{
+  position:sticky;top:0;z-index:2;
+  background:var(--surf-sunken);
+  font-size:10.5px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;
+  text-align:left;padding:11px 12px;
+  border-bottom:1px solid var(--line-strong);white-space:nowrap;
+  user-select:none;
+}
+#variant-6 .v6-tbl thead th.v6-sortable{cursor:pointer;}
+#variant-6 .v6-tbl thead th.v6-sortable:hover{color:var(--ip-ink);}
+#variant-6 .v6-tbl thead th.v6-num{text-align:right;}
+#variant-6 .v6-tbl thead th.v6-ctr{text-align:center;}
+#variant-6 .v6-sortmark{
+  display:inline-block;margin-left:5px;font-size:9px;color:var(--ip-blue);
+  vertical-align:middle;
+}
+#variant-6 th.v6-col-chk{width:40px;}
+
+/* group header row */
+#variant-6 .v6-grp td{
+  padding:9px 12px;background:var(--card-2);
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+}
+#variant-6 .v6-grp-inner{
+  display:flex;align-items:center;gap:10px;
+}
+#variant-6 .v6-grp-chk{
+  width:17px;height:17px;flex:0 0 17px;border-radius:5px;
+  border:1.5px solid var(--muted-2);background:#fff;cursor:pointer;position:relative;
+}
+#variant-6 .v6-grp-chk::after{
+  content:"−";position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:13px;font-weight:900;color:#fff;opacity:0;
+}
+#variant-6 .v6-grp-bar{width:4px;height:16px;border-radius:2px;}
+#variant-6 .v6-grp-name{font-size:12.5px;font-weight:800;letter-spacing:-.2px;}
+#variant-6 .v6-grp-range{
+  font-size:11px;color:var(--muted);font-weight:500;
+}
+#variant-6 .v6-grp-cnt{
+  margin-left:auto;font-family:"Geist Mono",monospace;font-size:11px;
+  color:var(--muted);font-weight:600;
+}
+#variant-6 .v6-grp-cnt em{font-style:normal;color:var(--ip-ink);}
+
+/* product rows */
+#variant-6 .v6-tbl tbody td{
+  padding:10px 12px;border-bottom:1px solid var(--line);
+  vertical-align:middle;
+}
+#variant-6 .v6-row:hover td{background:rgba(0,80,230,.025);}
+#variant-6 .v6-row.v6-checked td{background:rgba(0,80,230,.05);}
+#variant-6 td.v6-col-chk{text-align:center;}
+#variant-6 .v6-chk{
+  width:18px;height:18px;border-radius:6px;
+  border:1.5px solid var(--muted-2);background:#fff;cursor:pointer;
+  position:relative;display:inline-block;vertical-align:middle;transition:.12s;
+}
+#variant-6 .v6-chk::after{
+  content:"";position:absolute;left:5px;top:1px;width:5px;height:9px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);opacity:0;
+}
+#variant-6 .v6-row.v6-checked .v6-chk{background:var(--ip-blue);border-color:var(--ip-blue);}
+#variant-6 .v6-row.v6-checked .v6-chk::after{opacity:1;}
+
+#variant-6 .v6-desig{font-weight:700;font-size:13px;letter-spacing:-.1px;line-height:1.25;}
+#variant-6 .v6-desig-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+#variant-6 .v6-cip{
+  font-family:"Geist Mono",monospace;font-size:11.5px;color:var(--muted);
+  white-space:nowrap;
+}
+#variant-6 td.v6-num{
+  text-align:right;font-family:"Geist Mono",monospace;
+  font-size:12.5px;font-weight:600;white-space:nowrap;
+}
+#variant-6 .v6-prix{color:var(--ip-ink);}
+#variant-6 .v6-rem{color:var(--c-opp);font-weight:700;}
+#variant-6 .v6-rem.v6-rem-none{color:var(--muted-2);font-weight:500;}
+
+/* sortie bar */
+#variant-6 td.v6-sortie{min-width:118px;}
+#variant-6 .v6-sortie-inner{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+#variant-6 .v6-sortie-num{
+  font-family:"Geist Mono",monospace;font-size:12px;font-weight:700;
+  white-space:nowrap;
+}
+#variant-6 .v6-sortie-num span{color:var(--muted-2);font-weight:500;}
+#variant-6 .v6-bar{
+  width:46px;height:6px;border-radius:3px;background:var(--surf-sunken);
+  overflow:hidden;flex:0 0 46px;
+}
+#variant-6 .v6-bar i{display:block;height:100%;border-radius:3px;background:var(--ip-blue);}
+
+/* badges */
+#variant-6 .v6-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:9.5px;font-weight:800;letter-spacing:.4px;
+  padding:2px 7px;border-radius:var(--r-pill);text-transform:uppercase;
+  white-space:nowrap;
+}
+#variant-6 .v6-b-froid{background:rgba(0,181,216,.12);color:#0086a3;}
+#variant-6 .v6-b-offre{background:rgba(30,158,106,.12);color:var(--c-opp);}
+
+/* footer */
+#variant-6 .v6-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:var(--surf-sunken);
+  border-top:1px solid var(--line-strong);font-size:12px;color:var(--muted);
+  flex-wrap:wrap;gap:10px;
+}
+#variant-6 .v6-foot b{
+  font-family:"Geist Mono",monospace;color:var(--ip-ink);font-weight:700;
+}
+#variant-6 .v6-foot-pdf{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;font-weight:700;color:var(--ip-blue-d);cursor:pointer;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:640px){
+  #variant-6 .v6-wrap{padding:12px;}
+  #variant-6 .v6-kpis{grid-template-columns:repeat(2,1fr);}
+  #variant-6 .v6-head-top{flex-direction:column;}
+  #variant-6 .v6-contacts{width:100%;}
+  #variant-6 .v6-cbtn{flex:1;justify-content:center;}
+  #variant-6 .v6-refopt{min-width:100%;}
+  #variant-6 .v6-toolbar{flex-direction:column;align-items:stretch;}
+  #variant-6 .v6-actions{justify-content:space-between;}
+  #variant-6 .v6-pdf{flex:1;justify-content:center;}
+}
+</style></head>
+<body class="sw-wrap">
+<div class="switch"><div class="switch-row"><span class="switch-lbl">Fiche officine · 6 designs</span><button class="switch-b on" data-n="1" onclick="show(1)">1</button><button class="switch-b" data-n="2" onclick="show(2)">2</button><button class="switch-b" data-n="3" onclick="show(3)">3</button><button class="switch-b" data-n="4" onclick="show(4)">4</button><button class="switch-b" data-n="5" onclick="show(5)">5</button><button class="switch-b" data-n="6" onclick="show(6)">6</button></div></div>
+<div class="meta"><div class="meta-block" data-n="1"><div class="meta-n">Design 1 / 6</div><div class="meta-t">Liste focus plein écran</div><div class="meta-s">Pour le commercial terrain qui veut scanner vite les manques d'une officine et générer sa liste d'achats sans friction.</div></div><div class="meta-block" data-n="2" hidden><div class="meta-n">Design 2 / 6</div><div class="meta-t">Master-détail deux colonnes</div><div class="meta-s">Pour le commercial terrain qui veut naviguer vite entre familles et bâtir sa liste d'achats famille par famille sans perdre le contexte officine.</div></div><div class="meta-block" data-n="3" hidden><div class="meta-n">Design 3 / 6</div><div class="meta-t">Cartes par famille (triage visuel)</div><div class="meta-s">Pour le commercial qui veut balayer une officine en un coup d'oeil et trier vite par famille produit avant de générer sa liste d'achats.</div></div><div class="meta-block" data-n="4" hidden><div class="meta-n">Design 4 / 6</div><div class="meta-t">Priorité — top opportunités</div><div class="meta-s">Pour le commercial pressé qui veut voir d'un coup d'œil les 5 plus gros coups à faire sur l'officine avant d'entrer dans le détail.</div></div><div class="meta-block" data-n="5" hidden><div class="meta-n">Design 5 / 6</div><div class="meta-t">Mode tournée checklist mobile</div><div class="meta-s">Pour le commercial au comptoir sur mobile : grandes cibles tactiles, on coche les produits à pousser et le PDF se construit tout seul.</div></div><div class="meta-block" data-n="6" hidden><div class="meta-n">Design 6 / 6</div><div class="meta-t">Tableau pro dense</div><div class="meta-s">Pour les commerciaux qui connaissent leur catalogue : tout en un tableau triable façon tableur, filtres par famille et sélection en masse pour générer la liste d'achats en quelques secondes.</div></div></div>
+<div class="stage">
+<section class="variant on" id="variant-1" data-n="1"><div class="v1-head">
+  <div class="v1-head-top">
+    <div class="v1-id">
+      <div class="v1-avatar">PM</div>
+      <div>
+        <div class="v1-name">Pharmacie du Marché</div>
+        <div class="v1-sub">
+          <span class="v1-code">3400 IP</span>
+          <span>Caen (14)</span>
+        </div>
+      </div>
+    </div>
+    <div class="v1-contacts">
+      <a class="v1-cbtn" href="#">📞 Appeler</a>
+      <a class="v1-cbtn" href="#">✉ E-mail</a>
+    </div>
+  </div>
+
+  <div class="v1-kpis">
+    <div class="v1-kpi">
+      <div class="v1-kpi-l">CA cumulé</div>
+      <div class="v1-kpi-v v1-mono">48 200<small>€</small></div>
+    </div>
+    <div class="v1-kpi is-marge">
+      <div class="v1-kpi-l">Marge MDL générée</div>
+      <div class="v1-kpi-v v1-mono">1 840<small>€</small></div>
+    </div>
+    <div class="v1-kpi">
+      <div class="v1-kpi-l">Références commandées</div>
+      <div class="v1-kpi-v v1-mono">312</div>
+    </div>
+    <div class="v1-kpi is-push">
+      <div class="v1-kpi-l">Produits à pousser</div>
+      <div class="v1-kpi-v v1-mono">47</div>
+    </div>
+  </div>
+</div>
+
+<div class="v1-refbar">
+  <div class="v1-seg" role="tablist" aria-label="Référence de comparaison">
+    <button class="v1-seg-btn is-active" role="tab" aria-selected="true">
+      <span class="v1-dot"></span> Réseau Intégral Pharma
+    </button>
+    <button class="v1-seg-btn" role="tab" aria-selected="false">
+      <span class="v1-dot"></span> Son groupement
+      <span class="v1-seg-meta">· Giphar (21 pharmacies)</span>
+    </button>
+  </div>
+  <p class="v1-refsub">
+    Produits que le réseau <b>Intégral Pharma</b> commande et que cette officine n'a pas — triés par nombre de pharmacies <b>(Sortie)</b>.
+  </p>
+</div>
+
+<div class="v1-list">
+
+  <!-- FAMILLE 1 : ouverte -->
+  <details class="v1-fam" open style="--fam:#1E9E6A">
+    <summary class="v1-fam-head">
+      <span class="v1-fam-icn"></span>
+      <span class="v1-fam-title">Princeps · Petits prix <span class="v1-fam-range">0–4,33 €</span></span>
+      <span class="v1-fam-count">5 réfs</span>
+      <span class="v1-chev"></span>
+    </summary>
+    <div class="v1-fam-body">
+      <div class="v1-colhead v1-row">
+        <span></span><span>Désignation · CIP</span>
+        <span class="v1-r">Prix net · Remise</span>
+        <span class="v1-c">Sortie</span>
+        <span class="v1-r">Volume</span>
+      </div>
+
+      <div class="v1-row is-on">
+        <span class="v1-check is-on" role="checkbox" aria-checked="true"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">DOLIPRANE 1000MG CPR BT8</div>
+          <div class="v1-cip">3400935955838</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">0,88 €</div><div class="v1-rem has">−17 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">18<small>/21</small></div><div class="v1-sbar"><i style="width:86%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">4 000</div><div class="v1-vlab">u/an</div></div>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">SPASFON CPR BT30</div>
+          <div class="v1-cip">3400930986080</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">1,75 €</div><div class="v1-rem has">−9 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">15<small>/21</small></div><div class="v1-sbar"><i style="width:71%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">980</div><div class="v1-vlab">u/an</div></div>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">KARDEGIC 75MG PDR SACH 30</div>
+          <div class="v1-cip">3400934744198</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">1,29 €</div><div class="v1-rem has">−12 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">14<small>/21</small></div><div class="v1-sbar"><i style="width:67%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">760</div><div class="v1-vlab">u/an</div></div>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">LAMALINE GELU BT16</div>
+          <div class="v1-cip">3400935154958</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">1,10 €</div><div class="v1-rem has">−14 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">12<small>/21</small></div><div class="v1-sbar"><i style="width:57%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">540</div><div class="v1-vlab">u/an</div></div>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">SERESTA 10MG CPR BT30</div>
+          <div class="v1-cip">3400935887559</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">0,96 €</div><div class="v1-rem has">−16 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">11<small>/21</small></div><div class="v1-sbar"><i style="width:52%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">410</div><div class="v1-vlab">u/an</div></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- FAMILLE 2 -->
+  <details class="v1-fam" style="--fam:#0050E6">
+    <summary class="v1-fam-head">
+      <span class="v1-fam-icn"></span>
+      <span class="v1-fam-title">Princeps · Intermédiaires <span class="v1-fam-range">4,33–468 €</span></span>
+      <span class="v1-fam-count">3 réfs</span>
+      <span class="v1-chev"></span>
+    </summary>
+    <div class="v1-fam-body">
+      <div class="v1-colhead v1-row">
+        <span></span><span>Désignation · CIP</span>
+        <span class="v1-r">Prix net · Remise</span>
+        <span class="v1-c">Sortie</span>
+        <span class="v1-r">Volume</span>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">GAVISCON BUV SUSP SACH10ML 24 <span class="v1-tag t-offre">Offre</span></div>
+          <div class="v1-cip">3400933095253</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">3,42 €</div><div class="v1-rem has">−5 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">13<small>/21</small></div><div class="v1-sbar"><i style="width:62%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">320</div><div class="v1-vlab">u/an</div></div>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">METEOSPASMYL CAPS BT20</div>
+          <div class="v1-cip">3400933254063</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">2,18 €</div><div class="v1-rem has">−8 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">10<small>/21</small></div><div class="v1-sbar"><i style="width:48%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">260</div><div class="v1-vlab">u/an</div></div>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">DACUDOSES OPHT UNIDOS10ML 24</div>
+          <div class="v1-cip">3400934796708</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">2,10 €</div><div class="v1-rem has">−8 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">9<small>/21</small></div><div class="v1-sbar"><i style="width:43%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">240</div><div class="v1-vlab">u/an</div></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- FAMILLE 3 : Froid -->
+  <details class="v1-fam" style="--fam:#00B5D8">
+    <summary class="v1-fam-head">
+      <span class="v1-fam-icn"></span>
+      <span class="v1-fam-title">Froid ❄</span>
+      <span class="v1-fam-count">2 réfs</span>
+      <span class="v1-chev"></span>
+    </summary>
+    <div class="v1-fam-body">
+      <div class="v1-colhead v1-row">
+        <span></span><span>Désignation · CIP</span>
+        <span class="v1-r">Prix net · Remise</span>
+        <span class="v1-c">Sortie</span>
+        <span class="v1-r">Volume</span>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">OZEMPIC 1MG STYLO <span class="v1-tag t-froid">Froid</span></div>
+          <div class="v1-cip">3400930213100</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">64,00 €</div><div class="v1-rem has">−4 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">8<small>/21</small></div><div class="v1-sbar"><i style="width:38%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">95</div><div class="v1-vlab">u/an</div></div>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">XARELTO 20MG CPR BT28 <span class="v1-tag t-froid">Froid</span></div>
+          <div class="v1-cip">3400939999999</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">42,50 €</div><div class="v1-rem has">−6 %</div></div>
+        <div class="v1-sortie"><div class="v1-sval">7<small>/21</small></div><div class="v1-sbar"><i style="width:33%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">70</div><div class="v1-vlab">u/an</div></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- FAMILLE 4 : Non remboursés -->
+  <details class="v1-fam" style="--fam:#C7791A">
+    <summary class="v1-fam-head">
+      <span class="v1-fam-icn"></span>
+      <span class="v1-fam-title">Non remboursés <span class="v1-fam-range">marge libre</span></span>
+      <span class="v1-fam-count">2 réfs</span>
+      <span class="v1-chev"></span>
+    </summary>
+    <div class="v1-fam-body">
+      <div class="v1-colhead v1-row">
+        <span></span><span>Désignation · CIP</span>
+        <span class="v1-r">Prix net · Remise</span>
+        <span class="v1-c">Sortie</span>
+        <span class="v1-r">Volume</span>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">NUROFEN 400MG CPR BT12</div>
+          <div class="v1-cip">3400930000000</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">2,40 €</div><div class="v1-rem none">—</div></div>
+        <div class="v1-sortie"><div class="v1-sval">12<small>/21</small></div><div class="v1-sbar"><i style="width:57%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">300</div><div class="v1-vlab">u/an</div></div>
+      </div>
+
+      <div class="v1-row">
+        <span class="v1-check" role="checkbox" aria-checked="false"></span>
+        <div class="v1-desig">
+          <div class="v1-dname">HUMER 150ML SPRAY</div>
+          <div class="v1-cip">3400930111111</div>
+        </div>
+        <div class="v1-price"><div class="v1-pval">3,10 €</div><div class="v1-rem none">—</div></div>
+        <div class="v1-sortie"><div class="v1-sval">9<small>/21</small></div><div class="v1-sbar"><i style="width:43%"></i></div></div>
+        <div class="v1-vol"><div class="v1-vval">210</div><div class="v1-vlab">u/an</div></div>
+      </div>
+    </div>
+  </details>
+
+</div>
+
+<div class="v1-pdfbar">
+  <div class="v1-selinfo">
+    <span class="v1-selcount v1-mono">1</span>
+    <div class="v1-seltxt">
+      produit sélectionné
+      <span>sur 12 produits à pousser</span>
+    </div>
+  </div>
+  <button class="v1-pdfbtn">Liste d'achats (PDF)</button>
+</div></section>
+<section class="variant" id="variant-2" data-n="2"><div class="v2-shell">
+
+  <!-- ============ LEFT RAIL ============ -->
+  <aside class="v2-rail">
+    <div class="v2-offhead">
+      <span class="v2-code">CODE 3400 IP</span>
+      <h2 class="v2-offname">Pharmacie du Marché</h2>
+      <div class="v2-offloc">📍 Caen (14)</div>
+      <div class="v2-contacts">
+        <a class="v2-cbtn" href="tel:">📞 Appeler</a>
+        <a class="v2-cbtn" href="mailto:">✉ E-mail</a>
+      </div>
+    </div>
+
+    <div class="v2-kpis">
+      <div class="v2-kpi"><span class="v2-kpi-l">CA cumulé</span><span class="v2-kpi-v v2-num">48 200 €</span></div>
+      <div class="v2-kpi"><span class="v2-kpi-l">Marge MDL générée</span><span class="v2-kpi-v v2-pos v2-num">1 840 €</span></div>
+      <div class="v2-kpi"><span class="v2-kpi-l">Références commandées</span><span class="v2-kpi-v v2-num">312</span></div>
+      <div class="v2-kpi"><span class="v2-kpi-l">Produits à pousser</span><span class="v2-kpi-v v2-push v2-num">47</span></div>
+    </div>
+
+    <div class="v2-fam-title">Familles à pousser</div>
+    <nav class="v2-famlist">
+      <button class="v2-fam v2-on"><span class="v2-dot" style="background:#1E9E6A"></span><span class="v2-fam-nm">Princeps · Petits prix</span><span class="v2-fam-ct v2-num">5</span></button>
+      <button class="v2-fam"><span class="v2-dot" style="background:#0050E6"></span><span class="v2-fam-nm">Princeps · Intermédiaires</span><span class="v2-fam-ct v2-num">3</span></button>
+      <button class="v2-fam"><span class="v2-dot" style="background:#00B5D8"></span><span class="v2-fam-nm">Froid</span><span class="v2-fam-ct v2-num">2</span></button>
+      <button class="v2-fam"><span class="v2-dot" style="background:#C7791A"></span><span class="v2-fam-nm">Non remboursés</span><span class="v2-fam-ct v2-num">2</span></button>
+    </nav>
+
+    <div class="v2-refbox">
+      <div class="v2-ref-h">Comparer avec</div>
+      <div class="v2-ref v2-on">
+        <span class="v2-radio"></span>
+        <span><span class="v2-ref-t">Réseau Intégral Pharma</span><span class="v2-ref-s">Référence par défaut</span></span>
+      </div>
+      <div class="v2-ref">
+        <span class="v2-radio"></span>
+        <span><span class="v2-ref-t">Son groupement · Giphar</span><span class="v2-ref-s">21 pharmacies</span></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ RIGHT PANEL ============ -->
+  <section class="v2-panel">
+
+    <!-- mobile family selector -->
+    <div class="v2-fambar">
+      <button class="v2-fchip v2-on"><span class="v2-dot" style="background:#1E9E6A"></span>Petits prix<span class="v2-fam-ct v2-num">5</span></button>
+      <button class="v2-fchip"><span class="v2-dot" style="background:#0050E6"></span>Intermédiaires<span class="v2-fam-ct v2-num">3</span></button>
+      <button class="v2-fchip"><span class="v2-dot" style="background:#00B5D8"></span>Froid<span class="v2-fam-ct v2-num">2</span></button>
+      <button class="v2-fchip"><span class="v2-dot" style="background:#C7791A"></span>Non remb.<span class="v2-fam-ct v2-num">2</span></button>
+    </div>
+
+    <div class="v2-phead">
+      <div>
+        <div class="v2-ptitle"><span class="v2-pdot" style="background:#1E9E6A"></span>Princeps · Petits prix <span class="v2-num" style="color:var(--muted);font-weight:600;font-size:14px">(0–4,33 €)</span></div>
+        <div class="v2-psub">Produits que le réseau Intégral Pharma commande et que cette officine n'a pas — triés par nombre de pharmacies (Sortie).</div>
+      </div>
+      <div class="v2-pright">
+        <span class="v2-selcount">Sélection <b class="v2-num">3</b>/47</span>
+        <button class="v2-pdf">⬇ Liste d'achats (PDF)</button>
+      </div>
+    </div>
+
+    <div class="v2-tablewrap">
+      <table class="v2-tbl">
+        <thead>
+          <tr>
+            <th class="v2-tl">Désignation</th>
+            <th>Prix net IP</th>
+            <th>Remise</th>
+            <th class="v2-tc">Sortie</th>
+            <th>Volume</th>
+            <th class="v2-tc">Badges</th>
+            <th class="v2-th-check">PDF</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="v2-picked">
+            <td class="v2-td-l"><div class="v2-desig">DOLIPRANE 1000MG CPR BT8</div><div class="v2-cip">3400935955838</div></td>
+            <td><span class="v2-price">0,88 €</span></td>
+            <td><span class="v2-rem">17 %</span></td>
+            <td class="v2-tc"><span class="v2-sortie"><span class="v2-num v2-sortie-n">18/21</span><span class="v2-bar"><i style="width:86%"></i></span></span></td>
+            <td><span class="v2-vol">4 000</span></td>
+            <td class="v2-tc"><span class="v2-badges"><span class="v2-bdg-empty">—</span></span></td>
+            <td class="v2-td-check"><span class="v2-check v2-on">✓</span></td>
+          </tr>
+          <tr class="v2-picked">
+            <td class="v2-td-l"><div class="v2-desig">SPASFON CPR BT30</div><div class="v2-cip">3400930986080</div></td>
+            <td><span class="v2-price">1,75 €</span></td>
+            <td><span class="v2-rem">9 %</span></td>
+            <td class="v2-tc"><span class="v2-sortie"><span class="v2-num v2-sortie-n">15/21</span><span class="v2-bar"><i style="width:71%"></i></span></span></td>
+            <td><span class="v2-vol">980</span></td>
+            <td class="v2-tc"><span class="v2-badges"><span class="v2-bdg-empty">—</span></span></td>
+            <td class="v2-td-check"><span class="v2-check v2-on">✓</span></td>
+          </tr>
+          <tr class="v2-picked">
+            <td class="v2-td-l"><div class="v2-desig">KARDEGIC 75MG PDR SACH 30</div><div class="v2-cip">3400934744198</div></td>
+            <td><span class="v2-price">1,29 €</span></td>
+            <td><span class="v2-rem">12 %</span></td>
+            <td class="v2-tc"><span class="v2-sortie"><span class="v2-num v2-sortie-n">14/21</span><span class="v2-bar"><i style="width:67%"></i></span></span></td>
+            <td><span class="v2-vol">760</span></td>
+            <td class="v2-tc"><span class="v2-badges"><span class="v2-bdg-empty">—</span></span></td>
+            <td class="v2-td-check"><span class="v2-check v2-on">✓</span></td>
+          </tr>
+          <tr>
+            <td class="v2-td-l"><div class="v2-desig">LAMALINE GELU BT16</div><div class="v2-cip">3400935154958</div></td>
+            <td><span class="v2-price">1,10 €</span></td>
+            <td><span class="v2-rem">14 %</span></td>
+            <td class="v2-tc"><span class="v2-sortie"><span class="v2-num v2-sortie-n">12/21</span><span class="v2-bar"><i style="width:57%"></i></span></span></td>
+            <td><span class="v2-vol">540</span></td>
+            <td class="v2-tc"><span class="v2-badges"><span class="v2-bdg-empty">—</span></span></td>
+            <td class="v2-td-check"><span class="v2-check">+</span></td>
+          </tr>
+          <tr>
+            <td class="v2-td-l"><div class="v2-desig">SERESTA 10MG CPR BT30</div><div class="v2-cip">3400935887559</div></td>
+            <td><span class="v2-price">0,96 €</span></td>
+            <td><span class="v2-rem">16 %</span></td>
+            <td class="v2-tc"><span class="v2-sortie"><span class="v2-num v2-sortie-n">11/21</span><span class="v2-bar"><i style="width:52%"></i></span></span></td>
+            <td><span class="v2-vol">410</span></td>
+            <td class="v2-tc"><span class="v2-badges"><span class="v2-bdg-empty">—</span></span></td>
+            <td class="v2-td-check"><span class="v2-check">+</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="v2-foot">💡 Famille active : <b style="margin:0 4px">Princeps · Petits prix</b> — 5 références à pousser sur 47 au total. Cochez pour ajouter à la liste d'achats.</div>
+  </section>
+
+</div></section>
+<section class="variant" id="variant-3" data-n="3"><div id="variant-3">
+
+  <!-- HEADER -->
+  <header class="v3-head">
+    <div class="v3-head-top">
+      <div class="v3-id">
+        <span class="v3-eyebrow">Fiche opportunités · Actif</span>
+        <h1 class="v3-title">Pharmacie du Marché</h1>
+        <p class="v3-sub">Code <span class="v3-mono">3400 IP</span> · Caen (14) · Giphar (21 pharmacies)</p>
+      </div>
+      <div class="v3-contacts">
+        <button class="v3-cbtn" type="button">📞 Appeler</button>
+        <button class="v3-cbtn" type="button">✉️ E-mail</button>
+      </div>
+    </div>
+    <div class="v3-kpis">
+      <div class="v3-kpi is-ca"><div class="v3-kpi-l">CA cumulé</div><div class="v3-kpi-v v3-mono">48 200 €</div></div>
+      <div class="v3-kpi is-marge"><div class="v3-kpi-l">Marge MDL générée</div><div class="v3-kpi-v v3-mono">1 840 €</div></div>
+      <div class="v3-kpi"><div class="v3-kpi-l">Réf. commandées</div><div class="v3-kpi-v v3-mono">312</div></div>
+      <div class="v3-kpi is-push"><div class="v3-kpi-l">Produits à pousser</div><div class="v3-kpi-v v3-mono">47</div></div>
+    </div>
+  </header>
+
+  <!-- CONTROL BAR -->
+  <div class="v3-bar">
+    <div class="v3-seg">
+      <span class="v3-seg-lab">Comparer à</span>
+      <div class="v3-toggle" role="group" aria-label="Référence de comparaison">
+        <button class="v3-opt is-on" type="button"><span class="v3-dot"></span>Réseau Intégral Pharma</button>
+        <button class="v3-opt" type="button"><span class="v3-dot"></span>Son groupement <small>· Giphar (21)</small></button>
+      </div>
+    </div>
+    <div class="v3-bar-actions">
+      <span class="v3-count">Sélection <b>0</b> / 12</span>
+      <button class="v3-pdf" type="button">⬇ Liste d'achats (PDF)</button>
+    </div>
+  </div>
+
+  <p class="v3-sub" style="margin:0 4px 16px;font-size:13px;color:var(--muted)">Produits que le réseau <strong style="color:var(--ip-ink)">Intégral Pharma</strong> commande et que cette officine n'a pas — triés par nombre de pharmacies (Sortie).</p>
+
+  <!-- GRID -->
+  <div class="v3-grid">
+
+    <!-- CARD : Petits prix -->
+    <section class="v3-fcard fam-petits">
+      <div class="v3-fhead">
+        <div class="v3-fcat"><span class="v3-fchip"></span><span class="v3-fname">Princeps · Petits prix</span></div>
+        <div class="v3-frange">0 – 4,33 € · marge fixe 0,18 €</div>
+        <div class="v3-fmeta"><span>À pousser <b>14</b></span><span>Sortie moy. <b>14/21</b></span><span>Remise moy. <b>14%</b></span></div>
+      </div>
+      <div class="v3-list">
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">DOLIPRANE 1000MG CPR BT8</div><div class="v3-pcip">3400935955838</div></div>
+          <div class="v3-pright"><span class="v3-price">0,88 €</span><div class="v3-pstats"><span class="v3-rem">−17%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:86%"></i></span>18/21</span></div><span class="v3-pvol">vol <span class="v3-mono">4 000</span></span></div>
+        </div>
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">SPASFON CPR BT30</div><div class="v3-pcip">3400930986080</div></div>
+          <div class="v3-pright"><span class="v3-price">1,75 €</span><div class="v3-pstats"><span class="v3-rem">−9%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:71%"></i></span>15/21</span></div><span class="v3-pvol">vol <span class="v3-mono">980</span></span></div>
+        </div>
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">KARDEGIC 75MG PDR SACH 30</div><div class="v3-pcip">3400934744198</div></div>
+          <div class="v3-pright"><span class="v3-price">1,29 €</span><div class="v3-pstats"><span class="v3-rem">−12%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:67%"></i></span>14/21</span></div><span class="v3-pvol">vol <span class="v3-mono">760</span></span></div>
+        </div>
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">LAMALINE GELU BT16</div><div class="v3-pcip">3400935154958</div></div>
+          <div class="v3-pright"><span class="v3-price">1,10 €</span><div class="v3-pstats"><span class="v3-rem">−14%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:57%"></i></span>12/21</span></div><span class="v3-pvol">vol <span class="v3-mono">540</span></span></div>
+        </div>
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">SERESTA 10MG CPR BT30</div><div class="v3-pcip">3400935887559</div></div>
+          <div class="v3-pright"><span class="v3-price">0,96 €</span><div class="v3-pstats"><span class="v3-rem">−16%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:52%"></i></span>11/21</span></div><span class="v3-pvol">vol <span class="v3-mono">410</span></span></div>
+        </div>
+      </div>
+      <div class="v3-ffoot"><button class="v3-fmore" type="button">Voir les 14 produits</button><span class="v3-fhidden">+<b>9</b> masqués</span></div>
+    </section>
+
+    <!-- CARD : Intermédiaires -->
+    <section class="v3-fcard fam-inter">
+      <div class="v3-fhead">
+        <div class="v3-fcat"><span class="v3-fchip"></span><span class="v3-fname">Princeps · Intermédiaires</span></div>
+        <div class="v3-frange">4,33 – 468 € · marge 3,9 %</div>
+        <div class="v3-fmeta"><span>À pousser <b>11</b></span><span>Sortie moy. <b>11/21</b></span><span>Remise moy. <b>7%</b></span></div>
+      </div>
+      <div class="v3-list">
+        <div class="v3-prod is-sel">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">GAVISCON BUV SACH 10ML 24 <span class="v3-tag t-offre">Offre</span></div><div class="v3-pcip">3400933095253</div></div>
+          <div class="v3-pright"><span class="v3-price">3,42 €</span><div class="v3-pstats"><span class="v3-rem">−5%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:62%"></i></span>13/21</span></div><span class="v3-pvol">vol <span class="v3-mono">320</span></span></div>
+        </div>
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">METEOSPASMYL CAPS BT20</div><div class="v3-pcip">3400933254063</div></div>
+          <div class="v3-pright"><span class="v3-price">2,18 €</span><div class="v3-pstats"><span class="v3-rem">−8%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:48%"></i></span>10/21</span></div><span class="v3-pvol">vol <span class="v3-mono">260</span></span></div>
+        </div>
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">DACUDOSES OPHT UNIDOS 10ML 24</div><div class="v3-pcip">3400934796708</div></div>
+          <div class="v3-pright"><span class="v3-price">2,10 €</span><div class="v3-pstats"><span class="v3-rem">−8%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:43%"></i></span>9/21</span></div><span class="v3-pvol">vol <span class="v3-mono">240</span></span></div>
+        </div>
+      </div>
+      <div class="v3-ffoot"><button class="v3-fmore" type="button">Voir les 11 produits</button><span class="v3-fhidden">+<b>8</b> masqués</span></div>
+    </section>
+
+    <!-- CARD : Froid -->
+    <section class="v3-fcard fam-froid">
+      <div class="v3-fhead">
+        <div class="v3-fcat"><span class="v3-fchip"></span><span class="v3-fname">Chaîne du froid ❄</span></div>
+        <div class="v3-frange">Transport réfrigéré · forte valeur</div>
+        <div class="v3-fmeta"><span>À pousser <b>5</b></span><span>Sortie moy. <b>8/21</b></span><span>Remise moy. <b>5%</b></span></div>
+      </div>
+      <div class="v3-list">
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">OZEMPIC 1MG STYLO <span class="v3-tag t-froid">Froid</span></div><div class="v3-pcip">3400930213100</div></div>
+          <div class="v3-pright"><span class="v3-price">64,00 €</span><div class="v3-pstats"><span class="v3-rem">−4%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:38%"></i></span>8/21</span></div><span class="v3-pvol">vol <span class="v3-mono">95</span></span></div>
+        </div>
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">XARELTO 20MG CPR BT28 <span class="v3-tag t-froid">Froid</span></div><div class="v3-pcip">3400939999999</div></div>
+          <div class="v3-pright"><span class="v3-price">42,50 €</span><div class="v3-pstats"><span class="v3-rem">−6%</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:33%"></i></span>7/21</span></div><span class="v3-pvol">vol <span class="v3-mono">70</span></span></div>
+        </div>
+      </div>
+      <div class="v3-ffoot"><button class="v3-fmore" type="button">Voir les 5 produits</button><span class="v3-fhidden">+<b>3</b> masqués</span></div>
+    </section>
+
+    <!-- CARD : Non remboursés -->
+    <section class="v3-fcard fam-nr">
+      <div class="v3-fhead">
+        <div class="v3-fcat"><span class="v3-fchip"></span><span class="v3-fname">Non remboursés</span></div>
+        <div class="v3-frange">Marge libre · prix PLM</div>
+        <div class="v3-fmeta"><span>À pousser <b>9</b></span><span>Sortie moy. <b>10/21</b></span><span>Marge <b>libre</b></span></div>
+      </div>
+      <div class="v3-list">
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">NUROFEN 400MG CPR BT12</div><div class="v3-pcip">3400930000000</div></div>
+          <div class="v3-pright"><span class="v3-price">2,40 €</span><div class="v3-pstats"><span class="v3-rem is-free">libre</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:57%"></i></span>12/21</span></div><span class="v3-pvol">vol <span class="v3-mono">300</span></span></div>
+        </div>
+        <div class="v3-prod">
+          <span class="v3-check"></span>
+          <div class="v3-pmain"><div class="v3-pname">HUMER 150ML SPRAY</div><div class="v3-pcip">3400930111111</div></div>
+          <div class="v3-pright"><span class="v3-price">3,10 €</span><div class="v3-pstats"><span class="v3-rem is-free">libre</span><span class="v3-sortie"><span class="v3-bar-mini"><i style="width:43%"></i></span>9/21</span></div><span class="v3-pvol">vol <span class="v3-mono">210</span></span></div>
+        </div>
+      </div>
+      <div class="v3-ffoot"><button class="v3-fmore" type="button">Voir les 9 produits</button><span class="v3-fhidden">+<b>7</b> masqués</span></div>
+    </section>
+
+  </div>
+</div></section>
+<section class="variant" id="variant-4" data-n="4"><div class="v4-wrap">
+
+  <!-- HEADER -->
+  <div class="v4-head">
+    <div class="v4-head-top">
+      <div class="v4-ph-id">
+        <div class="v4-ph-badge">PM</div>
+        <div>
+          <div class="v4-ph-name">Pharmacie du Marché</div>
+          <div class="v4-ph-meta">Code <b>3400 IP</b> · Caen (14)</div>
+        </div>
+      </div>
+      <div class="v4-contacts">
+        <button class="v4-cbtn" type="button">📞 Appeler</button>
+        <button class="v4-cbtn" type="button">✉️ E-mail</button>
+      </div>
+    </div>
+
+    <div class="v4-kpis">
+      <div class="v4-kpi"><div class="v4-kpi-l">CA cumulé</div><div class="v4-kpi-v v4-mono">48 200 €</div></div>
+      <div class="v4-kpi"><div class="v4-kpi-l">Marge MDL générée</div><div class="v4-kpi-v v4-pos v4-mono">1 840 €</div></div>
+      <div class="v4-kpi"><div class="v4-kpi-l">Réf. commandées</div><div class="v4-kpi-v v4-mono">312</div></div>
+      <div class="v4-kpi"><div class="v4-kpi-l">Produits à pousser</div><div class="v4-kpi-v v4-push v4-mono">47</div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY HERO -->
+  <div class="v4-prio">
+    <div class="v4-prio-head">
+      <div>
+        <div class="v4-prio-title"><span class="v4-spark">⚡</span> À pousser en priorité</div>
+        <div class="v4-prio-sub">Les 5 plus gros potentiels — gain estimé / an = rotation réseau × remise IP</div>
+      </div>
+      <div class="v4-prio-tot">
+        <div class="v4-prio-tot-l">Potentiel cumulé</div>
+        <div class="v4-prio-tot-v v4-mono">≈ 3 980 € / an</div>
+      </div>
+    </div>
+
+    <div class="v4-prio-list">
+      <div class="v4-prio-row">
+        <div class="v4-rank">1</div>
+        <div class="v4-prio-main">
+          <div class="v4-prio-name">DOLIPRANE 1000MG CPR BT8</div>
+          <div class="v4-prio-detail"><span class="v4-mono">0,88 €</span> · remise <span class="v4-mono">17%</span> · sortie <span class="v4-mono">18/21</span> · vol <span class="v4-mono">4000</span></div>
+        </div>
+        <div class="v4-prio-gain">
+          <div class="v4-prio-gain-v v4-mono">+ 1 490 €</div>
+          <div class="v4-prio-gain-l">gain / an</div>
+        </div>
+        <button class="v4-pick v4-on" type="button" aria-label="Sélectionné">✓</button>
+      </div>
+
+      <div class="v4-prio-row">
+        <div class="v4-rank">2</div>
+        <div class="v4-prio-main">
+          <div class="v4-prio-name">OZEMPIC 1MG STYLO <span class="v4-pill v4-froid">Froid</span></div>
+          <div class="v4-prio-detail"><span class="v4-mono">64,00 €</span> · remise <span class="v4-mono">4%</span> · sortie <span class="v4-mono">8/21</span> · vol <span class="v4-mono">95</span></div>
+        </div>
+        <div class="v4-prio-gain">
+          <div class="v4-prio-gain-v v4-mono">+ 970 €</div>
+          <div class="v4-prio-gain-l">gain / an</div>
+        </div>
+        <button class="v4-pick v4-on" type="button" aria-label="Sélectionné">✓</button>
+      </div>
+
+      <div class="v4-prio-row">
+        <div class="v4-rank">3</div>
+        <div class="v4-prio-main">
+          <div class="v4-prio-name">XARELTO 20MG CPR BT28 <span class="v4-pill v4-froid">Froid</span></div>
+          <div class="v4-prio-detail"><span class="v4-mono">42,50 €</span> · remise <span class="v4-mono">6%</span> · sortie <span class="v4-mono">7/21</span> · vol <span class="v4-mono">70</span></div>
+        </div>
+        <div class="v4-prio-gain">
+          <div class="v4-prio-gain-v v4-mono">+ 720 €</div>
+          <div class="v4-prio-gain-l">gain / an</div>
+        </div>
+        <button class="v4-pick v4-on" type="button" aria-label="Sélectionné">✓</button>
+      </div>
+
+      <div class="v4-prio-row">
+        <div class="v4-rank">4</div>
+        <div class="v4-prio-main">
+          <div class="v4-prio-name">SPASFON CPR BT30</div>
+          <div class="v4-prio-detail"><span class="v4-mono">1,75 €</span> · remise <span class="v4-mono">9%</span> · sortie <span class="v4-mono">15/21</span> · vol <span class="v4-mono">980</span></div>
+        </div>
+        <div class="v4-prio-gain">
+          <div class="v4-prio-gain-v v4-mono">+ 460 €</div>
+          <div class="v4-prio-gain-l">gain / an</div>
+        </div>
+        <button class="v4-pick" type="button" aria-label="Ajouter au PDF">+</button>
+      </div>
+
+      <div class="v4-prio-row">
+        <div class="v4-rank">5</div>
+        <div class="v4-prio-main">
+          <div class="v4-prio-name">GAVISCON BUV SUSP SACH10ML 24 <span class="v4-pill v4-offre">Offre</span></div>
+          <div class="v4-prio-detail"><span class="v4-mono">3,42 €</span> · remise <span class="v4-mono">5%</span> · sortie <span class="v4-mono">13/21</span> · vol <span class="v4-mono">320</span></div>
+        </div>
+        <div class="v4-prio-gain">
+          <div class="v4-prio-gain-v v4-mono">+ 340 €</div>
+          <div class="v4-prio-gain-l">gain / an</div>
+        </div>
+        <button class="v4-pick" type="button" aria-label="Ajouter au PDF">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="v4-bar">
+    <div class="v4-seg">
+      <button class="v4-seg-opt v4-active" type="button"><span class="v4-dot"></span> Réseau Intégral Pharma</button>
+      <button class="v4-seg-opt" type="button"><span class="v4-dot"></span> Son groupement · Giphar <small>(21 pharmacies)</small></button>
+    </div>
+    <div class="v4-actions">
+      <span class="v4-count">Sélection PDF : <b>3</b> produits</span>
+      <button class="v4-pdf" type="button">📄 Liste d'achats (PDF)</button>
+    </div>
+  </div>
+
+  <div class="v4-listsub">Liste complète — produits que le réseau Intégral Pharma commande et que cette officine n'a pas, triés par nombre de pharmacies (Sortie).</div>
+
+  <!-- FAMILY: Princeps petits prix -->
+  <details class="v4-fam" open>
+    <summary class="v4-fam-head">
+      <span class="v4-fam-chev">▶</span>
+      <span class="v4-fam-bar v4-c-pp"></span>
+      <span class="v4-fam-name">Princeps · Petits prix</span>
+      <span class="v4-fam-tag">0 – 4,33 €</span>
+      <span class="v4-fam-cnt">5 réf.</span>
+    </summary>
+    <div class="v4-tbl">
+      <div class="v4-trow v4-hcol">
+        <div></div>
+        <div class="v4-th">Désignation · CIP</div>
+        <div class="v4-th v4-r">Prix net IP</div>
+        <div class="v4-th v4-r">Remise</div>
+        <div class="v4-th v4-r">Sortie / Vol</div>
+        <div class="v4-th v4-r">PDF</div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk v4-on" type="button">✓</button>
+        <div class="v4-prod"><div class="v4-prod-n">DOLIPRANE 1000MG CPR BT8</div><div class="v4-prod-c v4-mono">3400935955838</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">0,88 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">17%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">18/21</span><span class="v4-small v4-mono">vol 4000</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk v4-on" type="button" style="margin-left:auto">✓</button></div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk" type="button">+</button>
+        <div class="v4-prod"><div class="v4-prod-n">SPASFON CPR BT30</div><div class="v4-prod-c v4-mono">3400930986080</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">1,75 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">9%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">15/21</span><span class="v4-small v4-mono">vol 980</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk" type="button" style="margin-left:auto">+</button></div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk" type="button">+</button>
+        <div class="v4-prod"><div class="v4-prod-n">KARDEGIC 75MG PDR SACH 30</div><div class="v4-prod-c v4-mono">3400934744198</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">1,29 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">12%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">14/21</span><span class="v4-small v4-mono">vol 760</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk" type="button" style="margin-left:auto">+</button></div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk" type="button">+</button>
+        <div class="v4-prod"><div class="v4-prod-n">LAMALINE GELU BT16</div><div class="v4-prod-c v4-mono">3400935154958</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">1,10 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">14%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">12/21</span><span class="v4-small v4-mono">vol 540</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk" type="button" style="margin-left:auto">+</button></div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk" type="button">+</button>
+        <div class="v4-prod"><div class="v4-prod-n">SERESTA 10MG CPR BT30</div><div class="v4-prod-c v4-mono">3400935887559</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">0,96 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">16%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">11/21</span><span class="v4-small v4-mono">vol 410</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk" type="button" style="margin-left:auto">+</button></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- FAMILY: Princeps intermédiaires -->
+  <details class="v4-fam" open>
+    <summary class="v4-fam-head">
+      <span class="v4-fam-chev">▶</span>
+      <span class="v4-fam-bar v4-c-int"></span>
+      <span class="v4-fam-name">Princeps · Intermédiaires</span>
+      <span class="v4-fam-tag">4,33 – 468 €</span>
+      <span class="v4-fam-cnt">3 réf.</span>
+    </summary>
+    <div class="v4-tbl">
+      <div class="v4-trow v4-hcol">
+        <div></div><div class="v4-th">Désignation · CIP</div><div class="v4-th v4-r">Prix net IP</div><div class="v4-th v4-r">Remise</div><div class="v4-th v4-r">Sortie / Vol</div><div class="v4-th v4-r">PDF</div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk v4-on" type="button">✓</button>
+        <div class="v4-prod"><div class="v4-prod-n">GAVISCON BUV SUSP SACH10ML 24 <span class="v4-pill v4-offre">Offre</span></div><div class="v4-prod-c v4-mono">3400933095253</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">3,42 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">5%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">13/21</span><span class="v4-small v4-mono">vol 320</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk v4-on" type="button" style="margin-left:auto">✓</button></div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk" type="button">+</button>
+        <div class="v4-prod"><div class="v4-prod-n">METEOSPASMYL CAPS BT20</div><div class="v4-prod-c v4-mono">3400933254063</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">2,18 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">8%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">10/21</span><span class="v4-small v4-mono">vol 260</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk" type="button" style="margin-left:auto">+</button></div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk" type="button">+</button>
+        <div class="v4-prod"><div class="v4-prod-n">DACUDOSES OPHT UNIDOS10ML 24</div><div class="v4-prod-c v4-mono">3400934796708</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">2,10 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">8%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">9/21</span><span class="v4-small v4-mono">vol 240</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk" type="button" style="margin-left:auto">+</button></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- FAMILY: Froid -->
+  <details class="v4-fam" open>
+    <summary class="v4-fam-head">
+      <span class="v4-fam-chev">▶</span>
+      <span class="v4-fam-bar v4-c-froid"></span>
+      <span class="v4-fam-name">Froid</span>
+      <span class="v4-fam-tag">chaîne du froid</span>
+      <span class="v4-fam-cnt">2 réf.</span>
+    </summary>
+    <div class="v4-tbl">
+      <div class="v4-trow v4-hcol">
+        <div></div><div class="v4-th">Désignation · CIP</div><div class="v4-th v4-r">Prix net IP</div><div class="v4-th v4-r">Remise</div><div class="v4-th v4-r">Sortie / Vol</div><div class="v4-th v4-r">PDF</div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk v4-on" type="button">✓</button>
+        <div class="v4-prod"><div class="v4-prod-n">OZEMPIC 1MG STYLO <span class="v4-pill v4-froid">Froid</span></div><div class="v4-prod-c v4-mono">3400930213100</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">64,00 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">4%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">8/21</span><span class="v4-small v4-mono">vol 95</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk v4-on" type="button" style="margin-left:auto">✓</button></div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk" type="button">+</button>
+        <div class="v4-prod"><div class="v4-prod-n">XARELTO 20MG CPR BT28 <span class="v4-pill v4-froid">Froid</span></div><div class="v4-prod-c v4-mono">3400939999999</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">42,50 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-mono">6%</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">7/21</span><span class="v4-small v4-mono">vol 70</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk" type="button" style="margin-left:auto">+</button></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- FAMILY: Non remboursés -->
+  <details class="v4-fam">
+    <summary class="v4-fam-head">
+      <span class="v4-fam-chev">▶</span>
+      <span class="v4-fam-bar v4-c-nr"></span>
+      <span class="v4-fam-name">Non remboursés</span>
+      <span class="v4-fam-tag">marge libre</span>
+      <span class="v4-fam-cnt">2 réf.</span>
+    </summary>
+    <div class="v4-tbl">
+      <div class="v4-trow v4-hcol">
+        <div></div><div class="v4-th">Désignation · CIP</div><div class="v4-th v4-r">Prix net IP</div><div class="v4-th v4-r">Remise</div><div class="v4-th v4-r">Sortie / Vol</div><div class="v4-th v4-r">PDF</div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk" type="button">+</button>
+        <div class="v4-prod"><div class="v4-prod-n">NUROFEN 400MG CPR BT12 <span class="v4-pill v4-nr">NR</span></div><div class="v4-prod-c v4-mono">3400930000000</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">2,40 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-na v4-mono">—</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">12/21</span><span class="v4-small v4-mono">vol 300</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk" type="button" style="margin-left:auto">+</button></div>
+      </div>
+
+      <div class="v4-trow">
+        <button class="v4-pk" type="button">+</button>
+        <div class="v4-prod"><div class="v4-prod-n">HUMER 150ML SPRAY <span class="v4-pill v4-nr">NR</span></div><div class="v4-prod-c v4-mono">3400930111111</div></div>
+        <div class="v4-cell v4-r v4-prix v4-mono">3,10 €</div>
+        <div class="v4-cell v4-r v4-remcell"><span class="v4-rem v4-na v4-mono">—</span></div>
+        <div class="v4-cell v4-r v4-sortiecell"><span class="v4-sortie v4-mono">9/21</span><span class="v4-small v4-mono">vol 210</span></div>
+        <div class="v4-cell v4-r v4-vol"><button class="v4-pk" type="button" style="margin-left:auto">+</button></div>
+      </div>
+    </div>
+  </details>
+
+</div></section>
+<section class="variant" id="variant-5" data-n="5"><div id="variant-5">
+
+  <!-- En-tête officine -->
+  <header class="v5-head">
+    <div class="v5-offrow">
+      <div class="v5-officon">&#127973;</div>
+      <div class="v5-offmeta">
+        <div class="v5-offname">Pharmacie du March&eacute;</div>
+        <div class="v5-offsub">
+          <span class="v5-code">3400 IP</span>
+          <span>&middot;</span>
+          <span>Caen (14)</span>
+        </div>
+      </div>
+      <div class="v5-contacts">
+        <a class="v5-cbtn" href="tel:" aria-label="Appeler">&#128222;</a>
+        <a class="v5-cbtn" href="mailto:" aria-label="E-mail">&#9993;&#65039;</a>
+      </div>
+    </div>
+
+    <div class="v5-kpis">
+      <div class="v5-kpi">
+        <div class="v5-kpi-v">48 200&euro;</div>
+        <div class="v5-kpi-l">CA cumul&eacute;</div>
+      </div>
+      <div class="v5-kpi">
+        <div class="v5-kpi-v">1 840&euro;</div>
+        <div class="v5-kpi-l">Marge MDL</div>
+      </div>
+      <div class="v5-kpi">
+        <div class="v5-kpi-v">312</div>
+        <div class="v5-kpi-l">R&eacute;f. command.</div>
+      </div>
+      <div class="v5-kpi v5-push">
+        <div class="v5-kpi-v">47</div>
+        <div class="v5-kpi-l">&Agrave; pousser</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sélecteur de référence -->
+  <section class="v5-ref">
+    <div class="v5-ref-label">Comparer &agrave;</div>
+    <div class="v5-seg" role="tablist">
+      <button class="v5-segbtn v5-on" role="tab" aria-selected="true">
+        <span class="v5-dot"></span>
+        <span>
+          <span class="v5-seg-t">R&eacute;seau Int&eacute;gral Pharma</span>
+          <span class="v5-seg-s">tout le r&eacute;seau</span>
+        </span>
+      </button>
+      <button class="v5-segbtn" role="tab" aria-selected="false">
+        <span class="v5-dot"></span>
+        <span>
+          <span class="v5-seg-t">Son groupement</span>
+          <span class="v5-seg-s">Giphar &middot; 21 pharmacies</span>
+        </span>
+      </button>
+    </div>
+    <p class="v5-ref-cap">
+      Produits que le r&eacute;seau <strong>Int&eacute;gral Pharma</strong> commande et que cette officine n'a pas &mdash; tri&eacute;s par nombre de pharmacies (Sortie).
+    </p>
+  </section>
+
+  <!-- FAMILLE : Princeps petits prix -->
+  <div class="v5-fam">
+    <span class="v5-fam-dot" style="background:#1E9E6A"></span>
+    <span class="v5-fam-t">Princeps &middot; Petits prix</span>
+    <span class="v5-fam-c">0&ndash;4,33&euro;</span>
+    <span class="v5-fam-line"></span>
+    <span class="v5-fam-c">5</span>
+  </div>
+
+  <div class="v5-list">
+
+    <div class="v5-card v5-checked">
+      <div class="v5-body">
+        <div class="v5-pname">DOLIPRANE 1000MG CPR BT8</div>
+        <div class="v5-cip">3400935955838</div>
+        <div class="v5-stats">
+          <span class="v5-price">0,88&euro;</span>
+          <span class="v5-rem">&minus;17%</span>
+          <span class="v5-sortie"><b>18</b>/21<span class="v5-bar"><i style="width:86%"></i></span></span>
+          <span class="v5-vol">vol 4000</span>
+        </div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+    <div class="v5-card v5-checked">
+      <div class="v5-body">
+        <div class="v5-pname">SPASFON CPR BT30</div>
+        <div class="v5-cip">3400930986080</div>
+        <div class="v5-stats">
+          <span class="v5-price">1,75&euro;</span>
+          <span class="v5-rem">&minus;9%</span>
+          <span class="v5-sortie"><b>15</b>/21<span class="v5-bar"><i style="width:71%"></i></span></span>
+          <span class="v5-vol">vol 980</span>
+        </div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+    <div class="v5-card">
+      <div class="v5-body">
+        <div class="v5-pname">KARDEGIC 75MG PDR SACH 30</div>
+        <div class="v5-cip">3400934744198</div>
+        <div class="v5-stats">
+          <span class="v5-price">1,29&euro;</span>
+          <span class="v5-rem">&minus;12%</span>
+          <span class="v5-sortie"><b>14</b>/21<span class="v5-bar"><i style="width:67%"></i></span></span>
+          <span class="v5-vol">vol 760</span>
+        </div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+    <div class="v5-card">
+      <div class="v5-body">
+        <div class="v5-pname">LAMALINE GELU BT16</div>
+        <div class="v5-cip">3400935154958</div>
+        <div class="v5-stats">
+          <span class="v5-price">1,10&euro;</span>
+          <span class="v5-rem">&minus;14%</span>
+          <span class="v5-sortie"><b>12</b>/21<span class="v5-bar"><i style="width:57%"></i></span></span>
+          <span class="v5-vol">vol 540</span>
+        </div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+    <div class="v5-card">
+      <div class="v5-body">
+        <div class="v5-pname">SERESTA 10MG CPR BT30</div>
+        <div class="v5-cip">3400935887559</div>
+        <div class="v5-stats">
+          <span class="v5-price">0,96&euro;</span>
+          <span class="v5-rem">&minus;16%</span>
+          <span class="v5-sortie"><b>11</b>/21<span class="v5-bar"><i style="width:52%"></i></span></span>
+          <span class="v5-vol">vol 410</span>
+        </div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+  </div>
+
+  <!-- FAMILLE : Princeps intermédiaires -->
+  <div class="v5-fam">
+    <span class="v5-fam-dot" style="background:#0050E6"></span>
+    <span class="v5-fam-t">Princeps &middot; Interm&eacute;diaires</span>
+    <span class="v5-fam-c">4,33&ndash;468&euro;</span>
+    <span class="v5-fam-line"></span>
+    <span class="v5-fam-c">3</span>
+  </div>
+
+  <div class="v5-list">
+
+    <div class="v5-card v5-checked">
+      <div class="v5-body">
+        <div class="v5-pname">GAVISCON BUV SUSP SACH 10ML 24</div>
+        <div class="v5-cip">3400933095253</div>
+        <div class="v5-stats">
+          <span class="v5-price">3,42&euro;</span>
+          <span class="v5-rem">&minus;5%</span>
+          <span class="v5-sortie"><b>13</b>/21<span class="v5-bar"><i style="width:62%"></i></span></span>
+          <span class="v5-vol">vol 320</span>
+        </div>
+        <div class="v5-tags"><span class="v5-tag v5-offre">Offre</span></div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+    <div class="v5-card">
+      <div class="v5-body">
+        <div class="v5-pname">METEOSPASMYL CAPS BT20</div>
+        <div class="v5-cip">3400933254063</div>
+        <div class="v5-stats">
+          <span class="v5-price">2,18&euro;</span>
+          <span class="v5-rem">&minus;8%</span>
+          <span class="v5-sortie"><b>10</b>/21<span class="v5-bar"><i style="width:48%"></i></span></span>
+          <span class="v5-vol">vol 260</span>
+        </div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+    <div class="v5-card">
+      <div class="v5-body">
+        <div class="v5-pname">DACUDOSES OPHT UNIDOS 10ML 24</div>
+        <div class="v5-cip">3400934796708</div>
+        <div class="v5-stats">
+          <span class="v5-price">2,10&euro;</span>
+          <span class="v5-rem">&minus;8%</span>
+          <span class="v5-sortie"><b>9</b>/21<span class="v5-bar"><i style="width:43%"></i></span></span>
+          <span class="v5-vol">vol 240</span>
+        </div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+  </div>
+
+  <!-- FAMILLE : Froid -->
+  <div class="v5-fam">
+    <span class="v5-fam-dot" style="background:#00B5D8"></span>
+    <span class="v5-fam-t">Froid</span>
+    <span class="v5-fam-c">cha&icirc;ne du froid</span>
+    <span class="v5-fam-line"></span>
+    <span class="v5-fam-c">2</span>
+  </div>
+
+  <div class="v5-list">
+
+    <div class="v5-card">
+      <div class="v5-body">
+        <div class="v5-pname">OZEMPIC 1MG STYLO</div>
+        <div class="v5-cip">3400930213100</div>
+        <div class="v5-stats">
+          <span class="v5-price">64,00&euro;</span>
+          <span class="v5-rem">&minus;4%</span>
+          <span class="v5-sortie"><b>8</b>/21<span class="v5-bar"><i style="width:38%"></i></span></span>
+          <span class="v5-vol">vol 95</span>
+        </div>
+        <div class="v5-tags"><span class="v5-tag v5-froid">&#10052;&#65039; Froid</span></div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+    <div class="v5-card">
+      <div class="v5-body">
+        <div class="v5-pname">XARELTO 20MG CPR BT28</div>
+        <div class="v5-cip">3400939999999</div>
+        <div class="v5-stats">
+          <span class="v5-price">42,50&euro;</span>
+          <span class="v5-rem">&minus;6%</span>
+          <span class="v5-sortie"><b>7</b>/21<span class="v5-bar"><i style="width:33%"></i></span></span>
+          <span class="v5-vol">vol 70</span>
+        </div>
+        <div class="v5-tags"><span class="v5-tag v5-froid">&#10052;&#65039; Froid</span></div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+  </div>
+
+  <!-- FAMILLE : Non remboursés -->
+  <div class="v5-fam">
+    <span class="v5-fam-dot" style="background:#C7791A"></span>
+    <span class="v5-fam-t">Non rembours&eacute;s</span>
+    <span class="v5-fam-c">marge libre</span>
+    <span class="v5-fam-line"></span>
+    <span class="v5-fam-c">2</span>
+  </div>
+
+  <div class="v5-list">
+
+    <div class="v5-card">
+      <div class="v5-body">
+        <div class="v5-pname">NUROFEN 400MG CPR BT12</div>
+        <div class="v5-cip">3400930000000</div>
+        <div class="v5-stats">
+          <span class="v5-price">2,40&euro;</span>
+          <span class="v5-rem v5-free">marge libre</span>
+          <span class="v5-sortie"><b>12</b>/21<span class="v5-bar"><i style="width:57%"></i></span></span>
+          <span class="v5-vol">vol 300</span>
+        </div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+    <div class="v5-card">
+      <div class="v5-body">
+        <div class="v5-pname">HUMER 150ML SPRAY</div>
+        <div class="v5-cip">3400930111111</div>
+        <div class="v5-stats">
+          <span class="v5-price">3,10&euro;</span>
+          <span class="v5-rem v5-free">marge libre</span>
+          <span class="v5-sortie"><b>9</b>/21<span class="v5-bar"><i style="width:43%"></i></span></span>
+          <span class="v5-vol">vol 210</span>
+        </div>
+      </div>
+      <div class="v5-check"><span class="v5-box"></span></div>
+    </div>
+
+  </div>
+
+  <!-- Barre flottante : compteur + PDF -->
+  <div class="v5-bardock">
+    <div class="v5-count">
+      <div class="v5-count-n"><b>3</b> produits coch&eacute;s</div>
+      <div class="v5-count-g">gain estim&eacute; <b>+62,40&euro;</b> de marge</div>
+    </div>
+    <button class="v5-pdf">
+      <span class="v5-pdf-ic">&#128196;</span>
+      <span class="v5-pdf-txt">Liste d'achats (PDF)</span>
+    </button>
+  </div>
+
+</div></section>
+<section class="variant" id="variant-6" data-n="6"><div class="v6-wrap">
+
+  <!-- HEADER -->
+  <div class="v6-head">
+    <div class="v6-head-top">
+      <div class="v6-ident">
+        <div class="v6-avatar">PM</div>
+        <div>
+          <div class="v6-name">Pharmacie du Marché</div>
+          <div class="v6-sub">
+            <span class="v6-code">3400 IP</span>
+            <span>Caen (14)</span>
+          </div>
+        </div>
+      </div>
+      <div class="v6-contacts">
+        <button class="v6-cbtn" type="button">📞 Appeler</button>
+        <button class="v6-cbtn" type="button">✉️ E-mail</button>
+      </div>
+    </div>
+
+    <div class="v6-kpis">
+      <div class="v6-kpi v6-k-ca">
+        <div class="v6-klabel">CA cumulé</div>
+        <div class="v6-kval">48 200 €</div>
+      </div>
+      <div class="v6-kpi v6-k-marge">
+        <div class="v6-klabel">Marge MDL générée</div>
+        <div class="v6-kval">1 840 €</div>
+      </div>
+      <div class="v6-kpi v6-k-ref">
+        <div class="v6-klabel">Réf. commandées</div>
+        <div class="v6-kval">312</div>
+      </div>
+      <div class="v6-kpi v6-k-push">
+        <div class="v6-klabel">À pousser</div>
+        <div class="v6-kval">47</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFERENCE SELECTOR -->
+  <div class="v6-refbar">
+    <div class="v6-reftitle">Comparer à</div>
+    <div class="v6-refchoices">
+      <label class="v6-refopt v6-active">
+        <span class="v6-radio"></span>
+        <span>
+          <span class="v6-reflbl">Réseau Intégral Pharma</span>
+          <span class="v6-refmeta">base complète du réseau</span>
+        </span>
+      </label>
+      <label class="v6-refopt">
+        <span class="v6-radio"></span>
+        <span>
+          <span class="v6-reflbl">Son groupement · Giphar</span>
+          <span class="v6-refmeta">21 pharmacies</span>
+        </span>
+      </label>
+    </div>
+    <div class="v6-refdesc">
+      Produits que le réseau <b>Intégral Pharma</b> commande et que cette officine n'a pas — triés par nombre de pharmacies (<b>Sortie</b>).
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="v6-toolbar">
+    <div class="v6-chips">
+      <button class="v6-chip v6-on" type="button">Tout <span class="v6-cnt">12</span></button>
+      <button class="v6-chip" type="button"><span class="v6-dot" style="background:var(--v6-fr-pp)"></span>Petits prix <span class="v6-cnt">5</span></button>
+      <button class="v6-chip" type="button"><span class="v6-dot" style="background:var(--v6-fr-int)"></span>Intermédiaires <span class="v6-cnt">3</span></button>
+      <button class="v6-chip" type="button"><span class="v6-dot" style="background:var(--v6-fr-froid)"></span>Froid <span class="v6-cnt">2</span></button>
+      <button class="v6-chip" type="button"><span class="v6-dot" style="background:var(--v6-fr-nr)"></span>Non remboursés <span class="v6-cnt">2</span></button>
+    </div>
+    <div class="v6-actions">
+      <span class="v6-selcount">Sélection <b>5</b> / 12 réf.</span>
+      <button class="v6-pdf" type="button">📄 Liste d'achats (PDF)</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="v6-tablewrap">
+    <div class="v6-scroll">
+      <table class="v6-tbl">
+        <thead>
+          <tr>
+            <th class="v6-col-chk v6-ctr"></th>
+            <th class="v6-sortable">Produit <span class="v6-sortmark">▲</span></th>
+            <th class="v6-sortable">CIP</th>
+            <th class="v6-sortable v6-num">Prix net IP</th>
+            <th class="v6-sortable v6-num">Remise</th>
+            <th class="v6-sortable v6-num">Sortie ▼</th>
+            <th class="v6-sortable v6-num">Volume</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- GROUP: Petits prix -->
+          <tr class="v6-grp">
+            <td colspan="7">
+              <div class="v6-grp-inner">
+                <span class="v6-grp-chk" title="Tout cocher cette famille"></span>
+                <span class="v6-grp-bar" style="background:var(--v6-fr-pp)"></span>
+                <span class="v6-grp-name">Princeps · Petits prix</span>
+                <span class="v6-grp-range">0 – 4,33 €</span>
+                <span class="v6-grp-cnt"><em>5</em> réf.</span>
+              </div>
+            </td>
+          </tr>
+          <tr class="v6-row v6-checked">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig">DOLIPRANE 1000MG CPR BT8</div></td>
+            <td><span class="v6-cip">3400935955838</span></td>
+            <td class="v6-num v6-prix">0,88 €</td>
+            <td class="v6-num"><span class="v6-rem">17 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">18<span>/21</span></span><span class="v6-bar"><i style="width:86%"></i></span></div></td>
+            <td class="v6-num">4 000</td>
+          </tr>
+          <tr class="v6-row v6-checked">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig">SPASFON CPR BT30</div></td>
+            <td><span class="v6-cip">3400930986080</span></td>
+            <td class="v6-num v6-prix">1,75 €</td>
+            <td class="v6-num"><span class="v6-rem">9 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">15<span>/21</span></span><span class="v6-bar"><i style="width:71%"></i></span></div></td>
+            <td class="v6-num">980</td>
+          </tr>
+          <tr class="v6-row v6-checked">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig">KARDEGIC 75MG PDR SACH 30</div></td>
+            <td><span class="v6-cip">3400934744198</span></td>
+            <td class="v6-num v6-prix">1,29 €</td>
+            <td class="v6-num"><span class="v6-rem">12 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">14<span>/21</span></span><span class="v6-bar"><i style="width:67%"></i></span></div></td>
+            <td class="v6-num">760</td>
+          </tr>
+          <tr class="v6-row v6-checked">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig">LAMALINE GELU BT16</div></td>
+            <td><span class="v6-cip">3400935154958</span></td>
+            <td class="v6-num v6-prix">1,10 €</td>
+            <td class="v6-num"><span class="v6-rem">14 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">12<span>/21</span></span><span class="v6-bar"><i style="width:57%"></i></span></div></td>
+            <td class="v6-num">540</td>
+          </tr>
+          <tr class="v6-row v6-checked">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig">SERESTA 10MG CPR BT30</div></td>
+            <td><span class="v6-cip">3400935887559</span></td>
+            <td class="v6-num v6-prix">0,96 €</td>
+            <td class="v6-num"><span class="v6-rem">16 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">11<span>/21</span></span><span class="v6-bar"><i style="width:52%"></i></span></div></td>
+            <td class="v6-num">410</td>
+          </tr>
+
+          <!-- GROUP: Intermédiaires -->
+          <tr class="v6-grp">
+            <td colspan="7">
+              <div class="v6-grp-inner">
+                <span class="v6-grp-chk"></span>
+                <span class="v6-grp-bar" style="background:var(--v6-fr-int)"></span>
+                <span class="v6-grp-name">Princeps · Intermédiaires</span>
+                <span class="v6-grp-range">4,33 – 468 €</span>
+                <span class="v6-grp-cnt"><em>3</em> réf.</span>
+              </div>
+            </td>
+          </tr>
+          <tr class="v6-row">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig-row"><span class="v6-desig">GAVISCON BUV SUSP SACH10ML 24</span><span class="v6-badge v6-b-offre">Offre</span></div></td>
+            <td><span class="v6-cip">3400933095253</span></td>
+            <td class="v6-num v6-prix">3,42 €</td>
+            <td class="v6-num"><span class="v6-rem">5 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">13<span>/21</span></span><span class="v6-bar"><i style="width:62%"></i></span></div></td>
+            <td class="v6-num">320</td>
+          </tr>
+          <tr class="v6-row">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig">METEOSPASMYL CAPS BT20</div></td>
+            <td><span class="v6-cip">3400933254063</span></td>
+            <td class="v6-num v6-prix">2,18 €</td>
+            <td class="v6-num"><span class="v6-rem">8 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">10<span>/21</span></span><span class="v6-bar"><i style="width:48%"></i></span></div></td>
+            <td class="v6-num">260</td>
+          </tr>
+          <tr class="v6-row">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig">DACUDOSES OPHT UNIDOS10ML 24</div></td>
+            <td><span class="v6-cip">3400934796708</span></td>
+            <td class="v6-num v6-prix">2,10 €</td>
+            <td class="v6-num"><span class="v6-rem">8 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">9<span>/21</span></span><span class="v6-bar"><i style="width:43%"></i></span></div></td>
+            <td class="v6-num">240</td>
+          </tr>
+
+          <!-- GROUP: Froid -->
+          <tr class="v6-grp">
+            <td colspan="7">
+              <div class="v6-grp-inner">
+                <span class="v6-grp-chk"></span>
+                <span class="v6-grp-bar" style="background:var(--v6-fr-froid)"></span>
+                <span class="v6-grp-name">Froid</span>
+                <span class="v6-grp-range">chaîne du froid</span>
+                <span class="v6-grp-cnt"><em>2</em> réf.</span>
+              </div>
+            </td>
+          </tr>
+          <tr class="v6-row">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig-row"><span class="v6-desig">OZEMPIC 1MG STYLO</span><span class="v6-badge v6-b-froid">❄ Froid</span></div></td>
+            <td><span class="v6-cip">3400930213100</span></td>
+            <td class="v6-num v6-prix">64,00 €</td>
+            <td class="v6-num"><span class="v6-rem">4 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">8<span>/21</span></span><span class="v6-bar"><i style="width:38%;background:var(--v6-fr-froid)"></i></span></div></td>
+            <td class="v6-num">95</td>
+          </tr>
+          <tr class="v6-row">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig-row"><span class="v6-desig">XARELTO 20MG CPR BT28</span><span class="v6-badge v6-b-froid">❄ Froid</span></div></td>
+            <td><span class="v6-cip">3400939999999</span></td>
+            <td class="v6-num v6-prix">42,50 €</td>
+            <td class="v6-num"><span class="v6-rem">6 %</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">7<span>/21</span></span><span class="v6-bar"><i style="width:33%;background:var(--v6-fr-froid)"></i></span></div></td>
+            <td class="v6-num">70</td>
+          </tr>
+
+          <!-- GROUP: Non remboursés -->
+          <tr class="v6-grp">
+            <td colspan="7">
+              <div class="v6-grp-inner">
+                <span class="v6-grp-chk"></span>
+                <span class="v6-grp-bar" style="background:var(--v6-fr-nr)"></span>
+                <span class="v6-grp-name">Non remboursés</span>
+                <span class="v6-grp-range">marge libre</span>
+                <span class="v6-grp-cnt"><em>2</em> réf.</span>
+              </div>
+            </td>
+          </tr>
+          <tr class="v6-row">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig">NUROFEN 400MG CPR BT12</div></td>
+            <td><span class="v6-cip">3400930000000</span></td>
+            <td class="v6-num v6-prix">2,40 €</td>
+            <td class="v6-num"><span class="v6-rem v6-rem-none">—</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">12<span>/21</span></span><span class="v6-bar"><i style="width:57%;background:var(--v6-fr-nr)"></i></span></div></td>
+            <td class="v6-num">300</td>
+          </tr>
+          <tr class="v6-row">
+            <td class="v6-col-chk"><span class="v6-chk"></span></td>
+            <td><div class="v6-desig">HUMER 150ML SPRAY</div></td>
+            <td><span class="v6-cip">3400930111111</span></td>
+            <td class="v6-num v6-prix">3,10 €</td>
+            <td class="v6-num"><span class="v6-rem v6-rem-none">—</span></td>
+            <td class="v6-num v6-sortie"><div class="v6-sortie-inner"><span class="v6-sortie-num">9<span>/21</span></span><span class="v6-bar"><i style="width:43%;background:var(--v6-fr-nr)"></i></span></div></td>
+            <td class="v6-num">210</td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+    <div class="v6-foot">
+      <span><b>12</b> produits à pousser · <b>5</b> sélectionnés</span>
+      <span class="v6-foot-pdf">📄 Générer la liste d'achats (PDF)</span>
+    </div>
+  </div>
+
+</div></section>
+
+</div>
+<script>
+function show(n){
+  document.querySelectorAll('.variant').forEach(function(s){s.classList.toggle('on',+s.dataset.n===n)});
+  document.querySelectorAll('.switch-b').forEach(function(b){b.classList.toggle('on',+b.dataset.n===n)});
+  document.querySelectorAll('.meta-block').forEach(function(m){m.hidden=(+m.dataset.n!==n)});
+  window.scrollTo({top:0,behavior:'instant'});
+}
+</script>
+</body></html>
