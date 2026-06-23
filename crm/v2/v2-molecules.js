@@ -86,7 +86,8 @@
   }
 
   V2.pages.molecules = {
-    render: function (root) {
+    render: function (root, param) {
+      if (param != null && param !== '') { S.q = String(param); S.chip = 'all'; }
       var tabs = V2.priceTabs ? V2.priceTabs('molecules') : '';
       if (!window.PROD_STATS) {
         root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +

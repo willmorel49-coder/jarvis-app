@@ -75,7 +75,7 @@
     }).join('') + '</div>';
   }
   V2.priceTabs = function (active) {
-    var t = [['catalogue', 'Catalogue grossiste'], ['molecules', 'Par produit']];
+    var t = [['molecules', 'Par produit']];
     if (V2.pages.offilog) t.push(['offilog', 'Offilog & concurrents']);
     return subnav(t, active);
   };
@@ -531,10 +531,10 @@
         var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
         // Fusion en espaces à onglets : Catalogue grossiste + Par produit + Offilog → une seule tuile ;
         // Fiches + Présentation → une seule tuile. Les pages restent accessibles via les onglets.
-        if (pmap.catalogue) {
-          pmap.catalogue.t = 'Catalogue & prix';
-          pmap.catalogue.d = 'Le catalogue grossiste, la vue « par produit » (rotation et marge réseau par CIP) et la veille Offilog/concurrents — réunis en onglets.';
-          pmap.catalogue.go = 'Ouvrir le catalogue';
+        if (pmap.molecules) {
+          pmap.molecules.t = 'Catalogue & prix';
+          pmap.molecules.d = 'Tous les produits par familles (rotation et marge réseau par CIP) et la veille Offilog/concurrents — réunis en onglets.';
+          pmap.molecules.go = 'Ouvrir le catalogue';
         }
         if (pmap.fiches) {
           pmap.fiches.t = 'Fiches & présentation';
@@ -543,11 +543,11 @@
         }
         var MOMENTS = [
           { n: 1, lbl: 'Préparer ma tournée', c: 'var(--ip-blue)', keys: ['pharma', 'groupements', 'pilotage'] },
-          { n: 2, lbl: 'En rendez-vous', c: 'var(--c-mint)', keys: ['catalogue', 'fiches'] },
+          { n: 2, lbl: 'En rendez-vous', c: 'var(--c-mint)', keys: ['molecules', 'fiches'] },
           { n: 3, lbl: 'Marketing & suivi', c: 'var(--c-rose)', keys: ['marketing'] },
         ];
-        // molecules / offilog / presentation sont repliés dans les onglets ci-dessus → pas de tuile propre
-        var used = { molecules: 1, offilog: 1, presentation: 1 };
+        // catalogue / offilog / presentation sont repliés dans les onglets ci-dessus → pas de tuile propre
+        var used = { catalogue: 1, offilog: 1, presentation: 1 };
         pilHtml = MOMENTS.map(function (m) {
           var tiles = m.keys.map(function (k) { if (!pmap[k]) return ''; used[k] = 1; return tile(pmap[k]); }).filter(Boolean).join('');
           if (!tiles) return '';
@@ -581,10 +581,10 @@
   function buildCmdkIndex() {
     var idx = [];
     // Pages
-    var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['fiches', 'Fiches commerciales', 'fiche'], ['catalogue', 'Catalogue grossiste', 'cat'], ['offilog', 'Offilog & concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
+    var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['fiches', 'Fiches commerciales', 'fiche'], ['offilog', 'Offilog & concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.push(['molecules', 'Par produit (rotation réseau)', 'cat']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(3, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) PAGES.push(['presentation', 'Présentation Intégral Pharma', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) PAGES.push(['groupements', 'Groupements (carte)', 'grid']);
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
@@ -592,10 +592,11 @@
     (V2.pharmacies || []).forEach(function (p) {
       idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', action: function () { V2.go('pharma', p.id); } });
     });
-    // Produits (top 300 BENCHMARK par rang)
-    var B = window.BENCHMARK || [];
-    B.slice().sort(function (a, b) { return (a.ip_rank_qty || 9e9) - (b.ip_rank_qty || 9e9); }).slice(0, 300)
-      .forEach(function (b) { idx.push({ grp: 'Produits', label: b.designation, ico: 'pill', meta: b.cip13, action: function () { V2.go('catalogue', b.cip13); } }); });
+    // Produits (top 300 PROD_STATS par rotation) — ouvre « Par produit » filtré sur le produit
+    var PS = window.PROD_STATS || [];
+    PS.slice(0, 300).forEach(function (r) {
+      idx.push({ grp: 'Produits', label: r.d, ico: 'pill', meta: r.c, action: function () { V2.go('molecules', r.c); } });
+    });
     return idx;
   }
   function cmdkSearch(q) {
