@@ -11,7 +11,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js?v=20260611v2CK').catch(function () {});
+        navigator.serviceWorker.register('sw.js?v=20260611v2CL').catch(function () {});
       });
     }
   </script>
@@ -37,11 +37,11 @@
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
-  <link rel="stylesheet" href="v2.css?v=20260611v2CK" />
-  <link rel="stylesheet" href="v2-motion.css?v=20260611v2CK" />
+  <link rel="stylesheet" href="v2.css?v=20260611v2CL" />
+  <link rel="stylesheet" href="v2-motion.css?v=20260611v2CL" />
 
   <!-- PWA : installable sur l'écran d'accueil (iOS + Android) -->
-  <link rel="manifest" href="manifest.webmanifest?v=20260611v2CK" />
+  <link rel="manifest" href="manifest.webmanifest?v=20260611v2CL" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -74,30 +74,30 @@
   <div class="v2" id="v2-root"></div>
 
   <!-- Socle -->
-  <script src="v2-icons.js?v=20260611v2CK"></script>
+  <script src="v2-icons.js?v=20260611v2CL"></script>
   <!-- Données officines + ventes WML (source de vérité, 5 mois) -->
-  <script src="wml-officines-data.js?v=20260611v2CK"></script>
+  <script src="wml-officines-data.js?v=20260611v2CL"></script>
   <!-- Prix PPHT NR (tarif grossiste officiel) — corrige le prix NR partout -->
-  <script src="ppht-data.js?v=20260611v2CK"></script>
-  <script src="v2-boot.js?v=20260611v2CK"></script>
+  <script src="ppht-data.js?v=20260611v2CL"></script>
+  <script src="v2-boot.js?v=20260611v2CL"></script>
   <!-- Piliers (chargés avant app pour enregistrer V2.pages.*) -->
-  <script src="v2-pharma.js?v=20260611v2CK"></script>
-  <script src="v2-catalogue.js?v=20260611v2CK"></script>
-  <script src="v2-offilog.js?v=20260611v2CK"></script>
-  <script src="v2-fiches.js?v=20260611v2CK"></script>
-  <script src="v2-pilotage.js?v=20260611v2CK"></script>
+  <script src="v2-pharma.js?v=20260611v2CL"></script>
+  <script src="v2-catalogue.js?v=20260611v2CL"></script>
+  <script src="v2-offilog.js?v=20260611v2CL"></script>
+  <script src="v2-fiches.js?v=20260611v2CL"></script>
+  <script src="v2-pilotage.js?v=20260611v2CL"></script>
   <!-- Analyse par produit / CIP (rotation/marge réseau) -->
-  <script src="prod-stats-data.js?v=20260611v2CK"></script>
-  <script src="v2-molecules.js?v=20260611v2CK"></script>
+  <script src="prod-stats-data.js?v=20260611v2CL"></script>
+  <script src="v2-molecules.js?v=20260611v2CL"></script>
   <!-- Espace Marketing JARVIS (Pauline & Will) -->
-  <script src="marketing-mix-data.js?v=20260611v2CK"></script>
-  <script src="mkt-images-data.js?v=20260611v2CK"></script>
-  <script src="v2-mkt.js?v=20260611v2CK"></script>
+  <script src="marketing-mix-data.js?v=20260611v2CL"></script>
+  <script src="mkt-images-data.js?v=20260611v2CL"></script>
+  <script src="v2-mkt.js?v=20260611v2CL"></script>
   <!-- App Groupements (carte de prospection, iframe) -->
-  <script src="v2-groupements.js?v=20260611v2CK"></script>
+  <script src="v2-groupements.js?v=20260611v2CL"></script>
   <!-- App (boot en dernier) -->
-  <script src="v2-app.js?v=20260611v2CK"></script>
+  <script src="v2-app.js?v=20260611v2CL"></script>
   <!-- Couche motion design (scroll-reveal, count-up, micro-interactions) — après l'app pour wrapper V2.render -->
-  <script src="v2-motion.js?v=20260611v2CK"></script>
+  <script src="v2-motion.js?v=20260611v2CL"></script>
 </body>
 </html>
