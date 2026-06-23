@@ -18,6 +18,20 @@ XLSX = os.path.join(ROOT, 'STATS', 'stock et prix 22 06 2026.xlsx')
 WML  = os.path.join(ROOT, 'crm', 'v2', 'wml-officines-data.js')
 OUT  = os.path.join(ROOT, 'crm', 'v2', 'prod-stats-data.js')
 
+BENCH = os.path.join(ROOT, 'crm', 'benchmark-data.js')
+
+# Produits "froid" (chaine du froid) : extraits du benchmark par CIP (la seule source dispo)
+froid = set()
+try:
+    bt = open(BENCH, encoding='utf-8').read()
+    for m in re.finditer(r'\{[^{}]*\}', bt):
+        o = m.group(0)
+        cm = re.search(r'cip13:"(\d{12,14})"', o)
+        if cm and re.search(r'is_froid:true', o):
+            froid.add(cm.group(1))
+except Exception:
+    pass
+
 ws = openpyxl.load_workbook(XLSX, read_only=True, data_only=True).active
 hh = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
 ci = hh.index('artcodebarre'); di = hh.index('artdesignation')
@@ -31,6 +45,15 @@ for r in ws.iter_rows(min_row=2, values_only=True):
             'ppht': (float(r[pi]) if isinstance(r[pi], (int, float)) else 0.0),
             'remb': str(r[ai] or '') == 'REMBSS',
         }
+
+def famille(cip, ppht, net, remb):
+    """Memes familles que le catalogue grossiste : froid > NR > tranches de prix PPHT."""
+    if cip in froid: return 'froid'
+    if not remb: return 'nr'
+    p = ppht if ppht > 0 else net
+    if p <= 4.33: return 'p_low'
+    if p <= 468:  return 'p_mid'
+    return 'p_high'
 
 def mdl(p):
     if p <= 0: return 0
@@ -57,8 +80,10 @@ for c, a in ag.items():
     nph = len(a['ph'])
     if nph < 3: continue
     k = 12.0 / NM / nph               # -> par pharmacie / an
+    net = (a['ca'] / a['qte']) if a['qte'] else 0   # prix net achat moyen / boite
     rows.append({
         'c': c, 'd': info[c]['d'][:46], 'n': nph,
+        'f': famille(c, info[c]['ppht'], net, info[c]['remb']),
         'rota': round(a['qte'] * k),
         'marge': round(a['marge'] * k),
         'remise': round(max(0, a['tarif'] - a['ca']) * k),
