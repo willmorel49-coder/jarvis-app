@@ -68,6 +68,23 @@
   }
   V2.topbar = topbar;
 
+  // ── Sous-onglets des espaces fusionnés (Catalogue & prix / Fiches & présentation) ──
+  function subnav(items, active) {
+    return '<div class="v2-subnav">' + items.map(function (it) {
+      return '<a class="v2-subtab' + (it[0] === active ? ' on' : '') + '" onclick="V2.go(\'' + it[0] + '\')">' + it[1] + '</a>';
+    }).join('') + '</div>';
+  }
+  V2.priceTabs = function (active) {
+    var t = [['catalogue', 'Catalogue grossiste'], ['molecules', 'Par produit']];
+    if (V2.pages.offilog) t.push(['offilog', 'Offilog & concurrents']);
+    return subnav(t, active);
+  };
+  V2.docTabs = function (active) {
+    var t = [['fiches', 'Fiches']];
+    if (V2.pages.presentation) t.push(['presentation', 'Présentation']);
+    return subnav(t, active);
+  };
+
   V2.userMenu = function () {
     var ex = document.getElementById('v2-usermenu');
     if (ex) { ex.parentNode.removeChild(ex); return; }
@@ -354,6 +371,7 @@
       };
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap">' +
+          (V2.docTabs ? V2.docTabs('presentation') : '') +
           '<div class="pres-hero">' +
             '<div class="pres-logo">' + logoSvg + '</div>' +
             '<div class="pres-eyebrow">Grossiste-répartiteur · +20 ans</div>' +
@@ -510,13 +528,26 @@
       if (window.V2_BRAND && window.V2_BRAND.opso) {
         pilHtml = '<div class="v2-piliers">' + P.map(tile).join('') + '</div>';
       } else {
+        var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
+        // Fusion en espaces à onglets : Catalogue grossiste + Par produit + Offilog → une seule tuile ;
+        // Fiches + Présentation → une seule tuile. Les pages restent accessibles via les onglets.
+        if (pmap.catalogue) {
+          pmap.catalogue.t = 'Catalogue & prix';
+          pmap.catalogue.d = 'Le catalogue grossiste, la vue « par produit » (rotation et marge réseau par CIP) et la veille Offilog/concurrents — réunis en onglets.';
+          pmap.catalogue.go = 'Ouvrir le catalogue';
+        }
+        if (pmap.fiches) {
+          pmap.fiches.t = 'Fiches & présentation';
+          pmap.fiches.d = 'Crée tes fiches produit en PDF et lance le pitch Intégral Pharma — au même endroit, en onglets.';
+          pmap.fiches.go = 'Créer une fiche';
+        }
         var MOMENTS = [
           { n: 1, lbl: 'Préparer ma tournée', c: 'var(--ip-blue)', keys: ['pharma', 'groupements', 'pilotage'] },
-          { n: 2, lbl: 'En rendez-vous', c: 'var(--c-mint)', keys: ['catalogue', 'molecules', 'offilog', 'fiches', 'presentation'] },
+          { n: 2, lbl: 'En rendez-vous', c: 'var(--c-mint)', keys: ['catalogue', 'fiches'] },
           { n: 3, lbl: 'Marketing & suivi', c: 'var(--c-rose)', keys: ['marketing'] },
         ];
-        var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
-        var used = {};
+        // molecules / offilog / presentation sont repliés dans les onglets ci-dessus → pas de tuile propre
+        var used = { molecules: 1, offilog: 1, presentation: 1 };
         pilHtml = MOMENTS.map(function (m) {
           var tiles = m.keys.map(function (k) { if (!pmap[k]) return ''; used[k] = 1; return tile(pmap[k]); }).filter(Boolean).join('');
           if (!tiles) return '';
@@ -553,6 +584,8 @@
     var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['fiches', 'Fiches commerciales', 'fiche'], ['catalogue', 'Catalogue grossiste', 'cat'], ['offilog', 'Offilog & concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.push(['molecules', 'Par produit (rotation réseau)', 'cat']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) PAGES.push(['presentation', 'Présentation Intégral Pharma', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) PAGES.push(['groupements', 'Groupements (carte)', 'grid']);
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
     // Pharmacies

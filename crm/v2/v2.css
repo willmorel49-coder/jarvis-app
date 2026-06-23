@@ -192,6 +192,11 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .v2-moment-h{display:flex;align-items:center;gap:9px;margin:0 2px 13px;font-size:13px;font-weight:800;letter-spacing:.02em;color:var(--ink2,#3A4252);text-transform:uppercase}
 .v2-moment-n{width:22px;height:22px;border-radius:50%;background:var(--mc,var(--ip-blue));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
 .v2-moment-h::after{content:"";flex:1;height:1px;background:var(--line)}
+/* Sous-onglets des espaces fusionnés (Catalogue & prix / Fiches & présentation) */
+.v2-subnav{display:flex;gap:4px;margin:0 0 20px;padding:4px;background:var(--card-2,var(--card));border:1px solid var(--line);border-radius:14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.v2-subtab{flex:0 0 auto;padding:9px 16px;border-radius:10px;font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;text-decoration:none}
+.v2-subtab:hover{color:var(--ip-ink)}
+.v2-subtab.on{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-1)}
 .v2-pil{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
   padding:25px 25px 23px;cursor:pointer;overflow:hidden;box-shadow:var(--sh-2);text-decoration:none;color:inherit;
   transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s var(--ease)}

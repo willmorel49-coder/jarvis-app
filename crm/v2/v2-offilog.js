@@ -745,6 +745,7 @@
 
       root.innerHTML = V2.topbar({ back: true }) +
         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
+          (V2.priceTabs ? V2.priceTabs('offilog') : '') +
           '<div class="v2-page-title">Offilog &amp; concurrents</div>' +
           '<div class="v2-page-sub">' + V2.fmtNum(nbTotal) + ' meilleures ventes Offilog (prix + photos) · ton achat IP comparé aux prix publics E.Leclerc, Drakkars et Cap3000</div>' +
           '<div class="off-search">' + ICO('search', 19, 2) +

@@ -390,6 +390,7 @@
 
     root.innerHTML = head + STY +
       '<div class="v2-wrap">'+
+        (V2.docTabs ? V2.docTabs('fiches') : '') +
         '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px">'+
           '<div>'+
             '<div class="v2-page-title">Fiches commerciales</div>'+
