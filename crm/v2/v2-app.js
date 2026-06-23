@@ -320,7 +320,7 @@
       var nbRemb = 0, nbOffre = 0, nbFroid = 0, nbGx = 0, nbBio = 0;
       B.forEach(function (b) {
         if (b.has_ameli) nbRemb++;
-        if (b.offre_ip > 0 && b.prix_ip > 0 && b.offre_ip < b.prix_ip && b.offre_ip >= b.prix_ip * 0.5) nbOffre++;
+        if (V2.bestPrice(b).offre) nbOffre++;   // même règle que partout (vs PPHT), pas de seuil dupliqué
         if (b.is_froid) nbFroid++;
         if (b.artnature === 'generique' || b.artnature === 'generique_partenaire') nbGx++;
         else if (b.artnature === 'biosimilaire') nbBio++;
