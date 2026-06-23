@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JARVIS — 5 pistes de refonte (vue ordinateur)</title>
+<style>
+  :root{
+    --blue:#0050E6; --blue-d:#0034A0; --ink:#10131C; --ink2:#3A4252; --muted:#7A8294;
+    --bg:#F4F6FB; --card:#FFFFFF; --line:#E6EAF2; --mint:#0E9E6A; --amber:#C7791A; --rose:#E0556E; --violet:#7C3AED;
+    --sh:0 12px 34px rgba(16,19,40,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#E9EDF5;color:var(--ink);font-family:'Satoshi',-apple-system,system-ui,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .page{max-width:1280px;margin:0 auto;padding:28px 20px 90px}
+  .h{margin:0 0 6px;font-size:26px;font-weight:900;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
+  .piste{margin-bottom:34px}
+  .piste-h{display:flex;align-items:baseline;gap:10px;margin:0 4px 10px}
+  .piste-h .n{font-size:12px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.05em}
+  .piste-h .t{font-size:19px;font-weight:900;letter-spacing:-.01em}
+  .piste-h .d{font-size:13px;color:var(--muted)}
+  /* browser frame */
+  .win{background:#fff;border:1px solid #d7deea;border-radius:14px;box-shadow:var(--sh);overflow:hidden}
+  .win-bar{display:flex;align-items:center;gap:7px;padding:10px 14px;background:#EEF2F8;border-bottom:1px solid var(--line)}
+  .win-bar i{width:11px;height:11px;border-radius:50%;background:#d6dbe6;display:inline-block}
+  .win-bar .url{margin-left:12px;font-size:11px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px 12px}
+  .app{display:flex;min-height:440px;background:var(--bg)}
+  /* sidebar */
+  .side{width:210px;flex-shrink:0;background:#0E1422;color:#cfd6e6;padding:16px 12px;display:flex;flex-direction:column;gap:3px}
+  .side .logo{display:flex;align-items:center;gap:9px;font-weight:900;color:#fff;font-size:15px;padding:4px 8px 14px}
+  .side .logo .b{width:28px;height:28px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px}
+  .side .grp{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b7790;margin:13px 8px 5px;font-weight:800}
+  .side a{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;font-size:13px;font-weight:600;color:#cfd6e6;text-decoration:none}
+  .side a.on{background:var(--blue);color:#fff}
+  .side a .e{width:17px;text-align:center}
+  /* main */
+  .main{flex:1;padding:22px 26px;overflow:hidden}
+  .main .pt{font-size:22px;font-weight:900;letter-spacing:-.02em}
+  .main .ps{font-size:13px;color:var(--muted);margin:3px 0 16px}
+  .row{display:grid;gap:14px}
+  .r3{grid-template-columns:repeat(3,1fr)} .r2{grid-template-columns:repeat(2,1fr)} .r4{grid-template-columns:repeat(4,1fr)}
+  .col{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
+  .col-h{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);margin-bottom:11px}
+  .col-h .d{width:9px;height:9px;border-radius:50%}
+  .item{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+  .item:first-of-type{border-top:none}
+  .item .ic{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+  .item .ct{font-weight:800;font-size:13.5px}
+  .item .cd{font-size:11px;color:var(--muted);line-height:1.3}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(16,19,40,.04)}
+  .tile .ic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;margin-bottom:10px}
+  .tile .ct{font-weight:800;font-size:15px;letter-spacing:-.01em}
+  .tile .cd{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .b-blue{background:var(--blue)} .b-mint{background:var(--mint)} .b-amber{background:var(--amber)} .b-rose{background:var(--rose)} .b-violet{background:var(--violet)} .b-ink{background:var(--ink)} .b-d{background:var(--blue-d)}
+  .c-blue{color:var(--blue)} .c-mint{color:var(--mint)} .c-amber{color:var(--amber)} .c-rose{color:var(--rose)}
+  .hero{grid-column:1/-1;background:linear-gradient(120deg,var(--blue),var(--blue-d));color:#fff;border-radius:16px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between}
+  .hero .ht{font-size:21px;font-weight:900} .hero .hd{font-size:13px;opacity:.9;margin-top:5px;max-width:560px;line-height:1.45}
+  .hero .cta{background:#fff;color:var(--blue);font-weight:800;font-size:14px;padding:11px 18px;border-radius:11px;white-space:nowrap}
+  .kpibar{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  .kpibar .k{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 16px}
+  .kpibar .kv{font-weight:900;font-size:22px;letter-spacing:-.02em}
+  .kpibar .kl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+  .topnav{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:9px 12px;margin-bottom:18px}
+  .topnav .logo{width:30px;height:30px;border-radius:8px;background:var(--blue);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:13px}
+  .topnav .seg{margin-left:8px;display:flex;gap:4px}
+  .topnav .seg a{font-size:13px;font-weight:700;color:var(--muted);padding:8px 14px;border-radius:9px}
+  .topnav .seg a.on{background:#EAF0FE;color:var(--blue)}
+  .topnav .sp{margin-left:auto;font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;font-size:10px;font-weight:800;color:var(--blue);background:#EAF0FE;border-radius:999px;padding:2px 8px;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="h">JARVIS — 5 pistes de refonte · vue ordinateur</h1>
+  <p class="sub">Mêmes 5 logiques que sur mobile, en plein écran. Rangé <b>par moment d'usage</b>. Dis-moi le numéro.</p>
+
+  <!-- PISTE 1 : sidebar par moment -->
+  <div class="piste">
+    <div class="piste-h"><span class="n">Piste 1</span><span class="t">Barre latérale par moment</span><span class="d">Navigation gauche groupée en 3 moments. Le standard "logiciel pro", très clair sur grand écran.</span></div>
+    <div class="win"><div class="win-bar"><i></i><i></i><i></i><span class="url">jarvis-app · Accueil</span></div>
+      <div class="app">
+        <div class="side">
+          <div class="logo"><span class="b">IP</span> JARVIS</div>
+          <div class="grp">1 · Préparer</div>
+          <a class="on"><span class="e">🎯</span> Mes officines</a>
+          <a><span class="e">🗺️</span> Groupements</a>
+          <a><span class="e">📊</span> Pilotage</a>
+          <div class="grp">2 · En rendez-vous</div>
+          <a><span class="e">📦</span> Catalogue &amp; prix</a>
+          <a><span class="e">📄</span> Fiches &amp; pitch</a>
+          <div class="grp">3 · Marketing</div>
+          <a><span class="e">✨</span> Supports &amp; sélections</a>
+        </div>
+        <div class="main">
+          <div class="pt">Mes officines</div>
+          <div class="ps">510 officines · clique pour voir les opportunités, ce que le réseau prend, la marge par molécule</div>
+          <div class="row r3">
+            <div class="tile"><div class="ic b-blue">🎯</div><div class="ct">Opportunités</div><div class="cd">Ce qu'il faut proposer à chaque pharmacie</div></div>
+            <div class="tile"><div class="ic b-violet">🧪</div><div class="ct">Par molécule</div><div class="cd">Rotation &amp; marge pharmacien</div></div>
+            <div class="tile"><div class="ic b-amber">📄</div><div class="ct">Prépa RDV</div><div class="cd">PDF des produits cochés</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PISTE 2 : 3 colonnes (les 3 moments côte à côte) -->
+  <div class="piste">
+    <div class="piste-h"><span class="n">Piste 2</span><span class="t">3 colonnes = 3 moments</span><span class="d">Tout l'accueil visible d'un coup : Préparer / En RDV / Marketing côte à côte. Zéro clic pour comprendre.</span></div>
+    <div class="win"><div class="win-bar"><i></i><i></i><i></i><span class="url">jarvis-app · Accueil</span></div>
+      <div class="main" style="background:var(--bg);padding:24px 28px">
+        <div class="pt">Bonjour Will <span class="pill">5 commerciaux</span></div>
+        <div class="ps">Ta tournée, du prospect au suivi.</div>
+        <div class="row r3">
+          <div class="col"><div class="col-h"><span class="d b-blue"></span>1 · Préparer</div>
+            <div class="item"><span class="ic b-blue">🎯</span><div><div class="ct">Mes officines</div><div class="cd">Opportunités &amp; prépa RDV</div></div></div>
+            <div class="item"><span class="ic b-d">🗺️</span><div><div class="ct">Groupements</div><div class="cd">Carte de prospection</div></div></div>
+            <div class="item"><span class="ic b-amber">📊</span><div><div class="ct">Pilotage</div><div class="cd">CA, marge, objectifs</div></div></div>
+          </div>
+          <div class="col"><div class="col-h"><span class="d b-mint"></span>2 · En rendez-vous</div>
+            <div class="item"><span class="ic b-mint">📦</span><div><div class="ct">Catalogue &amp; prix</div><div class="cd">Catalogue · molécules · concurrents</div></div></div>
+            <div class="item"><span class="ic b-blue">📄</span><div><div class="ct">Fiches commerciales</div><div class="cd">PDF produit sur-mesure</div></div></div>
+            <div class="item"><span class="ic b-ink">🎤</span><div><div class="ct">Présentation</div><div class="cd">Le pitch prospect</div></div></div>
+          </div>
+          <div class="col"><div class="col-h"><span class="d b-rose"></span>3 · Marketing &amp; suivi</div>
+            <div class="item"><span class="ic b-rose">✨</span><div><div class="ct">Marketing</div><div class="cd">Supports &amp; sélections</div></div></div>
+            <div class="item"><span class="ic b-violet">🧪</span><div><div class="ct">Analyse molécules</div><div class="cd">Rotation &amp; marge réseau</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PISTE 3 : hub officines -->
+  <div class="piste">
+    <div class="piste-h"><span class="n">Piste 3</span><span class="t">Hub « Mes officines »</span><span class="d">Le cœur terrain en grand bandeau, le reste rangé par moment dessous.</span></div>
+    <div class="win"><div class="win-bar"><i></i><i></i><i></i><span class="url">jarvis-app · Accueil</span></div>
+      <div class="main" style="background:var(--bg);padding:24px 28px">
+        <div class="row r3">
+          <div class="hero"><div><div class="ht">🎯 Mes officines</div><div class="hd">Choisis une pharmacie : opportunités, ce que le réseau commande et pas elle, marge par molécule, prépa RDV en PDF.</div></div><span class="cta">Choisir une pharmacie →</span></div>
+          <div class="col" style="grid-column:span 1"><div class="col-h"><span class="d b-mint"></span>Pour le RDV</div>
+            <div class="item"><span class="ic b-mint">📦</span><div><div class="ct">Catalogue &amp; prix</div></div></div>
+            <div class="item"><span class="ic b-blue">📄</span><div><div class="ct">Fiches / Pitch</div></div></div></div>
+          <div class="col" style="grid-column:span 1"><div class="col-h"><span class="d b-amber"></span>Préparer &amp; suivre</div>
+            <div class="item"><span class="ic b-d">🗺️</span><div><div class="ct">Groupements</div></div></div>
+            <div class="item"><span class="ic b-amber">📊</span><div><div class="ct">Pilotage</div></div></div></div>
+          <div class="col" style="grid-column:span 1"><div class="col-h"><span class="d b-rose"></span>Marketing</div>
+            <div class="item"><span class="ic b-rose">✨</span><div><div class="ct">Supports &amp; sélections</div></div></div>
+            <div class="item"><span class="ic b-violet">🧪</span><div><div class="ct">Par molécule</div></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PISTE 4 : top nav segmentée -->
+  <div class="piste">
+    <div class="piste-h"><span class="n">Piste 4</span><span class="t">Barre du haut segmentée</span><span class="d">Un sélecteur Préparer / En RDV / Marketing en haut ; le contenu change dessous. Épuré, web classique.</span></div>
+    <div class="win"><div class="win-bar"><i></i><i></i><i></i><span class="url">jarvis-app · Accueil</span></div>
+      <div class="main" style="background:var(--bg);padding:22px 28px">
+        <div class="topnav"><span class="logo">IP</span><div class="seg"><a class="on">1 · Préparer</a><a>2 · En RDV</a><a>3 · Marketing</a></div><span class="sp">Will · juin 2026</span></div>
+        <div class="row r3">
+          <div class="tile"><div class="ic b-blue">🎯</div><div class="ct">Mes officines</div><div class="cd">Opportunités, ce que le réseau prend, prépa RDV</div></div>
+          <div class="tile"><div class="ic b-d">🗺️</div><div class="ct">Groupements</div><div class="cd">Carte de prospection</div></div>
+          <div class="tile"><div class="ic b-amber">📊</div><div class="ct">Pilotage</div><div class="cd">CA, marge MDL, objectifs</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PISTE 5 : dashboard KPI -->
+  <div class="piste">
+    <div class="piste-h"><span class="n">Piste 5</span><span class="t">Tableau de bord d'abord</span><span class="d">Tes chiffres en bandeau, puis les actions par moment. Pour piloter en arrivant.</span></div>
+    <div class="win"><div class="win-bar"><i></i><i></i><i></i><span class="url">jarvis-app · Accueil</span></div>
+      <div class="main" style="background:var(--bg);padding:22px 28px">
+        <div class="pt" style="margin-bottom:14px">Bonjour Will</div>
+        <div class="kpibar">
+          <div class="k"><div class="kv c-blue">312 k€</div><div class="kl">CA cumulé</div></div>
+          <div class="k"><div class="kv c-mint">38 k€</div><div class="kl">Marge MDL</div></div>
+          <div class="k"><div class="kv c-amber">510</div><div class="kl">Officines</div></div>
+          <div class="k"><div class="kv" style="color:var(--violet)">1 118</div><div class="kl">Molécules suivies</div></div>
+        </div>
+        <div class="row r3">
+          <div class="col"><div class="col-h"><span class="d b-blue"></span>Préparer</div>
+            <div class="item"><span class="ic b-blue">🎯</span><div><div class="ct">Mes officines</div></div></div>
+            <div class="item"><span class="ic b-d">🗺️</span><div><div class="ct">Groupements</div></div></div></div>
+          <div class="col"><div class="col-h"><span class="d b-mint"></span>En RDV</div>
+            <div class="item"><span class="ic b-mint">📦</span><div><div class="ct">Catalogue &amp; prix</div></div></div>
+            <div class="item"><span class="ic b-blue">📄</span><div><div class="ct">Fiches / Pitch</div></div></div></div>
+          <div class="col"><div class="col-h"><span class="d b-rose"></span>Marketing</div>
+            <div class="item"><span class="ic b-rose">✨</span><div><div class="ct">Supports &amp; sélections</div></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
