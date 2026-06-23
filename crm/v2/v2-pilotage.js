@@ -410,8 +410,8 @@
             '<div class="v2-page-sub">' + (opso ? 'Tableau de bord groupement OPSO Santé.' : 'Ton chiffre d\'affaires, ta marge MDL et tes familles produits.') + '</div>' +
             '<div class="v2-card"><div class="v2-empty">' +
               '<div class="v2-empty-ico">' + ICO('pilo', 64, 1.4) + '</div>' +
-              '<div class="v2-empty-t">Pas encore de ventes importées</div>' +
-              '<div class="v2-empty-d">Importe tes relevés de ventes pour voir le CA, la marge MDL et l\'évolution sur 13 mois.</div>' +
+              '<div class="v2-empty-t">Tes ventes ne sont pas encore disponibles</div>' +
+              '<div class="v2-empty-d">Tes données de ventes ne sont pas encore chargées sur ton périmètre. Contacte ton administrateur pour les activer.</div>' +
             '</div></div>' +
           '</div>';
         return;

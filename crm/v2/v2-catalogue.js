@@ -569,7 +569,7 @@
         : '';
 
       root.innerHTML = V2.topbar({ back: true }) +
-        '<div class="v2-wrap"' + (S.sel != null ? ' style="margin-right:372px"' : '') + '>' +
+        '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:372px"' : '"') + '>' +
           '<div class="v2-page-title">Catalogue Intégral Pharma</div>' +
           '<div class="v2-page-sub">' + V2.fmtNum(nbTotal) + ' références grossiste · filtre par tranches de prix et familles AFMCODE' + esc(sortInfo) + '</div>' +
           '<div class="cat-search">' + ICO('search', 19, 2) +
