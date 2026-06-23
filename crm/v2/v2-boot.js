@@ -29,15 +29,16 @@
   // prix le plus bas. Utilisé partout où on affiche un prix IP.
   V2.bestPrice = function (b) {
     if (!b) return { ip: null, ht: null, remise: 0, offre: false };
-    var ht = (b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0;
-    var ip0 = (b.prix_ip != null && b.prix_ip > 0) ? b.prix_ip : 0;
+    var ht = (b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0;   // PPHT / tarif grossiste
+    var ip0 = (b.prix_ip != null && b.prix_ip > 0) ? b.prix_ip : 0;  // prix net IP
     var off = (b.offre_ip != null && b.offre_ip > 0) ? b.offre_ip : 0;
-    // offre valide UNIQUEMENT si remise raisonnable (≤ 50%). Au-delà = donnée
-    // aberrante du champ offre_ip (ex. vaccins à 0,78€) → on ignore.
-    var offre = off > 0 && ip0 > 0 && off < ip0 && off >= ip0 * 0.5;
-    var ip = offre ? off : ip0;
+    // Offre labo valide UNIQUEMENT par rapport au PPHT : sous le tarif + remise réaliste
+    // (≤ 50% du PPHT). Sans PPHT (prix_ht=0, ex vaccins à offre_ip aberrante 2,86 vs 73€)
+    // → offre ignorée d'office. La remise se calcule TOUJOURS sur le PPHT.
+    var offre = off > 0 && ht > 0 && off < ht && off >= ht * 0.5;
+    var ip = offre ? off : ip0;                                      // prix le plus bas
     var remise = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
-    return { ip: ip > 0 ? ip : null, ht: ht > 0 ? ht : null, remise: remise, offre: offre };
+    return { ip: ip > 0 ? ip : null, ht: ht > 0 ? ht : null, remise: remise, offre: offre && (!ip0 || off < ip0) };
   };
 
   // ── Couleur « bon / à surveiller / faible » selon des seuils ───
@@ -226,9 +227,9 @@
       if (!c || !(P[c] > 0)) continue;          // ignore PPHT absent ou ≤ 0 (ex Shingrix=0) → jamais de prix à 0
       var pp = P[c];
       b.prix_ht = pp;                           // tarif grossiste officiel (HT) — corrige les prix_ht=0
-      // NR : pas de remise NR fiable -> on aligne le prix IP sur le PPHT
-      // (sauf vraie offre labo plus basse). Remboursable : on garde le prix_ip réel.
-      if (NR[c] && !(b.prix_ip > 0 && b.prix_ip < pp)) b.prix_ip = pp;
+      // NR : marge libre PLM -> on aligne le prix IP sur le PPHT et on neutralise
+      // l'offre labo (pas de tag OFFRE sur un NR). Remboursable : on garde le prix_ip réel.
+      if (NR[c]) { if (!(b.prix_ip > 0 && b.prix_ip < pp)) b.prix_ip = pp; b.offre_ip = 0; }
       // recalcule la remise (évite les % aberrants pré-calculés quand prix_ht était 0)
       b.remise_pct = (b.prix_ht > 0 && b.prix_ip > 0 && b.prix_ip <= b.prix_ht)
         ? Math.round((1 - b.prix_ip / b.prix_ht) * 1000) / 10 : 0;
@@ -253,7 +254,7 @@
   V2.loadFiles = function (keys) {
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // ⚠️ DOIT être bumpé en même temps que la version globale (sinon le SW ressert les vieilles données)
-    var V = '?v=20260611v2CF';
+    var V = '?v=20260611v2CG';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();
