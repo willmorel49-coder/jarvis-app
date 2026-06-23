@@ -348,6 +348,28 @@
       '</div>';
   }
 
+  // Résumé "par molécule" (réseau) sur la fiche : ce qu'une molécule rapporte.
+  function molSummarySection() {
+    var M = window.MOL_STATS; if (!M || !M.length) return '';
+    var top = M.slice(0, 8);   // déjà trié par marge pharmacien
+    var rows = top.map(function (r, i) {
+      return '<div class="ipv-row">' +
+        '<span class="ipv-rank">#' + (i + 1) + '</span>' +
+        '<span class="ipv-name">' + esc(cap((r.m || '').toLowerCase())) +
+          '<small style="display:block;color:var(--muted);font-family:var(--mono)">rotation ~' + V2.fmtNum(r.rota) + '/an · ' + r.n + ' phies · ta remise ' + V2.fmtEur(r.remise) + '/an</small></span>' +
+        '<span class="ipv-vol" style="color:var(--c-opp);font-weight:800" title="marge pharmacien MDL / an">' + V2.fmtEur(r.marge) + '<small>/an</small></span>' +
+        '</div>';
+    }).join('');
+    var open = sectionOpen('molsum');
+    return '<div class="ph-section">' +
+      sectionHead('Ce qu\'une molécule rapporte (réseau)',
+        'rotation moyenne par pharmacie & marge pharmacien (MDL) — l\'argument chiffré à montrer au comptoir',
+        'molsum', open) +
+      (open ? '<div class="v2-card" style="padding:6px 0">' + rows +
+        '<div style="text-align:right;padding:8px 14px"><a class="v2-cat-link" style="cursor:pointer" onclick="V2.go(\'molecules\')">Toutes les molécules →</a></div></div>' : '') +
+      '</div>';
+  }
+
   // VUE A — Liste des officines
   // ─────────────────────────────────────────────────────────────
   function listRowHtml(x) {
@@ -802,6 +824,7 @@
         activitySection(sales, marge, ca) +
         topByCatSection(sales) +
         networkRecoSection(pid) +
+        molSummarySection() +
         ipVolumeSection(pid) +
         sectionHead('Opportunités par catégorie', 'ce que le marché commande et que cette officine n\'a pas encore') +
         '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-primary" onclick="V2.pharmaRecoOrder(\'' + esc(String(pid)) + '\')">' + ICO('fiche', 16) + 'Générer la commande recommandée</button></div>' +
