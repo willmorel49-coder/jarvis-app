@@ -1,76 +1,54 @@
-# Armee de 20 agents - Appli Integral Pharma
+# Armée de 20 agents — CRM JARVIS (Intégral Pharma)
 
-20 sous-agents Claude Code, prets a deposer dans ton repo. Chacun a un role precis, sans recouvrement, pense pour une appli d'analytics pharma (Python + dashboard web).
+20 sous-agents Claude Code, chacun avec un rôle précis sans recouvrement, **alignés sur l'app JARVIS réelle** : CRM web **vanilla JS zéro build** (GitHub Pages, Supabase auth-only) + générateurs **Python 3.9** qui produisent les fichiers de données `.js`, + projet **GROUPEMENTS** (prospection).
 
-## Installation (2 min)
+## Utilisation
 
-1. Copie le dossier `.claude/` a la racine de ton repo (au meme niveau que `CLAUDE.md`).
-2. Ouvre Claude Code dans le projet et tape `/agents` pour verifier qu'ils sont charges.
-3. C'est tout. Tu peux les appeler par leur nom, ou laisser le `tech-lead-orchestrator` deleguer.
-
-Scope projet : versionne `.claude/agents/` dans Git -> toute l'equipe (Arthur, Karine, Samuel) en profite.
+- Ils vivent dans `.claude/agents/` (versionnés dans le repo). `/agents` pour les lister.
+- Appelle-les par leur nom, ou laisse `tech-lead-orchestrator` déléguer.
 
 ## Les 6 escouades
 
-ARCHI & PILOTAGE
-- tech-lead-orchestrator : decoupe une demande, delegue, tient ROADMAP.md (Opus)
-- architect-reviewer : valide le design avant le build (Opus)
-- codebase-cartographer : cartographie le repo (Haiku)
+**ARCHI & PILOTAGE**
+- `tech-lead-orchestrator` : découpe une demande, délègue, tient le plan (lit ROBOT.md)
+- `architect-reviewer` : valide le design avant build (séparation données/logique/piliers, zéro dépendance)
+- `codebase-cartographer` : cartographie le repo (piliers v2-*.js, générateurs, données, GROUPEMENTS)
 
-BUILD DATA / BACKEND
-- python-refactorer : qualite du code Python, sans changer le comportement
-- data-pipeline-engineer : ETL, scraping, enrichissement, recalibrage CRM
-- excel-report-engineer : exports .xlsx a TON standard (Top 20, medailles, vert/rouge)
-- pharma-data-modeler : CIP13/artcode/afmcode, normalisation, jointures fiables
+**BUILD DATA / GÉNÉRATEURS**
+- `data-pipeline-engineer` : générateurs Python (ventes WML, mix marketing, PPHT, photos), scraping groupements
+- `pharma-data-modeler` : CIP13/EAN/afmcode, matching benchmark/ventes/PPHT, jointures fiables
+- `python-refactorer` : qualité des générateurs Python (3.9 strict), sans changer la sortie
+- `doc-report-engineer` : documents commerciaux — fiches/catalogues PDF (html2pdf, charte IP), exports
 
-FRONT / DASHBOARD
-- dashboard-frontend-dev : composants, etat, integration data, responsive
-- dataviz-specialist : le bon graphe pour la bonne donnee
-- ui-ux-polish : finition, hierarchie, ergonomie
+**FRONT / UI**
+- `dashboard-frontend-dev` : piliers v2-*.js (vanilla JS), intégration data, responsive/PWA, cache busting
+- `dataviz-specialist` : graphes du pilotage (Chart.js), couleurs cohérentes, formats FR
+- `ui-ux-polish` : finition, hiérarchie, ergonomie, tokens CSS, règles UX de Will
 
-QUALITE & SECURITE
-- code-reviewer : relecture facon PR, triee par priorite
-- test-engineer : pytest, golden-file sur les sorties Excel
-- data-quality-validator : dernier rempart avant livraison d'un chiffre
-- security-auditor : secrets (tokens.json), donnees client, dependances (Opus)
-- performance-optimizer : gros volumes, pandas, generation Excel
+**QUALITÉ & SÉCURITÉ**
+- `code-reviewer` : relecture façon PR (conventions JARVIS, cache, sécurité), triée par priorité
+- `test-engineer` : vérifs générateurs + règles métier (MDL, PPHT, bestPrice), `node --check`
+- `data-quality-validator` : dernier rempart avant déploiement (prix/remises/doublons/totaux)
+- `security-auditor` : secrets Supabase (anon OK, jamais service_role), données client, PDF privés, historique
+- `performance-optimizer` : gros `.js`, rendu, lazy-load, génération PDF
 
-METIER & CONFORMITE
-- pharma-domain-expert : bareme marges, coef NR, 5 categories, biosimilaires (Opus)
-- rgpd-compliance-officer : donnees client sensibles, minimisation, conservation
+**MÉTIER & CONFORMITÉ**
+- `pharma-domain-expert` : barème MDL (remboursables), marge libre NR/PPHT, tranches prix IP, offre labo, froid
+- `rgpd-compliance-officer` : données clients nominatives + app publique, minimisation, exposition
 
-DEVEX & LIVRAISON
-- devops-ci-engineer : GitHub Actions, synchro VS Code/Claude Code/mobile
-- docs-writer : README, CLAUDE.md, methodos pour les collegues
-- bug-hunter : cause racine, ecarts de chiffres
+**DEVEX & LIVRAISON**
+- `devops-ci-engineer` : déploiement GitHub Pages (push main), cache `?v=` + sw.js, .gitignore, git propre
+- `docs-writer` : ROBOT.md, skills, et explications côté Will en **français simple**
+- `bug-hunter` : cause racine, écarts de chiffres (chaîne .xlsx → générateur → .js → affichage)
 
-## Franc-parler : par ou commencer
+## Par où commencer
 
-20 agents, c'est plus que ce que la plupart des projets utilisent vraiment. Ne les cable pas tous en daily driver. Le noyau a activer en premier (couvre 80% des cas) :
+Noyau couvrant 80 % des cas : `tech-lead-orchestrator`, `pharma-domain-expert`, `data-quality-validator`, `code-reviewer`, `bug-hunter`, `security-auditor` (avant chaque push), `dashboard-frontend-dev`. Les autres = situationnels.
 
-1. tech-lead-orchestrator  (le cerveau)
-2. pharma-domain-expert     (ton vrai differentiateur metier)
-3. excel-report-engineer    (ton livrable signature)
-4. data-quality-validator   (zero chiffre faux chez Vincent)
-5. code-reviewer            (filet de securite permanent)
-6. bug-hunter               (quand ca casse)
-7. security-auditor         (avant chaque push - tu manipules de l'encours client)
+## Coût
 
-Les 13 autres = situationnels. Tu les appelles quand le besoin tombe (refonte, perf, RGPD, nouveau module front...). Ils restent dispos sans te polluer.
+Chaque sous-agent tourne dans son propre contexte (un workflow très multi-agents peut consommer beaucoup plus de tokens). Délègue quand ça fait gagner du temps réel ou de la fiabilité ; pour une petite correction, reste en session principale.
 
-## Strategie de modeles (deja reglee dans les fichiers)
+## Stack réelle (ces agents en tiennent compte)
 
-- Opus = jugement et coordination : orchestrateur, archi, metier, securite.
-- Sonnet = build et review : la majorite.
-- Haiku = exploration/recherche rapide : cartographe.
-
-Tu peux forcer un defaut global :
-`export CLAUDE_CODE_SUBAGENT_MODEL="sonnet"`
-
-## Le vrai cout (a savoir)
-
-Chaque sous-agent tourne dans son propre contexte. Un workflow tres "multi-agents" peut consommer jusqu'a ~7x les tokens d'une session simple. Logique entrepreneuriale : delegue quand ca te fait gagner du temps reel ou de la fiabilite, pas par reflexe. Pour une petite correction, reste en session principale.
-
-## Hypothese de stack
-
-Ces agents partent du principe : Python (pandas, openpyxl) + dashboard web (HTML/JS ou React). Si ton appli est en React seul, Next.js, ou autre, dis-le moi : je retune les agents de build et front en quelques minutes.
+Vanilla JS / HTML / CSS (zéro build) · Supabase (auth + profils) · GitHub Pages · Chart.js, SheetJS, html2pdf, Leaflet (CDN) · générateurs Python 3.9 (openpyxl, pandas) · projet GROUPEMENTS (sqlite, scrapers). **Pas de framework, pas de dépendance externe ajoutée sans accord.**
