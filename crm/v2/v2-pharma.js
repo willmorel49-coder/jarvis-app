@@ -274,31 +274,48 @@
       '</div>';
   }
 
-  // ── Réseau : popularité d'un CIP = nb de pharmacies (tous commerciaux) qui le commandent ──
-  var _cipPharmaSet = null, _netTotal = 0;
-  function cipPharmaCount() {
-    if (_cipPharmaSet) return _cipPharmaSet;
-    var m = new Map(), phies = {};
+  // ── Réseau : par CIP, nb de pharmacies qui le commandent + volume total (rotation) ──
+  var _cipStats = null, _netTotal = 0, _statsMonths = 5;
+  function cipStats() {
+    if (_cipStats) return _cipStats;
+    var m = new Map(), phies = {}, months = {};
     (V2.sales || []).forEach(function (s) {
       var c = String(s.artCode || ''); if (c.length < 7) return;
       var pid = String(s.pharmacyId); phies[pid] = 1;
-      var set = m.get(c); if (!set) { set = new Set(); m.set(c, set); }
-      set.add(pid);
+      if (s.month) months[(s.year || '') + '-' + s.month] = 1;
+      var e = m.get(c); if (!e) { e = { ph: new Set(), qte: 0 }; m.set(c, e); }
+      e.ph.add(pid); e.qte += (s.qte || 0);
     });
-    _cipPharmaSet = m; _netTotal = Object.keys(phies).length;
+    _cipStats = m; _netTotal = Object.keys(phies).length;
+    _statsMonths = Object.keys(months).length || 5;
     return m;
   }
+  // Rotation moyenne = boîtes/an pour une pharmacie qui le commande (moyenne réseau).
+  function rotationYear(cip) {
+    var e = cipStats().get(String(cip)); if (!e || !e.ph.size) return 0;
+    return Math.round(e.qte / e.ph.size / _statsMonths * 12);
+  }
+  // Gain estimé = remise (PPHT - prix net) × rotation moyenne annuelle.
+  function gainYear(b) {
+    if (!b) return 0;
+    var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
+    if (!(ht > 0 && ip > 0 && ip < ht)) return 0;
+    return Math.round((ht - ip) * rotationYear(b.cip13));
+  }
+  V2.rotationYear = rotationYear; V2.gainYear = gainYear;   // réutilisable (marketing, prépa)
+
   // Produits que cette officine NE commande PAS, classés par nb de pharmacies du réseau qui les prennent.
   function buildNetworkReco(pid, limit) {
-    var counts = cipPharmaCount(), bIdx = benchIndex();
+    var stats = cipStats(), bIdx = benchIndex();
     var owned = new Set();
     pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
     var rows = [];
-    counts.forEach(function (set, cip) {
+    stats.forEach(function (e, cip) {
       if (owned.has(cip)) return;
       var b = bIdx.get(cip); if (!b) return;          // doit être au catalogue IP pour être proposable
       var bp = V2.bestPrice(b);
-      rows.push({ cip: cip, designation: b.designation || '', nb: set.size, prix: bp.ip, offre: bp.offre, froid: !!b.is_froid });
+      rows.push({ cip: cip, designation: b.designation || '', nb: e.ph.size, prix: bp.ip, offre: bp.offre,
+                  froid: !!b.is_froid, rota: rotationYear(cip), gain: gainYear(b) });
     });
     rows.sort(function (a, b) { return b.nb - a.nb; });
     return rows.slice(0, limit || 40);
@@ -307,13 +324,15 @@
     var reco = buildNetworkReco(pid, 40);
     if (!reco.length) return '';
     var tot = _netTotal || (V2.pharmacies || []).length || 0;
+    var totalGain = reco.reduce(function (s, r) { return s + (r.gain || 0); }, 0);
     var rows = reco.map(function (r, i) {
       var on = selCips && selCips.has(r.cip);
       var pct = tot ? Math.round(r.nb / tot * 100) : 0;
       return '<div class="ipv-row">' +
         '<span class="ipv-rank">#' + (i + 1) + '</span>' +
-        '<span class="ipv-name">' + esc(cap((r.designation || '').toLowerCase())) + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + '</span>' +
-        '<span class="ipv-vol">' + V2.fmtNum(r.nb) + '<small>/' + V2.fmtNum(tot) + ' phies (' + pct + '%)</small>' + (r.prix > 0 ? ' · ' + V2.fmtEur(r.prix) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '') + '</span>' +
+        '<span class="ipv-name">' + esc(cap((r.designation || '').toLowerCase())) + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') +
+          '<small style="display:block;color:var(--muted);font-family:var(--mono)">' + V2.fmtNum(r.nb) + '/' + V2.fmtNum(tot) + ' phies (' + pct + '%)' + (r.rota > 0 ? ' · rotation ~' + V2.fmtNum(r.rota) + '/an' : '') + (r.prix > 0 ? ' · ' + V2.fmtEur(r.prix) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '') + '</small></span>' +
+        '<span class="ipv-vol" style="color:var(--c-opp);font-weight:800" title="rotation moyenne × remise PPHT→net">' + (r.gain > 0 ? '+' + V2.fmtEur(r.gain) + '<small>/an</small>' : '—') + '</span>' +
         '<button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) +
           '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF RDV">' + (on ? '✓' : '+') + '</button>' +
         '</div>';
@@ -321,9 +340,11 @@
     var open = sectionOpen('netreco');
     return '<div class="ph-section">' +
       sectionHead('À pousser : tout le réseau le prend, pas elle',
-        'les produits commandés par le plus de pharmacies du réseau (tous commerciaux) et que cette officine n\'a pas encore',
+        'produits que le plus de pharmacies du réseau commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × ta remise',
         'netreco', open) +
-      (open ? '<div class="v2-card" style="padding:6px 0">' + rows + '</div>' : '') +
+      (open ? '<div class="v2-card" style="padding:6px 0">' +
+        '<div class="ipv-row" style="background:var(--card-2)"><span class="ipv-rank"></span><span class="ipv-name" style="font-weight:700">Potentiel total de cette liste</span><span class="ipv-vol" style="color:var(--c-opp);font-weight:800">+' + V2.fmtEur(totalGain) + '<small>/an</small></span><span style="width:30px"></span></div>' +
+        rows + '</div>' : '') +
       '</div>';
   }
 
