@@ -11,7 +11,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js?v=20260611v2BZ').catch(function () {});
+        navigator.serviceWorker.register('sw.js?v=20260611v2CD').catch(function () {});
       });
     }
   </script>
@@ -21,6 +21,11 @@
     window.addEventListener('error', function (e) {
       var p = document.getElementById('__err'); if (!p) { p = document.createElement('div'); p.id = '__err'; p.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#FFE5E5;color:#7A0000;padding:12px 18px;font:13px/1.4 -apple-system,system-ui;border-bottom:3px solid #FF3B30;white-space:pre-wrap;max-height:50vh;overflow:auto'; (document.body||document.documentElement).appendChild(p); }
       p.textContent = '⚠️ ' + (e.message||'') + (e.filename ? '\n→ ' + e.filename.split('/').pop() + ':' + (e.lineno||'?') : '');
+    });
+    // erreurs async non capturées (auth Supabase, loadFiles, .then) — sinon écran figé sans message
+    window.addEventListener('unhandledrejection', function (e) {
+      var p = document.getElementById('__err'); if (!p) { p = document.createElement('div'); p.id = '__err'; p.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#FFE5E5;color:#7A0000;padding:12px 18px;font:13px/1.4 -apple-system,system-ui;border-bottom:3px solid #FF3B30;white-space:pre-wrap;max-height:50vh;overflow:auto'; (document.body||document.documentElement).appendChild(p); }
+      var r = e && e.reason; p.textContent = '⚠️ ' + ((r && (r.message || r)) || 'Promesse rejetée') ;
     });
   </script>
 
@@ -32,11 +37,11 @@
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
-  <link rel="stylesheet" href="v2.css?v=20260611v2BZ" />
-  <link rel="stylesheet" href="v2-motion.css?v=20260611v2BZ" />
+  <link rel="stylesheet" href="v2.css?v=20260611v2CD" />
+  <link rel="stylesheet" href="v2-motion.css?v=20260611v2CD" />
 
   <!-- PWA : installable sur l'écran d'accueil (iOS + Android) -->
-  <link rel="manifest" href="manifest.webmanifest?v=20260611v2BZ" />
+  <link rel="manifest" href="manifest.webmanifest?v=20260611v2CD" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -69,27 +74,27 @@
   <div class="v2" id="v2-root"></div>
 
   <!-- Socle -->
-  <script src="v2-icons.js?v=20260611v2BZ"></script>
+  <script src="v2-icons.js?v=20260611v2CD"></script>
   <!-- Données officines + ventes WML (source de vérité, 5 mois) -->
-  <script src="wml-officines-data.js?v=20260611v2BZ"></script>
+  <script src="wml-officines-data.js?v=20260611v2CD"></script>
   <!-- Prix PPHT NR (tarif grossiste officiel) — corrige le prix NR partout -->
-  <script src="ppht-data.js?v=20260611v2BZ"></script>
-  <script src="v2-boot.js?v=20260611v2BZ"></script>
+  <script src="ppht-data.js?v=20260611v2CD"></script>
+  <script src="v2-boot.js?v=20260611v2CD"></script>
   <!-- Piliers (chargés avant app pour enregistrer V2.pages.*) -->
-  <script src="v2-pharma.js?v=20260611v2BZ"></script>
-  <script src="v2-catalogue.js?v=20260611v2BZ"></script>
-  <script src="v2-offilog.js?v=20260611v2BZ"></script>
-  <script src="v2-fiches.js?v=20260611v2BZ"></script>
-  <script src="v2-pilotage.js?v=20260611v2BZ"></script>
+  <script src="v2-pharma.js?v=20260611v2CD"></script>
+  <script src="v2-catalogue.js?v=20260611v2CD"></script>
+  <script src="v2-offilog.js?v=20260611v2CD"></script>
+  <script src="v2-fiches.js?v=20260611v2CD"></script>
+  <script src="v2-pilotage.js?v=20260611v2CD"></script>
   <!-- Espace Marketing JARVIS (Pauline & Will) -->
-  <script src="marketing-mix-data.js?v=20260611v2BZ"></script>
-  <script src="mkt-images-data.js?v=20260611v2BZ"></script>
-  <script src="v2-mkt.js?v=20260611v2BZ"></script>
+  <script src="marketing-mix-data.js?v=20260611v2CD"></script>
+  <script src="mkt-images-data.js?v=20260611v2CD"></script>
+  <script src="v2-mkt.js?v=20260611v2CD"></script>
   <!-- App Groupements (carte de prospection, iframe) -->
-  <script src="v2-groupements.js?v=20260611v2BZ"></script>
+  <script src="v2-groupements.js?v=20260611v2CD"></script>
   <!-- App (boot en dernier) -->
-  <script src="v2-app.js?v=20260611v2BZ"></script>
+  <script src="v2-app.js?v=20260611v2CD"></script>
   <!-- Couche motion design (scroll-reveal, count-up, micro-interactions) — après l'app pour wrapper V2.render -->
-  <script src="v2-motion.js?v=20260611v2BZ"></script>
+  <script src="v2-motion.js?v=20260611v2CD"></script>
 </body>
 </html>
