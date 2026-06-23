@@ -274,6 +274,59 @@
       '</div>';
   }
 
+  // ── Réseau : popularité d'un CIP = nb de pharmacies (tous commerciaux) qui le commandent ──
+  var _cipPharmaSet = null, _netTotal = 0;
+  function cipPharmaCount() {
+    if (_cipPharmaSet) return _cipPharmaSet;
+    var m = new Map(), phies = {};
+    (V2.sales || []).forEach(function (s) {
+      var c = String(s.artCode || ''); if (c.length < 7) return;
+      var pid = String(s.pharmacyId); phies[pid] = 1;
+      var set = m.get(c); if (!set) { set = new Set(); m.set(c, set); }
+      set.add(pid);
+    });
+    _cipPharmaSet = m; _netTotal = Object.keys(phies).length;
+    return m;
+  }
+  // Produits que cette officine NE commande PAS, classés par nb de pharmacies du réseau qui les prennent.
+  function buildNetworkReco(pid, limit) {
+    var counts = cipPharmaCount(), bIdx = benchIndex();
+    var owned = new Set();
+    pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
+    var rows = [];
+    counts.forEach(function (set, cip) {
+      if (owned.has(cip)) return;
+      var b = bIdx.get(cip); if (!b) return;          // doit être au catalogue IP pour être proposable
+      var bp = V2.bestPrice(b);
+      rows.push({ cip: cip, designation: b.designation || '', nb: set.size, prix: bp.ip, offre: bp.offre, froid: !!b.is_froid });
+    });
+    rows.sort(function (a, b) { return b.nb - a.nb; });
+    return rows.slice(0, limit || 40);
+  }
+  function networkRecoSection(pid) {
+    var reco = buildNetworkReco(pid, 40);
+    if (!reco.length) return '';
+    var tot = _netTotal || (V2.pharmacies || []).length || 0;
+    var rows = reco.map(function (r, i) {
+      var on = selCips && selCips.has(r.cip);
+      var pct = tot ? Math.round(r.nb / tot * 100) : 0;
+      return '<div class="ipv-row">' +
+        '<span class="ipv-rank">#' + (i + 1) + '</span>' +
+        '<span class="ipv-name">' + esc(cap((r.designation || '').toLowerCase())) + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + '</span>' +
+        '<span class="ipv-vol">' + V2.fmtNum(r.nb) + '<small>/' + V2.fmtNum(tot) + ' phies (' + pct + '%)</small>' + (r.prix > 0 ? ' · ' + V2.fmtEur(r.prix) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '') + '</span>' +
+        '<button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) +
+          '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF RDV">' + (on ? '✓' : '+') + '</button>' +
+        '</div>';
+    }).join('');
+    var open = sectionOpen('netreco');
+    return '<div class="ph-section">' +
+      sectionHead('À pousser : tout le réseau le prend, pas elle',
+        'les produits commandés par le plus de pharmacies du réseau (tous commerciaux) et que cette officine n\'a pas encore',
+        'netreco', open) +
+      (open ? '<div class="v2-card" style="padding:6px 0">' + rows + '</div>' : '') +
+      '</div>';
+  }
+
   // VUE A — Liste des officines
   // ─────────────────────────────────────────────────────────────
   function listRowHtml(x) {
@@ -727,6 +780,7 @@
         hero +
         activitySection(sales, marge, ca) +
         topByCatSection(sales) +
+        networkRecoSection(pid) +
         ipVolumeSection(pid) +
         sectionHead('Opportunités par catégorie', 'ce que le marché commande et que cette officine n\'a pas encore') +
         '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-primary" onclick="V2.pharmaRecoOrder(\'' + esc(String(pid)) + '\')">' + ICO('fiche', 16) + 'Générer la commande recommandée</button></div>' +
