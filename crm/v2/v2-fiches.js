@@ -99,6 +99,19 @@
     if (p <= 468) return p * 0.039;
     return 19.50;
   }
+  // Le barème MDL ne vaut QUE pour les remboursables. NR/para = marge libre (pas de MDL).
+  var _rembMap = null;
+  function rembOf(p) {
+    if (p.remb != null) return !!p.remb;
+    if (p.has_ameli != null) return !!p.has_ameli;
+    if (!_rembMap) {
+      _rembMap = {};
+      (window.BENCHMARK || []).forEach(function (b) { var c = String(b.cip13 == null ? '' : b.cip13); if (c) _rembMap[c] = b.has_ameli === true; });
+    }
+    var cip = String(p.cip13 != null ? p.cip13 : (p.cip != null ? p.cip : ''));
+    return !!(cip && _rembMap[cip] === true);   // si inconnu -> pas de MDL (on ne montre jamais de fausse marge)
+  }
+  function mdlOf(p) { return rembOf(p) ? margeMDL(netPrice(p)) : 0; }
   function netPrice(p) {
     var prix = (p.prix_ip != null && p.prix_ip !== '') ? +p.prix_ip : 0;
     var rem = (p.remise_pct != null && p.remise_pct !== '') ? +p.remise_pct : 0;
@@ -128,7 +141,7 @@
 
   // une seule rangée produit (réutilisée au render initial + refresh)
   function productRow(p, i) {
-    var net = netPrice(p), mdl = margeMDL(net), qty = lineQty(p);
+    var net = netPrice(p), mdl = mdlOf(p), qty = lineQty(p);
     var tot = net * qty;
     return ''+
       '<div class="fch-prow">'+
@@ -348,7 +361,7 @@
         var title = f.title && f.title.trim() ? f.title : 'Fiche sans titre';
         var dest = f.destId ? pharmaById(f.destId) : null;
         var totNet = prods.reduce(function (s, p) { return s + lineTotal(p); }, 0);
-        var totMdl = prods.reduce(function (s, p) { return s + margeMDL(netPrice(p)) * lineQty(p); }, 0);
+        var totMdl = prods.reduce(function (s, p) { return s + mdlOf(p) * lineQty(p); }, 0);
         return ''+
           '<div class="fch-card">'+
             '<div class="fch-card-t">' + esc(title) + '</div>'+
@@ -504,7 +517,7 @@
   function totalsHtml() {
     var ps = editingFiche.products;
     var net = ps.reduce(function (s, p) { return s + lineTotal(p); }, 0);
-    var mdl = ps.reduce(function (s, p) { return s + margeMDL(netPrice(p)) * lineQty(p); }, 0);
+    var mdl = ps.reduce(function (s, p) { return s + mdlOf(p) * lineQty(p); }, 0);
     var hasQty = ps.some(function (p) { return lineQty(p) > 1; });
     return ''+
       '<div class="fch-totals" id="fch-totals">'+
@@ -532,7 +545,7 @@
     debouncedRefreshPreview();
     var ps = editingFiche.products, n = ps.length;
     var net = ps.reduce(function (s, p) { return s + lineTotal(p); }, 0);
-    var mdl = ps.reduce(function (s, p) { return s + margeMDL(netPrice(p)) * lineQty(p); }, 0);
+    var mdl = ps.reduce(function (s, p) { return s + mdlOf(p) * lineQty(p); }, 0);
     var hasQty = ps.some(function (p) { return lineQty(p) > 1; });
     var en = document.getElementById('fch-tot-n'); if (en) en.textContent = n;
     var enet = document.getElementById('fch-tot-net'); if (enet) enet.textContent = V2.fmtEur(net);
@@ -543,7 +556,7 @@
   // maj ciblée d'une ligne pendant la frappe (préserve le focus du champ)
   function recalcRow(i) {
     var p = editingFiche.products[i]; if (!p) return;
-    var net = netPrice(p), mdl = margeMDL(net), qty = lineQty(p), tot = net * qty;
+    var net = netPrice(p), mdl = mdlOf(p), qty = lineQty(p), tot = net * qty;
     var em = document.getElementById('fch-mdl-' + i); if (em) em.textContent = V2.fmtEur(mdl);
     var en = document.getElementById('fch-net-' + i); if (en) en.textContent = V2.fmtEur(net);
     var et = document.getElementById('fch-tot-line-' + i);
@@ -741,12 +754,12 @@
     var count = prods.length;
     var dest = fiche.destId ? pharmaById(fiche.destId) : null;
     var totNet = prods.reduce(function (s, p) { return s + lineTotal(p); }, 0);
-    var totMdl = prods.reduce(function (s, p) { return s + margeMDL(netPrice(p)) * lineQty(p); }, 0);
+    var totMdl = prods.reduce(function (s, p) { return s + mdlOf(p) * lineQty(p); }, 0);
 
     function e2(v) { return num(v).toFixed(2).replace('.', ',') + ' €'; }
     var hasQtyPdf = prods.some(function (p) { return lineQty(p) > 1; });
     var rows = prods.map(function (p, i) {
-      var net = netPrice(p), mdl = margeMDL(net), qty = lineQty(p), tot = net * qty;
+      var net = netPrice(p), mdl = mdlOf(p), qty = lineQty(p), tot = net * qty;
       var prix = (p.prix_ip != null && p.prix_ip !== '') ? e2(p.prix_ip) : '—';
       var rem = (p.remise_pct != null && p.remise_pct !== '' && +p.remise_pct > 0) ? String(p.remise_pct).replace('.', ',') + ' %' : '—';
       return ''+
