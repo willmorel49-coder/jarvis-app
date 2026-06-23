@@ -30,6 +30,7 @@
   // Sous-onglet Opportunités : 'officines' | 'groupements' | 'listes'
   var pharmaView = 'officines';
   var selGroup = null;        // groupement ouvert
+  var netScope = 'reseau';    // réf. de la reco fiche : 'reseau' (réseau IP) | 'groupement' (son groupement)
   var selList = null;         // liste personnalisée ouverte (id)
   var grpCollapsed = {};      // repli des catégories en vue groupement / liste
 
@@ -275,20 +276,38 @@
   }
 
   // ── Réseau : par CIP, nb de pharmacies qui le commandent + volume total (rotation) ──
-  var _cipStats = null, _netTotal = 0, _statsMonths = 5;
-  function cipStats() {
-    if (_cipStats) return _cipStats;
+  // Statistiques CIP → {ph:Set des pharmacies, qte}. Calculées sur tout le réseau,
+  // ou restreintes à un sous-ensemble de pharmacies (pidSet) pour la vue groupement.
+  var _statsCache = {};
+  function computeStats(key, pidSet) {
+    if (_statsCache[key]) return _statsCache[key];
     var m = new Map(), phies = {}, months = {};
     (V2.sales || []).forEach(function (s) {
+      var pid = String(s.pharmacyId);
+      if (pidSet && !pidSet.has(pid)) return;
       var c = String(s.artCode || ''); if (c.length < 7) return;
-      var pid = String(s.pharmacyId); phies[pid] = 1;
+      phies[pid] = 1;
       if (s.month) months[(s.year || '') + '-' + s.month] = 1;
       var e = m.get(c); if (!e) { e = { ph: new Set(), qte: 0 }; m.set(c, e); }
       e.ph.add(pid); e.qte += (s.qte || 0);
     });
-    _cipStats = m; _netTotal = Object.keys(phies).length;
-    _statsMonths = Object.keys(months).length || 5;
-    return m;
+    _statsCache[key] = { map: m, total: Object.keys(phies).length, months: Object.keys(months).length || 5 };
+    return _statsCache[key];
+  }
+  var _netTotal = 0, _statsMonths = 5;
+  function cipStats() {
+    var st = computeStats('__net__', null);
+    _netTotal = st.total; _statsMonths = st.months;
+    return st.map;
+  }
+  // Pharmacies du même groupement que `pid` (selon pharma.groupement).
+  function groupementPids(pid) {
+    var p = (V2.pharmacies || []).filter(function (x) { return String(x.id) === String(pid); })[0];
+    var g = p && p.groupement ? String(p.groupement).trim() : '';
+    if (!g) return { name: '', set: null };
+    var set = new Set();
+    (V2.pharmacies || []).forEach(function (x) { if (String(x.groupement || '').trim() === g) set.add(String(x.id)); });
+    return { name: g, set: set };
   }
   // Rotation moyenne = boîtes/an pour une pharmacie qui le commande (moyenne réseau).
   function rotationYear(cip) {
@@ -304,9 +323,19 @@
   }
   V2.rotationYear = rotationYear; V2.gainYear = gainYear;   // réutilisable (marketing, prépa)
 
-  // Produits que cette officine NE commande PAS, classés par nb de pharmacies du réseau qui les prennent.
-  function buildNetworkReco(pid, limit) {
-    var stats = cipStats(), bIdx = benchIndex();
+  // Produits que cette officine NE commande PAS, classés par nb de pharmacies (de la
+  // référence choisie) qui les prennent. scope = 'reseau' (réseau IP) | 'groupement'.
+  function buildNetworkReco(pid, limit, scope) {
+    cipStats(); // initialise _netTotal/_statsMonths (réseau)
+    var st, total;
+    if (scope === 'groupement') {
+      var g = groupementPids(pid);
+      if (!g.set || g.set.size < 2) return { rows: [], total: 0, name: g.name };
+      st = computeStats('grp:' + g.name, g.set); total = st.total;
+    } else {
+      st = computeStats('__net__', null); total = st.total;
+    }
+    var stats = st.map, bIdx = benchIndex();
     var owned = new Set();
     pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
     var rows = [];
@@ -318,12 +347,38 @@
                   froid: !!b.is_froid, rota: rotationYear(cip), gain: gainYear(b) });
     });
     rows.sort(function (a, b) { return b.nb - a.nb; });
-    return rows.slice(0, limit || 40);
+    return { rows: rows.slice(0, limit || 40), total: total };
   }
+  V2.setNetScope = function (s) { netScope = s; V2.render(); };
   function networkRecoSection(pid) {
-    var reco = buildNetworkReco(pid, 40);
-    if (!reco.length) return '';
-    var tot = _netTotal || (V2.pharmacies || []).length || 0;
+    var g = groupementPids(pid);
+    var scope = (netScope === 'groupement' && g.set && g.set.size >= 2) ? 'groupement' : 'reseau';
+    var built = buildNetworkReco(pid, 40, scope);
+    var reco = built.rows;
+    var tot = built.total || _netTotal || (V2.pharmacies || []).length || 0;
+    // Sélecteur de référence (réseau IP / son groupement)
+    var toggle = '<div class="net-scope">' +
+      '<button type="button" class="net-scope-b' + (scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')">Réseau Intégral Pharma</button>' +
+      (g.name
+        ? '<button type="button" class="net-scope-b' + (scope === 'groupement' ? ' on' : '') + '" onclick="V2.setNetScope(\'groupement\')">Son groupement · ' + esc(g.name) + '</button>'
+        : '') +
+      '</div>';
+    var titre = scope === 'groupement'
+      ? 'À pousser : son groupement le prend, pas elle'
+      : 'À pousser : tout le réseau le prend, pas elle';
+    var soustitre = scope === 'groupement'
+      ? 'produits que le plus de pharmacies de ' + esc(g.name) + ' commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × ta remise'
+      : 'produits que le plus de pharmacies du réseau commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × ta remise';
+    var open = sectionOpen('netreco');
+    if (!reco.length) {
+      // groupement sélectionné mais trop peu de pharmacies / aucune reco → on garde le sélecteur
+      if (scope === 'reseau') return '';
+      return '<div class="ph-section">' +
+        sectionHead(titre, soustitre, 'netreco', open) +
+        (open ? '<div class="v2-card" style="padding:14px">' + toggle +
+          '<div style="color:var(--muted);font-size:13px;padding:8px 4px">Pas assez de pharmacies de ce groupement dans tes données pour comparer. Bascule sur « Réseau Intégral Pharma ».</div></div>' : '') +
+        '</div>';
+    }
     var totalGain = reco.reduce(function (s, r) { return s + (r.gain || 0); }, 0);
     var rows = reco.map(function (r, i) {
       var on = selCips && selCips.has(r.cip);
@@ -337,12 +392,10 @@
           '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF RDV">' + (on ? '✓' : '+') + '</button>' +
         '</div>';
     }).join('');
-    var open = sectionOpen('netreco');
     return '<div class="ph-section">' +
-      sectionHead('À pousser : tout le réseau le prend, pas elle',
-        'produits que le plus de pharmacies du réseau commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × ta remise',
-        'netreco', open) +
+      sectionHead(titre, soustitre, 'netreco', open) +
       (open ? '<div class="v2-card" style="padding:6px 0">' +
+        '<div style="padding:10px 12px 4px">' + toggle + '</div>' +
         '<div class="ipv-row" style="background:var(--card-2)"><span class="ipv-rank"></span><span class="ipv-name" style="font-weight:700">Potentiel total de cette liste</span><span class="ipv-vol" style="color:var(--c-opp);font-weight:800">+' + V2.fmtEur(totalGain) + '<small>/an</small></span><span style="width:30px"></span></div>' +
         rows + '</div>' : '') +
       '</div>';
@@ -1964,6 +2017,10 @@
       // ── Best-sellers IP à pousser (analyse volumes) ──
       '.ipv-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line)}',
       '.ipv-row:last-child{border-bottom:none}',
+      '.net-scope{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}',
+      '.net-scope-b{flex:0 1 auto;padding:7px 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);font-family:var(--font);font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,border-color .15s}',
+      '.net-scope-b:hover{color:var(--ip-ink)}',
+      '.net-scope-b.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}',
       '.ipv-rank{flex-shrink:0;width:44px;font-size:12px;font-weight:700;color:var(--ip-blue);font-variant-numeric:tabular-nums}',
       '.ipv-name{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.ipv-vol{flex-shrink:0;font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}',
