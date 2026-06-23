@@ -32,6 +32,7 @@
   var selGroup = null;        // groupement ouvert
   var netScope = 'reseau';    // réf. de la reco fiche : 'reseau' (réseau IP) | 'groupement' (son groupement)
   var recoFam = null;         // famille active dans la fiche officine (master-détail)
+  var recoInitKey = null;     // (pid|scope) déjà pré-sélectionné ? — tout coché par défaut
   var selList = null;         // liste personnalisée ouverte (id)
   var grpCollapsed = {};      // repli des catégories en vue groupement / liste
 
@@ -885,6 +886,16 @@
     var data = buildRecoCats(pid, tog.scope);
     var totalOpp = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
 
+    // Tout coché par défaut → la liste d'achats est prête direct ; Will décoche ce qu'il
+    // ne veut pas. On (re)pré-sélectionne à la 1ère ouverture de l'officine ET à chaque
+    // changement de référence (réseau ↔ groupement = nouvelle liste).
+    var initKey = String(pid) + '|' + tog.scope;
+    if (recoInitKey !== initKey) {
+      recoInitKey = initKey;
+      selPid = String(pid); selCips = new Set();
+      data.cats.forEach(function (o) { o.rows.forEach(function (r) { selCips.add(r.cip); }); });
+    }
+
     // Famille active (master-détail) : défaut = 1ère famille non vide.
     var famKeys = data.cats.map(function (o) { return o.cat.key; });
     if (!recoFam || famKeys.indexOf(recoFam) < 0) recoFam = famKeys[0] || null;
@@ -972,7 +983,7 @@
           '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
             '<th class="phf-tl">Désignation</th><th>Prix net IP</th><th>Remise</th><th class="phf-tc">Sortie</th><th>Volume</th><th class="phf-tc">Type</th><th class="phf-th-check">PDF</th>' +
           '</tr></thead><tbody>' + trs + '</tbody></table></div>' +
-          '<div class="phf-foot">' + ICO('spark', 14) + ' Famille <b style="margin:0 4px">' + esc(active.cat.label) + '</b> — ' + active.rows.length + ' référence' + (active.rows.length > 1 ? 's' : '') + ' à pousser sur ' + totalOpp + ' au total. Coche pour ajouter à la liste d\'achats.</div>' +
+          '<div class="phf-foot">' + ICO('spark', 14) + ' Famille <b style="margin:0 4px">' + esc(active.cat.label) + '</b> — ' + active.rows.length + ' référence' + (active.rows.length > 1 ? 's' : '') + ' à pousser sur ' + totalOpp + ' au total. Tout est coché — décoche ce que tu ne veux pas dans la liste d\'achats.</div>' +
         '</section>';
     }
 
@@ -1123,12 +1134,27 @@
     // Si Will a coché des produits (bouton +) → le PDF ne contient QUE sa sélection.
     // Sinon → top marché par catégorie (15 max), comportement par défaut.
     var useSel = !!(selCips && selCips.size && String(selPid) === String(pid));
-    var sections = opps.map(function (o) {
-      var rows = useSel
-        ? o.rows.filter(function (r) { return selCips.has(r.cip); })
-        : o.rows.slice(0, 15);
-      return { cat: o.cat, rows: rows, oppCount: useSel ? rows.length : o.oppCount, totalQte: o.totalQte };
-    }).filter(function (o) { return o.rows.length; });
+    var sections;
+    if (useSel) {
+      // PDF construit DIRECTEMENT depuis la sélection cochée (même liste que la fiche :
+      // produits que la référence prend et qu'elle n'a pas), groupée par familles.
+      var bIdxP = benchIndex(), buckP = {};
+      CATS.forEach(function (c) { buckP[c.key] = []; });
+      selCips.forEach(function (cip) {
+        var b = bIdxP.get(String(cip)); if (!b) return;
+        var cat = classify(b, cip); if (!cat || !buckP[cat]) return;
+        var bp = V2.bestPrice(b);
+        buckP[cat].push({ cip: String(cip), designation: b.designation || '', prix_ip: bp.ip, marketQte: rotationYear(cip) || 0 });
+      });
+      sections = CATS.map(function (c) {
+        var rows = buckP[c.key].sort(function (a, b) { return (b.marketQte || 0) - (a.marketQte || 0); });
+        return { cat: c, rows: rows, oppCount: rows.length, totalQte: rows.reduce(function (s, r) { return s + (r.marketQte || 0); }, 0) };
+      }).filter(function (o) { return o.rows.length; });
+    } else {
+      sections = opps.map(function (o) {
+        return { cat: o.cat, rows: o.rows.slice(0, 15), oppCount: o.oppCount, totalQte: o.totalQte };
+      }).filter(function (o) { return o.rows.length; });
+    }
 
     var catSections = sections.map(function (o) {
       var rows = o.rows.map(function (r, i) {
