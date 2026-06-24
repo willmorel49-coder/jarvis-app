@@ -177,7 +177,8 @@
   var ROUTE_ACCENT = {
     home: 'var(--accent)', pharma: 'var(--pil-opp)', fiches: 'var(--pil-fiche)',
     catalogue: 'var(--pil-cat)', pilotage: 'var(--pil-pilo)', offilog: 'var(--pil-froid)',
-    groupements: 'var(--pil-fiche)'
+    groupements: 'var(--pil-fiche)', molecules: '#7C3AED', presentation: 'var(--c-opp)',
+    infos: 'var(--c-amber)', marketing: 'var(--c-rose)'
   };
   function accentFor(name) {
     if (name === 'marketing') return (window.V2_BRAND && window.V2_BRAND.opso) ? 'var(--pil-fiche)' : 'var(--pil-rose)';
@@ -532,7 +533,7 @@
       } else {
         var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
         // Fusion en espaces à onglets : Catalogue grossiste + Par produit + Offilog → une seule tuile ;
-        // Fiches + Présentation → une seule tuile. Les pages restent accessibles via les onglets.
+        // catalogue/offilog repliés ailleurs, fiches retiré. Pages masquées encore atteignables via ⌘K.
         if (pmap.molecules) {
           pmap.molecules.t = 'Catalogue & prix';
           pmap.molecules.d = 'Tous les produits par familles : rotation et marge réseau par CIP, ton prix net et ta remise.';
