@@ -1378,7 +1378,6 @@
   function pharmaTabs(active) {
     return '<div class="ph-vtabs">' +
       '<button class="ph-vtab' + (active === 'officines' ? ' on' : '') + '" onclick="V2.pharmaView(\'officines\')">' + ICO('pharma', 15, 2) + 'Officines</button>' +
-      '<button class="ph-vtab' + (active === 'groupements' ? ' on' : '') + '" onclick="V2.pharmaView(\'groupements\')">' + ICO('grid', 15, 2) + 'Groupements</button>' +
       '<button class="ph-vtab' + (active === 'listes' ? ' on' : '') + '" onclick="V2.pharmaView(\'listes\')">' + ICO('fiche', 15, 2) + 'Mes listes</button>' +
       '<button class="ph-vtab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.pharmaView(\'carte\')">' + ICO('grid', 15, 2) + 'Carte secteur</button>' +
     '</div>';
@@ -1482,11 +1481,11 @@
         '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
       '</a>';
     }).join('') || '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement.</div></div>';
-    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+    root.innerHTML = V2.topbar({ back: true, backTo: 'groupements', backLabel: 'Groupements' }) +
       '<div class="v2-wrap">' +
-        '<div class="v2-page-title">Opportunités pharmacie</div>' +
-        '<div class="v2-page-sub">Par groupement · ce que commandent les pharmacies adhérentes</div>' +
-        pharmaTabs('groupements') +
+        '<div class="v2-page-title">Groupements</div>' +
+        '<div class="v2-page-sub">Opportunités par groupement · ce que commandent les pharmacies adhérentes — liste d\'achats à pousser</div>' +
+        (V2.grpSpaceTabs ? V2.grpSpaceTabs('opp') : '') +
         '<div class="v2-card" style="margin-top:16px">' + rows + '</div>' +
       '</div>';
   }
