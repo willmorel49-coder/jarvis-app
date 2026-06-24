@@ -414,19 +414,21 @@
       st = computeStats('grp:' + g.name, g.set); total = st.total;
     } else { st = computeStats('__net__', null); total = st.total; }
     var stats = st.map, bIdx = benchIndex();
+    var grpScope = (scope === 'groupement');
     var owned = new Set();
     pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
-    // Seuil de pénétration PAR FAMILLE, adapté à la diffusion réelle de chaque famille :
-    // les petits prix sont des staples (35%), les familles spécialistes (biosimilaires,
-    // chers, froid) sont peu diffusées par nature → seuil bas, sinon elles n'apparaissent pas.
-    var PEN = { pp: 0.35, mi: 0.10, gen: 0.10, genp: 0.10, nr: 0.10, ch: 0.05, froid: 0.05, biosim: 0.03 };
-    var penFor = function (k) { return PEN[k] != null ? PEN[k] : 0.10; };
+    // RÉSEAU : seuil de pénétration par famille (bas, pour avoir BEAUCOUP de produits et
+    // bien répartis) + plafond par famille (équilibre, aucune famille n'écrase les autres).
+    // GROUPEMENT : on prend TOUT ce que le groupement commande et qu'elle n'a pas (aucun seuil).
+    var PEN = { pp: 0.20, mi: 0.08, gen: 0.08, genp: 0.08, nr: 0.08, ch: 0.04, froid: 0.04, biosim: 0.02 };
+    var penFor = function (k) { return PEN[k] != null ? PEN[k] : 0.08; };
+    var CAP = grpScope ? 200 : 40;   // plafond par famille
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     stats.forEach(function (e, cip) {
       if (owned.has(cip)) return;
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
-      if (e.ph.size < Math.max(2, Math.ceil(total * penFor(cat)))) return;
+      if (!grpScope && e.ph.size < Math.max(2, Math.ceil(total * penFor(cat)))) return;  // réseau : seuil
       var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
       var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       buckets[cat].push({ cip: cip, designation: b.designation || '', prix_ht: ht, prix_ip: ip, offre: bp.offre,
@@ -435,7 +437,7 @@
     return {
       panel: total, total: total,
       cats: CATS.map(function (c) {
-        return { cat: c, rows: buckets[c.key].sort(function (a, b) { return b.sortie - a.sortie || b.qte - a.qte; }) };
+        return { cat: c, rows: buckets[c.key].sort(function (a, b) { return b.sortie - a.sortie || b.qte - a.qte; }).slice(0, CAP) };
       }).filter(function (o) { return o.rows.length; })
     };
   }
