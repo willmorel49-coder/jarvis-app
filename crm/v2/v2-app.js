@@ -75,14 +75,12 @@
     }).join('') + '</div>';
   }
   V2.priceTabs = function (active) {
-    var t = [['molecules', 'Par produit']];
-    if (V2.pages.offilog) t.push(['offilog', 'Offilog & concurrents']);
-    return subnav(t, active);
+    // « Catalogue & prix » = la vue par produit seule (Offilog est désormais un item à part).
+    return '';
   };
   V2.docTabs = function (active) {
-    var t = [['fiches', 'Fiches']];
-    if (V2.pages.presentation) t.push(['presentation', 'Présentation']);
-    return subnav(t, active);
+    // Prospection = Présentation seule (les Fiches ne sont plus dans cet espace) → pas d'onglets.
+    return '';
   };
 
   V2.userMenu = function () {
@@ -533,21 +531,26 @@
         // Fiches + Présentation → une seule tuile. Les pages restent accessibles via les onglets.
         if (pmap.molecules) {
           pmap.molecules.t = 'Catalogue & prix';
-          pmap.molecules.d = 'Tous les produits par familles (rotation et marge réseau par CIP) et la veille Offilog/concurrents — réunis en onglets.';
+          pmap.molecules.d = 'Tous les produits par familles : rotation et marge réseau par CIP, ton prix net et ta remise.';
           pmap.molecules.go = 'Ouvrir le catalogue';
         }
-        if (pmap.fiches) {
-          pmap.fiches.t = 'Fiches & présentation';
-          pmap.fiches.d = 'Crée tes fiches produit en PDF et lance le pitch Intégral Pharma — au même endroit, en onglets.';
-          pmap.fiches.go = 'Créer une fiche';
+        if (pmap.presentation) {
+          pmap.presentation.t = 'Présentation Intégral Pharma';
+          pmap.presentation.d = 'Le pitch prospection à montrer au comptoir : qui est Intégral Pharma et comment travailler avec nous.';
+          pmap.presentation.go = 'Lancer la présentation';
+        }
+        if (pmap.offilog) {
+          pmap.offilog.t = 'Grossistes concurrents';
+          pmap.offilog.d = 'Ta parapharma : ton prix d\'achat IP comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000. Repère où un concurrent casse les prix.';
+          pmap.offilog.go = 'Comparer les concurrents';
         }
         var MOMENTS = [
-          { n: 1, lbl: 'Préparer ma tournée', c: 'var(--ip-blue)', keys: ['pharma', 'groupements', 'pilotage'] },
-          { n: 2, lbl: 'En rendez-vous', c: 'var(--c-mint)', keys: ['molecules', 'fiches'] },
-          { n: 3, lbl: 'Marketing & suivi', c: 'var(--c-rose)', keys: ['marketing'] },
+          { n: 1, lbl: 'Préparer ma tournée', c: 'var(--ip-blue)', keys: ['pharma', 'pilotage'] },
+          { n: 2, lbl: 'En rendez-vous', c: 'var(--c-mint)', keys: ['molecules', 'presentation'] },
+          { n: 3, lbl: 'Marketing, groupements & concurrents', c: 'var(--c-rose)', keys: ['marketing', 'groupements', 'offilog'] },
         ];
-        // catalogue / offilog / presentation sont repliés dans les onglets ci-dessus → pas de tuile propre
-        var used = { catalogue: 1, offilog: 1, presentation: 1 };
+        // catalogue replié dans « Catalogue & prix » ; fiches retiré (prospection = présentation seule)
+        var used = { catalogue: 1, fiches: 1 };
         pilHtml = MOMENTS.map(function (m) {
           var tiles = m.keys.map(function (k) { if (!pmap[k]) return ''; used[k] = 1; return tile(pmap[k]); }).filter(Boolean).join('');
           if (!tiles) return '';
@@ -581,7 +584,8 @@
   function buildCmdkIndex() {
     var idx = [];
     // Pages
-    var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['fiches', 'Fiches commerciales', 'fiche'], ['offilog', 'Offilog & concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
+    var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Grossistes concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
+    if (window.V2_BRAND && window.V2_BRAND.opso) PAGES.splice(2, 0, ['fiches', 'Fiches commerciales', 'fiche']); // OPSO garde les fiches
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(3, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
