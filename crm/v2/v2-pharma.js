@@ -948,7 +948,8 @@
         '</div>' +
         '<div class="phf-bar2r">' +
           '<span class="phf-selcount" id="phf-selcount">Sélection <b class="mono">' + (selCips ? selCips.size : 0) + '</b>/' + totalOpp + '</span>' +
-          '<button id="v2-opp-pdf" class="phf-pdf" onclick="V2.pharmaPrepaPreview(\'' + esc(String(pid)) + '\')">' + ICO('download', 16) + 'Liste d\'achats (PDF)</button>' +
+          '<button id="v2-opp-pdf" class="phf-pdf" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\')">' + ICO('download', 16) + 'Liste d\'achats (PDF)</button>' +
+          (V2.canShareFiles && V2.canShareFiles() ? '<button class="phf-pdf phf-pdf-ghost" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
         '</div>' +
       '</div>';
 
@@ -1033,10 +1034,10 @@
       if (nEl) nEl.textContent = n;
       if (lEl) lEl.textContent = 'produit' + (n > 1 ? 's' : '') + ' retenu' + (n > 1 ? 's' : '');
       if (gEl) {
-        gEl.innerHTML = ICO('download', 16) + (grp ? 'Liste d\'achats' : 'Préparer le RDV');
+        gEl.innerHTML = ICO('download', 16) + 'Liste d\'achats';
         gEl.onclick = function () {
           if (grp) { V2.grpDownloadPdf(encodeURIComponent(String(selPid).slice(4))); }
-          else { V2.pharmaPrepaPreview(String(selPid)); }
+          else { V2.pharmaListPdf(String(selPid)); }
         };
       }
       bar.classList.add('show');
@@ -1783,6 +1784,16 @@
     var l = listGet(id); if (!l) return;
     achatsPdf(l.name, productsForIds(listIdsObj(l), 'LST:' + id), !!(selCips && selCips.size && selPid === 'LST:' + id), mode);
   };
+  // PDF officine = liste d'achats PURE (même format que le groupement, SANS récap RDV)
+  V2.pharmaListPdf = function (pid, mode) {
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    if (!pharma) { V2.toast('Pharmacie introuvable', 'error'); return; }
+    if (!window.BENCHMARK) { V2.toast('Catalogue en cours de chargement…'); V2.loadFiles(['bench', 'sagitta']).then(function () {}); return; }
+    var tog = recoScopeToggle(pid);
+    var data = buildRecoCats(pid, tog.scope);
+    var useSel = !!(selCips && selCips.size && String(selPid) === String(pid));
+    achatsPdf(pharma.name, data, useSel, mode);
+  };
   V2.grpToggleCat = function (catKey) {
     var key = 'g_' + catKey, idx = -1;
     for (var i = 0; i < CATS.length; i++) { if (CATS[i].key === catKey) { idx = i; break; } }
@@ -2248,6 +2259,8 @@
       '.phf-pdf{display:inline-flex;align-items:center;gap:8px;background:var(--ip-blue);color:#fff;border:0;border-radius:var(--r-btn);padding:11px 17px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-2);transition:background .15s,transform .1s}',
       '.phf-pdf:hover{background:var(--ip-blue-d)}',
       '.phf-pdf:active{transform:translateY(1px)}',
+      '.phf-pdf-ghost{background:var(--card);color:var(--ip-blue);border:1px solid var(--line-strong);box-shadow:none}',
+      '.phf-pdf-ghost:hover{background:var(--card-2);border-color:var(--ip-blue)}',
       '.phf-fambar{display:none}',
       '.phf-tablewrap{overflow-x:auto}',
       '.phf-tbl{width:100%;border-collapse:collapse;font-size:13px}',
