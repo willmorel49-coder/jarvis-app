@@ -1796,8 +1796,12 @@
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
     V2.toast('Génération du PDF…');
     function e2(v) { return (v ? v.toFixed(2).replace('.', ',') : '0,00') + ' €'; }
+    // Plafond par famille : html2pdf/html2canvas a une hauteur de rendu max — au-delà,
+    // le PDF est coupé. On garde le TOP par famille (déjà trié par sortie/rotation).
+    var PDF_CAP = 35, truncated = false;
     var sections = data.cats.map(function (o) {
       var rows = (useSel && selCips) ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows;
+      if (rows.length > PDF_CAP) { rows = rows.slice(0, PDF_CAP); truncated = true; }
       return { cat: o.cat, rows: rows };
     }).filter(function (o) { return o.rows.length; });
     var totalProd = sections.reduce(function (s, o) { return s + o.rows.length; }, 0);
@@ -1865,7 +1869,7 @@
         (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
         // Pied
         '<div style="margin-top:16px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
-          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau au ' + dateStr + '.<br>Prix nets HT indicatifs. Sortie = nb de pharmacies de la référence commandant le produit / ' + panel + '.</div>' +
+          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau au ' + dateStr + '.<br>Prix nets HT indicatifs. Sortie = nb de pharmacies de la référence commandant le produit / ' + panel + '.' + (truncated ? '<br>Top ' + PDF_CAP + ' par famille (les plus commandés) — pour cocher d\'autres produits, sélectionne-les dans l\'app avant l\'export.' : '') + '</div>' +
           '<div style="text-align:right;font-size:8.5px;color:#A8AFBE;white-space:nowrap">' + esc(grpName) + (pharma && pharma.ville ? '<br>' + esc(pharma.ville) : '') + '</div>' +
         '</div>' +
       '</div>' +
