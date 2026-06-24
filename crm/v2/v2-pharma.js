@@ -416,14 +416,15 @@
     var stats = st.map, bIdx = benchIndex();
     var owned = new Set();
     pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
-    var MINPEN = 0.25;                 // top : au moins 25% des pharmacies de la réf. le commandent déjà
-    var seuil = Math.max(2, Math.ceil(total * MINPEN));
+    // Seuil de pénétration PAR FAMILLE : petits prix exigeants (35%), tout le reste large (10%)
+    // — sinon les intermédiaires et les produits chers (moins diffusés) n'apparaissent pas.
+    var penFor = function (k) { return k === 'pp' ? 0.35 : 0.10; };
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     stats.forEach(function (e, cip) {
       if (owned.has(cip)) return;
-      if (e.ph.size < seuil) return;   // garde uniquement les produits très répandus dans la réf.
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
+      if (e.ph.size < Math.max(2, Math.ceil(total * penFor(cat)))) return;
       var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
       var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       buckets[cat].push({ cip: cip, designation: b.designation || '', prix_ht: ht, prix_ip: ip, offre: bp.offre,
