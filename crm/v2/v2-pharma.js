@@ -416,9 +416,12 @@
     var stats = st.map, bIdx = benchIndex();
     var owned = new Set();
     pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
+    var MINPEN = 0.40;                 // top : au moins 40% des pharmacies de la réf. le commandent déjà
+    var seuil = Math.max(2, Math.ceil(total * MINPEN));
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     stats.forEach(function (e, cip) {
       if (owned.has(cip)) return;
+      if (e.ph.size < seuil) return;   // garde uniquement les produits très répandus dans la réf.
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
@@ -918,12 +921,19 @@
             (email ? '<a class="phf-cbtn" href="mailto:' + esc(email) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
           '</div>' : '') +
         '</div>' +
+        // Comparer avec (EN HAUT — sélection directe réseau / groupement)
+        '<div class="phf-refbox"><div class="phf-ref-h">Comparer avec</div>' +
+          '<div class="phf-segref">' +
+            '<button class="phf-segref-b' + (tog.scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')">Réseau Intégral</button>' +
+            (tog.name ? '<button class="phf-segref-b' + (tog.scope === 'groupement' ? ' on' : '') + '" onclick="V2.setNetScope(\'groupement\')">' + esc(tog.name) + '</button>' : '') +
+          '</div>' +
+        '</div>' +
         // KPIs
         '<div class="phf-kpis">' +
           '<div class="phf-kpi"><span class="phf-kpi-l">CA cumulé</span><span class="phf-kpi-v mono">' + V2.fmtEur(ca) + '</span></div>' +
           '<div class="phf-kpi"><span class="phf-kpi-l">Marge MDL générée</span><span class="phf-kpi-v phf-pos mono">' + V2.fmtEur(marge) + '</span></div>' +
           '<div class="phf-kpi"><span class="phf-kpi-l">Références commandées</span><span class="phf-kpi-v mono">' + V2.fmtNum(nbRefs) + '</span></div>' +
-          '<div class="phf-kpi"><span class="phf-kpi-l">Produits à pousser</span><span class="phf-kpi-v phf-push mono">' + V2.fmtNum(totalOpp) + '</span></div>' +
+          '<div class="phf-kpi"><span class="phf-kpi-l">Top à pousser</span><span class="phf-kpi-v phf-push mono">' + V2.fmtNum(totalOpp) + '</span></div>' +
         '</div>' +
         // Familles (master)
         (data.cats.length ? '<div class="phf-fam-title">Familles à pousser</div><nav class="phf-famlist">' +
@@ -933,11 +943,6 @@
               '<span class="phf-fam-nm">' + esc(o.cat.label) + '</span>' +
               '<span class="phf-fam-ct mono">' + o.rows.length + '</span></button>';
           }).join('') + '</nav>' : '') +
-        // Référence
-        '<div class="phf-refbox"><div class="phf-ref-h">Comparer avec</div>' +
-          '<button class="phf-ref' + (tog.scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')"><span class="phf-radio"></span><span><span class="phf-ref-t">Réseau Intégral Pharma</span><span class="phf-ref-s">toutes les pharmacies IP</span></span></button>' +
-          (tog.name ? '<button class="phf-ref' + (tog.scope === 'groupement' ? ' on' : '') + '" onclick="V2.setNetScope(\'groupement\')"><span class="phf-radio"></span><span><span class="phf-ref-t">Son groupement · ' + esc(tog.name) + '</span><span class="phf-ref-s">pharmacies du groupement</span></span></button>' : '') +
-        '</div>' +
       '</aside>';
 
     // ── Panneau droit : produits de la famille active ──
@@ -2195,6 +2200,10 @@
       '.phf-ref.on .phf-radio::after{content:"";position:absolute;inset:2px;border-radius:50%;background:var(--ip-blue)}',
       '.phf-ref-t{font-size:13px;font-weight:700;line-height:1.2;display:block}',
       '.phf-ref-s{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px;display:block}',
+      '.phf-segref{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-btn);padding:4px}',
+      '.phf-segref-b{flex:1;padding:9px 8px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,color .15s}',
+      '.phf-segref-b:hover{color:var(--ip-ink)}',
+      '.phf-segref-b.on{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-1)}',
       '.phf-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden;min-width:0}',
       '.phf-phead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}',
       '.phf-ptitle{font-size:18px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}',
@@ -2241,7 +2250,7 @@
       '.phf-foot{padding:13px 22px;background:var(--card-2);border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:7px}',
       '.phf-empty{padding:48px 24px;text-align:center;color:var(--muted);font-size:14px}',
       '@media(max-width:900px){.phf-shell{grid-template-columns:1fr}.phf-rail{position:static}.phf-fam-title,.phf-famlist{display:none}' +
-        '.phf-fambar{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}' +
+        '.phf-fambar{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch;position:sticky;top:0;background:var(--card);z-index:6}' +
         '.phf-fchip{flex:none;display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid var(--line-strong);border-radius:var(--r-pill);background:var(--card);font:inherit;font-size:13px;font-weight:600;color:var(--ip-ink);cursor:pointer;white-space:nowrap}' +
         '.phf-fchip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}' +
         '.phf-fchip.on .phf-fam-ct{background:rgba(255,255,255,.22);color:#fff}}',
