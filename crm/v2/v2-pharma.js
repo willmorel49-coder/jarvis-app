@@ -416,9 +416,11 @@
     var stats = st.map, bIdx = benchIndex();
     var owned = new Set();
     pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
-    // Seuil de pénétration PAR FAMILLE : petits prix exigeants (35%), tout le reste large (10%)
-    // — sinon les intermédiaires et les produits chers (moins diffusés) n'apparaissent pas.
-    var penFor = function (k) { return k === 'pp' ? 0.35 : 0.10; };
+    // Seuil de pénétration PAR FAMILLE, adapté à la diffusion réelle de chaque famille :
+    // les petits prix sont des staples (35%), les familles spécialistes (biosimilaires,
+    // chers, froid) sont peu diffusées par nature → seuil bas, sinon elles n'apparaissent pas.
+    var PEN = { pp: 0.35, mi: 0.10, gen: 0.10, genp: 0.10, nr: 0.10, ch: 0.05, froid: 0.05, biosim: 0.03 };
+    var penFor = function (k) { return PEN[k] != null ? PEN[k] : 0.10; };
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     stats.forEach(function (e, cip) {
       if (owned.has(cip)) return;
