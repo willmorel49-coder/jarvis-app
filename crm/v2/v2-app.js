@@ -484,6 +484,10 @@
         { k: 'offilog', cls: 'p5', accent: 'var(--c-froid)', ico: 'spark', tag: 'Veille', t: 'Offilog & concurrents', d: 'Ta parapharma : ton prix d\'achat IP comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000. Repère où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
         { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: V2.fmtK(caTotal) + ' €', t: 'Pilotage CA & marge', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
       ];
+      // Infos du matin (brief quotidien) — app JARVIS
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
+        P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'Ton brief du jour : le focus produit du jour, les offres labo en cours et le top marge réseau. Pour démarrer ta tournée.', go: 'Voir le brief' });
+      }
       // Pilier Molécules (analyse réseau : rotation + marge pharmacien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) {
         P.push({ k: 'molecules', cls: 'p3', accent: '#7C3AED', ico: 'cat', tag: 'Réseau', t: 'Par molécule', d: 'Ce qu\'une pharmacie moyenne fait sur chaque molécule : rotation, marge pharmacien et ta remise. Pour chiffrer ce que ça rapporte au comptoir.', go: 'Voir les molécules' });
@@ -545,7 +549,7 @@
           pmap.offilog.go = 'Comparer les concurrents';
         }
         var MOMENTS = [
-          { n: 1, lbl: 'Préparer ma tournée', c: 'var(--ip-blue)', keys: ['pharma', 'pilotage'] },
+          { n: 1, lbl: 'Préparer ma tournée', c: 'var(--ip-blue)', keys: ['infos', 'pharma', 'pilotage'] },
           { n: 2, lbl: 'En rendez-vous', c: 'var(--c-mint)', keys: ['molecules', 'presentation'] },
           { n: 3, lbl: 'Marketing, groupements & concurrents', c: 'var(--c-rose)', keys: ['marketing', 'groupements', 'offilog'] },
         ];
@@ -588,6 +592,7 @@
     if (window.V2_BRAND && window.V2_BRAND.opso) PAGES.splice(2, 0, ['fiches', 'Fiches commerciales', 'fiche']); // OPSO garde les fiches
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(3, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) PAGES.push(['presentation', 'Présentation Intégral Pharma', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) PAGES.push(['groupements', 'Groupements (carte)', 'grid']);
