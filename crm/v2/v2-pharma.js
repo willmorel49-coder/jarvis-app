@@ -1735,8 +1735,8 @@
           '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px">' + V2.fmtNum(r.qte) + '</td>' +
           '</tr>';
       }).join('');
-      return '<div style="margin-bottom:13px;page-break-inside:avoid">' +
-        '<div style="display:flex;align-items:center;gap:9px;padding:7px 11px;background:linear-gradient(90deg,' + o.cat.color + '22,transparent);border-left:4px solid ' + o.cat.color + ';border-radius:5px;margin-bottom:5px">' +
+      return '<div style="margin-bottom:13px">' +
+        '<div style="display:flex;align-items:center;gap:9px;padding:7px 11px;background:linear-gradient(90deg,' + o.cat.color + '22,transparent);border-left:4px solid ' + o.cat.color + ';border-radius:5px;margin-bottom:5px;page-break-after:avoid">' +
           '<div style="font-size:12px;font-weight:800;color:#10131C">' + esc(o.cat.label) + '</div></div>' +
         '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#F4F6FB">' +
           ['#', 'Produit', 'CIP13', 'Prix net', 'Remise', 'Sortie', 'Volume'].map(function (h, k) {
@@ -1763,7 +1763,7 @@
       var worker = window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
       });
       function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); }
       if (mode === 'share' && V2.shareOrSaveBlob) {
