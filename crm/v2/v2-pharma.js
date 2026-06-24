@@ -2146,6 +2146,10 @@
 
   V2.pages.pharma = {
     render: function (root, param) {
+      // deep-link d'une sous-vue depuis l'accueil/⌘K : V2.go('pharma','groupements'|'listes'|'carte'|'officines')
+      if (param === 'groupements' || param === 'listes' || param === 'carte' || param === 'officines') {
+        pharmaView = param; selGroup = null; selList = null; param = null;
+      }
       if (param) { renderDetail(root, param); return; }
       if (pharmaView === 'groupements') {
         if (selGroup) renderGroupementDetail(root, selGroup);
