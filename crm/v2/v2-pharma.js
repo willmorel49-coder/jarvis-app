@@ -1663,7 +1663,60 @@
     if (c) c.textContent = n + ' sélectionné' + (n > 1 ? 's' : '');
   }
   // Générateur PDF générique « liste d'achats » (groupement OU liste perso)
-  function achatsPdf(title, data, useSel, mode) {
+  // Récap d'une officine pour le PDF (KPIs + CA/mois + commandé par tranche) — comble
+  // le haut de page et donne le contexte RDV. Vide pour les PDF groupement/liste.
+  function recapPdfHtml(pid) {
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    if (!pharma) return '';
+    var sales = pharmaSales(pid);
+    if (!sales.length) return '';
+    var MONO = "'Geist Mono',ui-monospace,monospace";
+    var ca = V2.sumCA(sales), marge = margeMDLpharma(sales);
+    var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); }).filter(function (c) { return c.length >= 7; })).size;
+    var months = monthlyCA(sales);
+    var maxM = months.reduce(function (m, x) { return Math.max(m, x.ca); }, 1);
+    var bars = months.map(function (m) {
+      var w = m.ca > 0 ? Math.max(4, m.ca / maxM * 100) : 0;
+      return '<div style="display:flex;align-items:center;gap:9px;padding:4px 0;border-bottom:1px solid #F4F6FB">' +
+        '<span style="width:30px;font-size:9px;color:#737A8C;font-weight:700">' + cap(MN_SHORT[m.month - 1]) + '</span>' +
+        '<div style="flex:1;height:11px;background:#EEF1F6;border-radius:6px;overflow:hidden"><div style="height:100%;width:' + w + '%;background:linear-gradient(90deg,#0050E6,#0034A0);border-radius:6px"></div></div>' +
+        '<span style="width:48px;text-align:right;font-size:9px;font-weight:700;font-family:' + MONO + ';color:#10131C">' + V2.fmtK(m.ca) + '</span>' +
+      '</div>';
+    }).join('');
+    var oc = ownedByCat(sales);
+    var trRows = CATS.map(function (c) { var b = oc.buckets[c.key]; return { c: c, refs: b.refs.size, ca: b.ca, mdl: b.mdl }; })
+      .filter(function (r) { return r.refs > 0; }).sort(function (a, b) { return b.ca - a.ca; })
+      .map(function (r) {
+        return '<tr style="border-bottom:1px solid #F0F2F7">' +
+          '<td style="padding:4px 7px;font-size:9px;font-weight:600;color:#10131C"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + r.c.color + ';margin-right:6px;vertical-align:middle"></span>' + esc(r.c.label) + '</td>' +
+          '<td style="padding:4px 7px;text-align:right;font-size:9px;font-family:' + MONO + '">' + V2.fmtNum(r.refs) + '</td>' +
+          '<td style="padding:4px 7px;text-align:right;font-size:9px;font-family:' + MONO + ';font-weight:700">' + V2.fmtEur(r.ca) + '</td>' +
+          '<td style="padding:4px 7px;text-align:right;font-size:9px;font-family:' + MONO + ';color:#1E9E6A;font-weight:700">' + (r.mdl > 0 ? V2.fmtEur(r.mdl) : '—') + '</td>' +
+        '</tr>';
+      }).join('');
+    var kpiTile = function (l, v, col) {
+      return '<div style="border:1px solid #E5E9F2;border-radius:9px;padding:8px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">' + l + '</div><div style="font-size:15px;font-weight:800;color:' + col + ';font-family:' + MONO + '">' + v + '</div></div>';
+    };
+    return '<div style="page-break-inside:avoid;margin-bottom:16px">' +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px">' +
+        kpiTile('CA cumulé', V2.fmtEur(ca), '#0050E6') + kpiTile('Marge MDL', V2.fmtEur(marge), '#1E9E6A') +
+        kpiTile('Références', V2.fmtNum(nbRefs), '#6D4FC4') + kpiTile(pharma.groupement ? 'Groupement' : 'Ville', esc(pharma.groupement || pharma.ville || '—'), '#C7791A') +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1.15fr;gap:12px">' +
+        '<div style="border:1px solid #E5E9F2;border-radius:11px;padding:11px 13px"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:7px">CA par mois</div>' + (bars || '<div style="font-size:10px;color:#9AA1B2">—</div>') + '</div>' +
+        '<div style="border:1px solid #E5E9F2;border-radius:11px;padding:11px 13px"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:7px">Ce qu\'elle commande · par tranche</div>' +
+          (trRows ? '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
+            '<th style="text-align:left;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Tranche</th>' +
+            '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Réfs</th>' +
+            '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">CA</th>' +
+            '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">MDL</th>' +
+            '</tr></thead><tbody>' + trRows + '</tbody></table>' : '<div style="font-size:10px;color:#9AA1B2">Aucune commande identifiée.</div>') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function achatsPdf(title, data, useSel, mode, portraitPid) {
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
     var grpName = title;
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -1725,6 +1778,7 @@
           '<div style="margin-top:5px;display:inline-block;font-size:9px;font-weight:800;color:#fff;background:#0050E6;border-radius:20px;padding:3px 11px;font-family:' + MONO + '">' + totalProd + ' produits</div>' +
         '</div>' +
       '</div>' +
+      (portraitPid ? recapPdfHtml(portraitPid) : '') +
       (legend ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px">' + legend + '</div>' : '') +
       (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
       '<div style="margin-top:14px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;justify-content:space-between;gap:12px;font-size:7.5px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.05em">' +
@@ -1772,7 +1826,7 @@
     scope = (scope === 'groupement') ? 'groupement' : 'reseau';
     var data = buildRecoCats(pid, scope);
     var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : 'Réseau Intégral Pharma';
-    achatsPdf(pharma.name + ' — ' + label, data, false, mode);
+    achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
   };
   V2.grpToggleCat = function (catKey) {
     var key = 'g_' + catKey, idx = -1;
