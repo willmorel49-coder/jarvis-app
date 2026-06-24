@@ -889,33 +889,20 @@
     var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); })
       .filter(function (c) { return c.length >= 7; })).size;
 
-    // Liste à pousser, calée sur la référence choisie (réseau IP / son groupement).
-    // Présentation MASTER-DÉTAIL : rail gauche (officine + familles + réf.) / panneau droit (produits).
-    var tog = recoScopeToggle(pid);
-    var data = buildRecoCats(pid, tog.scope);
-    var totalOpp = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
-
-    // Tout coché par défaut → la liste d'achats est prête direct ; Will décoche ce qu'il
-    // ne veut pas. On (re)pré-sélectionne à la 1ère ouverture de l'officine ET à chaque
-    // changement de référence (réseau ↔ groupement = nouvelle liste).
-    var initKey = String(pid) + '|' + tog.scope;
-    if (recoInitKey !== initKey) {
-      recoInitKey = initKey;
-      selPid = String(pid); selCips = new Set();
-      data.cats.forEach(function (o) { o.rows.forEach(function (r) { selCips.add(r.cip); }); });
-    }
-
-    // Famille active (master-détail) : défaut = 1ère famille non vide.
-    var famKeys = data.cats.map(function (o) { return o.cat.key; });
-    if (!recoFam || famKeys.indexOf(recoFam) < 0) recoFam = famKeys[0] || null;
-    var active = data.cats.filter(function (o) { return o.cat.key === recoFam; })[0] || data.cats[0] || null;
+    // On ne montre PLUS les tableaux à l'écran (trop d'espace). On propose directement
+    // les DEUX listes d'achats en PDF : réseau Intégral et son groupement.
+    var dataR = buildRecoCats(pid, 'reseau');
+    var nReseau = dataR.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
+    var g = groupementPids(pid);
+    var hasGrp = !!(g.set && g.set.size >= 2);
+    var nGrp = hasGrp ? buildRecoCats(pid, 'groupement').cats.reduce(function (s, o) { return s + o.rows.length; }, 0) : 0;
 
     var ficheBadge = isOpso() ? ' ' + opsoBadge(pharma) : '';
     var loc = [pharma.cp, pharma.ville].filter(function (x) { return x; }).join(' ');
     var tel = (pharma.tel == null ? '' : String(pharma.tel)).trim();
     var email = (pharma.email == null ? '' : String(pharma.email)).trim();
 
-    // ── En-tête horizontal : identité + KPIs + contacts ──
+    // ── En-tête : identité + KPIs + contacts ──
     var kpi = function (l, v, cls) {
       return '<div class="phf-hkpi"><span class="phf-hkpi-l">' + l + '</span><span class="phf-hkpi-v ' + (cls || '') + ' mono">' + v + '</span></div>';
     };
@@ -930,7 +917,7 @@
           kpi('CA cumulé', V2.fmtEur(ca), '') +
           kpi('Marge MDL', V2.fmtEur(marge), 'phf-pos') +
           kpi('Références', V2.fmtNum(nbRefs), '') +
-          kpi('Top à pousser', V2.fmtNum(totalOpp), 'phf-push') +
+          kpi('À pousser', V2.fmtNum(nReseau), 'phf-push') +
         '</div>' +
         ((tel || email) ? '<div class="phf-hcontacts">' +
           (tel ? '<a class="phf-cbtn2" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
@@ -938,85 +925,39 @@
         '</div>' : '') +
       '</div>';
 
-    // ── Barre : « Comparer avec » + sélection + PDF ──
-    var bar =
-      '<div class="phf-bar2">' +
-        '<div class="phf-refwrap"><span class="phf-ref-h">Comparer avec</span>' +
-          '<div class="phf-segref">' +
-            '<button class="phf-segref-b' + (tog.scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')">Réseau Intégral</button>' +
-            (tog.name ? '<button class="phf-segref-b' + (tog.scope === 'groupement' ? ' on' : '') + '" onclick="V2.setNetScope(\'groupement\')">' + esc(tog.name) + '</button>' : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="phf-bar2r">' +
-          '<span class="phf-selcount" id="phf-selcount">Sélection <b class="mono">' + (selCips ? selCips.size : 0) + '</b>/' + totalOpp + '</span>' +
-          '<button id="v2-opp-pdf" class="phf-pdf" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\')">' + ICO('download', 16) + 'Liste d\'achats (PDF)</button>' +
-          (V2.canShareFiles && V2.canShareFiles() ? '<button class="phf-pdf phf-pdf-ghost" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
-        '</div>' +
-      '</div>';
-
-    // ── Onglets familles HORIZONTAUX ──
-    var tabs = data.cats.length ? '<div class="phf-tabs">' + data.cats.map(function (o) {
-      return '<button class="phf-tab' + (o.cat.key === recoFam ? ' on' : '') + '" onclick="V2.pharmaRecoFam(\'' + o.cat.key + '\')">' +
-        '<span class="phf-dot" style="background:' + o.cat.color + '"></span>' + esc(o.cat.label) +
-        '<span class="phf-fam-ct mono">' + o.rows.length + '</span></button>';
-    }).join('') + '</div>' : '';
-
-    // ── Tableau de la famille active (plein largeur) ──
-    var body;
-    if (!active) {
-      body = '<div class="v2-card"><div class="phf-empty">' +
-        (tog.scope === 'groupement' ? 'Pas assez de pharmacies de ce groupement dans tes données. Bascule sur « Réseau Intégral ».' : 'Cette officine commande déjà l\'essentiel du catalogue réseau.') +
-        '</div></div>';
-    } else {
-      var subt = (tog.scope === 'groupement' ? 'Produits que les pharmacies de ' + esc(tog.name) + ' commandent' : 'Produits que le réseau Intégral Pharma commande') +
-        ' et que cette officine n\'a pas — triés par nombre de pharmacies (Sortie).';
-      var trs = active.rows.map(function (r) {
-        var on = !!(selCips && selCips.has(r.cip));
-        var pct = data.panel ? Math.round(r.sortie / data.panel * 100) : 0;
-        var badges = (r.froid ? '<span class="phf-bdg phf-bdg-froid">Froid</span>' : '') + (r.offre ? '<span class="phf-bdg phf-bdg-offre">Offre</span>' : '');
-        if (!badges) badges = '<span class="phf-bdg-empty">—</span>';
-        return '<tr' + (on ? ' class="phf-picked"' : '') + ' data-cip="' + esc(r.cip) + '">' +
-          '<td class="phf-td-l"><div class="phf-desig">' + esc(cap((r.designation || '').toLowerCase())) + '</div><div class="phf-cip">' + esc(r.cip) + '</div></td>' +
-          '<td><span class="phf-price">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) : '—') + '</span></td>' +
-          '<td><span class="phf-rem' + (r.remise > 0 ? '' : ' phf-none') + '">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</span></td>' +
-          '<td class="phf-tc"><span class="phf-sortie"><span class="mono phf-sortie-n">' + r.sortie + '/' + data.panel + '</span><span class="phf-bar"><i style="width:' + pct + '%"></i></span></span></td>' +
-          '<td><span class="phf-vol mono">' + V2.fmtNum(r.qte) + '</span></td>' +
-          '<td class="phf-tc"><span class="phf-badges">' + badges + '</span></td>' +
-          '<td class="phf-td-check"><button type="button" class="phf-check' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
-        '</tr>';
-      }).join('');
-      body =
-        '<div class="v2-card" style="padding:0;overflow:hidden">' +
-          '<div class="phf-phead">' +
-            '<div class="phf-ptitle"><span class="phf-pdot" style="background:' + active.cat.color + '"></span>' + esc(active.cat.label) +
-              (active.cat.sub ? ' <span class="phf-prange mono">(' + esc(active.cat.sub) + ')</span>' : '') + '</div>' +
-            '<div class="phf-psub">' + subt + '</div>' +
-          '</div>' +
-          '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
-            '<th class="phf-tl">Désignation</th><th>Prix net IP</th><th>Remise</th><th class="phf-tc">Sortie</th><th>Volume</th><th class="phf-tc">Type</th><th class="phf-th-check">PDF</th>' +
-          '</tr></thead><tbody>' + trs + '</tbody></table></div>' +
-          '<div class="phf-foot">' + ICO('spark', 14) + ' Famille <b style="margin:0 4px">' + esc(active.cat.label) + '</b> — ' + active.rows.length + ' référence' + (active.rows.length > 1 ? 's' : '') + ' à pousser sur ' + totalOpp + ' au total. Tout est coché — décoche ce que tu ne veux pas dans la liste d\'achats.</div>' +
-        '</div>';
-    }
-
-    // Bloc STATS (pilotage de l'officine) — pour le RDV : on montre l'existant d'abord.
-    // Sections repliables (clic sur l'entête) pour n'afficher que ce qui est pertinent.
+    // ── Bloc STATS (pour le RDV) — sections repliables ──
     if (!('activity' in sectionCollapsed)) sectionCollapsed['activity'] = false; // Activité ouverte par défaut
     var stats = '<div class="ph-stats">' + activitySection(sales, marge, ca) + topByCatSection(sales) + '</div>';
+
+    // ── Deux propositions de liste d'achats (PDF) ──
+    var canShare = !!(V2.canShareFiles && V2.canShareFiles());
+    var propCard = function (scope, color, title, sub, n) {
+      if (n <= 0) return '';
+      return '<div class="phf-prop" style="--pc:' + color + '">' +
+        '<div class="phf-prop-ic">' + ICO('fiche', 22) + '</div>' +
+        '<div class="phf-prop-main"><div class="phf-prop-t">' + title + '</div><div class="phf-prop-s">' + sub + '</div></div>' +
+        '<div class="phf-prop-n mono">' + V2.fmtNum(n) + '<small>produits</small></div>' +
+        '<div class="phf-prop-acts">' +
+          '<button class="phf-pdf" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'' + scope + '\')">' + ICO('download', 16) + 'Télécharger</button>' +
+          (canShare ? '<button class="phf-pdf phf-pdf-ghost" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'' + scope + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
+        '</div>' +
+      '</div>';
+    };
+    var props = '<div class="phf-props">' +
+      propCard('reseau', 'var(--ip-blue)', 'Liste réseau Intégral Pharma', 'ce que tout le réseau commande et qu\'elle n\'a pas', nReseau) +
+      (hasGrp ? propCard('groupement', 'var(--c-opp)', 'Liste de son groupement · ' + esc(g.name), 'ce que son groupement commande et qu\'elle n\'a pas', nGrp) : '') +
+      ((nReseau <= 0 && !hasGrp) ? '<div class="v2-card"><div class="phf-empty">Cette officine commande déjà l\'essentiel du catalogue.</div></div>' : '') +
+    '</div>';
 
     // Liseré / halo contextuel : le pilier Opportunités porte SA lumière (--pil-opp).
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
         head +
         stats +
-        sectionHead('Proposition à pousser', 'sélection prête — décoche ce que tu ne veux pas, puis génère la liste d\'achats') +
-        bar + tabs + body +
-      '</div>' +
-      pharmaCartbar();
-
-    refreshCartbar();
+        sectionHead('Listes d\'achats à pousser', 'deux propositions prêtes à générer en PDF pour le rendez-vous') +
+        props +
+      '</div>';
   }
-  V2.pharmaRecoFam = function (k) { recoFam = k; V2.render(); };
 
   // ── Barre d'action collante (pattern .v2-cartbar maison) ──────────
   // Apparaît dès qu'un produit est coché : le CTA Prépa RDV reste atteignable
@@ -1729,7 +1670,7 @@
     V2.toast('Génération du PDF…');
     function e2(v) { return (v ? v.toFixed(2).replace('.', ',') : '0,00') + ' €'; }
     var sections = data.cats.map(function (o) {
-      var rows = useSel ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows.slice(0, 20);
+      var rows = useSel ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows;
       return { cat: o.cat, rows: rows };
     }).filter(function (o) { return o.rows.length; });
     var catHtml = sections.map(function (o) {
@@ -1793,15 +1734,16 @@
     var l = listGet(id); if (!l) return;
     achatsPdf(l.name, productsForIds(listIdsObj(l), 'LST:' + id), !!(selCips && selCips.size && selPid === 'LST:' + id), mode);
   };
-  // PDF officine = liste d'achats PURE (même format que le groupement, SANS récap RDV)
-  V2.pharmaListPdf = function (pid, mode) {
+  // PDF officine = liste d'achats PURE (même format que le groupement, SANS récap RDV).
+  // scope = 'reseau' (réf. réseau IP) | 'groupement' (réf. son groupement). Toute la liste.
+  V2.pharmaListPdf = function (pid, scope, mode) {
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
     if (!pharma) { V2.toast('Pharmacie introuvable', 'error'); return; }
     if (!window.BENCHMARK) { V2.toast('Catalogue en cours de chargement…'); V2.loadFiles(['bench', 'sagitta']).then(function () {}); return; }
-    var tog = recoScopeToggle(pid);
-    var data = buildRecoCats(pid, tog.scope);
-    var useSel = !!(selCips && selCips.size && String(selPid) === String(pid));
-    achatsPdf(pharma.name, data, useSel, mode);
+    scope = (scope === 'groupement') ? 'groupement' : 'reseau';
+    var data = buildRecoCats(pid, scope);
+    var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : 'Réseau Intégral Pharma';
+    achatsPdf(pharma.name + ' — ' + label, data, false, mode);
   };
   V2.grpToggleCat = function (catKey) {
     var key = 'g_' + catKey, idx = -1;
@@ -2271,6 +2213,16 @@
       '.phf-pdf:active{transform:translateY(1px)}',
       '.phf-pdf-ghost{background:var(--card);color:var(--ip-blue);border:1px solid var(--line-strong);box-shadow:none}',
       '.phf-pdf-ghost:hover{background:var(--card-2);border-color:var(--ip-blue)}',
+      '.phf-props{display:grid;gap:12px;margin-bottom:8px}',
+      '.phf-prop{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pc,var(--ip-blue));border-radius:var(--r-card);box-shadow:var(--sh-1);padding:16px 20px}',
+      '.phf-prop-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--pc,var(--ip-blue));flex:none}',
+      '.phf-prop-main{flex:1;min-width:160px}',
+      '.phf-prop-t{font-size:16px;font-weight:800;letter-spacing:-.01em}',
+      '.phf-prop-s{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:2px}',
+      '.phf-prop-n{font-size:22px;font-weight:800;color:var(--pc,var(--ip-blue));text-align:center;line-height:1}',
+      '.phf-prop-n small{display:block;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.03em;margin-top:3px}',
+      '.phf-prop-acts{display:flex;gap:8px;flex-wrap:wrap}',
+      '@media(max-width:560px){.phf-prop-acts{width:100%}.phf-prop-acts .phf-pdf{flex:1;justify-content:center}}',
       '.phf-fambar{display:none}',
       '.phf-tablewrap{overflow-x:auto}',
       '.phf-tbl{width:100%;border-collapse:collapse;font-size:13px}',
