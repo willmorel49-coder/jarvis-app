@@ -11,7 +11,7 @@ Sources :
   - ANSM informations de sécurité médicaments     -> cat "securite"
   - Le Moniteur des pharmacies (RSS)              -> cat "profession"
 """
-import urllib.request, json, re, os, sys
+import urllib.request, json, re, os, sys, html
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, date, timedelta
 
@@ -35,10 +35,8 @@ def fetch(url):
 
 
 def clean(s):
-    s = re.sub(r'<[^>]+>', '', s or '')          # retire le HTML éventuel
-    s = (s.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
-           .replace('&#39;', "'").replace('&rsquo;', "'").replace('&nbsp;', ' ')
-           .replace('&quot;', '"').replace('&laquo;', '«').replace('&raquo;', '»'))
+    s = re.sub(r'<[^>]+>', ' ', s or '')          # retire le HTML éventuel
+    s = html.unescape(s)                           # décode toutes les entités (&#8217; &rsquo; …)
     return re.sub(r'\s+', ' ', s).strip()
 
 
@@ -78,6 +76,12 @@ def items_from(feed):
         titre = clean(t)
         if not titre:
             continue
+        # résumé : description, sinon content:encoded
+        desc = it.findtext('description') or ''
+        if not desc:
+            enc = it.find('{http://purl.org/rss/1.0/modules/content/}encoded')
+            desc = enc.text if (enc is not None and enc.text) else ''
+        desc = clean(desc)
         row = {
             'cat': feed['cat'], 'source': feed['source'],
             'titre': titre, 'url': clean(link),
@@ -88,6 +92,17 @@ def items_from(feed):
             if dci:
                 row['dci'] = dci
                 row['titre'] = re.sub(r'\s*[–-]\s*\[[^\]]+\]\s*$', '', titre).strip()  # libellé sans la DCI
+            m = re.search(r'Statut\s*:\s*(.+?)\s*-\s*A partir', desc)        # ex "Tension d'approvisionnement"
+            if m: row['statut'] = m.group(1).strip()
+            md = re.search(r'A partir du\s*([0-9/]{8,10})', desc)
+            if md: row['depuis'] = md.group(1)
+        else:
+            r = re.sub(r'^Ce que vous allez apprendre\s*:?\s*', '', desc)    # préfixe template Le Moniteur
+            if re.match(r'^(Publié|Mis à jour|Statut)\b', r):                 # métadonnées ANSM seules = pas un résumé
+                r = ''
+            if len(r) > 320:
+                r = r[:320].rsplit(' ', 1)[0] + '…'
+            row['resume'] = r
         out.append(row)
         if len(out) >= feed['max']:
             break

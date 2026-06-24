@@ -15,6 +15,13 @@
   var eur = function (n) { return V2.fmtEur ? V2.fmtEur(n) : (n + ' €'); };
   function cap(s) { s = String(s == null ? '' : s); return s.charAt(0).toUpperCase() + s.slice(1); }
   function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function statutColor(s) {
+    s = norm(s || '');
+    if (s.indexOf('rupture') >= 0) return 'var(--bad)';
+    if (s.indexOf('remise') >= 0 || s.indexOf('disponible') >= 0) return 'var(--ok)';
+    if (s.indexOf('arret') >= 0) return 'var(--muted)';
+    return 'var(--warn)';   // tension d'approvisionnement
+  }
 
   var DATA = null, LOADED = false, FAILED = false;
 
@@ -110,10 +117,22 @@
         var c = CAT[k] || { label: k, color: 'var(--muted)', ico: 'spark' };
         var rows = list.map(function (i) {
           var url = i.url ? ' href="' + esc(i.url) + '" target="_blank" rel="noopener"' : '';
+          var meta = esc(i.source || '') + (frDate(i.date) ? ' · ' + frDate(i.date) : '') + (i.url ? ' · Lire l\'article' : '');
+          var mid = '';
+          if (i.cat === 'ruptures') {
+            mid = '<span class="inf-rupt"><span class="inf-statut" style="--sc:' + statutColor(i.statut) + '">' + esc(i.statut || 'Tension') + '</span>' +
+              (i.dci ? '<span class="inf-dci">' + esc(cap(i.dci)) + '</span>' : '') +
+              (i.depuis ? '<span class="inf-since">depuis le ' + esc(i.depuis) + '</span>' : '') + '</span>';
+          } else if (i.resume) {
+            mid = '<span class="inf-resume">' + esc(i.resume) + '</span>';
+          }
           return '<a class="inf-item' + (i.today ? ' inf-item--today' : '') + '"' + url + '>' +
             '<span class="inf-item-dot" style="background:' + c.color + '"></span>' +
-            '<span class="inf-item-tx">' + esc(i.titre) + (i.today ? ' <span class="inf-today">aujourd\'hui</span>' : '') +
-              '<small>' + esc(i.source || '') + (frDate(i.date) ? ' · ' + frDate(i.date) : '') + '</small></span>' +
+            '<span class="inf-item-tx">' +
+              '<span class="inf-item-tt">' + esc(i.titre) + (i.today ? ' <span class="inf-today">aujourd\'hui</span>' : '') + '</span>' +
+              mid +
+              '<small>' + meta + '</small>' +
+            '</span>' +
             (i.url ? '<span class="inf-item-go">' + ICO('chev', 15) + '</span>' : '') +
           '</a>';
         }).join('');
@@ -175,8 +194,14 @@
       '.inf-item{display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--line-2,var(--line));text-decoration:none;color:inherit}' +
       '.inf-item:last-child{border-bottom:none}.inf-item:hover{background:var(--card-2)}' +
       '.inf-item-dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:5px;align-self:flex-start}' +
-      '.inf-item-tx{flex:1;min-width:0;font-size:13px;font-weight:700;line-height:1.3}' +
-      '.inf-item-tx small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-top:2px}' +
+      '.inf-item-tx{flex:1;min-width:0}' +
+      '.inf-item-tt{display:block;font-size:13px;font-weight:700;line-height:1.3}' +
+      '.inf-item-tx small{display:block;font-weight:600;color:var(--muted-2);font-size:11px;margin-top:4px}' +
+      '.inf-resume{display:block;font-size:12px;color:var(--muted);font-weight:500;line-height:1.45;margin-top:4px}' +
+      '.inf-rupt{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:5px}' +
+      '.inf-statut{font-size:9.5px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--sc);background:color-mix(in srgb,var(--sc) 14%,transparent);border-radius:var(--r-pill);padding:2px 8px}' +
+      '.inf-dci{font-size:11.5px;font-weight:700;color:var(--ip-ink)}' +
+      '.inf-since{font-size:11px;color:var(--muted-2);font-family:var(--mono)}' +
       '.inf-item-go{flex:none;color:var(--muted-2)}' +
       '.inf-empty{padding:30px 18px;text-align:center;color:var(--muted);font-size:13.5px}' +
       '.inf-foot{margin-top:16px;font-size:11.5px;color:var(--muted);text-align:center}';
