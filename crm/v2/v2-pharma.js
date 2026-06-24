@@ -385,7 +385,7 @@
     var totalGain = reco.reduce(function (s, r) { return s + (r.gain || 0); }, 0);
     var rows = reco.map(function (r, i) {
       var on = selCips && selCips.has(r.cip);
-      var pct = tot ? Math.round(r.nb / tot * 100) : 0;
+      var pct = tot ? Math.min(100, Math.round(r.nb / tot * 100)) : 0;
       return '<div class="ipv-row">' +
         '<span class="ipv-rank">#' + (i + 1) + '</span>' +
         '<span class="ipv-name">' + esc(cap((r.designation || '').toLowerCase())) + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') +
@@ -429,7 +429,7 @@
       if (owned.has(cip)) return;
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
-      if (!grpScope && e.ph.size < Math.max(2, Math.ceil(total * penFor(cat)))) return;  // réseau : seuil
+      if (!grpScope && total >= 2 && e.ph.size < Math.max(2, Math.ceil(total * penFor(cat)))) return;  // réseau : seuil
       var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
       var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       buckets[cat].push({ cip: cip, designation: b.designation || '', prix_ht: ht, prix_ip: ip, offre: bp.offre,
@@ -745,7 +745,7 @@
       bk.qte += s.qte || 0;
       if (cip.length >= 7) bk.refs.add(cip);
       if (cat && buckets[cat] && isRemboursable(cip)) {
-        buckets[cat].mdl += V2.margeMDLboite(s.puNet || 0) * (s.qte || 0);
+        if (s.puNet > 0) buckets[cat].mdl += V2.margeMDLboite(s.puNet) * (s.qte || 0);
       }
     });
     return { buckets: buckets, other: other };
@@ -978,7 +978,7 @@
     var nGap = rot.rows.length - nOwn;
     var shownRot = (grpListFilter === 'gap') ? rot.rows.filter(function (r) { return !r.owned; }) : rot.rows;
     var rotRows = shownRot.map(function (r, i) {
-      var pct = rot.total ? Math.round(r.sortie / rot.total * 100) : 0;
+      var pct = rot.total ? Math.min(100, Math.round(r.sortie / rot.total * 100)) : 0;
       var tag = r.owned
         ? '<span class="phf-mk phf-mk-own">' + ICO('check', 12) + ' Commande</span>'
         : '<span class="phf-mk phf-mk-gap">À pousser</span>';
@@ -997,7 +997,7 @@
           '<div class="phf-psub">les produits les plus commandés par ' + (rot.isGrp ? 'son groupement' : 'le réseau') + ' — ce qu\'elle a déjà et ce qu\'il reste à pousser</div></div>' +
         '<div class="phf-rotfilter">' +
           '<button class="phf-rf' + (grpListFilter === 'all' ? ' on' : '') + '" onclick="V2.pharmaGrpFilter(\'all\')">Tout · ' + rot.rows.length + '</button>' +
-          '<button class="phf-rf' + (grpListFilter === 'gap' ? ' on' : '') + '" onclick="V2.pharmaGrpFilter(\'gap\')">À pousser · ' + nGap + '</button>' +
+          '<button class="phf-rf' + (grpListFilter === 'gap' ? ' on' : '') + (nGap === 0 ? ' phf-rf-off" disabled title="Elle commande déjà tous les best-sellers"' : '" onclick="V2.pharmaGrpFilter(\'gap\')"') + '>À pousser · ' + nGap + '</button>' +
         '</div>' +
       '</div>' +
       '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
@@ -1456,7 +1456,7 @@
       // prix le plus bas : offre labo (Sanofi, UPSA…) valide si remise ≤ 50%
       // (au-delà = donnée offre_ip aberrante → ignorée)
       var off = (b.offre_ip > 0) ? b.offre_ip : 0;
-      var hasOffer = off > 0 && ip0 > 0 && off < ip0 && off >= ip0 * 0.5;
+      var hasOffer = off > 0 && ht > 0 && off < ht && off >= ht * 0.5;
       var ip = hasOffer ? off : ip0;
       var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: ht, prix_ip: ip, offre: hasOffer, remise: rem,
@@ -1797,14 +1797,16 @@
     V2.toast('Génération du PDF…');
     function e2(v) { return (v ? v.toFixed(2).replace('.', ',') : '0,00') + ' €'; }
     var sections = data.cats.map(function (o) {
-      var rows = useSel ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows;
+      var rows = (useSel && selCips) ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows;
       return { cat: o.cat, rows: rows };
     }).filter(function (o) { return o.rows.length; });
     var totalProd = sections.reduce(function (s, o) { return s + o.rows.length; }, 0);
+    var panel = (data.panel > 0) ? data.panel : 0;   // garde anti "x/0" dans le rendu
+    if (!sections.length || !panel) { V2.toast('Aucun produit à proposer pour cette liste', 'warn'); return; }
     var MONO = "'Geist Mono',ui-monospace,monospace";
     var pharma = portraitPid ? (V2.pharmacies || []).find(function (p) { return String(p.id) === String(portraitPid); }) : null;
     var headName = pharma ? pharma.name : grpName;
-    var headSub = pharma ? [pharma.code, pharma.ville].filter(function (x) { return x; }).join(' · ') : (data.panel + ' pharmacies du panel');
+    var headSub = pharma ? [pharma.code, pharma.ville].filter(function (x) { return x; }).join(' · ') : (panel + ' pharmacies du panel');
     var COLS6 = '<colgroup><col style="width:33%"><col style="width:16%"><col style="width:11%"><col style="width:9%"><col style="width:15%"><col style="width:16%"></colgroup>';
 
     // ── Familles (en-tête de famille coloré + table dense, design "Tableau dense pro") ──
@@ -1818,7 +1820,7 @@
           '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:#10131C;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:' + (r.remise > 0 ? o.cat.color : '#A8AFBE') + '">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</td>' +
-          '<td style="padding:6px 8px;text-align:center;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + r.sortie + '<span style="color:#A8AFBE">/' + data.panel + '</span></td>' +
+          '<td style="padding:6px 8px;text-align:center;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + r.sortie + '<span style="color:#A8AFBE">/' + panel + '</span></td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;color:#10131C">' + V2.fmtNum(r.qte) + '</td>' +
           '</tr>';
       }).join('');
@@ -1849,21 +1851,21 @@
       '</div>' +
       // Sous-bandeau référence
       '<div style="background:#10131C;padding:6px 22px;page-break-inside:avoid">' +
-        '<span style="color:#C7D2E6;font-size:9.5px;font-weight:600;letter-spacing:.3px">RÉFÉRENCE — ' + esc(grpName) + ' · <span style="color:#FFFFFF">' + data.panel + ' pharmacies</span> · produits commandés par la référence et absents de l\'officine</span>' +
+        '<span style="color:#C7D2E6;font-size:9.5px;font-weight:600;letter-spacing:.3px">RÉFÉRENCE — ' + esc(grpName) + ' · <span style="color:#FFFFFF">' + panel + ' pharmacies</span> · produits commandés par la référence et absents de l\'officine</span>' +
       '</div>' +
       '<div style="padding:16px 22px 20px">' +
         (portraitPid ? recapPdfHtml(portraitPid) : '') +
         // Titre liste + en-tête colonnes global (sombre)
         '<div style="display:flex;align-items:center;justify-content:space-between;border-top:2px solid #10131C;padding-top:9px;margin-bottom:9px;page-break-after:avoid">' +
           '<div style="font-size:12px;font-weight:800;color:#10131C">Liste à pousser <span style="color:#737A8C;font-weight:600;font-size:10px">— ' + totalProd + ' produits, par famille</span></div>' +
-          '<div style="font-size:9px;color:#737A8C">Sortie = nb pharmacies / ' + data.panel + '</div>' +
+          '<div style="font-size:9px;color:#737A8C">Sortie = nb pharmacies / ' + panel + '</div>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-after:avoid">' + COLS6 +
           '<thead><tr style="background:#10131C">' + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('Prix net IP', 'right') + thd('Remise', 'right') + thd('Sortie', 'center') + thd('Volume/an', 'right') + '</tr></thead></table>' +
         (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
         // Pied
         '<div style="margin-top:16px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
-          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau au ' + dateStr + '.<br>Prix nets HT indicatifs. Sortie = nb de pharmacies de la référence commandant le produit / ' + data.panel + '.</div>' +
+          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau au ' + dateStr + '.<br>Prix nets HT indicatifs. Sortie = nb de pharmacies de la référence commandant le produit / ' + panel + '.</div>' +
           '<div style="text-align:right;font-size:8.5px;color:#A8AFBE;white-space:nowrap">' + esc(grpName) + (pharma && pharma.ville ? '<br>' + esc(pharma.ville) : '') + '</div>' +
         '</div>' +
       '</div>' +
@@ -2387,7 +2389,8 @@
       '.phf-prop-n{font-size:22px;font-weight:800;color:var(--pc,var(--ip-blue));text-align:center;line-height:1}',
       '.phf-prop-n small{display:block;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.03em;margin-top:3px}',
       '.phf-prop-acts{display:flex;gap:8px;flex-wrap:wrap}',
-      '@media(max-width:560px){.phf-prop-acts{width:100%}.phf-prop-acts .phf-pdf{flex:1;justify-content:center}}',
+      '.phf-rf-off{opacity:.45;cursor:default}',
+      '@media(max-width:640px){.phf-prop{flex-direction:column;align-items:stretch}.phf-prop-acts{width:100%;gap:8px}.phf-prop-acts .phf-pdf{flex:1;justify-content:center}}',
       '.phf-mk{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;padding:3px 9px;border-radius:var(--r-pill);white-space:nowrap}',
       '.phf-mk-own{color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 13%,transparent)}',
       '.phf-mk-gap{color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 15%,transparent)}',
@@ -2436,8 +2439,8 @@
         '.phf-fchip.on .phf-fam-ct{background:rgba(255,255,255,.22);color:#fff}}',
       '@media(max-width:640px){.phf-phead{flex-direction:column;align-items:stretch}.phf-pright{justify-content:space-between}.phf-pdf{flex:1;justify-content:center}}',
       '.ipv-rank{flex-shrink:0;width:44px;font-size:12px;font-weight:700;color:var(--ip-blue);font-variant-numeric:tabular-nums}',
-      '.ipv-name{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.ipv-vol{flex-shrink:0;font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}',
+      '.ipv-name{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.ipv-vol{flex-shrink:0;font-size:13px;font-weight:700;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
       '.ipv-vol small{font-weight:500;color:var(--muted-2);font-size:11px}',
       // ── Badges OPSO (clientes / prospects) — uniquement en mode OPSO ──
       '.opso-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.01em;flex-shrink:0;vertical-align:middle}',
