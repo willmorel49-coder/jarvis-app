@@ -1,0 +1,39 @@
+name: Infos du matin (veille)
+
+# Robot GRATUIT : agrège chaque matin les flux RSS (ANSM ruptures/sécurité/actu +
+# Le Moniteur des pharmacies) et committe crm/v2/infos-jour.json que l'app CRM lit.
+# Aucune clé, aucun coût. Déclenchable aussi à la main (workflow_dispatch).
+
+on:
+  schedule:
+    - cron: '30 5 * * *'   # 05h30 UTC = ~07h30 Paris (été)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: infos-matin
+  cancel-in-progress: false
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Générer la veille
+        run: python3 generate_infos.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/infos-jour.json; then
+            echo "Pas de changement."
+          else
+            git config user.name  "JARVIS veille"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/infos-jour.json
+            git commit -m "data(infos): veille du matin $(date -u +%Y-%m-%d)"
+            git push
+          fi
