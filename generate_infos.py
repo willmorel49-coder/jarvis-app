@@ -24,8 +24,21 @@ FEEDS = [
     {'cat': 'ruptures',      'source': 'ANSM · Disponibilité', 'url': 'https://ansm.sante.fr/rss/disponibilite_produits_sante?produitsSante=medicaments', 'max': 40},
     {'cat': 'securite',      'source': 'ANSM · Sécurité',      'url': 'https://ansm.sante.fr/rss/informations_securite?produitsSante=medicaments', 'max': 20},
     {'cat': 'reglementaire', 'source': 'ANSM · Actualités',    'url': 'https://ansm.sante.fr/rss/actualites?produitsSante=medicaments', 'max': 20},
-    {'cat': 'profession',    'source': 'Le Moniteur des pharmacies', 'url': 'https://www.lemoniteurdespharmacies.fr/feed/', 'max': 25},
+    {'cat': 'profession',    'source': 'Le Quotidien du Pharmacien', 'url': 'https://www.lequotidiendupharmacien.fr/rss.xml', 'max': 35, 'filter': True},
+    {'cat': 'profession',    'source': 'Le Moniteur des pharmacies', 'url': 'https://www.lemoniteurdespharmacies.fr/feed/', 'max': 25, 'filter': True},
+    {'cat': 'profession',    'source': 'FSPF',                 'url': 'https://www.fspf.fr/feed/', 'max': 10, 'filter': True},
+    {'cat': 'profession',    'source': 'Le Pharmacien de France', 'url': 'https://www.lepharmaciendefrance.fr/feed', 'max': 10, 'filter': True},
 ]
+
+# Pertinence "cœur de métier officine" : on ne garde de la presse pro que ce qui touche
+# directement le comptoir, la distribution et l'économie de l'officine.
+REL = re.compile(
+    r'pharmac|officin|comptoir|g[ée]n[ée]riqu|substitu|biosimil|rupture|tension|approvision|'
+    r'rembours|\bprix\b|honorair|convention|avenant|rosp|tarif|nomenclature|marge|grossist|'
+    r'r[ée]partit|d[ée]livr|ordonnance|s[ée]rialis|vaccin|trod|d[ée]pist|entretien|bilan partag|'
+    r'\bpda\b|lfss|ameli|cnam|ceps|m[ée]dicament|p[ée]nurie|missions?|garde', re.I)
+def relevant(txt):
+    return bool(REL.search(txt or ''))
 UA = 'Mozilla/5.0 (compatible; JARVIS-veille/1.0; +integralpharma)'
 
 
@@ -103,6 +116,9 @@ def items_from(feed):
             if len(r) > 320:
                 r = r[:320].rsplit(' ', 1)[0] + '…'
             row['resume'] = r
+        # filtre pertinence officine pour la presse pro
+        if feed.get('filter') and not relevant(titre + ' ' + (row.get('resume') or '')):
+            continue
         out.append(row)
         if len(out) >= feed['max']:
             break
