@@ -1324,7 +1324,7 @@
       var fn = 'Prepa-RDV-' + (built.pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: 794, windowHeight: wrap.scrollHeight + 200 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
       }).save().then(function () {
@@ -1796,9 +1796,9 @@
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
     V2.toast('Génération du PDF…');
     function e2(v) { return (v ? v.toFixed(2).replace('.', ',') : '0,00') + ' €'; }
-    // Plafond par famille : html2pdf/html2canvas a une hauteur de rendu max — au-delà,
-    // le PDF est coupé. On garde le TOP par famille (déjà trié par sortie/rotation).
-    var PDF_CAP = 35, truncated = false;
+    // Multi-pages restauré (html2canvas auto-dimensionne sur la hauteur réelle de l'élément) :
+    // plus de plafond — html2pdf pagine tout le contenu.
+    var PDF_CAP = Infinity, truncated = false;
     var sections = data.cats.map(function (o) {
       var rows = (useSel && selCips) ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows;
       if (rows.length > PDF_CAP) { rows = rows.slice(0, PDF_CAP); truncated = true; }
@@ -1883,8 +1883,8 @@
       var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       var worker = window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: 794, windowHeight: wrap.scrollHeight + 200 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.pdf-cat-head'] }
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
       });
       function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); }
       if (mode === 'share' && V2.shareOrSaveBlob) {
