@@ -1,210 +1,226 @@
 /* ═══════════════════════════════════════════════════════════════════
-   CRM V2 · Pilier "Infos du matin" (pages.infos)
-   VRAIE veille marché officine, 100% gratuite : lit crm/v2/infos-jour.json
-   (généré chaque matin par le robot GitHub Actions generate_infos.py qui agrège
-   les flux RSS ANSM — ruptures/sécurité/actu — et Le Moniteur des pharmacies).
-   Différenciateur : croise la DCI des ruptures avec le catalogue IP -> alternatives IP.
-   Aucune clé, aucun coût. Fallback propre si le fichier n'est pas là.
+   CRM V2 · Pilier "Infos du matin" (pages.infos) — design "Rubriques colorées"
+   Lit crm/v2/infos-jour.json (robot GitHub Actions : RSS ANSM ruptures/sécu/actu +
+   presse pro). Classe les actus par rubrique métier (Économie/remboursement,
+   Génériques/substitution, Sécurité/rappels, Métier) + Opportunités IP en tête
+   (ruptures croisées au catalogue par molécule). 100% gratuit, fallback propre.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
-  var ICO = window.ICO || function () { return ''; };
   var eur = function (n) { return V2.fmtEur ? V2.fmtEur(n) : (n + ' €'); };
   function cap(s) { s = String(s == null ? '' : s); return s.charAt(0).toUpperCase() + s.slice(1); }
   function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
-  function statutColor(s) {
-    s = norm(s || '');
-    if (s.indexOf('rupture') >= 0) return 'var(--bad)';
-    if (s.indexOf('remise') >= 0 || s.indexOf('disponible') >= 0) return 'var(--ok)';
-    if (s.indexOf('arret') >= 0) return 'var(--muted)';
-    return 'var(--warn)';   // tension d'approvisionnement
-  }
 
   var DATA = null, LOADED = false, FAILED = false;
-
   function load(cb) {
     if (LOADED || FAILED) { cb(); return; }
-    var day = '';
-    try { day = new Date().toISOString().slice(0, 10); } catch (e) {}
+    var day = ''; try { day = new Date().toISOString().slice(0, 10); } catch (e) {}
     try {
       fetch('infos-jour.json?d=' + day, { cache: 'no-store' })
-        .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
         .then(function (j) { DATA = j; LOADED = true; cb(); })
         .catch(function () { FAILED = true; cb(); });
     } catch (e) { FAILED = true; cb(); }
   }
 
-  var CAT = {
-    ruptures:      { label: 'Ruptures & tensions', color: 'var(--bad)', ico: 'alert' },
-    securite:      { label: 'Sécurité / pharmacovigilance', color: 'var(--c-cat)', ico: 'alert' },
-    reglementaire: { label: 'Réglementaire & marché', color: 'var(--ip-blue)', ico: 'spark' },
-    profession:    { label: 'Profession & officine', color: 'var(--c-opp)', ico: 'pharma' },
-  };
+  // statut rupture → classe badge + libellé court
+  function statutClass(s) { s = norm(s); if (s.indexOf('rupture') >= 0) return 'nv8-st-bad'; if (s.indexOf('remise') >= 0 || s.indexOf('disponible') >= 0) return 'nv8-st-ok'; return 'nv8-st-warn'; }
+  function statutLabel(s) { var n = norm(s); if (n.indexOf('rupture') >= 0) return 'Rupture de stock'; if (n.indexOf('remise') >= 0 || n.indexOf('disponible') >= 0) return 'Remise à dispo'; if (n.indexOf('arret') >= 0) return 'Arrêt'; return 'Tension'; }
 
-  // Alternatives IP pour une molécule en rupture (les génériques IP portent le nom de la DCI)
+  // rubrique métier d'une actu
+  function rubricOf(i) {
+    if (i.cat === 'securite') return 'secu';
+    var x = norm(i.titre + ' ' + (i.resume || ''));
+    if (/rappel|pharmacovigilance|retrait de lot|vigilance|defaut qualite|alerte securite/.test(x)) return 'secu';
+    if (/generiqu|biosimil|substitu|interchangeab|delivr|repertoire/.test(x)) return 'gen';
+    if (/rembours|\bprix\b|honorair|convention|avenant|rosp|tarif|nomenclature|economie|\bmarge|lfss|cnam|ceps|budget|cotation|\bsecu\b/.test(x)) return 'eco';
+    return 'metier';
+  }
+
   function ipAlternatives(dci) {
     var B = window.BENCHMARK; if (!B || !dci) return [];
-    var key = norm(dci).split(/[ ,/]/)[0];
-    if (key.length < 4) return [];
+    var key = norm(dci).split(/[ ,/]/)[0]; if (key.length < 4) return [];
     var out = [], seen = {};
-    for (var i = 0; i < B.length && out.length < 4; i++) {
+    for (var i = 0; i < B.length && out.length < 2; i++) {
       var b = B[i], d = norm(b.designation || '');
-      if (d.indexOf(key) >= 0) {
-        var c = String(b.cip13 || ''); if (seen[c]) continue; seen[c] = 1;
-        var bp = V2.bestPrice ? V2.bestPrice(b) : { ip: b.prix_ip, remise: b.remise_pct };
-        out.push({ d: b.designation || '', cip: c, ip: bp.ip, remise: bp.remise, froid: !!b.is_froid });
-      }
+      if (d.indexOf(key) >= 0) { var c = String(b.cip13 || ''); if (seen[c]) continue; seen[c] = 1; var bp = V2.bestPrice ? V2.bestPrice(b) : { ip: b.prix_ip, remise: b.remise_pct }; out.push({ d: b.designation || '', cip: c, ip: bp.ip, remise: bp.remise }); }
     }
     return out;
   }
 
-  function frDate(iso) {
-    if (!iso) return '';
-    try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); }
-    catch (e) { return ''; }
+  function frDate(iso) { if (!iso) return ''; try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); } catch (e) { return ''; } }
+  function dayLabel() { try { return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) { return 'aujourd\'hui'; } }
+
+  var RUBR = [
+    { key: 'eco', cls: 'nv8-eco', h: 'Économie & remboursement', sub: 'Conventions, ROSP, prix, prise en charge' },
+    { key: 'gen', cls: 'nv8-gen', h: 'Génériques & substitution', sub: 'Biosimilaires, délivrance, répertoire' },
+    { key: 'secu', cls: 'nv8-secu', h: 'Sécurité & rappels', sub: 'Pharmacovigilance, rappels de lots' },
+    { key: 'metier', cls: 'nv8-metier', h: 'Métier & officine', sub: 'Démographie, missions, accès aux soins' },
+  ];
+
+  function band(cls, h, sub, n) {
+    return '<div class="nv8-band"><span class="nv8-ico"></span><div class="nv8-htxt"><h2>' + esc(h) + '</h2>' +
+      (sub ? '<div class="nv8-sub">' + esc(sub) + '</div>' : '') + '</div><span class="nv8-count">' + n + '</span></div>';
   }
-  function dayLabel() {
-    try { return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); }
-    catch (e) { return 'aujourd\'hui'; }
+  function actuRow(i) {
+    var url = i.url ? ' href="' + esc(i.url) + '" target="_blank" rel="noopener"' : '';
+    return '<div class="nv8-actu">' +
+      '<div class="nv8-actu-top"><span class="nv8-src">' + esc(i.source || '') + '</span>' +
+        (i.today ? '<span class="nv8-now">Aujourd\'hui</span>' : '') +
+        '<span class="nv8-when">' + esc(frDate(i.date)) + '</span></div>' +
+      '<h3 class="nv8-actu-h">' + esc(i.titre) + '</h3>' +
+      (i.resume ? '<p class="nv8-actu-p">' + esc(i.resume) + '</p>' : '') +
+      (i.url ? '<a class="nv8-read"' + url + '>Lire l\'article</a>' : '') +
+    '</div>';
   }
 
   V2.pages.infos = {
     render: function (root) {
-      var topbar = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
-      var firstName = (V2.user && V2.user.name ? V2.user.name.split(' ')[0] : 'Will');
-
-      // Chargement du brief + catalogue (pour les alternatives IP) en tâche de fond
+      var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
       if (!LOADED && !FAILED) {
         load(function () { if (V2.route && V2.route.name === 'infos') V2.render(); });
-        root.innerHTML = topbar + '<div class="v2-wrap narrow"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de la veille du matin…</div></div></div>';
+        root.innerHTML = top + '<div class="v2-wrap"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de la veille du matin…</div></div></div>';
         return;
       }
       if (!window.BENCHMARK && V2.loadFiles && DATA) {
         V2.loadFiles(['bench']).then(function () { if (V2.route && V2.route.name === 'infos') V2.render(); });
       }
-
       var items = (DATA && DATA.items) ? DATA.items : [];
       var ruptures = items.filter(function (i) { return i.cat === 'ruptures'; });
 
-      // ── Opportunités IP : ruptures croisées au catalogue (le levier commercial) ──
-      var oppHtml = '';
+      var html = '<div id="infos-8">';
+      // En-tête
+      html += '<header class="nv8-head"><div><span class="nv8-date">' + esc(dayLabel()) + '</span><h1 class="nv8-title">Infos du matin</h1></div>' +
+        '<div class="nv8-counter"><span class="nv8-chip nv8-today"><b class="nv8-mono">' + ((DATA && DATA.count_today) || 0) + '</b> aujourd\'hui</span>' +
+        '<span class="nv8-chip"><b class="nv8-mono">' + ((DATA && DATA.count) || items.length) + '</b> sur 7 jours</span></div></header>';
+
+      if (!DATA || !items.length) {
+        html += '<article class="nv8-sec"><div class="nv8-body"><p class="nv8-actu-p" style="padding:18px 0">' +
+          (FAILED ? 'La veille du jour n\'a pas pu être chargée (connexion ?). Elle se met à jour chaque matin.' : 'Pas encore d\'infos aujourd\'hui. La veille se met à jour chaque matin.') +
+          '</p></div></article></div>';
+        root.innerHTML = top + '<div class="v2-wrap">' + html + '</div>';
+        return;
+      }
+
+      // Opportunités IP
       if (window.BENCHMARK) {
-        var opps = ruptures.map(function (r) { return { r: r, alt: r.dci ? ipAlternatives(r.dci) : [] }; })
-          .filter(function (o) { return o.alt.length; });
+        var opps = ruptures.map(function (r) { return { r: r, alt: r.dci ? ipAlternatives(r.dci) : [] }; }).filter(function (o) { return o.alt.length; });
         if (opps.length) {
-          oppHtml = '<div class="inf-opp">' +
-            '<div class="inf-opp-h">' + ICO('spark', 16) + ' Opportunités IP — une rupture, ton alternative en stock</div>' +
-            opps.slice(0, 6).map(function (o) {
-              var alts = o.alt.map(function (a) {
-                return '<a class="inf-alt" onclick="V2.go(\'molecules\',\'' + esc(a.cip) + '\')">' + esc(cap((a.d || '').toLowerCase())) +
-                  (a.ip > 0 ? '<span class="inf-alt-p mono">' + eur(a.ip) + (a.remise > 0 ? ' · -' + Math.round(a.remise) + '%' : '') + '</span>' : '') + '</a>';
-              }).join('');
-              return '<div class="inf-opp-row"><div class="inf-opp-rupt">' + ICO('alert', 13) + ' <b>' + esc(cap(o.r.dci)) + '</b> en tension <small>· ' + esc(o.r.titre.slice(0, 60)) + '</small></div>' +
-                '<div class="inf-alts">' + alts + '</div></div>';
-            }).join('') +
-          '</div>';
+          var cards = opps.slice(0, 6).map(function (o) {
+            var a = o.alt[0];
+            return '<a class="nv8-opp-card" onclick="V2.go(\'molecules\',\'' + esc(a.cip) + '\')" style="cursor:pointer;text-decoration:none;color:inherit">' +
+              '<div><div class="nv8-flow"><span class="nv8-rx">' + esc(cap(o.r.dci)) + '</span> <span class="nv8-arr">' + esc((statutLabel(o.r.statut)).toLowerCase()) + '</span> <span class="nv8-arr">→</span> <span class="nv8-ipbadge">Alternative IP en stock</span></div>' +
+              '<div class="nv8-altname">' + esc(cap((a.d || '').toLowerCase())) + '</div></div>' +
+              '<div class="nv8-price"><span class="nv8-eur nv8-mono">' + (a.ip > 0 ? esc(eur(a.ip)) : '—') + '</span>' +
+              (a.remise > 0 ? '<br><span class="nv8-disc nv8-mono">−' + Math.round(a.remise) + ' %</span>' : '') + '</div></a>';
+          }).join('');
+          html += '<article class="nv8-sec nv8-opp">' + band('', 'Opportunités IP', 'Une rupture en officine, une alternative Intégral Pharma en stock', opps.length) +
+            '<div class="nv8-body">' + cards + '</div></article>';
         }
       }
 
-      // ── Veille par catégorie ──
-      var sections = '';
-      ['ruptures', 'reglementaire', 'securite', 'profession'].forEach(function (k) {
-        var list = items.filter(function (i) { return i.cat === k; });
-        if (!list.length) return;
-        var c = CAT[k] || { label: k, color: 'var(--muted)', ico: 'spark' };
-        var rows = list.map(function (i) {
-          var url = i.url ? ' href="' + esc(i.url) + '" target="_blank" rel="noopener"' : '';
-          var meta = esc(i.source || '') + (frDate(i.date) ? ' · ' + frDate(i.date) : '') + (i.url ? ' · Lire l\'article' : '');
-          var mid = '';
-          if (i.cat === 'ruptures') {
-            mid = '<span class="inf-rupt"><span class="inf-statut" style="--sc:' + statutColor(i.statut) + '">' + esc(i.statut || 'Tension') + '</span>' +
-              (i.dci ? '<span class="inf-dci">' + esc(cap(i.dci)) + '</span>' : '') +
-              (i.depuis ? '<span class="inf-since">depuis le ' + esc(i.depuis) + '</span>' : '') + '</span>';
-          } else if (i.resume) {
-            mid = '<span class="inf-resume">' + esc(i.resume) + '</span>';
-          }
-          return '<a class="inf-item' + (i.today ? ' inf-item--today' : '') + '"' + url + '>' +
-            '<span class="inf-item-dot" style="background:' + c.color + '"></span>' +
-            '<span class="inf-item-tx">' +
-              '<span class="inf-item-tt">' + esc(i.titre) + (i.today ? ' <span class="inf-today">aujourd\'hui</span>' : '') + '</span>' +
-              mid +
-              '<small>' + meta + '</small>' +
-            '</span>' +
-            (i.url ? '<span class="inf-item-go">' + ICO('chev', 15) + '</span>' : '') +
-          '</a>';
+      // Ruptures ANSM
+      if (ruptures.length) {
+        var rows = ruptures.map(function (r) {
+          return '<div class="nv8-rupt-item"><span class="nv8-status ' + statutClass(r.statut) + '">' + esc(statutLabel(r.statut)) + '</span>' +
+            '<div><div class="nv8-rupt-name">' + esc(r.titre) + '</div>' +
+            '<div class="nv8-rupt-meta">' + (r.dci ? '<span class="nv8-mol">' + esc(r.dci) + '</span>' : '') +
+            (r.depuis ? (r.dci ? ' · ' : '') + '<span class="nv8-since">depuis le <span class="nv8-mono">' + esc(r.depuis) + '</span></span>' : '') + '</div></div></div>';
         }).join('');
-        sections += '<div class="inf-card"><div class="inf-card-h" style="color:' + c.color + '">' + ICO(c.ico, 16) + ' ' + c.label +
-          '<span class="inf-card-n mono">' + list.length + '</span></div>' + rows + '</div>';
-      });
-
-      var body;
-      if (!DATA || !items.length) {
-        // Fallback : jamais d'écran vide
-        body = '<div class="inf-card"><div class="inf-empty">' +
-          (FAILED ? 'La veille du jour n\'a pas pu être chargée (connexion ?). Réessaie plus tard — le brief se met à jour chaque matin.'
-                  : 'Pas encore d\'infos pour aujourd\'hui. Le brief se met à jour chaque matin.') +
-          '</div></div>';
-      } else {
-        body = oppHtml + '<div class="inf-grid2">' + sections + '</div>';
+        html += '<article class="nv8-sec nv8-rupt">' + band('', 'Ruptures & tensions ANSM', 'Statut, molécule et date d\'entrée', ruptures.length) +
+          '<div class="nv8-body">' + rows + '</div></article>';
       }
 
+      // Rubriques actu
+      var actu = items.filter(function (i) { return i.cat !== 'ruptures'; });
+      RUBR.forEach(function (rb) {
+        var list = actu.filter(function (i) { return rubricOf(i) === rb.key; });
+        if (!list.length) return;
+        html += '<article class="nv8-sec ' + rb.cls + '">' + band('', rb.h, rb.sub, list.length) +
+          '<div class="nv8-body">' + list.map(actuRow).join('') + '</div></article>';
+      });
+
       var maj = (DATA && DATA.generated_at) ? frDate(DATA.generated_at) : '';
-      root.innerHTML = topbar +
-        '<div class="v2-wrap narrow" style="--accent:var(--c-amber)">' +
-          '<div class="inf-hero">' +
-            '<span class="inf-eyebrow">' + ICO('spark', 15) + ' ' + cap(dayLabel()) + '</span>' +
-            '<h1>Bonjour ' + esc(firstName) + ', ta veille du matin</h1>' +
-            '<p>Ruptures, sécurité, réglementaire et actu officine — les 7 derniers jours, focus sur aujourd\'hui.</p>' +
-            ((DATA && DATA.count) ? '<div class="inf-count"><b>' + (DATA.count_today || 0) + '</b> aujourd\'hui · ' + DATA.count + ' sur 7 jours</div>' : '') +
-          '</div>' +
-          body +
-          '<div class="inf-foot">Sources : ANSM (ruptures · sécurité) · Le Quotidien du Pharmacien · Le Moniteur des pharmacies · FSPF · Le Pharmacien de France' + (maj ? ' · mis à jour le ' + maj : '') + '. Veille filtrée « cœur de métier officine », mise à jour chaque matin.</div>' +
-        '</div>';
+      html += '<div class="nv8-foot">Sources : ANSM · Le Quotidien du Pharmacien · Le Moniteur des pharmacies · FSPF · Le Pharmacien de France' + (maj ? ' · mis à jour le ' + maj : '') + '. Veille « cœur de métier officine », chaque matin.</div>';
+      html += '</div>';
+
+      root.innerHTML = top + '<div class="v2-wrap">' + html + '</div>';
     }
   };
 
   if (!document.getElementById('v2-infos-css')) {
     var st = document.createElement('style'); st.id = 'v2-infos-css';
     st.textContent =
-      '.inf-hero{margin:8px 0 18px}' +
-      '.inf-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--c-amber);text-transform:capitalize}' +
-      '.inf-hero h1{font-size:25px;font-weight:900;letter-spacing:-.025em;margin:8px 0 4px;line-height:1.1}' +
-      '.inf-hero p{font-size:14px;color:var(--muted);font-weight:500;max-width:580px}' +
-      '.inf-count{margin-top:9px;font-size:12.5px;color:var(--muted);font-weight:600}.inf-count b{color:var(--c-amber);font-family:var(--mono)}' +
-      '.inf-today{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 15%,transparent);border-radius:var(--r-pill);padding:1px 7px;vertical-align:middle;margin-left:4px}' +
-      '.inf-item--today{background:color-mix(in srgb,var(--c-amber) 4%,transparent)}' +
-      '.inf-opp{background:linear-gradient(150deg,#0050E6,#0034A0);color:#fff;border-radius:var(--r-card);padding:18px 20px;margin-bottom:18px;box-shadow:var(--sh-2)}' +
-      '.inf-opp-h{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;letter-spacing:.01em;margin-bottom:12px}' +
-      '.inf-opp-row{padding:10px 0;border-top:1px solid rgba(255,255,255,.16)}' +
-      '.inf-opp-row:first-of-type{border-top:none}' +
-      '.inf-opp-rupt{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}' +
-      '.inf-opp-rupt small{opacity:.7;font-weight:500}' +
-      '.inf-alts{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}' +
-      '.inf-alt{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.14);border-radius:var(--r-pill);padding:6px 12px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer;text-decoration:none}' +
-      '.inf-alt:hover{background:rgba(255,255,255,.26)}' +
-      '.inf-alt-p{opacity:.85;font-weight:600}' +
-      '.inf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}' +
-      '@media(max-width:720px){.inf-grid2{grid-template-columns:1fr}}' +
-      '.inf-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden}' +
-      '.inf-card-h{display:flex;align-items:center;gap:8px;padding:13px 16px;font-size:13.5px;font-weight:800;border-bottom:1px solid var(--line)}' +
-      '.inf-card-n{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted);background:var(--surf-sunken);border-radius:var(--r-pill);padding:1px 9px}' +
-      '.inf-item{display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--line-2,var(--line));text-decoration:none;color:inherit}' +
-      '.inf-item:last-child{border-bottom:none}.inf-item:hover{background:var(--card-2)}' +
-      '.inf-item-dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:5px;align-self:flex-start}' +
-      '.inf-item-tx{flex:1;min-width:0}' +
-      '.inf-item-tt{display:block;font-size:13px;font-weight:700;line-height:1.3}' +
-      '.inf-item-tx small{display:block;font-weight:600;color:var(--muted-2);font-size:11px;margin-top:4px}' +
-      '.inf-resume{display:block;font-size:12px;color:var(--muted);font-weight:500;line-height:1.45;margin-top:4px}' +
-      '.inf-rupt{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:5px}' +
-      '.inf-statut{font-size:9.5px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--sc);background:color-mix(in srgb,var(--sc) 14%,transparent);border-radius:var(--r-pill);padding:2px 8px}' +
-      '.inf-dci{font-size:11.5px;font-weight:700;color:var(--ip-ink)}' +
-      '.inf-since{font-size:11px;color:var(--muted-2);font-family:var(--mono)}' +
-      '.inf-item-go{flex:none;color:var(--muted-2)}' +
-      '.inf-empty{padding:30px 18px;text-align:center;color:var(--muted);font-size:13.5px}' +
-      '.inf-foot{margin-top:16px;font-size:11.5px;color:var(--muted);text-align:center}';
+      '#infos-8{--ip-blue:#0050E6;--ip-ink:#10131C;--muted:#737A8C;--muted-2:#9AA1B2;--paper:#FBFCFE;--card:#FFFFFF;--card-2:#F7F9FC;--line:rgba(16,19,28,.07);--line-strong:rgba(16,19,28,.12);--ok:#1E9E6A;--warn:#C7791A;--bad:#E0556E;--cat:#6D4FC4;--froid:#00B5D8;--r-card:20px;--r-md:14px;--r-pill:999px;--sh-1:0 1px 2px rgba(16,19,28,.04);--sh-2:0 6px 24px rgba(16,19,28,.06),0 2px 6px rgba(16,19,28,.04);font-family:"Satoshi",system-ui,sans-serif;color:var(--ip-ink);max-width:760px;margin:0 auto;padding:6px 0 40px;line-height:1.5}' +
+      '#infos-8 *{box-sizing:border-box}' +
+      '#infos-8 .nv8-mono{font-family:"Geist Mono",ui-monospace,monospace;font-feature-settings:"tnum" 1}' +
+      '#infos-8 .nv8-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:22px}' +
+      '#infos-8 .nv8-date{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);text-transform:capitalize}' +
+      '#infos-8 .nv8-date::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ip-blue);box-shadow:0 0 0 4px rgba(0,80,230,.12)}' +
+      '#infos-8 .nv8-title{font-size:28px;font-weight:800;letter-spacing:-.025em;line-height:1.05;margin-top:6px}' +
+      '#infos-8 .nv8-counter{display:flex;gap:8px;align-items:center}' +
+      '#infos-8 .nv8-chip{display:inline-flex;align-items:baseline;gap:5px;padding:7px 12px;border-radius:var(--r-pill);background:var(--card);border:1px solid var(--line-strong);box-shadow:var(--sh-1);font-size:12px;font-weight:600;color:var(--muted)}' +
+      '#infos-8 .nv8-chip b{font-size:14px;color:var(--ip-ink);font-weight:800}' +
+      '#infos-8 .nv8-chip.nv8-today{background:rgba(0,80,230,.06);border-color:rgba(0,80,230,.22);color:var(--ip-blue)}' +
+      '#infos-8 .nv8-chip.nv8-today b{color:var(--ip-blue)}' +
+      '#infos-8 .nv8-sec{--c:var(--ip-blue);--c-soft:rgba(0,80,230,.08);background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden;margin-bottom:22px}' +
+      '#infos-8 .nv8-sec.nv8-rupt{--c:var(--bad);--c-soft:rgba(224,85,110,.09)}' +
+      '#infos-8 .nv8-sec.nv8-gen{--c:var(--cat);--c-soft:rgba(109,79,196,.09)}' +
+      '#infos-8 .nv8-sec.nv8-eco{--c:var(--ip-blue);--c-soft:rgba(0,80,230,.08)}' +
+      '#infos-8 .nv8-sec.nv8-secu{--c:var(--warn);--c-soft:rgba(199,121,26,.10)}' +
+      '#infos-8 .nv8-sec.nv8-metier{--c:var(--froid);--c-soft:rgba(0,181,216,.10)}' +
+      '#infos-8 .nv8-sec.nv8-opp{--c:var(--ok);--c-soft:rgba(30,158,106,.10);border-color:rgba(30,158,106,.22)}' +
+      '#infos-8 .nv8-band{display:flex;align-items:center;gap:11px;padding:14px 20px;background:var(--c-soft);border-bottom:1px solid var(--line);position:relative}' +
+      '#infos-8 .nv8-band::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}' +
+      '#infos-8 .nv8-ico{width:30px;height:30px;border-radius:9px;background:var(--c);flex:none;display:grid;place-items:center;color:#fff;font-weight:800;font-size:16px}' +
+      '#infos-8 .nv8-rupt .nv8-ico::after{content:"!"}' +
+      '#infos-8 .nv8-gen .nv8-ico::after{content:"\\21C4"}' +
+      '#infos-8 .nv8-eco .nv8-ico::after{content:"\\20AC"}' +
+      '#infos-8 .nv8-secu .nv8-ico::after{content:"!"}' +
+      '#infos-8 .nv8-metier .nv8-ico::after{content:"+";font-size:19px}' +
+      '#infos-8 .nv8-opp .nv8-ico::after{content:"\\2605";font-size:15px}' +
+      '#infos-8 .nv8-band h2{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}' +
+      '#infos-8 .nv8-sub{font-size:12px;color:var(--muted);font-weight:500;margin-top:1px}' +
+      '#infos-8 .nv8-htxt{flex:1}' +
+      '#infos-8 .nv8-count{margin-left:auto;font-size:12px;font-weight:700;color:var(--c);background:#fff;border:1px solid var(--line-strong);padding:3px 9px;border-radius:var(--r-pill)}' +
+      '#infos-8 .nv8-body{padding:6px 20px 8px}' +
+      '#infos-8 .nv8-opp .nv8-body{padding:14px 20px 18px;display:grid;gap:12px}' +
+      '#infos-8 .nv8-opp-card{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:14px 16px;border-radius:var(--r-md);background:var(--card-2);border:1px solid var(--line);transition:border-color .15s}' +
+      '#infos-8 .nv8-opp-card:hover{border-color:rgba(30,158,106,.4)}' +
+      '#infos-8 .nv8-flow{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}' +
+      '#infos-8 .nv8-flow .nv8-rx{color:var(--bad);font-weight:700;text-transform:capitalize}' +
+      '#infos-8 .nv8-flow .nv8-arr{color:var(--muted-2)}' +
+      '#infos-8 .nv8-flow .nv8-ipbadge{color:var(--ok);font-weight:800}' +
+      '#infos-8 .nv8-altname{font-size:15.5px;font-weight:700;letter-spacing:-.01em;line-height:1.3}' +
+      '#infos-8 .nv8-price{text-align:right;white-space:nowrap}' +
+      '#infos-8 .nv8-price .nv8-eur{font-size:18px;font-weight:800}' +
+      '#infos-8 .nv8-price .nv8-disc{display:inline-block;margin-top:5px;font-size:12px;font-weight:800;color:#fff;background:var(--ok);padding:3px 8px;border-radius:var(--r-pill)}' +
+      '#infos-8 .nv8-rupt-item{display:flex;align-items:flex-start;gap:13px;padding:14px 0;border-top:1px solid var(--line)}' +
+      '#infos-8 .nv8-rupt-item:first-child{border-top:none}' +
+      '#infos-8 .nv8-status{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:5px 10px;border-radius:var(--r-pill);white-space:nowrap;margin-top:2px;min-width:118px;text-align:center}' +
+      '#infos-8 .nv8-st-bad{background:rgba(224,85,110,.12);color:#c23652;border:1px solid rgba(224,85,110,.28)}' +
+      '#infos-8 .nv8-st-warn{background:rgba(199,121,26,.12);color:#a8651a;border:1px solid rgba(199,121,26,.30)}' +
+      '#infos-8 .nv8-st-ok{background:rgba(30,158,106,.13);color:#178055;border:1px solid rgba(30,158,106,.30)}' +
+      '#infos-8 .nv8-rupt-name{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.32}' +
+      '#infos-8 .nv8-rupt-meta{font-size:12.5px;color:var(--muted);margin-top:3px}' +
+      '#infos-8 .nv8-rupt-meta .nv8-mol{color:var(--cat);font-weight:600;text-transform:capitalize}' +
+      '#infos-8 .nv8-rupt-meta .nv8-since{color:var(--muted-2)}' +
+      '#infos-8 .nv8-actu{padding:16px 0;border-top:1px solid var(--line)}' +
+      '#infos-8 .nv8-actu:first-child{border-top:none}' +
+      '#infos-8 .nv8-actu-top{display:flex;align-items:center;gap:9px;margin-bottom:7px;flex-wrap:wrap}' +
+      '#infos-8 .nv8-src{font-size:11px;font-weight:700;color:var(--c);background:var(--c-soft);padding:3px 9px;border-radius:var(--r-pill)}' +
+      '#infos-8 .nv8-now{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--ip-blue);padding:3px 8px;border-radius:var(--r-pill)}' +
+      '#infos-8 .nv8-when{font-size:12px;color:var(--muted-2);font-weight:600;margin-left:auto}' +
+      '#infos-8 .nv8-actu-h{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.28;margin-bottom:6px}' +
+      '#infos-8 .nv8-actu-p{font-size:14.5px;line-height:1.58;color:#3a4150}' +
+      '#infos-8 .nv8-read{display:inline-flex;align-items:center;gap:6px;margin-top:11px;font-size:13px;font-weight:700;color:var(--c);text-decoration:none}' +
+      '#infos-8 .nv8-read::after{content:"\\2192";transition:transform .15s}' +
+      '#infos-8 .nv8-read:hover::after{transform:translateX(3px)}' +
+      '#infos-8 .nv8-foot{margin-top:8px;padding-top:14px;font-size:11.5px;color:var(--muted-2);text-align:center;line-height:1.5}' +
+      '@media(max-width:640px){#infos-8 .nv8-title{font-size:24px}#infos-8 .nv8-opp-card{grid-template-columns:1fr;gap:10px}#infos-8 .nv8-price{text-align:left}#infos-8 .nv8-rupt-item{flex-direction:column;gap:8px}#infos-8 .nv8-status{min-width:0}#infos-8 .nv8-when{margin-left:0}}';
     document.head.appendChild(st);
   }
 })();
