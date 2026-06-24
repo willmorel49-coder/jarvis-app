@@ -23,7 +23,7 @@
   }
   function dateLabel() {
     try { return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); }
-    catch (e) { return ''; }
+    catch (e) { return 'aujourd\'hui'; }
   }
 
   // Offres labo en cours (catalogue IP) — nécessite BENCHMARK (chargé à la demande).
@@ -59,11 +59,12 @@
 
       // KPIs
       var kpi = function (l, v, sub, color, go) {
-        return '<' + (go ? 'a' : 'div') + ' class="inf-kpi"' + (go ? ' onclick="V2.go(\'' + go + '\')" style="cursor:pointer"' : '') + '>' +
+        var tag = go ? 'button type="button"' : 'div', end = go ? 'button' : 'div';
+        return '<' + tag + ' class="inf-kpi"' + (go ? ' onclick="V2.go(\'' + go + '\')"' : '') + '>' +
           '<div class="inf-kpi-v mono" style="color:' + (color || 'var(--ip-ink)') + '">' + v + '</div>' +
           '<div class="inf-kpi-l">' + l + '</div>' +
           (sub ? '<div class="inf-kpi-s">' + sub + '</div>' : '') +
-          '</' + (go ? 'a' : 'div') + '>';
+          '</' + end + '>';
       };
       var kpis = '<div class="inf-kpis">' +
         kpi('Produits à pousser', num(PS.length), 'sur le réseau', 'var(--ip-blue)', 'molecules') +
@@ -138,7 +139,8 @@
       '.inf-hero h1{font-size:26px;font-weight:900;letter-spacing:-.025em;margin:8px 0 4px;line-height:1.1}' +
       '.inf-hero p{font-size:14px;color:var(--muted);font-weight:500;max-width:560px}' +
       '.inf-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}' +
-      '.inf-kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;text-decoration:none;color:inherit;box-shadow:var(--sh-1)}' +
+      '.inf-kpi{display:block;width:100%;text-align:left;font:inherit;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;text-decoration:none;color:inherit;box-shadow:var(--sh-1)}' +
+      'button.inf-kpi{cursor:pointer}' +
       '.inf-kpi-v{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1}' +
       '.inf-kpi-l{font-size:13px;font-weight:700;color:var(--ip-ink);margin-top:6px}' +
       '.inf-kpi-s{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px}' +
@@ -152,7 +154,7 @@
       '.inf-focus-cta{display:inline-flex;align-items:center;gap:5px;margin-top:16px;font-size:13px;font-weight:700;color:#fff;background:rgba(255,255,255,.16);border-radius:var(--r-pill);padding:8px 15px;cursor:pointer;position:relative;z-index:1}' +
       '.inf-focus-cta:hover{background:rgba(255,255,255,.26)}' +
       '.inf-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}' +
-      '@media(max-width:760px){.inf-grid{grid-template-columns:1fr}.inf-kpis{grid-template-columns:1fr}.inf-focus-grid{grid-template-columns:1fr 1fr}}' +
+      '@media(max-width:720px){.inf-grid{grid-template-columns:1fr}.inf-kpis{grid-template-columns:1fr}.inf-focus-grid{grid-template-columns:1fr 1fr}}' +
       '.inf-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden}' +
       '.inf-card-h{display:flex;align-items:center;gap:8px;padding:13px 16px;font-size:13.5px;font-weight:800;border-bottom:1px solid var(--line)}' +
       '.inf-card-link{margin-left:auto;font-size:12px;font-weight:700;color:var(--ip-blue);cursor:pointer;text-decoration:none}' +
