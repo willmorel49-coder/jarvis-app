@@ -416,7 +416,7 @@
     var stats = st.map, bIdx = benchIndex();
     var owned = new Set();
     pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
-    var MINPEN = 0.40;                 // top : au moins 40% des pharmacies de la réf. le commandent déjà
+    var MINPEN = 0.25;                 // top : au moins 25% des pharmacies de la réf. le commandent déjà
     var seuil = Math.max(2, Math.ceil(total * MINPEN));
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     stats.forEach(function (e, cip) {
