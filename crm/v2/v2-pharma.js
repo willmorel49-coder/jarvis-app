@@ -826,9 +826,10 @@
           : '<div class="v2-cat-empty">Aucun produit commandé identifié.</div>') +
       '</div>';
 
+    var open = sectionOpen('activity');
     return '<div class="ph-activity ph-section">' +
-        sectionHead('Activité de l\'officine', 'son CA, ce qu\'elle commande et sa marge') +
-        '<div class="ph-act-grid">' + chartCard + trCard + '</div>' +
+        sectionHead('Activité de l\'officine', 'son CA, ce qu\'elle commande et sa marge', 'activity', open) +
+        (open ? '<div class="ph-act-grid">' + chartCard + trCard + '</div>' : '') +
       '</div>';
   }
 
@@ -998,10 +999,18 @@
         '</div>';
     }
 
+    // Bloc STATS (pilotage de l'officine) — pour le RDV : on montre l'existant d'abord.
+    // Sections repliables (clic sur l'entête) pour n'afficher que ce qui est pertinent.
+    if (!('activity' in sectionCollapsed)) sectionCollapsed['activity'] = false; // Activité ouverte par défaut
+    var stats = '<div class="ph-stats">' + activitySection(sales, marge, ca) + topByCatSection(sales) + '</div>';
+
     // Liseré / halo contextuel : le pilier Opportunités porte SA lumière (--pil-opp).
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
-        head + bar + tabs + body +
+        head +
+        stats +
+        sectionHead('Proposition à pousser', 'sélection prête — décoche ce que tu ne veux pas, puis génère la liste d\'achats') +
+        bar + tabs + body +
       '</div>' +
       pharmaCartbar();
 
@@ -2246,6 +2255,7 @@
       '.phf-tab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
       '.phf-tab.on .phf-fam-ct{background:rgba(255,255,255,.22);color:#fff}',
       '.phf-phead{display:block}',
+      '.ph-stats .ph-section{margin-bottom:18px}',
       '@media(max-width:640px){.phf-bar2r{margin-left:0;width:100%}.phf-bar2 .phf-pdf{flex:1;justify-content:center}}',
       '.phf-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden;min-width:0}',
       '.phf-phead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}',
