@@ -912,55 +912,60 @@
     var tel = (pharma.tel == null ? '' : String(pharma.tel)).trim();
     var email = (pharma.email == null ? '' : String(pharma.email)).trim();
 
-    // ── Rail gauche : entête officine (bandeau bleu) ──
-    var rail =
-      '<aside class="phf-rail">' +
-        '<div class="phf-offhead">' +
+    // ── En-tête horizontal : identité + KPIs + contacts ──
+    var kpi = function (l, v, cls) {
+      return '<div class="phf-hkpi"><span class="phf-hkpi-l">' + l + '</span><span class="phf-hkpi-v ' + (cls || '') + ' mono">' + v + '</span></div>';
+    };
+    var head =
+      '<div class="phf-hcard">' +
+        '<div class="phf-hid">' +
           (pharma.code ? '<span class="phf-code">' + esc(String(pharma.code)) + '</span>' : '') +
-          '<h2 class="phf-offname">' + esc(pharma.name) + ficheBadge + '</h2>' +
-          (loc ? '<div class="phf-offloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
-          ((tel || email) ? '<div class="phf-contacts">' +
-            (tel ? '<a class="phf-cbtn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
-            (email ? '<a class="phf-cbtn" href="mailto:' + esc(email) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
-          '</div>' : '') +
+          '<div class="phf-hname">' + esc(pharma.name) + ficheBadge + '</div>' +
+          (loc ? '<div class="phf-hloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
         '</div>' +
-        // Comparer avec (EN HAUT — sélection directe réseau / groupement)
-        '<div class="phf-refbox"><div class="phf-ref-h">Comparer avec</div>' +
+        '<div class="phf-hkpis">' +
+          kpi('CA cumulé', V2.fmtEur(ca), '') +
+          kpi('Marge MDL', V2.fmtEur(marge), 'phf-pos') +
+          kpi('Références', V2.fmtNum(nbRefs), '') +
+          kpi('Top à pousser', V2.fmtNum(totalOpp), 'phf-push') +
+        '</div>' +
+        ((tel || email) ? '<div class="phf-hcontacts">' +
+          (tel ? '<a class="phf-cbtn2" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
+          (email ? '<a class="phf-cbtn2" href="mailto:' + esc(email) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
+        '</div>' : '') +
+      '</div>';
+
+    // ── Barre : « Comparer avec » + sélection + PDF ──
+    var bar =
+      '<div class="phf-bar2">' +
+        '<div class="phf-refwrap"><span class="phf-ref-h">Comparer avec</span>' +
           '<div class="phf-segref">' +
             '<button class="phf-segref-b' + (tog.scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')">Réseau Intégral</button>' +
             (tog.name ? '<button class="phf-segref-b' + (tog.scope === 'groupement' ? ' on' : '') + '" onclick="V2.setNetScope(\'groupement\')">' + esc(tog.name) + '</button>' : '') +
           '</div>' +
         '</div>' +
-        // KPIs
-        '<div class="phf-kpis">' +
-          '<div class="phf-kpi"><span class="phf-kpi-l">CA cumulé</span><span class="phf-kpi-v mono">' + V2.fmtEur(ca) + '</span></div>' +
-          '<div class="phf-kpi"><span class="phf-kpi-l">Marge MDL générée</span><span class="phf-kpi-v phf-pos mono">' + V2.fmtEur(marge) + '</span></div>' +
-          '<div class="phf-kpi"><span class="phf-kpi-l">Références commandées</span><span class="phf-kpi-v mono">' + V2.fmtNum(nbRefs) + '</span></div>' +
-          '<div class="phf-kpi"><span class="phf-kpi-l">Top à pousser</span><span class="phf-kpi-v phf-push mono">' + V2.fmtNum(totalOpp) + '</span></div>' +
+        '<div class="phf-bar2r">' +
+          '<span class="phf-selcount" id="phf-selcount">Sélection <b class="mono">' + (selCips ? selCips.size : 0) + '</b>/' + totalOpp + '</span>' +
+          '<button id="v2-opp-pdf" class="phf-pdf" onclick="V2.pharmaPrepaPreview(\'' + esc(String(pid)) + '\')">' + ICO('download', 16) + 'Liste d\'achats (PDF)</button>' +
         '</div>' +
-        // Familles (master)
-        (data.cats.length ? '<div class="phf-fam-title">Familles à pousser</div><nav class="phf-famlist">' +
-          data.cats.map(function (o) {
-            return '<button class="phf-fam' + (o.cat.key === recoFam ? ' on' : '') + '" onclick="V2.pharmaRecoFam(\'' + o.cat.key + '\')">' +
-              '<span class="phf-dot" style="background:' + o.cat.color + '"></span>' +
-              '<span class="phf-fam-nm">' + esc(o.cat.label) + '</span>' +
-              '<span class="phf-fam-ct mono">' + o.rows.length + '</span></button>';
-          }).join('') + '</nav>' : '') +
-      '</aside>';
+      '</div>';
 
-    // ── Panneau droit : produits de la famille active ──
-    var panel;
+    // ── Onglets familles HORIZONTAUX ──
+    var tabs = data.cats.length ? '<div class="phf-tabs">' + data.cats.map(function (o) {
+      return '<button class="phf-tab' + (o.cat.key === recoFam ? ' on' : '') + '" onclick="V2.pharmaRecoFam(\'' + o.cat.key + '\')">' +
+        '<span class="phf-dot" style="background:' + o.cat.color + '"></span>' + esc(o.cat.label) +
+        '<span class="phf-fam-ct mono">' + o.rows.length + '</span></button>';
+    }).join('') + '</div>' : '';
+
+    // ── Tableau de la famille active (plein largeur) ──
+    var body;
     if (!active) {
-      panel = '<section class="phf-panel"><div class="phf-empty">' +
-        (tog.scope === 'groupement' ? 'Pas assez de pharmacies de ce groupement dans tes données. Bascule sur « Réseau Intégral Pharma ».' : 'Cette officine commande déjà l\'essentiel du catalogue réseau.') +
-        '</div></section>';
+      body = '<div class="v2-card"><div class="phf-empty">' +
+        (tog.scope === 'groupement' ? 'Pas assez de pharmacies de ce groupement dans tes données. Bascule sur « Réseau Intégral ».' : 'Cette officine commande déjà l\'essentiel du catalogue réseau.') +
+        '</div></div>';
     } else {
       var subt = (tog.scope === 'groupement' ? 'Produits que les pharmacies de ' + esc(tog.name) + ' commandent' : 'Produits que le réseau Intégral Pharma commande') +
         ' et que cette officine n\'a pas — triés par nombre de pharmacies (Sortie).';
-      var fambar = data.cats.map(function (o) {
-        return '<button class="phf-fchip' + (o.cat.key === recoFam ? ' on' : '') + '" onclick="V2.pharmaRecoFam(\'' + o.cat.key + '\')">' +
-          '<span class="phf-dot" style="background:' + o.cat.color + '"></span>' + esc(o.cat.label) + '<span class="phf-fam-ct mono">' + o.rows.length + '</span></button>';
-      }).join('');
       var trs = active.rows.map(function (r) {
         var on = !!(selCips && selCips.has(r.cip));
         var pct = data.panel ? Math.round(r.sortie / data.panel * 100) : 0;
@@ -976,29 +981,24 @@
           '<td class="phf-td-check"><button type="button" class="phf-check' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
         '</tr>';
       }).join('');
-      panel =
-        '<section class="phf-panel">' +
-          '<div class="phf-fambar">' + fambar + '</div>' +
+      body =
+        '<div class="v2-card" style="padding:0;overflow:hidden">' +
           '<div class="phf-phead">' +
-            '<div><div class="phf-ptitle"><span class="phf-pdot" style="background:' + active.cat.color + '"></span>' + esc(active.cat.label) +
+            '<div class="phf-ptitle"><span class="phf-pdot" style="background:' + active.cat.color + '"></span>' + esc(active.cat.label) +
               (active.cat.sub ? ' <span class="phf-prange mono">(' + esc(active.cat.sub) + ')</span>' : '') + '</div>' +
-              '<div class="phf-psub">' + subt + '</div></div>' +
-            '<div class="phf-pright">' +
-              '<span class="phf-selcount" id="phf-selcount">Sélection <b class="mono">' + (selCips ? selCips.size : 0) + '</b>/' + totalOpp + '</span>' +
-              '<button id="v2-opp-pdf" class="phf-pdf" onclick="V2.pharmaPrepaPreview(\'' + esc(String(pid)) + '\')">' + ICO('download', 16) + 'Liste d\'achats (PDF)</button>' +
-            '</div>' +
+            '<div class="phf-psub">' + subt + '</div>' +
           '</div>' +
           '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
             '<th class="phf-tl">Désignation</th><th>Prix net IP</th><th>Remise</th><th class="phf-tc">Sortie</th><th>Volume</th><th class="phf-tc">Type</th><th class="phf-th-check">PDF</th>' +
           '</tr></thead><tbody>' + trs + '</tbody></table></div>' +
           '<div class="phf-foot">' + ICO('spark', 14) + ' Famille <b style="margin:0 4px">' + esc(active.cat.label) + '</b> — ' + active.rows.length + ' référence' + (active.rows.length > 1 ? 's' : '') + ' à pousser sur ' + totalOpp + ' au total. Tout est coché — décoche ce que tu ne veux pas dans la liste d\'achats.</div>' +
-        '</section>';
+        '</div>';
     }
 
     // Liseré / halo contextuel : le pilier Opportunités porte SA lumière (--pil-opp).
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
-        '<div class="phf-shell">' + rail + panel + '</div>' +
+        head + bar + tabs + body +
       '</div>' +
       pharmaCartbar();
 
@@ -2207,6 +2207,33 @@
       '.phf-segref-b{flex:1;padding:9px 8px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,color .15s}',
       '.phf-segref-b:hover{color:var(--ip-ink)}',
       '.phf-segref-b.on{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-1)}',
+      /* Disposition HORIZONTALE (une seule colonne) */
+      '.phf-hcard{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:16px 20px;margin-bottom:14px}',
+      '.phf-hid{min-width:180px;flex:1}',
+      '.phf-hname{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.15;display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.phf-hloc{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:4px;display:flex;align-items:center;gap:5px}',
+      '.phf-hkpis{display:flex;gap:10px;flex-wrap:wrap}',
+      '.phf-hkpi{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:8px 14px;min-width:92px}',
+      '.phf-hkpi-l{display:block;font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}',
+      '.phf-hkpi-v{display:block;font-size:17px;font-weight:800;letter-spacing:-.01em;margin-top:2px}',
+      '.phf-hkpi-v.phf-pos{color:var(--c-opp)}',
+      '.phf-hkpi-v.phf-push{color:var(--ip-blue)}',
+      '.phf-hcontacts{display:flex;gap:8px}',
+      '.phf-cbtn2{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ip-blue);background:var(--card-2);border:1px solid var(--line-strong);border-radius:var(--r-btn);padding:9px 12px;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s}',
+      '.phf-cbtn2:hover{background:#fff;border-color:var(--ip-blue)}',
+      '.phf-bar2{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}',
+      '.phf-refwrap{display:flex;align-items:center;gap:10px}',
+      '.phf-refwrap .phf-ref-h{margin:0;white-space:nowrap}',
+      '.phf-bar2 .phf-segref{width:auto}',
+      '.phf-bar2 .phf-segref-b{flex:0 0 auto;padding:9px 14px}',
+      '.phf-bar2r{display:flex;align-items:center;gap:12px;margin-left:auto}',
+      '.phf-tabs{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;margin-bottom:14px}',
+      '.phf-tab{flex:none;display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid var(--line-strong);border-radius:var(--r-pill);background:var(--card);font:inherit;font-size:13px;font-weight:600;color:var(--ip-ink);cursor:pointer;white-space:nowrap;transition:background .14s,border-color .14s,color .14s}',
+      '.phf-tab:hover{border-color:var(--ip-blue)}',
+      '.phf-tab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.phf-tab.on .phf-fam-ct{background:rgba(255,255,255,.22);color:#fff}',
+      '.phf-phead{display:block}',
+      '@media(max-width:640px){.phf-bar2r{margin-left:0;width:100%}.phf-bar2 .phf-pdf{flex:1;justify-content:center}}',
       '.phf-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden;min-width:0}',
       '.phf-phead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}',
       '.phf-ptitle{font-size:18px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}',
