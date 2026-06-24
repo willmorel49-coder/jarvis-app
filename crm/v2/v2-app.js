@@ -487,7 +487,7 @@
       ];
       // Infos du matin (brief quotidien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
-        P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'Ton brief du jour : le focus produit du jour, les offres labo en cours et le top marge réseau. Pour démarrer ta tournée.', go: 'Voir le brief' });
+        P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'La veille du jour : ruptures ANSM, sécurité, réglementaire et actu officine — avec ton alternative IP pour chaque molécule en tension.', go: 'Voir la veille' });
       }
       // Pilier Molécules (analyse réseau : rotation + marge pharmacien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) {
