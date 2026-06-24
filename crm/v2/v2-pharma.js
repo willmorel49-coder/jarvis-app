@@ -1318,7 +1318,7 @@
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
     }).then(function () {
       var wrap = document.createElement('div');
-      wrap.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff';
+      wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
       wrap.innerHTML = built.html;
       document.body.appendChild(wrap);
       var fn = 'Prepa-RDV-' + (built.pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
@@ -1878,7 +1878,7 @@
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
     }).then(function () {
       var wrap = document.createElement('div');
-      wrap.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff';
+      wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
       wrap.innerHTML = html; document.body.appendChild(wrap);
       var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       var worker = window.html2pdf().from(wrap.firstChild).set({
