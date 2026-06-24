@@ -500,10 +500,9 @@
         // App JARVIS : espace Marketing de Pauline & Will (supports + sélections à pousser)
         P.splice(2, 0, { k: 'marketing', cls: 'p6', accent: '#E0556E', ico: 'spark', tag: 'Pauline & Will', t: 'Marketing', d: 'Fabriquez vos supports (flyers produits avec photos et prix) et vos sélections à pousser aux pharmacies. À deux, au même endroit.', go: 'Ouvrir le marketing' });
       }
-      // Groupements : la tuile ouvre directement la génération de liste d'achats par groupement
-      // (vue Opportunités › Groupements). La carte de prospection reste accessible via ⌘K.
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.pharma) {
-        P.push({ k: 'groupements', cls: 'p7', accent: '#0034A0', ico: 'grid', tag: 'Listes', route: { name: 'pharma', param: 'groupements' }, t: 'Groupements', d: 'Choisis un groupement et génère sa liste d\'achats idéale (produits commandés par le réseau adhérent) à pousser, prête en PDF.', go: 'Voir les groupements' });
+      // Espace Groupements : cartographie + grossistes + onglet « Opportunités groupements » (génération PDF)
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) {
+        P.push({ k: 'groupements', cls: 'p7', accent: '#0034A0', ico: 'grid', tag: 'Carte + listes', t: 'Groupements', d: 'La cartographie de prospection, les grossistes, et les opportunités par groupement (liste d\'achats à pousser en PDF) — réunis en onglets.', go: 'Ouvrir les groupements' });
       }
       // Mode prospection : pitch à montrer au comptoir
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) {

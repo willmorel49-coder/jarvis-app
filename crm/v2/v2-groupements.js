@@ -211,12 +211,18 @@
   };
   V2.psFilter = function (q) { txtSel = q || ''; applyFilter(); };
 
-  function tabs() {
+  // Onglets de l'ESPACE Groupements (partagés avec la vue "Opportunités groupements" du pilier pharma)
+  // active : 'carte' | 'grossistes' | 'opp'
+  V2.grpSpaceTabs = function (active) {
     return '<div class="grp-tabs">' +
-      '<button class="grp-tab' + (view === 'app' ? ' on' : '') + '" onclick="V2.grpView(\'app\')">Groupements</button>' +
-      '<button class="grp-tab' + (view === 'grossistes' ? ' on' : '') + '" onclick="V2.grpView(\'grossistes\')">Grossistes</button>' +
+      '<button class="grp-tab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.grpGo(\'app\')">Cartographie</button>' +
+      '<button class="grp-tab' + (active === 'grossistes' ? ' on' : '') + '" onclick="V2.grpGo(\'grossistes\')">Grossistes</button>' +
+      '<button class="grp-tab' + (active === 'opp' ? ' on' : '') + '" onclick="V2.go(\'pharma\',\'groupements\')">Opportunités groupements</button>' +
       '</div>';
-  }
+  };
+  // navigue vers la carte groupements en réglant la sous-vue (depuis n'importe quelle page)
+  V2.grpGo = function (v) { view = v; V2.go('groupements'); };
+  function tabs() { return V2.grpSpaceTabs(view === 'grossistes' ? 'grossistes' : 'carte'); }
 
   V2.pages.groupements = {
     render: function (root) {
