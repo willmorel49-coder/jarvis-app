@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════
    CRM V2 · Pilier "Infos du matin" (pages.infos)
-   Brief quotidien 100% client-side (aucune clé API, aucun serveur) :
-   - le focus produit du jour (déterministe par date, tournant)
-   - les offres labo en cours (BENCHMARK)
-   - le top marge pharmacien du réseau (PROD_STATS)
-   Sert de point de départ de journée pour préparer la tournée.
+   VRAIE veille marché officine, 100% gratuite : lit crm/v2/infos-jour.json
+   (généré chaque matin par le robot GitHub Actions generate_infos.py qui agrège
+   les flux RSS ANSM — ruptures/sécurité/actu — et Le Moniteur des pharmacies).
+   Différenciateur : croise la DCI des ruptures avec le catalogue IP -> alternatives IP.
+   Aucune clé, aucun coût. Fallback propre si le fichier n'est pas là.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -13,120 +13,135 @@
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
   var eur = function (n) { return V2.fmtEur ? V2.fmtEur(n) : (n + ' €'); };
-  var num = function (n) { return V2.fmtNum ? V2.fmtNum(n) : String(n); };
   function cap(s) { s = String(s == null ? '' : s); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
-  // Index du jour (déterministe, stable sur 24h) — pas de Math.random pour rester reproductible.
-  function dayOfYear() {
-    var d = new Date();
-    return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(d.getFullYear(), 0, 0)) / 86400000);
+  var DATA = null, LOADED = false, FAILED = false;
+
+  function load(cb) {
+    if (LOADED || FAILED) { cb(); return; }
+    var day = '';
+    try { day = new Date().toISOString().slice(0, 10); } catch (e) {}
+    try {
+      fetch('infos-jour.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+        .then(function (j) { DATA = j; LOADED = true; cb(); })
+        .catch(function () { FAILED = true; cb(); });
+    } catch (e) { FAILED = true; cb(); }
   }
-  function dateLabel() {
+
+  var CAT = {
+    ruptures:      { label: 'Ruptures & tensions', color: 'var(--bad)', ico: 'alert' },
+    securite:      { label: 'Sécurité / pharmacovigilance', color: 'var(--c-cat)', ico: 'alert' },
+    reglementaire: { label: 'Réglementaire & marché', color: 'var(--ip-blue)', ico: 'spark' },
+    profession:    { label: 'Profession & officine', color: 'var(--c-opp)', ico: 'pharma' },
+  };
+
+  // Alternatives IP pour une molécule en rupture (les génériques IP portent le nom de la DCI)
+  function ipAlternatives(dci) {
+    var B = window.BENCHMARK; if (!B || !dci) return [];
+    var key = norm(dci).split(/[ ,/]/)[0];
+    if (key.length < 4) return [];
+    var out = [], seen = {};
+    for (var i = 0; i < B.length && out.length < 4; i++) {
+      var b = B[i], d = norm(b.designation || '');
+      if (d.indexOf(key) >= 0) {
+        var c = String(b.cip13 || ''); if (seen[c]) continue; seen[c] = 1;
+        var bp = V2.bestPrice ? V2.bestPrice(b) : { ip: b.prix_ip, remise: b.remise_pct };
+        out.push({ d: b.designation || '', cip: c, ip: bp.ip, remise: bp.remise, froid: !!b.is_froid });
+      }
+    }
+    return out;
+  }
+
+  function frDate(iso) {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); }
+    catch (e) { return ''; }
+  }
+  function dayLabel() {
     try { return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); }
     catch (e) { return 'aujourd\'hui'; }
   }
 
-  // Offres labo en cours (catalogue IP) — nécessite BENCHMARK (chargé à la demande).
-  function offres() {
-    var B = window.BENCHMARK; if (!B) return null;
-    var out = [];
-    for (var i = 0; i < B.length; i++) {
-      var b = B[i], bp = V2.bestPrice ? V2.bestPrice(b) : null;
-      if (bp && bp.offre && bp.ip > 0) out.push({ d: b.designation || '', cip: b.cip13 || '', ip: bp.ip, ht: bp.ht || 0, remise: bp.remise || 0, froid: !!b.is_froid });
-    }
-    out.sort(function (a, b) { return (b.remise || 0) - (a.remise || 0); });
-    return out;
-  }
-
   V2.pages.infos = {
     render: function (root) {
-      var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
+      var topbar = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
       var firstName = (V2.user && V2.user.name ? V2.user.name.split(' ')[0] : 'Will');
-      var PS = window.PROD_STATS || [];
 
-      // ── Focus produit du jour (tournant) parmi le top rotation réseau ──
-      var pool = PS.slice(0, Math.min(PS.length, 150));
-      var focus = pool.length ? pool[dayOfYear() % pool.length] : null;
-
-      // ── Top marge pharmacien (réseau) ──
-      var topMarge = PS.slice().sort(function (a, b) { return (b.marge || 0) - (a.marge || 0); }).slice(0, 6);
-
-      // ── Offres labo (lazy : on charge le catalogue en tâche de fond) ──
-      var offs = offres();
-      if (offs === null && V2.loadFiles) {
+      // Chargement du brief + catalogue (pour les alternatives IP) en tâche de fond
+      if (!LOADED && !FAILED) {
+        load(function () { if (V2.route && V2.route.name === 'infos') V2.render(); });
+        root.innerHTML = topbar + '<div class="v2-wrap narrow"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de la veille du matin…</div></div></div>';
+        return;
+      }
+      if (!window.BENCHMARK && V2.loadFiles && DATA) {
         V2.loadFiles(['bench']).then(function () { if (V2.route && V2.route.name === 'infos') V2.render(); });
       }
 
-      // KPIs
-      var kpi = function (l, v, sub, color, go) {
-        var tag = go ? 'button type="button"' : 'div', end = go ? 'button' : 'div';
-        return '<' + tag + ' class="inf-kpi"' + (go ? ' onclick="V2.go(\'' + go + '\')"' : '') + '>' +
-          '<div class="inf-kpi-v mono" style="color:' + (color || 'var(--ip-ink)') + '">' + v + '</div>' +
-          '<div class="inf-kpi-l">' + l + '</div>' +
-          (sub ? '<div class="inf-kpi-s">' + sub + '</div>' : '') +
-          '</' + end + '>';
-      };
-      var kpis = '<div class="inf-kpis">' +
-        kpi('Produits à pousser', num(PS.length), 'sur le réseau', 'var(--ip-blue)', 'molecules') +
-        kpi('Offres labo en cours', offs === null ? '…' : num(offs.length), 'remises ponctuelles', 'var(--c-amber)', 'molecules') +
-        kpi('Officines à voir', num((V2.pharmacies || []).length), 'dans ton secteur', 'var(--c-opp)', 'pharma') +
-        '</div>';
+      var items = (DATA && DATA.items) ? DATA.items : [];
+      var ruptures = items.filter(function (i) { return i.cat === 'ruptures'; });
 
-      // Carte focus du jour
-      var focusCard = focus ? '<div class="inf-focus">' +
-        '<div class="inf-focus-tag">' + ICO('spark', 14) + ' Le focus du jour</div>' +
-        '<div class="inf-focus-name">' + esc(cap((focus.d || '').toLowerCase())) + '</div>' +
-        '<div class="inf-focus-grid">' +
-          '<div><div class="inf-f-v mono">' + num(focus.rota) + '</div><div class="inf-f-l">boîtes/an/pharmacie</div></div>' +
-          '<div><div class="inf-f-v mono" style="color:var(--c-opp)">' + eur(focus.marge) + '</div><div class="inf-f-l">marge pharmacien/an</div></div>' +
-          '<div><div class="inf-f-v mono" style="color:var(--ip-blue)">' + eur(focus.remise) + '</div><div class="inf-f-l">ta remise/an</div></div>' +
-          '<div><div class="inf-f-v mono">' + num(focus.n) + '</div><div class="inf-f-l">pharmacies réseau</div></div>' +
-        '</div>' +
-        '<a class="inf-focus-cta" onclick="V2.go(\'molecules\',\'' + esc(focus.c) + '\')">Voir dans le catalogue ' + ICO('chev', 14) + '</a>' +
-      '</div>' : '';
-
-      // Top marge réseau
-      var margeRows = topMarge.map(function (r, i) {
-        return '<a class="inf-row" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">' +
-          '<span class="inf-row-rk mono">' + (i + 1) + '</span>' +
-          '<span class="inf-row-nm">' + esc(cap((r.d || '').toLowerCase())) +
-            '<small>rotation ~' + num(r.rota) + '/an · ' + num(r.n) + ' phies</small></span>' +
-          '<span class="inf-row-v mono" style="color:var(--c-opp)">' + eur(r.marge) + '<small>/an</small></span>' +
-        '</a>';
-      }).join('');
-      var margeCard = topMarge.length ? '<div class="inf-card">' +
-        '<div class="inf-card-h">' + ICO('cat', 16) + ' Top marge pharmacien · réseau' +
-          '<a class="inf-card-link" onclick="V2.go(\'molecules\')">tout voir →</a></div>' +
-        margeRows + '</div>' : '';
-
-      // Offres du moment
-      var offCard = '';
-      if (offs && offs.length) {
-        var offRows = offs.slice(0, 6).map(function (o, i) {
-          return '<a class="inf-row" onclick="V2.go(\'molecules\',\'' + esc(o.cip) + '\')">' +
-            '<span class="inf-row-rk mono">' + (i + 1) + '</span>' +
-            '<span class="inf-row-nm">' + esc(cap((o.d || '').toLowerCase())) + (o.froid ? ' <span class="ph-froid">FROID</span>' : '') +
-              '<small>prix net ' + eur(o.ip) + '</small></span>' +
-            '<span class="inf-row-v mono" style="color:var(--c-amber)">-' + (o.remise || 0) + '%</span>' +
-          '</a>';
-        }).join('');
-        offCard = '<div class="inf-card">' +
-          '<div class="inf-card-h">' + ICO('spark', 16) + ' Offres labo en cours' +
-            '<a class="inf-card-link" onclick="V2.go(\'molecules\')">tout voir →</a></div>' +
-          offRows + '</div>';
+      // ── Opportunités IP : ruptures croisées au catalogue (le levier commercial) ──
+      var oppHtml = '';
+      if (window.BENCHMARK) {
+        var opps = ruptures.map(function (r) { return { r: r, alt: r.dci ? ipAlternatives(r.dci) : [] }; })
+          .filter(function (o) { return o.alt.length; });
+        if (opps.length) {
+          oppHtml = '<div class="inf-opp">' +
+            '<div class="inf-opp-h">' + ICO('spark', 16) + ' Opportunités IP — une rupture, ton alternative en stock</div>' +
+            opps.slice(0, 6).map(function (o) {
+              var alts = o.alt.map(function (a) {
+                return '<a class="inf-alt" onclick="V2.go(\'molecules\',\'' + esc(a.cip) + '\')">' + esc(cap((a.d || '').toLowerCase())) +
+                  (a.ip > 0 ? '<span class="inf-alt-p mono">' + eur(a.ip) + (a.remise > 0 ? ' · -' + Math.round(a.remise) + '%' : '') + '</span>' : '') + '</a>';
+              }).join('');
+              return '<div class="inf-opp-row"><div class="inf-opp-rupt">' + ICO('alert', 13) + ' <b>' + esc(cap(o.r.dci)) + '</b> en tension <small>· ' + esc(o.r.titre.slice(0, 60)) + '</small></div>' +
+                '<div class="inf-alts">' + alts + '</div></div>';
+            }).join('') +
+          '</div>';
+        }
       }
 
-      root.innerHTML = top +
+      // ── Veille par catégorie ──
+      var sections = '';
+      ['ruptures', 'reglementaire', 'securite', 'profession'].forEach(function (k) {
+        var list = items.filter(function (i) { return i.cat === k; });
+        if (!list.length) return;
+        var c = CAT[k] || { label: k, color: 'var(--muted)', ico: 'spark' };
+        var rows = list.map(function (i) {
+          var url = i.url ? ' href="' + esc(i.url) + '" target="_blank" rel="noopener"' : '';
+          return '<a class="inf-item"' + url + '>' +
+            '<span class="inf-item-dot" style="background:' + c.color + '"></span>' +
+            '<span class="inf-item-tx">' + esc(i.titre) +
+              '<small>' + esc(i.source || '') + (frDate(i.date) ? ' · ' + frDate(i.date) : '') + '</small></span>' +
+            (i.url ? '<span class="inf-item-go">' + ICO('chev', 15) + '</span>' : '') +
+          '</a>';
+        }).join('');
+        sections += '<div class="inf-card"><div class="inf-card-h" style="color:' + c.color + '">' + ICO(c.ico, 16) + ' ' + c.label +
+          '<span class="inf-card-n mono">' + list.length + '</span></div>' + rows + '</div>';
+      });
+
+      var body;
+      if (!DATA || !items.length) {
+        // Fallback : jamais d'écran vide
+        body = '<div class="inf-card"><div class="inf-empty">' +
+          (FAILED ? 'La veille du jour n\'a pas pu être chargée (connexion ?). Réessaie plus tard — le brief se met à jour chaque matin.'
+                  : 'Pas encore d\'infos pour aujourd\'hui. Le brief se met à jour chaque matin.') +
+          '</div></div>';
+      } else {
+        body = oppHtml + '<div class="inf-grid2">' + sections + '</div>';
+      }
+
+      var maj = (DATA && DATA.generated_at) ? frDate(DATA.generated_at) : '';
+      root.innerHTML = topbar +
         '<div class="v2-wrap narrow" style="--accent:var(--c-amber)">' +
           '<div class="inf-hero">' +
-            '<span class="inf-eyebrow">' + ICO('spark', 15) + ' ' + cap(dateLabel()) + '</span>' +
-            '<h1>Bonjour ' + esc(firstName) + ', voici ton brief du matin</h1>' +
-            '<p>L\'essentiel pour démarrer ta journée : ton focus du jour, les offres en cours et le top marge réseau.</p>' +
+            '<span class="inf-eyebrow">' + ICO('spark', 15) + ' ' + cap(dayLabel()) + '</span>' +
+            '<h1>Bonjour ' + esc(firstName) + ', ta veille du matin</h1>' +
+            '<p>Ruptures, sécurité, réglementaire et actu officine — l\'essentiel pour arriver informé en rendez-vous.</p>' +
           '</div>' +
-          kpis +
-          focusCard +
-          '<div class="inf-grid">' + margeCard + offCard + '</div>' +
-          '<div class="inf-foot">Mis à jour chaque jour à partir des ventes réseau et du catalogue Intégral Pharma — aucune donnée ne sort de l\'app.</div>' +
+          body +
+          '<div class="inf-foot">Sources : ANSM (ruptures · sécurité · actualités) &amp; Le Moniteur des pharmacies' + (maj ? ' · mis à jour le ' + maj : '') + '. Mis à jour chaque matin, automatiquement.</div>' +
         '</div>';
     }
   };
@@ -134,36 +149,32 @@
   if (!document.getElementById('v2-infos-css')) {
     var st = document.createElement('style'); st.id = 'v2-infos-css';
     st.textContent =
-      '.inf-hero{margin:8px 0 20px}' +
+      '.inf-hero{margin:8px 0 18px}' +
       '.inf-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--c-amber);text-transform:capitalize}' +
-      '.inf-hero h1{font-size:26px;font-weight:900;letter-spacing:-.025em;margin:8px 0 4px;line-height:1.1}' +
-      '.inf-hero p{font-size:14px;color:var(--muted);font-weight:500;max-width:560px}' +
-      '.inf-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}' +
-      '.inf-kpi{display:block;width:100%;text-align:left;font:inherit;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;text-decoration:none;color:inherit;box-shadow:var(--sh-1)}' +
-      'button.inf-kpi{cursor:pointer}' +
-      '.inf-kpi-v{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1}' +
-      '.inf-kpi-l{font-size:13px;font-weight:700;color:var(--ip-ink);margin-top:6px}' +
-      '.inf-kpi-s{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px}' +
-      '.inf-focus{background:linear-gradient(150deg,#0050E6,#0034A0);color:#fff;border-radius:var(--r-card);padding:20px 22px;margin-bottom:16px;box-shadow:var(--sh-2);position:relative;overflow:hidden}' +
-      '.inf-focus::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)}' +
-      '.inf-focus-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;opacity:.85}' +
-      '.inf-focus-name{font-size:20px;font-weight:800;letter-spacing:-.01em;margin:6px 0 16px;position:relative;z-index:1}' +
-      '.inf-focus-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;position:relative;z-index:1}' +
-      '.inf-f-v{font-size:18px;font-weight:800;line-height:1}' +
-      '.inf-f-l{font-size:10.5px;opacity:.82;font-weight:600;margin-top:3px}' +
-      '.inf-focus-cta{display:inline-flex;align-items:center;gap:5px;margin-top:16px;font-size:13px;font-weight:700;color:#fff;background:rgba(255,255,255,.16);border-radius:var(--r-pill);padding:8px 15px;cursor:pointer;position:relative;z-index:1}' +
-      '.inf-focus-cta:hover{background:rgba(255,255,255,.26)}' +
-      '.inf-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}' +
-      '@media(max-width:720px){.inf-grid{grid-template-columns:1fr}.inf-kpis{grid-template-columns:1fr}.inf-focus-grid{grid-template-columns:1fr 1fr}}' +
+      '.inf-hero h1{font-size:25px;font-weight:900;letter-spacing:-.025em;margin:8px 0 4px;line-height:1.1}' +
+      '.inf-hero p{font-size:14px;color:var(--muted);font-weight:500;max-width:580px}' +
+      '.inf-opp{background:linear-gradient(150deg,#0050E6,#0034A0);color:#fff;border-radius:var(--r-card);padding:18px 20px;margin-bottom:18px;box-shadow:var(--sh-2)}' +
+      '.inf-opp-h{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;letter-spacing:.01em;margin-bottom:12px}' +
+      '.inf-opp-row{padding:10px 0;border-top:1px solid rgba(255,255,255,.16)}' +
+      '.inf-opp-row:first-of-type{border-top:none}' +
+      '.inf-opp-rupt{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}' +
+      '.inf-opp-rupt small{opacity:.7;font-weight:500}' +
+      '.inf-alts{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}' +
+      '.inf-alt{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.14);border-radius:var(--r-pill);padding:6px 12px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer;text-decoration:none}' +
+      '.inf-alt:hover{background:rgba(255,255,255,.26)}' +
+      '.inf-alt-p{opacity:.85;font-weight:600}' +
+      '.inf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}' +
+      '@media(max-width:720px){.inf-grid2{grid-template-columns:1fr}}' +
       '.inf-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden}' +
       '.inf-card-h{display:flex;align-items:center;gap:8px;padding:13px 16px;font-size:13.5px;font-weight:800;border-bottom:1px solid var(--line)}' +
-      '.inf-card-link{margin-left:auto;font-size:12px;font-weight:700;color:var(--ip-blue);cursor:pointer;text-decoration:none}' +
-      '.inf-row{display:flex;align-items:center;gap:11px;padding:10px 16px;border-bottom:1px solid var(--line-2,var(--line));text-decoration:none;color:inherit}' +
-      '.inf-row:last-child{border-bottom:none}.inf-row:hover{background:var(--card-2)}' +
-      '.inf-row-rk{flex:none;width:20px;font-size:12px;font-weight:700;color:var(--muted-2)}' +
-      '.inf-row-nm{flex:1;min-width:0;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis}' +
-      '.inf-row-nm small{display:block;font-weight:500;color:var(--muted);font-family:var(--mono);font-size:11px}' +
-      '.inf-row-v{flex:none;font-size:14px;font-weight:800}.inf-row-v small{font-size:10px;font-weight:600;color:var(--muted-2)}' +
+      '.inf-card-n{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted);background:var(--surf-sunken);border-radius:var(--r-pill);padding:1px 9px}' +
+      '.inf-item{display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--line-2,var(--line));text-decoration:none;color:inherit}' +
+      '.inf-item:last-child{border-bottom:none}.inf-item:hover{background:var(--card-2)}' +
+      '.inf-item-dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:5px;align-self:flex-start}' +
+      '.inf-item-tx{flex:1;min-width:0;font-size:13px;font-weight:700;line-height:1.3}' +
+      '.inf-item-tx small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-top:2px}' +
+      '.inf-item-go{flex:none;color:var(--muted-2)}' +
+      '.inf-empty{padding:30px 18px;text-align:center;color:var(--muted);font-size:13.5px}' +
       '.inf-foot{margin-top:16px;font-size:11.5px;color:var(--muted);text-align:center}';
     document.head.appendChild(st);
   }
