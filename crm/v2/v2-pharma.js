@@ -33,6 +33,7 @@
   var netScope = 'reseau';    // réf. de la reco fiche : 'reseau' (réseau IP) | 'groupement' (son groupement)
   var recoFam = null;         // famille active dans la fiche officine (master-détail)
   var recoInitKey = null;     // (pid|scope) déjà pré-sélectionné ? — tout coché par défaut
+  var grpListFilter = 'all';  // listing best rotations groupement : 'all' | 'gap' (ce qu'elle ne commande pas)
   var selList = null;         // liste personnalisée ouverte (id)
   var grpCollapsed = {};      // repli des catégories en vue groupement / liste
 
@@ -441,6 +442,28 @@
       }).filter(function (o) { return o.rows.length; })
     };
   }
+  // Best rotations du groupement (ou réseau si pas de groupement), avec marqueur
+  // "commande / ne commande pas" pour CETTE officine. Pour cibler en RDV.
+  function grpBestRotations(pid, limit) {
+    cipStats();
+    var g = groupementPids(pid), st, total, isGrp = !!(g.set && g.set.size >= 2);
+    if (isGrp) { st = computeStats('grp:' + g.name, g.set); total = st.total; }
+    else { st = computeStats('__net__', null); total = st.total; }
+    var stats = st.map, bIdx = benchIndex();
+    var owned = new Set();
+    pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
+    var rows = [];
+    stats.forEach(function (e, cip) {
+      var b = bIdx.get(cip); if (!b) return;
+      var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
+      var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
+      rows.push({ cip: cip, designation: b.designation || '', prix_ip: ip, remise: rem, froid: !!b.is_froid, sortie: e.ph.size, qte: e.qte, owned: owned.has(cip) });
+    });
+    rows.sort(function (a, b) { return b.sortie - a.sortie || b.qte - a.qte; });
+    return { rows: rows.slice(0, limit || 50), total: total, name: g.name, isGrp: isGrp };
+  }
+  V2.pharmaGrpFilter = function (f) { grpListFilter = f; V2.render(); };
+
   // Sélecteur de référence réutilisé (réseau IP / son groupement)
   function recoScopeToggle(pid) {
     var g = groupementPids(pid);
@@ -949,6 +972,40 @@
       ((nReseau <= 0 && !hasGrp) ? '<div class="v2-card"><div class="phf-empty">Cette officine commande déjà l\'essentiel du catalogue.</div></div>' : '') +
     '</div>';
 
+    // ── Listing : best rotations de son groupement, avec marqueur commande / ne commande pas ──
+    var rot = grpBestRotations(pid, 60);
+    var nOwn = rot.rows.filter(function (r) { return r.owned; }).length;
+    var nGap = rot.rows.length - nOwn;
+    var shownRot = (grpListFilter === 'gap') ? rot.rows.filter(function (r) { return !r.owned; }) : rot.rows;
+    var rotRows = shownRot.map(function (r, i) {
+      var pct = rot.total ? Math.round(r.sortie / rot.total * 100) : 0;
+      var tag = r.owned
+        ? '<span class="phf-mk phf-mk-own">' + ICO('check', 12) + ' Commande</span>'
+        : '<span class="phf-mk phf-mk-gap">À pousser</span>';
+      return '<tr class="' + (r.owned ? 'phf-r-own' : 'phf-r-gap') + '">' +
+        '<td class="phf-td-l"><div class="phf-desig">' + esc(cap((r.designation || '').toLowerCase())) + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + '</div><div class="phf-cip">' + esc(r.cip) + '</div></td>' +
+        '<td>' + tag + '</td>' +
+        '<td><span class="phf-price">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) : '—') + '</span></td>' +
+        '<td><span class="phf-rem' + (r.remise > 0 ? '' : ' phf-none') + '">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</span></td>' +
+        '<td class="phf-tc"><span class="phf-sortie"><span class="mono phf-sortie-n">' + r.sortie + '/' + rot.total + '</span><span class="phf-bar"><i style="width:' + pct + '%"></i></span></span></td>' +
+        '<td><span class="phf-vol mono">' + V2.fmtNum(r.qte) + '</span></td>' +
+      '</tr>';
+    }).join('');
+    var listing = rot.rows.length ? '<div class="v2-card" style="padding:0;overflow:hidden;margin-top:8px">' +
+      '<div class="phf-phead" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">' +
+        '<div><div class="phf-ptitle"><span class="phf-pdot" style="background:var(--c-opp)"></span>Best rotations ' + (rot.isGrp ? 'de son groupement · ' + esc(rot.name) : 'du réseau') + '</div>' +
+          '<div class="phf-psub">les produits les plus commandés par ' + (rot.isGrp ? 'son groupement' : 'le réseau') + ' — ce qu\'elle a déjà et ce qu\'il reste à pousser</div></div>' +
+        '<div class="phf-rotfilter">' +
+          '<button class="phf-rf' + (grpListFilter === 'all' ? ' on' : '') + '" onclick="V2.pharmaGrpFilter(\'all\')">Tout · ' + rot.rows.length + '</button>' +
+          '<button class="phf-rf' + (grpListFilter === 'gap' ? ' on' : '') + '" onclick="V2.pharmaGrpFilter(\'gap\')">À pousser · ' + nGap + '</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
+        '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th>Remise</th><th class="phf-tc">Sortie</th><th>Volume</th>' +
+      '</tr></thead><tbody>' + rotRows + '</tbody></table></div>' +
+      '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + ' à pousser</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? 'du groupement' : 'du réseau') + '.</div>' +
+    '</div>' : '';
+
     // Liseré / halo contextuel : le pilier Opportunités porte SA lumière (--pil-opp).
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
@@ -956,6 +1013,7 @@
         stats +
         sectionHead('Listes d\'achats à pousser', 'deux propositions prêtes à générer en PDF pour le rendez-vous') +
         props +
+        listing +
       '</div>';
   }
 
@@ -2306,6 +2364,14 @@
       '.phf-prop-n small{display:block;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.03em;margin-top:3px}',
       '.phf-prop-acts{display:flex;gap:8px;flex-wrap:wrap}',
       '@media(max-width:560px){.phf-prop-acts{width:100%}.phf-prop-acts .phf-pdf{flex:1;justify-content:center}}',
+      '.phf-mk{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;padding:3px 9px;border-radius:var(--r-pill);white-space:nowrap}',
+      '.phf-mk-own{color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 13%,transparent)}',
+      '.phf-mk-gap{color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 15%,transparent)}',
+      '.phf-r-gap td{background:color-mix(in srgb,var(--c-amber) 5%,transparent)}',
+      '.phf-rotfilter{display:flex;gap:6px}',
+      '.phf-rf{padding:7px 12px;border-radius:var(--r-pill);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap}',
+      '.phf-rf:hover{color:var(--ip-ink)}',
+      '.phf-rf.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
       '.phf-fambar{display:none}',
       '.phf-tablewrap{overflow-x:auto}',
       '.phf-tbl{width:100%;border-collapse:collapse;font-size:13px}',
