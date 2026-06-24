@@ -161,7 +161,7 @@
             ((DATA && DATA.count) ? '<div class="inf-count"><b>' + (DATA.count_today || 0) + '</b> aujourd\'hui · ' + DATA.count + ' sur 7 jours</div>' : '') +
           '</div>' +
           body +
-          '<div class="inf-foot">Sources : ANSM (ruptures · sécurité · actualités) &amp; Le Moniteur des pharmacies' + (maj ? ' · mis à jour le ' + maj : '') + '. Mis à jour chaque matin, automatiquement.</div>' +
+          '<div class="inf-foot">Sources : ANSM (ruptures · sécurité) · Le Quotidien du Pharmacien · Le Moniteur des pharmacies · FSPF · Le Pharmacien de France' + (maj ? ' · mis à jour le ' + maj : '') + '. Veille filtrée « cœur de métier officine », mise à jour chaque matin.</div>' +
         '</div>';
     }
   };
