@@ -1,0 +1,1559 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF opportunités — 5 mises en page</title>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,800,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#EEF1F6;font-family:'Satoshi',system-ui,sans-serif;color:#10131C}
+.sw{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid #E7EBF2;padding:12px 18px}
+.sw-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;max-width:900px;margin:0 auto}
+.sw-l{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#737A8C;margin-right:6px}
+.sw-b{height:34px;min-width:34px;padding:0 13px;border-radius:999px;border:1px solid #D4DAE6;background:#fff;font:inherit;font-size:13px;font-weight:700;color:#737A8C;cursor:pointer}
+.sw-b.on{background:#0050E6;border-color:#0050E6;color:#fff}
+.meta{max-width:900px;margin:16px auto 0;padding:0 18px}
+.meta-n{font-family:'Geist Mono',monospace;font-size:12px;font-weight:600;color:#0050E6;background:#E9F0FF;padding:3px 9px;border-radius:999px;display:inline-block;margin-bottom:8px}
+.meta-t{font-size:21px;font-weight:900;letter-spacing:-.02em}
+.meta-s{font-size:13.5px;color:#737A8C;font-weight:500;margin-top:4px;max-width:760px}
+.stage{padding:22px 18px 70px;display:flex;justify-content:center}
+.page{width:794px;background:#fff;box-shadow:0 10px 40px rgba(16,19,28,.18);border:1px solid #E7EBF2}
+.variant{display:none}.variant.on{display:block}
+@media(max-width:840px){.page{transform:scale(.46);transform-origin:top center}}
+
+
+#pdf-2{width:794px;margin:0 auto;background:#FFFFFF;color:#10131C;font-family:'Satoshi','Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;}
+#pdf-2 *{box-sizing:border-box;}
+#pdf-2 .p2-mono{font-family:'Geist Mono','SF Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+#pdf-2 .p2-page{padding:40px 44px;}
+#pdf-2 table{border-collapse:collapse;width:100%;}
+#pdf-2 .p2-row{page-break-inside:avoid;}
+#pdf-2 .p2-famhead{page-break-after:avoid;}
+#pdf-2 .p2-sec{page-break-inside:avoid;}
+#pdf-3{width:794px;margin:0 auto;background:#FFFFFF;color:#10131C;font-family:'Satoshi','Inter',system-ui,-apple-system,sans-serif;font-size:11px;line-height:1.4;-webkit-font-smoothing:antialiased}
+#pdf-3 *{box-sizing:border-box}
+#pdf-3 .p3-mono{font-family:'Geist Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;font-variant-numeric:tabular-nums}
+#pdf-3 table{border-collapse:collapse;width:100%;table-layout:fixed}
+#pdf-3 .p3-fam-block{page-break-inside:avoid}
+#pdf-3 tr{page-break-inside:avoid}
+#pdf-3 .p3-famhead{page-break-after:avoid}
+#pdf-4{font-family:'Satoshi','Inter',system-ui,-apple-system,sans-serif;color:#10131C;width:794px;margin:0;padding:0;background:#FFFFFF;-webkit-font-smoothing:antialiased}
+#pdf-4 *{box-sizing:border-box}
+#pdf-4 .p4-num{font-family:'Geist Mono','SFMono-Regular',Menlo,monospace;font-variant-numeric:tabular-nums}
+#pdf-4 .p4-row{page-break-inside:avoid}
+#pdf-4 .p4-famhead{page-break-after:avoid;page-break-inside:avoid}
+#pdf-4 table{border-collapse:collapse;table-layout:fixed;width:100%}
+#pdf-5{width:794px;margin:0 auto;background:#FFFFFF;color:#10131C;font-family:'Satoshi','Inter',system-ui,-apple-system,sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased;}
+#pdf-5 *{box-sizing:border-box;margin:0;padding:0;}
+#pdf-5 .p5-mono{font-family:'Geist Mono','SFMono-Regular',Consolas,monospace;font-variant-numeric:tabular-nums;}
+#pdf-5 .p5-page{padding:34px 38px 30px 38px;}
+#pdf-5 .p5-fam{page-break-inside:auto;}
+#pdf-5 .p5-row{page-break-inside:avoid;}
+#pdf-5 .p5-famhead{page-break-after:avoid;}
+</style></head><body>
+<div class="sw"><div class="sw-row"><span class="sw-l">PDF opportunités · 5 mises en page</span><button class="sw-b on" data-n="1" onclick="show(1)">1</button><button class="sw-b" data-n="2" onclick="show(2)">2</button><button class="sw-b" data-n="3" onclick="show(3)">3</button><button class="sw-b" data-n="4" onclick="show(4)">4</button><button class="sw-b" data-n="5" onclick="show(5)">5</button></div></div>
+<div class="meta"><div class="meta-block" data-n="1"><div class="meta-n">PDF 1 / 5</div><div class="meta-t">Tableau dense pro</div><div class="meta-s">Bandeau compact, recap horizontal fin et tables par famille zebrees a colonnes fixes : tout l'echantillon tient en lecture rapide sans rien couper a l'impression.</div></div><div class="meta-block" data-n="2" hidden><div class="meta-n">PDF 2 / 5</div><div class="meta-t">Editorial Premium — Dashboard</div><div class="meta-s">Rapport haut de gamme aéré : KPIs en cartes, mini-graphe CA/mois, familles en sections lisibles, pagination maîtrisée pour un usage direct en rendez-vous.</div></div><div class="meta-block" data-n="3" hidden><div class="meta-n">PDF 3 / 5</div><div class="meta-t">Fiche commerciale impactante</div><div class="meta-s">En-tete de marque fort, dashboard officine et listing par famille avec badges OFFRE/FROID lisibles en un coup d'oeil, pagine sans coupures.</div></div><div class="meta-block" data-n="4" hidden><div class="meta-n">PDF 4 / 5</div><div class="meta-t">Synthese 1 page executive</div><div class="meta-s">Recap KPI compact en bandeau, puis un seul tableau unifie trie par famille avec pastille couleur — tout tient sur une page A4, ideal a degainer en rendez-vous.</div></div><div class="meta-block" data-n="5" hidden><div class="meta-n">PDF 5 / 5</div><div class="meta-t">Catalogue par familles lisible</div><div class="meta-s">Chaque famille forme un bloc nettement delimite avec titre colore et lignes hautes a gros prix net, pensees pour etre lues a voix haute au comptoir sans ambiguite.</div></div></div>
+<div class="stage"><div style="width:794px;max-width:100%"><section class="variant on" data-n="1"><div class="page"><div id="pdf-1" style="width:794px;margin:0 auto;background:#FFFFFF;color:#10131C;font-family:'Satoshi','Inter',system-ui,-apple-system,sans-serif;font-size:11px;line-height:1.35;padding:0;-webkit-font-smoothing:antialiased;">
+
+  <!-- ============ EN-TETE BANDEAU COMPACT ============ -->
+  <div style="background:#0034A0;background:linear-gradient(90deg,#0034A0 0%,#0050E6 100%);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid;">
+    <div style="display:flex;align-items:center;gap:13px;">
+      <div style="width:34px;height:34px;border-radius:8px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:800;color:#0050E6;font-size:17px;letter-spacing:-1px;">IP</div>
+      <div>
+        <div style="color:#FFFFFF;font-size:15px;font-weight:800;letter-spacing:-0.2px;line-height:1.1;">Intégral Pharma</div>
+        <div style="color:#A9C2F5;font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-top:2px;">Liste d'achats recommandée</div>
+      </div>
+    </div>
+    <div style="text-align:right;color:#FFFFFF;">
+      <div style="font-size:11px;font-weight:700;">Pharmacie du Marché</div>
+      <div style="font-size:10px;color:#A9C2F5;margin-top:1px;">CIP 3400xxx · Caen (14)</div>
+      <div style="font-size:10px;color:#A9C2F5;margin-top:1px;">Édité le 24 juin 2026 · <span style="color:#FFFFFF;font-weight:700;">18 produits à pousser</span></div>
+    </div>
+  </div>
+
+  <!-- Sous-bandeau reference -->
+  <div style="background:#10131C;padding:6px 22px;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid;">
+    <div style="color:#C7D2E6;font-size:9.5px;font-weight:600;letter-spacing:.3px;">RÉFÉRENCE DE SÉLECTION — Réseau Intégral Pharma · <span style="color:#FFFFFF;">510 pharmacies</span> &nbsp;|&nbsp; Groupement Giphar · <span style="color:#FFFFFF;">21 pharmacies</span></div>
+    <div style="color:#737A8C;font-size:9px;letter-spacing:.5px;">Produits commandés par le réseau et absents de l'officine</div>
+  </div>
+
+  <div style="padding:16px 22px 22px;">
+
+    <!-- ============ RECAP OFFICINE — BANDE KPI ============ -->
+    <div style="page-break-inside:avoid;margin-bottom:12px;">
+      <div style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#737A8C;text-transform:uppercase;margin-bottom:7px;">Récap de l'officine</div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;border:1px solid #E7EBF2;border-radius:8px;padding:9px 11px;background:#F7F9FC;">
+          <div style="font-size:8.5px;font-weight:700;letter-spacing:.5px;color:#737A8C;text-transform:uppercase;">CA cumulé</div>
+          <div style="font-family:'Geist Mono',monospace;font-size:17px;font-weight:700;color:#10131C;margin-top:3px;">48 200 €</div>
+        </div>
+        <div style="flex:1;border:1px solid #E7EBF2;border-radius:8px;padding:9px 11px;background:#F7F9FC;border-left:3px solid #1E9E6A;">
+          <div style="font-size:8.5px;font-weight:700;letter-spacing:.5px;color:#737A8C;text-transform:uppercase;">Marge MDL générée</div>
+          <div style="font-family:'Geist Mono',monospace;font-size:17px;font-weight:700;color:#1E9E6A;margin-top:3px;">1 840 €</div>
+        </div>
+        <div style="flex:1;border:1px solid #E7EBF2;border-radius:8px;padding:9px 11px;background:#F7F9FC;">
+          <div style="font-size:8.5px;font-weight:700;letter-spacing:.5px;color:#737A8C;text-transform:uppercase;">Réf. commandées</div>
+          <div style="font-family:'Geist Mono',monospace;font-size:17px;font-weight:700;color:#10131C;margin-top:3px;">312</div>
+        </div>
+        <div style="flex:1;border:1px solid #E7EBF2;border-radius:8px;padding:9px 11px;background:#F7F9FC;border-left:3px solid #0050E6;">
+          <div style="font-size:8.5px;font-weight:700;letter-spacing:.5px;color:#737A8C;text-transform:uppercase;">Groupement</div>
+          <div style="font-size:15px;font-weight:800;color:#0050E6;margin-top:5px;letter-spacing:-0.2px;">Giphar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ RECAP — CA PAR MOIS + COMMANDE PAR TRANCHE ============ -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;page-break-inside:avoid;">
+
+      <!-- CA par mois -->
+      <div style="flex:0 0 230px;border:1px solid #E7EBF2;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:8.5px;font-weight:800;letter-spacing:.8px;color:#737A8C;text-transform:uppercase;margin-bottom:9px;">CA par mois (5 mois)</div>
+        <div style="display:flex;align-items:flex-end;gap:9px;height:64px;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="font-family:'Geist Mono',monospace;font-size:8px;color:#737A8C;">9,2k</div>
+            <div style="width:100%;height:48px;background:#DCE6FB;border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:8px;color:#737A8C;font-weight:600;">Jan</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="font-family:'Geist Mono',monospace;font-size:8px;color:#737A8C;">8,7k</div>
+            <div style="width:100%;height:44px;background:#DCE6FB;border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:8px;color:#737A8C;font-weight:600;">Fév</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="font-family:'Geist Mono',monospace;font-size:8px;color:#0050E6;font-weight:700;">10,1k</div>
+            <div style="width:100%;height:56px;background:#0050E6;border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:8px;color:#737A8C;font-weight:600;">Mar</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="font-family:'Geist Mono',monospace;font-size:8px;color:#737A8C;">9,8k</div>
+            <div style="width:100%;height:53px;background:#DCE6FB;border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:8px;color:#737A8C;font-weight:600;">Avr</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="font-family:'Geist Mono',monospace;font-size:8px;color:#0050E6;font-weight:700;">10,4k</div>
+            <div style="width:100%;height:60px;background:#0050E6;border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:8px;color:#737A8C;font-weight:600;">Mai</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commande deja par tranche -->
+      <div style="flex:1;border:1px solid #E7EBF2;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:8.5px;font-weight:800;letter-spacing:.8px;color:#737A8C;text-transform:uppercase;margin-bottom:8px;">Ce qu'elle commande déjà · par tranche</div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+          <colgroup><col style="width:42%"><col style="width:29%"><col style="width:29%"></colgroup>
+          <tbody>
+            <tr>
+              <td style="padding:3px 0;font-size:10px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#1E9E6A;margin-right:6px;"></span>Petits prix</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#737A8C;">142 réfs</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">12 400 €</td>
+            </tr>
+            <tr style="border-top:1px solid #F1F4F9;">
+              <td style="padding:3px 0;font-size:10px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#0050E6;margin-right:6px;"></span>Intermédiaires</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#737A8C;">98 réfs</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">21 300 €</td>
+            </tr>
+            <tr style="border-top:1px solid #F1F4F9;">
+              <td style="padding:3px 0;font-size:10px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#00B5D8;margin-right:6px;"></span>Froid</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#737A8C;">14 réfs</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">8 900 €</td>
+            </tr>
+            <tr style="border-top:1px solid #F1F4F9;">
+              <td style="padding:3px 0;font-size:10px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#737A8C;margin-right:6px;"></span>Génériques</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#737A8C;">41 réfs</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">3 200 €</td>
+            </tr>
+            <tr style="border-top:1px solid #F1F4F9;">
+              <td style="padding:3px 0;font-size:10px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#C7791A;margin-right:6px;"></span>Non remboursés</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#737A8C;">17 réfs</td>
+              <td style="padding:3px 0;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">2 400 €</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============ LISTE A POUSSER ============ -->
+    <div style="display:flex;align-items:center;justify-content:space-between;border-top:2px solid #10131C;padding-top:9px;margin-bottom:9px;page-break-after:avoid;page-break-inside:avoid;">
+      <div style="font-size:12px;font-weight:800;letter-spacing:-0.2px;color:#10131C;">Liste à pousser <span style="color:#737A8C;font-weight:600;font-size:10px;">— commandés par le réseau, absents de l'officine</span></div>
+      <div style="font-size:9px;color:#737A8C;">Sortie = nb pharmacies / 510</div>
+    </div>
+
+    <!-- ===== EN-TETE COLONNES GLOBAL ===== -->
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-inside:avoid;page-break-after:avoid;">
+      <colgroup>
+        <col style="width:33%"><col style="width:16%"><col style="width:11%"><col style="width:9%"><col style="width:15%"><col style="width:16%">
+      </colgroup>
+      <thead>
+        <tr style="background:#10131C;">
+          <th style="text-align:left;padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#FFFFFF;text-transform:uppercase;">Produit</th>
+          <th style="text-align:left;padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#C7D2E6;text-transform:uppercase;">CIP13</th>
+          <th style="text-align:right;padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#FFFFFF;text-transform:uppercase;">Prix net IP</th>
+          <th style="text-align:right;padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#FFFFFF;text-transform:uppercase;">Remise</th>
+          <th style="text-align:center;padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#FFFFFF;text-transform:uppercase;">Sortie</th>
+          <th style="text-align:right;padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#FFFFFF;text-transform:uppercase;">Volume/an</th>
+        </tr>
+      </thead>
+    </table>
+
+    <!-- ===== FAMILLE : PETITS PRIX ===== -->
+    <div style="page-break-after:avoid;page-break-inside:avoid;margin-top:10px;">
+      <div style="background:#1E9E6A;display:flex;align-items:center;justify-content:space-between;padding:4px 10px;border-radius:5px 5px 0 0;">
+        <span style="color:#FFFFFF;font-size:10px;font-weight:800;letter-spacing:.4px;">PETITS PRIX <span style="font-weight:600;color:#C9EEDD;">· 0–4,33 €</span></span>
+        <span style="color:#C9EEDD;font-size:9px;font-weight:700;">5 produits</span>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #E7EBF2;border-top:none;">
+      <colgroup>
+        <col style="width:33%"><col style="width:16%"><col style="width:11%"><col style="width:9%"><col style="width:15%"><col style="width:16%">
+      </colgroup>
+      <tbody>
+        <tr style="page-break-inside:avoid;background:#FFFFFF;border-bottom:1px solid #F1F4F9;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">DOLIPRANE 1000MG CPR BT8</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400935955838</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">0,88 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#1E9E6A;">17 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">204<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">4 000</td>
+        </tr>
+        <tr style="page-break-inside:avoid;background:#F7F9FC;border-bottom:1px solid #F1F4F9;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">SPASFON CPR BT30</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400930986080</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">1,75 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#1E9E6A;">9 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">150<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">980</td>
+        </tr>
+        <tr style="page-break-inside:avoid;background:#FFFFFF;border-bottom:1px solid #F1F4F9;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">KARDEGIC 75MG PDR SACH 30</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400934744198</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">1,29 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#1E9E6A;">12 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">140<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">760</td>
+        </tr>
+        <tr style="page-break-inside:avoid;background:#F7F9FC;border-bottom:1px solid #F1F4F9;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">LAMALINE GELU BT16</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400935154958</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">1,10 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#1E9E6A;">14 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">120<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">540</td>
+        </tr>
+        <tr style="page-break-inside:avoid;background:#FFFFFF;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">SERESTA 10MG CPR BT30</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400935887559</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">0,96 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#1E9E6A;">16 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">110<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">410</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ===== FAMILLE : INTERMEDIAIRES ===== -->
+    <div style="page-break-after:avoid;page-break-inside:avoid;margin-top:12px;">
+      <div style="background:#0050E6;display:flex;align-items:center;justify-content:space-between;padding:4px 10px;border-radius:5px 5px 0 0;">
+        <span style="color:#FFFFFF;font-size:10px;font-weight:800;letter-spacing:.4px;">INTERMÉDIAIRES <span style="font-weight:600;color:#BBD0FB;">· 4,33–468 €</span></span>
+        <span style="color:#BBD0FB;font-size:9px;font-weight:700;">3 produits</span>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #E7EBF2;border-top:none;">
+      <colgroup>
+        <col style="width:33%"><col style="width:16%"><col style="width:11%"><col style="width:9%"><col style="width:15%"><col style="width:16%">
+      </colgroup>
+      <tbody>
+        <tr style="page-break-inside:avoid;background:#FFFFFF;border-bottom:1px solid #F1F4F9;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">GAVISCON BUV SUSP SACH10ML 24 <span style="display:inline-block;background:#FCEBD6;color:#C7791A;font-size:7.5px;font-weight:800;letter-spacing:.5px;padding:1px 5px;border-radius:3px;vertical-align:middle;margin-left:3px;">OFFRE</span></td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400933095253</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">3,42 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#0050E6;">5 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">130<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">320</td>
+        </tr>
+        <tr style="page-break-inside:avoid;background:#F7F9FC;border-bottom:1px solid #F1F4F9;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">METEOSPASMYL CAPS BT20</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400933254063</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">2,18 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#0050E6;">8 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">100<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">260</td>
+        </tr>
+        <tr style="page-break-inside:avoid;background:#FFFFFF;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">DACUDOSES OPHT UNIDOS10ML 24</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400934796708</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">2,10 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#0050E6;">8 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">90<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">240</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ===== FAMILLE : FROID ===== -->
+    <div style="page-break-after:avoid;page-break-inside:avoid;margin-top:12px;">
+      <div style="background:#00B5D8;display:flex;align-items:center;justify-content:space-between;padding:4px 10px;border-radius:5px 5px 0 0;">
+        <span style="color:#FFFFFF;font-size:10px;font-weight:800;letter-spacing:.4px;">FROID <span style="font-weight:600;color:#CDF1F8;">· chaîne du froid</span></span>
+        <span style="color:#CDF1F8;font-size:9px;font-weight:700;">2 produits</span>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #E7EBF2;border-top:none;">
+      <colgroup>
+        <col style="width:33%"><col style="width:16%"><col style="width:11%"><col style="width:9%"><col style="width:15%"><col style="width:16%">
+      </colgroup>
+      <tbody>
+        <tr style="page-break-inside:avoid;background:#FFFFFF;border-bottom:1px solid #F1F4F9;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">OZEMPIC 1MG STYLO <span style="display:inline-block;background:#D6F2F8;color:#0089A3;font-size:7.5px;font-weight:800;letter-spacing:.5px;padding:1px 5px;border-radius:3px;vertical-align:middle;margin-left:3px;">FROID</span></td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400930213100</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">64,00 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#00B5D8;">4 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">80<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">95</td>
+        </tr>
+        <tr style="page-break-inside:avoid;background:#F7F9FC;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">ABASAGLAR 100U STYLO 3ML 5 <span style="display:inline-block;background:#D6F2F8;color:#0089A3;font-size:7.5px;font-weight:800;letter-spacing:.5px;padding:1px 5px;border-radius:3px;vertical-align:middle;margin-left:3px;">FROID</span></td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400930040072</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">38,00 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#00B5D8;">5 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">131<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">70</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ===== FAMILLE : BIOSIMILAIRES ===== -->
+    <div style="page-break-after:avoid;page-break-inside:avoid;margin-top:12px;">
+      <div style="background:#6D4FC4;display:flex;align-items:center;justify-content:space-between;padding:4px 10px;border-radius:5px 5px 0 0;">
+        <span style="color:#FFFFFF;font-size:10px;font-weight:800;letter-spacing:.4px;">BIOSIMILAIRES <span style="font-weight:600;color:#D7CCF0;">· spécialités chères</span></span>
+        <span style="color:#D7CCF0;font-size:9px;font-weight:700;">2 produits</span>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #E7EBF2;border-top:none;">
+      <colgroup>
+        <col style="width:33%"><col style="width:16%"><col style="width:11%"><col style="width:9%"><col style="width:15%"><col style="width:16%">
+      </colgroup>
+      <tbody>
+        <tr style="page-break-inside:avoid;background:#FFFFFF;border-bottom:1px solid #F1F4F9;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">AMGEVITA 40MG INJ STYLO 2</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400930294512</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">310,00 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#6D4FC4;">6 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">39<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">24</td>
+        </tr>
+        <tr style="page-break-inside:avoid;background:#F7F9FC;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">IMRALDI 40MG INJ STYLO 2</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400930254134</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">305,00 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#6D4FC4;">6 %</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">30<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">18</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ===== FAMILLE : NON REMBOURSES ===== -->
+    <div style="page-break-after:avoid;page-break-inside:avoid;margin-top:12px;">
+      <div style="background:#C7791A;display:flex;align-items:center;justify-content:space-between;padding:4px 10px;border-radius:5px 5px 0 0;">
+        <span style="color:#FFFFFF;font-size:10px;font-weight:800;letter-spacing:.4px;">NON REMBOURSÉS <span style="font-weight:600;color:#F2DCBE;">· marge libre PLM</span></span>
+        <span style="color:#F2DCBE;font-size:9px;font-weight:700;">2 produits</span>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #E7EBF2;border-top:none;">
+      <colgroup>
+        <col style="width:33%"><col style="width:16%"><col style="width:11%"><col style="width:9%"><col style="width:15%"><col style="width:16%">
+      </colgroup>
+      <tbody>
+        <tr style="page-break-inside:avoid;background:#FFFFFF;border-bottom:1px solid #F1F4F9;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">NUROFEN 400MG CPR BT12</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400930000000</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">2,40 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#A8AFBE;">—</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">120<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">300</td>
+        </tr>
+        <tr style="page-break-inside:avoid;background:#F7F9FC;">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C;">HUMER 150ML SPRAY</td>
+          <td style="padding:6px 8px;font-family:'Geist Mono',monospace;font-size:9px;color:#737A8C;">3400930111111</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;font-weight:700;color:#10131C;">3,10 €</td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#A8AFBE;">—</td>
+          <td style="padding:6px 8px;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;color:#10131C;">90<span style="color:#A8AFBE;">/510</span></td>
+          <td style="padding:6px 8px;text-align:right;font-family:'Geist Mono',monospace;font-size:10px;color:#10131C;">210</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ============ PIED ============ -->
+    <div style="margin-top:18px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid;">
+      <div style="font-size:8.5px;color:#737A8C;line-height:1.45;">
+        <span style="font-weight:800;color:#0050E6;">Intégral Pharma</span> · Liste d'achats recommandée — données réseau au 24 juin 2026.<br>
+        Prix nets HT indicatifs hors conditions ponctuelles. Sortie = nombre de pharmacies de la référence commandant le produit / 510.
+      </div>
+      <div style="text-align:right;font-size:8.5px;color:#A8AFBE;white-space:nowrap;">
+        Page 1 / 1<br>Réf. Giphar · Caen (14)
+      </div>
+    </div>
+
+  </div>
+</div></div></section>
+<section class="variant" data-n="2"><div class="page"><div id="pdf-2">
+<div class="p2-page">
+
+  <!-- ============ EN-TÊTE ============ -->
+  <div class="p2-sec" style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0034A0;padding-bottom:22px;">
+    <div style="max-width:62%;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:30px;height:30px;border-radius:8px;background:#0050E6;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;line-height:1;">IP</div>
+        <span style="font-weight:800;font-size:15px;letter-spacing:.04em;color:#0034A0;">INTÉGRAL PHARMA</span>
+      </div>
+      <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#737A8C;font-weight:600;margin-bottom:6px;">Document commercial</div>
+      <h1 style="margin:0;font-size:34px;line-height:1.05;font-weight:800;color:#10131C;letter-spacing:-.02em;">Liste d'achats<br>recommandée</h1>
+      <p style="margin:12px 0 0;font-size:12px;color:#737A8C;line-height:1.55;max-width:380px;">
+        Sélection des références commandées par votre réseau et absentes de votre stock. Opportunités classées par tranche de prix.
+      </p>
+    </div>
+    <div style="text-align:right;min-width:34%;">
+      <div style="background:#F7F9FC;border:1px solid #E7EBF2;border-radius:12px;padding:16px 18px;">
+        <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#737A8C;font-weight:600;">Officine destinataire</div>
+        <div style="font-size:15px;font-weight:800;color:#10131C;margin-top:4px;">Pharmacie du Marché</div>
+        <div class="p2-mono" style="font-size:11px;color:#737A8C;margin-top:2px;">CIP 3400xxx · Caen (14)</div>
+        <div style="height:1px;background:#E7EBF2;margin:12px 0;"></div>
+        <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#737A8C;font-weight:600;">Référence sélection</div>
+        <div style="font-size:12px;font-weight:700;color:#0034A0;margin-top:3px;">Réseau Intégral Pharma</div>
+        <div style="font-size:11px;color:#737A8C;">510 pharmacies · groupt. Giphar (21)</div>
+        <div style="height:1px;background:#E7EBF2;margin:12px 0;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;">
+          <span style="color:#737A8C;">Édité le</span><span class="p2-mono" style="font-weight:700;color:#10131C;">24 juin 2026</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;">
+          <span style="color:#737A8C;">À pousser</span><span class="p2-mono" style="font-weight:700;color:#0050E6;">18 produits</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD RÉCAP ============ -->
+  <div class="p2-sec" style="margin-top:30px;">
+    <div class="p2-famhead" style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
+      <h2 style="margin:0;font-size:18px;font-weight:800;color:#10131C;letter-spacing:-.01em;">Profil de l'officine</h2>
+      <span style="font-size:11px;color:#737A8C;">activité 5 derniers mois</span>
+    </div>
+
+    <!-- KPI cards -->
+    <table style="table-layout:fixed;border-spacing:12px 0;border-collapse:separate;width:100%;margin-left:-12px;margin-right:-12px;">
+      <colgroup><col style="width:25%;"><col style="width:25%;"><col style="width:25%;"><col style="width:25%;"></colgroup>
+      <tr>
+        <td style="vertical-align:top;">
+          <div style="border:1px solid #E7EBF2;border-radius:12px;padding:15px 16px;background:#FFFFFF;border-top:3px solid #0050E6;">
+            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#737A8C;font-weight:600;">CA cumulé</div>
+            <div class="p2-mono" style="font-size:24px;font-weight:800;color:#10131C;margin-top:6px;line-height:1;">48 200<span style="font-size:14px;color:#737A8C;"> €</span></div>
+          </div>
+        </td>
+        <td style="vertical-align:top;">
+          <div style="border:1px solid #E7EBF2;border-radius:12px;padding:15px 16px;background:#FFFFFF;border-top:3px solid #1E9E6A;">
+            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#737A8C;font-weight:600;">Marge MDL générée</div>
+            <div class="p2-mono" style="font-size:24px;font-weight:800;color:#1E9E6A;margin-top:6px;line-height:1;">1 840<span style="font-size:14px;color:#94B8A8;"> €</span></div>
+          </div>
+        </td>
+        <td style="vertical-align:top;">
+          <div style="border:1px solid #E7EBF2;border-radius:12px;padding:15px 16px;background:#FFFFFF;border-top:3px solid #00B5D8;">
+            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#737A8C;font-weight:600;">Références commandées</div>
+            <div class="p2-mono" style="font-size:24px;font-weight:800;color:#10131C;margin-top:6px;line-height:1;">312</div>
+          </div>
+        </td>
+        <td style="vertical-align:top;">
+          <div style="border:1px solid #E7EBF2;border-radius:12px;padding:15px 16px;background:#FFFFFF;border-top:3px solid #6D4FC4;">
+            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#737A8C;font-weight:600;">Groupement</div>
+            <div style="font-size:24px;font-weight:800;color:#10131C;margin-top:6px;line-height:1;">Giphar</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- graphe + tranches -->
+    <table style="table-layout:fixed;border-spacing:14px 0;border-collapse:separate;width:100%;margin-top:16px;margin-left:-14px;margin-right:-14px;">
+      <colgroup><col style="width:42%;"><col style="width:58%;"></colgroup>
+      <tr>
+        <!-- mini graphe CA/mois -->
+        <td style="vertical-align:top;">
+          <div style="border:1px solid #E7EBF2;border-radius:12px;padding:16px 18px;background:#F7F9FC;height:100%;">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#737A8C;font-weight:700;margin-bottom:14px;">CA par mois</div>
+            <table style="table-layout:fixed;width:100%;height:96px;">
+              <colgroup><col style="width:20%;"><col style="width:20%;"><col style="width:20%;"><col style="width:20%;"><col style="width:20%;"></colgroup>
+              <tr style="vertical-align:bottom;">
+                <td style="text-align:center;padding:0 5px;"><div style="height:74px;display:flex;align-items:flex-end;justify-content:center;"><div style="width:100%;height:65px;background:#9DBBF5;border-radius:5px 5px 0 0;"></div></div></td>
+                <td style="text-align:center;padding:0 5px;"><div style="height:74px;display:flex;align-items:flex-end;justify-content:center;"><div style="width:100%;height:61px;background:#9DBBF5;border-radius:5px 5px 0 0;"></div></div></td>
+                <td style="text-align:center;padding:0 5px;"><div style="height:74px;display:flex;align-items:flex-end;justify-content:center;"><div style="width:100%;height:72px;background:#0050E6;border-radius:5px 5px 0 0;"></div></div></td>
+                <td style="text-align:center;padding:0 5px;"><div style="height:74px;display:flex;align-items:flex-end;justify-content:center;"><div style="width:100%;height:69px;background:#9DBBF5;border-radius:5px 5px 0 0;"></div></div></td>
+                <td style="text-align:center;padding:0 5px;"><div style="height:74px;display:flex;align-items:flex-end;justify-content:center;"><div style="width:100%;height:74px;background:#0050E6;border-radius:5px 5px 0 0;"></div></div></td>
+              </tr>
+              <tr>
+                <td class="p2-mono" style="text-align:center;font-size:9px;color:#737A8C;padding-top:6px;">9,2k</td>
+                <td class="p2-mono" style="text-align:center;font-size:9px;color:#737A8C;padding-top:6px;">8,7k</td>
+                <td class="p2-mono" style="text-align:center;font-size:9px;color:#737A8C;padding-top:6px;">10,1k</td>
+                <td class="p2-mono" style="text-align:center;font-size:9px;color:#737A8C;padding-top:6px;">9,8k</td>
+                <td class="p2-mono" style="text-align:center;font-size:9px;color:#737A8C;padding-top:6px;">10,4k</td>
+              </tr>
+              <tr>
+                <td style="text-align:center;font-size:10px;color:#737A8C;font-weight:600;">Jan</td>
+                <td style="text-align:center;font-size:10px;color:#737A8C;font-weight:600;">Fév</td>
+                <td style="text-align:center;font-size:10px;color:#737A8C;font-weight:600;">Mar</td>
+                <td style="text-align:center;font-size:10px;color:#737A8C;font-weight:600;">Avr</td>
+                <td style="text-align:center;font-size:10px;color:#737A8C;font-weight:600;">Mai</td>
+              </tr>
+            </table>
+          </div>
+        </td>
+        <!-- tranches commandées -->
+        <td style="vertical-align:top;">
+          <div style="border:1px solid #E7EBF2;border-radius:12px;padding:16px 18px;background:#FFFFFF;height:100%;">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#737A8C;font-weight:700;margin-bottom:12px;">Ce qu'elle commande déjà · par tranche</div>
+            <table style="table-layout:fixed;width:100%;">
+              <colgroup><col style="width:46%;"><col style="width:24%;"><col style="width:30%;"></colgroup>
+              <tr style="border-bottom:1px solid #E7EBF2;">
+                <td style="padding:7px 0;font-size:11.5px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#1E9E6A;margin-right:7px;"></span>Petits prix</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:11px;color:#737A8C;text-align:right;">142 réfs</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:12px;font-weight:700;color:#10131C;text-align:right;">12 400 €</td>
+              </tr>
+              <tr style="border-bottom:1px solid #E7EBF2;">
+                <td style="padding:7px 0;font-size:11.5px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#0050E6;margin-right:7px;"></span>Intermédiaires</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:11px;color:#737A8C;text-align:right;">98 réfs</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:12px;font-weight:700;color:#10131C;text-align:right;">21 300 €</td>
+              </tr>
+              <tr style="border-bottom:1px solid #E7EBF2;">
+                <td style="padding:7px 0;font-size:11.5px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#00B5D8;margin-right:7px;"></span>Froid</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:11px;color:#737A8C;text-align:right;">14 réfs</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:12px;font-weight:700;color:#10131C;text-align:right;">8 900 €</td>
+              </tr>
+              <tr style="border-bottom:1px solid #E7EBF2;">
+                <td style="padding:7px 0;font-size:11.5px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#737A8C;margin-right:7px;"></span>Génériques</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:11px;color:#737A8C;text-align:right;">41 réfs</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:12px;font-weight:700;color:#10131C;text-align:right;">3 200 €</td>
+              </tr>
+              <tr>
+                <td style="padding:7px 0;font-size:11.5px;font-weight:600;color:#10131C;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#C7791A;margin-right:7px;"></span>Non remboursés</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:11px;color:#737A8C;text-align:right;">17 réfs</td>
+                <td class="p2-mono" style="padding:7px 0;font-size:12px;font-weight:700;color:#10131C;text-align:right;">2 400 €</td>
+              </tr>
+            </table>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ============ LISTING ============ -->
+  <div style="margin-top:32px;">
+    <div class="p2-famhead" style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;">
+      <h2 style="margin:0;font-size:18px;font-weight:800;color:#10131C;letter-spacing:-.01em;">Opportunités à pousser</h2>
+      <span style="font-size:11px;color:#737A8C;">références du réseau absentes du stock · groupées par tranche</span>
+    </div>
+
+    <!-- légende colonnes (sticky conceptuelle) -->
+    <table style="table-layout:fixed;width:100%;margin-top:10px;">
+      <colgroup>
+        <col style="width:32%;"><col style="width:18%;"><col style="width:11%;"><col style="width:9%;"><col style="width:14%;"><col style="width:16%;">
+      </colgroup>
+      <thead><tr style="page-break-inside:avoid;">
+        <th style="text-align:left;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#737A8C;font-weight:700;padding:0 8px 6px 0;border-bottom:2px solid #E7EBF2;">Produit</th>
+        <th style="text-align:left;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#737A8C;font-weight:700;padding:0 8px 6px;border-bottom:2px solid #E7EBF2;">CIP13</th>
+        <th style="text-align:right;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#737A8C;font-weight:700;padding:0 8px 6px;border-bottom:2px solid #E7EBF2;">Prix net</th>
+        <th style="text-align:right;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#737A8C;font-weight:700;padding:0 8px 6px;border-bottom:2px solid #E7EBF2;">Remise</th>
+        <th style="text-align:right;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#737A8C;font-weight:700;padding:0 8px 6px;border-bottom:2px solid #E7EBF2;">Sortie</th>
+        <th style="text-align:right;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#737A8C;font-weight:700;padding:0 0 6px 8px;border-bottom:2px solid #E7EBF2;">Volume/an</th>
+      </tr></thead>
+    </table>
+
+    <!-- ---- FAMILLE : PETITS PRIX ---- -->
+    <div class="p2-famhead" style="display:flex;align-items:center;gap:10px;margin-top:20px;padding:8px 12px;background:#ECF7F1;border-left:4px solid #1E9E6A;border-radius:0 8px 8px 0;">
+      <span style="font-size:13px;font-weight:800;color:#10131C;">Petits prix</span>
+      <span style="font-size:11px;color:#1E9E6A;font-weight:600;">0 – 4,33 €</span>
+      <span style="margin-left:auto;font-size:10px;color:#737A8C;">5 références</span>
+    </div>
+    <table style="table-layout:fixed;width:100%;">
+      <colgroup><col style="width:32%;"><col style="width:18%;"><col style="width:11%;"><col style="width:9%;"><col style="width:14%;"><col style="width:16%;"></colgroup>
+      <tbody>
+        <tr class="p2-row" style="background:#FFFFFF;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">DOLIPRANE 1000MG CPR BT8</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400935955838</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">0,88 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#1E9E6A;text-align:right;border-bottom:1px solid #E7EBF2;">17 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">204/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">4 000</td>
+        </tr>
+        <tr class="p2-row" style="background:#F7F9FC;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">SPASFON CPR BT30</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400930986080</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">1,75 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#1E9E6A;text-align:right;border-bottom:1px solid #E7EBF2;">9 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">150/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">980</td>
+        </tr>
+        <tr class="p2-row" style="background:#FFFFFF;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">KARDEGIC 75MG PDR SACH 30</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400934744198</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">1,29 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#1E9E6A;text-align:right;border-bottom:1px solid #E7EBF2;">12 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">140/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">760</td>
+        </tr>
+        <tr class="p2-row" style="background:#F7F9FC;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">LAMALINE GELU BT16</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400935154958</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">1,10 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#1E9E6A;text-align:right;border-bottom:1px solid #E7EBF2;">14 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">120/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">540</td>
+        </tr>
+        <tr class="p2-row" style="background:#FFFFFF;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">SERESTA 10MG CPR BT30</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400935887559</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">0,96 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#1E9E6A;text-align:right;border-bottom:1px solid #E7EBF2;">16 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">110/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">410</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ---- FAMILLE : INTERMÉDIAIRES ---- -->
+    <div class="p2-famhead" style="display:flex;align-items:center;gap:10px;margin-top:22px;padding:8px 12px;background:#EAF1FE;border-left:4px solid #0050E6;border-radius:0 8px 8px 0;">
+      <span style="font-size:13px;font-weight:800;color:#10131C;">Intermédiaires</span>
+      <span style="font-size:11px;color:#0050E6;font-weight:600;">4,33 – 468 €</span>
+      <span style="margin-left:auto;font-size:10px;color:#737A8C;">3 références</span>
+    </div>
+    <table style="table-layout:fixed;width:100%;">
+      <colgroup><col style="width:32%;"><col style="width:18%;"><col style="width:11%;"><col style="width:9%;"><col style="width:14%;"><col style="width:16%;"></colgroup>
+      <tbody>
+        <tr class="p2-row" style="background:#FFFFFF;">
+          <td style="padding:9px 8px 9px 0;border-bottom:1px solid #E7EBF2;">
+            <span style="font-size:12px;font-weight:700;color:#10131C;">GAVISCON BUV SUSP SACH10ML 24</span>
+            <span style="display:inline-block;margin-left:6px;font-size:8.5px;font-weight:800;letter-spacing:.05em;color:#C7791A;background:#FAEEDD;border:1px solid #EAD3AE;border-radius:4px;padding:1px 5px;vertical-align:middle;">OFFRE</span>
+          </td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400933095253</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">3,42 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#0050E6;text-align:right;border-bottom:1px solid #E7EBF2;">5 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">130/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">320</td>
+        </tr>
+        <tr class="p2-row" style="background:#F7F9FC;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">METEOSPASMYL CAPS BT20</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400933254063</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">2,18 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#0050E6;text-align:right;border-bottom:1px solid #E7EBF2;">8 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">100/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">260</td>
+        </tr>
+        <tr class="p2-row" style="background:#FFFFFF;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">DACUDOSES OPHT UNIDOS10ML 24</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400934796708</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">2,10 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#0050E6;text-align:right;border-bottom:1px solid #E7EBF2;">8 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">90/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">240</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ---- FAMILLE : FROID ---- -->
+    <div class="p2-famhead" style="display:flex;align-items:center;gap:10px;margin-top:22px;padding:8px 12px;background:#E3F7FB;border-left:4px solid #00B5D8;border-radius:0 8px 8px 0;">
+      <span style="font-size:13px;font-weight:800;color:#10131C;">Froid</span>
+      <span style="font-size:11px;color:#0090AC;font-weight:600;">chaîne du froid · 2 – 8 °C</span>
+      <span style="margin-left:auto;font-size:10px;color:#737A8C;">2 références</span>
+    </div>
+    <table style="table-layout:fixed;width:100%;">
+      <colgroup><col style="width:32%;"><col style="width:18%;"><col style="width:11%;"><col style="width:9%;"><col style="width:14%;"><col style="width:16%;"></colgroup>
+      <tbody>
+        <tr class="p2-row" style="background:#FFFFFF;">
+          <td style="padding:9px 8px 9px 0;border-bottom:1px solid #E7EBF2;">
+            <span style="font-size:12px;font-weight:700;color:#10131C;">OZEMPIC 1MG STYLO</span>
+            <span style="display:inline-block;margin-left:6px;font-size:8.5px;font-weight:800;letter-spacing:.05em;color:#0090AC;background:#E3F7FB;border:1px solid #A9E4EF;border-radius:4px;padding:1px 5px;vertical-align:middle;">FROID</span>
+          </td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400930213100</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">64,00 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#00B5D8;text-align:right;border-bottom:1px solid #E7EBF2;">4 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">80/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">95</td>
+        </tr>
+        <tr class="p2-row" style="background:#F7F9FC;">
+          <td style="padding:9px 8px 9px 0;border-bottom:1px solid #E7EBF2;">
+            <span style="font-size:12px;font-weight:700;color:#10131C;">ABASAGLAR 100U STYLO 3ML 5</span>
+            <span style="display:inline-block;margin-left:6px;font-size:8.5px;font-weight:800;letter-spacing:.05em;color:#0090AC;background:#E3F7FB;border:1px solid #A9E4EF;border-radius:4px;padding:1px 5px;vertical-align:middle;">FROID</span>
+          </td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400930040072</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">38,00 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#00B5D8;text-align:right;border-bottom:1px solid #E7EBF2;">5 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">131/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">70</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ---- FAMILLE : BIOSIMILAIRES ---- -->
+    <div class="p2-famhead" style="display:flex;align-items:center;gap:10px;margin-top:22px;padding:8px 12px;background:#EFEBF9;border-left:4px solid #6D4FC4;border-radius:0 8px 8px 0;">
+      <span style="font-size:13px;font-weight:800;color:#10131C;">Biosimilaires</span>
+      <span style="font-size:11px;color:#6D4FC4;font-weight:600;">forte valeur · marge volume</span>
+      <span style="margin-left:auto;font-size:10px;color:#737A8C;">2 références</span>
+    </div>
+    <table style="table-layout:fixed;width:100%;">
+      <colgroup><col style="width:32%;"><col style="width:18%;"><col style="width:11%;"><col style="width:9%;"><col style="width:14%;"><col style="width:16%;"></colgroup>
+      <tbody>
+        <tr class="p2-row" style="background:#FFFFFF;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">AMGEVITA 40MG INJ STYLO 2</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400930294512</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">310,00 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#6D4FC4;text-align:right;border-bottom:1px solid #E7EBF2;">6 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">39/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">24</td>
+        </tr>
+        <tr class="p2-row" style="background:#F7F9FC;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">IMRALDI 40MG INJ STYLO 2</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400930254134</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">305,00 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;font-weight:700;color:#6D4FC4;text-align:right;border-bottom:1px solid #E7EBF2;">6 %</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">30/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">18</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ---- FAMILLE : NON REMBOURSÉS ---- -->
+    <div class="p2-famhead" style="display:flex;align-items:center;gap:10px;margin-top:22px;padding:8px 12px;background:#FAEEDD;border-left:4px solid #C7791A;border-radius:0 8px 8px 0;">
+      <span style="font-size:13px;font-weight:800;color:#10131C;">Non remboursés</span>
+      <span style="font-size:11px;color:#C7791A;font-weight:600;">marge libre · prix de vente PLM</span>
+      <span style="margin-left:auto;font-size:10px;color:#737A8C;">2 références</span>
+    </div>
+    <table style="table-layout:fixed;width:100%;">
+      <colgroup><col style="width:32%;"><col style="width:18%;"><col style="width:11%;"><col style="width:9%;"><col style="width:14%;"><col style="width:16%;"></colgroup>
+      <tbody>
+        <tr class="p2-row" style="background:#FFFFFF;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">NUROFEN 400MG CPR BT12</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400930000000</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">2,40 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">—</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">120/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">300</td>
+        </tr>
+        <tr class="p2-row" style="background:#F7F9FC;">
+          <td style="padding:9px 8px 9px 0;font-size:12px;font-weight:700;color:#10131C;border-bottom:1px solid #E7EBF2;">HUMER 150ML SPRAY</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:10.5px;color:#737A8C;border-bottom:1px solid #E7EBF2;">3400930111111</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:12px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">3,10 €</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">—</td>
+          <td class="p2-mono" style="padding:9px 8px;font-size:11px;color:#737A8C;text-align:right;border-bottom:1px solid #E7EBF2;">90/510</td>
+          <td class="p2-mono" style="padding:9px 0 9px 8px;font-size:11.5px;font-weight:700;color:#10131C;text-align:right;border-bottom:1px solid #E7EBF2;">210</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ NOTE DE LECTURE ============ -->
+  <div class="p2-sec" style="margin-top:26px;background:#F7F9FC;border:1px solid #E7EBF2;border-radius:12px;padding:16px 18px;">
+    <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#737A8C;font-weight:700;margin-bottom:8px;">Comment lire ce document</div>
+    <table style="table-layout:fixed;width:100%;border-spacing:0;">
+      <colgroup><col style="width:25%;"><col style="width:25%;"><col style="width:25%;"><col style="width:25%;"></colgroup>
+      <tr style="vertical-align:top;">
+        <td style="padding-right:12px;"><div style="font-size:11px;font-weight:700;color:#10131C;">Sortie</div><div style="font-size:10.5px;color:#737A8C;line-height:1.4;">Nb de pharmacies du réseau (sur 510) qui commandent la référence.</div></td>
+        <td style="padding-right:12px;"><div style="font-size:11px;font-weight:700;color:#10131C;">Volume/an</div><div style="font-size:10.5px;color:#737A8C;line-height:1.4;">Boîtes écoulées par an, moyenne réseau.</div></td>
+        <td style="padding-right:12px;"><div style="font-size:11px;font-weight:700;color:#10131C;">Prix net IP</div><div style="font-size:10.5px;color:#737A8C;line-height:1.4;">Prix net grossiste Intégral Pharma, remise déduite.</div></td>
+        <td><div style="font-size:11px;font-weight:700;color:#10131C;">Badges</div><div style="font-size:10.5px;color:#737A8C;line-height:1.4;">FROID = chaîne du froid · OFFRE = promotion en cours.</div></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ============ PIED ============ -->
+  <div class="p2-sec" style="margin-top:22px;padding-top:14px;border-top:2px solid #0034A0;display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-size:10px;color:#737A8C;line-height:1.5;">
+      <span style="font-weight:800;color:#0034A0;">Intégral Pharma</span> · Liste d'achats recommandée · sélection réseau 510 pharmacies<br>
+      Prix nets indicatifs HT susceptibles d'évolution · document non contractuel · édité le 24 juin 2026
+    </div>
+    <div class="p2-mono" style="font-size:10px;color:#737A8C;text-align:right;white-space:nowrap;">18 produits · 5 familles<br>Pharmacie du Marché · Caen (14)</div>
+  </div>
+
+</div>
+</div></div></section>
+<section class="variant" data-n="3"><div class="page"><div id="pdf-3" style="padding:0;">
+
+  <!-- ============ EN-TETE MARQUE FORT ============ -->
+  <div style="background:linear-gradient(120deg,#0034A0 0%,#0050E6 100%);color:#FFFFFF;padding:22px 28px 20px;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:30px;height:30px;border-radius:7px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;">
+            <span style="color:#0050E6;font-weight:800;font-size:17px;letter-spacing:-1px;">IP</span>
+          </div>
+          <span style="font-weight:800;font-size:16px;letter-spacing:.5px;">INTEGRAL PHARMA</span>
+        </div>
+        <div style="font-size:23px;font-weight:800;letter-spacing:-.4px;margin-top:12px;line-height:1.1;">Liste d'achats recommandee</div>
+        <div style="font-size:12px;color:#BBD0FF;margin-top:4px;">Opportunites a pousser — selectionnees pour votre officine</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="display:inline-block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:9px;padding:10px 14px;text-align:center;">
+          <div style="font-size:28px;font-weight:800;line-height:1;" class="p3-mono">18</div>
+          <div style="font-size:9px;color:#BBD0FF;letter-spacing:1px;margin-top:3px;text-transform:uppercase;">produits</div>
+        </div>
+        <div style="font-size:10px;color:#BBD0FF;margin-top:8px;">Edition 24 juin 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- bandeau officine -->
+  <div style="background:#10131C;color:#FFFFFF;padding:11px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <div style="font-size:13px;font-weight:700;">Pharmacie du Marche <span style="color:#737A8C;font-weight:500;font-size:11px;">· Caen (14)</span></div>
+    <div style="font-size:10px;color:#A9B0C0;" class="p3-mono">CIP 3400xxx</div>
+    <div style="font-size:10px;color:#A9B0C0;">Reference : Reseau Integral Pharma <b style="color:#fff;">510 pharmacies</b> · Groupement Giphar <b style="color:#fff;">21 pharmacies</b></div>
+  </div>
+
+  <div style="padding:18px 28px 26px;">
+
+    <!-- ============ DASHBOARD RECAP OFFICINE ============ -->
+    <div style="page-break-inside:avoid;margin-bottom:18px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:#737A8C;text-transform:uppercase;margin-bottom:9px;">Recap de l'officine</div>
+
+      <!-- KPIs -->
+      <div style="display:flex;gap:9px;margin-bottom:11px;">
+        <div style="flex:1;border:1px solid #E7EBF2;border-radius:9px;padding:11px 13px;background:#F7F9FC;">
+          <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.7px;">CA cumule</div>
+          <div style="font-size:18px;font-weight:800;color:#0050E6;margin-top:3px;" class="p3-mono">48 200 &euro;</div>
+        </div>
+        <div style="flex:1;border:1px solid #E7EBF2;border-radius:9px;padding:11px 13px;background:#F7F9FC;">
+          <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.7px;">Marge MDL generee</div>
+          <div style="font-size:18px;font-weight:800;color:#1E9E6A;margin-top:3px;" class="p3-mono">1 840 &euro;</div>
+        </div>
+        <div style="flex:1;border:1px solid #E7EBF2;border-radius:9px;padding:11px 13px;background:#F7F9FC;">
+          <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.7px;">References commandees</div>
+          <div style="font-size:18px;font-weight:800;color:#10131C;margin-top:3px;" class="p3-mono">312</div>
+        </div>
+        <div style="flex:1;border:1px solid #E7EBF2;border-radius:9px;padding:11px 13px;background:#F7F9FC;">
+          <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.7px;">Groupement</div>
+          <div style="font-size:18px;font-weight:800;color:#10131C;margin-top:3px;">Giphar</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:11px;align-items:stretch;">
+        <!-- CA par mois -->
+        <div style="flex:1.05;border:1px solid #E7EBF2;border-radius:9px;padding:12px 14px;">
+          <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;">CA par mois — 5 mois</div>
+          <div style="display:flex;align-items:flex-end;gap:10px;height:74px;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+              <div class="p3-mono" style="font-size:8.5px;color:#737A8C;margin-bottom:3px;">9 200</div>
+              <div style="width:100%;height:62px;background:#C5D6FB;border-radius:4px 4px 0 0;"></div>
+              <div style="font-size:9px;color:#737A8C;margin-top:4px;">Jan</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+              <div class="p3-mono" style="font-size:8.5px;color:#737A8C;margin-bottom:3px;">8 700</div>
+              <div style="width:100%;height:58px;background:#C5D6FB;border-radius:4px 4px 0 0;"></div>
+              <div style="font-size:9px;color:#737A8C;margin-top:4px;">Fev</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+              <div class="p3-mono" style="font-size:8.5px;color:#737A8C;margin-bottom:3px;">10 100</div>
+              <div style="width:100%;height:69px;background:#0050E6;border-radius:4px 4px 0 0;"></div>
+              <div style="font-size:9px;color:#737A8C;margin-top:4px;">Mar</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+              <div class="p3-mono" style="font-size:8.5px;color:#737A8C;margin-bottom:3px;">9 800</div>
+              <div style="width:100%;height:66px;background:#C5D6FB;border-radius:4px 4px 0 0;"></div>
+              <div style="font-size:9px;color:#737A8C;margin-top:4px;">Avr</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+              <div class="p3-mono" style="font-size:8.5px;color:#737A8C;margin-bottom:3px;">10 400</div>
+              <div style="width:100%;height:72px;background:#0050E6;border-radius:4px 4px 0 0;"></div>
+              <div style="font-size:9px;color:#737A8C;margin-top:4px;">Mai</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ce qu'elle commande deja par tranche -->
+        <div style="flex:1.25;border:1px solid #E7EBF2;border-radius:9px;padding:12px 14px;">
+          <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.7px;margin-bottom:9px;">Deja commande — par tranche</div>
+          <table>
+            <colgroup><col style="width:46%"><col style="width:27%"><col style="width:27%"></colgroup>
+            <tbody style="font-size:10px;">
+              <tr><td style="padding:3px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#1E9E6A;margin-right:6px;"></span>Petits prix</td><td class="p3-mono" style="text-align:right;color:#737A8C;">142 ref.</td><td class="p3-mono" style="text-align:right;font-weight:700;">12 400 &euro;</td></tr>
+              <tr><td style="padding:3px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#0050E6;margin-right:6px;"></span>Intermediaires</td><td class="p3-mono" style="text-align:right;color:#737A8C;">98 ref.</td><td class="p3-mono" style="text-align:right;font-weight:700;">21 300 &euro;</td></tr>
+              <tr><td style="padding:3px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#00B5D8;margin-right:6px;"></span>Froid</td><td class="p3-mono" style="text-align:right;color:#737A8C;">14 ref.</td><td class="p3-mono" style="text-align:right;font-weight:700;">8 900 &euro;</td></tr>
+              <tr><td style="padding:3px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#737A8C;margin-right:6px;"></span>Generiques</td><td class="p3-mono" style="text-align:right;color:#737A8C;">41 ref.</td><td class="p3-mono" style="text-align:right;font-weight:700;">3 200 &euro;</td></tr>
+              <tr><td style="padding:3px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#C7791A;margin-right:6px;"></span>Non rembourses</td><td class="p3-mono" style="text-align:right;color:#737A8C;">17 ref.</td><td class="p3-mono" style="text-align:right;font-weight:700;">2 400 &euro;</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- bandeau argumentaire -->
+    <div style="page-break-inside:avoid;background:#EAF0FE;border:1px solid #C5D6FB;border-left:4px solid #0050E6;border-radius:8px;padding:11px 15px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+      <div style="font-size:11px;color:#0034A0;line-height:1.45;"><b>L'opportunite :</b> ces 18 references sont commandees par vos consoeurs du reseau mais <b>absentes de votre stock</b>. Forte rotation, remises negociees, marge securisee. Profil de vente identique au votre.</div>
+    </div>
+
+    <!-- legende badges -->
+    <div style="page-break-inside:avoid;display:flex;gap:16px;align-items:center;margin-bottom:14px;font-size:9.5px;color:#737A8C;">
+      <span style="font-weight:700;letter-spacing:.5px;color:#10131C;">LEGENDE</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;"><span style="background:#00B5D8;color:#fff;font-size:8px;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:.5px;">FROID</span> chaine du froid</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;"><span style="background:#C7791A;color:#fff;font-size:8px;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:.5px;">OFFRE</span> conditions speciales</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;"><b style="color:#10131C;">Sortie</b> = pharmacies du reseau qui le commandent</span>
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- LISTING PAR FAMILLES -->
+    <!-- ====================================================== -->
+
+    <!-- ===== PETITS PRIX ===== -->
+    <div class="p3-fam-block" style="margin-bottom:16px;">
+      <div class="p3-famhead" style="display:flex;align-items:center;gap:9px;border-left:5px solid #1E9E6A;background:#EAF7F1;padding:7px 12px;border-radius:0 7px 7px 0;margin-bottom:0;">
+        <span style="font-size:13px;font-weight:800;color:#157A52;">Petits prix</span>
+        <span style="font-size:10px;color:#1E9E6A;">0 &ndash; 4,33 &euro;</span>
+        <span style="margin-left:auto;font-size:9px;color:#737A8C;" class="p3-mono">5 references</span>
+      </div>
+      <table>
+        <colgroup><col style="width:30%"><col style="width:18%"><col style="width:11%"><col style="width:10%"><col style="width:16%"><col style="width:15%"></colgroup>
+        <thead><tr style="background:#10131C;color:#fff;font-size:8.5px;letter-spacing:.6px;text-transform:uppercase;">
+          <th style="text-align:left;padding:6px 10px;font-weight:700;">Produit</th>
+          <th style="text-align:left;padding:6px 6px;font-weight:700;">CIP13</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Prix net IP</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Remise</th>
+          <th style="text-align:center;padding:6px 6px;font-weight:700;">Sortie</th>
+          <th style="text-align:right;padding:6px 10px;font-weight:700;">Vol./an</th>
+        </tr></thead>
+        <tbody style="font-size:10.5px;">
+          <tr style="border-bottom:1px solid #E7EBF2;"><td style="padding:7px 10px;font-weight:600;">DOLIPRANE 1000MG CPR BT8</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400935955838</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">0,88 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">17 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">204/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">4 000</td></tr>
+          <tr style="border-bottom:1px solid #E7EBF2;background:#F7F9FC;"><td style="padding:7px 10px;font-weight:600;">SPASFON CPR BT30</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400930986080</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">1,75 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">9 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">150/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">980</td></tr>
+          <tr style="border-bottom:1px solid #E7EBF2;"><td style="padding:7px 10px;font-weight:600;">KARDEGIC 75MG PDR SACH 30</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400934744198</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">1,29 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">12 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">140/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">760</td></tr>
+          <tr style="border-bottom:1px solid #E7EBF2;background:#F7F9FC;"><td style="padding:7px 10px;font-weight:600;">LAMALINE GELU BT16</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400935154958</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">1,10 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">14 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">120/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">540</td></tr>
+          <tr style="border-bottom:1px solid #E7EBF2;"><td style="padding:7px 10px;font-weight:600;">SERESTA 10MG CPR BT30</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400935887559</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">0,96 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">16 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">110/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">410</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== INTERMEDIAIRES ===== -->
+    <div class="p3-fam-block" style="margin-bottom:16px;">
+      <div class="p3-famhead" style="display:flex;align-items:center;gap:9px;border-left:5px solid #0050E6;background:#EAF0FE;padding:7px 12px;border-radius:0 7px 7px 0;">
+        <span style="font-size:13px;font-weight:800;color:#0034A0;">Intermediaires</span>
+        <span style="font-size:10px;color:#0050E6;">4,33 &ndash; 468 &euro;</span>
+        <span style="margin-left:auto;font-size:9px;color:#737A8C;" class="p3-mono">3 references</span>
+      </div>
+      <table>
+        <colgroup><col style="width:30%"><col style="width:18%"><col style="width:11%"><col style="width:10%"><col style="width:16%"><col style="width:15%"></colgroup>
+        <thead><tr style="background:#10131C;color:#fff;font-size:8.5px;letter-spacing:.6px;text-transform:uppercase;">
+          <th style="text-align:left;padding:6px 10px;font-weight:700;">Produit</th>
+          <th style="text-align:left;padding:6px 6px;font-weight:700;">CIP13</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Prix net IP</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Remise</th>
+          <th style="text-align:center;padding:6px 6px;font-weight:700;">Sortie</th>
+          <th style="text-align:right;padding:6px 10px;font-weight:700;">Vol./an</th>
+        </tr></thead>
+        <tbody style="font-size:10.5px;">
+          <tr style="border-bottom:1px solid #E7EBF2;"><td style="padding:7px 10px;font-weight:600;">GAVISCON BUV SUSP SACH10ML 24 <span style="background:#C7791A;color:#fff;font-size:7.5px;font-weight:800;padding:1px 5px;border-radius:3px;letter-spacing:.5px;vertical-align:middle;margin-left:4px;">OFFRE</span></td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400933095253</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">3,42 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">5 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">130/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">320</td></tr>
+          <tr style="border-bottom:1px solid #E7EBF2;background:#F7F9FC;"><td style="padding:7px 10px;font-weight:600;">METEOSPASMYL CAPS BT20</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400933254063</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">2,18 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">8 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">100/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">260</td></tr>
+          <tr style="border-bottom:1px solid #E7EBF2;"><td style="padding:7px 10px;font-weight:600;">DACUDOSES OPHT UNIDOS10ML 24</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400934796708</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">2,10 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">8 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">90/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">240</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== FROID ===== -->
+    <div class="p3-fam-block" style="margin-bottom:16px;">
+      <div class="p3-famhead" style="display:flex;align-items:center;gap:9px;border-left:5px solid #00B5D8;background:#E5F8FC;padding:7px 12px;border-radius:0 7px 7px 0;">
+        <span style="font-size:13px;font-weight:800;color:#0A7E96;">Froid</span>
+        <span style="font-size:10px;color:#00B5D8;">chaine du froid 2&ndash;8&deg;C</span>
+        <span style="margin-left:auto;font-size:9px;color:#737A8C;" class="p3-mono">2 references</span>
+      </div>
+      <table>
+        <colgroup><col style="width:30%"><col style="width:18%"><col style="width:11%"><col style="width:10%"><col style="width:16%"><col style="width:15%"></colgroup>
+        <thead><tr style="background:#10131C;color:#fff;font-size:8.5px;letter-spacing:.6px;text-transform:uppercase;">
+          <th style="text-align:left;padding:6px 10px;font-weight:700;">Produit</th>
+          <th style="text-align:left;padding:6px 6px;font-weight:700;">CIP13</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Prix net IP</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Remise</th>
+          <th style="text-align:center;padding:6px 6px;font-weight:700;">Sortie</th>
+          <th style="text-align:right;padding:6px 10px;font-weight:700;">Vol./an</th>
+        </tr></thead>
+        <tbody style="font-size:10.5px;">
+          <tr style="border-bottom:1px solid #E7EBF2;"><td style="padding:7px 10px;font-weight:600;">OZEMPIC 1MG STYLO <span style="background:#00B5D8;color:#fff;font-size:7.5px;font-weight:800;padding:1px 5px;border-radius:3px;letter-spacing:.5px;vertical-align:middle;margin-left:4px;">FROID</span></td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400930213100</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">64,00 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">4 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">80/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">95</td></tr>
+          <tr style="border-bottom:1px solid #E7EBF2;background:#F7F9FC;"><td style="padding:7px 10px;font-weight:600;">ABASAGLAR 100U STYLO 3ML 5 <span style="background:#00B5D8;color:#fff;font-size:7.5px;font-weight:800;padding:1px 5px;border-radius:3px;letter-spacing:.5px;vertical-align:middle;margin-left:4px;">FROID</span></td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400930040072</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">38,00 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">5 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">131/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">70</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== BIOSIMILAIRES ===== -->
+    <div class="p3-fam-block" style="margin-bottom:16px;">
+      <div class="p3-famhead" style="display:flex;align-items:center;gap:9px;border-left:5px solid #6D4FC4;background:#F0EBFA;padding:7px 12px;border-radius:0 7px 7px 0;">
+        <span style="font-size:13px;font-weight:800;color:#523B96;">Biosimilaires</span>
+        <span style="font-size:10px;color:#6D4FC4;">forte valeur</span>
+        <span style="margin-left:auto;font-size:9px;color:#737A8C;" class="p3-mono">2 references</span>
+      </div>
+      <table>
+        <colgroup><col style="width:30%"><col style="width:18%"><col style="width:11%"><col style="width:10%"><col style="width:16%"><col style="width:15%"></colgroup>
+        <thead><tr style="background:#10131C;color:#fff;font-size:8.5px;letter-spacing:.6px;text-transform:uppercase;">
+          <th style="text-align:left;padding:6px 10px;font-weight:700;">Produit</th>
+          <th style="text-align:left;padding:6px 6px;font-weight:700;">CIP13</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Prix net IP</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Remise</th>
+          <th style="text-align:center;padding:6px 6px;font-weight:700;">Sortie</th>
+          <th style="text-align:right;padding:6px 10px;font-weight:700;">Vol./an</th>
+        </tr></thead>
+        <tbody style="font-size:10.5px;">
+          <tr style="border-bottom:1px solid #E7EBF2;"><td style="padding:7px 10px;font-weight:600;">AMGEVITA 40MG INJ STYLO 2</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400930294512</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">310,00 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">6 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">39/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">24</td></tr>
+          <tr style="border-bottom:1px solid #E7EBF2;background:#F7F9FC;"><td style="padding:7px 10px;font-weight:600;">IMRALDI 40MG INJ STYLO 2</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400930254134</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">305,00 &euro;</td><td class="p3-mono" style="text-align:right;color:#1E9E6A;font-weight:700;padding:7px 6px;">6 %</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">30/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">18</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== NON REMBOURSES ===== -->
+    <div class="p3-fam-block" style="margin-bottom:18px;">
+      <div class="p3-famhead" style="display:flex;align-items:center;gap:9px;border-left:5px solid #C7791A;background:#FBF1E5;padding:7px 12px;border-radius:0 7px 7px 0;">
+        <span style="font-size:13px;font-weight:800;color:#A0610F;">Non rembourses</span>
+        <span style="font-size:10px;color:#C7791A;">marge libre</span>
+        <span style="margin-left:auto;font-size:9px;color:#737A8C;" class="p3-mono">2 references</span>
+      </div>
+      <table>
+        <colgroup><col style="width:30%"><col style="width:18%"><col style="width:11%"><col style="width:10%"><col style="width:16%"><col style="width:15%"></colgroup>
+        <thead><tr style="background:#10131C;color:#fff;font-size:8.5px;letter-spacing:.6px;text-transform:uppercase;">
+          <th style="text-align:left;padding:6px 10px;font-weight:700;">Produit</th>
+          <th style="text-align:left;padding:6px 6px;font-weight:700;">CIP13</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Prix net IP</th>
+          <th style="text-align:right;padding:6px 6px;font-weight:700;">Remise</th>
+          <th style="text-align:center;padding:6px 6px;font-weight:700;">Sortie</th>
+          <th style="text-align:right;padding:6px 10px;font-weight:700;">Vol./an</th>
+        </tr></thead>
+        <tbody style="font-size:10.5px;">
+          <tr style="border-bottom:1px solid #E7EBF2;"><td style="padding:7px 10px;font-weight:600;">NUROFEN 400MG CPR BT12</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400930000000</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">2,40 &euro;</td><td class="p3-mono" style="text-align:right;color:#C7791A;font-weight:700;padding:7px 6px;">marge&nbsp;libre</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">120/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">300</td></tr>
+          <tr style="border-bottom:1px solid #E7EBF2;background:#F7F9FC;"><td style="padding:7px 10px;font-weight:600;">HUMER 150ML SPRAY</td><td class="p3-mono" style="color:#737A8C;padding:7px 6px;">3400930111111</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 6px;">3,10 &euro;</td><td class="p3-mono" style="text-align:right;color:#C7791A;font-weight:700;padding:7px 6px;">marge&nbsp;libre</td><td class="p3-mono" style="text-align:center;padding:7px 6px;">90/510</td><td class="p3-mono" style="text-align:right;font-weight:700;padding:7px 10px;">210</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ============ PIED ============ -->
+    <div style="page-break-inside:avoid;border-top:2px solid #0050E6;padding-top:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+      <div style="font-size:9px;color:#737A8C;line-height:1.5;max-width:62%;">
+        <b style="color:#10131C;">Integral Pharma</b> — Selection batie sur les achats reels de votre reseau et de votre groupement Giphar.<br>
+        Prix nets indicatifs hors promotions ponctuelles. Remises soumises aux conditions commerciales en vigueur. Marges non remboursables a votre appreciation (PLM).
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.8px;">Total selection</div>
+        <div style="font-size:20px;font-weight:800;color:#0050E6;" class="p3-mono">18 produits</div>
+        <div style="font-size:9px;color:#737A8C;margin-top:2px;">Editee le 24 juin 2026</div>
+      </div>
+    </div>
+
+  </div>
+</div></div></section>
+<section class="variant" data-n="4"><div class="page"><div id="pdf-4" style="padding:30px 34px 26px 34px;">
+
+  <!-- EN-TETE -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0050E6;padding-bottom:14px;">
+    <div style="max-width:430px;">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <div style="width:26px;height:26px;border-radius:6px;background:#0034A0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;line-height:1;">IP</div>
+        <span style="font-size:15px;font-weight:800;letter-spacing:.3px;color:#0034A0;">Intégral Pharma</span>
+      </div>
+      <div style="font-size:23px;font-weight:800;color:#10131C;margin-top:8px;line-height:1.1;">Liste d'achats recommandée</div>
+      <div style="font-size:11.5px;color:#737A8C;margin-top:6px;line-height:1.5;">
+        <b style="color:#10131C;">Pharmacie du Marché</b> · CIP 3400xxx · Caen (14)<br>
+        Référence : Réseau Intégral Pharma <b style="color:#10131C;">(510 pharmacies)</b> · groupement Giphar (21)
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:10.5px;color:#737A8C;text-transform:uppercase;letter-spacing:.6px;">Édition</div>
+      <div style="font-size:13px;font-weight:700;color:#10131C;">24 juin 2026</div>
+      <div style="margin-top:9px;display:inline-block;background:#0050E6;color:#fff;border-radius:8px;padding:7px 13px;text-align:center;">
+        <div class="p4-num" style="font-size:21px;font-weight:800;line-height:1;">18</div>
+        <div style="font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-top:2px;">produits à pousser</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECAP OFFICINE : KPI -->
+  <div style="display:flex;gap:9px;margin-top:14px;">
+    <div style="flex:1;background:#F7F9FC;border:1px solid #E7EBF2;border-radius:9px;padding:9px 11px;">
+      <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.5px;">CA cumulé</div>
+      <div class="p4-num" style="font-size:17px;font-weight:800;color:#10131C;margin-top:2px;">48 200 €</div>
+    </div>
+    <div style="flex:1;background:#F2FBF7;border:1px solid #CDEBDD;border-radius:9px;padding:9px 11px;">
+      <div style="font-size:9px;color:#1E9E6A;text-transform:uppercase;letter-spacing:.5px;font-weight:700;">Marge MDL générée</div>
+      <div class="p4-num" style="font-size:17px;font-weight:800;color:#1E9E6A;margin-top:2px;">1 840 €</div>
+    </div>
+    <div style="flex:1;background:#F7F9FC;border:1px solid #E7EBF2;border-radius:9px;padding:9px 11px;">
+      <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.5px;">Réf. commandées</div>
+      <div class="p4-num" style="font-size:17px;font-weight:800;color:#10131C;margin-top:2px;">312</div>
+    </div>
+    <div style="flex:1;background:#F7F9FC;border:1px solid #E7EBF2;border-radius:9px;padding:9px 11px;">
+      <div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.5px;">Groupement</div>
+      <div style="font-size:15px;font-weight:800;color:#0050E6;margin-top:3px;">Giphar</div>
+    </div>
+  </div>
+
+  <!-- RECAP : CA par mois + tranches deja commandees -->
+  <div style="display:flex;gap:9px;margin-top:9px;">
+    <!-- CA par mois -->
+    <div style="width:248px;background:#FFFFFF;border:1px solid #E7EBF2;border-radius:9px;padding:9px 11px;">
+      <div style="font-size:9.5px;color:#737A8C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;">CA par mois (k€)</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;height:48px;gap:6px;">
+        <div style="flex:1;text-align:center;"><div style="height:42px;display:flex;align-items:flex-end;"><div style="width:100%;background:#9DBBF5;border-radius:3px 3px 0 0;height:81%;"></div></div><div class="p4-num" style="font-size:8px;color:#737A8C;margin-top:3px;">9,2</div></div>
+        <div style="flex:1;text-align:center;"><div style="height:42px;display:flex;align-items:flex-end;"><div style="width:100%;background:#9DBBF5;border-radius:3px 3px 0 0;height:75%;"></div></div><div class="p4-num" style="font-size:8px;color:#737A8C;margin-top:3px;">8,7</div></div>
+        <div style="flex:1;text-align:center;"><div style="height:42px;display:flex;align-items:flex-end;"><div style="width:100%;background:#5C8DEE;border-radius:3px 3px 0 0;height:94%;"></div></div><div class="p4-num" style="font-size:8px;color:#737A8C;margin-top:3px;">10,1</div></div>
+        <div style="flex:1;text-align:center;"><div style="height:42px;display:flex;align-items:flex-end;"><div style="width:100%;background:#5C8DEE;border-radius:3px 3px 0 0;height:88%;"></div></div><div class="p4-num" style="font-size:8px;color:#737A8C;margin-top:3px;">9,8</div></div>
+        <div style="flex:1;text-align:center;"><div style="height:42px;display:flex;align-items:flex-end;"><div style="width:100%;background:#0050E6;border-radius:3px 3px 0 0;height:100%;"></div></div><div class="p4-num" style="font-size:8px;color:#10131C;font-weight:700;margin-top:3px;">10,4</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:8px;color:#A4ABBA;margin-top:3px;"><span>Jan</span><span>Fév</span><span>Mar</span><span>Avr</span><span>Mai</span></div>
+    </div>
+    <!-- Tranches deja commandees -->
+    <div style="flex:1;background:#FFFFFF;border:1px solid #E7EBF2;border-radius:9px;padding:9px 11px;">
+      <div style="font-size:9.5px;color:#737A8C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Ce qu'elle commande déjà, par tranche</div>
+      <table>
+        <colgroup><col style="width:46%"><col style="width:27%"><col style="width:27%"></colgroup>
+        <tbody style="font-size:10px;">
+          <tr><td style="padding:2px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#1E9E6A;margin-right:6px;vertical-align:middle;"></span>Petits prix</td><td class="p4-num" style="text-align:right;color:#737A8C;">142 réfs</td><td class="p4-num" style="text-align:right;font-weight:700;">12 400 €</td></tr>
+          <tr><td style="padding:2px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#0050E6;margin-right:6px;vertical-align:middle;"></span>Intermédiaires</td><td class="p4-num" style="text-align:right;color:#737A8C;">98 réfs</td><td class="p4-num" style="text-align:right;font-weight:700;">21 300 €</td></tr>
+          <tr><td style="padding:2px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#00B5D8;margin-right:6px;vertical-align:middle;"></span>Froid</td><td class="p4-num" style="text-align:right;color:#737A8C;">14 réfs</td><td class="p4-num" style="text-align:right;font-weight:700;">8 900 €</td></tr>
+          <tr><td style="padding:2px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#737A8C;margin-right:6px;vertical-align:middle;"></span>Génériques</td><td class="p4-num" style="text-align:right;color:#737A8C;">41 réfs</td><td class="p4-num" style="text-align:right;font-weight:700;">3 200 €</td></tr>
+          <tr><td style="padding:2px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#C7791A;margin-right:6px;vertical-align:middle;"></span>Non remboursés</td><td class="p4-num" style="text-align:right;color:#737A8C;">17 réfs</td><td class="p4-num" style="text-align:right;font-weight:700;">2 400 €</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABLEAU UNIFIE -->
+  <div style="margin-top:16px;display:flex;align-items:baseline;justify-content:space-between;">
+    <div style="font-size:13px;font-weight:800;color:#10131C;">À pousser — non référencés en officine</div>
+    <div style="font-size:10px;color:#737A8C;">Sortie = pharmacies de la référence qui commandent · / 510</div>
+  </div>
+
+  <table style="margin-top:8px;font-size:10.5px;">
+    <colgroup>
+      <col style="width:33%"><col style="width:18%"><col style="width:11.5%"><col style="width:9%"><col style="width:14.5%"><col style="width:14%">
+    </colgroup>
+    <thead>
+      <tr style="background:#0034A0;color:#fff;">
+        <th style="text-align:left;padding:7px 9px;font-size:9px;letter-spacing:.4px;text-transform:uppercase;font-weight:700;">Produit</th>
+        <th style="text-align:left;padding:7px 6px;font-size:9px;letter-spacing:.4px;text-transform:uppercase;font-weight:700;">CIP13</th>
+        <th style="text-align:right;padding:7px 6px;font-size:9px;letter-spacing:.4px;text-transform:uppercase;font-weight:700;">Prix net</th>
+        <th style="text-align:right;padding:7px 6px;font-size:9px;letter-spacing:.4px;text-transform:uppercase;font-weight:700;">Remise</th>
+        <th style="text-align:right;padding:7px 6px;font-size:9px;letter-spacing:.4px;text-transform:uppercase;font-weight:700;">Sortie</th>
+        <th style="text-align:right;padding:7px 9px;font-size:9px;letter-spacing:.4px;text-transform:uppercase;font-weight:700;">Vol./an</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- FAMILLE Petits prix -->
+      <tr class="p4-famhead"><td colspan="6" style="padding:6px 9px 5px 9px;background:#F2FBF7;border-left:4px solid #1E9E6A;">
+        <span style="font-size:10px;font-weight:800;color:#1E9E6A;letter-spacing:.3px;">PETITS PRIX</span>
+        <span style="font-size:9px;color:#737A8C;font-weight:600;"> · 0–4,33 €</span>
+      </td></tr>
+      <tr class="p4-row"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">DOLIPRANE 1000MG CPR BT8</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400935955838</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">0,88 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">17 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">204/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">4 000</td></tr>
+      <tr class="p4-row" style="background:#FAFCFE;"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">SPASFON CPR BT30</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400930986080</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">1,75 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">9 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">150/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">980</td></tr>
+      <tr class="p4-row"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">KARDEGIC 75MG PDR SACH 30</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400934744198</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">1,29 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">12 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">140/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">760</td></tr>
+      <tr class="p4-row" style="background:#FAFCFE;"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">LAMALINE GELU BT16</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400935154958</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">1,10 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">14 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">120/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">540</td></tr>
+      <tr class="p4-row"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">SERESTA 10MG CPR BT30</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400935887559</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">0,96 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">16 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">110/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">410</td></tr>
+
+      <!-- FAMILLE Intermediaires -->
+      <tr class="p4-famhead"><td colspan="6" style="padding:6px 9px 5px 9px;background:#F4F8FF;border-left:4px solid #0050E6;">
+        <span style="font-size:10px;font-weight:800;color:#0050E6;letter-spacing:.3px;">INTERMÉDIAIRES</span>
+        <span style="font-size:9px;color:#737A8C;font-weight:600;"> · 4,33–468 €</span>
+      </td></tr>
+      <tr class="p4-row"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">GAVISCON BUV SUSP SACH10ML 24 <span style="display:inline-block;background:#C7791A;color:#fff;font-size:7.5px;font-weight:800;padding:1px 5px;border-radius:3px;letter-spacing:.4px;vertical-align:middle;">OFFRE</span></td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400933095253</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">3,42 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">5 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">130/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">320</td></tr>
+      <tr class="p4-row" style="background:#FAFCFE;"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">METEOSPASMYL CAPS BT20</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400933254063</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">2,18 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">8 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">100/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">260</td></tr>
+      <tr class="p4-row"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">DACUDOSES OPHT UNIDOS10ML 24</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400934796708</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">2,10 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">8 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">90/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">240</td></tr>
+
+      <!-- FAMILLE Froid -->
+      <tr class="p4-famhead"><td colspan="6" style="padding:6px 9px 5px 9px;background:#EEFBFE;border-left:4px solid #00B5D8;">
+        <span style="font-size:10px;font-weight:800;color:#0090AD;letter-spacing:.3px;">FROID</span>
+        <span style="font-size:9px;color:#737A8C;font-weight:600;"> · chaîne du froid</span>
+      </td></tr>
+      <tr class="p4-row"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">OZEMPIC 1MG STYLO <span style="display:inline-block;background:#00B5D8;color:#fff;font-size:7.5px;font-weight:800;padding:1px 5px;border-radius:3px;letter-spacing:.4px;vertical-align:middle;">FROID</span></td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400930213100</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">64,00 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">4 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">80/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">95</td></tr>
+      <tr class="p4-row" style="background:#FAFCFE;"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">ABASAGLAR 100U STYLO 3ML 5 <span style="display:inline-block;background:#00B5D8;color:#fff;font-size:7.5px;font-weight:800;padding:1px 5px;border-radius:3px;letter-spacing:.4px;vertical-align:middle;">FROID</span></td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400930040072</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">38,00 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">5 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">131/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">70</td></tr>
+
+      <!-- FAMILLE Biosimilaires -->
+      <tr class="p4-famhead"><td colspan="6" style="padding:6px 9px 5px 9px;background:#F4F1FB;border-left:4px solid #6D4FC4;">
+        <span style="font-size:10px;font-weight:800;color:#6D4FC4;letter-spacing:.3px;">BIOSIMILAIRES</span>
+      </td></tr>
+      <tr class="p4-row"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">AMGEVITA 40MG INJ STYLO 2</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400930294512</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">310,00 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">6 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">39/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">24</td></tr>
+      <tr class="p4-row" style="background:#FAFCFE;"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">IMRALDI 40MG INJ STYLO 2</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400930254134</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">305,00 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#1E9E6A;font-weight:700;">6 %</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">30/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">18</td></tr>
+
+      <!-- FAMILLE Non rembourses -->
+      <tr class="p4-famhead"><td colspan="6" style="padding:6px 9px 5px 9px;background:#FBF4EA;border-left:4px solid #C7791A;">
+        <span style="font-size:10px;font-weight:800;color:#C7791A;letter-spacing:.3px;">NON REMBOURSÉS</span>
+        <span style="font-size:9px;color:#737A8C;font-weight:600;"> · marge libre</span>
+      </td></tr>
+      <tr class="p4-row"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">NUROFEN 400MG CPR BT12</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400930000000</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">2,40 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#C7791A;font-weight:700;">PLM</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">120/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">300</td></tr>
+      <tr class="p4-row" style="background:#FAFCFE;"><td style="padding:5px 9px;border-bottom:1px solid #E7EBF2;font-weight:600;">HUMER 150ML SPRAY</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;color:#737A8C;">3400930111111</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">3,10 €</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;color:#C7791A;font-weight:700;">PLM</td><td class="p4-num" style="padding:5px 6px;border-bottom:1px solid #E7EBF2;text-align:right;">90/510</td><td class="p4-num" style="padding:5px 9px;border-bottom:1px solid #E7EBF2;text-align:right;font-weight:700;">210</td></tr>
+
+    </tbody>
+  </table>
+
+  <!-- PIED -->
+  <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E7EBF2;padding-top:10px;">
+    <div style="font-size:9px;color:#A4ABBA;line-height:1.5;max-width:520px;">
+      PLM = prix libre marge (produits non remboursés). Sortie = nombre de pharmacies de la référence (510) commandant le produit.
+      Prix net Intégral Pharma indicatifs · sans franco ni engagement.
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;font-weight:800;color:#0034A0;">Intégral Pharma</div>
+      <div style="font-size:8.5px;color:#A4ABBA;">Synthèse éditée le 24/06/2026</div>
+    </div>
+  </div>
+
+</div></div></section>
+<section class="variant" data-n="5"><div class="page"><div id="pdf-5">
+<div class="p5-page">
+
+  <!-- ============ EN-TETE ============ -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0050E6;padding-bottom:16px;page-break-inside:avoid;page-break-after:avoid;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:46px;height:46px;border-radius:11px;background:#0050E6;display:flex;align-items:center;justify-content:center;color:#FFFFFF;font-weight:800;font-size:20px;letter-spacing:-1px;">IP</div>
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#0034A0;">Integral Pharma</div>
+        <div style="font-size:21px;font-weight:800;color:#10131C;letter-spacing:-0.4px;line-height:1.15;margin-top:1px;">Liste d'achats recommandee</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;color:#737A8C;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;">Date d'edition</div>
+      <div class="p5-mono" style="font-size:14px;font-weight:700;color:#10131C;">24 juin 2026</div>
+      <div style="margin-top:6px;display:inline-block;background:#0050E6;color:#FFFFFF;font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;">18 produits a pousser</div>
+    </div>
+  </div>
+
+  <!-- Officine + reference -->
+  <div style="display:flex;gap:14px;margin-top:14px;page-break-inside:avoid;">
+    <div style="flex:1;background:#F7F9FC;border:1px solid #E7EBF2;border-left:4px solid #0050E6;border-radius:9px;padding:11px 14px;">
+      <div style="font-size:10px;color:#737A8C;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;">Officine</div>
+      <div style="font-size:15px;font-weight:800;color:#10131C;margin-top:2px;">Pharmacie du Marche</div>
+      <div class="p5-mono" style="font-size:11.5px;color:#737A8C;margin-top:2px;">CIP 3400xxx &middot; Caen (14) &middot; Groupement Giphar</div>
+    </div>
+    <div style="flex:1;background:#F7F9FC;border:1px solid #E7EBF2;border-left:4px solid #00B5D8;border-radius:9px;padding:11px 14px;">
+      <div style="font-size:10px;color:#737A8C;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;">Reference de la selection</div>
+      <div style="font-size:15px;font-weight:800;color:#10131C;margin-top:2px;">Reseau Integral Pharma</div>
+      <div style="font-size:11.5px;color:#737A8C;margin-top:2px;">510 pharmacies &middot; dont Giphar 21 pharmacies</div>
+    </div>
+  </div>
+
+  <!-- ============ RECAP OFFICINE / DASHBOARD ============ -->
+  <div style="margin-top:18px;page-break-inside:avoid;">
+    <div style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#0034A0;margin-bottom:8px;">Recap de l'officine</div>
+
+    <!-- KPIs -->
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;border:1px solid #E7EBF2;border-radius:9px;padding:10px 12px;background:#FFFFFF;">
+        <div style="font-size:9.5px;color:#737A8C;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">CA cumule</div>
+        <div class="p5-mono" style="font-size:19px;font-weight:800;color:#10131C;margin-top:2px;">48 200 &euro;</div>
+      </div>
+      <div style="flex:1;border:1px solid #E7EBF2;border-radius:9px;padding:10px 12px;background:#FFFFFF;">
+        <div style="font-size:9.5px;color:#737A8C;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">Marge MDL generee</div>
+        <div class="p5-mono" style="font-size:19px;font-weight:800;color:#1E9E6A;margin-top:2px;">1 840 &euro;</div>
+      </div>
+      <div style="flex:1;border:1px solid #E7EBF2;border-radius:9px;padding:10px 12px;background:#FFFFFF;">
+        <div style="font-size:9.5px;color:#737A8C;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">References commandees</div>
+        <div class="p5-mono" style="font-size:19px;font-weight:800;color:#10131C;margin-top:2px;">312</div>
+      </div>
+      <div style="flex:1;border:1px solid #E7EBF2;border-radius:9px;padding:10px 12px;background:#0034A0;">
+        <div style="font-size:9.5px;color:#AFC4F2;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">Groupement</div>
+        <div style="font-size:19px;font-weight:800;color:#FFFFFF;margin-top:2px;">Giphar</div>
+      </div>
+    </div>
+
+    <!-- CA par mois + tranches -->
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <!-- CA par mois -->
+      <div style="flex:1.05;border:1px solid #E7EBF2;border-radius:9px;padding:11px 13px 9px 13px;background:#FFFFFF;">
+        <div style="font-size:9.5px;color:#737A8C;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:9px;">CA par mois (5 mois)</div>
+        <div style="display:flex;align-items:flex-end;gap:10px;height:74px;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+            <div class="p5-mono" style="font-size:9px;font-weight:700;color:#0050E6;margin-bottom:3px;">9 200</div>
+            <div style="width:78%;background:#AFC4F2;border-radius:4px 4px 0 0;height:65px;"></div>
+            <div style="font-size:9px;color:#737A8C;margin-top:4px;font-weight:600;">Jan</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+            <div class="p5-mono" style="font-size:9px;font-weight:700;color:#0050E6;margin-bottom:3px;">8 700</div>
+            <div style="width:78%;background:#AFC4F2;border-radius:4px 4px 0 0;height:61px;"></div>
+            <div style="font-size:9px;color:#737A8C;margin-top:4px;font-weight:600;">Fev</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+            <div class="p5-mono" style="font-size:9px;font-weight:700;color:#0050E6;margin-bottom:3px;">10 100</div>
+            <div style="width:78%;background:#0050E6;border-radius:4px 4px 0 0;height:71px;"></div>
+            <div style="font-size:9px;color:#737A8C;margin-top:4px;font-weight:600;">Mar</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+            <div class="p5-mono" style="font-size:9px;font-weight:700;color:#0050E6;margin-bottom:3px;">9 800</div>
+            <div style="width:78%;background:#AFC4F2;border-radius:4px 4px 0 0;height:69px;"></div>
+            <div style="font-size:9px;color:#737A8C;margin-top:4px;font-weight:600;">Avr</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+            <div class="p5-mono" style="font-size:9px;font-weight:700;color:#0050E6;margin-bottom:3px;">10 400</div>
+            <div style="width:78%;background:#0050E6;border-radius:4px 4px 0 0;height:74px;"></div>
+            <div style="font-size:9px;color:#737A8C;margin-top:4px;font-weight:600;">Mai</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ce qu'elle commande par tranche -->
+      <div style="flex:1.55;border:1px solid #E7EBF2;border-radius:9px;padding:11px 13px;background:#FFFFFF;">
+        <div style="font-size:9.5px;color:#737A8C;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px;">Deja commande, par tranche</div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+          <colgroup><col style="width:48%"><col style="width:26%"><col style="width:26%"></colgroup>
+          <tbody>
+            <tr><td style="padding:3px 0;font-size:11px;font-weight:600;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#1E9E6A;margin-right:6px;"></span>Petits prix</td><td class="p5-mono" style="text-align:right;font-size:11px;color:#737A8C;">142 refs</td><td class="p5-mono" style="text-align:right;font-size:11.5px;font-weight:700;">12 400 &euro;</td></tr>
+            <tr><td style="padding:3px 0;font-size:11px;font-weight:600;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#0050E6;margin-right:6px;"></span>Intermediaires</td><td class="p5-mono" style="text-align:right;font-size:11px;color:#737A8C;">98 refs</td><td class="p5-mono" style="text-align:right;font-size:11.5px;font-weight:700;">21 300 &euro;</td></tr>
+            <tr><td style="padding:3px 0;font-size:11px;font-weight:600;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#00B5D8;margin-right:6px;"></span>Froid</td><td class="p5-mono" style="text-align:right;font-size:11px;color:#737A8C;">14 refs</td><td class="p5-mono" style="text-align:right;font-size:11.5px;font-weight:700;">8 900 &euro;</td></tr>
+            <tr><td style="padding:3px 0;font-size:11px;font-weight:600;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#737A8C;margin-right:6px;"></span>Generiques</td><td class="p5-mono" style="text-align:right;font-size:11px;color:#737A8C;">41 refs</td><td class="p5-mono" style="text-align:right;font-size:11.5px;font-weight:700;">3 200 &euro;</td></tr>
+            <tr><td style="padding:3px 0;font-size:11px;font-weight:600;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#C7791A;margin-right:6px;"></span>Non rembourses</td><td class="p5-mono" style="text-align:right;font-size:11px;color:#737A8C;">17 refs</td><td class="p5-mono" style="text-align:right;font-size:11.5px;font-weight:700;">2 400 &euro;</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TITRE LISTING ============ -->
+  <div style="margin-top:22px;display:flex;align-items:center;gap:10px;page-break-inside:avoid;page-break-after:avoid;">
+    <div style="font-size:14px;font-weight:800;color:#10131C;letter-spacing:-0.2px;">A pousser &mdash; ce que la reference commande et que l'officine n'a pas</div>
+    <div style="flex:1;height:1px;background:#E7EBF2;"></div>
+  </div>
+  <div style="font-size:10.5px;color:#737A8C;margin-top:3px;margin-bottom:4px;">
+    <span style="font-weight:700;color:#10131C;">Sortie</span> = nb de pharmacies de la reference qui commandent le produit &middot; <span style="font-weight:700;color:#10131C;">Volume</span> = boites / an
+  </div>
+
+  <!-- ============ FAMILLE : PETITS PRIX ============ -->
+  <div class="p5-fam" style="margin-top:14px;border:1.5px solid #1E9E6A;border-radius:11px;overflow:hidden;">
+    <div class="p5-famhead" style="background:#1E9E6A;color:#FFFFFF;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:14px;font-weight:800;letter-spacing:0.2px;">Petits prix &middot; 0&ndash;4,33 &euro;</div>
+      <div style="font-size:10.5px;font-weight:700;opacity:0.92;">5 produits</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+      <colgroup><col style="width:38%"><col style="width:18%"><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:10%"></colgroup>
+      <thead>
+        <tr style="background:#EAF6F0;">
+          <th style="text-align:left;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0F6B47;">Produit</th>
+          <th style="text-align:left;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0F6B47;">CIP13</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0F6B47;">Prix net IP</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0F6B47;">Remise</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0F6B47;">Sortie</th>
+          <th style="text-align:right;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0F6B47;">Vol/an</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="p5-row">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">DOLIPRANE 1000MG CPR BT8</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400935955838</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">0,88&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#1E9E6A;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-17%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">204/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">4 000</td>
+        </tr>
+        <tr class="p5-row" style="background:#FAFCFB;">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">SPASFON CPR BT30</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400930986080</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">1,75&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#1E9E6A;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-9%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">150/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">980</td>
+        </tr>
+        <tr class="p5-row">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">KARDEGIC 75MG PDR SACH 30</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400934744198</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">1,29&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#1E9E6A;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-12%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">140/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">760</td>
+        </tr>
+        <tr class="p5-row" style="background:#FAFCFB;">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">LAMALINE GELU BT16</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400935154958</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">1,10&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#1E9E6A;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-14%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">120/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">540</td>
+        </tr>
+        <tr class="p5-row">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">SERESTA 10MG CPR BT30</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400935887559</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">0,96&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#1E9E6A;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-16%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">110/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">410</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ FAMILLE : INTERMEDIAIRES ============ -->
+  <div class="p5-fam" style="margin-top:14px;border:1.5px solid #0050E6;border-radius:11px;overflow:hidden;">
+    <div class="p5-famhead" style="background:#0050E6;color:#FFFFFF;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:14px;font-weight:800;letter-spacing:0.2px;">Intermediaires &middot; 4,33&ndash;468 &euro;</div>
+      <div style="font-size:10.5px;font-weight:700;opacity:0.92;">3 produits</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+      <colgroup><col style="width:38%"><col style="width:18%"><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:10%"></colgroup>
+      <thead>
+        <tr style="background:#E9F0FE;">
+          <th style="text-align:left;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0034A0;">Produit</th>
+          <th style="text-align:left;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0034A0;">CIP13</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0034A0;">Prix net IP</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0034A0;">Remise</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0034A0;">Sortie</th>
+          <th style="text-align:right;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0034A0;">Vol/an</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="p5-row">
+          <td style="padding:9px 14px;border-top:1px solid #E7EBF2;"><span style="font-size:13px;font-weight:700;color:#10131C;">GAVISCON BUV SUSP SACH10ML 24</span> <span style="background:#C7791A;color:#FFFFFF;font-size:8.5px;font-weight:800;letter-spacing:0.5px;padding:2px 6px;border-radius:4px;vertical-align:middle;margin-left:4px;">OFFRE</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400933095253</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">3,42&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#0050E6;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-5%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">130/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">320</td>
+        </tr>
+        <tr class="p5-row" style="background:#FAFBFE;">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">METEOSPASMYL CAPS BT20</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400933254063</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">2,18&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#0050E6;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-8%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">100/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">260</td>
+        </tr>
+        <tr class="p5-row">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">DACUDOSES OPHT UNIDOS10ML 24</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400934796708</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">2,10&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#0050E6;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-8%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">90/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">240</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ FAMILLE : FROID ============ -->
+  <div class="p5-fam" style="margin-top:14px;border:1.5px solid #00B5D8;border-radius:11px;overflow:hidden;">
+    <div class="p5-famhead" style="background:#00B5D8;color:#FFFFFF;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:14px;font-weight:800;letter-spacing:0.2px;">Froid &middot; chaine du froid 2&ndash;8&deg;C</div>
+      <div style="font-size:10.5px;font-weight:700;opacity:0.95;">2 produits</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+      <colgroup><col style="width:38%"><col style="width:18%"><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:10%"></colgroup>
+      <thead>
+        <tr style="background:#E2F7FB;">
+          <th style="text-align:left;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#06778C;">Produit</th>
+          <th style="text-align:left;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#06778C;">CIP13</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#06778C;">Prix net IP</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#06778C;">Remise</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#06778C;">Sortie</th>
+          <th style="text-align:right;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#06778C;">Vol/an</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="p5-row">
+          <td style="padding:9px 14px;border-top:1px solid #E7EBF2;"><span style="font-size:13px;font-weight:700;color:#10131C;">OZEMPIC 1MG STYLO</span> <span style="background:#00B5D8;color:#FFFFFF;font-size:8.5px;font-weight:800;letter-spacing:0.5px;padding:2px 6px;border-radius:4px;vertical-align:middle;margin-left:4px;">FROID</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400930213100</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">64,00&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#00B5D8;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-4%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">80/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">95</td>
+        </tr>
+        <tr class="p5-row" style="background:#FAFDFE;">
+          <td style="padding:9px 14px;border-top:1px solid #E7EBF2;"><span style="font-size:13px;font-weight:700;color:#10131C;">ABASAGLAR 100U STYLO 3ML 5</span> <span style="background:#00B5D8;color:#FFFFFF;font-size:8.5px;font-weight:800;letter-spacing:0.5px;padding:2px 6px;border-radius:4px;vertical-align:middle;margin-left:4px;">FROID</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400930040072</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">38,00&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#00B5D8;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-5%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">131/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">70</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ FAMILLE : BIOSIMILAIRES ============ -->
+  <div class="p5-fam" style="margin-top:14px;border:1.5px solid #6D4FC4;border-radius:11px;overflow:hidden;">
+    <div class="p5-famhead" style="background:#6D4FC4;color:#FFFFFF;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:14px;font-weight:800;letter-spacing:0.2px;">Biosimilaires</div>
+      <div style="font-size:10.5px;font-weight:700;opacity:0.92;">2 produits</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+      <colgroup><col style="width:38%"><col style="width:18%"><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:10%"></colgroup>
+      <thead>
+        <tr style="background:#EFEBF9;">
+          <th style="text-align:left;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#4A338F;">Produit</th>
+          <th style="text-align:left;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#4A338F;">CIP13</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#4A338F;">Prix net IP</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#4A338F;">Remise</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#4A338F;">Sortie</th>
+          <th style="text-align:right;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#4A338F;">Vol/an</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="p5-row">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">AMGEVITA 40MG INJ STYLO 2</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400930294512</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">310,00&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#6D4FC4;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-6%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">39/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">24</td>
+        </tr>
+        <tr class="p5-row" style="background:#FBFAFE;">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">IMRALDI 40MG INJ STYLO 2</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400930254134</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">305,00&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span class="p5-mono" style="background:#6D4FC4;color:#FFFFFF;font-size:12px;font-weight:800;padding:2px 7px;border-radius:6px;">-6%</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">30/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">18</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ FAMILLE : NON REMBOURSES ============ -->
+  <div class="p5-fam" style="margin-top:14px;border:1.5px solid #C7791A;border-radius:11px;overflow:hidden;">
+    <div class="p5-famhead" style="background:#C7791A;color:#FFFFFF;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:14px;font-weight:800;letter-spacing:0.2px;">Non rembourses &middot; marge libre</div>
+      <div style="font-size:10.5px;font-weight:700;opacity:0.95;">2 produits</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+      <colgroup><col style="width:38%"><col style="width:18%"><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:10%"></colgroup>
+      <thead>
+        <tr style="background:#FBF0E2;">
+          <th style="text-align:left;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#8F560F;">Produit</th>
+          <th style="text-align:left;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#8F560F;">CIP13</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#8F560F;">Prix net IP</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#8F560F;">Marge</th>
+          <th style="text-align:right;padding:5px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#8F560F;">Sortie</th>
+          <th style="text-align:right;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#8F560F;">Vol/an</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="p5-row">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">NUROFEN 400MG CPR BT12</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400930000000</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">2,40&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span style="background:#FBF0E2;color:#8F560F;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;border:1px solid #E8C79A;">PLM</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">120/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">300</td>
+        </tr>
+        <tr class="p5-row" style="background:#FEFCF8;">
+          <td style="padding:9px 14px;font-size:13px;font-weight:700;color:#10131C;border-top:1px solid #E7EBF2;">HUMER 150ML SPRAY</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:10.5px;color:#737A8C;border-top:1px solid #E7EBF2;">3400930111111</td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:18px;font-weight:800;color:#10131C;text-align:right;border-top:1px solid #E7EBF2;">3,10&euro;</td>
+          <td style="padding:9px 6px;text-align:right;border-top:1px solid #E7EBF2;"><span style="background:#FBF0E2;color:#8F560F;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;border:1px solid #E8C79A;">PLM</span></td>
+          <td class="p5-mono" style="padding:9px 6px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;border-top:1px solid #E7EBF2;">90/510</td>
+          <td class="p5-mono" style="padding:9px 14px;font-size:13px;font-weight:700;text-align:right;border-top:1px solid #E7EBF2;">210</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ PIED ============ -->
+  <div style="margin-top:24px;border-top:2px solid #E7EBF2;padding-top:12px;display:flex;justify-content:space-between;align-items:flex-end;page-break-inside:avoid;">
+    <div style="font-size:9.5px;color:#737A8C;line-height:1.5;max-width:62%;">
+      <span style="font-weight:800;color:#0034A0;">Integral Pharma</span> &mdash; Liste indicative etablie a partir des commandes du reseau de reference.
+      Prix nets HT susceptibles d'evolution. Non rembourses : marge libre laissee a l'appreciation du titulaire (PLM).
+      Chaine du froid : produits FROID a conserver entre 2 et 8&deg;C.
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:9px;color:#737A8C;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;">Total selection</div>
+      <div class="p5-mono" style="font-size:16px;font-weight:800;color:#0050E6;">18 produits &middot; 5 familles</div>
+    </div>
+  </div>
+
+</div>
+</div></div></section>
+</div></div>
+<script>
+function show(n){
+  document.querySelectorAll('.variant').forEach(function(s){s.classList.toggle('on',+s.dataset.n===n)});
+  document.querySelectorAll('.sw-b').forEach(function(b){b.classList.toggle('on',+b.dataset.n===n)});
+  document.querySelectorAll('.meta-block').forEach(function(m){m.hidden=(+m.dataset.n!==n)});
+  window.scrollTo({top:0});
+}
+</script></body></html>
