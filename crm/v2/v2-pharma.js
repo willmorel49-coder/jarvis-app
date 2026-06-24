@@ -1702,8 +1702,8 @@
         kpiTile('CA cumulé', V2.fmtEur(ca), '#0050E6') + kpiTile('Marge MDL', V2.fmtEur(marge), '#1E9E6A') +
         kpiTile('Références', V2.fmtNum(nbRefs), '#6D4FC4') + kpiTile(pharma.groupement ? 'Groupement' : 'Ville', esc(pharma.groupement || pharma.ville || '—'), '#C7791A') +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1.15fr;gap:12px">' +
-        '<div style="border:1px solid #E5E9F2;border-radius:11px;padding:11px 13px"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:7px">CA par mois</div>' + (bars || '<div style="font-size:10px;color:#9AA1B2">—</div>') + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:stretch">' +
+        '<div style="border:1px solid #E5E9F2;border-radius:11px;padding:11px 13px;display:flex;flex-direction:column"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:7px">CA par mois</div><div style="flex:1;display:flex;flex-direction:column;justify-content:space-between">' + (bars || '<div style="font-size:10px;color:#9AA1B2">—</div>') + '</div></div>' +
         '<div style="border:1px solid #E5E9F2;border-radius:11px;padding:11px 13px"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:7px">Ce qu\'elle commande · par tranche</div>' +
           (trRows ? '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
             '<th style="text-align:left;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Tranche</th>' +
