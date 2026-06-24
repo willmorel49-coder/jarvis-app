@@ -689,7 +689,7 @@
         // squelette (forme des futures cartes) au lieu du spinner sur la grille lourde
         root.innerHTML = V2.topbar({ back: true }) +
           '<div class="v2-wrap">' +
-            '<div class="v2-page-title">Offilog &amp; concurrents</div>' +
+            '<div class="v2-page-title">Grossistes concurrents</div>' +
             '<div class="v2-page-sub">Chargement des meilleures ventes Offilog…</div>' +
             skeletonGrid(12) +
           '</div>';
@@ -746,7 +746,7 @@
       root.innerHTML = V2.topbar({ back: true }) +
         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
-          '<div class="v2-page-title">Offilog &amp; concurrents</div>' +
+          '<div class="v2-page-title">Grossistes concurrents</div>' +
           '<div class="v2-page-sub">' + V2.fmtNum(nbTotal) + ' meilleures ventes Offilog (prix + photos) · ton achat IP comparé aux prix publics E.Leclerc, Drakkars et Cap3000</div>' +
           '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
