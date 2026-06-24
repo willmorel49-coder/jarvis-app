@@ -1673,35 +1673,64 @@
       var rows = useSel ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows;
       return { cat: o.cat, rows: rows };
     }).filter(function (o) { return o.rows.length; });
+    var totalProd = sections.reduce(function (s, o) { return s + o.rows.length; }, 0);
+    var MONO = "'Geist Mono',ui-monospace,monospace";
+
+    // Résumé compact des familles (puces colorées) — lecture immédiate du périmètre
+    var legend = sections.map(function (o) {
+      return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;color:#2A2F3C;background:#F4F6FB;border:1px solid #E7EBF2;border-radius:20px;padding:3px 10px">' +
+        '<span style="width:7px;height:7px;border-radius:50%;background:' + o.cat.color + ';flex:none"></span>' + esc(o.cat.label) +
+        '<span style="color:#9AA1B2;font-family:' + MONO + '">' + o.rows.length + '</span></span>';
+    }).join('');
+
     var catHtml = sections.map(function (o) {
       var trs = o.rows.map(function (r, i) {
-        return '<tr style="border-bottom:1px solid #ECEFF5">' +
-          '<td style="padding:4px 6px;text-align:center;color:#9AA1B2;font-size:9px">' + (i + 1) + '</td>' +
-          '<td style="padding:4px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.designation || '').slice(0, 50)) + (r.froid ? ' <span style="font-size:7px;font-weight:800;color:#00B5D8;background:#E3F7FB;padding:1px 4px;border-radius:4px;vertical-align:middle">FROID</span>' : '') + '</td>' +
-          '<td style="padding:4px 6px;font-family:monospace;font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + (r.prix_ip ? e2(r.prix_ip) + (r.offre ? ' <span style="font-family:Satoshi,sans-serif;font-size:7px;font-weight:800;color:#C7791A;background:#FBEEDD;padding:1px 4px;border-radius:4px;vertical-align:middle">OFFRE</span>' : '') : '—') + '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#1E9E6A">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:800">' + r.sortie + '/' + data.panel + '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px">' + V2.fmtNum(r.qte) + '</td>' +
+        var zebra = (i % 2 === 1) ? 'background:#FAFBFD;' : '';
+        var froid = r.froid ? ' <span style="font-size:7px;font-weight:800;color:#0086A3;background:#E3F7FB;padding:1px 5px;border-radius:4px;vertical-align:middle;letter-spacing:.03em">FROID</span>' : '';
+        var offre = r.offre ? ' <span style="font-size:7px;font-weight:800;color:#1E9E6A;background:#E6F6EE;padding:1px 5px;border-radius:4px;vertical-align:middle;letter-spacing:.03em">OFFRE</span>' : '';
+        return '<tr style="' + zebra + 'page-break-inside:avoid">' +
+          '<td style="padding:6px 8px;text-align:center;color:#B4BAC8;font-size:9px;font-family:' + MONO + ';border-bottom:1px solid #EEF1F6">' + (i + 1) + '</td>' +
+          '<td style="padding:6px 8px;font-size:10px;font-weight:600;color:#10131C;border-bottom:1px solid #EEF1F6">' + esc((r.designation || '').slice(0, 52)) + froid + offre + '</td>' +
+          '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#9AA1B2;border-bottom:1px solid #EEF1F6">' + esc(r.cip) + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:#0050E6;border-bottom:1px solid #EEF1F6;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:' + (r.remise > 0 ? '#1E9E6A' : '#C4C9D4') + ';border-bottom:1px solid #EEF1F6">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:800;color:#10131C;border-bottom:1px solid #EEF1F6;white-space:nowrap">' + r.sortie + '<span style="color:#B4BAC8;font-weight:500">/' + data.panel + '</span></td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;color:#5A6173;border-bottom:1px solid #EEF1F6">' + V2.fmtNum(r.qte) + '</td>' +
           '</tr>';
       }).join('');
-      return '<div style="margin-bottom:13px">' +
-        '<div style="display:flex;align-items:center;gap:9px;padding:7px 11px;background:linear-gradient(90deg,' + o.cat.color + '22,transparent);border-left:4px solid ' + o.cat.color + ';border-radius:5px;margin-bottom:5px;page-break-after:avoid">' +
-          '<div style="font-size:12px;font-weight:800;color:#10131C">' + esc(o.cat.label) + '</div></div>' +
-        '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#F4F6FB">' +
-          ['#', 'Produit', 'CIP13', 'Prix net', 'Remise', 'Sortie', 'Volume'].map(function (h, k) {
-            return '<th style="padding:5px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;text-align:' + (k < 3 ? 'left' : 'right') + '">' + h + '</th>';
-          }).join('') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
+      var th = function (h, al) { return '<th style="padding:6px 8px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#737A8C;text-align:' + al + ';border-bottom:1.5px solid #E2E7F0;background:#F7F9FC">' + h + '</th>'; };
+      return '<div style="margin-bottom:16px">' +
+        '<div class="pdf-cat-head" style="display:flex;align-items:center;gap:9px;padding:8px 13px;background:' + o.cat.color + '14;border:1px solid ' + o.cat.color + '30;border-left:5px solid ' + o.cat.color + ';border-radius:8px;page-break-after:avoid">' +
+          '<span style="font-size:12px;font-weight:800;color:#10131C;letter-spacing:-.01em">' + esc(o.cat.label) + '</span>' +
+          (o.cat.sub ? '<span style="font-size:9px;color:#737A8C;font-weight:600">' + esc(o.cat.sub) + '</span>' : '') +
+          '<span style="margin-left:auto;font-size:9.5px;font-weight:800;color:' + o.cat.color + ';font-family:' + MONO + '">' + o.rows.length + ' produit' + (o.rows.length > 1 ? 's' : '') + '</span>' +
+        '</div>' +
+        '<table style="width:100%;border-collapse:collapse;margin-top:5px;table-layout:fixed">' +
+          '<colgroup><col style="width:26px"><col><col style="width:96px"><col style="width:74px"><col style="width:58px"><col style="width:60px"><col style="width:58px"></colgroup>' +
+          '<thead><tr>' + th('#', 'center') + th('Produit', 'left') + th('CIP13', 'left') + th('Prix net', 'right') + th('Remise', 'right') + th('Sortie', 'right') + th('Volume', 'right') + '</tr></thead>' +
+          '<tbody>' + trs + '</tbody></table>' +
+      '</div>';
     }).join('');
-    var html = '<div style="padding:18px 22px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
-      '<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #10131C;padding-bottom:12px;margin-bottom:15px">' +
-        '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>' +
-        '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · Liste d\'achats</div>' +
-          '<div style="font-size:19px;font-weight:800">' + esc(grpName) + '</div>' +
-          '<div style="font-size:10px;color:#737A8C">' + data.panel + ' pharmacies du panel · ' + periodLabel() + ' · trié par nb de pharmacies qui commandent</div></div>' +
-        '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + dateStr + '</div>' +
-      '</div>' + (catHtml || '<div style="color:#9AA1B2;padding:30px;text-align:center">Aucun produit</div>') +
-      '<div style="margin-top:16px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · Document confidentiel · « Sortie » = nombre de pharmacies du panel qui commandent le produit</div>' +
+
+    var html = '<div style="font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C;padding:4px 20px 14px">' +
+      // En-tête
+      '<div style="display:flex;align-items:center;gap:13px;padding-bottom:13px;margin-bottom:14px;border-bottom:2.5px solid #0050E6">' +
+        '<div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative;flex:none"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>' +
+        '<div style="flex:1;min-width:0"><div style="font-size:8.5px;color:#0050E6;text-transform:uppercase;letter-spacing:.1em;font-weight:800">Intégral Pharma · Liste d\'achats recommandée</div>' +
+          '<div style="font-size:18px;font-weight:800;letter-spacing:-.02em;margin-top:1px">' + esc(grpName) + '</div>' +
+          '<div style="font-size:9.5px;color:#737A8C;margin-top:2px">' + data.panel + ' pharmacies de référence · ' + periodLabel() + '</div></div>' +
+        '<div style="text-align:right;flex:none">' +
+          '<div style="font-size:7.5px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Édité le</div>' +
+          '<div style="font-size:11px;font-weight:800;font-family:' + MONO + '">' + dateStr + '</div>' +
+          '<div style="margin-top:5px;display:inline-block;font-size:9px;font-weight:800;color:#fff;background:#0050E6;border-radius:20px;padding:3px 11px;font-family:' + MONO + '">' + totalProd + ' produits</div>' +
+        '</div>' +
+      '</div>' +
+      (legend ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px">' + legend + '</div>' : '') +
+      (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
+      '<div style="margin-top:14px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;justify-content:space-between;gap:12px;font-size:7.5px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.05em">' +
+        '<span style="font-weight:700">Intégral Pharma · Document confidentiel</span>' +
+        '<span>« Sortie » = nb de pharmacies de la référence qui commandent le produit</span>' +
+      '</div>' +
     '</div>';
     window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
@@ -1713,7 +1742,7 @@
       var worker = window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.pdf-cat-head'] }
       });
       function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); }
       if (mode === 'share' && V2.shareOrSaveBlob) {
