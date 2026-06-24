@@ -500,9 +500,10 @@
         // App JARVIS : espace Marketing de Pauline & Will (supports + sélections à pousser)
         P.splice(2, 0, { k: 'marketing', cls: 'p6', accent: '#E0556E', ico: 'spark', tag: 'Pauline & Will', t: 'Marketing', d: 'Fabriquez vos supports (flyers produits avec photos et prix) et vos sélections à pousser aux pharmacies. À deux, au même endroit.', go: 'Ouvrir le marketing' });
       }
-      // Pilier Groupements (carte de prospection) si présent
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) {
-        P.push({ k: 'groupements', cls: 'p7', accent: '#0034A0', ico: 'grid', tag: 'Carte', t: 'Groupements', d: 'La carte de prospection des groupements et pharmacies : qui est où, quel groupement, quels décideurs. Pour préparer ta tournée.', go: 'Ouvrir la carte' });
+      // Groupements : la tuile ouvre directement la génération de liste d'achats par groupement
+      // (vue Opportunités › Groupements). La carte de prospection reste accessible via ⌘K.
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.pharma) {
+        P.push({ k: 'groupements', cls: 'p7', accent: '#0034A0', ico: 'grid', tag: 'Listes', route: { name: 'pharma', param: 'groupements' }, t: 'Groupements', d: 'Choisis un groupement et génère sa liste d\'achats idéale (produits commandés par le réseau adhérent) à pousser, prête en PDF.', go: 'Voir les groupements' });
       }
       // Mode prospection : pitch à montrer au comptoir
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) {
@@ -521,7 +522,8 @@
         }
       }
       function tile(p) {
-        return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onclick="V2.go(\'' + p.k + '\')">' +
+        var nav = p.route ? ('V2.go(\'' + p.route.name + '\'' + (p.route.param ? ',\'' + p.route.param + '\'' : '') + ')') : ('V2.go(\'' + p.k + '\')');
+        return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onclick="' + nav + '">' +
           '<div class="v2-pil-head"><div class="v2-pil-ico">' + ICO(p.ico, 26) + '</div><span class="v2-pil-num">' + p.tag + '</span></div>' +
           '<div class="v2-pil-t">' + p.t + '</div><div class="v2-pil-d">' + p.d + '</div>' +
           '<div class="v2-pil-go">' + p.go + ' <span class="arrow">→</span></div></a>';
