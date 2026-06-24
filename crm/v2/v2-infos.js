@@ -110,9 +110,9 @@
         var c = CAT[k] || { label: k, color: 'var(--muted)', ico: 'spark' };
         var rows = list.map(function (i) {
           var url = i.url ? ' href="' + esc(i.url) + '" target="_blank" rel="noopener"' : '';
-          return '<a class="inf-item"' + url + '>' +
+          return '<a class="inf-item' + (i.today ? ' inf-item--today' : '') + '"' + url + '>' +
             '<span class="inf-item-dot" style="background:' + c.color + '"></span>' +
-            '<span class="inf-item-tx">' + esc(i.titre) +
+            '<span class="inf-item-tx">' + esc(i.titre) + (i.today ? ' <span class="inf-today">aujourd\'hui</span>' : '') +
               '<small>' + esc(i.source || '') + (frDate(i.date) ? ' · ' + frDate(i.date) : '') + '</small></span>' +
             (i.url ? '<span class="inf-item-go">' + ICO('chev', 15) + '</span>' : '') +
           '</a>';
@@ -138,7 +138,8 @@
           '<div class="inf-hero">' +
             '<span class="inf-eyebrow">' + ICO('spark', 15) + ' ' + cap(dayLabel()) + '</span>' +
             '<h1>Bonjour ' + esc(firstName) + ', ta veille du matin</h1>' +
-            '<p>Ruptures, sécurité, réglementaire et actu officine — l\'essentiel pour arriver informé en rendez-vous.</p>' +
+            '<p>Ruptures, sécurité, réglementaire et actu officine — les 7 derniers jours, focus sur aujourd\'hui.</p>' +
+            ((DATA && DATA.count) ? '<div class="inf-count"><b>' + (DATA.count_today || 0) + '</b> aujourd\'hui · ' + DATA.count + ' sur 7 jours</div>' : '') +
           '</div>' +
           body +
           '<div class="inf-foot">Sources : ANSM (ruptures · sécurité · actualités) &amp; Le Moniteur des pharmacies' + (maj ? ' · mis à jour le ' + maj : '') + '. Mis à jour chaque matin, automatiquement.</div>' +
@@ -153,6 +154,9 @@
       '.inf-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--c-amber);text-transform:capitalize}' +
       '.inf-hero h1{font-size:25px;font-weight:900;letter-spacing:-.025em;margin:8px 0 4px;line-height:1.1}' +
       '.inf-hero p{font-size:14px;color:var(--muted);font-weight:500;max-width:580px}' +
+      '.inf-count{margin-top:9px;font-size:12.5px;color:var(--muted);font-weight:600}.inf-count b{color:var(--c-amber);font-family:var(--mono)}' +
+      '.inf-today{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 15%,transparent);border-radius:var(--r-pill);padding:1px 7px;vertical-align:middle;margin-left:4px}' +
+      '.inf-item--today{background:color-mix(in srgb,var(--c-amber) 4%,transparent)}' +
       '.inf-opp{background:linear-gradient(150deg,#0050E6,#0034A0);color:#fff;border-radius:var(--r-card);padding:18px 20px;margin-bottom:18px;box-shadow:var(--sh-2)}' +
       '.inf-opp-h{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;letter-spacing:.01em;margin-bottom:12px}' +
       '.inf-opp-row{padding:10px 0;border-top:1px solid rgba(255,255,255,.16)}' +

@@ -13,16 +13,18 @@ Sources :
 """
 import urllib.request, json, re, os, sys
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
+
+WINDOW_DAYS = 7   # on garde la semaine glissante
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, 'crm', 'v2', 'infos-jour.json')
 
 FEEDS = [
-    {'cat': 'ruptures',      'source': 'ANSM · Disponibilité', 'url': 'https://ansm.sante.fr/rss/disponibilite_produits_sante?produitsSante=medicaments', 'max': 12},
-    {'cat': 'securite',      'source': 'ANSM · Sécurité',      'url': 'https://ansm.sante.fr/rss/informations_securite?produitsSante=medicaments', 'max': 5},
-    {'cat': 'reglementaire', 'source': 'ANSM · Actualités',    'url': 'https://ansm.sante.fr/rss/actualites?produitsSante=medicaments', 'max': 5},
-    {'cat': 'profession',    'source': 'Le Moniteur des pharmacies', 'url': 'https://www.lemoniteurdespharmacies.fr/feed/', 'max': 6},
+    {'cat': 'ruptures',      'source': 'ANSM · Disponibilité', 'url': 'https://ansm.sante.fr/rss/disponibilite_produits_sante?produitsSante=medicaments', 'max': 40},
+    {'cat': 'securite',      'source': 'ANSM · Sécurité',      'url': 'https://ansm.sante.fr/rss/informations_securite?produitsSante=medicaments', 'max': 20},
+    {'cat': 'reglementaire', 'source': 'ANSM · Actualités',    'url': 'https://ansm.sante.fr/rss/actualites?produitsSante=medicaments', 'max': 20},
+    {'cat': 'profession',    'source': 'Le Moniteur des pharmacies', 'url': 'https://www.lemoniteurdespharmacies.fr/feed/', 'max': 25},
 ]
 UA = 'Mozilla/5.0 (compatible; JARVIS-veille/1.0; +integralpharma)'
 
@@ -92,17 +94,60 @@ def items_from(feed):
     return out
 
 
+def keyof(it):
+    return (it.get('url') or '').strip() or (it.get('source', '') + '|' + it.get('titre', ''))
+
+
+def daystr(it, today):
+    # jour de référence de l'item : sa date de publication sinon le jour où on l'a vu
+    return (it.get('date') or '')[:10] or it.get('seen') or today
+
+
 def main():
-    items = []
+    today = date.today().isoformat()
+    cutoff = (date.today() - timedelta(days=WINDOW_DAYS - 1)).isoformat()
+
+    # 1) reprendre l'existant (accumulation semaine glissante)
+    merged = {}
+    try:
+        old = json.load(open(OUT, encoding='utf-8'))
+        for it in old.get('items', []):
+            merged[keyof(it)] = it
+    except Exception:
+        pass
+
+    # 2) fusionner les nouveautés (garde la 1ère date de découverte = "seen")
+    fresh = 0
     for f in FEEDS:
-        items += items_from(f)
-    # tri : ruptures d'abord, puis par date décroissante
+        for it in items_from(f):
+            k = keyof(it)
+            if k in merged:
+                it['seen'] = merged[k].get('seen') or daystr(merged[k], today)
+            else:
+                it['seen'] = (it.get('date') or '')[:10] or today
+                fresh += 1
+            merged[k] = it
+
+    # 3) fenêtre 7 jours + drapeau "aujourd'hui"
+    items = []
+    for it in merged.values():
+        d = daystr(it, today)
+        if d < cutoff:
+            continue
+        it['day'] = d
+        it['today'] = (d == today)
+        items.append(it)
+
+    # 4) tri : aujourd'hui d'abord, puis catégorie, puis date décroissante
     order = {'ruptures': 0, 'securite': 1, 'reglementaire': 2, 'profession': 3}
-    items.sort(key=lambda r: (order.get(r['cat'], 9), r['date'] == '', _neg(r['date'])))
+    items.sort(key=lambda r: (0 if r['today'] else 1, order.get(r['cat'], 9), _neg(r.get('date') or r['day'])))
+
     payload = {
-        'day': datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+        'day': today,
         'generated_at': datetime.now(timezone.utc).isoformat(),
+        'window_days': WINDOW_DAYS,
         'count': len(items),
+        'count_today': sum(1 for i in items if i['today']),
         'sources': [f['source'] for f in FEEDS],
         'items': items,
     }
@@ -110,11 +155,12 @@ def main():
     with open(OUT, 'w', encoding='utf-8') as fh:
         json.dump(payload, fh, ensure_ascii=False, separators=(',', ':'))
     n_rupt = sum(1 for i in items if i['cat'] == 'ruptures')
-    print('OK %d infos (%d ruptures) -> %s' % (len(items), n_rupt, OUT))
+    print('OK %d infos sur %dj (%d aujourd\'hui, %d ruptures, %d nouvelles) -> %s'
+          % (len(items), WINDOW_DAYS, payload['count_today'], n_rupt, fresh, OUT))
 
 
 def _neg(iso):
-    # pour trier par date décroissante en clé ascendante
+    # tri par date décroissante via clé ascendante
     return '' if not iso else ''.join(str(255 - ord(c)) for c in iso[:19])
 
 
