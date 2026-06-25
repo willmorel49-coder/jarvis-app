@@ -6,7 +6,10 @@ name: Infos du matin (veille)
 
 on:
   schedule:
-    - cron: '30 5 * * *'   # 05h30 UTC = ~07h30 Paris (été)
+    # Le cron GitHub est "best effort" (souvent retardé/sauté aux heures rondes) -> minutes
+    # non-rondes + 2 passages/jour (matin + midi) pour fiabiliser la mise à jour quotidienne.
+    - cron: '23 5 * * *'    # ~07h23 Paris (été)
+    - cron: '17 10 * * *'   # ~12h17 Paris — filet de sécurité si le matin est sauté
   workflow_dispatch:
 
 permissions:
