@@ -988,7 +988,6 @@
         '<td><span class="phf-price">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) : '—') + '</span></td>' +
         '<td><span class="phf-rem' + (r.remise > 0 ? '' : ' phf-none') + '">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</span></td>' +
         '<td class="phf-tc"><span class="phf-sortie"><span class="mono phf-sortie-n">' + r.sortie + '/' + rot.total + '</span><span class="phf-bar"><i style="width:' + pct + '%"></i></span></span></td>' +
-        '<td><span class="phf-vol mono">' + V2.fmtNum(r.qte) + '</span></td>' +
       '</tr>';
     }).join('');
     var listing = rot.rows.length ? '<div class="v2-card" style="padding:0;overflow:hidden;margin-top:8px">' +
@@ -1001,7 +1000,7 @@
         '</div>' +
       '</div>' +
       '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
-        '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th>Remise</th><th class="phf-tc">Sortie</th><th>Volume</th>' +
+        '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th>Remise</th><th class="phf-tc">Nbr pharma</th>' +
       '</tr></thead><tbody>' + rotRows + '</tbody></table></div>' +
       '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + ' à pousser</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? 'du groupement' : 'du réseau') + '.</div>' +
     '</div>' : '';
@@ -1452,11 +1451,16 @@
     var ov = ovKey ? overridesGet(ovKey) : { removed: {}, added: {} };
     // produits ajoutés manuellement et non commandés par le panel : entrée vide (sortie 0)
     Object.keys(ov.added).forEach(function (cip) { if (!byCip[cip]) byCip[cip] = { ph: {}, qte: 0, ca: 0, manual: true }; });
+    // seuil de diffusion : un produit n'apparaît que s'il est commandé par >= 20% des pharmacies
+    // (actives) du groupement (les produits ajoutés à la main passent toujours).
+    var panel0 = Object.keys(activeSet).length;
+    var seuil = Math.max(1, Math.ceil(panel0 * 0.20));
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     Object.keys(byCip).forEach(function (cip) {
       if (ov.removed[cip]) return;                       // produit retiré à la main
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
+      if (!byCip[cip].manual && Object.keys(byCip[cip].ph).length < seuil) return;   // < 20% des pharmacies → masqué
       var e = byCip[cip], ht = (b.prix_ht > 0) ? b.prix_ht : 0, ip0 = (b.prix_ip > 0) ? b.prix_ip : 0;
       // prix le plus bas : offre labo (Sanofi, UPSA…) valide si remise ≤ 50%
       // (au-delà = donnée offre_ip aberrante → ignorée)
@@ -1518,14 +1522,13 @@
         '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
         '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
         '<td class="num" style="font-weight:800">' + r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + panel + '</span></td>' +
-        '<td class="num">' + V2.fmtNum(r.qte) + '</td>' +
         '<td style="width:46px;text-align:center"><button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Sélectionner pour le PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
         (enc ? '<td style="width:38px;text-align:center"><button type="button" class="ph-rmprod" title="Retirer ce produit de la liste" onclick="V2.itemRemove(\'' + enc + '\',\'' + esc(r.cip) + '\')">' + ICO('close', 14, 2) + '</button></td>' : '') +
       '</tr>';
     }).join('');
     var body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
       '<thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">Remise</th>' +
-      '<th class="num">Sortie</th><th class="num">Volume</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
+      '<th class="num">Nbr pharma</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
     return '<div class="v2-card v2-cat open">' + head + body + '</div>';
   }
 
@@ -1816,7 +1819,7 @@
     var pharma = portraitPid ? (V2.pharmacies || []).find(function (p) { return String(p.id) === String(portraitPid); }) : null;
     var headName = pharma ? pharma.name : grpName;
     var headSub = pharma ? [pharma.code, pharma.ville].filter(function (x) { return x; }).join(' · ') : (panel + ' pharmacies du panel');
-    var COLS6 = '<colgroup><col style="width:33%"><col style="width:16%"><col style="width:11%"><col style="width:9%"><col style="width:15%"><col style="width:16%"></colgroup>';
+    var COLS6 = '<colgroup><col style="width:40%"><col style="width:20%"><col style="width:16%"><col style="width:11%"><col style="width:13%"></colgroup>';
 
     // ── Familles (en-tête de famille coloré + table dense, design "Tableau dense pro") ──
     var catHtml = sections.map(function (o) {
@@ -1830,7 +1833,6 @@
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:#10131C;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:' + (r.remise > 0 ? o.cat.color : '#A8AFBE') + '">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</td>' +
           '<td style="padding:6px 8px;text-align:center;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + r.sortie + '<span style="color:#A8AFBE">/' + panel + '</span></td>' +
-          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;color:#10131C">' + V2.fmtNum(r.qte) + '</td>' +
           '</tr>';
       }).join('');
       return '<div style="page-break-after:avoid;page-break-inside:avoid;margin-top:11px">' +
@@ -1867,14 +1869,14 @@
         // Titre liste + en-tête colonnes global (sombre)
         '<div style="display:flex;align-items:center;justify-content:space-between;border-top:2px solid #10131C;padding-top:9px;margin-bottom:9px;page-break-after:avoid">' +
           '<div style="font-size:12px;font-weight:800;color:#10131C">Liste à pousser <span style="color:#737A8C;font-weight:600;font-size:10px">— ' + totalProd + ' produits, par famille</span></div>' +
-          '<div style="font-size:9px;color:#737A8C">Sortie = nb pharmacies / ' + panel + '</div>' +
+          '<div style="font-size:9px;color:#737A8C">Nbr pharma = pharmacies qui commandent / ' + panel + '</div>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-after:avoid">' + COLS6 +
-          '<thead><tr style="background:#10131C">' + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('Prix net IP', 'right') + thd('Remise', 'right') + thd('Sortie', 'center') + thd('Volume/an', 'right') + '</tr></thead></table>' +
+          '<thead><tr style="background:#10131C">' + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('Prix net IP', 'right') + thd('Remise', 'right') + thd('Nbr pharma', 'center') + '</tr></thead></table>' +
         (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
         // Pied
         '<div style="margin-top:16px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
-          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau au ' + dateStr + '.<br>Prix nets HT indicatifs. Sortie = nb de pharmacies de la référence commandant le produit / ' + panel + '.' + (truncated ? '<br>Top ' + PDF_CAP + ' par famille (les plus commandés) — pour cocher d\'autres produits, sélectionne-les dans l\'app avant l\'export.' : '') + '</div>' +
+          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau au ' + dateStr + '.<br>Prix nets HT indicatifs. Nbr pharma = nb de pharmacies de la référence commandant le produit / ' + panel + '.' + (truncated ? '<br>Top ' + PDF_CAP + ' par famille (les plus commandés) — pour cocher d\'autres produits, sélectionne-les dans l\'app avant l\'export.' : '') + '</div>' +
           '<div style="text-align:right;font-size:8.5px;color:#A8AFBE;white-space:nowrap">' + esc(grpName) + (pharma && pharma.ville ? '<br>' + esc(pharma.ville) : '') + '</div>' +
         '</div>' +
       '</div>' +
