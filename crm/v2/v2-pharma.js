@@ -1881,11 +1881,20 @@
         '</div>' +
       '</div>' +
     '</div>';
+    // Aperçu avant impression (sauf clic explicite "Partager" sur mobile → partage direct)
+    var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+    var shareTitle = 'Liste d\'achats · ' + grpName;
+    if (mode === 'share') { pdfGenerate(html, fn, 'share', shareTitle); }
+    else { V2.pdfPreview(html, fn, shareTitle); }
+  }
+
+  // Génère et télécharge/partage un PDF à partir d'un HTML 794px (réutilisable).
+  function pdfGenerate(html, fn, mode, shareTitle) {
+    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+    V2.toast('Génération du PDF…');
     window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
     }).then(function () {
-      // Wrap rendu en haut-gauche du document (x=0 → pas de coupe gauche ; absolute → hauteur
-      // complète multi-pages). Un voile blanc le masque visuellement le temps de la génération.
       try { window.scrollTo(0, 0); } catch (e) {}
       var wrap = document.createElement('div');
       wrap.style.cssText = 'position:absolute;left:0;top:0;width:794px;overflow:hidden;background:#fff;z-index:1';
@@ -1894,7 +1903,6 @@
       veil.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:2147483600;display:flex;align-items:center;justify-content:center;font:600 14px Satoshi,system-ui,sans-serif;color:#737A8C';
       veil.textContent = 'Génération du PDF…';
       document.body.appendChild(veil);
-      var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       var worker = window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [0, 0, 0, 0], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
@@ -1902,7 +1910,7 @@
       });
       function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); if (veil.parentNode) document.body.removeChild(veil); }
       if (mode === 'share' && V2.shareOrSaveBlob) {
-        worker.outputPdf('blob').then(function (blob) { return V2.shareOrSaveBlob(blob, fn, 'Liste d\'achats · ' + grpName); })
+        worker.outputPdf('blob').then(function (blob) { return V2.shareOrSaveBlob(blob, fn, shareTitle || fn); })
           .then(function () { cleanup(); V2.toast('PDF prêt à partager'); })
           .catch(function (e) { console.error(e); cleanup(); V2.toast('Erreur PDF', 'error'); });
       } else {
@@ -1911,6 +1919,41 @@
       }
     });
   }
+
+  // Aperçu avant impression — modal WYSIWYG (réutilise le style .prepa-*)
+  function fitPrevSheet() {
+    var scroll = document.getElementById('pdfprev-scroll'), holder = document.getElementById('pdfprev-holder'), sheet = document.getElementById('pdfprev-sheet');
+    if (!scroll || !holder || !sheet) return;
+    var avail = scroll.clientWidth - 32; if (avail <= 0) return;
+    var scale = Math.min(1, avail / 794);
+    sheet.style.transform = 'scale(' + scale + ')';
+    var h = sheet.firstChild ? sheet.firstChild.offsetHeight : sheet.offsetHeight;
+    holder.style.width = (794 * scale) + 'px'; holder.style.height = (h * scale) + 'px';
+  }
+  V2.pdfPreviewClose = function () { var b = document.getElementById('pdf-prev'); if (b) b.classList.remove('open'); };
+  V2.pdfPreview = function (html, fn, shareTitle) {
+    var bd = document.getElementById('pdf-prev');
+    if (!bd) {
+      bd = document.createElement('div'); bd.id = 'pdf-prev'; bd.className = 'prepa-modal';
+      bd.innerHTML = '<div class="prepa-dialog" onclick="event.stopPropagation()">' +
+        '<div class="prepa-top">' +
+          '<div class="prepa-tt">' + ICO('fiche', 17, 2) + ' Aperçu avant impression</div>' +
+          '<button class="v2-btn v2-btn-primary" id="pdfprev-dl">' + ICO('download', 16) + ' Télécharger</button>' +
+          (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" id="pdfprev-sh">' + ICO('spark', 16) + ' Partager</button>' : '') +
+          '<button class="prepa-x" onclick="V2.pdfPreviewClose()" title="Fermer">' + ICO('close', 18, 2) + '</button>' +
+        '</div>' +
+        '<div class="prepa-scroll" id="pdfprev-scroll"><div class="prepa-holder" id="pdfprev-holder"><div class="prepa-sheet" id="pdfprev-sheet"></div></div></div>' +
+      '</div>';
+      bd.onclick = function () { V2.pdfPreviewClose(); };
+      document.body.appendChild(bd);
+    }
+    bd.querySelector('#pdfprev-sheet').innerHTML = html;
+    bd.querySelector('#pdfprev-dl').onclick = function () { pdfGenerate(html, fn, 'save'); };
+    var sh = bd.querySelector('#pdfprev-sh'); if (sh) sh.onclick = function () { pdfGenerate(html, fn, 'share', shareTitle); };
+    bd.classList.add('open');
+    requestAnimationFrame(function () { requestAnimationFrame(fitPrevSheet); });
+    if (!V2._pdfPrevResize) { window.addEventListener('resize', fitPrevSheet); V2._pdfPrevResize = true; }
+  };
   V2.grpDownloadPdf = function (enc, mode) {
     var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
     achatsPdf(grpName, groupementProducts(grpName), !!(selCips && selCips.size && selPid === 'GRP:' + grpName), mode);
