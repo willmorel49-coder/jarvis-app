@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Audit Achats Intégral — Maquette</title>
+<title>Audit Achats Intégral — Maquette v2</title>
 <style>
   :root{
     --ip:#0050E6; --ip-d:#0039A6; --ink:#10131C; --muted:#737A8C; --muted2:#9AA1B2;
@@ -17,25 +17,22 @@
   .sheet{max-width:820px;margin:0 auto;padding:0 16px 60px}
   .note{max-width:820px;margin:14px auto 0;padding:8px 14px;background:#FFF6E6;border:1px solid #F0D9A8;border-radius:10px;color:#8a6516;font-size:12.5px;font-weight:600;text-align:center}
 
-  /* Bandeau */
   .band{background:linear-gradient(120deg,var(--ip),var(--ip-d));color:#fff;border-radius:var(--r);padding:22px 26px;margin-top:16px;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
   .band .logo{font-weight:800;font-size:13px;letter-spacing:.18em;text-transform:uppercase;opacity:.9}
   .band h1{font-size:23px;font-weight:800;letter-spacing:-.02em;margin:4px 0 0}
   .band .ph{font-size:13.5px;opacity:.92;margin-top:7px}
   .band .gift{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:700;white-space:nowrap}
 
-  /* Hero chiffre */
   .hero{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:26px;margin-top:16px;text-align:center}
   .hero .lbl{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
   .hero .big{font-size:54px;font-weight:800;letter-spacing:-.03em;color:var(--green);margin:6px 0 2px;line-height:1}
   .hero .sub{font-size:14px;color:var(--muted)}
   .minis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
-  .mini{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px}
-  .mini .n{font-size:21px;font-weight:800;color:var(--ink)}
+  .mini{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:left}
+  .mini .n{font-size:20px;font-weight:800;color:var(--ink)}
   .mini .t{font-size:12px;color:var(--muted);font-weight:600;margin-top:3px;line-height:1.35}
   .mini .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px;margin-bottom:9px}
 
-  /* Sections */
   .sec{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-top:18px;overflow:hidden}
   .sh{display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--line);position:relative}
   .sh::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--ip))}
@@ -43,6 +40,8 @@
   .sh h2{font-size:14px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--c,var(--ip));margin:0}
   .sh .desc{font-size:12px;color:var(--muted);font-weight:500;margin-top:1px}
   .sh .tot{margin-left:auto;font-size:13px;font-weight:800;color:#fff;background:var(--c,var(--ip));padding:5px 12px;border-radius:999px;white-space:nowrap}
+  .intro{padding:14px 22px 2px;font-size:13.5px;color:#3a4150}
+  .intro b{color:var(--ink)}
   table{width:100%;border-collapse:collapse;font-size:13.5px}
   thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted2);font-weight:700;text-align:right;padding:11px 22px 7px}
   thead th:first-child{text-align:left}
@@ -50,94 +49,108 @@
   tbody td:first-child{text-align:left}
   .prod{font-weight:700;letter-spacing:-.01em}
   .cip{font-size:11px;color:var(--muted2);font-weight:500}
-  .old{color:var(--muted);text-decoration:line-through;font-size:12.5px}
   .gain{font-weight:800;color:var(--green)}
   .pill{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:999px}
   .p-bad{background:rgba(224,85,110,.12);color:#c23652}
   .p-warn{background:rgba(199,121,26,.13);color:#a8651a}
-  .p-ip{background:var(--green-s);color:var(--green)}
   .row-foot td{border-top:2px solid var(--line2);font-weight:800;background:var(--paper)}
   .alt{font-weight:700;color:var(--green)}
   .arr{color:var(--muted2);padding:0 4px}
+
+  .verif{background:linear-gradient(120deg,#0b1220,#16233a);color:#fff;border-radius:var(--r);box-shadow:var(--sh);margin-top:18px;padding:22px 24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .verif .vic{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:20px;flex:none}
+  .verif h3{margin:0 0 3px;font-size:15.5px;font-weight:800}
+  .verif p{margin:0;font-size:13px;color:#c4cbd9;line-height:1.5}
+  .verif .btn{margin-left:auto;background:#fff;color:#0b1220;font-weight:800;font-size:13px;padding:10px 16px;border-radius:10px;white-space:nowrap}
+
   .foot{margin-top:24px;text-align:center;color:var(--muted2);font-size:12px;line-height:1.6}
   .foot b{color:var(--ip)}
   @media(max-width:620px){
     .minis{grid-template-columns:1fr}
-    .hero .big{font-size:42px}
+    .hero .big{font-size:40px}
+    .verif .btn{margin-left:0}
     thead{display:none}
     tbody td{display:block;text-align:left;padding:3px 18px;border:none}
     tbody tr{display:block;border-top:1px solid var(--line);padding:12px 0}
-    tbody td:first-child{padding-top:8px}
-    td[data-l]::before{content:attr(data-l);display:inline-block;min-width:128px;color:var(--muted2);font-size:11px;font-weight:700;text-transform:uppercase}
+    td[data-l]::before{content:attr(data-l);display:inline-block;min-width:140px;color:var(--muted2);font-size:11px;font-weight:700;text-transform:uppercase}
   }
-  @media print{body{background:#fff}.note{display:none}.sheet{padding:0}}
+  @media print{body{background:#fff}.note{display:none}.sheet{padding:0}.verif{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 </head>
 <body>
 
-<div class="note">⚠️ Maquette — chiffres d'exemple (fictifs mais réalistes). Rien n'est codé : c'est l'aperçu à valider.</div>
+<div class="note">⚠️ Maquette v2 — chiffres d'exemple (pharmacie à 50 000 €/mois d'achats). Modèle calé sur l'étude abandon de marge. Rien n'est codé.</div>
 
 <div class="sheet">
 
-  <!-- Bandeau -->
   <div class="band">
     <div>
       <div class="logo">Intégral Pharma</div>
-      <h1>Votre Audit Achats</h1>
-      <div class="ph">Pharmacie du Centre — Mme Dupont · 12 rue Nationale, 49100 Angers · CIP 4900123</div>
+      <h1>Votre Audit Marge</h1>
+      <div class="ph">Pharmacie du Centre — Mme Dupont · 12 rue Nationale, 49100 Angers · ~600 000 €/an d'achats</div>
     </div>
     <div class="gift">🎁 Audit offert</div>
   </div>
 
-  <!-- Hero -->
   <div class="hero">
-    <div class="lbl">Ce que vous pourriez récupérer chaque année</div>
-    <div class="big mono">≈ 3 240 €<span style="font-size:24px;color:var(--muted2)"> / an</span></div>
-    <div class="sub">en optimisant vos achats avec Intégral Pharma</div>
+    <div class="lbl">Marge supplémentaire possible, par an</div>
+    <div class="big mono">≈ 27 000 €<span style="font-size:24px;color:var(--muted2)"> / an</span></div>
+    <div class="sub">avec Intégral Pharma, net sur facture — sans engagement ni franco</div>
     <div class="minis">
       <div class="mini">
         <div class="ic" style="background:var(--ip)">€</div>
-        <div class="n mono">1 180 €</div>
-        <div class="t">Économie sur vos prix d'achat</div>
+        <div class="n mono">23 400 €</div>
+        <div class="t">Abandon de marge Intégral (rendu net sur facture)</div>
       </div>
       <div class="mini">
         <div class="ic" style="background:var(--green)">↑</div>
         <div class="n mono">2 060 €</div>
-        <div class="t">Marge laissée (génériques + non remboursés)</div>
+        <div class="t">Marge génériques non captée (princeps → générique)</div>
       </div>
       <div class="mini">
-        <div class="ic" style="background:var(--amber)">!</div>
-        <div class="n mono">3</div>
-        <div class="t">Ruptures couvertes par une alternative IP</div>
+        <div class="ic" style="background:var(--amber)">↑</div>
+        <div class="n mono">1 540 €</div>
+        <div class="t">Non-remboursés sous-margés (vs prix public)</div>
       </div>
     </div>
   </div>
 
-  <!-- Section 1 : prix -->
+  <!-- Section 1 : abandon de marge (l'arme IP) -->
   <div class="sec" style="--c:var(--ip)">
     <div class="sh">
       <div class="ic">€</div>
-      <div><h2>Où vous payez trop cher</h2><div class="desc">Vos achats actuels comparés à l'offre nette Intégral Pharma</div></div>
-      <div class="tot mono">1 180 € / an</div>
+      <div><h2>Ce qu'Intégral vous rend</h2><div class="desc">Notre abandon de marge, net sur facture dès la 1re boîte</div></div>
+      <div class="tot mono">23 400 € / an</div>
+    </div>
+    <div class="intro">
+      Intégral vous <b>rétrocède sa marge de grossiste</b> directement sur la facture. C'est <b>légal et cumulable</b> : ça s'ajoute par-dessus vos remises habituelles (hors plafond, art. L.138-9). <b>Sans engagement, sans franco, dès la première boîte.</b>
     </div>
     <table>
-      <thead><tr><th>Produit</th><th>Votre achat</th><th>Net IP</th><th>Vol./an</th><th>Économie/an</th></tr></thead>
+      <thead><tr><th>Type de produit</th><th>Vos achats/an</th><th>Rendu Intégral</th><th>Marge rendue/an</th></tr></thead>
       <tbody>
-        <tr><td><div class="prod">Paracétamol 1g cpr 8</div><div class="cip">gén. · CIP 3400900000000</div></td><td data-l="Votre achat"><span class="old mono">0,92 €</span></td><td data-l="Net IP" class="mono">0,78 €</td><td data-l="Vol./an" class="mono">1 800</td><td data-l="Économie/an" class="gain mono">+252 €</td></tr>
-        <tr><td><div class="prod">Amoxicilline 1g sachet</div><div class="cip">gén. · CIP 3400900000017</div></td><td data-l="Votre achat"><span class="old mono">1,28 €</span></td><td data-l="Net IP" class="mono">1,06 €</td><td data-l="Vol./an" class="mono">1 200</td><td data-l="Économie/an" class="gain mono">+264 €</td></tr>
-        <tr><td><div class="prod">Oméprazole 20mg gél 28</div><div class="cip">gén. · CIP 3400900000024</div></td><td data-l="Votre achat"><span class="old mono">1,55 €</span></td><td data-l="Net IP" class="mono">1,33 €</td><td data-l="Vol./an" class="mono">1 100</td><td data-l="Économie/an" class="gain mono">+242 €</td></tr>
-        <tr><td><div class="prod">Atorvastatine 20mg cpr 90</div><div class="cip">gén. · CIP 3400900000031</div></td><td data-l="Votre achat"><span class="old mono">2,40 €</span></td><td data-l="Net IP" class="mono">2,07 €</td><td data-l="Vol./an" class="mono">650</td><td data-l="Économie/an" class="gain mono">+215 €</td></tr>
-        <tr><td><div class="prod">Ibuprofène 400mg cpr 30</div><div class="cip">gén. · CIP 3400900000048</div></td><td data-l="Votre achat"><span class="old mono">1,35 €</span></td><td data-l="Net IP" class="mono">1,12 €</td><td data-l="Vol./an" class="mono">900</td><td data-l="Économie/an" class="gain mono">+207 €</td></tr>
-        <tr class="row-foot"><td>Total économie achats</td><td></td><td></td><td></td><td class="gain mono">+1 180 €</td></tr>
+        <tr><td><div class="prod">Cœur de gamme</div><div class="cip">prix 4,33 € – 468 €</div></td><td data-l="Vos achats/an" class="mono">421 000 €</td><td data-l="Rendu Intégral" class="mono">≈ 4,2 %</td><td data-l="Marge rendue/an" class="gain mono">+17 500 €</td></tr>
+        <tr><td><div class="prod">Petits prix</div><div class="cip">prix &lt; 4,33 € — effet plancher</div></td><td data-l="Vos achats/an" class="mono">70 000 €</td><td data-l="Rendu Intégral" class="mono">jusqu'à 18 %</td><td data-l="Marge rendue/an" class="gain mono">+5 600 €</td></tr>
+        <tr><td><div class="prod">Produits chers</div><div class="cip">prix &gt; 468 € — marge plafonnée</div></td><td data-l="Vos achats/an" class="mono">109 000 €</td><td data-l="Rendu Intégral" class="mono">—</td><td data-l="Marge rendue/an" class="gain mono">+300 €</td></tr>
+        <tr class="row-foot"><td>Total rendu sur facture</td><td></td><td></td><td class="gain mono">+23 400 €</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- Section 2 : marge -->
+  <!-- Vérificateur de remise -->
+  <div class="verif">
+    <div class="vic">🔍</div>
+    <div>
+      <h3>Vérificateur de remise — la transparence contre l'opacité</h3>
+      <p>Vous doutez de ce que votre grossiste vous fait vraiment ? Importez <b>une seule facture</b> : je calcule, ligne par ligne, la remise que le barème officiel permet — et je vous montre <b>l'écart, net à net</b>. Vos vrais chiffres, pas des promesses.</p>
+    </div>
+    <div class="btn">Importer une facture</div>
+  </div>
+
+  <!-- Section 2 : marge génériques -->
   <div class="sec" style="--c:var(--green)">
     <div class="sh">
       <div class="ic">↑</div>
-      <div><h2>La marge que vous laissez filer</h2><div class="desc">Génériques non substitués + produits non remboursés sous-margés</div></div>
+      <div><h2>La marge que vous laissez filer — génériques</h2><div class="desc">Princeps encore délivrés là où le générique Intégral rapporte plus</div></div>
       <div class="tot mono">2 060 € / an</div>
     </div>
     <table>
@@ -145,21 +158,42 @@
       <tbody>
         <tr><td><div class="prod">Crestor® (rosuvastatine)</div><div class="cip">princeps</div></td><td class="arr">→</td><td data-l="Passez à" class="alt">Rosuvastatine gén. IP</td><td data-l="Gain marge/an" class="gain mono">+380 €</td></tr>
         <tr><td><div class="prod">Inexium® (ésoméprazole)</div><div class="cip">princeps</div></td><td class="arr">→</td><td data-l="Passez à" class="alt">Ésoméprazole gén. IP</td><td data-l="Gain marge/an" class="gain mono">+320 €</td></tr>
-        <tr><td><div class="prod">Lyrica® (prégabaline)</div><div class="cip">princeps</div></td><td class="arr">→</td><td data-l="Passez à" class="alt">Prégabaline gén. IP</td><td data-l="Gain marge/an" class="gain mono">+290 €</td></tr>
-        <tr><td><div class="prod">Magnésium (compl. alim.)</div><div class="cip"><span class="pill p-warn">Non remb.</span> marge libre faible</div></td><td class="arr">→</td><td data-l="Conseil" class="alt">Prix conseillé compétitif</td><td data-l="Gain marge/an" class="gain mono">+340 €</td></tr>
-        <tr><td><div class="prod">Crème hydratante derma</div><div class="cip"><span class="pill p-warn">Non remb.</span> vendue trop bas vs zone</div></td><td class="arr">→</td><td data-l="Conseil" class="alt">Prix conseillé compétitif</td><td data-l="Gain marge/an" class="gain mono">+260 €</td></tr>
+        <tr><td><div class="prod">Lyrica® (prégabaline)</div><div class="cip">princeps</div></td><td class="arr">→</td><td data-l="Passez à" class="alt">Prégabaline gén. IP</td><td data-l="Gain marge/an" class="gain mono">+340 €</td></tr>
+        <tr><td><div class="prod">Plavix® (clopidogrel)</div><div class="cip">princeps</div></td><td class="arr">→</td><td data-l="Passez à" class="alt">Clopidogrel gén. IP</td><td data-l="Gain marge/an" class="gain mono">+300 €</td></tr>
         <tr><td><div class="prod">Vesicare® (solifénacine)</div><div class="cip">princeps</div></td><td class="arr">→</td><td data-l="Passez à" class="alt">Solifénacine gén. IP</td><td data-l="Gain marge/an" class="gain mono">+250 €</td></tr>
-        <tr><td><div class="prod">Tadalafil princeps</div><div class="cip">princeps</div></td><td class="arr">→</td><td data-l="Passez à" class="alt">Tadalafil gén. IP</td><td data-l="Gain marge/an" class="gain mono">+220 €</td></tr>
-        <tr class="row-foot"><td>Total marge récupérable</td><td></td><td></td><td class="gain mono">+2 060 €</td></tr>
+        <tr><td><div class="prod">Atacand® (candésartan)</div><div class="cip">princeps</div></td><td class="arr">→</td><td data-l="Passez à" class="alt">Candésartan gén. IP</td><td data-l="Gain marge/an" class="gain mono">+260 €</td></tr>
+        <tr><td><div class="prod">Tadalafil princeps</div><div class="cip">princeps</div></td><td class="arr">→</td><td data-l="Passez à" class="alt">Tadalafil gén. IP</td><td data-l="Gain marge/an" class="gain mono">+210 €</td></tr>
+        <tr class="row-foot"><td>Total marge génériques</td><td></td><td></td><td class="gain mono">+2 060 €</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- Section 3 : ruptures -->
+  <!-- Section 3 : non-remboursés -->
   <div class="sec" style="--c:var(--amber)">
     <div class="sh">
+      <div class="ic">↑</div>
+      <div><h2>Non-remboursés sous-margés</h2><div class="desc">Marge libre : vendus trop bas vs le prix public de votre zone</div></div>
+      <div class="tot mono">1 540 € / an</div>
+    </div>
+    <table>
+      <thead><tr><th>Produit (non remb.)</th><th>Votre prix</th><th>Prix conseillé</th><th>Gain marge/an</th></tr></thead>
+      <tbody>
+        <tr><td><div class="prod">Magnésium (complément)</div><div class="cip">marge libre faible</div></td><td data-l="Votre prix" class="mono">6,90 €</td><td data-l="Prix conseillé" class="mono">8,50 €</td><td data-l="Gain marge/an" class="gain mono">+340 €</td></tr>
+        <tr><td><div class="prod">Vitamine D 1000 UI</div><div class="cip">marge libre faible</div></td><td data-l="Votre prix" class="mono">5,20 €</td><td data-l="Prix conseillé" class="mono">6,40 €</td><td data-l="Gain marge/an" class="gain mono">+280 €</td></tr>
+        <tr><td><div class="prod">Crème hydratante derma</div><div class="cip">vs prix public zone</div></td><td data-l="Votre prix" class="mono">9,90 €</td><td data-l="Prix conseillé" class="mono">11,90 €</td><td data-l="Gain marge/an" class="gain mono">+260 €</td></tr>
+        <tr><td><div class="prod">Probiotiques 30 gél</div><div class="cip">marge libre faible</div></td><td data-l="Votre prix" class="mono">12,50 €</td><td data-l="Prix conseillé" class="mono">14,90 €</td><td data-l="Gain marge/an" class="gain mono">+240 €</td></tr>
+        <tr><td><div class="prod">Spray nasal eau de mer</div><div class="cip">vs prix public zone</div></td><td data-l="Votre prix" class="mono">4,20 €</td><td data-l="Prix conseillé" class="mono">5,30 €</td><td data-l="Gain marge/an" class="gain mono">+220 €</td></tr>
+        <tr><td><div class="prod">Sérum physiologique 40 doses</div><div class="cip">marge libre faible</div></td><td data-l="Votre prix" class="mono">2,30 €</td><td data-l="Prix conseillé" class="mono">2,90 €</td><td data-l="Gain marge/an" class="gain mono">+200 €</td></tr>
+        <tr class="row-foot"><td>Total marge non-remboursés</td><td></td><td></td><td class="gain mono">+1 540 €</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 4 : ruptures -->
+  <div class="sec" style="--c:var(--bad)">
+    <div class="sh">
       <div class="ic">!</div>
-      <div><h2>Vos ruptures du moment → mon alternative en stock</h2><div class="desc">Tensions et ruptures ANSM, avec l'équivalent Intégral Pharma disponible</div></div>
+      <div><h2>Vos ruptures du moment → mon alternative en stock</h2><div class="desc">Tensions et ruptures ANSM, avec l'équivalent Intégral disponible</div></div>
       <div class="tot mono">3 dispo</div>
     </div>
     <table>
@@ -173,9 +207,9 @@
   </div>
 
   <div class="foot">
-    Audit réalisé par <b>Intégral Pharma</b> à partir de vos achats, du barème de marge officiel (MDL),<br>
-    des prix nets IP et des données publiques du médicament (BDPM / ANSM). Document de travail — vérifiez le détail avec votre commercial.<br>
-    <b>Intégral Pharma</b> · votre partenaire qui vous fait gagner de la marge.
+    Calculé sur le <b>barème de marge officiel (MDL)</b>, l'<b>abandon de marge Intégral</b> (rétrocession hors plafond, art. L.138-9 CSS)<br>
+    et les données publiques du médicament (BDPM / ANSM). Document de travail — chiffres à confirmer avec votre commercial.<br>
+    <b>Intégral Pharma</b> · le grossiste qui vous rend de la marge.
   </div>
 
 </div>
