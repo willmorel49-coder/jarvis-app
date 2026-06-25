@@ -1317,19 +1317,25 @@
     window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
     }).then(function () {
+      try { window.scrollTo(0, 0); } catch (e) {}
       var wrap = document.createElement('div');
-      wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
+      wrap.style.cssText = 'position:absolute;left:0;top:0;width:794px;background:#fff;z-index:1';
       wrap.innerHTML = built.html;
       document.body.appendChild(wrap);
+      var veil = document.createElement('div');
+      veil.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:2147483600;display:flex;align-items:center;justify-content:center;font:600 14px Satoshi,system-ui,sans-serif;color:#737A8C';
+      veil.textContent = 'Génération du PDF…';
+      document.body.appendChild(veil);
+      function cleanP() { if (wrap.parentNode) document.body.removeChild(wrap); if (veil.parentNode) document.body.removeChild(veil); }
       var fn = 'Prepa-RDV-' + (built.pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
       }).save().then(function () {
-        if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('PDF téléchargé');
-      }).catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
+        cleanP(); V2.toast('PDF téléchargé');
+      }).catch(function (e) { console.error(e); cleanP(); V2.toast('Erreur PDF', 'error'); });
     });
   };
 
@@ -1876,16 +1882,23 @@
     window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
     }).then(function () {
+      // Wrap rendu en haut-gauche du document (x=0 → pas de coupe gauche ; absolute → hauteur
+      // complète multi-pages). Un voile blanc le masque visuellement le temps de la génération.
+      try { window.scrollTo(0, 0); } catch (e) {}
       var wrap = document.createElement('div');
-      wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
+      wrap.style.cssText = 'position:absolute;left:0;top:0;width:794px;background:#fff;z-index:1';
       wrap.innerHTML = html; document.body.appendChild(wrap);
+      var veil = document.createElement('div');
+      veil.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:2147483600;display:flex;align-items:center;justify-content:center;font:600 14px Satoshi,system-ui,sans-serif;color:#737A8C';
+      veil.textContent = 'Génération du PDF…';
+      document.body.appendChild(veil);
       var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       var worker = window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
       });
-      function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); }
+      function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); if (veil.parentNode) document.body.removeChild(veil); }
       if (mode === 'share' && V2.shareOrSaveBlob) {
         worker.outputPdf('blob').then(function (blob) { return V2.shareOrSaveBlob(blob, fn, 'Liste d\'achats · ' + grpName); })
           .then(function () { cleanup(); V2.toast('PDF prêt à partager'); })
