@@ -1905,7 +1905,7 @@
       document.body.appendChild(veil);
       var worker = window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [0, 0, 0, 0], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
       });
       function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); if (veil.parentNode) document.body.removeChild(veil); }
@@ -1916,6 +1916,32 @@
       } else {
         worker.save().then(function () { cleanup(); V2.toast('PDF téléchargé'); })
           .catch(function (e) { console.error(e); cleanup(); V2.toast('Erreur PDF', 'error'); });
+      }
+    });
+  }
+
+  // Génère le PDF DEPUIS l'élément exact de l'aperçu (ce que l'utilisateur voit) -> rendu identique.
+  function pdfFromSheet(fn, mode, shareTitle) {
+    var sheet = document.getElementById('pdfprev-sheet');
+    var inner = sheet && sheet.firstChild;
+    if (!inner) { V2.toast('Aperçu introuvable', 'error'); return; }
+    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+    var prevT = sheet.style.transform; sheet.style.transform = 'none';   // capture à l'échelle 1:1 (794px réels)
+    V2.toast('Génération du PDF…');
+    window.ensureHtml2Pdf().then(function () {
+      return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
+    }).then(function () {
+      var worker = window.html2pdf().from(inner).set({
+        filename: fn, margin: [0, 0, 0, 0], image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
+      });
+      function done(msg) { sheet.style.transform = prevT; V2.toast(msg); }
+      if (mode === 'share' && V2.shareOrSaveBlob) {
+        worker.outputPdf('blob').then(function (blob) { return V2.shareOrSaveBlob(blob, fn, shareTitle || fn); })
+          .then(function () { done('PDF prêt à partager'); }).catch(function (e) { console.error(e); done('Erreur PDF'); });
+      } else {
+        worker.save().then(function () { done('PDF téléchargé'); }).catch(function (e) { console.error(e); done('Erreur PDF'); });
       }
     });
   }
@@ -1948,8 +1974,8 @@
       document.body.appendChild(bd);
     }
     bd.querySelector('#pdfprev-sheet').innerHTML = html;
-    bd.querySelector('#pdfprev-dl').onclick = function () { pdfGenerate(html, fn, 'save'); };
-    var sh = bd.querySelector('#pdfprev-sh'); if (sh) sh.onclick = function () { pdfGenerate(html, fn, 'share', shareTitle); };
+    bd.querySelector('#pdfprev-dl').onclick = function () { pdfFromSheet(fn, 'save'); };
+    var sh = bd.querySelector('#pdfprev-sh'); if (sh) sh.onclick = function () { pdfFromSheet(fn, 'share', shareTitle); };
     bd.classList.add('open');
     requestAnimationFrame(function () { requestAnimationFrame(fitPrevSheet); });
     if (!V2._pdfPrevResize) { window.addEventListener('resize', fitPrevSheet); V2._pdfPrevResize = true; }
