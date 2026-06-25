@@ -2146,8 +2146,10 @@
   V2.pages.pharma = {
     render: function (root, param) {
       // deep-link d'une sous-vue depuis l'accueil/⌘K : V2.go('pharma','groupements'|'listes'|'carte'|'officines')
+      // consommé UNE SEULE FOIS (sinon ça réinitialise selGroup/selList à chaque rendu → on ne peut plus ouvrir un groupement)
       if (param === 'groupements' || param === 'listes' || param === 'carte' || param === 'officines') {
         pharmaView = param; selGroup = null; selList = null; param = null;
+        if (V2.route) V2.route.param = null;
       }
       if (param) { renderDetail(root, param); return; }
       if (pharmaView === 'groupements') {
