@@ -61,7 +61,30 @@
       '.ps-deptbubble{display:inline-flex;align-items:stretch;height:26px;background:#fff;border:2px solid var(--ip-blue);border-radius:999px;box-shadow:0 2px 8px rgba(16,19,28,.35);overflow:hidden;cursor:pointer;font-family:var(--font);font-variant-numeric:tabular-nums;transition:transform .12s var(--ease)}' +
       '.ps-deptbubble:hover{transform:scale(1.1)}' +
       '.ps-deptbubble-d{display:flex;align-items:center;background:var(--ip-blue);color:#fff;font-weight:800;font-size:13.5px;letter-spacing:-.01em;padding:0 7px}' +
-      '.ps-deptbubble-n{display:flex;align-items:center;color:var(--ip-ink);font-weight:800;font-size:13.5px;padding:0 8px}';
+      '.ps-deptbubble-n{display:flex;align-items:center;color:var(--ip-ink);font-weight:800;font-size:13.5px;padding:0 8px}' +
+      // ── Cartographie groupements (carte France + légende à cocher) ──
+      '.gc-split{display:flex;height:calc(100vh - 168px)}' +
+      '@media(max-width:820px){.gc-split{flex-direction:column;height:auto}}' +
+      '.gc-panel{width:300px;flex:none;display:flex;flex-direction:column;border-right:1px solid var(--line);background:var(--card)}' +
+      '@media(max-width:820px){.gc-panel{width:100%;max-height:40vh;border-right:none;border-bottom:1px solid var(--line)}}' +
+      '.gc-tools{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}' +
+      '.gc-search{display:flex;align-items:center;gap:7px;flex:1;min-width:140px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:6px 10px}' +
+      '.gc-search svg{color:var(--ip-blue);flex:none}' +
+      '.gc-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:13.5px;flex:1;color:var(--ip-ink)}' +
+      '.gc-allbtns{display:flex;gap:5px}' +
+      '.gc-allbtns button{border:1px solid var(--line-strong);background:var(--card);border-radius:8px;padding:6px 10px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}' +
+      '.gc-allbtns button:hover{color:var(--ip-blue);border-color:var(--ip-blue)}' +
+      '.gc-list{flex:1;overflow-y:auto}' +
+      '.gc-row{display:flex;align-items:center;gap:9px;padding:8px 13px;border-bottom:1px solid var(--line-2,var(--line));cursor:pointer;font-size:13px}' +
+      '.gc-row:hover{background:var(--card-2)}' +
+      '.gc-row input{width:16px;height:16px;accent-color:var(--ip-blue);cursor:pointer;flex:none}' +
+      '.gc-dot{width:10px;height:10px;border-radius:50%;flex:none}' +
+      '.gc-nm{flex:1;min-width:0;font-weight:600;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.gc-ct{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:700}' +
+      '.gc-mapwrap{flex:1;min-width:0;position:relative;background:#EAEEF3}' +
+      '@media(max-width:820px){.gc-mapwrap{height:56vh}}' +
+      '.gc-map{position:absolute;inset:0}' +
+      '.gc-mapwrap .leaflet-popup-content{font:13px/1.45 var(--font,sans-serif);margin:10px 12px}';
     document.head.appendChild(st);
   }
 
@@ -88,6 +111,109 @@
     };
     s1.onerror = function () { leafletLoading = false; cb(); };
     document.head.appendChild(s1);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // CARTOGRAPHIE GROUPEMENTS — carte de France, tous les points, légende à cocher
+  // ════════════════════════════════════════════════════════════════
+  var GP = null;                         // points.json : [lat,lng,nom,groupement,cp,ville,tel,adr]
+  var gcMap = null, gcCluster = null, gcMarkers = null;   // gcMarkers[grp] = [circleMarkers]
+  var gcChecked = null, gcCounts = null, gcOrder = null;  // état légende
+
+  function ensureGrpPoints(cb) {
+    if (GP) { cb(); return; }
+    fetch('points.json?v=1', { cache: 'force-cache' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { GP = Array.isArray(j) ? j : []; cb(); })
+      .catch(function () { GP = []; cb(); });
+  }
+  function grpColor(name) {
+    var h = 0; name = String(name || '');
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+    return 'hsl(' + h + ',62%,46%)';
+  }
+  function gcMeta() {
+    gcCounts = {};
+    for (var i = 0; i < GP.length; i++) { var g = GP[i][3] || '—'; gcCounts[g] = (gcCounts[g] || 0) + 1; }
+    gcOrder = Object.keys(gcCounts).sort(function (a, b) { return gcCounts[b] - gcCounts[a]; });
+    if (!gcChecked) { gcChecked = {}; gcOrder.forEach(function (g) { gcChecked[g] = true; }); } // tout affiché par défaut
+  }
+  function gcInitMap() {
+    var el = document.getElementById('gc-map'); if (!el || !window.L) return;
+    if (gcMap) { try { gcMap.remove(); } catch (e) {} gcMap = null; }
+    gcMap = window.L.map(el, { scrollWheelZoom: true, preferCanvas: true }).setView([46.6, 2.4], 6);
+    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap © CARTO' }).addTo(gcMap);
+    gcCluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 48, spiderfyOnMaxZoom: true });
+    var canvas = window.L.canvas({ padding: 0.5 });
+    gcMarkers = {};
+    for (var i = 0; i < GP.length; i++) {
+      var p = GP[i], lat = p[0], lng = p[1];
+      if (typeof lat !== 'number' || typeof lng !== 'number') continue;
+      var g = p[3] || '—', col = grpColor(g);
+      var m = window.L.circleMarker([lat, lng], { renderer: canvas, radius: 5, color: '#fff', weight: 1, fillColor: col, fillOpacity: 0.9 });
+      m.bindPopup('<b>' + esc(p[2] || '') + '</b><br>' + esc(((p[7] || '') + ', ' + (p[4] || '') + ' ' + (p[5] || '')).replace(/^, /, '')) +
+        '<br><span style="color:' + col + ';font-weight:700">' + esc(g) + '</span>' + (p[6] ? '<br>' + esc(p[6]) : ''));
+      (gcMarkers[g] = gcMarkers[g] || []).push(m);
+    }
+    gcMap.addLayer(gcCluster);
+    gcRefreshAll();
+  }
+  function gcRefreshAll() {
+    if (!gcCluster) return;
+    gcCluster.clearLayers();
+    var all = [];
+    gcOrder.forEach(function (g) { if (gcChecked[g]) all = all.concat(gcMarkers[g] || []); });
+    gcCluster.addLayers(all);
+  }
+  V2.gcToggle = function (idx) {
+    var g = gcOrder[idx]; if (!g) return;
+    gcChecked[g] = !gcChecked[g];
+    if (!gcCluster || !gcMarkers) return;
+    if (gcChecked[g]) gcCluster.addLayers(gcMarkers[g] || []);
+    else gcCluster.removeLayers(gcMarkers[g] || []);
+  };
+  V2.gcAll = function (on) {
+    gcOrder.forEach(function (g) { gcChecked[g] = !!on; });
+    Array.prototype.forEach.call(document.querySelectorAll('.gc-row input'), function (cb) { cb.checked = !!on; });
+    gcRefreshAll();
+  };
+  V2.gcSearch = function (q) {
+    q = (q || '').toLowerCase();
+    Array.prototype.forEach.call(document.querySelectorAll('.gc-row'), function (row) {
+      var nm = (row.getAttribute('data-nm') || '');
+      row.style.display = (!q || nm.indexOf(q) >= 0) ? '' : 'none';
+    });
+  };
+  function gcLegend() {
+    return gcOrder.map(function (g, i) {
+      return '<label class="gc-row" data-nm="' + esc(g.toLowerCase()) + '">' +
+        '<input type="checkbox"' + (gcChecked[g] ? ' checked' : '') + ' onchange="V2.gcToggle(' + i + ')">' +
+        '<span class="gc-dot" style="background:' + grpColor(g) + '"></span>' +
+        '<span class="gc-nm">' + esc(g) + '</span><span class="gc-ct">' + gcCounts[g] + '</span></label>';
+    }).join('');
+  }
+  function renderGrpCarte(root) {
+    var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
+    root.innerHTML = top + V2.grpSpaceTabs('carte') +
+      '<div class="gc-split">' +
+        '<div class="gc-panel">' +
+          '<div class="gc-tools">' +
+            '<div class="gc-search">' + ICO('search', 16, 2) + '<input placeholder="Chercher un groupement…" oninput="V2.gcSearch(this.value)" autocomplete="off"></div>' +
+            '<div class="gc-allbtns"><button onclick="V2.gcAll(true)">Tout</button><button onclick="V2.gcAll(false)">Aucun</button></div>' +
+          '</div>' +
+          '<div class="gc-list" id="gc-list"><div class="grp-load"><div class="v2-spinner"></div>Chargement…</div></div>' +
+        '</div>' +
+        '<div class="gc-mapwrap"><div id="gc-map" class="gc-map"></div><div class="grp-load" id="gc-maploader"><div class="v2-spinner"></div>Chargement de la carte…</div></div>' +
+      '</div>';
+    ensureGrpPoints(function () {
+      gcMeta();
+      var lst = document.getElementById('gc-list'); if (lst) lst.innerHTML = gcLegend();
+      ensureLeaflet(function () {
+        var ld = document.getElementById('gc-maploader'); if (ld) ld.style.display = 'none';
+        gcInitMap();
+      });
+    });
   }
 
   function addMarkers(rows) {
@@ -246,12 +372,7 @@
           ensureLeaflet(function () { initMap(); });
         });
       } else {
-        root.innerHTML = top + tabs() +
-          '<div class="grp-bar">' + ICO('grid', 15, 2) +
-            '<span>Prospection groupements &amp; pharmacies</span>' +
-            '<a href="groupements.html" target="_blank" rel="noopener" style="margin-left:auto">Ouvrir en plein écran ↗</a>' +
-          '</div>' +
-          '<iframe class="grp-frame" src="groupements.html?v=20260622e" title="Prospection groupements"></iframe>';
+        renderGrpCarte(root);   // carte de France native : tous les groupements, légende à cocher
       }
     }
   };
