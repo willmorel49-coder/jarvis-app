@@ -1318,7 +1318,7 @@
     }).then(function () {
       try { window.scrollTo(0, 0); } catch (e) {}
       var wrap = document.createElement('div');
-      wrap.style.cssText = 'position:absolute;left:0;top:0;width:794px;background:#fff;z-index:1';
+      wrap.style.cssText = 'position:absolute;left:0;top:0;width:794px;overflow:hidden;background:#fff;z-index:1';
       wrap.innerHTML = built.html;
       document.body.appendChild(wrap);
       var veil = document.createElement('div');
@@ -1329,7 +1329,7 @@
       var fn = 'Prepa-RDV-' + (built.pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
       }).save().then(function () {
@@ -1888,7 +1888,7 @@
       // complète multi-pages). Un voile blanc le masque visuellement le temps de la génération.
       try { window.scrollTo(0, 0); } catch (e) {}
       var wrap = document.createElement('div');
-      wrap.style.cssText = 'position:absolute;left:0;top:0;width:794px;background:#fff;z-index:1';
+      wrap.style.cssText = 'position:absolute;left:0;top:0;width:794px;overflow:hidden;background:#fff;z-index:1';
       wrap.innerHTML = html; document.body.appendChild(wrap);
       var veil = document.createElement('div');
       veil.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:2147483600;display:flex;align-items:center;justify-content:center;font:600 14px Satoshi,system-ui,sans-serif;color:#737A8C';
@@ -1897,7 +1897,7 @@
       var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       var worker = window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
       });
       function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); if (veil.parentNode) document.body.removeChild(veil); }
