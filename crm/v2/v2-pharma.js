@@ -1328,7 +1328,7 @@
       function cleanP() { if (wrap.parentNode) document.body.removeChild(wrap); if (veil.parentNode) document.body.removeChild(veil); }
       var fn = 'Prepa-RDV-' + (built.pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       window.html2pdf().from(wrap.firstChild).set({
-        filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+        filename: fn, margin: [0, 0, 0, 0], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
@@ -1896,7 +1896,7 @@
       document.body.appendChild(veil);
       var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       var worker = window.html2pdf().from(wrap.firstChild).set({
-        filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+        filename: fn, margin: [0, 0, 0, 0], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
       });
