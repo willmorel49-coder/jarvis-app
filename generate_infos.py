@@ -28,6 +28,9 @@ FEEDS = [
     {'cat': 'profession',    'source': 'Le Moniteur des pharmacies', 'url': 'https://www.lemoniteurdespharmacies.fr/feed/', 'max': 25, 'filter': True},
     {'cat': 'profession',    'source': 'FSPF',                 'url': 'https://www.fspf.fr/feed/', 'max': 10, 'filter': True},
     {'cat': 'profession',    'source': 'Le Pharmacien de France', 'url': 'https://www.lepharmaciendefrance.fr/feed', 'max': 10, 'filter': True},
+    {'cat': 'reglementaire', 'source': 'Le Quotidien du Médecin', 'url': 'https://www.lequotidiendumedecin.fr/rss.xml', 'max': 18, 'filter': True},
+    {'cat': 'reglementaire', 'source': 'Leem',                 'url': 'https://www.leem.org/rss.xml', 'max': 8, 'filter': True},
+    {'cat': 'profession',    'source': 'Egora',                'url': 'https://www.egora.fr/rss.xml', 'max': 8, 'filter': True},
 ]
 
 # Pertinence "cœur de métier officine" : on ne garde de la presse pro que ce qui touche
