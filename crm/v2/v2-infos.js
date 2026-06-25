@@ -36,26 +36,39 @@
     var x = norm(i.titre + ' ' + (i.resume || ''));
     if (/rappel|pharmacovigilance|retrait de lot|vigilance|defaut qualite|alerte securite/.test(x)) return 'secu';
     if (/generiqu|biosimil|substitu|interchangeab|delivr|repertoire/.test(x)) return 'gen';
-    if (/rembours|\bprix\b|honorair|convention|avenant|rosp|tarif|nomenclature|economie|\bmarge|lfss|cnam|ceps|budget|cotation|\bsecu\b/.test(x)) return 'eco';
+    if (/rembours|deremboursement|\bprix\b|honorair|convention|avenant|rosp|tarif|nomenclature|economie|\bmarge|lfss|cnam|ceps|budget|cotation|\bsecu\b|grossist|repartit|distribut|contingent|quota/.test(x)) return 'eco';
     return 'metier';
   }
 
+  // mots à ignorer dans une DCI : sels, hydrates, excipients, liaisons
+  var DCI_STOP = { de: 1, du: 1, d: 1, et: 1, en: 1, la: 1, le: 1, acide: 1, chlorhydrate: 1, sulfate: 1, sodique: 1, sodium: 1, calcique: 1, calcium: 1, potassique: 1, maleate: 1, fumarate: 1, tartrate: 1, besilate: 1, mesilate: 1, bromure: 1, base: 1, monohydrate: 1, dihydrate: 1, trihydrate: 1, anhydre: 1, micronise: 1, hemifumarate: 1, dipropionate: 1, valerate: 1, acetate: 1, phosphate: 1, citrate: 1, nitrate: 1, succinate: 1, embonate: 1, pamoate: 1 };
+  // clés molécule exploitables extraites d'une DCI (mots significatifs ≥5 lettres)
+  function dciKeys(dci) {
+    return norm(dci).split(/[ ,/()\-]+/).filter(function (w) { return w.length >= 5 && !DCI_STOP[w]; });
+  }
   function ipAlternatives(dci) {
     var B = window.BENCHMARK; if (!B || !dci) return [];
-    var key = norm(dci).split(/[ ,/]/)[0]; if (key.length < 4) return [];
-    var out = [], seen = {};
-    for (var i = 0; i < B.length && out.length < 2; i++) {
+    var keys = dciKeys(dci); if (!keys.length) return [];
+    var hits = [], seen = {};
+    for (var i = 0; i < B.length; i++) {
       var b = B[i], d = norm(b.designation || '');
-      if (d.indexOf(key) >= 0) { var c = String(b.cip13 || ''); if (seen[c]) continue; seen[c] = 1; var bp = V2.bestPrice ? V2.bestPrice(b) : { ip: b.prix_ip, remise: b.remise_pct }; out.push({ d: b.designation || '', cip: c, ip: bp.ip, remise: bp.remise }); }
+      var match = false;
+      for (var k = 0; k < keys.length; k++) { if (d.indexOf(keys[k]) >= 0) { match = true; break; } }
+      if (!match) continue;
+      var c = String(b.cip13 || ''); if (seen[c]) continue; seen[c] = 1;
+      var bp = V2.bestPrice ? V2.bestPrice(b) : { ip: b.prix_ip, remise: b.remise_pct };
+      hits.push({ d: b.designation || '', cip: c, ip: bp.ip, remise: bp.remise || 0, rank: b.ip_rank_qty || 9999 });
     }
-    return out;
+    // priorité : remise IP la plus forte, puis meilleure rotation (rang ventes)
+    hits.sort(function (a, b) { return (b.remise - a.remise) || (a.rank - b.rank); });
+    return hits.slice(0, 2);
   }
 
   function frDate(iso) { if (!iso) return ''; try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); } catch (e) { return ''; } }
   function dayLabel() { try { return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) { return 'aujourd\'hui'; } }
 
   var RUBR = [
-    { key: 'eco', cls: 'nv8-eco', h: 'Économie & remboursement', sub: 'Conventions, ROSP, prix, prise en charge' },
+    { key: 'eco', cls: 'nv8-eco', h: 'Économie, distribution & remboursement', sub: 'Conventions, prix, marge, répartition, grossistes' },
     { key: 'gen', cls: 'nv8-gen', h: 'Génériques & substitution', sub: 'Biosimilaires, délivrance, répertoire' },
     { key: 'secu', cls: 'nv8-secu', h: 'Sécurité & rappels', sub: 'Pharmacovigilance, rappels de lots' },
     { key: 'metier', cls: 'nv8-metier', h: 'Métier & officine', sub: 'Démographie, missions, accès aux soins' },
@@ -145,7 +158,7 @@
       });
 
       var maj = (DATA && DATA.generated_at) ? frDate(DATA.generated_at) : '';
-      html += '<div class="nv8-foot">Sources : ANSM · Le Quotidien du Pharmacien · Le Moniteur des pharmacies · FSPF · Le Pharmacien de France' + (maj ? ' · mis à jour le ' + maj : '') + '. Veille « cœur de métier officine », chaque matin.</div>';
+      html += '<div class="nv8-foot">Sources : ANSM · Le Quotidien du Pharmacien · Le Moniteur des pharmacies · FSPF · Le Pharmacien de France · Leem' + (maj ? ' · mis à jour le ' + maj : '') + '. Veille « cœur de métier officine & distribution », filtrée et croisée au catalogue IP, chaque matin.</div>';
       html += '</div>';
 
       root.innerHTML = top + '<div class="v2-wrap">' + html + '</div>';

@@ -28,21 +28,31 @@ FEEDS = [
     {'cat': 'profession',    'source': 'Le Moniteur des pharmacies', 'url': 'https://www.lemoniteurdespharmacies.fr/feed/', 'max': 25, 'filter': True},
     {'cat': 'profession',    'source': 'FSPF',                 'url': 'https://www.fspf.fr/feed/', 'max': 10, 'filter': True},
     {'cat': 'profession',    'source': 'Le Pharmacien de France', 'url': 'https://www.lepharmaciendefrance.fr/feed', 'max': 10, 'filter': True},
-    {'cat': 'reglementaire', 'source': 'Le Quotidien du Médecin', 'url': 'https://www.lequotidiendumedecin.fr/rss.xml', 'max': 18, 'filter': True},
-    {'cat': 'reglementaire', 'source': 'Leem',                 'url': 'https://www.leem.org/rss.xml', 'max': 8, 'filter': True},
-    {'cat': 'profession',    'source': 'Egora',                'url': 'https://www.egora.fr/rss.xml', 'max': 8, 'filter': True},
+    {'cat': 'reglementaire', 'source': 'Leem',                 'url': 'https://www.leem.org/rss.xml', 'max': 8, 'filter': True, 'strict': True},
 ]
+# Flux écartés (presse médecins = trop de bruit clinique, faible valeur officine/grossiste) :
+# Le Quotidien du Médecin, Le Généraliste, Egora, What's up Doc. La presse pharma pure couvre déjà
+# remboursement / prix / génériques / ruptures / honoraires / distribution.
 
 # Pertinence "cœur de métier officine" : on ne garde de la presse pro que ce qui touche
 # directement le comptoir, la distribution et l'économie de l'officine.
 REL = re.compile(
     r'pharmac|officin|comptoir|g[ée]n[ée]riqu|substitu|biosimil|rupture|tension|approvision|'
-    r'rembours|\bprix\b|honorair|convention|avenant|rosp|tarif|nomenclature|marge|grossist|'
-    r'r[ée]partit|d[ée]livr|ordonnance|s[ée]rialis|vaccin|trod|d[ée]pist|entretien|bilan partag|'
-    r'\bpda\b|lfss|ameli|cnam|ceps|m[ée]dicament|p[ée]nurie|missions?|garde', re.I)
-def relevant(txt):
-    return bool(REL.search(txt or ''))
-UA = 'Mozilla/5.0 (compatible; JARVIS-veille/1.0; +integralpharma)'
+    r'rembours|d[ée]rembours|\bprix\b|honorair|convention|avenant|rosp|tarif|nomenclature|marge|'
+    r'grossist|r[ée]partit|distribut|contingent|quota|d[ée]livr|ordonnance|prescript|s[ée]rialis|'
+    r'vaccin|trod|d[ée]pist|entretien|bilan partag|t[ée]l[ée](soin|consult)|parapharma|'
+    r'\bpda\b|lfss|ameli|cnam|ceps|\bhas\b|transparence|\bsmr\b|\basmr\b|m[ée]dicament|p[ée]nurie|'
+    r'missions?|\bgarde\b|laboratoire|industrie pharma|stock|p[ée]remption', re.I)
+# Filtre STRICT pour les sources non-officine (presse médecins, industrie) :
+# on n'en garde QUE ce qui touche vraiment le médicament, l'officine ou la distribution.
+REL_STRICT = re.compile(
+    r'pharmac|officin|comptoir|grossist|r[ée]partit|distribut|g[ée]n[ée]riqu|biosimil|substitu|'
+    r'rupture|tension|rembours|d[ée]rembours|honorair|\bmarge|d[ée]livr|ordonnance|prescript|'
+    r'm[ée]dicament|s[ée]rialis|contingent|quota|parapharma|vaccin|\bprix\b du m', re.I)
+def relevant(txt, strict=False):
+    rx = REL_STRICT if strict else REL
+    return bool(rx.search(txt or ''))
+UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
 
 def fetch(url):
@@ -79,6 +89,14 @@ def items_from(feed):
     except Exception as e:
         sys.stderr.write('FAIL %s : %s\n' % (feed['url'], e))
         return out
+    # certains flux ajoutent un BOM ou une ligne vide avant <?xml -> on nettoie
+    i = raw.find(b'<?xml')
+    if i < 0:
+        i = raw.find(b'<rss')
+    if i < 0:
+        i = raw.find(b'<')
+    if i > 0:
+        raw = raw[i:]
     try:
         root = ET.fromstring(raw)
     except Exception as e:
@@ -119,8 +137,8 @@ def items_from(feed):
             if len(r) > 320:
                 r = r[:320].rsplit(' ', 1)[0] + '…'
             row['resume'] = r
-        # filtre pertinence officine pour la presse pro
-        if feed.get('filter') and not relevant(titre + ' ' + (row.get('resume') or '')):
+        # filtre pertinence : large pour la presse officine, strict pour médecins/industrie
+        if feed.get('filter') and not relevant(titre + ' ' + (row.get('resume') or ''), feed.get('strict')):
             continue
         out.append(row)
         if len(out) >= feed['max']:
