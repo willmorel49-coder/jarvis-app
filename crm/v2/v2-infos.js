@@ -94,8 +94,9 @@
       var html = '<div id="infos-8">';
       // En-tête
       html += '<header class="nv8-head"><div><span class="nv8-date">' + esc(dayLabel()) + '</span><h1 class="nv8-title">Infos du matin</h1></div>' +
-        '<div class="nv8-counter"><span class="nv8-chip nv8-today"><b class="nv8-mono">' + ((DATA && DATA.count_today) || 0) + '</b> aujourd\'hui</span>' +
-        '<span class="nv8-chip"><b class="nv8-mono">' + ((DATA && DATA.count) || items.length) + '</b> sur 7 jours</span></div></header>';
+        '<div class="nv8-counter">' +
+        (((DATA && DATA.count_today) || 0) > 0 ? '<span class="nv8-chip nv8-today"><b class="nv8-mono">' + DATA.count_today + '</b> aujourd\'hui</span>' : '') +
+        '<span class="nv8-chip"><b class="nv8-mono">' + ((DATA && DATA.count) || items.length) + '</b> infos · 7 derniers jours</span></div></header>';
 
       if (!DATA || !items.length) {
         html += '<article class="nv8-sec"><div class="nv8-body"><p class="nv8-actu-p" style="padding:18px 0">' +
