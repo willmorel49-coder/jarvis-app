@@ -479,11 +479,11 @@
         : '<span class="v2-rchip more" onclick="V2.go(\'pharma\')">voir mes officines</span>';
 
       var P = [
-        { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Opportunités pharmacie', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas, classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
+        { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Officines', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas, son audit marge — classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
         { k: 'fiches', cls: 'p2', ico: 'fiche', tag: 'PDF', t: 'Fiches commerciales', d: 'Crée une fiche produit sur-mesure et sors-la en PDF à montrer ou envoyer au pharmacien pendant le rendez-vous.', go: 'Créer une fiche' },
         { k: 'catalogue', cls: 'p3', ico: 'cat', tag: (window.BENCHMARK ? V2.fmtNum(window.BENCHMARK.length) : '10 500'), t: 'Catalogue grossiste', d: 'Tout le catalogue médicaments IP par tranches de prix et familles AFMCODE, avec ton volume et le marché Ameli.', go: 'Explorer le catalogue' },
         { k: 'offilog', cls: 'p5', accent: 'var(--c-froid)', ico: 'spark', tag: 'Veille', t: 'Offilog & concurrents', d: 'Ta parapharma : ton prix d\'achat IP comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000. Repère où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
-        { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: V2.fmtK(caTotal) + ' €', t: 'Pilotage CA & marge', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
+        { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: V2.fmtK(caTotal) + ' €', t: 'Pilotage', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
       ];
       // Infos du matin (brief quotidien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
@@ -495,7 +495,7 @@
       }
       // Audit Marge (abandon de marge par pharmacie) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
-        P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit Marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
+        P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
       }
       // Pilier marketing : uniquement en mode OPSO (module v2-marketing chargé)
       if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) {
@@ -545,26 +545,26 @@
           pmap.molecules.go = 'Ouvrir le catalogue';
         }
         if (pmap.presentation) {
-          pmap.presentation.t = 'Présentation Intégral Pharma';
+          pmap.presentation.t = 'Présentation';
           pmap.presentation.d = 'Le pitch prospection à montrer au comptoir : qui est Intégral Pharma et comment travailler avec nous.';
           pmap.presentation.go = 'Lancer la présentation';
         }
         if (pmap.offilog) {
-          pmap.offilog.t = 'Grossistes concurrents';
+          pmap.offilog.t = 'Concurrents';
           pmap.offilog.d = 'Ta parapharma : ton prix d\'achat IP comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000. Repère où un concurrent casse les prix.';
           pmap.offilog.go = 'Comparer les concurrents';
         }
         var MOMENTS = [
-          { n: 1, lbl: 'Préparer ma tournée', c: 'var(--ip-blue)', keys: ['infos', 'pharma', 'pilotage'] },
-          { n: 2, lbl: 'Convaincre en rendez-vous', c: 'var(--c-mint)', keys: ['audit', 'molecules', 'presentation'] },
-          { n: 3, lbl: 'Prospecter & explorer', c: 'var(--c-rose)', keys: ['groupements', 'offilog', 'marketing'] },
+          { lbl: 'Mes officines', c: 'var(--ip-blue)', keys: ['pharma', 'pilotage'] },
+          { lbl: 'Vendre', c: 'var(--c-mint)', keys: ['audit', 'molecules', 'presentation', 'marketing'] },
+          { lbl: 'Marché & veille', c: 'var(--c-rose)', keys: ['infos', 'offilog', 'groupements'] },
         ];
         // catalogue replié dans « Catalogue & prix » ; fiches retiré (prospection = présentation seule)
         var used = { catalogue: 1, fiches: 1 };
         pilHtml = MOMENTS.map(function (m) {
           var tiles = m.keys.map(function (k) { if (!pmap[k]) return ''; used[k] = 1; return tile(pmap[k]); }).filter(Boolean).join('');
           if (!tiles) return '';
-          return '<section class="v2-moment"><div class="v2-moment-h" style="--mc:' + m.c + '"><span class="v2-moment-n">' + m.n + '</span>' + m.lbl + '</div><div class="v2-piliers">' + tiles + '</div></section>';
+          return '<section class="v2-moment"><div class="v2-moment-h" style="--mc:' + m.c + '"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + m.c + ';margin-right:10px;vertical-align:middle"></span>' + m.lbl + '</div><div class="v2-piliers">' + tiles + '</div></section>';
         }).join('');
         var rest = P.filter(function (p) { return !used[p.k]; }).map(tile).join('');
         if (rest) pilHtml += '<section class="v2-moment"><div class="v2-moment-h">Autres outils</div><div class="v2-piliers">' + rest + '</div></section>';
