@@ -234,8 +234,13 @@
   }
 
   // ── Transition de vue : retrigger .mo-view-in sur le wrapper ────────
+  var __moLastRoute = null;
   function viewTransition(scope) {
     if (RM) return;
+    // Ne glisser que sur un vrai changement d'écran (pas un re-render interne : filtre, onglet, repli)
+    var rt = V2.route ? (V2.route.name + '/' + (V2.route.param || '')) : '';
+    if (rt === __moLastRoute) return;
+    __moLastRoute = rt;
     var wrap = scope.querySelector('.v2-wrap') || scope;
     var cls = (window.__navDir === 'back') ? 'mo-view-back' : 'mo-view-in';
     wrap.classList.remove('mo-view-in', 'mo-view-back');

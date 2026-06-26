@@ -401,3 +401,53 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
   /* tables : scroll horizontal fluide */
   .v2-table{font-size:12.5px}
 }
+
+/* ════════════════════════════════════════════════════════════════
+   POLISH UX/UI (synthèse agents 2026-06-26) — additif, cascade.
+   Typo réelle · tactile · profondeur · motion signature. Vanilla.
+   ════════════════════════════════════════════════════════════════ */
+/* Typo : ne JAMAIS synthétiser une graisse manquante (fini le faux-gras) */
+body{font-synthesis:none;overscroll-behavior-y:none}
+/* Nombres = signature : tabulaire + zéro barré */
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"zero" 1}
+
+/* Feedback tactile : pas de surlignage natif + press immédiat dans le geste */
+html{-webkit-tap-highlight-color:transparent}
+.v2-pil,.v2-row,.v2-rchip,.v2-back,.v2-btn,.ph-vtab,.grp-tab,.v2-tab,.v2-subtab,.v2-seg,.v2-cmdk-item{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+@media (hover:none){
+  .v2-pil:active{transform:scale(.985);transition:transform .06s ease-out}
+  .v2-row:active{background:var(--card-2)}
+  .v2-rchip:active,.v2-back:active{transform:scale(.96)}
+  .v2-cmdk-item:active{background:var(--halo)}
+}
+
+/* Boutons : enfoncement tactile + états désactivé/focus clavier */
+.v2-btn-primary:active,.v2-btn-ghost:active{transform:translateY(0) scale(.985);transition-duration:.06s}
+.v2-btn:disabled,.v2-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;transform:none!important;filter:grayscale(.2)}
+.v2-btn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--halo),0 0 0 5px color-mix(in srgb,var(--ip-blue) 35%,transparent)}
+
+/* Tuiles : élévation unifiée + OMBRE TEINTÉE par le pilier (signature « chaque outil a sa lumière ») */
+.v2-pil:hover{transform:translateY(var(--mo-lift,-3px));
+  box-shadow:0 8px 16px color-mix(in srgb,var(--accent) 14%,rgba(16,19,28,.06)),
+             0 28px 56px color-mix(in srgb,var(--accent) 10%,rgba(16,19,28,.08)),
+             0 1px 0 rgba(255,255,255,.8) inset;
+  border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+
+/* Le point de l'accueil « respire » (vivant, discret) */
+@keyframes mo-pulse-dot{0%,100%{box-shadow:0 0 0 3px rgba(0,80,230,.16)}50%{box-shadow:0 0 0 6px rgba(0,80,230,.04)}}
+.v2-eyebrow .dot{animation:mo-pulse-dot 2.8s cubic-bezier(.4,0,.2,1) infinite}
+
+/* Filet KPI dégradé (plus raffiné qu'un trait plein) */
+.v2-kpi::before{background:linear-gradient(180deg,var(--accent,var(--ip-blue)),color-mix(in srgb,var(--accent,var(--ip-blue)) 22%,transparent))}
+
+@media (max-width:640px){
+  /* cibles tactiles : plancher 44px sans grossir le glyphe */
+  .v2-subtab,.v2-tab,.ph-vtab,.grp-tab,.v2-seg,.v2-rchip{min-height:var(--tap-min,44px);display:inline-flex;align-items:center}
+  /* ⌘K en bottom-sheet : à portée du pouce, au-dessus du clavier */
+  .v2-cmdk-bd{align-items:flex-end;padding-top:0}
+  .v2-cmdk{width:100%;max-width:100%;max-height:80vh;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+}
+@media (prefers-reduced-motion:reduce){
+  .v2-eyebrow .dot{animation:none}
+  .v2-pil:active,.v2-rchip:active,.v2-back:active{transform:none}
+}

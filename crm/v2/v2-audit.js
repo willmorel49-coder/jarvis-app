@@ -31,15 +31,24 @@
   function pfFromNet(pu) { pu = Math.abs(pu || 0); return pu <= 4.63 ? Math.max(0.01, pu - 0.30) : (pu <= 501.5 ? pu / 1.0693 : pu - 32.50); }
   function abPF(pf) { return 0.60 * Math.max(0.30, Math.min(0.0693 * pf, 32.50)); }
 
+  // Index ventes brutes par pharmacie (1×) + cache résultat — évite d'itérer 325k lignes à chaque render
+  var _sbp = null, _ac = {};
+  function salesByPid() {
+    if (_sbp) return _sbp;
+    _sbp = {}; var S = window.WML_SALES || [];
+    for (var i = 0; i < S.length; i++) { var k = String(S[i][0]); (_sbp[k] || (_sbp[k] = [])).push(S[i]); }
+    return _sbp;
+  }
   // Calcule l'audit pour une pharmacie (pid) ou la moyenne réseau (pid falsy).
   function audit(pid) {
-    var S = window.WML_SALES || [], M = cipMap();
+    var ck = String(pid || '_reseau'); if (_ac[ck]) return _ac[ck];
+    var M = cipMap();
+    var S = pid ? (salesByPid()[String(pid)] || []) : (window.WML_SALES || []);
     var t3 = { petits: { n: 0, a: 0 }, coeur: { n: 0, a: 0 }, chers: { n: 0, a: 0 } };
     var t5 = [{ n: 0, a: 0 }, { n: 0, a: 0 }, { n: 0, a: 0 }, { n: 0, a: 0 }, { n: 0, a: 0 }];
     var ph = {}, net = 0, ab = 0;
     for (var i = 0; i < S.length; i++) {
       var r = S[i];
-      if (pid && String(r[0]) !== String(pid)) continue;
       var q = r[4], nh = r[6];
       if (!(q > 0) || !(nh > 0)) continue;
       var m = M[r[3]]; if (!m || !m.p || m.g) continue;     // princeps remboursable, hors génériques
@@ -50,7 +59,8 @@
     }
     var nph = pid ? 1 : Math.max(1, Object.keys(ph).length);
     var div = nph * MOIS / 12;                              // total -> €/an par pharmacie
-    return { net: net, ab: ab, t3: t3, t5: t5, nph: nph, annNet: net / div, annAb: ab / div, div: div, rate: net ? ab / net * 100 : 0 };
+    var out = { net: net, ab: ab, t3: t3, t5: t5, nph: nph, annNet: net / div, annAb: ab / div, div: div, rate: net ? ab / net * 100 : 0 };
+    _ac[ck] = out; return out;
   }
 
   function aLabels() {

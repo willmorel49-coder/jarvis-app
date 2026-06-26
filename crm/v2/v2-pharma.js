@@ -117,14 +117,19 @@
   }
 
   // ── Ventes d'une pharma ────────────────────────────────────────
-  function pharmaSales(pid) {
-    return (V2.sales || []).filter(function (s) {
-      return String(s.pharmacyId) === String(pid) && (!V2.commFilter || s.commercial === V2.commFilter);
-    });
+  // Index ventes par pharmacie (construit 1× par jeu de données) — évite N×filter(325k)
+  var _salesIdx = null, _salesIdxRef = null;
+  function salesIndex() {
+    if (_salesIdx && _salesIdxRef === V2.sales) return _salesIdx;
+    _salesIdx = {}; var S = V2.sales || [];
+    for (var i = 0; i < S.length; i++) { var k = String(S[i].pharmacyId); (_salesIdx[k] || (_salesIdx[k] = [])).push(S[i]); }
+    _salesIdxRef = V2.sales; return _salesIdx;
   }
   // toutes ventes d'une pharma, TOUS commerciaux (vue groupements = vue d'équipe)
-  function pharmaSalesAll(pid) {
-    return (V2.sales || []).filter(function (s) { return String(s.pharmacyId) === String(pid); });
+  function pharmaSalesAll(pid) { return salesIndex()[String(pid)] || []; }
+  function pharmaSales(pid) {
+    var base = pharmaSalesAll(pid);
+    return V2.commFilter ? base.filter(function (s) { return s.commercial === V2.commFilter; }) : base;
   }
   // libellé période couverte par les données (ex. "cumul 5 mois · janv.–mai 2026")
   function periodLabel() {
