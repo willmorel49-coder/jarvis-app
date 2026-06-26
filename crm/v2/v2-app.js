@@ -556,8 +556,8 @@
         }
         var MOMENTS = [
           { n: 1, lbl: 'Préparer ma tournée', c: 'var(--ip-blue)', keys: ['infos', 'pharma', 'pilotage'] },
-          { n: 2, lbl: 'En rendez-vous', c: 'var(--c-mint)', keys: ['molecules', 'presentation'] },
-          { n: 3, lbl: 'Marketing, groupements & concurrents', c: 'var(--c-rose)', keys: ['marketing', 'groupements', 'offilog'] },
+          { n: 2, lbl: 'Convaincre en rendez-vous', c: 'var(--c-mint)', keys: ['audit', 'molecules', 'presentation'] },
+          { n: 3, lbl: 'Prospecter & explorer', c: 'var(--c-rose)', keys: ['groupements', 'offilog', 'marketing'] },
         ];
         // catalogue replié dans « Catalogue & prix » ; fiches retiré (prospection = présentation seule)
         var used = { catalogue: 1, fiches: 1 };
