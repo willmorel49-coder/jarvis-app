@@ -165,6 +165,13 @@
     }
   };
 
+  // API publique : permet à la fiche officine (v2-pharma) d'afficher l'audit d'une pharmacie.
+  V2.audit = {
+    sheetFor: function (pid) { ensureCss(); return buildSheet(pid || null, pidName(pid)); },
+    importSection: importSection,
+    ensureCss: ensureCss
+  };
+
   function importSection() {
     return '<div class="aud-imp">'
       + '<div class="aud-imp-head"><span class="aud-vic2">🔍</span><div><b>Vérificateur de remise</b><div class="aud-imp-d">Importez une facture (Excel/CSV) d\'un autre grossiste — je calcule, ligne par ligne, <b>ce qu\'Intégral vous aurait rendu</b> dessus. Vos vrais chiffres, pas des promesses.</div></div></div>'

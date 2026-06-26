@@ -1005,16 +1005,34 @@
       '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + ' à pousser</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? 'du groupement' : 'du réseau') + '.</div>' +
     '</div>' : '';
 
+    // ── Hub à onglets : l'en-tête reste fixe, le contenu bascule Vue d'ensemble / Audit ──
+    var apercu = stats +
+      sectionHead('Listes d\'achats à pousser', 'deux propositions prêtes à générer en PDF pour le rendez-vous') +
+      props + listing;
+    var auditTab = (V2.audit && window.WML_SALES && window.PROD_STATS)
+      ? '<div id="aud">' + V2.audit.sheetFor(pid) + V2.audit.importSection() + '</div>' : '';
+    var tabs = '<div class="ph-fiche-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px">' +
+      '<button class="ph-vtab on" id="phft-apercu" onclick="V2.phFicheTab(\'apercu\')">' + ICO('pharma', 15, 2) + 'Vue d\'ensemble & opportunités</button>' +
+      (auditTab ? '<button class="ph-vtab" id="phft-audit" onclick="V2.phFicheTab(\'audit\')">' + ICO('pilo', 15, 2) + 'Audit marge</button>' : '') +
+      '</div>';
+
     // Liseré / halo contextuel : le pilier Opportunités porte SA lumière (--pil-opp).
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
         head +
-        stats +
-        sectionHead('Listes d\'achats à pousser', 'deux propositions prêtes à générer en PDF pour le rendez-vous') +
-        props +
-        listing +
+        tabs +
+        '<div id="phft-c-apercu">' + apercu + '</div>' +
+        (auditTab ? '<div id="phft-c-audit" style="display:none">' + auditTab + '</div>' : '') +
       '</div>';
   }
+
+  V2.phFicheTab = function (t) {
+    ['apercu', 'audit'].forEach(function (x) {
+      var b = document.getElementById('phft-' + x), c = document.getElementById('phft-c-' + x);
+      if (b) b.classList.toggle('on', x === t);
+      if (c) c.style.display = (x === t) ? '' : 'none';
+    });
+  };
 
   // ── Barre d'action collante (pattern .v2-cartbar maison) ──────────
   // Apparaît dès qu'un produit est coché : le CTA Prépa RDV reste atteignable
