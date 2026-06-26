@@ -1,0 +1,225 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CRM V2 · Pilier "Audit Marge" (pages.audit)
+   Calcule, par pharmacie (ou moyenne réseau), l'abandon de marge Intégral
+   sur le PRINCEPS DE MARQUE (hors génériques), à partir des vraies ventes
+   WML_SALES [pharmacyId,mois,commercial,cip13,qte,puNet,mntNetHt] + PROD_STATS
+   (famille + libellé par CIP pour isoler le princeps de marque).
+   Abandon = 60% de la marge grossiste (plancher 0,30€ / 6,93% / plafond 32,50€).
+   100% client-side, zéro dépendance. PDF via V2.pdfPreview.
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+  var V2 = window.V2 = window.V2 || {};
+  V2.pages = V2.pages || {};
+  var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
+  function fmt(n) { n = Math.round(n || 0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function pc1(x) { return (Math.round(x * 10) / 10).toString().replace('.', ',') + ' %'; }
+
+  var MOIS = 5;                       // période couverte : janv → mai 2026
+  // labos génériqueurs (mots entiers dans le libellé) -> exclus
+  var GEN = /\b(ZTL|ZYD|ZEN|EG|BGR|BGA|MYL|SDZ|TEVA|ARW|KRKA|CRST|CRISTERS|ALM|ALMUS|ACCORD|ACC|VIATRIS|EVOLUGEN|EVG|QUALIMED|QLM|RPG|RANBAXY|BLUEFISH|BLF|SUN|AUROBINDO|AUR|BIOGARAN|SANDOZ|ZENTIVA|ZYDUS|MYLAN|ARROW|WINTHROP|WTP|ALTER|RATIOPHARM|RTP|GNR|GERDA|ISO|REF)\b/;
+  var _M = null;
+  function cipMap() {
+    if (_M) return _M;
+    _M = {}; var P = window.PROD_STATS || [];
+    for (var i = 0; i < P.length; i++) {
+      var p = P[i], f = p.f;
+      _M[p.c] = { p: (f === 'p_low' || f === 'p_mid' || f === 'p_high'), g: GEN.test((p.d || '').toUpperCase()) };
+    }
+    return _M;
+  }
+  function pfFromNet(pu) { pu = Math.abs(pu || 0); return pu <= 4.63 ? Math.max(0.01, pu - 0.30) : (pu <= 501.5 ? pu / 1.0693 : pu - 32.50); }
+  function abPF(pf) { return 0.60 * Math.max(0.30, Math.min(0.0693 * pf, 32.50)); }
+
+  // Calcule l'audit pour une pharmacie (pid) ou la moyenne réseau (pid falsy).
+  function audit(pid) {
+    var S = window.WML_SALES || [], M = cipMap();
+    var t3 = { petits: { n: 0, a: 0 }, coeur: { n: 0, a: 0 }, chers: { n: 0, a: 0 } };
+    var t5 = [{ n: 0, a: 0 }, { n: 0, a: 0 }, { n: 0, a: 0 }, { n: 0, a: 0 }, { n: 0, a: 0 }];
+    var ph = {}, net = 0, ab = 0;
+    for (var i = 0; i < S.length; i++) {
+      var r = S[i];
+      if (pid && String(r[0]) !== String(pid)) continue;
+      var q = r[4], nh = r[6];
+      if (!(q > 0) || !(nh > 0)) continue;
+      var m = M[r[3]]; if (!m || !m.p || m.g) continue;     // princeps remboursable, hors génériques
+      var pf = pfFromNet(r[5]), a = abPF(pf) * q;
+      ph[r[0]] = 1; net += nh; ab += a;
+      var k = pf < 4.33 ? 'petits' : (pf <= 468.97 ? 'coeur' : 'chers'); t3[k].n += nh; t3[k].a += a;
+      var bi = pf <= 1.91 ? 0 : (pf <= 22.90 ? 1 : (pf <= 150 ? 2 : (pf <= 1930 ? 3 : 4))); t5[bi].n += nh; t5[bi].a += a;
+    }
+    var nph = pid ? 1 : Math.max(1, Object.keys(ph).length);
+    var div = nph * MOIS / 12;                              // total -> €/an par pharmacie
+    return { net: net, ab: ab, t3: t3, t5: t5, nph: nph, annNet: net / div, annAb: ab / div, div: div, rate: net ? ab / net * 100 : 0 };
+  }
+
+  function aLabels() {
+    return [
+      { lo: 'Petits prix', sub: '&lt; 4,33 €' },
+      { lo: 'Cœur de gamme', sub: '4,33 € – 468 €' },
+      { lo: 'Produits chers', sub: '&gt; 468 €' }
+    ];
+  }
+  var T5 = ['0 – 1,91 €', '1,92 – 22,90 €', '22,91 – 150 €', '150 – 1 930 €', '> 1 930 €'];
+  var N1 = ['≤ 2,5 %', '≤ 2,5 %', '2,5 % (plafond)', '2,5 % → 0 %', '0 % (T4 exclu)'];
+
+  // Construit le "sheet" (HTML) — width: variable (écran responsive / 794px en PDF).
+  function buildSheet(pid, name) {
+    var d = audit(pid);
+    if (!d.net) {
+      return '<div class="aud-sheet"><div class="aud-band"><div><div class="aud-logo">Intégral Pharma</div><h1>Audit Marge</h1>'
+        + '<div class="aud-ph">' + esc(name) + '</div></div></div>'
+        + '<div class="aud-empty">Aucune vente de princeps de marque sur la période (janv.–mai 2026) pour cette pharmacie.</div></div>';
+    }
+    var t3 = d.t3, A = 12 / d.div;  // facteur total->an/pharma
+    function row3(k, L) {
+      var x = t3[k]; var an = x.n / d.div, ra = x.a / d.div;
+      return '<tr><td><div class="aud-prod">' + L.lo + '</div><div class="aud-cip">' + L.sub + '</div></td>'
+        + '<td data-l="Achats/an" class="aud-mono">' + fmt(an) + ' €</td>'
+        + '<td data-l="Rendu/an" class="aud-gain aud-mono">+' + fmt(ra) + ' €</td>'
+        + '<td data-l="%" class="aud-gain aud-mono">' + pc1(x.n ? x.a / x.n * 100 : 0) + '</td></tr>';
+    }
+    var L = aLabels();
+    var rows3 = row3('petits', L[0]) + row3('coeur', L[1]) + row3('chers', L[2]);
+    var rows5 = '';
+    for (var i = 0; i < 5; i++) {
+      var x = d.t5[i], p = x.n ? x.a / x.n * 100 : 0;
+      rows5 += '<tr><td><div class="aud-prod">' + T5[i] + '</div></td>'
+        + '<td data-l="Intégral" class="aud-gain aud-mono">' + (x.n ? pc1(p) : '—') + '</td>'
+        + '<td data-l="Votre N°1" class="aud-mono" style="color:#9AA1B2">' + N1[i] + '</td></tr>';
+    }
+    var ann = d.annNet ? d.annAb / d.annNet * 100 : 0;
+    return '<div class="aud-sheet">'
+      + '<div class="aud-band"><div><div class="aud-logo">Intégral Pharma</div><h1>Audit Marge</h1>'
+      + '<div class="aud-ph">' + esc(name) + ' · princeps de marque · janv.–mai 2026</div></div>'
+      + '<div class="aud-gift">🎁 Audit offert</div></div>'
+
+      + '<div class="aud-hero"><div class="aud-lbl">Ce qu\'Intégral vous rend sur le princeps</div>'
+      + '<div class="aud-big aud-mono">≈ ' + fmt(d.annAb) + ' €<span class="aud-yr"> / an</span></div>'
+      + '<div class="aud-sub">soit ' + fmt(d.annAb / 12) + ' €/mois, net sur facture — cumulable, sans engagement ni franco</div>'
+      + '<div class="aud-minis">'
+      + '<div class="aud-mini"><div class="aud-n aud-mono">' + fmt(d.annNet) + ' €<span class="aud-u">/an</span></div><div class="aud-t">Vos achats princeps</div></div>'
+      + '<div class="aud-mini"><div class="aud-n aud-mono">' + fmt(d.annAb / 12) + ' €<span class="aud-u">/mois</span></div><div class="aud-t">Marge rendue</div></div>'
+      + '<div class="aud-mini"><div class="aud-n aud-mono">' + pc1(ann) + '</div><div class="aud-t">de vos achats rendus</div></div>'
+      + '</div></div>'
+
+      + '<div class="aud-sec"><div class="aud-sh"><div class="aud-ic">€</div><div><h2>Ce qu\'Intégral vous rend</h2>'
+      + '<div class="aud-desc">60 % de notre marge de grossiste — net sur facture, cumulable (art. L.138-9)</div></div>'
+      + '<div class="aud-tot aud-mono">+' + fmt(d.annAb) + ' € / an</div></div>'
+      + '<table><thead><tr><th>Tranche</th><th>Achats/an</th><th>Rendu/an</th><th>%</th></tr></thead><tbody>' + rows3
+      + '<tr class="aud-foot-row"><td>Total</td><td class="aud-mono">' + fmt(d.annNet) + ' €</td><td class="aud-gain aud-mono">+' + fmt(d.annAb) + ' €</td><td class="aud-gain aud-mono">' + pc1(ann) + '</td></tr>'
+      + '</tbody></table></div>'
+
+      + '<div class="aud-sec"><div class="aud-sh"><div class="aud-ic">⚖</div><div><h2>Comparatif par tranche — vs votre grossiste</h2>'
+      + '<div class="aud-desc">Dans vos 5 tranches de prix · % sur vos achats réels</div></div></div>'
+      + '<div class="aud-intro">Votre N°1 est <b>plafonné à 2,5 %</b> sur le remboursable et <b>0 % au-delà de ~450 €</b>. Intégral n\'est pas plafonné : l\'abandon <b>s\'empile par-dessus</b>.</div>'
+      + '<table><thead><tr><th>Tranche (PFHT)</th><th>Intégral</th><th>Votre N°1</th></tr></thead><tbody>' + rows5 + '</tbody></table></div>'
+
+      + '<div class="aud-verif"><div class="aud-vic">🔍</div><div><h3>Vérificateur de remise</h3>'
+      + '<p>Vous doutez de ce que votre grossiste vous fait vraiment ? On calcule, sur votre facture, la remise que le barème officiel permet — net à net.</p></div></div>'
+
+      + '<div class="aud-fo">Calculé sur le barème officiel de marge grossiste et l\'abandon Intégral (art. L.138-9), à partir de vos achats réels. '
+      + 'Princeps de marque, hors génériques. Document de travail.<br><b>Intégral Pharma</b> · le grossiste qui vous rend de la marge.</div>'
+      + '</div>';
+  }
+
+  function selectorHtml(pid) {
+    var O = (window.WML_OFFICINES || []).slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
+    var opt = '<option value="">★ Moyenne réseau (toutes les pharmacies)</option>';
+    for (var i = 0; i < O.length; i++) {
+      var o = O[i], sel = (String(pid) === String(o.id)) ? ' selected' : '';
+      opt += '<option value="' + esc(o.id) + '"' + sel + '>' + esc(o.name) + (o.ville ? ' — ' + esc(o.ville) : '') + '</option>';
+    }
+    return '<div class="aud-pick"><label>Pharmacie&nbsp;:</label><select onchange="V2.go(\'audit\', this.value)">' + opt + '</select>'
+      + '<button class="v2-btn v2-btn-primary aud-pdf" onclick="V2.auditPdf()">Télécharger le PDF</button></div>';
+  }
+
+  V2.auditPdf = function () {
+    var pid = (V2.route && V2.route.param) || '';
+    var name = pidName(pid);
+    if (typeof V2.pdfPreview !== 'function') { if (V2.toast) V2.toast('Module PDF indisponible', 'error'); return; }
+    var html = '<div id="aud" style="width:794px"><style>' + CSS + '</style>' + buildSheet(pid || null, name) + '</div>';
+    var fn = 'Audit-Marge-' + (name || 'reseau').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+    V2.pdfPreview(html, fn, 'Audit Marge · ' + name);
+  };
+
+  function pidName(pid) {
+    if (!pid) return 'Pharmacie moyenne du réseau';
+    var O = window.WML_OFFICINES || [];
+    for (var i = 0; i < O.length; i++) if (String(O[i].id) === String(pid)) return O[i].name + (O[i].ville ? ' — ' + O[i].ville : '');
+    return 'Pharmacie';
+  }
+
+  V2.pages.audit = {
+    render: function (root) {
+      var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
+      if (!window.WML_SALES || !window.PROD_STATS) {
+        root.innerHTML = top + '<div class="v2-wrap"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des ventes…</div></div></div>';
+        if (V2.loadFiles) V2.loadFiles(['wml', 'prod']).then(function () { if (V2.route && V2.route.name === 'audit') V2.render(); });
+        return;
+      }
+      ensureCss();
+      var pid = (V2.route && V2.route.param) || '';
+      var name = pidName(pid);
+      root.innerHTML = top + '<div class="v2-wrap"><div id="aud">' + selectorHtml(pid) + buildSheet(pid || null, name) + '</div></div>';
+    }
+  };
+
+  function ensureCss() {
+    if (document.getElementById('aud-css')) return;
+    var st = document.createElement('style'); st.id = 'aud-css'; st.textContent = CSS; document.head.appendChild(st);
+  }
+
+  var CSS =
+    '#aud{--ip:#0050E6;--ip-d:#0039A6;--ink:#10131C;--muted:#737A8C;--muted2:#9AA1B2;--line:rgba(16,19,28,.08);--line2:rgba(16,19,28,.13);--green:#10915E;--paper:#F4F6FB;--r:18px;--sh:0 6px 24px rgba(16,19,28,.07),0 2px 6px rgba(16,19,28,.04);max-width:820px;margin:0 auto;font-family:"Inter",system-ui,sans-serif;color:var(--ink)}'
+    + '#aud *{box-sizing:border-box}'
+    + '#aud .aud-mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}'
+    + '#aud .aud-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 16px}'
+    + '#aud .aud-pick label{font-size:13px;font-weight:700;color:var(--muted)}'
+    + '#aud .aud-pick select{flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--line2);border-radius:12px;background:#fff;font-size:14px;font-weight:600;color:var(--ink)}'
+    + '#aud .aud-pdf{white-space:nowrap}'
+    + '#aud .aud-sheet{background:transparent}'
+    + '#aud .aud-band{background:linear-gradient(120deg,var(--ip),var(--ip-d));color:#fff;border-radius:var(--r);padding:22px 26px;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}'
+    + '#aud .aud-logo{font-weight:800;font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.9}'
+    + '#aud .aud-band h1{font-size:22px;font-weight:800;margin:4px 0 0}'
+    + '#aud .aud-ph{font-size:13px;opacity:.92;margin-top:7px}'
+    + '#aud .aud-gift{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:700;white-space:nowrap}'
+    + '#aud .aud-hero{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:24px;margin-top:16px;text-align:center}'
+    + '#aud .aud-lbl{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}'
+    + '#aud .aud-big{font-size:48px;font-weight:800;letter-spacing:-.03em;color:var(--green);margin:6px 0 2px;line-height:1}'
+    + '#aud .aud-yr{font-size:22px;color:var(--muted2)}'
+    + '#aud .aud-sub{font-size:13.5px;color:var(--muted)}'
+    + '#aud .aud-minis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}'
+    + '#aud .aud-mini{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:13px;text-align:left}'
+    + '#aud .aud-n{font-size:19px;font-weight:800}'
+    + '#aud .aud-u{font-size:12px;color:var(--muted2);font-weight:600}'
+    + '#aud .aud-t{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:3px;line-height:1.3}'
+    + '#aud .aud-sec{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-top:18px;overflow:hidden}'
+    + '#aud .aud-sh{display:flex;align-items:center;gap:11px;padding:15px 20px;border-bottom:1px solid var(--line);position:relative}'
+    + '#aud .aud-sh::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ip)}'
+    + '#aud .aud-ic{width:31px;height:31px;border-radius:9px;background:var(--ip);color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}'
+    + '#aud .aud-sh h2{font-size:13.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--ip);margin:0}'
+    + '#aud .aud-desc{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px}'
+    + '#aud .aud-tot{margin-left:auto;font-size:13px;font-weight:800;color:#fff;background:var(--ip);padding:5px 12px;border-radius:999px;white-space:nowrap}'
+    + '#aud .aud-intro{padding:13px 20px 2px;font-size:13px;color:#3a4150}'
+    + '#aud table{width:100%;border-collapse:collapse;font-size:13.5px}'
+    + '#aud thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted2);font-weight:700;text-align:right;padding:11px 20px 7px}'
+    + '#aud thead th:first-child{text-align:left}'
+    + '#aud tbody td{padding:11px 20px;border-top:1px solid var(--line);text-align:right}'
+    + '#aud tbody td:first-child{text-align:left}'
+    + '#aud .aud-prod{font-weight:700;letter-spacing:-.01em}'
+    + '#aud .aud-cip{font-size:11px;color:var(--muted2);font-weight:500}'
+    + '#aud .aud-gain{font-weight:800;color:var(--green)}'
+    + '#aud .aud-foot-row td{border-top:2px solid var(--line2);font-weight:800;background:var(--paper)}'
+    + '#aud .aud-verif{background:linear-gradient(120deg,#0b1220,#16233a);color:#fff;border-radius:var(--r);box-shadow:var(--sh);margin-top:18px;padding:20px 22px;display:flex;gap:15px;align-items:center}'
+    + '#aud .aud-vic{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:19px;flex:none}'
+    + '#aud .aud-verif h3{margin:0 0 3px;font-size:15px;font-weight:800}'
+    + '#aud .aud-verif p{margin:0;font-size:12.5px;color:#c4cbd9;line-height:1.5}'
+    + '#aud .aud-fo{margin-top:18px;text-align:center;color:var(--muted2);font-size:11.5px;line-height:1.6;padding-bottom:10px}'
+    + '#aud .aud-fo b{color:var(--ip)}'
+    + '#aud .aud-empty{padding:30px;text-align:center;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:var(--r);margin-top:16px}'
+    + '@media(max-width:600px){#aud .aud-minis{grid-template-columns:1fr}#aud .aud-big{font-size:38px}'
+    + '#aud thead{display:none}#aud tbody td{display:block;text-align:left;padding:3px 18px;border:none}'
+    + '#aud tbody tr{display:block;border-top:1px solid var(--line);padding:11px 0}'
+    + '#aud td[data-l]::before{content:attr(data-l);display:inline-block;min-width:120px;color:var(--muted2);font-size:11px;font-weight:700;text-transform:uppercase}}';
+})();
