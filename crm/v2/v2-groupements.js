@@ -342,8 +342,14 @@
   V2.grpSpaceTabs = function (active) {
     return '<div class="grp-tabs">' +
       '<button class="grp-tab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.grpGo(\'app\')">Cartographie</button>' +
-      '<button class="grp-tab' + (active === 'grossistes' ? ' on' : '') + '" onclick="V2.grpGo(\'grossistes\')">Grossistes</button>' +
       '<button class="grp-tab' + (active === 'opp' ? ' on' : '') + '" onclick="V2.go(\'pharma\',\'groupements\')">Opportunités groupements</button>' +
+      '</div>';
+  };
+  // Onglets de l'espace CONCURRENTS / GROSSISTES (Prix concurrents = Offilog+Pharmazon, Sagitta = répartiteur)
+  V2.concTabs = function (active) {
+    return '<div class="grp-tabs">' +
+      '<button class="grp-tab' + (active === 'prix' ? ' on' : '') + '" onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
+      '<button class="grp-tab' + (active === 'sagitta' ? ' on' : '') + '" onclick="V2.go(\'sagitta\')">Sagitta</button>' +
       '</div>';
   };
   // navigue vers la carte groupements en réglant la sous-vue (depuis n'importe quelle page)
@@ -352,28 +358,31 @@
 
   V2.pages.groupements = {
     render: function (root) {
+      renderGrpCarte(root);   // carte de France native : tous les groupements, légende à cocher
+    }
+  };
+
+  // Sagitta = veille répartiteur, déplacée dans l'espace « Grossistes concurrents » (onglets V2.concTabs)
+  V2.pages.sagitta = {
+    render: function (root) {
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
-      if (view === 'grossistes') {
-        var nb = (window.PHARMASMILE || []).length;
-        root.innerHTML = top + tabs() +
-          '<div class="grp-sub"><span class="grp-sub-l">Grossiste</span>' +
-            '<button class="grp-chip on">Sagitta' + (nb ? ' · ' + nb.toLocaleString('fr') : '') + '</button></div>' +
-          '<div class="ps-bar">' +
-            '<select id="ps-dept" class="ps-dept" onchange="V2.psDept(this.value)"><option value="">Tous les départements</option></select>' +
-            ICO('search', 16, 2) +
-            '<input id="ps-search" placeholder="ville ou nom…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
-            '<span class="ps-count" id="ps-count">chargement…</span></div>' +
-          '<div class="sag-split">' +
-            '<div class="sag-list" id="sag-list"><div class="grp-load"><div class="v2-spinner"></div>Chargement…</div></div>' +
-            '<div id="ps-map" class="sag-map"><div class="grp-load"><div class="v2-spinner"></div>Chargement de la carte…</div></div>' +
-          '</div>';
-        ensureData(function () {
-          fillDeptSelect();
-          ensureLeaflet(function () { initMap(); });
-        });
-      } else {
-        renderGrpCarte(root);   // carte de France native : tous les groupements, légende à cocher
-      }
+      var nb = (window.PHARMASMILE || []).length;
+      root.innerHTML = top + V2.concTabs('sagitta') +
+        '<div class="grp-sub"><span class="grp-sub-l">Répartiteur</span>' +
+          '<button class="grp-chip on">Sagitta' + (nb ? ' · ' + nb.toLocaleString('fr') : '') + '</button></div>' +
+        '<div class="ps-bar">' +
+          '<select id="ps-dept" class="ps-dept" onchange="V2.psDept(this.value)"><option value="">Tous les départements</option></select>' +
+          ICO('search', 16, 2) +
+          '<input id="ps-search" placeholder="ville ou nom…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
+          '<span class="ps-count" id="ps-count">chargement…</span></div>' +
+        '<div class="sag-split">' +
+          '<div class="sag-list" id="sag-list"><div class="grp-load"><div class="v2-spinner"></div>Chargement…</div></div>' +
+          '<div id="ps-map" class="sag-map"><div class="grp-load"><div class="v2-spinner"></div>Chargement de la carte…</div></div>' +
+        '</div>';
+      ensureData(function () {
+        fillDeptSelect();
+        ensureLeaflet(function () { initMap(); });
+      });
     }
   };
 })();

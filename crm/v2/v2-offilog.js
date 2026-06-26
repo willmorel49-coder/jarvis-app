@@ -687,7 +687,7 @@
           return;
         }
         // squelette (forme des futures cartes) au lieu du spinner sur la grille lourde
-        root.innerHTML = V2.topbar({ back: true }) +
+        root.innerHTML = V2.topbar({ back: true }) + (V2.concTabs ? V2.concTabs('prix') : '') +
           '<div class="v2-wrap">' +
             '<div class="v2-page-title">Grossistes concurrents</div>' +
             '<div class="v2-page-sub">Chargement des meilleures ventes Offilog…</div>' +
@@ -743,7 +743,7 @@
       var qVal = S.q.replace(/"/g, '&quot;');
       var clrBtn = S.q ? '<button class="clr" onclick="V2.offSearch(\'\')">' + ICO('close', 16, 2) + '</button>' : '';
 
-      root.innerHTML = V2.topbar({ back: true }) +
+      root.innerHTML = V2.topbar({ back: true }) + (V2.concTabs ? V2.concTabs('prix') : '') +
         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
           '<div class="v2-page-title">Grossistes concurrents</div>' +
