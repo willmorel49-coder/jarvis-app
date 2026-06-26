@@ -161,9 +161,78 @@
       ensureCss();
       var pid = (V2.route && V2.route.param) || '';
       var name = pidName(pid);
-      root.innerHTML = top + '<div class="v2-wrap"><div id="aud">' + selectorHtml(pid) + buildSheet(pid || null, name) + '</div></div>';
+      root.innerHTML = top + '<div class="v2-wrap"><div id="aud">' + selectorHtml(pid) + buildSheet(pid || null, name) + importSection() + '</div></div>';
     }
   };
+
+  function importSection() {
+    return '<div class="aud-imp">'
+      + '<div class="aud-imp-head"><span class="aud-vic2">🔍</span><div><b>Vérificateur de remise</b><div class="aud-imp-d">Importez une facture (Excel/CSV) d\'un autre grossiste — je calcule, ligne par ligne, <b>ce qu\'Intégral vous aurait rendu</b> dessus. Vos vrais chiffres, pas des promesses.</div></div></div>'
+      + '<label class="v2-btn v2-btn-primary aud-imp-btn">Choisir un fichier Excel/CSV<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="V2.auditImport(this)"></label>'
+      + '<div id="aud-imp-res"></div></div>';
+  }
+
+  function ensureXLSX() {
+    if (window.XLSX) return Promise.resolve();
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js';
+      s.onload = res; s.onerror = rej; document.head.appendChild(s);
+    });
+  }
+
+  function pickCol(keys, re) { for (var i = 0; i < keys.length; i++) if (re.test(keys[i])) return keys[i]; return null; }
+  function num(v) { if (typeof v === 'number') return v; v = String(v == null ? '' : v).replace(/\s/g, '').replace(/€/g, '').replace(',', '.'); var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+  V2.auditImport = function (input) {
+    var f = input.files && input.files[0]; if (!f) return;
+    var res = document.getElementById('aud-imp-res');
+    res.innerHTML = '<div class="aud-imp-load">Lecture du fichier…</div>';
+    ensureXLSX().then(function () {
+      var rd = new FileReader();
+      rd.onload = function (e) {
+        try {
+          var wb = XLSX.read(e.target.result, { type: 'array' });
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          var rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+          renderImport(rows, res, f.name);
+        } catch (err) { res.innerHTML = '<div class="aud-imp-err">Impossible de lire ce fichier. Exporte tes achats en Excel (.xlsx) ou CSV depuis ton logiciel.</div>'; }
+      };
+      rd.readAsArrayBuffer(f);
+    }).catch(function () { res.innerHTML = '<div class="aud-imp-err">Module Excel indisponible (connexion ?).</div>'; });
+  };
+
+  function renderImport(rows, res, fname) {
+    if (!rows || !rows.length) { res.innerHTML = '<div class="aud-imp-err">Fichier vide.</div>'; return; }
+    var keys = Object.keys(rows[0]);
+    var cQte = pickCol(keys, /qte|quant/i);
+    var cPu = pickCol(keys, /punet|prix.?net|pu.?ht|prix.?unit|p\.?u/i);
+    var cMnt = pickCol(keys, /mnt.?net|montant|total.?ht|^net$/i);
+    var cCip = pickCol(keys, /cip|artcode|code.?barre|^ean|^code$/i);
+    if (!cQte || (!cPu && !cMnt)) {
+      res.innerHTML = '<div class="aud-imp-err">Colonnes non reconnues. Il me faut au moins une <b>quantité</b> et un <b>prix unitaire</b> (ou un montant). Colonnes vues : ' + esc(keys.slice(0, 8).join(', ')) + '</div>';
+      return;
+    }
+    var M = cipMap();
+    var net = 0, ab = 0, n = 0, skipped = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var qte = num(r[cQte]); if (qte <= 0) continue;
+      var pu = cPu ? num(r[cPu]) : (num(r[cMnt]) / qte);
+      var mnt = cMnt ? num(r[cMnt]) : pu * qte;
+      if (pu <= 0 || mnt <= 0) continue;
+      if (cCip) { var m = M[String(r[cCip]).replace(/\D/g, '')]; if (m && !m.p && !m.g) { skipped++; continue; } } // NR connu -> pas d'abandon
+      var pf = pfFromNet(pu); net += mnt; ab += abPF(pf) * qte; n++;
+    }
+    if (!n) { res.innerHTML = '<div class="aud-imp-err">Aucune ligne exploitable trouvée.</div>'; return; }
+    var rate = net ? ab / net * 100 : 0;
+    res.innerHTML = '<div class="aud-imp-out">'
+      + '<div class="aud-imp-file">📄 ' + esc(fname) + ' · ' + n + ' lignes · ' + fmt(net) + ' € d\'achats</div>'
+      + '<div class="aud-imp-big">Intégral vous aurait rendu <b class="aud-gain">≈ ' + fmt(ab) + ' €</b> sur cette facture</div>'
+      + '<div class="aud-imp-rate">soit <b>' + pc1(rate) + '</b> de vos achats — net sur facture, cumulable, en plus de votre remise actuelle.</div>'
+      + (skipped ? '<div class="aud-imp-note">(' + skipped + ' lignes non remboursables ignorées — marge libre.)</div>' : '')
+      + '</div>';
+  }
 
   function ensureCss() {
     if (document.getElementById('aud-css')) return;
@@ -218,6 +287,20 @@
     + '#aud .aud-fo{margin-top:18px;text-align:center;color:var(--muted2);font-size:11.5px;line-height:1.6;padding-bottom:10px}'
     + '#aud .aud-fo b{color:var(--ip)}'
     + '#aud .aud-empty{padding:30px;text-align:center;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:var(--r);margin-top:16px}'
+    + '#aud .aud-imp{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-top:18px;padding:20px 22px}'
+    + '#aud .aud-imp-head{display:flex;gap:13px;align-items:flex-start}'
+    + '#aud .aud-vic2{width:38px;height:38px;border-radius:11px;background:rgba(0,80,230,.10);display:grid;place-items:center;font-size:18px;flex:none}'
+    + '#aud .aud-imp-head b{font-size:14px}'
+    + '#aud .aud-imp-d{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.5}'
+    + '#aud .aud-imp-btn{margin-top:14px;display:inline-block;cursor:pointer}'
+    + '#aud .aud-imp-load{margin-top:14px;font-size:13px;color:var(--muted)}'
+    + '#aud .aud-imp-err{margin-top:14px;font-size:13px;color:#c23652;background:rgba(224,85,110,.08);border:1px solid rgba(224,85,110,.25);border-radius:12px;padding:12px 14px}'
+    + '#aud .aud-imp-out{margin-top:16px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px}'
+    + '#aud .aud-imp-file{font-size:12px;color:var(--muted2);font-weight:600;margin-bottom:8px}'
+    + '#aud .aud-imp-big{font-size:18px;font-weight:700;letter-spacing:-.01em;line-height:1.35}'
+    + '#aud .aud-imp-big .aud-gain{font-size:22px}'
+    + '#aud .aud-imp-rate{font-size:13.5px;color:#3a4150;margin-top:6px}'
+    + '#aud .aud-imp-note{font-size:11.5px;color:var(--muted2);margin-top:8px}'
     + '@media(max-width:600px){#aud .aud-minis{grid-template-columns:1fr}#aud .aud-big{font-size:38px}'
     + '#aud thead{display:none}#aud tbody td{display:block;text-align:left;padding:3px 18px;border:none}'
     + '#aud tbody tr{display:block;border-top:1px solid var(--line);padding:11px 0}'
