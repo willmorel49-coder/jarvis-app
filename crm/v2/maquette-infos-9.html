@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0050E6" />
+<title>Infos du matin · Maquette 9 (style Notion)</title>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0050E6;
+    --blue-soft:#EEF3FF;
+    --blue-line:#D7E2FB;
+    --ink:#1A1D24;        /* texte principal */
+    --ink-2:#5B6472;      /* texte secondaire */
+    --ink-3:#8A93A2;      /* labels / micro */
+    --line:#ECEDF1;       /* séparateurs nets */
+    --line-2:#E3E5EA;
+    --bg:#FBFBFC;         /* fond app (beaucoup de blanc) */
+    --card:#FFFFFF;
+    --green:#0E9F6E;
+    --green-soft:#E7F6EF;
+    --amber:#B7791F;
+    --amber-soft:#FCF2E1;
+    --red:#D6334E;
+    --red-soft:#FCE9EC;
+    --radius:10px;
+    --mono:'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans:'Satoshi', -apple-system, system-ui, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:64px;
+  }
+  .num{font-family:var(--mono); font-feature-settings:"tnum"; letter-spacing:-.02em}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:30;
+    background:rgba(255,255,255,.86);
+    backdrop-filter:saturate(180%) blur(12px);
+    border-bottom:1px solid var(--line);
+    padding:10px 22px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .brand{display:flex; align-items:center; gap:9px; font-weight:900; letter-spacing:-.02em; font-size:14px}
+  .brand .dot{width:18px; height:18px; border-radius:6px; background:var(--blue); display:grid; place-items:center; color:#fff; font-size:11px}
+  .crumb{color:var(--ink-3); font-size:12.5px; display:flex; align-items:center; gap:8px}
+  .crumb b{color:var(--ink-2); font-weight:500}
+  .topbar .spacer{flex:1}
+  .pill-date{
+    font-family:var(--mono); font-size:11.5px; color:var(--ink-2);
+    border:1px solid var(--line-2); border-radius:7px; padding:4px 9px; background:#fff;
+  }
+  .icon-btn{
+    width:30px; height:30px; border:1px solid var(--line-2); border-radius:8px; background:#fff;
+    display:grid; place-items:center; font-size:14px; color:var(--ink-2); cursor:pointer; transition:.15s;
+  }
+  .icon-btn:hover{background:var(--blue-soft); border-color:var(--blue-line); color:var(--blue)}
+
+  /* ---------- Page head ---------- */
+  .wrap{max-width:1320px; margin:0 auto; padding:26px 22px 0}
+  .page-head{display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap; margin-bottom:18px}
+  .page-emoji{font-size:30px; line-height:1}
+  .page-title{font-size:27px; font-weight:900; letter-spacing:-.03em}
+  .page-sub{color:var(--ink-3); font-size:13px; margin-top:2px}
+  .head-actions{margin-left:auto; display:flex; gap:8px}
+  .btn{
+    font-family:var(--sans); font-size:12.5px; font-weight:500;
+    border:1px solid var(--line-2); border-radius:8px; background:#fff; color:var(--ink-2);
+    padding:7px 12px; cursor:pointer; transition:.15s; display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:hover{background:#fafbfe; border-color:var(--blue-line); color:var(--ink)}
+  .btn.primary{background:var(--blue); border-color:var(--blue); color:#fff}
+  .btn.primary:hover{background:#0042c2}
+
+  /* ---------- Callout récap ---------- */
+  .callout{
+    display:flex; gap:14px; align-items:flex-start;
+    background:var(--blue-soft);
+    border:1px solid var(--blue-line);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    margin-bottom:26px;
+  }
+  .callout .ico{font-size:20px; line-height:1.2; flex-shrink:0}
+  .callout .body{flex:1; min-width:0}
+  .callout .lead{font-weight:700; font-size:14.5px; letter-spacing:-.01em}
+  .callout .lead .cnt{color:var(--blue)}
+  .callout .hl{display:flex; flex-wrap:wrap; gap:8px; margin-top:11px}
+  .hl-chip{
+    background:#fff; border:1px solid var(--blue-line); border-radius:8px;
+    padding:6px 11px; font-size:12.5px; color:var(--ink); display:inline-flex; align-items:center; gap:7px;
+  }
+  .hl-chip .tag{
+    font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.04em;
+    padding:1.5px 6px; border-radius:5px;
+  }
+  .tag.bleu{background:var(--blue-soft); color:var(--blue)}
+  .tag.rouge{background:var(--red-soft); color:var(--red)}
+
+  /* ---------- Kanban ---------- */
+  .board{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:16px;
+    align-items:start;
+  }
+  .col{display:flex; flex-direction:column; gap:10px}
+  .col-head{
+    display:flex; align-items:center; gap:8px;
+    padding:2px 2px 8px;
+  }
+  .col-head .ci{font-size:14px}
+  .col-head .ct{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-2)}
+  .col-head .cc{
+    margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--ink-3);
+    background:#fff; border:1px solid var(--line-2); border-radius:20px; padding:1px 8px;
+  }
+  .col-head .accent{width:6px; height:6px; border-radius:50%}
+  .a-red{background:var(--red)} .a-amber{background:var(--amber)} .a-blue{background:var(--blue)} .a-green{background:var(--green)}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 13px;
+    cursor:pointer;
+    transition:.14s;
+  }
+  .card:hover{border-color:var(--blue-line); box-shadow:0 1px 0 rgba(16,24,40,.02), 0 6px 18px -10px rgba(16,24,40,.18); transform:translateY(-1px)}
+  .card .row1{display:flex; align-items:center; gap:8px; margin-bottom:5px}
+  .card .ttl{font-size:13.5px; font-weight:700; letter-spacing:-.01em; line-height:1.3}
+  .card .dose{font-family:var(--mono); font-size:11px; color:var(--ink-3); margin-left:auto; white-space:nowrap}
+  .card .meta{display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap}
+  .card .note{font-size:12px; color:var(--ink-2); margin-top:4px}
+
+  .badge{
+    font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.04em;
+    padding:2px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; font-weight:500;
+  }
+  .b-rupture{background:var(--red-soft); color:var(--red)}
+  .b-tension{background:var(--amber-soft); color:var(--amber)}
+  .b-retour{background:var(--green-soft); color:var(--green)}
+  .b-chimie{background:var(--amber-soft); color:var(--amber)}
+  .b-energy{background:var(--red-soft); color:var(--red)}
+  .b-microbio{background:#EEF3FF; color:var(--blue)}
+  .date-mini{font-family:var(--mono); font-size:11px; color:var(--ink-3); display:inline-flex; align-items:center; gap:4px}
+
+  /* dot statut */
+  .sdot{width:7px; height:7px; border-radius:50%; flex-shrink:0}
+  .sdot.red{background:var(--red)} .sdot.amber{background:var(--amber)} .sdot.green{background:var(--green)}
+
+  /* Opportunité IP — carte mise en avant */
+  .opp{
+    background:linear-gradient(180deg,#F4F8FF 0%, #FFFFFF 60%);
+    border:1px solid var(--blue-line);
+  }
+  .opp .price{
+    display:flex; align-items:baseline; gap:8px; margin-top:10px;
+    padding-top:10px; border-top:1px dashed var(--blue-line);
+  }
+  .opp .price .now{font-family:var(--mono); font-size:18px; font-weight:600; color:var(--blue); letter-spacing:-.02em}
+  .opp .price .save{font-family:var(--mono); font-size:11px; font-weight:600; color:var(--green); background:var(--green-soft); padding:2px 7px; border-radius:6px}
+  .opp .cta{
+    margin-top:11px; width:100%; justify-content:center;
+    background:var(--blue); border-color:var(--blue); color:#fff; font-weight:500;
+  }
+  .opp .cta:hover{background:#0042c2}
+
+  .col-foot{
+    text-align:center; font-size:12px; color:var(--ink-3);
+    padding:6px; border:1px dashed var(--line-2); border-radius:9px; background:#fff; cursor:pointer; transition:.15s;
+  }
+  .col-foot:hover{color:var(--blue); border-color:var(--blue-line); background:var(--blue-soft)}
+
+  /* ---------- Bandeau maquette ---------- */
+  .mq-flag{
+    position:fixed; bottom:14px; right:14px; z-index:40;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.02em;
+    background:var(--ink); color:#fff; opacity:.82;
+    border-radius:7px; padding:5px 10px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .mq-flag .d{width:6px; height:6px; border-radius:50%; background:var(--blue)}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:1080px){
+    .board{grid-template-columns:repeat(2, minmax(0,1fr))}
+  }
+  @media (max-width:680px){
+    .board{grid-template-columns:1fr}
+    .wrap{padding:18px 14px 0}
+    .topbar{padding:9px 14px}
+    .crumb{display:none}
+    .page-title{font-size:23px}
+    .callout .hl{flex-direction:column}
+    .head-actions{width:100%; order:3}
+  }
+</style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand"><span class="dot">IP</span> Intégral&nbsp;Pharma</div>
+    <div class="crumb"><span>Espace</span> ›&nbsp; <b>Infos du matin</b></div>
+    <div class="spacer"></div>
+    <span class="pill-date" id="liveDate">lun. 29 juin 2026</span>
+    <button class="icon-btn" title="Rechercher">⌕</button>
+    <button class="icon-btn" title="Filtrer">⚙</button>
+  </header>
+
+  <main class="wrap">
+
+    <!-- Page head -->
+    <div class="page-head">
+      <span class="page-emoji">☀️</span>
+      <div>
+        <div class="page-title">Infos du matin</div>
+        <div class="page-sub">Brief quotidien · ruptures, rappels, métier &amp; opportunités catalogue</div>
+      </div>
+      <div class="head-actions">
+        <button class="btn">⤓ Exporter</button>
+        <button class="btn primary">✓ Marquer comme lu</button>
+      </div>
+    </div>
+
+    <!-- Callout récap -->
+    <div class="callout">
+      <span class="ico">📌</span>
+      <div class="body">
+        <div class="lead"><span class="cnt num">13</span> actus du jour</div>
+        <div class="hl">
+          <span class="hl-chip"><span class="tag bleu">À la une</span> Décision du <span class="num">23/06</span> — groupes hybrides</span>
+          <span class="hl-chip"><span class="tag rouge">Tension</span> Fortes tensions sur l'aspirine <span class="num">75/100&nbsp;mg</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Board kanban -->
+    <section class="board">
+
+      <!-- COLONNE 1 — Ruptures & tensions -->
+      <div class="col">
+        <div class="col-head">
+          <span class="accent a-red"></span>
+          <span class="ci">⛔</span>
+          <span class="ct">Ruptures &amp; tensions</span>
+          <span class="cc num">957</span>
+        </div>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Zophren</span><span class="dose num">8&nbsp;mg</span></div>
+          <div class="meta">
+            <span class="badge b-tension"><span class="sdot amber"></span>Tension</span>
+            <span class="date-mini">🕓 maj <span class="num">28/06</span></span>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Sugammadex</span><span class="dose num">100&nbsp;mg/ml</span></div>
+          <div class="meta">
+            <span class="badge b-tension"><span class="sdot amber"></span>Tension</span>
+            <span class="date-mini">🕓 maj <span class="num">27/06</span></span>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Amoxicilline</span><span class="dose num">500&nbsp;mg</span></div>
+          <div class="meta">
+            <span class="badge b-tension"><span class="sdot amber"></span>Tension</span>
+            <span class="date-mini">🕓 maj <span class="num">29/06</span></span>
+          </div>
+          <div class="note">Forte demande saisonnière — voir alternative IP →</div>
+        </article>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Furosémide</span><span class="dose num">40&nbsp;mg</span></div>
+          <div class="meta">
+            <span class="badge b-rupture"><span class="sdot red"></span>Rupture</span>
+            <span class="date-mini">🕓 retour est. <span class="num">15/07</span></span>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Prednisolone</span><span class="dose num">20&nbsp;mg</span></div>
+          <div class="meta">
+            <span class="badge b-tension"><span class="sdot amber"></span>Tension</span>
+            <span class="date-mini">🕓 maj <span class="num">26/06</span></span>
+          </div>
+        </article>
+
+        <div class="col-foot">Voir les <span class="num">957</span> suivies →</div>
+      </div>
+
+      <!-- COLONNE 2 — Rappels parapharma -->
+      <div class="col">
+        <div class="col-head">
+          <span class="accent a-amber"></span>
+          <span class="ci">⚠️</span>
+          <span class="ct">Rappels parapharma</span>
+          <span class="cc num">3</span>
+        </div>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Exoderm crème mains</span></div>
+          <div class="meta">
+            <span class="badge b-energy">Risque chimique</span>
+            <span class="date-mini">vecteur energy</span>
+          </div>
+          <div class="note">Retrait des lots concernés · rappel fournisseur.</div>
+        </article>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Algae crème</span></div>
+          <div class="meta">
+            <span class="badge b-chimie">Risque chimique</span>
+            <span class="date-mini">🕓 publié <span class="num">28/06</span></span>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Sérum nettoyant</span></div>
+          <div class="meta">
+            <span class="badge b-microbio">Défaut microbio</span>
+            <span class="date-mini">🕓 publié <span class="num">27/06</span></span>
+          </div>
+        </article>
+
+        <div class="col-foot">Historique des rappels →</div>
+      </div>
+
+      <!-- COLONNE 3 — Actu métier -->
+      <div class="col">
+        <div class="col-head">
+          <span class="accent a-blue"></span>
+          <span class="ci">📰</span>
+          <span class="ct">Actu métier</span>
+          <span class="cc num">4</span>
+        </div>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Réforme des études de santé</span></div>
+          <div class="note">Nouveau cadre annoncé — impact filière officine.</div>
+        </article>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Honoraires</span></div>
+          <div class="meta"><span class="date-mini">avenant conventionnel</span></div>
+          <div class="note">Revalorisation à l'ordonnance en discussion.</div>
+        </article>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">Génériques</span></div>
+          <div class="meta"><span class="date-mini">nouveau groupe</span></div>
+          <div class="note">Inscription d'un nouveau groupe au répertoire.</div>
+        </article>
+
+        <article class="card">
+          <div class="row1"><span class="ttl">ROSP</span><span class="dose num">2026</span></div>
+          <div class="note">Objectifs et indicateurs mis à jour.</div>
+        </article>
+
+        <div class="col-foot">Toute l'actu métier →</div>
+      </div>
+
+      <!-- COLONNE 4 — Opportunités IP -->
+      <div class="col">
+        <div class="col-head">
+          <span class="accent a-green"></span>
+          <span class="ci">💡</span>
+          <span class="ct">Opportunités IP</span>
+          <span class="cc num">1</span>
+        </div>
+
+        <article class="card opp">
+          <div class="row1"><span class="ttl">Amoxicilline en tension</span></div>
+          <div class="note">Alternative générique disponible au catalogue Intégral — sécurise vos délivrances.</div>
+          <div class="price">
+            <span class="now num">1,06&nbsp;€</span>
+            <span class="save num">−9&nbsp;%</span>
+          </div>
+          <button class="btn cta">Voir au catalogue →</button>
+        </article>
+
+        <div class="col-foot">Croisement tensions × catalogue →</div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Bandeau maquette discret -->
+  <div class="mq-flag"><span class="d"></span> Maquette 9 · style Notion</div>
+
+<script>
+  // Date du jour en français (cosmétique, non bloquant)
+  (function(){
+    try{
+      var d = new Date();
+      var s = d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
+      var el = document.getElementById('liveDate');
+      if(el) el.textContent = s;
+    }catch(e){}
+  })();
+
+  // Feedback léger au clic sur une carte (démo)
+  document.querySelectorAll('.card, .col-foot').forEach(function(c){
+    c.addEventListener('click', function(){
+      this.style.transition='transform .08s';
+      this.style.transform='scale(.99)';
+      var self=this;
+      setTimeout(function(){ self.style.transform=''; }, 90);
+    });
+  });
+</script>
+</body>
+</html>

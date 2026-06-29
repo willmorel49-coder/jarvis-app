@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Brief du Matin · Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0050E6;
+    --blue-dark:#0036A0;
+    --ink:#10141C;
+    --muted:#5B6472;
+    --line:#E8EBF0;
+    --paper:#FBFAF7;
+    --cream:#F4F1EA;
+    --amber:#FFB020;
+    --red:#E23A3A;
+    --green:#1EA362;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:90px;
+  }
+  .wrap{max-width:560px;margin:0 auto;background:var(--paper);min-height:100vh;
+    box-shadow:0 0 60px rgba(16,20,28,.08)}
+
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+  /* ===== Top bar ===== */
+  .topbar{display:flex;align-items:center;justify-content:space-between;
+    padding:12px 20px;border-bottom:1px solid var(--line);background:var(--paper)}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.3px}
+  .logo-dot{width:22px;height:22px;border-radius:7px;background:var(--blue);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px}
+  .topbar .right{font-size:11px;color:var(--muted);font-weight:600}
+
+  /* ===== Hero ===== */
+  .hero{padding:30px 24px 26px;border-bottom:3px solid var(--ink);
+    background:linear-gradient(160deg,#0050E6 0%,#0036A0 100%);color:#fff;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;
+    background:radial-gradient(circle,rgba(255,176,32,.4),transparent 70%);filter:blur(10px)}
+  .kicker{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:1.5px;background:rgba(255,255,255,.16);
+    padding:5px 11px;border-radius:100px;backdrop-filter:blur(4px)}
+  .hero h1{font-family:'Fraunces',serif;font-weight:900;font-size:42px;line-height:.98;
+    margin:16px 0 8px;letter-spacing:-1px}
+  .hero .meta{display:flex;gap:16px;font-size:13px;font-weight:500;opacity:.92;margin-top:14px;
+    flex-wrap:wrap;align-items:center}
+  .hero .meta span{display:inline-flex;align-items:center;gap:5px}
+  .greet{font-size:14px;margin-top:18px;opacity:.95;line-height:1.5;max-width:90%}
+
+  /* ===== Recap ===== */
+  .recap{padding:22px 24px;border-bottom:1px solid var(--line);background:var(--paper)}
+  .recap-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .recap-head .big{font-family:'Fraunces',serif;font-weight:700;font-size:20px;letter-spacing:-.4px}
+  .recap-head .pill{font-size:11px;font-weight:700;color:var(--blue);background:#EAF0FF;
+    padding:4px 10px;border-radius:100px}
+  .recap-list{display:flex;flex-direction:column;gap:10px}
+  .recap-item{display:flex;gap:12px;align-items:flex-start}
+  .recap-item .dash{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--blue);
+    background:#EAF0FF;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;flex-shrink:0;margin-top:1px}
+  .recap-item p{font-size:14px;line-height:1.45}
+  .recap-item .tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.5px;padding:2px 7px;border-radius:5px;margin-right:6px;vertical-align:middle}
+  .tag-une{background:var(--amber);color:#3A2800}
+  .tag-hot{background:#FDEAEA;color:var(--red)}
+
+  /* ===== Section ===== */
+  section.block{padding:24px}
+  .sec-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .sec-emoji{font-size:22px;line-height:1}
+  .sec-title{font-family:'Fraunces',serif;font-weight:700;font-size:22px;letter-spacing:-.5px}
+  .sec-sub{font-size:12.5px;color:var(--muted);margin-bottom:16px;margin-left:32px;font-weight:500}
+  .rule{height:1px;background:var(--line);margin:0 24px}
+
+  /* rupture cards */
+  .rupt{display:flex;flex-direction:column;gap:10px}
+  .r-row{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--cream);
+    border-radius:12px;border:1px solid var(--line)}
+  .r-row .ico{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;
+    align-items:center;justify-content:center;font-size:18px;
+    background:linear-gradient(140deg,#fff,#EDEFF5)}
+  .r-row .body{flex:1;min-width:0}
+  .r-row .name{font-weight:700;font-size:14.5px;letter-spacing:-.2px}
+  .r-row .desc{font-size:12px;color:var(--muted);margin-top:1px}
+  .r-row .status{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+    padding:4px 9px;border-radius:100px;white-space:nowrap;flex-shrink:0}
+  .st-rupt{background:#FDEAEA;color:var(--red)}
+  .st-tens{background:#FFF3DD;color:#9A6500}
+  .st-remis{background:#E6F6EE;color:var(--green)}
+  .ansm{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);
+    font-weight:600;background:#fff;border:1px solid var(--line);padding:4px 9px;border-radius:100px;
+    margin-left:32px;margin-bottom:14px}
+
+  /* rappels */
+  .rappel{display:flex;flex-direction:column;gap:12px}
+  .rcard{display:flex;gap:13px;padding:14px;border-radius:12px;
+    border:1px solid #F2D9A6;background:linear-gradient(180deg,#FFFBF2,#FFF7E6)}
+  .rcard .thumb{width:48px;height:48px;border-radius:11px;flex-shrink:0;display:flex;
+    align-items:center;justify-content:center;font-size:22px;
+    background:linear-gradient(140deg,#FFE7B0,#FFD27A)}
+  .rcard .name{font-weight:700;font-size:14.5px}
+  .rcard .why{font-size:12.5px;color:#7A5A10;margin-top:2px;line-height:1.4}
+  .rcard .risk{display:inline-block;margin-top:7px;font-size:10px;font-weight:800;text-transform:uppercase;
+    letter-spacing:.5px;background:var(--amber);color:#3A2800;padding:3px 8px;border-radius:5px}
+  .risk.micro{background:#C9E5FF;color:#0A4B8C}
+
+  /* actu metier */
+  .metier{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .mcard{padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--paper);
+    transition:transform .15s}
+  .mcard:active{transform:scale(.98)}
+  .mcard .mtag{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--blue);
+    text-transform:uppercase;letter-spacing:.5px}
+  .mcard .mtitle{font-weight:700;font-size:14px;margin-top:6px;letter-spacing:-.2px;line-height:1.25}
+  .mcard .mdesc{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.4}
+
+  /* opportunité */
+  .opp{margin:24px;border-radius:16px;overflow:hidden;border:1px solid var(--line);
+    background:linear-gradient(160deg,#0050E6,#0036A0);color:#fff;position:relative}
+  .opp::before{content:"";position:absolute;left:-30px;bottom:-30px;width:140px;height:140px;
+    background:radial-gradient(circle,rgba(255,176,32,.45),transparent 70%)}
+  .opp-inner{padding:20px;position:relative}
+  .opp-kick{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:1px;background:rgba(255,255,255,.18);
+    padding:4px 10px;border-radius:100px}
+  .opp h3{font-family:'Fraunces',serif;font-weight:700;font-size:19px;margin:13px 0 4px;line-height:1.15}
+  .opp p{font-size:13px;opacity:.92;line-height:1.45}
+  .opp .priceline{display:flex;align-items:baseline;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .opp .price{font-family:var(--mono);font-weight:700;font-size:30px;letter-spacing:-1px}
+  .opp .save{font-size:13px;font-weight:800;background:var(--amber);color:#3A2800;
+    padding:3px 10px;border-radius:7px}
+  .opp .cta{display:inline-block;margin-top:16px;background:#fff;color:var(--blue);
+    font-weight:800;font-size:13px;padding:11px 18px;border-radius:10px;text-decoration:none}
+
+  /* footer */
+  .foot{padding:26px 24px 34px;text-align:center;border-top:1px solid var(--line)}
+  .foot .sig{font-family:'Fraunces',serif;font-size:16px;font-weight:600}
+  .foot .small{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+  /* badge maquette */
+  .mq{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:50;
+    background:rgba(16,20,28,.85);color:#fff;font-size:10.5px;font-weight:600;
+    padding:6px 13px;border-radius:100px;backdrop-filter:blur(8px);letter-spacing:.3px;
+    border:1px solid rgba(255,255,255,.12);white-space:nowrap}
+
+  @media (max-width:400px){
+    .hero h1{font-size:36px}
+    .metier{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand"><span class="logo-dot">i</span> Intégral Pharma</div>
+    <div class="right">Infos du matin</div>
+  </div>
+
+  <!-- HERO -->
+  <header class="hero">
+    <span class="kicker">☕ Édition quotidienne</span>
+    <h1>Le Brief<br>du Matin</h1>
+    <div class="meta">
+      <span>📅 <span class="num">Lundi 15 juin 2026</span></span>
+      <span>⏱ Lecture <span class="num">~2&nbsp;min</span></span>
+    </div>
+    <p class="greet">Bonjour 👋 Voici tout ce qui compte pour votre officine ce matin, trié, vérifié et prêt en deux minutes. On y va.</p>
+  </header>
+
+  <!-- RECAP DU JOUR -->
+  <div class="recap">
+    <div class="recap-head">
+      <div class="big">Le récap du jour</div>
+      <div class="pill"><span class="num">13</span> actus</div>
+    </div>
+    <div class="recap-list">
+      <div class="recap-item">
+        <div class="dash num">01</div>
+        <p><span class="tag tag-une">À la une</span>Décision du <span class="num">23/06</span> sur les <strong>groupes hybrides</strong> : ce qui change pour la substitution.</p>
+      </div>
+      <div class="recap-item">
+        <div class="dash num">02</div>
+        <p><span class="tag tag-hot">Tension</span><strong>Fortes tensions</strong> sur l'aspirine <span class="num">75/100&nbsp;mg</span> — pensez aux alternatives.</p>
+      </div>
+      <div class="recap-item">
+        <div class="dash num">03</div>
+        <p><span class="num">957</span> ruptures suivies par l'ANSM, <span class="num">5</span> à surveiller de près aujourd'hui.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUPTURES & TENSIONS -->
+  <section class="block">
+    <div class="sec-head"><span class="sec-emoji">📉</span><span class="sec-title">Ruptures &amp; tensions</span></div>
+    <div class="sec-sub">Le point sur les médicaments sensibles du jour.</div>
+    <span class="ansm">🔬 Source ANSM · <span class="num">957</span> références suivies</span>
+    <div class="rupt">
+      <div class="r-row">
+        <div class="ico">💊</div>
+        <div class="body">
+          <div class="name">Zophren</div>
+          <div class="desc">Anti-émétique · retour annoncé <span class="num">28/06</span></div>
+        </div>
+        <span class="status st-tens">Tension</span>
+      </div>
+      <div class="r-row">
+        <div class="ico">💉</div>
+        <div class="body">
+          <div class="name">Sugammadex</div>
+          <div class="desc">Réservé hospitalier · suivi <span class="num">12/06</span></div>
+        </div>
+        <span class="status st-tens">Tension</span>
+      </div>
+      <div class="r-row">
+        <div class="ico">🦠</div>
+        <div class="body">
+          <div class="name">Amoxicilline <span class="num">500&nbsp;mg</span></div>
+          <div class="desc">Antibiotique · stock fragile <span class="num">14/06</span></div>
+        </div>
+        <span class="status st-tens">Tension</span>
+      </div>
+      <div class="r-row">
+        <div class="ico">💧</div>
+        <div class="body">
+          <div class="name">Furosémide <span class="num">40&nbsp;mg</span></div>
+          <div class="desc">Diurétique · indisponible depuis <span class="num">09/06</span></div>
+        </div>
+        <span class="status st-rupt">Rupture</span>
+      </div>
+      <div class="r-row">
+        <div class="ico">🌿</div>
+        <div class="body">
+          <div class="name">Prednisolone</div>
+          <div class="desc">Corticoïde · approvisionnement <span class="num">19/06</span></div>
+        </div>
+        <span class="status st-tens">Tension</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- RAPPELS PARAPHARMA -->
+  <section class="block">
+    <div class="sec-head"><span class="sec-emoji">⚠️</span><span class="sec-title">Rappels parapharma</span></div>
+    <div class="sec-sub">À retirer des rayons et signaler si besoin.</div>
+    <div class="rappel">
+      <div class="rcard">
+        <div class="thumb">🧴</div>
+        <div class="body">
+          <div class="name">Exoderm — crème mains</div>
+          <div class="why">Vecteur « energy » concerné. Présence de substances réglementées dans la formule.</div>
+          <span class="risk">Risque chimique</span>
+        </div>
+      </div>
+      <div class="rcard">
+        <div class="thumb">🌊</div>
+        <div class="body">
+          <div class="name">Algae — crème</div>
+          <div class="why">Lots rappelés par le fabricant pour non-conformité de composition.</div>
+          <span class="risk">Risque chimique</span>
+        </div>
+      </div>
+      <div class="rcard">
+        <div class="thumb">💦</div>
+        <div class="body">
+          <div class="name">Sérum nettoyant</div>
+          <div class="why">Défaut détecté lors d'un contrôle qualité sur plusieurs lots.</div>
+          <span class="risk micro">Défaut microbio</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ACTU METIER -->
+  <section class="block">
+    <div class="sec-head"><span class="sec-emoji">📰</span><span class="sec-title">Actu métier</span></div>
+    <div class="sec-sub">Ce qui bouge dans la profession.</div>
+    <div class="metier">
+      <div class="mcard">
+        <div class="mtag">Formation</div>
+        <div class="mtitle">Réforme des études de santé</div>
+        <div class="mdesc">Nouveau cadre d'accès en discussion pour la rentrée.</div>
+      </div>
+      <div class="mcard">
+        <div class="mtag">Rémunération</div>
+        <div class="mtitle">Honoraires : avenant signé</div>
+        <div class="mdesc">Revalorisation des actes à l'officine actée.</div>
+      </div>
+      <div class="mcard">
+        <div class="mtag">Génériques</div>
+        <div class="mtitle">Nouveau groupe au répertoire</div>
+        <div class="mdesc">Substitution élargie, à intégrer au logiciel.</div>
+      </div>
+      <div class="mcard">
+        <div class="mtag">ROSP</div>
+        <div class="mtitle">Objectifs ROSP <span class="num">2026</span></div>
+        <div class="mdesc">Les indicateurs de l'année sont publiés.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPPORTUNITÉ IP -->
+  <div class="opp">
+    <div class="opp-inner">
+      <span class="opp-kick">⭐ Opportunité Intégral</span>
+      <h3>Amoxicilline en tension ? Sécurisez vos stocks.</h3>
+      <p>L'alternative générique Intégral Pharma est disponible immédiatement, à prix négocié pour le groupement.</p>
+      <div class="priceline">
+        <span class="price">1,06&nbsp;€</span>
+        <span class="save">−9 %</span>
+      </div>
+      <a href="#" class="cta">Voir l'offre dans l'Offilog →</a>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="foot">
+    <div class="sig">À demain matin ☕</div>
+    <div class="small">
+      L'équipe Intégral Pharma · <span class="num">13</span> actus passées au crible<br>
+      Vous avez tout lu ? Vous êtes à jour pour la journée.
+    </div>
+  </div>
+
+</div>
+
+<div class="mq">Maquette 6 · style Morning Brew</div>
+
+<script>
+  // micro-interaction : feedback tactile au tap sur les cartes
+  document.querySelectorAll('.mcard, .r-row, .rcard').forEach(function(el){
+    el.addEventListener('click', function(){
+      el.style.transition='transform .12s ease';
+      el.style.transform='scale(.97)';
+      setTimeout(function(){ el.style.transform='scale(1)'; }, 130);
+    });
+  });
+</script>
+</body>
+</html>
