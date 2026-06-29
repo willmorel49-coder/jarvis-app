@@ -111,6 +111,16 @@
         (((DATA && DATA.count_today) || 0) > 0 ? '<span class="nv8-chip nv8-today"><b class="nv8-mono">' + DATA.count_today + '</b> aujourd\'hui</span>' : '') +
         '<span class="nv8-chip"><b class="nv8-mono">' + ((DATA && DATA.count) || items.length) + '</b> infos · 7 derniers jours</span></div></header>';
 
+      // Récap en tête (synthèse IA si dispo, sinon calculé)
+      if (DATA && DATA.recap && DATA.recap.text) {
+        var rcp = DATA.recap;
+        html += '<article class="nv8-recap' + (rcp.ai ? ' nv8-recap-ai' : '') + '">' +
+          '<div class="nv8-recap-h">' + (rcp.ai ? '✨ Synthèse du matin' : 'L\'essentiel ce matin') + '</div>' +
+          '<div class="nv8-recap-t">' + esc(rcp.text).replace(/\n+/g, '<br>') + '</div>' +
+          (rcp.une ? '<div class="nv8-recap-une"><span>À la une</span> ' + esc(rcp.une) + '</div>' : '') +
+          '</article>';
+      }
+
       if (!DATA || !items.length) {
         html += '<article class="nv8-sec"><div class="nv8-body"><p class="nv8-actu-p" style="padding:18px 0">' +
           (FAILED ? 'La veille du jour n\'a pas pu être chargée (connexion ?). Elle se met à jour chaque matin.' : 'Pas encore d\'infos aujourd\'hui. La veille se met à jour chaque matin.') +
@@ -217,6 +227,12 @@
       '#infos-8 .nv8-sec.nv8-secu{--c:var(--warn);--c-soft:rgba(199,121,26,.10)}' +
       '#infos-8 .nv8-sec.nv8-metier{--c:var(--froid);--c-soft:rgba(0,181,216,.10)}' +
       '#infos-8 .nv8-sec.nv8-opp{--c:var(--ok);--c-soft:rgba(30,158,106,.10);border-color:rgba(30,158,106,.22)}' +
+      '#infos-8 .nv8-recap{background:linear-gradient(135deg,#0b1220,#16233a);color:#fff;border-radius:18px;padding:18px 20px;margin-bottom:22px;box-shadow:0 8px 24px rgba(11,18,32,.18)}' +
+      '#infos-8 .nv8-recap-ai{background:linear-gradient(135deg,#0050E6,#0039A6)}' +
+      '#infos-8 .nv8-recap-h{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.85;margin-bottom:8px}' +
+      '#infos-8 .nv8-recap-t{font-size:14.5px;line-height:1.55;font-weight:500}' +
+      '#infos-8 .nv8-recap-une{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.16);font-size:12.5px;opacity:.92}' +
+      '#infos-8 .nv8-recap-une span{font-weight:800;text-transform:uppercase;font-size:10px;letter-spacing:.06em;opacity:.8;margin-right:6px}' +
       '#infos-8 .nv8-sec.nv8-rap{--c:var(--warn);--c-soft:rgba(199,121,26,.10)}' +
       '#infos-8 .nv8-rap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding:14px 20px 18px}' +
       '#infos-8 .nv8-rap-card{display:flex;gap:11px;align-items:center;padding:10px;border-radius:14px;background:var(--card-2);border:1px solid var(--line);text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}' +
