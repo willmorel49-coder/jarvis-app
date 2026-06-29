@@ -342,6 +342,26 @@
       '#infos-art .art-load,#infos-art .art-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:40px;color:rgba(255,255,255,.8);font-size:14px;line-height:1.6}' +
       '#infos-art .art-spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;animation:artspin .8s linear infinite}' +
       '@keyframes artspin{to{transform:rotate(360deg)}}' +
+      // ── DESKTOP : ouvrir en grand (pas juste largeur téléphone) ──
+      '@media(min-width:900px){' +
+        '#infos-art .art-feed{max-width:1180px}' +
+        '#infos-art .art-top,#infos-art .art-nav{max-width:1180px}' +
+        '#infos-art .art-card{padding:120px 56px calc(108px + env(safe-area-inset-bottom,0))}' +
+        '#infos-art .kick{font-size:12px;padding:8px 16px;margin-bottom:20px}' +
+        '#infos-art .mega{font-size:clamp(96px,11vw,148px)}' +
+        '#infos-art .title{font-size:clamp(42px,5vw,66px)}' +
+        '#infos-art .lede{font-size:17px;max-width:64ch}' +
+        '#infos-art .art-recs{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:980px}' +
+        '#infos-art .list{display:grid;grid-template-columns:1fr 1fr;gap:11px;align-content:start}' +
+        '#infos-art .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}' +
+        '#infos-art .grid2{grid-template-columns:repeat(4,1fr)}' +
+        '#infos-art .oppo{max-width:580px}' +
+      '}' +
+      '@media(min-width:1400px){' +
+        '#infos-art .art-feed,#infos-art .art-top,#infos-art .art-nav{max-width:1340px}' +
+        '#infos-art .list{grid-template-columns:1fr 1fr 1fr}' +
+        '#infos-art .grid2{grid-template-columns:repeat(4,1fr)}' +
+      '}' +
       '@media(prefers-reduced-motion:reduce){#infos-art .art-feed{scroll-snap-type:none}#infos-art .hint,#infos-art .art-live i{animation:none}}';
     document.head.appendChild(st);
   }
