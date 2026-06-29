@@ -807,16 +807,19 @@
       var chartEl = root.querySelector('#pilo-chart');
       if (!tip || !chartEl) return;
       Array.prototype.forEach.call(root.querySelectorAll('.pilo-cbar'), function (el) {
-        el.addEventListener('mouseenter', function () {
+        var show = function () {
           tip.textContent = el.dataset.tip;
           tip.classList.add('show');
           var cr = chartEl.getBoundingClientRect();
           var er = el.getBoundingClientRect();
           var x = er.left - cr.left + er.width / 2;
           tip.style.left = Math.min(Math.max(x, 70), cr.width - 70) + 'px';
-        });
+        };
+        el.addEventListener('mouseenter', show);
+        el.addEventListener('pointerdown', show);   // lecture au doigt (mobile terrain)
         el.addEventListener('mouseleave', function () { tip.classList.remove('show'); });
       });
+      chartEl.addEventListener('pointerleave', function () { tip.classList.remove('show'); });
     }
     return { html: html, bind: bind };
   }
