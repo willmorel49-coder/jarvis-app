@@ -217,6 +217,49 @@ def fetch_ruptures_live(n=40):
     return out, total
 
 
+def build_recap(items, rappels, rlive, rtotal):
+    """Récap « calculé » (zéro dépendance, repli si pas d'IA)."""
+    bits = []
+    actu = [i for i in items if i.get('today') and i.get('cat') != 'ruptures']
+    if rtotal:
+        bits.append("%d ruptures/tensions médicament suivies" % rtotal)
+    if rappels:
+        m = (rappels[0].get('marque') or '').strip()
+        bits.append("%d rappel%s parapharma à vérifier%s" % (len(rappels), 's' if len(rappels) > 1 else '', (' (%s)' % m) if m else ''))
+    if actu:
+        bits.append("%d actu%s métier du jour" % (len(actu), 's' if len(actu) > 1 else ''))
+    une = (actu[0].get('titre') if actu else (items[0].get('titre') if items else ''))
+    return {'text': 'À retenir ce matin : ' + (', '.join(bits) + '.' if bits else 'veille à jour.'), 'une': une, 'ai': False}
+
+
+def ai_recap(items, rappels, rlive, rtotal):
+    """Synthèse IA via Gemini (palier gratuit) si GEMINI_API_KEY présent côté robot. Repli silencieux sinon."""
+    key = os.environ.get('GEMINI_API_KEY')
+    if not key:
+        return None
+    actu = [i.get('titre', '') for i in items if i.get('today') and i.get('cat') != 'ruptures'][:8]
+    rap = ['%s — %s (%s)' % (r.get('titre', ''), r.get('risque', ''), r.get('marque', '')) for r in rappels[:5]]
+    rup = ['%s [%s]' % (r.get('titre', ''), r.get('statut', '')) for r in rlive[:8]]
+    prompt = ("Tu es l'assistant de veille d'un commercial grossiste pharma (Intégral Pharma) et de ses pharmaciens d'officine. "
+              "À partir des données du jour ci-dessous, rédige un récap ULTRA court en français : 3 puces maximum, style télégraphique, "
+              "sans phrase d'introduction, centré sur ce qui est ACTIONNABLE au comptoir (ce qu'il faut retirer, surveiller, pousser). "
+              "Commence chaque puce par « • ».\n\n"
+              "Ruptures/tensions suivies par l'ANSM : %d. Les plus récentes : %s\n"
+              "Rappels parapharma (RappelConso) : %s\n"
+              "Actu métier du jour : %s" % (rtotal, ' | '.join(rup), ' | '.join(rap), ' | '.join(actu)))
+    body = json.dumps({'contents': [{'parts': [{'text': prompt}]}],
+                       'generationConfig': {'temperature': 0.3, 'maxOutputTokens': 320}}).encode('utf-8')
+    url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + key
+    try:
+        req = urllib.request.Request(url, data=body, headers={'Content-Type': 'application/json'})
+        resp = json.loads(urllib.request.urlopen(req, timeout=30).read())
+        txt = html.unescape(resp['candidates'][0]['content']['parts'][0]['text']).strip()   # garde les retours à la ligne (puces)
+        return {'text': txt, 'une': '', 'ai': True} if txt else None
+    except Exception as e:
+        sys.stderr.write('AI recap FAIL : %s\n' % e)
+        return None
+
+
 def main():
     today = date.today().isoformat()
     cutoff = (date.today() - timedelta(days=WINDOW_DAYS - 1)).isoformat()
@@ -259,6 +302,7 @@ def main():
     # 5) sources API (gratuites) : rappels parapharma + ruptures médicament en direct
     rappels = fetch_rappels()
     ruptures_live, ruptures_total = fetch_ruptures_live()
+    recap = ai_recap(items, rappels, ruptures_live, ruptures_total) or build_recap(items, rappels, ruptures_live, ruptures_total)
 
     payload = {
         'day': today,
@@ -268,6 +312,7 @@ def main():
         'count_today': sum(1 for i in items if i['today']),
         'sources': [f['source'] for f in FEEDS] + ['RappelConso (DGCCRF)', 'ANSM · Disponibilités (BDPM)'],
         'items': items,
+        'recap': recap,
         'rappels': rappels,
         'ruptures_live': ruptures_live,
         'ruptures_total': ruptures_total,
@@ -276,8 +321,9 @@ def main():
     with open(OUT, 'w', encoding='utf-8') as fh:
         json.dump(payload, fh, ensure_ascii=False, separators=(',', ':'))
     n_rupt = sum(1 for i in items if i['cat'] == 'ruptures')
-    print('OK %d infos / %dj (%d auj., %d ruptures RSS) · %d rappels parapharma · %d/%d ruptures live -> %s'
-          % (len(items), WINDOW_DAYS, payload['count_today'], n_rupt, len(rappels), len(ruptures_live), ruptures_total, OUT))
+    print('OK %d infos / %dj (%d auj., %d ruptures RSS) · %d rappels · %d/%d ruptures live · recap=%s -> %s'
+          % (len(items), WINDOW_DAYS, payload['count_today'], n_rupt, len(rappels), len(ruptures_live), ruptures_total,
+             ('IA' if recap.get('ai') else 'calculé'), OUT))
 
 
 def _neg(iso):
