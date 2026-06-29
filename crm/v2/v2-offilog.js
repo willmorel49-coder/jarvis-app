@@ -610,7 +610,8 @@
       '.off-card-brand{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.off-card-name{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--ip-ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}',
       '.off-card-price{font-size:16px;font-weight:800;color:var(--pil-froid);margin-top:5px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}',
-      '.off-card-pz{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:1px 6px}',
+      '.off-card-pz{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
+      '@media(max-width:640px){.off-grid{grid-template-columns:repeat(2,1fr);gap:10px}.off-card-media{height:118px}.off-card-name{font-size:12px}}',
       '.off-card-pz.win{color:#0034A0;background:color-mix(in srgb,#0034A0 10%,#fff);border-color:color-mix(in srgb,#0034A0 28%,transparent)}',
       // comparatif Offilog vs Pharmazon (inspecteur)
       '.off-pz{margin-top:18px;padding:15px;background:color-mix(in srgb,#0034A0 5%,#fff);border:1px solid color-mix(in srgb,#0034A0 22%,transparent);border-radius:13px}',
