@@ -19,7 +19,7 @@
   var STAGGER_CAP = 8;     // index de stagger plafonné (les retardataires n'attendent pas)
   var COUNT_MS    = 600;   // durée du count-up
   var REVEAL_SEL  = '.v2-hero, .v2-pil, .v2-kpi, .v2-card'; // blocs de 1er niveau, classes réelles
-  var COUNT_SEL   = '.v2-kpi-v.mono, .opso-chip-n.mono';    // chiffres « titres » uniquement
+  var COUNT_SEL   = '.v2-kpi-v.mono, .opso-chip-n.mono, [data-count]';    // chiffres « titres » + opt-in générique [data-count]
   var INSP_SEL    = '.cat-insp.open, .off-insp.open';       // panneaux inspecteur glissés
 
   // prefers-reduced-motion : lu une fois, mais on respecte aussi un changement live
@@ -263,6 +263,25 @@
         btn.classList.add('mo-press');
       } catch (err) {}
     }, true); // capture : n'interfère pas avec les handlers onclick existants
+
+    // Ripple positionné au point de contact (boutons, tuiles, onglets, chips) — transform/opacity, RM-safe
+    document.addEventListener('pointerdown', function (e) {
+      if (RM) return;
+      try {
+        var host = e.target && e.target.closest ? e.target.closest('.v2-btn,.v2-pil,.ph-vtab,.grp-tab,.v2-seg,.v2-rchip') : null;
+        if (!host) return;
+        if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+        host.classList.add('mo-rippling');
+        var r = host.getBoundingClientRect(), size = Math.max(r.width, r.height) * 1.1;
+        var ink = document.createElement('span');
+        ink.className = 'mo-ripple';
+        ink.style.width = ink.style.height = size + 'px';
+        ink.style.left = (e.clientX - r.left - size / 2) + 'px';
+        ink.style.top = (e.clientY - r.top - size / 2) + 'px';
+        host.appendChild(ink);
+        ink.addEventListener('animationend', function () { if (ink.parentNode) ink.parentNode.removeChild(ink); });
+      } catch (err) {}
+    }, true);
   }
 
   // ── Passe complète post-render ──────────────────────────────────────
@@ -277,6 +296,8 @@
       // hors-écran restent animés au scroll via l'IntersectionObserver.
       passReveal(root, true);
       passInspector(root); // cascade interne des panneaux inspecteur glissés
+      // count-up des chiffres opt-in [data-count] hors blocs reveal (ex. KPIs fiche officine)
+      try { var lc = root.querySelectorAll('[data-count]'); for (var i = 0; i < lc.length; i++) { if (RM) break; if (inViewport(lc[i])) animateNumber(lc[i]); } } catch (e2) {}
     } catch (e) { /* une passe ne doit jamais bloquer l'app */ }
   }
 

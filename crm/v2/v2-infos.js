@@ -28,7 +28,7 @@
 
   // statut rupture → classe badge + libellé court
   function statutClass(s) { s = norm(s); if (s.indexOf('rupture') >= 0) return 'nv8-st-bad'; if (s.indexOf('remise') >= 0 || s.indexOf('disponible') >= 0) return 'nv8-st-ok'; return 'nv8-st-warn'; }
-  function statutLabel(s) { var n = norm(s); if (n.indexOf('rupture') >= 0) return 'Rupture de stock'; if (n.indexOf('remise') >= 0 || n.indexOf('disponible') >= 0) return 'Remise à dispo'; if (n.indexOf('arret') >= 0) return 'Arrêt'; return 'Tension'; }
+  function statutLabel(s) { var n = norm(s); if (n.indexOf('rupture') >= 0) return 'Rupture de stock'; if (n.indexOf('remise') >= 0 || n.indexOf('disponible') >= 0) return 'Remise à dispo'; if (n.indexOf('arret') >= 0) return 'Arrêt de commercialisation'; if (n.indexOf('tension') >= 0) return 'Tension'; return 'Signalé ANSM'; }
 
   // rubrique métier d'une actu
   function rubricOf(i) {
@@ -196,7 +196,7 @@
       '#infos-8 .nv8-secu .nv8-ico::after{content:"!"}' +
       '#infos-8 .nv8-metier .nv8-ico::after{content:"+";font-size:19px}' +
       '#infos-8 .nv8-opp .nv8-ico::after{content:"\\2605";font-size:15px}' +
-      '#infos-8 .nv8-band h2{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}' +
+      '#infos-8 .nv8-band h2{font-size:15px;font-weight:800;letter-spacing:-.015em;color:var(--c);line-height:1.2}' +
       '#infos-8 .nv8-sub{font-size:12px;color:var(--muted);font-weight:500;margin-top:1px}' +
       '#infos-8 .nv8-htxt{flex:1}' +
       '#infos-8 .nv8-count{margin-left:auto;font-size:12px;font-weight:700;color:var(--c);background:#fff;border:1px solid var(--line-strong);padding:3px 9px;border-radius:var(--r-pill)}' +
