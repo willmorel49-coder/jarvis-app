@@ -652,21 +652,168 @@ a:focus-visible{outline-offset:4px}
 .opl-cta{margin-top:clamp(36px,5vh,52px)}
 
 /* ============================================================
-   ACCOMPAGNEMENT — minimal, distinctif (libellés + 1 CTA)
+   05 ACCOMPAGNEMENT — LE PORTOIR : composition éditoriale
+   asymétrique interactive. UNE scène premium en 2 colonnes :
+   à gauche le projet AU PORTÉ (chiffre géant mono + illustration
+   capsule duotone agrandie + capsule orange qui se hisse), à
+   droite l'index des 4 projets. Survol/focus/clavier OU auto-
+   cycle au scroll promeuvent un projet : fondu + montée verticale
+   (transform/opacity/stroke uniquement, AUCUN slide latéral,
+   AUCUN fond animé). DISTINCT de Carrières (annuaire de lignes).
    ============================================================ */
-.acc-row{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:clamp(34px,5vh,48px)}
-.acc-chip{display:inline-flex;align-items:center;gap:10px;min-height:44px;border:var(--bw-strong) solid var(--ink);border-radius:999px;
-  padding:13px 22px;font-weight:900;font-size:clamp(15px,1.7vw,19px);letter-spacing:-.02em;color:var(--ink);
-  background:transparent;transition:transform var(--t-base) var(--ease-snap),background var(--t-fast) var(--ease-soft),color var(--t-fast) var(--ease-soft)}
-.acc-chip .acc-n{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--orange-text);letter-spacing:.04em}
-.acc-chip:hover{transform:translateY(var(--lift-sm));background:var(--ink);color:#fff}
-.acc-chip:hover .acc-n{color:var(--orange)}
-.acc-chip:active{transform:translateY(0) scale(.98);transition-duration:.06s}
-/* Carrières (06) : variante surface claire pour distinguer la section
-   d'Accompagnement (05) au scan rapide — bordure fine + fond doux au repos,
-   même hover encre/blanc. Visuel uniquement. */
-.acc-row.careers .acc-chip{background:var(--surface2);border:var(--bw) solid var(--line2)}
-.acc-row.careers .acc-chip:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+.portoir{margin-top:clamp(40px,6vh,60px);position:relative;
+  display:grid;grid-template-columns:1fr;gap:clamp(28px,4vw,46px);align-items:stretch}
+@media(min-width:861px){.portoir{grid-template-columns:minmax(0,1.06fr) minmax(290px,.94fr)}}
+
+/* --- SCÈNE : le projet porté, en avant-plan ---
+   Carte-vitrine : chiffre géant en filigrane d'encre, plateau qui PORTE
+   l'illustration (capsule de marque qui se hisse + ombre portée), pied mono. */
+.port-stage{position:relative;min-height:clamp(300px,42vh,440px);
+  border:var(--bw) solid var(--line2);border-radius:var(--r-lg);
+  background:var(--bg);overflow:hidden;
+  padding:clamp(24px,3vw,38px);display:grid;
+  grid-template-rows:auto 1fr auto;
+  box-shadow:var(--sh-2)}
+/* filet d'angle signature (coin haut-gauche) : repère éditorial, tracé au reveal */
+.port-stage::before{content:"";position:absolute;left:0;top:0;width:clamp(40px,5vw,64px);height:var(--bw-strong);
+  background:linear-gradient(90deg,var(--orange),var(--blue));transform:scaleX(0);transform-origin:left;
+  transition:transform var(--t-trace) var(--ease-net) .12s}
+.portoir.in .port-stage::before,.in .port-stage::before{transform:scaleX(1)}
+
+/* chiffre géant en filigrane : le rang du projet porté, en Geist Mono */
+.port-ghost{grid-row:1;font-family:var(--mono);font-weight:500;line-height:.78;
+  font-size:clamp(108px,19vw,224px);letter-spacing:-.05em;color:var(--ink);opacity:.07;
+  position:relative;z-index:0;pointer-events:none;user-select:none;margin:-.06em 0 0 -.02em}
+.port-ghost span{display:inline-block}
+.port-ghost.swap span{animation:portNumIn .58s var(--ease-net)}
+@keyframes portNumIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+/* plateau : centre de scène, l'illustration y est PORTÉE (au-dessus du filigrane) */
+.port-deck{grid-row:2;position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  min-height:clamp(120px,16vw,180px)}
+/* ombre portée : la matière de la "portance" (respire avec la capsule) */
+.port-shadow{position:absolute;bottom:clamp(-4px,-.6vw,-2px);left:50%;transform:translateX(-50%) scaleX(1);
+  width:clamp(96px,15vw,170px);height:12px;border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(10,10,11,.16),rgba(10,10,11,0) 70%);
+  opacity:0;transition:opacity .5s var(--ease-net) .2s}
+.portoir.in .port-shadow,.in .port-shadow{opacity:1;animation:portShadow 2.6s var(--ease-soft) 1s infinite}
+@keyframes portShadow{0%,100%{transform:translateX(-50%) scaleX(1);opacity:.9}50%{transform:translateX(-50%) scaleX(.86);opacity:.55}}
+
+/* illustrations : empilées, une seule visible (la portée). 48x36, capsule duotone. */
+.port-art{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) translateY(16px);
+  width:clamp(168px,26vw,290px);height:auto;
+  fill:none;stroke:var(--ink);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease-net),transform .5s var(--ease-net)}
+.port-art .acc{stroke:var(--blue)}
+.port-art .fill-o{fill:var(--orange);stroke:none}
+.port-art .dot{fill:var(--orange);stroke:none}
+.port-art.is-on{opacity:1;transform:translate(-50%,-50%) translateY(0)}
+/* tracé : le contour se dessine quand l'art devient porté */
+.port-art .draw{stroke-dasharray:var(--dl,120);stroke-dashoffset:var(--dl,120);
+  transition:stroke-dashoffset var(--t-trace) var(--ease-net) var(--dd,0s)}
+.port-art .draw.w2{--dd:.12s}.port-art .draw.w3{--dd:.24s}
+.port-art.is-on .draw{stroke-dashoffset:0}
+/* la capsule orange "se hisse" : on porte le projet (montée + léger pop) */
+.port-art .pop{transform-box:fill-box;transform-origin:center;
+  opacity:0;transform:translateY(7px) scale(.9);
+  transition:transform .55s var(--ease-snap) .28s,opacity .4s var(--ease-net) .28s}
+.port-art.is-on .pop{opacity:1;transform:translateY(0) scale(1)}
+.port-art.is-on .cap-live{animation:portCapLift 2.6s var(--ease-soft) 1s infinite}
+@keyframes portCapLift{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.025)}}
+
+/* pied de scène : légende mono relayée + rang n/4 */
+.port-foot{grid-row:3;position:relative;z-index:1;display:flex;align-items:baseline;
+  justify-content:space-between;gap:14px;border-top:1px solid var(--line);padding-top:clamp(14px,1.8vw,18px)}
+.port-stage-tag{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--orange-text)}
+.port-stage-tag.swap{animation:portNumIn .5s var(--ease-net)}
+.port-rank{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--ink);flex:none}
+.port-rank i{font-style:normal;color:var(--muted);margin:0 2px}
+.port-rank.swap{animation:portNumIn .5s var(--ease-net)}
+
+/* --- INDEX : les 4 projets, l'actif au porté --- */
+.port-index{list-style:none;margin:0;padding:0;display:grid;align-content:center;gap:0}
+.port-row{position:relative;width:100%;display:grid;grid-template-columns:auto 1fr auto;
+  align-items:center;gap:clamp(12px,1.6vw,20px);
+  padding:clamp(15px,2vw,21px) 2px clamp(15px,2vw,21px) clamp(14px,1.8vw,20px);
+  background:none;border:0;cursor:pointer;text-align:left;
+  border-bottom:1px solid var(--line);color:inherit;font:inherit}
+.port-index li:last-child .port-row{border-bottom:0}
+.port-row-n{font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:.06em;
+  color:var(--muted);transition:color var(--t-base) var(--ease-soft)}
+.port-row-t{font-size:clamp(19px,2.2vw,27px);font-weight:900;letter-spacing:-.03em;line-height:1.04;
+  color:var(--ink2);text-wrap:balance;
+  transition:color var(--t-base) var(--ease-soft),transform var(--t-base) var(--ease-net)}
+/* puce capsule à droite : se remplit d'orange quand le projet est porté */
+.port-row-cap{width:26px;height:11px;border-radius:var(--r-pill);
+  border:var(--bw-strong) solid var(--line3);background:transparent;flex:none;
+  transition:border-color var(--t-base) var(--ease-soft),background var(--t-base) var(--ease-soft),transform var(--t-base) var(--ease-snap)}
+/* filet d'avant-plan : trait bleu/orange à gauche qui se trace pour l'actif */
+.port-row::before{content:"";position:absolute;left:-1px;top:50%;width:var(--bw-strong);height:0;
+  transform:translateY(-50%) scaleY(0);transform-origin:center;
+  background:linear-gradient(180deg,var(--blue),var(--orange));border-radius:2px;
+  transition:height var(--t-base) var(--ease-net),transform var(--t-base) var(--ease-net)}
+/* ÉTAT PORTÉ (.is-active) : le projet passe en avant-plan, monte légèrement */
+.port-row.is-active .port-row-n{color:var(--orange-text)}
+.port-row.is-active .port-row-t{color:var(--blue);transform:translateY(-1px)}
+.port-row.is-active .port-row-cap{border-color:var(--orange);background:var(--orange);transform:scale(1.05)}
+.port-row.is-active::before{height:calc(100% - 18px);transform:translateY(-50%) scaleY(1)}
+/* survol (desktop) : préfigure le porté sans bousculer */
+@media(min-width:781px){
+  .port-row:hover .port-row-t{color:var(--blue)}
+  .port-row:hover .port-row-cap{border-color:var(--orange)}
+}
+.port-row:focus-visible{outline:var(--bw-strong) solid var(--blue);outline-offset:3px;border-radius:var(--r-xs)}
+.port-row:active .port-row-t{transform:translateY(0)}
+
+/* mobile : la scène d'abord, l'index ensuite ; illustration un peu plus contenue */
+@media(max-width:860px){
+  .port-art{width:clamp(150px,42vw,210px)}
+}
+
+/* ============================================================
+   06 CARRIÈRES — VOLET RH : annuaire de métiers (liste éditoriale)
+   Layout bespoke DIFFÉRENT de 05 : pas de rail ni de timeline.
+   Des LIGNES-métier pleine largeur, picto à gauche, intitulé +
+   structure/lieu réels, et au survol l'accent orange + flèche
+   "Postuler". Ton "rejoignez une équipe de proximité".
+   ============================================================ */
+.jobs{margin-top:clamp(38px,5.5vh,56px);border-top:1px solid var(--line)}
+.job{position:relative;display:grid;grid-template-columns:54px 1fr auto;align-items:center;
+  gap:clamp(16px,2.4vw,30px);padding:clamp(20px,2.8vw,30px) 0;border-bottom:1px solid var(--line);
+  text-decoration:none;color:inherit}
+/* socle picto carré doux (≠ médaillon rond de 05) */
+.job .job-ic{width:54px;height:54px;border-radius:var(--r-md);background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;
+  transition:background var(--t-base) var(--ease-soft),transform var(--t-base) var(--ease-snap)}
+.job .job-ic .picto{--pz:28px}
+.job .job-main{min-width:0}
+.job .job-title{font-size:clamp(20px,2.4vw,30px);font-weight:900;letter-spacing:-.03em;line-height:1.02;color:var(--ink);
+  transition:color var(--t-fast) var(--ease-soft)}
+.job .job-org{display:block;margin-top:7px;font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted)}
+/* affordance "Postuler" : capsule accent qui se révèle au survol */
+.job .job-go{display:inline-flex;align-items:center;gap:9px;font-weight:900;font-size:14px;letter-spacing:-.01em;
+  color:var(--blue);white-space:nowrap;opacity:0;transform:translateY(2px);
+  transition:opacity var(--t-base) var(--ease-net),transform var(--t-base) var(--ease-net)}
+.job .job-go .ar{display:inline-block;transition:transform var(--t-base) var(--ease-net)}
+@media(min-width:781px){
+  .job:hover .job-ic{background:#FFF1DC;transform:scale(1.06) rotate(-3deg)}
+  .job:hover .job-title{color:var(--blue)}
+  .job:hover .job-go{opacity:1;transform:none}
+  .job:hover .job-go .ar{transform:translateX(4px)}
+  .job:hover .picto .cap-live{animation:capLive .9s var(--ease-snap)}
+}
+/* mobile : l'affordance reste visible (pas de hover) */
+@media(max-width:780px){
+  .job{grid-template-columns:48px 1fr;gap:16px}
+  .job .job-ic{width:48px;height:48px}
+  .job .job-go{grid-column:2;opacity:1;transform:none;margin-top:10px;color:var(--orange-text)}
+}
+.job:active .job-ic{transform:scale(.97)}
 
 /* REDUCED MOTION : tout posé net — fallback complet */
 @media(prefers-reduced-motion:reduce){
@@ -683,6 +830,16 @@ a:focus-visible{outline-offset:4px}
   .opl-rail{overflow-x:auto!important;-webkit-mask-image:none!important;mask-image:none!important}
   /* le filet du champ est piloté en width (pas en transform) : il reste neutre au repos */
   .cform .fr::after{width:0}
+  /* PORTOIR : pas d'auto-cycle ni de hisse ; seul le projet porté est montré,
+     posé net (les autres restent masqués pour éviter la superposition). */
+  .port-art{transition:none!important;transform:translate(-50%,-50%)!important}
+  .port-art.is-on{opacity:1!important}
+  .port-art .draw{stroke-dashoffset:0!important}
+  .port-art .pop{opacity:1!important;transform:none!important}
+  .port-art.is-on .cap-live{animation:none!important}
+  .port-stage::before{transform:scaleX(1)!important}
+  .port-shadow{opacity:1!important;animation:none!important;transform:translateX(-50%) scaleX(1)!important}
+  .port-ghost.swap span,.port-stage-tag.swap,.port-rank.swap{animation:none!important}
   .cform .fr:focus-within::after{width:100%}
   /* sticky CTA : apparition instantanée au lieu de rester hors-écran */
   .stickycta.show{transform:none!important;visibility:visible!important;pointer-events:auto!important}
@@ -702,6 +859,10 @@ a:focus-visible{outline-offset:4px}
   .opl-tile::after{transform:scaleX(0)!important}
   /* filets de section : tracés une fois (état final), sans animation */
   .block>.wrap>.kicker::after,.offilog-sec>.wrap>.kicker::after,.kicker.in::after{transform:scaleX(1)!important;transition:none!important}
+  /* 05 Portoir : filet d'avant-plan posé pour l'actif, sans animation */
+  .port-row.is-active::before{transition:none!important}
+  /* 06 Carrières : l'affordance "Postuler" reste visible (pas de hover requis) */
+  .job .job-go{opacity:1!important;transform:none!important}
 }
 
 /* tracking display : relâcher le serrage en petit corps (mobile) */
@@ -878,7 +1039,6 @@ a:focus-visible{outline-offset:4px}
     <h2 class="giant2 r">
       <span class="line"><span class="kw"><i class="s1">N</i><i class="s2">a</i><i class="s3">t</i><i class="s4">i</i><i class="s5">o</i><i class="s6">n</i><i class="s7">a</i><i class="s8">l</i></span><span class="dotorange">.</span></span>
     </h2>
-    <p class="lede r d1">Grossiste-répartiteur de première intention, à vos côtés depuis plus de 20&nbsp;ans.</p>
     <div class="atlas-embed r d1">
       <iframe id="atlasFrame" src="map-component.html" title="Carte interactive des établissements Intégral Pharma" loading="lazy" scrolling="no"></iframe>
     </div>
@@ -976,12 +1136,94 @@ a:focus-visible{outline-offset:4px}
       <span class="line"><span>Votre projet,</span></span>
       <span class="line l2"><span class="blue">on le porte<span class="dotorange">.</span></span></span>
     </h2>
-    <p class="lede r d1">Titulaires, on vous épaule à chaque étape de la vie de l'officine.</p>
-    <div class="acc-row r d2">
-      <span class="acc-chip"><span class="acc-n">01</span>Transfert</span>
-      <span class="acc-chip"><span class="acc-n">02</span>Agrandissement</span>
-      <span class="acc-chip"><span class="acc-n">03</span>Cession de parts</span>
-      <span class="acc-chip"><span class="acc-n">04</span>Optimisation</span>
+    <p class="lede r d1">Vous êtes pharmacien titulaire et vous avez un projet de transfert, d'agrandissement, de cession de parts ou d'optimisation ? On le porte avec vous.</p>
+    <!-- LE PORTOIR — composition éditoriale asymétrique interactive.
+         Une seule scène : à GAUCHE, le projet AU PORTÉ (gros chiffre mono,
+         illustration capsule duotone agrandie, capsule orange qui se hisse) ;
+         à DROITE, l'index des 4 projets. Survol/focus/clavier OU auto-cycle
+         au scroll promeuvent un projet en avant-plan (fondu + montée verticale,
+         aucun slide latéral, aucun fond animé). DISTINCT de Carrières (lignes RH). -->
+    <div class="portoir r d2" data-active="0">
+      <!-- SCÈNE : le projet porté, en avant-plan -->
+      <div class="port-stage" aria-hidden="true">
+        <!-- chiffre géant (Geist Mono) en filigrane d'encre : le rang du projet porté -->
+        <div class="port-ghost"><span data-num="01">01</span></div>
+
+        <!-- plateau du porté : la capsule de marque qui SOULÈVE le projet -->
+        <div class="port-deck">
+          <!-- 01 · TRANSFERT D'OFFICINE — une officine + flèche + nouvelle adresse (pin orange) -->
+          <svg class="port-art is-on" data-art="0" viewBox="0 0 48 36" focusable="false" aria-hidden="true">
+            <path fill="none" stroke="#0050E6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" d="M5 15 L8.5 9 H20.5 L24 15"/>
+            <rect fill="none" stroke="#0050E6" stroke-width="2" stroke-linejoin="round" x="7" y="15" width="15" height="13" rx="1.5"/>
+            <rect fill="none" stroke="#0050E6" stroke-width="2" x="11.5" y="20" width="6" height="8"/>
+            <path fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M27 21 H35 M32 18 L35 21 L32 24"/>
+            <path class="fill-o pop" fill="#F39A1B" d="M41 13 a4.6 4.6 0 0 0-9.2 0 c0 3.6 4.6 8 4.6 8 s4.6-4.4 4.6-8 z"/>
+            <circle cx="36.4" cy="13" r="1.7" fill="#fff"/>
+          </svg>
+
+          <!-- 02 · AGRANDISSEMENT — une officine + flèches d'expansion orange -->
+          <svg class="port-art" data-art="1" viewBox="0 0 48 36" focusable="false" aria-hidden="true">
+            <rect fill="none" stroke="#0050E6" stroke-width="2" stroke-linejoin="round" x="14" y="12" width="20" height="14" rx="2"/>
+            <path class="pop" fill="none" stroke="#F39A1B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M40 5 H45 V10 M45 5 L37.5 12.5"/>
+            <path class="pop" fill="none" stroke="#F39A1B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 31 H3 V26 M3 31 L10.5 23.5"/>
+          </svg>
+
+          <!-- 03 · CESSION DE PARTS — un camembert dont une part (orange) est transmise -->
+          <svg class="port-art" data-art="2" viewBox="0 0 48 36" focusable="false" aria-hidden="true">
+            <circle fill="none" stroke="#0050E6" stroke-width="2" cx="22" cy="18" r="11"/>
+            <path fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" d="M22 18 V7 M22 18 L31 22.5"/>
+            <path class="fill-o pop" fill="#F39A1B" d="M24 6.7 A11 11 0 0 1 33.4 21 L24 18 Z"/>
+          </svg>
+
+          <!-- 04 · OPTIMISATION — courbe ascendante + flèche orange (meilleures conditions) -->
+          <svg class="port-art" data-art="3" viewBox="0 0 48 36" focusable="false" aria-hidden="true">
+            <path fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" d="M6 30 H42"/>
+            <path fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 25 L19 18 L26 22 L39 9"/>
+            <path class="pop" fill="none" stroke="#F39A1B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M32 9 H39 V16"/>
+          </svg>
+
+          <!-- l'ombre portée du plateau : la matière de la "portance" -->
+          <span class="port-shadow" aria-hidden="true"></span>
+        </div>
+
+        <!-- pied de scène : légende mono du porté + rang n/4 -->
+        <div class="port-foot">
+          <span class="port-stage-tag" data-tag>Transfert d'officine</span>
+          <span class="port-rank" data-rank>01<i>/</i>04</span>
+        </div>
+      </div>
+
+      <!-- INDEX : les 4 projets, l'actif passe en avant-plan -->
+      <ul class="port-index" role="list">
+        <li>
+          <button type="button" class="port-row is-active" data-go="0">
+            <span class="port-row-n">01</span>
+            <span class="port-row-t">Transfert d'officine</span>
+            <span class="port-row-cap" aria-hidden="true"></span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="port-row" data-go="1">
+            <span class="port-row-n">02</span>
+            <span class="port-row-t">Agrandissement</span>
+            <span class="port-row-cap" aria-hidden="true"></span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="port-row" data-go="2">
+            <span class="port-row-n">03</span>
+            <span class="port-row-t">Cession de parts</span>
+            <span class="port-row-cap" aria-hidden="true"></span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="port-row" data-go="3">
+            <span class="port-row-n">04</span>
+            <span class="port-row-t">Optimisation</span>
+            <span class="port-row-cap" aria-hidden="true"></span>
+          </button>
+        </li>
+      </ul>
     </div>
     <a href="#contact" class="cta-line r d3" data-intent="Je souhaite être accompagné sur un projet d'officine (transfert, agrandissement, cession de parts, optimisation).">En parler avec nous <span aria-hidden="true">→</span></a>
   </div>
@@ -1006,13 +1248,77 @@ a:focus-visible{outline-offset:4px}
       <span class="line l2"><span class="blue">recrute<span class="dotorange">.</span></span></span>
     </h2>
     <p class="lede r d1">Rejoignez des équipes de proximité, au plus près des officines.</p>
-    <div class="acc-row careers r d2">
-      <span class="acc-chip"><span class="acc-n">01</span>Approvisionnement</span>
-      <span class="acc-chip"><span class="acc-n">02</span>Commercial</span>
-      <span class="acc-chip"><span class="acc-n">03</span>Pharmacien responsable</span>
-      <span class="acc-chip"><span class="acc-n">04</span>Préparateur-chauffeur</span>
+    <!-- VOLET RH : annuaire de métiers, chaque ligne mène à la candidature. -->
+    <div class="jobs r d2">
+      <a class="job" href="#contact" data-intent="Candidature — Approvisionnement (Intégral Pharma).">
+        <span class="job-ic" aria-hidden="true">
+          <!-- APPROVISIONNEMENT — des capsules-marque qui s'empilent (le stock) ;
+               celle du dessus, orange pleine, vient compléter le rayon. -->
+          <svg class="picto" viewBox="0 0 24 24" focusable="false">
+            <rect class="draw" style="--dl:30" x="3" y="15.4" width="18" height="4.4" rx="2.2"/>
+            <rect class="draw w2" style="--dl:24" x="5.4" y="10.6" width="13.2" height="4" rx="2"/>
+            <rect class="fill-o pop w2 cap-live" x="8.4" y="5.4" width="7.2" height="4" rx="2"/>
+          </svg>
+        </span>
+        <span class="job-main">
+          <span class="job-title">Approvisionnement</span>
+          <span class="job-org">Hyères · Siège du groupe</span>
+        </span>
+        <span class="job-go">Postuler <span class="ar" aria-hidden="true">→</span></span>
+      </a>
+      <a class="job" href="#contact" data-intent="Candidature — Commercial (Intégral Pharma).">
+        <span class="job-ic" aria-hidden="true">
+          <!-- COMMERCIAL — une capsule-marque "en lien" : deux nœuds reliés,
+               la poignée de main du terrain ; nœud accent orange = le client. -->
+          <svg class="picto" viewBox="0 0 24 24" focusable="false">
+            <rect class="draw" style="--dl:22" x="2.6" y="9.8" width="7" height="4.4" rx="2.2"/>
+            <path class="draw w2 acc" style="--dl:6" d="M9.8 12h4.4"/>
+            <rect class="fill-o pop w2 cap-live" x="14.6" y="9.8" width="7" height="4.4" rx="2.2"/>
+          </svg>
+        </span>
+        <span class="job-main">
+          <span class="job-title">Commercial</span>
+          <span class="job-org">Pharm'Occitanie Services · Sud Ouest Pharma</span>
+        </span>
+        <span class="job-go">Postuler <span class="ar" aria-hidden="true">→</span></span>
+      </a>
+      <a class="job" href="#contact" data-intent="Candidature — Pharmacien responsable (Intégral Pharma).">
+        <span class="job-ic" aria-hidden="true">
+          <!-- PHARMACIEN RESPONSABLE — une capsule-marque debout (le pilier),
+               la couture orange = la croix/garantie pharmaceutique au centre. -->
+          <svg class="picto" viewBox="0 0 24 24" focusable="false">
+            <rect class="draw" style="--dl:50" x="8.4" y="2.8" width="7.2" height="18.4" rx="3.6"/>
+            <path class="draw w2 acc" style="--dl:8" d="M12 9v6"/>
+            <path class="draw w3 acc" style="--dl:8" d="M9 12h6"/>
+            <circle class="dot pop w3 cap-live" cx="12" cy="12" r="1.7"/>
+          </svg>
+        </span>
+        <span class="job-main">
+          <span class="job-title">Pharmacien responsable</span>
+          <span class="job-org">Comptoir Pharmaceutique du Rhône</span>
+        </span>
+        <span class="job-go">Postuler <span class="ar" aria-hidden="true">→</span></span>
+      </a>
+      <a class="job" href="#contact" data-intent="Candidature — Préparateur-chauffeur (Intégral Pharma).">
+        <span class="job-ic" aria-hidden="true">
+          <!-- PRÉPARATEUR-CHAUFFEUR — une capsule-marque "en route" : la pleine
+               orange roule vers l'officine, le filet = la tournée de livraison. -->
+          <svg class="picto" viewBox="0 0 24 24" focusable="false">
+            <path class="draw acc" style="--dl:18" d="M2.8 18h12.4"/>
+            <rect class="draw w2" style="--dl:30" x="3" y="9" width="9.6" height="6.4" rx="2.4"/>
+            <circle class="draw w3" style="--dl:14" cx="6.6" cy="18.4" r="1.9"/>
+            <circle class="draw w3" style="--dl:14" cx="14.2" cy="18.4" r="1.9"/>
+            <rect class="fill-o pop w2 cap-live" x="15.6" y="9.4" width="5.6" height="5.6" rx="2.4"/>
+          </svg>
+        </span>
+        <span class="job-main">
+          <span class="job-title">Préparateur-chauffeur</span>
+          <span class="job-org">Tournées officines · Tous sites du groupe</span>
+        </span>
+        <span class="job-go">Postuler <span class="ar" aria-hidden="true">→</span></span>
+      </a>
     </div>
-    <a href="#contact" class="cta-line r d3" data-intent="Candidature — je souhaite rejoindre les équipes Intégral Pharma.">Postuler <span aria-hidden="true">→</span></a>
+    <a href="#contact" class="cta-line r d3" data-intent="Candidature — je souhaite rejoindre les équipes Intégral Pharma.">Postuler / candidature spontanée <span aria-hidden="true">→</span></a>
   </div>
 </section>
 
@@ -1088,6 +1394,72 @@ var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
   },{threshold:.3});
   document.querySelectorAll('.picto').forEach(function(p){ pio.observe(p); });
   document.querySelectorAll('.sig-sep').forEach(function(s){ pio.observe(s); });
+})();
+
+/* ---------- 05 ACCOMPAGNEMENT — LE PORTOIR ----------
+   promeut un projet "au porté" : maj de l'index actif, de l'illustration
+   visible (fondu + montée), du chiffre géant et de la légende mono.
+   Interaction : survol / focus / clic / clavier (← →). Auto-cycle UNE
+   passe quand la section entre en vue, puis s'arrête au 1er geste user.
+   reduced-motion : aucun cycle, pas de hisse ; l'utilisateur navigue
+   toujours via les boutons (états posés net via le bloc CSS dédié). */
+(function(){
+  var portoir=document.querySelector('.portoir'); if(!portoir) return;
+  var rows=[].slice.call(portoir.querySelectorAll('.port-row'));
+  var arts=[].slice.call(portoir.querySelectorAll('.port-art'));
+  var numEl=portoir.querySelector('.port-ghost span');
+  var tagEl=portoir.querySelector('[data-tag]');
+  var rankEl=portoir.querySelector('[data-rank]');
+  if(!rows.length||!arts.length) return;
+  var nums=rows.map(function(r){ var n=r.querySelector('.port-row-n'); return n?n.textContent.trim():''; });
+  var titles=rows.map(function(r){ var t=r.querySelector('.port-row-t'); return t?t.textContent.trim():''; });
+  var cur=0, userTook=false, cycleId=null;
+
+  function set(i){
+    i=((i%rows.length)+rows.length)%rows.length;
+    if(i===cur) return; cur=i;
+    rows.forEach(function(r,k){ r.classList.toggle('is-active',k===i); r.setAttribute('aria-pressed',k===i?'true':'false'); });
+    arts.forEach(function(a,k){ a.classList.toggle('is-on',k===i); });
+    portoir.setAttribute('data-active',String(i));
+    if(numEl){ numEl.textContent=nums[i];
+      if(!reduce){ var n=numEl.parentNode; n.classList.remove('swap'); void n.offsetWidth; n.classList.add('swap'); } }
+    if(tagEl){ tagEl.textContent=titles[i];
+      if(!reduce){ tagEl.classList.remove('swap'); void tagEl.offsetWidth; tagEl.classList.add('swap'); } }
+    if(rankEl){ rankEl.innerHTML=nums[i]+'<i>/</i>04';
+      if(!reduce){ rankEl.classList.remove('swap'); void rankEl.offsetWidth; rankEl.classList.add('swap'); } }
+  }
+
+  function stopCycle(){ if(cycleId){clearInterval(cycleId);cycleId=null;} }
+  function claim(){ if(!userTook){ userTook=true; stopCycle(); } }
+
+  rows.forEach(function(r,k){
+    r.setAttribute('aria-pressed',k===0?'true':'false');
+    r.addEventListener('mouseenter',function(){ claim(); set(k); });
+    r.addEventListener('focus',function(){ claim(); set(k); });
+    r.addEventListener('click',function(){ claim(); set(k); });
+    r.addEventListener('keydown',function(e){
+      if(e.key==='ArrowDown'||e.key==='ArrowRight'){ e.preventDefault(); claim(); var n=(k+1)%rows.length; set(n); rows[n].focus(); }
+      else if(e.key==='ArrowUp'||e.key==='ArrowLeft'){ e.preventDefault(); claim(); var p=(k-1+rows.length)%rows.length; set(p); rows[p].focus(); }
+    });
+  });
+
+  /* auto-cycle UNE passe au reveal (sobre, ~2.4s), arrêt au 1er geste. */
+  if(!reduce){
+    var seen=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting&&!cycleId&&!userTook){
+          var passes=0;
+          cycleId=setInterval(function(){
+            if(userTook){stopCycle();return;}
+            set((cur+1)%rows.length); passes++;
+            if(passes>=rows.length){ stopCycle(); } // une boucle complète puis stop
+          },2400);
+          seen.unobserve(portoir);
+        }
+      });
+    },{threshold:.4});
+    seen.observe(portoir);
+  }
 })();
 
 /* ---------- perf : suspendre les animations infinies de respiration hors-viewport ----------
