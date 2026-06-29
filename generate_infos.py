@@ -234,7 +234,12 @@ def build_recap(items, rappels, rlive, rtotal, today):
         lines.append("• %d rappel%s parapharma du jour%s"
                      % (len(rap), 's' if len(rap) > 1 else '', (' (%s)' % det) if det else ''))
     if actu:
-        lines.append("• Actu du jour — " + short(actu[0].get('titre', '')))
+        if len(actu) > 1:
+            lines.append("• %d actus du jour — à la une : %s" % (len(actu), short(actu[0].get('titre', ''))))
+            if not rupt and not rap:
+                lines.append("• " + short(actu[1].get('titre', '')))
+        else:
+            lines.append("• Actu du jour — " + short(actu[0].get('titre', '')))
     if not lines:
         return {'text': "Rien de neuf à l'instant : aucune rupture, rappel ou actu datés d'aujourd'hui. La veille des 7 derniers jours est ci-dessous.", 'une': '', 'ai': False, 'empty': True}
     return {'text': '\n'.join(lines), 'une': '', 'ai': False}
