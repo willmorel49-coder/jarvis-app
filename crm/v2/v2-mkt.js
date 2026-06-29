@@ -221,12 +221,28 @@
           '<span class="mkt-cat-s">Ta parapharma L\'Intégral par spécialité + les pansements/DM ITP (avec marge), classés par sorties. Consulter &amp; télécharger.</span></span>' +
           '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
         '</a>' +
+        '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'site\')">' +
+          '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
+          '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Site vitrine Intégral Pharma</span>' +
+          '<span class="mkt-cat-s">Aperçu du nouveau site internet — vidéos, réseau national, Offilog. Cliquer pour ouvrir.</span></span>' +
+          '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
+        '</a>' +
         section('support', supports) +
         section('selection', selections) +
         (backend === 'local'
           ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Activer le partage entre vous</b><br>' +
             'Pour l\'instant les supports sont enregistrés sur cet appareil. Pour que Pauline et toi voyiez les mêmes, il faut créer une table dans Supabase (une seule fois). Demande-moi le script SQL, il est prêt.</div></div>'
           : '') +
+      '</div>';
+  }
+
+  // ════════════════════════════════════════════
+  // SITE VITRINE INTÉGRAL PHARMA (aperçu en iframe)
+  // ════════════════════════════════════════════
+  function renderSite(root) {
+    root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
+      '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#fff">' +
+        '<iframe src="../../site-integral/index-typo.html" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -838,6 +854,7 @@
         return;
       }
       if (param === 'catalogues') renderCatalogues(root);
+      else if (param === 'site') renderSite(root);
       else if (param) renderEditor(root, param); else renderList(root);
     }
   };
