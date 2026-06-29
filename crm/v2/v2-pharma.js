@@ -931,8 +931,9 @@
     var email = (pharma.email == null ? '' : String(pharma.email)).trim();
 
     // ── En-tête : identité + KPIs + contacts ──
-    var kpi = function (l, v, cls) {
-      return '<div class="phf-hkpi"><span class="phf-hkpi-l">' + l + '</span><span class="phf-hkpi-v ' + (cls || '') + ' mono">' + v + '</span></div>';
+    var kpi = function (l, v, cls, raw) {
+      var dc = (raw != null && raw > 0) ? ' data-count="' + raw + '"' : '';
+      return '<div class="phf-hkpi"><span class="phf-hkpi-l">' + l + '</span><span class="phf-hkpi-v ' + (cls || '') + ' mono"' + dc + '>' + v + '</span></div>';
     };
     var head =
       '<div class="phf-hcard">' +
@@ -942,10 +943,10 @@
           (loc ? '<div class="phf-hloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
         '</div>' +
         '<div class="phf-hkpis">' +
-          kpi('CA cumulé', V2.fmtEur(ca), '') +
-          kpi('Marge MDL', V2.fmtEur(marge), 'phf-pos') +
-          kpi('Références', V2.fmtNum(nbRefs), '') +
-          kpi('À pousser', V2.fmtNum(nReseau), 'phf-push') +
+          kpi('CA cumulé', V2.fmtEur(ca), '', ca) +
+          kpi('Marge MDL', V2.fmtEur(marge), 'phf-pos', marge) +
+          kpi('Références', V2.fmtNum(nbRefs), '', nbRefs) +
+          kpi('À pousser', V2.fmtNum(nReseau), 'phf-push', nReseau) +
         '</div>' +
         ((tel || email) ? '<div class="phf-hcontacts">' +
           (tel ? '<a class="phf-cbtn2" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
@@ -1035,7 +1036,11 @@
     ['apercu', 'audit'].forEach(function (x) {
       var b = document.getElementById('phft-' + x), c = document.getElementById('phft-c-' + x);
       if (b) b.classList.toggle('on', x === t);
-      if (c) c.style.display = (x === t) ? '' : 'none';
+      if (c) {
+        var show = (x === t);
+        c.style.display = show ? '' : 'none';
+        if (show) { c.classList.remove('mo-view-in'); void c.offsetWidth; c.classList.add('mo-view-in'); }
+      }
     });
   };
 

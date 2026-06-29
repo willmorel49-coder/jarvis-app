@@ -451,3 +451,21 @@ html{-webkit-tap-highlight-color:transparent}
   .v2-eyebrow .dot{animation:none}
   .v2-pil:active,.v2-rchip:active,.v2-back:active{transform:none}
 }
+
+/* ── POLISH round 2 (synthèse agents 2026-06-29) ── */
+/* Ripple tactile (point de contact) */
+.mo-rippling{overflow:hidden}
+.mo-ripple{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.14;transform:scale(0);animation:mo-ripple .46s cubic-bezier(.32,.72,0,1) forwards;z-index:0}
+@keyframes mo-ripple{to{transform:scale(1);opacity:0}}
+/* Fiche officine — premium (specificité .ph-detail pour gagner sur le CSS injecté) */
+.ph-detail .phf-hcard{position:relative;overflow:hidden}
+.ph-detail .phf-hcard::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--ip-blue),var(--c-opp) 55%,var(--c-amber));opacity:.85}
+.ph-detail .phf-price,.ph-detail .phf-rem,.ph-detail .phf-sortie-n{font-variant-numeric:tabular-nums}
+.ph-detail .phf-r-gap td{background:color-mix(in srgb,var(--c-amber) 6%,transparent)}
+.ph-detail .phf-r-gap .phf-desig{font-weight:800}
+.ph-detail .phf-r-own .phf-desig{font-weight:600;color:var(--muted)}
+@media (max-width:560px){
+  .ph-detail .phf-tbl thead th:nth-child(2),.ph-detail .phf-tbl tbody td:nth-child(2){display:none}
+  .ph-detail .phf-r-gap .phf-desig::after{content:" · À pousser";font-size:9px;font-weight:800;color:var(--c-amber)}
+}
+@media (prefers-reduced-motion:reduce){.mo-ripple{display:none}}
