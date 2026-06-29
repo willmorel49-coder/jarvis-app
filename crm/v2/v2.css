@@ -472,3 +472,11 @@ html{-webkit-tap-highlight-color:transparent}
 /* Pilotage : le CA est le chiffre roi */
 .v2-kpi.k1 .v2-kpi-v{font-size:32px}
 @media (max-width:640px){.v2-kpi.k1 .v2-kpi-v{font-size:24px}}
+/* Stagger d'arrivée des tuiles d'accueil (CSS pur, RM-safe) */
+@media (prefers-reduced-motion:no-preference){
+  .v2-piliers .v2-pil{animation:moTileIn .42s cubic-bezier(.32,.72,0,1) both}
+  .v2-piliers .v2-pil:nth-child(2){animation-delay:.05s}
+  .v2-piliers .v2-pil:nth-child(3){animation-delay:.10s}
+  .v2-piliers .v2-pil:nth-child(4){animation-delay:.16s}
+}
+@keyframes moTileIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
