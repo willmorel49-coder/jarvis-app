@@ -90,6 +90,12 @@
     '</div>';
   }
 
+  V2.infosMore = function (id, btn) {
+    var el = document.getElementById(id);
+    if (el) { el.classList.remove('nv8-clip'); el.classList.remove('nv8-clip-4'); }
+    if (btn) btn.style.display = 'none';
+  };
+
   V2.pages.infos = {
     render: function (root) {
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
@@ -149,7 +155,7 @@
       // Ruptures & tensions médicament — EN DIRECT (API ANSM/BDPM)
       var rlive = (DATA && DATA.ruptures_live) ? DATA.ruptures_live : [];
       if (rlive.length) {
-        var rows = rlive.map(function (r) {
+        var rows = rlive.slice(0, 24).map(function (r) {
           return '<a class="nv8-rupt-item"' + (r.url ? ' href="' + esc(r.url) + '" target="_blank" rel="noopener"' : '') + ' style="text-decoration:none;color:inherit">' +
             '<span class="nv8-status ' + statutClass(r.statut) + '">' + esc(statutLabel(r.statut)) + '</span>' +
             '<div><div class="nv8-rupt-name">' + esc(cap((r.titre || '').toLowerCase())) + '</div>' +
@@ -157,8 +163,10 @@
             (r.url ? ' · <span class="nv8-mol">fiche ANSM ↗</span>' : '') + '</div></div></a>';
         }).join('');
         var rtot = (DATA && DATA.ruptures_total) || rlive.length;
-        html += '<article class="nv8-sec nv8-rupt">' + band('', 'Ruptures & tensions médicament', rtot + ' suivies en direct par l\'ANSM · les plus récentes', rlive.length) +
-          '<div class="nv8-body">' + rows + '</div></article>';
+        var rShown = Math.min(rlive.length, 24);
+        html += '<article class="nv8-sec nv8-rupt">' + band('', 'Ruptures & tensions médicament', rtot + ' suivies en direct · les plus récentes', rlive.length) +
+          '<div class="nv8-body nv8-clip" id="nv8-rupt-body">' + rows + '</div>' +
+          (rShown > 6 ? '<button class="nv8-more" onclick="V2.infosMore(\'nv8-rupt-body\',this)">Voir les ' + (rShown - 6) + ' autres</button>' : '') + '</article>';
       } else if (ruptures.length) {
         var rows0 = ruptures.map(function (r) {
           return '<div class="nv8-rupt-item"><span class="nv8-status ' + statutClass(r.statut) + '">' + esc(statutLabel(r.statut)) + '</span>' +
@@ -184,8 +192,10 @@
               (r.risque ? '<div class="nv8-rap-risk">⚠ ' + esc(r.risque) + '</div>' : '') +
             '</div></a>';
         }).join('');
-        html += '<article class="nv8-sec nv8-rap">' + band('', 'Rappels de produits', 'Parapharma & cosmétiques rappelés (RappelConso) — à retirer du rayon', rappels.length) +
-          '<div class="nv8-body nv8-rap-grid">' + rc + '</div></article>';
+        var rapN = Math.min(rappels.length, 12);
+        html += '<article class="nv8-sec nv8-rap">' + band('', 'Rappels de produits', 'Parapharma rappelés (RappelConso) — à retirer du rayon', rappels.length) +
+          '<div class="nv8-body nv8-rap-grid nv8-clip" id="nv8-rap-body">' + rc + '</div>' +
+          (rapN > 6 ? '<button class="nv8-more" onclick="V2.infosMore(\'nv8-rap-body\',this)">Voir les ' + (rapN - 6) + ' autres rappels</button>' : '') + '</article>';
       }
 
       // Rubriques actu
@@ -193,8 +203,10 @@
       RUBR.forEach(function (rb) {
         var list = actu.filter(function (i) { return rubricOf(i) === rb.key; });
         if (!list.length) return;
+        var bid = 'nv8-rub-' + rb.key;
         html += '<article class="nv8-sec ' + rb.cls + '">' + band('', rb.h, rb.sub, list.length) +
-          '<div class="nv8-body">' + list.map(actuRow).join('') + '</div></article>';
+          '<div class="nv8-body nv8-clip-4" id="' + bid + '">' + list.map(actuRow).join('') + '</div>' +
+          (list.length > 4 ? '<button class="nv8-more" onclick="V2.infosMore(\'' + bid + '\',this)">Voir les ' + (list.length - 4) + ' autres</button>' : '') + '</article>';
       });
 
       var maj = (DATA && DATA.generated_at) ? frDate(DATA.generated_at) : '';
@@ -234,6 +246,10 @@
       '#infos-8 .nv8-recap-une{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.16);font-size:12.5px;opacity:.92}' +
       '#infos-8 .nv8-recap-une span{font-weight:800;text-transform:uppercase;font-size:10px;letter-spacing:.06em;opacity:.8;margin-right:6px}' +
       '#infos-8 .nv8-sec.nv8-rap{--c:var(--warn);--c-soft:rgba(199,121,26,.10)}' +
+      '#infos-8 .nv8-clip > :nth-child(n+7){display:none}' +
+      '#infos-8 .nv8-clip-4 > :nth-child(n+5){display:none}' +
+      '#infos-8 .nv8-more{display:block;width:100%;margin:0;padding:12px;background:none;border:none;border-top:1px solid var(--line);color:var(--c,var(--ip-blue));font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:-.01em}' +
+      '#infos-8 .nv8-more:hover{background:var(--c-soft)}' +
       '#infos-8 .nv8-rap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding:14px 20px 18px}' +
       '#infos-8 .nv8-rap-card{display:flex;gap:11px;align-items:center;padding:10px;border-radius:14px;background:var(--card-2);border:1px solid var(--line);text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}' +
       '#infos-8 .nv8-rap-card:hover{border-color:rgba(199,121,26,.4);transform:translateY(-2px)}' +
