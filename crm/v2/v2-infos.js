@@ -201,6 +201,7 @@
       // Barre de filtres : cibler un type d'info
       var GLBL = { opp: 'Opportunités', ruptures: 'Ruptures', rappels: 'Rappels', actu: 'Actu métier' };
       var grps = []; SECT.forEach(function (x) { if (grps.indexOf(x.grp) < 0) grps.push(x.grp); });
+      html += '<div class="nv8-archlbl">Le reste, classé par type</div>';
       html += '<div class="nv8-filters"><button class="nv8-fchip' + (infosFilter === 'all' ? ' on' : '') + '" onclick="V2.infosFilter(\'all\')">Tout</button>' +
         grps.map(function (g) { return '<button class="nv8-fchip' + (infosFilter === g ? ' on' : '') + '" onclick="V2.infosFilter(\'' + g + '\')">' + esc(GLBL[g] || g) + '</button>'; }).join('') + '</div>';
 
@@ -258,6 +259,7 @@
       '#infos-8 .nv8-recap-une{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.16);font-size:12.5px;opacity:.92}' +
       '#infos-8 .nv8-recap-une span{font-weight:800;text-transform:uppercase;font-size:10px;letter-spacing:.06em;opacity:.8;margin-right:6px}' +
       '#infos-8 .nv8-sec.nv8-rap{--c:var(--warn);--c-soft:rgba(199,121,26,.10)}' +
+      '#infos-8 .nv8-archlbl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);margin:24px 0 12px}' +
       '#infos-8 .nv8-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}' +
       '#infos-8 .nv8-fchip{border:1px solid var(--line-strong);background:var(--card);border-radius:999px;padding:8px 15px;font-family:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.12s}' +
       '#infos-8 .nv8-fchip:active{transform:scale(.96)}' +
