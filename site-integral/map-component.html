@@ -16,11 +16,11 @@
   --ease-snap:cubic-bezier(.34,1.56,.64,1);
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5;padding:0}
+body{margin:0;font-family:var(--font);color:var(--ink);background:transparent;-webkit-font-smoothing:antialiased;line-height:1.5;padding:0}
 
-/* ===== COMPONENT WRAPPER ===== */
-.ip-atlas{max-width:none;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:28px;overflow:hidden;box-shadow:0 30px 80px -40px rgba(10,20,48,.35)}
-.ip-atlas__head{padding:34px 38px 22px;border-bottom:1px solid var(--line)}
+/* ===== COMPONENT WRAPPER (intégré : sans carte, fond transparent) ===== */
+.ip-atlas{max-width:none;margin:0 auto;background:transparent;border:none;border-radius:0;overflow:hidden;box-shadow:none}
+.ip-atlas__head{padding:0 0 22px;border-bottom:1px solid var(--line)}
 .ip-atlas__eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:14px}
 .ip-atlas__eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 0 rgba(243,154,27,.5);animation:eb 2.8s var(--ease-net) infinite}
 @keyframes eb{0%{box-shadow:0 0 0 0 rgba(243,154,27,.55)}70%{box-shadow:0 0 0 8px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
