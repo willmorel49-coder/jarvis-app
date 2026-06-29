@@ -135,10 +135,13 @@
       .then(function (j) { GP = Array.isArray(j) ? j : []; cb(); })
       .catch(function () { GP = []; cb(); });
   }
+  var GC_PALETTE = ['#0050E6', '#E5484D', '#12A150', '#F5A524', '#8E51FF', '#00B8D9', '#EC4899', '#7A5C2E', '#0EA5E9', '#84CC16', '#F97316', '#6366F1'];
   function grpColor(name) {
-    var h = 0; name = String(name || '');
-    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
-    return 'hsl(' + h + ',62%,46%)';
+    name = String(name || '');
+    var idx = (gcOrder ? gcOrder.indexOf(name) : -1);   // index par poids -> les gros groupements ont des couleurs franches
+    if (idx < 0) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; idx = h % 997; }
+    if (idx < GC_PALETTE.length) return GC_PALETTE[idx];
+    return 'hsl(' + Math.round((idx * 137.508) % 360) + ',58%,42%)';   // angle d'or : teintes maximalement espacées
   }
   function gcMeta() {
     gcCounts = {};
