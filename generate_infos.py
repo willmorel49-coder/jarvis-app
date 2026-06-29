@@ -218,18 +218,28 @@ def fetch_ruptures_live(n=40):
 
 
 def build_recap(items, rappels, rlive, rtotal):
-    """Récap « calculé » (zéro dépendance, repli si pas d'IA)."""
-    bits = []
-    actu = [i for i in items if i.get('today') and i.get('cat') != 'ruptures']
-    if rtotal:
-        bits.append("%d ruptures/tensions médicament suivies" % rtotal)
+    """Récap « brief » calculé (zéro dépendance) — puces actionnables, lecture rapide."""
+    def short(t, n=92):
+        t = (t or '').strip(); return t if len(t) <= n else t[:n].rsplit(' ', 1)[0] + '…'
+    lines = []
+    # 1) ruptures : compteur + la plus notable (titre RSS = libellé lisible avec dosage)
+    rupt = [i for i in items if i.get('cat') == 'ruptures']
+    if rtotal or rupt:
+        s = "%d ruptures/tensions médicament suivies" % rtotal if rtotal else "Ruptures & tensions en cours"
+        if rupt and rupt[0].get('titre'):
+            s += " — à la une : " + short(rupt[0]['titre'])
+        lines.append("• " + s)
+    # 2) rappels parapharma : à retirer du rayon (marque + risque)
     if rappels:
-        m = (rappels[0].get('marque') or '').strip()
-        bits.append("%d rappel%s parapharma à vérifier%s" % (len(rappels), 's' if len(rappels) > 1 else '', (' (%s)' % m) if m else ''))
-    if actu:
-        bits.append("%d actu%s métier du jour" % (len(actu), 's' if len(actu) > 1 else ''))
-    une = (actu[0].get('titre') if actu else (items[0].get('titre') if items else ''))
-    return {'text': 'À retenir ce matin : ' + (', '.join(bits) + '.' if bits else 'veille à jour.'), 'une': une, 'ai': False}
+        ex = rappels[0]; m = (ex.get('marque') or '').strip(); rq = (ex.get('risque') or '').strip()
+        det = m + (' — ' + rq if rq else '') if m else rq
+        lines.append("• %d rappel%s parapharma à retirer du rayon%s"
+                     % (len(rappels), 's' if len(rappels) > 1 else '', (' (ex. %s)' % det) if det else ''))
+    # 3) actu métier du jour
+    actu = [i for i in items if i.get('today') and i.get('cat') != 'ruptures']
+    if actu and actu[0].get('titre'):
+        lines.append("• Actu du jour : " + short(actu[0]['titre']))
+    return {'text': '\n'.join(lines) if lines else 'Veille à jour — rien de majeur ce matin.', 'une': '', 'ai': False}
 
 
 def ai_recap(items, rappels, rlive, rtotal):
