@@ -130,7 +130,7 @@
 
   function ensureGrpPoints(cb) {
     if (GP) { cb(); return; }
-    fetch('points.json?v=4', { cache: 'force-cache' })
+    fetch('points.json?v=5', { cache: 'force-cache' })
       .then(function (r) { return r.json(); })
       .then(function (j) { GP = Array.isArray(j) ? j : []; cb(); })
       .catch(function () { GP = []; cb(); });
