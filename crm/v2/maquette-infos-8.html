@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Infos du matin · Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ip:#0050E6;
+    --ip-dark:#0040b8;
+    --ip-soft:#eaf1ff;
+    --ink:#0d1117;
+    --ink-2:#3a424d;
+    --muted:#6b7480;
+    --line:#e8ebf0;
+    --bg:#f4f6fa;
+    --card:#ffffff;
+    --red:#e0245e;
+    --red-soft:#fdeaf1;
+    --orange:#e8590c;
+    --orange-soft:#fff0e6;
+    --amber:#c47f00;
+    --amber-soft:#fff7e0;
+    --green:#11a63c;
+    --green-soft:#e7f7ec;
+    --purple:#6741d9;
+    --purple-soft:#efeaff;
+    --radius:18px;
+    --shadow:0 1px 0 rgba(13,17,23,.04);
+    font-size:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+  .app{max-width:600px;margin:0 auto;background:var(--card);min-height:100vh;position:relative;box-shadow:0 0 60px rgba(13,17,23,.06)}
+
+  /* ===== Header sticky ===== */
+  header{
+    position:sticky;top:0;z-index:30;
+    background:rgba(255,255,255,.86);
+    backdrop-filter:saturate(180%) blur(14px);
+    -webkit-backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar{display:flex;align-items:center;gap:12px;padding:14px 16px 10px}
+  .logo{
+    width:38px;height:38px;border-radius:11px;flex:none;
+    background:linear-gradient(135deg,var(--ip),#3a7bff);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:900;font-size:1rem;letter-spacing:-.5px;
+    box-shadow:0 4px 12px rgba(0,80,230,.35);
+  }
+  .title-wrap{flex:1;min-width:0}
+  .title-wrap h1{margin:0;font-size:1.06rem;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:7px}
+  .title-wrap .sub{margin:0;font-size:.72rem;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:6px}
+  .live{
+    display:inline-flex;align-items:center;gap:5px;
+    background:var(--red-soft);color:var(--red);
+    font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+    padding:3px 8px;border-radius:999px;
+  }
+  .live .dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(224,36,94,.5)}70%{box-shadow:0 0 0 7px rgba(224,36,94,0)}100%{box-shadow:0 0 0 0 rgba(224,36,94,0)}}
+  .date-chip{font-size:.72rem;color:var(--muted);font-weight:600;white-space:nowrap}
+
+  /* ===== Filter pills ===== */
+  .filters{display:flex;gap:8px;padding:4px 16px 12px;overflow-x:auto;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .pill{
+    flex:none;border:1px solid var(--line);background:#fff;color:var(--ink-2);
+    font-family:inherit;font-size:.82rem;font-weight:700;
+    padding:8px 15px;border-radius:999px;cursor:pointer;
+    display:flex;align-items:center;gap:7px;transition:all .15s ease;white-space:nowrap;
+  }
+  .pill .count{font-size:.7rem;color:var(--muted);background:var(--bg);padding:1px 7px;border-radius:999px;font-weight:700}
+  .pill:hover{border-color:#cfd6e0}
+  .pill.active{background:var(--ip);border-color:var(--ip);color:#fff;box-shadow:0 4px 12px rgba(0,80,230,.3)}
+  .pill.active .count{background:rgba(255,255,255,.22);color:#fff}
+
+  /* ===== Feed ===== */
+  .feed{padding:0 0 90px}
+  .post{
+    display:flex;gap:12px;padding:16px;border-bottom:1px solid var(--line);
+    transition:background .15s;position:relative;cursor:pointer;animation:fadein .4s ease both;
+  }
+  @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .post:hover{background:#fafbfd}
+  .post:active{background:#f3f6fb}
+
+  .avatar{
+    width:46px;height:46px;border-radius:13px;flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:1.35rem;
+    box-shadow:inset 0 0 0 1px rgba(13,17,23,.04);
+  }
+  .av-red{background:var(--red-soft)}
+  .av-orange{background:var(--orange-soft)}
+  .av-amber{background:var(--amber-soft)}
+  .av-blue{background:var(--ip-soft)}
+  .av-green{background:var(--green-soft)}
+  .av-purple{background:var(--purple-soft)}
+
+  .body{flex:1;min-width:0}
+  .meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.8rem;margin-bottom:3px}
+  .src{font-weight:800;color:var(--ink);letter-spacing:-.01em}
+  .verified{color:var(--ip);font-size:.85rem}
+  .handle{color:var(--muted);font-weight:500}
+  .sep{color:var(--muted)}
+  .time{color:var(--muted);font-weight:600;white-space:nowrap}
+
+  .badge{
+    font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+    padding:3px 8px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;
+  }
+  .b-rupture{background:var(--red);color:#fff}
+  .b-tension{background:var(--orange-soft);color:var(--orange)}
+  .b-rappel{background:var(--amber-soft);color:var(--amber)}
+  .b-actu{background:var(--ip-soft);color:var(--ip)}
+  .b-oppo{background:var(--green);color:#fff}
+
+  .text{font-size:.95rem;color:var(--ink);margin:4px 0 0;line-height:1.5}
+  .text strong{font-weight:800}
+  .text .dci{font-weight:800;color:var(--ip)}
+
+  /* embedded info card inside post */
+  .embed{
+    margin-top:11px;border:1px solid var(--line);border-radius:14px;padding:12px 13px;
+    background:#fcfdff;font-size:.85rem;
+  }
+  .embed.warn{border-color:#f6d6c0;background:var(--orange-soft)}
+  .embed.danger{border-color:#f4c4d4;background:var(--red-soft)}
+  .embed.good{border-color:#bfe8cb;background:var(--green-soft)}
+  .embed-row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .embed-row + .embed-row{margin-top:5px}
+  .embed-k{color:var(--ink-2);font-weight:600}
+  .embed-v{font-weight:800;text-align:right}
+  .embed-title{font-weight:800;font-size:.82rem;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+  .strike{color:var(--muted);text-decoration:line-through;font-weight:600}
+  .price-now{color:var(--green);font-weight:900}
+  .pct{background:var(--green);color:#fff;font-size:.68rem;font-weight:800;padding:2px 7px;border-radius:6px}
+
+  /* engagement row */
+  .acts{display:flex;gap:18px;margin-top:11px;color:var(--muted);font-size:.78rem;font-weight:600}
+  .act{display:flex;align-items:center;gap:6px;transition:color .15s}
+  .act:hover{color:var(--ip)}
+  .act .ico{font-size:.95rem}
+
+  /* ===== Pinned ===== */
+  .pinned{
+    background:linear-gradient(180deg,var(--ip-soft),#fff 70%);
+    border-bottom:1px solid var(--line);padding:16px 16px 18px;position:relative;
+  }
+  .pin-flag{
+    display:inline-flex;align-items:center;gap:6px;font-size:.68rem;font-weight:800;
+    color:var(--ip);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;
+  }
+  .pinned h2{margin:0 0 4px;font-size:1.2rem;font-weight:900;letter-spacing:-.02em}
+  .pinned .lede{margin:0;color:var(--ink-2);font-size:.9rem}
+  .pin-headlines{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .head-item{
+    display:flex;gap:9px;align-items:flex-start;background:#fff;border:1px solid var(--line);
+    border-radius:12px;padding:10px 12px;font-size:.86rem;font-weight:600;
+  }
+  .head-item .tag{flex:none;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    padding:3px 7px;border-radius:6px;margin-top:1px}
+  .tag.tag-orange{background:var(--orange-soft);color:var(--orange)}
+  .tag.tag-blue{background:var(--ip-soft);color:var(--ip)}
+  .pin-stats{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap}
+  .stat{display:flex;flex-direction:column;line-height:1.1}
+  .stat .n{font-size:1.4rem;font-weight:900;letter-spacing:-.03em;color:var(--ip)}
+  .stat .l{font-size:.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+
+  .new-banner{
+    display:none;position:sticky;top:118px;z-index:25;margin:10px auto;width:max-content;
+    background:var(--ip);color:#fff;font-weight:800;font-size:.8rem;padding:8px 16px;
+    border-radius:999px;box-shadow:0 6px 18px rgba(0,80,230,.4);cursor:pointer;
+    animation:drop .4s ease;
+  }
+  @keyframes drop{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+  .new-banner.show{display:block}
+
+  .empty{display:none;text-align:center;padding:60px 30px;color:var(--muted)}
+  .empty.show{display:block}
+  .empty .big{font-size:2rem;margin-bottom:8px}
+
+  /* bottom watermark */
+  .watermark{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    max-width:600px;width:100%;text-align:center;font-size:.66rem;color:var(--muted);
+    background:rgba(244,246,250,.9);backdrop-filter:blur(6px);padding:8px;
+    border-top:1px solid var(--line);z-index:20;font-weight:600;letter-spacing:.02em;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="topbar">
+      <div class="logo">IP</div>
+      <div class="title-wrap">
+        <h1>Infos du matin <span class="live"><span class="dot"></span>Live</span></h1>
+        <p class="sub">Intégral Pharma · veille temps réel</p>
+      </div>
+      <span class="date-chip mono">lun. 15/06 · 07:42</span>
+    </div>
+    <div class="filters" id="filters">
+      <button class="pill active" data-filter="all">Tout <span class="count">13</span></button>
+      <button class="pill" data-filter="rupture">Ruptures <span class="count">5</span></button>
+      <button class="pill" data-filter="rappel">Rappels <span class="count">3</span></button>
+      <button class="pill" data-filter="actu">Actu <span class="count">4</span></button>
+      <button class="pill" data-filter="oppo">Opportunités <span class="count">1</span></button>
+    </div>
+  </header>
+
+  <!-- NEW BANNER (deco) -->
+  <div class="new-banner" id="newBanner">↑ 2 nouvelles actus</div>
+
+  <!-- PINNED RECAP -->
+  <section class="pinned">
+    <div class="pin-flag">📌 Récap du jour · épinglé</div>
+    <h2>13 actus du jour</h2>
+    <p class="lede">À la une ce matin — décision réglementaire imminente et tensions d'appro à surveiller.</p>
+    <div class="pin-headlines">
+      <div class="head-item"><span class="tag tag-blue">À la une</span><span>Décision du <strong class="mono">23/06</strong> attendue sur les groupes hybrides.</span></div>
+      <div class="head-item"><span class="tag tag-orange">Tension</span><span>Fortes tensions sur l'<strong>aspirine 75/100&nbsp;mg</strong>.</span></div>
+    </div>
+    <div class="pin-stats">
+      <div class="stat"><span class="n mono">5</span><span class="l">Ruptures / tensions</span></div>
+      <div class="stat"><span class="n mono">957</span><span class="l">Réfs suivies</span></div>
+      <div class="stat"><span class="n mono">1</span><span class="l">Opportunité IP</span></div>
+    </div>
+  </section>
+
+  <!-- FEED -->
+  <main class="feed" id="feed">
+
+    <!-- OPPORTUNITY -->
+    <article class="post" data-type="oppo">
+      <div class="avatar av-green">💡</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">Intégral Pharma</span><span class="verified">✔</span>
+          <span class="handle">@offilog</span><span class="sep">·</span><span class="time mono">07:38</span>
+          <span class="badge b-oppo">Opportunité IP</span>
+        </div>
+        <p class="text">Tension sur l'<span class="dci">amoxicilline</span> : une alternative générique reste disponible au catalogue Intégral, prix négocié.</p>
+        <div class="embed good">
+          <div class="embed-title">💊 Amoxicilline 500&nbsp;mg — générique Intégral</div>
+          <div class="embed-row"><span class="embed-k">Prix net</span><span class="embed-v"><span class="strike mono">1,16&nbsp;€</span> &nbsp;<span class="price-now mono">1,06&nbsp;€</span> <span class="pct mono">−9&nbsp;%</span></span></div>
+          <div class="embed-row"><span class="embed-k">Disponibilité</span><span class="embed-v" style="color:var(--green)">En stock</span></div>
+        </div>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">12</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">8</span></span>
+          <span class="act"><span class="ico">📌</span> Commander</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- RUPTURE -->
+    <article class="post" data-type="rupture">
+      <div class="avatar av-red">🚫</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">ANSM</span><span class="verified">✔</span>
+          <span class="handle">@ansm</span><span class="sep">·</span><span class="time mono">07:21</span>
+          <span class="badge b-rupture">Rupture</span>
+        </div>
+        <p class="text"><strong>Furosémide 40&nbsp;mg</strong> cp — rupture de stock confirmée au niveau national. Pas de remise à disposition annoncée à ce jour.</p>
+        <div class="embed danger">
+          <div class="embed-row"><span class="embed-k">Statut</span><span class="embed-v" style="color:var(--red)">Rupture</span></div>
+          <div class="embed-row"><span class="embed-k">Réf. suivies</span><span class="embed-v mono">957</span></div>
+        </div>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">5</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">21</span></span>
+          <span class="act"><span class="ico">🔔</span> Suivre</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- TENSION Zophren -->
+    <article class="post" data-type="rupture">
+      <div class="avatar av-orange">⚠️</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">ANSM</span><span class="verified">✔</span>
+          <span class="handle">@ansm</span><span class="sep">·</span><span class="time mono">07:09</span>
+          <span class="badge b-tension">Tension</span>
+        </div>
+        <p class="text"><strong>Zophren 2&nbsp;mg/ml</strong> solution injectable — tension d'approvisionnement. Réserver aux situations prioritaires.</p>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">3</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">9</span></span>
+          <span class="act"><span class="ico">🔔</span> Suivre</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- RAPPEL Exoderm -->
+    <article class="post" data-type="rappel">
+      <div class="avatar av-amber">📦</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">RappelConso</span><span class="verified">✔</span>
+          <span class="handle">@rappel.conso</span><span class="sep">·</span><span class="time mono">06:58</span>
+          <span class="badge b-rappel">Rappel</span>
+        </div>
+        <p class="text"><strong>Exoderm crème mains</strong> — rappel produit. Risque chimique identifié.</p>
+        <div class="embed warn">
+          <div class="embed-row"><span class="embed-k">Vecteur</span><span class="embed-v">Energy</span></div>
+          <div class="embed-row"><span class="embed-k">Motif</span><span class="embed-v" style="color:var(--orange)">Risque chimique</span></div>
+        </div>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">7</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">34</span></span>
+          <span class="act"><span class="ico">⚠️</span> Retirer rayon</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- ACTU Réforme -->
+    <article class="post" data-type="actu">
+      <div class="avatar av-blue">📰</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">Le Moniteur</span><span class="verified">✔</span>
+          <span class="handle">@lemoniteur</span><span class="sep">·</span><span class="time mono">06:45</span>
+          <span class="badge b-actu">Actu</span>
+        </div>
+        <p class="text"><strong>Réforme des études de santé</strong> : le calendrier de mise en œuvre se précise pour la rentrée. Impacts attendus sur la filière pharmacie.</p>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">18</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">12</span></span>
+          <span class="act"><span class="ico">🔗</span> Lire</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- TENSION Sugammadex -->
+    <article class="post" data-type="rupture">
+      <div class="avatar av-orange">⚠️</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">ANSM</span><span class="verified">✔</span>
+          <span class="handle">@ansm</span><span class="sep">·</span><span class="time mono">06:32</span>
+          <span class="badge b-tension">Tension</span>
+        </div>
+        <p class="text"><strong>Sugammadex</strong> injectable — tension d'approvisionnement signalée. Contingentement en cours.</p>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">2</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">6</span></span>
+          <span class="act"><span class="ico">🔔</span> Suivre</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- ACTU Honoraires -->
+    <article class="post" data-type="actu">
+      <div class="avatar av-blue">📰</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">USPO</span><span class="verified">✔</span>
+          <span class="handle">@uspo</span><span class="sep">·</span><span class="time mono">06:20</span>
+          <span class="badge b-actu">Actu</span>
+        </div>
+        <p class="text"><strong>Honoraires de dispensation</strong> : un nouvel avenant conventionnel est en discussion. Revalorisation à la clé.</p>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">24</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">31</span></span>
+          <span class="act"><span class="ico">🔗</span> Lire</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- RAPPEL Algae -->
+    <article class="post" data-type="rappel">
+      <div class="avatar av-amber">📦</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">RappelConso</span><span class="verified">✔</span>
+          <span class="handle">@rappel.conso</span><span class="sep">·</span><span class="time mono">06:05</span>
+          <span class="badge b-rappel">Rappel</span>
+        </div>
+        <p class="text"><strong>Algae crème</strong> — rappel produit. Risque chimique signalé sur certains lots.</p>
+        <div class="embed warn">
+          <div class="embed-row"><span class="embed-k">Motif</span><span class="embed-v" style="color:var(--orange)">Risque chimique</span></div>
+        </div>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">4</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">19</span></span>
+          <span class="act"><span class="ico">⚠️</span> Retirer rayon</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- TENSION Amoxicilline -->
+    <article class="post" data-type="rupture">
+      <div class="avatar av-orange">⚠️</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">ANSM</span><span class="verified">✔</span>
+          <span class="handle">@ansm</span><span class="sep">·</span><span class="time mono">05:50</span>
+          <span class="badge b-tension">Tension</span>
+        </div>
+        <p class="text"><strong>Amoxicilline 500&nbsp;mg</strong> — tension d'approvisionnement. <span style="color:var(--green);font-weight:700">→ Alternative IP dispo (voir plus haut)</span></p>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">9</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">15</span></span>
+          <span class="act"><span class="ico">🔔</span> Suivre</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- ACTU Génériques -->
+    <article class="post" data-type="actu">
+      <div class="avatar av-blue">📰</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">ANSM</span><span class="verified">✔</span>
+          <span class="handle">@ansm</span><span class="sep">·</span><span class="time mono">05:34</span>
+          <span class="badge b-actu">Actu</span>
+        </div>
+        <p class="text"><strong>Génériques</strong> : publication d'un nouveau groupe au répertoire. Pensez à mettre à jour vos substitutions.</p>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">6</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">10</span></span>
+          <span class="act"><span class="ico">🔗</span> Lire</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- RAPPEL Sérum -->
+    <article class="post" data-type="rappel">
+      <div class="avatar av-amber">📦</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">RappelConso</span><span class="verified">✔</span>
+          <span class="handle">@rappel.conso</span><span class="sep">·</span><span class="time mono">05:18</span>
+          <span class="badge b-rappel">Rappel</span>
+        </div>
+        <p class="text"><strong>Sérum nettoyant</strong> — rappel produit. Défaut microbiologique détecté.</p>
+        <div class="embed warn">
+          <div class="embed-row"><span class="embed-k">Motif</span><span class="embed-v" style="color:var(--orange)">Défaut microbiologique</span></div>
+        </div>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">3</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">22</span></span>
+          <span class="act"><span class="ico">⚠️</span> Retirer rayon</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- TENSION Prednisolone -->
+    <article class="post" data-type="rupture">
+      <div class="avatar av-orange">⚠️</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">ANSM</span><span class="verified">✔</span>
+          <span class="handle">@ansm</span><span class="sep">·</span><span class="time mono">05:02</span>
+          <span class="badge b-tension">Tension</span>
+        </div>
+        <p class="text"><strong>Prednisolone</strong> cp orodispersibles — tension d'approvisionnement. Surveillance renforcée.</p>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">1</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">7</span></span>
+          <span class="act"><span class="ico">🔔</span> Suivre</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- ACTU ROSP -->
+    <article class="post" data-type="actu">
+      <div class="avatar av-blue">📰</div>
+      <div class="body">
+        <div class="meta">
+          <span class="src">Assurance Maladie</span><span class="verified">✔</span>
+          <span class="handle">@ameli</span><span class="sep">·</span><span class="time mono">04:47</span>
+          <span class="badge b-actu">Actu</span>
+        </div>
+        <p class="text"><strong>ROSP 2026</strong> : les indicateurs de la rémunération sur objectifs de santé publique sont publiés. Vérifiez vos cibles.</p>
+        <div class="acts">
+          <span class="act"><span class="ico">💬</span><span class="mono">14</span></span>
+          <span class="act"><span class="ico">🔁</span><span class="mono">17</span></span>
+          <span class="act"><span class="ico">🔗</span> Lire</span>
+        </div>
+      </div>
+    </article>
+
+    <div class="empty" id="empty">
+      <div class="big">🔍</div>
+      <div>Aucune actu dans ce filtre.</div>
+    </div>
+
+  </main>
+
+  <div class="watermark">Maquette 8 · style X/Twitter</div>
+</div>
+
+<script>
+  // Filters
+  const pills = document.querySelectorAll('.pill');
+  const posts = document.querySelectorAll('.post');
+  const empty = document.getElementById('empty');
+
+  pills.forEach(p=>{
+    p.addEventListener('click',()=>{
+      pills.forEach(x=>x.classList.remove('active'));
+      p.classList.add('active');
+      const f = p.dataset.filter;
+      let shown = 0;
+      posts.forEach(post=>{
+        const ok = f==='all' || post.dataset.type===f;
+        post.style.display = ok ? 'flex' : 'none';
+        if(ok) shown++;
+      });
+      empty.classList.toggle('show', shown===0);
+    });
+  });
+
+  // "Live" new-post banner (decorative)
+  const banner = document.getElementById('newBanner');
+  setTimeout(()=>banner.classList.add('show'), 4000);
+  banner.addEventListener('click',()=>{
+    banner.classList.remove('show');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+
+  // Ticking clock in header
+  const dateChip = document.querySelector('.date-chip');
+  function tick(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    dateChip.textContent = 'lun. 15/06 · ' + hh + ':' + mm;
+  }
+  setInterval(tick, 30000);
+</script>
+</body>
+</html>

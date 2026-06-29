@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infos du matin · Terminal Veille Pharma — Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#06080d;
+    --bg-2:#0b0f17;
+    --panel:#0e131d;
+    --panel-2:#111826;
+    --line:#1c2535;
+    --line-soft:#161e2c;
+    --txt:#e6ecf5;
+    --txt-2:#9aa7bd;
+    --txt-3:#5e6b82;
+    --accent:#0050E6;
+    --accent-glow:rgba(0,80,230,.35);
+    --green:#16c784;
+    --red:#ff4d5e;
+    --amber:#ffb020;
+    --orange:#ff7a18;
+    --purple:#a78bfa;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --sans:'IBM Plex Sans',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
+  body{padding-bottom:60px}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--accent);color:#fff}
+
+  /* ===== TOP BAR ===== */
+  .topbar{
+    display:flex;align-items:center;gap:18px;
+    height:46px;padding:0 16px;
+    background:linear-gradient(180deg,#0b1019,#070a11);
+    border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:50;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
+  .brand .sq{width:22px;height:22px;border-radius:4px;background:var(--accent);box-shadow:0 0 14px var(--accent-glow);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:12px;color:#fff}
+  .brand .name{font-size:13px}
+  .brand .sub{font-family:var(--mono);font-size:10px;color:var(--txt-3);border:1px solid var(--line);padding:2px 6px;border-radius:4px;letter-spacing:1px;text-transform:uppercase}
+  .topnav{display:flex;gap:2px;margin-left:6px;overflow-x:auto}
+  .topnav a{font-family:var(--mono);font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--txt-2);padding:6px 11px;border-radius:5px;white-space:nowrap;transition:.15s}
+  .topnav a.active{background:rgba(0,80,230,.16);color:#fff;box-shadow:inset 0 0 0 1px rgba(0,80,230,.4)}
+  .topnav a:hover{color:#fff;background:#121a28}
+  .clock{margin-left:auto;display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:11px;color:var(--txt-2);white-space:nowrap}
+  .clock .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .clock b{color:var(--txt)}
+
+  /* ===== TICKER ===== */
+  .ticker{
+    display:flex;align-items:center;height:34px;
+    background:#0a0e16;border-bottom:1px solid var(--line);overflow:hidden;position:relative;
+  }
+  .ticker-tag{
+    font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;
+    background:var(--red);color:#fff;padding:0 12px;height:100%;display:flex;align-items:center;
+    white-space:nowrap;z-index:3;box-shadow:6px 0 14px rgba(0,0,0,.7)
+  }
+  .ticker-tag.blue{background:var(--accent)}
+  .ticker-track{display:flex;white-space:nowrap;will-change:transform;animation:scroll 38s linear infinite;padding-left:14px}
+  .ticker:hover .ticker-track{animation-play-state:paused}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .tk{font-family:var(--mono);font-size:12px;display:inline-flex;align-items:center;gap:8px;padding:0 22px;color:var(--txt-2)}
+  .tk .sym{color:var(--txt);font-weight:600}
+  .tk .sep{color:var(--line);margin:0 -8px}
+  .tk .up{color:var(--green)}
+  .tk .dn{color:var(--red)}
+  .tk .warn{color:var(--amber)}
+  .pill{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 5px;border-radius:3px;text-transform:uppercase}
+  .pill.rupt{background:rgba(255,77,94,.15);color:var(--red);box-shadow:inset 0 0 0 1px rgba(255,77,94,.35)}
+  .pill.tens{background:rgba(255,176,32,.13);color:var(--amber);box-shadow:inset 0 0 0 1px rgba(255,176,32,.3)}
+  .pill.stab{background:rgba(22,199,132,.12);color:var(--green);box-shadow:inset 0 0 0 1px rgba(22,199,132,.3)}
+
+  /* ===== RECAP BANNER ===== */
+  .recap{
+    display:flex;align-items:stretch;gap:0;border-bottom:1px solid var(--line);background:var(--bg-2);
+    flex-wrap:wrap;
+  }
+  .recap .lead{
+    flex:1 1 380px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;border-right:1px solid var(--line-soft);min-width:280px
+  }
+  .recap .lead .kick{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)}
+  .recap .lead h1{font-size:20px;font-weight:700;line-height:1.2}
+  .recap .lead h1 .cnt{color:var(--accent)}
+  .recap .lead .alu{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+  .recap .lead .alu .row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt-2)}
+  .recap .lead .alu .row b{color:var(--txt);font-weight:500}
+  .recap .stats{display:flex;flex-wrap:wrap}
+  .stat{padding:14px 18px;border-right:1px solid var(--line-soft);min-width:120px;display:flex;flex-direction:column;gap:3px}
+  .stat .lab{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--txt-3)}
+  .stat .val{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1}
+  .stat .chg{font-family:var(--mono);font-size:11px}
+  .stat .val.r{color:var(--red)} .stat .val.a{color:var(--amber)} .stat .val.g{color:var(--green)} .stat .val.b{color:var(--accent)}
+
+  /* ===== LAYOUT GRID ===== */
+  .wrap{display:grid;grid-template-columns:1.5fr 1fr;gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
+  .col{display:flex;flex-direction:column;gap:1px;background:var(--line)}
+  @media(max-width:980px){.wrap{grid-template-columns:1fr}}
+
+  .panel{background:var(--panel)}
+  .panel-head{
+    display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--panel-2);border-bottom:1px solid var(--line)
+  }
+  .panel-head .tt{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .panel-head .src{font-family:var(--mono);font-size:9px;color:var(--txt-3);letter-spacing:.5px;border:1px solid var(--line);padding:2px 6px;border-radius:3px}
+  .panel-head .count{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--txt-2)}
+  .panel-head .count b{color:var(--txt)}
+  .led{width:8px;height:8px;border-radius:2px;box-shadow:0 0 8px currentColor}
+  .led.red{background:var(--red);color:var(--red);animation:pulse 1.6s infinite}
+  .led.amber{background:var(--amber);color:var(--amber)}
+  .led.blue{background:var(--accent);color:var(--accent)}
+  .led.green{background:var(--green);color:var(--green)}
+  .led.purple{background:var(--purple);color:var(--purple)}
+
+  /* ===== DATA TABLE ===== */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{
+    font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--txt-3);
+    text-align:left;padding:7px 14px;border-bottom:1px solid var(--line);background:#0c1119;font-weight:600
+  }
+  thead th.r,tbody td.r{text-align:right}
+  tbody td{padding:9px 14px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  tbody tr{transition:background .12s}
+  tbody tr:hover{background:#0f1623}
+  .drug{font-weight:600;color:var(--txt)}
+  .lab{font-size:11px;color:var(--txt-3)}
+  .mono{font-family:var(--mono)}
+  .num{font-family:var(--mono);color:var(--txt-2)}
+  td .meta{display:flex;flex-direction:column;gap:1px}
+  .spark{display:inline-flex;align-items:flex-end;gap:2px;height:18px}
+  .spark i{width:3px;background:var(--red);opacity:.55;border-radius:1px;display:block}
+
+  /* ===== CARDS (recalls / actu / opportunities) ===== */
+  .clist{display:flex;flex-direction:column}
+  .item{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line-soft);transition:background .12s}
+  .item:hover{background:#0f1623}
+  .item .ic{flex:0 0 38px;height:38px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.5px}
+  .ic.chem{background:rgba(255,122,24,.12);color:var(--orange);box-shadow:inset 0 0 0 1px rgba(255,122,24,.3)}
+  .ic.micro{background:rgba(167,139,250,.12);color:var(--purple);box-shadow:inset 0 0 0 1px rgba(167,139,250,.3)}
+  .item .body{flex:1;min-width:0}
+  .item .body .h{font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .item .body .d{font-size:12px;color:var(--txt-2);margin-top:3px}
+  .item .body .f{display:flex;gap:14px;margin-top:7px;font-family:var(--mono);font-size:10px;color:var(--txt-3);flex-wrap:wrap}
+  .item .body .f span b{color:var(--txt-2)}
+  .tag{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 6px;border-radius:3px;text-transform:uppercase}
+  .tag.chem{background:rgba(255,122,24,.13);color:var(--orange)}
+  .tag.micro{background:rgba(167,139,250,.13);color:var(--purple)}
+  .tag.new{background:rgba(0,80,230,.16);color:#6fa0ff}
+
+  /* actu metier rows */
+  .actu .item .ic{background:rgba(0,80,230,.1);color:#6fa0ff;box-shadow:inset 0 0 0 1px rgba(0,80,230,.28)}
+  .cat{font-family:var(--mono);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--txt-3)}
+
+  /* opportunity */
+  .opp{background:linear-gradient(135deg,rgba(0,80,230,.1),rgba(0,80,230,.02));border:1px solid rgba(0,80,230,.3)}
+  .opp-inner{padding:14px}
+  .opp .top{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#6fa0ff}
+  .opp h3{font-size:15px;margin:9px 0 3px}
+  .opp .sub{font-size:12px;color:var(--txt-2)}
+  .opp .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--line);margin-top:12px;border-radius:6px;overflow:hidden}
+  .opp .cell{background:var(--panel-2);padding:10px 12px}
+  .opp .cell .l{font-family:var(--mono);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--txt-3)}
+  .opp .cell .v{font-family:var(--mono);font-size:18px;font-weight:700;margin-top:3px}
+  .opp .cell .v.g{color:var(--green)}
+  .opp .cta{display:flex;gap:8px;margin-top:12px}
+  .btn{font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;font-weight:600;padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:#0f1623;color:var(--txt);cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--accent);color:#fff}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 16px var(--accent-glow)}
+  .btn.primary:hover{filter:brightness(1.1)}
+
+  /* footer status bar */
+  .statusbar{
+    position:fixed;bottom:0;left:0;right:0;height:30px;z-index:60;
+    display:flex;align-items:center;gap:18px;padding:0 14px;
+    background:linear-gradient(180deg,#0a0e16,#06080d);border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:10px;color:var(--txt-3);letter-spacing:.5px;overflow-x:auto
+  }
+  .statusbar .seg{display:flex;align-items:center;gap:7px;white-space:nowrap}
+  .statusbar .seg b{color:var(--txt-2)}
+  .statusbar .mk{margin-left:auto;color:var(--txt-3);border:1px solid var(--line);padding:2px 8px;border-radius:4px;white-space:nowrap}
+  .statusbar .mk b{color:var(--accent)}
+
+  .section-title{display:flex;align-items:center;gap:10px;padding:14px 16px 6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--txt-3)}
+  .section-title::after{content:"";flex:1;height:1px;background:var(--line)}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="brand">
+    <span class="sq">IP</span>
+    <span class="name">INTÉGRAL&nbsp;PHARMA</span>
+    <span class="sub">Terminal Veille</span>
+  </div>
+  <nav class="topnav">
+    <a class="active" href="#">Infos du matin</a>
+    <a href="#">Ruptures</a>
+    <a href="#">Rappels</a>
+    <a href="#">Actu métier</a>
+    <a href="#">Opportunités</a>
+  </nav>
+  <div class="clock">
+    <span class="dot"></span><span>LIVE</span>
+    <span id="clk"><b>--:--:--</b></span>
+    <span>LUN 15 JUIN 2026</span>
+  </div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-tag">● RUPTURES ANSM</div>
+  <div class="ticker-track" id="track">
+    <span class="tk"><span class="sym">ZOPHREN 4mg</span> <span class="pill tens">tension</span> <span class="warn">stock 9j</span></span>
+    <span class="tk sep">/</span>
+    <span class="tk"><span class="sym">SUGAMMADEX</span> <span class="pill tens">tension</span> <span class="warn">contingenté</span></span>
+    <span class="tk sep">/</span>
+    <span class="tk"><span class="sym">AMOXICILLINE 500mg</span> <span class="pill tens">tension</span> <span class="warn">forte</span></span>
+    <span class="tk sep">/</span>
+    <span class="tk"><span class="sym">FUROSÉMIDE 40mg</span> <span class="pill rupt">rupture</span> <span class="dn">retour 07/26</span></span>
+    <span class="tk sep">/</span>
+    <span class="tk"><span class="sym">PREDNISOLONE 20mg</span> <span class="pill tens">tension</span> <span class="warn">stock 14j</span></span>
+    <span class="tk sep">/</span>
+    <span class="tk"><span class="sym">ASPIRINE 75/100mg</span> <span class="pill rupt">rupture</span> <span class="dn">très forte</span></span>
+    <span class="tk sep">/</span>
+    <span class="tk"><span class="sym">SALBUTAMOL</span> <span class="pill stab">stable</span> <span class="up">▲ réappro</span></span>
+    <span class="tk sep">/</span>
+  </div>
+</div>
+
+<!-- RECAP -->
+<div class="recap">
+  <div class="lead">
+    <span class="kick">// Récap du jour — 06:30</span>
+    <h1><span class="cnt">13</span> actus du jour</h1>
+    <div class="alu">
+      <div class="row"><span class="pill" style="background:rgba(0,80,230,.16);color:#6fa0ff">À LA UNE</span> <b>Décision du 23/06 — groupes hybrides (substitution)</b></div>
+      <div class="row"><span class="pill rupt">ALERTE</span> <b>Fortes tensions sur l'aspirine 75/100 mg</b></div>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="lab">Ruptures suivies</span><span class="val r">957</span><span class="chg" style="color:var(--red)">▲ +12 / 24h</span></div>
+    <div class="stat"><span class="lab">Rappels conso</span><span class="val a">3</span><span class="chg" style="color:var(--amber)">parapharma</span></div>
+    <div class="stat"><span class="lab">Actu métier</span><span class="val b">4</span><span class="chg" style="color:var(--txt-3)">réglementaire</span></div>
+    <div class="stat"><span class="lab">Opportunités IP</span><span class="val g">1</span><span class="chg" style="color:var(--green)">substitution</span></div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="wrap">
+
+  <!-- LEFT COLUMN -->
+  <div class="col">
+
+    <!-- RUPTURES -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="tt"><span class="led red"></span>Ruptures &amp; tensions</span>
+        <span class="src">SRC · ANSM</span>
+        <span class="count"><b>957</b> suivies en direct</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Spécialité</th>
+            <th>Statut</th>
+            <th class="r">Tendance</th>
+            <th class="r">Couv.</th>
+            <th class="r">Retour est.</th>
+            <th class="r">MàJ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="meta"><span class="drug">Aspirine 75/100 mg</span><span class="lab">Acide acétylsalicylique · multi-lab</span></div></td>
+            <td><span class="pill rupt">rupture</span></td>
+            <td class="r"><span class="spark"><i style="height:5px"></i><i style="height:8px"></i><i style="height:7px"></i><i style="height:12px"></i><i style="height:16px"></i></span></td>
+            <td class="r num" style="color:var(--red)">4 j</td>
+            <td class="r num">31/07</td>
+            <td class="r num">06:14</td>
+          </tr>
+          <tr>
+            <td><div class="meta"><span class="drug">Furosémide 40 mg</span><span class="lab">Diurétique · Teva</span></div></td>
+            <td><span class="pill rupt">rupture</span></td>
+            <td class="r"><span class="spark"><i style="height:6px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:14px"></i><i style="height:16px"></i></span></td>
+            <td class="r num" style="color:var(--red)">0 j</td>
+            <td class="r num">07/26</td>
+            <td class="r num">05:58</td>
+          </tr>
+          <tr>
+            <td><div class="meta"><span class="drug">Amoxicilline 500 mg</span><span class="lab">Antibiotique · multi-lab</span></div></td>
+            <td><span class="pill tens">tension</span></td>
+            <td class="r"><span class="spark"><i style="height:4px;background:var(--amber)"></i><i style="height:7px;background:var(--amber)"></i><i style="height:9px;background:var(--amber)"></i><i style="height:8px;background:var(--amber)"></i><i style="height:12px;background:var(--amber)"></i></span></td>
+            <td class="r num" style="color:var(--amber)">11 j</td>
+            <td class="r num">en cours</td>
+            <td class="r num">06:02</td>
+          </tr>
+          <tr>
+            <td><div class="meta"><span class="drug">Zophren 4 mg</span><span class="lab">Ondansétron · antiémétique</span></div></td>
+            <td><span class="pill tens">tension</span></td>
+            <td class="r"><span class="spark"><i style="height:8px;background:var(--amber)"></i><i style="height:7px;background:var(--amber)"></i><i style="height:9px;background:var(--amber)"></i><i style="height:9px;background:var(--amber)"></i><i style="height:10px;background:var(--amber)"></i></span></td>
+            <td class="r num" style="color:var(--amber)">9 j</td>
+            <td class="r num">08/26</td>
+            <td class="r num">05:41</td>
+          </tr>
+          <tr>
+            <td><div class="meta"><span class="drug">Sugammadex</span><span class="lab">Antagoniste · usage hospitalier</span></div></td>
+            <td><span class="pill tens">tension</span></td>
+            <td class="r"><span class="spark"><i style="height:6px;background:var(--amber)"></i><i style="height:8px;background:var(--amber)"></i><i style="height:7px;background:var(--amber)"></i><i style="height:11px;background:var(--amber)"></i><i style="height:9px;background:var(--amber)"></i></span></td>
+            <td class="r num" style="color:var(--amber)">contingenté</td>
+            <td class="r num">—</td>
+            <td class="r num">05:33</td>
+          </tr>
+          <tr>
+            <td><div class="meta"><span class="drug">Prednisolone 20 mg</span><span class="lab">Corticoïde · multi-lab</span></div></td>
+            <td><span class="pill tens">tension</span></td>
+            <td class="r"><span class="spark"><i style="height:5px;background:var(--amber)"></i><i style="height:6px;background:var(--amber)"></i><i style="height:8px;background:var(--amber)"></i><i style="height:7px;background:var(--amber)"></i><i style="height:9px;background:var(--amber)"></i></span></td>
+            <td class="r num" style="color:var(--amber)">14 j</td>
+            <td class="r num">06/26</td>
+            <td class="r num">05:20</td>
+          </tr>
+          <tr>
+            <td><div class="meta"><span class="drug">Salbutamol spray</span><span class="lab">Bronchodilatateur · GSK</span></div></td>
+            <td><span class="pill stab">stable</span></td>
+            <td class="r"><span class="spark"><i style="height:9px;background:var(--green)"></i><i style="height:8px;background:var(--green)"></i><i style="height:10px;background:var(--green)"></i><i style="height:12px;background:var(--green)"></i><i style="height:14px;background:var(--green)"></i></span></td>
+            <td class="r num" style="color:var(--green)">42 j</td>
+            <td class="r num">réappro</td>
+            <td class="r num">04:55</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- RAPPELS -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="tt"><span class="led amber"></span>Rappels parapharma</span>
+        <span class="src">SRC · RAPPELCONSO</span>
+        <span class="count"><b>3</b> nouveaux</span>
+      </div>
+      <div class="clist">
+        <div class="item">
+          <div class="ic chem">⚗</div>
+          <div class="body">
+            <div class="h">Exoderm — crème mains <span class="tag chem">risque chimique</span></div>
+            <div class="d">Présence non conforme — vecteur de type « energy ». Cesser l'utilisation, rapporter le produit en officine.</div>
+            <div class="f"><span>Lot <b>EX-2406A</b></span><span>Vecteur <b>energy</b></span><span>Réf <b>RC-2026-0612</b></span><span>Publié <b>14/06</b></span></div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="ic chem">⚗</div>
+          <div class="body">
+            <div class="h">Algae — crème hydratante <span class="tag chem">risque chimique</span></div>
+            <div class="d">Substance interdite détectée dans la formule. Rappel et retrait des points de vente.</div>
+            <div class="f"><span>Lot <b>ALG-118</b></span><span>Réf <b>RC-2026-0609</b></span><span>Publié <b>13/06</b></span></div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="ic micro">◷</div>
+          <div class="body">
+            <div class="h">Sérum nettoyant visage <span class="tag micro">défaut microbio</span></div>
+            <div class="d">Contamination microbiologique — dépassement des seuils. Ne pas appliquer sur peau lésée.</div>
+            <div class="f"><span>Lot <b>SN-0425</b></span><span>Réf <b>RC-2026-0607</b></span><span>Publié <b>12/06</b></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="col">
+
+    <!-- ACTU METIER -->
+    <div class="panel actu">
+      <div class="panel-head">
+        <span class="tt"><span class="led blue"></span>Actu métier</span>
+        <span class="src">RÉGLEMENTAIRE</span>
+        <span class="count"><b>4</b> dossiers</span>
+      </div>
+      <div class="clist">
+        <div class="item">
+          <div class="ic">RÉF</div>
+          <div class="body">
+            <div class="h">Réforme des études de santé <span class="tag new">nouveau</span></div>
+            <div class="d">Refonte du cursus pharma — nouvelle maquette et passerelles. Concertation ouverte.</div>
+            <div class="f"><span class="cat">Formation</span><span>MàJ <b>15/06</b></span></div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="ic">HON</div>
+          <div class="body">
+            <div class="h">Honoraires — avenant conventionnel</div>
+            <div class="d">Révision de la grille d'honoraires de dispensation. Entrée en vigueur progressive.</div>
+            <div class="f"><span class="cat">Rémunération</span><span>MàJ <b>14/06</b></span></div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="ic">GÉN</div>
+          <div class="body">
+            <div class="h">Génériques — nouveau groupe</div>
+            <div class="d">Inscription d'un nouveau groupe au répertoire. Substitution possible dès parution.</div>
+            <div class="f"><span class="cat">Substitution</span><span>MàJ <b>13/06</b></span></div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="ic">ROSP</div>
+          <div class="body">
+            <div class="h">ROSP 2026 — objectifs</div>
+            <div class="d">Indicateurs et barème de la rémunération sur objectifs de santé publique 2026.</div>
+            <div class="f"><span class="cat">Performance</span><span>MàJ <b>11/06</b></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPPORTUNITES IP -->
+    <div class="section-title">Opportunités Intégral Pharma</div>
+    <div class="panel" style="padding:0 12px 14px">
+      <div class="opp">
+        <div class="opp-inner">
+          <div class="top"><span class="led green" style="position:relative;top:1px"></span> Signal substitution · catalogue IP</div>
+          <h3>Amoxicilline en tension → alternative générique Intégral</h3>
+          <div class="sub">Tension confirmée ANSM sur l'amoxicilline 500 mg. Référence générique disponible au catalogue, dispo immédiate.</div>
+          <div class="grid">
+            <div class="cell"><div class="l">Prix net IP</div><div class="v g">1,06 €</div></div>
+            <div class="cell"><div class="l">Écart marché</div><div class="v g">−9 %</div></div>
+            <div class="cell"><div class="l">Dispo</div><div class="v">24 h</div></div>
+          </div>
+          <div class="cta">
+            <button class="btn primary">Commander via Offilog</button>
+            <button class="btn">Fiche produit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MINI MARCHE / RECAP -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="tt"><span class="led purple"></span>Indicateurs veille</span>
+        <span class="count">today</span>
+      </div>
+      <table>
+        <thead><tr><th>Indicateur</th><th class="r">Valeur</th><th class="r">24h</th></tr></thead>
+        <tbody>
+          <tr><td>Ruptures actives</td><td class="r num">957</td><td class="r num" style="color:var(--red)">▲ +12</td></tr>
+          <tr><td>Tensions critiques</td><td class="r num">128</td><td class="r num" style="color:var(--red)">▲ +5</td></tr>
+          <tr><td>Réappro confirmés</td><td class="r num">34</td><td class="r num" style="color:var(--green)">▲ +8</td></tr>
+          <tr><td>Rappels conso (7j)</td><td class="r num">11</td><td class="r num" style="color:var(--amber)">▲ +3</td></tr>
+          <tr><td>Substituts IP dispo</td><td class="r num">62</td><td class="r num" style="color:var(--green)">▲ +1</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="seg"><span class="led green" style="width:7px;height:7px"></span> <b>FLUX OK</b> · ANSM · RappelConso · ordre</div>
+  <div class="seg">DERNIÈRE SYNC <b>06:30:12</b></div>
+  <div class="seg">LATENCE <b>42ms</b></div>
+  <div class="seg">957 RUPTURES · 13 ACTUS · 1 OPP</div>
+  <span class="mk">Maquette 4 · style <b>Bloomberg</b></span>
+</div>
+
+<script>
+  // horloge live
+  function tick(){
+    var d=new Date();
+    var p=function(n){return String(n).padStart(2,'0')};
+    var el=document.querySelector('#clk b');
+    if(el) el.textContent=p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  }
+  tick(); setInterval(tick,1000);
+
+  // dupliquer le contenu du ticker pour boucle infinie continue
+  (function(){
+    var t=document.getElementById('track');
+    if(t) t.innerHTML += t.innerHTML;
+  })();
+</script>
+</body>
+</html>

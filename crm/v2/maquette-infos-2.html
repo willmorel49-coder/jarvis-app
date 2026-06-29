@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Infos du matin · Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ip:#0050E6;
+  --ip-dark:#0038A6;
+  --ip-tint:#E9F0FF;
+  --ink:#1a1c20;
+  --ink-2:#5f6571;
+  --ink-3:#8a909c;
+  --line:#e8eaef;
+  --bg:#f4f6fa;
+  --card:#ffffff;
+  --red:#d8392b;
+  --red-tint:#fdecea;
+  --amber:#b06a00;
+  --amber-tint:#fff3df;
+  --green:#117a3d;
+  --green-tint:#e6f5ec;
+  --radius:18px;
+  --shadow:0 1px 2px rgba(20,30,60,.05),0 6px 22px rgba(20,30,60,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:88px;
+}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(255,255,255,.86);
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid var(--line);
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;
+}
+.topbar-row{display:flex;align-items:center;gap:12px;max-width:760px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:-.02em}
+.brand .glyph{
+  width:30px;height:30px;border-radius:9px;flex:none;
+  background:linear-gradient(135deg,var(--ip),#3d7bff);
+  display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px;
+  box-shadow:0 4px 12px rgba(0,80,230,.35);
+}
+.brand small{display:block;font-weight:600;font-size:10.5px;color:var(--ink-3);letter-spacing:.02em;margin-top:-2px}
+.topbar .spacer{flex:1}
+.iconbtn{
+  width:38px;height:38px;border-radius:50%;border:1px solid var(--line);
+  background:#fff;display:grid;place-items:center;font-size:17px;cursor:pointer;
+}
+.avatar{
+  width:34px;height:34px;border-radius:50%;flex:none;
+  background:linear-gradient(135deg,#ffb347,#ff7a59);
+  display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;
+}
+/* chips de sujets */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 16px 2px;scrollbar-width:none;max-width:760px;margin:0 auto}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;border:1px solid var(--line);background:#fff;color:var(--ink-2);
+  font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;
+  white-space:nowrap;transition:.15s;
+}
+.chip.active{background:var(--ip);border-color:var(--ip);color:#fff;box-shadow:0 4px 12px rgba(0,80,230,.28)}
+.chip:active{transform:scale(.96)}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:760px;margin:0 auto;padding:14px 16px 0}
+.banner{
+  display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+  color:var(--ink-3);background:#fff;border:1px solid var(--line);
+  padding:5px 11px;border-radius:999px;margin:2px 0 14px;
+}
+.banner .dot{width:6px;height:6px;border-radius:50%;background:var(--ip)}
+
+/* récap du jour */
+.recap{
+  background:linear-gradient(140deg,#0038A6,#0050E6 55%,#2f6bff);
+  border-radius:22px;padding:20px 20px 18px;color:#fff;position:relative;overflow:hidden;
+  box-shadow:0 12px 30px rgba(0,60,180,.30);
+}
+.recap::after{content:"";position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.10)}
+.recap::before{content:"";position:absolute;right:30px;bottom:-70px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.07)}
+.recap .label{font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;opacity:.85}
+.recap h1{margin:6px 0 0;font-size:23px;font-weight:800;letter-spacing:-.02em;position:relative}
+.recap h1 .n{font-size:30px}
+.recap .lead{position:relative;margin-top:14px;display:flex;flex-direction:column;gap:9px}
+.lead-item{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.35}
+.lead-item .pin{
+  flex:none;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);
+  padding:3px 7px;border-radius:7px;margin-top:1px;
+}
+.lead-item.alert .pin{background:#ffd34d;color:#5a3d00;border-color:transparent}
+
+/* section headers */
+.sec{margin:26px 0 0}
+.sec-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sec-head .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:16px;flex:none}
+.sec-head h2{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em}
+.sec-head .meta{font-size:11.5px;color:var(--ink-3);font-weight:600;margin-top:1px}
+.sec-head .more{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--ip);cursor:pointer;white-space:nowrap}
+
+/* cards generic */
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;
+}
+
+/* source pill */
+.src{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.src .b{width:18px;height:18px;border-radius:5px;display:grid;place-items:center;color:#fff;font-size:9px;font-weight:800;flex:none}
+.src .time{color:var(--ink-3);font-weight:500}
+.src .time::before{content:"·";margin:0 6px;color:var(--ink-3)}
+
+/* ruptures rows */
+.rupture{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;transition:.12s}
+.rupture+.rupture{border-top:1px solid var(--line)}
+.rupture:active{background:#fafbfe}
+.rupture .gico{
+  width:46px;height:46px;border-radius:12px;flex:none;display:grid;place-items:center;font-size:21px;
+  background:linear-gradient(135deg,#eef2fb,#dde6f7);
+}
+.rupture .body{flex:1;min-width:0}
+.rupture .body .name{font-weight:700;font-size:14.5px;letter-spacing:-.01em}
+.rupture .body .desc{font-size:12px;color:var(--ink-3);margin-top:2px}
+.rupture .right{text-align:right;flex:none}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.badge.tension{background:var(--amber-tint);color:var(--amber)}
+.badge.rupture{background:var(--red-tint);color:var(--red)}
+.badge .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.rupture .date{display:block;font-size:11px;color:var(--ink-3);font-weight:600;margin-top:6px}
+.rup-foot{padding:11px 16px;border-top:1px solid var(--line);background:#fafbfe;font-size:12px;font-weight:600;color:var(--ip);text-align:center;cursor:pointer}
+
+/* rappels parapharma */
+.recalls{display:grid;grid-template-columns:1fr;gap:10px}
+.recall{display:flex;gap:0;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow);cursor:pointer}
+.recall .thumb{width:78px;flex:none;display:grid;place-items:center;font-size:30px;color:#fff;position:relative}
+.recall .thumb .tag{position:absolute;bottom:6px;left:6px;font-size:8.5px;font-weight:800;letter-spacing:.04em;background:rgba(0,0,0,.25);padding:2px 6px;border-radius:6px}
+.recall .rc-body{padding:11px 13px;flex:1;min-width:0}
+.recall .rc-body .src{margin-bottom:6px}
+.recall .rc-body h3{margin:0;font-size:14px;font-weight:700;letter-spacing:-.01em}
+.recall .risk{display:inline-flex;align-items:center;gap:5px;margin-top:7px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px}
+.risk.chem{background:var(--red-tint);color:var(--red)}
+.risk.micro{background:var(--amber-tint);color:var(--amber)}
+
+/* actu métier list */
+.métier{display:flex;flex-direction:column}
+.m-item{display:flex;gap:13px;padding:13px 16px;cursor:pointer;align-items:flex-start}
+.m-item+.m-item{border-top:1px solid var(--line)}
+.m-item:active{background:#fafbfe}
+.m-item .num{font-size:13px;font-weight:800;color:var(--ip);width:20px;flex:none;margin-top:1px}
+.m-item .m-body h3{margin:0;font-size:14px;font-weight:700;letter-spacing:-.01em}
+.m-item .m-body .src{margin-top:5px}
+.m-item .arr{margin-left:auto;color:var(--ink-3);font-size:16px;align-self:center}
+
+/* opportunité IP */
+.oppo{
+  background:linear-gradient(135deg,#062a6e,#0a3da0);border-radius:var(--radius);
+  padding:18px;color:#fff;position:relative;overflow:hidden;box-shadow:0 12px 28px rgba(6,40,110,.32)
+}
+.oppo::after{content:"€";position:absolute;right:-10px;bottom:-30px;font-size:140px;font-weight:800;color:rgba(255,255,255,.06);font-family:'JetBrains Mono'}
+.oppo .tagline{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.16);padding:5px 10px;border-radius:999px}
+.oppo h3{margin:12px 0 4px;font-size:16px;font-weight:800;position:relative}
+.oppo p{margin:0;font-size:13px;opacity:.9;position:relative}
+.oppo .deal{display:flex;align-items:center;gap:14px;margin-top:15px;position:relative}
+.oppo .price{font-size:30px;font-weight:800}
+.oppo .cut{background:#1ec07a;color:#04321f;font-weight:800;font-size:12px;padding:5px 10px;border-radius:9px}
+.oppo .cta{margin-left:auto;background:#fff;color:var(--ip-dark);font-weight:800;font-size:13px;padding:11px 16px;border-radius:12px;cursor:pointer;border:none}
+
+/* bottom nav */
+.nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+  display:flex;justify-content:space-around;
+  padding:8px 6px calc(env(safe-area-inset-bottom) + 8px);
+}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--ink-3);text-decoration:none;flex:1;padding:3px 0}
+.nav a .ni{font-size:20px}
+.nav a.on{color:var(--ip)}
+
+.foot-note{text-align:center;font-size:11px;color:var(--ink-3);margin:24px 0 6px;line-height:1.5}
+@media(min-width:600px){
+  .recalls{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="brand">
+      <span class="glyph">IP</span>
+      <span>Infos du matin<small>Intégral Pharma</small></span>
+    </div>
+    <span class="spacer"></span>
+    <button class="iconbtn" aria-label="Rechercher">🔍</button>
+    <div class="avatar">PS</div>
+  </div>
+  <div class="chips">
+    <button class="chip active">À la une</button>
+    <button class="chip">Ruptures</button>
+    <button class="chip">Rappels</button>
+    <button class="chip">Réglementaire</button>
+    <button class="chip">Génériques</button>
+    <button class="chip">Officine</button>
+    <button class="chip">Opportunités</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="banner"><span class="dot"></span>Maquette 2 · style Google News</div>
+
+  <!-- ===== RÉCAP DU JOUR ===== -->
+  <section class="recap">
+    <div class="label">Dimanche 15 juin 2026</div>
+    <h1><span class="n mono">13</span> actus du jour</h1>
+    <div class="lead">
+      <div class="lead-item">
+        <span class="pin">À la une</span>
+        <span>Décision du <strong>23/06</strong> sur les groupes hybrides — impact assimilation génériques.</span>
+      </div>
+      <div class="lead-item alert">
+        <span class="pin">Tension</span>
+        <span>Fortes tensions sur l'<strong>aspirine 75/100 mg</strong> — anticipez les substitutions.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RUPTURES & TENSIONS ===== -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="ic" style="background:var(--amber-tint);color:var(--amber)">⚠️</span>
+      <div>
+        <h2>Ruptures & tensions</h2>
+        <div class="meta"><span class="mono">957</span> références suivies · Source ANSM</div>
+      </div>
+      <span class="more">Tout voir</span>
+    </div>
+    <div class="card cards">
+      <div class="rupture">
+        <span class="gico">💉</span>
+        <div class="body">
+          <div class="name">Zophren 2 mg/ml injectable</div>
+          <div class="desc">Ondansétron · antiémétique</div>
+        </div>
+        <div class="right">
+          <span class="badge tension"><span class="d"></span>Tension</span>
+          <span class="date mono">12/06</span>
+        </div>
+      </div>
+      <div class="rupture">
+        <span class="gico">💉</span>
+        <div class="body">
+          <div class="name">Sugammadex</div>
+          <div class="desc">Antagoniste curares · bloc opératoire</div>
+        </div>
+        <div class="right">
+          <span class="badge tension"><span class="d"></span>Tension</span>
+          <span class="date mono">11/06</span>
+        </div>
+      </div>
+      <div class="rupture">
+        <span class="gico">💊</span>
+        <div class="body">
+          <div class="name">Amoxicilline 500 mg</div>
+          <div class="desc">Antibiotique · forte demande</div>
+        </div>
+        <div class="right">
+          <span class="badge tension"><span class="d"></span>Tension</span>
+          <span class="date mono">10/06</span>
+        </div>
+      </div>
+      <div class="rupture">
+        <span class="gico">💊</span>
+        <div class="body">
+          <div class="name">Furosémide 40 mg</div>
+          <div class="desc">Diurétique de l'anse</div>
+        </div>
+        <div class="right">
+          <span class="badge rupture"><span class="d"></span>Rupture</span>
+          <span class="date mono">09/06</span>
+        </div>
+      </div>
+      <div class="rupture">
+        <span class="gico">💊</span>
+        <div class="body">
+          <div class="name">Prednisolone 20 mg</div>
+          <div class="desc">Corticoïde oral</div>
+        </div>
+        <div class="right">
+          <span class="badge tension"><span class="d"></span>Tension</span>
+          <span class="date mono">08/06</span>
+        </div>
+      </div>
+      <div class="rup-foot">Voir les 957 références suivies →</div>
+    </div>
+  </section>
+
+  <!-- ===== RAPPELS PARAPHARMA ===== -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="ic" style="background:var(--red-tint);color:var(--red)">🚫</span>
+      <div>
+        <h2>Rappels parapharma</h2>
+        <div class="meta">Source RappelConso · 3 nouveaux</div>
+      </div>
+      <span class="more">Tout voir</span>
+    </div>
+    <div class="recalls">
+      <div class="recall">
+        <div class="thumb" style="background:linear-gradient(135deg,#e26a4a,#c8432a)">🧴<span class="tag">CRÈME MAINS</span></div>
+        <div class="rc-body">
+          <div class="src"><span class="b" style="background:#c8432a">RC</span>RappelConso<span class="time mono">13/06</span></div>
+          <h3>Exoderm crème mains</h3>
+          <span class="risk chem">⚗ Risque chimique · vecteur energy</span>
+        </div>
+      </div>
+      <div class="recall">
+        <div class="thumb" style="background:linear-gradient(135deg,#2faf87,#15795c)">🌿<span class="tag">CRÈME</span></div>
+        <div class="rc-body">
+          <div class="src"><span class="b" style="background:#15795c">RC</span>RappelConso<span class="time mono">12/06</span></div>
+          <h3>Algae crème hydratante</h3>
+          <span class="risk chem">⚗ Risque chimique</span>
+        </div>
+      </div>
+      <div class="recall">
+        <div class="thumb" style="background:linear-gradient(135deg,#6f86d6,#3f54a8)">💧<span class="tag">SÉRUM</span></div>
+        <div class="rc-body">
+          <div class="src"><span class="b" style="background:#3f54a8">RC</span>RappelConso<span class="time mono">11/06</span></div>
+          <h3>Sérum nettoyant visage</h3>
+          <span class="risk micro">🧫 Défaut microbiologique</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ACTU MÉTIER ===== -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="ic" style="background:var(--ip-tint);color:var(--ip)">📋</span>
+      <div>
+        <h2>Actu métier</h2>
+        <div class="meta">Le Moniteur des pharmacies · 4 articles</div>
+      </div>
+      <span class="more">Tout voir</span>
+    </div>
+    <div class="card métier">
+      <div class="m-item">
+        <span class="num mono">01</span>
+        <div class="m-body">
+          <h3>Réforme des études de santé : ce qui change à la rentrée</h3>
+          <div class="src"><span class="b" style="background:var(--ip)">LM</span>Le Moniteur<span class="time mono">il y a 2 h</span></div>
+        </div>
+        <span class="arr">›</span>
+      </div>
+      <div class="m-item">
+        <span class="num mono">02</span>
+        <div class="m-body">
+          <h3>Honoraires de dispensation : un nouvel avenant signé</h3>
+          <div class="src"><span class="b" style="background:var(--ip)">LM</span>Le Moniteur<span class="time mono">il y a 5 h</span></div>
+        </div>
+        <span class="arr">›</span>
+      </div>
+      <div class="m-item">
+        <span class="num mono">03</span>
+        <div class="m-body">
+          <h3>Génériques : un nouveau groupe inscrit au répertoire</h3>
+          <div class="src"><span class="b" style="background:var(--ip)">LM</span>Le Moniteur<span class="time mono">hier</span></div>
+        </div>
+        <span class="arr">›</span>
+      </div>
+      <div class="m-item">
+        <span class="num mono">04</span>
+        <div class="m-body">
+          <h3>ROSP 2026 : les nouveaux indicateurs dévoilés</h3>
+          <div class="src"><span class="b" style="background:var(--ip)">LM</span>Le Moniteur<span class="time mono">hier</span></div>
+        </div>
+        <span class="arr">›</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== OPPORTUNITÉS IP ===== -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="ic" style="background:var(--green-tint);color:var(--green)">💡</span>
+      <div>
+        <h2>Opportunités IP</h2>
+        <div class="meta">Croisement DCI × catalogue Intégral</div>
+      </div>
+    </div>
+    <div class="oppo">
+      <span class="tagline">🔄 Tension → alternative</span>
+      <h3>Amoxicilline 500 mg en tension</h3>
+      <p>Générique disponible au catalogue Intégral, livrable immédiatement.</p>
+      <div class="deal">
+        <span class="price mono">1,06&nbsp;€</span>
+        <span class="cut mono">−9 %</span>
+        <button class="cta">Commander →</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot-note">
+    Veille automatisée · ANSM · RappelConso · Le Moniteur<br>
+    Mise à jour quotidienne — 06:00
+  </p>
+
+</main>
+
+<!-- ===== BOTTOM NAV ===== -->
+<nav class="nav">
+  <a href="#" class="on"><span class="ni">📰</span>Infos</a>
+  <a href="#"><span class="ni">⚠️</span>Ruptures</a>
+  <a href="#"><span class="ni">💡</span>Opportunités</a>
+  <a href="#"><span class="ni">🔖</span>Sauvés</a>
+  <a href="#"><span class="ni">👤</span>Compte</a>
+</nav>
+
+<script>
+// chips actifs
+document.querySelectorAll('.chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelector('.chip.active')?.classList.remove('active');
+    c.classList.add('active');
+  });
+});
+// nav active
+document.querySelectorAll('.nav a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    document.querySelector('.nav a.on')?.classList.remove('on');
+    a.classList.add('on');
+  });
+});
+// feedback tactile léger sur cartes cliquables
+document.querySelectorAll('.rupture,.m-item,.recall').forEach(el=>{
+  el.addEventListener('click',()=>{el.style.transform='scale(.99)';setTimeout(()=>el.style.transform='',120);});
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Infos du matin · Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bleu:#0050E6;
+    --bleu-d:#0039A6;
+    --ink:#0a0c12;
+    --ink-2:#33373f;
+    --gray:#6b7280;
+    --gray-2:#9aa0aa;
+    --line:#e8e9ed;
+    --bg:#fbfbfc;
+    --card:#ffffff;
+    --amber:#c2410c;
+    --red:#c0252b;
+    --green:#0e7a4f;
+    --mono:'Geist Mono',ui-monospace,monospace;
+    --serif:'Newsreader',Georgia,serif;
+    --sans:'Inter',-apple-system,system-ui,sans-serif;
+    --r:18px;
+    --shadow:0 1px 2px rgba(10,12,18,.04),0 8px 24px -12px rgba(10,12,18,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.5;
+    padding-bottom:env(safe-area-inset-bottom);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:560px;margin:0 auto;background:var(--bg);min-height:100vh;position:relative}
+
+  /* bandeau maquette */
+  .mockbar{
+    background:var(--ink);color:#fff;font-size:11px;letter-spacing:.04em;
+    text-align:center;padding:5px 12px;font-weight:500;
+    font-family:var(--mono);
+  }
+  .mockbar b{color:#7ea8ff;font-weight:600}
+
+  /* header */
+  header{
+    position:sticky;top:0;z-index:30;
+    background:rgba(251,251,252,.82);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--line);
+    padding:14px 20px 12px;
+  }
+  .kicker{
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:12px;color:var(--gray);font-weight:500;
+    text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px;
+  }
+  .kicker .dot{display:inline-flex;align-items:center;gap:6px}
+  .live{width:7px;height:7px;border-radius:50%;background:var(--red);
+    box-shadow:0 0 0 0 rgba(192,37,43,.5);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(192,37,43,.45)}70%{box-shadow:0 0 0 7px rgba(192,37,43,0)}100%{box-shadow:0 0 0 0 rgba(192,37,43,0)}}
+  .brand{display:flex;align-items:baseline;justify-content:space-between;margin-top:2px}
+  .brand h1{
+    font-family:var(--sans);font-weight:700;font-size:30px;letter-spacing:-.025em;
+    line-height:1;color:var(--ink);
+  }
+  .brand h1 .by{font-size:12px;font-weight:600;color:var(--bleu);
+    display:block;letter-spacing:.02em;margin-top:5px}
+  .date{font-family:var(--mono);font-size:12px;color:var(--gray);text-align:right;font-weight:500}
+
+  /* récap du jour */
+  .recap{
+    margin:18px 20px 8px;background:var(--ink);color:#fff;
+    border-radius:var(--r);padding:18px 18px 16px;position:relative;overflow:hidden;
+  }
+  .recap::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;
+    background:radial-gradient(circle,rgba(0,80,230,.55),transparent 70%);border-radius:50%}
+  .recap .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;color:#7ea8ff;font-weight:500;display:flex;align-items:center;gap:7px}
+  .recap .count{font-family:var(--mono);font-size:13px;color:#aeb6c4;margin-top:11px}
+  .recap .count b{color:#fff;font-size:26px;font-weight:600;letter-spacing:-.02em}
+  .recap ul{list-style:none;margin-top:13px;position:relative;z-index:1}
+  .recap li{display:flex;gap:11px;padding:9px 0;border-top:1px solid rgba(255,255,255,.1);font-size:14.5px;line-height:1.35}
+  .recap li:first-child{border-top:none}
+  .recap li .tag{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.05em;
+    flex-shrink:0;padding:3px 7px;border-radius:6px;height:fit-content;margin-top:1px}
+  .tag.une{background:var(--bleu);color:#fff}
+  .tag.hot{background:rgba(192,37,43,.22);color:#ff9a9e}
+  .recap li span{font-weight:500}
+
+  /* section */
+  section{margin-top:30px}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 12px}
+  .sec-head h2{font-family:var(--sans);font-weight:700;font-size:21px;letter-spacing:-.02em}
+  .sec-head .sub{font-size:12px;color:var(--gray);font-weight:500;display:flex;align-items:center;gap:6px}
+  .sec-head .src{font-family:var(--mono);font-size:10px;color:var(--gray-2);
+    border:1px solid var(--line);padding:2px 7px;border-radius:20px;letter-spacing:.03em}
+
+  /* HERO à la une */
+  .hero{margin:6px 20px 0;background:var(--card);border-radius:24px;overflow:hidden;
+    box-shadow:var(--shadow);border:1px solid var(--line)}
+  .hero .img{height:215px;position:relative;
+    background:
+      radial-gradient(120% 120% at 80% 0%, #1a5cff 0%, #0050E6 38%, #0039A6 100%);
+    display:flex;flex-direction:column;justify-content:flex-end;padding:20px}
+  .hero .img::before{content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(40% 50% at 18% 22%, rgba(255,255,255,.22), transparent 60%),
+      linear-gradient(180deg, transparent 40%, rgba(0,28,90,.55) 100%)}
+  .hero .img .glyph{position:absolute;right:14px;top:8px;font-size:118px;opacity:.16;line-height:1;filter:saturate(0) brightness(2)}
+  .hero .pill{position:relative;z-index:2;align-self:flex-start;
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+    background:rgba(255,255,255,.95);color:var(--bleu-d);padding:5px 11px;border-radius:30px}
+  .hero .body{padding:18px 20px 20px}
+  .hero h3{font-family:var(--serif);font-weight:600;font-size:27px;line-height:1.12;
+    letter-spacing:-.01em;color:var(--ink)}
+  .hero p{margin-top:9px;font-size:15px;color:var(--ink-2);line-height:1.5}
+  .hero .meta{margin-top:14px;display:flex;align-items:center;gap:9px;
+    font-family:var(--mono);font-size:11.5px;color:var(--gray);font-weight:500}
+  .hero .meta .auth{color:var(--bleu);font-weight:600}
+
+  /* ruptures list */
+  .rupt{margin:4px 20px 0;background:var(--card);border-radius:var(--r);
+    box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
+  .rupt .row{display:flex;align-items:center;gap:13px;padding:14px 16px;border-top:1px solid var(--line)}
+  .rupt .row:first-child{border-top:none}
+  .rupt .ic{width:42px;height:42px;border-radius:12px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:20px}
+  .ic.t{background:#fff3e6}
+  .ic.r{background:#fde8e8}
+  .rupt .txt{flex:1;min-width:0}
+  .rupt .txt .n{font-weight:600;font-size:15px;letter-spacing:-.01em;line-height:1.25}
+  .rupt .txt .d{font-family:var(--mono);font-size:11px;color:var(--gray);margin-top:3px}
+  .badge{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.04em;
+    padding:4px 9px;border-radius:20px;flex-shrink:0;text-transform:uppercase}
+  .badge.tension{background:#fff3e6;color:var(--amber)}
+  .badge.rupture{background:#fde8e8;color:var(--red)}
+  .rupt .foot{padding:13px 16px;background:#fafbff;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center}
+  .rupt .foot .c{font-family:var(--mono);font-size:12px;color:var(--gray)}
+  .rupt .foot .c b{color:var(--bleu);font-size:15px}
+  .rupt .foot a{font-size:13px;color:var(--bleu);font-weight:600;text-decoration:none}
+
+  /* rappels cards horizontal */
+  .scroller{display:flex;gap:13px;overflow-x:auto;padding:4px 20px 8px;
+    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+  .scroller::-webkit-scrollbar{display:none}
+  .recall{flex:0 0 215px;scroll-snap-align:start;background:var(--card);
+    border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+  .recall .vis{height:120px;display:flex;align-items:flex-start;justify-content:flex-end;padding:11px}
+  .recall .vis span{font-size:34px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.18))}
+  .v1{background:linear-gradient(135deg,#ff8a4c,#e63946)}
+  .v2{background:linear-gradient(135deg,#3ad29f,#0e9aa7)}
+  .v3{background:linear-gradient(135deg,#7b8cff,#5a32e6)}
+  .recall .rb{padding:13px 14px 15px}
+  .recall .risk{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.03em;
+    text-transform:uppercase;color:var(--red);display:flex;align-items:center;gap:5px}
+  .recall h4{font-family:var(--serif);font-weight:600;font-size:17px;line-height:1.15;margin-top:8px}
+  .recall .sm{font-size:12px;color:var(--gray);margin-top:6px;line-height:1.35}
+
+  /* actu métier */
+  .metier{margin:4px 20px 0}
+  .marow{display:flex;gap:14px;padding:15px 0;border-top:1px solid var(--line);align-items:flex-start}
+  .marow:first-child{border-top:none}
+  .marow .num{font-family:var(--mono);font-size:12px;color:var(--gray-2);font-weight:600;
+    flex-shrink:0;width:22px;padding-top:2px}
+  .marow .mc{flex:1}
+  .marow .cat{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--bleu)}
+  .marow h4{font-family:var(--serif);font-weight:600;font-size:18.5px;line-height:1.2;margin-top:4px;letter-spacing:-.01em}
+  .marow .mt{font-family:var(--mono);font-size:11px;color:var(--gray);margin-top:6px}
+  .marow .arr{color:var(--gray-2);font-size:18px;padding-top:6px}
+
+  /* opportunité IP */
+  .opp{margin:6px 20px 0;border-radius:22px;padding:2px;
+    background:linear-gradient(135deg,#0050E6,#1a5cff 45%,#0039A6)}
+  .opp .inner{background:var(--card);border-radius:20px;padding:18px 18px 16px}
+  .opp .head{display:flex;align-items:center;gap:9px;font-family:var(--mono);
+    font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--bleu)}
+  .opp h3{font-family:var(--serif);font-weight:600;font-size:21px;line-height:1.2;margin-top:11px;letter-spacing:-.01em}
+  .opp .flow{display:flex;align-items:center;gap:12px;margin-top:14px;
+    background:#f5f8ff;border:1px solid #e1ebff;border-radius:14px;padding:13px}
+  .opp .flow .a{flex:1}
+  .opp .flow .a .l{font-size:11px;color:var(--gray);font-weight:500}
+  .opp .flow .a .v{font-weight:600;font-size:14px;margin-top:2px}
+  .opp .flow .a.tens .v{color:var(--amber)}
+  .opp .flow .sep{font-size:18px;color:var(--bleu)}
+  .opp .priceln{display:flex;align-items:center;justify-content:space-between;margin-top:15px}
+  .opp .priceln .px{display:flex;align-items:baseline;gap:9px}
+  .opp .priceln .px .big{font-family:var(--mono);font-size:30px;font-weight:600;color:var(--ink);letter-spacing:-.02em}
+  .opp .priceln .px .pct{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--green);
+    background:#e6f6ee;padding:3px 8px;border-radius:8px}
+  .opp .priceln .px .stk{font-family:var(--mono);font-size:11px;color:var(--green);display:block;margin-top:2px;font-weight:500}
+  .opp .cta{background:var(--bleu);color:#fff;border:none;font-family:var(--sans);
+    font-weight:600;font-size:14px;padding:12px 18px;border-radius:13px;cursor:pointer;
+    box-shadow:0 6px 16px -6px rgba(0,80,230,.6)}
+  .opp .cta:active{transform:scale(.97)}
+
+  footer{text-align:center;padding:34px 20px 30px;color:var(--gray-2);
+    font-family:var(--mono);font-size:11px;letter-spacing:.02em;line-height:1.7}
+  footer b{color:var(--bleu)}
+
+  @media(max-width:380px){
+    .brand h1{font-size:26px}
+    .hero h3{font-size:24px}
+    .recall{flex-basis:185px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="mockbar">MAQUETTE 1 · style <b>Apple News</b> — éditorial premium</div>
+
+  <header>
+    <div class="kicker">
+      <span class="dot"><span class="live"></span>EN DIRECT</span>
+      <span>Édition du matin</span>
+    </div>
+    <div class="brand">
+      <h1>Infos du matin<span class="by">par Intégral Pharma</span></h1>
+      <span class="date">LUN.<br>15 JUIN</span>
+    </div>
+  </header>
+
+  <!-- RÉCAP DU JOUR -->
+  <div class="recap">
+    <div class="lbl">★ Le récap du jour</div>
+    <div class="count"><b>13</b> actus à retenir ce matin</div>
+    <ul>
+      <li><span class="tag une">À LA UNE</span><span>Décision du 23/06 : entrée des <strong>groupes hybrides</strong> au répertoire des génériques</span></li>
+      <li><span class="tag hot">TENSION</span><span>Fortes tensions sur l'<strong>aspirine gastro-résistante</strong> 75 / 100 mg</span></li>
+    </ul>
+  </div>
+
+  <!-- HERO -->
+  <section>
+    <div class="sec-head">
+      <h2>À la une</h2>
+      <span class="sub">Sélection rédaction</span>
+    </div>
+    <article class="hero">
+      <div class="img">
+        <span class="glyph">⚖️</span>
+        <span class="pill">DÉCISION · 23/06</span>
+      </div>
+      <div class="body">
+        <h3>Groupes hybrides : ce qui change au répertoire dès le 23 juin</h3>
+        <p>L'arrivée des groupes hybrides redessine la substitution officinale. Les premiers couples princeps / hybrides concernés et l'impact sur vos marges, en clair.</p>
+        <div class="meta"><span class="auth">RÉGLEMENTAIRE</span><span>·</span><span>4 min de lecture</span><span>·</span><span>il y a 2 h</span></div>
+      </div>
+    </article>
+  </section>
+
+  <!-- RUPTURES -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2>Ruptures &amp; tensions</h2>
+        <div class="sub" style="margin-top:4px"><span class="live"></span>957 médicaments suivis en direct</div>
+      </div>
+      <span class="src">ANSM</span>
+    </div>
+    <div class="rupt">
+      <div class="row">
+        <div class="ic t">💉</div>
+        <div class="txt"><div class="n">Zophren 2 mg/ml injectable</div><div class="d">Ondansétron · depuis le 02/06</div></div>
+        <span class="badge tension">Tension</span>
+      </div>
+      <div class="row">
+        <div class="ic t">💉</div>
+        <div class="txt"><div class="n">Sugammadex 100 mg/ml</div><div class="d">Solution injectable · depuis le 28/05</div></div>
+        <span class="badge tension">Tension</span>
+      </div>
+      <div class="row">
+        <div class="ic t">💊</div>
+        <div class="txt"><div class="n">Amoxicilline 500 mg</div><div class="d">Gélule · depuis le 11/06</div></div>
+        <span class="badge tension">Tension</span>
+      </div>
+      <div class="row">
+        <div class="ic r">💊</div>
+        <div class="txt"><div class="n">Furosémide 40 mg</div><div class="d">Comprimé · depuis le 05/06</div></div>
+        <span class="badge rupture">Rupture</span>
+      </div>
+      <div class="row">
+        <div class="ic t">💊</div>
+        <div class="txt"><div class="n">Prednisolone 20 mg</div><div class="d">Comprimé orodispersible · depuis le 09/06</div></div>
+        <span class="badge tension">Tension</span>
+      </div>
+      <div class="foot">
+        <span class="c"><b>5</b> sur vos lignes de commande</span>
+        <a href="#">Voir les 957 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- RAPPELS -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2>Rappels parapharma</h2>
+        <div class="sub" style="margin-top:4px">Faites glisser →</div>
+      </div>
+      <span class="src">RappelConso</span>
+    </div>
+    <div class="scroller">
+      <div class="recall">
+        <div class="vis v1"><span>⚠️</span></div>
+        <div class="rb">
+          <div class="risk">● Risque chimique</div>
+          <h4>Exoderm crème mains 75 ml</h4>
+          <div class="sm">Vecteur « energy » · lots du 04/06 · arrêt de la vente</div>
+        </div>
+      </div>
+      <div class="recall">
+        <div class="vis v2"><span>⚠️</span></div>
+        <div class="rb">
+          <div class="risk">● Risque chimique</div>
+          <h4>Algae crème revitalisante</h4>
+          <div class="sm">Soin visage · rappel national · 07/06</div>
+        </div>
+      </div>
+      <div class="recall">
+        <div class="vis v3"><span>🧫</span></div>
+        <div class="rb">
+          <div class="risk">● Défaut microbiologique</div>
+          <h4>Sérum nettoyant</h4>
+          <div class="sm">Soin visage · contamination · 09/06</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTU MÉTIER -->
+  <section>
+    <div class="sec-head"><h2>Actu métier</h2><span class="sub">4 à suivre</span></div>
+    <div class="metier">
+      <div class="marow">
+        <div class="num">01</div>
+        <div class="mc"><div class="cat">Formation</div><h4>Réforme des études de santé : le calendrier se précise</h4><div class="mt">PASS / LAS · rentrée 2026</div></div>
+        <div class="arr">›</div>
+      </div>
+      <div class="marow">
+        <div class="num">02</div>
+        <div class="mc"><div class="cat">Convention</div><h4>Honoraires de dispensation : un nouvel avenant signé</h4><div class="mt">Assurance Maladie · application T3</div></div>
+        <div class="arr">›</div>
+      </div>
+      <div class="marow">
+        <div class="num">03</div>
+        <div class="mc"><div class="cat">Génériques</div><h4>Un nouveau groupe inscrit au répertoire</h4><div class="mt">JO du 14/06 · substitution ouverte</div></div>
+        <div class="arr">›</div>
+      </div>
+      <div class="marow">
+        <div class="num">04</div>
+        <div class="mc"><div class="cat">Rémunération</div><h4>ROSP 2026 : les nouveaux indicateurs officine</h4><div class="mt">Objectifs révisés · échéance déc.</div></div>
+        <div class="arr">›</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPPORTUNITÉ IP -->
+  <section>
+    <div class="sec-head"><h2>Opportunité Intégral</h2><span class="sub">Liée à l'actu</span></div>
+    <div class="opp">
+      <div class="inner">
+        <div class="head">◆ Tension détectée → alternative en stock</div>
+        <h3>Amoxicilline en tension ? On a la relève.</h3>
+        <div class="flow">
+          <div class="a tens">
+            <div class="l">En tension (ANSM)</div>
+            <div class="v">Amoxicilline 500 mg</div>
+          </div>
+          <div class="sep">→</div>
+          <div class="a">
+            <div class="l">Alternative Intégral</div>
+            <div class="v">Générique en stock ✓</div>
+          </div>
+        </div>
+        <div class="priceln">
+          <div class="px">
+            <span class="big">1,06 €</span>
+            <span>
+              <span class="pct">−9 %</span>
+              <span class="stk">Dispo immédiate</span>
+            </span>
+          </div>
+          <button class="cta">Commander</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Infos du matin · <b>Intégral Pharma</b><br>
+    Sources : ANSM · RappelConso · Le Moniteur · veille interne<br>
+    Mis à jour ce matin à 07 : 00
+  </footer>
+
+</div>
+</body>
+</html>

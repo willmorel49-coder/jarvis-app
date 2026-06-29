@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infos du matin · Intégral Pharma — Maquette 5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ip:#0050E6;
+    --ip-dark:#0033A0;
+    --ink:#0c1424;
+    --muted:#5b6678;
+    --line:#e7eaf0;
+    --bg:#f4f6fa;
+    --card:#ffffff;
+    --radius:18px;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+    --serif:"Fraunces",Georgia,serif;
+    --sans:"Inter","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+    padding-bottom:80px;
+  }
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.86);
+    backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:1180px;margin:0 auto;padding:14px 22px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.02em}
+  .brand .logo{
+    width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(135deg,var(--ip),#3d7bff);
+    display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px;
+    box-shadow:0 6px 16px rgba(0,80,230,.35);
+  }
+  .brand small{display:block;font-weight:500;color:var(--muted);font-size:11.5px;letter-spacing:0}
+  .date-pill{
+    font-family:var(--mono);font-size:12px;color:var(--ip-dark);
+    background:#eaf0ff;border:1px solid #d6e2ff;border-radius:999px;
+    padding:6px 12px;font-weight:600;
+  }
+
+  /* ---------- Masthead ---------- */
+  .masthead{max-width:1180px;margin:0 auto;padding:38px 22px 8px}
+  .kicker{
+    font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--ip);
+  }
+  .masthead h1{
+    font-family:var(--serif);font-weight:600;font-size:clamp(38px,6vw,62px);
+    letter-spacing:-.025em;line-height:.98;margin:8px 0 6px;
+  }
+  .masthead .sub{color:var(--muted);font-size:16px;max-width:620px}
+
+  /* ---------- Récap du jour ---------- */
+  .recap{
+    max-width:1180px;margin:24px auto 6px;padding:0 22px;
+  }
+  .recap-card{
+    background:linear-gradient(135deg,#0033A0,#0050E6 55%,#3d7bff);
+    color:#fff;border-radius:var(--radius);
+    padding:26px 28px;position:relative;overflow:hidden;
+    box-shadow:0 18px 40px -18px rgba(0,80,230,.6);
+  }
+  .recap-card::after{
+    content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;
+    background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%);
+  }
+  .recap-card .tag{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    opacity:.85;font-weight:600;
+  }
+  .recap-card .big{
+    font-family:var(--serif);font-weight:600;font-size:clamp(22px,3.4vw,30px);
+    margin:10px 0 16px;line-height:1.1;max-width:760px;
+  }
+  .recap-card .big b{font-weight:700}
+  .recap-flags{display:flex;flex-wrap:wrap;gap:10px;position:relative;z-index:1}
+  .flag{
+    background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);
+    border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;
+    display:flex;align-items:center;gap:8px;
+  }
+  .flag .dot{width:8px;height:8px;border-radius:50%;background:#ffd34d;box-shadow:0 0 0 4px rgba(255,211,77,.25)}
+  .flag.crit .dot{background:#ff6b6b;box-shadow:0 0 0 4px rgba(255,107,107,.28)}
+
+  /* ---------- Section nav ---------- */
+  .nav{
+    max-width:1180px;margin:22px auto 4px;padding:0 22px;
+    display:flex;gap:8px;flex-wrap:wrap;
+  }
+  .nav a{
+    text-decoration:none;color:var(--muted);font-size:13px;font-weight:600;
+    padding:7px 13px;border-radius:999px;border:1px solid var(--line);
+    background:#fff;transition:.18s;
+  }
+  .nav a:hover{color:var(--ip);border-color:var(--ip);transform:translateY(-1px)}
+
+  /* ---------- Masonry ---------- */
+  .feed{max-width:1180px;margin:18px auto 0;padding:0 22px}
+  .section-head{
+    display:flex;align-items:baseline;gap:12px;margin:34px 0 14px;
+  }
+  .section-head h2{
+    font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:-.02em;
+  }
+  .section-head .count{
+    font-family:var(--mono);font-size:12px;font-weight:600;color:#fff;
+    background:var(--ip);border-radius:999px;padding:4px 11px;
+  }
+  .section-head .rule{flex:1;height:1px;background:var(--line)}
+
+  .masonry{
+    column-count:3;column-gap:18px;
+  }
+  .masonry > *{break-inside:avoid;margin-bottom:18px;display:block}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;transition:transform .2s,box-shadow .2s;
+  }
+  .card:hover{transform:translateY(-3px);box-shadow:0 16px 34px -20px rgba(12,20,36,.35)}
+  .card .visual{
+    height:150px;position:relative;display:flex;align-items:flex-end;
+    padding:14px;color:#fff;
+  }
+  .card .visual .emoji{
+    position:absolute;top:12px;right:14px;font-size:34px;
+    filter:drop-shadow(0 4px 8px rgba(0,0,0,.25));
+  }
+  .card .visual .vlabel{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;background:rgba(0,0,0,.28);
+    padding:5px 10px;border-radius:999px;backdrop-filter:blur(4px);
+  }
+  .card .body{padding:16px 17px 18px}
+  .card h3{font-size:16.5px;font-weight:700;letter-spacing:-.01em;line-height:1.25;margin-bottom:6px}
+  .card p{font-size:13.5px;color:var(--muted);line-height:1.5}
+  .card .meta{
+    display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;
+    font-size:12px;color:var(--muted);
+  }
+  .card .meta .mono{font-weight:600;color:var(--ink)}
+
+  /* status badges */
+  .badge{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;
+    padding:4px 9px;border-radius:7px;text-transform:uppercase;
+  }
+  .b-rupture{background:#ffe5e5;color:#c81e1e}
+  .b-tension{background:#fff3d6;color:#9a6700}
+  .b-retour{background:#e3f6e8;color:#1a7a3c}
+  .b-rappel{background:#ffe2ec;color:#bd1b54}
+  .b-info{background:#e6efff;color:var(--ip-dark)}
+
+  /* small text-only ruptures card */
+  .rupture-list .row{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:13px 0;border-bottom:1px solid var(--line);
+  }
+  .rupture-list .row:last-child{border-bottom:0;padding-bottom:0}
+  .rupture-list .row .name{font-weight:600;font-size:14px}
+  .rupture-list .row .name span{display:block;font-size:11.5px;color:var(--muted);font-weight:500}
+  .rupture-list .row .date{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px;text-align:right}
+
+  /* gradients for visuals */
+  .g-rappel1{background:linear-gradient(135deg,#ff7a7a,#bd1b54)}
+  .g-rappel2{background:linear-gradient(135deg,#ffb347,#ff5e62)}
+  .g-rappel3{background:linear-gradient(135deg,#36d1dc,#5b86e5)}
+  .g-metier1{background:linear-gradient(135deg,#0050E6,#00b4db)}
+  .g-metier2{background:linear-gradient(140deg,#1f2d52,#0050E6)}
+  .g-oppo{background:linear-gradient(135deg,#11998e,#38ef7d)}
+  .g-tension{background:linear-gradient(135deg,#0033A0,#0050E6)}
+
+  /* opportunity card highlight */
+  .card.oppo{border:1.5px solid #19c37d22;box-shadow:0 14px 30px -22px rgba(25,153,142,.7)}
+  .oppo-price{
+    display:flex;align-items:baseline;gap:10px;margin-top:8px;
+  }
+  .oppo-price .now{font-family:var(--mono);font-size:24px;font-weight:700;color:#0c8b53}
+  .oppo-price .old{font-family:var(--mono);font-size:14px;color:var(--muted);text-decoration:line-through}
+  .oppo-price .pct{
+    font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;
+    background:#0c8b53;border-radius:7px;padding:3px 8px;
+  }
+  .btn{
+    display:inline-block;margin-top:14px;text-decoration:none;
+    background:var(--ip);color:#fff;font-weight:700;font-size:13px;
+    padding:10px 16px;border-radius:11px;transition:.18s;
+  }
+  .btn:hover{background:var(--ip-dark);transform:translateY(-1px)}
+
+  /* feature (big) card */
+  .card.feature .visual{height:200px}
+  .card.feature h3{font-family:var(--serif);font-weight:600;font-size:21px}
+
+  /* bottom mockup ribbon */
+  .ribbon{
+    position:fixed;bottom:0;left:0;right:0;z-index:60;
+    background:rgba(12,20,36,.9);color:#fff;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;
+    text-align:center;padding:9px;backdrop-filter:blur(8px);
+    border-top:1px solid rgba(255,255,255,.1);
+  }
+  .ribbon b{color:#8fb8ff}
+
+  /* responsive */
+  @media(max-width:900px){.masonry{column-count:2}}
+  @media(max-width:600px){
+    .masonry{column-count:1}
+    .masthead{padding-top:26px}
+    .recap-card{padding:22px}
+    .topbar .date-pill{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="logo">IP</div>
+      <div>Infos du matin
+        <small>Intégral Pharma · veille quotidienne</small>
+      </div>
+    </div>
+    <div class="date-pill mono">LUN 29 JUIN 2026 · 07:30</div>
+  </div>
+</header>
+
+<!-- MASTHEAD -->
+<section class="masthead">
+  <div class="kicker">★ Édition du matin</div>
+  <h1>L'essentiel pharma,<br>servi avec le café.</h1>
+  <p class="sub">Ruptures, rappels, actu métier et opportunités catalogue — trié et résumé pour votre officine.</p>
+</section>
+
+<!-- RÉCAP DU JOUR -->
+<section class="recap">
+  <div class="recap-card">
+    <div class="tag">Récap du jour</div>
+    <div class="big"><b>13 actus</b> du jour — à la une&nbsp;: <b>Décision du 23/06</b> sur les groupes hybrides.</div>
+    <div class="recap-flags">
+      <div class="flag crit"><span class="dot"></span>Fortes tensions sur l'aspirine 75/100 mg</div>
+      <div class="flag"><span class="dot"></span>3 rappels parapharma actifs</div>
+      <div class="flag"><span class="dot"></span>957 ruptures suivies ANSM</div>
+    </div>
+  </div>
+</section>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="#ruptures">Ruptures & tensions</a>
+  <a href="#rappels">Rappels parapharma</a>
+  <a href="#metier">Actu métier</a>
+  <a href="#oppo">Opportunités IP</a>
+</nav>
+
+<!-- FEED -->
+<main class="feed">
+
+  <!-- RUPTURES -->
+  <div class="section-head" id="ruptures">
+    <h2>Ruptures &amp; tensions</h2>
+    <span class="count mono">957 suivies</span>
+    <div class="rule"></div>
+  </div>
+
+  <div class="masonry">
+
+    <!-- big feature tension -->
+    <article class="card feature">
+      <div class="visual g-tension">
+        <span class="emoji">💊</span>
+        <span class="vlabel">À la une · ANSM</span>
+      </div>
+      <div class="body">
+        <span class="badge b-tension">Tension</span>
+        <h3 style="margin-top:10px">Aspirine 75 / 100 mg : fortes tensions d'approvisionnement</h3>
+        <p>Plusieurs présentations en faible demande sur le marché. Dispensation à l'unité conseillée ; surveiller les substitutions cardio.</p>
+        <div class="meta"><span class="mono">MàJ 29/06</span> · <span>Source ANSM</span></div>
+      </div>
+    </article>
+
+    <!-- rupture list card -->
+    <article class="card">
+      <div class="visual g-metier2" style="height:96px">
+        <span class="emoji" style="font-size:26px">📋</span>
+        <span class="vlabel">Suivi officine</span>
+      </div>
+      <div class="body rupture-list">
+        <div class="row">
+          <div class="name">Zophren 2 mg/ml inj<span>ondansétron — injectable</span>
+            <div class="badge b-tension" style="margin-top:6px">Tension</div>
+          </div>
+          <div class="date">depuis<br>12/06</div>
+        </div>
+        <div class="row">
+          <div class="name">Sugammadex<span>antagoniste curare</span>
+            <div class="badge b-tension" style="margin-top:6px">Tension</div>
+          </div>
+          <div class="date">depuis<br>03/06</div>
+        </div>
+        <div class="row">
+          <div class="name">Amoxicilline 500 mg<span>antibiotique</span>
+            <div class="badge b-tension" style="margin-top:6px">Tension</div>
+          </div>
+          <div class="date">depuis<br>18/06</div>
+        </div>
+        <div class="row">
+          <div class="name">Furosémide 40 mg<span>diurétique</span>
+            <div class="badge b-rupture" style="margin-top:6px">Rupture</div>
+          </div>
+          <div class="date">depuis<br>21/06</div>
+        </div>
+        <div class="row">
+          <div class="name">Prednisolone 20 mg<span>corticoïde</span>
+            <div class="badge b-tension" style="margin-top:6px">Tension</div>
+          </div>
+          <div class="date">depuis<br>09/06</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- small note -->
+    <article class="card">
+      <div class="body">
+        <span class="badge b-info">Repère</span>
+        <h3 style="margin-top:10px">Remise en stock attendue</h3>
+        <p>Retour progressif annoncé sur le Furosémide 40 mg à compter de mi-juillet selon l'exploitant.</p>
+        <div class="meta"><span class="mono">EST. 15/07</span></div>
+      </div>
+    </article>
+
+    <!-- RAPPELS -->
+    <div class="section-head" id="rappels" style="column-span:all">
+      <h2>Rappels parapharma</h2>
+      <span class="count mono">3 actifs</span>
+      <div class="rule"></div>
+    </div>
+
+    <article class="card">
+      <div class="visual g-rappel1">
+        <span class="emoji">🧴</span>
+        <span class="vlabel">Rappel produit</span>
+      </div>
+      <div class="body">
+        <span class="badge b-rappel">Rappel</span>
+        <h3 style="margin-top:10px">Exoderm — crème mains</h3>
+        <p>Présence de l'allergène <b>vecteur energy</b>. Risque chimique. Cessez la vente et retirez le lot des rayons.</p>
+        <div class="meta"><span class="mono">RAPPELCONSO</span> · <span>Risque chimique</span></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="visual g-rappel2">
+        <span class="emoji">🌿</span>
+        <span class="vlabel">Rappel produit</span>
+      </div>
+      <div class="body">
+        <span class="badge b-rappel">Rappel</span>
+        <h3 style="margin-top:10px">Algae — crème</h3>
+        <p>Risque chimique identifié sur certains lots. Retrait demandé et information des clients concernés.</p>
+        <div class="meta"><span class="mono">RAPPELCONSO</span> · <span>Risque chimique</span></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="visual g-rappel3">
+        <span class="emoji">💧</span>
+        <span class="vlabel">Rappel produit</span>
+      </div>
+      <div class="body">
+        <span class="badge b-rappel">Rappel</span>
+        <h3 style="margin-top:10px">Sérum nettoyant</h3>
+        <p>Défaut de qualité microbiologique. Produit non conforme : retrait du marché et arrêt de la dispensation.</p>
+        <div class="meta"><span class="mono">RAPPELCONSO</span> · <span>Défaut microbio</span></div>
+      </div>
+    </article>
+
+    <!-- ACTU MÉTIER -->
+    <div class="section-head" id="metier" style="column-span:all">
+      <h2>Actu métier</h2>
+      <span class="count mono">4 sujets</span>
+      <div class="rule"></div>
+    </div>
+
+    <article class="card feature">
+      <div class="visual g-metier1">
+        <span class="emoji">🎓</span>
+        <span class="vlabel">Officine · Réforme</span>
+      </div>
+      <div class="body">
+        <span class="badge b-info">Métier</span>
+        <h3 style="margin-top:10px">Réforme des études de santé</h3>
+        <p>Nouvelle architecture des cursus en discussion : impacts attendus sur la filière pharmacie et les stages en officine.</p>
+        <div class="meta"><span class="mono">DOSSIER</span> · <span>En cours</span></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="visual g-metier2" style="height:110px">
+        <span class="emoji">📝</span>
+        <span class="vlabel">Convention</span>
+      </div>
+      <div class="body">
+        <span class="badge b-info">Métier</span>
+        <h3 style="margin-top:10px">Honoraires : nouvel avenant</h3>
+        <p>Évolution de la rémunération à l'ordonnance. À intégrer dans le pilotage de marge de l'officine.</p>
+        <div class="meta"><span class="mono">AVENANT</span></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="body">
+        <span class="badge b-info">Métier</span>
+        <h3 style="margin-top:10px">Génériques : nouveau groupe</h3>
+        <p>Création d'un nouveau groupe générique au répertoire. Vérifiez les équivalences substituables à l'officine.</p>
+        <div class="meta"><span class="mono">RÉPERTOIRE</span></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="body">
+        <span class="badge b-info">Métier</span>
+        <h3 style="margin-top:10px">ROSP 2026</h3>
+        <p>Objectifs et indicateurs de la rémunération sur objectifs de santé publique pour l'exercice à venir.</p>
+        <div class="meta"><span class="mono">ROSP · 2026</span></div>
+      </div>
+    </article>
+
+    <!-- OPPORTUNITÉS IP -->
+    <div class="section-head" id="oppo" style="column-span:all">
+      <h2>Opportunités IP</h2>
+      <span class="count mono">1 ce matin</span>
+      <div class="rule"></div>
+    </div>
+
+    <article class="card oppo feature">
+      <div class="visual g-oppo">
+        <span class="emoji">⚡</span>
+        <span class="vlabel">Opportunité catalogue</span>
+      </div>
+      <div class="body">
+        <span class="badge b-retour">Alternative dispo</span>
+        <h3 style="margin-top:10px">Amoxicilline en tension → générique Intégral</h3>
+        <p>Face à la tension sur l'Amoxicilline 500 mg, une alternative générique du catalogue Intégral est disponible et compétitive.</p>
+        <div class="oppo-price">
+          <span class="now mono">1,06 €</span>
+          <span class="old mono">1,16 €</span>
+          <span class="pct mono">−9 %</span>
+        </div>
+        <a class="btn" href="#">Voir au catalogue →</a>
+      </div>
+    </article>
+
+  </div>
+</main>
+
+<!-- MOCKUP RIBBON -->
+<div class="ribbon">Maquette 5 · style <b>Flipboard</b> — mise en page magazine éditoriale · Intégral Pharma</div>
+
+<script>
+  // smooth-scroll offset compensation for sticky topbar
+  document.querySelectorAll('.nav a').forEach(function(a){
+    a.addEventListener('click',function(e){
+      var id=this.getAttribute('href').slice(1);
+      var el=document.getElementById(id);
+      if(el){e.preventDefault();var y=el.getBoundingClientRect().top+window.scrollY-80;window.scrollTo({top:y,behavior:'smooth'});}
+    });
+  });
+</script>
+</body>
+</html>
