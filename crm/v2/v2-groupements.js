@@ -75,16 +75,24 @@
       '.gc-allbtns button{border:1px solid var(--line-strong);background:var(--card);border-radius:8px;padding:6px 10px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}' +
       '.gc-allbtns button:hover{color:var(--ip-blue);border-color:var(--ip-blue)}' +
       '.gc-list{flex:1;overflow-y:auto}' +
-      '.gc-row{display:flex;align-items:center;gap:9px;padding:8px 13px;border-bottom:1px solid var(--line-2,var(--line));cursor:pointer;font-size:13px}' +
+      '.gc-row{display:flex;align-items:center;gap:10px;min-height:44px;padding:7px 14px;border-bottom:1px solid var(--line-2,var(--line));cursor:pointer;font-size:13.5px;-webkit-tap-highlight-color:transparent}' +
       '.gc-row:hover{background:var(--card-2)}' +
-      '.gc-row input{width:16px;height:16px;accent-color:var(--ip-blue);cursor:pointer;flex:none}' +
-      '.gc-dot{width:10px;height:10px;border-radius:50%;flex:none}' +
+      '.gc-row:active{background:var(--halo)}' +
+      '.gc-row input{width:20px;height:20px;accent-color:var(--ip-blue);cursor:pointer;flex:none}' +
+      '.gc-dot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 1px var(--line-strong) inset,0 1px 2px rgba(16,19,28,.18)}' +
       '.gc-nm{flex:1;min-width:0;font-weight:600;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
       '.gc-ct{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:700}' +
       '.gc-mapwrap{flex:1;min-width:0;position:relative;background:#EAEEF3}' +
       '@media(max-width:820px){.gc-mapwrap{height:56vh}}' +
       '.gc-map{position:absolute;inset:0}' +
-      '.gc-mapwrap .leaflet-popup-content{font:13px/1.45 var(--font,sans-serif);margin:10px 12px}';
+      '.gc-mapwrap .leaflet-popup-content{font:13px/1.45 var(--font,sans-serif);margin:10px 12px}' +
+      // popups + contrôles de zoom soignés (vaut pour les deux cartes)
+      '.leaflet-popup-content-wrapper{border-radius:14px;box-shadow:0 10px 30px rgba(16,19,28,.18);border:1px solid var(--line)}' +
+      '.leaflet-popup-content b{font-size:13.5px;letter-spacing:-.01em}' +
+      '.leaflet-container a.leaflet-popup-close-button{width:30px;height:30px;font-size:20px;color:var(--muted);padding:5px 0 0}' +
+      '.leaflet-control-zoom a{width:40px;height:40px;line-height:40px;font-size:20px;color:var(--ip-ink)}' +
+      // Sagitta mobile : carte d'abord, barre de filtres qui passe à la ligne
+      '@media(max-width:820px){.sag-map{order:-1}.ps-bar{flex-wrap:wrap}.ps-dept{flex:1 1 100%;max-width:none}}';
     document.head.appendChild(st);
   }
 

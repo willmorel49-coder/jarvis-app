@@ -469,3 +469,6 @@ html{-webkit-tap-highlight-color:transparent}
   .ph-detail .phf-r-gap .phf-desig::after{content:" · À pousser";font-size:9px;font-weight:800;color:var(--c-amber)}
 }
 @media (prefers-reduced-motion:reduce){.mo-ripple{display:none}}
+/* Pilotage : le CA est le chiffre roi */
+.v2-kpi.k1 .v2-kpi-v{font-size:32px}
+@media (max-width:640px){.v2-kpi.k1 .v2-kpi-v{font-size:24px}}
