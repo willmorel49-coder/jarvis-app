@@ -209,17 +209,15 @@
       var vis = SECT.filter(function (s) { return infosFilter === 'all' || s.grp === infosFilter; });
       html += '<div class="nv8-grid' + (single ? ' nv8-grid-1' : '') + '">';
       vis.forEach(function (s) {
-        var collapsed = !!infosCollapsed[s.key];
         var bid = 'nv8-b-' + s.key;
         var bodyCls = 'nv8-body' + (s.grid ? ' nv8-rap-grid' : '') + ((!single && s.clip) ? (s.clip <= 4 ? ' nv8-clip-4' : ' nv8-clip') : '');
-        html += '<article class="nv8-sec ' + s.cls + (s.wide ? ' nv8-wide' : '') + (collapsed ? ' nv8-collapsed' : '') + '" id="' + bid + '">' +
-          '<button class="nv8-band2" onclick="V2.infosCollapse(\'' + s.key + '\')"><span class="nv8-ico"></span>' +
+        var act = single ? 'V2.infosFilter(\'all\')' : 'V2.infosFilter(\'' + s.grp + '\')';
+        html += '<article class="nv8-sec ' + s.cls + (s.wide ? ' nv8-wide' : '') + '">' +
+          '<button class="nv8-band2" onclick="' + act + '"><span class="nv8-ico"></span>' +
             '<div class="nv8-htxt"><h2>' + esc(s.t) + '</h2><div class="nv8-sub">' + esc(s.s) + '</div></div>' +
-            '<span class="nv8-count">' + s.n + '</span><span class="nv8-chev">⌄</span></button>' +
-          '<div class="nv8-secbody">' +
-            '<div class="' + bodyCls + '" id="' + bid + '-c">' + s.body + '</div>' +
-            ((!single && s.clip && s.shown > s.clip) ? '<button class="nv8-more" onclick="V2.infosMore(\'' + bid + '-c\',this)">Voir les ' + (s.shown - s.clip) + ' autres</button>' : '') +
-          '</div></article>';
+            '<span class="nv8-count">' + s.n + '</span><span class="nv8-chev">' + (single ? '×' : '›') + '</span></button>' +
+          '<div class="' + bodyCls + '" id="' + bid + '-c">' + s.body + '</div>' +
+          '</article>';
       });
       html += '</div>';
 
@@ -268,12 +266,11 @@
       '#infos-8 .nv8-grid-1{column-count:1;max-width:760px}' +
       '#infos-8 .nv8-grid .nv8-sec{break-inside:avoid;margin:0 0 18px;display:inline-block;width:100%;vertical-align:top}' +
       '#infos-8 .nv8-wide{column-span:all}' +
-      '#infos-8 .nv8-band2{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:14px 20px;background:var(--c-soft);border:none;border-bottom:1px solid var(--line);cursor:pointer;font-family:inherit;position:relative;-webkit-tap-highlight-color:transparent}' +
-      '#infos-8 .nv8-band2::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}' +
+      '#infos-8 .nv8-band2{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:13px 18px;background:var(--card);border:none;border-bottom:1px solid var(--line);cursor:pointer;font-family:inherit;position:relative;-webkit-tap-highlight-color:transparent;transition:background .12s}' +
+      '#infos-8 .nv8-band2:hover{background:var(--c-soft)}' +
+      '#infos-8 .nv8-band2::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}' +
       '#infos-8 .nv8-band2 h2{font-size:14px;font-weight:800;letter-spacing:-.01em;color:var(--c);margin:0}' +
-      '#infos-8 .nv8-chev{margin-left:10px;color:var(--c);font-size:15px;font-weight:800;transition:transform .2s}' +
-      '#infos-8 .nv8-collapsed .nv8-chev{transform:rotate(-90deg)}' +
-      '#infos-8 .nv8-collapsed .nv8-secbody{display:none}' +
+      '#infos-8 .nv8-chev{margin-left:10px;color:var(--muted-2);font-size:18px;font-weight:700;line-height:1}' +
       '@media(max-width:760px){#infos-8 .nv8-grid{column-count:1}}' +
       '#infos-8 .nv8-clip > :nth-child(n+7){display:none}' +
       '#infos-8 .nv8-clip-4 > :nth-child(n+5){display:none}' +
