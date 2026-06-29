@@ -24,10 +24,13 @@ FEEDS = [
     {'cat': 'ruptures',      'source': 'ANSM · Disponibilité', 'url': 'https://ansm.sante.fr/rss/disponibilite_produits_sante?produitsSante=medicaments', 'max': 40},
     {'cat': 'securite',      'source': 'ANSM · Sécurité',      'url': 'https://ansm.sante.fr/rss/informations_securite?produitsSante=medicaments', 'max': 20},
     {'cat': 'reglementaire', 'source': 'ANSM · Actualités',    'url': 'https://ansm.sante.fr/rss/actualites?produitsSante=medicaments', 'max': 20},
-    {'cat': 'profession',    'source': 'Le Quotidien du Pharmacien', 'url': 'https://www.lequotidiendupharmacien.fr/rss.xml', 'max': 35, 'filter': True},
-    {'cat': 'profession',    'source': 'Le Moniteur des pharmacies', 'url': 'https://www.lemoniteurdespharmacies.fr/feed/', 'max': 25, 'filter': True},
+    # ── Sources GRATUITES à lire uniquement. Le Quotidien du Pharmacien & Le Moniteur
+    #    des pharmacies ont été RETIRÉS : articles payants/abonnés → liens inutiles (Will).
+    #    On va directement aux sources primaires gratuites qu'eux-mêmes relaient :
+    #    syndicats (USPO, FSPF), presse syndicale ouverte (Le Pharmacien de France), Leem.
+    {'cat': 'profession',    'source': 'USPO',                 'url': 'https://uspo.fr/feed/', 'max': 12, 'filter': True},
     {'cat': 'profession',    'source': 'FSPF',                 'url': 'https://www.fspf.fr/feed/', 'max': 10, 'filter': True},
-    {'cat': 'profession',    'source': 'Le Pharmacien de France', 'url': 'https://www.lepharmaciendefrance.fr/feed', 'max': 10, 'filter': True},
+    {'cat': 'profession',    'source': 'Le Pharmacien de France', 'url': 'https://lepharmaciendefrance.fr/feed/', 'max': 10, 'filter': True},
     {'cat': 'reglementaire', 'source': 'Leem',                 'url': 'https://www.leem.org/rss.xml', 'max': 8, 'filter': True, 'strict': True},
 ]
 # Flux écartés (presse médecins = trop de bruit clinique, faible valeur officine/grossiste) :
