@@ -29,6 +29,8 @@ jobs:
           python-version: '3.11'
       - name: Générer la veille
         run: python3 generate_infos.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}   # optionnel : synthèse IA si la clé existe, sinon récap calculé
       - name: Committer si changement
         run: |
           if git diff --quiet -- crm/v2/infos-jour.json; then
