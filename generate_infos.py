@@ -11,7 +11,7 @@ Sources :
   - ANSM informations de sécurité médicaments     -> cat "securite"
   - Le Moniteur des pharmacies (RSS)              -> cat "profession"
 """
-import urllib.request, json, re, os, sys, html
+import urllib.request, urllib.parse, json, re, os, sys, html
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, date, timedelta
 
@@ -155,6 +155,68 @@ def daystr(it, today):
     return (it.get('date') or '')[:10] or it.get('seen') or today
 
 
+def deslug(url):
+    seg = (url or '').rstrip('/').split('/')[-1].replace('-', ' ').strip()
+    return ' '.join(w[:1].upper() + w[1:] for w in seg.split()) if seg else ''
+
+
+def fetch_rappels(n=16):
+    """API officielle RappelConso (data.economie.gouv.fr) — rappels parapharma/cosmétiques (hygiène-beauté)."""
+    out = []
+    url = ('https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/rappelconso-v2-gtin-espaces/records'
+           '?limit=%d&order_by=date_publication%%20DESC&where=%s'
+           % (n, urllib.parse.quote('categorie_produit="hygiène-beauté"')))
+    try:
+        data = json.loads(fetch(url))
+    except Exception as e:
+        sys.stderr.write('FAIL rappels : %s\n' % e); return out
+    for r in (data.get('results') or []):
+        img = r.get('liens_vers_les_images') or ''
+        if isinstance(img, list): img = img[0] if img else ''
+        img = str(img).split('|')[0].strip()
+        out.append({
+            'titre': clean(r.get('libelle') or r.get('modeles_ou_references') or r.get('marque_produit') or 'Rappel produit'),
+            'marque': clean(r.get('marque_produit') or ''),
+            'motif': clean(r.get('motif_rappel') or ''),
+            'risque': clean(r.get('risques_encourus') or ''),
+            'conduite': clean(r.get('conduites_a_tenir_par_le_consommateur') or '').replace('|', ' · '),
+            'img': img,
+            'url': (r.get('lien_vers_la_fiche_rappel') or '').strip(),
+            'date': (r.get('date_publication') or '')[:10],
+        })
+    return out
+
+
+def fetch_ruptures_live(n=40):
+    """API BDPM/ANSM (bdpmgf.vedielaute.fr) — ruptures & tensions médicament EN COURS (état temps réel)."""
+    out, total = [], 0
+    try:
+        d = json.loads(fetch('https://bdpmgf.vedielaute.fr/api/medicaments/disponibilite?limit=400'))
+    except Exception as e:
+        sys.stderr.write('FAIL ruptures API : %s\n' % e); return out, total
+    rows = d.get('data') or []
+    total = (d.get('pagination') or {}).get('total') or len(rows)
+    def pdk(s):
+        m = re.match(r'(\d{2})/(\d{2})/(\d{4})', s or '')
+        return (m.group(3) + m.group(2) + m.group(1)) if m else ''
+    rows = [r for r in rows if re.search(r'rupture|tension', (r.get('classement_remboursement') or ''), re.I)]
+    rows.sort(key=lambda r: pdk(r.get('date_debut')), reverse=True)
+    seen = {}
+    for r in rows:
+        nm = deslug(r.get('type_etat'))
+        if not nm:
+            continue
+        key = re.split(r'\s\d', nm)[0].lower().strip()   # dédoublonne par nom (hors dosage/présentation)
+        if key in seen:
+            continue
+        seen[key] = 1
+        out.append({'titre': nm, 'statut': (r.get('classement_remboursement') or '').strip(),
+                    'depuis': (r.get('date_debut') or '').strip(), 'url': (r.get('type_etat') or '').strip()})
+        if len(out) >= n:
+            break
+    return out, total
+
+
 def main():
     today = date.today().isoformat()
     cutoff = (date.today() - timedelta(days=WINDOW_DAYS - 1)).isoformat()
@@ -194,21 +256,28 @@ def main():
     order = {'ruptures': 0, 'securite': 1, 'reglementaire': 2, 'profession': 3}
     items.sort(key=lambda r: (0 if r['today'] else 1, order.get(r['cat'], 9), _neg(r.get('date') or r['day'])))
 
+    # 5) sources API (gratuites) : rappels parapharma + ruptures médicament en direct
+    rappels = fetch_rappels()
+    ruptures_live, ruptures_total = fetch_ruptures_live()
+
     payload = {
         'day': today,
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'window_days': WINDOW_DAYS,
         'count': len(items),
         'count_today': sum(1 for i in items if i['today']),
-        'sources': [f['source'] for f in FEEDS],
+        'sources': [f['source'] for f in FEEDS] + ['RappelConso (DGCCRF)', 'ANSM · Disponibilités (BDPM)'],
         'items': items,
+        'rappels': rappels,
+        'ruptures_live': ruptures_live,
+        'ruptures_total': ruptures_total,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w', encoding='utf-8') as fh:
         json.dump(payload, fh, ensure_ascii=False, separators=(',', ':'))
     n_rupt = sum(1 for i in items if i['cat'] == 'ruptures')
-    print('OK %d infos sur %dj (%d aujourd\'hui, %d ruptures, %d nouvelles) -> %s'
-          % (len(items), WINDOW_DAYS, payload['count_today'], n_rupt, fresh, OUT))
+    print('OK %d infos / %dj (%d auj., %d ruptures RSS) · %d rappels parapharma · %d/%d ruptures live -> %s'
+          % (len(items), WINDOW_DAYS, payload['count_today'], n_rupt, len(rappels), len(ruptures_live), ruptures_total, OUT))
 
 
 def _neg(iso):

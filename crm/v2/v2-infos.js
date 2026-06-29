@@ -136,16 +136,46 @@
         }
       }
 
-      // Ruptures ANSM
-      if (ruptures.length) {
-        var rows = ruptures.map(function (r) {
+      // Ruptures & tensions médicament — EN DIRECT (API ANSM/BDPM)
+      var rlive = (DATA && DATA.ruptures_live) ? DATA.ruptures_live : [];
+      if (rlive.length) {
+        var rows = rlive.map(function (r) {
+          return '<a class="nv8-rupt-item"' + (r.url ? ' href="' + esc(r.url) + '" target="_blank" rel="noopener"' : '') + ' style="text-decoration:none;color:inherit">' +
+            '<span class="nv8-status ' + statutClass(r.statut) + '">' + esc(statutLabel(r.statut)) + '</span>' +
+            '<div><div class="nv8-rupt-name">' + esc(cap((r.titre || '').toLowerCase())) + '</div>' +
+            '<div class="nv8-rupt-meta">' + (r.depuis ? '<span class="nv8-since">depuis le <span class="nv8-mono">' + esc(r.depuis) + '</span></span>' : '') +
+            (r.url ? ' · <span class="nv8-mol">fiche ANSM ↗</span>' : '') + '</div></div></a>';
+        }).join('');
+        var rtot = (DATA && DATA.ruptures_total) || rlive.length;
+        html += '<article class="nv8-sec nv8-rupt">' + band('', 'Ruptures & tensions médicament', rtot + ' suivies en direct par l\'ANSM · les plus récentes', rlive.length) +
+          '<div class="nv8-body">' + rows + '</div></article>';
+      } else if (ruptures.length) {
+        var rows0 = ruptures.map(function (r) {
           return '<div class="nv8-rupt-item"><span class="nv8-status ' + statutClass(r.statut) + '">' + esc(statutLabel(r.statut)) + '</span>' +
             '<div><div class="nv8-rupt-name">' + esc(r.titre) + '</div>' +
             '<div class="nv8-rupt-meta">' + (r.dci ? '<span class="nv8-mol">' + esc(r.dci) + '</span>' : '') +
             (r.depuis ? (r.dci ? ' · ' : '') + '<span class="nv8-since">depuis le <span class="nv8-mono">' + esc(r.depuis) + '</span></span>' : '') + '</div></div></div>';
         }).join('');
         html += '<article class="nv8-sec nv8-rupt">' + band('', 'Ruptures & tensions ANSM', 'Statut, molécule et date d\'entrée', ruptures.length) +
-          '<div class="nv8-body">' + rows + '</div></article>';
+          '<div class="nv8-body">' + rows0 + '</div></article>';
+      }
+
+      // Rappels de produits (parapharma / cosmétiques) — API RappelConso
+      var rappels = (DATA && DATA.rappels) ? DATA.rappels : [];
+      if (rappels.length) {
+        var rc = rappels.slice(0, 12).map(function (r) {
+          var img = r.img
+            ? '<div class="nv8-rap-img" style="background-image:url(\'' + esc(r.img) + '\')"></div>'
+            : '<div class="nv8-rap-img nv8-rap-noimg">⚠</div>';
+          return '<a class="nv8-rap-card"' + (r.url ? ' href="' + esc(r.url) + '" target="_blank" rel="noopener"' : '') + '>' + img +
+            '<div class="nv8-rap-main">' +
+              (r.marque ? '<div class="nv8-rap-brand">' + esc(r.marque) + '</div>' : '') +
+              '<div class="nv8-rap-name">' + esc(cap((r.titre || '').toLowerCase())) + '</div>' +
+              (r.risque ? '<div class="nv8-rap-risk">⚠ ' + esc(r.risque) + '</div>' : '') +
+            '</div></a>';
+        }).join('');
+        html += '<article class="nv8-sec nv8-rap">' + band('', 'Rappels de produits', 'Parapharma & cosmétiques rappelés (RappelConso) — à retirer du rayon', rappels.length) +
+          '<div class="nv8-body nv8-rap-grid">' + rc + '</div></article>';
       }
 
       // Rubriques actu
@@ -158,7 +188,7 @@
       });
 
       var maj = (DATA && DATA.generated_at) ? frDate(DATA.generated_at) : '';
-      html += '<div class="nv8-foot">Sources : ANSM · Le Quotidien du Pharmacien · Le Moniteur des pharmacies · FSPF · Le Pharmacien de France · Leem' + (maj ? ' · mis à jour le ' + maj : '') + '. Veille « cœur de métier officine & distribution », filtrée et croisée au catalogue IP, chaque matin.</div>';
+      html += '<div class="nv8-foot">Sources : ANSM (ruptures en direct) · RappelConso/DGCCRF (rappels) · Le Quotidien du Pharmacien · Le Moniteur des pharmacies · FSPF · Le Pharmacien de France · Leem' + (maj ? ' · mis à jour le ' + maj : '') + '. Veille santé/officine multi-sources, croisée au catalogue IP, chaque matin.</div>';
       html += '</div>';
 
       root.innerHTML = top + '<div class="v2-wrap">' + html + '</div>';
@@ -187,6 +217,15 @@
       '#infos-8 .nv8-sec.nv8-secu{--c:var(--warn);--c-soft:rgba(199,121,26,.10)}' +
       '#infos-8 .nv8-sec.nv8-metier{--c:var(--froid);--c-soft:rgba(0,181,216,.10)}' +
       '#infos-8 .nv8-sec.nv8-opp{--c:var(--ok);--c-soft:rgba(30,158,106,.10);border-color:rgba(30,158,106,.22)}' +
+      '#infos-8 .nv8-sec.nv8-rap{--c:var(--warn);--c-soft:rgba(199,121,26,.10)}' +
+      '#infos-8 .nv8-rap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding:14px 20px 18px}' +
+      '#infos-8 .nv8-rap-card{display:flex;gap:11px;align-items:center;padding:10px;border-radius:14px;background:var(--card-2);border:1px solid var(--line);text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}' +
+      '#infos-8 .nv8-rap-card:hover{border-color:rgba(199,121,26,.4);transform:translateY(-2px)}' +
+      '#infos-8 .nv8-rap-img{width:58px;height:58px;border-radius:10px;background:#fff center/cover no-repeat;border:1px solid var(--line);flex:none}' +
+      '#infos-8 .nv8-rap-noimg{display:grid;place-items:center;font-size:22px;color:var(--warn);background:rgba(199,121,26,.08)}' +
+      '#infos-8 .nv8-rap-brand{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}' +
+      '#infos-8 .nv8-rap-name{font-size:13.5px;font-weight:700;letter-spacing:-.01em;line-height:1.25;margin-top:1px}' +
+      '#infos-8 .nv8-rap-risk{font-size:11px;font-weight:700;color:var(--warn);margin-top:4px}' +
       '#infos-8 .nv8-band{display:flex;align-items:center;gap:11px;padding:14px 20px;background:var(--c-soft);border-bottom:1px solid var(--line);position:relative}' +
       '#infos-8 .nv8-band::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}' +
       '#infos-8 .nv8-ico{width:30px;height:30px;border-radius:9px;background:var(--c);flex:none;display:grid;place-items:center;color:#fff;font-weight:800;font-size:16px}' +
