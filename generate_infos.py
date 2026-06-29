@@ -217,29 +217,27 @@ def fetch_ruptures_live(n=40):
     return out, total
 
 
-def build_recap(items, rappels, rlive, rtotal):
-    """Récap « brief » calculé (zéro dépendance) — puces actionnables, lecture rapide."""
+def build_recap(items, rappels, rlive, rtotal, today):
+    """Récap « brief » calculé — UNIQUEMENT l'info datée d'aujourd'hui (zéro dépendance)."""
     def short(t, n=92):
         t = (t or '').strip(); return t if len(t) <= n else t[:n].rsplit(' ', 1)[0] + '…'
-    lines = []
-    # 1) ruptures : compteur + la plus notable (titre RSS = libellé lisible avec dosage)
-    rupt = [i for i in items if i.get('cat') == 'ruptures']
-    if rtotal or rupt:
-        s = "%d ruptures/tensions médicament suivies" % rtotal if rtotal else "Ruptures & tensions en cours"
-        if rupt and rupt[0].get('titre'):
-            s += " — à la une : " + short(rupt[0]['titre'])
-        lines.append("• " + s)
-    # 2) rappels parapharma : à retirer du rayon (marque + risque)
-    if rappels:
-        ex = rappels[0]; m = (ex.get('marque') or '').strip(); rq = (ex.get('risque') or '').strip()
-        det = m + (' — ' + rq if rq else '') if m else rq
-        lines.append("• %d rappel%s parapharma à retirer du rayon%s"
-                     % (len(rappels), 's' if len(rappels) > 1 else '', (' (ex. %s)' % det) if det else ''))
-    # 3) actu métier du jour
+    rupt = [i for i in items if i.get('cat') == 'ruptures' and i.get('today')]
+    rap = [r for r in rappels if (r.get('date') or '')[:10] == today]
     actu = [i for i in items if i.get('today') and i.get('cat') != 'ruptures']
-    if actu and actu[0].get('titre'):
-        lines.append("• Actu du jour : " + short(actu[0]['titre']))
-    return {'text': '\n'.join(lines) if lines else 'Veille à jour — rien de majeur ce matin.', 'une': '', 'ai': False}
+    lines = []
+    if rupt:
+        lines.append("• %d nouvelle%s rupture/tension — %s"
+                     % (len(rupt), 's' if len(rupt) > 1 else '', short(rupt[0].get('titre', ''))))
+    if rap:
+        ex = rap[0]; m = (ex.get('marque') or '').strip(); rq = (ex.get('risque') or '').strip()
+        det = m + (' — ' + rq if rq else '') if m else rq
+        lines.append("• %d rappel%s parapharma du jour%s"
+                     % (len(rap), 's' if len(rap) > 1 else '', (' (%s)' % det) if det else ''))
+    if actu:
+        lines.append("• Actu du jour — " + short(actu[0].get('titre', '')))
+    if not lines:
+        return {'text': "Rien de neuf à l'instant : aucune rupture, rappel ou actu datés d'aujourd'hui. La veille des 7 derniers jours est ci-dessous.", 'une': '', 'ai': False, 'empty': True}
+    return {'text': '\n'.join(lines), 'une': '', 'ai': False}
 
 
 def ai_recap(items, rappels, rlive, rtotal):
@@ -312,7 +310,7 @@ def main():
     # 5) sources API (gratuites) : rappels parapharma + ruptures médicament en direct
     rappels = fetch_rappels()
     ruptures_live, ruptures_total = fetch_ruptures_live()
-    recap = ai_recap(items, rappels, ruptures_live, ruptures_total) or build_recap(items, rappels, ruptures_live, ruptures_total)
+    recap = ai_recap(items, rappels, ruptures_live, ruptures_total) or build_recap(items, rappels, ruptures_live, ruptures_total, today)
 
     payload = {
         'day': today,
