@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Intégral Pharma — Plus de marge, sur chaque commande.</title>
+<meta name="description" content="Intégral Pharma — grossiste-répartiteur de première intention. De meilleures conditions, dès la première boîte, pour chaque officine." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --blue:#0050E6; --blue-deep:#0033A0; --violet:#6B4BD6; --violet-soft:#8C73E8;
+  --orange:#F39A1B; --orange-deep:#D97E06;
+  --ink:#0C1430; --ink-soft:#33405E; --mute:#5B688A;
+  --paper:#F4F7FF; --white:#FFFFFF;
+  --panel:rgba(255,255,255,0.80);
+  --panel-2:rgba(255,255,255,0.66);
+  --line:rgba(12,20,48,0.10);
+  --shadow:0 24px 70px -28px rgba(12,20,48,0.40);
+  --shadow-sm:0 10px 30px -14px rgba(12,20,48,0.30);
+  --r:22px; --r-sm:14px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --maxw:1200px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth; -webkit-text-size-adjust:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  color:var(--ink); background:var(--paper); line-height:1.6; font-weight:400;
+  overflow-x:hidden; position:relative; min-height:100vh;
+}
+img{max-width:100%; display:block}
+a{color:inherit; text-decoration:none}
+::selection{background:rgba(243,154,27,.28)}
+
+/* ============ WEBGL CANVAS ============ */
+#bg{position:fixed; inset:0; width:100%; height:100%; z-index:-2; display:block}
+/* fallback gradient layer (shown if webgl fails) */
+#bgFallback{
+  position:fixed; inset:0; z-index:-3; display:block;
+  background:
+    radial-gradient(120% 90% at 18% 12%, rgba(0,80,230,.30), transparent 55%),
+    radial-gradient(120% 90% at 85% 18%, rgba(107,75,214,.26), transparent 55%),
+    radial-gradient(140% 100% at 70% 95%, rgba(243,154,27,.22), transparent 55%),
+    linear-gradient(160deg,#EAF0FF 0%,#F4F7FF 45%,#FDF4E6 100%);
+}
+#bgFallback::after{
+  content:""; position:absolute; inset:0;
+  background:url('../assets/poster.jpg') center/cover no-repeat;
+  opacity:0; transition:opacity .6s ease;
+}
+body.webgl-failed #bgFallback::after{opacity:.10}
+/* veil to keep text readable over the flow */
+#veil{position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:linear-gradient(180deg,rgba(244,247,255,.30) 0%,rgba(244,247,255,.12) 30%,rgba(244,247,255,.30) 100%);}
+
+/* ============ LAYOUT ============ */
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 26px}
+section{position:relative; z-index:1}
+.eyebrow{
+  display:inline-flex; align-items:center; gap:9px;
+  font-size:.74rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--blue); padding:7px 15px; border-radius:100px;
+  background:rgba(0,80,230,.08); border:1px solid rgba(0,80,230,.16);
+}
+.eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--orange); box-shadow:0 0 0 4px rgba(243,154,27,.18)}
+h1,h2,h3{font-weight:600; line-height:1.07; letter-spacing:-.02em; color:var(--ink)}
+.lead{color:var(--ink-soft); font-weight:300}
+
+/* glass panel — NO backdrop-filter, only rgba + gradient */
+.panel{
+  background:linear-gradient(180deg,var(--panel),var(--panel-2));
+  border:1px solid rgba(255,255,255,.7);
+  border-radius:var(--r); box-shadow:var(--shadow);
+  position:relative; overflow:hidden;
+}
+.panel::before{content:""; position:absolute; inset:0; border-radius:inherit;
+  border:1px solid var(--line); pointer-events:none}
+
+/* ============ BUTTONS ============ */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  min-height:48px; padding:0 24px; border-radius:100px; cursor:pointer;
+  font-weight:600; font-size:.95rem; border:1px solid transparent;
+  transition:transform .2s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease);
+  will-change:transform;
+}
+.btn:focus-visible{outline:3px solid rgba(0,80,230,.45); outline-offset:3px}
+.btn-primary{
+  color:#fff; background:linear-gradient(135deg,var(--blue),var(--violet));
+  box-shadow:0 14px 34px -12px rgba(0,80,230,.6);
+}
+.btn-primary:hover{transform:translateY(-3px); box-shadow:0 22px 44px -12px rgba(0,80,230,.7)}
+.btn-primary:active{transform:translateY(-1px)}
+.btn-ghost{color:var(--ink); background:rgba(255,255,255,.7); border-color:var(--line)}
+.btn-ghost:hover{transform:translateY(-3px); box-shadow:var(--shadow-sm); border-color:rgba(0,80,230,.3)}
+.btn-amber{color:#3a2400; background:linear-gradient(135deg,var(--orange),#ffc451); box-shadow:0 14px 34px -12px rgba(243,154,27,.6)}
+.btn-amber:hover{transform:translateY(-3px)}
+
+/* ============ HEADER ============ */
+header.nav{
+  position:fixed; top:0; left:0; right:0; z-index:50;
+  transition:background .3s ease, box-shadow .3s ease, padding .3s ease;
+  padding:16px 0;
+}
+header.nav.scrolled{
+  background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.80));
+  box-shadow:0 6px 30px -16px rgba(12,20,48,.4); padding:10px 0;
+  border-bottom:1px solid var(--line);
+}
+.nav-in{display:flex; align-items:center; gap:26px}
+.brand{display:flex; align-items:center; gap:11px; flex-shrink:0}
+.brand img{height:32px; width:auto}
+.brand b{font-size:1.02rem; font-weight:600; letter-spacing:-.01em}
+.nav-links{display:flex; gap:5px; margin-left:auto}
+.nav-links a{
+  padding:9px 14px; border-radius:100px; font-size:.9rem; color:var(--ink-soft);
+  font-weight:500; transition:color .2s, background .2s; position:relative;
+}
+.nav-links a:hover{color:var(--blue); background:rgba(0,80,230,.07)}
+.nav-cta{margin-left:6px}
+.burger{display:none; margin-left:auto; width:46px; height:46px; border-radius:12px;
+  border:1px solid var(--line); background:rgba(255,255,255,.7); cursor:pointer; align-items:center; justify-content:center}
+.burger span,.burger span::before,.burger span::after{content:""; display:block; width:20px; height:2px; background:var(--ink); border-radius:2px; position:relative; transition:.25s}
+.burger span::before{position:absolute; top:-6px}
+.burger span::after{position:absolute; top:6px}
+
+/* ============ HERO ============ */
+.hero{min-height:100vh; display:flex; align-items:center; padding:140px 0 90px}
+.hero-grid{display:grid; grid-template-columns:1.15fr .85fr; gap:48px; align-items:center}
+.hero h1{font-size:clamp(2.6rem,6.2vw,4.7rem); margin:22px 0 20px}
+.hero h1 .accent{color:var(--orange)}
+.hero .sub{font-size:clamp(1.05rem,2vw,1.32rem); max-width:30ch; margin-bottom:32px}
+.hero-cta{display:flex; gap:14px; flex-wrap:wrap}
+.hero-side{display:flex; flex-direction:column; gap:16px}
+.float-card{padding:22px 24px; border-radius:var(--r)}
+.float-card .k{font-size:2.1rem; font-weight:600; color:var(--blue); letter-spacing:-.02em; line-height:1}
+.float-card .l{font-size:.86rem; color:var(--mute); margin-top:6px}
+.float-card.amber .k{color:var(--orange-deep)}
+.hero-tags{display:flex; gap:10px; flex-wrap:wrap; margin-top:26px}
+.tag{font-size:.8rem; color:var(--ink-soft); padding:7px 14px; border-radius:100px;
+  background:rgba(255,255,255,.7); border:1px solid var(--line)}
+.tag b{color:var(--blue); font-weight:600}
+
+/* reveal animation */
+.reveal{opacity:0; transform:translateY(30px); transition:opacity .7s var(--ease), transform .7s var(--ease)}
+.reveal.in{opacity:1; transform:none}
+.reveal[data-d="1"]{transition-delay:.08s}
+.reveal[data-d="2"]{transition-delay:.16s}
+.reveal[data-d="3"]{transition-delay:.24s}
+.reveal[data-d="4"]{transition-delay:.32s}
+
+/* ============ SECTION HEADS ============ */
+.sec{padding:96px 0}
+.sec-head{max-width:720px; margin-bottom:46px}
+.sec-head h2{font-size:clamp(2rem,4.4vw,3.1rem); margin:18px 0 14px}
+.sec-head p{font-size:1.08rem}
+
+/* ============ VALEURS ============ */
+.vals{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
+.val{padding:30px 28px; border-radius:var(--r); transition:transform .3s var(--ease)}
+.val:hover{transform:translateY(-6px)}
+.val .ic{width:52px; height:52px; border-radius:15px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,rgba(0,80,230,.12),rgba(107,75,214,.12)); margin-bottom:18px}
+.val .ic svg{width:26px; height:26px; stroke:var(--blue); fill:none; stroke-width:1.7}
+.val h3{font-size:1.32rem; margin-bottom:9px}
+.val p{color:var(--ink-soft); font-weight:300; font-size:.98rem}
+
+/* ============ OFFRES / LABOS ============ */
+.labos-wrap{padding:42px 38px; border-radius:var(--r)}
+.labos{display:flex; flex-wrap:wrap; gap:14px; margin-top:26px}
+.labo{font-size:1.18rem; font-weight:600; color:var(--ink); padding:14px 26px; border-radius:100px;
+  background:rgba(255,255,255,.66); border:1px solid var(--line); letter-spacing:-.01em;
+  transition:transform .25s var(--ease), color .25s, border-color .25s}
+.labo:hover{transform:translateY(-4px); color:var(--blue); border-color:rgba(0,80,230,.35)}
+
+/* ============ GROUPE / CARTE ============ */
+.map-shell{border-radius:var(--r); overflow:hidden; padding:14px}
+.map-shell iframe{width:100%; border:0; display:block; border-radius:calc(var(--r) - 12px); min-height:540px; background:rgba(255,255,255,.4)}
+.agences{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:22px}
+.ag{padding:16px 18px; border-radius:var(--r-sm); background:rgba(255,255,255,.66); border:1px solid var(--line);
+  transition:transform .25s var(--ease), border-color .25s}
+.ag:hover{transform:translateY(-4px); border-color:rgba(0,80,230,.3)}
+.ag b{display:block; font-size:1rem; font-weight:600; margin-bottom:3px}
+.ag span{font-size:.84rem; color:var(--mute)}
+.ag .badge{display:inline-block; margin-top:8px; font-size:.68rem; font-weight:600; letter-spacing:.06em;
+  text-transform:uppercase; padding:3px 9px; border-radius:100px; background:rgba(243,154,27,.16); color:var(--orange-deep)}
+
+/* ============ CHIFFRES ============ */
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:18px}
+.stat{padding:32px 26px; border-radius:var(--r); text-align:center}
+.stat .num{font-size:clamp(2.4rem,5vw,3.4rem); font-weight:600; line-height:1; letter-spacing:-.03em;
+  color:var(--blue)}
+.stat:nth-child(2) .num{color:var(--violet)}
+.stat:nth-child(3) .num{color:var(--orange-deep)}
+.stat:nth-child(4) .num{color:var(--blue-deep)}
+.stat .lab{margin-top:12px; font-size:.92rem; color:var(--ink-soft); font-weight:400}
+
+/* ============ OFFILOG ============ */
+.offilog{display:grid; grid-template-columns:.9fr 1.1fr; gap:34px; align-items:center}
+.offilog-stats{display:flex; gap:14px; flex-wrap:wrap; margin:24px 0 0}
+.ostat{flex:1; min-width:120px; padding:20px; border-radius:var(--r-sm); background:rgba(255,255,255,.66); border:1px solid var(--line)}
+.ostat .n{font-size:1.8rem; font-weight:600; color:var(--blue); letter-spacing:-.02em}
+.ostat .t{font-size:.82rem; color:var(--mute); margin-top:4px}
+.cats{display:flex; flex-wrap:wrap; gap:11px}
+.cat{font-size:.92rem; font-weight:500; color:var(--ink-soft); padding:11px 18px; border-radius:100px;
+  background:rgba(255,255,255,.66); border:1px solid var(--line); transition:transform .22s var(--ease), color .22s, border-color .22s}
+.cat:hover{transform:translateY(-3px); color:var(--violet); border-color:rgba(107,75,214,.35)}
+
+/* ============ ACCOMPAGNEMENT ============ */
+.accomp-head{max-width:780px; margin-bottom:40px}
+.accomp-head .hook{font-size:clamp(1.4rem,3vw,2rem); font-weight:300; color:var(--ink); line-height:1.32; letter-spacing:-.01em; margin-top:18px}
+.accomp-head .hook b{font-weight:600; color:var(--blue)}
+.projects{display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:34px}
+.proj{padding:28px 24px; border-radius:var(--r); transition:transform .3s var(--ease)}
+.proj:hover{transform:translateY(-6px)}
+.proj .pic{width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,rgba(243,154,27,.16),rgba(107,75,214,.14)); margin-bottom:16px}
+.proj .pic svg{width:28px; height:28px; stroke:var(--orange-deep); fill:none; stroke-width:1.6}
+.proj h3{font-size:1.12rem; margin-bottom:7px}
+.proj p{font-size:.9rem; color:var(--ink-soft); font-weight:300}
+
+/* ============ CARRIERES ============ */
+.jobs{display:grid; grid-template-columns:repeat(4,1fr); gap:16px}
+.job{padding:24px 22px; border-radius:var(--r-sm); display:flex; align-items:center; gap:14px;
+  transition:transform .25s var(--ease)}
+.job:hover{transform:translateY(-4px)}
+.job .jn{width:40px; height:40px; flex-shrink:0; border-radius:11px; background:rgba(0,80,230,.1);
+  display:flex; align-items:center; justify-content:center; color:var(--blue); font-weight:600; font-size:.85rem}
+.job b{font-size:1rem; font-weight:600}
+
+/* ============ CONTACT ============ */
+.contact{display:grid; grid-template-columns:1fr 1fr; gap:34px}
+.contact-info .ci{display:flex; gap:14px; align-items:flex-start; margin-bottom:22px}
+.contact-info .ci .ic{width:44px;height:44px;flex-shrink:0;border-radius:12px;background:rgba(0,80,230,.1);
+  display:flex;align-items:center;justify-content:center}
+.contact-info .ci .ic svg{width:22px;height:22px;stroke:var(--blue);fill:none;stroke-width:1.7}
+.contact-info .ci b{display:block;font-size:.96rem}
+.contact-info .ci span{font-size:.92rem;color:var(--ink-soft)}
+form{padding:34px; border-radius:var(--r)}
+.frow{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px}
+.field label{display:block; font-size:.82rem; font-weight:500; color:var(--ink-soft); margin-bottom:6px}
+.field input,.field textarea{
+  width:100%; padding:13px 15px; border-radius:12px; border:1px solid var(--line);
+  background:rgba(255,255,255,.8); font-family:inherit; font-size:.94rem; color:var(--ink); transition:border-color .2s, box-shadow .2s;
+}
+.field input:focus,.field textarea:focus{outline:none; border-color:var(--blue); box-shadow:0 0 0 4px rgba(0,80,230,.14)}
+.field textarea{resize:vertical; min-height:104px}
+form .btn{width:100%; margin-top:6px}
+
+/* ============ FOOTER ============ */
+footer{padding:60px 0 40px; margin-top:40px; position:relative; z-index:1}
+.foot{padding:40px; border-radius:var(--r)}
+.foot-top{display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; margin-bottom:28px}
+.foot-links{display:flex; gap:8px; flex-wrap:wrap}
+.foot-links a{font-size:.88rem; color:var(--ink-soft); padding:7px 12px; border-radius:100px; transition:color .2s, background .2s}
+.foot-links a:hover{color:var(--blue); background:rgba(0,80,230,.07)}
+.foot-bottom{border-top:1px solid var(--line); padding-top:22px; display:flex; justify-content:space-between;
+  gap:14px; flex-wrap:wrap; font-size:.84rem; color:var(--mute)}
+.foot-bottom .indep{color:var(--ink-soft); font-weight:500}
+
+/* ============ RESPONSIVE ============ */
+@media(max-width:980px){
+  .hero-grid{grid-template-columns:1fr; gap:34px}
+  .hero-side{flex-direction:row; flex-wrap:wrap}
+  .float-card{flex:1; min-width:160px}
+  .vals,.projects{grid-template-columns:1fr 1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .agences{grid-template-columns:1fr 1fr}
+  .offilog,.contact{grid-template-columns:1fr}
+  .jobs{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .wrap{padding:0 18px}
+  .nav-links{display:none}
+  .nav-cta{display:none}
+  .burger{display:flex}
+  header.nav.open .nav-links{
+    display:flex; position:absolute; top:100%; left:0; right:0; flex-direction:column; margin:0; gap:4px;
+    background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.92)); padding:14px 18px;
+    box-shadow:var(--shadow-sm); border-bottom:1px solid var(--line);
+  }
+  header.nav.open .nav-cta{display:flex; margin:8px 18px 14px}
+  .sec{padding:64px 0}
+  .hero{padding:120px 0 60px; min-height:auto}
+  .hero-side{flex-direction:column}
+  .vals,.projects,.stats,.agences,.jobs{grid-template-columns:1fr}
+  .frow{grid-template-columns:1fr}
+  .labos-wrap,.foot,form{padding:24px 20px}
+  .map-shell iframe{min-height:460px}
+}
+
+/* ============ REDUCED MOTION ============ */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{animation:none!important; transition:none!important}
+  .reveal{opacity:1!important; transform:none!important}
+  #bg{display:none!important}
+}
+.no-js .reveal{opacity:1; transform:none}
+</style>
+</head>
+<body class="no-js">
+
+<!-- ===== WEBGL BACKGROUND + FALLBACK ===== -->
+<div id="bgFallback" aria-hidden="true"></div>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div id="veil" aria-hidden="true"></div>
+
+<!-- ===== HEADER ===== -->
+<header class="nav" id="hdr">
+  <div class="wrap nav-in">
+    <a href="#top" class="brand" aria-label="Intégral Pharma, accueil">
+      <img src="../assets/logo.png" alt="Intégral Pharma" />
+      <b>Intégral&nbsp;Pharma</b>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="#valeurs">Valeurs</a>
+      <a href="#offres">Offres</a>
+      <a href="#groupe">Le groupe</a>
+      <a href="#offilog">Offilog</a>
+      <a href="#accompagnement">Accompagnement</a>
+      <a href="#carrieres">Carrières</a>
+    </nav>
+    <a href="#contact" class="btn btn-primary nav-cta">Demander nos conditions</a>
+    <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span></button>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ===== HERO ===== -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow reveal"><span class="dot"></span>Grossiste-répartiteur de première intention</span>
+      <h1 id="hero-title" class="reveal" data-d="1">Plus de marge,<br />sur <span class="accent">chaque commande.</span></h1>
+      <p class="sub lead reveal" data-d="2">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
+      <div class="hero-cta reveal" data-d="3">
+        <a href="#contact" class="btn btn-primary">Demander nos conditions</a>
+        <a href="#groupe" class="btn btn-ghost">Découvrir le groupe</a>
+      </div>
+      <div class="hero-tags reveal" data-d="4">
+        <span class="tag"><b>+20 ans</b> d'indépendance</span>
+        <span class="tag"><b>9 agences</b> en France</span>
+        <span class="tag"><b>Couverture</b> nationale</span>
+      </div>
+    </div>
+    <div class="hero-side">
+      <div class="float-card panel reveal" data-d="2" data-px="0.04">
+        <div class="k" data-count="20" data-suffix="+">0</div>
+        <div class="l">années d'expérience, en toute indépendance</div>
+      </div>
+      <div class="float-card panel amber reveal" data-d="3" data-px="0.07">
+        <div class="k" data-count="14000" data-suffix="+" data-sep="1">0</div>
+        <div class="l">références Offilog en parapharmacie</div>
+      </div>
+      <div class="float-card panel reveal" data-d="4" data-px="0.05">
+        <div class="k">0€</div>
+        <div class="l">d'adhésion — on commence simplement</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== VALEURS ===== -->
+<section class="sec" id="valeurs" aria-labelledby="valeurs-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow reveal"><span class="dot"></span>Notre ADN</span>
+      <h2 id="valeurs-title" class="reveal" data-d="1">Une relation, avant tout.</h2>
+      <p class="lead reveal" data-d="2">Ce qui guide chaque échange avec les officines que nous servons.</p>
+    </div>
+    <div class="vals">
+      <div class="val panel reveal" data-d="1" data-px="0.03">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Confiance</h3>
+        <p>Des engagements tenus, une transparence sur chaque commande et une relation qui dure dans le temps.</p>
+      </div>
+      <div class="val panel reveal" data-d="2" data-px="0.05">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.35-7-10a4 4 0 017-2.65A4 4 0 0119 11c0 5.65-7 10-7 10z"/></svg></div>
+        <h3>Engagement</h3>
+        <p>Nous portons vos enjeux comme les nôtres, avec une équipe disponible et proche de votre terrain.</p>
+      </div>
+      <div class="val panel reveal" data-d="3" data-px="0.04">
+        <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0114 0"/></svg></div>
+        <h3>Respect</h3>
+        <p>De votre indépendance, de votre rythme et de vos choix. Vous décidez, nous vous donnons les moyens.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== NOS OFFRES ===== -->
+<section class="sec" id="offres" aria-labelledby="offres-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow reveal"><span class="dot"></span>Nos offres</span>
+      <h2 id="offres-title" class="reveal" data-d="1">Les plus grands laboratoires.</h2>
+      <p class="lead reveal" data-d="2">Un sourcing solide qui couvre vos besoins du quotidien, avec des conditions pensées pour votre marge.</p>
+    </div>
+    <div class="labos-wrap panel reveal" data-d="1" data-px="0.025">
+      <p class="lead" style="font-size:.98rem">Génériques et grandes marques, disponibles dès la première boîte :</p>
+      <div class="labos">
+        <span class="labo">Zentiva</span>
+        <span class="labo">Teva</span>
+        <span class="labo">EG&nbsp;Labo</span>
+        <span class="labo">Zydus</span>
+        <span class="labo">Viatris</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== LE GROUPE ===== -->
+<section class="sec" id="groupe" aria-labelledby="groupe-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow reveal"><span class="dot"></span>Le groupe</span>
+      <h2 id="groupe-title" class="reveal" data-d="1">National.</h2>
+      <p class="lead reveal" data-d="2">9 agences réparties sur le territoire, pour servir chaque officine au plus près. Un groupe de grossistes français indépendant.</p>
+    </div>
+    <div class="map-shell panel reveal" data-d="1">
+      <iframe id="netFrame" src="../map-component.html?mode=map" title="Carte des agences Intégral Pharma" loading="lazy" scrolling="no"></iframe>
+    </div>
+    <div class="agences">
+      <div class="ag reveal" data-d="1"><b>Ouest Pharma Services</b><span>St-Étienne-de-Montluc (44)</span></div>
+      <div class="ag reveal" data-d="1"><b>Escale Pharma</b><span>Chilly-Mazarin (91)</span></div>
+      <div class="ag reveal" data-d="2"><b>Comptoir Pharmaceutique du Rhône</b><span>Saint-Maurice-l'Exil (38)</span></div>
+      <div class="ag reveal" data-d="2"><b>Sud Ouest Pharma</b><span>Montayral (47)</span></div>
+      <div class="ag reveal" data-d="3"><b>Pharm'Occitanie Services</b><span>Villeneuve-lès-Béziers (34)</span></div>
+      <div class="ag reveal" data-d="3"><b>Hyères Pharma</b><span>Hyères (83)</span><span class="badge">Siège</span></div>
+      <div class="ag reveal" data-d="1"><b>Sud Est Pharma</b><span>Le Cannet-des-Maures (83)</span></div>
+      <div class="ag reveal" data-d="2"><b>Mistral Santé Pharma</b><span>Flassans-sur-Issole (83)</span></div>
+      <div class="ag reveal" data-d="3"><b>Pharmest</b><span>Metz (57)</span><span class="badge">Partenaire</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CHIFFRES ===== -->
+<section class="sec" id="chiffres" aria-labelledby="chiffres-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow reveal"><span class="dot"></span>En quelques chiffres</span>
+      <h2 id="chiffres-title" class="reveal" data-d="1">Solide, proche, indépendant.</h2>
+    </div>
+    <div class="stats">
+      <div class="stat panel reveal" data-d="1" data-px="0.03"><div class="num" data-count="20" data-suffix="+">0</div><div class="lab">ans d'expérience</div></div>
+      <div class="stat panel reveal" data-d="2" data-px="0.05"><div class="num" data-count="9">0</div><div class="lab">agences en France</div></div>
+      <div class="stat panel reveal" data-d="3" data-px="0.04"><div class="num" data-count="14000" data-suffix="+" data-sep="1">0</div><div class="lab">références Offilog</div></div>
+      <div class="stat panel reveal" data-d="4" data-px="0.06"><div class="num" data-count="430" data-suffix="+">0</div><div class="lab">laboratoires partenaires</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== OFFILOG ===== -->
+<section class="sec" id="offilog" aria-labelledby="offilog-title">
+  <div class="wrap">
+    <div class="offilog">
+      <div class="offilog-copy">
+        <span class="eyebrow reveal"><span class="dot"></span>Offilog</span>
+        <h2 id="offilog-title" class="reveal" data-d="1" style="font-size:clamp(2rem,4.4vw,3.1rem); margin:18px 0 14px">Toute la parapharmacie.</h2>
+        <p class="lead reveal" data-d="2">Une plateforme dédiée pour commander toute votre parapharmacie au même endroit, sans frais d'adhésion.</p>
+        <div class="offilog-stats reveal" data-d="3">
+          <div class="ostat"><div class="n" data-count="14000" data-suffix="+" data-sep="1">0</div><div class="t">références</div></div>
+          <div class="ostat"><div class="n" data-count="430" data-suffix="+">0</div><div class="t">laboratoires</div></div>
+          <div class="ostat"><div class="n">0€</div><div class="t">d'adhésion</div></div>
+        </div>
+      </div>
+      <div class="offilog-cats panel reveal" data-d="2" data-px="0.03" style="padding:32px 30px; border-radius:var(--r)">
+        <p class="lead" style="font-size:.94rem; margin-bottom:18px">Toutes les catégories, en un seul flux :</p>
+        <div class="cats">
+          <span class="cat">Solaires</span>
+          <span class="cat">Soin du visage</span>
+          <span class="cat">Hygiène</span>
+          <span class="cat">Bébé</span>
+          <span class="cat">Cheveux</span>
+          <span class="cat">Compléments</span>
+          <span class="cat">Bio</span>
+          <span class="cat">Bucco-dentaire</span>
+          <span class="cat">Vétérinaire</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ACCOMPAGNEMENT ===== -->
+<section class="sec" id="accompagnement" aria-labelledby="accomp-title">
+  <div class="wrap">
+    <div class="accomp-head">
+      <span class="eyebrow reveal"><span class="dot"></span>Accompagnement</span>
+      <h2 id="accomp-title" class="reveal" data-d="1">On le porte avec vous.</h2>
+      <p class="hook reveal" data-d="2">Vous êtes pharmacien titulaire et vous avez un projet de <b>transfert</b>, d'<b>agrandissement</b>, de <b>cession de parts</b> ou d'<b>optimisation</b> ? On le porte avec vous.</p>
+    </div>
+    <div class="projects">
+      <div class="proj panel reveal" data-d="1" data-px="0.03">
+        <div class="pic"><svg viewBox="0 0 24 24"><path d="M4 17l6-6 4 4 6-7"/><path d="M14 8h6v6"/></svg></div>
+        <h3>Transfert d'officine</h3>
+        <p>Un changement d'emplacement bien préparé, avec vous à chaque étape.</p>
+      </div>
+      <div class="proj panel reveal" data-d="2" data-px="0.045">
+        <div class="pic"><svg viewBox="0 0 24 24"><path d="M3 21V7l9-4 9 4v14"/><path d="M9 21v-6h6v6"/></svg></div>
+        <h3>Agrandissement</h3>
+        <p>Faire grandir votre surface et votre offre sans perdre votre cap.</p>
+      </div>
+      <div class="proj panel reveal" data-d="3" data-px="0.035">
+        <div class="pic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0"/><path d="M14 20a6 6 0 016-6"/></svg></div>
+        <h3>Cession de parts</h3>
+        <p>Une transmission accompagnée, dans le respect de chacun.</p>
+      </div>
+      <div class="proj panel reveal" data-d="4" data-px="0.05">
+        <div class="pic"><svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="4"/></svg></div>
+        <h3>Optimisation</h3>
+        <p>Plus de marge et de fluidité, là où ça compte vraiment pour vous.</p>
+      </div>
+    </div>
+    <a href="#contact" class="btn btn-amber reveal" data-d="1">En parler avec nous</a>
+  </div>
+</section>
+
+<!-- ===== CARRIERES ===== -->
+<section class="sec" id="carrieres" aria-labelledby="car-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow reveal"><span class="dot"></span>Carrières</span>
+      <h2 id="car-title" class="reveal" data-d="1">Le groupe recrute.</h2>
+      <p class="lead reveal" data-d="2">Rejoignez un groupe de grossistes français indépendant, à taille humaine et ancré dans son territoire.</p>
+    </div>
+    <div class="jobs">
+      <div class="job panel reveal" data-d="1"><div class="jn">01</div><b>Approvisionnement</b></div>
+      <div class="job panel reveal" data-d="2"><div class="jn">02</div><b>Commercial</b></div>
+      <div class="job panel reveal" data-d="3"><div class="jn">03</div><b>Pharmacien responsable</b></div>
+      <div class="job panel reveal" data-d="4"><div class="jn">04</div><b>Préparateur-chauffeur</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CONTACT ===== -->
+<section class="sec" id="contact" aria-labelledby="contact-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow reveal"><span class="dot"></span>Contact</span>
+      <h2 id="contact-title" class="reveal" data-d="1">Demandons-nous nos conditions.</h2>
+      <p class="lead reveal" data-d="2">Dites-nous où vous en êtes — on vous chiffre vos conditions en rendez-vous, adaptées à votre officine.</p>
+    </div>
+    <div class="contact">
+      <div class="contact-info reveal" data-d="1">
+        <div class="ci">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 6l8 6 8-6"/></svg></div>
+          <div><b>Email</b><span>contact@integralpharma.fr</span></div>
+        </div>
+        <div class="ci">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 0114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+          <div><b>Siège</b><span>758 Chemin de la Source, 83400 Hyères</span></div>
+        </div>
+        <div class="ci">
+          <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div>
+          <div><b>Couverture</b><span>9 agences — nationale</span></div>
+        </div>
+        <p class="lead" style="font-size:.94rem; margin-top:8px">Pas de % ni de montant en ligne : nos conditions se construisent avec vous, en rendez-vous.</p>
+      </div>
+      <form class="panel reveal" data-d="2" id="contactForm" action="mailto:contact@integralpharma.fr" method="post" enctype="text/plain">
+        <div class="frow">
+          <div class="field"><label for="f-nom">Nom</label><input id="f-nom" name="Nom" type="text" autocomplete="name" required /></div>
+          <div class="field"><label for="f-off">Officine</label><input id="f-off" name="Officine" type="text" /></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label for="f-cp">Code postal</label><input id="f-cp" name="Code postal" type="text" inputmode="numeric" autocomplete="postal-code" /></div>
+          <div class="field"><label for="f-tel">Téléphone</label><input id="f-tel" name="Téléphone" type="tel" autocomplete="tel" /></div>
+        </div>
+        <div class="field" style="margin-bottom:14px"><label for="f-email">Email</label><input id="f-email" name="Email" type="email" autocomplete="email" required /></div>
+        <div class="field" style="margin-bottom:14px"><label for="f-msg">Message</label><textarea id="f-msg" name="Message" placeholder="Parlez-nous de votre officine et de votre projet…"></textarea></div>
+        <button type="submit" class="btn btn-primary">Demander nos conditions</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap">
+    <div class="foot panel">
+      <div class="foot-top">
+        <a href="#top" class="brand"><img src="../assets/logo.png" alt="Intégral Pharma" /><b>Intégral&nbsp;Pharma</b></a>
+        <nav class="foot-links" aria-label="Pied de page">
+          <a href="#valeurs">Valeurs</a>
+          <a href="#offres">Offres</a>
+          <a href="#groupe">Le groupe</a>
+          <a href="#offilog">Offilog</a>
+          <a href="#accompagnement">Accompagnement</a>
+          <a href="#carrieres">Carrières</a>
+          <a href="#contact">Contact</a>
+        </nav>
+      </div>
+      <div class="foot-bottom">
+        <span class="indep">Groupe de grossistes français indépendant</span>
+        <span>© <span id="yr">2026</span> Intégral Pharma — Tous droits réservés</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== THREE.JS ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  document.body.classList.remove('no-js');
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var isMobile = window.matchMedia('(max-width:640px)').matches;
+
+  /* ---------- HEADER scroll + burger ---------- */
+  var hdr = document.getElementById('hdr');
+  var burger = document.getElementById('burger');
+  function onScrollHdr(){ hdr.classList.toggle('scrolled', window.scrollY > 30); }
+  onScrollHdr();
+  burger.addEventListener('click', function(){
+    var open = hdr.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open ? 'true':'false');
+  });
+  document.querySelectorAll('.nav-links a, .nav-cta').forEach(function(a){
+    a.addEventListener('click', function(){ hdr.classList.remove('open'); burger.setAttribute('aria-expanded','false'); });
+  });
+
+  /* ---------- REVEAL on scroll ---------- */
+  var revEls = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  if('IntersectionObserver' in window && !REDUCED){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    },{threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+    revEls.forEach(function(el){ io.observe(el); });
+  } else { revEls.forEach(function(el){ el.classList.add('in'); }); }
+
+  /* ---------- COUNT-UP ---------- */
+  function fmt(n, sep){
+    if(sep){ return Math.round(n).toLocaleString('fr-FR').replace(/ /g,' '); }
+    return Math.round(n).toString();
+  }
+  function runCount(el){
+    var target = parseFloat(el.getAttribute('data-count'));
+    var suffix = el.getAttribute('data-suffix') || '';
+    var sep = el.getAttribute('data-sep');
+    if(REDUCED){ el.textContent = fmt(target, sep) + suffix; return; }
+    var dur = 1500, t0 = null;
+    function step(ts){
+      if(!t0) t0 = ts;
+      var p = Math.min((ts - t0)/dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(target * eased, sep) + suffix;
+      if(p < 1) requestAnimationFrame(step);
+      else el.textContent = fmt(target, sep) + suffix;
+    }
+    requestAnimationFrame(step);
+  }
+  var counters = Array.prototype.slice.call(document.querySelectorAll('[data-count]'));
+  if('IntersectionObserver' in window){
+    var cio = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting){ runCount(e.target); cio.unobserve(e.target); } });
+    },{threshold:0.5});
+    counters.forEach(function(el){ cio.observe(el); });
+  } else { counters.forEach(runCount); }
+
+  /* ---------- MAP iframe autosize ---------- */
+  (function(){
+    var f = document.getElementById('netFrame'); if(!f) return;
+    function fit(){ try{ var d=f.contentDocument||f.contentWindow.document; if(d&&d.body){ f.style.height=d.body.scrollHeight+'px'; } }catch(e){} }
+    f.addEventListener('load', function(){ fit(); setTimeout(fit,400); setTimeout(fit,1400); });
+    window.addEventListener('resize', fit);
+    window.addEventListener('message', function(e){ if(e.data && e.data.ipAtlasHeight){ f.style.height = e.data.ipAtlasHeight + 'px'; } });
+  })();
+
+  /* ---------- PARALLAX (mouse + scroll) on data-px ---------- */
+  var pxEls = Array.prototype.slice.call(document.querySelectorAll('[data-px]'));
+  var mx = 0, my = 0, tmx = 0, tmy = 0;
+  if(!REDUCED && !isMobile){
+    window.addEventListener('pointermove', function(e){
+      tmx = (e.clientX / window.innerWidth - 0.5);
+      tmy = (e.clientY / window.innerHeight - 0.5);
+    }, {passive:true});
+  }
+  function parallaxTick(){
+    mx += (tmx - mx) * 0.06; my += (tmy - my) * 0.06;
+    var sy = window.scrollY;
+    for(var i=0;i<pxEls.length;i++){
+      var el = pxEls[i], amt = parseFloat(el.getAttribute('data-px'));
+      var tx = mx * amt * 240;
+      var ty = my * amt * 180;
+      el.style.transform = 'translate3d('+tx.toFixed(1)+'px,'+ty.toFixed(1)+'px,0)';
+    }
+  }
+
+  /* =========================================================
+     WEBGL — SPATIAL FLOW SHADER
+     Full-screen plane, fragment-shader fluid flow that reacts
+     to mouse + scroll. Blue / soft violet / orange.
+  ========================================================= */
+  var canvas = document.getElementById('bg');
+  var renderer, scene, camera, mesh, uniforms, clock, rafId = null;
+  var webglOK = false;
+  var uMouse = {x:0.5, y:0.5}, uMouseT = {x:0.5, y:0.5};
+  var scrollNorm = 0;
+
+  var FRAG = [
+    'precision highp float;',
+    'uniform float uTime;',
+    'uniform vec2 uRes;',
+    'uniform vec2 uMouse;',
+    'uniform float uScroll;',
+    'varying vec2 vUv;',
+    // hash + value noise
+    'vec2 hash22(vec2 p){ p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))); return -1.0+2.0*fract(sin(p)*43758.5453123); }',
+    'float noise(vec2 p){',
+    '  vec2 i=floor(p), f=fract(p);',
+    '  vec2 u=f*f*(3.0-2.0*f);',
+    '  return mix(mix(dot(hash22(i+vec2(0,0)),f-vec2(0,0)),dot(hash22(i+vec2(1,0)),f-vec2(1,0)),u.x),',
+    '             mix(dot(hash22(i+vec2(0,1)),f-vec2(0,1)),dot(hash22(i+vec2(1,1)),f-vec2(1,1)),u.x),u.y);',
+    '}',
+    'float fbm(vec2 p){',
+    '  float v=0.0, a=0.55; mat2 m=mat2(1.6,1.2,-1.2,1.6);',
+    '  for(int i=0;i<5;i++){ v+=a*noise(p); p=m*p; a*=0.5; }',
+    '  return v;',
+    '}',
+    'void main(){',
+    '  vec2 uv=vUv;',
+    '  float asp=uRes.x/uRes.y;',
+    '  vec2 p=uv; p.x*=asp;',
+    '  float t=uTime*0.05;',
+    // flow domain-warp
+    '  vec2 q=vec2(fbm(p+vec2(0.0,t)), fbm(p+vec2(5.2,-t*0.8)));',
+    '  vec2 m2=(uMouse-0.5); m2.x*=asp;',
+    '  vec2 r=vec2(fbm(p+1.8*q+m2*0.6+vec2(1.7,9.2)+t*0.4),',
+    '             fbm(p+1.8*q+vec2(8.3,2.8)-t*0.3));',
+    '  float f=fbm(p+1.9*r + uScroll*0.5);',
+    // palette: paper -> blue -> violet -> orange
+    '  vec3 cPaper=vec3(0.945,0.965,1.0);',
+    '  vec3 cBlue =vec3(0.0,0.314,0.902);',
+    '  vec3 cViolet=vec3(0.42,0.294,0.84);',
+    '  vec3 cOrange=vec3(0.953,0.604,0.106);',
+    '  vec3 col=cPaper;',
+    '  col=mix(col,cBlue, smoothstep(0.0,0.65,f)*0.85);',
+    '  col=mix(col,cViolet, clamp(length(r),0.0,1.0)*0.55);',
+    '  col=mix(col,cOrange, smoothstep(0.55,0.95,f+0.15*sin(uScroll*3.0))*0.5);',
+    // lighten toward paper so content stays readable
+    '  col=mix(col,cPaper, 0.34);',
+    // mouse light glow
+    '  float d=distance(vec2(uv.x*asp,uv.y), vec2(uMouse.x*asp,uMouse.y));',
+    '  float glow=smoothstep(0.5,0.0,d);',
+    '  col+=vec3(0.10,0.09,0.04)*glow;',
+    // soft vignette
+    '  float vig=smoothstep(1.25,0.25,length((uv-0.5)*vec2(asp,1.0)));',
+    '  col=mix(col*0.94, col, vig);',
+    '  gl_FragColor=vec4(col,1.0);',
+    '}'
+  ].join('\n');
+
+  var VERT = [
+    'varying vec2 vUv;',
+    'void main(){ vUv=uv; gl_Position=vec4(position,1.0); }'
+  ].join('\n');
+
+  function initGL(){
+    if(REDUCED) return false;
+    if(!window.THREE) return false;
+    try{
+      renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:false, alpha:false, powerPreference:'high-performance'});
+      var ctx = renderer.getContext();
+      if(!ctx) return false;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, isMobile ? 1.5 : 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      scene = new THREE.Scene();
+      camera = new THREE.Camera();
+      clock = new THREE.Clock();
+      uniforms = {
+        uTime:{value:0},
+        uRes:{value:new THREE.Vector2(window.innerWidth, window.innerHeight)},
+        uMouse:{value:new THREE.Vector2(0.5,0.5)},
+        uScroll:{value:0}
+      };
+      var geo = new THREE.PlaneBufferGeometry(2,2);
+      var mat = new THREE.ShaderMaterial({vertexShader:VERT, fragmentShader:FRAG, uniforms:uniforms, depthTest:false, depthWrite:false});
+      mesh = new THREE.Mesh(geo, mat);
+      scene.add(mesh);
+      webglOK = true;
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function resizeGL(){
+    if(!webglOK) return;
+    var w = window.innerWidth, h = window.innerHeight;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, isMobile ? 1.5 : 2));
+    renderer.setSize(w, h);
+    uniforms.uRes.value.set(w, h);
+  }
+
+  var lastT = 0;
+  function frame(){
+    rafId = requestAnimationFrame(frame);
+    // parallax always (cheap)
+    parallaxTick();
+    if(!webglOK) return;
+    var dt = clock.getDelta();
+    uMouse.x += (uMouseT.x - uMouse.x)*0.05;
+    uMouse.y += (uMouseT.y - uMouse.y)*0.05;
+    uniforms.uTime.value += dt;
+    uniforms.uMouse.value.set(uMouse.x, uMouse.y);
+    var maxS = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    scrollNorm += ((window.scrollY/maxS) - scrollNorm)*0.06;
+    uniforms.uScroll.value = scrollNorm;
+    renderer.render(scene, camera);
+  }
+
+  function startLoop(){ if(rafId===null){ if(clock) clock.getDelta(); rafId = requestAnimationFrame(frame); } }
+  function stopLoop(){ if(rafId!==null){ cancelAnimationFrame(rafId); rafId = null; } }
+
+  function disposeGL(){
+    stopLoop();
+    try{
+      if(mesh){ mesh.geometry.dispose(); mesh.material.dispose(); }
+      if(renderer){ renderer.dispose(); renderer.forceContextLoss && renderer.forceContextLoss(); }
+    }catch(e){}
+  }
+
+  // pointer for shader (works on mobile too, lightly)
+  window.addEventListener('pointermove', function(e){
+    uMouseT.x = e.clientX/window.innerWidth;
+    uMouseT.y = 1.0 - e.clientY/window.innerHeight;
+  }, {passive:true});
+
+  // boot
+  if(initGL()){
+    startLoop();
+    window.addEventListener('resize', resizeGL);
+    // pause when hidden
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden) stopLoop(); else startLoop();
+    });
+    // pause when canvas off-viewport (it's full screen fixed, so tie to page visibility only)
+    window.addEventListener('pagehide', disposeGL);
+    window.addEventListener('beforeunload', disposeGL);
+    // context loss handling
+    canvas.addEventListener('webglcontextlost', function(ev){ ev.preventDefault(); stopLoop(); document.body.classList.add('webgl-failed'); }, false);
+  } else {
+    // FALLBACK: hide canvas, show gradient/poster
+    webglOK = false;
+    canvas.style.display = 'none';
+    document.body.classList.add('webgl-failed');
+    // still run parallax loop (light) unless reduced
+    if(!REDUCED){ rafId = requestAnimationFrame(function lp(){ rafId = requestAnimationFrame(lp); parallaxTick(); }); }
+  }
+
+  // scroll handler
+  window.addEventListener('scroll', onScrollHdr, {passive:true});
+
+})();
+</script>
+</body>
+</html>
