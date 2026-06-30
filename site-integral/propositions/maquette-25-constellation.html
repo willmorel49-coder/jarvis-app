@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intégral Pharma — Le réseau national vivant</title>
+<meta name="description" content="Intégral Pharma — grossiste-répartiteur de première intention. Plus de marge, sur chaque commande.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --night:#05070E; --night2:#0A0F1C; --panel:#0D1424;
+  --blue:#0050E6; --blue-soft:#2D6BFF; --orange:#F39A1B;
+  --ink:#EAF0FF; --mut:#8A99B8; --line:rgba(120,150,210,.14);
+  --max:1180px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',system-ui,sans-serif; background:var(--night); color:var(--ink);
+  line-height:1.6; overflow-x:hidden; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.font-d{font-family:'Sora',sans-serif; line-height:1.05; letter-spacing:-.02em}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+section{position:relative}
+:focus-visible{outline:2px solid var(--orange);outline-offset:3px;border-radius:4px}
+
+/* ===== HEADER ===== */
+header{position:fixed;top:0;left:0;right:0;z-index:60;transition:background .4s,border-color .4s;border-bottom:1px solid transparent}
+header.scrolled{background:rgba(5,7,14,.82);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:72px}
+.nav .logo{height:32px;width:auto}
+.nav ul{display:flex;gap:30px;list-style:none}
+.nav ul a{font-size:14px;color:var(--mut);font-weight:500;transition:color .25s}
+.nav ul a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:'Sora';font-weight:600;font-size:14px;
+  padding:12px 22px;border-radius:40px;cursor:pointer;border:0;transition:transform .25s,box-shadow .25s,background .25s}
+.btn-pri{background:var(--orange);color:#1a1206;box-shadow:0 8px 30px rgba(243,154,27,.28)}
+.btn-pri:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(243,154,27,.4)}
+.btn-gho{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn-gho:hover{border-color:var(--blue-soft);background:rgba(45,107,255,.08)}
+.burger{display:none;background:none;border:0;color:var(--ink);cursor:pointer}
+
+/* ===== HERO ===== */
+#hero{height:100vh;min-height:680px;position:relative;overflow:hidden;display:flex;align-items:center}
+#three-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
+.hero-poster{position:absolute;inset:0;z-index:1;background:var(--night) center/cover no-repeat;display:none}
+.hero-poster.show{display:block}
+.hero-veil{position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(110% 80% at 50% 30%,transparent 38%,rgba(5,7,14,.55) 100%),
+  linear-gradient(180deg,rgba(5,7,14,.35) 0%,transparent 35%,rgba(5,7,14,.9) 100%)}
+.hero-inner{position:relative;z-index:3;width:100%}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:'Sora';font-weight:600;font-size:12.5px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--orange);margin-bottom:22px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 14px var(--orange);animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+h1.hero-title{font-size:clamp(2.6rem,7vw,5.4rem);font-weight:800;max-width:14ch;margin-bottom:22px}
+.hero-title .w{display:inline-block;opacity:0;transform:translateY(28px);animation:rise .8s cubic-bezier(.2,.7,.2,1) forwards}
+.hero-title .accent{color:var(--orange)}
+@keyframes rise{to{opacity:1;transform:none}}
+.hero-sub{font-size:clamp(1.02rem,1.8vw,1.28rem);color:var(--mut);max-width:46ch;margin-bottom:34px;
+  opacity:0;animation:rise .8s .6s forwards}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;opacity:0;animation:rise .8s .8s forwards}
+.scroll-hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:3;color:var(--mut);
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:8px}
+.scroll-hint .bar{width:1px;height:38px;background:linear-gradient(var(--orange),transparent);animation:drop 1.8s infinite}
+@keyframes drop{0%{transform:scaleY(.2);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}100%{transform:scaleY(.2);transform-origin:bottom}}
+
+/* ===== GENERIC SECTION ===== */
+.sec{padding:120px 0;position:relative}
+.kicker{font-family:'Sora';font-weight:600;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-soft);margin-bottom:16px}
+.sec h2{font-size:clamp(2rem,4.4vw,3.2rem);font-weight:800;margin-bottom:18px}
+.sec h2 .o{color:var(--orange)}
+.lead{font-size:1.08rem;color:var(--mut);max-width:54ch}
+.reveal{opacity:0;transform:translateY(34px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+
+/* ===== VALEURS ===== */
+.vals{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:54px}
+.val{background:linear-gradient(160deg,var(--panel),var(--night2));border:1px solid var(--line);border-radius:20px;padding:34px;transition:transform .4s,border-color .4s}
+.val:hover{transform:translateY(-6px);border-color:var(--blue-soft)}
+.val .ic{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;background:rgba(45,107,255,.12);margin-bottom:20px}
+.val h3{font-size:1.32rem;margin-bottom:10px}
+.val p{color:var(--mut);font-size:.97rem}
+
+/* ===== OFFRES / LABOS ===== */
+.labos-grid{display:flex;flex-wrap:wrap;gap:14px;margin-top:40px}
+.labo-chip{font-family:'Sora';font-weight:600;font-size:1.15rem;padding:16px 30px;border-radius:14px;
+  border:1px solid var(--line);background:var(--panel);color:var(--ink);transition:transform .35s,color .35s,border-color .35s}
+.labo-chip:hover{transform:translateY(-4px);color:var(--orange);border-color:var(--orange)}
+
+/* ===== GROUPE / RESEAU ===== */
+.net-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:start;margin-top:48px}
+.frame-shell{border:1px solid var(--line);border-radius:22px;overflow:hidden;background:var(--night2);min-height:420px}
+#netFrame{width:100%;height:520px;border:0;display:block;background:var(--night2)}
+.agencies{display:flex;flex-direction:column;gap:8px}
+.agency{display:flex;align-items:baseline;gap:14px;padding:13px 16px;border-radius:12px;border:1px solid transparent;transition:background .3s,border-color .3s}
+.agency:hover{background:var(--panel);border-color:var(--line)}
+.agency .nm{font-family:'Sora';font-weight:600;font-size:1rem}
+.agency .loc{color:var(--mut);font-size:.86rem;margin-left:auto;white-space:nowrap}
+.agency .tag{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);font-weight:700;margin-left:8px}
+
+/* ===== CHIFFRES ===== */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:50px}
+.stat{text-align:center;padding:30px 16px;border-radius:18px;background:linear-gradient(160deg,var(--panel),var(--night2));border:1px solid var(--line)}
+.stat .num{font-family:'Sora';font-weight:800;font-size:clamp(2.2rem,4.2vw,3rem);color:var(--orange);line-height:1}
+.stat .lab{color:var(--mut);font-size:.9rem;margin-top:10px}
+
+/* ===== OFFILOG ===== */
+.offi-head{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;justify-content:space-between}
+.offi-stats{display:flex;gap:34px;flex-wrap:wrap}
+.offi-stats div{font-family:'Sora'}
+.offi-stats b{display:block;font-weight:800;font-size:1.7rem;color:var(--orange)}
+.offi-stats span{color:var(--mut);font-size:.85rem}
+.cats{display:flex;flex-wrap:wrap;gap:12px;margin-top:40px}
+.cat{padding:12px 20px;border-radius:40px;border:1px solid var(--line);background:var(--night2);color:var(--mut);font-size:.92rem;transition:color .3s,border-color .3s}
+.cat:hover{color:var(--ink);border-color:var(--blue-soft)}
+
+/* ===== ACCOMPAGNEMENT ===== */
+.proj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:46px}
+.proj{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px 24px;transition:transform .4s,border-color .4s}
+.proj:hover{transform:translateY(-6px);border-color:var(--orange)}
+.proj .ic{width:44px;height:44px;margin-bottom:18px;color:var(--orange)}
+.proj h3{font-size:1.1rem;margin-bottom:6px}
+.proj p{color:var(--mut);font-size:.88rem}
+.accomp-lead{font-size:clamp(1.15rem,2.2vw,1.5rem);font-family:'Sora';font-weight:600;max-width:30ch;line-height:1.3}
+
+/* ===== CARRIERES ===== */
+.jobs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:42px}
+.job{padding:24px;border-radius:16px;border:1px solid var(--line);background:var(--night2);display:flex;align-items:center;gap:14px;transition:border-color .3s,transform .3s}
+.job:hover{border-color:var(--blue-soft);transform:translateY(-4px)}
+.job .d{width:9px;height:9px;border-radius:50%;background:var(--orange);flex:none}
+.job span{font-family:'Sora';font-weight:600;font-size:1rem}
+
+/* ===== CONTACT ===== */
+.contact-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:48px;margin-top:48px;align-items:start}
+.contact-info p{color:var(--mut);margin-bottom:18px}
+.contact-info .row{display:flex;gap:13px;margin-bottom:16px;align-items:flex-start}
+.contact-info .row svg{color:var(--orange);flex:none;margin-top:3px}
+form{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+form .full{grid-column:1/-1}
+label{display:block;font-size:.82rem;color:var(--mut);margin-bottom:7px;font-weight:500}
+input,textarea{width:100%;background:var(--night2);border:1px solid var(--line);border-radius:12px;
+  padding:13px 15px;color:var(--ink);font-family:inherit;font-size:.95rem;transition:border-color .3s}
+input:focus,textarea:focus{outline:none;border-color:var(--blue-soft)}
+textarea{min-height:120px;resize:vertical}
+
+/* ===== FOOTER ===== */
+footer{border-top:1px solid var(--line);padding:56px 0 40px;background:var(--night2)}
+.foot-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:28px;align-items:center}
+.foot-top .logo{height:30px}
+.foot-nav{display:flex;gap:26px;flex-wrap:wrap}
+.foot-nav a{color:var(--mut);font-size:.9rem;transition:color .3s}
+.foot-nav a:hover{color:var(--ink)}
+.foot-bottom{margin-top:34px;padding-top:24px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;color:var(--mut);font-size:.82rem}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){
+  .nav ul,.nav .btn{display:none}
+  .burger{display:block}
+  .nav.open ul{display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;background:var(--night2);padding:20px 24px;gap:16px;border-bottom:1px solid var(--line)}
+  .nav.open .btn{display:inline-flex;margin:8px 24px 18px}
+  .vals,.stats,.proj-grid,.jobs{grid-template-columns:1fr 1fr}
+  .net-grid,.contact-grid{grid-template-columns:1fr}
+  form{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .sec{padding:84px 0}
+  .vals,.stats,.proj-grid,.jobs{grid-template-columns:1fr}
+  .offi-stats{gap:22px}
+  #hero{min-height:600px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:0s!important;transition-duration:0s!important}
+  .hero-title .w,.hero-sub,.hero-cta{opacity:1!important;transform:none!important}
+  .reveal{opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="hdr">
+  <div class="wrap">
+    <nav class="nav" id="nav">
+      <a href="#hero" aria-label="Intégral Pharma accueil"><img src="../assets/logo.png" alt="Intégral Pharma" class="logo"></a>
+      <ul>
+        <li><a href="#valeurs">Nos valeurs</a></li>
+        <li><a href="#offres">Nos offres</a></li>
+        <li><a href="#groupe">Le groupe</a></li>
+        <li><a href="#offilog">Offilog</a></li>
+        <li><a href="#accompagnement">Vous accompagner</a></li>
+        <li><a href="#carrieres">Carrières</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <a href="#contact" class="btn btn-pri">Demander nos conditions</a>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="three-canvas" aria-hidden="true"></canvas>
+  <div class="hero-poster" id="heroPoster" style="background-image:url('../assets/poster.jpg')"></div>
+  <div class="hero-veil"></div>
+  <div class="hero-inner">
+    <div class="wrap">
+      <span class="eyebrow"><span class="dot"></span>Grossiste-répartiteur de première intention</span>
+      <h1 class="hero-title" id="heroTitle">
+        <span class="w" style="animation-delay:.05s">Plus</span>
+        <span class="w" style="animation-delay:.15s">de</span>
+        <span class="w accent" style="animation-delay:.25s">marge,</span><br>
+        <span class="w" style="animation-delay:.38s">sur</span>
+        <span class="w" style="animation-delay:.48s">chaque</span>
+        <span class="w" style="animation-delay:.58s">commande.</span>
+      </h1>
+      <p class="hero-sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
+      <div class="hero-cta">
+        <a href="#contact" class="btn btn-pri">Demander nos conditions</a>
+        <a href="#groupe" class="btn btn-gho">Découvrir le réseau</a>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint"><span>Le réseau est vivant</span><span class="bar"></span></div>
+</section>
+
+<!-- VALEURS -->
+<section class="sec" id="valeurs">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="kicker">Ce qui nous guide</p>
+      <h2>Une officine indépendante,<br><span class="o">près de chez vous.</span></h2>
+      <p class="lead">Un groupe de grossistes français indépendant, à vos côtés depuis plus de 20 ans. Trois valeurs, un même cap : votre réussite.</p>
+    </div>
+    <div class="vals">
+      <div class="val reveal">
+        <div class="ic"><svg width="24" height="24" fill="none" stroke="#2D6BFF" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/></svg></div>
+        <h3>Confiance</h3>
+        <p>Des engagements clairs, tenus commande après commande. Un interlocuteur qui connaît votre officine.</p>
+      </div>
+      <div class="val reveal">
+        <div class="ic"><svg width="24" height="24" fill="none" stroke="#2D6BFF" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z"/><path d="M9 11l2 2 4-4"/></svg></div>
+        <h3>Engagement</h3>
+        <p>Nous portons vos projets comme les nôtres. La proximité d'un partenaire, la force d'un réseau national.</p>
+      </div>
+      <div class="val reveal">
+        <div class="ic"><svg width="24" height="24" fill="none" stroke="#2D6BFF" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg></div>
+        <h3>Respect</h3>
+        <p>L'indépendance de chaque pharmacien, respectée. Vous restez maître chez vous, nous facilitons le reste.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OFFRES -->
+<section class="sec" id="offres" style="background:var(--night2)">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="kicker">Nos offres</p>
+      <h2>Les plus grands <span class="o">laboratoires.</span></h2>
+      <p class="lead">Un accès direct aux références qui font tourner votre officine, négociées au plus juste pour vous laisser plus de marge sur chaque boîte.</p>
+    </div>
+    <div class="labos-grid reveal">
+      <span class="labo-chip">Zentiva</span>
+      <span class="labo-chip">Teva</span>
+      <span class="labo-chip">EG Labo</span>
+      <span class="labo-chip">Zydus</span>
+      <span class="labo-chip">Viatris</span>
+    </div>
+  </div>
+</section>
+
+<!-- GROUPE / RESEAU -->
+<section class="sec" id="groupe">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="kicker">Le groupe</p>
+      <h2><span class="o">National.</span></h2>
+      <p class="lead">Neuf agences, un même réseau qui irrigue tout le territoire. Un groupe de grossistes français indépendant, organisé pour être au plus près de votre comptoir.</p>
+    </div>
+    <div class="net-grid">
+      <div class="frame-shell reveal">
+        <iframe id="netFrame" title="Carte du réseau Intégral Pharma" src="../map-component.html?mode=map" loading="lazy" scrolling="no"></iframe>
+      </div>
+      <div class="agencies reveal">
+        <div class="agency"><span class="nm">Ouest Pharma Services</span><span class="loc">St-Étienne-de-Montluc (44)</span></div>
+        <div class="agency"><span class="nm">Escale Pharma</span><span class="loc">Chilly-Mazarin (91)</span></div>
+        <div class="agency"><span class="nm">Comptoir Pharmaceutique du Rhône</span><span class="loc">St-Maurice-l'Exil (38)</span></div>
+        <div class="agency"><span class="nm">Sud Ouest Pharma</span><span class="loc">Montayral (47)</span></div>
+        <div class="agency"><span class="nm">Pharm'Occitanie Services</span><span class="loc">Villeneuve-lès-Béziers (34)</span></div>
+        <div class="agency"><span class="nm">Hyères Pharma<span class="tag">Siège</span></span><span class="loc">Hyères (83)</span></div>
+        <div class="agency"><span class="nm">Sud Est Pharma</span><span class="loc">Le Cannet-des-Maures (83)</span></div>
+        <div class="agency"><span class="nm">Mistral Santé Pharma</span><span class="loc">Flassans-sur-Issole (83)</span></div>
+        <div class="agency"><span class="nm">Pharmest<span class="tag">Partenaire</span></span><span class="loc">Metz (57)</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHIFFRES -->
+<section class="sec" id="chiffres" style="background:var(--night2)">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="kicker">En quelques repères</p>
+      <h2>Un réseau <span class="o">solide.</span></h2>
+    </div>
+    <div class="stats">
+      <div class="stat reveal"><div class="num" data-to="20" data-suf="+">0</div><div class="lab">ans d'expérience</div></div>
+      <div class="stat reveal"><div class="num" data-to="9">0</div><div class="lab">agences en France</div></div>
+      <div class="stat reveal"><div class="num" data-to="14000" data-suf="+">0</div><div class="lab">références Offilog</div></div>
+      <div class="stat reveal"><div class="num" data-to="430" data-suf="+">0</div><div class="lab">laboratoires</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- OFFILOG -->
+<section class="sec" id="offilog">
+  <div class="wrap">
+    <div class="offi-head reveal">
+      <div>
+        <p class="kicker">Offilog</p>
+        <h2>Toute la <span class="o">parapharmacie.</span></h2>
+        <p class="lead">Une plateforme dédiée pour bâtir et dynamiser votre rayon, sans contrainte d'entrée.</p>
+      </div>
+      <div class="offi-stats">
+        <div><b>+14 000</b><span>références</span></div>
+        <div><b>+430</b><span>laboratoires</span></div>
+        <div><b>0&nbsp;€</b><span>d'adhésion</span></div>
+      </div>
+    </div>
+    <div class="cats reveal">
+      <span class="cat">Solaires</span><span class="cat">Soin du visage</span><span class="cat">Hygiène</span>
+      <span class="cat">Bébé</span><span class="cat">Cheveux</span><span class="cat">Compléments</span>
+      <span class="cat">Bio</span><span class="cat">Bucco-dentaire</span><span class="cat">Vétérinaire</span>
+    </div>
+  </div>
+</section>
+
+<!-- ACCOMPAGNEMENT -->
+<section class="sec" id="accompagnement" style="background:var(--night2)">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="kicker">Vous accompagner</p>
+      <p class="accomp-lead">Vous êtes pharmacien titulaire et vous avez un projet de transfert, d'agrandissement, de cession de parts ou d'optimisation ? <span class="o">On le porte avec vous.</span></p>
+    </div>
+    <div class="proj-grid">
+      <div class="proj reveal">
+        <svg class="ic" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M5 9l-3 3 3 3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/></svg>
+        <h3>Transfert d'officine</h3><p>Sécuriser et réussir le déplacement de votre pharmacie.</p>
+      </div>
+      <div class="proj reveal">
+        <svg class="ic" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>
+        <h3>Agrandissement</h3><p>Gagner de l'espace et faire grandir votre surface de vente.</p>
+      </div>
+      <div class="proj reveal">
+        <svg class="ic" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5a2.5 2 0 015 0M9.5 14.5a2.5 2 0 005 0"/></svg>
+        <h3>Cession de parts</h3><p>Structurer une association ou une transmission sereine.</p>
+      </div>
+      <div class="proj reveal">
+        <svg class="ic" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-8"/><path d="M21 8v5M21 8h-5"/></svg>
+        <h3>Optimisation</h3><p>Améliorer vos achats, vos marges et votre organisation.</p>
+      </div>
+    </div>
+    <div class="reveal" style="margin-top:40px"><a href="#contact" class="btn btn-pri">En parler avec nous</a></div>
+  </div>
+</section>
+
+<!-- CARRIERES -->
+<section class="sec" id="carrieres">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="kicker">Carrières</p>
+      <h2>Le groupe <span class="o">recrute.</span></h2>
+      <p class="lead">Rejoignez un réseau humain où chaque métier compte, partout en France.</p>
+    </div>
+    <div class="jobs">
+      <div class="job reveal"><span class="d"></span><span>Approvisionnement</span></div>
+      <div class="job reveal"><span class="d"></span><span>Commercial</span></div>
+      <div class="job reveal"><span class="d"></span><span>Pharmacien responsable</span></div>
+      <div class="job reveal"><span class="d"></span><span>Préparateur-chauffeur</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="sec" id="contact" style="background:var(--night2)">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="kicker">Contact</p>
+      <h2>Parlons de <span class="o">votre officine.</span></h2>
+      <p class="lead">On vous chiffre vos conditions en rendez-vous, adaptées à votre activité.</p>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-info reveal">
+        <p>Une question, un projet, l'envie de comparer ? Écrivez-nous, on revient vers vous rapidement.</p>
+        <div class="row"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 4l8 8 8-8"/></svg><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a></div>
+        <div class="row"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>758 Chemin de la Source, 83400 Hyères</span></div>
+      </div>
+      <form class="reveal" id="contactForm" action="mailto:contact@integralpharma.fr" method="post" enctype="text/plain">
+        <div><label for="nom">Nom</label><input id="nom" name="Nom" type="text" required></div>
+        <div><label for="off">Officine</label><input id="off" name="Officine" type="text"></div>
+        <div><label for="cp">Code postal</label><input id="cp" name="Code postal" type="text" inputmode="numeric"></div>
+        <div><label for="em">Email</label><input id="em" name="Email" type="email" required></div>
+        <div class="full"><label for="tel">Téléphone</label><input id="tel" name="Téléphone" type="tel"></div>
+        <div class="full"><label for="msg">Message</label><textarea id="msg" name="Message"></textarea></div>
+        <div class="full"><button type="submit" class="btn btn-pri">Demander nos conditions</button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <a href="#hero"><img src="../assets/logo.png" alt="Intégral Pharma" class="logo"></a>
+      <nav class="foot-nav">
+        <a href="#valeurs">Valeurs</a><a href="#offres">Offres</a><a href="#groupe">Le groupe</a>
+        <a href="#offilog">Offilog</a><a href="#accompagnement">Vous accompagner</a><a href="#carrieres">Carrières</a><a href="#contact">Contact</a>
+      </nav>
+    </div>
+    <div class="foot-bottom">
+      <span>Groupe de grossistes français indépendant</span>
+      <span>© Intégral Pharma</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ===== HEADER + NAV ===== */
+var hdr=document.getElementById('hdr'),nav=document.getElementById('nav'),burger=document.getElementById('burger');
+window.addEventListener('scroll',function(){hdr.classList.toggle('scrolled',window.scrollY>40)});
+burger.addEventListener('click',function(){var o=nav.classList.toggle('open');burger.setAttribute('aria-expanded',o)});
+nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nav.classList.remove('open');burger.setAttribute('aria-expanded',false)})});
+
+/* ===== prefers-reduced-motion ===== */
+var REDUCE=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ===== REVEALS ===== */
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.16});
+document.querySelectorAll('.reveal').forEach(function(el){REDUCE?el.classList.add('in'):io.observe(el)});
+
+/* ===== COMPTEURS ===== */
+function fmt(n){return n>=1000?n.toLocaleString('fr-FR'):String(n)}
+var sio=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;sio.unobserve(e.target);
+  var el=e.target,to=+el.dataset.to,suf=el.dataset.suf||'';
+  if(REDUCE){el.textContent=fmt(to)+suf;return}
+  var t0=null,dur=1500;
+  function step(t){t0=t0||t;var p=Math.min((t-t0)/dur,1),v=Math.floor((1-Math.pow(1-p,3))*to);
+    el.textContent=fmt(v)+suf;if(p<1)requestAnimationFrame(step)}
+  requestAnimationFrame(step);
+})},{threshold:.5});
+document.querySelectorAll('.num').forEach(function(el){sio.observe(el)});
+
+/* ===== CARTE iframe height ===== */
+window.addEventListener('message',function(e){if(e.data&&e.data.ipAtlasHeight){
+  var f=document.getElementById('netFrame');if(f)f.style.height=Math.max(420,e.data.ipAtlasHeight)+'px';
+}});
+
+/* =================================================================
+   HERO 3D — CONSTELLATION RÉSEAU (THREE.Points + lignes proches)
+   ================================================================= */
+(function(){
+  var canvas=document.getElementById('three-canvas'),poster=document.getElementById('heroPoster');
+  function fallback(){canvas.style.display='none';poster.classList.add('show');}
+  if(REDUCE||typeof THREE==='undefined'){fallback();return;}
+
+  var renderer,scene,camera,points,lineMesh,raf,running=true;
+  var N=window.innerWidth<640?900:2400;        // nb particules
+  var SPREAD=70, MAXDIST=7.2, MAXLINKS=N*3;     // distance de lien
+  var basePos=new Float32Array(N*3), curPos=new Float32Array(N*3),
+      targetPos=new Float32Array(N*3), vel=new Float32Array(N*3);
+  var mode=0; // 0 = nuage libre, 1 = forme France
+  var morph=0; // 0..1 interpolation vers la cible
+
+  // FORME FRANCE approximative (silhouette hexagone stylisé) projetée
+  function franceShape(i){
+    // contour normalisé (-1..1) — silhouette hexagonale "France"
+    var pts=[[-.55,.78],[.12,.92],[.55,.62],[.92,.18],[.66,-.45],[.18,-.95],[-.42,-.72],[-.85,-.18],[-.92,.35]];
+    // remplissage: point aléatoire à l'intérieur via barycentre triangulé approx
+    var a=pts[i%pts.length], b=pts[(i*7+3)%pts.length];
+    var t=((i*0.6180339887)%1), s=((i*0.7548776662)%1)*.9;
+    var x=(a[0]*(1-t)+b[0]*t)*s, y=(a[1]*(1-t)+b[1]*t)*s;
+    return [x*30, y*34+2, (((i*0.3819660)%1)-0.5)*14];
+  }
+
+  function initPositions(){
+    for(var i=0;i<N;i++){
+      var x=(Math.random()-.5)*SPREAD, y=(Math.random()-.5)*SPREAD*.7, z=(Math.random()-.5)*SPREAD*.6;
+      basePos[i*3]=x; basePos[i*3+1]=y; basePos[i*3+2]=z;
+      curPos[i*3]=x; curPos[i*3+1]=y; curPos[i*3+2]=z;
+    }
+  }
+
+  function buildTargets(){
+    for(var i=0;i<N;i++){
+      if(mode===1){var f=franceShape(i);targetPos[i*3]=f[0];targetPos[i*3+1]=f[1];targetPos[i*3+2]=f[2];}
+      else{targetPos[i*3]=basePos[i*3];targetPos[i*3+1]=basePos[i*3+1];targetPos[i*3+2]=basePos[i*3+2];}
+    }
+  }
+
+  function init(){
+    try{
+      renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});
+    }catch(err){fallback();return false;}
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.setSize(window.innerWidth,window.innerHeight,false);
+    scene=new THREE.Scene();
+    camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,.1,400);
+    camera.position.set(0,0,72);
+
+    initPositions(); buildTargets();
+
+    // POINTS
+    var geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(curPos,3));
+    var col=new Float32Array(N*3),C1=new THREE.Color(0x0050E6),C2=new THREE.Color(0x2D6BFF),C3=new THREE.Color(0xF39A1B);
+    for(var i=0;i<N;i++){var r=Math.random(),c=r<.16?C3:(r<.55?C2:C1);col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;}
+    geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+    var sprite=makeGlow();
+    var mat=new THREE.PointsMaterial({size:1.5,map:sprite,vertexColors:true,transparent:true,
+      blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true,opacity:.95});
+    points=new THREE.Points(geo,mat); scene.add(points);
+
+    // LIGNES (réseau)
+    var lgeo=new THREE.BufferGeometry();
+    lgeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(MAXLINKS*6),3));
+    var lmat=new THREE.LineBasicMaterial({color:0x2D6BFF,transparent:true,opacity:.18,blending:THREE.AdditiveBlending,depthWrite:false});
+    lineMesh=new THREE.LineSegments(lgeo,lmat); scene.add(lineMesh);
+
+    window.addEventListener('resize',onResize);
+    window.addEventListener('pointermove',onMove,{passive:true});
+    return true;
+  }
+
+  function makeGlow(){
+    var c=document.createElement('canvas');c.width=c.height=64;var x=c.getContext('2d');
+    var g=x.createRadialGradient(32,32,0,32,32,32);
+    g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.25,'rgba(255,255,255,.85)');
+    g.addColorStop(.55,'rgba(255,255,255,.25)');g.addColorStop(1,'rgba(255,255,255,0)');
+    x.fillStyle=g;x.fillRect(0,0,64,64);var t=new THREE.Texture(c);t.needsUpdate=true;return t;
+  }
+
+  var mx=0,my=0,tmx=0,tmy=0;
+  function onMove(e){tmx=(e.clientX/window.innerWidth-.5);tmy=(e.clientY/window.innerHeight-.5);}
+  function onResize(){if(!renderer)return;camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight,false);}
+
+  // liens: échantillonnage spatial léger (grille)
+  function updateLinks(pos){
+    var lp=lineMesh.geometry.attributes.position.array,k=0;
+    var cell=MAXDIST,grid={};
+    for(var i=0;i<N;i++){
+      var gx=Math.floor(pos[i*3]/cell),gy=Math.floor(pos[i*3+1]/cell),gz=Math.floor(pos[i*3+2]/cell);
+      var key=gx+'_'+gy+'_'+gz;(grid[key]||(grid[key]=[])).push(i);
+    }
+    var d2=MAXDIST*MAXDIST;
+    for(var key in grid){
+      var arr=grid[key];
+      for(var a=0;a<arr.length;a++){
+        var ia=arr[a];
+        for(var b=a+1;b<arr.length;b++){
+          var ib=arr[b];
+          var dx=pos[ia*3]-pos[ib*3],dy=pos[ia*3+1]-pos[ib*3+1],dz=pos[ia*3+2]-pos[ib*3+2];
+          if(dx*dx+dy*dy+dz*dz<d2){
+            if(k+6>lp.length)break;
+            lp[k++]=pos[ia*3];lp[k++]=pos[ia*3+1];lp[k++]=pos[ia*3+2];
+            lp[k++]=pos[ib*3];lp[k++]=pos[ib*3+1];lp[k++]=pos[ib*3+2];
+          }
+        }
+      }
+    }
+    lineMesh.geometry.setDrawRange(0,k/3);
+    lineMesh.geometry.attributes.position.needsUpdate=true;
+  }
+
+  var t=0,linkTick=0;
+  function animate(){
+    if(!running)return;
+    raf=requestAnimationFrame(animate);
+    t+=0.004;
+    // souris -> caméra parallax + inclinaison nuage
+    mx+=(tmx-mx)*.05; my+=(tmy-my)*.05;
+    camera.position.x=mx*22; camera.position.y=-my*16; camera.lookAt(0,0,0);
+
+    // morph vers cible
+    morph+=((mode===1?1:0)-morph)*.04;
+
+    var pos=points.geometry.attributes.position.array;
+    for(var i=0;i<N;i++){
+      var ix=i*3;
+      // dérive lente bruitée autour de base
+      var drift=Math.sin(t+i*0.21)*2.0;
+      var bx=basePos[ix]+Math.sin(t*1.1+i)*1.4;
+      var by=basePos[ix+1]+Math.cos(t*0.9+i*0.7)*1.4;
+      var bz=basePos[ix+2]+drift;
+      // interp base<->france
+      var tx=bx+(targetPos[ix]-bx)*morph;
+      var ty=by+(targetPos[ix+1]-by)*morph;
+      var tz=bz+(targetPos[ix+2]-bz)*morph;
+      pos[ix]+=(tx-pos[ix])*.06;
+      pos[ix+1]+=(ty-pos[ix+1])*.06;
+      pos[ix+2]+=(tz-pos[ix+2])*.06;
+    }
+    points.geometry.attributes.position.needsUpdate=true;
+    points.rotation.y=t*0.15;
+    lineMesh.rotation.y=points.rotation.y;
+
+    if((linkTick++%3)===0) updateLinks(pos); // liens 1 frame /3 (perf)
+    renderer.render(scene,camera);
+  }
+
+  // scroll -> bascule mode France quand on quitte le hero
+  var scio=new IntersectionObserver(function(es){es.forEach(function(e){
+    mode = e.isIntersecting ? 0 : 1; buildTargets();
+    // pause rendu si hero totalement hors écran ? on garde tant qu'on n'est pas loin
+  })},{threshold:0});
+  scio.observe(document.getElementById('hero'));
+
+  // pause quand onglet caché
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){running=false;if(raf)cancelAnimationFrame(raf);}
+    else if(renderer){running=true;animate();}
+  });
+  // pause si hero loin sous le fold (économie)
+  var heroVis=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting && !document.hidden){if(!running){running=true;animate();}}
+    else{running=false;if(raf)cancelAnimationFrame(raf);}
+  })},{rootMargin:'120px',threshold:0});
+
+  if(init()){ animate(); heroVis.observe(document.getElementById('hero')); }
+})();
+</script>
+</body>
+</html>
