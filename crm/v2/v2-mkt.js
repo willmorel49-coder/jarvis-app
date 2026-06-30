@@ -47,6 +47,11 @@
   var catSrc = 'nr';   // section Catalogues grossiste : 'integral' | 'itp' | 'best'
   var catSel = [];     // panier : produits cochés (+) dans le catalogue grossiste
   var catRows = [];     // index plat des lignes affichées (pour les boutons +)
+  // ── Documents PDF partagés (Supabase Storage, visibles par TOUS les comptes) ──
+  var BUCKET = 'marketing-pdfs';
+  var docs = null;       // null = pas chargé · [] = chargé
+  var docsErr = null;    // message d'erreur (ex : bucket pas encore créé)
+  var docsBusy = false;  // upload en cours
 
   // ════════════════════════════════════════════
   // STORE (Supabase partagé + repli local)
@@ -103,6 +108,25 @@
     items = localAll(); return Promise.resolve(items);
   }
   function newId() { return 'm' + Date.now() + Math.floor((window.performance && performance.now ? performance.now() : 0) % 1000); }
+
+  // ── Store Documents PDF (Supabase Storage) ──
+  function prettyName(n) { var i = String(n || '').indexOf('__'); return i >= 0 ? n.slice(i + 2) : n; }
+  function fmtSize(b) { b = +b || 0; if (b < 1024) return b + ' o'; if (b < 1048576) return Math.round(b / 1024) + ' Ko'; return (b / 1048576).toFixed(1) + ' Mo'; }
+  function sanitize(n) { return String(n || 'document.pdf').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/-+/g, '-').slice(0, 80) || 'document.pdf'; }
+  function loadDocs() {
+    var c = sb();
+    if (!c || !c.storage) { docs = []; docsErr = 'no-sb'; return Promise.resolve(); }
+    return c.storage.from(BUCKET).list('', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } })
+      .then(function (r) {
+        if (r.error) { docs = []; docsErr = r.error.message || 'err'; return; }
+        docsErr = null;
+        docs = (r.data || []).filter(function (f) { return f.name && f.name !== '.emptyFolderPlaceholder'; }).map(function (f) {
+          var meta = f.metadata || {};
+          return { name: f.name, size: meta.size || 0, created: f.created_at || f.updated_at || null,
+                   url: c.storage.from(BUCKET).getPublicUrl(f.name).data.publicUrl };
+        });
+      }).catch(function (e) { docs = []; docsErr = (e && e.message) || 'err'; });
+  }
 
   // ════════════════════════════════════════════
   // DONNÉES PRODUITS (Offilog best-sellers + images)
@@ -225,6 +249,12 @@
           '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
           '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Site vitrine Intégral Pharma</span>' +
           '<span class="mkt-cat-s">Aperçu du nouveau site internet — vidéos, réseau national, Offilog. Cliquer pour ouvrir.</span></span>' +
+          '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
+        '</a>' +
+        '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'docs\')">' +
+          '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
+          '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Documents partagés (PDF)</span>' +
+          '<span class="mkt-cat-s">Catalogues, fiches, offres en PDF — ajoute-les ici, ils restent visibles par tous les comptes. Ouvrir &amp; supprimer.</span></span>' +
           '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
         '</a>' +
         section('support', supports) +
@@ -844,6 +874,45 @@
   // ════════════════════════════════════════════
   // PAGE
   // ════════════════════════════════════════════
+  // ════════════════════════════════════════════
+  // DOCUMENTS PARTAGÉS (PDF) — Supabase Storage
+  // ════════════════════════════════════════════
+  function renderDocs(root) {
+    if (docs === null) {
+      root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
+        '<div class="v2-loading"><div class="v2-spinner"></div><div>Ouverture des documents…</div></div>';
+      loadDocs().then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
+      return;
+    }
+    var list = docs.length ? docs.map(function (d) {
+      var nm = String(d.name).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return '<div class="mkt-doc">' +
+        '<span class="mkt-doc-ic">' + ICO('cat', 20) + '</span>' +
+        '<div class="mkt-doc-main"><div class="mkt-doc-n">' + esc(prettyName(d.name)) + '</div>' +
+          '<div class="mkt-doc-m">' + fmtSize(d.size) + (d.created ? ' · ' + new Date(d.created).toLocaleDateString('fr-FR') : '') + '</div></div>' +
+        '<a class="v2-btn v2-btn-ghost mkt-doc-open" href="' + esc(d.url) + '" target="_blank" rel="noopener">' + ICO('download', 15) + 'Ouvrir</a>' +
+        '<button class="mkt-doc-del" title="Supprimer pour tous" onclick="V2.mkt.docsDelete(\'' + nm + '\')">' + ICO('close', 16, 2) + '</button>' +
+      '</div>';
+    }).join('') : '<div class="mkt-empty">Aucun document pour le moment. Ajoute un PDF — il sera visible par tous les comptes.</div>';
+
+    var setup = docsErr
+      ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Stockage partagé à activer (une seule fois)</b><br>' +
+        'Le dossier des PDF n\'est pas encore créé côté Supabase. Demande-moi le script, il est prêt — après ça, tout marche pour tous les comptes.</div></div>'
+      : '';
+
+    root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
+      '<div class="v2-wrap">' +
+        '<div class="v2-page-title">Documents partagés</div>' +
+        '<div class="v2-page-sub">Des PDF (catalogues, fiches, offres…) visibles par <b>tous les comptes</b>. Ajoute, ouvre, supprime.</div>' +
+        '<div class="mkt-doc-bar">' +
+          '<label class="v2-btn v2-btn-primary mkt-upl' + (docsBusy ? ' is-busy' : '') + '">' + ICO('plus', 16, 2) + (docsBusy ? 'Envoi en cours…' : 'Ajouter un PDF') +
+            '<input type="file" accept="application/pdf,.pdf" multiple style="display:none"' + (docsBusy ? ' disabled' : '') + ' onchange="V2.mkt.docsUpload(this)"></label>' +
+        '</div>' +
+        setup +
+        '<div class="mkt-doc-list">' + list + '</div>' +
+      '</div>';
+  }
+
   V2.pages.marketing = {
     render: function (root, param) {
       injectCss();
@@ -855,10 +924,49 @@
       }
       if (param === 'catalogues') renderCatalogues(root);
       else if (param === 'site') renderSite(root);
+      else if (param === 'docs') renderDocs(root);
       else if (param) renderEditor(root, param); else renderList(root);
     }
   };
-  V2.mktReload = function () { items = null; };
+  V2.mktReload = function () { items = null; docs = null; };
+
+  // ── Upload / suppression des PDF partagés ──
+  V2.mkt = V2.mkt || {};
+  V2.mkt.docsUpload = function (input) {
+    var files = input && input.files ? [].slice.call(input.files) : [];
+    var pdfs = files.filter(function (f) { return /\.pdf$/i.test(f.name) || f.type === 'application/pdf'; });
+    if (!pdfs.length) { if (V2.toast) V2.toast('Choisis un fichier PDF.'); return; }
+    var c = sb();
+    if (!c || !c.storage) { if (V2.toast) V2.toast('Connexion requise.'); return; }
+    docsBusy = true; if (V2.route && V2.route.name === 'marketing') V2.render();
+    var chain = Promise.resolve(), failed = 0;
+    pdfs.forEach(function (f) {
+      chain = chain.then(function () {
+        var key = Date.now() + '-' + Math.floor(Math.random() * 1000) + '__' + sanitize(f.name);
+        return c.storage.from(BUCKET).upload(key, f, { contentType: 'application/pdf', upsert: false })
+          .then(function (r) { if (r && r.error) failed++; });
+      });
+    });
+    chain.then(function () { return loadDocs(); }).then(function () {
+      docsBusy = false;
+      if (V2.route && V2.route.name === 'marketing') V2.render();
+      if (V2.toast) V2.toast(failed ? 'Envoi partiel (' + failed + ' échec).' : (pdfs.length > 1 ? 'PDF ajoutés.' : 'PDF ajouté.'));
+    }).catch(function () {
+      docsBusy = false;
+      loadDocs().then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
+      if (V2.toast) V2.toast('Échec de l\'envoi.');
+    });
+  };
+  V2.mkt.docsDelete = function (name) {
+    var c = sb(); if (!c || !c.storage) return;
+    var disp = prettyName(name);
+    var go = function () {
+      c.storage.from(BUCKET).remove([name]).then(function () { return loadDocs(); })
+        .then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); if (V2.toast) V2.toast('Supprimé.'); })
+        .catch(function () { if (V2.toast) V2.toast('Échec de la suppression.'); });
+    };
+    if (window.confirm('Supprimer « ' + disp + ' » ? Il disparaîtra pour tous les comptes.')) go();
+  };
 
   // ════════════════════════════════════════════
   // CSS
@@ -876,6 +984,20 @@
       '.mkt-cat-ic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-cat),#4d35a0)}',
       '.mkt-cat-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
       '.mkt-cat-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}',
+      // ── Documents PDF partagés ──
+      '.mkt-doc-bar{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap}',
+      '.mkt-upl{position:relative;cursor:pointer}',
+      '.mkt-upl input{position:absolute;inset:0;opacity:0;cursor:pointer}',
+      '.mkt-upl.is-busy{opacity:.6;pointer-events:none}',
+      '.mkt-doc-list{display:flex;flex-direction:column;gap:10px;margin-top:14px}',
+      '.mkt-doc{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-1);padding:12px 14px}',
+      '.mkt-doc-ic{width:40px;height:40px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-rose,#E0556E),#b1304a)}',
+      '.mkt-doc-main{flex:1;min-width:0}',
+      '.mkt-doc-n{font-weight:700;font-size:14.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.mkt-doc-m{font-size:12px;color:var(--muted);margin-top:2px}',
+      '.mkt-doc-open{flex-shrink:0;white-space:nowrap}',
+      '.mkt-doc-del{flex-shrink:0;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}',
+      '.mkt-doc-del:hover{color:#fff;background:var(--c-rose,#E0556E);border-color:var(--c-rose,#E0556E)}',
       '.mkt-cat-prod{font-weight:600;font-size:13.5px}',
       '.mkt-sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}',
       '.mkt-sec-t{font-size:18px;font-weight:800;letter-spacing:-.02em}',
