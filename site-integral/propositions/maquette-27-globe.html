@@ -10,21 +10,22 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --night:#060A14; --night2:#0A1120; --card:#0E1626; --line:rgba(255,255,255,.08);
-  --blue:#2E7DF6; --blue2:#5FA8FF; --orange:#FF7A18; --orange2:#FFA351;
-  --txt:#EAF0FA; --muted:#93A2BC; --muted2:#6B7C99;
+  --bg:#FFFFFF; --bg2:#F6F8FC; --cream:#F4F0E6; --card:#FFFFFF; --line:rgba(10,20,48,.10);
+  --blue:#0050E6; --blue2:#0a5bff; --orange:#F39A1B; --orange2:#e08c12;
+  --ink:#0A1430; --txt:#10131C; --muted:#46546F; --muted2:#6B7A95;
   --maxw:1200px;
   --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
   --rad:6px; --rad-lg:10px;
+  --shadow:0 10px 34px rgba(10,20,48,.07); --shadow-hover:0 16px 44px rgba(10,20,48,.12);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{
-  font-family:var(--sans);background:var(--night);color:var(--txt);
+  font-family:var(--sans);background:var(--bg);color:var(--txt);
   line-height:1.62;overflow-x:hidden;-webkit-font-smoothing:antialiased;
 }
-h1,h2,h3,.brandfont{font-family:var(--sans);letter-spacing:-.018em;font-weight:700}
+h1,h2,h3,.brandfont{font-family:var(--sans);letter-spacing:-.018em;font-weight:700;color:var(--ink)}
 a{color:inherit;text-decoration:none}
 img{max-width:100%;display:block}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
@@ -37,37 +38,38 @@ section{position:relative}
 }
 
 /* HEADER */
-header{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .3s,border-color .3s}
-header.scrolled{background:rgba(6,10,20,.85);border-bottom:1px solid var(--line)}
+header{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .3s,border-color .3s,box-shadow .3s}
+header.scrolled{background:rgba(255,255,255,.9);border-bottom:1px solid var(--line);box-shadow:0 4px 20px rgba(10,20,48,.05)}
 .nav{display:flex;align-items:center;justify-content:space-between;height:72px}
 .logo{display:flex;align-items:center;gap:10px}
 .logo img{height:32px;width:auto}
-.logo span{font-family:var(--sans);font-weight:700;font-size:18px}
+.logo span{font-family:var(--sans);font-weight:700;font-size:18px;color:var(--ink)}
 .navlinks{display:flex;gap:28px;align-items:center}
 .navlinks a{color:var(--muted);font-size:13.5px;font-weight:500;letter-spacing:.005em;transition:color .2s}
-.navlinks a:hover{color:var(--txt)}
+.navlinks a:hover{color:var(--ink)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;
   font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.02em;border-radius:var(--rad);padding:13px 22px;transition:transform .2s,box-shadow .2s,background .2s;white-space:nowrap}
-.btn-primary{background:linear-gradient(135deg,var(--orange),var(--orange2));color:#150A00;box-shadow:0 8px 30px rgba(255,122,24,.35)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 38px rgba(255,122,24,.5)}
-.btn-ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1px solid var(--line)}
-.btn-ghost:hover{background:rgba(255,255,255,.12)}
-.burger{display:none;background:none;border:none;color:var(--txt);font-size:26px;cursor:pointer}
+.btn-primary{background:linear-gradient(135deg,var(--orange),var(--orange2));color:#2a1700;box-shadow:0 8px 24px rgba(243,154,27,.32)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(243,154,27,.44)}
+.btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn-ghost:hover{background:var(--bg2);border-color:rgba(0,80,230,.3)}
+.burger{display:none;background:none;border:none;color:var(--ink);font-size:26px;cursor:pointer}
 
 /* HERO */
-.hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden}
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden;
+  background:radial-gradient(80% 90% at 70% 40%,#FFFFFF 0%,#F6F8FC 55%,#EEF2FA 100%)}
 #heroCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
-.hero-poster{position:absolute;inset:0;background:#060A14 url('../assets/poster.jpg') center/cover no-repeat;z-index:0;opacity:.55}
-.hero-poster::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 60% at 50% 40%,rgba(6,10,20,.2),rgba(6,10,20,.92))}
+.hero-poster{position:absolute;inset:0;background:#F6F8FC url('../assets/poster.jpg') center/cover no-repeat;z-index:0;opacity:.18}
+.hero-poster::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 60% at 50% 40%,rgba(246,248,252,.4),rgba(246,248,252,.92))}
 .hero-grad{position:absolute;inset:0;z-index:2;pointer-events:none;
-  background:radial-gradient(70% 80% at 30% 50%,rgba(6,10,20,0) 30%,rgba(6,10,20,.7) 100%),
-  linear-gradient(180deg,rgba(6,10,20,.5) 0%,rgba(6,10,20,0) 25%,rgba(6,10,20,.85) 100%)}
+  background:radial-gradient(70% 80% at 30% 50%,rgba(255,255,255,0) 35%,rgba(255,255,255,.55) 100%),
+  linear-gradient(180deg,rgba(255,255,255,.4) 0%,rgba(255,255,255,0) 28%,rgba(255,255,255,.6) 100%)}
 .hero-content{position:relative;z-index:3;max-width:var(--maxw);margin:0 auto;padding:0 24px;width:100%}
 .surtitle{display:inline-flex;align-items:center;gap:9px;font-size:11.5px;font-weight:500;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--orange2);background:rgba(255,122,24,.1);border:1px solid rgba(255,122,24,.25);
+  text-transform:uppercase;color:var(--orange2);background:rgba(243,154,27,.12);border:1px solid rgba(243,154,27,.32);
   padding:8px 15px;border-radius:var(--rad);margin-bottom:24px}
-.surtitle .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 12px var(--orange)}
-.hero h1{font-size:clamp(40px,7vw,80px);font-weight:700;line-height:1.04;letter-spacing:-.03em;margin-bottom:22px;color:var(--txt)}
+.surtitle .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+.hero h1{font-size:clamp(40px,7vw,80px);font-weight:700;line-height:1.04;letter-spacing:-.03em;margin-bottom:22px;color:var(--ink)}
 .hero h1 em{font-style:normal;color:var(--orange2)}
 .hero .sub{font-size:clamp(16px,2vw,20px);color:var(--muted);max-width:620px;margin-bottom:34px;line-height:1.6}
 .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
@@ -78,28 +80,28 @@ header.scrolled{background:rgba(6,10,20,.85);border-bottom:1px solid var(--line)
 
 /* SECTIONS GENERIC */
 .sec{padding:108px 0;position:relative}
-.sec-alt{background:linear-gradient(180deg,var(--night) 0%,var(--night2) 50%,var(--night) 100%)}
-.eyebrow{font-size:11.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--orange);margin-bottom:16px;display:flex;align-items:center;gap:10px}
-.eyebrow::before{content:"";width:22px;height:1px;background:var(--orange);opacity:.7}
-.sec h2{font-size:clamp(30px,4.4vw,50px);font-weight:700;line-height:1.08;letter-spacing:-.025em;margin-bottom:18px}
+.sec-alt{background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 50%,var(--bg) 100%)}
+.eyebrow{font-size:11.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--orange2);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:22px;height:1px;background:var(--orange);opacity:.8}
+.sec h2{font-size:clamp(30px,4.4vw,50px);font-weight:700;line-height:1.08;letter-spacing:-.025em;margin-bottom:18px;color:var(--ink)}
 .sec .lead{font-size:17.5px;color:var(--muted);max-width:640px;line-height:1.6}
 .sec-head{margin-bottom:54px;max-width:760px}
 
 /* VALEURS */
 .values{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.vcard{background:var(--card);border:1px solid var(--line);border-radius:var(--rad-lg);padding:32px 30px;transition:transform .3s,border-color .3s;position:relative}
-.vcard:hover{transform:translateY(-6px);border-color:rgba(255,122,24,.35)}
+.vcard{background:var(--card);border:1px solid var(--line);border-radius:var(--rad-lg);padding:32px 30px;transition:transform .3s,border-color .3s,box-shadow .3s;position:relative;box-shadow:var(--shadow)}
+.vcard:hover{transform:translateY(-6px);border-color:rgba(243,154,27,.4);box-shadow:var(--shadow-hover)}
 .vico{width:50px;height:50px;border-radius:var(--rad);display:flex;align-items:center;justify-content:center;margin-bottom:20px;
-  background:linear-gradient(135deg,rgba(46,125,246,.18),rgba(255,122,24,.12));border:1px solid var(--line)}
+  background:linear-gradient(135deg,rgba(0,80,230,.10),rgba(243,154,27,.10));border:1px solid var(--line)}
 .vico svg{width:25px;height:25px;stroke:var(--orange2);fill:none;stroke-width:1.8}
-.vcard h3{font-size:20px;font-weight:600;letter-spacing:-.01em;margin-bottom:10px}
+.vcard h3{font-size:20px;font-weight:600;letter-spacing:-.01em;margin-bottom:10px;color:var(--ink)}
 .vcard p{color:var(--muted);font-size:15px}
 
 /* OFFRES + MARQUEE */
 .labs-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:36px}
 .lab{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:30px 16px;text-align:center;
-  font-family:var(--mono);font-weight:500;font-size:16px;letter-spacing:.01em;color:var(--txt);transition:.3s}
-.lab:hover{border-color:rgba(95,168,255,.4);background:#101a2e;color:var(--blue2)}
+  font-family:var(--mono);font-weight:500;font-size:16px;letter-spacing:.01em;color:var(--ink);transition:.3s;box-shadow:var(--shadow)}
+.lab:hover{border-color:rgba(0,80,230,.4);background:#F2F6FF;color:var(--blue)}
 .marquee{overflow:hidden;margin-top:48px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
   mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
@@ -109,19 +111,19 @@ header.scrolled{background:rgba(6,10,20,.85);border-bottom:1px solid var(--line)
 @keyframes marq{to{transform:translateX(-50%)}}
 
 /* GROUPE / RESEAU */
-.net-wrap{margin-top:30px;border:1px solid var(--line);border-radius:var(--rad-lg);overflow:hidden;background:var(--card)}
+.net-wrap{margin-top:30px;border:1px solid var(--line);border-radius:var(--rad-lg);overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
 #netFrame{width:100%;border:0;display:block;min-height:520px}
 .agences{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:34px}
-.ag{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:18px 20px;display:flex;align-items:flex-start;gap:13px;transition:.25s}
-.ag:hover{border-color:rgba(46,125,246,.35);transform:translateY(-3px)}
-.ag .pin{width:11px;height:11px;border-radius:50%;margin-top:6px;flex:none;background:var(--blue);box-shadow:0 0 10px var(--blue)}
-.ag.siege .pin{background:var(--orange);box-shadow:0 0 12px var(--orange)}
-.ag.partenaire .pin{background:#9aa7bd;box-shadow:0 0 10px rgba(154,167,189,.6)}
-.ag h4{font-size:15px;font-weight:600;letter-spacing:-.005em}
+.ag{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:18px 20px;display:flex;align-items:flex-start;gap:13px;transition:.25s;box-shadow:var(--shadow)}
+.ag:hover{border-color:rgba(0,80,230,.4);transform:translateY(-3px);box-shadow:var(--shadow-hover)}
+.ag .pin{width:11px;height:11px;border-radius:50%;margin-top:6px;flex:none;background:var(--blue)}
+.ag.siege .pin{background:var(--orange)}
+.ag.partenaire .pin{background:#8a97ad}
+.ag h4{font-size:15px;font-weight:600;letter-spacing:-.005em;color:var(--ink)}
 .ag .loc{font-size:12px;color:var(--muted2);margin-top:3px;letter-spacing:.01em}
 .ag .tag{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-top:7px;display:inline-block}
 .ag.siege .tag{color:var(--orange2)}
-.ag.partenaire .tag{color:#aab6c9}
+.ag.partenaire .tag{color:#6f7c92}
 .legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:22px;font-size:12px;letter-spacing:.02em;color:var(--muted)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:middle}
 
@@ -133,27 +135,27 @@ header.scrolled{background:rgba(6,10,20,.85);border-bottom:1px solid var(--line)
 
 /* OFFILOG */
 .offilog-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:34px 0 38px}
-.ofig{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:var(--rad-lg);padding:28px}
-.ofig .n{font-family:var(--mono);font-weight:600;font-size:33px;letter-spacing:-.02em;color:var(--blue2)}
+.ofig{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:var(--rad-lg);padding:28px;box-shadow:var(--shadow)}
+.ofig .n{font-family:var(--mono);font-weight:600;font-size:33px;letter-spacing:-.02em;color:var(--blue)}
 .ofig .t{color:var(--muted);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;margin-top:9px}
 .cats{display:flex;flex-wrap:wrap;gap:10px}
-.cat{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:var(--rad);padding:10px 16px;font-family:var(--mono);font-size:13px;letter-spacing:.01em;color:var(--txt);transition:.25s}
-.cat:hover{background:rgba(46,125,246,.14);border-color:rgba(95,168,255,.4)}
+.cat{background:var(--bg2);border:1px solid var(--line);border-radius:var(--rad);padding:10px 16px;font-family:var(--mono);font-size:13px;letter-spacing:.01em;color:var(--ink);transition:.25s}
+.cat:hover{background:rgba(0,80,230,.10);border-color:rgba(0,80,230,.4);color:var(--blue)}
 
 /* ACCOMPAGNEMENT */
-.acc-lead{font-size:clamp(20px,2.6vw,27px);font-family:var(--sans);font-weight:500;line-height:1.4;letter-spacing:-.015em;max-width:840px;margin-bottom:42px}
+.acc-lead{font-size:clamp(20px,2.6vw,27px);font-family:var(--sans);font-weight:500;line-height:1.4;letter-spacing:-.015em;max-width:840px;margin-bottom:42px;color:var(--ink)}
 .proj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.proj{background:var(--card);border:1px solid var(--line);border-radius:var(--rad-lg);padding:28px 24px;transition:.3s}
-.proj:hover{transform:translateY(-6px);border-color:rgba(255,122,24,.3)}
+.proj{background:var(--card);border:1px solid var(--line);border-radius:var(--rad-lg);padding:28px 24px;transition:.3s;box-shadow:var(--shadow)}
+.proj:hover{transform:translateY(-6px);border-color:rgba(243,154,27,.35);box-shadow:var(--shadow-hover)}
 .proj .pico{width:44px;height:44px;margin-bottom:18px}
 .proj .pico svg{width:44px;height:44px;stroke:var(--orange2);fill:none;stroke-width:1.6}
-.proj h4{font-size:17px;font-weight:600;letter-spacing:-.005em}
+.proj h4{font-size:17px;font-weight:600;letter-spacing:-.005em;color:var(--ink)}
 
 /* CARRIERES */
 .jobs{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}
-.job{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:24px;display:flex;flex-direction:column;gap:12px;transition:.25s}
-.job:hover{border-color:rgba(46,125,246,.35);background:#101a2e}
-.job h4{font-size:16px;font-weight:600;letter-spacing:-.005em}
+.job{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:24px;display:flex;flex-direction:column;gap:12px;transition:.25s;box-shadow:var(--shadow)}
+.job:hover{border-color:rgba(0,80,230,.4);background:#F2F6FF}
+.job h4{font-size:16px;font-weight:600;letter-spacing:-.005em;color:var(--ink)}
 .job .ar{color:var(--orange2);font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
 
 /* CONTACT */
@@ -161,23 +163,23 @@ header.scrolled{background:rgba(6,10,20,.85);border-bottom:1px solid var(--line)
 .form{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .form .full{grid-column:1/-1}
 .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500;letter-spacing:.08em;text-transform:uppercase}
-.field input,.field textarea{width:100%;background:#0B1322;border:1px solid var(--line);border-radius:var(--rad);
+.field input,.field textarea{width:100%;background:#fff;border:1px solid var(--line);border-radius:var(--rad);
   padding:13px 15px;color:var(--txt);font-family:var(--sans);font-size:15px;transition:.2s}
-.field input:focus,.field textarea:focus{border-color:var(--orange);background:#0d1626;outline:none}
+.field input:focus,.field textarea:focus{border-color:var(--orange);background:#fffdf8;outline:none;box-shadow:0 0 0 3px rgba(243,154,27,.12)}
 .field textarea{min-height:120px;resize:vertical}
-.contact-info{background:var(--card);border:1px solid var(--line);border-radius:var(--rad-lg);padding:34px}
-.contact-info h3{font-size:21px;font-weight:600;letter-spacing:-.01em;margin-bottom:20px}
+.contact-info{background:var(--card);border:1px solid var(--line);border-radius:var(--rad-lg);padding:34px;box-shadow:var(--shadow)}
+.contact-info h3{font-size:21px;font-weight:600;letter-spacing:-.01em;margin-bottom:20px;color:var(--ink)}
 .ci-item{display:flex;gap:14px;align-items:flex-start;margin-bottom:22px}
 .ci-item svg{width:22px;height:22px;stroke:var(--orange2);fill:none;stroke-width:1.7;flex:none;margin-top:2px}
 .ci-item .ci-l{font-size:10.5px;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase}
-.ci-item .ci-v{font-size:15px;color:var(--txt);font-weight:500;margin-top:3px}
+.ci-item .ci-v{font-size:15px;color:var(--ink);font-weight:500;margin-top:3px}
 
 /* FOOTER */
-footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--night2)}
+footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--cream)}
 .foot-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:30px;margin-bottom:34px}
 .foot-links{display:flex;gap:26px;flex-wrap:wrap}
 .foot-links a{color:var(--muted);font-size:13.5px}
-.foot-links a:hover{color:var(--txt)}
+.foot-links a:hover{color:var(--ink)}
 .foot-tag{color:var(--muted2);font-size:14px;max-width:300px}
 .foot-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-top:24px;border-top:1px solid var(--line);
   color:var(--muted2);font-size:11.5px;letter-spacing:.03em}
@@ -193,7 +195,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--nig
 @media(max-width:640px){
   .navlinks{display:none}.burger{display:block}
   .navlinks.open{display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;gap:0;
-    background:rgba(6,10,20,.97);border-bottom:1px solid var(--line);padding:10px 24px 18px}
+    background:rgba(255,255,255,.98);border-bottom:1px solid var(--line);padding:10px 24px 18px;box-shadow:0 12px 30px rgba(10,20,48,.1)}
   .navlinks.open a{padding:12px 0;border-bottom:1px solid var(--line)}
   .navlinks.open .btn{margin-top:12px}
   .sec{padding:72px 0}
@@ -203,7 +205,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--nig
 }
 @media(prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-  .hero-poster{opacity:.6}
+  .hero-poster{opacity:.2}
 }
 .nojs-note{display:none}
 </style>
@@ -312,7 +314,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--nig
     <div class="legend" aria-hidden="true">
       <span><i style="background:var(--orange)"></i>Siège — Hyères</span>
       <span><i style="background:var(--blue)"></i>Agences</span>
-      <span><i style="background:#9aa7bd"></i>Partenaire</span>
+      <span><i style="background:#8a97ad"></i>Partenaire</span>
     </div>
     <div class="agences">
       <div class="ag"><span class="pin"></span><div><h4>Ouest Pharma Services</h4><div class="loc">St-Étienne-de-Montluc (44)</div></div></div>
@@ -508,7 +510,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--nig
   var statObs=new IntersectionObserver(function(es){es.forEach(function(en){ if(en.isIntersecting && !counted){counted=true; document.querySelectorAll('.num').forEach(animCount);} });},{threshold:.4});
   var firstStat=document.querySelector('.stat'); if(firstStat)statObs.observe(firstStat);
 
-  /* =================== HERO 3D : GLOBE + ARCS LOGISTIQUES =================== */
+  /* =================== HERO 3D : GLOBE + ARCS LOGISTIQUES (THÈME CLAIR) =================== */
   var canvas=document.getElementById('heroCanvas');
   var poster=document.querySelector('.hero-poster');
 
@@ -519,11 +521,11 @@ footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--nig
   if(!THREE_OK || !webglOK() || reduceMotion){
     // FALLBACK : poster reste visible, canvas masqué
     canvas.style.display='none';
-    poster.style.opacity = reduceMotion ? '.6' : '.6';
+    poster.style.opacity = '.2';
     return;
   }
 
-  // 3D active : on atténue le poster (sert juste de fond derrière le canvas alpha)
+  // 3D active : canvas alpha:true par-dessus le fond CSS clair, poster atténué
   poster.style.opacity='0';
   run3D();
 
@@ -533,40 +535,44 @@ footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--nig
     var camera=new THREE.PerspectiveCamera(45, W/H, 0.1, 100);
     camera.position.set(0,0,11);
 
+    // Renderer alpha:true par-dessus un fond CSS clair (clearColor transparent)
     var renderer=new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true, powerPreference:'high-performance'});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
     renderer.setSize(W,H);
+    renderer.setClearColor(0x000000,0); // transparent → fond clair CSS visible
 
     var group=new THREE.Group(); scene.add(group);
 
     var R=3.7; // rayon globe
 
-    /* ---- GLOBE en points (fibonacci sphere) ---- */
+    /* ---- GLOBE en points (fibonacci sphere) — BLEU saturé sur fond clair, couleurs PLEINES, PAS d'additive ---- */
     var N=2200, pos=new Float32Array(N*3), col=new Float32Array(N*3);
-    var cBlue=new THREE.Color(0x2E7DF6), cDeep=new THREE.Color(0x12244a);
+    var cBlue=new THREE.Color(0x0050E6), cBlueLite=new THREE.Color(0x4d86ff);
     var golden=Math.PI*(3-Math.sqrt(5));
     for(var i=0;i<N;i++){
       var y=1-(i/(N-1))*2, r=Math.sqrt(1-y*y), th=golden*i;
       var x=Math.cos(th)*r, z=Math.sin(th)*r;
       pos[i*3]=x*R; pos[i*3+1]=y*R; pos[i*3+2]=z*R;
-      var mix=cDeep.clone().lerp(cBlue, 0.35+0.65*Math.random());
+      // mélange entre bleu profond saturé et bleu plus clair — toujours saturé, visible sur clair
+      var mix=cBlue.clone().lerp(cBlueLite, 0.15+0.45*Math.random());
       col[i*3]=mix.r; col[i*3+1]=mix.g; col[i*3+2]=mix.b;
     }
     var gGeo=new THREE.BufferGeometry();
     gGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
     gGeo.setAttribute('color',new THREE.BufferAttribute(col,3));
-    var gMat=new THREE.PointsMaterial({size:0.045, vertexColors:true, transparent:true, opacity:.9, depthWrite:false, blending:THREE.AdditiveBlending});
+    // NormalBlending (pas d'additive : sur fond clair l'additive délave)
+    var gMat=new THREE.PointsMaterial({size:0.046, vertexColors:true, transparent:true, opacity:.95, depthWrite:false, blending:THREE.NormalBlending});
     var globe=new THREE.Points(gGeo,gMat); group.add(globe);
 
-    /* ---- halo wireframe léger ---- */
+    /* ---- halo wireframe léger — bleu doux, normal blending ---- */
     var wire=new THREE.Mesh(new THREE.SphereGeometry(R*1.002,24,18),
-      new THREE.MeshBasicMaterial({color:0x14325f,wireframe:true,transparent:true,opacity:.16,blending:THREE.AdditiveBlending,depthWrite:false}));
+      new THREE.MeshBasicMaterial({color:0x9ec0ff,wireframe:true,transparent:true,opacity:.20,depthWrite:false,blending:THREE.NormalBlending}));
     group.add(wire);
 
-    /* ---- glow sphere ---- */
-    var glow=new THREE.Mesh(new THREE.SphereGeometry(R*1.18,32,24),
-      new THREE.MeshBasicMaterial({color:0x0a1f44,transparent:true,opacity:.25,side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false}));
-    group.add(glow);
+    /* ---- sphère pleine intérieure (occlusion claire — donne du volume sans glow) ---- */
+    var core=new THREE.Mesh(new THREE.SphereGeometry(R*0.985,40,30),
+      new THREE.MeshBasicMaterial({color:0xeaf1ff,transparent:true,opacity:.55,depthWrite:true}));
+    group.add(core);
 
     /* ---- AGENCES : lat/lon approximatifs France projetés sur sphère ---- */
     function ll(lat,lon){
@@ -589,23 +595,25 @@ footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--nig
       {n:'Flassans-sur-Issole', lat:43.4, lon:6.2, type:'ag'},
       {n:'Metz',        lat:49.1, lon:6.2,  type:'part'}
     ];
-    var cOrange=new THREE.Color(0xFF7A18), cGrey=new THREE.Color(0xc4d0e2);
+    // Couleurs PLEINES SATURÉES : Hyères orange, Metz gris, agences bleu
+    var cOrange=new THREE.Color(0xF39A1B), cGrey=new THREE.Color(0x6b7a95), cAg=new THREE.Color(0x0050E6);
     var nodes=[];
     agences.forEach(function(a){
       var v=ll(a.lat,a.lon);
-      var c = a.type==='siege'?cOrange : a.type==='part'?cGrey : new THREE.Color(0x5FA8FF);
-      var sz= a.type==='siege'?0.16 : 0.11;
+      var c = a.type==='siege'?cOrange : a.type==='part'?cGrey : cAg;
+      var sz= a.type==='siege'?0.17 : 0.115;
+      // nœud plein opaque, pas d'additive
       var m=new THREE.Mesh(new THREE.SphereGeometry(sz,16,16),
-        new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.95,blending:THREE.AdditiveBlending}));
-      m.position.copy(v); group.add(m);
-      // anneau pulsant
-      var ring=new THREE.Mesh(new THREE.RingGeometry(sz*1.4,sz*1.7,24),
-        new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.6,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
-      ring.position.copy(v); ring.lookAt(v.clone().multiplyScalar(2)); group.add(ring);
+        new THREE.MeshBasicMaterial({color:c,transparent:false,depthWrite:true}));
+      m.position.copy(v.clone().multiplyScalar(1.012)); group.add(m);
+      // anneau pulsant — couleur pleine, normal blending
+      var ring=new THREE.Mesh(new THREE.RingGeometry(sz*1.4,sz*1.75,28),
+        new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false,blending:THREE.NormalBlending}));
+      ring.position.copy(v.clone().multiplyScalar(1.012)); ring.lookAt(v.clone().multiplyScalar(2)); group.add(ring);
       nodes.push({pos:v,type:a.type,mesh:m,ring:ring,phase:Math.random()*Math.PI*2});
     });
 
-    /* ---- ARCS LOGISTIQUES : du siège vers chaque agence + quelques inter-agences ---- */
+    /* ---- ARCS LOGISTIQUES : du siège vers chaque agence + quelques inter-agences (ORANGE bien visible sur clair) ---- */
     var hyeres=nodes[0].pos;
     var arcDefs=[];
     for(var k=1;k<nodes.length;k++){ arcDefs.push([hyeres,nodes[k].pos,nodes[k].type]); }
@@ -623,27 +631,28 @@ footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--nig
       var curve=new THREE.QuadraticBezierCurve3(a,mid,b);
       var pts=curve.getPoints(50);
       var geo=new THREE.BufferGeometry().setFromPoints(pts);
-      var ac = type==='siege'? 0xFFA351 : 0x5FA8FF;
-      var mat=new THREE.LineBasicMaterial({color:ac,transparent:true,opacity:.22,blending:THREE.AdditiveBlending});
+      // Arcs ORANGE pleins (toutes liaisons partent du siège) — saturés, opacité haute, NormalBlending
+      var ac = 0xF39A1B;
+      var mat=new THREE.LineBasicMaterial({color:ac,transparent:true,opacity:.65,blending:THREE.NormalBlending});
       var line=new THREE.Line(geo,mat); group.add(line);
 
-      // particule qui défile
+      // particule qui défile — orange foncé pleine, nette
       var pGeo=new THREE.BufferGeometry();
       pGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(3),3));
-      var pMat=new THREE.PointsMaterial({color:0xFFD9A8,size:0.13,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false});
+      var pMat=new THREE.PointsMaterial({color:0xe08c12,size:0.16,transparent:true,opacity:1,depthWrite:false,blending:THREE.NormalBlending});
       var part=new THREE.Points(pGeo,pMat); group.add(part);
 
       arcs.push({curve:curve,line:line,part:part,t:Math.random(),speed:0.0016+Math.random()*0.0022});
     });
 
-    /* ---- étoiles d'ambiance ---- */
-    var sN=420, sPos=new Float32Array(sN*3);
+    /* ---- semis de points d'ambiance discrets sur fond clair (gris-bleu doux, pas d'étoiles brillantes) ---- */
+    var sN=300, sPos=new Float32Array(sN*3);
     for(var s=0;s<sN;s++){
       var rr=14+Math.random()*22, a1=Math.random()*Math.PI*2, a2=Math.acos(2*Math.random()-1);
       sPos[s*3]=rr*Math.sin(a2)*Math.cos(a1); sPos[s*3+1]=rr*Math.sin(a2)*Math.sin(a1); sPos[s*3+2]=rr*Math.cos(a2)-6;
     }
     var sGeo=new THREE.BufferGeometry(); sGeo.setAttribute('position',new THREE.BufferAttribute(sPos,3));
-    var stars=new THREE.Points(sGeo,new THREE.PointsMaterial({color:0x6f86b8,size:0.05,transparent:true,opacity:.5}));
+    var stars=new THREE.Points(sGeo,new THREE.PointsMaterial({color:0xb9c6dd,size:0.045,transparent:true,opacity:.45,blending:THREE.NormalBlending}));
     scene.add(stars);
 
     /* oriente le groupe pour que la France (face +X/-Z) regarde la caméra, légèrement penché */
@@ -698,8 +707,8 @@ footer{border-top:1px solid var(--line);padding:54px 0 36px;background:var(--nig
         var arr=ar.part.geometry.attributes.position.array;
         arr[0]=p.x;arr[1]=p.y;arr[2]=p.z;
         ar.part.geometry.attributes.position.needsUpdate=true;
-        // ligne qui respire
-        ar.line.material.opacity=0.18+0.14*Math.abs(Math.sin(t*1.3+ar.t*6));
+        // ligne qui respire (reste bien visible sur clair)
+        ar.line.material.opacity=0.5+0.25*Math.abs(Math.sin(t*1.3+ar.t*6));
       });
 
       stars.rotation.y += 0.0003;
