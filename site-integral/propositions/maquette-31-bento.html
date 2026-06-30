@@ -717,7 +717,49 @@ footer{background:#0B1320;color:#cbd5e1;padding:54px 0 30px;margin-top:30px}
       group = new THREE.Group();
       scene.add(group);
 
-      /* ---- GÉLULE PHARMACEUTIQUE : corps perle + coiffe orange emboîtée ----
+      /* ---- ENVIRONNEMENT DE REFLETS (chrome/métal) -----------------------
+         CanvasTexture en dégradé vertical : blanc lumineux en haut → gris
+         clair → gris foncé en bas, avec une légère touche chaude au centre.
+         Mappée en equirectangulaire puis PMREM → scene.environment.
+         C'est CE dégradé qui donne le chrome blanc-en-haut/gris-en-bas du logo. */
+      var envMap = null;
+      (function buildEnv(){
+        try{
+          var ec = document.createElement('canvas');
+          ec.width = 256; ec.height = 256;
+          var ex = ec.getContext('2d');
+          var g = ex.createLinearGradient(0, 0, 0, 256);
+          g.addColorStop(0.00, '#FFFFFF'); // sommet : blanc lumineux
+          g.addColorStop(0.30, '#EDF1F5'); // haut clair
+          g.addColorStop(0.52, '#C9D0D8'); // milieu argent
+          g.addColorStop(0.74, '#8C929B'); // gris moyen
+          g.addColorStop(1.00, '#5A5F67'); // bas : gris foncé
+          ex.fillStyle = g; ex.fillRect(0, 0, 256, 256);
+          // légère touche chaude (reflet ambré du logo) sur un côté
+          var gw = ex.createRadialGradient(190, 95, 8, 190, 95, 130);
+          gw.addColorStop(0, 'rgba(255,196,120,0.30)');
+          gw.addColorStop(1, 'rgba(255,196,120,0)');
+          ex.fillStyle = gw; ex.fillRect(0, 0, 256, 256);
+          // halo lumineux blanc en haut (source studio)
+          var gh = ex.createRadialGradient(95, 40, 4, 95, 40, 120);
+          gh.addColorStop(0, 'rgba(255,255,255,0.85)');
+          gh.addColorStop(1, 'rgba(255,255,255,0)');
+          ex.fillStyle = gh; ex.fillRect(0, 0, 256, 256);
+
+          var envTex = new THREE.CanvasTexture(ec);
+          envTex.mapping = THREE.EquirectangularReflectionMapping;
+          envTex.encoding = THREE.sRGBEncoding;
+
+          var pmrem = new THREE.PMREMGenerator(renderer);
+          pmrem.compileEquirectangularShader();
+          envMap = pmrem.fromEquirectangular(envTex).texture;
+          scene.environment = envMap;
+          envTex.dispose();
+          pmrem.dispose();
+        }catch(e){ envMap = null; }
+      })();
+
+      /* ---- GÉLULE PHARMACEUTIQUE : corps chrome argent + coiffe orange emboîtée ----
          Construction classique reconnaissable :
          - rayon corps (bodyRad), coiffe légèrement plus large (capRad) qui chevauche le corps
          - corps ≈ 60% de la longueur (extrémité hémisphérique perle)
@@ -733,15 +775,20 @@ footer{background:#0B1320;color:#cbd5e1;padding:54px 0 30px;margin-top:30px}
       var bodyCylH  = Math.max(0.001, bodyLen - bodyRad);
       var capCylH   = Math.max(0.001, capLen  - capRad);
 
-      // Aspect gélatine pharmaceutique : MeshPhysicalMaterial satiné, légère translucidité.
-      // Gélule OPAQUE brillante (pas de transmission : sinon invisible sur canvas alpha en r128)
+      // Couleurs calées EXACTEMENT sur la capsule du logo Intégral Pharma.
+      // OPAQUE (pas de transmission : sinon invisible sur canvas alpha en r128).
+      // Le métal n'est visible QUE parce que scene.environment (envMap) existe.
+      // COIFFE = orange métallisé brillant (orange vif en haut → ambre vers le bas via env)
       var matCap = new THREE.MeshPhysicalMaterial({
-        color:0xF39A1B, metalness:0.0, roughness:0.33,
-        clearcoat:0.9, clearcoatRoughness:0.24, reflectivity:0.5
+        color:0xF39A1B, metalness:0.55, roughness:0.30,
+        clearcoat:0.5, clearcoatRoughness:0.22, reflectivity:0.5,
+        envMap:envMap, envMapIntensity:1.2
       });
+      // CORPS = CHROME ARGENT (blanc lumineux en haut → argent → gris foncé en bas)
       var matBody = new THREE.MeshPhysicalMaterial({
-        color:0xF3F1EA, metalness:0.0, roughness:0.28, // blanc cassé / perle
-        clearcoat:0.9, clearcoatRoughness:0.18, reflectivity:0.5
+        color:0xD7DCE2, metalness:1.0, roughness:0.22,
+        clearcoat:0.0, reflectivity:0.6,
+        envMap:envMap, envMapIntensity:1.35
       });
 
       // Position verticale : coiffe en haut, corps en bas. Centre la gélule.
@@ -772,7 +819,7 @@ footer{background:#0B1320;color:#cbd5e1;padding:54px 0 30px;margin-top:30px}
       var seamY = capBottomY;
       var seam = new THREE.Mesh(
         new THREE.TorusGeometry(capRad*0.998, 0.012, 12, 90),
-        new THREE.MeshPhysicalMaterial({color:0xC97E12, metalness:0.0, roughness:0.45, clearcoat:0.6})
+        new THREE.MeshPhysicalMaterial({color:0x8B5A12, metalness:0.55, roughness:0.40, clearcoat:0.4, envMap:envMap, envMapIntensity:1.0})
       );
       seam.rotation.x = Math.PI/2; seam.position.y = seamY; group.add(seam);
 
