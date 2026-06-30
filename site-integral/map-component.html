@@ -168,7 +168,17 @@ body{margin:0;font-family:var(--font);color:var(--ink);background:transparent;-w
   .leader{opacity:.5} .leader-dot{opacity:.7}
   #radar{display:none}
 }
+
+/* ===== MODE "CARTE SEULE" (embarqué via ?mode=map) — n'affecte PAS l'appel sans paramètre ===== */
+html.bare .ip-atlas__head{display:none}
+html.bare .ip-list{display:none}
+html.bare .ip-atlas__body{grid-template-columns:1fr}
+html.bare .ip-atlas{border:none;box-shadow:none}
+html.bare .ip-map{padding:6px 8px 12px;background:transparent}
+html.bare .ip-map svg{max-width:560px;margin:0 auto}
+html.bare .ip-legend{justify-content:center}
 </style>
+<script>if(/[?&#](bare|mode=map)/i.test(location.href))document.documentElement.classList.add('bare');</script>
 </head>
 <body>
 
