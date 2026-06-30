@@ -320,7 +320,7 @@ footer{background:#0B1320;color:#cbd5e1;padding:54px 0 30px;margin-top:30px}
         <div class="poster-fb" aria-hidden="true"></div>
         <canvas id="cv3d" role="img" aria-label="Capsule 3D de la marque Intégral Pharma en rotation"></canvas>
         <div class="tdui tl"><span class="chip"><span class="led"></span>Intégral OS · Live</span></div>
-        <div class="tdui br"><div class="label">La capsule Intégral<small>Métal · gloss · studio</small></div></div>
+        <div class="tdui br"><div class="label">La gélule Intégral<small>Pharma · gélatine · studio</small></div></div>
         <div class="drag-hint" id="dragHint">↔ Bougez la souris</div>
       </div>
     </div>
@@ -717,50 +717,95 @@ footer{background:#0B1320;color:#cbd5e1;padding:54px 0 30px;margin-top:30px}
       group = new THREE.Group();
       scene.add(group);
 
-      /* ---- Capsule: two hemispheres + cylinder, orange + silver ---- */
-      var capLen = 2.0, capRad = 1.05, capH = capLen - 2*0;
-      var orange = new THREE.MeshPhysicalMaterial({color:0xF39A1B, metalness:0.55, roughness:0.22, clearcoat:0.9, clearcoatRoughness:0.18});
-      var silver = new THREE.MeshPhysicalMaterial({color:0xE8EDF5, metalness:0.95, roughness:0.16, clearcoat:0.7});
+      /* ---- GÉLULE PHARMACEUTIQUE : corps perle + coiffe orange emboîtée ----
+         Construction classique reconnaissable :
+         - rayon corps (bodyRad), coiffe légèrement plus large (capRad) qui chevauche le corps
+         - corps ≈ 60% de la longueur (extrémité hémisphérique perle)
+         - coiffe ≈ 40% de la longueur (extrémité hémisphérique orange), recouvre le haut du corps
+         - longueur totale ≈ 2.7× le diamètre
+         - ligne de jonction nette là où la coiffe recouvre le corps                    */
+      var bodyRad   = 0.62;            // rayon du corps
+      var capRad    = bodyRad * 1.045; // coiffe un peu plus large (emboîtement visible)
+      var totalLen  = bodyRad * 2 * 2.7; // ~2.7× le diamètre → gélule bien allongée
+      var bodyLen   = totalLen * 0.60; // corps ~60%
+      var capLen    = totalLen * 0.40; // coiffe ~40%
+      // longueur des parties cylindriques (longueur totale - 2 hémisphères de chaque tronçon)
+      var bodyCylH  = Math.max(0.001, bodyLen - bodyRad);
+      var capCylH   = Math.max(0.001, capLen  - capRad);
 
-      // body cylinder
-      var body = new THREE.Mesh(new THREE.CylinderGeometry(capRad, capRad, capLen, 64, 1, true), null);
-      // split body: half orange half silver by two half-cylinders
-      var halfOrange = new THREE.Mesh(new THREE.CylinderGeometry(capRad,capRad,capLen,48,1,true,0,Math.PI), orange);
-      var halfSilver = new THREE.Mesh(new THREE.CylinderGeometry(capRad,capRad,capLen,48,1,true,Math.PI,Math.PI), silver);
-      group.add(halfOrange); group.add(halfSilver);
+      // Aspect gélatine pharmaceutique : MeshPhysicalMaterial satiné, légère translucidité.
+      var matCap = new THREE.MeshPhysicalMaterial({
+        color:0xF39A1B, metalness:0.0, roughness:0.30,
+        clearcoat:0.85, clearcoatRoughness:0.22,
+        transmission:0.18, ior:1.32, thickness:0.9,
+        reflectivity:0.45, sheen:0.4, sheenColor:new THREE.Color(0xffd591),
+        attenuationColor:new THREE.Color(0xF39A1B), attenuationDistance:1.6
+      });
+      var matBody = new THREE.MeshPhysicalMaterial({
+        color:0xF3F1EA, metalness:0.0, roughness:0.26, // blanc cassé / perle
+        clearcoat:0.9, clearcoatRoughness:0.18,
+        transmission:0.22, ior:1.34, thickness:0.8,
+        reflectivity:0.5, sheen:0.35, sheenColor:new THREE.Color(0xffffff),
+        attenuationColor:new THREE.Color(0xeceae1), attenuationDistance:1.8
+      });
 
-      var capTop = new THREE.Mesh(new THREE.SphereGeometry(capRad, 48, 32, 0, Math.PI*2, 0, Math.PI/2), silver);
-      capTop.position.y = capLen/2;
-      var capBot = new THREE.Mesh(new THREE.SphereGeometry(capRad, 48, 32, 0, Math.PI*2, Math.PI/2, Math.PI/2), orange);
-      capBot.position.y = -capLen/2;
-      group.add(capTop); group.add(capBot);
+      // Position verticale : coiffe en haut, corps en bas. Centre la gélule.
+      var halfTotal = totalLen/2;
 
-      // subtle seam ring
-      var seam = new THREE.Mesh(new THREE.TorusGeometry(capRad+0.005, 0.04, 16, 80), new THREE.MeshStandardMaterial({color:0xffffff, metalness:0.9, roughness:0.3}));
-      seam.rotation.x = Math.PI/2; seam.position.y = 0; group.add(seam);
+      // --- CORPS (body, perle) : cylindre + hémisphère bas ---
+      var bodyCyl = new THREE.Mesh(new THREE.CylinderGeometry(bodyRad, bodyRad, bodyCylH, 64, 1, true), matBody);
+      // le bas du corps est à -halfTotal ; le cylindre du corps occupe le tiers inférieur
+      var bodyCylCenterY = -halfTotal + bodyRad + bodyCylH/2;
+      bodyCyl.position.y = bodyCylCenterY;
+      group.add(bodyCyl);
+      var bodyDome = new THREE.Mesh(new THREE.SphereGeometry(bodyRad, 64, 40, 0, Math.PI*2, Math.PI/2, Math.PI/2), matBody);
+      bodyDome.position.y = -halfTotal + bodyRad; group.add(bodyDome);
+      // léger disque de fermeture en haut du tube corps (cache l'intérieur sous la coiffe)
+      var bodyTopY = bodyCylCenterY + bodyCylH/2;
 
-      group.rotation.z = 0.5; // tilt capsule diagonally
-      group.rotation.x = 0.15;
+      // --- COIFFE (cap, orange) : cylindre + hémisphère haut, plus large, chevauche le corps ---
+      var capCyl = new THREE.Mesh(new THREE.CylinderGeometry(capRad, capRad, capCylH, 64, 1, true), matCap);
+      var capCylCenterY = halfTotal - capRad - capCylH/2;
+      capCyl.position.y = capCylCenterY; group.add(capCyl);
+      var capDome = new THREE.Mesh(new THREE.SphereGeometry(capRad, 64, 40, 0, Math.PI*2, 0, Math.PI/2), matCap);
+      capDome.position.y = halfTotal - capRad; group.add(capDome);
+      // bord ouvert de la coiffe (anneau) qui chevauche le corps → ligne de jonction nette
+      var capBottomY = capCylCenterY - capCylH/2;
+      var capLip = new THREE.Mesh(new THREE.RingGeometry(bodyRad*0.985, capRad, 64), matCap);
+      capLip.rotation.x = -Math.PI/2; capLip.position.y = capBottomY; group.add(capLip);
+      // petit collier sombre à la jonction pour bien lire l'emboîtement
+      var seamY = capBottomY;
+      var seam = new THREE.Mesh(
+        new THREE.TorusGeometry(capRad*0.998, 0.012, 12, 90),
+        new THREE.MeshPhysicalMaterial({color:0xC97E12, metalness:0.0, roughness:0.45, clearcoat:0.6})
+      );
+      seam.rotation.x = Math.PI/2; seam.position.y = seamY; group.add(seam);
 
-      /* ---- Orbiting particles ring ---- */
-      var pcount = isMobile?60:130;
+      // Inclinaison diagonale premium
+      group.rotation.z = 0.62;
+      group.rotation.x = 0.12;
+
+      /* ---- Particules en orbite (discrètes) ---- */
+      var pcount = isMobile?34:70;
       var pgeo = new THREE.BufferGeometry();
       var pos = new Float32Array(pcount*3);
       for(var i=0;i<pcount;i++){
-        var a = Math.random()*Math.PI*2, rr = 2.6+Math.random()*1.8, yy=(Math.random()-0.5)*3.4;
+        var a = Math.random()*Math.PI*2, rr = 2.4+Math.random()*1.7, yy=(Math.random()-0.5)*3.2;
         pos[i*3]=Math.cos(a)*rr; pos[i*3+1]=yy; pos[i*3+2]=Math.sin(a)*rr;
       }
       pgeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
-      var pmat = new THREE.PointsMaterial({color:0x6aa0ff, size:0.05, transparent:true, opacity:0.7, depthWrite:false, blending:THREE.AdditiveBlending});
+      var pmat = new THREE.PointsMaterial({color:0x6aa0ff, size:0.035, transparent:true, opacity:0.35, depthWrite:false, blending:THREE.AdditiveBlending});
       var pts = new THREE.Points(pgeo, pmat);
       scene.add(pts);
 
-      /* ---- Lights: studio ---- */
-      scene.add(new THREE.AmbientLight(0x9bb4e0, 0.55));
-      var key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(4,5,6); scene.add(key);
-      var fill = new THREE.PointLight(0x0050E6, 1.4, 30); fill.position.set(-5,-2,4); scene.add(fill);
-      var rim = new THREE.PointLight(0xF39A1B, 1.6, 30); rim.position.set(4,-3,-4); scene.add(rim);
-      var top = new THREE.PointLight(0xffffff, 0.9, 30); top.position.set(0,7,2); scene.add(top);
+      /* ---- Lumière : studio doux (key + fill + rim) qui lit le volume gélatine ---- */
+      scene.add(new THREE.AmbientLight(0xdfe8f7, 0.85));
+      var hemi = new THREE.HemisphereLight(0xffffff, 0x14233f, 0.7); scene.add(hemi);
+      var key = new THREE.DirectionalLight(0xffffff, 2.0); key.position.set(4.5, 6, 6.5); scene.add(key);
+      var fill = new THREE.DirectionalLight(0xbfd2ff, 0.9); fill.position.set(-5, -1.5, 4); scene.add(fill);
+      var rim = new THREE.PointLight(0xF39A1B, 1.6, 28); rim.position.set(4, -3.5, -4.5); scene.add(rim);
+      var rimCool = new THREE.PointLight(0x9cc0ff, 1.0, 28); rimCool.position.set(-4, 3, -4); scene.add(rimCool);
+      var spec = new THREE.PointLight(0xffffff, 1.3, 20); spec.position.set(1.5, 4.5, 3); scene.add(spec); // point spéculaire net
 
       size();
 
@@ -783,8 +828,8 @@ footer{background:#0B1320;color:#cbd5e1;padding:54px 0 30px;margin-top:30px}
         var t = clock.getElapsedTime();
         curX += (tgtX-curX)*0.06; curY += (tgtY-curY)*0.06;
         group.rotation.y = t*0.35 + curY*1.2;
-        group.rotation.x = 0.15 + Math.sin(t*0.5)*0.06 + curX;
-        group.rotation.z = 0.5 + Math.sin(t*0.3)*0.04;
+        group.rotation.x = 0.12 + Math.sin(t*0.5)*0.06 + curX;
+        group.rotation.z = 0.62 + Math.sin(t*0.3)*0.04;
         group.position.y = Math.sin(t*0.8)*0.12;
         pts.rotation.y = -t*0.12;
         pts.rotation.x = scrollT*0.5;
