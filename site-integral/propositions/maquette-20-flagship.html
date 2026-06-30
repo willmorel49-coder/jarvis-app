@@ -222,7 +222,7 @@ body.menu-open .drawer{opacity:1;visibility:visible}
 
 /* ---------- MAP FRANCE ---------- */
 .map-wrap{position:relative;margin-top:40px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#F8FAFF,var(--bg2));overflow:hidden;padding:24px;box-shadow:var(--shadow)}
-.map-stage{position:relative;width:100%;aspect-ratio:1/1;max-width:720px;margin:0 auto}
+.map-stage{position:relative;width:100%;max-width:640px;margin:0 auto}
 .map-stage svg{width:100%;height:100%}
 .dotpt{fill:rgba(0,80,230,.18)}
 .arc{fill:none;stroke:url(#arcgrad);stroke-width:1.8;stroke-linecap:round;stroke-dasharray:var(--len);stroke-dashoffset:var(--len);opacity:.9}
@@ -492,17 +492,7 @@ footer{border-top:1px solid var(--line);padding:60px 0 40px;margin-top:60px;back
     </div>
     <div class="map-wrap reveal">
       <div class="map-stage">
-        <svg viewBox="0 0 600 600" id="mapsvg" role="img" aria-label="Carte de France du réseau Intégral Pharma : neuf agences, un siège à Hyères et un partenaire à Metz">
-          <defs>
-            <linearGradient id="arcgrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#F39A1B"/><stop offset="1" stop-color="#0050E6"/>
-            </linearGradient>
-          </defs>
-          <g id="dots"></g>
-          <g id="arcs"></g>
-          <g id="cities"></g>
-        </svg>
-        <div class="maplabel" id="maplabel" role="status" aria-live="polite"></div>
+        <iframe id="netFrame" src="../map-component.html?mode=map" loading="lazy" scrolling="no" title="Carte des 9 agences Intégral Pharma en France" style="width:100%;border:0;display:block;min-height:480px"></iframe>
       </div>
       <div class="legend">
         <span><i style="background:var(--orange)"></i>Siège — Hyères</span>
@@ -856,69 +846,14 @@ footer{border-top:1px solid var(--line);padding:60px 0 40px;margin-top:60px;back
     {n:'Escale Pharma', c:'Chilly-Mazarin (91)', x:51, y:30, t:'', tag:'Agence'},
     {n:'Pharmest', c:'Metz (57)', x:79, y:24, t:'partner', tag:'Partenaire'}
   ];
-  var V=600, dots=document.getElementById('dots'), arcsG=document.getElementById('arcs'), citiesG=document.getElementById('cities');
-  var label=document.getElementById('maplabel'), stage=document.querySelector('.map-stage');
-  var poly=[[28,8],[55,6],[60,20],[82,18],[86,32],[78,46],[83,60],[80,76],[70,90],[48,92],[40,80],[18,72],[12,52],[20,34],[16,18]];
-  function inPoly(x,y){
-    var inside=false;
-    for(var i=0,j=poly.length-1;i<poly.length;j=i++){
-      var xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
-      var inter=((yi>y)!=(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
-      if(inter) inside=!inside;
-    }
-    return inside;
-  }
-  // dot grid (allégé sur mobile : maille plus large)
-  var step = small ? 4.4 : 3.4;
-  for(var gy=4;gy<=94;gy+=step){
-    for(var gx=8;gx<=90;gx+=step){
-      if(inPoly(gx,gy)){
-        var d=document.createElementNS('http://www.w3.org/2000/svg','circle');
-        d.setAttribute('class','dotpt'); d.setAttribute('cx',gx/100*V); d.setAttribute('cy',gy/100*V); d.setAttribute('r',1.4);
-        dots.appendChild(d);
-      }
-    }
-  }
-  // arcs from HQ (Hyères) to others
-  var hq=cities[0];
-  cities.forEach(function(ct,idx){
-    if(idx===0) return;
-    var x1=hq.x/100*V, y1=hq.y/100*V, x2=ct.x/100*V, y2=ct.y/100*V;
-    var mx=(x1+x2)/2, my=(y1+y2)/2 - Math.hypot(x2-x1,y2-y1)*0.4;
-    var path=document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d','M'+x1+' '+y1+' Q '+mx+' '+my+' '+x2+' '+y2);
-    path.setAttribute('class','arc');
-    arcsG.appendChild(path);
-    var L = path.getTotalLength();
-    path.style.setProperty('--len',L);
-    if(!reduce){ path.classList.add('run'); path.style.animationDelay=(idx*0.5)+'s'; }
-    else { path.style.strokeDashoffset=0; }
-  });
-  // cities
-  cities.forEach(function(ct){
-    var g=document.createElementNS('http://www.w3.org/2000/svg','g');
-    g.setAttribute('class','city '+ct.t); g.setAttribute('tabindex','0');
-    g.setAttribute('role','button');
-    g.setAttribute('aria-label',ct.n+', '+ct.c+', '+ct.tag);
-    var cx=ct.x/100*V, cy=ct.y/100*V;
-    var ring=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    ring.setAttribute('class','ring'); ring.setAttribute('cx',cx); ring.setAttribute('cy',cy); ring.setAttribute('r',4); ring.setAttribute('stroke-width','1.4');
-    var core=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    core.setAttribute('class','core'); core.setAttribute('cx',cx); core.setAttribute('cy',cy); core.setAttribute('r', ct.t==='hq'?5.5:4);
-    g.appendChild(ring); g.appendChild(core);
-    citiesG.appendChild(g);
-    function show(){
-      label.innerHTML='<b>'+ct.n+'</b><span>'+ct.c+' · '+ct.tag+'</span>';
-      var sr=stage.getBoundingClientRect();
-      var px=ct.x/100*sr.width, py=ct.y/100*sr.height;
-      label.style.left=Math.min(Math.max(px,10),sr.width-200)+'px';
-      label.style.top=(py-54)+'px';
-      label.classList.add('show');
-    }
-    function hide(){ label.classList.remove('show'); }
-    g.addEventListener('mouseenter',show); g.addEventListener('mouseleave',hide);
-    g.addEventListener('focus',show); g.addEventListener('blur',hide);
-  });
+  /* carte interactive du réseau via iframe map-component (auto-hauteur) */
+  (function(){
+    var f=document.getElementById('netFrame'); if(!f) return;
+    function fit(){ try{ var d=f.contentDocument||f.contentWindow.document; if(d&&d.documentElement){ f.style.height=d.documentElement.scrollHeight+'px'; } }catch(e){} }
+    f.addEventListener('load',function(){ fit(); setTimeout(fit,300); setTimeout(fit,1200); });
+    addEventListener('resize',fit);
+    addEventListener('message',function(e){ if(e.data&&e.data.ipAtlasHeight){ f.style.height=e.data.ipAtlasHeight+'px'; } });
+  })();
   // agency list
   var al=document.getElementById('agencylist');
   cities.forEach(function(ct){
