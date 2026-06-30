@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Intégral Pharma — Capsule de marque (3D immersive, studio clair)</title>
 <meta name="description" content="Intégral Pharma — grossiste-répartiteur de première intention. Plus de marge, sur chaque commande.">
+<meta name="theme-color" content="#FBF8F1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
@@ -12,21 +13,38 @@
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <style>
 :root{
+  /* Palette — ambiance studio crème (préservée) */
   --creme:#F4F0E6; --creme2:#FBF8F1; --carte:#FFFFFF;
   --bleu:#0050E6; --bleu-doux:#C9DBFF; --bleu-pastel:#E4ECFF;
   --orange:#F39A1B; --orange-soft:#FBE3BD;
   --vert:#9BCBA6; --vert-soft:#E2F0E6;
   --peche:#F8DDC9;
-  --encre:#2B2A26; --encre-2:#0A1430; --gris:#6F6A60;
+  --encre:#2B2A26; --encre-2:#0A1430; --gris:#605B52;
   --ligne:rgba(43,42,38,.10);
+  --ligne-forte:rgba(43,42,38,.16);
+
+  /* Rayons — échelle régulière */
   --r-xl:28px; --r-l:20px; --r-m:15px; --r-s:12px;
+
+  /* Espacement — échelle 4/8 px */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px;
+  --s-7:48px; --s-8:64px; --s-9:96px; --s-10:128px;
+
   --max:1180px;
+
+  /* Ombres — échelle homogène */
   --ombre:0 24px 60px -28px rgba(43,42,38,.30);
-  --ombre-s:0 10px 30px -16px rgba(43,42,38,.28);
+  --ombre-s:0 10px 30px -16px rgba(43,42,38,.22);
+
+  /* Motion — easing unique pour toute l'interface */
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --t-fast:.22s; --t:.34s; --t-slow:.7s;
+
   --ff-titre:'Fraunces',Georgia,serif; --ff:'General Sans','Helvetica Neue',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;scroll-padding-top:92px}
 body{
   font-family:var(--ff); color:var(--encre);
   background:
@@ -39,10 +57,18 @@ body{
 a{color:inherit;text-decoration:none}
 img{max-width:100%;display:block}
 .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
-h1,h2,h3{font-family:var(--ff-titre);font-weight:400;line-height:1.02;letter-spacing:-.015em;color:var(--encre);font-optical-sizing:auto}
+
+/* Échelle typographique cohérente */
+h1,h2,h3{font-family:var(--ff-titre);font-weight:400;line-height:1.04;letter-spacing:-.015em;color:var(--encre);font-optical-sizing:auto}
 .surtitre{font-family:var(--ff);font-size:.72rem;font-weight:600;letter-spacing:.26em;text-transform:uppercase;color:var(--orange)}
 .muted{color:var(--gris)}
 :focus-visible{outline:3px solid var(--bleu);outline-offset:3px;border-radius:8px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+
+/* Lien d'évitement (accessibilité) */
+.skip{position:absolute;left:14px;top:-60px;z-index:200;background:var(--encre);color:#fff;
+  padding:.7em 1.2em;border-radius:999px;font-weight:600;font-size:.85rem;transition:top var(--t) var(--ease)}
+.skip:focus{top:14px}
 
 /* ===== Canvas 3D EN FOND FIXE — toute la page ===== */
 #bgCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;touch-action:pan-y;pointer-events:none}
@@ -56,31 +82,52 @@ h1,h2,h3{font-family:var(--ff-titre);font-weight:400;line-height:1.02;letter-spa
 /* tout le contenu passe au-dessus du canvas */
 .page{position:relative;z-index:2}
 
-/* Boutons — éditorial luxe : filet fin, casse douce, espacement aéré */
-.btn{display:inline-flex;align-items:center;gap:.6em;font-family:var(--ff);font-weight:600;font-size:.92rem;
+/* Boutons — éditorial luxe : filet fin, casse douce, espacement aéré, états homogènes */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.6em;font-family:var(--ff);font-weight:600;font-size:.92rem;
   letter-spacing:.01em;
   padding:.92em 1.7em;border-radius:999px;border:1.5px solid transparent;cursor:pointer;
-  transition:transform .25s ease, box-shadow .25s ease, background .25s ease}
+  transition:transform var(--t) var(--ease), box-shadow var(--t) var(--ease), background var(--t) var(--ease), border-color var(--t) var(--ease), color var(--t) var(--ease)}
+.btn .ico{transition:transform var(--t) var(--ease)}
+.btn:hover .ico{transform:translateX(3px)}
 .btn-primary{background:var(--encre);color:#fff;box-shadow:var(--ombre-s)}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 36px -16px rgba(43,42,38,.5)}
+.btn-primary:active{transform:translateY(0)}
 .btn-orange{background:var(--orange);color:#3a2603;box-shadow:0 14px 30px -14px rgba(243,154,27,.7)}
-.btn-orange:hover{transform:translateY(-2px)}
-.btn-ghost{background:rgba(255,255,255,.85);border-color:var(--ligne);color:var(--encre)}
+.btn-orange:hover{transform:translateY(-2px);box-shadow:0 20px 40px -16px rgba(243,154,27,.8)}
+.btn-orange:active{transform:translateY(0)}
+.btn-ghost{background:rgba(255,255,255,.85);border-color:var(--ligne-forte);color:var(--encre)}
 .btn-ghost:hover{transform:translateY(-2px);border-color:var(--encre);box-shadow:var(--ombre-s)}
+.btn-ghost:active{transform:translateY(0)}
 
 /* Header */
-header{position:fixed;inset:0 0 auto 0;z-index:60;transition:background .3s,box-shadow .3s,border-color .3s;
+header{position:fixed;inset:0 0 auto 0;z-index:60;transition:background var(--t) var(--ease),box-shadow var(--t) var(--ease),border-color var(--t) var(--ease);
   border-bottom:1px solid transparent}
-header.scrolled{background:rgba(251,248,241,.92);box-shadow:0 6px 24px -18px rgba(43,42,38,.5);border-color:var(--ligne)}
+header.scrolled{background:rgba(251,248,241,.94);box-shadow:0 6px 24px -18px rgba(43,42,38,.5);border-color:var(--ligne)}
 .nav{display:flex;align-items:center;gap:24px;height:74px}
 .brand{display:flex;align-items:center;gap:11px;font-family:var(--ff-titre);font-weight:500;letter-spacing:-.01em}
 .brand img{height:32px;width:auto}
 .brand span{font-size:1.18rem}
 .nav-links{display:flex;gap:24px;margin-left:auto}
-.nav-links a{font-family:var(--ff);font-size:.86rem;font-weight:500;letter-spacing:.01em;color:var(--encre);opacity:.74;transition:opacity .2s}
-.nav-links a:hover{opacity:1}
+.nav-links a{position:relative;font-family:var(--ff);font-size:.86rem;font-weight:500;letter-spacing:.01em;color:var(--encre);opacity:.74;
+  transition:opacity var(--t-fast) var(--ease);padding:.2em 0}
+.nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1.5px;background:var(--orange);
+  transform:scaleX(0);transform-origin:left;transition:transform var(--t) var(--ease)}
+.nav-links a:hover,.nav-links a:focus-visible{opacity:1}
+.nav-links a:hover::after,.nav-links a.active::after{transform:scaleX(1)}
+.nav-links a.active{opacity:1}
 .nav .btn{padding:.66em 1.2em;font-size:.82rem}
-.burger{display:none;margin-left:auto;background:none;border:0;cursor:pointer;width:42px;height:42px;color:var(--encre)}
+.burger{display:none;margin-left:auto;background:none;border:0;cursor:pointer;width:42px;height:42px;color:var(--encre);
+  border-radius:10px;transition:background var(--t-fast) var(--ease)}
+.burger:hover{background:rgba(43,42,38,.06)}
+
+/* Menu mobile (overlay propre, CTA visible) */
+.mobile-menu{display:none;position:fixed;inset:74px 0 auto 0;z-index:55;background:rgba(251,248,241,.98);
+  border-bottom:1px solid var(--ligne);box-shadow:0 18px 40px -24px rgba(43,42,38,.5);padding:18px 24px 26px}
+.mobile-menu.open{display:block}
+.mobile-menu a{display:block;font-family:var(--ff);font-size:1.02rem;font-weight:500;padding:14px 4px;color:var(--encre);
+  border-bottom:1px solid var(--ligne)}
+.mobile-menu a:last-of-type{border-bottom:0}
+.mobile-menu .btn{width:100%;margin-top:16px}
 
 /* Hero */
 .hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden}
@@ -96,11 +143,12 @@ header.scrolled{background:rgba(251,248,241,.92);box-shadow:0 6px 24px -18px rgb
 .drag-hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:4;
   font-family:var(--ff);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gris);
   display:flex;align-items:center;gap:9px}
-.drag-hint .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+.drag-hint .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulse 2.4s var(--ease) infinite}
+@keyframes pulse{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
 
-/* Sections */
+/* Sections — rythme vertical régulier */
 section{position:relative}
-.sec{padding:104px 0}
+.sec{padding:var(--s-10) 0}
 .sec-head{max-width:680px;margin-bottom:54px}
 .sec-head h2{font-size:clamp(2.1rem,4.2vw,3.4rem);font-weight:400;margin:18px 0 16px;letter-spacing:-.02em}
 .sec-head p{color:var(--gris);font-size:1.1rem;font-weight:400}
@@ -108,20 +156,22 @@ section{position:relative}
   text-transform:uppercase;color:var(--bleu);background:var(--bleu-pastel);padding:.46em 1.05em;border-radius:999px}
 
 /* Panneaux semi-opaques pleins (lisibilité au-dessus de la 3D, SANS backdrop-filter) */
-.panel{background:rgba(251,248,241,.86);border:1px solid var(--ligne);border-radius:var(--r-xl);
+.panel{background:rgba(251,248,241,.88);border:1px solid var(--ligne);border-radius:var(--r-xl);
   box-shadow:var(--ombre-s)}
 
 /* cartes génériques */
 .card{background:var(--carte);border:1px solid var(--ligne);border-radius:var(--r-l);padding:32px;
-  box-shadow:var(--ombre-s);transition:transform .3s,box-shadow .3s}
+  box-shadow:var(--ombre-s);transition:transform var(--t) var(--ease),box-shadow var(--t) var(--ease),border-color var(--t) var(--ease)}
 .card:hover{transform:translateY(-5px);box-shadow:var(--ombre)}
 
 /* Valeurs */
 .val-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-.val-ic{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;margin-bottom:20px}
+.val-ic{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;margin-bottom:20px;
+  transition:transform var(--t) var(--ease)}
+.card:hover .val-ic{transform:scale(1.06) rotate(-3deg)}
 .val-ic.c1{background:var(--bleu-pastel);color:var(--bleu)}
-.val-ic.c2{background:var(--orange-soft);color:#b56d00}
-.val-ic.c3{background:var(--vert-soft);color:#3e7d52}
+.val-ic.c2{background:var(--orange-soft);color:#9a5e00}
+.val-ic.c3{background:var(--vert-soft);color:#2f6e44}
 .val-grid h3{font-size:1.5rem;font-weight:500;margin-bottom:10px;letter-spacing:-.01em}
 .val-grid p{color:var(--gris);font-size:1rem}
 
@@ -129,10 +179,10 @@ section{position:relative}
 .labos{display:flex;flex-wrap:wrap;gap:13px;margin-top:32px}
 .labo{background:#fff;border:1px solid var(--ligne);border-radius:999px;padding:.66em 1.4em;
   font-family:var(--ff-titre);font-weight:500;font-style:italic;
-  font-size:1.05rem;box-shadow:var(--ombre-s);transition:transform .25s,border-color .25s}
+  font-size:1.05rem;box-shadow:var(--ombre-s);transition:transform var(--t) var(--ease),border-color var(--t) var(--ease)}
 .labo:hover{transform:translateY(-3px);border-color:var(--orange)}
 .offres-flex{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
-.offre-visual{background:linear-gradient(160deg,rgba(228,236,255,.9),rgba(226,240,230,.9));
+.offre-visual{background:linear-gradient(160deg,rgba(228,236,255,.92),rgba(226,240,230,.92));
   border-radius:var(--r-xl);padding:48px;min-height:300px;display:flex;flex-direction:column;justify-content:center;
   border:1px solid var(--ligne)}
 .offre-visual .big{font-family:var(--ff-titre);font-weight:400;font-size:2.9rem;line-height:1.04;letter-spacing:-.02em;color:var(--encre);margin-bottom:12px}
@@ -141,17 +191,20 @@ section{position:relative}
 
 /* Groupe / carte */
 .agences{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
-.agence{background:rgba(255,255,255,.9);border:1px solid var(--ligne);border-radius:var(--r-m);padding:17px 19px;transition:transform .25s,border-color .25s}
-.agence:hover{transform:translateY(-3px);border-color:var(--bleu)}
+.agence{background:rgba(255,255,255,.92);border:1px solid var(--ligne);border-radius:var(--r-m);padding:17px 19px;
+  transition:transform var(--t) var(--ease),border-color var(--t) var(--ease),box-shadow var(--t) var(--ease)}
+.agence:hover{transform:translateY(-3px);border-color:var(--bleu);box-shadow:var(--ombre-s)}
 .agence .nom{font-family:var(--ff-titre);font-weight:500;font-size:1.05rem;letter-spacing:-.005em}
 .agence .ville{font-size:.84rem;color:var(--gris);margin-top:4px}
 .agence .pill{display:inline-block;margin-top:9px;font-family:var(--ff);font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
-  padding:.28em .72em;border-radius:999px;background:var(--orange-soft);color:#a35e00}
+  padding:.28em .72em;border-radius:999px;background:var(--orange-soft);color:#8f5300}
 .agence .pill.part{background:var(--bleu-pastel);color:var(--bleu)}
 
 /* Chiffres */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
-.stat{background:rgba(255,255,255,.9);border:1px solid var(--ligne);border-radius:var(--r-l);padding:36px 26px;text-align:center;box-shadow:var(--ombre-s)}
+.stat{background:rgba(255,255,255,.92);border:1px solid var(--ligne);border-radius:var(--r-l);padding:36px 26px;text-align:center;box-shadow:var(--ombre-s);
+  transition:transform var(--t) var(--ease),box-shadow var(--t) var(--ease)}
+.stat:hover{transform:translateY(-4px);box-shadow:var(--ombre)}
 .stat .num{font-family:var(--ff-titre);font-weight:400;font-size:clamp(2.5rem,4.2vw,3.4rem);color:var(--orange);line-height:1;letter-spacing:-.02em}
 .stat .lbl{margin-top:12px;color:var(--gris);font-size:.9rem;font-weight:500;letter-spacing:.01em}
 
@@ -162,34 +215,37 @@ section{position:relative}
 .offilog-kpi .k b{font-family:var(--ff-titre);font-weight:400;font-size:1.85rem;color:var(--bleu);display:block;letter-spacing:-.015em}
 .offilog-kpi .k span{font-size:.78rem;color:var(--gris);letter-spacing:.02em}
 .cats{display:flex;flex-wrap:wrap;gap:11px}
-.cat{background:rgba(255,255,255,.92);border:1px solid var(--ligne);border-radius:12px;padding:.82em 1.3em;font-weight:500;font-size:.95rem;
-  display:flex;align-items:center;gap:.6em;transition:transform .25s,background .25s,color .25s}
-.cat:hover{transform:translateY(-3px);background:var(--orange);color:#3a2603}
-.cat .d{width:8px;height:8px;border-radius:3px;background:var(--vert)}
+.cat{background:rgba(255,255,255,.94);border:1px solid var(--ligne);border-radius:12px;padding:.82em 1.3em;font-weight:500;font-size:.95rem;
+  display:flex;align-items:center;gap:.6em;transition:transform var(--t) var(--ease),background var(--t) var(--ease),color var(--t) var(--ease),border-color var(--t) var(--ease)}
+.cat:hover{transform:translateY(-3px);background:var(--orange);color:#3a2603;border-color:var(--orange)}
+.cat .d{width:8px;height:8px;border-radius:3px;background:var(--vert);transition:background var(--t) var(--ease)}
+.cat:hover .d{background:#3a2603}
 
 /* Accompagnement — panneau encre lisible sur 3D claire */
 .accomp .inner{background:var(--encre-2);color:#EAF0FF;border-radius:var(--r-xl);padding:60px 48px;box-shadow:var(--ombre)}
 .accomp h2,.accomp h3{color:#fff}
 .accomp .sec-head{margin-bottom:30px}
 .accomp .sec-head p{color:#B6C4E8}
-.accomp .tag{background:rgba(255,255,255,.1);color:#fff}
+.accomp .tag{background:rgba(255,255,255,.12);color:#fff}
 .accomp .lead{font-family:var(--ff-titre);font-weight:400;font-size:clamp(1.55rem,2.7vw,2.25rem);line-height:1.22;letter-spacing:-.015em;max-width:30ch;color:#fff;margin-bottom:32px}
 .proj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:34px}
 .proj{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-l);padding:28px;
-  transition:transform .3s,background .3s}
-.proj:hover{transform:translateY(-5px);background:rgba(255,255,255,.09)}
+  transition:transform var(--t) var(--ease),background var(--t) var(--ease),border-color var(--t) var(--ease)}
+.proj:hover{transform:translateY(-5px);background:rgba(255,255,255,.10);border-color:rgba(243,154,27,.4)}
 .proj .pi{width:46px;height:46px;border-radius:13px;background:rgba(243,154,27,.18);color:var(--orange);
-  display:grid;place-items:center;margin-bottom:18px}
+  display:grid;place-items:center;margin-bottom:18px;transition:transform var(--t) var(--ease)}
+.proj:hover .pi{transform:scale(1.06) rotate(-3deg)}
 .proj h3{font-size:1.26rem;font-weight:500;margin-bottom:8px;letter-spacing:-.01em}
 .proj p{color:#A9B8DC;font-size:.92rem}
 
 /* Carrières */
 .carr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:8px}
-.job{background:rgba(255,255,255,.92);border:1px solid var(--ligne);border-radius:var(--r-m);padding:24px;display:flex;
-  flex-direction:column;gap:9px;transition:transform .25s,border-color .25s}
-.job:hover{transform:translateY(-4px);border-color:var(--orange)}
+.job{background:rgba(255,255,255,.94);border:1px solid var(--ligne);border-radius:var(--r-m);padding:24px;display:flex;
+  flex-direction:column;gap:9px;transition:transform var(--t) var(--ease),border-color var(--t) var(--ease),box-shadow var(--t) var(--ease)}
+.job:hover{transform:translateY(-4px);border-color:var(--orange);box-shadow:var(--ombre-s)}
 .job .role{font-family:var(--ff-titre);font-weight:500;font-size:1.12rem;letter-spacing:-.005em}
-.job .ar{color:var(--orange);font-weight:600;font-size:1.1rem}
+.job .ar{color:var(--orange);font-weight:600;font-size:1.2rem;transition:transform var(--t) var(--ease)}
+.job:hover .ar{transform:translateX(5px)}
 
 /* Contact */
 .contact-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:46px}
@@ -200,13 +256,16 @@ section{position:relative}
 .cinfo .ic{width:38px;height:38px;border-radius:11px;background:var(--bleu-pastel);color:var(--bleu);display:grid;place-items:center;flex:none}
 .cinfo b{display:block;font-family:var(--ff);font-weight:600;font-size:.95rem;letter-spacing:.01em}
 .cinfo span{font-size:.9rem;color:var(--gris)}
-form{background:rgba(255,255,255,.95);border:1px solid var(--ligne);border-radius:var(--r-xl);padding:36px;box-shadow:var(--ombre-s)}
+.cinfo a:hover{color:var(--bleu)}
+form{background:rgba(255,255,255,.96);border:1px solid var(--ligne);border-radius:var(--r-xl);padding:36px;box-shadow:var(--ombre-s)}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .field{margin-bottom:16px}
 .field label{display:block;font-family:var(--ff);font-size:.76rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px;color:var(--encre)}
-.field input,.field textarea{width:100%;border:1.5px solid var(--ligne);border-radius:var(--r-s);padding:.85em 1em;
-  font:inherit;background:var(--creme2);color:var(--encre);transition:border-color .2s,background .2s}
-.field input:focus,.field textarea:focus{outline:none;border-color:var(--bleu);background:#fff}
+.field label .req{color:var(--orange)}
+.field input,.field textarea{width:100%;border:1.5px solid var(--ligne-forte);border-radius:var(--r-s);padding:.85em 1em;
+  font:inherit;background:var(--creme2);color:var(--encre);transition:border-color var(--t-fast) var(--ease),background var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease)}
+.field input:hover,.field textarea:hover{border-color:var(--encre)}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--bleu);background:#fff;box-shadow:0 0 0 4px var(--bleu-pastel)}
 .field textarea{resize:vertical;min-height:110px}
 form .btn{width:100%;justify-content:center;margin-top:6px}
 
@@ -218,14 +277,16 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
 .foot-brand span{font-size:1.12rem}
 .foot-brand img{height:30px;filter:brightness(0) invert(1)}
 .foot-links{display:flex;gap:26px;flex-wrap:wrap}
-.foot-links a{font-family:var(--ff);font-size:.9rem;font-weight:500;letter-spacing:.01em;color:#C6D2F0;opacity:.85}
-.foot-links a:hover{opacity:1;color:#fff}
+.foot-links a{position:relative;font-family:var(--ff);font-size:.9rem;font-weight:500;letter-spacing:.01em;color:#C6D2F0;opacity:.85;
+  transition:opacity var(--t-fast) var(--ease),color var(--t-fast) var(--ease)}
+.foot-links a:hover,.foot-links a:focus-visible{opacity:1;color:#fff}
 .foot-bot{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:24px;font-size:.84rem;color:#8FA0CB}
 .foot-bot span:last-child{font-family:var(--ff-titre);font-style:italic;font-weight:400}
 
-/* reveal */
-.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+/* reveal — easing homogène, stagger maîtrisé */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity var(--t-slow) var(--ease-out),transform var(--t-slow) var(--ease-out)}
 .reveal.in{opacity:1;transform:none}
+.stagger>.reveal{transition-delay:calc(var(--i,0) * 70ms)}
 
 /* progress de scroll (fine barre orange) */
 .scroll-bar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--orange);z-index:70;
@@ -241,17 +302,26 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
   .offres-flex,.contact-grid{grid-template-columns:1fr;gap:30px}
 }
 @media (max-width:640px){
+  html{scroll-padding-top:80px}
   .wrap{padding:0 18px}
   .nav-links{display:none}
+  .nav>.btn-primary{display:none}
   .burger{display:grid;place-items:center}
   .sec{padding:72px 0}
+  .sec-head{margin-bottom:36px}
   .val-grid,.proj-grid,.carr-grid,.stats,.agences{grid-template-columns:1fr}
   .frow{grid-template-columns:1fr}
-  .hero-grid{padding-top:80px}
+  .hero-grid{padding-top:80px;padding-bottom:40px}
   .hero h1{font-size:clamp(2.3rem,9vw,3.1rem)}
+  .hero-spacer{min-height:220px}
+  .hero-cta .btn{flex:1 1 auto}
   .offilog-top{grid-template-columns:1fr}
   .accomp .inner{padding:40px 26px}
   .pad{padding:30px}
+  .card{padding:26px}
+  .offre-visual{padding:34px;min-height:auto}
+  .offre-visual .big{font-size:2.3rem}
+  form{padding:26px}
 }
 @media (prefers-reduced-motion: reduce){
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
@@ -264,6 +334,8 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
 </head>
 <body>
 
+<a class="skip" href="#main">Aller au contenu</a>
+
 <!-- CANVAS 3D FOND FIXE — présent sur TOUTE la page -->
 <canvas id="bgCanvas" aria-hidden="true"></canvas>
 <div id="bgFallback" aria-hidden="true"><img src="../assets/poster.jpg" alt=""></div>
@@ -273,10 +345,10 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
 <header id="hdr">
   <div class="wrap nav">
     <a class="brand" href="#hero" aria-label="Intégral Pharma — accueil">
-      <img src="../assets/logo.png" alt="Intégral Pharma">
+      <img src="../assets/logo.png" alt="Intégral Pharma" width="120" height="32">
       <span>Intégral Pharma</span>
     </a>
-    <nav class="nav-links" aria-label="Navigation principale">
+    <nav class="nav-links" id="navLinks" aria-label="Navigation principale">
       <a href="#offres">Offres</a>
       <a href="#groupe">Le groupe</a>
       <a href="#offilog">Offilog</a>
@@ -285,23 +357,34 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
       <a href="#contact">Contact</a>
     </nav>
     <a class="btn btn-primary" href="#contact">Demander nos conditions</a>
-    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobileMenu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     </button>
   </div>
 </header>
 
-<div class="page">
+<!-- MENU MOBILE -->
+<nav class="mobile-menu" id="mobileMenu" aria-label="Navigation mobile">
+  <a href="#offres">Offres</a>
+  <a href="#groupe">Le groupe</a>
+  <a href="#offilog">Offilog</a>
+  <a href="#accompagnement">Accompagnement</a>
+  <a href="#carrieres">Carrières</a>
+  <a href="#contact">Contact</a>
+  <a class="btn btn-orange" href="#contact">Demander nos conditions</a>
+</nav>
+
+<main class="page" id="main">
 
 <!-- HERO -->
-<section class="hero" id="hero" data-scene="hero">
+<section class="hero" id="hero" data-scene="hero" aria-labelledby="hero-title">
   <div class="hero-grid">
     <div class="hero-copy">
       <span class="surtitre">Grossiste-répartiteur de première intention</span>
-      <h1>Plus de marge,<br>sur <span class="em">chaque</span> commande.</h1>
+      <h1 id="hero-title">Plus de marge,<br>sur <span class="em">chaque</span> commande.</h1>
       <p class="hero-sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
       <div class="hero-cta">
-        <a class="btn btn-orange" href="#contact">Demander nos conditions</a>
+        <a class="btn btn-orange" href="#contact">Demander nos conditions <span class="ico" aria-hidden="true">→</span></a>
         <a class="btn btn-ghost" href="#groupe">Découvrir le groupe</a>
       </div>
     </div>
@@ -311,26 +394,26 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
 </section>
 
 <!-- VALEURS -->
-<section class="sec" id="valeurs" data-scene="valeurs">
+<section class="sec" id="valeurs" data-scene="valeurs" aria-labelledby="valeurs-title">
   <div class="wrap">
     <div class="sec-head reveal panel pad" style="margin-bottom:40px">
       <span class="tag">Nos valeurs</span>
-      <h2>Une officine indépendante, près de chez vous.</h2>
+      <h2 id="valeurs-title">Une officine indépendante, près de chez vous.</h2>
       <p>Un groupe de grossistes français à taille humaine, qui connaît votre métier et reste joignable.</p>
     </div>
-    <div class="val-grid">
-      <div class="card reveal">
-        <div class="val-ic c1"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.4-3 8-7 10-4-2-7-5.6-7-10V6l7-3z"/></svg></div>
+    <div class="val-grid stagger">
+      <div class="card reveal" style="--i:0">
+        <div class="val-ic c1"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8-7 10-4-2-7-5.6-7-10V6l7-3z"/></svg></div>
         <h3>Confiance</h3>
         <p>Des interlocuteurs stables, des engagements tenus, une relation directe sans intermédiaire.</p>
       </div>
-      <div class="card reveal">
-        <div class="val-ic c2"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v6m0 8v6M2 12h6m8 0h6"/><circle cx="12" cy="12" r="3.2"/></svg></div>
+      <div class="card reveal" style="--i:1">
+        <div class="val-ic c2"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2v6m0 8v6M2 12h6m8 0h6"/><circle cx="12" cy="12" r="3.2"/></svg></div>
         <h3>Engagement</h3>
         <p>Nous portons votre approvisionnement comme le nôtre, avec une exigence de service constante.</p>
       </div>
-      <div class="card reveal">
-        <div class="val-ic c3"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7L9 18l-5-5"/></svg></div>
+      <div class="card reveal" style="--i:2">
+        <div class="val-ic c3"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7L9 18l-5-5"/></svg></div>
         <h3>Respect</h3>
         <p>De votre indépendance, de votre rythme et de la singularité de chaque officine.</p>
       </div>
@@ -339,12 +422,12 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
 </section>
 
 <!-- OFFRES -->
-<section class="sec" id="offres" data-scene="offres">
+<section class="sec" id="offres" data-scene="offres" aria-labelledby="offres-title">
   <div class="wrap">
     <div class="offres-flex">
       <div class="reveal panel pad">
         <span class="tag">Nos offres</span>
-        <h2 style="font-size:clamp(2.1rem,4.2vw,3.4rem);font-weight:400;margin:18px 0 16px;letter-spacing:-.02em">Les plus grands laboratoires.</h2>
+        <h2 id="offres-title" style="font-size:clamp(2.1rem,4.2vw,3.4rem);font-weight:400;margin:18px 0 16px;letter-spacing:-.02em">Les plus grands laboratoires.</h2>
         <p class="muted" style="font-size:1.1rem;max-width:44ch">Un catalogue complet de génériqueurs et de marques de référence, négocié pour vous — on vous le chiffre en rendez-vous.</p>
         <div class="labos">
           <span class="labo">Zentiva</span>
@@ -363,46 +446,46 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
 </section>
 
 <!-- LE GROUPE -->
-<section class="sec" id="groupe" data-scene="groupe">
+<section class="sec" id="groupe" data-scene="groupe" aria-labelledby="groupe-title">
   <div class="wrap">
     <div class="sec-head reveal panel pad" style="margin-bottom:30px">
       <span class="tag">Le groupe</span>
-      <h2>National.</h2>
+      <h2 id="groupe-title">National.</h2>
       <p>Un groupe de grossistes français indépendant, 9 agences, une couverture nationale.</p>
     </div>
-    <div class="agences">
-      <div class="agence reveal"><div class="nom">Ouest Pharma Services</div><div class="ville">St-Étienne-de-Montluc (44)</div></div>
-      <div class="agence reveal"><div class="nom">Escale Pharma</div><div class="ville">Chilly-Mazarin (91)</div></div>
-      <div class="agence reveal"><div class="nom">Comptoir Pharmaceutique du Rhône</div><div class="ville">Saint-Maurice-l'Exil (38)</div></div>
-      <div class="agence reveal"><div class="nom">Sud Ouest Pharma</div><div class="ville">Montayral (47)</div></div>
-      <div class="agence reveal"><div class="nom">Pharm'Occitanie Services</div><div class="ville">Villeneuve-lès-Béziers (34)</div></div>
-      <div class="agence reveal"><div class="nom">Hyères Pharma</div><div class="ville">Hyères (83)</div><span class="pill">Siège</span></div>
-      <div class="agence reveal"><div class="nom">Sud Est Pharma</div><div class="ville">Le Cannet-des-Maures (83)</div></div>
-      <div class="agence reveal"><div class="nom">Mistral Santé Pharma</div><div class="ville">Flassans-sur-Issole (83)</div></div>
-      <div class="agence reveal"><div class="nom">Pharmest</div><div class="ville">Metz (57)</div><span class="pill part">Partenaire</span></div>
+    <div class="agences stagger">
+      <div class="agence reveal" style="--i:0"><div class="nom">Ouest Pharma Services</div><div class="ville">St-Étienne-de-Montluc (44)</div></div>
+      <div class="agence reveal" style="--i:1"><div class="nom">Escale Pharma</div><div class="ville">Chilly-Mazarin (91)</div></div>
+      <div class="agence reveal" style="--i:2"><div class="nom">Comptoir Pharmaceutique du Rhône</div><div class="ville">Saint-Maurice-l'Exil (38)</div></div>
+      <div class="agence reveal" style="--i:3"><div class="nom">Sud Ouest Pharma</div><div class="ville">Montayral (47)</div></div>
+      <div class="agence reveal" style="--i:4"><div class="nom">Pharm'Occitanie Services</div><div class="ville">Villeneuve-lès-Béziers (34)</div></div>
+      <div class="agence reveal" style="--i:5"><div class="nom">Hyères Pharma</div><div class="ville">Hyères (83)</div><span class="pill">Siège</span></div>
+      <div class="agence reveal" style="--i:6"><div class="nom">Sud Est Pharma</div><div class="ville">Le Cannet-des-Maures (83)</div></div>
+      <div class="agence reveal" style="--i:7"><div class="nom">Mistral Santé Pharma</div><div class="ville">Flassans-sur-Issole (83)</div></div>
+      <div class="agence reveal" style="--i:8"><div class="nom">Pharmest</div><div class="ville">Metz (57)</div><span class="pill part">Partenaire</span></div>
     </div>
   </div>
 </section>
 
 <!-- CHIFFRES -->
-<section class="sec" id="chiffres" data-scene="chiffres">
+<section class="sec" id="chiffres" data-scene="chiffres" aria-label="Nos chiffres clés">
   <div class="wrap">
-    <div class="stats">
-      <div class="stat reveal"><div class="num" data-count="20" data-prefix="+">+20</div><div class="lbl">ans d'expérience</div></div>
-      <div class="stat reveal"><div class="num" data-count="9">9</div><div class="lbl">agences en France</div></div>
-      <div class="stat reveal"><div class="num" data-count="14000" data-prefix="+">+14 000</div><div class="lbl">références Offilog</div></div>
-      <div class="stat reveal"><div class="num" data-count="430" data-prefix="+">+430</div><div class="lbl">laboratoires</div></div>
+    <div class="stats stagger">
+      <div class="stat reveal" style="--i:0"><div class="num" data-count="20" data-prefix="+">+20</div><div class="lbl">ans d'expérience</div></div>
+      <div class="stat reveal" style="--i:1"><div class="num" data-count="9">9</div><div class="lbl">agences en France</div></div>
+      <div class="stat reveal" style="--i:2"><div class="num" data-count="14000" data-prefix="+">+14 000</div><div class="lbl">références Offilog</div></div>
+      <div class="stat reveal" style="--i:3"><div class="num" data-count="430" data-prefix="+">+430</div><div class="lbl">laboratoires</div></div>
     </div>
   </div>
 </section>
 
 <!-- OFFILOG -->
-<section class="sec" id="offilog" data-scene="offilog">
+<section class="sec" id="offilog" data-scene="offilog" aria-labelledby="offilog-title">
   <div class="wrap">
     <div class="panel pad reveal">
       <div class="sec-head" style="margin-bottom:28px">
         <span class="tag">Offilog</span>
-        <h2>Toute la parapharmacie.</h2>
+        <h2 id="offilog-title">Toute la parapharmacie.</h2>
       </div>
       <div class="offilog-top">
         <p class="muted" style="font-size:1.1rem;max-width:46ch">Une centrale parapharmacie complète, accessible à toutes nos officines, sans frais d'entrée.</p>
@@ -413,111 +496,111 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
         </div>
       </div>
       <div class="cats">
-        <span class="cat"><span class="d"></span>Solaires</span>
-        <span class="cat"><span class="d"></span>Soin du visage</span>
-        <span class="cat"><span class="d"></span>Hygiène</span>
-        <span class="cat"><span class="d"></span>Bébé</span>
-        <span class="cat"><span class="d"></span>Cheveux</span>
-        <span class="cat"><span class="d"></span>Compléments</span>
-        <span class="cat"><span class="d"></span>Bio</span>
-        <span class="cat"><span class="d"></span>Bucco-dentaire</span>
-        <span class="cat"><span class="d"></span>Vétérinaire</span>
+        <span class="cat"><span class="d" aria-hidden="true"></span>Solaires</span>
+        <span class="cat"><span class="d" aria-hidden="true"></span>Soin du visage</span>
+        <span class="cat"><span class="d" aria-hidden="true"></span>Hygiène</span>
+        <span class="cat"><span class="d" aria-hidden="true"></span>Bébé</span>
+        <span class="cat"><span class="d" aria-hidden="true"></span>Cheveux</span>
+        <span class="cat"><span class="d" aria-hidden="true"></span>Compléments</span>
+        <span class="cat"><span class="d" aria-hidden="true"></span>Bio</span>
+        <span class="cat"><span class="d" aria-hidden="true"></span>Bucco-dentaire</span>
+        <span class="cat"><span class="d" aria-hidden="true"></span>Vétérinaire</span>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ACCOMPAGNEMENT -->
-<section class="sec accomp" id="accompagnement" data-scene="accompagnement">
+<section class="sec accomp" id="accompagnement" data-scene="accompagnement" aria-labelledby="accomp-title">
   <div class="wrap">
     <div class="inner reveal">
       <div class="sec-head">
         <span class="tag">Accompagnement</span>
-        <h2>On le porte avec vous.</h2>
+        <h2 id="accomp-title">On le porte avec vous.</h2>
       </div>
       <p class="lead">Vous êtes pharmacien titulaire et vous avez un projet de transfert, d'agrandissement, de cession de parts ou d'optimisation ? On le porte avec vous.</p>
-      <div class="proj-grid">
-        <div class="proj">
-          <div class="pi"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="proj-grid stagger">
+        <div class="proj reveal" style="--i:0">
+          <div class="pi"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
           <h3>Transfert d'officine</h3>
           <p>Sécuriser et réussir votre changement d'emplacement.</p>
         </div>
-        <div class="proj">
-          <div class="pi"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V8l8-4 8 4v12M9 20v-6h6v6"/></svg></div>
+        <div class="proj reveal" style="--i:1">
+          <div class="pi"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 20V8l8-4 8 4v12M9 20v-6h6v6"/></svg></div>
           <h3>Agrandissement</h3>
           <p>Gagner de la surface et repenser votre espace de vente.</p>
         </div>
-        <div class="proj">
-          <div class="pi"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>
+        <div class="proj reveal" style="--i:2">
+          <div class="pi"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>
           <h3>Cession de parts</h3>
           <p>Accompagner les entrées et sorties d'associés en confiance.</p>
         </div>
-        <div class="proj">
-          <div class="pi"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18l5-6 4 4 7-9"/><path d="M4 21h16"/></svg></div>
+        <div class="proj reveal" style="--i:3">
+          <div class="pi"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 18l5-6 4 4 7-9"/><path d="M4 21h16"/></svg></div>
           <h3>Optimisation</h3>
           <p>Améliorer vos marges et votre organisation au quotidien.</p>
         </div>
       </div>
-      <a class="btn btn-orange" href="#contact">En parler avec nous</a>
+      <a class="btn btn-orange" href="#contact">En parler avec nous <span class="ico" aria-hidden="true">→</span></a>
     </div>
   </div>
 </section>
 
 <!-- CARRIÈRES -->
-<section class="sec" id="carrieres" data-scene="carrieres">
+<section class="sec" id="carrieres" data-scene="carrieres" aria-labelledby="carr-title">
   <div class="wrap">
     <div class="sec-head reveal panel pad" style="margin-bottom:30px">
       <span class="tag">Carrières</span>
-      <h2>Le groupe recrute.</h2>
+      <h2 id="carr-title">Le groupe recrute.</h2>
       <p>Rejoignez une entreprise française indépendante, à taille humaine, partout en France.</p>
     </div>
-    <div class="carr-grid">
-      <div class="job reveal"><div class="role">Approvisionnement</div><p class="muted" style="font-size:.9rem;flex:1">Gestion des stocks et des commandes fournisseurs.</p><span class="ar">→</span></div>
-      <div class="job reveal"><div class="role">Commercial</div><p class="muted" style="font-size:.9rem;flex:1">Développement et suivi des officines partenaires.</p><span class="ar">→</span></div>
-      <div class="job reveal"><div class="role">Pharmacien responsable</div><p class="muted" style="font-size:.9rem;flex:1">Garant de la qualité et de la conformité réglementaire.</p><span class="ar">→</span></div>
-      <div class="job reveal"><div class="role">Préparateur-chauffeur</div><p class="muted" style="font-size:.9rem;flex:1">Préparation et livraison au cœur du service.</p><span class="ar">→</span></div>
+    <div class="carr-grid stagger">
+      <div class="job reveal" style="--i:0"><div class="role">Approvisionnement</div><p class="muted" style="font-size:.9rem;flex:1">Gestion des stocks et des commandes fournisseurs.</p><span class="ar" aria-hidden="true">→</span></div>
+      <div class="job reveal" style="--i:1"><div class="role">Commercial</div><p class="muted" style="font-size:.9rem;flex:1">Développement et suivi des officines partenaires.</p><span class="ar" aria-hidden="true">→</span></div>
+      <div class="job reveal" style="--i:2"><div class="role">Pharmacien responsable</div><p class="muted" style="font-size:.9rem;flex:1">Garant de la qualité et de la conformité réglementaire.</p><span class="ar" aria-hidden="true">→</span></div>
+      <div class="job reveal" style="--i:3"><div class="role">Préparateur-chauffeur</div><p class="muted" style="font-size:.9rem;flex:1">Préparation et livraison au cœur du service.</p><span class="ar" aria-hidden="true">→</span></div>
     </div>
   </div>
 </section>
 
 <!-- CONTACT -->
-<section class="sec" id="contact" data-scene="contact">
+<section class="sec" id="contact" data-scene="contact" aria-labelledby="contact-title">
   <div class="wrap">
     <div class="contact-grid panel pad reveal">
       <div class="contact-info">
         <span class="tag">Contact</span>
-        <h2 style="margin-top:14px">Demandez nos conditions.</h2>
+        <h2 id="contact-title" style="margin-top:14px">Demandez nos conditions.</h2>
         <p>Dites-nous qui vous êtes, on vous rappelle et on chiffre vos conditions en rendez-vous.</p>
         <div class="cinfo">
-          <div class="row"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg></div><div><b>Email</b><span>contact@integralpharma.fr</span></div></div>
-          <div class="row"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></div><div><b>Siège</b><span>758 Chemin de la Source, 83400 Hyères</span></div></div>
+          <div class="row"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg></div><div><b>Email</b><a href="mailto:contact@integralpharma.fr"><span>contact@integralpharma.fr</span></a></div></div>
+          <div class="row"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></div><div><b>Siège</b><span>758 Chemin de la Source, 83400 Hyères</span></div></div>
         </div>
       </div>
-      <form id="contactForm" action="mailto:contact@integralpharma.fr" method="post" enctype="text/plain">
+      <form id="contactForm" action="mailto:contact@integralpharma.fr" method="post" enctype="text/plain" aria-labelledby="contact-title">
         <div class="frow">
-          <div class="field"><label for="f-nom">Nom</label><input id="f-nom" name="Nom" type="text" required></div>
-          <div class="field"><label for="f-off">Officine</label><input id="f-off" name="Officine" type="text"></div>
+          <div class="field"><label for="f-nom">Nom <span class="req" aria-hidden="true">*</span></label><input id="f-nom" name="Nom" type="text" autocomplete="name" required></div>
+          <div class="field"><label for="f-off">Officine</label><input id="f-off" name="Officine" type="text" autocomplete="organization"></div>
         </div>
         <div class="frow">
-          <div class="field"><label for="f-cp">Code postal</label><input id="f-cp" name="Code postal" type="text" inputmode="numeric"></div>
-          <div class="field"><label for="f-tel">Téléphone</label><input id="f-tel" name="Telephone" type="tel"></div>
+          <div class="field"><label for="f-cp">Code postal</label><input id="f-cp" name="Code postal" type="text" inputmode="numeric" autocomplete="postal-code"></div>
+          <div class="field"><label for="f-tel">Téléphone</label><input id="f-tel" name="Telephone" type="tel" autocomplete="tel"></div>
         </div>
-        <div class="field"><label for="f-mail">Email</label><input id="f-mail" name="Email" type="email" required></div>
+        <div class="field"><label for="f-mail">Email <span class="req" aria-hidden="true">*</span></label><input id="f-mail" name="Email" type="email" autocomplete="email" required></div>
         <div class="field"><label for="f-msg">Message</label><textarea id="f-msg" name="Message"></textarea></div>
-        <button class="btn btn-primary" type="submit">Envoyer ma demande</button>
+        <button class="btn btn-primary" type="submit">Envoyer ma demande <span class="ico" aria-hidden="true">→</span></button>
       </form>
     </div>
   </div>
 </section>
 
-</div><!-- /.page -->
+</main><!-- /.page -->
 
 <!-- FOOTER -->
 <footer>
   <div class="wrap">
     <div class="foot-top">
       <div>
-        <div class="foot-brand"><img src="../assets/logo.png" alt="Intégral Pharma"><span>Intégral Pharma</span></div>
+        <div class="foot-brand"><img src="../assets/logo.png" alt="Intégral Pharma" width="113" height="30"><span>Intégral Pharma</span></div>
         <p style="margin-top:12px;max-width:30ch;font-size:.9rem">Groupe de grossistes français indépendant. Couverture nationale.</p>
       </div>
       <nav class="foot-links" aria-label="Pied de page">
@@ -548,13 +631,25 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
   function onHdr(){ if(window.scrollY>20) hdr.classList.add('scrolled'); else hdr.classList.remove('scrolled'); }
   window.addEventListener('scroll',onHdr,{passive:true}); onHdr();
 
-  /* Burger */
+  /* Burger + menu mobile accessible */
   var burger=document.getElementById('burger');
-  if(burger){ burger.addEventListener('click',function(){
-    var open=this.getAttribute('aria-expanded')==='true';
-    this.setAttribute('aria-expanded', String(!open));
-    document.querySelector('.nav-links').style.display = open?'none':'flex';
-  });}
+  var mobileMenu=document.getElementById('mobileMenu');
+  function setMenu(open){
+    if(!burger||!mobileMenu) return;
+    burger.setAttribute('aria-expanded', String(open));
+    burger.setAttribute('aria-label', open?'Fermer le menu':'Ouvrir le menu');
+    mobileMenu.classList.toggle('open', open);
+  }
+  if(burger){
+    burger.addEventListener('click',function(){
+      setMenu(burger.getAttribute('aria-expanded')!=='true');
+    });
+  }
+  if(mobileMenu){
+    mobileMenu.querySelectorAll('a').forEach(function(a){ a.addEventListener('click',function(){ setMenu(false); }); });
+  }
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') setMenu(false); });
+  window.addEventListener('resize',function(){ if(window.innerWidth>640) setMenu(false); });
 
   /* Année */
   document.getElementById('yr').textContent=new Date().getFullYear();
@@ -571,8 +666,26 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
   var revEls=[].slice.call(document.querySelectorAll('.reveal'));
   if(reduce || !('IntersectionObserver' in window)){ revEls.forEach(function(el){el.classList.add('in');}); }
   else {
-    var ro=new IntersectionObserver(function(es){es.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); ro.unobserve(en.target);} });},{threshold:.12});
+    var ro=new IntersectionObserver(function(es){es.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); ro.unobserve(en.target);} });},{threshold:.14,rootMargin:'0px 0px -8% 0px'});
     revEls.forEach(function(el){ro.observe(el);});
+  }
+
+  /* Lien de nav actif selon section visible */
+  var navMap={};
+  [].slice.call(document.querySelectorAll('.nav-links a')).forEach(function(a){
+    var id=a.getAttribute('href').slice(1); if(id) navMap[id]=a;
+  });
+  if('IntersectionObserver' in window){
+    var spy=new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        var a=navMap[en.target.id]; if(!a) return;
+        if(en.isIntersecting){
+          for(var k in navMap){ navMap[k].classList.remove('active'); }
+          a.classList.add('active');
+        }
+      });
+    },{threshold:.5,rootMargin:'-30% 0px -50% 0px'});
+    [].slice.call(document.querySelectorAll('section[id]')).forEach(function(s){ if(navMap[s.id]) spy.observe(s); });
   }
 
   /* Count-up */
@@ -609,7 +722,7 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
   var DPR=Math.min(window.devicePixelRatio||1, isMobile?1.5:2);
 
   try{
-    renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:!isMobile,alpha:true});
+    renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:!isMobile,alpha:true,powerPreference:'high-performance'});
   }catch(err){ showFallback(); return; }
   if(!renderer || !renderer.getContext()){ showFallback(); return; }
 
@@ -630,8 +743,8 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
   rig=new THREE.Group(); scene.add(rig);
 
   /* --- Lumières studio douces (PAS d'additive sur fond clair) --- */
-  scene.add(new THREE.HemisphereLight(0xffffff,0xeae3d4,0.9));
-  var key=new THREE.DirectionalLight(0xffffff,1.15);
+  scene.add(new THREE.HemisphereLight(0xffffff,0xeae3d4,0.92));
+  var key=new THREE.DirectionalLight(0xffffff,1.18);
   key.position.set(4,7,6);
   if(!isMobile){ key.castShadow=true;
     key.shadow.mapSize.width=1024; key.shadow.mapSize.height=1024;
@@ -640,8 +753,8 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
     key.shadow.radius=6; key.shadow.bias=-0.0005;
   }
   scene.add(key);
-  var fill=new THREE.DirectionalLight(0xc9dbff,0.5); fill.position.set(-6,2,4); scene.add(fill);
-  var rim=new THREE.DirectionalLight(0xfbe3bd,0.5); rim.position.set(-3,4,-6); scene.add(rim);
+  var fill=new THREE.DirectionalLight(0xc9dbff,0.52); fill.position.set(-6,2,4); scene.add(fill);
+  var rim=new THREE.DirectionalLight(0xfbe3bd,0.52); rim.position.set(-3,4,-6); scene.add(rim);
 
   /* --- Sol : ombre portée douce --- */
   if(!isMobile){
@@ -650,13 +763,13 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
     rig.add(ground);
   }
 
-  /* --- matériaux --- */
-  var matOrange=new THREE.MeshStandardMaterial({color:0xF39A1B,roughness:0.32,metalness:0.14});
-  var matArgent=new THREE.MeshStandardMaterial({color:0xE9ECF2,roughness:0.20,metalness:0.80});
-  var matBande =new THREE.MeshStandardMaterial({color:0x0050E6,roughness:0.40,metalness:0.10});
-  var orbMats=[new THREE.MeshStandardMaterial({color:0x0050E6,roughness:.4,metalness:.1}),
-               new THREE.MeshStandardMaterial({color:0x9BCBA6,roughness:.5,metalness:.05}),
-               new THREE.MeshStandardMaterial({color:0xF39A1B,roughness:.4,metalness:.1})];
+  /* --- matériaux (cohérents avec l'ambiance : orange marque, argent doux, bleu marque) --- */
+  var matOrange=new THREE.MeshStandardMaterial({color:0xF39A1B,roughness:0.30,metalness:0.16});
+  var matArgent=new THREE.MeshStandardMaterial({color:0xEBEEF4,roughness:0.18,metalness:0.82});
+  var matBande =new THREE.MeshStandardMaterial({color:0x0050E6,roughness:0.38,metalness:0.12});
+  var orbMats=[new THREE.MeshStandardMaterial({color:0x0050E6,roughness:.4,metalness:.12}),
+               new THREE.MeshStandardMaterial({color:0x9BCBA6,roughness:.5,metalness:.06}),
+               new THREE.MeshStandardMaterial({color:0xF39A1B,roughness:.38,metalness:.12})];
 
   /* --- Capsule de marque : deux demi-coques orange + argent --- */
   var R=0.92, L=1.5, radialSeg=isMobile?32:48, capSeg=isMobile?16:24;
@@ -787,9 +900,11 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
     };
   }
 
-  /* Pointeur (parallax léger) — sur tout le document */
+  /* Pointeur (parallax léger) — désactivé sur mobile (pas de hover, perf) */
   function setPtr(cx,cy){ ptr.tx=(cx/W()-0.5)*2; ptr.ty=(cy/H()-0.5)*2; }
-  window.addEventListener('mousemove',function(e){ setPtr(e.clientX,e.clientY); },{passive:true});
+  if(!isMobile){
+    window.addEventListener('mousemove',function(e){ setPtr(e.clientX,e.clientY); },{passive:true});
+  }
 
   function resize(){
     renderer.setSize(W(),H(),false);
@@ -824,7 +939,7 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
     var spin = (1-st.settle)*t*0.25;       // tourne, puis se pose
     capsule.rotation.y += ((st.ry + spin + ptr.x*0.22) - capsule.rotation.y)*0.08;
     capsule.rotation.x += ((st.rx + ptr.y*0.16) - capsule.rotation.x)*0.08;
-    capsule.rotation.z += ((st.settle?0.5:0.5) - capsule.rotation.z)*0.05;
+    capsule.rotation.z += (0.5 - capsule.rotation.z)*0.05;
     var floatY = (1-st.settle)*Math.sin(t*0.9)*0.18 - st.settle*2.4;
     capsule.position.y += (floatY - capsule.position.y)*0.08;
     var sc=st.scale; capsule.scale.x += (sc-capsule.scale.x)*0.1; capsule.scale.y=capsule.scale.x; capsule.scale.z=capsule.scale.x;
@@ -867,10 +982,20 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
     renderer.render(scene,camera);
     rafId=requestAnimationFrame(animate);
   }
-  function start(){ if(running && rafId)return; running=true; t0=performance.now()-(t0?0:0); rafId=requestAnimationFrame(animate); }
+  function start(){ if(running && rafId)return; running=true; t0=performance.now(); rafId=requestAnimationFrame(animate); }
   function stop(){ running=false; if(rafId)cancelAnimationFrame(rafId); rafId=null; }
 
+  /* Pause quand l'onglet est masqué (perf / batterie) */
   document.addEventListener('visibilitychange',function(){ if(document.hidden)stop(); else start(); });
+
+  /* Pause quand le canvas est totalement hors écran */
+  if('IntersectionObserver' in window){
+    var canvasVis=new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting){ if(!document.hidden) start(); } else { stop(); } });
+    },{threshold:0});
+    canvasVis.observe(canvas);
+  }
+
   start();
 
   /* dispose propre */

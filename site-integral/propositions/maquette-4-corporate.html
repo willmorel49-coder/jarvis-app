@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Intégral Pharma — Plus de marge, sur chaque commande.</title>
 <meta name="description" content="Intégral Pharma — grossiste-répartiteur de première intention. Groupe de grossistes français indépendant. De meilleures conditions, dès la première boîte.">
+<meta name="theme-color" content="#06163F">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,11 +14,14 @@
    INTÉGRAL PHARMA — Direction 4 : Corporate Confiance · Bleu profond
    Un seul fichier autonome. CSS + JS vanilla inline.
    Motion premium 2026 (minimal & signifiant) recodé 100% vanilla.
+   Système : échelle typo claire, espacement 4/8px, easing homogène,
+   2 accents maîtrisés (bleu #0050E6 + orange #F39A1B).
    Stabilité Safari : pas de background-clip:text, pas de backdrop-filter,
    pas de filter:blur grande surface, 1 seule vidéo autoplay max.
    ============================================================ */
 
 :root{
+  /* --- Accents de marque (constants) --- */
   --blue:#0050E6;
   --blue-600:#0046C8;
   --blue-700:#0034A0;
@@ -26,32 +30,45 @@
   --orange:#F39A1B;
   --orange-600:#E08A0C;
 
+  /* --- Neutres / fond (ambiance corporate claire) --- */
   --ink:#0B1736;
   --muted:#56627F;
   --soft:#7B859E;
   --line:#E4E9F4;
+  --line-2:#D2DDF4;
   --bg:#FFFFFF;
   --bg-alt:#F5F8FE;
   --card:#FFFFFF;
   --white:#FFFFFF;
 
+  /* --- Ombres --- */
   --shadow-sm:0 1px 2px rgba(8,18,50,.05),0 2px 8px rgba(8,18,50,.04);
   --shadow:0 8px 30px rgba(8,18,50,.08),0 2px 8px rgba(8,18,50,.05);
   --shadow-lg:0 30px 70px rgba(6,22,63,.16),0 8px 24px rgba(6,22,63,.08);
   --shadow-blue:0 24px 60px rgba(0,80,230,.28);
 
+  /* --- Rayons --- */
   --r:8px;
   --r-lg:12px;
   --r-xl:16px;
+
+  /* --- Easing homogène (signature unique) --- */
   --ease:cubic-bezier(.22,1,.36,1);
   --ease-soft:cubic-bezier(.4,0,.2,1);
+
+  /* --- Échelle d'espacement 4/8px --- */
+  --s-1:4px;  --s-2:8px;  --s-3:12px; --s-4:16px; --s-5:20px;
+  --s-6:24px; --s-7:32px; --s-8:40px; --s-9:48px; --s-10:64px;
+  --s-11:80px; --s-12:104px;
+
   --maxw:1200px;
+  --header-h:80px;
   --font:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
   --font-display:'Archivo','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
 }
 
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:96px}
 body{
   margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
@@ -62,6 +79,11 @@ a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer}
 h1,h2,h3,h4,h5{font-family:var(--font-display)}
 :focus-visible{outline:3px solid var(--orange);outline-offset:3px;border-radius:4px}
+
+/* skip link (accessibilité clavier) */
+.skip{position:absolute;left:-999px;top:8px;z-index:200;background:var(--blue);color:#fff;
+  font-family:var(--font-display);font-weight:700;font-size:14px;padding:12px 20px;border-radius:8px}
+.skip:focus{left:16px}
 
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px}
 section{position:relative}
@@ -96,7 +118,7 @@ header.site{
   transition:background .3s var(--ease-soft),border-color .3s var(--ease-soft),box-shadow .3s var(--ease-soft);
 }
 header.site.scrolled{background:rgba(255,255,255,.97);border-bottom-color:var(--line);box-shadow:0 6px 22px rgba(8,18,50,.06)}
-.nav{display:flex;align-items:center;gap:30px;height:80px;transition:height .35s var(--ease-soft)}
+.nav{display:flex;align-items:center;gap:30px;height:var(--header-h);transition:height .35s var(--ease-soft)}
 header.site.scrolled .nav{height:64px}
 .brand{display:flex;align-items:center;gap:0;flex-shrink:0}
 .brand img{height:38px;width:auto;transition:height .35s var(--ease-soft)}
@@ -105,7 +127,7 @@ header.site.scrolled .brand img{height:34px}
 .nav-links a{
   font-family:var(--font-display);
   font-size:14.5px;font-weight:600;letter-spacing:.005em;color:#33405E;padding:9px 13px;border-radius:6px;
-  transition:color .2s,background .2s;position:relative;
+  transition:color .2s var(--ease-soft);position:relative;
 }
 .nav-links a::after{
   content:"";position:absolute;left:13px;right:13px;bottom:4px;height:2px;border-radius:2px;
@@ -114,14 +136,17 @@ header.site.scrolled .brand img{height:34px}
 }
 .nav-links a:hover{color:var(--blue)}
 .nav-links a:hover::after{transform:scaleX(1)}
+.nav-links a[aria-current="true"]{color:var(--blue)}
+.nav-links a[aria-current="true"]::after{transform:scaleX(1)}
 .nav-cta{margin-left:auto;display:flex;align-items:center;gap:14px}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:9px;
   font-family:var(--font-display);font-weight:700;font-size:14.5px;letter-spacing:.01em;
   border:none;border-radius:6px;
-  padding:13px 24px;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s;
+  padding:13px 24px;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s var(--ease-soft);
   white-space:nowrap;position:relative;overflow:hidden;
 }
+.btn:active{transform:translateY(0) scale(.985)}
 /* balayage lumineux premium */
 .btn::before{
   content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;
@@ -142,17 +167,20 @@ header.site.scrolled .brand img{height:34px}
 .btn:hover .arrow{transform:translateX(4px)}
 .btn-lg{padding:16px 30px;font-size:15.5px;border-radius:7px}
 
-.burger{display:none;flex-direction:column;gap:5px;width:44px;height:44px;align-items:center;justify-content:center;background:transparent;border:1px solid var(--line);border-radius:7px}
-.burger span{width:20px;height:2px;background:var(--ink);border-radius:2px;transition:.3s}
+.burger{display:none;flex-direction:column;gap:5px;width:44px;height:44px;align-items:center;justify-content:center;background:transparent;border:1px solid var(--line);border-radius:7px;transition:border-color .2s}
+.burger:hover{border-color:var(--blue)}
+.burger span{width:20px;height:2px;background:var(--ink);border-radius:2px;transition:.3s var(--ease)}
 
 /* mobile menu */
 .mobile-menu{display:none;position:fixed;inset:0;z-index:90;background:var(--white)}
 .mobile-menu.open{display:block}
 .mobile-menu .mm-top{display:flex;align-items:center;height:74px;padding:0 24px;border-bottom:1px solid var(--line)}
 .mobile-menu .mm-top img{height:36px}
-.mobile-menu .mm-close{margin-left:auto;width:44px;height:44px;border:1px solid var(--line);border-radius:7px;background:#fff;font-size:22px;line-height:1;color:var(--ink)}
+.mobile-menu .mm-close{margin-left:auto;width:44px;height:44px;border:1px solid var(--line);border-radius:7px;background:#fff;font-size:22px;line-height:1;color:var(--ink);transition:border-color .2s,color .2s}
+.mobile-menu .mm-close:hover{border-color:var(--blue);color:var(--blue)}
 .mobile-menu nav{display:flex;flex-direction:column;padding:18px 24px}
-.mobile-menu nav a{font-family:var(--font-display);font-size:21px;font-weight:700;letter-spacing:-.01em;padding:16px 0;border-bottom:1px solid var(--line);color:var(--ink)}
+.mobile-menu nav a{font-family:var(--font-display);font-size:21px;font-weight:700;letter-spacing:-.01em;padding:16px 0;border-bottom:1px solid var(--line);color:var(--ink);transition:color .2s}
+.mobile-menu nav a:hover{color:var(--blue)}
 .mobile-menu .mm-cta{padding:24px}
 .mobile-menu .mm-cta .btn{width:100%}
 
@@ -206,7 +234,7 @@ header.site.scrolled .brand img{height:34px}
   margin:0 0 22px;max-width:16ch;
 }
 .hero h1 .accent{color:var(--orange)}
-/* révélation par MOTS échelonnée (signature 21st.dev) */
+/* révélation par MOTS échelonnée */
 .hero h1 .w{display:inline-block;overflow:hidden;vertical-align:top}
 .hero h1 .w > span{display:inline-block;transform:translateY(105%);opacity:0;will-change:transform}
 .hero.ready h1 .w > span{transform:translateY(0);opacity:1;transition:transform .7s var(--ease),opacity .7s var(--ease)}
@@ -237,7 +265,7 @@ header.site.scrolled .brand img{height:34px}
 @keyframes scrolldot{0%{transform:translateY(-100%)}60%,100%{transform:translateY(260%)}}
 
 /* ============================================================
-   REVEAL SYSTEM (IntersectionObserver + stagger)
+   REVEAL SYSTEM (IntersectionObserver + stagger homogène)
    ============================================================ */
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
 .reveal.in{opacity:1;transform:none}
@@ -256,10 +284,10 @@ header.site.scrolled .brand img{height:34px}
   mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
 }
 .marquee-track{display:flex;align-items:center;gap:56px;padding-right:56px;animation:scrollx 26s linear infinite}
-.marquee-wrap:hover .marquee-track{animation-play-state:paused}
+.marquee-wrap:hover .marquee-track,.marquee-wrap:focus-within .marquee-track{animation-play-state:paused}
 .marquee-track .ml{
   font-family:var(--font-display);font-size:24px;font-weight:800;letter-spacing:-.01em;color:#9AA7C4;white-space:nowrap;
-  display:inline-flex;align-items:center;gap:14px;transition:color .25s;
+  display:inline-flex;align-items:center;gap:14px;transition:color .25s var(--ease-soft);
 }
 .marquee-track .ml:hover{color:var(--blue)}
 .marquee-track .ml .sep{width:7px;height:7px;border-radius:0;transform:rotate(45deg);background:var(--orange);opacity:.5}
@@ -273,7 +301,7 @@ header.site.scrolled .brand img{height:34px}
 .value-card{
   background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
   padding:34px 30px;box-shadow:var(--shadow-sm);
-  transition:transform .4s var(--ease),box-shadow .4s var(--ease),border-color .4s;
+  transition:transform .4s var(--ease),box-shadow .4s var(--ease),border-color .4s var(--ease-soft);
   position:relative;overflow:hidden;
 }
 /* spotlight piloté par --mx/--my (radial-gradient, AUCUN blur) */
@@ -283,7 +311,7 @@ header.site.scrolled .brand img{height:34px}
 }
 .value-card:hover::after{opacity:1}
 .value-card::before{content:"";position:absolute;top:0;left:0;width:100%;height:4px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease)}
-.value-card:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:#D4DEF2}
+.value-card:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:var(--line-2)}
 .value-card:hover::before{transform:scaleX(1)}
 .value-ic{
   width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;
@@ -304,7 +332,7 @@ header.site.scrolled .brand img{height:34px}
 .labo-chip{
   display:flex;align-items:center;gap:18px;background:#fff;border:1px solid var(--line);
   border-radius:10px;padding:18px 22px;box-shadow:var(--shadow-sm);
-  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s,opacity .6s var(--ease);
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s var(--ease-soft),opacity .6s var(--ease);
   opacity:0;transform:translateX(22px);
 }
 .labos-rail.in .labo-chip{opacity:1;transform:none}
@@ -354,7 +382,7 @@ header.site.scrolled .brand img{height:34px}
 .agencies{display:flex;flex-direction:column;gap:11px}
 .agency{
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:9px;
-  padding:14px 16px;transition:background .3s,border-color .3s,transform .3s var(--ease);
+  padding:14px 16px;transition:background .3s var(--ease-soft),border-color .3s var(--ease-soft),transform .3s var(--ease);
 }
 @media(max-width:980px){.agencies{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}
 @media(max-width:600px){.agencies{grid-template-columns:repeat(2,1fr)}}
@@ -388,16 +416,16 @@ header.site.scrolled .brand img{height:34px}
 .offilog{padding:104px 0;background:var(--bg-alt);overflow:hidden}
 .offilog-head{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:end;margin-bottom:46px}
 .offilog-metrics{display:flex;gap:38px;flex-wrap:wrap}
-.ometric b{display:block;font-family:var(--font-display);font-size:clamp(26px,3vw,40px);font-weight:800;color:var(--blue);letter-spacing:-.03em;line-height:1}
+.ometric b{display:block;font-family:var(--font-display);font-size:clamp(26px,3vw,40px);font-weight:800;color:var(--blue);letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
 .ometric b .o{color:var(--orange)}
 .ometric span{font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .cat{
   display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--line);
   border-radius:10px;padding:20px 22px;box-shadow:var(--shadow-sm);
-  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s;
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s var(--ease-soft);
 }
-.cat:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:#D2DDF4}
+.cat:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:var(--line-2)}
 .cat .cic{width:46px;height:46px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#EAF1FF,#DCE8FF);transition:transform .35s var(--ease)}
 .cat:hover .cic{transform:scale(1.08)}
 .cat .cic svg{width:24px;height:24px}
@@ -420,10 +448,10 @@ header.site.scrolled .brand img{height:34px}
 .projects{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
 .project{
   background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:30px 26px;
-  box-shadow:var(--shadow-sm);transition:transform .4s var(--ease),box-shadow .4s var(--ease),border-color .4s;
+  box-shadow:var(--shadow-sm);transition:transform .4s var(--ease),box-shadow .4s var(--ease),border-color .4s var(--ease-soft);
   position:relative;
 }
-.project:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:#D2DDF4}
+.project:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:var(--line-2)}
 .project .pic{width:58px;height:58px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0050E6,#0034A0);margin-bottom:22px;box-shadow:0 10px 24px rgba(0,80,230,.22);transition:transform .4s var(--ease)}
 .project:hover .pic{transform:translateY(-3px) scale(1.05)}
 .project .pic svg{width:30px;height:30px}
@@ -444,15 +472,15 @@ header.site.scrolled .brand img{height:34px}
 .jobs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .job{
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;
-  padding:22px 22px;transition:background .3s,border-color .3s,transform .35s var(--ease);
+  padding:22px 22px;transition:background .3s var(--ease-soft),border-color .3s var(--ease-soft),transform .35s var(--ease);
   display:flex;flex-direction:column;gap:6px;
 }
 .job:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.36);transform:translateY(-5px)}
 .job .jic{width:42px;height:42px;border-radius:9px;background:rgba(0,80,230,.5);display:flex;align-items:center;justify-content:center;margin-bottom:8px}
 .job .jic svg{width:22px;height:22px}
 .job h4{margin:0;font-family:var(--font-display);font-size:17px;font-weight:800;letter-spacing:-.01em}
-.job .arr{font-family:var(--font-display);font-size:12.5px;color:var(--orange);font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
-.job:hover .arr{transform:translateX(3px);transition:transform .25s var(--ease)}
+.job .arr{font-family:var(--font-display);font-size:12.5px;color:var(--orange);font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;transition:transform .25s var(--ease)}
+.job:hover .arr{transform:translateX(3px)}
 .careers-cta{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
 
 /* ============================================================
@@ -468,6 +496,7 @@ header.site.scrolled .brand img{height:34px}
 .cinfo .cic svg{width:24px;height:24px}
 .cinfo .cl{font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
 .cinfo .cv{font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--ink)}
+a.cinfo:hover .cv{color:var(--blue)}
 .form-card{
   background:#fff;border:1px solid var(--line);border-radius:var(--r-xl);padding:38px 36px;box-shadow:var(--shadow);
 }
@@ -478,8 +507,10 @@ header.site.scrolled .brand img{height:34px}
 .field input,.field textarea{
   font-family:inherit;font-size:16px;color:var(--ink);
   border:1.5px solid var(--line);border-radius:7px;padding:13px 15px;background:#FAFBFE;
-  transition:border-color .25s,background .25s,box-shadow .25s;width:100%;
+  transition:border-color .25s var(--ease-soft),background .25s,box-shadow .25s;width:100%;
 }
+.field input::placeholder,.field textarea::placeholder{color:#A6AFC6}
+.field input:hover,.field textarea:hover{border-color:var(--line-2)}
 .field input:focus,.field textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 4px rgba(0,80,230,.10)}
 .field textarea{resize:vertical;min-height:118px}
 .form-card .btn{width:100%;margin-top:6px}
@@ -495,7 +526,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 .foot-brand .mention{margin-top:18px;display:inline-flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#CFE0FF;padding:8px 14px;border:1px solid rgba(255,255,255,.18);border-radius:5px}
 .foot-brand .mention .dot{width:7px;height:7px;border-radius:0;transform:rotate(45deg);background:var(--orange)}
 .foot-col h5{font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#7E93C2;margin:0 0 18px}
-.foot-col a{display:block;color:#C7D5EF;font-size:15px;padding:7px 0;transition:color .2s,transform .2s}
+.foot-col a{display:block;color:#C7D5EF;font-size:15px;padding:7px 0;transition:color .2s var(--ease-soft),transform .2s var(--ease)}
 .foot-col a:hover{color:#fff;transform:translateX(3px)}
 .foot-bot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding-top:28px;color:#8295BE;font-size:14px}
 .foot-bot .badges{display:flex;gap:10px;flex-wrap:wrap}
@@ -527,6 +558,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 }
 @media(max-width:640px){
   body{font-size:16px}
+  html{scroll-padding-top:80px}
   .wrap{padding:0 20px}
   .hero-inner{padding:72px 0 84px}
   .hero h1{font-size:clamp(34px,11vw,52px)}
@@ -539,18 +571,22 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   .values-grid{grid-template-columns:1fr}
   .agencies{grid-template-columns:1fr}
   .stats-grid{grid-template-columns:1fr 1fr}
+  .stat{padding:26px 22px}
   .stat .big{font-size:clamp(34px,11vw,48px)}
   .cats{grid-template-columns:1fr}
   .offilog-head{grid-template-columns:1fr;align-items:start}
+  .offilog-metrics{gap:26px}
   .projects{grid-template-columns:1fr}
   .jobs{grid-template-columns:1fr}
   .form-row{grid-template-columns:1fr}
   .form-card{padding:28px 22px}
   .foot-top{grid-template-columns:1fr}
+  .foot-bot{justify-content:flex-start}
   .net-map iframe{min-height:420px}
   .sec-head{margin-bottom:36px}
   .marquee-track{gap:38px;padding-right:38px}
   .marquee-track .ml{font-size:20px}
+  .support-quote{padding:32px 26px}
 }
 
 /* ============================================================
@@ -571,12 +607,14 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 </head>
 <body>
 
+<a class="skip" href="#hero">Aller au contenu</a>
+
 <!-- ============================ HEADER ============================ -->
 <header class="site" id="top">
   <div class="wrap">
     <div class="nav">
       <a class="brand" href="#top" aria-label="Intégral Pharma — accueil">
-        <img src="../assets/logo.png" alt="Intégral Pharma">
+        <img src="../assets/logo.png" alt="Intégral Pharma" width="120" height="38">
       </a>
       <nav class="nav-links" aria-label="Navigation principale">
         <a href="#groupe">Le groupe</a>
@@ -588,7 +626,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
       </nav>
       <div class="nav-cta">
         <a class="btn btn-primary" href="#contact">Demander nos conditions<span class="arrow" aria-hidden="true">→</span></a>
-        <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false">
+        <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobileMenu">
           <span></span><span></span><span></span>
         </button>
       </div>
@@ -597,12 +635,12 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 </header>
 
 <!-- mobile menu -->
-<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+<div class="mobile-menu" id="mobileMenu" role="dialog" aria-modal="true" aria-label="Menu de navigation" aria-hidden="true">
   <div class="mm-top">
-    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <img src="../assets/logo.png" alt="Intégral Pharma" width="114" height="36">
     <button class="mm-close" id="mmClose" aria-label="Fermer le menu">×</button>
   </div>
-  <nav>
+  <nav aria-label="Navigation mobile">
     <a href="#groupe">Le groupe</a>
     <a href="#offres">Nos offres</a>
     <a href="#offilog">Offilog</a>
@@ -628,7 +666,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   <div class="hero-grid" aria-hidden="true"></div>
   <div class="wrap">
     <div class="hero-inner">
-      <span class="hero-badge"><span class="dot"></span>Grossiste-répartiteur de première intention</span>
+      <span class="hero-badge"><span class="dot" aria-hidden="true"></span>Grossiste-répartiteur de première intention</span>
       <h1 data-split>Plus de marge, sur <span class="accent">chaque commande.</span></h1>
       <p class="sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
       <div class="hero-cta">
@@ -643,23 +681,23 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
       </div>
     </div>
   </div>
-  <div class="scroll-hint" aria-hidden="true">
+  <a class="scroll-hint" href="#valeurs" aria-label="Défiler vers le contenu">
     <span>Défiler</span>
-    <span class="line"></span>
-  </div>
+    <span class="line" aria-hidden="true"></span>
+  </a>
 </section>
 
 <!-- ============================ MARQUEE LABOS ============================ -->
 <div class="marquee-wrap" aria-label="Laboratoires partenaires">
-  <div class="marquee">
-    <div class="marquee-track" aria-hidden="false">
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
       <span class="ml">Zentiva<span class="sep"></span></span>
       <span class="ml">Teva<span class="sep"></span></span>
       <span class="ml">EG Labo<span class="sep"></span></span>
       <span class="ml">Zydus<span class="sep"></span></span>
       <span class="ml">Viatris<span class="sep"></span></span>
     </div>
-    <div class="marquee-track" aria-hidden="true">
+    <div class="marquee-track">
       <span class="ml">Zentiva<span class="sep"></span></span>
       <span class="ml">Teva<span class="sep"></span></span>
       <span class="ml">EG Labo<span class="sep"></span></span>
@@ -670,30 +708,30 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 </div>
 
 <!-- ============================ VALEURS ============================ -->
-<section class="values" id="valeurs" aria-label="Nos valeurs">
+<section class="values" id="valeurs" aria-labelledby="valeurs-title">
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow"><span class="tick"></span>Nos valeurs</span>
-      <h2 class="title">Confiance · Engagement · <span class="kicker-accent">Respect.</span></h2>
+      <h2 class="title" id="valeurs-title">Confiance · Engagement · <span class="kicker-accent">Respect.</span></h2>
       <p class="lead">Nous défendons l'officine indépendante, près de chez vous. Un groupe à taille humaine, présent sur le terrain, fidèle à ses pharmaciens.</p>
     </div>
     <div class="values-grid">
       <article class="value-card reveal d1 spot">
-        <div class="value-ic">
+        <div class="value-ic" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
         </div>
         <h3>Confiance</h3>
         <p>Une relation durable et transparente. Ce qu'on s'engage à faire, on le tient — sur chaque commande, dans la durée.</p>
       </article>
       <article class="value-card reveal d2 spot">
-        <div class="value-ic">
+        <div class="value-ic" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5 12 3 3.5 7.5 12 12l8.5-4.5z"/><path d="M3.5 7.5v9L12 21l8.5-4.5v-9"/><path d="M12 12v9"/></svg>
         </div>
         <h3>Engagement</h3>
         <p>Un groupe de grossistes français indépendant, engagé pour la pérennité de l'officine et pour une répartition responsable.</p>
       </article>
       <article class="value-card reveal d3 spot">
-        <div class="value-ic">
+        <div class="value-ic" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5.5 21a7 7 0 0 1 13 0"/></svg>
         </div>
         <h3>Respect</h3>
@@ -704,37 +742,37 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 </section>
 
 <!-- ============================ NOS OFFRES ============================ -->
-<section class="offers" id="offres" aria-label="Nos offres">
+<section class="offers" id="offres" aria-labelledby="offres-title">
   <div class="wrap">
     <div class="offers-flex">
       <div class="reveal">
         <span class="eyebrow"><span class="tick"></span>Nos offres</span>
-        <h2 class="title">Les plus grands <span class="kicker-accent">laboratoires.</span></h2>
+        <h2 class="title" id="offres-title">Les plus grands <span class="kicker-accent">laboratoires.</span></h2>
         <p class="lead">Un accès à un catalogue large et à des conditions adaptées à votre type d'officine. Les marques génériques de référence, négociées pour vous.</p>
         <div class="offers-note">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
           <p><b>Vos conditions, chiffrées en rendez-vous.</b> Chaque officine est différente — on construit l'offre qui correspond à la vôtre, en toute simplicité.</p>
         </div>
       </div>
-      <div class="labos-rail">
-        <div class="labo-chip"><span class="num">01</span><span class="lname">Zentiva</span><span class="ldot"></span></div>
-        <div class="labo-chip"><span class="num">02</span><span class="lname">Teva</span><span class="ldot"></span></div>
-        <div class="labo-chip"><span class="num">03</span><span class="lname">EG Labo</span><span class="ldot"></span></div>
-        <div class="labo-chip"><span class="num">04</span><span class="lname">Zydus</span><span class="ldot"></span></div>
-        <div class="labo-chip"><span class="num">05</span><span class="lname">Viatris</span><span class="ldot"></span></div>
-      </div>
+      <ul class="labos-rail" aria-label="Laboratoires génériques de référence">
+        <li class="labo-chip"><span class="num">01</span><span class="lname">Zentiva</span><span class="ldot" aria-hidden="true"></span></li>
+        <li class="labo-chip"><span class="num">02</span><span class="lname">Teva</span><span class="ldot" aria-hidden="true"></span></li>
+        <li class="labo-chip"><span class="num">03</span><span class="lname">EG Labo</span><span class="ldot" aria-hidden="true"></span></li>
+        <li class="labo-chip"><span class="num">04</span><span class="lname">Zydus</span><span class="ldot" aria-hidden="true"></span></li>
+        <li class="labo-chip"><span class="num">05</span><span class="lname">Viatris</span><span class="ldot" aria-hidden="true"></span></li>
+      </ul>
     </div>
   </div>
 </section>
 
 <!-- ============================ RÉSEAU / LE GROUPE ============================ -->
-<section class="network" id="groupe" aria-label="Le groupe et son réseau">
+<section class="network" id="groupe" aria-labelledby="groupe-title">
   <div class="network-inner">
     <div class="wrap">
       <div class="network-top">
         <div class="reveal">
           <span class="eyebrow on-blue"><span class="tick"></span>Le groupe · Le réseau</span>
-          <h2 class="title">National.</h2>
+          <h2 class="title" id="groupe-title">National.</h2>
         </div>
         <p class="lead reveal d2">9 agences réparties en France pour une livraison rapide, partout. Un maillage de proximité au service de votre officine.</p>
       </div>
@@ -742,8 +780,8 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
       <div class="network-grid">
       <div class="net-map reveal">
         <div class="map-head">
-          <span class="mh-t"><span class="pin"></span>Le réseau Intégral · 9 agences en France</span>
-          <span class="mh-legend">
+          <span class="mh-t"><span class="pin" aria-hidden="true"></span>Le réseau Intégral · 9 agences en France</span>
+          <span class="mh-legend" aria-hidden="true">
             <span><span class="lg o"></span>Siège</span>
             <span><span class="lg b"></span>Agence</span>
             <span><span class="lg d"></span>Partenaire</span>
@@ -754,40 +792,40 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 
       <div class="agencies">
         <article class="agency reveal d1">
-          <div class="ag-h"><span class="pin"></span><h4>Ouest Pharma Services</h4></div>
+          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Ouest Pharma Services</h4></div>
           <p>St-Étienne-de-Montluc · 44</p>
         </article>
         <article class="agency reveal d1">
-          <div class="ag-h"><span class="pin"></span><h4>Escale Pharma</h4></div>
+          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Escale Pharma</h4></div>
           <p>Chilly-Mazarin · 91</p>
         </article>
         <article class="agency reveal d1">
-          <div class="ag-h"><span class="pin"></span><h4>Comptoir Pharmaceutique du Rhône</h4></div>
+          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Comptoir Pharmaceutique du Rhône</h4></div>
           <p>Saint-Maurice-l'Exil · 38</p>
         </article>
         <article class="agency reveal d2">
-          <div class="ag-h"><span class="pin"></span><h4>Sud Ouest Pharma</h4></div>
+          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Sud Ouest Pharma</h4></div>
           <p>Montayral · 47</p>
         </article>
         <article class="agency reveal d2">
-          <div class="ag-h"><span class="pin"></span><h4>Pharm'Occitanie Services</h4></div>
+          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Pharm'Occitanie Services</h4></div>
           <p>Villeneuve-lès-Béziers · 34</p>
         </article>
         <article class="agency reveal d2">
-          <div class="ag-h"><span class="pin"></span><h4>Hyères Pharma</h4></div>
+          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Hyères Pharma</h4></div>
           <p>Hyères · 83</p>
           <span class="tag">Siège</span>
         </article>
         <article class="agency reveal d3">
-          <div class="ag-h"><span class="pin"></span><h4>Sud Est Pharma</h4></div>
+          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Sud Est Pharma</h4></div>
           <p>Le Cannet-des-Maures · 83</p>
         </article>
         <article class="agency reveal d3">
-          <div class="ag-h"><span class="pin"></span><h4>Mistral Santé Pharma</h4></div>
+          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Mistral Santé Pharma</h4></div>
           <p>Flassans-sur-Issole · 83</p>
         </article>
         <article class="agency reveal d3">
-          <div class="ag-h"><span class="pin"></span><h4>Pharmest</h4></div>
+          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Pharmest</h4></div>
           <p>Metz · 57</p>
           <span class="tag alt">Partenaire</span>
         </article>
@@ -804,34 +842,34 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
       <div class="stat reveal d1">
         <div class="big"><span class="pre">+</span><span class="count" data-to="20">0</span></div>
         <div class="lbl">ans d'expérience</div>
-        <span class="bar"></span>
+        <span class="bar" aria-hidden="true"></span>
       </div>
       <div class="stat reveal d2">
         <div class="big"><span class="count" data-to="9">0</span></div>
         <div class="lbl">agences en France</div>
-        <span class="bar"></span>
+        <span class="bar" aria-hidden="true"></span>
       </div>
       <div class="stat reveal d3">
         <div class="big" style="font-size:clamp(30px,4vw,46px);padding-top:12px">National</div>
         <div class="lbl">couverture complète</div>
-        <span class="bar"></span>
+        <span class="bar" aria-hidden="true"></span>
       </div>
       <div class="stat reveal d4">
         <div class="big"><span class="pre">+</span><span class="count" data-to="14000" data-sep="1">0</span></div>
         <div class="lbl">références Offilog</div>
-        <span class="bar"></span>
+        <span class="bar" aria-hidden="true"></span>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ============================ OFFILOG ============================ -->
-<section class="offilog" id="offilog" aria-label="Offilog — parapharmacie">
+<section class="offilog" id="offilog" aria-labelledby="offilog-title">
   <div class="wrap">
     <div class="offilog-head">
       <div class="reveal">
         <span class="eyebrow"><span class="tick"></span>Offilog · Parapharmacie</span>
-        <h2 class="title">Toute la <span class="kicker-accent">parapharmacie.</span></h2>
+        <h2 class="title" id="offilog-title">Toute la <span class="kicker-accent">parapharmacie.</span></h2>
         <p class="lead">Une plateforme complète pour piloter votre rayon para — large, claire et sans barrière à l'entrée.</p>
       </div>
       <div class="offilog-metrics reveal d2">
@@ -841,57 +879,57 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
       </div>
     </div>
     <div class="cats">
-      <div class="cat reveal d1"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><span>Solaires</span></div>
-      <div class="cat reveal d1"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="11" r="7"/><path d="M9 11a3 3 0 0 1 6 0"/><path d="M12 21v-3"/></svg></span><span>Soin du visage</span></div>
-      <div class="cat reveal d1"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l-1 6H9L8 2z"/><path d="M9 8c-1.5 2-2 4-2 7a5 5 0 0 0 10 0c0-3-.5-5-2-7"/></svg></span><span>Hygiène</span></div>
-      <div class="cat reveal d2"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M9 9h.01M15 9h.01M10 12a3 3 0 0 0 4 0"/><path d="M5 20c1-3 4-4 7-4s6 1 7 4"/></svg></span><span>Bébé</span></div>
-      <div class="cat reveal d2"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20c0-6 3-12 8-12s8 6 8 12"/><path d="M8 8c0-3 2-5 4-5M16 8c0-3-2-5-4-5"/></svg></span><span>Cheveux</span></div>
-      <div class="cat reveal d2"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="3"/><path d="M10 3v3h4V3"/></svg></span><span>Compléments</span></div>
-      <div class="cat reveal d3"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 9-10-1 4 1 7 4 8a7 7 0 0 1-6 9z"/></svg></span><span>Bio</span></div>
-      <div class="cat reveal d3"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 0-5 2-5 5 0 4 5 13 5 13s5-9 5-13c0-3-2-5-5-5z"/><path d="M12 8v6M9 11h6"/></svg></span><span>Bucco-dentaire</span></div>
-      <div class="cat reveal d3"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.5C10 4 9 3 8 3S6 4 6 5.5 7 8 8 8s2-1 2-2.5z"/><path d="M18 5.5C18 4 17 3 16 3s-2 1-2 2.5S15 8 16 8s2-1 2-2.5z"/><path d="M5 12.5C5 11 4 10 3.5 10S2 11 2 12.5 3 15 3.5 15 5 14 5 12.5z"/><path d="M22 12.5c0-1.5-1-2.5-1.5-2.5S19 11 19 12.5s1 2.5 1.5 2.5 1.5-1 1.5-2.5z"/><path d="M12 12c-2.5 0-4.5 2-4.5 4.5C7.5 19 9 21 12 21s4.5-2 4.5-4.5C16.5 14 14.5 12 12 12z"/></svg></span><span>Vétérinaire</span></div>
+      <div class="cat reveal d1"><span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><span>Solaires</span></div>
+      <div class="cat reveal d1"><span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="11" r="7"/><path d="M9 11a3 3 0 0 1 6 0"/><path d="M12 21v-3"/></svg></span><span>Soin du visage</span></div>
+      <div class="cat reveal d1"><span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l-1 6H9L8 2z"/><path d="M9 8c-1.5 2-2 4-2 7a5 5 0 0 0 10 0c0-3-.5-5-2-7"/></svg></span><span>Hygiène</span></div>
+      <div class="cat reveal d2"><span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M9 9h.01M15 9h.01M10 12a3 3 0 0 0 4 0"/><path d="M5 20c1-3 4-4 7-4s6 1 7 4"/></svg></span><span>Bébé</span></div>
+      <div class="cat reveal d2"><span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20c0-6 3-12 8-12s8 6 8 12"/><path d="M8 8c0-3 2-5 4-5M16 8c0-3-2-5-4-5"/></svg></span><span>Cheveux</span></div>
+      <div class="cat reveal d2"><span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="3"/><path d="M10 3v3h4V3"/></svg></span><span>Compléments</span></div>
+      <div class="cat reveal d3"><span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 9-10-1 4 1 7 4 8a7 7 0 0 1-6 9z"/></svg></span><span>Bio</span></div>
+      <div class="cat reveal d3"><span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 0-5 2-5 5 0 4 5 13 5 13s5-9 5-13c0-3-2-5-5-5z"/><path d="M12 8v6M9 11h6"/></svg></span><span>Bucco-dentaire</span></div>
+      <div class="cat reveal d3"><span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.5C10 4 9 3 8 3S6 4 6 5.5 7 8 8 8s2-1 2-2.5z"/><path d="M18 5.5C18 4 17 3 16 3s-2 1-2 2.5S15 8 16 8s2-1 2-2.5z"/><path d="M5 12.5C5 11 4 10 3.5 10S2 11 2 12.5 3 15 3.5 15 5 14 5 12.5z"/><path d="M22 12.5c0-1.5-1-2.5-1.5-2.5S19 11 19 12.5s1 2.5 1.5 2.5 1.5-1 1.5-2.5z"/><path d="M12 12c-2.5 0-4.5 2-4.5 4.5C7.5 19 9 21 12 21s4.5-2 4.5-4.5C16.5 14 14.5 12 12 12z"/></svg></span><span>Vétérinaire</span></div>
     </div>
   </div>
 </section>
 
 <!-- ============================ ACCOMPAGNEMENT ============================ -->
-<section class="support" id="accompagnement" aria-label="Accompagnement des titulaires">
+<section class="support" id="accompagnement" aria-labelledby="accompagnement-title">
   <div class="wrap">
     <div class="support-head">
       <div class="reveal">
         <span class="eyebrow"><span class="tick"></span>Accompagnement · Titulaires</span>
-        <h2 class="title">On le porte <span class="kicker-accent">avec vous.</span></h2>
+        <h2 class="title" id="accompagnement-title">On le porte <span class="kicker-accent">avec vous.</span></h2>
         <p class="lead">Au-delà de la distribution, un partenaire qui s'investit dans vos projets de vie d'officine et vous accompagne à chaque étape.</p>
       </div>
       <div class="support-sticky reveal d2">
-        <div class="support-quote">
+        <blockquote class="support-quote">
           <p>« Vous êtes pharmacien titulaire et vous avez un projet de transfert, d'agrandissement, de cession de parts ou d'optimisation ? On le porte avec vous. »</p>
-          <span class="sig"><span class="tk"></span>Intégral Pharma</span>
-        </div>
+          <span class="sig"><span class="tk" aria-hidden="true"></span>Intégral Pharma</span>
+        </blockquote>
       </div>
     </div>
     <div class="projects">
       <article class="project reveal d1">
-        <span class="pn">01</span>
-        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h13"/><path d="m12 6 6 6-6 6"/><path d="M21 4v16"/></svg></div>
+        <span class="pn" aria-hidden="true">01</span>
+        <div class="pic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h13"/><path d="m12 6 6 6-6 6"/><path d="M21 4v16"/></svg></div>
         <h3>Transfert d'officine</h3>
         <p>Sécuriser et réussir le déplacement de votre officine, du dossier à l'ouverture.</p>
       </article>
       <article class="project reveal d2">
-        <span class="pn">02</span>
-        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 9V3h-6"/><path d="M3 15v6h6"/><path d="M21 3 14 10"/><path d="M3 21l7-7"/></svg></div>
+        <span class="pn" aria-hidden="true">02</span>
+        <div class="pic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 9V3h-6"/><path d="M3 15v6h6"/><path d="M21 3 14 10"/><path d="M3 21l7-7"/></svg></div>
         <h3>Agrandissement</h3>
         <p>Gagner de l'espace et de la capacité pour développer votre activité.</p>
       </article>
       <article class="project reveal d3">
-        <span class="pn">03</span>
-        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11l2.5 2.5L23 9"/></svg></div>
+        <span class="pn" aria-hidden="true">03</span>
+        <div class="pic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11l2.5 2.5L23 9"/></svg></div>
         <h3>Cession de parts</h3>
         <p>Préparer une transmission sereine et structurer l'entrée d'associés.</p>
       </article>
       <article class="project reveal d4">
-        <span class="pn">04</span>
-        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M16 8h5v5"/></svg></div>
+        <span class="pn" aria-hidden="true">04</span>
+        <div class="pic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M16 8h5v5"/></svg></div>
         <h3>Optimisation</h3>
         <p>Améliorer vos marges et votre rentabilité, commande après commande.</p>
       </article>
@@ -903,13 +941,13 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 </section>
 
 <!-- ============================ CARRIÈRES ============================ -->
-<section class="careers" id="carrieres" aria-label="Carrières">
+<section class="careers" id="carrieres" aria-labelledby="carrieres-title">
   <div class="careers-inner">
     <div class="wrap">
       <div class="careers-grid">
         <div class="reveal">
           <span class="eyebrow on-blue"><span class="tick"></span>Carrières</span>
-          <h2 class="title">Le groupe <span class="kicker-accent">recrute.</span></h2>
+          <h2 class="title" id="carrieres-title">Le groupe <span class="kicker-accent">recrute.</span></h2>
           <p class="lead">Rejoindre Intégral Pharma, c'est intégrer un groupe de grossistes français indépendant, à taille humaine, fier de ses métiers et de son terrain.</p>
           <div class="careers-cta">
             <a class="btn btn-orange btn-lg" href="#contact">Voir les offres<span class="arrow" aria-hidden="true">→</span></a>
@@ -918,24 +956,24 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
         </div>
         <div class="jobs">
           <article class="job reveal d1">
-            <div class="jic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13v10H3z"/><path d="M16 10h4l1 3v4h-5"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></div>
+            <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13v10H3z"/><path d="M16 10h4l1 3v4h-5"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></div>
             <h4>Approvisionnement</h4>
-            <span class="arr">Postuler →</span>
+            <span class="arr">Postuler <span aria-hidden="true">→</span></span>
           </article>
           <article class="job reveal d2">
-            <div class="jic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
+            <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
             <h4>Commercial</h4>
-            <span class="arr">Postuler →</span>
+            <span class="arr">Postuler <span aria-hidden="true">→</span></span>
           </article>
           <article class="job reveal d3">
-            <div class="jic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18" stroke-width="2.6"/></svg></div>
+            <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18" stroke-width="2.6"/></svg></div>
             <h4>Pharmacien responsable</h4>
-            <span class="arr">Postuler →</span>
+            <span class="arr">Postuler <span aria-hidden="true">→</span></span>
           </article>
           <article class="job reveal d4">
-            <div class="jic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="13" height="8" rx="1.5"/><path d="M15 11h4l2 2v3h-6"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
+            <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="13" height="8" rx="1.5"/><path d="M15 11h4l2 2v3h-6"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
             <h4>Préparateur-chauffeur</h4>
-            <span class="arr">Postuler →</span>
+            <span class="arr">Postuler <span aria-hidden="true">→</span></span>
           </article>
         </div>
       </div>
@@ -944,24 +982,24 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 </section>
 
 <!-- ============================ CONTACT ============================ -->
-<section class="contact" id="contact" aria-label="Contact">
+<section class="contact" id="contact" aria-labelledby="contact-title">
   <div class="wrap">
     <div class="contact-grid">
       <div class="contact-info reveal">
         <span class="eyebrow"><span class="tick"></span>Contact</span>
-        <h2 class="title">Parlons de votre <span class="kicker-accent">officine.</span></h2>
+        <h2 class="title" id="contact-title">Parlons de votre <span class="kicker-accent">officine.</span></h2>
         <p class="lead">Dites-nous l'essentiel — on vous recontacte et on vous chiffre vos conditions en rendez-vous, adaptées à votre officine.</p>
         <div class="cinfo-list">
+          <a class="cinfo" href="mailto:contact@integralpharma.fr">
+            <span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="m4 6 8 6 8-6"/></svg></span>
+            <span><span class="cl">Email</span><span class="cv">contact@integralpharma.fr</span></span>
+          </a>
           <div class="cinfo">
-            <span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="m4 6 8 6 8-6"/></svg></span>
-            <div><div class="cl">Email</div><div class="cv">contact@integralpharma.fr</div></div>
-          </div>
-          <div class="cinfo">
-            <span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
+            <span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
             <div><div class="cl">Siège</div><div class="cv">758 Chemin de la Source, 83400 Hyères</div></div>
           </div>
           <div class="cinfo">
-            <span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
+            <span class="cic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
             <div><div class="cl">Réseau</div><div class="cv">9 agences · couverture nationale</div></div>
           </div>
         </div>
@@ -970,11 +1008,11 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
       <form class="form-card reveal d2" action="mailto:contact@integralpharma.fr" method="post" enctype="text/plain">
         <div class="form-row">
           <div class="field">
-            <label for="f-nom">Nom <span class="req">*</span></label>
+            <label for="f-nom">Nom <span class="req" aria-hidden="true">*</span></label>
             <input id="f-nom" name="Nom" type="text" required autocomplete="name" placeholder="Votre nom">
           </div>
           <div class="field">
-            <label for="f-off">Officine <span class="req">*</span></label>
+            <label for="f-off">Officine <span class="req" aria-hidden="true">*</span></label>
             <input id="f-off" name="Officine" type="text" required placeholder="Nom de l'officine">
           </div>
         </div>
@@ -989,7 +1027,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
           </div>
         </div>
         <div class="field">
-          <label for="f-email">Email <span class="req">*</span></label>
+          <label for="f-email">Email <span class="req" aria-hidden="true">*</span></label>
           <input id="f-email" name="Email" type="email" required autocomplete="email" placeholder="vous@officine.fr">
         </div>
         <div class="field">
@@ -1008,11 +1046,11 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   <div class="wrap">
     <div class="foot-top">
       <div class="foot-brand">
-        <img src="../assets/logo.png" alt="Intégral Pharma">
+        <img src="../assets/logo.png" alt="Intégral Pharma" width="126" height="40">
         <p>Grossiste-répartiteur de première intention. Plus de marge, sur chaque commande — dès la première boîte.</p>
-        <span class="mention"><span class="dot"></span>Groupe de grossistes français indépendant</span>
+        <span class="mention"><span class="dot" aria-hidden="true"></span>Groupe de grossistes français indépendant</span>
       </div>
-      <div class="foot-col">
+      <nav class="foot-col" aria-label="Navigation pied de page">
         <h5>Navigation</h5>
         <a href="#groupe">Le groupe</a>
         <a href="#offres">Nos offres</a>
@@ -1020,7 +1058,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
         <a href="#accompagnement">Accompagnement</a>
         <a href="#carrieres">Carrières</a>
         <a href="#contact">Contact</a>
-      </div>
+      </nav>
       <div class="foot-col">
         <h5>Contact</h5>
         <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
@@ -1051,35 +1089,44 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   onScroll();
   window.addEventListener('scroll', onScroll, {passive:true});
 
-  /* ----- mobile menu ----- */
+  /* ----- mobile menu (avec piège-focus + ESC) ----- */
   var burger = document.getElementById('burger');
   var mm = document.getElementById('mobileMenu');
   var mmClose = document.getElementById('mmClose');
-  function openMenu(){ mm.classList.add('open'); mm.setAttribute('aria-hidden','false'); burger.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; }
-  function closeMenu(){ mm.classList.remove('open'); mm.setAttribute('aria-hidden','true'); burger.setAttribute('aria-expanded','false'); document.body.style.overflow=''; }
+  var lastFocus = null;
+  function openMenu(){
+    lastFocus = document.activeElement;
+    mm.classList.add('open'); mm.setAttribute('aria-hidden','false');
+    burger.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden';
+    mmClose.focus();
+  }
+  function closeMenu(){
+    mm.classList.remove('open'); mm.setAttribute('aria-hidden','true');
+    burger.setAttribute('aria-expanded','false'); document.body.style.overflow='';
+    if(lastFocus && lastFocus.focus){ lastFocus.focus(); }
+  }
   burger.addEventListener('click', openMenu);
   mmClose.addEventListener('click', closeMenu);
   mm.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeMenu); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && mm.classList.contains('open')){ closeMenu(); }
+  });
 
   /* ----- year ----- */
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  /* ----- HERO : révélation par MOTS échelonnée (signature 21st.dev) ----- */
+  /* ----- HERO : révélation par MOTS échelonnée ----- */
   var hero = document.getElementById('hero');
   var h1 = hero ? hero.querySelector('[data-split]') : null;
   if(h1 && !reduce){
-    // découpe le titre en mots, en préservant les <span> internes (.accent, <br> non présent)
     var words = [];
     (function walk(node){
       node.childNodes.forEach(function(child){
         if(child.nodeType === 3){ // texte
           var parts = child.textContent.split(/(\s+)/);
           parts.forEach(function(p){
-            if(p.trim().length){
-              words.push({text:p, accent:false});
-            } else if(p.length){
-              words.push({space:true});
-            }
+            if(p.trim().length){ words.push({text:p, accent:false}); }
+            else if(p.length){ words.push({space:true}); }
           });
         } else if(child.nodeType === 1){
           var accent = child.classList && child.classList.contains('accent');
@@ -1106,7 +1153,6 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
       h1.appendChild(wrap);
       idx++;
     });
-    // déclenche au prochain frame pour garantir la transition
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){ hero.classList.add('ready'); });
     });
@@ -1169,6 +1215,31 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
     document.querySelectorAll('.stat').forEach(function(s){ statObs.observe(s); });
   }
 
+  /* ----- SCROLL-SPY : nav active synchronisée aux sections ----- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-links a'));
+  var linkMap = {};
+  navLinks.forEach(function(a){
+    var id = a.getAttribute('href').replace('#','');
+    linkMap[id] = a;
+  });
+  var spyIds = ['groupe','offres','offilog','accompagnement','carrieres','contact'];
+  var spyTargets = spyIds.map(function(id){ return document.getElementById(id); }).filter(Boolean);
+  if('IntersectionObserver' in window && spyTargets.length){
+    var current = null;
+    function setActive(id){
+      if(current === id) return;
+      current = id;
+      navLinks.forEach(function(a){ a.removeAttribute('aria-current'); });
+      if(id && linkMap[id]){ linkMap[id].setAttribute('aria-current','true'); }
+    }
+    var spy = new IntersectionObserver(function(entries){
+      var visible = entries.filter(function(e){ return e.isIntersecting; })
+        .sort(function(a,b){ return b.intersectionRatio - a.intersectionRatio; });
+      if(visible.length){ setActive(visible[0].target.id); }
+    }, {rootMargin:'-45% 0px -50% 0px', threshold:[0,.25,.5,.75,1]});
+    spyTargets.forEach(function(s){ spy.observe(s); });
+  }
+
   /* ----- SPOTLIGHT curseur sur les cartes valeurs (--mx/--my, aucun blur) ----- */
   if(!reduce && window.matchMedia('(hover:hover)').matches){
     document.querySelectorAll('.value-card.spot').forEach(function(card){
@@ -1180,32 +1251,49 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
     });
   }
 
-  /* ----- light parallax + drift sur hero media (GPU transform only) ----- */
-  if(!reduce){
-    var media = document.querySelector('.hero-media');
+  /* ----- light parallax sur hero media (GPU transform only, will-change géré) ----- */
+  var media = document.querySelector('.hero-media');
+  if(!reduce && media){
     var ticking = false;
     window.addEventListener('scroll', function(){
       if(ticking) return;
       ticking = true;
       requestAnimationFrame(function(){
         var y = window.scrollY;
-        if(y < window.innerHeight && media){
-          media.style.transform = 'translateY(' + (y * 0.18) + 'px)';
+        if(y < window.innerHeight){
+          media.style.willChange = 'transform';
+          media.style.transform = 'translate3d(0,' + (y * 0.18) + 'px,0)';
+        } else {
+          media.style.willChange = 'auto';
         }
         ticking = false;
       });
     }, {passive:true});
+  }
 
-    /* graceful video fallback : if it can't play, poster stays */
-    var hv = document.getElementById('heroVideo');
-    if(hv){
+  /* ----- vidéo hero : fallback propre + pause hors-écran (perf) ----- */
+  var hv = document.getElementById('heroVideo');
+  if(hv){
+    if(reduce){
+      hv.style.display = 'none';
+    } else {
       hv.addEventListener('error', function(){ hv.style.display='none'; });
-      var p = hv.play && hv.play();
-      if(p && p.catch){ p.catch(function(){ /* poster remains visible */ }); }
+      var pp = hv.play && hv.play();
+      if(pp && pp.catch){ pp.catch(function(){ /* poster reste visible */ }); }
+      if('IntersectionObserver' in window){
+        var vObs = new IntersectionObserver(function(entries){
+          entries.forEach(function(e){
+            if(e.isIntersecting){
+              var r = hv.play && hv.play();
+              if(r && r.catch){ r.catch(function(){}); }
+            } else if(!hv.paused){
+              try{ hv.pause(); }catch(err){}
+            }
+          });
+        }, {threshold:0.05});
+        vObs.observe(hv);
+      }
     }
-  } else {
-    var hv2 = document.getElementById('heroVideo');
-    if(hv2){ hv2.style.display='none'; }
   }
 })();
 </script>

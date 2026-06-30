@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="theme-color" content="#0A0A0B" />
+<meta name="theme-color" content="#ffffff" />
 <title>Intégral Pharma — Plus de marge, meilleures conditions</title>
 <meta name="description" content="Intégral Pharma, grossiste-répartiteur de première intention. Plus de marge et de meilleures conditions sur chaque commande, dès la première boîte, adaptées à chaque officine." />
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
@@ -167,7 +167,9 @@ a:focus-visible{outline-offset:4px}
    (scaleX du filet · la capsule respire). transform/opacity only.
    ============================================================ */
 .sig-sep{display:flex;align-items:center;justify-content:center;gap:0;
-  margin:0 auto;max-width:1180px;padding:0 var(--gutter)}
+  margin:var(--section-tight) auto;max-width:1180px;padding:0 var(--gutter)}
+/* le séparateur fait sa propre respiration : la section suivante n'ajoute pas son filet en doublon */
+.sig-sep+.block{border-top:none;padding-top:0}
 .sig-sep .ln{height:1px;flex:1;transform:scaleX(0);transform-origin:var(--o,left);
   background:linear-gradient(90deg,transparent,var(--line3));
   transition:transform var(--t-trace) var(--ease-net) .1s}
@@ -543,6 +545,18 @@ a:focus-visible{outline-offset:4px}
 .foot{background:var(--black);color:#fff;padding:clamp(70px,10vh,120px) 0 clamp(40px,6vh,64px)}
 .foot .fbig{font-size:var(--big);font-weight:900;letter-spacing:-.04em;line-height:.98;text-wrap:balance}
 .foot .fbig .blue{color:#5e93ff}
+/* marque footer : logo + libellé, miroir du header */
+.foot-brand{display:flex;align-items:center;gap:11px;margin-top:clamp(36px,5vh,52px)}
+.foot-brand img{height:32px;width:auto}
+.foot-brand .tx{font-weight:900;font-size:15px;letter-spacing:-.03em;line-height:1.05;color:#fff}
+.foot-brand .tx small{display:block;font-family:var(--mono);font-weight:500;color:rgba(255,255,255,.55);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+/* navigation de pied : ancres du site, rappel discret de la barre */
+.foot-nav{margin-top:26px;display:flex;flex-wrap:wrap;gap:10px 26px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.foot-nav a{color:rgba(255,255,255,.78);text-decoration:none;position:relative;padding-bottom:3px;min-height:32px;display:inline-flex;align-items:center;transition:color var(--t-fast) var(--ease-soft)}
+.foot-nav a::after{content:"";position:absolute;left:0;bottom:0;height:var(--underline-h);width:100%;border-radius:2px;background:linear-gradient(90deg,var(--orange),#5e93ff);transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+.foot-nav a:hover{color:#fff}
+.foot-nav a:hover::after{transform:scaleX(1)}
+@media(max-width:560px){.foot-nav a{min-height:44px}}
 .foot .fmeta{margin-top:clamp(40px,6vh,64px);border-top:1px solid rgba(255,255,255,.14);padding-top:28px;display:flex;flex-wrap:wrap;gap:14px 30px;font-family:var(--mono);font-size:12px;letter-spacing:.03em;color:rgba(255,255,255,.6)}
 .foot .fmeta a{color:rgba(255,255,255,.85);text-decoration:none;position:relative;padding-bottom:2px;transition:color var(--t-fast) var(--ease-soft)}
 .foot .fmeta a::after{content:"";position:absolute;left:0;bottom:0;height:var(--underline-h);width:100%;border-radius:2px;background:rgba(255,255,255,.7);transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
@@ -926,7 +940,7 @@ a:focus-visible{outline-offset:4px}
       <a href="#groupe" class="btn btn-ghost"><span>Découvrir le groupe</span></a>
     </div>
     <div class="hero-media">
-      <video id="heroVid" autoplay muted playsinline preload="auto" poster="assets/poster.jpg"><source src="assets/clip3.mp4" type="video/mp4"></video>
+      <video id="heroVid" autoplay muted playsinline preload="auto" poster="assets/poster.jpg" aria-hidden="true" tabindex="-1"><source src="assets/clip3.mp4" type="video/mp4"></video>
     </div>
   </div>
 </header>
@@ -1016,6 +1030,7 @@ a:focus-visible{outline-offset:4px}
 </section>
 
 <!-- signature : séparateur capsule de marque -->
+<div class="sig-sep r" aria-hidden="true"><span class="ln"></span><span class="cap"></span><span class="ln r2"></span></div>
 
 <!-- 03 LE GROUPE -->
 <section id="groupe" class="block">
@@ -1050,7 +1065,7 @@ a:focus-visible{outline-offset:4px}
 <!-- BANDE VIDÉO (interstitiel) -->
 <section class="videoband r" id="videoband">
   <div class="vbposter" aria-hidden="true" style="background:#0A0A0B;opacity:1"></div>
-  <video id="bandVid" autoplay muted playsinline preload="metadata" poster="assets/poster.jpg"><source src="assets/band.mp4" type="video/mp4"></video>
+  <video id="bandVid" autoplay muted playsinline preload="metadata" poster="assets/poster.jpg" aria-hidden="true" tabindex="-1"><source src="assets/band.mp4" type="video/mp4"></video>
   <div class="ov"></div>
   <div class="wrap">
     <span class="vk">Au plus près des officines · partout en France</span>
@@ -1118,6 +1133,7 @@ a:focus-visible{outline-offset:4px}
 </section>
 
 <!-- signature : séparateur capsule de marque -->
+<div class="sig-sep r" aria-hidden="true"><span class="ln"></span><span class="cap"></span><span class="ln r2"></span></div>
 
 <!-- 05 ACCOMPAGNEMENT — minimal, distinctif -->
 <section id="accompagnement" class="block">
@@ -1323,6 +1339,7 @@ a:focus-visible{outline-offset:4px}
 </section>
 
 <!-- signature : séparateur capsule de marque -->
+<div class="sig-sep r" aria-hidden="true"><span class="ln"></span><span class="cap"></span><span class="ln r2"></span></div>
 
 <!-- 07 CONTACT -->
 <section id="contact" class="block">
@@ -1369,12 +1386,24 @@ a:focus-visible{outline-offset:4px}
 <footer class="foot">
   <div class="wrap">
     <div class="fbig"><span class="line r"><span>Plus de marge,</span></span><span class="line l2 r"><span>meilleures <span class="blue">conditions.</span></span></span></div>
+    <a href="#hero" class="foot-brand" aria-label="Intégral Pharma — retour en haut">
+      <img src="assets/logo.png" alt="">
+      <span class="tx">Intégral Pharma<small>Groupe de grossistes français indépendant</small></span>
+    </a>
+    <nav class="foot-nav" aria-label="Navigation de pied de page">
+      <a href="#valeurs">Valeurs</a>
+      <a href="#offres">Nos offres</a>
+      <a href="#groupe">Le groupe</a>
+      <a href="#offilog">Offilog</a>
+      <a href="#accompagnement">Accompagnement</a>
+      <a href="#carrieres">Carrières</a>
+      <a href="#contact">Contact</a>
+    </nav>
     <div class="fmeta">
-      <span>Intégral Pharma</span>
       <a href="https://www.linkedin.com/company/integralpharma" target="_blank" rel="noopener">LinkedIn</a>
       <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
       <a href="mailto:contact@integralpharma.fr?subject=Demande%20de%20mentions%20l%C3%A9gales">Mentions légales</a>
-      <span class="sp">758 Chemin de la Source, 83400 Hyères · © 2026</span>
+      <span class="sp">758 Chemin de la Source, 83400 Hyères · © 2026 Intégral Pharma</span>
     </div>
   </div>
 </footer>

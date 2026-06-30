@@ -4,21 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Intégral Pharma — Plus de marge, sur chaque commande.</title>
+<meta name="description" content="Intégral Pharma, grossiste-répartiteur de première intention. Plus de marge dès la première boîte, quelle que soit votre officine. Groupe de grossistes français indépendant, 9 agences, couverture nationale.">
+<meta name="theme-color" content="#ffffff">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
+  /* ── Brand accents (constants across all 7 sites) ── */
   --blue:#0050E6; --blue-d:#003db0; --orange:#F39A1B;
-  --ink:#0d1424; --slate:#5a6478; --line:#e6eaf2;
+  /* ── Ambiance: clean SaaS light ── */
+  --ink:#0d1424; --slate:#5a6478; --line:#e6eaf2; --line-2:#cdd6e8;
   --bg:#ffffff; --bg-soft:#f6f8fd; --card:#ffffff;
-  --radius:24px; --shadow:0 1px 2px rgba(13,20,36,.04),0 12px 32px rgba(13,20,36,.06);
+  /* ── Spacing scale (4 / 8 px rhythm) ── */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px; --s-7:48px; --s-8:64px; --s-9:96px;
+  /* ── Radius scale ── */
+  --r-sm:10px; --r-md:14px; --r-lg:16px; --r-xl:24px; --r-2xl:30px;
+  /* ── Elevation ── */
+  --shadow:0 1px 2px rgba(13,20,36,.04),0 12px 32px rgba(13,20,36,.06);
   --shadow-lg:0 2px 4px rgba(13,20,36,.05),0 24px 60px rgba(13,20,36,.10);
+  --ring:0 0 0 3px rgba(0,80,230,.14);
+  /* ── Motion (homogeneous easing) ── */
+  --ease:cubic-bezier(.16,1,.3,1); --ease-out:cubic-bezier(.22,.61,.36,1);
+  --t-fast:.2s; --t:.3s; --t-slow:.7s;
   --maxw:1180px;
   --font:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:84px}
 body{
   font-family:var(--font);color:var(--ink);background:var(--bg);
   font-weight:500;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden;letter-spacing:-.005em;
@@ -26,35 +39,45 @@ body{
 h1,h2,h3{font-family:var(--font);line-height:1.06;letter-spacing:-.035em;font-weight:800}
 a{color:inherit;text-decoration:none}
 img{display:block;max-width:100%}
-.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
-.eyebrow{font-family:var(--font);font-weight:800;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--blue)}
+ul{list-style:none}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 var(--s-5)}
+.eyebrow{display:inline-block;font-family:var(--font);font-weight:800;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--blue)}
 .muted{color:var(--slate)}
-:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:10px}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:var(--r-sm)}
+.skip{position:absolute;left:-9999px;top:0;z-index:200;background:var(--blue);color:#fff;padding:.7rem 1.1rem;border-radius:0 0 var(--r-md) 0;font-weight:700;font-size:.9rem}
+.skip:focus{left:0}
 
 /* ===== BUTTONS ===== */
-.btn{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--font);font-weight:700;font-size:.95rem;letter-spacing:-.01em;
-  padding:.9rem 1.6rem;border-radius:14px;border:1.5px solid transparent;cursor:pointer;transition:transform .25s,box-shadow .25s,background .25s,border-color .25s;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:var(--font);font-weight:700;font-size:.95rem;letter-spacing:-.01em;
+  padding:.9rem 1.6rem;border-radius:var(--r-md);border:1.5px solid transparent;cursor:pointer;
+  transition:transform var(--t) var(--ease),box-shadow var(--t),background var(--t),border-color var(--t);white-space:nowrap}
 .btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0)}
 .btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 22px rgba(0,80,230,.28)}
 .btn-primary:hover{background:var(--blue-d);box-shadow:0 12px 30px rgba(0,80,230,.36)}
 .btn-ghost{background:#fff;color:var(--ink);border-color:var(--line);box-shadow:var(--shadow)}
-.btn-ghost:hover{border-color:#cdd6e8}
-.btn svg{width:16px;height:16px}
+.btn-ghost:hover{border-color:var(--line-2)}
+.btn svg{width:16px;height:16px;transition:transform var(--t) var(--ease)}
+.btn-primary:hover svg{transform:translateX(3px)}
 
 /* ===== HEADER ===== */
-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);border-bottom:1.5px solid transparent;transition:border-color .3s,box-shadow .3s,background .3s}
+header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);border-bottom:1.5px solid transparent;transition:border-color var(--t),box-shadow var(--t),background var(--t)}
 header.scrolled{background:rgba(255,255,255,.92);border-color:var(--line);box-shadow:0 6px 24px rgba(13,20,36,.05)}
-.nav{display:flex;align-items:center;justify-content:space-between;height:70px}
+.nav{display:flex;align-items:center;justify-content:space-between;height:70px;gap:var(--s-5)}
 .brand{display:flex;align-items:center;gap:.6rem;font-family:var(--font);font-weight:800;font-size:1.08rem;letter-spacing:-.03em}
 .brand img{height:32px;width:auto}
 .nav-links{display:flex;gap:1.7rem;font-weight:600;font-size:.92rem;letter-spacing:-.01em}
-.nav-links a{color:var(--slate);position:relative;transition:color .2s}
-.nav-links a:hover{color:var(--ink)}
-.nav-links a::after{content:"";position:absolute;left:0;bottom:-5px;width:0;height:2.5px;background:var(--orange);transition:width .25s;border-radius:3px}
-.nav-links a:hover::after{width:100%}
+.nav-links a{color:var(--slate);position:relative;transition:color var(--t-fast)}
+.nav-links a:hover,.nav-links a:focus-visible{color:var(--ink)}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:-5px;width:0;height:2.5px;background:var(--orange);transition:width var(--t) var(--ease);border-radius:3px}
+.nav-links a:hover::after,.nav-links a:focus-visible::after{width:100%}
 .nav-cta{display:flex;align-items:center;gap:.8rem}
-.burger{display:none;background:none;border:1.5px solid var(--line);border-radius:12px;padding:.5rem;cursor:pointer}
-.burger span{display:block;width:20px;height:2.5px;background:var(--ink);margin:4px 0;border-radius:3px;transition:.3s}
+.burger{display:none;background:none;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:.5rem;cursor:pointer;transition:border-color var(--t-fast)}
+.burger:hover{border-color:var(--line-2)}
+.burger span{display:block;width:20px;height:2.5px;background:var(--ink);margin:4px 0;border-radius:3px;transition:transform var(--t) var(--ease),opacity var(--t)}
+.burger[aria-expanded="true"] span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.burger[aria-expanded="true"] span:nth-child(2){opacity:0}
+.burger[aria-expanded="true"] span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
 
 /* ===== HERO ===== */
 .hero{position:relative;padding:66px 0 30px;text-align:center;overflow:hidden}
@@ -72,7 +95,7 @@ header.scrolled{background:rgba(255,255,255,.92);border-color:var(--line);box-sh
 .hero h1 .accent{color:var(--blue)}
 .hero .sub{font-size:clamp(1.05rem,2.2vw,1.32rem);font-weight:500;color:var(--slate);max-width:42ch;margin:0 auto 1.9rem;letter-spacing:-.01em}
 .hero-cta{display:flex;gap:.9rem;justify-content:center;flex-wrap:wrap;margin-bottom:2.5rem}
-.surtitre{display:inline-block;margin-bottom:1.1rem}
+.surtitre{margin-bottom:1.1rem}
 .hero-media{position:relative;max-width:980px;margin:0 auto;border-radius:28px;overflow:hidden;box-shadow:var(--shadow-lg);border:1.5px solid var(--line)}
 .hero-media video,.hero-media img{width:100%;height:auto;display:block;aspect-ratio:16/8;object-fit:cover}
 .hero-media::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(13,20,36,.18));pointer-events:none}
@@ -81,42 +104,45 @@ header.scrolled{background:rgba(255,255,255,.92);border-color:var(--line);box-sh
 .logostrip{padding:28px 0 6px;text-align:center}
 .logostrip p{font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:1.1rem}
 .logos{display:flex;flex-wrap:wrap;justify-content:center;gap:1.4rem 2.6rem;align-items:center}
-.logos span{font-family:var(--font);font-weight:800;font-size:1.16rem;color:#9aa4ba;letter-spacing:-.025em;transition:color .25s}
+.logos span{font-family:var(--font);font-weight:800;font-size:1.16rem;color:#9aa4ba;letter-spacing:-.025em;transition:color var(--t)}
 .logos span:hover{color:var(--ink)}
 
 /* ===== SECTIONS ===== */
-section{padding:96px 0;position:relative}
+section{padding:var(--s-9) 0;position:relative}
 .sec-head{text-align:center;max-width:640px;margin:0 auto 56px}
-.sec-head h2{font-size:clamp(2rem,4.2vw,3.05rem);margin:.7rem 0 .85rem;letter-spacing:-.04em}
+.sec-head .eyebrow{margin-bottom:.7rem}
+.sec-head h2{font-size:clamp(2rem,4.2vw,3.05rem);margin:0 0 .85rem;letter-spacing:-.04em}
 .sec-head p{color:var(--slate);font-size:1.08rem;font-weight:500}
-.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity var(--t-slow) var(--ease),transform var(--t-slow) var(--ease)}
 .reveal.in{opacity:1;transform:none}
 
 /* ===== VALEURS ===== */
 .values{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-.vcard{background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow)}
-.vcard .vi{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:rgba(0,80,230,.08);color:var(--blue);margin-bottom:1.1rem}
+.vcard{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-xl);padding:var(--s-6);box-shadow:var(--shadow);transition:transform var(--t) var(--ease),box-shadow var(--t),border-color var(--t)}
+.vcard:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg);border-color:var(--line-2)}
+.vcard .vi{width:48px;height:48px;border-radius:var(--r-md);display:grid;place-items:center;background:rgba(0,80,230,.08);color:var(--blue);margin-bottom:1.1rem;transition:transform var(--t) var(--ease)}
+.vcard:hover .vi{transform:scale(1.06)}
 .vcard svg{width:24px;height:24px}
 .vcard h3{font-size:1.28rem;margin-bottom:.45rem;letter-spacing:-.03em}
 .vcard p{color:var(--slate);font-size:.96rem;font-weight:500}
 
 /* ===== SPOTLIGHT CARDS (offres) ===== */
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-.spot{position:relative;background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);padding:36px;
-  box-shadow:var(--shadow);overflow:hidden;transform-style:preserve-3d;transition:transform .25s ease,box-shadow .3s}
-.spot::before{content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .3s;pointer-events:none;
+.spot{position:relative;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-xl);padding:36px;
+  box-shadow:var(--shadow);overflow:hidden;transform-style:preserve-3d;transition:transform var(--t-fast) var(--ease-out),box-shadow var(--t),border-color var(--t)}
+.spot::before{content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity var(--t);pointer-events:none;
   background:radial-gradient(360px circle at var(--mx,50%) var(--my,50%),rgba(0,80,230,.12),transparent 60%)}
-.spot:hover::before{opacity:1}
-.spot:hover{box-shadow:var(--shadow-lg)}
-.spot .num{display:inline-block;font-family:var(--font);font-weight:800;font-size:.78rem;color:var(--orange);letter-spacing:.08em;padding:.2rem .55rem;border:1.5px solid rgba(243,154,27,.3);border-radius:8px}
-.spot h3{font-size:1.38rem;margin:.85rem 0 .6rem;letter-spacing:-.03em}
+.spot:hover::before,.spot:focus-within::before{opacity:1}
+.spot:hover,.spot:focus-within{box-shadow:var(--shadow-lg);border-color:var(--line-2)}
+.spot .num{display:inline-block;font-family:var(--font);font-weight:800;font-size:.78rem;color:var(--orange);letter-spacing:.08em;padding:.2rem .55rem;border:1.5px solid rgba(243,154,27,.3);border-radius:var(--s-2)}
+.spot h3{font-size:1.38rem;margin:.85rem 0 .6rem;letter-spacing:-.03em;position:relative;z-index:1}
 .spot p{color:var(--slate);font-size:.98rem;font-weight:500;position:relative;z-index:1}
-.spot ul{list-style:none;margin-top:1.1rem;display:flex;flex-direction:column;gap:.55rem;position:relative;z-index:1}
+.spot ul{margin-top:1.1rem;display:flex;flex-direction:column;gap:.55rem;position:relative;z-index:1}
 .spot li{display:flex;gap:.55rem;align-items:flex-start;font-size:.94rem;font-weight:600;letter-spacing:-.01em}
 .spot li svg{width:18px;height:18px;color:var(--blue);flex-shrink:0;margin-top:2px}
 
 /* ===== COUNTERS ===== */
-.counters{background:linear-gradient(135deg,var(--blue),var(--blue-d));color:#fff;border-radius:30px;padding:54px 40px;
+.counters{background:linear-gradient(135deg,var(--blue),var(--blue-d));color:#fff;border-radius:var(--r-2xl);padding:54px 40px;
   display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center;position:relative;overflow:hidden}
 .counters::after{content:"";position:absolute;width:420px;height:420px;border-radius:50%;right:-120px;top:-160px;
   background:radial-gradient(circle,rgba(243,154,27,.4),transparent 65%)}
@@ -130,18 +156,19 @@ section{padding:96px 0;position:relative}
 .ostat .n{font-family:var(--font);font-weight:800;font-size:1.75rem;color:var(--blue);letter-spacing:-.035em}
 .ostat .l{font-size:.78rem;font-weight:700;color:var(--slate);letter-spacing:.08em}
 .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.cat{display:flex;align-items:center;gap:.85rem;background:var(--card);border:1.5px solid var(--line);border-radius:16px;
-  padding:16px 18px;font-weight:700;font-size:.98rem;letter-spacing:-.015em;box-shadow:var(--shadow);transition:transform .2s,border-color .2s}
-.cat:hover{transform:translateX(4px);border-color:#cdd6e8}
-.cat .ci{width:40px;height:40px;border-radius:12px;background:rgba(243,154,27,.12);color:var(--orange);display:grid;place-items:center;flex-shrink:0}
+.cat{display:flex;align-items:center;gap:.85rem;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-lg);
+  padding:16px 18px;font-weight:700;font-size:.98rem;letter-spacing:-.015em;box-shadow:var(--shadow);transition:transform var(--t) var(--ease),border-color var(--t),box-shadow var(--t)}
+.cat:hover{transform:translateX(4px);border-color:var(--line-2);box-shadow:var(--shadow-lg)}
+.cat .ci{width:40px;height:40px;border-radius:var(--r-sm);background:rgba(243,154,27,.12);color:var(--orange);display:grid;place-items:center;flex-shrink:0}
 .cat svg{width:20px;height:20px}
 
 /* ===== RESEAU ===== */
 .net-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:start}
-.net-map{border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--line);box-shadow:var(--shadow);background:var(--bg-soft);min-height:380px}
+.net-map{border-radius:var(--r-xl);overflow:hidden;border:1.5px solid var(--line);box-shadow:var(--shadow);background:var(--bg-soft);min-height:380px}
 .net-map iframe{display:block;min-height:420px}
-.sites{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+.sites{display:flex;flex-direction:column;gap:.5rem}
 .sites li{display:flex;gap:.7rem;align-items:baseline;padding:.58rem 0;border-bottom:1.5px dashed var(--line)}
+.sites li:last-child{border-bottom:none}
 .sites li b{font-weight:800;font-family:var(--font);letter-spacing:-.02em}
 .sites li .loc{margin-left:auto;font-size:.85rem;font-weight:600;color:var(--slate);white-space:nowrap}
 .sites .tag{font-size:.66rem;font-weight:800;color:var(--orange);border:1.5px solid rgba(243,154,27,.35);border-radius:7px;padding:.05rem .4rem;margin-left:.45rem;letter-spacing:.06em}
@@ -150,24 +177,26 @@ section{padding:96px 0;position:relative}
 .accomp{background:var(--bg-soft)}
 .accomp-lead{max-width:680px;margin:0 auto 48px;text-align:center;font-size:1.18rem;color:var(--ink);font-weight:600;letter-spacing:-.02em}
 .proj{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-.pcard{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:30px 24px;text-align:center;box-shadow:var(--shadow);transition:transform .25s}
-.pcard:hover{transform:translateY(-6px)}
-.pcard .pi{width:56px;height:56px;margin:0 auto 1.1rem;border-radius:16px;background:linear-gradient(135deg,rgba(0,80,230,.1),rgba(243,154,27,.12));display:grid;place-items:center;color:var(--blue)}
+.pcard{background:#fff;border:1.5px solid var(--line);border-radius:var(--r-xl);padding:30px 24px;text-align:center;box-shadow:var(--shadow);transition:transform var(--t) var(--ease),box-shadow var(--t),border-color var(--t)}
+.pcard:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg);border-color:var(--line-2)}
+.pcard .pi{width:56px;height:56px;margin:0 auto 1.1rem;border-radius:var(--r-lg);background:linear-gradient(135deg,rgba(0,80,230,.1),rgba(243,154,27,.12));display:grid;place-items:center;color:var(--blue);transition:transform var(--t) var(--ease)}
+.pcard:hover .pi{transform:scale(1.06)}
 .pcard svg{width:28px;height:28px}
 .pcard h3{font-size:1.06rem;letter-spacing:-.025em}
 .accomp-cta{text-align:center;margin-top:42px}
 
 /* ===== CARRIERES ===== */
 .jobs{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:38px}
-.job{background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .25s}
-.job:hover{transform:translateY(-5px)}
-.job .arrow{position:absolute;top:22px;right:22px;color:var(--blue);transition:transform .25s}
-.job:hover .arrow{transform:translate(3px,-3px)}
-.job h3{font-size:1.12rem;margin-bottom:.35rem;letter-spacing:-.03em}
+.job{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-xl);padding:28px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform var(--t) var(--ease),box-shadow var(--t),border-color var(--t)}
+.job:hover,.job:focus-within{transform:translateY(-5px);box-shadow:var(--shadow-lg);border-color:var(--line-2)}
+.job .arrow{position:absolute;top:22px;right:22px;color:var(--blue);transition:transform var(--t) var(--ease)}
+.job:hover .arrow,.job:focus-within .arrow{transform:translate(3px,-3px)}
+.job h3{font-size:1.12rem;margin-bottom:.35rem;letter-spacing:-.03em;padding-right:1.8rem}
 .job p{font-size:.88rem;font-weight:500;color:var(--slate)}
 
 /* ===== CONTACT ===== */
 .contact-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:50px;align-items:start}
+.contact-info .eyebrow{margin-bottom:.7rem}
 .contact-info h2{font-size:clamp(1.85rem,3.6vw,2.65rem);margin-bottom:1rem;letter-spacing:-.04em}
 .contact-info .ci-row{display:flex;gap:.8rem;align-items:flex-start;margin:1.2rem 0;color:var(--slate);font-weight:500}
 .contact-info .ci-row svg{width:22px;height:22px;color:var(--blue);flex-shrink:0;margin-top:2px}
@@ -176,10 +205,13 @@ form{background:var(--card);border:1.5px solid var(--line);border-radius:26px;pa
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .field{margin-bottom:16px}
 .field label{display:block;font-size:.8rem;font-weight:700;margin-bottom:.45rem;color:var(--ink);letter-spacing:.01em}
-.field input,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:.85rem 1rem;font-family:inherit;font-weight:500;font-size:.95rem;background:#fbfcfe;transition:border-color .2s,box-shadow .2s}
-.field input:focus,.field textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,80,230,.12)}
+.field .req{color:var(--orange)}
+.field input,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:var(--r-md);padding:.85rem 1rem;font-family:inherit;font-weight:500;font-size:.95rem;color:var(--ink);background:#fbfcfe;transition:border-color var(--t-fast),box-shadow var(--t-fast),background var(--t-fast)}
+.field input::placeholder,.field textarea::placeholder{color:#9aa4ba}
+.field input:hover,.field textarea:hover{border-color:var(--line-2)}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:var(--ring)}
 .field textarea{resize:vertical;min-height:110px}
-form .btn-primary{width:100%;justify-content:center;margin-top:.4rem}
+form .btn-primary{width:100%;margin-top:.4rem}
 
 /* ===== FOOTER ===== */
 footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
@@ -189,8 +221,8 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
 .foot-brand img{filter:brightness(0) invert(1);height:30px}
 .foot-brand p{font-size:.9rem;font-weight:500}
 .foot-links{display:flex;gap:1.4rem;flex-wrap:wrap}
-.foot-links a{color:#aeb6c8;font-size:.9rem;font-weight:600;transition:color .2s}
-.foot-links a:hover{color:#fff}
+.foot-links a{color:#aeb6c8;font-size:.9rem;font-weight:600;transition:color var(--t-fast)}
+.foot-links a:hover,.foot-links a:focus-visible{color:#fff}
 .foot-bot{border-top:1.5px solid rgba(255,255,255,.1);padding-top:24px;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;font-size:.82rem;font-weight:500;color:#7d889e}
 
 /* ===== RESPONSIVE ===== */
@@ -200,31 +232,42 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
   .net-grid,.contact-grid{grid-template-columns:1fr;gap:32px}
 }
 @media(max-width:640px){
+  .nav{gap:var(--s-3)}
   .nav-links{display:none;position:absolute;top:70px;left:0;right:0;background:#fff;flex-direction:column;padding:18px 24px;gap:.4rem;border-bottom:1.5px solid var(--line);box-shadow:var(--shadow)}
   .nav-links.open{display:flex}
-  .nav-links a{padding:.6rem 0}
+  .nav-links a{padding:.7rem 0}
+  .nav-links a::after{display:none}
   .nav-cta .btn-primary{display:none}
   .burger{display:block}
   section{padding:66px 0}
+  .sec-head{margin-bottom:40px}
   .values,.grid-3,.proj,.jobs,.cats,.counters{grid-template-columns:1fr}
   .frow{grid-template-columns:1fr}
   .hero{padding:40px 0 20px}
+  .hero-media{border-radius:var(--r-xl)}
+  .hero-media video,.hero-media img{aspect-ratio:16/10}
   .hero-cta{flex-direction:column}
-  .hero-cta .btn{width:100%;justify-content:center}
+  .hero-cta .btn{width:100%}
+  .pill{flex-wrap:wrap;justify-content:center}
+  .offilog-head{gap:1.4rem 1.8rem}
+  .foot-bot{flex-direction:column;gap:6px}
 }
 @media(prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  html{scroll-behavior:auto!important}
   .reveal{opacity:1!important;transform:none!important}
-  .btn:hover,.pcard:hover,.job:hover,.spot:hover,.cat:hover{transform:none!important}
+  .btn:hover,.pcard:hover,.job:hover,.spot:hover,.cat:hover,.vcard:hover{transform:none!important}
 }
 </style>
 </head>
 <body>
 
+<a href="#top" class="skip">Aller au contenu</a>
+
 <!-- HEADER -->
 <header id="hdr">
   <div class="wrap nav">
-    <a href="#top" class="brand"><img src="../assets/logo.png" alt="Intégral Pharma">Intégral Pharma</a>
+    <a href="#top" class="brand"><img src="../assets/logo.png" alt="Intégral Pharma — accueil">Intégral Pharma</a>
     <nav class="nav-links" id="navlinks" aria-label="Navigation principale">
       <a href="#groupe">Le groupe</a>
       <a href="#offres">Nos offres</a>
@@ -235,7 +278,7 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
     </nav>
     <div class="nav-cta">
       <a href="#contact" class="btn btn-primary">Demander nos conditions</a>
-      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="navlinks"><span></span><span></span><span></span></button>
     </div>
   </div>
 </header>
@@ -244,18 +287,18 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
 
 <!-- HERO -->
 <section class="hero" id="hero">
-  <div class="hero-bg"></div>
+  <div class="hero-bg" aria-hidden="true"></div>
   <div class="wrap">
     <span class="eyebrow surtitre">Grossiste-répartiteur de première intention</span>
     <div><span class="pill">
       <span class="dot">Offilog</span>
-      <b>+14 000 références</b><span class="sep"></span>0&nbsp;€ d'adhésion
+      <b>+14 000 références</b><span class="sep" aria-hidden="true"></span>0&nbsp;€ d'adhésion
     </span></div>
     <h1>Plus de marge, <span class="accent">sur chaque commande.</span></h1>
     <p class="sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
     <div class="hero-cta">
       <a href="#contact" class="btn btn-primary">Demander nos conditions
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       <a href="#groupe" class="btn btn-ghost">Découvrir le groupe</a>
     </div>
     <div class="hero-media reveal">
@@ -284,17 +327,17 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
     </div>
     <div class="values">
       <div class="vcard reveal">
-        <div class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <div class="vi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <h3>Confiance</h3>
         <p>Des relations directes et durables. On vous chiffre nos conditions en rendez-vous, clairement, sans détour.</p>
       </div>
       <div class="vcard reveal">
-        <div class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7L9 18l-5-5"/></svg></div>
+        <div class="vi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7L9 18l-5-5"/></svg></div>
         <h3>Engagement</h3>
         <p>On porte vos projets avec vous, de la première commande à l'évolution de votre officine.</p>
       </div>
       <div class="vcard reveal">
-        <div class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5.5a3 3 0 010 5.4M21 20c0-2.4-1.3-4.5-3.3-5.6"/></svg></div>
+        <div class="vi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5.5a3 3 0 010 5.4M21 20c0-2.4-1.3-4.5-3.3-5.6"/></svg></div>
         <h3>Respect</h3>
         <p>De l'indépendance des pharmaciens et du métier. Le pharmacien décide, on accompagne.</p>
       </div>
@@ -316,17 +359,17 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
         <h3>Marge dès la 1ʳᵉ boîte</h3>
         <p>Des conditions adaptées à votre profil d'officine, applicables immédiatement — pas de palier à atteindre avant d'en profiter.</p>
         <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>Adapté à chaque type d'officine</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>Chiffré pour vous en rendez-vous</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Adapté à chaque type d'officine</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Chiffré pour vous en rendez-vous</li>
         </ul>
       </article>
       <article class="spot reveal" tabindex="0">
         <span class="num">02</span>
-        <h3>Génériques & princeps</h3>
+        <h3>Génériques &amp; princeps</h3>
         <p>Les laboratoires majeurs du générique, disponibles au quotidien : Zentiva, Teva, EG Labo, Zydus, Viatris.</p>
         <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>Plus de 430 laboratoires</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>Substitution facilitée</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Plus de 430 laboratoires</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Substitution facilitée</li>
         </ul>
       </article>
       <article class="spot reveal" tabindex="0">
@@ -334,8 +377,8 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
         <h3>Livraison rapide</h3>
         <p>Une logistique de répartiteur, 9 agences en propre, une couverture nationale pour servir votre officine vite et bien.</p>
         <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>9 agences en France</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>Disponibilité au quotidien</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>9 agences en France</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Disponibilité au quotidien</li>
         </ul>
       </article>
     </div>
@@ -368,15 +411,15 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
       <div class="ostat"><div class="n">0 €</div><div class="l">D'ADHÉSION</div></div>
     </div>
     <div class="cats">
-      <div class="cat reveal"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg></span>Solaires</div>
-      <div class="cat reveal"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M9 15c1 1 5 1 6 0"/></svg></span>Soin du visage</div>
-      <div class="cat reveal"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h10l-1 7a4 4 0 01-8 0L7 3zM6 21h12"/></svg></span>Hygiène</div>
-      <div class="cat reveal"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg></span>Bébé</div>
-      <div class="cat reveal"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c4 0 7 3 7 8s-3 10-7 10-7-5-7-10 3-8 7-8z"/><path d="M12 3v18"/></svg></span>Cheveux</div>
-      <div class="cat reveal"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="3" width="10" height="18" rx="3"/><path d="M7 9h10"/></svg></span>Compléments</div>
-      <div class="cat reveal"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c5-4 8-8 8-12a8 8 0 00-8-3 8 8 0 00-8 3c0 4 3 8 8 12z"/></svg></span>Bio</div>
-      <div class="cat reveal"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M8 6c-3 0-4 4-4 7s2 5 4 5M16 6c3 0 4 4 4 7s-2 5-4 5"/></svg></span>Bucco-dentaire</div>
-      <div class="cat reveal"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="9" r="2"/><circle cx="17" cy="9" r="2"/><circle cx="5" cy="15" r="2"/><circle cx="19" cy="15" r="2"/><path d="M9 16c0-2 1.5-3 3-3s3 1 3 3-1.5 4-3 4-3-2-3-4z"/></svg></span>Vétérinaire</div>
+      <div class="cat reveal"><span class="ci" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg></span>Solaires</div>
+      <div class="cat reveal"><span class="ci" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M9 15c1 1 5 1 6 0"/></svg></span>Soin du visage</div>
+      <div class="cat reveal"><span class="ci" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h10l-1 7a4 4 0 01-8 0L7 3zM6 21h12"/></svg></span>Hygiène</div>
+      <div class="cat reveal"><span class="ci" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg></span>Bébé</div>
+      <div class="cat reveal"><span class="ci" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c4 0 7 3 7 8s-3 10-7 10-7-5-7-10 3-8 7-8z"/><path d="M12 3v18"/></svg></span>Cheveux</div>
+      <div class="cat reveal"><span class="ci" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="3" width="10" height="18" rx="3"/><path d="M7 9h10"/></svg></span>Compléments</div>
+      <div class="cat reveal"><span class="ci" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c5-4 8-8 8-12a8 8 0 00-8-3 8 8 0 00-8 3c0 4 3 8 8 12z"/></svg></span>Bio</div>
+      <div class="cat reveal"><span class="ci" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M8 6c-3 0-4 4-4 7s2 5 4 5M16 6c3 0 4 4 4 7s-2 5-4 5"/></svg></span>Bucco-dentaire</div>
+      <div class="cat reveal"><span class="ci" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="9" r="2"/><circle cx="17" cy="9" r="2"/><circle cx="5" cy="15" r="2"/><circle cx="19" cy="15" r="2"/><path d="M9 16c0-2 1.5-3 3-3s3 1 3 3-1.5 4-3 4-3-2-3-4z"/></svg></span>Vétérinaire</div>
     </div>
   </div>
 </section>
@@ -420,23 +463,24 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
     <p class="accomp-lead reveal">Vous êtes pharmacien titulaire et vous avez un projet de transfert, d'agrandissement, de cession de parts ou d'optimisation ? On le porte avec vous.</p>
     <div class="proj">
       <div class="pcard reveal">
-        <div class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/><path d="M16 4l4 3M14 4l4 3"/></svg></div>
+        <div class="pi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/><path d="M16 4l4 3M14 4l4 3"/></svg></div>
         <h3>Transfert d'officine</h3>
       </div>
       <div class="pcard reveal">
-        <div class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V8l8-5 8 5v12"/><path d="M9 20v-7h6v7"/><path d="M20 9l2-1.5M22 13v-2"/></svg></div>
+        <div class="pi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V8l8-5 8 5v12"/><path d="M9 20v-7h6v7"/><path d="M20 9l2-1.5M22 13v-2"/></svg></div>
         <h3>Agrandissement</h3>
       </div>
       <div class="pcard reveal">
-        <div class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="16" r="3"/><path d="M5 19c0-2.5 2-4 4-4M19 5c0 2.5-2 4-4 4"/></svg></div>
+        <div class="pi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="16" r="3"/><path d="M5 19c0-2.5 2-4 4-4M19 5c0 2.5-2 4-4 4"/></svg></div>
         <h3>Cession de parts</h3>
       </div>
       <div class="pcard reveal">
-        <div class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l5-5 4 3 8-8"/><path d="M16 4h5v5"/></svg></div>
+        <div class="pi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l5-5 4 3 8-8"/><path d="M16 4h5v5"/></svg></div>
         <h3>Optimisation</h3>
       </div>
     </div>
-    <div class="accomp-cta reveal"><a href="#contact" class="btn btn-primary">En parler avec nous</a></div>
+    <div class="accomp-cta reveal"><a href="#contact" class="btn btn-primary">En parler avec nous
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
   </div>
 </section>
 
@@ -449,10 +493,10 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
       <p>Rejoignez un groupe de grossistes français indépendant, à taille humaine, sur tout le territoire.</p>
     </div>
     <div class="jobs">
-      <article class="job reveal" tabindex="0"><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M7 17L17 7M9 7h8v8"/></svg></span><h3>Approvisionnement</h3><p>Gestion des stocks et des achats.</p></article>
-      <article class="job reveal" tabindex="0"><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M7 17L17 7M9 7h8v8"/></svg></span><h3>Commercial</h3><p>Au contact des officines, sur le terrain.</p></article>
-      <article class="job reveal" tabindex="0"><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M7 17L17 7M9 7h8v8"/></svg></span><h3>Pharmacien responsable</h3><p>Garant de la qualité et de la réglementation.</p></article>
-      <article class="job reveal" tabindex="0"><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M7 17L17 7M9 7h8v8"/></svg></span><h3>Préparateur-chauffeur</h3><p>Préparation et livraison des commandes.</p></article>
+      <article class="job reveal" tabindex="0"><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M7 17L17 7M9 7h8v8"/></svg></span><h3>Approvisionnement</h3><p>Gestion des stocks et des achats.</p></article>
+      <article class="job reveal" tabindex="0"><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M7 17L17 7M9 7h8v8"/></svg></span><h3>Commercial</h3><p>Au contact des officines, sur le terrain.</p></article>
+      <article class="job reveal" tabindex="0"><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M7 17L17 7M9 7h8v8"/></svg></span><h3>Pharmacien responsable</h3><p>Garant de la qualité et de la réglementation.</p></article>
+      <article class="job reveal" tabindex="0"><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M7 17L17 7M9 7h8v8"/></svg></span><h3>Préparateur-chauffeur</h3><p>Préparation et livraison des commandes.</p></article>
     </div>
     <div style="text-align:center"><a href="#contact" class="btn btn-ghost reveal">Voir les offres</a></div>
   </div>
@@ -465,22 +509,22 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
       <span class="eyebrow">Contact</span>
       <h2>Parlons de votre officine.</h2>
       <p class="muted">Dites-nous où vous en êtes : on vous chiffre nos conditions, sur mesure, en rendez-vous.</p>
-      <div class="ci-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" opacity="0"/><path d="M3 6l9 7 9-7M3 6h18v12H3z"/></svg><div><b>contact@integralpharma.fr</b><br>Réponse sous 48 h ouvrées</div></div>
-      <div class="ci-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div><b>758 Chemin de la Source</b><br>83400 Hyères</div></div>
+      <div class="ci-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6l9 7 9-7M3 6h18v12H3z"/></svg><div><b>contact@integralpharma.fr</b><br>Réponse sous 48 h ouvrées</div></div>
+      <div class="ci-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div><b>758 Chemin de la Source</b><br>83400 Hyères</div></div>
     </div>
-    <form action="mailto:contact@integralpharma.fr" method="post" enctype="text/plain" class="reveal">
+    <form action="mailto:contact@integralpharma.fr" method="post" enctype="text/plain" class="reveal" aria-label="Demander nos conditions">
       <div class="frow">
-        <div class="field"><label for="f-nom">Nom</label><input id="f-nom" name="Nom" type="text" required></div>
-        <div class="field"><label for="f-off">Officine</label><input id="f-off" name="Officine" type="text"></div>
+        <div class="field"><label for="f-nom">Nom <span class="req" aria-hidden="true">*</span></label><input id="f-nom" name="Nom" type="text" autocomplete="name" required></div>
+        <div class="field"><label for="f-off">Officine</label><input id="f-off" name="Officine" type="text" autocomplete="organization"></div>
       </div>
       <div class="frow">
-        <div class="field"><label for="f-cp">Code postal</label><input id="f-cp" name="Code postal" type="text" inputmode="numeric"></div>
-        <div class="field"><label for="f-tel">Téléphone</label><input id="f-tel" name="Téléphone" type="tel"></div>
+        <div class="field"><label for="f-cp">Code postal</label><input id="f-cp" name="Code postal" type="text" inputmode="numeric" autocomplete="postal-code"></div>
+        <div class="field"><label for="f-tel">Téléphone</label><input id="f-tel" name="Téléphone" type="tel" autocomplete="tel"></div>
       </div>
-      <div class="field"><label for="f-mail">Email</label><input id="f-mail" name="Email" type="email" required></div>
+      <div class="field"><label for="f-mail">Email <span class="req" aria-hidden="true">*</span></label><input id="f-mail" name="Email" type="email" autocomplete="email" required></div>
       <div class="field"><label for="f-msg">Message</label><textarea id="f-msg" name="Message" placeholder="Votre projet, votre type d'officine…"></textarea></div>
       <button type="submit" class="btn btn-primary">Demander nos conditions
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
     </form>
   </div>
 </section>
@@ -526,25 +570,39 @@ footer{background:var(--ink);color:#aeb6c8;padding:64px 0 30px}
 
   // burger
   var burger = document.getElementById('burger'), links = document.getElementById('navlinks');
+  function closeMenu(){ links.classList.remove('open'); burger.setAttribute('aria-expanded','false'); burger.setAttribute('aria-label','Ouvrir le menu'); }
   burger.addEventListener('click', function(){
     var open = links.classList.toggle('open');
-    burger.setAttribute('aria-expanded', open);
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    burger.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
   });
-  links.addEventListener('click', function(e){ if(e.target.tagName==='A'){ links.classList.remove('open'); burger.setAttribute('aria-expanded',false);} });
+  links.addEventListener('click', function(e){ if(e.target.tagName==='A'){ closeMenu(); } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && links.classList.contains('open')){ closeMenu(); burger.focus(); } });
 
-  // reveal on scroll
+  // reveal on scroll (homogeneous stagger)
   var revs = document.querySelectorAll('.reveal');
   if(reduce || !('IntersectionObserver' in window)){
     revs.forEach(function(r){ r.classList.add('in'); });
   } else {
     var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
+      entries.forEach(function(en){
+        if(en.isIntersecting){
+          var t = en.target;
+          // stagger siblings within the same grid for a coherent cascade
+          var parent = t.parentElement;
+          var sibs = parent ? Array.prototype.filter.call(parent.children, function(c){ return c.classList && c.classList.contains('reveal'); }) : [t];
+          var idx = sibs.indexOf(t);
+          t.style.transitionDelay = (idx > 0 ? Math.min(idx,5)*0.07 : 0) + 's';
+          t.classList.add('in');
+          io.unobserve(t);
+        }
+      });
     }, {threshold:.12, rootMargin:'0px 0px -8% 0px'});
     revs.forEach(function(r){ io.observe(r); });
   }
 
   // spotlight cards (--mx/--my) + tilt
-  if(!reduce){
+  if(!reduce && window.matchMedia('(hover:hover) and (pointer:fine)').matches){
     document.querySelectorAll('.spot').forEach(function(card){
       card.addEventListener('pointermove', function(e){
         var r = card.getBoundingClientRect();
