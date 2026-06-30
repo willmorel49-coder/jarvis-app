@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intégral Pharma — Plus de marge, sur chaque commande.</title>
+<meta name="description" content="Intégral Pharma — grossiste-répartiteur de première intention. Groupe de grossistes français indépendant. De meilleures conditions, dès la première boîte.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   INTÉGRAL PHARMA — Direction 4 : Corporate Confiance · Bleu profond
+   Un seul fichier autonome. CSS + JS vanilla inline.
+   Motion premium 2026 (minimal & signifiant) recodé 100% vanilla.
+   Stabilité Safari : pas de background-clip:text, pas de backdrop-filter,
+   pas de filter:blur grande surface, 1 seule vidéo autoplay max.
+   ============================================================ */
+
+:root{
+  --blue:#0050E6;
+  --blue-600:#0046C8;
+  --blue-700:#0034A0;
+  --blue-900:#06163F;
+  --navy:#081232;
+  --orange:#F39A1B;
+  --orange-600:#E08A0C;
+
+  --ink:#0B1736;
+  --muted:#56627F;
+  --soft:#7B859E;
+  --line:#E4E9F4;
+  --bg:#FFFFFF;
+  --bg-alt:#F5F8FE;
+  --card:#FFFFFF;
+  --white:#FFFFFF;
+
+  --shadow-sm:0 1px 2px rgba(8,18,50,.05),0 2px 8px rgba(8,18,50,.04);
+  --shadow:0 8px 30px rgba(8,18,50,.08),0 2px 8px rgba(8,18,50,.05);
+  --shadow-lg:0 30px 70px rgba(6,22,63,.16),0 8px 24px rgba(6,22,63,.08);
+  --shadow-blue:0 24px 60px rgba(0,80,230,.28);
+
+  --r:14px;
+  --r-lg:22px;
+  --r-xl:30px;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --ease-soft:cubic-bezier(.4,0,.2,1);
+  --maxw:1200px;
+  --font:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  line-height:1.55;font-size:17px;overflow-x:hidden;
+}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--orange);outline-offset:3px;border-radius:6px}
+
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px}
+section{position:relative}
+
+/* ---------- TYPO HELPERS ---------- */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--blue);margin:0 0 18px;
+}
+.eyebrow .tick{width:24px;height:2px;background:var(--orange);border-radius:2px;display:inline-block;transform-origin:left;transform:scaleX(.3);transition:transform .7s var(--ease) .1s}
+.reveal.in .eyebrow .tick{transform:scaleX(1)}
+.eyebrow.on-blue{color:#A9C6FF}
+.eyebrow.on-blue .tick{background:var(--orange)}
+
+h2.title{
+  font-size:clamp(30px,4.4vw,52px);font-weight:800;letter-spacing:-.03em;
+  line-height:1.05;margin:0 0 18px;
+}
+.lead{font-size:clamp(17px,1.6vw,20px);color:var(--muted);max-width:60ch;margin:0;font-weight:500}
+.kicker-accent{color:var(--orange)}
+.sec-head{max-width:760px;margin-bottom:54px}
+
+/* ============================================================
+   HEADER — se densifie au scroll
+   ============================================================ */
+header.site{
+  position:sticky;top:0;z-index:80;
+  background:rgba(255,255,255,.86);
+  border-bottom:1px solid transparent;
+  transition:background .3s var(--ease-soft),border-color .3s var(--ease-soft),box-shadow .3s var(--ease-soft);
+}
+header.site.scrolled{background:rgba(255,255,255,.97);border-bottom-color:var(--line);box-shadow:0 6px 22px rgba(8,18,50,.06)}
+.nav{display:flex;align-items:center;gap:30px;height:80px;transition:height .35s var(--ease-soft)}
+header.site.scrolled .nav{height:64px}
+.brand{display:flex;align-items:center;gap:0;flex-shrink:0}
+.brand img{height:38px;width:auto;transition:height .35s var(--ease-soft)}
+header.site.scrolled .brand img{height:34px}
+.nav-links{display:flex;gap:6px;margin-left:14px}
+.nav-links a{
+  font-size:15px;font-weight:600;color:#33405E;padding:9px 13px;border-radius:9px;
+  transition:color .2s,background .2s;position:relative;
+}
+.nav-links a::after{
+  content:"";position:absolute;left:13px;right:13px;bottom:4px;height:2px;border-radius:2px;
+  background:var(--blue);transform:scaleX(0);transform-origin:left;
+  transition:transform .35s var(--ease);
+}
+.nav-links a:hover{color:var(--blue)}
+.nav-links a:hover::after{transform:scaleX(1)}
+.nav-cta{margin-left:auto;display:flex;align-items:center;gap:14px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  font-weight:700;font-size:15px;border:none;border-radius:11px;
+  padding:13px 22px;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s;
+  white-space:nowrap;position:relative;overflow:hidden;
+}
+/* balayage lumineux premium */
+.btn::before{
+  content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);
+  transform:skewX(-18deg);transition:left .6s var(--ease);pointer-events:none;
+}
+.btn:hover::before{left:140%}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 22px rgba(0,80,230,.26)}
+.btn-primary:hover{background:var(--blue-600);transform:translateY(-2px) scale(1.02);box-shadow:0 14px 30px rgba(0,80,230,.34)}
+.btn-orange{background:var(--orange);color:#1a1304;box-shadow:0 8px 22px rgba(243,154,27,.30)}
+.btn-orange:hover{background:var(--orange-600);transform:translateY(-2px) scale(1.02);box-shadow:0 14px 30px rgba(243,154,27,.38)}
+.btn-orange::before{background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent)}
+.btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.45)}
+.btn-ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.8);transform:translateY(-2px)}
+.btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--line);box-shadow:var(--shadow-sm)}
+.btn-outline:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}
+.btn .arrow{transition:transform .25s var(--ease)}
+.btn:hover .arrow{transform:translateX(4px)}
+.btn-lg{padding:16px 28px;font-size:16px;border-radius:13px}
+
+.burger{display:none;flex-direction:column;gap:5px;width:44px;height:44px;align-items:center;justify-content:center;background:transparent;border:1px solid var(--line);border-radius:11px}
+.burger span{width:20px;height:2px;background:var(--ink);border-radius:2px;transition:.3s}
+
+/* mobile menu */
+.mobile-menu{display:none;position:fixed;inset:0;z-index:90;background:var(--white)}
+.mobile-menu.open{display:block}
+.mobile-menu .mm-top{display:flex;align-items:center;height:74px;padding:0 24px;border-bottom:1px solid var(--line)}
+.mobile-menu .mm-top img{height:36px}
+.mobile-menu .mm-close{margin-left:auto;width:44px;height:44px;border:1px solid var(--line);border-radius:11px;background:#fff;font-size:22px;line-height:1;color:var(--ink)}
+.mobile-menu nav{display:flex;flex-direction:column;padding:18px 24px}
+.mobile-menu nav a{font-size:20px;font-weight:700;padding:16px 0;border-bottom:1px solid var(--line);color:var(--ink)}
+.mobile-menu .mm-cta{padding:24px}
+.mobile-menu .mm-cta .btn{width:100%}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{position:relative;color:#fff;overflow:hidden;background:var(--blue-900)}
+.hero-media{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-media video,.hero-media img.poster{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+}
+.hero-veil{
+  position:absolute;inset:0;z-index:1;
+  background:
+    linear-gradient(180deg,rgba(6,22,63,.62) 0%,rgba(6,22,63,.50) 36%,rgba(6,22,63,.86) 100%),
+    linear-gradient(100deg,rgba(0,52,160,.55) 0%,rgba(6,22,63,.10) 55%);
+}
+/* couche de dégradé bleu qui dérive lentement (SOBRE, aucun blur) */
+.hero-drift{
+  position:absolute;inset:-30% -20%;z-index:1;pointer-events:none;opacity:.55;
+  background:
+    radial-gradient(45% 55% at 22% 30%,rgba(0,80,230,.55),transparent 60%),
+    radial-gradient(40% 50% at 82% 72%,rgba(243,154,27,.18),transparent 60%);
+  animation:drift 26s var(--ease-soft) infinite alternate;
+}
+@keyframes drift{
+  0%{transform:translate3d(-3%,-2%,0) scale(1)}
+  100%{transform:translate3d(4%,3%,0) scale(1.08)}
+}
+/* fine grille SVG, statique et sobre */
+.hero-grid{
+  position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.10;
+  background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(70% 70% at 50% 40%,#000 0%,transparent 78%);
+  mask-image:radial-gradient(70% 70% at 50% 40%,#000 0%,transparent 78%);
+}
+.hero-inner{position:relative;z-index:2;padding:104px 0 96px}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  color:#CFE0FF;padding:9px 16px;border-radius:100px;
+  border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);margin-bottom:28px;
+  opacity:0;transform:translateY(12px);
+}
+.hero-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 0 rgba(243,154,27,.6);animation:pulse 2.6s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(243,154,27,.55)}70%{box-shadow:0 0 0 9px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+.hero h1{
+  font-size:clamp(40px,7vw,84px);font-weight:800;letter-spacing:-.04em;line-height:1.0;
+  margin:0 0 22px;max-width:16ch;
+}
+.hero h1 .accent{color:var(--orange)}
+/* révélation par MOTS échelonnée (signature 21st.dev) */
+.hero h1 .w{display:inline-block;overflow:hidden;vertical-align:top}
+.hero h1 .w > span{display:inline-block;transform:translateY(105%);opacity:0;will-change:transform}
+.hero.ready h1 .w > span{transform:translateY(0);opacity:1;transition:transform .7s var(--ease),opacity .7s var(--ease)}
+.hero p.sub{font-size:clamp(18px,2vw,23px);color:#D8E3FB;max-width:46ch;margin:0 0 38px;font-weight:500;opacity:0;transform:translateY(14px)}
+.hero-cta{display:flex;gap:16px;flex-wrap:wrap;align-items:center;opacity:0;transform:translateY(14px)}
+.hero.ready .hero-badge,.hero.ready p.sub,.hero.ready .hero-cta{opacity:1;transform:none;transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.hero.ready .hero-badge{transition-delay:.05s}
+.hero.ready p.sub{transition-delay:.5s}
+.hero.ready .hero-cta{transition-delay:.62s}
+.hero-trust{
+  display:flex;flex-wrap:wrap;gap:30px;margin-top:54px;padding-top:30px;
+  border-top:1px solid rgba(255,255,255,.16);max-width:760px;
+  opacity:0;transform:translateY(14px);
+}
+.hero.ready .hero-trust{opacity:1;transform:none;transition:opacity .7s var(--ease) .74s,transform .7s var(--ease) .74s}
+.hero-trust .ht{display:flex;flex-direction:column;gap:2px}
+.hero-trust .ht b{font-size:clamp(22px,2.4vw,30px);font-weight:800;letter-spacing:-.02em;color:#fff}
+.hero-trust .ht span{font-size:13.5px;color:#A9C0EC;font-weight:600;letter-spacing:.02em}
+.hero-trust .ht b em{font-style:normal;color:var(--orange)}
+
+.scroll-hint{
+  position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:3;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:#B9CDF2;font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;
+}
+.scroll-hint .line{width:1.5px;height:34px;background:linear-gradient(180deg,rgba(255,255,255,.5),transparent);position:relative;overflow:hidden}
+.scroll-hint .line::after{content:"";position:absolute;top:0;left:0;width:100%;height:40%;background:var(--orange);animation:scrolldot 2s var(--ease) infinite}
+@keyframes scrolldot{0%{transform:translateY(-100%)}60%,100%{transform:translateY(260%)}}
+
+/* ============================================================
+   REVEAL SYSTEM (IntersectionObserver + stagger)
+   ============================================================ */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+.reveal.d1{transition-delay:.08s}
+.reveal.d2{transition-delay:.16s}
+.reveal.d3{transition-delay:.24s}
+.reveal.d4{transition-delay:.32s}
+
+/* ============================================================
+   MARQUEE labos
+   ============================================================ */
+.marquee-wrap{padding:26px 0;background:var(--bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden}
+.marquee{
+  display:flex;width:max-content;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+}
+.marquee-track{display:flex;align-items:center;gap:56px;padding-right:56px;animation:scrollx 26s linear infinite}
+.marquee-wrap:hover .marquee-track{animation-play-state:paused}
+.marquee-track .ml{
+  font-size:24px;font-weight:800;letter-spacing:-.02em;color:#9AA7C4;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:14px;transition:color .25s;
+}
+.marquee-track .ml:hover{color:var(--blue)}
+.marquee-track .ml .sep{width:7px;height:7px;border-radius:50%;background:var(--orange);opacity:.5}
+@keyframes scrollx{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ============================================================
+   VALEURS — bento + spotlight curseur
+   ============================================================ */
+.values{padding:96px 0;background:var(--bg)}
+.values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.value-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:34px 30px;box-shadow:var(--shadow-sm);
+  transition:transform .4s var(--ease),box-shadow .4s var(--ease),border-color .4s;
+  position:relative;overflow:hidden;
+}
+/* spotlight piloté par --mx/--my (radial-gradient, AUCUN blur) */
+.value-card::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .35s var(--ease);
+  background:radial-gradient(220px 220px at var(--mx,50%) var(--my,50%),rgba(0,80,230,.10),transparent 70%);
+}
+.value-card:hover::after{opacity:1}
+.value-card::before{content:"";position:absolute;top:0;left:0;width:100%;height:4px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease)}
+.value-card:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:#D4DEF2}
+.value-card:hover::before{transform:scaleX(1)}
+.value-ic{
+  width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#EAF1FF,#DCE8FF);margin-bottom:22px;position:relative;z-index:1;
+  transition:transform .4s var(--ease);
+}
+.value-card:hover .value-ic{transform:scale(1.06) rotate(-3deg)}
+.value-ic svg{width:28px;height:28px}
+.value-card h3{font-size:23px;font-weight:800;letter-spacing:-.02em;margin:0 0 10px;position:relative;z-index:1}
+.value-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.6;position:relative;z-index:1}
+
+/* ============================================================
+   NOS OFFRES (labos)
+   ============================================================ */
+.offers{padding:104px 0;background:var(--bg-alt);overflow:hidden}
+.offers-flex{display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:center}
+.labos-rail{display:flex;flex-direction:column;gap:14px}
+.labo-chip{
+  display:flex;align-items:center;gap:18px;background:#fff;border:1px solid var(--line);
+  border-radius:16px;padding:18px 22px;box-shadow:var(--shadow-sm);
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s,opacity .6s var(--ease);
+  opacity:0;transform:translateX(22px);
+}
+.labos-rail.in .labo-chip{opacity:1;transform:none}
+.labos-rail.in .labo-chip:nth-child(1){transition-delay:.05s}
+.labos-rail.in .labo-chip:nth-child(2){transition-delay:.13s}
+.labos-rail.in .labo-chip:nth-child(3){transition-delay:.21s}
+.labos-rail.in .labo-chip:nth-child(4){transition-delay:.29s}
+.labos-rail.in .labo-chip:nth-child(5){transition-delay:.37s}
+.labo-chip:hover{transform:translateX(8px);box-shadow:var(--shadow);border-color:#CFDBF4}
+.labo-chip .num{font-size:13px;font-weight:700;color:var(--blue);letter-spacing:.1em;font-variant-numeric:tabular-nums;width:30px}
+.labo-chip .lname{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.labo-chip .ldot{margin-left:auto;width:9px;height:9px;border-radius:50%;background:var(--orange)}
+.offers-note{margin-top:30px;display:flex;gap:14px;align-items:flex-start;padding:20px 22px;background:#fff;border:1px dashed #C9D6F0;border-radius:16px}
+.offers-note svg{flex-shrink:0;margin-top:2px}
+.offers-note p{margin:0;font-size:15px;color:var(--muted)}
+.offers-note b{color:var(--ink)}
+
+/* ============================================================
+   RÉSEAU / LE GROUPE
+   ============================================================ */
+.network{padding:0;background:var(--blue);color:#fff;position:relative;overflow:hidden}
+.network::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(80% 90% at 88% 8%,rgba(243,154,27,.18),transparent 60%),
+  radial-gradient(70% 80% at 4% 96%,rgba(0,52,160,.55),transparent 60%);pointer-events:none}
+.network-inner{position:relative;z-index:2;padding:100px 0}
+.network-top{display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:end;margin-bottom:48px}
+.network h2.title{color:#fff}
+.network .lead{color:#C7D8FB}
+.network-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:34px;align-items:start}
+@media(max-width:980px){.network-grid{grid-template-columns:1fr;gap:26px}}
+.net-map{
+  background:#fff;border-radius:var(--r-xl);padding:10px 14px 10px;
+  box-shadow:var(--shadow-lg);margin-bottom:0;
+}
+.net-map .map-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  padding:12px 10px 14px;border-bottom:1px solid var(--line)}
+.net-map .map-head .mh-t{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:800;letter-spacing:.01em;color:var(--ink)}
+.net-map .map-head .mh-t .pin{width:9px;height:9px;border-radius:50%;background:var(--orange)}
+.net-map .map-head .mh-legend{display:flex;gap:16px;font-size:12px;font-weight:600;color:var(--muted)}
+.net-map .map-head .mh-legend span{display:inline-flex;align-items:center;gap:7px}
+.net-map .map-head .lg{width:10px;height:10px;border-radius:50%}
+.net-map .map-head .lg.b{background:var(--blue)}
+.net-map .map-head .lg.o{background:var(--orange)}
+.net-map .map-head .lg.d{background:transparent;border:1.6px dashed var(--blue)}
+.net-map iframe{width:100%;border:0;display:block;min-height:500px}
+@media(max-width:560px){.net-map .map-head{justify-content:flex-start}}
+.agencies{display:flex;flex-direction:column;gap:11px}
+.agency{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:13px;
+  padding:14px 16px;transition:background .3s,border-color .3s,transform .3s var(--ease);
+}
+@media(max-width:980px){.agencies{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}
+@media(max-width:600px){.agencies{grid-template-columns:repeat(2,1fr)}}
+.agency:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.4);transform:translateY(-4px)}
+.agency .ag-h{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.agency .ag-h .pin{width:9px;height:9px;border-radius:50%;background:var(--orange);flex-shrink:0}
+.agency h4{font-size:16px;font-weight:800;margin:0;letter-spacing:-.01em}
+.agency p{margin:0;font-size:13.5px;color:#B7CCF4;font-weight:500}
+.agency .tag{display:inline-block;margin-top:9px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0B1736;background:var(--orange);padding:3px 9px;border-radius:6px}
+.agency .tag.alt{background:rgba(255,255,255,.18);color:#fff}
+
+/* ============================================================
+   CHIFFRES-CLÉS (compteurs)
+   ============================================================ */
+.stats{padding:90px 0;background:var(--bg)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.stat{
+  text-align:left;padding:34px 30px;border-radius:var(--r-lg);
+  background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-sm);
+  position:relative;overflow:hidden;transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
+.stat:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+.stat .big{font-size:clamp(40px,5.2vw,62px);font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--blue);font-variant-numeric:tabular-nums}
+.stat .big .pre{color:var(--orange)}
+.stat .lbl{margin-top:12px;font-size:15px;font-weight:600;color:var(--muted)}
+.stat .bar{position:absolute;left:0;bottom:0;height:4px;width:100%;background:linear-gradient(90deg,var(--blue),var(--orange));transform:scaleX(0);transform-origin:left;transition:transform 1.1s var(--ease)}
+.stat.in .bar{transform:scaleX(1)}
+
+/* ============================================================
+   OFFILOG
+   ============================================================ */
+.offilog{padding:104px 0;background:var(--bg-alt);overflow:hidden}
+.offilog-head{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:end;margin-bottom:46px}
+.offilog-metrics{display:flex;gap:38px;flex-wrap:wrap}
+.ometric b{display:block;font-size:clamp(26px,3vw,38px);font-weight:800;color:var(--blue);letter-spacing:-.03em;line-height:1}
+.ometric b .o{color:var(--orange)}
+.ometric span{font-size:14px;color:var(--muted);font-weight:600}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cat{
+  display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--line);
+  border-radius:16px;padding:20px 22px;box-shadow:var(--shadow-sm);
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s;
+}
+.cat:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:#D2DDF4}
+.cat .cic{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#EAF1FF,#DCE8FF);transition:transform .35s var(--ease)}
+.cat:hover .cic{transform:scale(1.08)}
+.cat .cic svg{width:24px;height:24px}
+.cat span{font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+
+/* ============================================================
+   ACCOMPAGNEMENT — sticky-scroll
+   ============================================================ */
+.support{padding:104px 0;background:var(--bg)}
+.support-head{display:grid;grid-template-columns:1.15fr .85fr;gap:50px;align-items:start;margin-bottom:56px}
+.support-sticky{position:sticky;top:110px;align-self:start}
+.support-quote{
+  background:linear-gradient(135deg,var(--blue),var(--blue-700));color:#fff;
+  border-radius:var(--r-xl);padding:40px 38px;box-shadow:var(--shadow-blue);position:relative;overflow:hidden;
+}
+.support-quote::before{content:"\201C";position:absolute;top:-22px;right:24px;font-size:160px;font-weight:800;color:rgba(255,255,255,.10);line-height:1}
+.support-quote p{margin:0;font-size:clamp(19px,2vw,24px);font-weight:700;letter-spacing:-.02em;line-height:1.35;position:relative}
+.support-quote .sig{margin-top:22px;display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:700;color:var(--orange)}
+.support-quote .sig .tk{width:22px;height:2px;background:var(--orange)}
+.projects{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.project{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:30px 26px;
+  box-shadow:var(--shadow-sm);transition:transform .4s var(--ease),box-shadow .4s var(--ease),border-color .4s;
+  position:relative;
+}
+.project:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:#D2DDF4}
+.project .pic{width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0050E6,#0034A0);margin-bottom:22px;box-shadow:0 10px 24px rgba(0,80,230,.22);transition:transform .4s var(--ease)}
+.project:hover .pic{transform:translateY(-3px) scale(1.05)}
+.project .pic svg{width:30px;height:30px}
+.project h3{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:0 0 8px}
+.project p{margin:0;font-size:14.5px;color:var(--muted);line-height:1.55}
+.project .pn{position:absolute;top:24px;right:26px;font-size:13px;font-weight:800;color:#D8E1F2;font-variant-numeric:tabular-nums}
+.support-cta{display:flex;justify-content:center;margin-top:50px}
+
+/* ============================================================
+   CARRIÈRES
+   ============================================================ */
+.careers{padding:0;background:var(--navy);color:#fff;position:relative;overflow:hidden}
+.careers::before{content:"";position:absolute;inset:0;background:radial-gradient(70% 80% at 85% 10%,rgba(0,80,230,.4),transparent 60%),radial-gradient(60% 70% at 8% 92%,rgba(243,154,27,.12),transparent 60%)}
+.careers-inner{position:relative;z-index:2;padding:96px 0}
+.careers-grid{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}
+.careers h2.title{color:#fff}
+.careers .lead{color:#B9CCF0}
+.jobs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.job{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:15px;
+  padding:22px 22px;transition:background .3s,border-color .3s,transform .35s var(--ease);
+  display:flex;flex-direction:column;gap:6px;
+}
+.job:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.36);transform:translateY(-5px)}
+.job .jic{width:42px;height:42px;border-radius:12px;background:rgba(0,80,230,.5);display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.job .jic svg{width:22px;height:22px}
+.job h4{margin:0;font-size:17px;font-weight:800;letter-spacing:-.01em}
+.job .arr{font-size:13px;color:var(--orange);font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.job:hover .arr{transform:translateX(3px);transition:transform .25s var(--ease)}
+.careers-cta{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
+
+/* ============================================================
+   CONTACT
+   ============================================================ */
+.contact{padding:104px 0;background:var(--bg-alt)}
+.contact-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:50px}
+.contact-info h2.title{margin-bottom:16px}
+.contact-info .lead{margin-bottom:36px}
+.cinfo-list{display:flex;flex-direction:column;gap:18px;margin-top:6px}
+.cinfo{display:flex;gap:16px;align-items:flex-start}
+.cinfo .cic{width:50px;height:50px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#EAF1FF,#DCE8FF)}
+.cinfo .cic svg{width:24px;height:24px}
+.cinfo .cl{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
+.cinfo .cv{font-size:17px;font-weight:700;color:var(--ink)}
+.form-card{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-xl);padding:38px 36px;box-shadow:var(--shadow);
+}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.field{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+.field label{font-size:13.5px;font-weight:700;color:var(--ink)}
+.field label .req{color:var(--orange)}
+.field input,.field textarea{
+  font-family:inherit;font-size:16px;color:var(--ink);
+  border:1.5px solid var(--line);border-radius:12px;padding:13px 15px;background:#FAFBFE;
+  transition:border-color .25s,background .25s,box-shadow .25s;width:100%;
+}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 4px rgba(0,80,230,.10)}
+.field textarea{resize:vertical;min-height:118px}
+.form-card .btn{width:100%;margin-top:6px}
+.form-foot{margin-top:16px;font-size:13px;color:var(--soft);text-align:center}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
+.foot-top{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;padding-bottom:44px;border-bottom:1px solid rgba(255,255,255,.12)}
+.foot-brand img{height:40px;margin-bottom:20px;filter:brightness(1.04)}
+.foot-brand p{margin:0;color:#9FB4DE;font-size:15px;max-width:38ch;line-height:1.6}
+.foot-brand .mention{margin-top:18px;display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#CFE0FF;padding:8px 14px;border:1px solid rgba(255,255,255,.18);border-radius:100px}
+.foot-brand .mention .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+.foot-col h5{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#7E93C2;margin:0 0 18px}
+.foot-col a{display:block;color:#C7D5EF;font-size:15px;padding:7px 0;transition:color .2s,transform .2s}
+.foot-col a:hover{color:#fff;transform:translateX(3px)}
+.foot-bot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding-top:28px;color:#8295BE;font-size:14px}
+.foot-bot .badges{display:flex;gap:10px;flex-wrap:wrap}
+.foot-bot .badges span{font-size:12.5px;font-weight:600;color:#A9BCE2;border:1px solid rgba(255,255,255,.14);border-radius:100px;padding:5px 13px}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media(max-width:980px){
+  .values-grid{grid-template-columns:1fr 1fr}
+  .offers-flex{grid-template-columns:1fr;gap:40px}
+  .network-top{grid-template-columns:1fr;gap:26px;align-items:start}
+  .agencies{grid-template-columns:1fr 1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .cats{grid-template-columns:1fr 1fr}
+  .support-head{grid-template-columns:1fr;gap:34px}
+  .support-sticky{position:static;top:auto}
+  .projects{grid-template-columns:1fr 1fr}
+  .careers-grid{grid-template-columns:1fr;gap:34px}
+  .contact-grid{grid-template-columns:1fr;gap:38px}
+  .foot-top{grid-template-columns:1fr 1fr}
+}
+@media(max-width:760px){
+  .nav-links{display:none}
+  .nav-cta .btn-primary{display:none}
+  .burger{display:flex}
+  .nav{height:66px}
+  header.site.scrolled .nav{height:60px}
+}
+@media(max-width:640px){
+  body{font-size:16px}
+  .wrap{padding:0 20px}
+  .hero-inner{padding:72px 0 84px}
+  .hero h1{font-size:clamp(34px,11vw,52px)}
+  .hero-cta{flex-direction:column;align-items:stretch}
+  .hero-cta .btn{width:100%}
+  .hero-trust{gap:22px}
+  .values,.offers,.offilog,.support,.contact{padding:68px 0}
+  .network-inner,.careers-inner{padding:68px 0}
+  .stats{padding:60px 0}
+  .values-grid{grid-template-columns:1fr}
+  .agencies{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .stat .big{font-size:clamp(34px,11vw,48px)}
+  .cats{grid-template-columns:1fr}
+  .offilog-head{grid-template-columns:1fr;align-items:start}
+  .projects{grid-template-columns:1fr}
+  .jobs{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .form-card{padding:28px 22px}
+  .foot-top{grid-template-columns:1fr}
+  .net-map iframe{min-height:420px}
+  .sec-head{margin-bottom:36px}
+  .marquee-track{gap:38px;padding-right:38px}
+  .marquee-track .ml{font-size:20px}
+}
+
+/* ============================================================
+   PREFERS-REDUCED-MOTION : tout statique et visible
+   ============================================================ */
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .reveal{opacity:1!important;transform:none!important}
+  .stat .bar,.value-card::before,.eyebrow .tick{transform:none!important}
+  .labos-rail .labo-chip{opacity:1!important;transform:none!important}
+  .hero h1 .w > span,.hero-badge,.hero p.sub,.hero-cta,.hero-trust{opacity:1!important;transform:none!important}
+  .hero-drift{display:none!important}
+  .hero-media video{display:none!important}
+  .hero-media img.poster{display:block!important}
+  .scroll-hint{display:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ HEADER ============================ -->
+<header class="site" id="top">
+  <div class="wrap">
+    <div class="nav">
+      <a class="brand" href="#top" aria-label="Intégral Pharma — accueil">
+        <img src="../assets/logo.png" alt="Intégral Pharma">
+      </a>
+      <nav class="nav-links" aria-label="Navigation principale">
+        <a href="#groupe">Le groupe</a>
+        <a href="#offres">Nos offres</a>
+        <a href="#offilog">Offilog</a>
+        <a href="#accompagnement">Accompagnement</a>
+        <a href="#carrieres">Carrières</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="btn btn-primary" href="#contact">Demander nos conditions<span class="arrow" aria-hidden="true">→</span></a>
+        <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- mobile menu -->
+<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+  <div class="mm-top">
+    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <button class="mm-close" id="mmClose" aria-label="Fermer le menu">×</button>
+  </div>
+  <nav>
+    <a href="#groupe">Le groupe</a>
+    <a href="#offres">Nos offres</a>
+    <a href="#offilog">Offilog</a>
+    <a href="#accompagnement">Accompagnement</a>
+    <a href="#carrieres">Carrières</a>
+    <a href="#contact">Contact</a>
+  </nav>
+  <div class="mm-cta">
+    <a class="btn btn-primary" href="#contact">Demander nos conditions →</a>
+  </div>
+</div>
+
+<!-- ============================ HERO ============================ -->
+<section class="hero" id="hero" aria-label="Présentation">
+  <div class="hero-media" aria-hidden="true">
+    <img class="poster" src="../assets/poster.jpg" alt="">
+    <video autoplay muted loop playsinline poster="../assets/poster.jpg" id="heroVideo" preload="auto">
+      <source src="../assets/clip3.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="hero-veil" aria-hidden="true"></div>
+  <div class="hero-drift" aria-hidden="true"></div>
+  <div class="hero-grid" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="hero-inner">
+      <span class="hero-badge"><span class="dot"></span>Grossiste-répartiteur de première intention</span>
+      <h1 data-split>Plus de marge, sur <span class="accent">chaque commande.</span></h1>
+      <p class="sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
+      <div class="hero-cta">
+        <a class="btn btn-orange btn-lg" href="#contact">Demander nos conditions<span class="arrow" aria-hidden="true">→</span></a>
+        <a class="btn btn-ghost btn-lg" href="#groupe">Découvrir le groupe</a>
+      </div>
+      <div class="hero-trust">
+        <div class="ht"><b><em>+</em>20 ans</b><span>d'expérience</span></div>
+        <div class="ht"><b>9 agences</b><span>en France</span></div>
+        <div class="ht"><b>National</b><span>couverture complète</span></div>
+        <div class="ht"><b>Offilog</b><span>+14 000 références</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint" aria-hidden="true">
+    <span>Défiler</span>
+    <span class="line"></span>
+  </div>
+</section>
+
+<!-- ============================ MARQUEE LABOS ============================ -->
+<div class="marquee-wrap" aria-label="Laboratoires partenaires">
+  <div class="marquee">
+    <div class="marquee-track" aria-hidden="false">
+      <span class="ml">Zentiva<span class="sep"></span></span>
+      <span class="ml">Teva<span class="sep"></span></span>
+      <span class="ml">EG Labo<span class="sep"></span></span>
+      <span class="ml">Zydus<span class="sep"></span></span>
+      <span class="ml">Viatris<span class="sep"></span></span>
+    </div>
+    <div class="marquee-track" aria-hidden="true">
+      <span class="ml">Zentiva<span class="sep"></span></span>
+      <span class="ml">Teva<span class="sep"></span></span>
+      <span class="ml">EG Labo<span class="sep"></span></span>
+      <span class="ml">Zydus<span class="sep"></span></span>
+      <span class="ml">Viatris<span class="sep"></span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ VALEURS ============================ -->
+<section class="values" id="valeurs" aria-label="Nos valeurs">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="tick"></span>Nos valeurs</span>
+      <h2 class="title">Confiance · Engagement · <span class="kicker-accent">Respect.</span></h2>
+      <p class="lead">Nous défendons l'officine indépendante, près de chez vous. Un groupe à taille humaine, présent sur le terrain, fidèle à ses pharmaciens.</p>
+    </div>
+    <div class="values-grid">
+      <article class="value-card reveal d1 spot">
+        <div class="value-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <h3>Confiance</h3>
+        <p>Une relation durable et transparente. Ce qu'on s'engage à faire, on le tient — sur chaque commande, dans la durée.</p>
+      </article>
+      <article class="value-card reveal d2 spot">
+        <div class="value-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5 12 3 3.5 7.5 12 12l8.5-4.5z"/><path d="M3.5 7.5v9L12 21l8.5-4.5v-9"/><path d="M12 12v9"/></svg>
+        </div>
+        <h3>Engagement</h3>
+        <p>Un groupe de grossistes français indépendant, engagé pour la pérennité de l'officine et pour une répartition responsable.</p>
+      </article>
+      <article class="value-card reveal d3 spot">
+        <div class="value-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5.5 21a7 7 0 0 1 13 0"/></svg>
+        </div>
+        <h3>Respect</h3>
+        <p>Proximité, écoute et indépendance. Nous respectons votre métier, votre territoire et votre liberté de pharmacien.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ NOS OFFRES ============================ -->
+<section class="offers" id="offres" aria-label="Nos offres">
+  <div class="wrap">
+    <div class="offers-flex">
+      <div class="reveal">
+        <span class="eyebrow"><span class="tick"></span>Nos offres</span>
+        <h2 class="title">Les plus grands <span class="kicker-accent">laboratoires.</span></h2>
+        <p class="lead">Un accès à un catalogue large et à des conditions adaptées à votre type d'officine. Les marques génériques de référence, négociées pour vous.</p>
+        <div class="offers-note">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          <p><b>Vos conditions, chiffrées en rendez-vous.</b> Chaque officine est différente — on construit l'offre qui correspond à la vôtre, en toute simplicité.</p>
+        </div>
+      </div>
+      <div class="labos-rail">
+        <div class="labo-chip"><span class="num">01</span><span class="lname">Zentiva</span><span class="ldot"></span></div>
+        <div class="labo-chip"><span class="num">02</span><span class="lname">Teva</span><span class="ldot"></span></div>
+        <div class="labo-chip"><span class="num">03</span><span class="lname">EG Labo</span><span class="ldot"></span></div>
+        <div class="labo-chip"><span class="num">04</span><span class="lname">Zydus</span><span class="ldot"></span></div>
+        <div class="labo-chip"><span class="num">05</span><span class="lname">Viatris</span><span class="ldot"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ RÉSEAU / LE GROUPE ============================ -->
+<section class="network" id="groupe" aria-label="Le groupe et son réseau">
+  <div class="network-inner">
+    <div class="wrap">
+      <div class="network-top">
+        <div class="reveal">
+          <span class="eyebrow on-blue"><span class="tick"></span>Le groupe · Le réseau</span>
+          <h2 class="title">National.</h2>
+        </div>
+        <p class="lead reveal d2">9 agences réparties en France pour une livraison rapide, partout. Un maillage de proximité au service de votre officine.</p>
+      </div>
+
+      <div class="network-grid">
+      <div class="net-map reveal">
+        <div class="map-head">
+          <span class="mh-t"><span class="pin"></span>Le réseau Intégral · 9 agences en France</span>
+          <span class="mh-legend">
+            <span><span class="lg o"></span>Siège</span>
+            <span><span class="lg b"></span>Agence</span>
+            <span><span class="lg d"></span>Partenaire</span>
+          </span>
+        </div>
+        <iframe id="netFrame" src="../map-component.html?mode=map" loading="lazy" scrolling="no" title="Carte des 9 agences Intégral Pharma en France"></iframe>
+      </div>
+
+      <div class="agencies">
+        <article class="agency reveal d1">
+          <div class="ag-h"><span class="pin"></span><h4>Ouest Pharma Services</h4></div>
+          <p>St-Étienne-de-Montluc · 44</p>
+        </article>
+        <article class="agency reveal d1">
+          <div class="ag-h"><span class="pin"></span><h4>Escale Pharma</h4></div>
+          <p>Chilly-Mazarin · 91</p>
+        </article>
+        <article class="agency reveal d1">
+          <div class="ag-h"><span class="pin"></span><h4>Comptoir Pharmaceutique du Rhône</h4></div>
+          <p>Saint-Maurice-l'Exil · 38</p>
+        </article>
+        <article class="agency reveal d2">
+          <div class="ag-h"><span class="pin"></span><h4>Sud Ouest Pharma</h4></div>
+          <p>Montayral · 47</p>
+        </article>
+        <article class="agency reveal d2">
+          <div class="ag-h"><span class="pin"></span><h4>Pharm'Occitanie Services</h4></div>
+          <p>Villeneuve-lès-Béziers · 34</p>
+        </article>
+        <article class="agency reveal d2">
+          <div class="ag-h"><span class="pin"></span><h4>Hyères Pharma</h4></div>
+          <p>Hyères · 83</p>
+          <span class="tag">Siège</span>
+        </article>
+        <article class="agency reveal d3">
+          <div class="ag-h"><span class="pin"></span><h4>Sud Est Pharma</h4></div>
+          <p>Le Cannet-des-Maures · 83</p>
+        </article>
+        <article class="agency reveal d3">
+          <div class="ag-h"><span class="pin"></span><h4>Mistral Santé Pharma</h4></div>
+          <p>Flassans-sur-Issole · 83</p>
+        </article>
+        <article class="agency reveal d3">
+          <div class="ag-h"><span class="pin"></span><h4>Pharmest</h4></div>
+          <p>Metz · 57</p>
+          <span class="tag alt">Partenaire</span>
+        </article>
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CHIFFRES-CLÉS ============================ -->
+<section class="stats" aria-label="Chiffres-clés">
+  <div class="wrap">
+    <div class="stats-grid">
+      <div class="stat reveal d1">
+        <div class="big"><span class="pre">+</span><span class="count" data-to="20">0</span></div>
+        <div class="lbl">ans d'expérience</div>
+        <span class="bar"></span>
+      </div>
+      <div class="stat reveal d2">
+        <div class="big"><span class="count" data-to="9">0</span></div>
+        <div class="lbl">agences en France</div>
+        <span class="bar"></span>
+      </div>
+      <div class="stat reveal d3">
+        <div class="big" style="font-size:clamp(30px,4vw,46px);padding-top:12px">National</div>
+        <div class="lbl">couverture complète</div>
+        <span class="bar"></span>
+      </div>
+      <div class="stat reveal d4">
+        <div class="big"><span class="pre">+</span><span class="count" data-to="14000" data-sep="1">0</span></div>
+        <div class="lbl">références Offilog</div>
+        <span class="bar"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ OFFILOG ============================ -->
+<section class="offilog" id="offilog" aria-label="Offilog — parapharmacie">
+  <div class="wrap">
+    <div class="offilog-head">
+      <div class="reveal">
+        <span class="eyebrow"><span class="tick"></span>Offilog · Parapharmacie</span>
+        <h2 class="title">Toute la <span class="kicker-accent">parapharmacie.</span></h2>
+        <p class="lead">Une plateforme complète pour piloter votre rayon para — large, claire et sans barrière à l'entrée.</p>
+      </div>
+      <div class="offilog-metrics reveal d2">
+        <div class="ometric"><b><span class="o">+</span>14 000</b><span>références</span></div>
+        <div class="ometric"><b><span class="o">+</span>430</b><span>laboratoires</span></div>
+        <div class="ometric"><b><span class="o">0€</span></b><span>d'adhésion</span></div>
+      </div>
+    </div>
+    <div class="cats">
+      <div class="cat reveal d1"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><span>Solaires</span></div>
+      <div class="cat reveal d1"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="11" r="7"/><path d="M9 11a3 3 0 0 1 6 0"/><path d="M12 21v-3"/></svg></span><span>Soin du visage</span></div>
+      <div class="cat reveal d1"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l-1 6H9L8 2z"/><path d="M9 8c-1.5 2-2 4-2 7a5 5 0 0 0 10 0c0-3-.5-5-2-7"/></svg></span><span>Hygiène</span></div>
+      <div class="cat reveal d2"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M9 9h.01M15 9h.01M10 12a3 3 0 0 0 4 0"/><path d="M5 20c1-3 4-4 7-4s6 1 7 4"/></svg></span><span>Bébé</span></div>
+      <div class="cat reveal d2"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20c0-6 3-12 8-12s8 6 8 12"/><path d="M8 8c0-3 2-5 4-5M16 8c0-3-2-5-4-5"/></svg></span><span>Cheveux</span></div>
+      <div class="cat reveal d2"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="3"/><path d="M10 3v3h4V3"/></svg></span><span>Compléments</span></div>
+      <div class="cat reveal d3"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 9-10-1 4 1 7 4 8a7 7 0 0 1-6 9z"/></svg></span><span>Bio</span></div>
+      <div class="cat reveal d3"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 0-5 2-5 5 0 4 5 13 5 13s5-9 5-13c0-3-2-5-5-5z"/><path d="M12 8v6M9 11h6"/></svg></span><span>Bucco-dentaire</span></div>
+      <div class="cat reveal d3"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.5C10 4 9 3 8 3S6 4 6 5.5 7 8 8 8s2-1 2-2.5z"/><path d="M18 5.5C18 4 17 3 16 3s-2 1-2 2.5S15 8 16 8s2-1 2-2.5z"/><path d="M5 12.5C5 11 4 10 3.5 10S2 11 2 12.5 3 15 3.5 15 5 14 5 12.5z"/><path d="M22 12.5c0-1.5-1-2.5-1.5-2.5S19 11 19 12.5s1 2.5 1.5 2.5 1.5-1 1.5-2.5z"/><path d="M12 12c-2.5 0-4.5 2-4.5 4.5C7.5 19 9 21 12 21s4.5-2 4.5-4.5C16.5 14 14.5 12 12 12z"/></svg></span><span>Vétérinaire</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ ACCOMPAGNEMENT ============================ -->
+<section class="support" id="accompagnement" aria-label="Accompagnement des titulaires">
+  <div class="wrap">
+    <div class="support-head">
+      <div class="reveal">
+        <span class="eyebrow"><span class="tick"></span>Accompagnement · Titulaires</span>
+        <h2 class="title">On le porte <span class="kicker-accent">avec vous.</span></h2>
+        <p class="lead">Au-delà de la distribution, un partenaire qui s'investit dans vos projets de vie d'officine et vous accompagne à chaque étape.</p>
+      </div>
+      <div class="support-sticky reveal d2">
+        <div class="support-quote">
+          <p>« Vous êtes pharmacien titulaire et vous avez un projet de transfert, d'agrandissement, de cession de parts ou d'optimisation ? On le porte avec vous. »</p>
+          <span class="sig"><span class="tk"></span>Intégral Pharma</span>
+        </div>
+      </div>
+    </div>
+    <div class="projects">
+      <article class="project reveal d1">
+        <span class="pn">01</span>
+        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h13"/><path d="m12 6 6 6-6 6"/><path d="M21 4v16"/></svg></div>
+        <h3>Transfert d'officine</h3>
+        <p>Sécuriser et réussir le déplacement de votre officine, du dossier à l'ouverture.</p>
+      </article>
+      <article class="project reveal d2">
+        <span class="pn">02</span>
+        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 9V3h-6"/><path d="M3 15v6h6"/><path d="M21 3 14 10"/><path d="M3 21l7-7"/></svg></div>
+        <h3>Agrandissement</h3>
+        <p>Gagner de l'espace et de la capacité pour développer votre activité.</p>
+      </article>
+      <article class="project reveal d3">
+        <span class="pn">03</span>
+        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11l2.5 2.5L23 9"/></svg></div>
+        <h3>Cession de parts</h3>
+        <p>Préparer une transmission sereine et structurer l'entrée d'associés.</p>
+      </article>
+      <article class="project reveal d4">
+        <span class="pn">04</span>
+        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M16 8h5v5"/></svg></div>
+        <h3>Optimisation</h3>
+        <p>Améliorer vos marges et votre rentabilité, commande après commande.</p>
+      </article>
+    </div>
+    <div class="support-cta">
+      <a class="btn btn-primary btn-lg" href="#contact">En parler avec nous<span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CARRIÈRES ============================ -->
+<section class="careers" id="carrieres" aria-label="Carrières">
+  <div class="careers-inner">
+    <div class="wrap">
+      <div class="careers-grid">
+        <div class="reveal">
+          <span class="eyebrow on-blue"><span class="tick"></span>Carrières</span>
+          <h2 class="title">Le groupe <span class="kicker-accent">recrute.</span></h2>
+          <p class="lead">Rejoindre Intégral Pharma, c'est intégrer un groupe de grossistes français indépendant, à taille humaine, fier de ses métiers et de son terrain.</p>
+          <div class="careers-cta">
+            <a class="btn btn-orange btn-lg" href="#contact">Voir les offres<span class="arrow" aria-hidden="true">→</span></a>
+            <a class="btn btn-ghost btn-lg" href="#contact">Postuler</a>
+          </div>
+        </div>
+        <div class="jobs">
+          <article class="job reveal d1">
+            <div class="jic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13v10H3z"/><path d="M16 10h4l1 3v4h-5"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></div>
+            <h4>Approvisionnement</h4>
+            <span class="arr">Postuler →</span>
+          </article>
+          <article class="job reveal d2">
+            <div class="jic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
+            <h4>Commercial</h4>
+            <span class="arr">Postuler →</span>
+          </article>
+          <article class="job reveal d3">
+            <div class="jic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18" stroke-width="2.6"/></svg></div>
+            <h4>Pharmacien responsable</h4>
+            <span class="arr">Postuler →</span>
+          </article>
+          <article class="job reveal d4">
+            <div class="jic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="13" height="8" rx="1.5"/><path d="M15 11h4l2 2v3h-6"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
+            <h4>Préparateur-chauffeur</h4>
+            <span class="arr">Postuler →</span>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CONTACT ============================ -->
+<section class="contact" id="contact" aria-label="Contact">
+  <div class="wrap">
+    <div class="contact-grid">
+      <div class="contact-info reveal">
+        <span class="eyebrow"><span class="tick"></span>Contact</span>
+        <h2 class="title">Parlons de votre <span class="kicker-accent">officine.</span></h2>
+        <p class="lead">Dites-nous l'essentiel — on vous recontacte et on vous chiffre vos conditions en rendez-vous, adaptées à votre officine.</p>
+        <div class="cinfo-list">
+          <div class="cinfo">
+            <span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="m4 6 8 6 8-6"/></svg></span>
+            <div><div class="cl">Email</div><div class="cv">contact@integralpharma.fr</div></div>
+          </div>
+          <div class="cinfo">
+            <span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
+            <div><div class="cl">Siège</div><div class="cv">758 Chemin de la Source, 83400 Hyères</div></div>
+          </div>
+          <div class="cinfo">
+            <span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
+            <div><div class="cl">Réseau</div><div class="cv">9 agences · couverture nationale</div></div>
+          </div>
+        </div>
+      </div>
+
+      <form class="form-card reveal d2" action="mailto:contact@integralpharma.fr" method="post" enctype="text/plain">
+        <div class="form-row">
+          <div class="field">
+            <label for="f-nom">Nom <span class="req">*</span></label>
+            <input id="f-nom" name="Nom" type="text" required autocomplete="name" placeholder="Votre nom">
+          </div>
+          <div class="field">
+            <label for="f-off">Officine <span class="req">*</span></label>
+            <input id="f-off" name="Officine" type="text" required placeholder="Nom de l'officine">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="f-cp">Code postal</label>
+            <input id="f-cp" name="Code postal" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="83400">
+          </div>
+          <div class="field">
+            <label for="f-tel">Téléphone</label>
+            <input id="f-tel" name="Telephone" type="tel" autocomplete="tel" placeholder="06 00 00 00 00">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-email">Email <span class="req">*</span></label>
+          <input id="f-email" name="Email" type="email" required autocomplete="email" placeholder="vous@officine.fr">
+        </div>
+        <div class="field">
+          <label for="f-msg">Message</label>
+          <textarea id="f-msg" name="Message" placeholder="Parlez-nous de votre officine et de votre projet…"></textarea>
+        </div>
+        <button class="btn btn-orange btn-lg" type="submit">Envoyer<span class="arrow" aria-hidden="true">→</span></button>
+        <p class="form-foot">Réponse rapide · Conditions chiffrées en rendez-vous · Adaptées à votre officine</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="site" aria-label="Pied de page">
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <img src="../assets/logo.png" alt="Intégral Pharma">
+        <p>Grossiste-répartiteur de première intention. Plus de marge, sur chaque commande — dès la première boîte.</p>
+        <span class="mention"><span class="dot"></span>Groupe de grossistes français indépendant</span>
+      </div>
+      <div class="foot-col">
+        <h5>Navigation</h5>
+        <a href="#groupe">Le groupe</a>
+        <a href="#offres">Nos offres</a>
+        <a href="#offilog">Offilog</a>
+        <a href="#accompagnement">Accompagnement</a>
+        <a href="#carrieres">Carrières</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <div class="foot-col">
+        <h5>Contact</h5>
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+        <a href="#contact">758 Chemin de la Source, 83400 Hyères</a>
+        <a href="#contact">9 agences · couverture nationale</a>
+        <a href="#contact">Demander nos conditions</a>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>© <span id="year">2026</span> Intégral Pharma. Tous droits réservés.</span>
+      <div class="badges">
+        <span>+20 ans</span><span>9 agences</span><span>National</span><span>Offilog +14 000 réfs</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ----- header scrolled state ----- */
+  var header = document.querySelector('header.site');
+  function onScroll(){
+    if(window.scrollY > 12){ header.classList.add('scrolled'); }
+    else{ header.classList.remove('scrolled'); }
+  }
+  onScroll();
+  window.addEventListener('scroll', onScroll, {passive:true});
+
+  /* ----- mobile menu ----- */
+  var burger = document.getElementById('burger');
+  var mm = document.getElementById('mobileMenu');
+  var mmClose = document.getElementById('mmClose');
+  function openMenu(){ mm.classList.add('open'); mm.setAttribute('aria-hidden','false'); burger.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; }
+  function closeMenu(){ mm.classList.remove('open'); mm.setAttribute('aria-hidden','true'); burger.setAttribute('aria-expanded','false'); document.body.style.overflow=''; }
+  burger.addEventListener('click', openMenu);
+  mmClose.addEventListener('click', closeMenu);
+  mm.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeMenu); });
+
+  /* ----- year ----- */
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  /* ----- HERO : révélation par MOTS échelonnée (signature 21st.dev) ----- */
+  var hero = document.getElementById('hero');
+  var h1 = hero ? hero.querySelector('[data-split]') : null;
+  if(h1 && !reduce){
+    // découpe le titre en mots, en préservant les <span> internes (.accent, <br> non présent)
+    var words = [];
+    (function walk(node){
+      node.childNodes.forEach(function(child){
+        if(child.nodeType === 3){ // texte
+          var parts = child.textContent.split(/(\s+)/);
+          parts.forEach(function(p){
+            if(p.trim().length){
+              words.push({text:p, accent:false});
+            } else if(p.length){
+              words.push({space:true});
+            }
+          });
+        } else if(child.nodeType === 1){
+          var accent = child.classList && child.classList.contains('accent');
+          var t = child.textContent.split(/(\s+)/);
+          t.forEach(function(p){
+            if(p.trim().length){ words.push({text:p, accent:accent}); }
+            else if(p.length){ words.push({space:true}); }
+          });
+        }
+      });
+    })(h1);
+
+    h1.innerHTML = '';
+    var idx = 0;
+    words.forEach(function(w){
+      if(w.space){ h1.appendChild(document.createTextNode(' ')); return; }
+      var wrap = document.createElement('span');
+      wrap.className = 'w';
+      var inner = document.createElement('span');
+      if(w.accent){ inner.className = 'accent'; }
+      inner.textContent = w.text;
+      inner.style.transitionDelay = (idx * 0.06) + 's';
+      wrap.appendChild(inner);
+      h1.appendChild(wrap);
+      idx++;
+    });
+    // déclenche au prochain frame pour garantir la transition
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ hero.classList.add('ready'); });
+    });
+  } else if(hero){
+    hero.classList.add('ready');
+  }
+
+  /* ----- reveal on scroll (IntersectionObserver + stagger) ----- */
+  var reveals = document.querySelectorAll('.reveal');
+  var rails = document.querySelectorAll('.labos-rail');
+  if(reduce || !('IntersectionObserver' in window)){
+    reveals.forEach(function(el){ el.classList.add('in'); });
+    rails.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, {threshold:0.14, rootMargin:'0px 0px -8% 0px'});
+    reveals.forEach(function(el){ io.observe(el); });
+    rails.forEach(function(el){ io.observe(el); });
+  }
+
+  /* ----- count-up (requestAnimationFrame + easeOutCubic, format fr-FR) ----- */
+  function formatNum(n, sep){
+    if(sep){ return n.toLocaleString('fr-FR'); }
+    return String(n);
+  }
+  function runCount(el){
+    var target = parseInt(el.getAttribute('data-to'),10);
+    var sep = el.getAttribute('data-sep');
+    if(reduce){ el.textContent = formatNum(target, sep); return; }
+    var dur = 1500, start = null;
+    function step(ts){
+      if(start===null) start = ts;
+      var p = Math.min((ts-start)/dur, 1);
+      var eased = 1 - Math.pow(1-p, 3);
+      var val = Math.round(target * eased);
+      el.textContent = formatNum(val, sep);
+      if(p < 1){ requestAnimationFrame(step); }
+      else { el.textContent = formatNum(target, sep); }
+    }
+    requestAnimationFrame(step);
+  }
+  var counts = document.querySelectorAll('.count');
+  if(reduce || !('IntersectionObserver' in window)){
+    counts.forEach(runCount);
+    document.querySelectorAll('.stat').forEach(function(s){ s.classList.add('in'); });
+  } else {
+    var statObs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          e.target.classList.add('in');
+          var c = e.target.querySelector('.count');
+          if(c) runCount(c);
+          statObs.unobserve(e.target);
+        }
+      });
+    }, {threshold:0.4});
+    document.querySelectorAll('.stat').forEach(function(s){ statObs.observe(s); });
+  }
+
+  /* ----- SPOTLIGHT curseur sur les cartes valeurs (--mx/--my, aucun blur) ----- */
+  if(!reduce && window.matchMedia('(hover:hover)').matches){
+    document.querySelectorAll('.value-card.spot').forEach(function(card){
+      card.addEventListener('mousemove', function(ev){
+        var r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', (ev.clientX - r.left) + 'px');
+        card.style.setProperty('--my', (ev.clientY - r.top) + 'px');
+      });
+    });
+  }
+
+  /* ----- light parallax + drift sur hero media (GPU transform only) ----- */
+  if(!reduce){
+    var media = document.querySelector('.hero-media');
+    var ticking = false;
+    window.addEventListener('scroll', function(){
+      if(ticking) return;
+      ticking = true;
+      requestAnimationFrame(function(){
+        var y = window.scrollY;
+        if(y < window.innerHeight && media){
+          media.style.transform = 'translateY(' + (y * 0.18) + 'px)';
+        }
+        ticking = false;
+      });
+    }, {passive:true});
+
+    /* graceful video fallback : if it can't play, poster stays */
+    var hv = document.getElementById('heroVideo');
+    if(hv){
+      hv.addEventListener('error', function(){ hv.style.display='none'; });
+      var p = hv.play && hv.play();
+      if(p && p.catch){ p.catch(function(){ /* poster remains visible */ }); }
+    }
+  } else {
+    var hv2 = document.getElementById('heroVideo');
+    if(hv2){ hv2.style.display='none'; }
+  }
+})();
+</script>
+<!-- auto-dimensionnement de la carte (affichage intégral, pas de coupe) -->
+<script>(function(){
+  var f=document.getElementById('netFrame'); if(!f) return;
+  function fit(){ try{ var d=f.contentDocument||f.contentWindow.document; if(d&&d.documentElement){ f.style.height=(d.documentElement.scrollHeight)+'px'; } }catch(e){} }
+  f.addEventListener('load',function(){ fit(); setTimeout(fit,300); setTimeout(fit,1200); });
+  addEventListener('resize',fit);
+  addEventListener('message',function(e){ if(e.data&&e.data.ipAtlasHeight){ f.style.height=e.data.ipAtlasHeight+'px'; } });
+})();</script>
+</body>
+</html>

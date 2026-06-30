@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Propositions retenues</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Manrope:wght@500;700;800&family=Sora:wght@400;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{--blue:#0050E6;--orange:#F39A1B;--ink:#0A0A0B;--paper:#FAFAF8;--line:#E7E6E1;--muted:#6B6B6B}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:Inter,system-ui,sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+  a{color:inherit;text-decoration:none}
+
+  .top{max-width:1180px;margin:0 auto;padding:34px 28px 0;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .top img{height:34px;width:auto;display:block}
+  .top .meta{font:600 12px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+  .hero{max-width:1180px;margin:0 auto;padding:46px 28px 30px}
+  .hero .eyebrow{font:700 12px/1 'JetBrains Mono',monospace;letter-spacing:.2em;text-transform:uppercase;color:var(--blue);margin-bottom:18px}
+  .hero h1{font:600 clamp(34px,5.4vw,60px)/1.04 Fraunces,serif;letter-spacing:-.01em;max-width:20ch}
+  .hero h1 em{font-style:italic;color:var(--blue)}
+  .hero p{margin-top:20px;max-width:62ch;font-size:clamp(15px,1.6vw,18px);color:#333}
+  .hero .legend{margin-top:22px;display:flex;gap:22px;flex-wrap:wrap;font:600 12.5px/1 'JetBrains Mono',monospace;letter-spacing:.04em;color:var(--muted)}
+  .hero .legend b{color:var(--ink)}
+  .rule{max-width:1180px;margin:30px auto 0;padding:0 28px}
+  .rule div{height:1px;background:var(--line)}
+
+  .grid{max-width:1180px;margin:0 auto;padding:34px 28px 90px;display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+  @media(max-width:640px){.grid{grid-template-columns:1fr;padding-bottom:60px}}
+
+  .card{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;display:flex;flex-direction:column;transition:transform .4s cubic-bezier(.2,.8,.2,1),box-shadow .4s,border-color .4s;opacity:0;transform:translateY(18px)}
+  .card.in{opacity:1;transform:none}
+  .card:hover{transform:translateY(-6px);box-shadow:0 24px 60px -28px rgba(0,0,0,.28);border-color:#d6d5cf}
+
+  .pv{position:relative;aspect-ratio:16/10;display:flex;flex-direction:column;justify-content:center;padding:26px 24px;overflow:hidden}
+  .pv .num{position:absolute;top:14px;right:18px;font:700 12px/1 'JetBrains Mono',monospace;letter-spacing:.1em;opacity:.7}
+  .pv .ttl{line-height:.98;letter-spacing:-.02em;max-width:12ch}
+  .pv .sub{margin-top:10px;font:600 11px/1.3 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+  .pv .swatches{position:absolute;left:0;bottom:0;display:flex;width:100%;height:7px}
+  .pv .swatches span{flex:1}
+
+  .body{padding:20px 22px 22px;display:flex;flex-direction:column;gap:12px;flex:1}
+  .body .kicker{font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .body .tag21{font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);border:1px solid #f1d9b0;background:#fdf6ea;border-radius:999px;padding:5px 9px;align-self:flex-start}
+  .body h3{font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .body p{font-size:13.5px;color:#555;flex:1}
+  .body .open{margin-top:6px;display:inline-flex;align-items:center;gap:9px;align-self:flex-start;font:700 13px/1 Inter;color:var(--blue);border:1px solid var(--line);border-radius:999px;padding:11px 18px;transition:background .25s,color .25s,border-color .25s}
+  .card:hover .open{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .body .open svg{width:14px;height:14px;transition:transform .25s}
+  .card:hover .open svg{transform:translate(2px,-2px)}
+
+  .card.feat{grid-column:1 / -1;flex-direction:row;align-items:stretch}
+  .card.feat .pv{aspect-ratio:auto;flex:1.1;min-height:330px}
+  .card.feat .body{flex:1;justify-content:center;padding:38px 40px}
+  .card.feat .body h3{font-size:26px}
+  .card.feat .body p{font-size:15px;max-width:50ch}
+  .card.feat .badge{align-self:flex-start;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#0a7d4a;background:#e7f7ee;border-radius:999px;padding:7px 13px}
+  @media(max-width:760px){.card.feat{flex-direction:column}.card.feat .pv{min-height:240px}}
+
+  footer{max-width:1180px;margin:0 auto;padding:0 28px 70px;color:var(--muted);font-size:13px}
+  footer b{color:var(--ink)}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none!important;animation:none!important}
+    .card{opacity:1!important;transform:none!important}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+
+  <header class="top">
+    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <div class="meta">Direction artistique · Site vitrine · v2026</div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Présélection — à départager</div>
+    <h1>Cinq directions retenues pour le site <em>Intégral&nbsp;Pharma</em>.</h1>
+    <p>La proposition&nbsp;01 est en ligne aujourd'hui ; 04, 11 et 14 ont été retravaillées au motion design ; 19 est le hero 3D interactif (Spline) « coup de cœur ». Même contenu, mêmes règles — cliquez pour ouvrir en taille réelle.</p>
+    <div class="legend">
+      <span><b>5</b> directions retenues</span>
+      <span><b>1</b> message validé</span>
+      <span><b>0</b> condition commerciale affichée</span>
+      <span>Compatible Safari · responsive</span>
+    </div>
+  </section>
+  <div class="rule"><div></div></div>
+
+  <main class="grid" id="grid">
+
+    <!-- 01 -->
+    <a class="card feat" href="../index-typo.html" target="_blank" rel="noopener">
+      <div class="pv" style="background:#FFFFFF;color:#0A0A0B">
+        <span class="num">01</span>
+        <div class="ttl" style="font:800 clamp(30px,4vw,46px)/.9 Inter;letter-spacing:-.04em">Plus de marge.<br><span style="color:var(--blue)">Sur chaque<br>commande.</span></div>
+        <div class="sub" style="color:var(--muted)">Typographie monumentale</div>
+        <div class="swatches"><span style="background:#FFFFFF;border-top:1px solid #eee"></span><span style="background:#0A0A0B"></span><span style="background:#0050E6"></span><span style="background:#F39A1B"></span></div>
+      </div>
+      <div class="body">
+        <span class="badge">● En ligne aujourd'hui</span>
+        <h3>01 — Typographie monumentale</h3>
+        <p>La version actuellement déployée : fond blanc minimal, mots géants animés au masque, carte interactive du réseau, gravitas « grand groupe national ». La référence à battre.</p>
+        <span class="open">Ouvrir la maquette<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
+      </div>
+    </a>
+
+    <!-- 04 -->
+    <a class="card" href="maquette-4-corporate.html" target="_blank" rel="noopener">
+      <div class="pv" style="background:#0050E6;color:#fff">
+        <span class="num">04</span>
+        <div class="ttl" style="font:800 clamp(28px,3.8vw,40px)/.98 Manrope,sans-serif;letter-spacing:-.02em">Plus de marge, sur chaque commande.</div>
+        <div class="sub" style="color:#cfe0ff">Corporate national</div>
+        <div class="swatches"><span style="background:#0050E6"></span><span style="background:#fff"></span><span style="background:#F39A1B"></span><span style="background:#003a9e"></span></div>
+      </div>
+      <div class="body"><span class="kicker">Institutionnel · Motion ✦</span><h3>04 — Corporate confiance</h3><p>Aplats bleu profond, KPI animés, bento de réassurance, carte du réseau intégrée en 2 colonnes. Solide et rassurant.</p><span class="open">Ouvrir<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></div>
+    </a>
+
+    <!-- 11 -->
+    <a class="card" href="maquette-11-aurora.html" target="_blank" rel="noopener">
+      <div class="pv" style="background:radial-gradient(70% 90% at 15% 10%,rgba(0,80,230,.22),transparent 60%),radial-gradient(60% 80% at 90% 20%,rgba(124,91,230,.22),transparent 60%),radial-gradient(70% 70% at 60% 100%,rgba(243,154,27,.18),transparent 60%),#fff;color:#0A1130">
+        <span class="num">11</span>
+        <div class="ttl" style="font:700 clamp(28px,3.8vw,40px)/1 'Space Grotesk',sans-serif;letter-spacing:-.02em">Plus de marge, sur chaque commande.</div>
+        <div class="sub" style="color:#5b6080">Aurora Flow</div>
+        <div class="swatches"><span style="background:#fff;border-top:1px solid #eee"></span><span style="background:#0050E6"></span><span style="background:#7C5BE6"></span><span style="background:#F39A1B"></span></div>
+      </div>
+      <div class="body"><span class="tag21">21st.dev · Aurora Background</span><h3>11 — Aurora Flow</h3><p>Aurore boréale douce et mouvante (sans flou), fond clair startup, kinetic typography, marquee infini de labos.</p><span class="open">Ouvrir<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></div>
+    </a>
+
+    <!-- 14 -->
+    <a class="card" href="maquette-14-kinetic3d.html" target="_blank" rel="noopener">
+      <div class="pv" style="background:#f4f6fb;color:#0c1426">
+        <span class="num">14</span>
+        <div class="ttl" style="font:800 clamp(28px,3.8vw,40px)/1 Sora,sans-serif;letter-spacing:-.02em">Plus de marge, sur chaque commande.</div>
+        <div class="sub" style="color:#5b6781">Kinetic 3D</div>
+        <div class="swatches"><span style="background:#f4f6fb;border-top:1px solid #e3e8f2"></span><span style="background:#0050E6"></span><span style="background:#F39A1B"></span><span style="background:#071a3f"></span></div>
+      </div>
+      <div class="body"><span class="tag21">21st.dev · 3D Card + Parallax</span><h3>14 — Kinetic 3D</h3><p>Cartes qui s'inclinent en 3D au survol, profondeur multi-couches, parallaxe au scroll. Tactile, premium, vivant.</p><span class="open">Ouvrir<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></div>
+    </a>
+
+    <!-- 19 -->
+    <a class="card" href="maquette-19-spline.html" target="_blank" rel="noopener">
+      <div class="pv" style="background:radial-gradient(60% 80% at 75% 12%,rgba(243,154,27,.30),transparent 55%),radial-gradient(70% 80% at 18% 92%,rgba(0,80,230,.32),transparent 55%),#070B14;color:#F4F7FF">
+        <span class="num" style="opacity:.85">19</span>
+        <div class="ttl" style="font:700 clamp(28px,3.8vw,40px)/1 'Space Grotesk',sans-serif;letter-spacing:-.02em">Plus de marge, <span style="color:#F39A1B">sur chaque commande.</span></div>
+        <div class="sub" style="color:#8a93ad">Interactive 3D · Spline</div>
+        <div class="swatches"><span style="background:#070B14"></span><span style="background:#0050E6"></span><span style="background:#F39A1B"></span><span style="background:#F4F7FF"></span></div>
+      </div>
+      <div class="body"><span class="tag21">21st.dev · Spline 3D + Spotlight</span><h3>19 — Interactive 3D ✦</h3><p>Hero sombre avec vraie scène 3D Spline interactive + spotlight qui suit la souris. L'effet « dingue » recherché (nécessite internet ; image de secours sinon).</p><span class="open">Ouvrir<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></div>
+    </a>
+
+  </main>
+
+  <footer>
+    Cinq directions retenues. Toutes partagent le <b>même contenu validé</b> et les mêmes règles : aucune condition commerciale chiffrée, pas le mot « groupement », message « plus de marge » adapté à toutes les officines. — <b>Intégral Pharma</b>, groupe de grossistes français indépendant.
+  </footer>
+
+<script>
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold:.12, rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.card').forEach(function(c,i){ c.style.transitionDelay=(Math.min(i,8)*55)+'ms'; io.observe(c); });
+</script>
+</body>
+</html>
