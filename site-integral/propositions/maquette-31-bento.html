@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Intégral Pharma — Plus de marge, sur chaque commande.</title>
+<meta name="description" content="Intégral Pharma — grossiste-répartiteur de première intention. Plus de marge, sur chaque commande." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Calistoga&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================ TOKENS ============================ */
+:root{
+  --bg:#F8FAFC; --bg2:#EEF2F8; --ink:#0F172A; --ink2:#475569; --ink3:#94A3B8;
+  --blue:#0050E6; --blue-d:#003BB0; --orange:#F39A1B; --orange-d:#D97E00;
+  --card:#FFFFFF; --line:#E6EBF2; --line2:#DDE4EE;
+  --r:20px; --r-s:14px; --r-l:26px;
+  --sh-s:0 1px 2px rgba(15,23,42,.04), 0 2px 6px rgba(15,23,42,.05);
+  --sh-m:0 6px 18px rgba(15,23,42,.07), 0 2px 6px rgba(15,23,42,.05);
+  --sh-l:0 22px 50px -18px rgba(15,23,42,.22), 0 8px 20px rgba(15,23,42,.08);
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --serif:'Calistoga',Georgia,serif; --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+  --mx:50%; --my:50%;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:
+  radial-gradient(900px 600px at 12% -8%, rgba(0,80,230,.07), transparent 60%),
+  radial-gradient(800px 520px at 92% 4%, rgba(243,154,27,.08), transparent 62%),
+  var(--bg)}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:8px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.mono{font-family:var(--mono)}
+
+/* ============================ HEADER ============================ */
+header{position:sticky;top:0;z-index:60;background:rgba(248,250,252,.86);border-bottom:1px solid transparent;transition:border-color .3s,box-shadow .3s,background .3s}
+header.scrolled{border-color:var(--line);box-shadow:var(--sh-s);background:rgba(248,250,252,.94)}
+.nav{display:flex;align-items:center;gap:22px;height:72px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em}
+.brand img{height:32px;width:auto}
+.brand b{color:var(--blue)}
+.nav-links{display:flex;gap:4px;margin-left:auto}
+.nav-links a{padding:9px 13px;border-radius:10px;font-size:14.5px;font-weight:600;color:var(--ink2);transition:background .2s,color .2s}
+.nav-links a:hover{background:#fff;color:var(--ink);box-shadow:var(--sh-s)}
+.cta{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;padding:11px 18px;border-radius:12px;cursor:pointer;border:1px solid transparent;transition:transform .18s var(--ease),box-shadow .25s,background .25s;min-height:44px}
+.cta.primary{background:var(--blue);color:#fff;box-shadow:0 8px 20px -6px rgba(0,80,230,.5)}
+.cta.primary:hover{background:var(--blue-d);transform:translateY(-2px);box-shadow:0 14px 28px -8px rgba(0,80,230,.55)}
+.cta.ghost{background:#fff;color:var(--ink);border-color:var(--line2);box-shadow:var(--sh-s)}
+.cta.ghost:hover{transform:translateY(-2px);box-shadow:var(--sh-m);border-color:var(--blue)}
+.cta.orange{background:var(--orange);color:#241200;box-shadow:0 8px 20px -6px rgba(243,154,27,.55)}
+.cta.orange:hover{background:var(--orange-d);color:#fff;transform:translateY(-2px)}
+.burger{display:none;margin-left:auto;width:44px;height:44px;border:1px solid var(--line2);border-radius:12px;background:#fff;cursor:pointer;flex-direction:column;gap:5px;align-items:center;justify-content:center}
+.burger span{width:20px;height:2px;background:var(--ink);border-radius:2px;transition:.25s}
+
+/* ============================ SECTION SHELL ============================ */
+section{padding:78px 0;position:relative}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);background:rgba(0,80,230,.08);padding:7px 13px;border-radius:999px;margin-bottom:18px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.06;color:var(--ink)}
+.sec-head{max-width:760px;margin-bottom:40px}
+.sec-head h2{font-size:clamp(30px,4.4vw,50px)}
+.sec-head p{color:var(--ink2);font-size:17px;margin-top:14px;max-width:620px}
+
+/* ============================ BENTO GRID ============================ */
+.bento{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+.card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px;box-shadow:var(--sh-s);overflow:hidden;transition:transform .35s var(--ease),box-shadow .35s,border-color .35s}
+.card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(420px circle at var(--mx) var(--my), rgba(0,80,230,.10), transparent 42%)}
+.card.lift:hover{transform:translateY(-5px);box-shadow:var(--sh-l);border-color:var(--line2)}
+.card.lift:hover::after{opacity:1}
+.card .kicker{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+.card h3{font-size:22px;margin-bottom:8px}
+.card p{color:var(--ink2);font-size:15px}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.rv.in{opacity:1;transform:none}
+
+/* ============================ HERO ============================ */
+#hero{padding-top:34px;padding-bottom:54px}
+.hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:18px}
+.hero-copy{background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);padding:46px 42px;box-shadow:var(--sh-m);display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.hero-copy::before{content:"";position:absolute;left:-40px;top:-40px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(243,154,27,.16),transparent 70%)}
+.hero-tag{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);padding:8px 14px;border-radius:999px;width:fit-content;margin-bottom:22px;position:relative}
+.hero-tag .pulse{width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 0 rgba(0,80,230,.5);animation:pulse 2.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,80,230,.5)}70%{box-shadow:0 0 0 10px rgba(0,80,230,0)}100%{box-shadow:0 0 0 0 rgba(0,80,230,0)}}
+.hero-copy h1{font-size:clamp(38px,5.4vw,64px);line-height:1.02;position:relative}
+.hero-copy h1 .ln{display:block;overflow:hidden}
+.hero-copy h1 .ln>span{display:block;transform:translateY(110%);transition:transform .9s var(--ease)}
+.hero-copy h1.go .ln>span{transform:none}
+.hero-copy h1 em{font-style:normal;color:var(--orange)}
+.hero-sub{color:var(--ink2);font-size:18px;margin:22px 0 30px;max-width:480px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+.hero-actions .cta{font-size:15.5px;padding:14px 22px}
+.hero-mini{display:flex;gap:26px;margin-top:30px;flex-wrap:wrap}
+.hero-mini div b{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--blue);display:block}
+.hero-mini div span{font-size:12.5px;color:var(--ink3);font-weight:600}
+
+/* 3D card */
+.hero-3d{position:relative;background:linear-gradient(155deg,#0B1B3A 0%,#0F172A 48%,#091428 100%);border:1px solid #1c2c4f;border-radius:var(--r-l);box-shadow:var(--sh-l);overflow:hidden;min-height:480px}
+.hero-3d::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(70% 60% at 30% 20%, rgba(0,80,230,.28), transparent 60%),radial-gradient(60% 60% at 78% 84%, rgba(243,154,27,.22), transparent 60%)}
+#cv3d{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:2}
+.hero-3d .poster-fb{position:absolute;inset:0;background:url('../assets/poster.jpg') center/cover, #0F172A;z-index:0;opacity:.5}
+.tdui{position:absolute;z-index:3;pointer-events:none}
+.tdui.tl{top:20px;left:22px}
+.tdui.br{right:22px;bottom:20px;text-align:right}
+.tdui .chip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#cdd9f0;background:rgba(12,26,54,.6);border:1px solid rgba(120,150,210,.28);padding:6px 11px;border-radius:999px}
+.tdui .chip .led{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange)}
+.tdui .label{font-family:var(--serif);color:#fff;font-size:19px;line-height:1.1;margin-top:6px}
+.tdui .label small{font-family:var(--sans);display:block;font-size:12px;color:#9fb3d6;font-weight:600;margin-top:4px}
+.drag-hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:3;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7e93bd;pointer-events:none;animation:floaty 3s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-5px)}}
+
+/* ============================ VALEURS ============================ */
+.val-grid .card{grid-column:span 4;min-height:200px;display:flex;flex-direction:column}
+.val-ic{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;margin-bottom:16px;background:rgba(0,80,230,.08)}
+.val-ic svg{width:26px;height:26px;stroke:var(--blue);fill:none;stroke-width:1.7}
+.card.accent-o .val-ic{background:rgba(243,154,27,.12)}
+.card.accent-o .val-ic svg{stroke:var(--orange-d)}
+.val-grid .card .num{position:absolute;top:18px;right:22px;font-family:var(--serif);font-size:40px;color:var(--line2);line-height:1}
+
+/* ============================ OFFRES / LABOS ============================ */
+.labo-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+.labo-grid .lead{grid-column:span 4}
+.labo-grid .lead{background:linear-gradient(160deg,#0050E6,#003BB0);color:#fff;border:none}
+.labo-grid .lead h3{color:#fff;font-size:26px}
+.labo-grid .lead p{color:#cfe0ff}
+.labo-grid .lead .badge{margin-top:auto;font-family:var(--mono);font-size:12px;font-weight:700;color:#bcd4ff;letter-spacing:.06em}
+.labo-grid .lead{display:flex;flex-direction:column}
+.labos{grid-column:span 8;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.labo{background:var(--card);border:1px solid var(--line);border-radius:var(--r-s);padding:22px 18px;box-shadow:var(--sh-s);display:flex;flex-direction:column;gap:6px;transition:transform .3s var(--ease),box-shadow .3s,border-color .3s;position:relative;overflow:hidden}
+.labo:hover{transform:translateY(-4px);box-shadow:var(--sh-m);border-color:var(--blue)}
+.labo .lname{font-family:var(--serif);font-size:21px}
+.labo .lmeta{font-family:var(--mono);font-size:11px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase}
+.labo .bar{height:4px;border-radius:4px;background:var(--line);margin-top:6px;overflow:hidden}
+.labo .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--orange));transition:width 1.1s var(--ease)}
+.labo.in .bar i{width:var(--w)}
+
+/* ============================ GROUPE / MAP ============================ */
+.grp-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:18px;align-items:start}
+.grp-side .card{margin-bottom:18px}
+.grp-side .big{font-family:var(--serif);font-size:54px;color:var(--blue);line-height:1}
+.agences{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.ag{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:7px 0;border-bottom:1px solid var(--line)}
+.ag:last-child{border:none}
+.ag .pin{width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0}
+.ag.siege .pin{background:var(--orange)}
+.ag b{font-weight:700}
+.ag span{color:var(--ink3);font-family:var(--mono);font-size:11px;margin-left:auto}
+.map-card{padding:0;overflow:hidden;background:#fff}
+.map-card .mc-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.map-card .mc-head .kicker{margin:0}
+#netFrame{width:100%;border:0;display:block;min-height:520px}
+
+/* ============================ CHIFFRES ============================ */
+.stats-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+.stat{grid-column:span 3;text-align:center;padding:34px 18px}
+.stat.wide{grid-column:span 3}
+.stat .v{font-family:var(--mono);font-weight:700;font-size:clamp(36px,4.6vw,54px);color:var(--ink);line-height:1;letter-spacing:-.02em}
+.stat .v .u{color:var(--orange-d);font-size:.6em}
+.stat .l{margin-top:10px;font-size:14px;color:var(--ink2);font-weight:600}
+.stat.feat{background:linear-gradient(160deg,#0F172A,#1a2742);border:none}
+.stat.feat .v{color:#fff}.stat.feat .l{color:#9fb3d6}
+
+/* ============================ OFFILOG ============================ */
+.offi-grid{display:grid;grid-template-columns:1.1fr 1.4fr;gap:18px}
+.offi-lead{background:linear-gradient(160deg,#F39A1B,#D97E00);color:#241200;border:none;display:flex;flex-direction:column}
+.offi-lead h3{color:#241200;font-size:30px}
+.offi-lead p{color:#3a2200}
+.offi-nums{display:flex;gap:22px;margin-top:auto;flex-wrap:wrap}
+.offi-nums div b{font-family:var(--mono);font-size:26px;display:block;color:#1a0e00}
+.offi-nums div span{font-size:12px;font-weight:700}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.cat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-s);padding:18px 16px;box-shadow:var(--sh-s);display:flex;align-items:center;gap:11px;font-weight:600;font-size:14.5px;transition:transform .25s var(--ease),box-shadow .25s,border-color .25s}
+.cat:hover{transform:translateY(-3px);box-shadow:var(--sh-m);border-color:var(--orange)}
+.cat .ci{width:34px;height:34px;border-radius:9px;background:rgba(243,154,27,.13);display:grid;place-items:center;flex-shrink:0}
+.cat .ci svg{width:18px;height:18px;stroke:var(--orange-d);fill:none;stroke-width:1.7}
+
+/* ============================ ACCOMPAGNEMENT ============================ */
+.acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}
+.acc-lead{background:linear-gradient(160deg,#0B1B3A,#0F172A);color:#fff;border:none;display:flex;flex-direction:column;justify-content:center}
+.acc-lead h2{color:#fff;font-size:clamp(26px,3.4vw,38px)}
+.acc-lead p{color:#aebfe0;font-size:17px;margin:16px 0 26px}
+.acc-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.proj{background:var(--card);border:1px solid var(--line);border-radius:var(--r-s);padding:20px;box-shadow:var(--sh-s);transition:transform .3s var(--ease),box-shadow .3s,border-color .3s}
+.proj:hover{transform:translateY(-4px);box-shadow:var(--sh-m);border-color:var(--blue)}
+.proj .pi{width:42px;height:42px;border-radius:12px;background:rgba(0,80,230,.08);display:grid;place-items:center;margin-bottom:12px}
+.proj .pi svg{width:22px;height:22px;stroke:var(--blue);fill:none;stroke-width:1.7}
+.proj b{display:block;font-family:var(--serif);font-size:18px;font-weight:400;margin-bottom:4px}
+.proj p{font-size:13.5px;color:var(--ink2)}
+
+/* ============================ CARRIERES ============================ */
+.car-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.job{background:var(--card);border:1px solid var(--line);border-radius:var(--r-s);padding:24px 20px;box-shadow:var(--sh-s);transition:transform .3s var(--ease),box-shadow .3s,border-color .3s;position:relative;overflow:hidden}
+.job:hover{transform:translateY(-5px);box-shadow:var(--sh-l);border-color:var(--orange)}
+.job .jn{font-family:var(--serif);font-size:20px;margin-bottom:6px}
+.job .jt{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.job .arr{position:absolute;right:20px;bottom:20px;color:var(--blue);font-size:20px;opacity:0;transform:translateX(-6px);transition:.3s}
+.job:hover .arr{opacity:1;transform:none}
+
+/* ============================ CONTACT ============================ */
+.contact-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;align-items:start}
+.contact-info .card{margin-bottom:18px}
+.cinfo{display:flex;align-items:flex-start;gap:13px;padding:14px 0;border-bottom:1px solid var(--line)}
+.cinfo:last-child{border:none}
+.cinfo .ci{width:40px;height:40px;border-radius:11px;background:rgba(0,80,230,.08);display:grid;place-items:center;flex-shrink:0}
+.cinfo .ci svg{width:20px;height:20px;stroke:var(--blue);fill:none;stroke-width:1.7}
+.cinfo b{display:block;font-size:13px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);font-size:11px}
+.cinfo span{font-size:15px;font-weight:600}
+form{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:12.5px;font-weight:700;color:var(--ink2)}
+.fg input,.fg textarea{font-family:inherit;font-size:15px;padding:12px 14px;border:1px solid var(--line2);border-radius:11px;background:var(--bg);color:var(--ink);transition:border-color .2s,box-shadow .2s;min-height:44px}
+.fg textarea{min-height:110px;resize:vertical}
+.fg input:focus,.fg textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,80,230,.12);outline:none}
+form .submit{grid-column:1/-1}
+form .submit .cta{width:100%;justify-content:center;font-size:16px;padding:15px}
+
+/* ============================ FOOTER ============================ */
+footer{background:#0B1320;color:#cbd5e1;padding:54px 0 30px;margin-top:30px}
+.foot-top{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;padding-bottom:28px;border-bottom:1px solid rgba(255,255,255,.08)}
+.foot-brand{max-width:320px}
+.foot-brand .fb{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:18px;margin-bottom:12px}
+.foot-brand .fb img{height:30px;filter:brightness(0) invert(1)}
+.foot-brand p{font-size:14px;color:#94a3b8}
+.foot-links{display:flex;gap:50px;flex-wrap:wrap}
+.foot-col h4{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#64748b;margin-bottom:12px;font-weight:700}
+.foot-col a{display:block;font-size:14px;color:#cbd5e1;padding:5px 0;transition:color .2s}
+.foot-col a:hover{color:var(--orange)}
+.foot-bot{padding-top:22px;font-size:13px;color:#64748b;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+/* ============================ RESPONSIVE ============================ */
+@media(max-width:980px){
+  .hero-grid,.grp-grid,.offi-grid,.acc-grid,.contact-grid{grid-template-columns:1fr}
+  .labo-grid .lead,.labos{grid-column:span 12}
+  .val-grid .card{grid-column:span 6}
+  .car-grid{grid-template-columns:1fr 1fr}
+  .stat,.stat.wide{grid-column:span 6}
+  .hero-3d{min-height:420px;order:-1}
+}
+@media(max-width:640px){
+  .wrap{padding:0 16px}
+  .nav-links,.nav .cta{display:none}
+  .burger{display:flex}
+  header.open .nav-links{display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;background:#fff;padding:14px 16px;box-shadow:var(--sh-l);border-bottom:1px solid var(--line)}
+  header.open .nav-links a{padding:13px}
+  section{padding:54px 0}
+  .hero-copy{padding:32px 24px}
+  .cats{grid-template-columns:1fr 1fr}
+  .acc-cards{grid-template-columns:1fr}
+  .car-grid{grid-template-columns:1fr}
+  .val-grid .card{grid-column:span 12;min-height:auto}
+  .stat,.stat.wide{grid-column:span 6;padding:24px 12px}
+  .hero-mini{gap:18px}
+  .hero-3d{min-height:340px}
+}
+
+/* ============================ REDUCED MOTION ============================ */
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .rv{opacity:1!important;transform:none!important}
+  .hero-copy h1 .ln>span{transform:none!important}
+  #cv3d{display:none!important}
+  .hero-3d .poster-fb{opacity:.85}
+  .labo .bar i{width:var(--w)!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== HEADER ===================== -->
+<header id="hdr">
+  <div class="wrap nav">
+    <a class="brand" href="#hero" aria-label="Intégral Pharma, accueil">
+      <img src="../assets/logo.png" alt="Intégral Pharma" />
+      <span>Intégral<b>Pharma</b></span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="#valeurs">Valeurs</a>
+      <a href="#offres">Offres</a>
+      <a href="#groupe">Le groupe</a>
+      <a href="#offilog">Offilog</a>
+      <a href="#accompagnement">Accompagnement</a>
+      <a href="#carrieres">Carrières</a>
+    </nav>
+    <a href="#contact" class="cta primary">Demander nos conditions</a>
+    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<main>
+<!-- ===================== HERO ===================== -->
+<section id="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <span class="hero-tag"><span class="pulse"></span>Grossiste-répartiteur de première intention</span>
+        <h1 id="heroH1">
+          <span class="ln"><span>Plus de marge,</span></span>
+          <span class="ln"><span>sur <em>chaque commande.</em></span></span>
+        </h1>
+        <p class="hero-sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
+        <div class="hero-actions">
+          <a href="#contact" class="cta primary">Demander nos conditions</a>
+          <a href="#groupe" class="cta ghost">Découvrir le groupe</a>
+        </div>
+        <div class="hero-mini">
+          <div><b>+20 ans</b><span>D'EXPÉRIENCE</span></div>
+          <div><b>9</b><span>AGENCES</span></div>
+          <div><b>National</b><span>COUVERTURE</span></div>
+        </div>
+      </div>
+
+      <div class="hero-3d" id="hero3d">
+        <div class="poster-fb" aria-hidden="true"></div>
+        <canvas id="cv3d" role="img" aria-label="Capsule 3D de la marque Intégral Pharma en rotation"></canvas>
+        <div class="tdui tl"><span class="chip"><span class="led"></span>Intégral OS · Live</span></div>
+        <div class="tdui br"><div class="label">La capsule Intégral<small>Métal · gloss · studio</small></div></div>
+        <div class="drag-hint" id="dragHint">↔ Bougez la souris</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== VALEURS ===================== -->
+<section id="valeurs">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow"><span class="dot"></span>Ce qui nous tient</span>
+      <h2>Trois valeurs, un même engagement.</h2>
+      <p>Une relation directe, durable et exigeante avec chaque officine que nous servons.</p>
+    </div>
+    <div class="bento val-grid">
+      <div class="card lift rv spot">
+        <span class="num">01</span>
+        <div class="val-ic"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v5c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Confiance</h3>
+        <p>Des conditions claires, tenues dans le temps. Ce qu'on annonce, on le respecte — commande après commande.</p>
+      </div>
+      <div class="card lift rv spot accent-o">
+        <span class="num">02</span>
+        <div class="val-ic"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/><path d="M3 12h2"/></svg></div>
+        <h3>Engagement</h3>
+        <p>On porte vos projets avec vous, au-delà de la simple livraison. Un partenaire impliqué, pas un fournisseur de plus.</p>
+      </div>
+      <div class="card lift rv spot">
+        <span class="num">03</span>
+        <div class="val-ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.5-3 2.8-4.5 5.5-4.5S14 16 14.5 19"/><path d="M16 7.5a3 3 0 010 6"/><path d="M18 19c-.2-2-1-3.4-2.3-4.2"/></svg></div>
+        <h3>Respect</h3>
+        <p>De l'indépendance des pharmaciens, du métier, des engagements pris. Une enseigne à taille humaine, française et libre.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== OFFRES / LABOS ===================== -->
+<section id="offres">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow"><span class="dot"></span>Nos offres</span>
+      <h2>Les plus grands laboratoires.</h2>
+      <p>Un sourcing direct auprès des leaders du générique et de la marque, pour des conditions qui font la différence.</p>
+    </div>
+    <div class="labo-grid">
+      <div class="card lead lift rv spot">
+        <h3>Le meilleur, négocié pour vous.</h3>
+        <p style="margin-top:10px">Notre force d'achat de groupe se traduit en marge concrète, dès la première boîte. On vous le chiffre en rendez-vous.</p>
+        <span class="badge" style="margin-top:24px">// FORCE D'ACHAT · GROUPE INDÉPENDANT</span>
+        <a href="#contact" class="cta orange" style="margin-top:18px;width:fit-content">Demander nos conditions</a>
+      </div>
+      <div class="labos rv">
+        <div class="labo li" data-w="92%"><span class="lname">Zentiva</span><span class="lmeta">Générique</span><div class="bar"><i style="--w:92%"></i></div></div>
+        <div class="labo li" data-w="88%"><span class="lname">Teva</span><span class="lmeta">Générique</span><div class="bar"><i style="--w:88%"></i></div></div>
+        <div class="labo li" data-w="84%"><span class="lname">EG Labo</span><span class="lmeta">Générique</span><div class="bar"><i style="--w:84%"></i></div></div>
+        <div class="labo li" data-w="80%"><span class="lname">Zydus</span><span class="lmeta">Générique</span><div class="bar"><i style="--w:80%"></i></div></div>
+        <div class="labo li" data-w="90%"><span class="lname">Viatris</span><span class="lmeta">Marque & Gx</span><div class="bar"><i style="--w:90%"></i></div></div>
+        <div class="labo li" data-w="76%"><span class="lname">+ Catalogue</span><span class="lmeta">Première intention</span><div class="bar"><i style="--w:76%"></i></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== LE GROUPE / MAP ===================== -->
+<section id="groupe">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow"><span class="dot"></span>Le groupe</span>
+      <h2>National.</h2>
+      <p>9 agences réparties sur le territoire, un groupe de grossistes français indépendant à couverture nationale.</p>
+    </div>
+    <div class="grp-grid">
+      <div class="grp-side">
+        <div class="card lift rv spot">
+          <span class="kicker">// Réseau</span>
+          <div class="big" data-count="9" data-suffix="">0</div>
+          <p style="margin-top:6px">agences au service des officines, du Grand Ouest au Sud-Est.</p>
+        </div>
+        <div class="card rv">
+          <span class="kicker">// Nos agences</span>
+          <div class="agences">
+            <div class="ag"><span class="pin"></span><b>Ouest Pharma Services</b><span>44</span></div>
+            <div class="ag"><span class="pin"></span><b>Escale Pharma</b><span>91</span></div>
+            <div class="ag"><span class="pin"></span><b>Comptoir Pharma. du Rhône</b><span>38</span></div>
+            <div class="ag"><span class="pin"></span><b>Sud Ouest Pharma</b><span>47</span></div>
+            <div class="ag"><span class="pin"></span><b>Pharm'Occitanie Services</b><span>34</span></div>
+            <div class="ag siege"><span class="pin"></span><b>Hyères Pharma · Siège</b><span>83</span></div>
+            <div class="ag"><span class="pin"></span><b>Sud Est Pharma</b><span>83</span></div>
+            <div class="ag"><span class="pin"></span><b>Mistral Santé Pharma</b><span>83</span></div>
+            <div class="ag"><span class="pin"></span><b>Pharmest · Partenaire</b><span>57</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card map-card lift rv">
+        <div class="mc-head"><span class="kicker" style="margin:0">// Carte du réseau · couverture nationale</span></div>
+        <iframe id="netFrame" src="../map-component.html?mode=map" loading="lazy" scrolling="no" title="Carte du réseau Intégral Pharma"></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CHIFFRES ===================== -->
+<section id="chiffres">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow"><span class="dot"></span>En chiffres</span>
+      <h2>La mesure de notre engagement.</h2>
+    </div>
+    <div class="stats-grid">
+      <div class="card stat lift rv"><div class="v" data-count="20" data-suffix="+">0</div><div class="l">Années d'expérience</div></div>
+      <div class="card stat lift rv"><div class="v" data-count="9" data-suffix="">0</div><div class="l">Agences en France</div></div>
+      <div class="card stat feat lift rv"><div class="v" data-count="14000" data-suffix="+">0</div><div class="l">Références Offilog</div></div>
+      <div class="card stat lift rv"><div class="v" data-count="430" data-suffix="+">0</div><div class="l">Laboratoires partenaires</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== OFFILOG ===================== -->
+<section id="offilog">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow"><span class="dot"></span>Offilog</span>
+      <h2>Toute la parapharmacie.</h2>
+      <p>Une plateforme dédiée à la parapharmacie, du soin au vétérinaire, sans aucun frais d'adhésion.</p>
+    </div>
+    <div class="offi-grid">
+      <div class="card offi-lead lift rv spot">
+        <span class="kicker" style="color:#5a3700">// Plateforme parapharmacie</span>
+        <h3>Une seule plateforme, tout le rayon.</h3>
+        <p style="margin-top:10px">Commandez l'ensemble de votre parapharmacie au même endroit, avec un sourcing large et des conditions adaptées.</p>
+        <div class="offi-nums">
+          <div><b data-count="14000" data-suffix="+">0</b><span>RÉFÉRENCES</span></div>
+          <div><b data-count="430" data-suffix="+">0</b><span>LABORATOIRES</span></div>
+          <div><b>0€</b><span>D'ADHÉSION</span></div>
+        </div>
+      </div>
+      <div class="cats rv">
+        <div class="cat"><span class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span>Solaires</div>
+        <div class="cat"><span class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M8.5 15a4 4 0 007 0"/></svg></span>Soin du visage</div>
+        <div class="cat"><span class="ci"><svg viewBox="0 0 24 24"><path d="M12 21c4-3 7-6 7-10a7 7 0 00-14 0c0 4 3 7 7 10z"/><path d="M9 11a3 3 0 016 0"/></svg></span>Hygiène</div>
+        <div class="cat"><span class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21c1-4 4-6 7-6s6 2 7 6"/></svg></span>Bébé</div>
+        <div class="cat"><span class="ci"><svg viewBox="0 0 24 24"><path d="M12 3c-4 0-7 3-7 7 0 5 7 11 7 11s7-6 7-11c0-4-3-7-7-7z" opacity=".0"/><path d="M6 4c2 3 2 8 0 16M12 3c2 4 2 10 0 17M18 4c-2 3-2 8 0 16"/></svg></span>Cheveux</div>
+        <div class="cat"><span class="ci"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 7v4"/></svg></span>Compléments</div>
+        <div class="cat"><span class="ci"><svg viewBox="0 0 24 24"><path d="M12 3c3 2 5 5 5 9a5 5 0 01-10 0c0-4 2-7 5-9z"/><path d="M12 7v8"/></svg></span>Bio</div>
+        <div class="cat"><span class="ci"><svg viewBox="0 0 24 24"><path d="M12 3c2 2 3 5 3 8s-1 8-3 10c-2-2-3-7-3-10s1-6 3-8z"/></svg></span>Bucco-dentaire</div>
+        <div class="cat"><span class="ci"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="2"/><circle cx="15" cy="9" r="2"/><circle cx="6.5" cy="13" r="1.8"/><circle cx="17.5" cy="13" r="1.8"/><path d="M9 15c0-2 1.5-3 3-3s3 1 3 3c0 2-1.5 3-3 3s-3-1-3-3z"/></svg></span>Vétérinaire</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACCOMPAGNEMENT ===================== -->
+<section id="accompagnement">
+  <div class="wrap">
+    <div class="acc-grid">
+      <div class="card acc-lead rv spot">
+        <span class="eyebrow" style="background:rgba(243,154,27,.18);color:#ffce8a"><span class="dot"></span>Accompagnement</span>
+        <h2>On le porte avec vous.</h2>
+        <p>Vous êtes pharmacien titulaire et vous avez un projet de transfert, d'agrandissement, de cession de parts ou d'optimisation ? On le porte avec vous.</p>
+        <a href="#contact" class="cta orange" style="width:fit-content">En parler avec nous</a>
+      </div>
+      <div class="acc-cards rv">
+        <div class="proj"><div class="pi"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 7l5 5-5 5"/><path d="M3 5v14"/></svg></div><b>Transfert d'officine</b><p>Un changement de lieu pensé avec méthode, à vos côtés.</p></div>
+        <div class="proj"><div class="pi"><svg viewBox="0 0 24 24"><path d="M3 21V7l9-4 9 4v14"/><path d="M9 21v-6h6v6"/></svg></div><b>Agrandissement</b><p>Faire grandir votre officine sans freiner votre activité.</p></div>
+        <div class="proj"><div class="pi"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="16" cy="14" r="3"/><path d="M3 19c0-2.5 2.5-4 6-4"/></svg></div><b>Cession de parts</b><p>Structurer une cession en toute sérénité, étape par étape.</p></div>
+        <div class="proj"><div class="pi"><svg viewBox="0 0 24 24"><path d="M4 18l5-5 4 4 7-8"/><path d="M16 9h4v4"/></svg></div><b>Optimisation</b><p>Améliorer vos marges et votre organisation au quotidien.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CARRIERES ===================== -->
+<section id="carrieres">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow"><span class="dot"></span>Carrières</span>
+      <h2>Le groupe recrute.</h2>
+      <p>Rejoignez un groupe de grossistes français indépendant, à taille humaine et en croissance.</p>
+    </div>
+    <div class="car-grid">
+      <div class="card job lift rv"><div class="jn">Approvisionnement</div><div class="jt">// Logistique · CDI</div><span class="arr">→</span></div>
+      <div class="card job lift rv"><div class="jn">Commercial</div><div class="jt">// Terrain · CDI</div><span class="arr">→</span></div>
+      <div class="card job lift rv"><div class="jn">Pharmacien responsable</div><div class="jt">// Réglementaire · CDI</div><span class="arr">→</span></div>
+      <div class="card job lift rv"><div class="jn">Préparateur-chauffeur</div><div class="jt">// Distribution · CDI</div><span class="arr">→</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CONTACT ===================== -->
+<section id="contact">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow"><span class="dot"></span>Contact</span>
+      <h2>Parlons de vos conditions.</h2>
+      <p>Dites-nous qui vous êtes — on vous chiffre vos conditions en rendez-vous.</p>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-info">
+        <div class="card rv">
+          <span class="kicker">// Nous joindre</span>
+          <div class="cinfo"><span class="ci"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><div><b>Email</b><span>contact@integralpharma.fr</span></div></div>
+          <div class="cinfo"><span class="ci"><svg viewBox="0 0 24 24"><path d="M12 21c4-4 7-7 7-11a7 7 0 00-14 0c0 4 3 7 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div><b>Siège</b><span>758 Chemin de la Source<br>83400 Hyères</span></div></div>
+          <div class="cinfo"><span class="ci"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><div><b>Couverture</b><span>9 agences · National</span></div></div>
+        </div>
+        <div class="card rv spot" style="background:linear-gradient(160deg,#0050E6,#003BB0);color:#fff;border:none">
+          <span class="kicker" style="color:#bcd4ff">// Promesse</span>
+          <h3 style="color:#fff;font-size:24px">Plus de marge, dès la première boîte.</h3>
+          <p style="color:#cfe0ff;margin-top:8px">On ne vend pas du volume. On construit votre rentabilité, commande après commande.</p>
+        </div>
+      </div>
+      <div class="card rv">
+        <form id="contactForm" novalidate>
+          <div class="fg"><label for="f-nom">Nom</label><input id="f-nom" name="nom" type="text" autocomplete="name" required /></div>
+          <div class="fg"><label for="f-off">Officine</label><input id="f-off" name="officine" type="text" required /></div>
+          <div class="fg"><label for="f-cp">Code postal</label><input id="f-cp" name="cp" type="text" inputmode="numeric" autocomplete="postal-code" /></div>
+          <div class="fg"><label for="f-mail">Email</label><input id="f-mail" name="email" type="email" autocomplete="email" required /></div>
+          <div class="fg full"><label for="f-tel">Téléphone</label><input id="f-tel" name="tel" type="tel" autocomplete="tel" /></div>
+          <div class="fg full"><label for="f-msg">Message</label><textarea id="f-msg" name="message" placeholder="Parlez-nous de votre officine et de votre projet…"></textarea></div>
+          <div class="submit"><button type="submit" class="cta orange">Demander nos conditions →</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <div class="fb"><img src="../assets/logo.png" alt="" />Intégral Pharma</div>
+        <p>Grossiste-répartiteur de première intention. Plus de marge, sur chaque commande.</p>
+      </div>
+      <div class="foot-links">
+        <div class="foot-col"><h4>Le site</h4>
+          <a href="#valeurs">Valeurs</a><a href="#offres">Offres</a><a href="#groupe">Le groupe</a><a href="#offilog">Offilog</a></div>
+        <div class="foot-col"><h4>Aller plus loin</h4>
+          <a href="#accompagnement">Accompagnement</a><a href="#carrieres">Carrières</a><a href="#contact">Contact</a></div>
+        <div class="foot-col"><h4>Siège</h4>
+          <a href="#contact">758 Chemin de la Source</a><a href="#contact">83400 Hyères</a><a href="#contact">contact@integralpharma.fr</a></div>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>Groupe de grossistes français indépendant.</span>
+      <span>© <span id="yr"></span> Intégral Pharma. Tous droits réservés.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  /* ---------- HEADER scroll state ---------- */
+  var hdr = document.getElementById('hdr');
+  function onScroll(){ if(window.scrollY>12) hdr.classList.add('scrolled'); else hdr.classList.remove('scrolled'); }
+  window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
+
+  /* ---------- Burger ---------- */
+  var burger = document.getElementById('burger');
+  burger.addEventListener('click', function(){
+    var open = hdr.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open?'true':'false');
+  });
+  document.querySelectorAll('.nav-links a').forEach(function(a){
+    a.addEventListener('click', function(){ hdr.classList.remove('open'); burger.setAttribute('aria-expanded','false'); });
+  });
+
+  /* ---------- Hero title reveal ---------- */
+  var h1 = document.getElementById('heroH1');
+  if(RM){ h1.classList.add('go'); } else { setTimeout(function(){ h1.classList.add('go'); }, 180); }
+
+  /* ---------- Reveal on scroll (stagger) ---------- */
+  var rvs = [].slice.call(document.querySelectorAll('.rv'));
+  if(RM){ rvs.forEach(function(e){e.classList.add('in');}); }
+  else if('IntersectionObserver' in window){
+    var ro = new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        if(en.isIntersecting){
+          var el = en.target;
+          var sibs = [].slice.call(el.parentNode.querySelectorAll('.rv'));
+          var idx = Math.max(0, sibs.indexOf(el));
+          el.style.transitionDelay = Math.min(idx*70, 280)+'ms';
+          el.classList.add('in');
+          ro.unobserve(el);
+        }
+      });
+    }, {threshold:.14, rootMargin:'0px 0px -8% 0px'});
+    rvs.forEach(function(e){ ro.observe(e); });
+  } else { rvs.forEach(function(e){e.classList.add('in');}); }
+
+  /* ---------- Labo bars + cats stagger reveal ---------- */
+  if('IntersectionObserver' in window && !RM){
+    var ro2 = new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); ro2.unobserve(en.target); }});
+    }, {threshold:.3});
+    document.querySelectorAll('.labo').forEach(function(e){ ro2.observe(e); });
+  } else { document.querySelectorAll('.labo').forEach(function(e){e.classList.add('in');}); }
+
+  /* ---------- Spotlight cursor (--mx/--my) ---------- */
+  function bindSpot(el){
+    el.addEventListener('pointermove', function(ev){
+      var r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', (ev.clientX-r.left)+'px');
+      el.style.setProperty('--my', (ev.clientY-r.top)+'px');
+    });
+  }
+  if(!RM){ document.querySelectorAll('.spot, .card.lift').forEach(bindSpot); }
+
+  /* ---------- Count-up ---------- */
+  function fmt(n){ return n>=10000 ? n.toLocaleString('fr-FR') : (''+n); }
+  function countUp(el){
+    var target = parseInt(el.getAttribute('data-count'),10);
+    var suf = el.getAttribute('data-suffix')||'';
+    if(RM){ el.textContent = fmt(target)+suf; return; }
+    var dur = 1500, t0 = null;
+    function step(ts){
+      if(!t0) t0 = ts;
+      var p = Math.min((ts-t0)/dur, 1);
+      var e = 1-Math.pow(1-p,3);
+      el.textContent = fmt(Math.round(target*e))+(p===1?suf:'');
+      if(p<1) requestAnimationFrame(step); else el.textContent = fmt(target)+suf;
+    }
+    requestAnimationFrame(step);
+  }
+  if('IntersectionObserver' in window){
+    var roC = new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting){ countUp(en.target); roC.unobserve(en.target); }});
+    }, {threshold:.5});
+    document.querySelectorAll('[data-count]').forEach(function(e){ roC.observe(e); });
+  } else { document.querySelectorAll('[data-count]').forEach(countUp); }
+
+  /* ---------- Map iframe auto-height ---------- */
+  var nf = document.getElementById('netFrame');
+  window.addEventListener('message', function(ev){
+    var d = ev.data;
+    if(d && typeof d==='object' && d.ipAtlasHeight && nf){
+      var h = Math.max(420, Math.min(900, parseInt(d.ipAtlasHeight,10)||520));
+      nf.style.height = h+'px';
+    }
+  });
+
+  /* ---------- Contact form → mailto ---------- */
+  var form = document.getElementById('contactForm');
+  if(form){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var g = function(n){ var el=form.elements[n]; return el?el.value.trim():''; };
+      var body = encodeURIComponent(
+        'Nom : '+g('nom')+'\nOfficine : '+g('officine')+'\nCode postal : '+g('cp')+
+        '\nEmail : '+g('email')+'\nTéléphone : '+g('tel')+'\n\nMessage :\n'+g('message'));
+      var subj = encodeURIComponent('Demande de conditions — '+(g('officine')||g('nom')||'Officine'));
+      window.location.href = 'mailto:contact@integralpharma.fr?subject='+subj+'&body='+body;
+    });
+  }
+
+  /* ================= THREE.JS — CAPSULE 3D MAÎTRESSE ================= */
+  (function(){
+    var canvas = document.getElementById('cv3d');
+    var host = document.getElementById('hero3d');
+    var hint = document.getElementById('dragHint');
+    var supportWebGL = (function(){ try{ var c=document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl'))); }catch(e){ return false; } })();
+
+    if(RM || typeof THREE==='undefined' || !supportWebGL){
+      if(canvas) canvas.style.display='none';
+      if(hint) hint.style.display='none';
+      return; // poster fallback already visible
+    }
+
+    var renderer, scene, camera, group, raf=null, running=false, disposed=false;
+    var dpr = Math.min(window.devicePixelRatio||1, 2);
+    var isMobile = window.matchMedia('(max-width:640px)').matches;
+    var tgtX=0, tgtY=0, curX=0, curY=0, scrollT=0;
+
+    function size(){
+      var w = host.clientWidth, h = host.clientHeight;
+      renderer.setSize(w,h,false);
+      camera.aspect = w/h; camera.updateProjectionMatrix();
+    }
+
+    try{
+      renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:!isMobile, alpha:true});
+      renderer.setPixelRatio(dpr);
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+      camera.position.set(0, 0, 8.4);
+
+      group = new THREE.Group();
+      scene.add(group);
+
+      /* ---- Capsule: two hemispheres + cylinder, orange + silver ---- */
+      var capLen = 2.0, capRad = 1.05, capH = capLen - 2*0;
+      var orange = new THREE.MeshPhysicalMaterial({color:0xF39A1B, metalness:0.55, roughness:0.22, clearcoat:0.9, clearcoatRoughness:0.18});
+      var silver = new THREE.MeshPhysicalMaterial({color:0xE8EDF5, metalness:0.95, roughness:0.16, clearcoat:0.7});
+
+      // body cylinder
+      var body = new THREE.Mesh(new THREE.CylinderGeometry(capRad, capRad, capLen, 64, 1, true), null);
+      // split body: half orange half silver by two half-cylinders
+      var halfOrange = new THREE.Mesh(new THREE.CylinderGeometry(capRad,capRad,capLen,48,1,true,0,Math.PI), orange);
+      var halfSilver = new THREE.Mesh(new THREE.CylinderGeometry(capRad,capRad,capLen,48,1,true,Math.PI,Math.PI), silver);
+      group.add(halfOrange); group.add(halfSilver);
+
+      var capTop = new THREE.Mesh(new THREE.SphereGeometry(capRad, 48, 32, 0, Math.PI*2, 0, Math.PI/2), silver);
+      capTop.position.y = capLen/2;
+      var capBot = new THREE.Mesh(new THREE.SphereGeometry(capRad, 48, 32, 0, Math.PI*2, Math.PI/2, Math.PI/2), orange);
+      capBot.position.y = -capLen/2;
+      group.add(capTop); group.add(capBot);
+
+      // subtle seam ring
+      var seam = new THREE.Mesh(new THREE.TorusGeometry(capRad+0.005, 0.04, 16, 80), new THREE.MeshStandardMaterial({color:0xffffff, metalness:0.9, roughness:0.3}));
+      seam.rotation.x = Math.PI/2; seam.position.y = 0; group.add(seam);
+
+      group.rotation.z = 0.5; // tilt capsule diagonally
+      group.rotation.x = 0.15;
+
+      /* ---- Orbiting particles ring ---- */
+      var pcount = isMobile?60:130;
+      var pgeo = new THREE.BufferGeometry();
+      var pos = new Float32Array(pcount*3);
+      for(var i=0;i<pcount;i++){
+        var a = Math.random()*Math.PI*2, rr = 2.6+Math.random()*1.8, yy=(Math.random()-0.5)*3.4;
+        pos[i*3]=Math.cos(a)*rr; pos[i*3+1]=yy; pos[i*3+2]=Math.sin(a)*rr;
+      }
+      pgeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+      var pmat = new THREE.PointsMaterial({color:0x6aa0ff, size:0.05, transparent:true, opacity:0.7, depthWrite:false, blending:THREE.AdditiveBlending});
+      var pts = new THREE.Points(pgeo, pmat);
+      scene.add(pts);
+
+      /* ---- Lights: studio ---- */
+      scene.add(new THREE.AmbientLight(0x9bb4e0, 0.55));
+      var key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(4,5,6); scene.add(key);
+      var fill = new THREE.PointLight(0x0050E6, 1.4, 30); fill.position.set(-5,-2,4); scene.add(fill);
+      var rim = new THREE.PointLight(0xF39A1B, 1.6, 30); rim.position.set(4,-3,-4); scene.add(rim);
+      var top = new THREE.PointLight(0xffffff, 0.9, 30); top.position.set(0,7,2); scene.add(top);
+
+      size();
+
+      /* ---- Interaction ---- */
+      function setTarget(cx, cy){
+        var r = host.getBoundingClientRect();
+        var nx = (cx - r.left)/r.width - 0.5;
+        var ny = (cy - r.top)/r.height - 0.5;
+        tgtY = nx * 1.1; tgtX = ny * 0.7;
+      }
+      host.addEventListener('pointermove', function(e){ setTarget(e.clientX, e.clientY); if(hint) hint.style.opacity='0'; });
+      host.addEventListener('pointerleave', function(){ tgtX=0; tgtY=0; });
+
+      var lastScroll = window.scrollY;
+      window.addEventListener('scroll', function(){ scrollT = window.scrollY*0.0006; }, {passive:true});
+
+      var clock = new THREE.Clock();
+      function frame(){
+        if(!running) return;
+        var t = clock.getElapsedTime();
+        curX += (tgtX-curX)*0.06; curY += (tgtY-curY)*0.06;
+        group.rotation.y = t*0.35 + curY*1.2;
+        group.rotation.x = 0.15 + Math.sin(t*0.5)*0.06 + curX;
+        group.rotation.z = 0.5 + Math.sin(t*0.3)*0.04;
+        group.position.y = Math.sin(t*0.8)*0.12;
+        pts.rotation.y = -t*0.12;
+        pts.rotation.x = scrollT*0.5;
+        camera.position.z = 8.4 + Math.sin(t*0.4)*0.15;
+        renderer.render(scene, camera);
+        raf = requestAnimationFrame(frame);
+      }
+      function start(){ if(running||disposed) return; running=true; clock.start(); raf=requestAnimationFrame(frame); }
+      function stop(){ running=false; if(raf) cancelAnimationFrame(raf); raf=null; }
+
+      /* ---- Pause when hidden / out of viewport ---- */
+      var inView = true;
+      if('IntersectionObserver' in window){
+        new IntersectionObserver(function(es){
+          inView = es[0].isIntersecting;
+          if(inView && !document.hidden) start(); else stop();
+        }, {threshold:0.02}).observe(host);
+      }
+      document.addEventListener('visibilitychange', function(){
+        if(document.hidden) stop(); else if(inView) start();
+      });
+      window.addEventListener('resize', function(){ if(!disposed) size(); }, {passive:true});
+
+      /* ---- Dispose ---- */
+      function dispose(){
+        disposed=true; stop();
+        try{
+          scene.traverse(function(o){ if(o.geometry) o.geometry.dispose(); if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.dispose&&m.dispose();}); } });
+          renderer.dispose();
+        }catch(e){}
+      }
+      window.addEventListener('pagehide', dispose);
+
+      start();
+    }catch(err){
+      if(canvas) canvas.style.display='none';
+      if(hint) hint.style.display='none';
+    }
+  })();
+})();
+</script>
+</body>
+</html>
