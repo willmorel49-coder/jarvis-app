@@ -245,16 +245,10 @@
           '<span class="mkt-cat-s">Ta parapharma L\'Intégral par spécialité + les pansements/DM ITP (avec marge), classés par sorties. Consulter &amp; télécharger.</span></span>' +
           '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
         '</a>' +
-        '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'site\')">' +
-          '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
-          '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Site vitrine Intégral Pharma</span>' +
-          '<span class="mkt-cat-s">Aperçu du nouveau site internet — vidéos, réseau national, Offilog. Cliquer pour ouvrir.</span></span>' +
-          '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
-        '</a>' +
         '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'propositions\')">' +
           '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
-          '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Propositions de direction artistique — 5 maquettes</span>' +
-          '<span class="mkt-cat-s">Galerie des nouvelles maquettes du site (dont un hero 3D interactif) à présenter à la direction. Cliquer pour comparer.</span></span>' +
+          '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Maquettes du nouveau site internet — propositions</span>' +
+          '<span class="mkt-cat-s">Galerie des directions design proposées pour le futur site, à présenter à la direction. Cliquer pour comparer.</span></span>' +
           '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
         '</a>' +
         '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'docs\')">' +
@@ -278,7 +272,7 @@
   function renderSite(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#fff">' +
-        '<iframe src="../../site-integral/index-typo.html?v=20260630c" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/index-typo.html?v=20260630d" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -288,7 +282,7 @@
   function renderPropositions(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/propositions/index.html?v=20260630c" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/propositions/index.html?v=20260630d" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
