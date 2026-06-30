@@ -780,10 +780,10 @@ footer{background:#0B1320;color:#cbd5e1;padding:54px 0 30px;margin-top:30px}
       // Le métal n'est visible QUE parce que scene.environment (envMap) existe.
       // COIFFE = orange métallisé brillant (orange vif en haut → ambre vers le bas via env)
       var matCap = new THREE.MeshPhysicalMaterial({
-        color:0xEE6A10, metalness:0.0, roughness:0.40,
-        clearcoat:0.5, clearcoatRoughness:0.25, reflectivity:0.35,
-        emissive:0xC24800, emissiveIntensity:0.34,
-        envMap:envMap, envMapIntensity:0.20
+        color:0xDB5510, metalness:0.0, roughness:0.44,
+        clearcoat:0.4, clearcoatRoughness:0.28, reflectivity:0.30,
+        emissive:0xB23A00, emissiveIntensity:0.22,
+        envMap:envMap, envMapIntensity:0.10
       });
       // CORPS = CHROME ARGENT (blanc lumineux en haut → argent → gris foncé en bas)
       var matBody = new THREE.MeshPhysicalMaterial({
@@ -842,13 +842,13 @@ footer{background:#0B1320;color:#cbd5e1;padding:54px 0 30px;margin-top:30px}
       scene.add(pts);
 
       /* ---- Lumière : studio doux (key + fill + rim) qui lit le volume gélatine ---- */
-      scene.add(new THREE.AmbientLight(0xdfe8f7, 0.55));
-      var hemi = new THREE.HemisphereLight(0xffffff, 0x14233f, 0.5); scene.add(hemi);
-      var key = new THREE.DirectionalLight(0xfff1e0, 1.45); key.position.set(4.5, 6, 6.5); scene.add(key);
-      var fill = new THREE.DirectionalLight(0xbfd2ff, 0.8); fill.position.set(-5, -1.5, 4); scene.add(fill);
-      var rim = new THREE.PointLight(0xF7820E, 2.0, 28); rim.position.set(4, -3.5, -4.5); scene.add(rim);
-      var rimCool = new THREE.PointLight(0x9cc0ff, 0.85, 28); rimCool.position.set(-4, 3, -4); scene.add(rimCool);
-      var spec = new THREE.PointLight(0xffffff, 0.65, 20); spec.position.set(1.5, 4.5, 3); scene.add(spec); // point spéculaire
+      scene.add(new THREE.AmbientLight(0xdfe8f7, 0.30));
+      var hemi = new THREE.HemisphereLight(0xffffff, 0x14233f, 0.32); scene.add(hemi);
+      var key = new THREE.DirectionalLight(0xffeccf, 0.95); key.position.set(4.5, 6, 6.5); scene.add(key);
+      var fill = new THREE.DirectionalLight(0xbfd2ff, 0.5); fill.position.set(-5, -1.5, 4); scene.add(fill);
+      var rim = new THREE.PointLight(0xF7820E, 2.1, 28); rim.position.set(4, -3.5, -4.5); scene.add(rim);
+      var rimCool = new THREE.PointLight(0x9cc0ff, 0.5, 28); rimCool.position.set(-4, 3, -4); scene.add(rimCool);
+      var spec = new THREE.PointLight(0xffffff, 0.4, 20); spec.position.set(1.5, 4.5, 3); scene.add(spec); // point spéculaire
 
       size();
 
