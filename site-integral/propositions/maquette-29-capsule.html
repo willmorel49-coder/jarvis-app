@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Intégral Pharma — Capsule de marque (3D immersive, studio clair)</title>
 <meta name="description" content="Intégral Pharma — grossiste-répartiteur de première intention. Plus de marge, sur chaque commande.">
-<meta name="theme-color" content="#FBF8F1">
+<meta name="theme-color" content="#FCF8F2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
@@ -13,15 +13,15 @@
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* Palette — ambiance studio crème (préservée) */
-  --creme:#F4F0E6; --creme2:#FBF8F1; --carte:#FFFFFF;
-  --bleu:#0050E6; --bleu-doux:#C9DBFF; --bleu-pastel:#E4ECFF;
-  --orange:#F39A1B; --orange-soft:#FBE3BD;
-  --vert:#9BCBA6; --vert-soft:#E2F0E6;
-  --peche:#F8DDC9;
-  --encre:#2B2A26; --encre-2:#0A1430; --gris:#605B52;
-  --ligne:rgba(43,42,38,.10);
-  --ligne-forte:rgba(43,42,38,.16);
+  /* Palette — studio premium chaleureux : ivoire crème → blush/pêche → bleu pâle lumineux */
+  --creme:#F7F1E6; --creme2:#FCF8F2; --carte:#FFFFFF;
+  --blush:#FBE7DC; --peche:#FBDFC8; --ivoire:#FDF9F2;
+  --bleu:#0050E6; --bleu-doux:#CFE0FF; --bleu-pastel:#E8F0FF; --ciel:#EAF2FF;
+  --orange:#F39A1B; --orange-soft:#FCEBC9;
+  --vert:#9BCBA6; --vert-soft:#E6F2EA;
+  --encre:#2A2722; --encre-2:#0B1430; --gris:#5E594F;
+  --ligne:rgba(42,39,34,.09);
+  --ligne-forte:rgba(42,39,34,.15);
 
   /* Rayons — échelle régulière */
   --r-xl:28px; --r-l:20px; --r-m:15px; --r-s:12px;
@@ -32,9 +32,9 @@
 
   --max:1180px;
 
-  /* Ombres — échelle homogène */
-  --ombre:0 24px 60px -28px rgba(43,42,38,.30);
-  --ombre-s:0 10px 30px -16px rgba(43,42,38,.22);
+  /* Ombres — échelle homogène, chaude */
+  --ombre:0 30px 70px -30px rgba(42,39,34,.34), 0 6px 18px -12px rgba(42,39,34,.12);
+  --ombre-s:0 14px 36px -20px rgba(42,39,34,.24);
 
   /* Motion — easing unique pour toute l'interface */
   --ease:cubic-bezier(.22,.61,.36,1);
@@ -47,10 +47,13 @@
 html{scroll-behavior:smooth;scroll-padding-top:92px}
 body{
   font-family:var(--ff); color:var(--encre);
+  /* Décor studio premium chaleureux — dégradés doux raffinés, halo lumineux (sans blur) */
   background:
-    radial-gradient(120% 60% at 82% 0%, var(--bleu-pastel) 0%, rgba(228,236,255,0) 45%),
-    radial-gradient(110% 50% at 10% 30%, var(--peche) 0%, rgba(248,221,201,0) 40%),
-    linear-gradient(180deg,var(--creme2) 0%, var(--creme) 60%, var(--creme2) 100%);
+    radial-gradient(140% 70% at 84% -6%, var(--ciel) 0%, rgba(234,242,255,0) 48%),
+    radial-gradient(120% 55% at 6% 26%, var(--blush) 0%, rgba(251,231,220,0) 44%),
+    radial-gradient(120% 60% at 50% 108%, var(--peche) 0%, rgba(251,223,200,0) 46%),
+    linear-gradient(178deg,var(--ivoire) 0%, var(--creme2) 52%, var(--creme) 100%);
+  background-attachment:fixed;
   -webkit-font-smoothing:antialiased; line-height:1.62; overflow-x:hidden;
   font-weight:400; letter-spacing:.002em;
 }
@@ -72,11 +75,17 @@ h1,h2,h3{font-family:var(--ff-titre);font-weight:400;line-height:1.04;letter-spa
 
 /* ===== Canvas 3D EN FOND FIXE — toute la page ===== */
 #bgCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;touch-action:pan-y;pointer-events:none}
+/* Halo de lumière studio doux derrière la capsule (radial-gradient, SANS filter:blur) */
+#studioGlow{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(46% 52% at 62% 42%, rgba(255,247,233,.92) 0%, rgba(255,247,233,.42) 32%, rgba(255,247,233,0) 64%),
+    radial-gradient(70% 70% at 64% 44%, rgba(255,236,206,.40) 0%, rgba(255,236,206,0) 60%);
+  mix-blend-mode:normal}
 #bgFallback{position:fixed;inset:0;z-index:0;display:none;
   background:
-    radial-gradient(120% 80% at 80% 10%, var(--bleu-pastel), transparent 55%),
-    radial-gradient(100% 70% at 10% 90%, var(--peche), transparent 55%),
-    linear-gradient(180deg,var(--creme2),var(--creme));}
+    radial-gradient(130% 80% at 80% 6%, var(--ciel), transparent 55%),
+    radial-gradient(110% 70% at 8% 92%, var(--blush), transparent 55%),
+    linear-gradient(178deg,var(--ivoire),var(--creme));}
 #bgFallback img{position:absolute;right:0;bottom:0;width:46%;max-width:520px;opacity:.5;
   border-top-left-radius:60px;object-fit:cover}
 /* tout le contenu passe au-dessus du canvas */
@@ -90,19 +99,19 @@ h1,h2,h3{font-family:var(--ff-titre);font-weight:400;line-height:1.04;letter-spa
 .btn .ico{transition:transform var(--t) var(--ease)}
 .btn:hover .ico{transform:translateX(3px)}
 .btn-primary{background:var(--encre);color:#fff;box-shadow:var(--ombre-s)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 36px -16px rgba(43,42,38,.5)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 36px -16px rgba(42,39,34,.5)}
 .btn-primary:active{transform:translateY(0)}
-.btn-orange{background:var(--orange);color:#3a2603;box-shadow:0 14px 30px -14px rgba(243,154,27,.7)}
-.btn-orange:hover{transform:translateY(-2px);box-shadow:0 20px 40px -16px rgba(243,154,27,.8)}
+.btn-orange{background:linear-gradient(135deg,#F8A93A,#F39A1B 52%,#E2870C);color:#3a2603;box-shadow:0 14px 30px -14px rgba(243,154,27,.7)}
+.btn-orange:hover{transform:translateY(-2px);box-shadow:0 22px 44px -16px rgba(243,154,27,.85)}
 .btn-orange:active{transform:translateY(0)}
-.btn-ghost{background:rgba(255,255,255,.85);border-color:var(--ligne-forte);color:var(--encre)}
+.btn-ghost{background:rgba(255,255,255,.88);border-color:var(--ligne-forte);color:var(--encre)}
 .btn-ghost:hover{transform:translateY(-2px);border-color:var(--encre);box-shadow:var(--ombre-s)}
 .btn-ghost:active{transform:translateY(0)}
 
 /* Header */
 header{position:fixed;inset:0 0 auto 0;z-index:60;transition:background var(--t) var(--ease),box-shadow var(--t) var(--ease),border-color var(--t) var(--ease);
   border-bottom:1px solid transparent}
-header.scrolled{background:rgba(251,248,241,.94);box-shadow:0 6px 24px -18px rgba(43,42,38,.5);border-color:var(--ligne)}
+header.scrolled{background:rgba(252,248,242,.92);box-shadow:0 6px 24px -18px rgba(42,39,34,.5);border-color:var(--ligne)}
 .nav{display:flex;align-items:center;gap:24px;height:74px}
 .brand{display:flex;align-items:center;gap:11px;font-family:var(--ff-titre);font-weight:500;letter-spacing:-.01em}
 .brand img{height:32px;width:auto}
@@ -118,11 +127,11 @@ header.scrolled{background:rgba(251,248,241,.94);box-shadow:0 6px 24px -18px rgb
 .nav .btn{padding:.66em 1.2em;font-size:.82rem}
 .burger{display:none;margin-left:auto;background:none;border:0;cursor:pointer;width:42px;height:42px;color:var(--encre);
   border-radius:10px;transition:background var(--t-fast) var(--ease)}
-.burger:hover{background:rgba(43,42,38,.06)}
+.burger:hover{background:rgba(42,39,34,.06)}
 
 /* Menu mobile (overlay propre, CTA visible) */
-.mobile-menu{display:none;position:fixed;inset:74px 0 auto 0;z-index:55;background:rgba(251,248,241,.98);
-  border-bottom:1px solid var(--ligne);box-shadow:0 18px 40px -24px rgba(43,42,38,.5);padding:18px 24px 26px}
+.mobile-menu{display:none;position:fixed;inset:74px 0 auto 0;z-index:55;background:rgba(252,248,242,.99);
+  border-bottom:1px solid var(--ligne);box-shadow:0 18px 40px -24px rgba(42,39,34,.5);padding:18px 24px 26px}
 .mobile-menu.open{display:block}
 .mobile-menu a{display:block;font-family:var(--ff);font-size:1.02rem;font-weight:500;padding:14px 4px;color:var(--encre);
   border-bottom:1px solid var(--ligne)}
@@ -156,7 +165,7 @@ section{position:relative}
   text-transform:uppercase;color:var(--bleu);background:var(--bleu-pastel);padding:.46em 1.05em;border-radius:999px}
 
 /* Panneaux semi-opaques pleins (lisibilité au-dessus de la 3D, SANS backdrop-filter) */
-.panel{background:rgba(251,248,241,.88);border:1px solid var(--ligne);border-radius:var(--r-xl);
+.panel{background:rgba(252,248,242,.9);border:1px solid var(--ligne);border-radius:var(--r-xl);
   box-shadow:var(--ombre-s)}
 
 /* cartes génériques */
@@ -182,16 +191,16 @@ section{position:relative}
   font-size:1.05rem;box-shadow:var(--ombre-s);transition:transform var(--t) var(--ease),border-color var(--t) var(--ease)}
 .labo:hover{transform:translateY(-3px);border-color:var(--orange)}
 .offres-flex{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
-.offre-visual{background:linear-gradient(160deg,rgba(228,236,255,.92),rgba(226,240,230,.92));
+.offre-visual{background:linear-gradient(155deg,var(--bleu-pastel) 0%, var(--vert-soft) 58%, var(--orange-soft) 120%);
   border-radius:var(--r-xl);padding:48px;min-height:300px;display:flex;flex-direction:column;justify-content:center;
-  border:1px solid var(--ligne)}
+  border:1px solid var(--ligne);box-shadow:var(--ombre-s)}
 .offre-visual .big{font-family:var(--ff-titre);font-weight:400;font-size:2.9rem;line-height:1.04;letter-spacing:-.02em;color:var(--encre);margin-bottom:12px}
 .offre-visual p{color:var(--gris)}
 .pad{padding:46px}
 
 /* Groupe / carte */
 .agences{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
-.agence{background:rgba(255,255,255,.92);border:1px solid var(--ligne);border-radius:var(--r-m);padding:17px 19px;
+.agence{background:rgba(255,255,255,.94);border:1px solid var(--ligne);border-radius:var(--r-m);padding:17px 19px;
   transition:transform var(--t) var(--ease),border-color var(--t) var(--ease),box-shadow var(--t) var(--ease)}
 .agence:hover{transform:translateY(-3px);border-color:var(--bleu);box-shadow:var(--ombre-s)}
 .agence .nom{font-family:var(--ff-titre);font-weight:500;font-size:1.05rem;letter-spacing:-.005em}
@@ -202,7 +211,7 @@ section{position:relative}
 
 /* Chiffres */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
-.stat{background:rgba(255,255,255,.92);border:1px solid var(--ligne);border-radius:var(--r-l);padding:36px 26px;text-align:center;box-shadow:var(--ombre-s);
+.stat{background:rgba(255,255,255,.94);border:1px solid var(--ligne);border-radius:var(--r-l);padding:36px 26px;text-align:center;box-shadow:var(--ombre-s);
   transition:transform var(--t) var(--ease),box-shadow var(--t) var(--ease)}
 .stat:hover{transform:translateY(-4px);box-shadow:var(--ombre)}
 .stat .num{font-family:var(--ff-titre);font-weight:400;font-size:clamp(2.5rem,4.2vw,3.4rem);color:var(--orange);line-height:1;letter-spacing:-.02em}
@@ -215,14 +224,14 @@ section{position:relative}
 .offilog-kpi .k b{font-family:var(--ff-titre);font-weight:400;font-size:1.85rem;color:var(--bleu);display:block;letter-spacing:-.015em}
 .offilog-kpi .k span{font-size:.78rem;color:var(--gris);letter-spacing:.02em}
 .cats{display:flex;flex-wrap:wrap;gap:11px}
-.cat{background:rgba(255,255,255,.94);border:1px solid var(--ligne);border-radius:12px;padding:.82em 1.3em;font-weight:500;font-size:.95rem;
+.cat{background:rgba(255,255,255,.96);border:1px solid var(--ligne);border-radius:12px;padding:.82em 1.3em;font-weight:500;font-size:.95rem;
   display:flex;align-items:center;gap:.6em;transition:transform var(--t) var(--ease),background var(--t) var(--ease),color var(--t) var(--ease),border-color var(--t) var(--ease)}
 .cat:hover{transform:translateY(-3px);background:var(--orange);color:#3a2603;border-color:var(--orange)}
 .cat .d{width:8px;height:8px;border-radius:3px;background:var(--vert);transition:background var(--t) var(--ease)}
 .cat:hover .d{background:#3a2603}
 
 /* Accompagnement — panneau encre lisible sur 3D claire */
-.accomp .inner{background:var(--encre-2);color:#EAF0FF;border-radius:var(--r-xl);padding:60px 48px;box-shadow:var(--ombre)}
+.accomp .inner{background:linear-gradient(165deg,#0E1838 0%, var(--encre-2) 60%);color:#EAF0FF;border-radius:var(--r-xl);padding:60px 48px;box-shadow:var(--ombre)}
 .accomp h2,.accomp h3{color:#fff}
 .accomp .sec-head{margin-bottom:30px}
 .accomp .sec-head p{color:#B6C4E8}
@@ -240,7 +249,7 @@ section{position:relative}
 
 /* Carrières */
 .carr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:8px}
-.job{background:rgba(255,255,255,.94);border:1px solid var(--ligne);border-radius:var(--r-m);padding:24px;display:flex;
+.job{background:rgba(255,255,255,.96);border:1px solid var(--ligne);border-radius:var(--r-m);padding:24px;display:flex;
   flex-direction:column;gap:9px;transition:transform var(--t) var(--ease),border-color var(--t) var(--ease),box-shadow var(--t) var(--ease)}
 .job:hover{transform:translateY(-4px);border-color:var(--orange);box-shadow:var(--ombre-s)}
 .job .role{font-family:var(--ff-titre);font-weight:500;font-size:1.12rem;letter-spacing:-.005em}
@@ -257,7 +266,7 @@ section{position:relative}
 .cinfo b{display:block;font-family:var(--ff);font-weight:600;font-size:.95rem;letter-spacing:.01em}
 .cinfo span{font-size:.9rem;color:var(--gris)}
 .cinfo a:hover{color:var(--bleu)}
-form{background:rgba(255,255,255,.96);border:1px solid var(--ligne);border-radius:var(--r-xl);padding:36px;box-shadow:var(--ombre-s)}
+form{background:rgba(255,255,255,.97);border:1px solid var(--ligne);border-radius:var(--r-xl);padding:36px;box-shadow:var(--ombre-s)}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .field{margin-bottom:16px}
 .field label{display:block;font-family:var(--ff);font-size:.76rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px;color:var(--encre)}
@@ -270,7 +279,7 @@ form{background:rgba(255,255,255,.96);border:1px solid var(--ligne);border-radiu
 form .btn{width:100%;justify-content:center;margin-top:6px}
 
 /* Footer */
-footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;padding:64px 0 34px}
+footer{position:relative;z-index:2;background:linear-gradient(165deg,#0E1838 0%, var(--encre-2) 60%);color:#C6D2F0;padding:64px 0 34px}
 .foot-top{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;align-items:flex-start;
   padding-bottom:34px;border-bottom:1px solid rgba(255,255,255,.12)}
 .foot-brand{display:flex;align-items:center;gap:11px;color:#fff;font-family:var(--ff-titre);font-weight:500}
@@ -327,6 +336,7 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   .reveal{opacity:1;transform:none}
   #bgCanvas{display:none!important}
+  #studioGlow{display:none!important}
   #bgFallback{display:block!important}
   .scroll-bar{display:none!important}
 }
@@ -338,6 +348,7 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
 
 <!-- CANVAS 3D FOND FIXE — présent sur TOUTE la page -->
 <canvas id="bgCanvas" aria-hidden="true"></canvas>
+<div id="studioGlow" aria-hidden="true"></div>
 <div id="bgFallback" aria-hidden="true"><img src="../assets/poster.jpg" alt=""></div>
 <div class="scroll-bar" id="scrollBar" aria-hidden="true"></div>
 
@@ -731,6 +742,8 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
   renderer.shadowMap.enabled=!isMobile;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   if(renderer.outputEncoding!==undefined) renderer.outputEncoding=THREE.sRGBEncoding;
+  /* rendu plus filmique / premium */
+  if(THREE.ACESFilmicToneMapping!==undefined){ renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.06; }
 
   scene=new THREE.Scene();
 
@@ -742,36 +755,83 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
   /* rig = nœud déplacé par la caméra-lerp (on bouge le rig plutôt que la caméra pour rester lisible) */
   rig=new THREE.Group(); scene.add(rig);
 
-  /* --- Lumières studio douces (PAS d'additive sur fond clair) --- */
-  scene.add(new THREE.HemisphereLight(0xffffff,0xeae3d4,0.92));
-  var key=new THREE.DirectionalLight(0xffffff,1.18);
-  key.position.set(4,7,6);
+  /* --- Environnement studio clair (CanvasTexture -> PMREM) : reflets nacrés/dorés premium --- */
+  var envMap=null;
+  (function buildStudioEnv(){
+    try{
+      var size=256;
+      var c=document.createElement('canvas'); c.width=size; c.height=size;
+      var ctx=c.getContext('2d');
+      // dégradé vertical studio : ciel clair -> ivoire chaud -> sol doux
+      var g=ctx.createLinearGradient(0,0,0,size);
+      g.addColorStop(0.0,'#ffffff');
+      g.addColorStop(0.32,'#eef4ff');   // softbox froide en haut
+      g.addColorStop(0.6,'#fdf6ec');    // ivoire chaud
+      g.addColorStop(1.0,'#efe7d8');     // sol
+      ctx.fillStyle=g; ctx.fillRect(0,0,size,size);
+      // softbox lumineuse principale (reflet clé chaud) en haut-droite
+      var s1=ctx.createRadialGradient(size*0.70,size*0.24,2,size*0.70,size*0.24,size*0.42);
+      s1.addColorStop(0,'rgba(255,250,238,1)'); s1.addColorStop(1,'rgba(255,250,238,0)');
+      ctx.fillStyle=s1; ctx.fillRect(0,0,size,size);
+      // softbox froide secondaire (fill bleuté) en haut-gauche
+      var s2=ctx.createRadialGradient(size*0.22,size*0.30,2,size*0.22,size*0.30,size*0.40);
+      s2.addColorStop(0,'rgba(225,237,255,.95)'); s2.addColorStop(1,'rgba(225,237,255,0)');
+      ctx.fillStyle=s2; ctx.fillRect(0,0,size,size);
+      // halo doré chaud bas-droite (rebond)
+      var s3=ctx.createRadialGradient(size*0.78,size*0.82,2,size*0.78,size*0.82,size*0.36);
+      s3.addColorStop(0,'rgba(255,224,180,.6)'); s3.addColorStop(1,'rgba(255,224,180,0)');
+      ctx.fillStyle=s3; ctx.fillRect(0,0,size,size);
+
+      var tex=new THREE.CanvasTexture(c);
+      tex.mapping=THREE.EquirectangularReflectionMapping;
+      if(THREE.sRGBEncoding!==undefined) tex.encoding=THREE.sRGBEncoding;
+      if(THREE.PMREMGenerator){
+        var pmrem=new THREE.PMREMGenerator(renderer); pmrem.compileEquirectangularShader();
+        envMap=pmrem.fromEquirectangular(tex).texture;
+        tex.dispose(); pmrem.dispose();
+      } else {
+        envMap=tex;
+      }
+      scene.environment=envMap;
+    }catch(e){ /* reflets dégradés gracieusement si indisponible */ }
+  })();
+
+  /* --- Lumières studio premium (key chaude + fill froide + rim/contre-jour) — PAS d'additive sur fond clair --- */
+  scene.add(new THREE.HemisphereLight(0xffffff,0xece4d6,0.78));
+  var key=new THREE.DirectionalLight(0xfff4e2,1.32);   // key chaude
+  key.position.set(4.5,7,6);
   if(!isMobile){ key.castShadow=true;
     key.shadow.mapSize.width=1024; key.shadow.mapSize.height=1024;
     key.shadow.camera.near=1; key.shadow.camera.far=30;
     key.shadow.camera.left=-9; key.shadow.camera.right=9; key.shadow.camera.top=9; key.shadow.camera.bottom=-9;
-    key.shadow.radius=6; key.shadow.bias=-0.0005;
+    key.shadow.radius=7; key.shadow.bias=-0.0005;
   }
   scene.add(key);
-  var fill=new THREE.DirectionalLight(0xc9dbff,0.52); fill.position.set(-6,2,4); scene.add(fill);
-  var rim=new THREE.DirectionalLight(0xfbe3bd,0.52); rim.position.set(-3,4,-6); scene.add(rim);
+  var fill=new THREE.DirectionalLight(0xcadcff,0.58); fill.position.set(-6,2.4,4); scene.add(fill);   // fill froide
+  var rim=new THREE.DirectionalLight(0xffe6bf,0.85);  rim.position.set(-3.5,4.5,-6.5); scene.add(rim);  // rim / contre-jour chaud soulignant le galbe
+  var rim2=new THREE.DirectionalLight(0xe9f1ff,0.4);  rim2.position.set(5,-1,-6); scene.add(rim2);      // contre-jour froid secondaire
 
   /* --- Sol : ombre portée douce --- */
   if(!isMobile){
-    ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60), new THREE.ShadowMaterial({opacity:0.14}));
+    ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60), new THREE.ShadowMaterial({opacity:0.16}));
     ground.rotation.x=-Math.PI/2; ground.position.y=-2.9; ground.receiveShadow=true;
     rig.add(ground);
   }
 
-  /* --- matériaux (cohérents avec l'ambiance : orange marque, argent doux, bleu marque) --- */
-  var matOrange=new THREE.MeshStandardMaterial({color:0xF39A1B,roughness:0.30,metalness:0.16});
-  var matArgent=new THREE.MeshStandardMaterial({color:0xEBEEF4,roughness:0.18,metalness:0.82});
-  var matBande =new THREE.MeshStandardMaterial({color:0x0050E6,roughness:0.38,metalness:0.12});
-  var orbMats=[new THREE.MeshStandardMaterial({color:0x0050E6,roughness:.4,metalness:.12}),
-               new THREE.MeshStandardMaterial({color:0x9BCBA6,roughness:.5,metalness:.06}),
-               new THREE.MeshStandardMaterial({color:0xF39A1B,roughness:.38,metalness:.12})];
+  /* --- matériaux premium : demi-coque orange riche & lumineuse, demi-coque nacre/perle, jonc bleu marque --- */
+  var matOrange=new THREE.MeshStandardMaterial({color:0xF2920E,roughness:0.26,metalness:0.42,
+    emissive:0x6e3a00, emissiveIntensity:0.16});
+  if('envMapIntensity' in matOrange) matOrange.envMapIntensity=1.25;
+  var matArgent=new THREE.MeshStandardMaterial({color:0xF3F0EA,roughness:0.16,metalness:0.62,
+    emissive:0xE9E3F2, emissiveIntensity:0.05});   // finition nacrée / perle lumineuse
+  if('envMapIntensity' in matArgent) matArgent.envMapIntensity=1.5;
+  var matBande =new THREE.MeshStandardMaterial({color:0x0050E6,roughness:0.28,metalness:0.34,
+    emissive:0x00153f, emissiveIntensity:0.12});
+  if('envMapIntensity' in matBande) matBande.envMapIntensity=1.15;
+  function mk(color,r,m,ei){ var mm=new THREE.MeshStandardMaterial({color:color,roughness:r,metalness:m}); if('envMapIntensity' in mm) mm.envMapIntensity=ei; return mm; }
+  var orbMats=[mk(0x0050E6,.30,.34,1.2), mk(0xF3F0EA,.18,.6,1.4), mk(0xF2920E,.28,.42,1.25)];
 
-  /* --- Capsule de marque : deux demi-coques orange + argent --- */
+  /* --- Capsule de marque : deux demi-coques orange + nacre --- */
   var R=0.92, L=1.5, radialSeg=isMobile?32:48, capSeg=isMobile?16:24;
   capsule=new THREE.Group();
 
@@ -1002,6 +1062,7 @@ footer{position:relative;z-index:2;background:var(--encre-2);color:#C6D2F0;paddi
   window.addEventListener('pagehide',function(){
     stop();
     scene.traverse(function(o){ if(o.geometry)o.geometry.dispose(); if(o.material){ if(Array.isArray(o.material))o.material.forEach(function(m){m.dispose();}); else o.material.dispose(); } });
+    if(envMap && envMap.dispose) envMap.dispose();
     renderer.dispose();
   });
 })();
