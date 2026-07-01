@@ -265,6 +265,12 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .v2-chip.b{background:var(--halo);color:var(--ip-blue)}
 /* Filet de sécurité focus clavier : tout élément interactif non déjà stylé (a11y globale) */
 :where(a,button,[role="button"],[tabindex],input,select,textarea):focus-visible{outline:none;box-shadow:0 0 0 3px var(--halo),0 0 0 5px color-mix(in srgb,var(--ip-blue) 38%,transparent);border-radius:var(--r-control)}
+/* Cibles tactiles confortables sur mobile (a11y — boutons d'action répétés) */
+@media(max-width:640px){
+  .opp-add,.mkt-catadd{min-width:40px;min-height:40px}
+  .mkt-prow-x,.mkt-doc-del,.mkt-mx{min-width:44px;min-height:44px}
+  .mkt-etabchip,.mkt-srcbtn,.mol-chip{min-height:40px}
+}
 
 /* ─── Boutons ─── */
 .v2-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:13px;

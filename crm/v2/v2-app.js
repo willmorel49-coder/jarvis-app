@@ -779,10 +779,13 @@
     root.innerHTML = '<div class="v2-login"><div class="v2-login-card mo-pop">' +
       '<div class="v2-login-logo">' + ICO('logo', 30) + '</div>' +
       '<h1>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</h1><p>' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial · CRM') + '</p>' +
-      '<input class="v2-field" id="v2-email" type="email" placeholder="Email" autocomplete="username">' +
-      '<input class="v2-field" id="v2-pass" type="password" placeholder="Mot de passe" autocomplete="current-password">' +
+      '<input class="v2-field" id="v2-email" type="email" inputmode="email" aria-label="Adresse email" placeholder="Email" autocomplete="username">' +
+      '<div style="position:relative">' +
+        '<input class="v2-field" id="v2-pass" type="password" aria-label="Mot de passe" placeholder="Mot de passe" autocomplete="current-password" style="padding-right:82px">' +
+        '<button type="button" id="v2-eye" aria-label="Afficher le mot de passe" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);font:600 12.5px/1 inherit;cursor:pointer;padding:10px">Afficher</button>' +
+      '</div>' +
       '<button class="v2-btn v2-btn-primary" id="v2-login-btn">Se connecter</button>' +
-      '<div class="v2-login-err" id="v2-login-err"></div>' +
+      '<div class="v2-login-err" id="v2-login-err" role="alert"></div>' +
       '</div></div>';
     var btn = document.getElementById('v2-login-btn');
     var err = document.getElementById('v2-login-err');
@@ -793,7 +796,7 @@
       btn.textContent = 'Connexion…'; btn.disabled = true; err.textContent = '';
       V2.signIn(em, pw).then(function (r) {
         if (r.ok) { V2.boot(); }
-        else { err.textContent = r.msg || 'Identifiants incorrects'; btn.textContent = 'Se connecter'; btn.disabled = false; }
+        else { err.textContent = r.msg || 'Identifiants incorrects'; btn.textContent = 'Se connecter'; btn.disabled = false; document.getElementById('v2-email').focus(); }
       }).catch(function () {
         err.textContent = 'Connexion impossible — vérifie ta connexion internet.';
         btn.textContent = 'Se connecter'; btn.disabled = false;
@@ -801,6 +804,8 @@
     }
     btn.onclick = submit;
     document.getElementById('v2-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+    var eye = document.getElementById('v2-eye');
+    if (eye) eye.onclick = function () { var p = document.getElementById('v2-pass'); var show = p.type === 'password'; p.type = show ? 'text' : 'password'; this.textContent = show ? 'Masquer' : 'Afficher'; this.setAttribute('aria-label', (show ? 'Masquer' : 'Afficher') + ' le mot de passe'); };
     document.getElementById('v2-email').focus();
   };
 
