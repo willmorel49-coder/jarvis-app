@@ -210,18 +210,6 @@
         '<span class="mkt-card-go">Ouvrir ' + ICO('chev', 15, 2.2) + '</span></div>' +
     '</div>';
   }
-  function section(type, list) {
-    var t = TYPES[type];
-    var cards = list.length ? list.map(card).join('')
-      : '<div class="mkt-empty">Aucun ' + esc(t.label.toLowerCase()) + ' pour le moment.</div>';
-    return '<div class="mkt-section">' +
-      '<div class="mkt-sec-head">' +
-        '<div><div class="mkt-sec-t"><span class="mkt-sec-dot" style="--dc:' + t.accent + '"></span>' + esc(t.plural) + (list.length ? ' <span class="mkt-sec-n">' + list.length + '</span>' : '') + '</div><div class="mkt-sec-s">' + esc(t.sub) + '</div></div>' +
-        '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.create(\'' + type + '\')">' + ICO('plus', 16, 2) + 'Nouveau</button>' +
-      '</div>' +
-      '<div class="mkt-grid">' + cards + '</div>' +
-    '</div>';
-  }
   // ── Sélection grossiste (mix L'Intégral + ITP + meilleures ventes) ──
   // Classé par NB DE PHARMACIES qui commandent (sortie réseau) — données bakées.
   var _mixFlat = null;
@@ -250,43 +238,64 @@
   function renderList(root) {
     var supports = (items || []).filter(function (x) { return x.type !== 'selection'; });
     var selections = (items || []).filter(function (x) { return x.type === 'selection'; });
+    var all = (items || []).slice().sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
     var shareNote = backend === 'supabase'
-      ? '<span class="mkt-share ok">' + ICO('check', 14, 2) + ' Partagé en équipe</span>'
-      : '<span class="mkt-share local">' + ICO('alert', 14, 2) + ' Local — partage à activer</span>';
+      ? '<span class="mkt-share ok">' + ICO('check', 14, 2) + ' Partagé avec Pauline</span>'
+      : '<span class="mkt-share local">' + ICO('alert', 14, 2) + ' Enregistré sur cet appareil</span>';
 
-    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap">' +
-        '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:6px">' +
-          '<div><div class="v2-page-title">Marketing</div>' +
-          '<div class="v2-page-sub" style="margin-bottom:0">L\'espace de Pauline &amp; Will — supports et sélections produits</div></div>' +
-          shareNote +
-        '</div>' +
-        // ── HÉRO : les 2 actions produit mises en avant ──
-        '<div class="mkt-hero">' +
-          '<div class="mkt-hero-card mkt-hero-support" onclick="V2.mkt.create(\'support\')">' +
-            '<span class="mkt-hero-ic">' + ICO('fiche', 24, 1.8) + '</span>' +
-            '<span class="mkt-hero-txt"><span class="mkt-hero-t">Nouveau support</span>' +
-            '<span class="mkt-hero-s">Un flyer produits avec photos, prix &amp; accroche.</span></span>' +
-            '<span class="mkt-hero-cta">' + ICO('plus', 18, 2.2) + ' Créer</span>' +
+    // ── ÉTAPE 1 : je choisis ce que je fabrique (une action claire par carte) ──
+    var makeZone =
+      '<div class="mkt-make">' +
+        '<button class="mkt-make-card mkt-make-support" onclick="V2.mkt.create(\'support\')">' +
+          '<span class="mkt-make-ic">' + ICO('fiche', 26, 1.8) + '</span>' +
+          '<span class="mkt-make-t">Un support à présenter</span>' +
+          '<span class="mkt-make-s">Un flyer avec photos, prix et une accroche — à montrer ou envoyer au pharmacien.</span>' +
+          '<span class="mkt-make-cta">' + ICO('plus', 17, 2.2) + ' Créer un support</span>' +
+        '</button>' +
+        '<button class="mkt-make-card mkt-make-selection" onclick="V2.mkt.create(\'selection\')">' +
+          '<span class="mkt-make-ic">' + ICO('list', 26, 1.8) + '</span>' +
+          '<span class="mkt-make-t">Une sélection à pousser</span>' +
+          '<span class="mkt-make-s">Une liste de produits du moment à mettre en avant auprès des pharmacies.</span>' +
+          '<span class="mkt-make-cta">' + ICO('plus', 17, 2.2) + ' Créer une sélection</span>' +
+        '</button>' +
+      '</div>';
+
+    // ── ÉTAPE 2 : mes créations récentes (une seule liste, plus de grilles répétées) ──
+    var recentZone;
+    if (all.length) {
+      recentZone =
+        '<div class="mkt-block">' +
+          '<div class="mkt-block-head">' +
+            '<div class="mkt-block-t">Mes créations</div>' +
+            '<div class="mkt-block-s">' + supports.length + ' support' + (supports.length > 1 ? 's' : '') +
+              ' · ' + selections.length + ' sélection' + (selections.length > 1 ? 's' : '') + '</div>' +
           '</div>' +
-          '<div class="mkt-hero-card mkt-hero-selection" onclick="V2.mkt.create(\'selection\')">' +
-            '<span class="mkt-hero-ic">' + ICO('list', 24, 1.8) + '</span>' +
-            '<span class="mkt-hero-txt"><span class="mkt-hero-t">Nouvelle sélection</span>' +
-            '<span class="mkt-hero-s">Une liste de produits du moment à pousser.</span></span>' +
-            '<span class="mkt-hero-cta">' + ICO('plus', 18, 2.2) + ' Créer</span>' +
-          '</div>' +
-        '</div>' +
-        section('support', supports) +
-        section('selection', selections) +
-        // ── Accès annexes (secondaires, discrets) ──
-        '<div class="mkt-links-head">Autres accès</div>' +
+          '<div class="mkt-grid">' + all.map(card).join('') + '</div>' +
+        '</div>';
+    } else {
+      recentZone =
+        '<div class="mkt-block">' +
+          '<div class="mkt-empty mkt-empty-first">Rien pour l\'instant. Choisis « Un support » ou « Une sélection » ci-dessus pour démarrer.</div>' +
+        '</div>';
+    }
+
+    // ── ZONE 2 : les PDF partagés (autre usage, bien séparé) ──
+    var docsZone =
+      '<div class="mkt-block">' +
+        '<a class="mkt-bigrow" onclick="V2.go(\'marketing\',\'docs\')">' +
+          '<span class="mkt-bigrow-ic">' + ICO('download', 22, 1.8) + '</span>' +
+          '<span class="mkt-bigrow-txt"><span class="mkt-bigrow-t">Documents partagés (PDF)</span>' +
+          '<span class="mkt-bigrow-s">Catalogues, fiches et offres — ajoute ou supprime des PDF visibles par tous les comptes.</span></span>' +
+          '<span class="mkt-bigrow-go">Ouvrir ' + ICO('chev', 17) + '</span>' +
+        '</a>' +
+      '</div>';
+
+    // ── Accès annexes (repliés, discrets — c'est le côté « design du site », pas le quotidien) ──
+    var moreZone =
+      '<details class="mkt-more-box">' +
+        '<summary class="mkt-more-sum">' + ICO('cat', 16) + ' Maquettes &amp; outils du nouveau site' +
+          '<span class="mkt-more-chev">' + ICO('chev', 16) + '</span></summary>' +
         '<div class="mkt-links">' +
-          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'docs\')">' +
-            '<span class="mkt-link-ic mkt-link-ic-doc">' + ICO('download', 18, 1.8) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Documents partagés (PDF)</span>' +
-            '<span class="mkt-link-s">Catalogues, fiches, offres — visibles par tous les comptes.</span></span>' +
-            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
-          '</a>' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
             '<span style="flex:1;min-width:0"><span class="mkt-link-t">Maquettes du nouveau site</span>' +
@@ -300,6 +309,19 @@
             '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
           '</a>' +
         '</div>' +
+      '</details>';
+
+    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+      '<div class="v2-wrap narrow mkt-launch">' +
+        '<div class="mkt-head">' +
+          '<div class="v2-page-title">Marketing</div>' +
+          '<div class="v2-page-sub" style="margin-bottom:0">Fabrique un support ou une sélection produits — l\'espace de Pauline &amp; Will.</div>' +
+          '<div class="mkt-head-share">' + shareNote + '</div>' +
+        '</div>' +
+        makeZone +
+        recentZone +
+        docsZone +
+        moreZone +
         (backend === 'local'
           ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Activer le partage entre vous</b><br>' +
             'Pour l\'instant les supports sont enregistrés sur cet appareil. Pour que Pauline et toi voyiez les mêmes, il faut créer une table dans Supabase (une seule fois). Demande-moi le script SQL, il est prêt.</div></div>'
@@ -313,7 +335,7 @@
   function renderSite(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#fff">' +
-        '<iframe src="../../site-integral/index-typo.html?v=20260701d" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/index-typo.html?v=20260701e" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -323,7 +345,7 @@
   function renderPropositions(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/propositions/index.html?v=20260701d" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/propositions/index.html?v=20260701e" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -333,7 +355,7 @@
   function renderFxBank(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#06080F">' +
-        '<iframe src="../../site-integral/fx-bank/index.html?v=20260701d" title="FX-BANK — banque d\'effets" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/fx-bank/index.html?v=20260701e" title="FX-BANK — banque d\'effets" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -1132,29 +1154,53 @@
       '.mkt-share{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px}',
       '.mkt-share.ok{color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,#fff)}',
       '.mkt-share.local{color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 12%,#fff)}',
-      '.mkt-section{margin-top:26px}',
       '.mkt-cat-banner{display:flex;align-items:center;gap:14px;margin-top:14px;padding:16px 18px;background:linear-gradient(150deg,color-mix(in srgb,var(--c-cat) 8%,#fff),var(--card));border:1px solid color-mix(in srgb,var(--c-cat) 22%,var(--line));border-radius:var(--r-card);box-shadow:var(--sh-1);cursor:pointer;text-decoration:none;color:inherit;transition:.16s var(--ease)}',
       '.mkt-cat-banner:hover{box-shadow:var(--sh-2);transform:translateY(-1px)}',
       '.mkt-cat-ic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-cat),#4d35a0)}',
       '.mkt-cat-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
       '.mkt-cat-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}',
-      // ── Héro accueil : 2 actions produit mises en avant ──
-      '.mkt-hero{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}',
-      '@media(max-width:640px){.mkt-hero{grid-template-columns:1fr}}',
-      '.mkt-hero-card{position:relative;display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:var(--r-card);cursor:pointer;color:#fff;overflow:hidden;box-shadow:0 10px 26px color-mix(in srgb,var(--_a) 34%,transparent);transition:transform .2s var(--ease),box-shadow .2s var(--ease)}',
-      '.mkt-hero-card::after{content:"";position:absolute;right:-38px;top:-38px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.13);pointer-events:none}',
-      '.mkt-hero-support{--_a:var(--ip-blue);background:linear-gradient(135deg,var(--ip-blue),#0034A0)}',
-      '.mkt-hero-selection{--_a:var(--c-opp);background:linear-gradient(135deg,var(--c-opp),#127a52)}',
-      '.mkt-hero-card:hover{transform:translateY(-3px);box-shadow:0 16px 36px color-mix(in srgb,var(--_a) 46%,transparent)}',
-      '.mkt-hero-card:active{transform:translateY(-1px)}',
-      '.mkt-hero-ic{width:50px;height:50px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);position:relative;z-index:1}',
-      '.mkt-hero-txt{flex:1;min-width:0;position:relative;z-index:1}',
-      '.mkt-hero-t{display:block;font-weight:800;font-size:16.5px;letter-spacing:-.02em}',
-      '.mkt-hero-s{display:block;font-size:12.5px;opacity:.9;margin-top:3px;line-height:1.35}',
-      '.mkt-hero-cta{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;font-weight:800;font-size:13px;background:rgba(255,255,255,.2);border-radius:999px;padding:8px 15px;position:relative;z-index:1;transition:background .16s var(--ease)}',
-      '.mkt-hero-card:hover .mkt-hero-cta{background:rgba(255,255,255,.32)}',
-      // ── Accès annexes discrets ──
-      '.mkt-links-head{margin-top:30px;margin-bottom:10px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}',
+      // ═══ Accueil Marketing « Launcher » : calme, centré, 1 action claire par zone ═══
+      '.mkt-launch{padding-top:6px}',
+      '.mkt-head{text-align:center;margin-bottom:22px}',
+      '.mkt-head .v2-page-title{margin-bottom:6px}',
+      '.mkt-head-share{margin-top:12px}',
+      // ── Étape 1 : les 2 choix de fabrication (grandes cartes claires, sobres) ──
+      '.mkt-make{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:var(--section-gap)}',
+      '@media(max-width:640px){.mkt-make{grid-template-columns:1fr;gap:12px}}',
+      '.mkt-make-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:22px 22px 20px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-card);cursor:pointer;font-family:var(--font);overflow:hidden;transition:transform .26s var(--mo-ease-soft),box-shadow .26s var(--mo-ease-soft),border-color .26s var(--mo-ease-soft)}',
+      '.mkt-make-card:hover{transform:translateY(-3px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--_a) 32%,var(--line))}',
+      '.mkt-make-card:active{transform:translateY(-1px)}',
+      '.mkt-make-support{--_a:var(--ip-blue)}',
+      '.mkt-make-selection{--_a:var(--c-opp)}',
+      '.mkt-make-ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--_a);background:linear-gradient(150deg,color-mix(in srgb,var(--_a) 15%,var(--card)),color-mix(in srgb,var(--_a) 6%,var(--card)));margin-bottom:4px}',
+      '.mkt-make-t{font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.mkt-make-s{font-size:13px;color:var(--muted);line-height:1.4}',
+      '.mkt-make-cta{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-weight:800;font-size:13.5px;color:#fff;background:var(--_a);border-radius:var(--r-pill);padding:9px 16px;min-height:var(--tap-min);box-sizing:border-box;align-self:stretch;justify-content:center;transition:filter .16s var(--ease)}',
+      '.mkt-make-card:hover .mkt-make-cta{filter:brightness(1.06)}',
+      // ── Blocs (créations récentes / PDF partagés) ──
+      '.mkt-block{margin-bottom:var(--section-gap)}',
+      '.mkt-block-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}',
+      '.mkt-block-t{font-size:16px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.mkt-block-s{font-size:12.5px;color:var(--muted);font-weight:600}',
+      '.mkt-empty-first{margin:0}',
+      // ── Grande ligne « Documents partagés » (action secondaire claire) ──
+      '.mkt-bigrow{display:flex;align-items:center;gap:15px;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);cursor:pointer;text-decoration:none;color:inherit;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease)}',
+      '.mkt-bigrow:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--c-rose) 28%,var(--line))}',
+      '.mkt-bigrow:hover .mkt-bigrow-go{color:var(--c-rose)}',
+      '.mkt-bigrow-ic{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-rose),#b1304a)}',
+      '.mkt-bigrow-txt{flex:1;min-width:0}',
+      '.mkt-bigrow-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.mkt-bigrow-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.4}',
+      '.mkt-bigrow-go{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;font-weight:700;font-size:13px;color:var(--muted-2);transition:color .16s var(--ease)}',
+      // ── Accès annexes repliés (progressive disclosure) ──
+      '.mkt-more-box{margin-bottom:var(--section-gap);border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);overflow:hidden}',
+      '.mkt-more-sum{display:flex;align-items:center;gap:9px;padding:14px 16px;font-size:13.5px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent}',
+      '.mkt-more-sum::-webkit-details-marker{display:none}',
+      '.mkt-more-sum svg{color:var(--muted-2)}',
+      '.mkt-more-chev{margin-left:auto;color:var(--muted-2);display:inline-flex;transition:transform .2s var(--ease)}',
+      '.mkt-more-box[open] .mkt-more-chev{transform:rotate(90deg)}',
+      '.mkt-more-box[open] .mkt-more-sum{border-bottom:1px solid var(--line)}',
+      '.mkt-more-box .mkt-links{padding:12px}',
       '.mkt-links{display:grid;grid-template-columns:1fr 1fr;gap:12px}',
       '@media(max-width:640px){.mkt-links{grid-template-columns:1fr}}',
       '.mkt-link{display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--card);border:1px solid var(--line);border-radius:14px;cursor:pointer;text-decoration:none;color:inherit;transition:border-color .16s var(--ease),transform .16s var(--ease),box-shadow .16s var(--ease)}',
@@ -1195,11 +1241,6 @@
       '.mkt-doc-del{flex-shrink:0;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}',
       '.mkt-doc-del:hover{color:#fff;background:var(--c-rose,#E0556E);border-color:var(--c-rose,#E0556E)}',
       '.mkt-cat-prod{font-weight:600;font-size:13.5px}',
-      '.mkt-sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}',
-      '.mkt-sec-t{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:800;letter-spacing:-.02em}',
-      '.mkt-sec-dot{width:9px;height:9px;border-radius:50%;background:var(--dc);flex-shrink:0}',
-      '.mkt-sec-n{font-size:12px;font-weight:800;color:var(--muted);background:var(--card-2);border-radius:999px;padding:1px 9px}',
-      '.mkt-sec-s{font-size:12.5px;color:var(--muted);margin-top:2px}',
       '.mkt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px}',
       '.mkt-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh-1);padding:16px 16px 14px;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease);display:flex;flex-direction:column;gap:9px;overflow:hidden}',
       '.mkt-card::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--ca);opacity:0;transition:opacity .2s var(--ease)}',
@@ -1329,8 +1370,8 @@
       '.mkt-msheet{width:794px;transform-origin:top left;background:#fff}',
       // ── Accessibilité : respecter la préférence « moins d\'animations » ──
       '@media(prefers-reduced-motion:reduce){',
-        '.mkt-hero-card,.mkt-card,.mkt-link,.mkt-pick-item,.mkt-cat-banner{transition:none!important}',
-        '.mkt-hero-card:hover,.mkt-card:hover,.mkt-link:hover,.mkt-pick-item:hover{transform:none!important}',
+        '.mkt-make-card,.mkt-bigrow,.mkt-card,.mkt-link,.mkt-pick-item,.mkt-cat-banner,.mkt-more-chev{transition:none!important}',
+        '.mkt-make-card:hover,.mkt-bigrow:hover,.mkt-card:hover,.mkt-link:hover,.mkt-pick-item:hover{transform:none!important}',
         '.mkt-card-go,.mkt-link .v2-row-chev{transition:none!important}',
         '.mkt-pv-live::before{animation:none!important}',
         '.mkt-pick,.mkt-dialog{transition:none!important}',

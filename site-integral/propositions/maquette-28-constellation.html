@@ -22,7 +22,7 @@
   --r-sm:9px; --r-md:14px; --r-lg:18px;
   /* échelle d'espacement régulière (4 / 8) */
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
-  /* easing homogène */
+  /* easing homogène — un seul langage motion */
   --ease:cubic-bezier(.2,.7,.2,1);
   --ease-out:cubic-bezier(.16,1,.3,1);
 }
@@ -56,7 +56,7 @@ section[id],footer{scroll-margin-top:88px}
 .sec-head h2 .hl{color:var(--blue)}
 .sec-head p{font-size:17px;color:var(--mut);line-height:1.6}
 
-/* ===== reveal ===== */
+/* ===== reveal (un seul langage : fade + montée, même easing/durée) ===== */
 .rv{opacity:0;transform:translateY(28px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
 .rv.in{opacity:1;transform:none}
 .rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}.rv.d4{transition-delay:.32s}
@@ -64,7 +64,7 @@ section[id],footer{scroll-margin-top:88px}
 /* ===== BTN ===== */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Chivo',sans-serif;font-weight:700;font-size:13.5px;
   letter-spacing:.02em;padding:14px 28px;border-radius:var(--r-sm);cursor:pointer;border:1px solid transparent;
-  transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s var(--ease),border-color .25s var(--ease);white-space:nowrap}
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s var(--ease),border-color .25s var(--ease);white-space:nowrap;will-change:transform}
 .btn-pri{background:var(--blue);color:#fff;box-shadow:0 12px 30px rgba(0,80,230,.30)}
 .btn-pri:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(0,80,230,.40)}
 .btn-pri:active{transform:translateY(0);box-shadow:0 8px 20px rgba(0,80,230,.34)}
@@ -75,10 +75,19 @@ section[id],footer{scroll-margin-top:88px}
 .btn-gho:hover{border-color:var(--blue);background:var(--blue-tint);transform:translateY(-2px)}
 .btn-gho:active{transform:translateY(0)}
 
-/* ===== CANVAS FOND FIXE ===== */
+/* FX-BANK · MAGNETIC BUTTON — le label bouge un peu plus que le bouton */
+.mag-label{display:inline-flex;align-items:center;gap:8px;transition:transform .25s var(--ease-out)}
+@media (prefers-reduced-motion: reduce){.btn,.mag-label{transition:none!important;transform:none!important}}
+
+/* ===== CANVAS FOND FIXE — RÉSEAU VIVANT ===== */
 #bg-canvas{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;pointer-events:none}
 #bg-fallback{position:fixed;inset:0;z-index:0;display:none;
-  background:radial-gradient(120% 90% at 70% 20%,#FFFFFF 0%,#EAF0FB 60%),var(--bg)}
+  background:
+    radial-gradient(2px 2px at 18% 30%,rgba(0,80,230,.16),transparent 60%),
+    radial-gradient(2px 2px at 72% 22%,rgba(243,154,27,.18),transparent 60%),
+    radial-gradient(2px 2px at 40% 68%,rgba(0,80,230,.13),transparent 60%),
+    radial-gradient(2px 2px at 84% 74%,rgba(10,20,48,.10),transparent 60%),
+    radial-gradient(120% 90% at 70% 20%,#FFFFFF 0%,#EAF0FB 60%),var(--bg)}
 #bg-fallback.show{display:block}
 .bg-vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
   background:radial-gradient(140% 120% at 50% 0%,rgba(255,255,255,.0) 40%,rgba(246,248,252,.65) 100%)}
@@ -109,12 +118,27 @@ header.scrolled{background:rgba(255,255,255,.88);border-bottom:1px solid var(--l
 #hero{min-height:100vh;position:relative;display:flex;align-items:center}
 .hero-inner{width:100%}
 .hero-inner .wrap{padding-top:120px;padding-bottom:80px}
-.hero-col{max-width:680px}
-.hero h1{font-size:clamp(44px,7.4vw,88px);font-weight:900;margin:18px 0 24px;color:var(--ink);letter-spacing:-.045em;line-height:.98}
+.hero-col{max-width:700px}
+/* chip « réseau vivant » — signature du concept */
+.live-chip{display:inline-flex;align-items:center;gap:10px;padding:7px 14px 7px 12px;border-radius:30px;
+  background:rgba(255,255,255,.82);border:1px solid var(--line);box-shadow:var(--shadow);
+  font-family:'Chivo',sans-serif;font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2);margin-bottom:20px}
+.live-chip .beacon{position:relative;width:9px;height:9px;flex-shrink:0}
+.live-chip .beacon i{position:absolute;inset:0;border-radius:50%;background:var(--blue)}
+.live-chip .beacon::after{content:'';position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--blue);
+  animation:beacon 2.2s var(--ease-out) infinite}
+@keyframes beacon{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.6);opacity:0}}
+.live-chip .sep{width:1px;height:12px;background:var(--line2)}
+.live-chip .nodes{color:var(--blue);font-variant-numeric:tabular-nums}
+.hero h1{font-size:clamp(44px,7.4vw,88px);font-weight:900;margin:0 0 24px;color:var(--ink);letter-spacing:-.045em;line-height:.98}
 .hero h1 .hl{color:var(--blue)}
 .hero .sub{font-size:clamp(16px,2vw,20px);color:var(--ink2);max-width:580px;margin-bottom:36px;line-height:1.6}
 .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
 .hero-foot{display:flex;gap:34px;flex-wrap:wrap;margin-top:52px;padding-top:30px;border-top:1px solid var(--line)}
+.hero-foot .it{position:relative;padding-left:18px}
+.hero-foot .it::before{content:'';position:absolute;left:0;top:7px;width:8px;height:8px;border-radius:50%;
+  background:var(--blue);box-shadow:0 0 0 4px var(--blue-tint)}
+.hero-foot .it:nth-child(2)::before{background:var(--orange);box-shadow:0 0 0 4px var(--orange-tint)}
 .hero-foot .it strong{display:block;font-family:'Chivo',sans-serif;font-size:27px;font-weight:900;color:var(--ink);letter-spacing:-.03em}
 .hero-foot .it span{font-size:12.5px;color:var(--mut);letter-spacing:.02em}
 .scroll-hint{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;
@@ -128,41 +152,65 @@ header.scrolled{background:rgba(255,255,255,.88);border-bottom:1px solid var(--l
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow)}
 .section-pad{padding:clamp(78px,10vw,128px) 0}
 
-/* VALEURS */
+/* légende réseau — rappel du concept sous les titres réseau */
+.net-legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:6px;margin-bottom:2px}
+.net-legend .lg{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mut);letter-spacing:.01em}
+.net-legend .lg i{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.net-legend .lg.blue i{background:var(--blue)}
+.net-legend .lg.orange i{background:var(--orange)}
+.net-legend .lg.link i{width:16px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--blue),transparent)}
+
+/* VALEURS — spotlight-cursor (fx-bank, adapté fond clair) */
 .vals{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-.val-card{padding:34px 30px;border-radius:var(--r-lg);background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
+.val-card{position:relative;overflow:hidden;isolation:isolate;--mx:50%;--my:50%;
+  padding:34px 30px;border-radius:var(--r-lg);background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
   transition:transform .35s var(--ease),border-color .35s var(--ease),box-shadow .35s var(--ease)}
+.val-card::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(320px circle at var(--mx) var(--my),rgba(0,80,230,.10),transparent 62%);
+  opacity:0;transition:opacity .3s var(--ease);transform:translateZ(0)}
 .val-card:hover{transform:translateY(-6px);border-color:var(--blue);box-shadow:0 24px 56px rgba(0,80,230,.16)}
+.val-card:hover::before{opacity:1}
 .val-ic{width:54px;height:54px;border-radius:var(--r-md);display:grid;place-items:center;margin-bottom:20px;
   background:var(--blue-tint);color:var(--blue)}
 .val-ic svg{width:26px;height:26px}
+.val-card:nth-child(2){--mx:50%;--my:50%}
+.val-card:nth-child(2)::before{background:radial-gradient(320px circle at var(--mx) var(--my),rgba(243,154,27,.12),transparent 62%)}
 .val-card:nth-child(2) .val-ic{background:var(--orange-tint);color:var(--orange-soft)}
+.val-card:nth-child(2):hover{border-color:var(--orange);box-shadow:0 24px 56px rgba(243,154,27,.16)}
 .val-card h3{font-size:22px;font-weight:700;margin-bottom:10px;color:var(--ink);letter-spacing:-.02em}
 .val-card p{font-size:15px;color:var(--mut);line-height:1.6}
 
 /* OFFRES */
 .labs{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
-.lab{padding:16px 28px;border-radius:var(--r-md);background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
+.lab{position:relative;padding:16px 28px 16px 44px;border-radius:var(--r-md);background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
   font-family:'Chivo',sans-serif;font-weight:700;font-size:18px;letter-spacing:-.01em;color:var(--ink);transition:transform .3s var(--ease),border-color .3s var(--ease),color .3s var(--ease)}
+.lab::before{content:'';position:absolute;left:20px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;
+  background:var(--blue);box-shadow:0 0 0 4px var(--blue-tint);transition:background .3s var(--ease),box-shadow .3s var(--ease)}
 .lab:hover{transform:translateY(-4px);border-color:var(--orange);color:var(--orange-soft)}
+.lab:hover::before{background:var(--orange);box-shadow:0 0 0 4px var(--orange-tint)}
 .offre-note{margin-top:30px;padding:18px 24px;border-radius:var(--r-md);border:1px dashed var(--line2);
   background:rgba(0,80,230,.05);color:var(--ink2);font-size:15px;max-width:640px;line-height:1.6}
 
 /* GROUPE / AGENCES */
 .grp-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
 .ag-list{display:grid;gap:10px}
-.ag{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:var(--r-md);background:var(--panel);
+.ag{position:relative;display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:var(--r-md);background:var(--panel);
   border:1px solid var(--line);box-shadow:var(--shadow);transition:transform .3s var(--ease),border-color .3s var(--ease),background .3s var(--ease)}
 .ag:hover{transform:translateX(6px);border-color:var(--blue);background:rgba(0,80,230,.06)}
-.ag .pin{width:34px;height:34px;border-radius:var(--r-sm);flex-shrink:0;display:grid;place-items:center;background:var(--blue-tint);color:var(--blue)}
+.ag .pin{position:relative;width:34px;height:34px;border-radius:var(--r-sm);flex-shrink:0;display:grid;place-items:center;background:var(--blue-tint);color:var(--blue)}
 .ag .pin svg{width:18px;height:18px}
 .ag.is-siege .pin{background:var(--orange-tint);color:var(--orange-soft)}
+/* pastille « en ligne » sur chaque nœud du réseau */
+.ag .pin::after{content:'';position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;
+  background:var(--blue);border:2px solid #fff}
+.ag.is-siege .pin::after{background:var(--orange)}
 .ag .tx strong{display:block;font-family:'Chivo',sans-serif;font-size:15px;color:var(--ink);font-weight:700;letter-spacing:-.01em}
 .ag .tx span{font-size:12.5px;color:var(--mut)}
 .ag .tag{margin-left:auto;font-family:'Chivo',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.14em;padding:4px 10px;border-radius:20px;
   background:var(--orange-tint);color:var(--orange-soft);text-transform:uppercase;white-space:nowrap}
 .ag .tag.part{background:var(--blue-tint);color:var(--blue)}
-.grp-aside{padding:36px 32px;border-radius:var(--r-lg);background:linear-gradient(160deg,rgba(0,80,230,.10),rgba(255,255,255,.85));
+.grp-aside{position:relative;overflow:hidden;padding:36px 32px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,rgba(0,80,230,.10),rgba(255,255,255,.85));
   border:1px solid var(--line2);box-shadow:var(--shadow)}
 .grp-aside h3{font-size:25px;font-weight:900;color:var(--ink);margin-bottom:14px;letter-spacing:-.03em}
 .grp-aside p{font-size:15px;color:var(--ink2);margin-bottom:20px;line-height:1.6}
@@ -170,7 +218,7 @@ header.scrolled{background:rgba(255,255,255,.88);border-bottom:1px solid var(--l
 
 /* CHIFFRES */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
-.stat{text-align:center;padding:36px 18px;border-radius:var(--r-lg);background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
+.stat{position:relative;text-align:center;padding:36px 18px;border-radius:var(--r-lg);background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
   transition:transform .35s var(--ease),border-color .35s var(--ease)}
 .stat:hover{transform:translateY(-5px);border-color:var(--blue)}
 .stat .num{font-family:'Chivo',sans-serif;font-size:clamp(36px,5.2vw,58px);font-weight:900;color:var(--ink);line-height:1;letter-spacing:-.045em}
@@ -267,6 +315,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
   html{scroll-behavior:auto}
   #bg-canvas{display:none!important}
   #bg-fallback{display:block!important}
+  .val-card::before{display:none}
 }
 </style>
 </head>
@@ -274,7 +323,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
 
 <a href="#main" class="skip">Aller au contenu</a>
 
-<!-- ===== FOND 3D FIXE ===== -->
+<!-- ===== FOND 3D FIXE — RÉSEAU VIVANT ===== -->
 <canvas id="bg-canvas" aria-hidden="true"></canvas>
 <div id="bg-fallback" aria-hidden="true"></div>
 <div class="bg-vignette" aria-hidden="true"></div>
@@ -292,7 +341,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
       <li><a href="#contact">Contact</a></li>
     </ul>
     <div class="nav-cta">
-      <a href="#contact" class="btn btn-orange">Demander nos conditions</a>
+      <a href="#contact" class="btn btn-orange" data-mag><span class="mag-label">Demander nos conditions</span></a>
       <button class="burger" id="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
     </div>
   </nav>
@@ -315,12 +364,17 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
   <div class="hero-inner">
     <div class="wrap">
       <div class="hero-col">
-        <p class="eyebrow rv"><span class="dot" aria-hidden="true"></span> Grossiste-répartiteur de première intention</p>
+        <span class="live-chip rv" aria-label="Réseau national actif, 9 agences en ligne">
+          <span class="beacon" aria-hidden="true"><i></i></span>
+          Réseau vivant
+          <span class="sep" aria-hidden="true"></span>
+          <span class="nodes"><span data-count="9">0</span> agences en ligne</span>
+        </span>
         <h1 id="hero-title" class="rv d1">Plus de marge,<br><span class="hl">sur chaque commande.</span></h1>
-        <p class="sub rv d2">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
+        <p class="sub rv d2">De meilleures conditions, dès la première boîte — quelle que soit votre officine. Un réseau national de grossistes, connecté au plus près de vous.</p>
         <div class="hero-cta rv d3">
-          <a href="#contact" class="btn btn-orange">Demander nos conditions</a>
-          <a href="#groupe" class="btn btn-gho">Découvrir le groupe</a>
+          <a href="#contact" class="btn btn-orange" data-mag><span class="mag-label">Demander nos conditions</span></a>
+          <a href="#groupe" class="btn btn-gho" data-mag><span class="mag-label">Découvrir le groupe</span></a>
         </div>
         <div class="hero-foot rv d4">
           <div class="it"><strong>+20 ans</strong><span>d'expérience</span></div>
@@ -342,17 +396,17 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
       <p>Un partenaire de proximité, fiable et exigeant — à vos côtés sur chaque commande.</p>
     </div>
     <div class="vals">
-      <div class="val-card rv">
+      <div class="val-card rv" data-spot>
         <div class="val-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.4-3 8.3-7 9.5C8 19.3 5 15.4 5 11V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <h3>Confiance</h3>
         <p>Des relations durables, une parole tenue et une transparence totale sur ce que l'on vous propose.</p>
       </div>
-      <div class="val-card rv d1">
+      <div class="val-card rv d1" data-spot>
         <div class="val-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v6"/><path d="M5 9l-1.5 9.5A2 2 0 005.5 21h13a2 2 0 002-2.5L19 9"/><circle cx="12" cy="6" r="3"/></svg></div>
         <h3>Engagement</h3>
         <p>On porte vos enjeux comme les nôtres : disponibilité, réactivité et accompagnement sur le long terme.</p>
       </div>
-      <div class="val-card rv d2">
+      <div class="val-card rv d2" data-spot>
         <div class="val-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 11a4 4 0 10-8 0"/><path d="M3 21a9 9 0 0118 0"/><circle cx="12" cy="7" r="4"/></svg></div>
         <h3>Respect</h3>
         <p>De l'humain avant tout : votre officine est unique, nos réponses le sont aussi.</p>
@@ -387,6 +441,11 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
       <p class="eyebrow"><span class="dot" aria-hidden="true"></span> Le groupe</p>
       <h2 id="groupe-title">National.</h2>
       <p>Neuf agences en réseau, au plus près de votre officine — partout en France.</p>
+      <div class="net-legend" aria-hidden="true">
+        <span class="lg blue"><i></i> Agence</span>
+        <span class="lg orange"><i></i> Siège</span>
+        <span class="lg link"><i></i> Liaison réseau</span>
+      </div>
     </div>
     <div class="grp-grid">
       <div class="ag-list">
@@ -468,7 +527,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
       <div class="proj rv d2"><div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="3"/><circle cx="16" cy="15" r="3"/><path d="M11 11l3 3"/></svg></div><h4>Cession de parts</h4></div>
       <div class="proj rv d3"><div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2 5 4-12 2 7h6"/></svg></div><h4>Optimisation</h4></div>
     </div>
-    <a href="#contact" class="btn btn-orange rv d4">En parler avec nous</a>
+    <a href="#contact" class="btn btn-orange rv d4" data-mag><span class="mag-label">En parler avec nous</span></a>
   </div>
 </section>
 
@@ -556,6 +615,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
   "use strict";
   document.getElementById('yr').textContent = new Date().getFullYear();
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var coarse = window.matchMedia('(pointer: coarse)').matches;
 
   /* ---------- HEADER / MENU ---------- */
   var hdr=document.getElementById('hdr');
@@ -597,7 +657,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
     Object.keys(navMap).forEach(function(id){ var s=document.getElementById(id); if(s) spy.observe(s); });
   }
 
-  /* ---------- REVEALS ---------- */
+  /* ---------- REVEALS (fade + montée, un seul langage) ---------- */
   var rvs=document.querySelectorAll('.rv');
   if('IntersectionObserver' in window && !reduce){
     var io=new IntersectionObserver(function(es){
@@ -606,9 +666,9 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
     rvs.forEach(function(r){io.observe(r);});
   } else { rvs.forEach(function(r){r.classList.add('in');}); }
 
-  /* ---------- COMPTEURS ---------- */
+  /* ---------- COMPTEURS (fx-bank count-up, easing homogène) ---------- */
   var counters=document.querySelectorAll('[data-count]');
-  function fmt(n,grp){ if(grp){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' '); } return Math.round(n).toString(); }
+  function fmt(n,grp){ if(grp){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' '); } return Math.round(n).toString(); }
   function runCount(el){
     var target=parseFloat(el.getAttribute('data-count')), grp=el.getAttribute('data-fmt')==='1';
     if(reduce){ el.textContent=fmt(target,grp); return; }
@@ -624,14 +684,46 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
     counters.forEach(function(c){io2.observe(c);});
   } else { counters.forEach(runCount); }
 
+  /* ---------- FX-BANK · SPOTLIGHT CURSOR (adapté fond clair, halo bleu/orange) ---------- */
+  if(!reduce && !coarse){
+    document.querySelectorAll('[data-spot]').forEach(function(el){
+      el.addEventListener('pointermove',function(e){
+        var r=el.getBoundingClientRect();
+        el.style.setProperty('--mx',(e.clientX-r.left)+'px');
+        el.style.setProperty('--my',(e.clientY-r.top)+'px');
+      },{passive:true});
+    });
+  }
+
+  /* ---------- FX-BANK · MAGNETIC BUTTON (CTA vivants, désactivé tactile) ---------- */
+  if(!reduce && !coarse){
+    var magR=80, magS=0.28;
+    document.querySelectorAll('[data-mag]').forEach(function(btn){
+      var label=btn.querySelector('.mag-label');
+      function move(e){
+        var r=btn.getBoundingClientRect();
+        var cx=r.left+r.width/2, cy=r.top+r.height/2;
+        var dx=e.clientX-cx, dy=e.clientY-cy;
+        if(Math.hypot(dx,dy) < r.width/2 + magR){
+          btn.style.transform='translate('+(dx*magS)+'px,'+(dy*magS)+'px)';
+          if(label) label.style.transform='translate('+(dx*magS*0.4)+'px,'+(dy*magS*0.4)+'px)';
+        } else { reset(); }
+      }
+      function reset(){ btn.style.transform=''; if(label) label.style.transform=''; }
+      window.addEventListener('mousemove',move,{passive:true});
+      btn.addEventListener('mouseleave',reset);
+    });
+  }
+
   /* ====================================================================
-     SCÈNE 3D — CONSTELLATION RÉSEAU PILOTÉE PAR LE SCROLL
+     SCÈNE 3D — CONSTELLATION / RÉSEAU VIVANT PILOTÉ PAR LE SCROLL
      hero (libre) -> valeurs (3 amas) -> offres (rangées/flux)
-     -> groupe (silhouette France + agences) -> chiffres (condensé)
+     -> groupe (silhouette France + agences + maillage) -> chiffres (condensé)
      -> offilog (pluie dispersée) -> accompagnement (regroupé)
      -> contact (apaisé)
-     Version CLAIRE : fond clair, couleurs PLEINES saturées (pas d'additive),
-     points/lignes nets, opacité haute pour rester lisible sur blanc.
+     Version CLAIRE : fond clair, couleurs PLEINES saturées (NormalBlending,
+     PAS d'AdditiveBlending), points/lignes nets, opacité haute pour rester
+     lisible sur blanc. Le réseau national vivant, en clair.
      ==================================================================== */
   var canvas=document.getElementById('bg-canvas');
   var fallback=document.getElementById('bg-fallback');
@@ -658,7 +750,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
   var running=true, rafId=null;
 
   var BLUE=new THREE.Color(0x0050E6), BLUE2=new THREE.Color(0x0A47C2), ORANGE=new THREE.Color(0xF39A1B), ORANGE2=new THREE.Color(0xC9760A);
-  var INK=new THREE.Color(0x0A1430);
+  var INK=new THREE.Color(0x0A1430), SLATE=new THREE.Color(0x8492B4);
 
   var FR_POLY=[
     [0.42,0.97],[0.52,0.95],[0.55,0.88],[0.63,0.86],[0.70,0.90],[0.78,0.84],
@@ -780,7 +872,8 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
     geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
     colorBase=new Float32Array(COUNT*3);
     for(var i=0;i<COUNT;i++){
-      var c = (i%6===0)?ORANGE:(i%9===0?ORANGE2:(i%3===0?BLUE:(i%2===0?BLUE2:INK)));
+      // couleurs PLEINES saturées : nœuds bleu/orange majoritaires, quelques ancres encre, gris-bleu épars
+      var c = (i%6===0)?ORANGE:(i%11===0?ORANGE2:(i%3===0?BLUE:(i%4===0?BLUE2:(i%13===0?INK:SLATE))));
       colorBase[i*3]=c.r; colorBase[i*3+1]=c.g; colorBase[i*3+2]=c.b;
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colorBase,3));
@@ -790,9 +883,10 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
     points=new THREE.Points(geo,mat);
     scene.add(points);
 
+    // maillage réseau : lignes gris-bleu nettes, NormalBlending (pas d'additive)
     var lgeo=new THREE.BufferGeometry();
     lgeo.setAttribute('position', new THREE.BufferAttribute(lineP,3));
-    var lmat=new THREE.LineBasicMaterial({color:0x0050E6, transparent:true, opacity:0.0, blending:THREE.NormalBlending, depthWrite:false});
+    var lmat=new THREE.LineBasicMaterial({color:0x6E86C6, transparent:true, opacity:0.0, blending:THREE.NormalBlending, depthWrite:false});
     lineSeg=new THREE.LineSegments(lgeo,lmat);
     scene.add(lineSeg);
 
@@ -921,7 +1015,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:54px
 
     var lineVis = nearFrance ? Math.min(1,(secProgLerp-2.4)/0.6)*Math.min(1,(3.8-secProgLerp)/0.6) : 0;
     lineVis=Math.max(0,lineVis);
-    lineSeg.material.opacity = 0.34*lineVis;
+    lineSeg.material.opacity = 0.30*lineVis;
     if(lineVis>0.02){
       lineFrame++;
       if(lineFrame%2===0){ // throttle léger : maillage mis à jour 1 frame sur 2

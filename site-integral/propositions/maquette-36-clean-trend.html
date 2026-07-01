@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Intégral Pharma — Grossiste-répartiteur de première intention</title>
 <meta name="description" content="Intégral Pharma, groupe de grossistes français indépendant. Plus de marge sur chaque commande, couverture nationale, Offilog +14 000 références." />
+<meta name="theme-color" content="#FFFFFF" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet" />
@@ -12,9 +13,15 @@
 /* ============================================================
    INTÉGRAL PHARMA — Maquette 36 "Clean Trend"
    DA : claire, aérée, encre foncée sur blanc. 2 accents (bleu + orange).
+   Concept : minimal moderne façon Linear/Stripe — beaucoup de blanc,
+   une grille disciplinée, une seule ligne de motion.
    Motion : UN SEUL langage — reveal fade + translateY(14px),
    cubic-bezier(.22,.61,.36,1), 560ms, léger stagger. Hover 180ms. Count-up.
-   Aucune 3D, aucun color-morph, aucun curseur custom, aucun parallax lourd.
+   Signatures d'interaction : fine barre de progression de scroll (haut),
+   marquee de preuve (fx-bank), CTA hero magnétique discret (fx-bank).
+   Aucune 3D, aucun color-morph, aucun curseur custom, aucun fond sombre.
+   Safari safe : pas de background-clip:text, pas de backdrop-filter,
+   pas de filter:blur sur grande surface, aucune <video>.
    ============================================================ */
 
 /* ---------- Reset ---------- */
@@ -25,11 +32,13 @@ img{max-width:100%;display:block}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer;border:none;background:none}
 :focus-visible{outline:2.5px solid var(--blue);outline-offset:3px;border-radius:6px}
+::selection{background:var(--blue-soft);color:var(--ink)}
 
 /* ---------- Tokens ---------- */
 :root{
   --bg:#FFFFFF;
   --bg-soft:#F7F8FA;
+  --bg-tint:#FBFCFE;
   --ink:#0A0E1A;
   --ink-2:#1E293B;
   --muted:#5B6472;
@@ -38,8 +47,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
   --line-soft:#EFF2F7;
   --card:#FFFFFF;
   --blue:#0050E6;
+  --blue-2:#003fc4;
   --blue-soft:#EBF1FF;
   --orange:#F39A1B;
+  --orange-ink:#B9740A;
   --orange-soft:#FEF4E4;
   --shadow-sm:0 1px 2px rgba(10,14,26,.04), 0 2px 6px rgba(10,14,26,.04);
   --shadow-md:0 4px 14px rgba(10,14,26,.06), 0 12px 34px rgba(10,14,26,.05);
@@ -52,6 +63,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
   --pad:24px;
 }
 
+/* ---------- Scroll progress (signature minimale, haut de page) ---------- */
+.scroll-progress{position:fixed;top:0;left:0;height:2px;width:100%;z-index:200;transform:scaleX(0);transform-origin:0 50%;background:linear-gradient(90deg,var(--blue),var(--orange));will-change:transform}
+
 /* ---------- Type scale ---------- */
 .display{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:-.028em;line-height:1.02;color:var(--ink)}
 h2.display{font-size:clamp(2rem,4.6vw,3.4rem)}
@@ -62,19 +76,23 @@ h3{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:-.02em;
 
 /* ---------- Layout ---------- */
 .wrap{width:100%;max-width:var(--maxw);margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
-section{padding:clamp(64px,9vw,120px) 0}
+section{padding:clamp(64px,9vw,120px) 0;position:relative}
 .section-head{max-width:720px;margin-bottom:clamp(40px,5vw,64px)}
 .section-head .eyebrow{display:inline-block;margin-bottom:16px}
 .section-head p{margin-top:18px}
 
 /* ---------- Buttons ---------- */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.96rem;padding:0 22px;height:50px;min-height:44px;border-radius:12px;transition:transform var(--hover) var(--ease),background var(--hover) var(--ease),box-shadow var(--hover) var(--ease),border-color var(--hover) var(--ease)}
-.btn svg{width:17px;height:17px}
+.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.96rem;padding:0 22px;height:50px;min-height:44px;border-radius:12px;transition:transform var(--hover) var(--ease),background var(--hover) var(--ease),box-shadow var(--hover) var(--ease),border-color var(--hover) var(--ease)}
+.btn svg{width:17px;height:17px;transition:transform var(--hover) var(--ease)}
 .btn-primary{background:var(--blue);color:#fff;box-shadow:0 2px 10px rgba(0,80,230,.22)}
-.btn-primary:hover{background:#003fc4;transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,80,230,.28)}
+.btn-primary:hover{background:var(--blue-2);transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,80,230,.28)}
+.btn-primary:hover svg{transform:translateX(3px)}
 .btn-ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
 .btn-ghost:hover{border-color:#cfd7e4;background:var(--bg-soft);transform:translateY(-2px)}
 .btn-sm{height:44px;padding:0 18px;font-size:.9rem}
+/* CTA magnétique (fx-bank magnetic-button, adapté fond clair + coins carrés) */
+.btn[data-fx-magnetic]{will-change:transform}
+.btn[data-fx-magnetic] .btn-label{display:inline-flex;align-items:center;gap:9px;transition:transform var(--hover) var(--ease)}
 
 /* ---------- Header ---------- */
 header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.86);border-bottom:1px solid transparent;transition:border-color var(--hover) var(--ease),box-shadow var(--hover) var(--ease),background var(--hover) var(--ease)}
@@ -84,17 +102,21 @@ header.stuck{border-bottom-color:var(--line);box-shadow:0 1px 0 rgba(10,14,26,.0
 .brand img{height:32px;width:auto}
 .brand span{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:1.06rem;letter-spacing:-.01em}
 .nav-links{display:flex;align-items:center;gap:4px;margin-left:auto}
-.nav-links a{font-size:.92rem;font-weight:450;color:var(--ink-2);padding:9px 12px;border-radius:9px;transition:color var(--hover) var(--ease),background var(--hover) var(--ease)}
+.nav-links a{position:relative;font-size:.92rem;font-weight:450;color:var(--ink-2);padding:9px 12px;border-radius:9px;transition:color var(--hover) var(--ease),background var(--hover) var(--ease)}
 .nav-links a:hover{color:var(--ink);background:var(--bg-soft)}
+.nav-links a[aria-current="true"]{color:var(--blue)}
 .nav-cta{margin-left:14px}
-.burger{display:none;margin-left:auto;width:44px;height:44px;border-radius:10px;border:1px solid var(--line);align-items:center;justify-content:center;background:var(--card)}
+.burger{display:none;margin-left:auto;width:44px;height:44px;border-radius:10px;border:1px solid var(--line);align-items:center;justify-content:center;background:var(--card);transition:background var(--hover) var(--ease),border-color var(--hover) var(--ease)}
+.burger:hover{background:var(--bg-soft);border-color:#cfd7e4}
 .burger svg{width:20px;height:20px}
 
 /* ---------- Hero ---------- */
 .hero{padding-top:clamp(48px,6vw,84px);padding-bottom:clamp(56px,7vw,96px)}
 .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(36px,5vw,72px);align-items:center}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:22px;padding:7px 14px;border-radius:999px;background:var(--blue-soft);color:var(--blue);font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:600;letter-spacing:.05em}
-.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--blue);position:relative}
+.hero-eyebrow .dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;background:var(--blue);opacity:.3;animation:pulse 2.4s var(--ease) infinite}
+@keyframes pulse{0%{transform:scale(.6);opacity:.4}70%,100%{transform:scale(1.8);opacity:0}}
 .hero h1{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.02;font-size:clamp(2.5rem,6vw,4.4rem);color:var(--ink)}
 .hero h1 .serif{color:var(--blue);font-size:1.04em;line-height:1}
 .hero .lede{margin-top:24px;max-width:44ch}
@@ -107,18 +129,22 @@ header.stuck{border-bottom-color:var(--line);box-shadow:0 1px 0 rgba(10,14,26,.0
 .visual-badge .vb-l{font-size:.78rem;color:var(--muted);line-height:1.2}
 .visual-badge .vb-bar{width:3px;height:34px;border-radius:2px;background:var(--orange)}
 
-/* trust band */
-.trust{margin-top:clamp(48px,6vw,72px);padding-top:32px;border-top:1px solid var(--line)}
-.trust-label{font-size:.8rem;font-weight:500;letter-spacing:.04em;color:var(--muted-2);text-transform:uppercase;margin-bottom:18px}
-.trust-logos{display:flex;flex-wrap:wrap;align-items:center;gap:14px 40px}
-.trust-logos span{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:1.14rem;color:#B4BCC9;letter-spacing:.01em;transition:color var(--hover) var(--ease)}
-.trust-logos span:hover{color:var(--ink-2)}
-
 /* hero mini-stats */
 .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;margin-top:clamp(40px,5vw,56px)}
-.hero-stats .hs{background:var(--card);padding:22px 20px}
+.hero-stats .hs{background:var(--card);padding:22px 20px;transition:background var(--hover) var(--ease)}
+.hero-stats .hs:hover{background:var(--bg-tint)}
 .hs-k{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(1.4rem,2.6vw,1.9rem);color:var(--ink);letter-spacing:-.02em;line-height:1}
 .hs-l{font-size:.86rem;color:var(--muted);margin-top:6px}
+
+/* trust marquee (fx-bank marquee-infinite, adapté fond clair) */
+.trust{margin-top:clamp(48px,6vw,72px);padding-top:34px;border-top:1px solid var(--line)}
+.trust-label{font-size:.8rem;font-weight:500;letter-spacing:.04em;color:var(--muted-2);text-transform:uppercase;margin-bottom:22px}
+.fx-marquee{--gap:56px;--speed:34s;position:relative;overflow:hidden;width:100%;display:flex;user-select:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.fx-marquee__track{display:flex;gap:var(--gap);padding-right:var(--gap);flex:0 0 auto;min-width:100%;align-items:center;animation:fxMarquee var(--speed) linear infinite;will-change:transform}
+.fx-marquee:hover .fx-marquee__track{animation-play-state:paused}
+.fx-marquee__item{flex:0 0 auto;display:inline-flex;align-items:center;gap:.6rem;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:1.14rem;letter-spacing:.01em;color:#B4BCC9;white-space:nowrap;transition:color var(--hover) var(--ease)}
+.fx-marquee__item:hover{color:var(--ink-2)}
+@keyframes fxMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
 /* ---------- Values ---------- */
 .values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
@@ -146,19 +172,17 @@ header.stuck{border-bottom-color:var(--line);box-shadow:0 1px 0 rgba(10,14,26,.0
 .agence .a-name{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:1.02rem;color:var(--ink);margin-bottom:5px;line-height:1.25}
 .agence .a-loc{font-size:.9rem;color:var(--muted)}
 .tag{display:inline-block;margin-top:12px;font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:6px}
-.tag-siege{background:var(--orange-soft);color:#B9740A}
+.tag-siege{background:var(--orange-soft);color:var(--orange-ink)}
 .tag-partner{background:var(--blue-soft);color:var(--blue)}
 
-/* ---------- Chiffres (compteurs) ---------- */
-.chiffres{background:var(--ink);color:#fff}
-.chiffres .eyebrow{color:#7FA6FF}
-.chiffres h2.display{color:#fff}
-.chiffres .lede{color:#AEB7C6}
-.count-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-lg);overflow:hidden;margin-top:44px}
-.count-cell{background:var(--ink);padding:34px 26px}
-.count-k{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(2.2rem,4.4vw,3rem);letter-spacing:-.03em;line-height:1;color:#fff}
+/* ---------- Chiffres (compteurs, fond clair) ---------- */
+.chiffres{background:var(--bg-soft)}
+.count-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-top:44px}
+.count-cell{background:var(--card);padding:34px 26px;transition:background var(--hover) var(--ease)}
+.count-cell:hover{background:var(--bg-tint)}
+.count-k{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(2.2rem,4.4vw,3rem);letter-spacing:-.03em;line-height:1;color:var(--ink)}
 .count-k .u{color:var(--orange)}
-.count-l{margin-top:10px;color:#AEB7C6;font-size:.94rem}
+.count-l{margin-top:10px;color:var(--muted);font-size:.94rem}
 
 /* ---------- Offilog ---------- */
 .offilog-top{display:grid;grid-template-columns:1fr auto;gap:32px;align-items:end;margin-bottom:44px}
@@ -169,8 +193,10 @@ header.stuck{border-bottom-color:var(--line);box-shadow:0 1px 0 rgba(10,14,26,.0
 .cats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .cat{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:18px 20px;transition:transform var(--hover) var(--ease),box-shadow var(--hover) var(--ease),border-color var(--hover) var(--ease)}
 .cat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--line-soft)}
-.cat-ic{width:40px;height:40px;flex-shrink:0;border-radius:10px;background:var(--bg-soft);display:flex;align-items:center;justify-content:center}
-.cat-ic svg{width:20px;height:20px;stroke:var(--ink-2)}
+.cat:hover .cat-ic{background:var(--blue-soft)}
+.cat:hover .cat-ic svg{stroke:var(--blue)}
+.cat-ic{width:40px;height:40px;flex-shrink:0;border-radius:10px;background:var(--bg-soft);display:flex;align-items:center;justify-content:center;transition:background var(--hover) var(--ease)}
+.cat-ic svg{width:20px;height:20px;stroke:var(--ink-2);transition:stroke var(--hover) var(--ease)}
 .cat span{font-weight:500;font-size:.98rem;color:var(--ink-2)}
 
 /* ---------- Accompagnement ---------- */
@@ -211,6 +237,7 @@ header.stuck{border-bottom-color:var(--line);box-shadow:0 1px 0 rgba(10,14,26,.0
 .field textarea{resize:vertical;min-height:110px;line-height:1.5}
 .field input:focus,.field textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px var(--blue-soft)}
 .form .btn{width:100%;margin-top:6px}
+.form-note{margin-top:14px;font-size:.82rem;color:var(--muted-2);text-align:center}
 
 /* ---------- Footer ---------- */
 footer{background:var(--bg-soft);border-top:1px solid var(--line);padding:56px 0 32px}
@@ -255,16 +282,23 @@ footer{background:var(--bg-soft);border-top:1px solid var(--line);padding:56px 0
   .foot-top{flex-direction:column}
 }
 
-/* ---------- Reduced motion : neutralise le peu de motion ---------- */
+/* ---------- Reduced motion : neutralise tout le motion ---------- */
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important}
   .reveal{opacity:1!important;transform:none!important;transition:none!important}
-  .btn,.value-card,.labo-chip,.agence,.cat,.proj,.carr,#netFrame{transition:none!important}
+  .btn,.value-card,.labo-chip,.agence,.cat,.proj,.carr,#netFrame,.hero-stats .hs,.count-cell,.cat-ic,.cat-ic svg{transition:none!important}
   .btn:hover,.value-card:hover,.proj:hover,.agence:hover,.cat:hover,.carr:hover,.labo-chip:hover{transform:none!important}
+  .btn[data-fx-magnetic],.btn[data-fx-magnetic] .btn-label{transform:none!important}
+  .hero-eyebrow .dot::after{animation:none!important}
+  .fx-marquee__track{animation:none!important}
+  .fx-marquee{overflow-x:auto}
+  .scroll-progress{display:none!important}
 }
 </style>
 </head>
 <body>
+
+<div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
 <!-- ============ HEADER ============ -->
 <header id="header">
@@ -301,8 +335,10 @@ footer{background:var(--bg-soft);border-top:1px solid var(--line);padding:56px 0
         <h1 class="reveal">Plus de marge, <span class="serif">sur chaque commande.</span></h1>
         <p class="lede reveal">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
         <div class="hero-cta reveal">
-          <a href="#contact" class="btn btn-primary">Demander nos conditions
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <a href="#contact" class="btn btn-primary" data-fx-magnetic>
+            <span class="btn-label">Demander nos conditions
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
           </a>
           <a href="#groupe" class="btn btn-ghost">Découvrir le groupe</a>
         </div>
@@ -329,11 +365,30 @@ footer{background:var(--bg-soft);border-top:1px solid var(--line);padding:56px 0
       <div class="hs"><div class="hs-k">+14 000</div><div class="hs-l">références Offilog</div></div>
     </div>
 
-    <!-- trust band -->
+    <!-- trust marquee -->
     <div class="trust reveal">
       <div class="trust-label">Ils nous font confiance</div>
-      <div class="trust-logos">
-        <span>Zentiva</span><span>Teva</span><span>EG Labo</span><span>Zydus</span><span>Viatris</span>
+      <div class="fx-marquee" aria-label="Laboratoires partenaires">
+        <div class="fx-marquee__track">
+          <span class="fx-marquee__item">Zentiva</span>
+          <span class="fx-marquee__item">Teva</span>
+          <span class="fx-marquee__item">EG Labo</span>
+          <span class="fx-marquee__item">Zydus</span>
+          <span class="fx-marquee__item">Viatris</span>
+          <span class="fx-marquee__item">Biogaran</span>
+          <span class="fx-marquee__item">Sandoz</span>
+          <span class="fx-marquee__item">Arrow</span>
+        </div>
+        <div class="fx-marquee__track" aria-hidden="true">
+          <span class="fx-marquee__item">Zentiva</span>
+          <span class="fx-marquee__item">Teva</span>
+          <span class="fx-marquee__item">EG Labo</span>
+          <span class="fx-marquee__item">Zydus</span>
+          <span class="fx-marquee__item">Viatris</span>
+          <span class="fx-marquee__item">Biogaran</span>
+          <span class="fx-marquee__item">Sandoz</span>
+          <span class="fx-marquee__item">Arrow</span>
+        </div>
       </div>
     </div>
   </div>
@@ -543,6 +598,7 @@ footer{background:var(--bg-soft);border-top:1px solid var(--line);padding:56px 0
         <button type="submit" class="btn btn-primary">Envoyer ma demande
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
+        <p class="form-note">Réponse rapide — conditions chiffrées en rendez-vous, adaptées à votre officine.</p>
       </form>
     </div>
   </div>
@@ -581,17 +637,34 @@ footer{background:var(--bg-soft);border-top:1px solid var(--line);padding:56px 0
 (function(){
   'use strict';
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var coarse = window.matchMedia('(pointer: coarse)').matches;
 
   /* ---- Header sticky shadow ---- */
   var header = document.getElementById('header');
   function onScroll(){ header.classList.toggle('stuck', window.scrollY > 8); }
   onScroll(); window.addEventListener('scroll', onScroll, {passive:true});
 
+  /* ---- Barre de progression de scroll (signature minimale) ---- */
+  var progress = document.getElementById('scrollProgress');
+  if(progress && !reduce){
+    var ticking = false;
+    function updateProgress(){
+      var doc = document.documentElement;
+      var max = (doc.scrollHeight - doc.clientHeight) || 1;
+      var p = Math.min(1, Math.max(0, window.scrollY / max));
+      progress.style.transform = 'scaleX(' + p + ')';
+      ticking = false;
+    }
+    window.addEventListener('scroll', function(){
+      if(!ticking){ requestAnimationFrame(updateProgress); ticking = true; }
+    }, {passive:true});
+    updateProgress();
+  }
+
   /* ---- Burger : révèle simplement les ancres du header (menu mobile léger) ---- */
   var burger = document.getElementById('burger');
   if(burger){
     burger.addEventListener('click', function(){
-      // scroll doux vers le sommaire des sections
       var open = burger.getAttribute('aria-expanded') === 'true';
       burger.setAttribute('aria-expanded', String(!open));
       document.getElementById('groupe').scrollIntoView({behavior: reduce ? 'auto' : 'smooth'});
@@ -619,7 +692,26 @@ footer{background:var(--bg-soft);border-top:1px solid var(--line);padding:56px 0
     reveals.forEach(function(el){ io.observe(el); });
   }
 
-  /* ---- Compteurs count-up (simples) ---- */
+  /* ---- Nav : lien actif selon la section visible ---- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-links a'));
+  var sections = navLinks.map(function(a){
+    var id = a.getAttribute('href');
+    return (id && id.charAt(0) === '#') ? document.querySelector(id) : null;
+  });
+  if('IntersectionObserver' in window){
+    var spy = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          navLinks.forEach(function(a,i){
+            a.setAttribute('aria-current', sections[i] === e.target ? 'true' : 'false');
+          });
+        }
+      });
+    }, {threshold:0.4, rootMargin:'-40% 0px -50% 0px'});
+    sections.forEach(function(s){ if(s) spy.observe(s); });
+  }
+
+  /* ---- Compteurs count-up (fx-bank count-up, easing out-cubic) ---- */
   function formatNum(n){ return n.toLocaleString('fr-FR'); }
   function runCount(el){
     var target = parseFloat(el.getAttribute('data-count'));
@@ -644,6 +736,30 @@ footer{background:var(--bg-soft);border-top:1px solid var(--line);padding:56px 0
       entries.forEach(function(e){ if(e.isIntersecting){ runCount(e.target); cio.unobserve(e.target); } });
     }, {threshold:0.5});
     counters.forEach(function(el){ cio.observe(el); });
+  }
+
+  /* ---- CTA magnétique (fx-bank magnetic-button, discret) ---- */
+  if(!reduce && !coarse){
+    var fxMagRadius = 90, fxMagStrength = 0.24;
+    document.querySelectorAll('[data-fx-magnetic]').forEach(function(btn){
+      var label = btn.querySelector('.btn-label');
+      function move(e){
+        var r = btn.getBoundingClientRect();
+        var cx = r.left + r.width/2, cy = r.top + r.height/2;
+        var dx = e.clientX - cx, dy = e.clientY - cy;
+        var dist = Math.hypot(dx, dy);
+        if(dist < r.width/2 + fxMagRadius){
+          btn.style.transform = 'translate(' + (dx*fxMagStrength) + 'px,' + (dy*fxMagStrength) + 'px)';
+          if(label) label.style.transform = 'translate(' + (dx*fxMagStrength*0.4) + 'px,' + (dy*fxMagStrength*0.4) + 'px)';
+        } else { reset(); }
+      }
+      function reset(){
+        btn.style.transform = 'translate(0,0)';
+        if(label) label.style.transform = 'translate(0,0)';
+      }
+      window.addEventListener('mousemove', move, {passive:true});
+      btn.addEventListener('mouseleave', reset);
+    });
   }
 
   /* ---- Carte : hauteur pilotée par le message ipAtlasHeight ---- */
