@@ -75,14 +75,8 @@
     }).join('') + '</div>';
   }
   V2.priceTabs = function (active) {
-    // « Catalogue & prix » unifié = 2 onglets : vue réseau par produit + catalogues grossiste (prix/stock/docs).
-    var items = [['molecules', 'Par produit'], ['marketing:catalogues', 'Catalogues grossiste']];
-    return '<div class="v2-subnav">' + items.map(function (it) {
-      var seg = it[0].split(':'), route = seg[0], param = seg[1] || '';
-      var on = (active === it[0]) ? ' on' : '';
-      var go = param ? "V2.go('" + route + "','" + param + "')" : "V2.go('" + route + "')";
-      return '<a class="v2-subtab' + on + '" onclick="' + go + '">' + it[1] + '</a>';
-    }).join('') + '</div>';
+    // Catalogue unifié = une seule page (pages.molecules) — plus d'onglets.
+    return '';
   };
   V2.docTabs = function (active) {
     // Prospection = Présentation seule (les Fiches ne sont plus dans cet espace) → pas d'onglets.
