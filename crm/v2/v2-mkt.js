@@ -327,6 +327,20 @@
             'Pour l\'instant les supports sont enregistrés sur cet appareil. Pour que Pauline et toi voyiez les mêmes, il faut créer une table dans Supabase (une seule fois). Demande-moi le script SQL, il est prêt.</div></div>'
           : '') +
       '</div>';
+
+    // ── Motion « façon Framer Motion » (discret, 150–300ms, RM-safe via l'API) ──
+    if (V2.motion) {
+      // Cascade d'entrée sur les cartes « Mes créations »
+      V2.motion.stagger(root.querySelectorAll('.mkt-card'), { step: 45, y: 10 });
+      // Les 2 grands boutons d'action rendus magnétiques (attirés vers le curseur)
+      var mk = root.querySelectorAll('.mkt-make-card');
+      for (var mi = 0; mi < mk.length; mi++) V2.motion.magnetic(mk[mi]);
+      // Apparition douce de la ligne « PDF partagés » et de l'état vide
+      var big = root.querySelector('.mkt-bigrow');
+      if (big) V2.motion.enter(big, { y: 8, delay: 120 });
+      var emptyFirst = root.querySelector('.mkt-empty-first');
+      if (emptyFirst) V2.motion.enter(emptyFirst, { y: 8, delay: 60 });
+    }
   }
 
   // ════════════════════════════════════════════

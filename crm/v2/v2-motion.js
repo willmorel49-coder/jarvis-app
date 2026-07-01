@@ -403,8 +403,117 @@
     })();
   }
 
-  // namespace public minimal (pas d'autres globals)
-  V2.motion = { pass: pass, refresh: pass };
+  // ══════════════════════════════════════════════════════════════════
+  // API PUBLIQUE « façon Framer Motion » (100% vanilla, WAAPI) — à la
+  // disposition de toutes les pages via V2.motion.* . Respecte TOUJOURS
+  // prefers-reduced-motion (RM) : en mode réduit on pose l'état final,
+  // sans animation. Zéro dépendance, hors-ligne.
+  // ══════════════════════════════════════════════════════════════════
+  var EASE_OUT    = 'cubic-bezier(.32,.72,0,1)';      // décélération franche (= --mo-ease-in)
+  var EASE_SOFT   = 'cubic-bezier(.33,.02,0,.98)';    // couleur/opacité douce (= --mo-ease-soft)
+  var EASE_SPRING = 'cubic-bezier(.34,1.56,.64,1)';   // ressort léger avec dépassement (pop)
+
+  function canWAAPI(el) { return el && typeof el.animate === 'function'; }
+
+  // animate(el, keyframes, opts) → Animation|null. Wrapper WAAPI + RM-safe.
+  // opts: {duration=300, delay=0, easing, fill='both', to:{styles état final}, onfinish}
+  function moAnimate(el, keyframes, opts) {
+    opts = opts || {};
+    if (!el) return null;
+    if (RM || !canWAAPI(el)) {
+      if (opts.to) { for (var k in opts.to) { try { el.style[k] = opts.to[k]; } catch (e) {} } }
+      if (typeof opts.onfinish === 'function') { try { opts.onfinish(); } catch (e2) {} }
+      return null;
+    }
+    var a = el.animate(keyframes, {
+      duration: opts.duration != null ? opts.duration : 300,
+      delay: opts.delay || 0,
+      easing: opts.easing || EASE_OUT,
+      fill: opts.fill || 'both'
+    });
+    if (typeof opts.onfinish === 'function') a.addEventListener('finish', opts.onfinish);
+    return a;
+  }
+
+  // enter(el, opts) : apparition douce (fondu + glisse depuis le bas)
+  function moEnter(el, opts) {
+    opts = opts || {};
+    var dy = opts.y != null ? opts.y : 8;
+    return moAnimate(el, [
+      { opacity: 0, transform: 'translateY(' + dy + 'px)' },
+      { opacity: 1, transform: 'none' }
+    ], { duration: opts.duration || 320, delay: opts.delay || 0, easing: opts.easing || EASE_OUT, to: { opacity: '1', transform: 'none' } });
+  }
+
+  // stagger(els, opts) : entrée en cascade (step ms entre chaque, plafonné)
+  function moStagger(els, opts) {
+    opts = opts || {};
+    var step = opts.step != null ? opts.step : 40;
+    var cap = opts.cap != null ? opts.cap : 12;
+    var list = (els && els.length != null) ? els : (els ? [els] : []);
+    for (var i = 0; i < list.length; i++) {
+      moEnter(list[i], { delay: (opts.delay || 0) + Math.min(i, cap) * step, y: opts.y, duration: opts.duration, easing: opts.easing });
+    }
+    return list.length;
+  }
+
+  // inView(el, cb, opts) : déclenche cb UNE fois quand el entre à l'écran
+  function moInView(el, cb, opts) {
+    if (!el || typeof cb !== 'function') return function () {};
+    if (RM || !('IntersectionObserver' in window)) { try { cb(el); } catch (e) {} return function () {}; }
+    opts = opts || {};
+    var o = new IntersectionObserver(function (ents) {
+      for (var i = 0; i < ents.length; i++) { if (ents[i].isIntersecting) { try { cb(el); } catch (e) {} o.disconnect(); break; } }
+    }, { rootMargin: opts.rootMargin || '0px 0px -8% 0px', threshold: opts.threshold != null ? opts.threshold : 0.05 });
+    o.observe(el);
+    return function () { try { o.disconnect(); } catch (e) {} };
+  }
+
+  // layout(container, opts) : FLIP — anime en douceur le repositionnement des
+  // enfants entre deux états (filtre/tri/ajout). Capture l'état, puis .after()
+  // après mutation du DOM. opts:{selector, duration=340}
+  function moLayout(container, opts) {
+    opts = opts || {};
+    if (!container) return { after: function () {} };
+    var sel = opts.selector || null;
+    function kids() { return Array.prototype.slice.call(sel ? container.querySelectorAll(sel) : container.children); }
+    var first = [];
+    kids().forEach(function (c) { first.push([c, c.getBoundingClientRect()]); });
+    function firstOf(c) { for (var i = 0; i < first.length; i++) if (first[i][0] === c) return first[i][1]; return null; }
+    return {
+      after: function () {
+        if (RM) return;
+        kids().forEach(function (c) {
+          var f = firstOf(c);
+          if (!f) { moEnter(c, { y: 6, duration: 260 }); return; }
+          if (!canWAAPI(c)) return;
+          var l = c.getBoundingClientRect();
+          var dx = f.left - l.left, dy = f.top - l.top;
+          if (!dx && !dy) return;
+          c.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }],
+            { duration: opts.duration || 340, easing: EASE_OUT });
+        });
+      }
+    };
+  }
+
+  // recordThen(container, mutateFn, opts) : capture → mutation → FLIP, en un appel
+  function moRecordThen(container, mutateFn, opts) {
+    var l = moLayout(container, opts);
+    if (typeof mutateFn === 'function') { try { mutateFn(); } catch (e) {} }
+    raf(function () { l.after(); });
+  }
+
+  // namespace public « façon Framer Motion » (pas d'autres globals)
+  V2.motion = {
+    pass: pass, refresh: pass,
+    animate: moAnimate, enter: moEnter, stagger: moStagger,
+    inView: moInView, layout: moLayout, recordThen: moRecordThen,
+    countUp: function (el) { try { if (!RM) animateNumber(el); } catch (e) {} },
+    magnetic: function (el) { if (el && el.classList) el.classList.add('mo-mag'); return el; },
+    reduced: function () { return RM; },
+    ease: { out: EASE_OUT, soft: EASE_SOFT, spring: EASE_SPRING }
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start);

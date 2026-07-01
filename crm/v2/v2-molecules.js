@@ -110,15 +110,23 @@
   }
 
   V2.molFilter = function (k) { S.chip = k; save(); V2.render(); };
-  V2.molSort = function (k) { S.sort = k; save(); fill(); syncHead(); var ms = document.getElementById('mol-msort'); if (ms) ms.value = k; };
+  V2.molSort = function (k) { S.sort = k; save(); fill(true); syncHead(); var ms = document.getElementById('mol-msort'); if (ms) ms.value = k; };
   V2.molEtab = function (code) { S.etab = code || ''; save(); if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'molecules') V2.render(); }); V2.render(); };
   V2.molStockOnly = function (on) { S.stockOnly = !!on; save(); V2.render(); };
   V2.molPerCat = function (n) { S.perCat = (+n) || 0; save(); V2.render(); };
   V2.molReset = function () { S = { sort: 'n', q: '', chip: 'all', etab: '', stockOnly: false, perCat: 5 }; save(); V2.render(); };
   var _t = null;
-  V2.molSearch = function (v) { S.q = v || ''; if (_t) clearTimeout(_t); _t = setTimeout(fill, 200); };
-  function fill() {
-    var b = document.getElementById('mol-tbody'); if (b) b.innerHTML = rowsHtml();
+  V2.molSearch = function (v) { S.q = v || ''; if (_t) clearTimeout(_t); _t = setTimeout(function () { fill(true); }, 200); };
+  function fill(flip) {
+    var b = document.getElementById('mol-tbody');
+    if (b) {
+      // FLIP : les lignes glissent vers leur nouvelle position (tri/recherche) au lieu de sauter
+      if (flip && V2.motion && V2.motion.recordThen) {
+        V2.motion.recordThen(b, function () { b.innerHTML = rowsHtml(); }, { selector: 'tr' });
+      } else {
+        b.innerHTML = rowsHtml();
+      }
+    }
     var cnt = document.getElementById('mol-count'); var tot = baseData().length;
     if (cnt) cnt.innerHTML = (tot > LIMIT ? '<b>' + LIMIT + '</b> affichés sur <b>' + num(tot) + '</b>' : '<b>' + num(tot) + '</b> produit' + (tot > 1 ? 's' : ''));
   }
@@ -286,6 +294,17 @@
           '<div class="v2-page-sub" style="margin-top:14px;font-size:12px">Ventes réelles du réseau (5 mois, annualisées) · marge MDL = remboursables · Net remisé = prix d\'achat moyen constaté · prix/stock = établissement choisi.</div>' +
         '</div>';
       fill();
+      // Motion discret : cascade d'entrée sur les familles + les 1res lignes du tableau
+      if (V2.motion) {
+        try {
+          V2.motion.stagger(root.querySelectorAll('.mol-segs .v2-seg'), { step: 30, cap: 8, y: 6 });
+          var firstRows = root.querySelectorAll('#mol-tbody tr:not(.mol-more)');
+          V2.motion.stagger(Array.prototype.slice.call(firstRows, 0, 12), { step: 22, cap: 10, y: 7, delay: 60 });
+          // Count-up sur le total affiché (1re valeur numérique de l'en-tête), une seule fois
+          var cntB = root.querySelector('#mol-count b');
+          if (cntB && V2.motion.countUp) V2.motion.countUp(cntB);
+        } catch (e) {}
+      }
     }
   };
 

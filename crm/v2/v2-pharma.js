@@ -661,7 +661,7 @@
   function sectionHead(title, desc, toggleKey, open) {
     var tog = toggleKey != null;
     return '<div class="v2-section-head' + (tog ? ' ph-sh-toggle' : '') + '"' +
-      (tog ? ' onclick="V2.pharmaToggleSection(\'' + toggleKey + '\')"' : '') + '>' +
+      (tog ? ' data-sec="' + esc(toggleKey) + '" onclick="V2.pharmaToggleSection(\'' + toggleKey + '\')"' : '') + '>' +
       '<h2 class="v2-sh-t">' + esc(title) + '</h2>' +
       (desc ? '<span class="v2-sh-s">' + esc(desc) + '</span>' : '') +
       (tog ? '<span class="v2-sh-end v2-section-chev' + (open ? ' open' : '') + '">' + ICO('chev', 16) + '</span>' : '') +
@@ -1150,9 +1150,13 @@
   };
 
   // Replie / déplie une section secondaire (Top 5, Best-sellers IP) sans perdre le scroll.
+  // Motion : mémorise la section qui vient de S'OUVRIR pour la révéler en douceur
+  // après le re-render (le contenu replié n'existe dans le DOM qu'une fois ouvert).
+  var _justOpenedSection = null;
   V2.pharmaToggleSection = function (key) {
     var cur = (key in sectionCollapsed) ? sectionCollapsed[key] : true;
     sectionCollapsed[key] = !cur;
+    _justOpenedSection = (!sectionCollapsed[key]) ? key : null; // ouverte → à révéler
     var y = window.scrollY || window.pageYOffset || 0;
     V2.render();
     try { window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { window.scrollTo(0, y); }
@@ -2268,8 +2272,43 @@
     setTimeout(function () { try { _secMap.invalidateSize(); } catch (e) {} }, 120);
   }
 
+  // ── Touches motion (façon Framer Motion), 100% via l'API V2.motion ─────
+  // Appelé après chaque rendu du pilier. Tout est RM-safe (l'API pose l'état
+  // final sans animation si prefers-reduced-motion). Aucune logique touchée :
+  // on ne fait qu'animer transform/opacity d'éléments déjà rendus.
+  function applyPharmaMotion(root) {
+    var M = V2.motion; if (!M || !root) return;
+
+    // 1) Cascade d'entrée sur les cartes « quoi lui proposer » + les listes d'achats.
+    var props = root.querySelectorAll('.phf-props .phf-prop');
+    if (props.length) M.stagger(props, { step: 55, y: 10, duration: 300 });
+
+    // 2) KPIs de l'officine : le count-up [data-count] est déjà auto-branché ;
+    //    on le déclenche à coup sûr quand la carte entête arrive à l'écran.
+    var kcard = root.querySelector('.phf-hcard');
+    if (kcard) {
+      M.inView(kcard, function (el) {
+        var nums = el.querySelectorAll('.phf-hkpi-v[data-count]');
+        for (var i = 0; i < nums.length; i++) M.countUp(nums[i]);
+      });
+    }
+
+    // 3) CTA primaire (télécharger la liste d'achats PDF) rendu magnétique.
+    var cta = root.querySelector('.phf-pdf:not(.phf-pdf-ghost)');
+    if (cta) M.magnetic(cta);
+
+    // 4) Révélation douce du contenu de la section repliable qui vient de s'ouvrir.
+    if (_justOpenedSection) {
+      var head = root.querySelector('.v2-section-head[data-sec="' + _justOpenedSection + '"]');
+      var body = head && head.parentNode ? head.nextElementSibling : null;
+      if (body) M.enter(body, { y: 6, duration: 260 });
+      _justOpenedSection = null;
+    }
+  }
+
   V2.pages.pharma = {
     render: function (root, param) {
+      var _out = (function () {
       // deep-link d'une sous-vue depuis l'accueil/⌘K : V2.go('pharma','groupements'|'listes'|'carte'|'officines')
       // consommé UNE SEULE FOIS (sinon ça réinitialise selGroup/selList à chaque rendu → on ne peut plus ouvrir un groupement)
       if (param === 'groupements' || param === 'listes' || param === 'carte' || param === 'officines') {
@@ -2289,6 +2328,13 @@
       }
       if (pharmaView === 'carte') { renderCarte(root); return; }
       renderList(root);
+      })();
+      // Touches motion post-rendu (RM-safe, transform/opacity uniquement).
+      try {
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function () { applyPharmaMotion(root); });
+        else applyPharmaMotion(root);
+      } catch (e) {}
+      return _out;
     }
   };
 

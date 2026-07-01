@@ -259,11 +259,18 @@
         '</div>' +
         '<div class="gc-mapwrap"><div id="gc-map" class="gc-map"></div><div class="grp-load" id="gc-maploader"><div class="v2-spinner"></div>Chargement de la carte…</div></div>' +
       '</div>';
+    // transition douce du panneau à l'arrivée sur l'onglet (conteneur UI, pas la carte)
+    if (V2.motion) { var _sp = root.querySelector('.gc-split'); if (_sp) V2.motion.enter(_sp, { y: 8 }); }
     ensureGrpPoints(function () {
       gcMeta();
       var hc = document.getElementById('gc-head-ct');
       if (hc) hc.textContent = gcOrder.length + ' groupements · ' + GP.length.toLocaleString('fr') + ' pharmacies';
-      var lst = document.getElementById('gc-list'); if (lst) lst.innerHTML = gcLegend();
+      var lst = document.getElementById('gc-list');
+      if (lst) {
+        lst.innerHTML = gcLegend();
+        // cascade d'entrée sur les items de la légende à cocher
+        if (V2.motion) V2.motion.stagger(lst.querySelectorAll('.gc-row'), { step: 22, cap: 14, y: 6 });
+      }
       ensureLeaflet(function () {
         var ld = document.getElementById('gc-maploader'); if (ld) ld.style.display = 'none';
         gcInitMap();
@@ -326,6 +333,8 @@
     if (rows.length > max) html += '<div class="sag-more">+ ' + (rows.length - max).toLocaleString('fr') + ' autres — affine la recherche</div>';
     box.innerHTML = html;
     box.scrollTop = 0;
+    // cascade d'entrée sur les premières lignes visibles (conteneur UI, pas la carte)
+    if (V2.motion) V2.motion.stagger(box.querySelectorAll('.sag-row'), { step: 18, cap: 12, y: 6 });
   }
   V2.psFocus = function (i) {
     var r = _rows[i]; if (!r || !_map) return;
@@ -439,6 +448,8 @@
           '<div class="sag-list" id="sag-list"><div class="grp-load"><div class="v2-spinner"></div>Chargement…</div></div>' +
           '<div id="ps-map" class="sag-map"><div class="grp-load"><div class="v2-spinner"></div>Chargement de la carte…</div></div>' +
         '</div>';
+      // transition douce du panneau à l'arrivée sur l'onglet (conteneur UI, pas la carte)
+      if (V2.motion) { var _ss = root.querySelector('.sag-split'); if (_ss) V2.motion.enter(_ss, { y: 8 }); }
       ensureData(function () {
         fillDeptSelect();
         ensureLeaflet(function () { initMap(); });
