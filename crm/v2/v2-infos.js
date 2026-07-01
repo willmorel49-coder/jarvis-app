@@ -114,7 +114,7 @@
 
       // état vide / échec
       if (!DATA || (!items.length && !rlive.length && !rappels.length)) {
-        root.innerHTML = '<div id="infos-art"><div class="art-top"><button class="art-back" onclick="V2.go(\'home\')">←</button>' +
+        root.innerHTML = '<div id="infos-art"><div class="art-top"><button class="art-back" aria-label="Retour à l\'accueil" onclick="V2.go(\'home\')">←</button>' +
           '<div class="art-brand"><span class="art-logo">IP</span><b>Infos du matin</b></div><span></span></div>' +
           '<div class="art-empty">' + (FAILED ? 'La veille n\'a pas pu être chargée (connexion ?).<br>Elle se met à jour chaque matin.' : 'Pas encore d\'infos aujourd\'hui.<br>La veille se met à jour chaque matin.') + '</div></div>';
         return;
@@ -144,7 +144,7 @@
         '<div class="mega">' + megaR + '<small> ' + (rcount > 0 ? 'aujourd\'hui' : 'infos') + '</small></div>' +
         '<p class="lede">' + lede + '</p>' +
         (recItems ? '<div class="art-recs">' + recItems + '</div>' : '') +
-        '<div class="hint">↑ Glissez pour explorer ↑</div></section>';
+        '<div class="hint">↓ Faites défiler ↓</div></section>';
       nav.push({ k: 'recap', em: '☀️', l: 'Récap' }); dots++;
 
       // ═══ CARTE 2 · RUPTURES & TENSIONS ═══
@@ -239,7 +239,7 @@
       }).join('') + '</nav>';
 
       var top = '<div class="art-top">' +
-        '<button class="art-back" onclick="V2.go(\'home\')">←</button>' +
+        '<button class="art-back" aria-label="Retour à l\'accueil" onclick="V2.go(\'home\')">←</button>' +
         '<div class="art-brand"><span class="art-logo">IP</span><b>Infos du matin</b></div>' +
         '<div class="art-live"><i></i>' + esc(topDate()) + '</div></div>';
 
@@ -268,7 +268,7 @@
       '#infos-art .bg-oppo{background:radial-gradient(120% 95% at 50% 0%,#1E5BFF 0%,#0033A0 55%,#021245 100%)}' +
       // top chrome
       '#infos-art .art-top{position:absolute;top:0;left:0;right:0;z-index:50;max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))}' +
-      '#infos-art .art-back{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:18px;cursor:pointer;backdrop-filter:blur(8px);-webkit-tap-highlight-color:transparent}' +
+      '#infos-art .art-back{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:18px;cursor:pointer;backdrop-filter:blur(8px);-webkit-tap-highlight-color:transparent}' +
       '#infos-art .art-back:active{transform:scale(.92)}' +
       '#infos-art .art-brand{display:flex;align-items:center;gap:9px;flex:1;justify-content:center}' +
       '#infos-art .art-logo{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#3B82F6,var(--ip-blue));display:grid;place-items:center;font-weight:800;font-size:12px;font-family:var(--display);box-shadow:0 4px 16px rgba(0,80,230,.5)}' +
@@ -301,7 +301,7 @@
       '#infos-art .row .ico{flex:0 0 38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px}' +
       '#infos-art .row .body{flex:1;min-width:0}' +
       '#infos-art .row .body b{display:block;font-size:14px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-      '#infos-art .row .body span{display:block;font-size:12px;color:rgba(255,255,255,.62);margin-top:1px}' +
+      '#infos-art .row .body span{display:block;font-size:12px;color:rgba(255,255,255,.74);margin-top:1px}' +
       '#infos-art .tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:5px 8px;border-radius:7px;white-space:nowrap;flex:none}' +
       '#infos-art .tag.rupt{background:#FF3B5C;color:#fff}' +
       '#infos-art .tag.tens{background:#FFB020;color:#1a1200}' +
@@ -320,7 +320,7 @@
       '#infos-art .gcard:hover{background:rgba(255,255,255,.13)}' +
       '#infos-art .gcard .em{font-size:21px}' +
       '#infos-art .gcard b{font-size:13.5px;font-weight:700;letter-spacing:-.2px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}' +
-      '#infos-art .gcard span{display:block;font-family:var(--mono);font-size:9.5px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin-top:5px}' +
+      '#infos-art .gcard span{display:block;font-family:var(--mono);font-size:9.5px;font-weight:600;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.5px;margin-top:5px}' +
       // opportunity hero
       '#infos-art .oppo{background:rgba(255,255,255,.96);color:#0A0E1A;border-radius:22px;padding:18px;margin-top:20px;box-shadow:0 20px 50px rgba(0,0,0,.5)}' +
       '#infos-art .oppo .oh{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ip-blue)}' +
@@ -335,7 +335,7 @@
       '#infos-art .hint{margin-top:22px;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.5);text-transform:uppercase;animation:artbob 1.8s infinite;align-self:flex-start}' +
       '@keyframes artbob{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(5px);opacity:.85}}' +
       '#infos-art .art-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;max-width:520px;margin:0 auto;display:flex;justify-content:space-around;align-items:center;padding:10px 10px calc(12px + env(safe-area-inset-bottom,0));background:linear-gradient(0deg,rgba(0,0,0,.85),rgba(0,0,0,0));backdrop-filter:blur(6px)}' +
-      '#infos-art .art-nav a{display:flex;flex-direction:column;align-items:center;gap:3px;color:rgba(255,255,255,.5);text-decoration:none;font-size:9.5px;font-weight:600;font-family:var(--mono);letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:color .15s}' +
+      '#infos-art .art-nav a{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;justify-content:center;color:rgba(255,255,255,.68);text-decoration:none;font-size:9.5px;font-weight:600;font-family:var(--mono);letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:color .15s}' +
       '#infos-art .art-nav a.act{color:#fff}' +
       '#infos-art .art-nav a .em{font-size:19px}' +
       // loading + empty
