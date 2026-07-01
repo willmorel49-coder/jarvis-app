@@ -47,11 +47,14 @@
       '.grp-frame{width:100%;height:calc(100vh - 112px);border:0;display:block;background:#fff}' +
       '.grp-bar{display:flex;align-items:center;gap:10px;padding:8px 26px;background:var(--card);border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted)}' +
       '.grp-bar a{color:var(--ip-blue);font-weight:600;text-decoration:none}' +
-      '.grp-tabs{display:flex;gap:4px;padding:12px 26px 0;background:var(--paper)}' +
-      '.grp-tab{position:relative;border:1px solid var(--line);border-bottom:none;background:var(--card-2);border-radius:12px 12px 0 0;padding:10px 18px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:color .18s var(--ease),background .18s var(--ease)}' +
+      // ── En-tête d\'espace épuré : intro simple + navigation en pilules calmes ──
+      '.grp-hd{padding:22px 26px 14px;background:var(--paper)}' +
+      '.grp-hd-t{font-size:23px;font-weight:800;letter-spacing:-.025em;line-height:1.1;color:var(--ip-ink)}' +
+      '.grp-hd-s{font-size:14px;color:var(--muted);font-weight:450;margin-top:4px;max-width:640px;line-height:1.5}' +
+      '.grp-tabs{display:inline-flex;gap:4px;margin-top:16px;padding:4px;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-1)}' +
+      '.grp-tab{border:none;background:none;border-radius:var(--r-sm);padding:9px 17px;font-family:var(--font);font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:color .18s var(--ease),background .18s var(--ease)}' +
       '.grp-tab:hover{color:var(--ip-ink);background:var(--card)}' +
-      '.grp-tab.on{background:var(--card);color:var(--ip-blue)}' +
-      '.grp-tab.on::after{content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:linear-gradient(90deg,var(--ip-blue),var(--c-pilo))}' +
+      '.grp-tab.on{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-1)}' +
       '.ps-bar{display:flex;align-items:center;gap:11px;padding:10px 26px;background:var(--card);border-bottom:1px solid var(--line)}' +
       '.ps-bar svg{color:var(--ip-blue);flex-shrink:0}' +
       '.ps-bar input{border:none;outline:none;background:none;font-family:var(--font);font-size:15px;flex:1;color:var(--ip-ink)}' +
@@ -62,8 +65,8 @@
       '.grp-sub-l{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}' +
       '.grp-chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 15px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}' +
       '.grp-chip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}' +
-      '.ps-map{width:100%;height:calc(100vh - 210px);background:#EAEEF3;position:relative}' +
-      '.sag-split{display:flex;height:calc(100vh - 210px)}' +
+      '.ps-map{width:100%;height:calc(100vh - 250px);background:#EAEEF3;position:relative}' +
+      '.sag-split{display:flex;height:calc(100vh - 250px)}' +
       '@media(max-width:820px){.sag-split{flex-direction:column;height:auto}}' +
       '.sag-list{width:380px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--line);background:var(--card)}' +
       '@media(max-width:820px){.sag-list{width:100%;max-height:42vh;border-right:none;border-bottom:1px solid var(--line)}}' +
@@ -85,13 +88,13 @@
       '.ps-deptbubble-d{display:flex;align-items:center;background:var(--ip-blue);color:#fff;font-weight:800;font-size:13.5px;letter-spacing:-.01em;padding:0 7px}' +
       '.ps-deptbubble-n{display:flex;align-items:center;color:var(--ip-ink);font-weight:800;font-size:13.5px;padding:0 8px}' +
       // ── Cartographie groupements (carte France + légende à cocher) ──
-      '.gc-split{display:flex;height:calc(100vh - 168px)}' +
+      '.gc-split{display:flex;height:calc(100vh - 214px)}' +
       '@media(max-width:820px){.gc-split{flex-direction:column;height:auto}}' +
-      '.gc-panel{width:312px;flex:none;display:flex;flex-direction:column;border-right:1px solid var(--line);background:var(--card)}' +
+      '.gc-panel{width:322px;flex:none;display:flex;flex-direction:column;border-right:1px solid var(--line);background:var(--card)}' +
       '@media(max-width:820px){.gc-panel{width:100%;max-height:40vh;border-right:none;border-bottom:1px solid var(--line)}}' +
-      '.gc-head{padding:14px 14px 4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:8px}' +
-      '.gc-head .gc-head-ct{font-family:var(--mono);color:var(--ip-blue);letter-spacing:0}' +
-      '.gc-tools{padding:8px 12px 10px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}' +
+      '.gc-head{padding:16px 16px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:8px}' +
+      '.gc-head .gc-head-ct{font-family:var(--mono);color:var(--ip-blue);letter-spacing:0;text-transform:none;font-weight:700}' +
+      '.gc-tools{padding:6px 14px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}' +
       '.gc-search{display:flex;align-items:center;gap:7px;flex:1;min-width:140px;background:var(--card-2);border:1px solid var(--line);border-radius:11px;padding:8px 11px;transition:border-color .18s var(--ease),box-shadow .18s var(--ease)}' +
       '.gc-search:focus-within{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}' +
       '.gc-search svg{color:var(--ip-blue);flex:none}' +
@@ -247,7 +250,7 @@
     root.innerHTML = top + V2.grpSpaceTabs('carte') +
       '<div class="gc-split">' +
         '<div class="gc-panel">' +
-          '<div class="gc-head"><span>Groupements</span><span class="gc-head-ct" id="gc-head-ct"></span></div>' +
+          '<div class="gc-head"><span>Cocher pour afficher</span><span class="gc-head-ct" id="gc-head-ct"></span></div>' +
           '<div class="gc-tools">' +
             '<div class="gc-search">' + ICO('search', 16, 2) + '<input placeholder="Chercher un groupement…" oninput="V2.gcSearch(this.value)" autocomplete="off"></div>' +
             '<div class="gc-allbtns"><button onclick="V2.gcAll(true)">Tout</button><button onclick="V2.gcAll(false)">Aucun</button></div>' +
@@ -259,7 +262,7 @@
     ensureGrpPoints(function () {
       gcMeta();
       var hc = document.getElementById('gc-head-ct');
-      if (hc) hc.textContent = gcOrder.length + ' · ' + GP.length.toLocaleString('fr') + ' pharmacies';
+      if (hc) hc.textContent = gcOrder.length + ' groupements · ' + GP.length.toLocaleString('fr') + ' pharmacies';
       var lst = document.getElementById('gc-list'); if (lst) lst.innerHTML = gcLegend();
       ensureLeaflet(function () {
         var ld = document.getElementById('gc-maploader'); if (ld) ld.style.display = 'none';
@@ -392,17 +395,25 @@
   // Onglets de l'ESPACE Groupements (partagés avec la vue "Opportunités groupements" du pilier pharma)
   // active : 'carte' | 'grossistes' | 'opp'
   V2.grpSpaceTabs = function (active) {
-    return '<div class="grp-tabs">' +
-      '<button class="grp-tab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.grpGo(\'app\')">Cartographie</button>' +
-      '<button class="grp-tab' + (active === 'opp' ? ' on' : '') + '" onclick="V2.go(\'pharma\',\'groupements\')">Opportunités groupements</button>' +
-      '</div>';
+    return '<div class="grp-hd">' +
+      '<div class="grp-hd-t">Groupements</div>' +
+      '<div class="grp-hd-s">Repérez les pharmacies par groupement sur la carte, puis préparez vos listes d\'achats à proposer.</div>' +
+      '<div class="grp-tabs" role="tablist">' +
+        '<button class="grp-tab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.grpGo(\'app\')">Carte des groupements</button>' +
+        '<button class="grp-tab' + (active === 'opp' ? ' on' : '') + '" onclick="V2.go(\'pharma\',\'groupements\')">Listes d\'achats à proposer</button>' +
+      '</div>' +
+    '</div>';
   };
   // Onglets de l'espace CONCURRENTS / GROSSISTES (Prix concurrents = Offilog+Pharmazon, Sagitta = répartiteur)
   V2.concTabs = function (active) {
-    return '<div class="grp-tabs">' +
-      '<button class="grp-tab' + (active === 'prix' ? ' on' : '') + '" onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
-      '<button class="grp-tab' + (active === 'sagitta' ? ' on' : '') + '" onclick="V2.go(\'sagitta\')">Sagitta</button>' +
-      '</div>';
+    return '<div class="grp-hd">' +
+      '<div class="grp-hd-t">Grossistes et concurrents</div>' +
+      '<div class="grp-hd-s">Comparez les prix des concurrents et suivez le répartiteur Sagitta près de chez vos clients.</div>' +
+      '<div class="grp-tabs" role="tablist">' +
+        '<button class="grp-tab' + (active === 'prix' ? ' on' : '') + '" onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
+        '<button class="grp-tab' + (active === 'sagitta' ? ' on' : '') + '" onclick="V2.go(\'sagitta\')">Répartiteur Sagitta</button>' +
+      '</div>' +
+    '</div>';
   };
   // navigue vers la carte groupements en réglant la sous-vue (depuis n'importe quelle page)
   V2.grpGo = function (v) { view = v; V2.go('groupements'); };
@@ -418,14 +429,11 @@
   V2.pages.sagitta = {
     render: function (root) {
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
-      var nb = (window.PHARMASMILE || []).length;
       root.innerHTML = top + V2.concTabs('sagitta') +
-        '<div class="grp-sub"><span class="grp-sub-l">Répartiteur</span>' +
-          '<button class="grp-chip on">Sagitta' + (nb ? ' · ' + nb.toLocaleString('fr') : '') + '</button></div>' +
         '<div class="ps-bar">' +
           '<select id="ps-dept" class="ps-dept" onchange="V2.psDept(this.value)"><option value="">Tous les départements</option></select>' +
           ICO('search', 16, 2) +
-          '<input id="ps-search" placeholder="ville ou nom…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
+          '<input id="ps-search" placeholder="Chercher une ville ou une pharmacie…" autocomplete="off" oninput="V2.psFilter(this.value)">' +
           '<span class="ps-count" id="ps-count">chargement…</span></div>' +
         '<div class="sag-split">' +
           '<div class="sag-list" id="sag-list"><div class="grp-load"><div class="v2-spinner"></div>Chargement…</div></div>' +

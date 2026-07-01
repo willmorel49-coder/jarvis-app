@@ -766,24 +766,44 @@
           '</div>' +
         '</div>';
 
-      // ── Mise en page sectionnée (Proposition A) ──
-      function sec(label) { return '<div class="pilo-sec">' + esc(label) + '</div>'; }
+      // ── Mise en page « épurée » : l'essentiel ouvert, le détail replié ──
+      // Bloc dépliable (progressive disclosure) : la page s'ouvre calme,
+      // Will déplie seulement ce qu'il veut voir. Natif <details> = zéro JS,
+      // respecte prefers-reduced-motion, pas de dépendance.
+      function disc(title, hint, body, open) {
+        if (!body) return '';
+        return '<details class="pilo-disc"' + (open ? ' open' : '') + '>' +
+            '<summary class="pilo-disc-sum">' +
+              '<span class="pilo-disc-t">' + esc(title) + '</span>' +
+              (hint ? '<span class="pilo-disc-hint">' + esc(hint) + '</span>' : '') +
+              '<span class="pilo-disc-chev">' + ICO('chev', 16) + '</span>' +
+            '</summary>' +
+            '<div class="pilo-disc-body">' + body + '</div>' +
+          '</details>';
+      }
+
+      // Détail : répartition du CA (familles + tranches de prix)
+      var repartition = '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>';
+      // Détail : classements (top pharmacies + groupements)
       var classements = grpCard ? ('<div class="pilo-grid2" data-reveal>' + topCaCard + grpCard + '</div>') : ('<div data-reveal>' + topCaCard + '</div>');
+      // Détail : marché Ameli & pharmacies à relancer
       var marche = (ameliCard && mdlCard) ? ('<div class="pilo-grid2" data-reveal>' + ameliCard + mdlCard + '</div>')
         : (ameliCard || mdlCard ? '<div data-reveal>' + (ameliCard || mdlCard) + '</div>' : '');
+
+      // Repères pour les intitulés dépliables (aide à la lecture, pas des objectifs)
+      var nbGrp = grpList.length;
 
       root.innerHTML = top +
         '<div class="v2-wrap">' +
           header +
           (opsoSect ? opsoSect.html : '') +
-          sec('Vue d\'ensemble') +
+          // ── ESSENTIEL, toujours visible : où j'en suis en un coup d'œil ──
           kpis +
           chart.html +
-          sec('Répartition du chiffre d\'affaires') +
-          '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>' +
-          sec('Classements') +
-          classements +
-          (marche ? (sec('Marché & alertes') + marche) : '') +
+          // ── DÉTAIL, replié par défaut : Will déplie au besoin ──
+          disc('Répartition de mon chiffre d\'affaires', 'familles de produits et tranches de prix', repartition, false) +
+          disc('Mes pharmacies', (nbActive ? nbActive + ' active' + (nbActive > 1 ? 's' : '') + ' sur la période' : '') + (nbGrp >= 2 && !opso ? ' · ' + nbGrp + ' groupements' : ''), classements, false) +
+          (marche ? disc('Marché Ameli & pharmacies à relancer', 'ce que je ne commande pas encore, et qui décroche', marche, false) : '') +
         '</div>';
 
       // ── Bind segmented ──
@@ -824,6 +844,20 @@
         }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
         Array.prototype.forEach.call(revs, function (el) { io.observe(el); });
       }
+
+      // ── Dépliage : révéler + (re)jouer les barres du contenu à l'ouverture ──
+      // Le contenu d'un <details> replié est masqué : l'observer ne le voit pas
+      // et les barres ne s'animent pas. On force le rendu propre à la 1ʳᵉ ouverture.
+      Array.prototype.forEach.call(root.querySelectorAll('.pilo-disc'), function (d) {
+        d.addEventListener('toggle', function () {
+          if (!d.open) return;
+          Array.prototype.forEach.call(d.querySelectorAll('[data-reveal]'), function (el) { el.classList.add('in'); });
+          requestAnimationFrame(function () {
+            Array.prototype.forEach.call(d.querySelectorAll('.pilo-bar-fill'), function (el) { el.style.width = (el.dataset.w || 0) + '%'; });
+            Array.prototype.forEach.call(d.querySelectorAll('.opso-gauge-fill,.pilo-kpi-meter-fill'), function (el) { el.style.width = (el.dataset.w || 0) + '%'; });
+          });
+        });
+      });
 
       // ── Bind chart hover ──
       chart.bind(root);
@@ -968,10 +1002,19 @@
       '.pilo-tier-dot{display:inline-block;width:9px;height:9px;border-radius:3px;flex-shrink:0}' +
       '.pilo-tier-meta{font-size:10.5px;color:var(--muted-2);margin-top:4px}' +
       '.pilo-ameli-sub{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.005em}' +
-      // libellés de section (mise en page sectionnée)
-      '.pilo-sec{display:flex;align-items:center;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:var(--section-gap) 2px 13px}' +
-      '.pilo-sec::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 32%,var(--line)),var(--line) 38%)}' +
-      '.v2-wrap .pilo-sec:first-of-type{margin-top:6px}' +
+      // ── Blocs dépliables (progressive disclosure) : le détail reste calme et rangé ──
+      '.pilo-disc{margin-top:var(--sp-4);border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);box-shadow:var(--sh-1);overflow:hidden}' +
+      '.pilo-disc[open]{box-shadow:var(--sh-2)}' +
+      '.pilo-disc-sum{display:flex;align-items:center;gap:12px;padding:17px 20px;cursor:pointer;list-style:none;user-select:none;transition:background .16s var(--ease)}' +
+      '.pilo-disc-sum::-webkit-details-marker{display:none}' +
+      '.pilo-disc-sum:hover{background:var(--card-2)}' +
+      '.pilo-disc-t{font-size:15px;font-weight:700;color:var(--ip-ink);letter-spacing:-.01em}' +
+      '.pilo-disc-hint{font-size:12.5px;color:var(--muted);font-weight:500;flex:1;min-width:0}' +
+      '.pilo-disc-chev{margin-left:auto;color:var(--muted-2);display:inline-flex;flex-shrink:0;transition:transform .2s var(--mo-ease-soft)}' +
+      '.pilo-disc[open] .pilo-disc-chev{transform:rotate(90deg)}' +
+      '.pilo-disc-body{padding:2px 20px 20px}' +
+      '@media(max-width:560px){.pilo-disc-hint{flex:0 0 100%;order:3}.pilo-disc-sum{flex-wrap:wrap;gap:4px 10px}.pilo-disc-body{padding:2px 14px 16px}}' +
+      '@media(prefers-reduced-motion:reduce){.pilo-disc-chev{transition:none}}' +
       // chart 13 mois
       '.pilo-chart{position:relative;display:flex;align-items:flex-end;gap:6px;height:160px;padding-top:8px}' +
       '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;cursor:default;min-width:0}' +
