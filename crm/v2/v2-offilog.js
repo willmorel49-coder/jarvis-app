@@ -20,6 +20,7 @@
   })();
 
   var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false };
+  var firstPaint = true; // cascade d'entrée réservée au 1er affichage de la grille
   var PER_PAGE = 60;
 
   // Sélection pour la fiche marketing parapharma
@@ -161,7 +162,7 @@
         'title="Produits où un prix public concurrent passe sous ton prix d\'achat IP">' +
         '<span class="off-verdict-ic">' + ICO('alert', 20, 2) + '</span>' +
         '<span class="off-verdict-txt">' +
-          '<span class="off-verdict-v mono">' + V2.fmtNum(nAlert) + '</span>' +
+          '<span class="off-verdict-v mono" data-count>' + V2.fmtNum(nAlert) + '</span>' +
           '<span class="off-verdict-l">' + (nAlert > 1 ? 'produits où un concurrent est moins cher que ton achat' : 'produit où un concurrent est moins cher que ton achat') + '</span>' +
         '</span>' +
         '<span class="off-verdict-go">' + (alertActive ? 'Tout revoir' : 'Les voir') + ' ' + ICO('chev', 15, 2.2) + '</span>' +
@@ -170,7 +171,7 @@
     var goodTile = '<div class="off-verdict off-verdict-ok">' +
         '<span class="off-verdict-ic">' + ICO('check', 20, 2.4) + '</span>' +
         '<span class="off-verdict-txt">' +
-          '<span class="off-verdict-v mono">' + V2.fmtNum(nGood) + '</span>' +
+          '<span class="off-verdict-v mono" data-count>' + V2.fmtNum(nGood) + '</span>' +
           '<span class="off-verdict-l">produits où ton achat tient face aux prix publics</span>' +
         '</span>' +
       '</div>';
@@ -217,7 +218,7 @@
       ? '<span class="off-card-flag" title="Un concurrent est moins cher que ton prix d\'achat">' + ICO('alert', 13, 2.2) + ' Alerte prix</span>' : '';
     var concBelow = it.alert && it.minConc > 0
       ? '<span class="off-card-conc mono">conc. ' + V2.fmtEur(it.minConc) + '</span>' : '';
-    return '<div class="off-card' + sel + alertCls + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
+    return '<div class="off-card' + sel + alertCls + '" data-id="' + esc(it.id) + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
       '<div class="off-card-media">' +
         '<span class="off-rank mono">#' + it.rank + '</span>' +
         '<button class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + esc(it.id) + '\',this)" title="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
@@ -316,7 +317,23 @@
     } catch (e) {}
   };
 
+  // FLIP par famille/alertes : on mémorise la position des cartes AVANT le re-render,
+  // le passage motion post-render (voir fin de render) rejoue le repositionnement.
+  var flipRects = null;
+  function captureCardRects() {
+    if (!V2.motion || V2.motion.reduced()) { flipRects = null; return; }
+    var grid = document.querySelector('.off-grid');
+    if (!grid) { flipRects = null; return; }
+    flipRects = new Map();
+    var cards = grid.querySelectorAll('.off-card');
+    for (var i = 0; i < cards.length; i++) {
+      var id = cards[i].getAttribute('data-id');
+      if (id != null) flipRects.set(String(id), cards[i].getBoundingClientRect());
+    }
+  }
+
   V2.offFilter = function (k) {
+    captureCardRects(); // repositionnement fluide des cartes qui restent visibles
     S.chip = k; S.page = 0;
     // si on choisit une catégorie (hors verdicts), on ouvre les filtres avancés pour rester cohérent
     if (k !== 'all' && k !== 'alerte' && k !== 'pzcheaper') S.adv = true;
@@ -604,7 +621,10 @@
       '.off-verdict-bad.cold .off-verdict-ic{background:var(--card-2);color:var(--muted-2)}',
       '.off-verdict-bad.cold .off-verdict-v{color:var(--ip-ink)}',
       '.off-verdict-bad.cold .off-verdict-go{color:var(--muted)}',
-      '.off-verdict-bad:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
+      // tuile ALERTE magnétique : offsets --mo-mx/--mo-my posés en JS (V2.motion),
+      // combinés au lift de survol -2px. Au repos les deux valent 0 → aucun décalage.
+      '.off-verdict-bad{--mo-mx:0px;--mo-my:0px}',
+      '.off-verdict-bad:hover{transform:translate3d(var(--mo-mx),calc(var(--mo-my) - 2px),0);box-shadow:var(--sh-2)}',
       '.off-verdict-bad.hot:hover{border-color:color-mix(in srgb,var(--bad) 58%,transparent)}',
       '.off-verdict-bad.active{box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 22%,transparent),var(--sh-2);border-color:var(--bad)}',
       // tuile BIEN PLACÉ (vert) — calme
@@ -637,7 +657,7 @@
       '.off-sortbtn:hover:not(.on){color:var(--ip-ink);background:var(--card-2)}',
       '.off-sortbtn:active{transform:scale(.97)}',
       '.off-sortbtn.on{background:var(--pil-froid);color:#fff;box-shadow:0 1px 4px color-mix(in srgb,var(--pil-froid) 34%,transparent)}',
-      '@media(prefers-reduced-motion:reduce){.off-search,.off-verdict-bad,.off-advbtn,.off-advbtn-chev{transition:none}.off-verdict-bad:hover{transform:none}}',
+      '@media(prefers-reduced-motion:reduce){.off-search,.off-verdict-bad,.off-advbtn,.off-advbtn-chev{transition:none}.off-verdict-bad:hover{transform:none}.off-verdict-bad{--mo-mx:0px!important;--mo-my:0px!important}}',
       // grille de cartes photo
       '.off-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:16px}',
       '.off-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:var(--sh-1);transition:.18s var(--ease);display:flex;flex-direction:column}',
@@ -765,6 +785,32 @@
     document.head.appendChild(s);
   }
 
+  // Magnétique sur la tuile-verdict rouge (délégué, câblé une seule fois).
+  // Même physique que V2.motion.magnetic (amplitude 5px), mais ciblée sur
+  // .off-verdict-bad (qui n'est pas un .v2-btn) via ses vars --mo-mx/--mo-my.
+  var verdictMagBound = false;
+  function bindVerdictMagnetic(mo) {
+    if (verdictMagBound || !mo || mo.reduced()) return;
+    try { if (window.matchMedia && window.matchMedia('(hover: none)').matches) return; } catch (e) {}
+    verdictMagBound = true;
+    var MAX = 5, cur = null;
+    function reset(el) { if (el) { el.style.setProperty('--mo-mx', '0px'); el.style.setProperty('--mo-my', '0px'); } }
+    document.addEventListener('pointermove', function (ev) {
+      if (mo.reduced() || ev.pointerType === 'touch') return;
+      var t = ev.target && ev.target.closest ? ev.target.closest('.off-verdict-bad') : null;
+      if (t !== cur) { if (cur) reset(cur); cur = t; }
+      if (!cur) return;
+      try {
+        var r = cur.getBoundingClientRect();
+        var dx = ev.clientX - (r.left + r.width / 2), dy = ev.clientY - (r.top + r.height / 2);
+        cur.style.setProperty('--mo-mx', Math.max(-MAX, Math.min(MAX, dx * 0.35)).toFixed(2) + 'px');
+        cur.style.setProperty('--mo-my', Math.max(-MAX, Math.min(MAX, dy * 0.35)).toFixed(2) + 'px');
+      } catch (e) {}
+    }, true);
+    document.addEventListener('pointerleave', function () { if (cur) { reset(cur); cur = null; } }, true);
+    document.addEventListener('pointerup', function () { if (cur) { reset(cur); cur = null; } }, true);
+  }
+
   // ── PAGE ──────────────────────────────────────
   V2.pages.offilog = {
     render: function (root, param) {
@@ -886,6 +932,53 @@
           '<button class="v2-btn v2-btn-primary" onclick="V2.offMktPreview()">' + ICO('grid', 16, 2) + ' Aperçu de la fiche</button>' +
           '<button class="clr" onclick="V2.offMktClear()" title="Vider">' + ICO('close', 16, 2) + '</button>' +
         '</div>';
+
+      // ── Motion « façon Framer Motion » (discret, 150–300ms, RM-safe via l'API) ──
+      var mo = V2.motion;
+      if (mo) {
+        var grid = root.querySelector('.off-grid');
+        var isFirst = firstPaint;
+        // 1) FLIP : les cartes qui restent affichées glissent de leur ancienne
+        //    position vers la nouvelle quand on filtre par famille ou « alertes ».
+        var didFlip = false;
+        if (grid && flipRects && !mo.reduced()) {
+          var cards = grid.querySelectorAll('.off-card');
+          for (var fi = 0; fi < cards.length; fi++) {
+            var c = cards[fi];
+            var prev = flipRects.get(String(c.getAttribute('data-id')));
+            if (!prev) continue;
+            var now = c.getBoundingClientRect();
+            var dx = prev.left - now.left, dy = prev.top - now.top;
+            if (!dx && !dy) continue;
+            try {
+              c.animate(
+                [{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }],
+                { duration: 300, easing: 'cubic-bezier(.22,.61,.36,1)' }
+              );
+              didFlip = true;
+            } catch (e) {}
+          }
+        }
+        flipRects = null;
+        // 2) Cascade d'entrée sur les premières cartes — seulement au 1er affichage
+        //    (pas à chaque frappe de recherche / tri / pagination), et jamais pendant un FLIP.
+        if (grid && isFirst && !didFlip) {
+          mo.stagger(grid.querySelectorAll('.off-card'), { step: 34, cap: 10, y: 8 });
+        }
+        // 3) Count-up des 2 chiffres verdict quand la bande arrive à l'écran —
+        //    au 1er affichage seulement (pas à chaque frappe de recherche).
+        var vwrap = root.querySelector('.off-verdict-wrap');
+        if (vwrap && isFirst) {
+          mo.inView(vwrap, function (el) {
+            var cs = el.querySelectorAll('[data-count]');
+            for (var i = 0; i < cs.length; i++) mo.countUp(cs[i]);
+          });
+        }
+        firstPaint = false;
+        // 4) Tuile verdict rouge (le signal fort) rendue magnétique : elle « penche »
+        //    de quelques px vers le curseur (physique alignée sur V2.motion, RM/touch-safe).
+        bindVerdictMagnetic(mo);
+      }
     }
   };
 })();
