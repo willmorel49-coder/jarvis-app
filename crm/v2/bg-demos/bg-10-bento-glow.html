@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 · Bento glow — Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBFCFE;
+    --blue:#0050E6;
+    --orange:#F39A1B;
+    --ink:#0d1b3e;
+    --line:rgba(13,27,62,.045);
+    --cell:32px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'DM Sans',system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    width:100%;
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* Grille bento : cellules aux bordures quasi invisibles */
+  .bento-grid{
+    position:fixed;
+    inset:0;
+    background-image:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:var(--cell) var(--cell);
+    -webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 45%,#000 55%,transparent 100%);
+            mask-image:radial-gradient(ellipse 90% 80% at 50% 45%,#000 55%,transparent 100%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* Panneaux bento accentués : quelques cellules plus marquées, effet "surface d'app" */
+  .panels{position:fixed;inset:0;z-index:1;pointer-events:none}
+  .panel{
+    position:absolute;
+    border:1px solid rgba(13,27,62,.06);
+    border-radius:20px;
+    background:linear-gradient(160deg,rgba(255,255,255,.55),rgba(255,255,255,0));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  .p1{top:12%;left:8%;width:22%;height:30%}
+  .p2{top:14%;right:9%;width:26%;height:22%}
+  .p3{bottom:12%;left:14%;width:30%;height:26%}
+  .p4{bottom:16%;right:10%;width:20%;height:32%}
+
+  /* Glow dégradé bleu/orange qui pulse */
+  .glow{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .blob{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(90px);
+    opacity:.55;
+    will-change:transform,opacity;
+  }
+  .blob.blue{
+    width:46vw;height:46vw;
+    background:radial-gradient(circle at 30% 30%,rgba(0,80,230,.55),rgba(0,80,230,0) 70%);
+    top:-8%;left:8%;
+    animation:pulseBlue 11s ease-in-out infinite;
+  }
+  .blob.orange{
+    width:40vw;height:40vw;
+    background:radial-gradient(circle at 60% 40%,rgba(243,154,27,.5),rgba(243,154,27,0) 70%);
+    bottom:-10%;right:6%;
+    animation:pulseOrange 13s ease-in-out infinite;
+  }
+  .blob.mid{
+    width:34vw;height:34vw;
+    background:radial-gradient(circle at 50% 50%,rgba(0,80,230,.28),rgba(243,154,27,.12) 60%,transparent 75%);
+    top:38%;left:40%;
+    animation:pulseMid 15s ease-in-out infinite;
+  }
+  @keyframes pulseBlue{
+    0%,100%{transform:translate(0,0) scale(1);opacity:.5}
+    50%{transform:translate(4%,3%) scale(1.12);opacity:.62}
+  }
+  @keyframes pulseOrange{
+    0%,100%{transform:translate(0,0) scale(1.05);opacity:.42}
+    50%{transform:translate(-3%,-4%) scale(.95);opacity:.58}
+  }
+  @keyframes pulseMid{
+    0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.4}
+    50%{transform:translate(-46%,-54%) scale(1.15);opacity:.5}
+  }
+
+  /* Fausse carte UI translucide, centrée */
+  .ui-card{
+    position:relative;
+    z-index:3;
+    width:min(340px,82vw);
+    padding:22px 22px 20px;
+    border-radius:22px;
+    background:rgba(255,255,255,.62);
+    -webkit-backdrop-filter:blur(18px) saturate(1.4);
+            backdrop-filter:blur(18px) saturate(1.4);
+    border:1px solid rgba(255,255,255,.8);
+    box-shadow:0 24px 60px -20px rgba(0,50,120,.28),inset 0 1px 0 rgba(255,255,255,.9);
+  }
+  .ui-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .dot{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--blue),#3d7bff);box-shadow:0 6px 16px -4px rgba(0,80,230,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px}
+  .ui-head .t{font-size:14px;font-weight:600}
+  .ui-head .s{font-size:11px;color:rgba(13,27,62,.5);font-weight:500}
+  .metric{display:flex;align-items:flex-end;gap:8px;margin-bottom:14px}
+  .metric .big{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .metric .tag{font-size:11px;font-weight:600;color:#0a8f3c;background:rgba(10,143,60,.1);padding:3px 7px;border-radius:8px;margin-bottom:4px}
+  .bars{display:flex;align-items:flex-end;gap:6px;height:52px;margin-bottom:12px}
+  .bar{flex:1;border-radius:5px 5px 3px 3px;background:linear-gradient(180deg,rgba(0,80,230,.85),rgba(0,80,230,.35))}
+  .bar:nth-child(4){background:linear-gradient(180deg,var(--orange),rgba(243,154,27,.4))}
+  .foot{display:flex;justify-content:space-between;font-size:11px;color:rgba(13,27,62,.45);font-weight:500}
+
+  /* Étiquette */
+  .badge{
+    position:fixed;
+    left:22px;bottom:20px;
+    z-index:4;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 14px;
+    border-radius:100px;
+    background:rgba(255,255,255,.7);
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    border:1px solid rgba(13,27,62,.06);
+    font-size:12px;font-weight:600;color:var(--ink);
+    box-shadow:0 6px 18px -8px rgba(0,50,120,.25);
+  }
+  .badge b{color:var(--blue)}
+  .badge i{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange)}
+
+  @media (prefers-reduced-motion:reduce){
+    .blob{animation:none!important}
+  }
+  @media (max-width:640px){
+    .panel{display:none}
+    :root{--cell:26px}
+  }
+</style>
+</head>
+<body>
+  <div class="glow">
+    <div class="blob blue"></div>
+    <div class="blob orange"></div>
+    <div class="blob mid"></div>
+  </div>
+  <div class="bento-grid"></div>
+  <div class="panels">
+    <div class="panel p1"></div>
+    <div class="panel p2"></div>
+    <div class="panel p3"></div>
+    <div class="panel p4"></div>
+  </div>
+
+  <div class="ui-card" role="img" aria-label="Aperçu d'interface Intégral Pharma">
+    <div class="ui-head">
+      <div class="dot">IP</div>
+      <div>
+        <div class="t">Remises négociées</div>
+        <div class="s">30 derniers jours</div>
+      </div>
+    </div>
+    <div class="metric">
+      <span class="big">8,4 %</span>
+      <span class="tag">+1,2 pt</span>
+    </div>
+    <div class="bars">
+      <div class="bar" style="height:42%"></div>
+      <div class="bar" style="height:60%"></div>
+      <div class="bar" style="height:52%"></div>
+      <div class="bar" style="height:88%"></div>
+      <div class="bar" style="height:70%"></div>
+      <div class="bar" style="height:78%"></div>
+    </div>
+    <div class="foot"><span>Cœur de gamme</span><span>Objectif atteint</span></div>
+  </div>
+
+  <div class="badge"><i></i>10 · <b>Bento glow</b></div>
+</body>
+</html>

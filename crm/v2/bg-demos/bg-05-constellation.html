@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>05 · Constellation — Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#FBFCFE;
+    --blue:#0050E6;
+    --orange:#F39A1B;
+    --ink:#0b1b3a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden}
+  body{
+    background:var(--bg);
+    font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+  }
+  #net{
+    position:fixed;
+    inset:0;
+    display:block;
+    width:100%;
+    height:100%;
+    z-index:0;
+  }
+  /* subtle vignette so edges feel calm */
+  .veil{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(120% 100% at 50% 0%,rgba(251,252,254,0) 55%,rgba(251,252,254,.85) 100%);
+  }
+  .tag{
+    position:fixed;left:24px;top:24px;z-index:3;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 14px;border-radius:999px;
+    background:rgba(255,255,255,.72);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(0,80,230,.14);
+    font-size:12.5px;font-weight:600;letter-spacing:.02em;
+    color:var(--blue);
+    box-shadow:0 6px 22px rgba(11,27,58,.06);
+  }
+  .tag .dot{width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 4px rgba(243,154,27,.16)}
+
+  /* fake translucent UI card */
+  .card{
+    position:fixed;right:26px;bottom:26px;z-index:3;
+    width:260px;padding:18px;border-radius:18px;
+    background:rgba(255,255,255,.62);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.8);
+    box-shadow:0 18px 50px rgba(11,27,58,.12);
+  }
+  .card h3{font-size:14px;font-weight:600;color:var(--ink);letter-spacing:.01em}
+  .card p{font-size:11.5px;color:#5a6b8c;margin-top:3px;font-weight:400}
+  .card .row{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+  .card .kpi{font-size:22px;font-weight:600;color:var(--blue)}
+  .card .kpi small{font-size:11px;color:#8a97b4;font-weight:500;margin-left:2px}
+  .card .pill{font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:999px;background:rgba(243,154,27,.14);color:#b26a00}
+  .bars{display:flex;gap:6px;align-items:flex-end;height:34px;margin-top:14px}
+  .bars span{flex:1;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,rgba(0,80,230,.85),rgba(0,80,230,.35))}
+  .bars span:nth-child(3){background:linear-gradient(180deg,rgba(243,154,27,.9),rgba(243,154,27,.4))}
+  .card .legend{display:flex;gap:14px;margin-top:14px;font-size:10.5px;color:#7382a1;font-weight:500}
+  .card .legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+  @media(max-width:560px){
+    .card{width:210px;right:16px;bottom:16px;padding:15px}
+    .tag{left:16px;top:16px}
+  }
+</style>
+</head>
+<body>
+  <canvas id="net"></canvas>
+  <div class="veil"></div>
+
+  <div class="tag"><span class="dot"></span>05 · Constellation</div>
+
+  <aside class="card" aria-hidden="true">
+    <h3>Réseau officines</h3>
+    <p>Connexions actives · temps réel</p>
+    <div class="row">
+      <div class="kpi">512<small> pts</small></div>
+      <div class="pill">+8 aujourd'hui</div>
+    </div>
+    <div class="bars">
+      <span style="height:40%"></span>
+      <span style="height:62%"></span>
+      <span style="height:88%"></span>
+      <span style="height:55%"></span>
+      <span style="height:72%"></span>
+      <span style="height:48%"></span>
+    </div>
+    <div class="legend">
+      <span><i style="background:#0050E6"></i>Reliées</span>
+      <span><i style="background:#F39A1B"></i>Hubs</span>
+    </div>
+  </aside>
+
+<script>
+(function(){
+  const canvas = document.getElementById('net');
+  const ctx = canvas.getContext('2d');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let W=0,H=0,DPR=1,nodes=[],linkDist=0;
+  const mouse = {x:-9999,y:-9999,active:false};
+
+  function pointCount(){
+    // discreet: scale with area but capped low
+    const area = (window.innerWidth*window.innerHeight)/1000000; // in Mpx
+    return Math.max(26, Math.min(64, Math.round(30*area+22)));
+  }
+
+  function init(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W*DPR; canvas.height = H*DPR;
+    canvas.style.width = W+'px'; canvas.style.height = H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    linkDist = Math.min(170, Math.max(120, Math.hypot(W,H)*0.11));
+
+    const n = pointCount();
+    nodes = [];
+    for(let i=0;i<n;i++){
+      const orange = Math.random() < 0.12; // few oranges
+      nodes.push({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        vx: (Math.random()-0.5)*0.18,
+        vy: (Math.random()-0.5)*0.18,
+        r: orange ? 2.6+Math.random()*1.2 : 1.6+Math.random()*1.4,
+        orange
+      });
+    }
+  }
+
+  function step(){
+    ctx.clearRect(0,0,W,H);
+
+    // gentle motion + mouse influence
+    for(const p of nodes){
+      if(!reduce){
+        p.x += p.vx; p.y += p.vy;
+        if(mouse.active){
+          const dx = p.x-mouse.x, dy = p.y-mouse.y;
+          const d2 = dx*dx+dy*dy;
+          if(d2 < 14000 && d2 > 0.01){
+            const f = (14000-d2)/14000 * 0.012;
+            p.x += dx*f; p.y += dy*f;
+          }
+        }
+        if(p.x< -20) p.x=W+20; else if(p.x>W+20) p.x=-20;
+        if(p.y< -20) p.y=H+20; else if(p.y>H+20) p.y=-20;
+      }
+    }
+
+    // links (fine lines when near)
+    for(let i=0;i<nodes.length;i++){
+      const a = nodes[i];
+      for(let j=i+1;j<nodes.length;j++){
+        const b = nodes[j];
+        const dx=a.x-b.x, dy=a.y-b.y;
+        const d = Math.hypot(dx,dy);
+        if(d < linkDist){
+          const t = 1 - d/linkDist;
+          const hub = a.orange || b.orange;
+          ctx.strokeStyle = hub
+            ? 'rgba(243,154,27,'+(t*0.16).toFixed(3)+')'
+            : 'rgba(0,80,230,'+(t*0.14).toFixed(3)+')';
+          ctx.lineWidth = 0.7;
+          ctx.beginPath();
+          ctx.moveTo(a.x,a.y);
+          ctx.lineTo(b.x,b.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // nodes
+    for(const p of nodes){
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle = p.orange ? 'rgba(243,154,27,0.62)' : 'rgba(0,80,230,0.42)';
+      ctx.fill();
+      if(p.orange){
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.r+3,0,Math.PI*2);
+        ctx.fillStyle='rgba(243,154,27,0.10)';
+        ctx.fill();
+      }
+    }
+
+    if(!reduce) raf = requestAnimationFrame(step);
+  }
+
+  let raf;
+  function start(){ cancelAnimationFrame(raf); step(); }
+
+  window.addEventListener('resize', ()=>{ init(); start(); }, {passive:true});
+  window.addEventListener('pointermove', e=>{ mouse.x=e.clientX; mouse.y=e.clientY; mouse.active=true; }, {passive:true});
+  window.addEventListener('pointerleave', ()=>{ mouse.active=false; });
+
+  init();
+  start(); // draws once even when reduced-motion (frozen)
+})();
+</script>
+</body>
+</html>

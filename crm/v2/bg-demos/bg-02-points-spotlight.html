@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 · Points + spotlight — Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBFCFE;
+    --dot:#C9D6EC;
+    --blue:#0050E6;
+    --orange:#F39A1B;
+    --ink:#0E1A2B;
+    --muted:#5B6B82;
+    --mx:50%;
+    --my:50%;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'DM Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    position:relative;
+    overflow:hidden;
+    display:grid;
+    place-items:center;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* Trame de points réguliers */
+  .dots{
+    position:fixed;
+    inset:0;
+    background-image:radial-gradient(circle, var(--dot) 1.1px, transparent 1.1px);
+    background-size:26px 26px;
+    background-position:-13px -13px;
+    z-index:0;
+    pointer-events:none;
+  }
+
+  /* Halo lumineux qui suit la souris, masqué en fondu radial */
+  .spotlight{
+    position:fixed;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    background:
+      radial-gradient(420px circle at var(--mx) var(--my),
+        rgba(0,80,230,0.16), rgba(0,80,230,0.06) 40%, transparent 70%),
+      radial-gradient(240px circle at var(--mx) var(--my),
+        rgba(243,154,27,0.10), transparent 65%);
+    transition:background .12s ease-out;
+    mix-blend-mode:multiply;
+  }
+  /* Le halo révèle des points plus contrastés là où la souris passe */
+  .spotlight-dots{
+    position:fixed;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    background-image:radial-gradient(circle, var(--blue) 1.1px, transparent 1.1px);
+    background-size:26px 26px;
+    background-position:-13px -13px;
+    -webkit-mask-image:radial-gradient(220px circle at var(--mx) var(--my), #000 0%, transparent 70%);
+            mask-image:radial-gradient(220px circle at var(--mx) var(--my), #000 0%, transparent 70%);
+    opacity:.5;
+  }
+
+  .stage{
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:34px;
+    padding:24px;
+    text-align:center;
+  }
+
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 18px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.72);
+    border:1px solid rgba(14,26,43,0.08);
+    box-shadow:0 1px 2px rgba(14,26,43,0.04);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.02em;
+    color:var(--muted);
+  }
+  .badge b{color:var(--blue);font-weight:700}
+  .badge .dotmark{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--orange);
+    box-shadow:0 0 0 4px rgba(243,154,27,0.18);
+  }
+
+  /* Fausse carte UI translucide */
+  .card{
+    width:min(380px,88vw);
+    text-align:left;
+    padding:24px 24px 22px;
+    border-radius:20px;
+    background:rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.7);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.6) inset,
+      0 18px 50px -18px rgba(14,26,43,0.22),
+      0 2px 8px rgba(14,26,43,0.05);
+    backdrop-filter:blur(16px) saturate(140%);
+    -webkit-backdrop-filter:blur(16px) saturate(140%);
+  }
+  .card .cap{
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--blue);
+    margin-bottom:10px;
+  }
+  .card h2{
+    font-size:19px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    margin-bottom:14px;
+  }
+  .card .line{
+    height:9px;
+    border-radius:6px;
+    background:linear-gradient(90deg, rgba(14,26,43,0.10), rgba(14,26,43,0.05));
+    margin-bottom:10px;
+  }
+  .card .line.short{width:62%}
+  .card .btn{
+    margin-top:18px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:11px 20px;
+    border-radius:12px;
+    border:none;
+    cursor:pointer;
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:600;
+    color:#fff;
+    background:var(--blue);
+    box-shadow:0 8px 20px -8px rgba(0,80,230,0.6);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .card .btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 12px 24px -8px rgba(0,80,230,0.65);
+  }
+  .card .btn:after{content:"→";font-weight:700}
+
+  @media (prefers-reduced-motion: reduce){
+    :root{--mx:50%;--my:38%}
+    .spotlight,.spotlight-dots{transition:none}
+    .card .btn{transition:none}
+  }
+</style>
+</head>
+<body>
+  <div class="dots" aria-hidden="true"></div>
+  <div class="spotlight" aria-hidden="true"></div>
+  <div class="spotlight-dots" aria-hidden="true"></div>
+
+  <main class="stage">
+    <span class="badge"><span class="dotmark"></span>02 · Points + spotlight</span>
+
+    <section class="card">
+      <div class="cap">Intégral Pharma</div>
+      <h2>Vos appros, sous contrôle.</h2>
+      <div class="line"></div>
+      <div class="line short"></div>
+      <button class="btn" type="button">Découvrir</button>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(reduce) return; // halo figé au centre via CSS
+      var root = document.documentElement;
+      var raf = null, tx = 0, ty = 0;
+      window.addEventListener('pointermove', function(e){
+        tx = e.clientX; ty = e.clientY;
+        if(raf) return;
+        raf = requestAnimationFrame(function(){
+          root.style.setProperty('--mx', tx + 'px');
+          root.style.setProperty('--my', ty + 'px');
+          raf = null;
+        });
+      }, {passive:true});
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 · Lignes diagonales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBFCFE;
+    --ink:#0f1b3d;
+    --blue:#0057FF;
+    --orange:#ff7a1a;
+    --line:rgba(15,27,61,.045);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'DM Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  /* Rayures diagonales très discrètes qui défilent lentement */
+  .stripes{
+    position:fixed;
+    inset:-40%;
+    background-image:repeating-linear-gradient(
+      45deg,
+      var(--line) 0 1px,
+      transparent 1px 22px
+    );
+    animation:drift 60s linear infinite;
+    z-index:0;
+  }
+  .stripes.fine{
+    background-image:repeating-linear-gradient(
+      45deg,
+      rgba(15,27,61,.028) 0 1px,
+      transparent 1px 11px
+    );
+    animation-duration:90s;
+    animation-direction:reverse;
+  }
+
+  /* Voile dégradé bleu/orange sur les coins */
+  .glow{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    background:
+      radial-gradient(60% 55% at 100% 0%, rgba(0,87,255,.10), transparent 60%),
+      radial-gradient(50% 50% at 0% 100%, rgba(255,122,26,.08), transparent 60%);
+    pointer-events:none;
+  }
+
+  @keyframes drift{
+    from{background-position:0 0}
+    to{background-position:311px 311px}
+  }
+
+  /* Étiquette */
+  .tag{
+    position:fixed;
+    top:22px;
+    left:22px;
+    z-index:3;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.02em;
+    color:var(--ink);
+    background:rgba(255,255,255,.7);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border:1px solid rgba(15,27,61,.08);
+    padding:8px 14px;
+    border-radius:999px;
+    box-shadow:0 4px 18px rgba(15,27,61,.05);
+  }
+  .tag b{color:var(--blue)}
+
+  /* Fausse carte UI translucide */
+  .card{
+    position:relative;
+    z-index:2;
+    width:min(420px,100%);
+    background:rgba(255,255,255,.55);
+    backdrop-filter:blur(16px) saturate(140%);
+    -webkit-backdrop-filter:blur(16px) saturate(140%);
+    border:1px solid rgba(255,255,255,.7);
+    border-radius:22px;
+    padding:26px 26px 22px;
+    box-shadow:
+      0 20px 60px rgba(15,27,61,.10),
+      inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  .card-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:20px;
+  }
+  .logo{
+    width:40px;height:40px;border-radius:12px;
+    background:linear-gradient(135deg,var(--blue),#3d82ff);
+    display:grid;place-items:center;
+    color:#fff;font-weight:700;font-size:15px;
+    box-shadow:0 6px 16px rgba(0,87,255,.35);
+  }
+  .card-head h1{font-size:15px;font-weight:600}
+  .card-head p{font-size:12px;color:rgba(15,27,61,.5);font-weight:500}
+
+  .kpis{display:flex;gap:12px;margin-bottom:18px}
+  .kpi{
+    flex:1;
+    background:rgba(255,255,255,.5);
+    border:1px solid rgba(15,27,61,.06);
+    border-radius:14px;
+    padding:12px 14px;
+  }
+  .kpi .v{font-size:22px;font-weight:700;line-height:1}
+  .kpi .v.blue{color:var(--blue)}
+  .kpi .v.orange{color:var(--orange)}
+  .kpi .l{font-size:11px;color:rgba(15,27,61,.5);margin-top:6px;font-weight:500}
+
+  .bar{
+    height:8px;border-radius:99px;
+    background:rgba(15,27,61,.08);
+    overflow:hidden;margin-bottom:8px;
+  }
+  .bar span{
+    display:block;height:100%;border-radius:99px;
+    background:linear-gradient(90deg,var(--blue),var(--orange));
+    width:72%;
+  }
+  .bar-label{
+    display:flex;justify-content:space-between;
+    font-size:11px;color:rgba(15,27,61,.55);font-weight:500;
+  }
+
+  @media (max-width:480px){
+    .kpis{flex-direction:column}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .stripes{animation:none}
+  }
+</style>
+</head>
+<body>
+  <div class="stripes"></div>
+  <div class="stripes fine"></div>
+  <div class="glow"></div>
+
+  <span class="tag"><b>07</b> · Lignes diagonales</span>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="logo">IP</div>
+      <div>
+        <h1>Intégral Pharma</h1>
+        <p>Tableau de bord commercial</p>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="v blue">+14 000</div>
+        <div class="l">Références Offilog</div>
+      </div>
+      <div class="kpi">
+        <div class="v orange">6–9 %</div>
+        <div class="l">Remise moyenne</div>
+      </div>
+    </div>
+
+    <div class="bar"><span></span></div>
+    <div class="bar-label">
+      <span>Objectif trimestre</span>
+      <span>72 %</span>
+    </div>
+  </div>
+</body>
+</html>

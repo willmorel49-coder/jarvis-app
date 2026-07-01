@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 · Spotlight curseur — Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBFCFE;
+    --blue:#0050E6;
+    --orange:#F39A1B;
+    --ink:#0A1B3D;
+    --mx:50%;
+    --my:42%;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+    position:relative;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* Couche lueur qui suit le curseur */
+  .spotlight{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:
+      radial-gradient(420px 420px at var(--mx) var(--my),
+        rgba(0,80,230,.28) 0%,
+        rgba(0,80,230,.14) 34%,
+        rgba(0,80,230,0) 70%),
+      radial-gradient(760px 760px at var(--mx) var(--my),
+        rgba(243,154,27,.16) 42%,
+        rgba(243,154,27,.06) 66%,
+        rgba(243,154,27,0) 82%);
+    transition:background .45s cubic-bezier(.22,.61,.36,1);
+    filter:saturate(1.05);
+  }
+  /* Léger grain de lumière très diffus au centre pour la profondeur */
+  .glow-core{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:radial-gradient(1200px 1200px at var(--mx) var(--my),
+      rgba(255,255,255,.5) 0%,
+      rgba(255,255,255,0) 55%);
+    transition:background .45s cubic-bezier(.22,.61,.36,1);
+    mix-blend-mode:screen;
+  }
+
+  /* Contenu */
+  .stage{
+    position:relative;
+    z-index:1;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  .tag{
+    position:fixed;
+    top:26px;
+    left:28px;
+    z-index:2;
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    padding:8px 15px;
+    font-size:12.5px;
+    font-weight:600;
+    letter-spacing:.02em;
+    color:var(--ink);
+    background:rgba(255,255,255,.6);
+    border:1px solid rgba(10,27,61,.08);
+    border-radius:999px;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    box-shadow:0 4px 20px rgba(0,80,230,.06);
+  }
+  .tag .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--blue);
+    box-shadow:0 0 0 4px rgba(0,80,230,.14);
+  }
+
+  /* Fausse carte UI translucide */
+  .card{
+    position:relative;
+    width:min(420px,90vw);
+    padding:28px 28px 26px;
+    border-radius:22px;
+    background:rgba(255,255,255,.55);
+    border:1px solid rgba(255,255,255,.75);
+    backdrop-filter:blur(22px) saturate(1.4);
+    -webkit-backdrop-filter:blur(22px) saturate(1.4);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.9) inset,
+      0 24px 60px -20px rgba(10,27,61,.22),
+      0 6px 18px -8px rgba(0,80,230,.14);
+  }
+  .card-top{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:22px;
+  }
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .mark{
+    width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(135deg,var(--blue),#2f7bff);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:15px;
+    box-shadow:0 6px 16px -4px rgba(0,80,230,.5);
+  }
+  .brand .name{font-weight:600;font-size:15px;letter-spacing:-.01em}
+  .brand .name small{display:block;font-weight:500;font-size:11.5px;color:#5b6b86}
+  .pill{
+    font-size:11px;font-weight:600;color:var(--blue);
+    background:rgba(0,80,230,.08);
+    padding:5px 10px;border-radius:999px;
+  }
+  .stat-row{display:flex;gap:14px;margin-bottom:20px}
+  .stat{
+    flex:1;
+    background:rgba(255,255,255,.5);
+    border:1px solid rgba(10,27,61,.06);
+    border-radius:14px;
+    padding:13px 14px;
+  }
+  .stat .k{font-size:11px;color:#6a7a94;font-weight:500;margin-bottom:5px}
+  .stat .v{font-size:22px;font-weight:700;letter-spacing:-.02em}
+  .stat .v span{font-size:13px;font-weight:600;color:var(--orange);margin-left:2px}
+  .bar{height:8px;border-radius:999px;background:rgba(10,27,61,.06);overflow:hidden;margin:4px 0 20px}
+  .bar > i{display:block;height:100%;width:72%;border-radius:999px;
+    background:linear-gradient(90deg,var(--blue),var(--orange));}
+  .cta{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:13px;border:none;border-radius:13px;
+    font-family:inherit;font-size:14px;font-weight:600;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,var(--blue),#2f6dff);
+    box-shadow:0 12px 26px -10px rgba(0,80,230,.6);
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .cta:hover{transform:translateY(-1px);box-shadow:0 16px 30px -10px rgba(0,80,230,.7)}
+
+  @media (prefers-reduced-motion: reduce){
+    :root{--mx:50%;--my:44%}
+    .spotlight,.glow-core{transition:none}
+  }
+</style>
+</head>
+<body>
+  <div class="spotlight"></div>
+  <div class="glow-core"></div>
+
+  <span class="tag"><span class="dot"></span>06 · Spotlight curseur</span>
+
+  <div class="stage">
+    <div class="card">
+      <div class="card-top">
+        <div class="brand">
+          <div class="mark">IP</div>
+          <div class="name">Intégral Pharma<small>Tableau de bord appros</small></div>
+        </div>
+        <span class="pill">Temps réel</span>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat">
+          <div class="k">Remise moyenne</div>
+          <div class="v">7,4<span>%</span></div>
+        </div>
+        <div class="stat">
+          <div class="k">Références suivies</div>
+          <div class="v">14 200</div>
+        </div>
+      </div>
+
+      <div class="bar"><i></i></div>
+
+      <button class="cta">Analyser mes achats →</button>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var root = document.documentElement;
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(reduce) return; // lueur fixe au centre
+
+      var tx = window.innerWidth/2, ty = window.innerHeight*0.42;
+      var cx = tx, cy = ty, raf = null;
+
+      function set(x,y){
+        root.style.setProperty('--mx', (x/window.innerWidth*100).toFixed(2)+'%');
+        root.style.setProperty('--my', (y/window.innerHeight*100).toFixed(2)+'%');
+      }
+      set(cx,cy);
+
+      function loop(){
+        cx += (tx-cx)*0.12;
+        cy += (ty-cy)*0.12;
+        set(cx,cy);
+        if(Math.abs(tx-cx)>0.3 || Math.abs(ty-cy)>0.3){
+          raf = requestAnimationFrame(loop);
+        } else { raf = null; }
+      }
+      function onMove(e){
+        var p = e.touches ? e.touches[0] : e;
+        tx = p.clientX; ty = p.clientY;
+        if(!raf) raf = requestAnimationFrame(loop);
+      }
+      window.addEventListener('pointermove', onMove, {passive:true});
+      window.addEventListener('touchmove', onMove, {passive:true});
+    })();
+  </script>
+</body>
+</html>

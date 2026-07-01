@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 fonds · accueil CRM Intégral</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ip:#0050E6;--or:#F39A1B;--ink:#10131C;--muted:#6b7280;--line:#e6e9f0;--bg:#f4f6fb}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif}
+  header{padding:26px 20px 8px;max-width:1500px;margin:0 auto}
+  header h1{font-size:23px;font-weight:700;letter-spacing:-.02em;margin:0}
+  header p{color:var(--muted);font-size:14px;margin:6px 0 0}
+  .grid{max-width:1500px;margin:0 auto;padding:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(16,19,28,.06)}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 15px;border-bottom:1px solid var(--line)}
+  .card-h .t{font-weight:700;font-size:14px}
+  .card-h .t b{color:var(--ip)}
+  .card-h a{font-size:12px;font-weight:700;color:var(--ip);text-decoration:none;white-space:nowrap;border:1px solid var(--line);padding:6px 11px;border-radius:9px}
+  .card-h a:hover{background:var(--bg)}
+  .frame{position:relative;height:56vh;min-height:340px;background:#fff}
+  iframe{width:100%;height:100%;border:0;display:block}
+</style>
+</head>
+<body>
+<header>
+  <h1>10 fonds pour l'accueil <span style="color:#F39A1B">·</span> genre 21st.dev / Linear</h1>
+  <p>Bouge la souris sur chacun. Donne-moi le numéro que tu préfères (ou un mix) et je le mets sur l'accueil du CRM.</p>
+</header>
+<div class="grid" id="grid"></div>
+<script>
+  var M = [
+    ['01','Grille + halo','Linear / Vercel'],
+    ['02','Points + spotlight','Aceternity / 21st — suit la souris'],
+    ['03','Mesh orbes','orbes flous, dérive lente'],
+    ['04','Grille + beams','faisceaux lumineux'],
+    ['05','Constellation','réseau de points reliés'],
+    ['06','Spotlight curseur','lueur qui suit le curseur'],
+    ['07','Lignes diagonales','rayures fines animées'],
+    ['08','Aurora géométrique','arcs nets, pas un ciel'],
+    ['09','Grain + dégradé','mat premium éditorial'],
+    ['10','Bento glow','surface d\'app, glow qui pulse']
+  ];
+  var files = {
+    '01':'bg-01-grille-halo.html','02':'bg-02-points-spotlight.html','03':'bg-03-mesh-orbes.html',
+    '04':'bg-04-grille-beams.html','05':'bg-05-constellation.html','06':'bg-06-spotlight-curseur.html',
+    '07':'bg-07-lignes-diagonales.html','08':'bg-08-aurora-geo.html','09':'bg-09-grain-degrade.html',
+    '10':'bg-10-bento-glow.html'
+  };
+  document.getElementById('grid').innerHTML = M.map(function(m){
+    var url = files[m[0]];
+    return '<div class="card"><div class="card-h"><div class="t"><b>'+m[0]+'.</b> '+m[1]+' <span style="color:#6b7280;font-weight:500">· '+m[2]+'</span></div>'
+      + '<a href="'+url+'" target="_blank" rel="noopener">Plein écran ↗</a></div>'
+      + '<div class="frame"><iframe loading="lazy" src="'+url+'" title="'+m[1]+'"></iframe></div></div>';
+  }).join('');
+</script>
+</body>
+</html>
