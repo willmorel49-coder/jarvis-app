@@ -16,15 +16,15 @@
 
   // Mêmes familles que le catalogue grossiste (sous-ensemble dérivable par CIP)
   var FAMS = [
-    { k: 'all',    label: 'Tout',                    sc: '#0050E6' },
-    { k: 'p_low',  label: 'Petits prix · 0–4,33€',   sc: '#1E9E6A' },
-    { k: 'p_mid',  label: 'Intermédiaire · 4,33–468€', sc: '#0050E6' },
-    { k: 'p_high', label: 'Cher · >468€',            sc: '#C7791A' },
-    { k: 'froid',  label: 'Froid',                   sc: '#00B5D8' },
-    { k: 'nr',     label: 'Non remboursés',          sc: '#C7791A' },
+    { k: 'all',    label: 'Tout',                        sc: '#0050E6' },
+    { k: 'pr_low', label: 'Princeps · petits prix',      sc: '#1E9E6A' },
+    { k: 'pr_mid', label: 'Princeps · intermédiaire',    sc: '#0050E6' },
+    { k: 'pr_high',label: 'Princeps · cher',             sc: '#C7791A' },
+    { k: 'nr',     label: 'NR',                          sc: '#E0556E' },
+    { k: 'genbio', label: 'Génériques + biosimilaires',  sc: '#7C3AED' },
   ];
   var FAM_BY = {}; FAMS.forEach(function (f) { FAM_BY[f.k] = f; });
-  var FAM_SHORT = { p_low: 'Petits prix', p_mid: 'Intermédiaire', p_high: 'Cher', froid: 'Froid', nr: 'NR' };
+  var FAM_SHORT = { pr_low: 'Princeps petits prix', pr_mid: 'Princeps intermédiaire', pr_high: 'Princeps cher', nr: 'NR', genbio: 'Génér. + biosim' };
 
   var S = { sort: 'rota', q: '', chip: 'all' };
   var COLS = [

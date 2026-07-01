@@ -36,6 +36,7 @@ ws = openpyxl.load_workbook(XLSX, read_only=True, data_only=True).active
 hh = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
 ci = hh.index('artcodebarre'); di = hh.index('artdesignation')
 pi = hh.index('ppht');         ai = hh.index('afmcode')
+ni = hh.index('artnature') if 'artnature' in hh else None
 info = {}
 for r in ws.iter_rows(min_row=2, values_only=True):
     c = str(r[ci] or '')
@@ -44,16 +45,22 @@ for r in ws.iter_rows(min_row=2, values_only=True):
             'd': (str(r[di]).strip() if r[di] else ''),
             'ppht': (float(r[pi]) if isinstance(r[pi], (int, float)) else 0.0),
             'remb': str(r[ai] or '') == 'REMBSS',
+            'nat': (str(r[ni]).strip() if (ni is not None and r[ni]) else ''),
         }
 
-def famille(cip, ppht, net, remb):
-    """Memes familles que le catalogue grossiste : froid > NR > tranches de prix PPHT."""
-    if cip in froid: return 'froid'
-    if not remb: return 'nr'
-    p = ppht if ppht > 0 else net
-    if p <= 4.33: return 'p_low'
-    if p <= 468:  return 'p_mid'
-    return 'p_high'
+def famille(cip, ppht, net, remb, nat):
+    """Catégories voulues (Will) : NR · Génériques+biosimilaires · Princeps par tranche de prix.
+    Nature depuis artnature du fichier prix (Referent=princeps ; Generique/Generique
+    Partenaire/Biosimilaire = genbio)."""
+    if not remb:
+        return 'nr'
+    nl = (nat or '').lower()
+    if 'generique' in nl or 'générique' in nl or 'biosimilaire' in nl:
+        return 'genbio'
+    p = ppht if ppht > 0 else net           # princeps / référent → tranche de prix
+    if p <= 4.33: return 'pr_low'
+    if p <= 468:  return 'pr_mid'
+    return 'pr_high'
 
 def mdl(p):
     if p <= 0: return 0
@@ -83,7 +90,7 @@ for c, a in ag.items():
     net = (a['ca'] / a['qte']) if a['qte'] else 0   # prix net achat moyen / boite
     rows.append({
         'c': c, 'd': info[c]['d'][:46], 'n': nph,
-        'f': famille(c, info[c]['ppht'], net, info[c]['remb']),
+        'f': famille(c, info[c]['ppht'], net, info[c]['remb'], info[c]['nat']),
         'rota': round(a['qte'] * k),
         'marge': round(a['marge'] * k),
         'remise': round(max(0, a['tarif'] - a['ca']) * k),
