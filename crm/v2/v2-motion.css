@@ -30,15 +30,15 @@
    ============================================================ */
 [data-reveal]{
   opacity:0;
-  transform:translateY(8px);
-  transition:opacity var(--mo-dur) var(--mo-ease-in),
+  transform:translate3d(0,10px,0);
+  transition:opacity var(--mo-dur) var(--mo-ease-soft),
              transform var(--mo-dur) var(--mo-ease-in);
-  transition-delay:calc(var(--mo-i, 0) * 30ms);
+  transition-delay:calc(var(--mo-i, 0) * 34ms);
   will-change:opacity, transform;
 }
 [data-reveal].is-in{
   opacity:1;
-  transform:translateY(0);
+  transform:translate3d(0,0,0);
 }
 
 /* ============================================================
@@ -109,6 +109,43 @@ a.off-card:hover{
 .v2-chip:active,
 .v2-rchip:active{
   transform:scale(.97);
+}
+
+/* --- Magnetic hover (piloté en JS via --mo-mx / --mo-my) --------------
+   Attraction spring subtile du bouton vers le curseur (Linear/Vercel).
+   Amplitude minuscule (quelques px) → premium, jamais gadget. Le JS pose
+   .mo-mag + les deux offsets ; au repos ils valent 0 donc translate = 0.
+   Réservé aux .v2-btn (aucun transform:hover concurrent en v2.css).
+   La courbe --ease franche donne le « rattrapage » ressort sans lib.
+   --mo-lift-y : lift de survol des variantes (primary/ghost lèvent de 1px
+   en v2.css) — on le réintègre pour NE PAS écraser la signature de survol.
+   On monte la spécificité (:hover) pour battre .v2-btn-primary:hover. */
+.v2-btn.mo-mag:hover,
+.v2-btn.mo-mag{
+  --mo-lift-y:0px;
+  transform:translate3d(var(--mo-mx,0), calc(var(--mo-my,0px) + var(--mo-lift-y)), 0);
+  transition:transform 260ms var(--ease),
+             background var(--mo-dur) var(--mo-ease-soft),
+             color var(--mo-dur) var(--mo-ease-soft),
+             border-color var(--mo-dur) var(--mo-ease-soft),
+             box-shadow var(--mo-dur) var(--mo-ease-in);
+  will-change:transform;
+}
+/* préserve le lift de survol des variantes qui l'avaient (primary/ghost) */
+.v2-btn-primary.mo-mag:hover,
+.v2-btn-ghost.mo-mag:hover{ --mo-lift-y:-1px; }
+/* pendant le suivi actif du curseur : réponse quasi immédiate (pas de lag) */
+.v2-btn.mo-mag.mo-mag-live:hover,
+.v2-btn.mo-mag.mo-mag-live{
+  transition:transform 90ms linear,
+             background var(--mo-dur) var(--mo-ease-soft),
+             color var(--mo-dur) var(--mo-ease-soft),
+             border-color var(--mo-dur) var(--mo-ease-soft),
+             box-shadow var(--mo-dur) var(--mo-ease-in);
+}
+/* l'appui garde la priorité tactile même en mode magnétique */
+.v2-btn.mo-mag:active{
+  transform:translate3d(var(--mo-mx,0), var(--mo-my,0px), 0) scale(.97);
 }
 
 /* --- .mo-press : settle spring signature (câblé en JS) ---------------
@@ -197,21 +234,26 @@ a.off-card:hover{
    8. View / tab switch — gentle fade-up on render
    JS adds .mo-view-in on the page root (.v2-wrap) each render.
    ============================================================ */
+/* Entrée d'écran : glisse latéral doux + effleurement d'échelle (Linear).
+   L'échelle part de .procheDe(1) pour une profondeur perçue sans « pop ».
+   Durée --mo-dur-slow réservée à ce mouvement ample, courbe d'entrée franche. */
 @keyframes mo-view-in{
-  from{ opacity:0; transform:translateX(20px); }
-  to{   opacity:1; transform:translateX(0); }
+  from{ opacity:0; transform:translate3d(18px,0,0) scale(.992); }
+  60% { opacity:1; }
+  to{   opacity:1; transform:translate3d(0,0,0)    scale(1);    }
 }
 .v2-wrap.mo-view-in,
 .mo-view-in{
-  animation:mo-view-in var(--mo-dur) var(--mo-ease-in) both;
+  animation:mo-view-in var(--mo-dur-slow) var(--mo-ease-in) both;
 }
 /* Retour : glissé inverse (sensation « je reviens en arrière ») */
 @keyframes mo-view-back{
-  from{ opacity:0; transform:translateX(-20px); }
-  to{   opacity:1; transform:translateX(0); }
+  from{ opacity:0; transform:translate3d(-18px,0,0) scale(.992); }
+  60% { opacity:1; }
+  to{   opacity:1; transform:translate3d(0,0,0)     scale(1);    }
 }
 .v2-wrap.mo-view-back{
-  animation:mo-view-back var(--mo-dur) var(--mo-ease-in) both;
+  animation:mo-view-back var(--mo-dur-slow) var(--mo-ease-in) both;
 }
 
 /* ============================================================
