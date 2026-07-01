@@ -496,7 +496,36 @@
       '.v2-home-x .v2-moment:nth-of-type(1){animation-delay:.10s}.v2-home-x .v2-moment:nth-of-type(2){animation-delay:.16s}.v2-home-x .v2-moment:nth-of-type(3){animation-delay:.22s}.v2-home-x .v2-moment:nth-of-type(4){animation-delay:.28s}',
       '@keyframes v2homeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}',
       // Accessibilité : on coupe animations + spotlight si mouvement réduit
-      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-moment,.v2-home-x .v2-hero,.v2-home-x .v2-search,.v2-home-x .v2-recent{animation:none}.v2-home-x .v2-pil,.v2-home-x .v2-pil-go .arrow{transition:none}.v2-home-x .v2-pil::after{display:none}}'
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-moment,.v2-home-x .v2-hero,.v2-home-x .v2-search,.v2-home-x .v2-recent{animation:none}.v2-home-x .v2-pil,.v2-home-x .v2-pil-go .arrow{transition:none}.v2-home-x .v2-pil::after{display:none}}',
+      // ─── Accueil « Launcher » (choix Will) : hero calme centré + grande recherche + 4 grandes entrées + « Autres outils » discret
+      '.v2-home-x .v2-hero{text-align:center}',
+      '.v2-home-x .v2-hero h1{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.02em;margin:0 0 9px}',
+      '.v2-home-x .v2-hero .ac{color:var(--ip-blue)}',
+      '.v2-home-x .v2-hero-sub{color:var(--muted);font-size:15px;margin:0}',
+      '.v2-home-x .v2-hero-sub b{color:var(--ink);font-weight:600}',
+      '.v2-home-x .v2-search{height:62px;border-radius:16px}',
+      '.v2-home-x .v2-search input{font-size:16px}',
+      '.v2-home-x .v2-recent{justify-content:center}',
+      '.v2-home-x .v2-lch-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:10px}',
+      '@media(max-width:640px){.v2-home-x .v2-lch-grid{grid-template-columns:1fr;gap:12px}}',
+      '.v2-home-x .v2-lch-card{position:relative;display:flex;flex-direction:column;gap:42px;min-height:150px;padding:24px 22px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-lg,20px);text-decoration:none;color:var(--ink);cursor:pointer;overflow:hidden;transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft),border-color .28s var(--mo-ease-soft)}',
+      '.v2-home-x .v2-lch-card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s var(--mo-ease-soft);background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--accent) 14%,transparent),transparent 62%)}',
+      '.v2-home-x .v2-lch-card:hover{transform:translateY(-4px);box-shadow:var(--sh-2,0 18px 42px rgba(16,24,43,.10));border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}',
+      '.v2-home-x .v2-lch-card:hover::after{opacity:1}',
+      '.v2-home-x .v2-lch-ico{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 16%,var(--card)),color-mix(in srgb,var(--accent) 6%,var(--card)));color:var(--accent);box-shadow:0 1px 0 rgba(255,255,255,.7) inset}',
+      '.v2-home-x .v2-lch-arrow{position:absolute;top:24px;right:22px;color:var(--muted-2,#98a1b4);font-size:19px;font-weight:700;line-height:1;transition:transform .28s var(--mo-ease-soft),color .28s}',
+      '.v2-home-x .v2-lch-card:hover .v2-lch-arrow{transform:translateX(3px);color:var(--accent)}',
+      '.v2-home-x .v2-lch-meta{display:flex;flex-direction:column;gap:4px}',
+      '.v2-home-x .v2-lch-t{font-size:18px;font-weight:700;letter-spacing:-.01em}',
+      '.v2-home-x .v2-lch-d{font-size:13.5px;color:var(--muted);line-height:1.35}',
+      '.v2-home-x .v2-lch-more{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}',
+      '.v2-home-x .v2-lch-more .lbl{font-size:12.5px;color:var(--muted);margin-right:4px;font-weight:600}',
+      '.v2-home-x .v2-lch-mini{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);color:var(--ink);font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s}',
+      '.v2-home-x .v2-lch-mini svg{color:var(--muted-2,#98a1b4);width:15px;height:15px;flex-shrink:0}',
+      '.v2-home-x .v2-lch-mini:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line));transform:translateY(-1px);box-shadow:var(--sh-1)}',
+      '.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:v2homeIn .5s var(--mo-ease-in) both}',
+      '.v2-home-x .v2-lch-card:nth-of-type(1){animation-delay:.10s}.v2-home-x .v2-lch-card:nth-of-type(2){animation-delay:.14s}.v2-home-x .v2-lch-card:nth-of-type(3){animation-delay:.18s}.v2-home-x .v2-lch-card:nth-of-type(4){animation-delay:.22s}.v2-home-x .v2-lch-more{animation-delay:.28s}',
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:none}.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-arrow{transition:none}.v2-home-x .v2-lch-card::after{display:none}}'
     ].join('');
     document.head.appendChild(st);
   }
@@ -590,38 +619,37 @@
         pilHtml = '<div class="v2-piliers">' + P.map(tile).join('') + '</div>';
       } else {
         var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
-        // Fusion en espaces à onglets : Catalogue grossiste + Par produit + Offilog → une seule tuile ;
-        // catalogue/offilog repliés ailleurs, fiches retiré. Pages masquées encore atteignables via ⌘K.
-        if (pmap.molecules) {
-          pmap.molecules.t = 'Catalogue & prix';
-          pmap.molecules.d = 'Tous les produits par familles : rotation et marge réseau par CIP, ton prix net et ta remise.';
-          pmap.molecules.go = 'Ouvrir le catalogue';
-        }
-        if (pmap.presentation) {
-          pmap.presentation.t = 'Présentation';
-          pmap.presentation.d = 'Le pitch prospection à montrer au comptoir : qui est Intégral Pharma et comment travailler avec nous.';
-          pmap.presentation.go = 'Lancer la présentation';
-        }
-        if (pmap.offilog) {
-          pmap.offilog.t = 'Concurrents';
-          pmap.offilog.d = 'Ta parapharma : ton prix d\'achat IP comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000. Repère où un concurrent casse les prix.';
-          pmap.offilog.go = 'Comparer les concurrents';
-        }
-        // v2 simplifiée : 2 groupes clairs. Audit marge fusionné DANS la fiche pharmacie
-        // (onglet), Concurrents/Pilotage/Présentation accessibles mais en « Autres outils ».
-        var MOMENTS = [
-          { lbl: 'L\'essentiel', c: 'var(--ip-blue)', keys: ['pharma', 'molecules', 'marketing', 'infos'] },
-          { lbl: 'Marché & réseau', c: 'var(--c-rose)', keys: ['offilog', 'groupements'] },
-        ];
+        // Libellés courts pour l'accueil ; les pages restent atteignables via ⌘K.
+        if (pmap.molecules) { pmap.molecules.t = 'Catalogue & prix'; }
+        if (pmap.presentation) { pmap.presentation.t = 'Présentation'; }
+        if (pmap.offilog) { pmap.offilog.t = 'Concurrents'; }
+        // ── Accueil « Launcher » (choix Will) : 4 grandes entrées, tout le reste en « Autres outils »
+        var ESSENTIAL = ['pharma', 'molecules', 'marketing', 'infos'];
+        var ACC = { pharma: 'var(--ip-blue)', molecules: 'var(--ip-blue)', marketing: '#F39A1B', infos: '#F39A1B' };
+        var SUB = {
+          pharma: 'Fiches, visites & suivi terrain',
+          molecules: 'Tous les produits, prix & marge réseau',
+          marketing: 'Supports & sélections à pousser',
+          infos: 'Ruptures, actu & opportunités du jour'
+        };
+        var ICOK = { pharma: 'pharma', molecules: 'cat', marketing: 'fiche', infos: 'spark' };
         // catalogue grossiste médicaments replié · fiches retiré · audit fusionné dans la fiche pharmacie
         var used = { catalogue: 1, fiches: 1, audit: 1 };
-        pilHtml = MOMENTS.map(function (m) {
-          var tiles = m.keys.map(function (k) { if (!pmap[k]) return ''; used[k] = 1; return tile(pmap[k]); }).filter(Boolean).join('');
-          if (!tiles) return '';
-          return '<section class="v2-moment"><div class="v2-moment-h" style="--mc:' + m.c + '"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + m.c + ';margin-right:10px;vertical-align:middle"></span>' + m.lbl + '</div><div class="v2-piliers">' + tiles + '</div></section>';
-        }).join('');
-        var rest = P.filter(function (p) { return !used[p.k]; }).map(tile).join('');
-        if (rest) pilHtml += '<section class="v2-moment"><div class="v2-moment-h">Autres outils</div><div class="v2-piliers">' + rest + '</div></section>';
+        function bigCard(k) {
+          var p = pmap[k]; if (!p) return ''; used[k] = 1;
+          return '<a class="v2-lch-card" style="--accent:' + (ACC[k] || 'var(--ip-blue)') + '" onmousemove="V2.homeSpot(event,this)" onclick="V2.go(\'' + k + '\')">' +
+            '<span class="v2-lch-ico">' + ICO(ICOK[k] || p.ico, 24) + '</span>' +
+            '<span class="v2-lch-arrow">→</span>' +
+            '<span class="v2-lch-meta"><span class="v2-lch-t">' + esc(p.t) + '</span><span class="v2-lch-d">' + (SUB[k] || '') + '</span></span></a>';
+        }
+        var big = ESSENTIAL.map(bigCard).filter(Boolean).join('');
+        pilHtml = '<div class="v2-lch-grid">' + big + '</div>';
+        var rest = P.filter(function (p) { return !used[p.k]; });
+        if (rest.length) {
+          pilHtml += '<div class="v2-lch-more"><span class="lbl">Autres outils</span>' +
+            rest.map(function (p) { return '<a class="v2-lch-mini" onclick="V2.go(\'' + p.k + '\')">' + ICO(p.ico, 15) + esc(p.t) + '</a>'; }).join('') +
+            '</div>';
+        }
       }
 
       var firstName = (V2.user && V2.user.name ? V2.user.name.split(' ')[0] : 'Will');
@@ -629,12 +657,11 @@
       root.innerHTML = topbar() +
         '<div class="v2-wrap narrow v2-home-x">' +
           '<div class="v2-hero">' +
-            '<span class="v2-eyebrow"><span class="dot"></span>' + cap(today) + ' · ' + nbPharma + ' officines actives</span>' +
-            '<h1>Bonjour ' + esc(firstName) + ', <span class="ac">par où on commence ?</span></h1>' +
-            '<p>Cherche une pharmacie, ou ouvre directement un de tes outils</p>' +
+            '<h1>Bonjour <span class="ac">' + esc(firstName) + '</span></h1>' +
+            '<p class="v2-hero-sub">' + cap(today) + ' · <b>' + nbPharma + '</b> officines actives</p>' +
           '</div>' +
           '<div class="v2-search" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
-            '<input readonly placeholder="Pharmacie, produit, page…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
+            '<input readonly placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           '<div class="v2-recent">' + recentHtml + '</div>' +
           pilHtml +
         '</div>';
