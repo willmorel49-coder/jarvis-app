@@ -176,6 +176,48 @@
     return !!(window.V2_BRAND && window.V2_BRAND.opso);
   }
 
+  // ── Mini sparkline SVG (tendance sur N points) ──────────────
+  // Ligne + aire douce, dernier point marqué. Couleur passée en paramètre.
+  function sparkline(vals, color, w, h) {
+    w = w || 132; h = h || 34;
+    var n = vals.length;
+    if (n < 2) return '';
+    var max = Math.max.apply(null, vals), min = Math.min.apply(null, vals);
+    var span = (max - min) || 1;
+    var pad = 3;
+    var iw = w - pad * 2, ih = h - pad * 2;
+    var pts = vals.map(function (v, i) {
+      var x = pad + (n === 1 ? 0 : i / (n - 1) * iw);
+      var y = pad + ih - ((v - min) / span) * ih;
+      return [x, y];
+    });
+    var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+    var area = line + ' L' + pts[n - 1][0].toFixed(1) + ' ' + (h - pad) + ' L' + pts[0][0].toFixed(1) + ' ' + (h - pad) + ' Z';
+    var last = pts[n - 1];
+    var gid = 'spk' + Math.random().toString(36).slice(2, 7);
+    return '<svg class="pilo-spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
+      '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="' + color + '" stop-opacity=".22"/>' +
+        '<stop offset="1" stop-color="' + color + '" stop-opacity="0"/>' +
+      '</linearGradient></defs>' +
+      '<path d="' + area + '" fill="url(#' + gid + ')"/>' +
+      '<path class="pilo-spark-line" d="' + line + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="2.6" fill="' + color + '"/>' +
+    '</svg>';
+  }
+
+  // Série CA mensuelle (N derniers mois présents), pour sparklines KPI
+  function monthlyCaSeries(sales, n) {
+    var months = availableMonths(sales);
+    if (!months.length) return [];
+    var last = months[months.length - 1], lastK = mkey(last.year, last.month);
+    var byK = {};
+    sales.forEach(function (s) { if (s.month && s.year) { var k = mkey(s.year, s.month); byK[k] = (byK[k] || 0) + (s.mntNetHt || 0); } });
+    var out = [];
+    for (var i = n - 1; i >= 0; i--) out.push(byK[lastK - i] || 0);
+    return out;
+  }
+
   // ── Top produits par CA (période courante) ────
   // Agrège par artDesignation (label produit), renvoie top N
   function buildTopProducts(salesArr, n) {
@@ -442,19 +484,36 @@
       // ── KPI 4 : Panier moyen ──
       var panier = nbActive ? caCur / nbActive : 0;
 
-      var kpis =
-        '<div class="v2-kpis">' +
-          '<div class="v2-kpi k1"><div class="v2-kpi-l">CA net HT</div>' +
-            '<div class="v2-kpi-v mono">' + V2.fmtEur(caCur) + '</div>' + deltaHtml(caCur, caPrev, pf && pf.prevLabel) + '</div>' +
+      // Séries pour les mini-tendances (12 derniers mois)
+      var caSeries = monthlyCaSeries(sales, 12);
+      var caTrend = caSeries.length >= 2 ? sparkline(caSeries, 'var(--ip-blue)', 150, 44) : '';
+      var activeRatio = (V2.pharmacies || []).length ? Math.round(nbActive / (V2.pharmacies || []).length * 100) : 0;
+
+      // ── HERO : CA net HT (le KPI qui prime) ──
+      var heroKpi =
+        '<div class="pilo-hero" data-reveal>' +
+          '<div class="pilo-hero-main">' +
+            '<div class="pilo-hero-l">CA net HT · ' + (pf ? esc(pf.label) : '') + '</div>' +
+            '<div class="pilo-hero-v mono">' + V2.fmtEur(caCur) + '</div>' +
+            '<div class="pilo-hero-delta">' + deltaHtml(caCur, caPrev, pf && pf.prevLabel) + '</div>' +
+          '</div>' +
+          (caTrend ? '<div class="pilo-hero-trend"><div class="pilo-hero-trend-t">12 derniers mois</div>' + caTrend + '</div>' : '') +
+        '</div>';
+
+      // ── KPIs secondaires (marge / actives / panier) ──
+      var kpis = heroKpi +
+        '<div class="v2-kpis pilo-kpis3" data-reveal>' +
           '<div class="v2-kpi k2"><div class="v2-kpi-l">Marge MDL générée</div>' +
             '<div class="v2-kpi-v mono">' + V2.fmtEur(mdlCur) + '</div>' +
-            '<div class="v2-kpi-d" style="color:var(--muted)">' + mdlPct.toFixed(1).replace('.', ',') + ' % du CA</div></div>' +
+            '<div class="pilo-kpi-meter"><span class="pilo-kpi-meter-fill" data-w="' + Math.min(100, mdlPct).toFixed(1) + '" style="width:0;background:var(--c-mint)"></span></div>' +
+            '<div class="v2-kpi-d" style="color:var(--muted)">' + mdlPct.toFixed(1).replace('.', ',') + ' % du CA net</div></div>' +
           '<div class="v2-kpi k3"><div class="v2-kpi-l">Pharmacies actives</div>' +
             '<div class="v2-kpi-v mono">' + V2.fmtNum(nbActive) + '</div>' +
-            '<div class="v2-kpi-d" style="color:var(--muted)">sur ' + V2.fmtNum((V2.pharmacies || []).length) + ' au total</div></div>' +
+            '<div class="pilo-kpi-meter"><span class="pilo-kpi-meter-fill" data-w="' + activeRatio + '" style="width:0;background:var(--c-cat)"></span></div>' +
+            '<div class="v2-kpi-d" style="color:var(--muted)">' + activeRatio + ' % des ' + V2.fmtNum((V2.pharmacies || []).length) + ' officines</div></div>' +
           '<div class="v2-kpi k4"><div class="v2-kpi-l">Panier moyen</div>' +
             '<div class="v2-kpi-v mono">' + V2.fmtEur(panier) + '</div>' +
-            '<div class="v2-kpi-d" style="color:var(--muted)">par officine active</div></div>' +
+            '<div class="v2-kpi-d" style="color:var(--muted);margin-top:auto">par officine active</div></div>' +
         '</div>';
 
       // ── Chart 13 mois ──
@@ -709,9 +768,9 @@
 
       // ── Mise en page sectionnée (Proposition A) ──
       function sec(label) { return '<div class="pilo-sec">' + esc(label) + '</div>'; }
-      var classements = grpCard ? ('<div class="pilo-grid2">' + topCaCard + grpCard + '</div>') : topCaCard;
-      var marche = (ameliCard && mdlCard) ? ('<div class="pilo-grid2">' + ameliCard + mdlCard + '</div>')
-        : (ameliCard || mdlCard || '');
+      var classements = grpCard ? ('<div class="pilo-grid2" data-reveal>' + topCaCard + grpCard + '</div>') : ('<div data-reveal>' + topCaCard + '</div>');
+      var marche = (ameliCard && mdlCard) ? ('<div class="pilo-grid2" data-reveal>' + ameliCard + mdlCard + '</div>')
+        : (ameliCard || mdlCard ? '<div data-reveal>' + (ameliCard || mdlCard) + '</div>' : '');
 
       root.innerHTML = top +
         '<div class="v2-wrap">' +
@@ -721,7 +780,7 @@
           kpis +
           chart.html +
           sec('Répartition du chiffre d\'affaires') +
-          '<div class="pilo-grid2">' + famCard + tierCard + '</div>' +
+          '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>' +
           sec('Classements') +
           classements +
           (marche ? (sec('Marché & alertes') + marche) : '') +
@@ -745,12 +804,26 @@
           Array.prototype.forEach.call(root.querySelectorAll('.pilo-cbar-fill'), function (el) {
             el.style.height = (el.dataset.h || 0) + '%';
           });
-          // jauge activation OPSO
-          Array.prototype.forEach.call(root.querySelectorAll('.opso-gauge-fill'), function (el) {
+          // jauges (activation OPSO + meters KPI + couverture Ameli)
+          Array.prototype.forEach.call(root.querySelectorAll('.opso-gauge-fill,.pilo-kpi-meter-fill'), function (el) {
             el.style.width = (el.dataset.w || 0) + '%';
           });
         });
       });
+
+      // ── Reveal au scroll (respecte prefers-reduced-motion) ──
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+      var revs = root.querySelectorAll('[data-reveal]');
+      if (reduce || !('IntersectionObserver' in window)) {
+        Array.prototype.forEach.call(revs, function (el) { el.classList.add('in'); });
+      } else {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        Array.prototype.forEach.call(revs, function (el) { io.observe(el); });
+      }
 
       // ── Bind chart hover ──
       chart.bind(root);
@@ -782,22 +855,35 @@
     });
     var maxCa = bars.reduce(function (a, b) { return Math.max(a, b.ca); }, 0) || 1;
 
+    // Moyenne mensuelle (mois avec vente uniquement) → repère visuel
+    var nonEmpty = bars.filter(function (b) { return b.ca > 0; });
+    var avg = nonEmpty.length ? nonEmpty.reduce(function (a, b) { return a + b.ca; }, 0) / nonEmpty.length : 0;
+    var avgPct = maxCa > 0 ? Math.min(97, avg / maxCa * 100) : 0;
+
     var barsHtml = bars.map(function (b, i) {
       var h = b.ca > 0 ? Math.max(3, b.ca / maxCa * 100) : 0;
       var isLast = (i === bars.length - 1);
+      var above = b.ca >= avg && b.ca > 0;
       return '<div class="pilo-cbar" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca)) + '">' +
         '<div class="pilo-cbar-track">' +
-          '<span class="pilo-cbar-fill' + (isLast ? ' cur' : '') + '" data-h="' + h.toFixed(1) + '" style="height:0"></span>' +
+          '<span class="pilo-cbar-fill' + (isLast ? ' cur' : (above ? ' up' : '')) + '" data-h="' + h.toFixed(1) + '" style="height:0"></span>' +
         '</div>' +
-        '<span class="pilo-cbar-lbl">' + b.mlabel + '</span>' +
+        '<span class="pilo-cbar-lbl' + (isLast ? ' on' : '') + '">' + b.mlabel + '</span>' +
       '</div>';
     }).join('');
 
+    // Ligne de moyenne (repère horizontal pointillé + étiquette)
+    var avgLine = avg > 0 ?
+      '<div class="pilo-avg" style="bottom:calc(' + avgPct.toFixed(1) + '% + 26px)">' +
+        '<span class="pilo-avg-lbl mono">moy. ' + V2.fmtEur(avg) + '</span>' +
+      '</div>' : '';
+
     var html =
-      '<div class="v2-card" style="padding:18px 20px;margin-bottom:14px">' +
+      '<div class="v2-card" style="padding:18px 20px;margin-bottom:14px" data-reveal>' +
         '<div class="v2-card-t" style="margin-bottom:4px">' + ICO('pilo', 17) + 'Évolution du CA · 13 mois</div>' +
-        '<div class="v2-page-sub" style="margin-bottom:14px">Survole une barre pour voir le détail mensuel</div>' +
-        '<div class="pilo-chart" id="pilo-chart">' + barsHtml +
+        '<div class="v2-page-sub" style="margin-bottom:14px">Survole une barre pour voir le détail mensuel' +
+          (avg > 0 ? ' · repère = moyenne mensuelle' : '') + '</div>' +
+        '<div class="pilo-chart" id="pilo-chart">' + avgLine + barsHtml +
           '<div class="pilo-tip" id="pilo-tip"></div>' +
         '</div>' +
       '</div>';
@@ -838,6 +924,34 @@
       '.pilo-segbtn.on{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px rgba(0,80,230,.28)}' +
       '.pilo-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}' +
       '@media(max-width:820px){.pilo-grid2{grid-template-columns:1fr}}' +
+      // ── HERO KPI (CA net = héros) ─────────────────
+      '.pilo-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;' +
+        'background:linear-gradient(120deg,color-mix(in srgb,var(--ip-blue) 6%,var(--card)),var(--card) 62%);' +
+        'border:1px solid color-mix(in srgb,var(--ip-blue) 20%,var(--line));border-radius:var(--r-card);' +
+        'padding:24px 26px;margin-bottom:14px;box-shadow:var(--sh-2);overflow:hidden}' +
+      '.pilo-hero::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;' +
+        'background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}' +
+      '.pilo-hero-main{min-width:0}' +
+      '.pilo-hero-l{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}' +
+      '.pilo-hero-v{font-family:var(--mono);font-size:clamp(34px,6vw,46px);font-weight:700;letter-spacing:-.035em;line-height:1.02;margin-top:8px;color:var(--ip-ink)}' +
+      '.pilo-hero-delta{margin-top:8px}.pilo-hero-delta .v2-kpi-d{font-size:13px}' +
+      '.pilo-hero-trend{flex-shrink:0;text-align:right}' +
+      '.pilo-hero-trend-t{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-2);font-weight:700;margin-bottom:6px}' +
+      '@media(max-width:560px){.pilo-hero{padding:20px 20px}.pilo-hero-trend{text-align:left}.pilo-hero .pilo-spark{width:100%}}' +
+      // sparklines
+      '.pilo-spark{display:block;overflow:visible}' +
+      '.pilo-spark-line{stroke-dasharray:520;stroke-dashoffset:520;animation:pilo-draw 1s var(--mo-ease-in) forwards}' +
+      '@keyframes pilo-draw{to{stroke-dashoffset:0}}' +
+      // KPI secondaires : 3 colonnes + mini-jauge
+      '.pilo-kpis3{grid-template-columns:repeat(3,1fr)}' +
+      '@media(max-width:720px){.pilo-kpis3{grid-template-columns:1fr}}' +
+      '.pilo-kpis3 .v2-kpi{display:flex;flex-direction:column}' +
+      '.pilo-kpi-meter{height:5px;border-radius:999px;background:var(--surf-sunken);overflow:hidden;margin-top:10px;box-shadow:inset 0 1px 1px rgba(16,19,28,.05)}' +
+      '.pilo-kpi-meter-fill{display:block;height:100%;border-radius:999px;transition:width var(--mo-dur) var(--mo-ease-in)}' +
+      // reveal au scroll
+      '[data-reveal]{opacity:0;transform:translateY(14px);transition:opacity .5s var(--mo-ease-in),transform .5s var(--mo-ease-in)}' +
+      '[data-reveal].in{opacity:1;transform:none}' +
+      '@media(prefers-reduced-motion:reduce){[data-reveal]{opacity:1;transform:none;transition:none}.pilo-spark-line{animation:none;stroke-dashoffset:0}}' +
       '.pilo-rank{color:var(--muted-2);font-size:12px;width:18px;flex-shrink:0;text-align:center}' +
       '.pilo-vals{text-align:right;flex-shrink:0}' +
       // progress bars (horizontales) — track creux, signature de profondeur par ton
@@ -862,12 +976,17 @@
       '.pilo-chart{position:relative;display:flex;align-items:flex-end;gap:6px;height:160px;padding-top:8px}' +
       '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;cursor:default;min-width:0}' +
       '.pilo-cbar-track{flex:1;width:100%;max-width:34px;display:flex;align-items:flex-end;border-radius:7px 7px 3px 3px;overflow:hidden;background:var(--surf-sunken);box-shadow:inset 0 1px 2px rgba(16,19,28,.05)}' +
-      '.pilo-cbar-fill{display:block;width:100%;border-radius:7px 7px 3px 3px;background:color-mix(in srgb,var(--ip-blue) 78%,#fff);transition:height var(--mo-dur) var(--mo-ease-in)}' +
-      '.pilo-cbar-fill.cur{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}' +
+      '.pilo-cbar-fill{display:block;width:100%;border-radius:7px 7px 3px 3px;background:color-mix(in srgb,var(--ip-blue) 42%,var(--surf-sunken));transition:height var(--mo-dur) var(--mo-ease-in),background .18s var(--ease)}' +
+      '.pilo-cbar-fill.up{background:color-mix(in srgb,var(--ip-blue) 72%,#fff)}' +
+      '.pilo-cbar-fill.cur{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d));box-shadow:0 2px 8px color-mix(in srgb,var(--ip-blue) 30%,transparent)}' +
       '.pilo-cbar:hover .pilo-cbar-fill{background:var(--ip-blue)}' +
       '.pilo-cbar:hover .pilo-cbar-fill.cur{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}' +
-      '@media(prefers-reduced-motion:reduce){.pilo-bar-fill,.pilo-cbar-fill,.opso-gauge-fill{transition:none}}' +
+      '@media(prefers-reduced-motion:reduce){.pilo-bar-fill,.pilo-cbar-fill,.opso-gauge-fill,.pilo-kpi-meter-fill{transition:none}}' +
       '.pilo-cbar-lbl{font-size:10.5px;color:var(--muted);font-weight:600;font-family:var(--mono)}' +
+      '.pilo-cbar-lbl.on{color:var(--ip-blue);font-weight:700}' +
+      // repère de moyenne mensuelle (ligne pointillée)
+      '.pilo-avg{position:absolute;left:0;right:0;height:0;border-top:1px dashed color-mix(in srgb,var(--ip-ink) 24%,transparent);pointer-events:none;z-index:2}' +
+      '.pilo-avg-lbl{position:absolute;right:0;top:-8px;font-size:10px;font-weight:700;color:var(--muted);background:var(--card);padding:1px 6px;border-radius:6px;border:1px solid var(--line)}' +
       '.pilo-tip{position:absolute;top:-6px;transform:translateX(-50%);background:var(--ip-ink);color:#fff;font-size:12px;font-weight:600;' +
         'padding:7px 11px;border-radius:9px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:var(--sh-pop);z-index:5;font-family:var(--mono)}' +
       '.pilo-tip.show{opacity:1}' +

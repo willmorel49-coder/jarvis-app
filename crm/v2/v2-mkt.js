@@ -200,12 +200,14 @@
     var thumbs = (it.products || []).slice(0, 4).map(function (p) {
       return p.img ? '<span class="mkt-th" style="background-image:url(' + esc(p.img) + ')"></span>' : '<span class="mkt-th mkt-th-x"></span>';
     }).join('');
-    return '<div class="mkt-card" onclick="V2.mkt.open(\'' + esc(it.id) + '\')">' +
+    var t = TYPES[it.type] || TYPES.support;
+    return '<div class="mkt-card" style="--ca:' + t.accent + '" onclick="V2.mkt.open(\'' + esc(it.id) + '\')">' +
       '<div class="mkt-card-top">' + badge(it.type) +
-        '<span class="mkt-status" style="--sc:' + st.color + '">' + esc(st.label) + '</span></div>' +
+        '<span class="mkt-status" style="--sc:' + st.color + '"><span class="mkt-status-dot"></span>' + esc(st.label) + '</span></div>' +
       '<div class="mkt-card-t">' + (it.title ? esc(it.title) : '<span style="color:var(--muted-2)">Sans titre</span>') + '</div>' +
       '<div class="mkt-thumbs">' + (thumbs || '<span class="mkt-th mkt-th-x"></span>') + (n > 4 ? '<span class="mkt-more">+' + (n - 4) + '</span>' : '') + '</div>' +
-      '<div class="mkt-card-m">' + n + ' produit' + (n > 1 ? 's' : '') + (it.owner ? ' · ' + esc((it.owner || '').split('@')[0]) : '') + '</div>' +
+      '<div class="mkt-card-m"><span>' + n + ' produit' + (n > 1 ? 's' : '') + (it.owner ? ' · ' + esc((it.owner || '').split('@')[0]) : '') + '</span>' +
+        '<span class="mkt-card-go">Ouvrir ' + ICO('chev', 15, 2.2) + '</span></div>' +
     '</div>';
   }
   function section(type, list) {
@@ -214,8 +216,8 @@
       : '<div class="mkt-empty">Aucun ' + esc(t.label.toLowerCase()) + ' pour le moment.</div>';
     return '<div class="mkt-section">' +
       '<div class="mkt-sec-head">' +
-        '<div><div class="mkt-sec-t">' + esc(t.plural) + '</div><div class="mkt-sec-s">' + esc(t.sub) + '</div></div>' +
-        '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.create(\'' + type + '\')">' + ICO('plus', 16, 2) + 'Nouveau</button>' +
+        '<div><div class="mkt-sec-t"><span class="mkt-sec-dot" style="--dc:' + t.accent + '"></span>' + esc(t.plural) + (list.length ? ' <span class="mkt-sec-n">' + list.length + '</span>' : '') + '</div><div class="mkt-sec-s">' + esc(t.sub) + '</div></div>' +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.create(\'' + type + '\')">' + ICO('plus', 16, 2) + 'Nouveau</button>' +
       '</div>' +
       '<div class="mkt-grid">' + cards + '</div>' +
     '</div>';
@@ -259,20 +261,39 @@
           '<div class="v2-page-sub" style="margin-bottom:0">L\'espace de Pauline &amp; Will — supports et sélections produits</div></div>' +
           shareNote +
         '</div>' +
-        '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'propositions\')">' +
-          '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
-          '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Maquettes du nouveau site internet — propositions</span>' +
-          '<span class="mkt-cat-s">Galerie des directions design proposées pour le futur site, à présenter à la direction. Cliquer pour comparer.</span></span>' +
-          '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
-        '</a>' +
-        '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'docs\')">' +
-          '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
-          '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Documents partagés (PDF)</span>' +
-          '<span class="mkt-cat-s">Catalogues, fiches, offres en PDF — ajoute-les ici, ils restent visibles par tous les comptes. Ouvrir &amp; supprimer.</span></span>' +
-          '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
-        '</a>' +
+        // ── HÉRO : les 2 actions produit mises en avant ──
+        '<div class="mkt-hero">' +
+          '<div class="mkt-hero-card mkt-hero-support" onclick="V2.mkt.create(\'support\')">' +
+            '<span class="mkt-hero-ic">' + ICO('fiche', 24, 1.8) + '</span>' +
+            '<span class="mkt-hero-txt"><span class="mkt-hero-t">Nouveau support</span>' +
+            '<span class="mkt-hero-s">Un flyer produits avec photos, prix &amp; accroche.</span></span>' +
+            '<span class="mkt-hero-cta">' + ICO('plus', 18, 2.2) + ' Créer</span>' +
+          '</div>' +
+          '<div class="mkt-hero-card mkt-hero-selection" onclick="V2.mkt.create(\'selection\')">' +
+            '<span class="mkt-hero-ic">' + ICO('list', 24, 1.8) + '</span>' +
+            '<span class="mkt-hero-txt"><span class="mkt-hero-t">Nouvelle sélection</span>' +
+            '<span class="mkt-hero-s">Une liste de produits du moment à pousser.</span></span>' +
+            '<span class="mkt-hero-cta">' + ICO('plus', 18, 2.2) + ' Créer</span>' +
+          '</div>' +
+        '</div>' +
         section('support', supports) +
         section('selection', selections) +
+        // ── Accès annexes (secondaires, discrets) ──
+        '<div class="mkt-links-head">Autres accès</div>' +
+        '<div class="mkt-links">' +
+          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'docs\')">' +
+            '<span class="mkt-link-ic mkt-link-ic-doc">' + ICO('download', 18, 1.8) + '</span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Documents partagés (PDF)</span>' +
+            '<span class="mkt-link-s">Catalogues, fiches, offres — visibles par tous les comptes.</span></span>' +
+            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
+          '</a>' +
+          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
+            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Maquettes du nouveau site</span>' +
+            '<span class="mkt-link-s">Galerie des directions design à présenter à la direction.</span></span>' +
+            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
+          '</a>' +
+        '</div>' +
         (backend === 'local'
           ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Activer le partage entre vous</b><br>' +
             'Pour l\'instant les supports sont enregistrés sur cet appareil. Pour que Pauline et toi voyiez les mêmes, il faut créer une table dans Supabase (une seule fois). Demande-moi le script SQL, il est prêt.</div></div>'
@@ -459,7 +480,8 @@
           '</div>' +
         '</div>' +
         '<div class="mkt-pv-col"><div class="mkt-pv-pane">' +
-          '<div class="mkt-pv-bar">Aperçu en direct</div>' +
+          '<div class="mkt-pv-bar"><span class="mkt-pv-live">Aperçu en direct</span>' +
+            '<button class="v2-btn v2-btn-primary mkt-pv-dl" onclick="V2.mkt.downloadPdf()">' + ICO('download', 15, 2) + 'Télécharger le PDF</button></div>' +
           '<div class="mkt-mscroll" id="mkt-mscroll"><div class="mkt-mholder" id="mkt-mholder"><div class="mkt-msheet" id="mkt-msheet"></div></div></div>' +
         '</div></div>' +
         '</div>' +
@@ -1099,6 +1121,34 @@
       '.mkt-cat-ic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-cat),#4d35a0)}',
       '.mkt-cat-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
       '.mkt-cat-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}',
+      // ── Héro accueil : 2 actions produit mises en avant ──
+      '.mkt-hero{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}',
+      '@media(max-width:640px){.mkt-hero{grid-template-columns:1fr}}',
+      '.mkt-hero-card{position:relative;display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:var(--r-card);cursor:pointer;color:#fff;overflow:hidden;box-shadow:0 10px 26px color-mix(in srgb,var(--_a) 34%,transparent);transition:transform .2s var(--ease),box-shadow .2s var(--ease)}',
+      '.mkt-hero-card::after{content:"";position:absolute;right:-38px;top:-38px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.13);pointer-events:none}',
+      '.mkt-hero-support{--_a:var(--ip-blue);background:linear-gradient(135deg,var(--ip-blue),#0034A0)}',
+      '.mkt-hero-selection{--_a:var(--c-opp);background:linear-gradient(135deg,var(--c-opp),#127a52)}',
+      '.mkt-hero-card:hover{transform:translateY(-3px);box-shadow:0 16px 36px color-mix(in srgb,var(--_a) 46%,transparent)}',
+      '.mkt-hero-card:active{transform:translateY(-1px)}',
+      '.mkt-hero-ic{width:50px;height:50px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);position:relative;z-index:1}',
+      '.mkt-hero-txt{flex:1;min-width:0;position:relative;z-index:1}',
+      '.mkt-hero-t{display:block;font-weight:800;font-size:16.5px;letter-spacing:-.02em}',
+      '.mkt-hero-s{display:block;font-size:12.5px;opacity:.9;margin-top:3px;line-height:1.35}',
+      '.mkt-hero-cta{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;font-weight:800;font-size:13px;background:rgba(255,255,255,.2);border-radius:999px;padding:8px 15px;position:relative;z-index:1;transition:background .16s var(--ease)}',
+      '.mkt-hero-card:hover .mkt-hero-cta{background:rgba(255,255,255,.32)}',
+      // ── Accès annexes discrets ──
+      '.mkt-links-head{margin-top:30px;margin-bottom:10px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}',
+      '.mkt-links{display:grid;grid-template-columns:1fr 1fr;gap:12px}',
+      '@media(max-width:640px){.mkt-links{grid-template-columns:1fr}}',
+      '.mkt-link{display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--card);border:1px solid var(--line);border-radius:14px;cursor:pointer;text-decoration:none;color:inherit;transition:border-color .16s var(--ease),transform .16s var(--ease),box-shadow .16s var(--ease)}',
+      '.mkt-link:hover{border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line));box-shadow:var(--sh-1);transform:translateY(-1px)}',
+      '.mkt-link:hover .v2-row-chev{transform:translateX(2px);color:var(--ip-blue)}',
+      '.mkt-link-ic{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff}',
+      '.mkt-link-ic-doc{background:linear-gradient(150deg,var(--c-rose,#E0556E),#b1304a)}',
+      '.mkt-link-ic-cat{background:linear-gradient(150deg,var(--c-cat),#4d35a0)}',
+      '.mkt-link-t{display:block;font-weight:700;font-size:14px;letter-spacing:-.01em}',
+      '.mkt-link-s{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.35}',
+      '.mkt-link .v2-row-chev{transition:transform .16s var(--ease),color .16s var(--ease)}',
       // ── Documents PDF partagés ──
       '.mkt-etabbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:12px 14px;background:color-mix(in srgb,var(--ip-blue) 5%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 18%,var(--line));border-radius:12px}',
       '.mkt-etablbl{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ip-blue)}',
@@ -1129,20 +1179,28 @@
       '.mkt-doc-del:hover{color:#fff;background:var(--c-rose,#E0556E);border-color:var(--c-rose,#E0556E)}',
       '.mkt-cat-prod{font-weight:600;font-size:13.5px}',
       '.mkt-sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}',
-      '.mkt-sec-t{font-size:18px;font-weight:800;letter-spacing:-.02em}',
+      '.mkt-sec-t{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:800;letter-spacing:-.02em}',
+      '.mkt-sec-dot{width:9px;height:9px;border-radius:50%;background:var(--dc);flex-shrink:0}',
+      '.mkt-sec-n{font-size:12px;font-weight:800;color:var(--muted);background:var(--card-2);border-radius:999px;padding:1px 9px}',
       '.mkt-sec-s{font-size:12.5px;color:var(--muted);margin-top:2px}',
       '.mkt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px}',
-      '.mkt-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh-1);padding:15px 16px;cursor:pointer;transition:.18s var(--ease);display:flex;flex-direction:column;gap:9px}',
-      '.mkt-card:hover{transform:translateY(-3px);box-shadow:var(--sh-3);border-color:rgba(0,80,230,.2)}',
+      '.mkt-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh-1);padding:16px 16px 14px;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease);display:flex;flex-direction:column;gap:9px;overflow:hidden}',
+      '.mkt-card::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--ca);opacity:0;transition:opacity .2s var(--ease)}',
+      '.mkt-card:hover{transform:translateY(-4px);box-shadow:var(--sh-3);border-color:color-mix(in srgb,var(--ca) 30%,var(--line))}',
+      '.mkt-card:hover::before{opacity:1}',
+      '.mkt-card:active{transform:translateY(-1px)}',
       '.mkt-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}',
       '.mkt-typebadge{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--bc);background:color-mix(in srgb,var(--bc) 13%,#fff);padding:3px 8px;border-radius:7px}',
-      '.mkt-status{font-size:10.5px;font-weight:700;color:var(--sc)}',
+      '.mkt-status{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:var(--sc)}',
+      '.mkt-status-dot{width:6px;height:6px;border-radius:50%;background:var(--sc)}',
       '.mkt-card-t{font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.25}',
       '.mkt-thumbs{display:flex;gap:5px;align-items:center}',
       '.mkt-th{width:34px;height:34px;border-radius:8px;background:#F0F2F7 center/cover no-repeat;border:1px solid var(--line);flex-shrink:0}',
       '.mkt-th-x{background:var(--card-2)}',
       '.mkt-more{font-size:11px;color:var(--muted);font-weight:700}',
-      '.mkt-card-m{font-size:11.5px;color:var(--muted);margin-top:auto}',
+      '.mkt-card-m{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted);margin-top:auto}',
+      '.mkt-card-go{display:inline-flex;align-items:center;gap:2px;font-weight:700;color:var(--ca);opacity:0;transform:translateX(-4px);transition:opacity .18s var(--ease),transform .18s var(--ease)}',
+      '.mkt-card:hover .mkt-card-go{opacity:1;transform:translateX(0)}',
       '.mkt-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:14px;grid-column:1/-1}',
       '.mkt-setup{display:flex;gap:11px;align-items:flex-start;margin-top:26px;padding:15px 17px;border-radius:14px;background:color-mix(in srgb,var(--c-amber) 8%,#fff);border:1px solid color-mix(in srgb,var(--c-amber) 28%,transparent);font-size:13px;line-height:1.5;color:var(--ip-ink-2)}',
       '.mkt-setup svg{color:var(--c-amber);flex-shrink:0;margin-top:1px}',
@@ -1191,15 +1249,21 @@
       '.mkt-prow-price{font-size:14px;font-weight:800;color:var(--ip-blue);flex-shrink:0}',
       '.mkt-prow-x{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.16s var(--ease)}',
       '.mkt-prow-x:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
-      '.mkt-editbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}',
+      '.mkt-editbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh-1)}',
+      '.mkt-editbar .v2-btn-primary{margin-left:auto}',
+      '.mkt-editbar .mkt-del{margin-left:0}',
+      '@media(max-width:560px){.mkt-editbar .v2-btn-primary{margin-left:0;width:100%;order:-1}}',
       // éditeur 2 colonnes + aperçu live
       '.mkt-edit-grid{display:grid;grid-template-columns:minmax(320px,1fr) minmax(360px,520px);gap:30px;align-items:start}',
       '@media(max-width:980px){.mkt-edit-grid{grid-template-columns:1fr;gap:22px}}',
       '.mkt-pv-pane{position:sticky;top:84px}',
       '@media(max-width:980px){.mkt-pv-pane{position:static}}',
-      '.mkt-pv-bar{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:12px}',
-      '.mkt-pv-bar::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c-opp);box-shadow:0 0 0 4px color-mix(in srgb,var(--c-opp) 18%,transparent)}',
-      '.mkt-pv-pane .mkt-mscroll{flex:none;max-height:calc(100vh - 132px);border-radius:16px;border:1px solid var(--line)}',
+      '.mkt-pv-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}',
+      '.mkt-pv-live{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}',
+      '.mkt-pv-live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c-opp);box-shadow:0 0 0 4px color-mix(in srgb,var(--c-opp) 18%,transparent);animation:mktPulse 2s var(--ease) infinite}',
+      '.mkt-pv-dl{flex-shrink:0}',
+      '@keyframes mktPulse{0%,100%{box-shadow:0 0 0 4px color-mix(in srgb,var(--c-opp) 18%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--c-opp) 8%,transparent)}}',
+      '.mkt-pv-pane .mkt-mscroll{flex:none;max-height:calc(100vh - 148px);border-radius:16px;border:1px solid var(--line)}',
       '.mkt-del{margin-left:auto;width:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.16s var(--ease)}',
       '.mkt-del:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
       '.mkt-pick-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,.34);backdrop-filter:blur(7px);display:flex;align-items:flex-start;justify-content:center;padding-top:8vh;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
@@ -1223,9 +1287,10 @@
       '.mkt-pick-ic{width:40px;height:40px;border-radius:9px;background:var(--card-2);display:flex;align-items:center;justify-content:center;color:var(--ip-blue);flex-shrink:0}',
       '.mkt-prow-pill{display:flex;align-items:center;justify-content:center;color:var(--ip-blue);background:var(--card-2)}',
       '.mkt-pick-list{overflow-y:auto;padding:8px}',
-      '.mkt-pick-item{display:flex;align-items:center;gap:12px;padding:8px 11px;border-radius:11px;cursor:pointer;transition:background .12s}',
-      '.mkt-pick-item:hover{background:var(--halo)}',
-      '.mkt-pick-item.added{opacity:.45;pointer-events:none}',
+      '.mkt-pick-item{display:flex;align-items:center;gap:12px;padding:8px 11px;border-radius:11px;cursor:pointer;transition:background .12s var(--ease),transform .12s var(--ease)}',
+      '.mkt-pick-item:hover{background:var(--halo);transform:translateX(2px)}',
+      '.mkt-pick-item.added{opacity:.5;pointer-events:none}',
+      '.mkt-pick-item.added::after{content:"Ajouté";margin-left:auto;flex-shrink:0;font-size:10.5px;font-weight:800;letter-spacing:.03em;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 14%,#fff);border-radius:999px;padding:3px 9px}',
       '.mkt-pick-img{width:40px;height:40px;border-radius:9px;background:#fff center/contain no-repeat;border:1px solid var(--line);flex-shrink:0}',
       '.mkt-pick-nm{flex:1;min-width:0}',
       '.mkt-pick-nm b{display:block;font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
@@ -1245,6 +1310,14 @@
       '.mkt-mscroll{overflow-y:auto;overflow-x:hidden;padding:24px;background:#EBEEF4;flex:1}',
       '.mkt-mholder{margin:0 auto;overflow:hidden;border-radius:8px;box-shadow:0 14px 44px rgba(16,19,28,.2)}',
       '.mkt-msheet{width:794px;transform-origin:top left;background:#fff}',
+      // ── Accessibilité : respecter la préférence « moins d\'animations » ──
+      '@media(prefers-reduced-motion:reduce){',
+        '.mkt-hero-card,.mkt-card,.mkt-link,.mkt-pick-item,.mkt-cat-banner{transition:none!important}',
+        '.mkt-hero-card:hover,.mkt-card:hover,.mkt-link:hover,.mkt-pick-item:hover{transform:none!important}',
+        '.mkt-card-go,.mkt-link .v2-row-chev{transition:none!important}',
+        '.mkt-pv-live::before{animation:none!important}',
+        '.mkt-pick,.mkt-dialog{transition:none!important}',
+      '}',
     ].join('');
     document.head.appendChild(s);
   }
