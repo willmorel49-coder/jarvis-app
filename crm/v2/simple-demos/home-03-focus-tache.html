@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Accueil · CRM Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bleu:#0050E6;
+    --bleu-d:#0039A6;
+    --orange:#F39A1B;
+    --bg:#FBFCFE;
+    --card:#FFFFFF;
+    --ink:#0c1524;
+    --ink-2:#3a4658;
+    --gray:#6b7688;
+    --gray-2:#98a1b2;
+    --line:#e7ebf3;
+    --sans:'DM Sans',-apple-system,system-ui,sans-serif;
+    --r:20px;
+    --shadow:0 1px 2px rgba(12,21,36,.04),0 14px 34px -18px rgba(12,21,36,.16);
+    --shadow-hover:0 2px 4px rgba(12,21,36,.05),0 22px 46px -20px rgba(12,21,36,.24);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+  }
+  /* lueur douce en fond */
+  body::before,body::after{
+    content:"";position:fixed;z-index:0;pointer-events:none;
+    border-radius:50%;filter:blur(90px);opacity:.5;
+  }
+  body::before{
+    width:560px;height:560px;top:-220px;left:-120px;
+    background:radial-gradient(circle,rgba(0,80,230,.20),transparent 70%);
+  }
+  body::after{
+    width:480px;height:480px;bottom:-200px;right:-140px;
+    background:radial-gradient(circle,rgba(243,154,27,.18),transparent 70%);
+  }
+
+  .wrap{
+    position:relative;z-index:1;
+    max-width:660px;margin:0 auto;
+    padding:26px 22px 48px;
+    min-height:100vh;
+    display:flex;flex-direction:column;
+  }
+
+  /* top bar */
+  .top{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:38px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.01em}
+  .brand .dot{
+    width:26px;height:26px;border-radius:8px;
+    background:linear-gradient(135deg,var(--bleu),var(--bleu-d));
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:13px;font-weight:700;
+  }
+  .brand small{color:var(--gray);font-weight:500}
+  .date{
+    font-size:13px;color:var(--gray);font-weight:500;
+    text-transform:capitalize;
+  }
+
+  /* grande question */
+  .hero{margin-bottom:30px}
+  .hero .eyebrow{
+    font-size:13px;font-weight:600;color:var(--orange);
+    letter-spacing:.02em;margin-bottom:10px;
+  }
+  .hero h1{
+    font-size:34px;line-height:1.12;font-weight:700;
+    letter-spacing:-.025em;color:var(--ink);
+  }
+  .hero p{
+    margin-top:12px;font-size:15px;color:var(--gray);max-width:440px;
+  }
+
+  /* choix */
+  .choices{display:flex;flex-direction:column;gap:14px}
+  .choice{
+    display:flex;align-items:center;gap:18px;
+    width:100%;text-align:left;text-decoration:none;color:inherit;
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--r);padding:22px 22px;
+    box-shadow:var(--shadow);cursor:pointer;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+    position:relative;
+  }
+  .choice:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover);border-color:#d5deee}
+  .choice:active{transform:translateY(0)}
+  .choice:focus-visible{outline:3px solid rgba(0,80,230,.35);outline-offset:2px}
+  .ico{
+    flex:none;width:54px;height:54px;border-radius:15px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .ico svg{width:26px;height:26px;stroke-width:2}
+  .c1 .ico{background:rgba(0,80,230,.10);color:var(--bleu)}
+  .c2 .ico{background:rgba(243,154,27,.14);color:#c77410}
+  .c3 .ico{background:rgba(12,21,36,.06);color:var(--ink-2)}
+  .choice .txt{flex:1;min-width:0}
+  .choice .txt h2{font-size:18px;font-weight:700;letter-spacing:-.015em;margin-bottom:3px}
+  .choice .txt span{font-size:14px;color:var(--gray);font-weight:400}
+  .choice .arrow{
+    flex:none;color:var(--gray-2);
+    transition:transform .18s ease,color .18s ease;
+  }
+  .choice:hover .arrow{transform:translateX(4px);color:var(--bleu)}
+  .c2:hover .arrow{color:var(--orange)}
+
+  /* bas discret */
+  .foot{margin-top:auto;padding-top:34px}
+  .search{position:relative;margin-bottom:20px}
+  .search svg{
+    position:absolute;left:16px;top:50%;transform:translateY(-50%);
+    width:18px;height:18px;color:var(--gray-2);pointer-events:none;
+  }
+  .search input{
+    width:100%;font-family:var(--sans);font-size:15px;color:var(--ink);
+    background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:13px 16px 13px 44px;
+    box-shadow:0 1px 2px rgba(12,21,36,.03);
+    transition:border-color .16s ease,box-shadow .16s ease;
+  }
+  .search input::placeholder{color:var(--gray-2)}
+  .search input:focus{outline:none;border-color:var(--bleu);box-shadow:0 0 0 3px rgba(0,80,230,.12)}
+
+  .recent-label{
+    font-size:12px;font-weight:600;color:var(--gray-2);
+    letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;
+  }
+  .recents{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    display:inline-flex;align-items:center;gap:7px;
+    background:transparent;border:1px solid var(--line);
+    border-radius:100px;padding:7px 13px 7px 11px;
+    font-size:13px;font-weight:500;color:var(--ink-2);
+    text-decoration:none;cursor:pointer;
+    transition:border-color .16s ease,background .16s ease,color .16s ease;
+  }
+  .chip:hover{border-color:#c9d4e8;background:#fff;color:var(--bleu)}
+  .chip i{
+    width:6px;height:6px;border-radius:50%;background:var(--gray-2);flex:none;
+  }
+  .chip:hover i{background:var(--bleu)}
+
+  .stat{margin-top:22px;font-size:13px;color:var(--gray-2);text-align:center}
+  .stat b{color:var(--gray);font-weight:600}
+
+  @media (max-width:520px){
+    .hero h1{font-size:28px}
+    .top{margin-bottom:30px}
+    .choice{padding:18px 16px;gap:14px}
+    .ico{width:48px;height:48px}
+    .choice .txt h2{font-size:16.5px}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+    .choice:hover{transform:none}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="top">
+      <div class="brand">
+        <span class="dot">I</span>
+        <span>Intégral Pharma <small>· CRM</small></span>
+      </div>
+      <div class="date" id="date">—</div>
+    </div>
+
+    <header class="hero">
+      <div class="eyebrow">On y va</div>
+      <h1>Qu'est-ce qu'on fait, Will&nbsp;?</h1>
+      <p>Choisis ce que tu veux attaquer maintenant. Le reste attendra.</p>
+    </header>
+
+    <nav class="choices">
+
+      <a class="choice c1" href="#pharmacie">
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        </span>
+        <span class="txt">
+          <h2>Je vais voir une pharmacie</h2>
+          <span>Ouvre la fiche, ses opportunités et son historique avant la visite.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="choice c2" href="#produits">
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2"/><path d="M3 8h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 12h6"/></svg>
+        </span>
+        <span class="txt">
+          <h2>Je prépare des produits à pousser</h2>
+          <span>Pioche dans le catalogue et monte ton argumentaire marketing.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="choice c3" href="#infos">
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a2 2 0 0 1 2-2h9l5 5v15a1 1 0 0 1-1 1Z"/><path d="M14 2v5h5"/><path d="M8 13h8M8 17h6M8 9h3"/></svg>
+        </span>
+        <span class="txt">
+          <h2>Je m'informe</h2>
+          <span>Les infos du matin : ruptures, actu pharma et opportunités du jour.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+    </nav>
+
+    <div class="foot">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" placeholder="Chercher une pharmacie, un produit…" aria-label="Rechercher">
+      </div>
+
+      <div class="recent-label">Récemment ouvertes</div>
+      <div class="recents">
+        <a class="chip" href="#"><i></i>Pharmacie du Marché · Caen</a>
+        <a class="chip" href="#"><i></i>Grande Pharmacie Saint-Sever · Rouen</a>
+        <a class="chip" href="#"><i></i>Pharmacie de la Plage · Deauville</a>
+      </div>
+
+      <div class="stat"><b>621 officines</b> dans ton portefeuille</div>
+    </div>
+
+  </div>
+
+  <script>
+    (function(){
+      try{
+        var d=new Date();
+        var s=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+        document.getElementById('date').textContent=s;
+      }catch(e){
+        document.getElementById('date').textContent='';
+      }
+    })();
+  </script>
+</body>
+</html>

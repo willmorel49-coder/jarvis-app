@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Intégral Pharma — Accueil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #FBFCFE;
+    --blue: #0050E6;
+    --orange: #F39A1B;
+    --ink: #10182B;
+    --muted: #6B7488;
+    --line: #E7ECF4;
+    --card: #FFFFFF;
+    --radius: 22px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100%;
+  }
+
+  /* Spotlight très discret en fond */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(1100px 620px at 50% -8%, rgba(0,80,230,0.07), transparent 60%),
+      radial-gradient(700px 500px at 88% 8%, rgba(243,154,27,0.06), transparent 62%);
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 46px 24px 80px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top bar */
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: clamp(48px, 9vh, 96px);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: 15px;
+  }
+  .brand .dot {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--blue), #2f74ff);
+    display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 13px;
+    box-shadow: 0 6px 16px rgba(0,80,230,0.28);
+  }
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd9a3, var(--orange));
+    color: #6b3d00;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 13px;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 12px rgba(243,154,27,0.28);
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .greet {
+    font-size: clamp(28px, 5.4vw, 42px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+  }
+  .greet b { color: var(--blue); font-weight: 700; }
+  .sub {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0;
+  }
+  .sub .dotsep { opacity: .5; margin: 0 8px; }
+  .sub .active b { color: var(--ink); font-weight: 600; }
+
+  /* Search */
+  form { margin: 30px 0 12px; }
+  .search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 0 18px;
+    height: 66px;
+    box-shadow: 0 10px 34px rgba(16,24,43,0.06), 0 2px 6px rgba(16,24,43,0.04);
+    transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease;
+  }
+  .search:focus-within {
+    border-color: rgba(0,80,230,0.45);
+    box-shadow: 0 14px 44px rgba(0,80,230,0.14), 0 0 0 4px rgba(0,80,230,0.08);
+    transform: translateY(-1px);
+  }
+  .search svg { color: var(--muted); flex: 0 0 auto; }
+  .search input {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 17px;
+    color: var(--ink);
+    width: 100%;
+    padding: 0 14px;
+  }
+  .search input::placeholder { color: #98a1b4; }
+  .kbd {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 4px 8px;
+    background: #F6F8FC;
+  }
+
+  /* Récentes */
+  .recent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin: 4px 0 42px;
+  }
+  .recent .label { color: var(--muted); font-size: 13px; align-self: center; margin-right: 2px; }
+  .chip {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 7px 14px;
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--ink);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: border-color .2s, transform .2s, box-shadow .2s;
+  }
+  .chip .pin { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); }
+  .chip:hover {
+    border-color: rgba(0,80,230,0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16,24,43,0.07);
+  }
+
+  /* Cards */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .card {
+    position: relative;
+    text-align: left;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 26px 24px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 46px;
+    min-height: 158px;
+    transition: transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s, border-color .28s;
+    overflow: hidden;
+  }
+  .card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(420px 220px at 100% 0%, rgba(0,80,230,0.05), transparent 70%);
+    opacity: 0;
+    transition: opacity .3s;
+    pointer-events: none;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 48px rgba(16,24,43,0.10);
+    border-color: rgba(0,80,230,0.28);
+  }
+  .card:hover::after { opacity: 1; }
+  .card .ico {
+    width: 46px; height: 46px;
+    border-radius: 13px;
+    display: grid; place-items: center;
+    background: rgba(0,80,230,0.08);
+    color: var(--blue);
+  }
+  .card.o .ico { background: rgba(243,154,27,0.12); color: var(--orange); }
+  .card .meta { display: flex; flex-direction: column; gap: 3px; }
+  .card h3 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+  .card p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .card .arrow {
+    position: absolute;
+    top: 26px; right: 24px;
+    color: #c3ccdb;
+    transition: transform .28s, color .28s;
+  }
+  .card:hover .arrow { transform: translateX(3px); color: var(--blue); }
+  .card.o:hover .arrow { color: var(--orange); }
+
+  footer {
+    margin-top: auto;
+    padding-top: 40px;
+    text-align: center;
+    color: #a6afbf;
+    font-size: 12px;
+  }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 34px 18px 56px; }
+    .grid { grid-template-columns: 1fr; gap: 12px; }
+    .card { min-height: auto; gap: 26px; padding: 22px 20px; }
+    .search { height: 60px; padding: 0 14px; }
+    .search input { font-size: 16px; }
+    .kbd { display: none; }
+    .top { margin-bottom: 40px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto !important; }
+    .card:hover, .search:focus-within, .chip:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand"><span class="dot">IP</span> Intégral Pharma</div>
+      <div class="avatar" aria-label="Will">W</div>
+    </div>
+
+    <div class="hero">
+      <h1 class="greet">Bonjour <b>Will</b></h1>
+      <p class="sub">
+        <span id="date"></span>
+        <span class="dotsep">•</span>
+        <span class="active"><b>621</b> officines actives</span>
+      </p>
+    </div>
+
+    <form onsubmit="return false" role="search">
+      <label class="search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+        <input id="q" type="text" placeholder="Cherche une pharmacie, un produit…" autocomplete="off" aria-label="Recherche" />
+        <span class="kbd">⌘K</span>
+      </label>
+    </form>
+
+    <div class="recent">
+      <span class="label">Récentes :</span>
+      <button class="chip" type="button"><span class="pin"></span>Pharmacie du Centre — Rouen</button>
+      <button class="chip" type="button"><span class="pin"></span>Grande Pharmacie de Caen</button>
+      <button class="chip" type="button"><span class="pin"></span>Pharmacie de la Plage — Deauville</button>
+    </div>
+
+    <div class="grid">
+      <a class="card" href="#pharmacie">
+        <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/><path d="M12 8v4M10 10h4"/></svg></span>
+        <span class="meta"><h3>Pharmacie</h3><p>Fiches, visites &amp; suivi terrain</p></span>
+        <span class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+
+      <a class="card" href="#catalogue">
+        <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="3"/></svg></span>
+        <span class="meta"><h3>Catalogue &amp; prix</h3><p>+14 000 références, remises</p></span>
+        <span class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+
+      <a class="card o" href="#marketing">
+        <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l14-7v16L3 13z"/><path d="M17 8a3 3 0 0 1 0 8"/></svg></span>
+        <span class="meta"><h3>Marketing</h3><p>Opérations &amp; supports vitrine</p></span>
+        <span class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+
+      <a class="card o" href="#infos">
+        <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M8 9h7M8 13h7M8 17h4"/></svg></span>
+        <span class="meta"><h3>Infos du matin</h3><p>Ruptures, actu &amp; opportunités</p></span>
+        <span class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+    </div>
+
+    <footer>Intégral Pharma · Anticipez vos appros.</footer>
+  </div>
+
+  <script>
+    (function () {
+      var d = new Date();
+      var s = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+      document.getElementById("date").textContent = s.charAt(0).toUpperCase() + s.slice(1);
+
+      document.addEventListener("keydown", function (e) {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+          e.preventDefault();
+          document.getElementById("q").focus();
+        }
+      });
+
+      document.querySelectorAll(".chip").forEach(function (c) {
+        c.addEventListener("click", function () {
+          var q = document.getElementById("q");
+          q.value = c.textContent.trim();
+          q.focus();
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
