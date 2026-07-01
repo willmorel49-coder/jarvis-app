@@ -799,6 +799,13 @@
     },
     catSort: function (mode) { catSortBy = (mode === 'vol') ? 'vol' : 'pharma'; V2.render(); },
     catPerCat: function (n) { catPerCat = (+n) || 0; V2.render(); },
+    // Créer une sélection depuis un autre pilier (ex: le catalogue « Par produit »)
+    newSelection: function (title, accroche, products) {
+      editing = { id: newId(), type: 'selection', title: title || 'Sélection', accroche: accroche || '',
+        footer: '', status: 'brouillon', products: (products || []).map(function (p) { return Object.assign({}, p); }),
+        theme: defaultTheme('selection'), owner: (V2.user && V2.user.email) || '', _new: 'selection' };
+      V2.go('marketing', 'new-selection');
+    },
     // Liste parfaite d'une catégorie = produits les plus commandés (nb pharmacies), au prix de l'établissement choisi
     catList: function (catName) {
       var M = window.MKT_MIX || {};
