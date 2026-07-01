@@ -2190,8 +2190,8 @@
     if (window.__leafletLoadingP) { setTimeout(function () { ensureLeafletP(cb); }, 200); return; }
     window.__leafletLoadingP = true;
     var css = document.createElement('link'); css.rel = 'stylesheet';
-    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
-    var s = document.createElement('script'); s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    css.href = 'vendor/leaflet/leaflet.css'; document.head.appendChild(css);
+    var s = document.createElement('script'); s.src = 'vendor/leaflet/leaflet.js';
     s.onload = function () { cb(); }; s.onerror = function () { cb(); }; document.head.appendChild(s);
   }
   // CA total d'une officine (respecte le filtre commercial)
