@@ -330,16 +330,26 @@
     var tabs = srcs.map(function (s) { return '<button class="mkt-srcbtn' + (s.k === catSrc ? ' on' : '') + '" onclick="V2.mkt.catSrc(\'' + s.k + '\')">' + esc(s.label) + '</button>'; }).join('');
     var offre = ' <span style="font-size:8.5px;font-weight:800;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 14%,#fff);padding:1px 5px;border-radius:5px;text-transform:uppercase">offre</span>';
     catRows = [];
+    var showStock = !!(window.ETAB_PRICES && mktEtab);   // colonne stock si un établissement précis est choisi
     var cats = cur.data.map(function (c) {
-      var trs = (c.rows || []).map(function (r, i) {
-        var price = (r.p > 0) ? V2.fmtEur(r.p) : '—';
+      var rowsArr = (c.rows || []).filter(function (r) {
+        if (!(mktEtab && etabStockOnly)) return true;
+        var er = etabRec(r.cip); return !!(er && er[1] > 0);
+      });
+      if (!rowsArr.length) return '';
+      var trs = rowsArr.map(function (r, i) {
+        var er = etabRec(r.cip);
+        var pval = (er && er[0] > 0) ? er[0] : r.p;
+        var stock = er ? er[1] : null;
+        var price = (pval > 0) ? V2.fmtEur(pval) : '—';
         var midCol = (cur.k === 'itp')
           ? '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.marge ? V2.fmtEur(r.marge) : '—') + '</td>'
           : '<td class="num" style="font-weight:700">' + (r.sortie > 0 ? r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + total + '</span>' : '—') + '</td>';
         var volCol = '<td class="num" style="font-weight:800;color:var(--ip-ink)">' + (r.vol > 0 ? V2.fmtNum(r.vol) : '—') + '</td>';
+        var stockCol = showStock ? '<td class="num" style="font-weight:800;color:' + (stock > 0 ? 'var(--c-mint)' : 'var(--c-rose)') + '">' + (stock != null ? V2.fmtNum(stock) : '—') + '</td>' : '';
         var fi = catRows.length;
         var pic = catImg(r.cip);
-        catRows.push({ d: r.d, cip: r.cip, p: r.p, froid: false, cat: c.cat, img: pic });
+        catRows.push({ d: r.d, cip: r.cip, p: pval, stock: stock, froid: false, cat: c.cat, img: pic });
         var selKey = String(r.cip || r.d);
         var added = catSel.some(function (x) { return x.key === selKey; });
         var addBtn = '<td style="width:36px;text-align:center"><button class="mkt-catadd' + (added ? ' on' : '') + '" id="mkt-ca-' + fi + '" title="' + (added ? 'Retirer de ma sélection' : 'Ajouter à une fiche') + '" onclick="V2.mkt.catAdd(' + fi + ')">' + ICO(added ? 'check' : 'plus', 15, 2.4) + '</button></td>';
@@ -351,21 +361,31 @@
           thumb +
           '<td><span class="mkt-cat-prod">' + esc(r.d) + '</span>' + (r.o ? offre : '') + '</td>' +
           '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip || '—') + '</td>' +
-          '<td class="num" style="color:var(--ip-blue);font-weight:700">' + price + '</td>' + midCol + volCol + addBtn +
+          '<td class="num" style="color:var(--ip-blue);font-weight:700">' + price + '</td>' + midCol + volCol + stockCol + addBtn +
         '</tr>';
       }).join('');
       var midTh = (cur.k === 'itp') ? 'Marge/bte' : 'Sorties';
+      var stockTh = showStock ? '<th class="num">Stock</th>' : '';
       return '<div class="v2-card" style="margin-bottom:14px;padding:16px 18px">' +
-        '<div class="v2-card-t" style="margin-bottom:10px">' + esc(c.cat) + ' <span style="color:var(--muted);font-weight:500">· ' + (c.rows || []).length + '</span></div>' +
-        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th></th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th><th></th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
+        '<div class="v2-card-t" style="margin-bottom:10px">' + esc(c.cat) + ' <span style="color:var(--muted);font-weight:500">· ' + rowsArr.length + '</span></div>' +
+        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th></th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th>' + stockTh + '<th></th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
       '</div>';
     }).join('');
+    if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
+    var ETABS = (window.ETAB_PRICES && window.ETAB_PRICES.etabs) || [];
+    var etabBtns = '<button class="mkt-etabchip' + (mktEtab === '' ? ' on' : '') + '" onclick="V2.mkt.catEtab(\'\')">Tous</button>' +
+      ETABS.map(function (e) { return '<button class="mkt-etabchip' + (mktEtab === e.code ? ' on' : '') + '" onclick="V2.mkt.catEtab(\'' + e.code + '\')">' + esc(e.code) + '</button>'; }).join('');
+    var etabBar = ETABS.length ? ('<div class="mkt-etabbar"><span class="mkt-etablbl">Établissement — prix &amp; stock à jour</span>' +
+      '<div class="mkt-etabchips">' + etabBtns + '</div>' +
+      (mktEtab ? '<label class="mkt-stocktgl"><input type="checkbox"' + (etabStockOnly ? ' checked' : '') + ' onchange="V2.mkt.catStockOnly(this.checked)"> En stock uniquement</label>' : '') +
+      '</div>') : '';
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap">' +
         '<button class="v2-back" style="margin-bottom:16px" onclick="V2.go(\'marketing\')">' + ICO('back', 16) + 'Marketing</button>' +
         '<div class="v2-page-title">Catalogues grossiste</div>' +
         '<div class="v2-page-sub">L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent. Coche les <b>+</b> pour bâtir une fiche.</div>' +
-        '<div class="mkt-pick-src" style="margin:16px 0 14px">' + tabs + '</div>' +
+        '<div class="mkt-pick-src" style="margin:16px 0 10px">' + tabs + '</div>' +
+        etabBar +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
           '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.catPdf(\'' + cur.k + '\')">' + ICO('download', 16) + 'Générer le doc marketing (PDF)</button>' +
           (cur.pdf ? '<a class="v2-btn v2-btn-ghost" href="' + cur.pdf + '" download>' + ICO('download', 16) + 'Catalogue ' + esc(cur.label) + ' d\'origine</a>' : '') +
@@ -986,6 +1006,12 @@
       if (V2.toast) V2.toast('Échec de l\'envoi.');
     });
   };
+  V2.mkt.catEtab = function (code) {
+    mktEtab = code || '';
+    if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
+    if (V2.route && V2.route.name === 'marketing') V2.render();
+  };
+  V2.mkt.catStockOnly = function (on) { etabStockOnly = !!on; if (V2.route && V2.route.name === 'marketing') V2.render(); };
   V2.mkt.docsDelete = function (name) {
     var c = sb(); if (!c || !c.storage) return;
     var disp = prettyName(name);
@@ -1014,6 +1040,14 @@
       '.mkt-cat-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
       '.mkt-cat-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}',
       // ── Documents PDF partagés ──
+      '.mkt-etabbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:12px 14px;background:color-mix(in srgb,var(--ip-blue) 5%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 18%,var(--line));border-radius:12px}',
+      '.mkt-etablbl{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ip-blue)}',
+      '.mkt-etabchips{display:flex;gap:6px;flex-wrap:wrap}',
+      '.mkt-etabchip{border:1px solid var(--line-strong,#d7dbe6);background:#fff;border-radius:999px;padding:6px 13px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.12s}',
+      '.mkt-etabchip:active{transform:scale(.96)}',
+      '.mkt-etabchip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.mkt-stocktgl{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--ip-ink);cursor:pointer;margin-left:auto}',
+      '.mkt-stocktgl input{width:16px;height:16px;accent-color:var(--ip-blue)}',
       '.mkt-doc-bar{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap}',
       '.mkt-upl{position:relative;cursor:pointer}',
       '.mkt-upl input{position:absolute;inset:0;opacity:0;cursor:pointer}',
