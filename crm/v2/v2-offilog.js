@@ -19,7 +19,7 @@
     return '';
   })();
 
-  var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes' };
+  var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false };
   var PER_PAGE = 60;
 
   // Sélection pour la fiche marketing parapharma
@@ -140,13 +140,12 @@
     return c;
   }
 
-  // ── Stat band ─────────────────────────────────
-  function kpiCard(k, l, v, d, vcol) {
-    return '<div class="v2-kpi ' + k + '"><div class="v2-kpi-l">' + l + '</div>' +
-      '<div class="v2-kpi-v mono"' + (vcol ? ' style="color:' + vcol + '"' : '') + '>' + v + '</div>' +
-      (d ? '<div class="v2-kpi-d" style="color:var(--muted)">' + d + '</div>' : '') + '</div>';
-  }
-  function statBand(list) {
+  // ── Verdict band ──────────────────────────────
+  // Message limpide : « où suis-je battu / où suis-je bon ». On mène avec l'alerte
+  // (concurrent public sous ton prix d'achat IP — rouge SACRÉ), puis « bien placé »
+  // (vert). Les autres chiffres (total / prix moyen / réf. croisées) passent en
+  // petit, discrets, sous les deux tuiles-verdict.
+  function verdictBand(list) {
     var n = list.length, nAlert = 0, nMatch = 0, pSum = 0, pN = 0;
     for (var i = 0; i < list.length; i++) {
       var it = list[i];
@@ -154,12 +153,36 @@
       if (it.matched) nMatch++;
       if (it.price > 0) { pSum += it.price; pN++; }
     }
-    return '<div class="v2-kpis off-kpis">' +
-      kpiCard('k1', 'Produits', V2.fmtNum(n), 'meilleures ventes Offilog') +
-      kpiCard('k2', 'Concurrent moins cher', V2.fmtNum(nAlert), 'produits où un concurrent est sous ton achat', nAlert > 0 ? 'var(--bad)' : null) +
-      kpiCard('k3', 'Prix Offilog moyen', pN ? V2.fmtEur(pSum / pN) : '—', 'sur la sélection') +
-      kpiCard('k4', 'Réf. croisées', V2.fmtNum(nMatch), 'avec données concurrents') +
-    '</div>';
+    var nGood = nMatch - nAlert; if (nGood < 0) nGood = 0;
+    // Tuile ALERTE (rouge) — cliquable : filtre direct sur les produits battus.
+    var alertActive = S.chip === 'alerte';
+    var alertTile = '<button type="button" class="off-verdict off-verdict-bad' + (nAlert > 0 ? ' hot' : ' cold') + (alertActive ? ' active' : '') +
+        '" onclick="V2.offFilter(\'' + (alertActive ? 'all' : 'alerte') + '\')" ' +
+        'title="Produits où un prix public concurrent passe sous ton prix d\'achat IP">' +
+        '<span class="off-verdict-ic">' + ICO('alert', 20, 2) + '</span>' +
+        '<span class="off-verdict-txt">' +
+          '<span class="off-verdict-v mono">' + V2.fmtNum(nAlert) + '</span>' +
+          '<span class="off-verdict-l">' + (nAlert > 1 ? 'produits où un concurrent est moins cher que ton achat' : 'produit où un concurrent est moins cher que ton achat') + '</span>' +
+        '</span>' +
+        '<span class="off-verdict-go">' + (alertActive ? 'Tout revoir' : 'Les voir') + ' ' + ICO('chev', 15, 2.2) + '</span>' +
+      '</button>';
+    // Tuile BIEN PLACÉ (vert) — calme, informative.
+    var goodTile = '<div class="off-verdict off-verdict-ok">' +
+        '<span class="off-verdict-ic">' + ICO('check', 20, 2.4) + '</span>' +
+        '<span class="off-verdict-txt">' +
+          '<span class="off-verdict-v mono">' + V2.fmtNum(nGood) + '</span>' +
+          '<span class="off-verdict-l">produits où ton achat tient face aux prix publics</span>' +
+        '</span>' +
+      '</div>';
+    // Ligne secondaire discrète : total, prix moyen, réf. croisées.
+    var meta = '<div class="off-verdict-meta">' +
+        '<span><b class="mono">' + V2.fmtNum(n) + '</b> produits</span>' +
+        '<span class="off-dot">·</span>' +
+        '<span>prix Offilog moyen <b class="mono">' + (pN ? V2.fmtEur(pSum / pN) : '—') + '</b></span>' +
+        '<span class="off-dot">·</span>' +
+        '<span><b class="mono">' + V2.fmtNum(nMatch) + '</b> réf. comparées aux concurrents</span>' +
+      '</div>';
+    return '<div class="off-verdict-wrap">' + alertTile + goodTile + '</div>' + meta;
   }
 
   // ── Squelette de grille (forme des futures cartes) ──
@@ -293,7 +316,13 @@
     } catch (e) {}
   };
 
-  V2.offFilter = function (k) { S.chip = k; S.page = 0; V2.render(); };
+  V2.offFilter = function (k) {
+    S.chip = k; S.page = 0;
+    // si on choisit une catégorie (hors verdicts), on ouvre les filtres avancés pour rester cohérent
+    if (k !== 'all' && k !== 'alerte' && k !== 'pzcheaper') S.adv = true;
+    V2.render();
+  };
+  V2.offToggleAdv = function () { S.adv = !S.adv; V2.render(); };
   V2.offSearch = function (val) { S.q = val || ''; S.page = 0; rerenderKeepFocus(); };
   V2.offSort = function (v) { S.sort = v; S.page = 0; V2.render(); };
   V2.offPage = function (p) { S.page = p; V2.render(); try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {} };
@@ -550,20 +579,65 @@
     if (document.getElementById('v2-off-css')) return;
     var s = document.createElement('style'); s.id = 'v2-off-css';
     s.textContent = [
-      '.off-search{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--sh-2);transition:.2s var(--ease)}',
+      // grande recherche calme (esprit Launcher)
+      '.off-search{display:flex;align-items:center;gap:13px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:16px;padding:0 18px;height:60px;margin-bottom:var(--sp-6);box-shadow:var(--sh-2);transition:.22s var(--mo-ease-soft)}',
       '.off-search:focus-within{border-color:color-mix(in srgb,var(--pil-froid) 42%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--pil-froid) 16%,transparent),var(--sh-2)}',
       '.off-search svg{color:var(--pil-froid);flex-shrink:0}',
       '.off-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}',
       '.off-search .clr{border:none;background:none;cursor:pointer;color:var(--muted);display:flex;padding:2px}',
-      '.off-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}',
-      '.off-count{font-size:12px;color:var(--muted)}',
-      '.off-sort{display:inline-flex;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px;box-shadow:var(--sh-1)}',
+      // ── Bande VERDICT : où suis-je battu / où suis-je bon ──
+      '.off-verdict-wrap{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-bottom:var(--sp-3)}',
+      '@media(max-width:640px){.off-verdict-wrap{grid-template-columns:1fr;gap:var(--sp-3)}}',
+      '.off-verdict{display:flex;align-items:center;gap:14px;text-align:left;width:100%;padding:18px 20px;border-radius:var(--r-card);border:1px solid var(--line);background:linear-gradient(180deg,var(--card),var(--card-2));box-shadow:var(--sh-1);font-family:var(--font)}',
+      '.off-verdict-ic{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
+      '.off-verdict-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}',
+      '.off-verdict-v{font-size:26px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}',
+      '.off-verdict-l{font-size:12.5px;color:var(--muted);line-height:1.3}',
+      '.off-verdict-go{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;flex-shrink:0;white-space:nowrap}',
+      // tuile ALERTE (rouge SACRÉ) — cliquable, la plus forte
+      '.off-verdict-bad{cursor:pointer;transition:transform .2s var(--mo-ease-soft),box-shadow .2s var(--mo-ease-soft),border-color .2s var(--mo-ease-soft)}',
+      '.off-verdict-bad.hot{border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--bad) 7%,#fff),color-mix(in srgb,var(--bad) 3%,#fff))}',
+      '.off-verdict-bad.hot .off-verdict-ic{background:var(--bad);color:#fff;box-shadow:0 4px 12px color-mix(in srgb,var(--bad) 40%,transparent)}',
+      '.off-verdict-bad.hot .off-verdict-v{color:var(--bad)}',
+      '.off-verdict-bad.hot .off-verdict-go{color:var(--bad)}',
+      '.off-verdict-bad.cold{opacity:.9}',
+      '.off-verdict-bad.cold .off-verdict-ic{background:var(--card-2);color:var(--muted-2)}',
+      '.off-verdict-bad.cold .off-verdict-v{color:var(--ip-ink)}',
+      '.off-verdict-bad.cold .off-verdict-go{color:var(--muted)}',
+      '.off-verdict-bad:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
+      '.off-verdict-bad.hot:hover{border-color:color-mix(in srgb,var(--bad) 58%,transparent)}',
+      '.off-verdict-bad.active{box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 22%,transparent),var(--sh-2);border-color:var(--bad)}',
+      // tuile BIEN PLACÉ (vert) — calme
+      '.off-verdict-ok .off-verdict-ic{background:color-mix(in srgb,var(--ok) 13%,#fff);color:var(--ok)}',
+      '.off-verdict-ok .off-verdict-v{color:var(--ok)}',
+      // ligne secondaire discrète
+      '.off-verdict-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:var(--sp-5);padding:0 2px}',
+      '.off-verdict-meta b{color:var(--ip-ink);font-weight:700}',
+      '.off-verdict-meta .off-dot{color:var(--muted-2);opacity:.6}',
+      // barre de contexte + filtres (calme)
+      '.off-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:var(--sp-4)}',
+      '.off-count{font-size:13px;color:var(--muted)}',
+      '.off-count b{color:var(--ip-ink)}',
+      // bouton « Filtres » (progressive disclosure)
+      '.off-advbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink-2);border-radius:var(--r-md);padding:8px 13px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--sh-1);transition:.16s var(--mo-ease-soft)}',
+      '.off-advbtn svg{color:var(--muted)}',
+      '.off-advbtn:hover{border-color:color-mix(in srgb,var(--pil-froid) 32%,var(--line));color:var(--ip-ink)}',
+      '.off-advbtn.open{border-color:color-mix(in srgb,var(--pil-froid) 40%,var(--line));background:var(--card-2)}',
+      '.off-advbtn-tag{background:color-mix(in srgb,var(--pil-froid) 12%,#fff);color:var(--pil-froid);border-radius:var(--r-pill);padding:2px 9px;font-size:11px;font-weight:700}',
+      '.off-advbtn-chev{display:inline-flex;color:var(--muted-2);transition:transform .2s var(--mo-ease-soft)}',
+      '.off-advbtn.open .off-advbtn-chev{transform:rotate(90deg)}',
+      // panneau avancé déplié
+      '.off-adv{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-card);padding:16px 18px;margin-bottom:var(--sp-5);box-shadow:var(--sh-1)}',
+      '.off-adv-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:0 0 10px}',
+      '.off-adv-segs{margin-bottom:16px}',
+      '.off-adv-segs .v2-seg .sw{width:9px;height:9px;border-radius:50%;background:var(--sc,var(--muted-2));flex-shrink:0}',
+      '.off-adv-segs .v2-seg.on .sw{background:#fff}',
+      '.off-adv .off-sort{display:inline-flex;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px;box-shadow:var(--sh-1)}',
       '.off-sortbtn{border:none;background:transparent;border-radius:8px;padding:6px 11px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.16s var(--ease);white-space:nowrap}',
       '.off-sortbtn:hover:not(.on){color:var(--ip-ink);background:var(--card-2)}',
       '.off-sortbtn:active{transform:scale(.97)}',
       '.off-sortbtn.on{background:var(--pil-froid);color:#fff;box-shadow:0 1px 4px color-mix(in srgb,var(--pil-froid) 34%,transparent)}',
-      '.off-stats-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:18px 0 12px}',
-      '.off-kpis{margin-bottom:18px}',
+      '@media(prefers-reduced-motion:reduce){.off-search,.off-verdict-bad,.off-advbtn,.off-advbtn-chev{transition:none}.off-verdict-bad:hover{transform:none}}',
       // grille de cartes photo
       '.off-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:16px}',
       '.off-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:var(--sh-1);transition:.18s var(--ease);display:flex;flex-direction:column}',
@@ -742,9 +816,13 @@
       var pageItems = filtered.slice(S.page * PER_PAGE, (S.page + 1) * PER_PAGE);
       var nbTotal = (window.OFFILOG_BEST || []).length;
 
-      var chips = CHIPS.map(function (f) {
+      // Chips de CATÉGORIE uniquement (Santé, Beauté, Hygiène…) — repliés dans les
+      // filtres avancés. Les « verdicts » (alerte / bien placé) vivent dans la
+      // bande du haut ; le raccourci Pharmazon reste ici, discret.
+      var advChips = CHIPS.map(function (f) {
+        if (f.k === 'alerte') return ''; // porté par la tuile-verdict rouge
         var n = c[f.k] || 0;
-        if (f.k !== 'all' && f.k !== 'alerte' && f.k !== 'pzcheaper' && n === 0) return '';
+        if (f.k !== 'all' && f.k !== 'pzcheaper' && n === 0) return '';
         var on = S.chip === f.k ? ' on' : '';
         return '<button class="v2-seg' + on + '" style="--sc:' + f.sc + '" onclick="V2.offFilter(\'' + f.k + '\')">' +
           (f.k === 'all' ? '' : '<span class="sw"></span>') + esc(f.label) + '<span class="cnt">' + V2.fmtNum(n) + '</span></button>';
@@ -766,20 +844,39 @@
       var qVal = S.q.replace(/"/g, '&quot;');
       var clrBtn = S.q ? '<button class="clr" onclick="V2.offSearch(\'\')">' + ICO('close', 16, 2) + '</button>' : '';
 
+      // Contexte de la sélection courante (calme, une ligne) : ce qu'on regarde.
+      var ctxLabel = (S.chip === 'all')
+        ? (S.q ? 'Résultats pour « ' + esc(S.q) + ' »' : 'Meilleures ventes')
+        : esc(CHIP_BY_KEY[S.chip].label);
+
+      // Bloc « Filtres » : progressive disclosure. Fermé par défaut = page calme.
+      var advOpen = S.adv;
+      var advBtn = '<button type="button" class="off-advbtn' + (advOpen ? ' open' : '') + '" onclick="V2.offToggleAdv()">' +
+          ICO('grid', 15, 2) + ' Filtres' +
+          (S.chip !== 'all' && S.chip !== 'alerte' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
+          '<span class="off-advbtn-chev">' + ICO('chev', 14, 2.2) + '</span></button>';
+      var advPanel = advOpen
+        ? '<div class="off-adv">' +
+            '<div class="off-adv-l">Par famille</div>' +
+            '<div class="v2-segs off-adv-segs">' + advChips + '</div>' +
+            '<div class="off-adv-l">Trier</div>' +
+            '<div class="off-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>' +
+          '</div>'
+        : '';
+
       root.innerHTML = V2.topbar({ back: true }) + (V2.concTabs ? V2.concTabs('prix') : '') +
         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
           '<div class="v2-page-title">Concurrents</div>' +
-          '<div class="v2-page-sub">' + V2.fmtNum(nbTotal) + ' meilleures ventes Offilog (prix + photos) · ton achat IP comparé aux prix publics E.Leclerc, Drakkars et Cap3000</div>' +
+          '<div class="v2-page-sub">Ton prix d\'achat IP (HT) comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000 (TTC). Vois d\'un coup d\'œil où un concurrent casse les prix sous ton achat.</div>' +
           '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
-          '<div class="v2-segs">' + chips + '</div>' +
-          '<div class="off-stats-l">' + (S.chip === 'all' ? (S.q ? 'Statistiques · résultats « ' + esc(S.q) + ' »' : 'Statistiques · meilleures ventes') : 'Statistiques · ' + esc(CHIP_BY_KEY[S.chip].label)) + '</div>' +
-          statBand(filtered) +
+          verdictBand(filtered) +
           '<div class="off-toolbar">' +
-            '<div class="off-count"><b style="color:var(--ip-ink);font-family:var(--mono)">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + (S.chip !== 'all' ? ' · ' + esc(CHIP_BY_KEY[S.chip].label) : '') + '</div>' +
-            '<div class="off-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>' +
+            '<div class="off-count"><b class="mono">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + ' · ' + ctxLabel + '</div>' +
+            advBtn +
           '</div>' +
+          advPanel +
           gridHtml +
         '</div>' + insHtml +
         '<div class="off-mktbar' + (mktSel.size ? '' : ' hidden') + '" id="off-mktbar">' +

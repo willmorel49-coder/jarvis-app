@@ -232,14 +232,35 @@
         return '<button class="v2-seg' + (S.chip === f.k ? ' on' : '') + '" style="--sc:' + f.sc + '" onclick="V2.molFilter(\'' + f.k + '\')">' + (f.k === 'all' ? '' : '<span class="sw"></span>') + esc(f.label) + '<span class="cnt">' + num(c[f.k] || 0) + '</span></button>';
       }).join('');
       var ETABS = (window.ETAB_PRICES && window.ETAB_PRICES.etabs) || [];
-      var etabBtns = '<button class="mol-chip' + (S.etab === '' ? ' on' : '') + '" onclick="V2.molEtab(\'\')">Tous</button>' +
-        ETABS.map(function (e) { return '<button class="mol-chip' + (S.etab === e.code ? ' on' : '') + '" onclick="V2.molEtab(\'' + e.code + '\')">' + esc(e.code) + '</button>'; }).join('');
-      var etabBar = ETABS.length ? ('<div class="mol-bar"><span class="mol-barlbl">Établissement — prix &amp; stock</span><div class="mol-chips">' + etabBtns + '</div>' +
-        (S.etab ? '<label class="mol-tgl"><input type="checkbox"' + (S.stockOnly ? ' checked' : '') + ' onchange="V2.molStockOnly(this.checked)"> En stock uniquement</label>' : '') + '</div>') : '<div class="mol-bar mol-bar-wait"><span class="mol-barlbl">Chargement des prix par établissement…</span></div>';
+      // Sélecteur d'établissement : liste déroulante simple (au lieu d'une rangée de puces)
+      var etabSelect;
+      if (ETABS.length) {
+        etabSelect = '<label class="mol-field"><span class="mol-field-l">Établissement</span>' +
+          '<select class="mol-select" onchange="V2.molEtab(this.value)">' +
+            '<option value=""' + (S.etab === '' ? ' selected' : '') + '>Tous — prix réseau</option>' +
+            ETABS.map(function (e) { return '<option value="' + esc(e.code) + '"' + (S.etab === e.code ? ' selected' : '') + '>' + esc(e.code) + (e.n ? ' — ' + num(e.n) + ' réf.' : '') + '</option>'; }).join('') +
+          '</select></label>';
+      } else {
+        etabSelect = '<label class="mol-field"><span class="mol-field-l">Établissement</span><span class="mol-select mol-select-wait">Chargement des prix…</span></label>';
+      }
+      var stockTgl = (ETABS.length && S.etab) ? ('<label class="mol-tgl"><input type="checkbox"' + (S.stockOnly ? ' checked' : '') + ' onchange="V2.molStockOnly(this.checked)"> En stock seulement</label>') : '';
+
+      // Barre d'action principale : établissement + export PDF (action évidente)
+      var actionBar = '<div class="mol-toolbar">' +
+          '<div class="mol-toolbar-l">' + etabSelect + stockTgl + '</div>' +
+          '<button id="mol-docbtn" class="v2-btn v2-btn-primary mol-doc" onclick="V2.molPdf()">' + ICO('download', 16) + 'Télécharger le PDF' + '</button>' +
+        '</div>';
+
+      // Options avancées repliées : nb de produits par catégorie + envoi Marketing
       var perBtns = [3, 5, 10, 15, 0].map(function (n) { return '<button class="mol-chip' + (S.perCat === n ? ' on' : '') + '" onclick="V2.molPerCat(' + n + ')">' + (n === 0 ? 'Tous' : n) + '</button>'; }).join('');
-      var docBar = '<div class="mol-bar"><span class="mol-barlbl">Produits par catégorie (doc &amp; fiche)</span><div class="mol-chips">' + perBtns + '</div>' +
-        '<button id="mol-docbtn" class="v2-btn v2-btn-primary mol-doc" onclick="V2.molPdf()">' + ICO('download', 15) + 'Télécharger le PDF — top ' + (S.perCat > 0 ? S.perCat : 'tous') + '/catégorie</button>' +
-        '<button class="v2-btn v2-btn-ghost mol-doc" onclick="V2.molList()">' + ICO('plus', 15) + 'Ouvrir dans Marketing →</button></div>';
+      var advBar = '<details class="mol-adv">' +
+          '<summary><span class="mol-adv-t">Options du document</span><span class="mol-adv-hint">top ' + (S.perCat > 0 ? S.perCat : 'tous') + '/catégorie</span></summary>' +
+          '<div class="mol-adv-body">' +
+            '<div class="mol-adv-row"><span class="mol-field-l">Produits par catégorie</span><div class="mol-chips">' + perBtns + '</div></div>' +
+            '<p class="mol-note">Le PDF et l\'envoi Marketing couvrent <b>les 6 catégories</b> (top par catégorie). Le tableau ci-dessous suit, lui, tes filtres.</p>' +
+            '<button class="v2-btn v2-btn-ghost mol-doc" onclick="V2.molList()">' + ICO('plus', 15) + 'Envoyer la sélection dans Marketing →</button>' +
+          '</div>' +
+        '</details>';
       var th = function (col) { return '<th class="num mol-th' + (S.sort === col.k ? ' on' : '') + '" data-k="' + col.k + '" onclick="V2.molSort(\'' + col.k + '\')" style="cursor:pointer;white-space:nowrap">' + col.l + '<small style="display:block;font-weight:500;color:var(--muted-2)">' + col.sub + ' ' + (S.sort === col.k ? '↓' : '↕') + '</small></th>'; };
       var showStock = !!(window.ETAB_PRICES && S.etab);
       var msort = '<div class="mol-msort"><label>Trier par</label><select onchange="V2.molSort(this.value)">' +
@@ -248,18 +269,17 @@
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap">' +
           '<div class="v2-page-title">Catalogue &amp; prix</div>' +
-          '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent : PPHT, ton prix net remisé, abandon de marge, rotation, marge pharmacien, + stock par établissement. Génère un doc « top par catégorie » ou une liste marketing.</div>' +
+          '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent. Pour chacun : ton <b>prix net remisé</b> et l\'<b>abandon de marge</b> Intégral, plus la rotation et la marge pharmacien.</div>' +
           '<div class="mol-search"><span>' + ICO('search', 18) + '</span><input id="mol-q" type="search" placeholder="Chercher un produit ou un CIP (doliprane, 3400…)" value="' + qVal + '" oninput="V2.molSearch(this.value)" autocomplete="off"></div>' +
           '<div class="v2-segs mol-segs">' + chips + '</div>' +
-          etabBar + docBar +
-          '<div class="mol-note">Le PDF et la liste couvrent <b>les 6 catégories</b> (top par catégorie). Le tableau ci-dessous suit tes filtres.</div>' +
+          actionBar + advBar +
           '<div class="mol-countrow"><span class="cat-count" id="mol-count"></span>' + msort + '</div>' +
           '<div class="mol-scroll" style="overflow-x:auto"><table class="v2-table mol-table"><thead><tr>' +
             '<th class="num">#</th><th>Produit</th><th>CIP13</th><th>Famille</th>' +
             '<th class="num mol-th' + (S.sort === 'n' ? ' on' : '') + '" data-k="n" onclick="V2.molSort(\'n\')" style="cursor:pointer">Pharmacies<small style="display:block;font-weight:500;color:var(--muted-2)">réseau ' + (S.sort === 'n' ? '↓' : '↕') + '</small></th>' +
             '<th class="num">PPHT<small style="display:block;font-weight:500;color:var(--muted-2)">tarif</small></th>' +
-            '<th class="num">Net remisé<small style="display:block;font-weight:500;color:var(--muted-2)">réel</small></th>' +
-            '<th class="num">Abandon<small style="display:block;font-weight:500;color:var(--muted-2)">de marge</small></th>' +
+            '<th class="num mol-key">Net remisé<small style="display:block;font-weight:500;color:var(--muted-2)">ton prix</small></th>' +
+            '<th class="num mol-key">Abandon<small style="display:block;font-weight:500;color:var(--muted-2)">de marge</small></th>' +
             COLS.map(th).join('') +
             (showStock ? '<th class="num">Stock</th>' : '') +
           '</tr></thead><tbody id="mol-tbody">' + rowsHtml() + '</tbody></table></div>' +
@@ -300,6 +320,11 @@
       '.mol-nph{font-weight:800;color:var(--ip-ink)}' +
       '.mol-ppht{color:var(--muted-2);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted-2) 50%,transparent);text-decoration-thickness:1px}' +
       '.mol-net{color:var(--ip-blue);font-weight:800;font-size:15px;background:color-mix(in srgb,var(--ip-blue) 5%,transparent);box-shadow:inset 2px 0 0 color-mix(in srgb,var(--ip-blue) 30%,transparent)}' +
+      // les 2 colonnes clés (Net remisé + Abandon de marge) ressortent dès l'en-tête
+      '.mol-table thead th.mol-key{color:var(--ip-blue);background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 7%,var(--card)),color-mix(in srgb,var(--ip-blue) 4%,var(--card-2,#f7f9fc)))}' +
+      '.mol-table thead th.mol-key small{color:color-mix(in srgb,var(--ip-blue) 70%,var(--muted-2)) !important}' +
+      // colonnes secondaires (CIP, PPHT, rotation, marge) allégées pour la hiérarchie
+      '.mol-table td.mol-cip,.mol-table td.mol-ppht{opacity:.85}' +
       '.mol-fam{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:11px;font-weight:700;letter-spacing:.01em;color:var(--fc);background:color-mix(in srgb,var(--fc) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fc) 24%,transparent);white-space:nowrap}' +
       '.mol-rem{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:12px;font-weight:800;font-family:var(--mono);letter-spacing:-.01em;color:var(--c-mint-txt,var(--c-opp));background:color-mix(in srgb,var(--c-opp) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c-opp) 26%,transparent)}' +
       // segs (familles)
@@ -308,18 +333,33 @@
       '.mol-segs .v2-seg.on{box-shadow:0 2px 8px color-mix(in srgb,var(--sc,var(--ip-blue)) 32%,transparent)}' +
       '.mol-segs .v2-seg .cnt{margin-left:6px;padding:1px 7px;border-radius:var(--r-pill,999px);font-family:var(--mono);font-size:11px;font-weight:800;color:var(--muted);background:color-mix(in srgb,var(--ip-ink) 7%,transparent)}' +
       '.mol-segs .v2-seg.on .cnt{background:color-mix(in srgb,#fff 24%,transparent);color:#fff;opacity:1}' +
-      // bars
-      '.mol-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:0 0 12px;padding:13px 16px;border-radius:var(--r-md,14px);background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 4.5%,#fff),#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 13%,var(--line));box-shadow:var(--sh-1)}' +
-      '.mol-bar-wait{opacity:.7;background:var(--card-2,#f7f9fc)}' +
-      '.mol-barlbl{position:relative;padding-left:13px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ip-blue)}' +
-      '.mol-barlbl::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:4px;height:14px;border-radius:2px;background:var(--ip-blue)}' +
+      // barre d'action principale (établissement + export PDF)
+      '.mol-toolbar{display:flex;align-items:flex-end;gap:14px 18px;flex-wrap:wrap;margin:14px 0 10px;padding:14px 16px;border-radius:var(--r-md,14px);background:linear-gradient(180deg,var(--card),var(--card-2,#f7f9fc));border:1px solid var(--line);box-shadow:var(--sh-1)}' +
+      '.mol-toolbar-l{display:flex;align-items:flex-end;gap:12px 16px;flex-wrap:wrap;flex:1;min-width:0}' +
+      '.mol-field{display:flex;flex-direction:column;gap:5px;min-width:220px}' +
+      '.mol-field-l{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}' +
+      '.mol-select{min-height:42px;border:1px solid var(--line-strong,#d7dbe6);border-radius:var(--r-btn,12px);background:#fff;color:var(--ip-ink);font-family:inherit;font-size:14.5px;font-weight:600;padding:0 12px;cursor:pointer;transition:border-color .14s var(--ease),box-shadow .14s var(--ease)}' +
+      '.mol-select:hover{border-color:color-mix(in srgb,var(--ip-blue) 35%,var(--line))}' +
+      '.mol-select:focus{outline:none;border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--line));box-shadow:0 0 0 3px var(--halo)}' +
+      '.mol-select-wait{display:flex;align-items:center;color:var(--muted);font-weight:500;opacity:.7;cursor:default}' +
+      '.mol-toolbar .mol-doc{min-height:42px;flex-shrink:0}' +
+      // options avancées repliées
+      '.mol-adv{margin:0 0 12px;border:1px solid var(--line);border-radius:var(--r-md,14px);background:var(--card-2,#f7f9fc);overflow:hidden}' +
+      '.mol-adv>summary{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;font-size:13.5px;font-weight:700;color:var(--ip-ink-2,var(--ip-ink));list-style:none;-webkit-tap-highlight-color:transparent}' +
+      '.mol-adv>summary::-webkit-details-marker{display:none}' +
+      '.mol-adv>summary::before{content:"▸";color:var(--muted);font-size:12px;transition:transform .16s var(--ease)}' +
+      '.mol-adv[open]>summary::before{transform:rotate(90deg)}' +
+      '.mol-adv>summary:hover{background:color-mix(in srgb,var(--ip-blue) 3%,transparent)}' +
+      '.mol-adv-hint{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted);font-family:var(--mono)}' +
+      '.mol-adv-body{padding:4px 16px 15px;display:flex;flex-direction:column;gap:11px;border-top:1px solid var(--line)}' +
+      '.mol-adv-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:11px}' +
       '.mol-chips{display:flex;gap:6px;flex-wrap:wrap}' +
       '.mol-chip{border:1px solid var(--line-strong,#d7dbe6);background:#fff;border-radius:var(--r-pill,999px);padding:6px 13px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .14s var(--ease),border-color .14s var(--ease),background .14s var(--ease),color .14s var(--ease),box-shadow .14s var(--ease)}' +
       '.mol-chip:hover{border-color:color-mix(in srgb,var(--ip-blue) 45%,var(--line));color:var(--ip-ink);background:color-mix(in srgb,var(--ip-blue) 4%,#fff)}' +
       '.mol-chip:active{transform:scale(.95)}' +
       '.mol-chip.on{background:var(--ip-blue);border-color:transparent;color:#fff;box-shadow:0 2px 8px color-mix(in srgb,var(--ip-blue) 32%,transparent)}' +
       '.mol-chip.on:hover{color:#fff;background:var(--ip-blue)}' +
-      '.mol-tgl{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ip-ink);cursor:pointer;margin-left:auto;padding:5px 11px;border-radius:var(--r-pill,999px);border:1px solid var(--line);background:#fff;transition:border-color .14s var(--ease),background .14s var(--ease)}' +
+      '.mol-tgl{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ip-ink);cursor:pointer;align-self:center;padding:9px 13px;border-radius:var(--r-btn,12px);border:1px solid var(--line);background:#fff;transition:border-color .14s var(--ease),background .14s var(--ease)}' +
       '.mol-tgl:hover{border-color:color-mix(in srgb,var(--ip-blue) 35%,var(--line));background:color-mix(in srgb,var(--ip-blue) 4%,#fff)}' +
       '.mol-tgl input{width:16px;height:16px;accent-color:var(--ip-blue)}' +
       '.mol-note{font-size:12px;color:var(--muted);margin:2px 0 8px;line-height:1.45}.mol-note b{color:var(--ip-ink-2,var(--ip-ink))}' +
@@ -332,7 +372,8 @@
         '#mol-q{font-size:16px}' +
         '.mol-search{position:sticky;top:0;z-index:20}' +
         '.mol-segs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}.mol-segs::-webkit-scrollbar{display:none}.mol-segs .v2-seg{flex:0 0 auto}' +
-        '.mol-bar{flex-direction:column;align-items:stretch;gap:8px}.mol-tgl{margin-left:0}.mol-doc{width:100%;justify-content:center}' +
+        '.mol-toolbar{flex-direction:column;align-items:stretch;gap:12px}.mol-toolbar-l{flex-direction:column;align-items:stretch;gap:10px}.mol-field{min-width:0}.mol-tgl{align-self:stretch;justify-content:flex-start}.mol-doc{width:100%;justify-content:center}' +
+        '.mol-adv-body .mol-doc{width:100%}' +
         '.mol-msort{display:flex;align-items:center;gap:10px}.mol-msort label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}.mol-msort select{flex:1;min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ip-ink);font-family:inherit;font-size:15px;padding:0 12px}' +
         '.mol-scroll{overflow-x:visible;border:none;border-radius:0;background:none;box-shadow:none}' +
         '.mol-table thead{position:absolute;left:-9999px}' +
@@ -350,7 +391,7 @@
       '}' +
       // accessibilité : mouvement réduit
       '@media(prefers-reduced-motion:reduce){' +
-        '.mol-search,.mol-chip,.mol-tgl,.mol-segs .v2-seg,.mol-table th.mol-th,.mol-table tbody tr,.mol-name span{transition:none !important}' +
+        '.mol-search,.mol-chip,.mol-tgl,.mol-segs .v2-seg,.mol-table th.mol-th,.mol-table tbody tr,.mol-name span,.mol-select,.mol-adv>summary::before{transition:none !important}' +
         '.mol-search:focus-within,.mol-chip:active,.mol-segs .v2-seg{transform:none !important}' +
       '}';
     document.head.appendChild(st);
