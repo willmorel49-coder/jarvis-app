@@ -105,14 +105,14 @@
     if (window.L && window.L.markerClusterGroup) { cb(); return; }
     if (leafletLoading) { setTimeout(function () { ensureLeaflet(cb); }, 250); return; }
     leafletLoading = true;
-    ['https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-     'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css',
-     'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css'].forEach(function (href) {
+    ['vendor/leaflet/leaflet.css',
+     'vendor/leaflet/MarkerCluster.css',
+     'vendor/leaflet/MarkerCluster.Default.css'].forEach(function (href) {
       var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l);
     });
-    var s1 = document.createElement('script'); s1.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    var s1 = document.createElement('script'); s1.src = 'vendor/leaflet/leaflet.js';
     s1.onload = function () {
-      var s2 = document.createElement('script'); s2.src = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';
+      var s2 = document.createElement('script'); s2.src = 'vendor/leaflet/leaflet.markercluster.js';
       s2.onload = function () { leafletLoading = false; cb(); };
       s2.onerror = function () { leafletLoading = false; cb(); };
       document.head.appendChild(s2);
