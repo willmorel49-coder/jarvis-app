@@ -55,6 +55,7 @@
   // ── Prix + stock par établissement (fiches marketing par établissement) ──
   var mktEtab = '';         // '' = tous établissements · sinon code (CPR, HP, MSP, OPS, POS, SEP, SOP)
   var etabStockOnly = false;
+  var catSortBy = 'pharma';   // 'pharma' = nb de pharmacies qui commandent · 'vol' = volume vendu
 
   // ════════════════════════════════════════════
   // STORE (Supabase partagé + repli local)
@@ -337,6 +338,7 @@
         var er = etabRec(r.cip); return !!(er && er[1] > 0);
       });
       if (!rowsArr.length) return '';
+      if (catSortBy === 'pharma') rowsArr.sort(function (a, b) { return (b.sortie || 0) - (a.sortie || 0) || (b.vol || 0) - (a.vol || 0); });
       var trs = rowsArr.map(function (r, i) {
         var er = etabRec(r.cip);
         var pval = (er && er[0] > 0) ? er[0] : r.p;
@@ -366,8 +368,10 @@
       }).join('');
       var midTh = (cur.k === 'itp') ? 'Marge/bte' : 'Sorties';
       var stockTh = showStock ? '<th class="num">Stock</th>' : '';
+      var cn = String(c.cat).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
       return '<div class="v2-card" style="margin-bottom:14px;padding:16px 18px">' +
-        '<div class="v2-card-t" style="margin-bottom:10px">' + esc(c.cat) + ' <span style="color:var(--muted);font-weight:500">· ' + rowsArr.length + '</span></div>' +
+        '<div class="mkt-cathead"><div class="v2-card-t">' + esc(c.cat) + ' <span style="color:var(--muted);font-weight:500">· ' + rowsArr.length + '</span></div>' +
+          '<button class="mkt-catlist-btn" onclick="V2.mkt.catList(\'' + cn + '\')" title="Créer une liste avec les produits les plus commandés de cette catégorie">' + ICO('plus', 14, 2.2) + 'Créer la liste</button></div>' +
         '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th></th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th>' + stockTh + '<th></th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
       '</div>';
     }).join('');
@@ -379,13 +383,18 @@
       '<div class="mkt-etabchips">' + etabBtns + '</div>' +
       (mktEtab ? '<label class="mkt-stocktgl"><input type="checkbox"' + (etabStockOnly ? ' checked' : '') + ' onchange="V2.mkt.catStockOnly(this.checked)"> En stock uniquement</label>' : '') +
       '</div>') : '';
+    var sortBar = '<div class="mkt-sortbar"><span class="mkt-sortlbl">Classer par</span>' +
+      '<button class="mkt-etabchip' + (catSortBy === 'pharma' ? ' on' : '') + '" onclick="V2.mkt.catSort(\'pharma\')">Nb de pharmacies</button>' +
+      '<button class="mkt-etabchip' + (catSortBy === 'vol' ? ' on' : '') + '" onclick="V2.mkt.catSort(\'vol\')">Volume vendu</button>' +
+      '</div>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap">' +
         '<button class="v2-back" style="margin-bottom:16px" onclick="V2.go(\'marketing\')">' + ICO('back', 16) + 'Marketing</button>' +
         '<div class="v2-page-title">Catalogues grossiste</div>' +
-        '<div class="v2-page-sub">L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent. Coche les <b>+</b> pour bâtir une fiche.</div>' +
+        '<div class="v2-page-sub">L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent. Bouton <b>« Créer la liste »</b> par catégorie = sélection parfaite des produits les plus commandés.</div>' +
         '<div class="mkt-pick-src" style="margin:16px 0 10px">' + tabs + '</div>' +
         etabBar +
+        sortBar +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
           '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.catPdf(\'' + cur.k + '\')">' + ICO('download', 16) + 'Générer le doc marketing (PDF)</button>' +
           (cur.pdf ? '<a class="v2-btn v2-btn-ghost" href="' + cur.pdf + '" download>' + ICO('download', 16) + 'Catalogue ' + esc(cur.label) + ' d\'origine</a>' : '') +
@@ -787,6 +796,33 @@
       catSel = [];
       V2.go('marketing', 'new-selection');
     },
+    catSort: function (mode) { catSortBy = (mode === 'vol') ? 'vol' : 'pharma'; V2.render(); },
+    // Liste parfaite d'une catégorie = produits les plus commandés (nb pharmacies), au prix de l'établissement choisi
+    catList: function (catName) {
+      var M = window.MKT_MIX || {};
+      var srcMap = { nr: 'nr', integral: 'integral', itp: 'itp', best: 'bestsellers' };
+      var data = M[srcMap[catSrc] || 'nr'] || [];
+      var c = null; for (var i = 0; i < data.length; i++) { if (data[i].cat === catName) { c = data[i]; break; } }
+      if (!c) { V2.toast('Catégorie introuvable', 'warn'); return; }
+      var rows = (c.rows || []).filter(function (r) {
+        if (!(mktEtab && etabStockOnly)) return true;
+        var er = etabRec(r.cip); return !!(er && er[1] > 0);
+      });
+      rows.sort(function (a, b) { return (b.sortie || 0) - (a.sortie || 0) || (b.vol || 0) - (a.vol || 0); });
+      rows = rows.slice(0, 20);
+      if (!rows.length) { V2.toast('Aucun produit en stock pour cette catégorie', 'warn'); return; }
+      var products = rows.map(function (r) {
+        var er = etabRec(r.cip); var price = (er && er[0] > 0) ? er[0] : (r.p || 0);
+        return { src: 'cat', key: String(r.cip || r.d), id: '', name: r.d, brand: '', ean: '',
+                 cip: r.cip ? String(r.cip) : '', price: price, remise: 0, img: catImg(r.cip) || '', froid: false, cat: catName };
+      });
+      var suffix = mktEtab ? ' · ' + mktEtab : '';
+      editing = { id: newId(), type: 'selection', title: catName + ' — top pharmacies' + suffix,
+                  accroche: 'Les ' + products.length + ' produits « ' + catName + ' » les plus commandés par les pharmacies' + (mktEtab ? ' (prix ' + mktEtab + ')' : '') + '.',
+                  footer: '', status: 'brouillon', products: products, theme: defaultTheme('selection'),
+                  owner: (V2.user && V2.user.email) || '', _new: 'selection' };
+      V2.go('marketing', 'new-selection');
+    },
     catPdf: function (srcKey) {
       if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
       var M = window.MKT_MIX || {};
@@ -1048,6 +1084,12 @@
       '.mkt-etabchip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
       '.mkt-stocktgl{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--ip-ink);cursor:pointer;margin-left:auto}',
       '.mkt-stocktgl input{width:16px;height:16px;accent-color:var(--ip-blue)}',
+      '.mkt-sortbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px}',
+      '.mkt-sortlbl{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}',
+      '.mkt-cathead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}',
+      '.mkt-catlist-btn{display:inline-flex;align-items:center;gap:5px;border:1px solid color-mix(in srgb,var(--c-mint) 45%,var(--line));background:color-mix(in srgb,var(--c-mint) 10%,#fff);color:#0f7a52;border-radius:9px;padding:6px 11px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.14s}',
+      '.mkt-catlist-btn:hover{background:var(--c-mint);color:#fff;border-color:var(--c-mint)}',
+      '.mkt-catlist-btn:active{transform:scale(.97)}',
       '.mkt-doc-bar{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap}',
       '.mkt-upl{position:relative;cursor:pointer}',
       '.mkt-upl input{position:absolute;inset:0;opacity:0;cursor:pointer}',
