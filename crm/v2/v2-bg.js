@@ -8,31 +8,53 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
-  var canvas = null, gl = null, raf = null, U = {}, t0 = 0;
+  var canvas = null, gl = null, raf = null, U = {}, t0 = 0, tLast = 0;
   var mx = 0.5, my = 0.55, tmx = 0.5, tmy = 0.55;
+  var FRAME_MS = 1000 / 40;   // cap ~40 fps : fond lent, économise le GPU (shader warp plus lourd)
   var REDUCED = false;
   try { REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
   var FRAG = [
-    'precision mediump float;',
+    'precision highp float;',
     'uniform float uT; uniform vec2 uR; uniform vec2 uM;',
+    // hash + valeur-noise interpolé cubiquement
     'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
     'float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);',
     ' return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);}',
-    'float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<5;i++){v+=a*noise(p);p*=1.9;a*=0.5;}return v;}',
+    // fbm 5 octaves + rotation par octave (casse l\'alignement en grille → flow plus organique)
+    'float fbm(vec2 p){float v=0.0,a=0.55; mat2 r=mat2(0.80,0.60,-0.60,0.80);',
+    ' for(int i=0;i<5;i++){v+=a*noise(p);p=r*p*1.92+vec2(1.7,9.2);a*=0.52;}return v;}',
     'void main(){',
     ' vec2 uv=gl_FragCoord.xy/uR.xy; vec2 p=uv; p.x*=uR.x/uR.y;',
-    ' float t=uT*0.04; vec2 m=(uM-0.5);',
-    ' vec2 q=vec2(fbm(p*1.4+vec2(0.0,t)+m*0.35), fbm(p*1.4+vec2(4.0,-t)));',
-    ' float f=fbm(p*1.6+1.5*q+t);',
-    ' float o=fbm(p*1.3-t+q);',
-    ' vec3 base=vec3(0.980,0.986,0.996);',
-    ' vec3 blue=vec3(0.0,0.314,0.902);',
-    ' vec3 orange=vec3(0.953,0.604,0.106);',
+    ' float t=uT*0.035; vec2 m=(uM-0.5);',
+    // ── domain warping en cascade (2 niveaux) : q déforme r qui déforme le champ final ──
+    ' vec2 q=vec2(fbm(p*1.25+vec2(0.0,t)+m*0.30), fbm(p*1.25+vec2(5.2,-t*0.8)));',
+    ' vec2 r=vec2(fbm(p*1.6+1.7*q+vec2(1.7,9.2)+0.15*t), fbm(p*1.6+1.7*q+vec2(8.3,2.8)-0.12*t));',
+    ' float f=fbm(p*1.5+2.4*r+0.6*t);',                 // nappe principale (flow noise)
+    ' float o=fbm(p*1.15-0.5*t+1.3*r+q);',              // nappe orange, plus lente/large
+    ' float warp=length(r);',                            // intensité du warp → rehausse les crêtes
+    // ── palette claire premium ──
+    ' vec3 base=vec3(0.984,0.988,0.996);',              // #FBFCFE
+    ' vec3 blue=vec3(0.0,0.314,0.902);',               // #0050E6
+    ' vec3 blueDeep=vec3(0.0,0.24,0.62);',             // teinte profonde pour le cœur des nappes
+    ' vec3 orange=vec3(0.953,0.604,0.106);',           // #F39A1B
     ' vec3 col=base;',
-    ' col=mix(col,blue,smoothstep(0.42,0.95,f+0.15*length(q))*0.15);',
-    ' col=mix(col,orange,smoothstep(0.58,1.0,o)*0.09);',
-    ' float d=distance(uv,uM); col=mix(col,blue,smoothstep(0.32,0.0,d)*0.05);',
+    // nappe bleue principale (deux passes → variation de teinte selon le warp = profondeur)
+    ' float mB=smoothstep(0.40,0.92,f+0.18*warp);',
+    ' col=mix(col,blue,mB*0.16);',
+    ' col=mix(col,blueDeep,smoothstep(0.62,1.0,f)*mB*0.07);',
+    // nappe orange, apparaît surtout là où le bleu recule (complémentarité douce)
+    ' float mO=smoothstep(0.55,1.0,o)*(1.0-mB*0.6);',
+    ' col=mix(col,orange,mO*0.085);',
+    // liseré lumineux sur les crêtes du warp → effet soyeux / iridescent très léger
+    ' float rim=smoothstep(0.75,1.0,warp);',
+    ' col+=blue*rim*0.03;',
+    // halo bleu doux qui suit la souris (interactivité subtile)
+    ' float d=distance(uv,uM); col=mix(col,blue,smoothstep(0.34,0.0,d)*0.05);',
+    // léger vignettage clair pour recentrer le regard sur le contenu',
+    ' float vig=smoothstep(1.25,0.35,length(uv-0.5)); col=mix(base,col,0.55+0.45*vig);',
+    // grain film discret (anti-banding sur les dégradés)',
+    ' float g=hash(gl_FragCoord.xy+fract(uT))-0.5; col+=g*0.012;',
     ' gl_FragColor=vec4(col,1.0);',
     '}'
   ].join('\n');
@@ -69,9 +91,12 @@
   function loop() {
     if (!V2.route || V2.route.name !== 'home') { cleanup(); return; }   // s'arrête en quittant l'accueil
     raf = requestAnimationFrame(loop);
-    if (document.hidden) return;
+    if (document.hidden) return;                                          // pause si onglet masqué
+    var now = performance.now();
+    if (now - tLast < FRAME_MS) return;                                   // cap FPS
+    tLast = now;
     mx += (tmx - mx) * 0.05; my += (tmy - my) * 0.05;
-    gl.uniform1f(U.uT, (performance.now() - t0) / 1000);
+    gl.uniform1f(U.uT, (now - t0) / 1000);
     gl.uniform2f(U.uM, mx, my);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
@@ -102,7 +127,7 @@
     resize();
     window.addEventListener('mousemove', onMove, { passive: true });
     window.addEventListener('resize', resize);
-    t0 = performance.now();
+    t0 = performance.now(); tLast = 0;
     loop();
   };
 

@@ -506,3 +506,105 @@ html{-webkit-tap-highlight-color:transparent}
   .v2-piliers .v2-pil:nth-child(4){animation-delay:.16s}
 }
 @keyframes moTileIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ════════════════════════════════════════════════════════════════
+   SIGNATURE PREMIUM — additif transversal (2026-07-01)
+   Skeleton/shimmer réutilisables · halo lumineux discret bleu marque ·
+   micro-brillance cohérente · finitions hover/active/focus.
+   Vanilla, tokens existants, AA, reduced-motion safe, theme-agnostic
+   (tout suit --accent/--ip-blue → n'impose aucune teinte, mode OPSO OK).
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── 1. États de chargement : skeleton + shimmer élégant ──
+   Remplace une zone vide. .v2-skel = bloc gris "creux" ; le sweep de
+   lumière balaie une seule fois puis boucle en douceur. Modificateurs
+   de forme réutilisables. Coupé sous prefers-reduced-motion (statique). */
+.v2-skel{position:relative;overflow:hidden;display:block;border-radius:var(--r-sm);
+  background:var(--surf-sunken);
+  box-shadow:0 0 0 1px var(--line-2) inset}
+.v2-skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,
+    transparent 0%,
+    color-mix(in srgb,var(--card) 92%,transparent) 45%,
+    color-mix(in srgb,var(--card) 96%,transparent) 50%,
+    color-mix(in srgb,var(--card) 92%,transparent) 55%,
+    transparent 100%);
+  animation:v2-shimmer 1.5s var(--ease-soft) infinite}
+/* teinte subliminale bleu marque dans la vague (signature, très discrète) */
+.v2-skel::before{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent 40%,color-mix(in srgb,var(--ip-blue) 6%,transparent) 50%,transparent 60%);
+  animation:v2-shimmer 1.5s var(--ease-soft) infinite}
+@keyframes v2-shimmer{100%{transform:translateX(100%)}}
+/* formes prêtes à l'emploi (hauteurs alignées sur l'échelle base-4) */
+.v2-skel-line{height:12px;border-radius:var(--r-pill);margin:0 0 var(--sp-2)}
+.v2-skel-line.sm{height:10px}
+.v2-skel-line.lg{height:16px}
+.v2-skel-line.w40{width:40%} .v2-skel-line.w60{width:60%} .v2-skel-line.w80{width:80%}
+.v2-skel-title{height:20px;width:52%;border-radius:var(--r-sm);margin:0 0 var(--sp-3)}
+.v2-skel-kpi{height:27px;width:64%;border-radius:var(--r-sm)}
+.v2-skel-chip{display:inline-block;height:22px;width:74px;border-radius:var(--r-pill);vertical-align:middle}
+.v2-skel-av{width:36px;height:36px;border-radius:50%}
+.v2-skel-ico{width:50px;height:50px;border-radius:15px}
+.v2-skel-block{height:100%;min-height:56px;border-radius:var(--r-md)}
+/* carte-fantôme : reprend l'enveloppe .v2-card sans son ombre portée */
+.v2-skel-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:var(--card-pad);box-shadow:var(--sh-1)}
+/* ligne de table en chargement : caler dans un <tr><td colspan>…</td></tr> */
+.v2-skel-row{display:flex;align-items:center;gap:var(--sp-3);padding:12px 20px;border-bottom:1px solid var(--line-2)}
+.v2-skel-row .v2-skel-line{margin:0}
+@media (prefers-reduced-motion:reduce){
+  .v2-skel::after,.v2-skel::before{animation:none;transform:none;opacity:.6}
+}
+
+/* ── 2. Halo lumineux discret (bleu marque) au survol ──
+   Cartes primaires + bouton primaire. Un liseré-lumière + une aura très
+   basse opacité qui "s'allume" au hover. Sur .v2-pil, on suit --accent
+   (chaque outil sa lumière) ; ailleurs, bleu marque. Aucune teinte forcée. */
+.v2-pil,.v2-kpi,.v2-search,.v2-btn-primary{position:relative}
+/* aura douce (pseudo dédié pour ne pas écraser les ::before existants) */
+.v2-pil::after,.v2-search::after{content:"";position:absolute;inset:-1px;border-radius:inherit;
+  pointer-events:none;opacity:0;transition:opacity .3s var(--ease-soft);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent,var(--ip-blue)) 34%,transparent),
+             0 0 22px color-mix(in srgb,var(--accent,var(--ip-blue)) 16%,transparent)}
+.v2-pil:hover::after,.v2-search:hover::after,.v2-search:focus-within::after{opacity:1}
+/* KPI : liseré-halo latéral qui s'intensifie au survol (garde le filet ::before) */
+.v2-kpi{transition:box-shadow .28s var(--ease),transform .28s var(--ease),border-color .28s var(--ease-soft)}
+.v2-kpi:hover{transform:translateY(-2px);
+  border-color:color-mix(in srgb,var(--accent,var(--ip-blue)) 24%,var(--line));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent,var(--ip-blue)) 14%,transparent),
+             0 6px 16px color-mix(in srgb,var(--accent,var(--ip-blue)) 10%,rgba(16,19,28,.06)),
+             var(--sh-2)}
+
+/* Bouton primaire : glow bleu marque discret + micro-brillance de surface.
+   Superpose au --sh-blue existant sans le remplacer. */
+.v2-btn-primary{isolation:isolate}
+.v2-btn-primary::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),transparent 30%);
+  opacity:.85;transition:opacity .22s var(--ease-soft)}
+.v2-btn-primary:hover{box-shadow:var(--sh-blue-h),0 0 24px color-mix(in srgb,var(--ip-blue) 22%,transparent)}
+.v2-btn-primary:hover::after{opacity:1}
+.v2-btn-primary:active::after{opacity:.6}
+.v2-btn-primary > *{position:relative;z-index:2}
+
+/* ── 3. Micro-brillance cohérente (haut-lumière subtil, signature) ──
+   Fin liseré lumineux en tête des surfaces primaires au survol. */
+.v2-pil::before,.v2-search{will-change:auto}
+
+/* ── 4. Finitions hover/active/focus encore plus nettes ──
+   Cartes primaires : ressort d'appui homogène. Focus-visible marque
+   renforcé sur les surfaces primaires (halo net, AA). */
+.v2-pil:active,.v2-kpi:active{transform:translateY(0) scale(.994);transition-duration:.08s}
+.v2-pil:focus-visible,.v2-kpi:focus-visible,.v2-search:focus-visible{outline:none;
+  box-shadow:0 0 0 2px var(--card),
+             0 0 0 4px color-mix(in srgb,var(--accent,var(--ip-blue)) 55%,transparent),
+             var(--sh-2)}
+/* Boutons ghost : halo bleu marque très léger au survol (cohérence primaire) */
+.v2-btn-ghost:hover{box-shadow:var(--sh-2),0 0 0 3px color-mix(in srgb,var(--ip-blue) 8%,transparent)}
+/* Rows/chips : transition d'appui plus nette au relâchement */
+.v2-row:active{transition-duration:.06s}
+.v2-rchip:active{transform:translateY(0) scale(.97);transition-duration:.06s}
+
+@media (prefers-reduced-motion:reduce){
+  .v2-pil::after,.v2-search::after,.v2-btn-primary::after{transition:none}
+  .v2-kpi:hover,.v2-pil:active,.v2-kpi:active{transform:none}
+}
