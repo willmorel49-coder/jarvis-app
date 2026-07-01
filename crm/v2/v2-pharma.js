@@ -954,8 +954,9 @@
         '</div>' : '') +
       '</div>';
 
-    // ── Bloc STATS (pour le RDV) — sections repliables ──
-    if (!('activity' in sectionCollapsed)) sectionCollapsed['activity'] = false; // Activité ouverte par défaut
+    // ── Bloc STATS (pour le RDV) — sections repliables, repliées par défaut ──
+    // Métamorphose « Launcher » : on ne montre plus tout d'un coup. L'essentiel = quoi
+    // proposer (les listes à pousser). L'activité détaillée reste à un clic, repliée.
     var stats = '<div class="ph-stats">' + activitySection(sales, marge, ca) + topByCatSection(sales) + '</div>';
 
     // ── Deux propositions de liste d'achats (PDF) ──
@@ -996,7 +997,7 @@
         '<td class="phf-tc"><span class="phf-sortie"><span class="mono phf-sortie-n">' + r.sortie + '/' + rot.total + '</span><span class="phf-bar"><i style="width:' + pct + '%"></i></span></span></td>' +
       '</tr>';
     }).join('');
-    var listing = rot.rows.length ? '<div class="v2-card" style="padding:0;overflow:hidden;margin-top:8px">' +
+    var listingBody = rot.rows.length ? '<div class="v2-card" style="padding:0;overflow:hidden;margin-top:8px">' +
       '<div class="phf-phead" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">' +
         '<div><div class="phf-ptitle"><span class="phf-pdot" style="background:var(--c-opp)"></span>Best rotations ' + (rot.isGrp ? 'de son groupement · ' + esc(rot.name) : 'du réseau') + '</div>' +
           '<div class="phf-psub">les produits les plus commandés par ' + (rot.isGrp ? 'son groupement' : 'le réseau') + ' — ce qu\'elle a déjà et ce qu\'il reste à pousser</div></div>' +
@@ -1010,15 +1011,27 @@
       '</tr></thead><tbody>' + rotRows + '</tbody></table></div>' +
       '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + ' à pousser</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? 'du groupement' : 'du réseau') + '.</div>' +
     '</div>' : '';
+    // Tableau détaillé = secondaire : replié derrière un « Voir plus », comme l'accueil Launcher.
+    var listing = rot.rows.length ? (function () {
+      var open = sectionOpen('bestrot');
+      return '<div class="ph-section">' +
+        sectionHead('Voir le détail produit par produit', 'ce qu\'elle a déjà et ce qu\'il reste à pousser, ligne par ligne', 'bestrot', open) +
+        (open ? listingBody : '') +
+      '</div>';
+    })() : '';
 
     // ── Hub à onglets : l'en-tête reste fixe, le contenu bascule Vue d'ensemble / Audit ──
-    var apercu = stats +
-      sectionHead('Listes d\'achats à pousser', 'deux propositions prêtes à générer en PDF pour le rendez-vous') +
-      props + listing;
+    // Hiérarchie « Launcher » : d'abord L'ACTION évidente (quoi lui proposer, en bleu),
+    // ensuite seulement le contexte (activité, top 5, détail) — tout replié à un clic.
+    var apercu =
+      sectionHead('Quoi lui proposer', 'ta liste d\'achats prête à sortir en PDF pour le rendez-vous') +
+      props +
+      listing +
+      stats;
     var auditTab = (V2.audit && window.WML_SALES && window.PROD_STATS)
       ? '<div id="aud">' + V2.audit.sheetFor(pid) + V2.audit.importSection() + '</div>' : '';
     var tabs = '<div class="ph-fiche-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px">' +
-      '<button class="ph-vtab on" id="phft-apercu" onclick="V2.phFicheTab(\'apercu\')">' + ICO('pharma', 15, 2) + 'Vue d\'ensemble & opportunités</button>' +
+      '<button class="ph-vtab on" id="phft-apercu" onclick="V2.phFicheTab(\'apercu\')">' + ICO('pharma', 15, 2) + 'Quoi lui proposer</button>' +
       (auditTab ? '<button class="ph-vtab" id="phft-audit" onclick="V2.phFicheTab(\'audit\')">' + ICO('pilo', 15, 2) + 'Audit marge</button>' : '') +
       '</div>';
 
@@ -2502,6 +2515,12 @@
       '.phf-tab.on .phf-fam-ct{background:rgba(255,255,255,.22);color:#fff}',
       '.phf-phead{display:block}',
       '.ph-stats .ph-section{margin-bottom:18px}',
+      /* Métamorphose « Launcher » : rythme aéré dans la fiche officine. */
+      '#phft-c-apercu>.v2-section-head{margin-top:var(--section-gap,28px)}',
+      '#phft-c-apercu>.v2-section-head:first-child{margin-top:6px}',
+      '#phft-c-apercu>.ph-section{margin-top:var(--section-gap,28px)}',
+      '#phft-c-apercu>.ph-stats{margin-top:var(--section-gap,28px)}',
+      '#phft-c-apercu .phf-props{margin-top:12px}',
       '@media(max-width:640px){.phf-bar2r{margin-left:0;width:100%}.phf-bar2 .phf-pdf{flex:1;justify-content:center}}',
       '.phf-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden;min-width:0}',
       '.phf-phead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}',
