@@ -101,17 +101,27 @@
   // ── Créer une sélection marketing (liste parfaite) depuis la vue courante ──
   V2.molList = function () {
     if (!V2.mkt || !V2.mkt.newSelection) { if (V2.toast) V2.toast('Marketing indisponible'); return; }
-    var data = baseData().slice();
-    data.sort(function (a, b) { return (b.n || 0) - (a.n || 0) || (b.rota || 0) - (a.rota || 0); });   // top nb pharmacies
-    var n = S.perCat > 0 ? S.perCat : data.length;
-    data = data.slice(0, (S.chip === 'all') ? Math.max(n, 20) : n);
-    if (!data.length) { if (V2.toast) V2.toast('Aucun produit'); return; }
-    var famLabel = (S.chip !== 'all' && FAM_BY[S.chip]) ? FAM_BY[S.chip].label : 'Top produits';
+    var perCat = S.perCat > 0 ? S.perCat : 9999;   // nb de produits PAR catégorie sur la fiche
+    var fams = (S.chip === 'all') ? FAM_ORDER : [S.chip];
+    var q = S.q.trim().toLowerCase();
+    var products = [];
+    fams.forEach(function (k) {
+      var rows = (window.PROD_STATS || []).filter(function (r) { return r.f === k; });
+      if (q) rows = rows.filter(function (r) { return (r.d || '').toLowerCase().indexOf(q) >= 0 || (r.c || '').indexOf(q) >= 0; });
+      if (S.etab && S.stockOnly) rows = rows.filter(function (r) { var er = etabRec(r.c); return !!(er && er[1] > 0); });
+      rows.sort(function (a, b) { return (b.n || 0) - (a.n || 0) || (b.rota || 0) - (a.rota || 0); });   // top nb pharmacies
+      rows.slice(0, perCat).forEach(function (r) {
+        var er = etabRec(r.c); var px = (er && er[0] > 0) ? er[0] : 0;
+        products.push({ src: 'cat', key: String(r.c), id: '', name: r.d, brand: '', ean: '', cip: String(r.c), price: px, remise: 0, img: '', froid: false, cat: (FAM_BY[k] && FAM_BY[k].label) || '' });
+      });
+    });
+    if (!products.length) { if (V2.toast) V2.toast('Aucun produit'); return; }
     var suffix = S.etab ? ' · ' + S.etab : '';
-    var products = data.map(function (r) { var er = etabRec(r.c); var px = (er && er[0] > 0) ? er[0] : 0;
-      return { src: 'cat', key: String(r.c), id: '', name: r.d, brand: '', ean: '', cip: String(r.c), price: px, remise: 0, img: '', froid: false, cat: famLabel }; });
-    V2.mkt.newSelection(famLabel + ' — top pharmacies' + suffix,
-      'Les ' + products.length + ' ' + famLabel.toLowerCase() + ' les plus commandés par les pharmacies' + (S.etab ? ' (prix ' + S.etab + ')' : '') + '.', products);
+    var title = (S.chip === 'all')
+      ? ('Top ' + (S.perCat > 0 ? S.perCat + ' ' : '') + 'par catégorie' + suffix)
+      : ((FAM_BY[S.chip] ? FAM_BY[S.chip].label : 'Top produits') + ' — top pharmacies' + suffix);
+    V2.mkt.newSelection(title,
+      'Les meilleures ventes par catégorie (par nb de pharmacies qui commandent)' + (S.etab ? ' — prix ' + S.etab : '') + '.', products);
   };
 
   // ── Document PDF : top N par catégorie ──
@@ -196,7 +206,7 @@
         (S.etab ? '<label class="mol-tgl"><input type="checkbox"' + (S.stockOnly ? ' checked' : '') + ' onchange="V2.molStockOnly(this.checked)"> En stock uniquement</label>' : '') + '</div>') : '';
       var PERCATS = [3, 5, 10, 15, 0];
       var perBtns = PERCATS.map(function (n) { return '<button class="mol-chip' + (S.perCat === n ? ' on' : '') + '" onclick="V2.molPerCat(' + n + ')">' + (n === 0 ? 'Tous' : n) + '</button>'; }).join('');
-      var docBar = '<div class="mol-bar"><span class="mol-barlbl">Produits/catégorie sur le doc</span><div class="mol-chips">' + perBtns + '</div>' +
+      var docBar = '<div class="mol-bar"><span class="mol-barlbl">Produits par catégorie (doc &amp; fiche)</span><div class="mol-chips">' + perBtns + '</div>' +
         '<button class="v2-btn v2-btn-primary mol-doc" onclick="V2.molPdf()">' + ICO('download', 15) + 'Générer le doc — top ' + (S.perCat > 0 ? S.perCat : 'tous') + '/catégorie</button>' +
         '<button class="v2-btn v2-btn-ghost mol-doc" onclick="V2.molList()">' + ICO('plus', 15) + 'Créer la liste' + (S.chip !== 'all' ? ' (' + esc(FAM_SHORT[S.chip] || '') + ')' : '') + '</button></div>';
       var th = function (col) { return '<th class="num mol-th' + (S.sort === col.k ? ' on' : '') + '" data-k="' + col.k + '" onclick="V2.molSort(\'' + col.k + '\')" style="cursor:pointer;white-space:nowrap">' + col.l + '<small style="display:block;font-weight:500;color:var(--muted-2)">' + col.sub + ' ↕</small></th>'; };
