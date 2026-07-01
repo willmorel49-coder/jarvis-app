@@ -293,7 +293,7 @@
       '.mol-cip{color:var(--muted);font-size:11.5px;width:1%;white-space:nowrap}' +
       '.mol-nph{font-weight:800}' +
       '.mol-ppht{color:var(--muted-2);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted-2) 55%,transparent)}' +
-      '.mol-net{color:var(--ip-blue);font-weight:800;font-size:14px}' +
+      '.mol-net{color:var(--ip-blue);font-weight:800;font-size:15px;background:color-mix(in srgb,var(--ip-blue) 4%,transparent)}' +
       '.mol-fam{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;color:var(--fc);background:color-mix(in srgb,var(--fc) 14%,transparent);white-space:nowrap}' +
       '.mol-rem{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:800;font-family:var(--mono);color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 13%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c-opp) 22%,transparent)}' +
       // segs (familles)
