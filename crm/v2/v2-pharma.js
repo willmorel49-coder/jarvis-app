@@ -943,10 +943,10 @@
           (loc ? '<div class="phf-hloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
         '</div>' +
         '<div class="phf-hkpis">' +
+          kpi('À pousser', V2.fmtNum(nReseau), 'phf-push', nReseau) +
           kpi('CA cumulé', V2.fmtEur(ca), '', ca) +
           kpi('Marge MDL', V2.fmtEur(marge), 'phf-pos', marge) +
           kpi('Références', V2.fmtNum(nbRefs), '', nbRefs) +
-          kpi('À pousser', V2.fmtNum(nReseau), 'phf-push', nReseau) +
         '</div>' +
         ((tel || email) ? '<div class="phf-hcontacts">' +
           (tel ? '<a class="phf-cbtn2" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
@@ -2469,7 +2469,8 @@
       '.phf-hkpi-l{display:block;font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}',
       '.phf-hkpi-v{display:block;font-size:17px;font-weight:800;letter-spacing:-.01em;margin-top:2px}',
       '.phf-hkpi-v.phf-pos{color:var(--c-opp)}',
-      '.phf-hkpi-v.phf-push{color:var(--ip-blue)}',
+      '.phf-hkpi-v.phf-push{color:var(--c-amber);font-size:19px}',
+      '.phf-hkpi:has(.phf-push){background:color-mix(in srgb,var(--c-amber) 12%,#fff);border-color:color-mix(in srgb,var(--c-amber) 32%,var(--line))}',
       '.phf-hcontacts{display:flex;gap:8px}',
       '.phf-cbtn2{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ip-blue);background:var(--card-2);border:1px solid var(--line-strong);border-radius:var(--r-btn);padding:9px 12px;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s}',
       '.phf-cbtn2:hover{background:#fff;border-color:var(--ip-blue)}',
