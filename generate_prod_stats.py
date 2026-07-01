@@ -72,12 +72,14 @@ t = open(WML, encoding='utf-8').read()
 sales = json.loads(re.search(r'WML_SALES\s*=\s*(\[.*?\]);', t, re.S).group(1))
 NM = len(set(s[1] for s in sales if len(s) > 1 and s[1])) or 5   # nb de mois distincts
 
-ag = defaultdict(lambda: {'qte': 0.0, 'ph': set(), 'ca': 0.0, 'tarif': 0.0, 'marge': 0.0})
+ag = defaultdict(lambda: {'qte': 0.0, 'ph': set(), 'ca': 0.0, 'tarif': 0.0, 'marge': 0.0, 'pw': 0.0, 'pn': 0.0})
 for s in sales:                       # [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
     c = str(s[3]); nfo = info.get(c)
     if not nfo: continue
-    qte = s[4] or 0; ca = s[6] or 0; a = ag[c]
+    qte = s[4] or 0; ca = s[6] or 0; pu = s[5] or 0; a = ag[c]
     a['qte'] += qte; a['ph'].add(str(s[0])); a['ca'] += ca
+    if qte > 0 and pu > 0:            # prix net remisé = puNet pondéré, RETOURS EXCLUS (fiable)
+        a['pw'] += pu * qte; a['pn'] += qte
     if nfo['ppht'] > 0:
         a['tarif'] += nfo['ppht'] * qte
         if nfo['remb']: a['marge'] += mdl(nfo['ppht']) * qte
@@ -85,24 +87,27 @@ for s in sales:                       # [pharmacyId, mois, comm, cip13, qte, puN
 rows = []
 for c, a in ag.items():
     nph = len(a['ph'])
-    if nph < 3: continue
+    if nph < 2: continue             # >=2 pharmacies (large : tous commerciaux)
     k = 12.0 / NM / nph               # -> par pharmacie / an
-    net = (a['ca'] / a['qte']) if a['qte'] else 0   # prix net achat moyen / boite
+    net = (a['pw'] / a['pn']) if a['pn'] > 0 else ((a['ca'] / a['qte']) if a['qte'] else 0)
     ppht = round(info[c]['ppht'], 2)
-    net_u = round(net, 2)                          # prix net remisé réel (CA/qté)
-    rem_pct = round((ppht - net_u) / ppht * 100, 1) if (ppht > 0 and net_u > 0 and net_u <= ppht) else 0
+    net_u = round(net, 2)                          # prix net remisé réel
+    stale = 1 if (ppht > 0 and net_u > ppht) else 0   # PPHT du fichier périmé (< net réel)
+    pp_eff = ppht if (ppht > 0 and not stale) else net_u
+    rem_pct = round((pp_eff - net_u) / pp_eff * 100, 1) if (pp_eff > 0 and 0 < net_u <= pp_eff) else 0
     rows.append({
         'c': c, 'd': info[c]['d'][:46], 'n': nph,
         'f': famille(c, info[c]['ppht'], net, info[c]['remb'], info[c]['nat']),
         'ppht': ppht,                              # PPHT tarif grossiste
-        'net': net_u,                              # prix net remisé (réel achat)
+        'net': net_u,                              # prix net remisé (réel achat, hors retours)
         'rpct': rem_pct,                           # % de remise (PPHT → net)
+        'stale': stale,                            # 1 = PPHT fichier à rafraîchir
         'rota': round(a['qte'] * k),
         'marge': round(a['marge'] * k),
         'remise': round(max(0, a['tarif'] - a['ca']) * k),
         'ca': round(a['ca'] * k),
     })
-rows.sort(key=lambda r: -r['rota'])
+rows.sort(key=lambda r: (-r['n'], -r['rota']))     # classé par nb de pharmacies
 
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write('// Stats reseau PAR PRODUIT (CIP) — rotation/marge/remise/CA par pharmacie/an — generate_prod_stats.py\n')
