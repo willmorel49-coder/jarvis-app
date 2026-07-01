@@ -136,7 +136,7 @@
   // ── Store prix/stock par établissement (etab-prices-data.js → window.ETAB_PRICES) ──
   function ensureEtab(cb) {
     if (window.ETAB_PRICES) { cb(); return; }
-    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260701e1';
+    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260701f1';
     s.onload = function () { cb(); }; s.onerror = function () { cb(); };
     document.head.appendChild(s);
   }
@@ -349,7 +349,7 @@
   function renderSite(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#fff">' +
-        '<iframe src="../../site-integral/index-typo.html?v=20260701e" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/index-typo.html?v=20260701f" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -359,7 +359,7 @@
   function renderPropositions(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/propositions/index.html?v=20260701e" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/propositions/index.html?v=20260701f" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -369,7 +369,7 @@
   function renderFxBank(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#06080F">' +
-        '<iframe src="../../site-integral/fx-bank/index.html?v=20260701e" title="FX-BANK — banque d\'effets" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/fx-bank/index.html?v=20260701f" title="FX-BANK — banque d\'effets" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
