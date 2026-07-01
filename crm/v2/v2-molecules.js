@@ -100,7 +100,7 @@
         '<td class="num mono mol-nph" data-label="Pharmacies">' + num(r.n) + '</td>' +
         pphtTd +
         '<td class="num mono mol-net" data-label="Net remisé">' + (p.net > 0 ? eur(p.net) : '—') + '</td>' +
-        '<td class="num" data-label="Remise">' + (p.rpct > 0 ? '<span class="mol-rem">−' + String(p.rpct).replace('.', ',') + '%</span>' : '<span style="color:var(--muted-2)">—</span>') + '</td>' +
+        '<td class="num" data-label="Abandon de marge">' + (p.rpct > 0 ? '<span class="mol-rem">−' + String(p.rpct).replace('.', ',') + '%</span>' : '<span style="color:var(--muted-2)">—</span>') + '</td>' +
         COLS.map(function (c) { return '<td class="num mono" data-label="' + esc(c.l) + '"' + (c.accent ? ' style="color:' + c.accent + ';font-weight:800"' : '') + '>' + c.fmt(r[c.k] || 0) + '</td>'; }).join('') +
         stockTd +
       '</tr>';
@@ -184,7 +184,7 @@
       return '<div style="margin-bottom:14px;page-break-inside:avoid">' +
         '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(90deg,' + FAM_BY[k].sc + '22,transparent);border-left:4px solid ' + FAM_BY[k].sc + ';border-radius:5px;margin-bottom:4px">' +
           '<div style="font-size:12.5px;font-weight:800;color:#10131C">' + esc(FAM_BY[k].label) + '</div>' +
-          '<div style="margin-left:auto;text-align:right;font-size:10px;color:#0f7a52;font-weight:800">' + (avgR > 0 ? 'remise moy. −' + String(avgR).replace('.', ',') + '% · éco. −' + e2(sEco) : 'top ' + rows.length) + '</div></div>' +
+          '<div style="margin-left:auto;text-align:right;font-size:10px;color:#0f7a52;font-weight:800">' + (avgR > 0 ? 'abandon moy. −' + String(avgR).replace('.', ',') + '% · éco. −' + e2(sEco) : 'top ' + rows.length) + '</div></div>' +
         '<table style="width:100%;border-collapse:collapse"><thead style="display:table-header-group"><tr style="background:#F4F6FB">' +
           ths.map(function (h, ci) { return '<th style="padding:4px 7px;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#737A8C;text-align:' + (ci < 3 ? 'left' : 'right') + '">' + h + '</th>'; }).join('') +
         '</tr></thead><tbody>' + trs + '</tbody></table></div>';
@@ -193,7 +193,7 @@
     var gAvg = gN ? Math.round(gR / gN * 10) / 10 : 0;
     var synth = '<div style="display:flex;gap:10px;margin-bottom:14px">' +
       '<div style="flex:1;padding:10px 14px;background:#F4F6FB;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:800;color:#0050E6">' + gProd + '</div><div style="font-size:9px;color:#737A8C;text-transform:uppercase">produits sélectionnés</div></div>' +
-      '<div style="flex:1;padding:10px 14px;background:#EAF7F1;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:800;color:#0f7a52">−' + String(gAvg).replace('.', ',') + '%</div><div style="font-size:9px;color:#737A8C;text-transform:uppercase">remise moyenne réseau</div></div>' +
+      '<div style="flex:1;padding:10px 14px;background:#EAF7F1;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:800;color:#0f7a52">−' + String(gAvg).replace('.', ',') + '%</div><div style="font-size:9px;color:#737A8C;text-transform:uppercase">abandon de marge moyen</div></div>' +
       '<div style="flex:1;padding:10px 14px;background:#EAF7F1;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:800;color:#0f7a52">−' + e2(gEco) + '</div><div style="font-size:9px;color:#737A8C;text-transform:uppercase">économie cumulée</div></div></div>';
     var subt = 'Top ' + (perCat > 0 ? perCat + ' ' : '') + 'par catégorie · classé par nb de pharmacies qui commandent' + (S.etab ? ' · prix &amp; stock ' + esc(S.etab) : ' · prix net indicatif');
     var html = '<div style="padding:18px 22px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
@@ -248,7 +248,7 @@
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap">' +
           '<div class="v2-page-title">Catalogue &amp; prix</div>' +
-          '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent : PPHT, ton prix net remisé, remise, rotation, marge pharmacien, + stock par établissement. Génère un doc « top par catégorie » ou une liste marketing.</div>' +
+          '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent : PPHT, ton prix net remisé, abandon de marge, rotation, marge pharmacien, + stock par établissement. Génère un doc « top par catégorie » ou une liste marketing.</div>' +
           '<div class="mol-search"><span>' + ICO('search', 18) + '</span><input id="mol-q" type="search" placeholder="Chercher un produit ou un CIP (doliprane, 3400…)" value="' + qVal + '" oninput="V2.molSearch(this.value)" autocomplete="off"></div>' +
           '<div class="v2-segs mol-segs">' + chips + '</div>' +
           etabBar + docBar +
@@ -259,7 +259,7 @@
             '<th class="num mol-th' + (S.sort === 'n' ? ' on' : '') + '" data-k="n" onclick="V2.molSort(\'n\')" style="cursor:pointer">Pharmacies<small style="display:block;font-weight:500;color:var(--muted-2)">réseau ' + (S.sort === 'n' ? '↓' : '↕') + '</small></th>' +
             '<th class="num">PPHT<small style="display:block;font-weight:500;color:var(--muted-2)">tarif</small></th>' +
             '<th class="num">Net remisé<small style="display:block;font-weight:500;color:var(--muted-2)">réel</small></th>' +
-            '<th class="num">Remise</th>' +
+            '<th class="num">Abandon<small style="display:block;font-weight:500;color:var(--muted-2)">de marge</small></th>' +
             COLS.map(th).join('') +
             (showStock ? '<th class="num">Stock</th>' : '') +
           '</tr></thead><tbody id="mol-tbody">' + rowsHtml() + '</tbody></table></div>' +
