@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Sparkles & Meteors</title>
+<!--
+/* FX-BANK · SPARKLES & METEORS
+   QUOI : Étincelles scintillantes (opacity/scale, délais variés) + météores (traits diagonaux qui défilent en translate).
+   QUAND : Overlay de hero, header de section premium, fond de CTA — donne de la vie sans surcharger.
+   DEPENDANCES : aucune (étoiles + météores générés en JS).
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+   COPIER : le bloc entre les balises <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  /* ---- Styles de DÉMO uniquement ---- */
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+    background:radial-gradient(120% 120% at 50% 0%,#141b33 0%,#0A0E1A 60%);
+    color:#F8FAFC;display:grid;place-items:center;min-height:100vh;overflow:hidden;
+  }
+  .demo-content{position:relative;z-index:2;text-align:center;padding:2rem}
+  .demo-content h1{font-size:clamp(2rem,6vw,4.5rem);font-weight:800;letter-spacing:-.03em}
+  .demo-content p{margin-top:1rem;opacity:.65}
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<!-- ===================== FX : SPARKLES & METEORS ===================== -->
+<!-- 1) Place ce conteneur en 1er enfant de la zone à décorer (parent en position:relative). -->
+<div class="fx-sky" data-fx-sky aria-hidden="true"></div>
+
+<style>
+/* --- VARIABLES À CHANGER : couleurs, densité gérée en JS ci-dessous --- */
+:root{
+  --sky-star:#F8FAFC;        /* couleur des étincelles */
+  --sky-meteor:#F39A1B;      /* couleur/tête des météores (orange marque) */
+}
+.fx-sky{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+
+/* Étincelle : point qui pulse en opacity + scale, chaque instance a ses délais inline. */
+.fx-sky__star{
+  position:absolute;width:2px;height:2px;border-radius:50%;
+  background:var(--sky-star);opacity:0;will-change:transform,opacity;
+  animation:fx-twinkle 3s ease-in-out infinite;
+}
+@keyframes fx-twinkle{
+  0%,100%{opacity:0;transform:scale(.4)}
+  50%    {opacity:.9;transform:scale(1.4)}
+}
+/* Météore : trait diagonal (gradient) translaté en travers, avec traînée. */
+.fx-sky__meteor{
+  position:absolute;top:-10%;width:120px;height:1px;
+  background:linear-gradient(90deg,var(--sky-meteor),transparent);
+  will-change:transform,opacity;transform:rotate(38deg);
+  animation:fx-meteor linear infinite;
+}
+.fx-sky__meteor::before{
+  content:"";position:absolute;top:-1px;left:0;width:3px;height:3px;border-radius:50%;
+  background:var(--sky-meteor);box-shadow:0 0 6px 1px var(--sky-meteor);
+}
+@keyframes fx-meteor{
+  0%  {transform:translate(0,0) rotate(38deg);opacity:0}
+  10% {opacity:1}
+  70% {opacity:1}
+  100%{transform:translate(60vw,90vh) rotate(38deg);opacity:0}
+}
+@media (prefers-reduced-motion: reduce){
+  .fx-sky__star,.fx-sky__meteor{animation:none !important;opacity:.5}
+  .fx-sky__meteor{display:none}
+}
+</style>
+
+<script>
+/* Génère étincelles + météores. Change STAR_COUNT / METEOR_COUNT pour la densité. */
+(function(){
+  var sky=document.querySelector('[data-fx-sky]');
+  if(!sky) return;
+  var STAR_COUNT=48, METEOR_COUNT=6;
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var frag=document.createDocumentFragment();
+  for(var i=0;i<STAR_COUNT;i++){
+    var s=document.createElement('span');s.className='fx-sky__star';
+    s.style.left=(Math.random()*100)+'%';
+    s.style.top=(Math.random()*100)+'%';
+    s.style.animationDelay=(Math.random()*3).toFixed(2)+'s';
+    s.style.animationDuration=(2+Math.random()*3).toFixed(2)+'s';
+    frag.appendChild(s);
+  }
+  if(!reduce){
+    for(var m=0;m<METEOR_COUNT;m++){
+      var mt=document.createElement('span');mt.className='fx-sky__meteor';
+      mt.style.left=(Math.random()*90)+'%';
+      mt.style.top=(-10+Math.random()*30)+'%';
+      mt.style.animationDelay=(Math.random()*8).toFixed(2)+'s';
+      mt.style.animationDuration=(3+Math.random()*4).toFixed(2)+'s';
+      frag.appendChild(mt);
+    }
+  }
+  sky.appendChild(frag);
+})();
+</script>
+<!-- ===================== /FX : SPARKLES & METEORS ==================== -->
+<!-- FX:COPY:END -->
+
+<div class="demo-content">
+  <h1>Ciel étoilé animé</h1>
+  <p>Étincelles + météores en overlay — 100% CSS/JS, stable Safari.</p>
+</div>
+
+</body>
+</html>

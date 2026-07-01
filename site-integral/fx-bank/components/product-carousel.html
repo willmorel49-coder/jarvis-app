@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Product Carousel</title>
+<!--
+/* FX-BANK · PRODUCT CAROUSEL
+   QUOI : Carrousel showcase de produits dont le THÈME (fond + accent) change en douceur par item.
+   QUAND : Landing produit, showcase gamme, section « nos best-sellers » façon Ciao Kombucha.
+   DEPENDANCES : aucune.
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  /* --- Styles de la page de démo (hors code copiable) --- */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #0A0E1A; color: #F8FAFC; min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .demo-title { text-align: center; margin-bottom: 28px; }
+  .demo-title h1 { font-size: clamp(22px, 5vw, 34px); letter-spacing: -.02em; }
+  .demo-title p { opacity: .55; font-size: 14px; margin-top: 6px; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="demo-title">
+      <h1>Product Carousel</h1>
+      <p>Glisse ou utilise les flèches — le thème suit le produit.</p>
+    </div>
+
+    <!-- FX:COPY:START -->
+    <!-- ============ FX PRODUCT CAROUSEL ============ -->
+    <style>
+      /* Le thème vit dans des variables sur .fxpc (transition douce) */
+      .fxpc{
+        --fx-bg:#0A0E1A; --fx-accent:#F39A1B; --fx-ink:#F8FAFC;
+        position:relative; width:min(920px,92vw); border-radius:28px; overflow:hidden;
+        background:
+          radial-gradient(120% 90% at 15% 0%, color-mix(in srgb, var(--fx-accent) 22%, transparent), transparent 60%),
+          var(--fx-bg);
+        transition:background 700ms ease; padding:40px 0 28px;
+        color:var(--fx-ink);
+      }
+      .fxpc__track{ display:flex; gap:24px; overflow-x:auto; scroll-snap-type:x mandatory;
+        padding:0 max(24px,calc((100% - 320px)/2)); scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+      .fxpc__track::-webkit-scrollbar{ display:none; }
+      .fxpc__item{ flex:0 0 320px; scroll-snap-align:center; text-align:center; user-select:none;
+        transform:scale(.9); opacity:.5; transition:transform .5s ease, opacity .5s ease; }
+      .fxpc__item.is-active{ transform:scale(1); opacity:1; }
+      .fxpc__disc{ width:220px; height:220px; margin:0 auto 20px; border-radius:50%;
+        display:grid; place-items:center; font-size:64px;
+        background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.28), transparent 55%),
+          color-mix(in srgb, var(--fx-accent) 30%, #000 6%);
+        box-shadow:0 24px 60px -20px color-mix(in srgb, var(--fx-accent) 60%, #000);
+        transition:background .7s ease, box-shadow .7s ease; }
+      .fxpc__name{ font-size:22px; font-weight:700; letter-spacing:-.01em; }
+      .fxpc__sub{ font-size:14px; opacity:.65; margin-top:6px; }
+      .fxpc__price{ display:inline-block; margin-top:14px; font-weight:700; font-size:15px;
+        padding:7px 16px; border-radius:999px; color:#0A0E1A;
+        background:var(--fx-accent); transition:background .7s ease; }
+      /* Flèches */
+      .fxpc__nav{ position:absolute; top:44%; width:46px; height:46px; border:none; cursor:pointer;
+        border-radius:50%; display:grid; place-items:center; color:var(--fx-ink); font-size:20px;
+        background:rgba(255,255,255,.10); transition:background .25s, transform .25s; z-index:3; }
+      .fxpc__nav:hover{ background:rgba(255,255,255,.22); transform:scale(1.08); }
+      .fxpc__nav:focus-visible{ outline:2px solid var(--fx-ink); outline-offset:2px; }
+      .fxpc__nav--prev{ left:14px; } .fxpc__nav--next{ right:14px; }
+      /* Points */
+      .fxpc__dots{ display:flex; justify-content:center; gap:9px; margin-top:26px; }
+      .fxpc__dot{ width:8px; height:8px; border-radius:50%; border:none; cursor:pointer; padding:0;
+        background:rgba(255,255,255,.28); transition:width .3s, background .3s; }
+      .fxpc__dot.is-active{ width:26px; border-radius:8px; background:var(--fx-accent); }
+      @media (prefers-reduced-motion: reduce){
+        .fxpc, .fxpc__disc, .fxpc__price, .fxpc__item, .fxpc__nav, .fxpc__dot{ transition:none !important; }
+        .fxpc__track{ scroll-behavior:auto; }
+      }
+    </style>
+
+    <div class="fxpc" id="fxpc">
+      <!-- data-bg / data-accent = le thème de chaque produit (À CHANGER librement) -->
+      <button class="fxpc__nav fxpc__nav--prev" aria-label="Produit précédent">‹</button>
+      <div class="fxpc__track" id="fxpcTrack" role="list">
+        <div class="fxpc__item" role="listitem" data-bg="#0A2540" data-accent="#0050E6">
+          <div class="fxpc__disc">💧</div>
+          <div class="fxpc__name">Sérum Hydra</div>
+          <div class="fxpc__sub">Acide hyaluronique · 30ml</div>
+          <span class="fxpc__price">14,90 €</span>
+        </div>
+        <div class="fxpc__item" role="listitem" data-bg="#2A1206" data-accent="#F39A1B">
+          <div class="fxpc__disc">🍊</div>
+          <div class="fxpc__name">Vitamine C+</div>
+          <div class="fxpc__sub">Éclat immédiat · 60 gél.</div>
+          <span class="fxpc__price">9,50 €</span>
+        </div>
+        <div class="fxpc__item" role="listitem" data-bg="#06251A" data-accent="#12B76A">
+          <div class="fxpc__disc">🌿</div>
+          <div class="fxpc__name">Détox Green</div>
+          <div class="fxpc__sub">Draineur plantes · 500ml</div>
+          <span class="fxpc__price">17,20 €</span>
+        </div>
+        <div class="fxpc__item" role="listitem" data-bg="#25062A" data-accent="#B04CE6">
+          <div class="fxpc__disc">🌙</div>
+          <div class="fxpc__name">Sommeil Zen</div>
+          <div class="fxpc__sub">Mélatonine · 30 comp.</div>
+          <span class="fxpc__price">8,90 €</span>
+        </div>
+      </div>
+      <button class="fxpc__nav fxpc__nav--next" aria-label="Produit suivant">›</button>
+      <div class="fxpc__dots" id="fxpcDots"></div>
+    </div>
+
+    <script>
+    (function(){
+      var root=document.getElementById('fxpc');
+      if(!root) return;
+      var track=root.querySelector('#fxpcTrack');
+      var items=[].slice.call(track.querySelectorAll('.fxpc__item'));
+      var dotsWrap=root.querySelector('#fxpcDots');
+      var current=-1;
+
+      // Construire les points
+      items.forEach(function(_,i){
+        var d=document.createElement('button');
+        d.className='fxpc__dot'; d.setAttribute('aria-label','Aller au produit '+(i+1));
+        d.addEventListener('click',function(){ goTo(i); });
+        dotsWrap.appendChild(d);
+      });
+      var dots=[].slice.call(dotsWrap.children);
+
+      // Applique le thème (transition CSS s'occupe du fondu)
+      function applyTheme(el){
+        root.style.setProperty('--fx-bg', el.dataset.bg || '#0A0E1A');
+        root.style.setProperty('--fx-accent', el.dataset.accent || '#F39A1B');
+      }
+      function setActive(i){
+        if(i===current) return; current=i;
+        items.forEach(function(el,k){ el.classList.toggle('is-active',k===i); });
+        dots.forEach(function(d,k){ d.classList.toggle('is-active',k===i); });
+        applyTheme(items[i]);
+      }
+      function goTo(i){
+        i=Math.max(0,Math.min(items.length-1,i));
+        items[i].scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+      }
+
+      // Détecte l'item centré pendant le scroll (glisser tactile inclus)
+      var raf;
+      track.addEventListener('scroll',function(){
+        cancelAnimationFrame(raf);
+        raf=requestAnimationFrame(function(){
+          var mid=track.scrollLeft + track.clientWidth/2, best=0, bd=1e9;
+          items.forEach(function(el,k){
+            var c=el.offsetLeft + el.offsetWidth/2, d=Math.abs(c-mid);
+            if(d<bd){ bd=d; best=k; }
+          });
+          setActive(best);
+        });
+      },{passive:true});
+
+      root.querySelector('.fxpc__nav--prev').addEventListener('click',function(){ goTo(current-1); });
+      root.querySelector('.fxpc__nav--next').addEventListener('click',function(){ goTo(current+1); });
+
+      setActive(0);
+    })();
+    </script>
+    <!-- ============ /FX PRODUCT CAROUSEL ============ -->
+    <!-- FX:COPY:END -->
+  </div>
+</body>
+</html>

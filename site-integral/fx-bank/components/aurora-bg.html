@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Aurora BG</title>
+<!--
+/* FX-BANK · AURORA BG
+   QUOI : Fond aurora premium — nappes de radial/conic-gradients qui dérivent lentement en transform, sans blur.
+   QUAND : Hero, section landing, arrière-plan de carte, splash. Dark ou clair.
+   DEPENDANCES : aucune.
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+   COPIER : le bloc entre les balises <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  /* ---- Styles de DÉMO uniquement (hors bloc copiable) ---- */
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+    background:#0A0E1A;color:#F8FAFC;
+    display:grid;place-items:center;min-height:100vh;overflow:hidden;
+  }
+  .demo-content{position:relative;z-index:2;text-align:center;padding:2rem}
+  .demo-content h1{font-size:clamp(2rem,6vw,4rem);font-weight:800;letter-spacing:-.03em;line-height:1.05}
+  .demo-content p{margin-top:1rem;opacity:.7;font-size:clamp(1rem,2vw,1.2rem)}
+  .demo-badge{display:inline-block;margin-bottom:1.5rem;padding:.4rem 1rem;border:1px solid rgba(255,255,255,.15);
+    border-radius:999px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<!-- ===================== FX : AURORA BG ===================== -->
+<!-- 1) Place ce conteneur en 1er enfant de la zone à décorer (position:relative sur le parent). -->
+<div class="fx-aurora" aria-hidden="true">
+  <span class="fx-aurora__layer fx-aurora__layer--a"></span>
+  <span class="fx-aurora__layer fx-aurora__layer--b"></span>
+  <span class="fx-aurora__layer fx-aurora__layer--c"></span>
+</div>
+
+<style>
+/* --- VARIABLES À CHANGER : les 3 couleurs de nappe + la vitesse --- */
+:root{
+  --aurora-c1:#0050E6;   /* bleu marque */
+  --aurora-c2:#F39A1B;   /* orange marque */
+  --aurora-c3:#7C3AED;   /* violet d'appoint */
+  --aurora-speed:26s;    /* + grand = + lent */
+  --aurora-opacity:.55;  /* intensité globale des nappes */
+}
+/* Conteneur plein cadre, derrière le contenu. Le parent DOIT être position:relative. */
+.fx-aurora{
+  position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  opacity:var(--aurora-opacity);
+}
+/* Chaque nappe = un gros radial-gradient déplacé/tourné par transform (jamais de blur). */
+.fx-aurora__layer{
+  position:absolute;top:-30%;left:-30%;width:160%;height:160%;
+  border-radius:50%;will-change:transform;
+  mix-blend-mode:screen; /* additif sur fond sombre ; passer à normal sur fond clair */
+}
+.fx-aurora__layer--a{
+  background:radial-gradient(closest-side,var(--aurora-c1),transparent 70%);
+  animation:fx-aurora-a var(--aurora-speed) ease-in-out infinite alternate;
+}
+.fx-aurora__layer--b{
+  background:radial-gradient(closest-side,var(--aurora-c2),transparent 70%);
+  animation:fx-aurora-b calc(var(--aurora-speed) * 1.35) ease-in-out infinite alternate;
+}
+.fx-aurora__layer--c{
+  background:radial-gradient(closest-side,var(--aurora-c3),transparent 70%);
+  animation:fx-aurora-c calc(var(--aurora-speed) * 1.7) ease-in-out infinite alternate;
+}
+@keyframes fx-aurora-a{
+  0%  {transform:translate(-8%,-6%) scale(1) rotate(0deg)}
+  100%{transform:translate(14%,10%) scale(1.25) rotate(40deg)}
+}
+@keyframes fx-aurora-b{
+  0%  {transform:translate(24%,-4%) scale(1.1) rotate(0deg)}
+  100%{transform:translate(-10%,18%) scale(1.35) rotate(-35deg)}
+}
+@keyframes fx-aurora-c{
+  0%  {transform:translate(6%,22%) scale(1) rotate(0deg)}
+  100%{transform:translate(-18%,-12%) scale(1.3) rotate(30deg)}
+}
+/* Accessibilité : on fige tout mouvement. */
+@media (prefers-reduced-motion: reduce){
+  .fx-aurora__layer{animation:none !important}
+}
+</style>
+<!-- ===================== /FX : AURORA BG ==================== -->
+<!-- FX:COPY:END -->
+
+<div class="demo-content">
+  <span class="demo-badge">FX-BANK · BG-GLOW</span>
+  <h1>Fond Aurora vivant</h1>
+  <p>Nappes de lumière qui dérivent — zéro blur, stable Safari.</p>
+</div>
+
+</body>
+</html>

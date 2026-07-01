@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK — Banque d'effets Intégral (vanilla, Safari-safe)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--blue:#0050E6;--orange:#F39A1B;--ink:#0A0E1A;--panel:#0F1524;--line:rgba(255,255,255,.10);--txt:#EAF0FF;--muted:#9aa6c7}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:Inter,system-ui,sans-serif;background:
+    radial-gradient(60% 50% at 15% 0%,rgba(0,80,230,.18),transparent 60%),
+    radial-gradient(50% 45% at 90% 10%,rgba(243,154,27,.12),transparent 60%),
+    #06080F;color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:32px 0 0}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand img{height:30px}
+  .brand b{font:700 15px/1 'Space Grotesk',sans-serif;letter-spacing:.02em}
+  .meta{font:600 12px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .hero{padding:44px 0 22px}
+  .hero .eyebrow{font:600 12px/1 'JetBrains Mono',monospace;letter-spacing:.2em;text-transform:uppercase;color:var(--orange);margin-bottom:16px}
+  .hero h1{font:700 clamp(32px,5.2vw,58px)/1.03 'Space Grotesk',sans-serif;letter-spacing:-.02em;max-width:20ch}
+  .hero h1 span{color:var(--blue)}
+  .hero p{margin-top:18px;max-width:64ch;font-size:clamp(15px,1.6vw,18px);color:#c3cde6}
+  .legend{margin-top:20px;display:flex;gap:20px;flex-wrap:wrap;font:600 12.5px/1 'JetBrains Mono',monospace;color:var(--muted)}
+  .legend b{color:var(--txt)}
+  .rule{height:1px;background:var(--line);margin:26px 0 0}
+
+  .group{padding:40px 0 0}
+  .group h2{font:600 13px/1 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .group h2::after{content:"";flex:1;height:1px;background:var(--line)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  @media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+
+  .card{position:relative;display:flex;flex-direction:column;gap:10px;padding:18px;border:1px solid var(--line);border-radius:16px;
+    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));overflow:hidden;
+    transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .35s,box-shadow .35s}
+  .card::before{content:"";position:absolute;inset:0;border-radius:16px;padding:1px;pointer-events:none;opacity:0;transition:opacity .35s;
+    background:linear-gradient(120deg,rgba(0,80,230,.6),rgba(243,154,27,.6));
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+  .card:hover{transform:translateY(-4px);border-color:transparent;box-shadow:0 20px 50px -24px rgba(0,80,230,.5)}
+  .card:hover::before{opacity:1}
+  .card .tag{font:600 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--orange)}
+  .card h3{font:700 16px/1.15 'Space Grotesk',sans-serif;letter-spacing:-.01em}
+  .card p{font-size:12.5px;color:var(--muted);flex:1}
+  .card .open{margin-top:2px;display:inline-flex;align-items:center;gap:7px;font:600 12.5px/1 Inter;color:#bcd0ff}
+  .card .open svg{width:13px;height:13px;transition:transform .25s}
+  .card:hover .open svg{transform:translate(2px,-2px)}
+  .card .dot{position:absolute;top:16px;right:16px;width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 12px var(--orange)}
+
+  footer{padding:56px 0 70px;color:var(--muted);font-size:13px}
+  footer b{color:var(--txt)}
+  code{font-family:'JetBrains Mono',monospace;color:#bcd0ff;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px;font-size:12px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand"><img src="../assets/logo.png" alt="Intégral Pharma"><b>FX-BANK</b></div>
+      <div class="meta">Banque d'effets · vanilla · Safari-safe</div>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Notre 21st.dev maison</div>
+      <h1>24 composants premium — <span>3D · motion · design</span> — prêts à assembler.</h1>
+      <p>Chaque effet est recodé en <b>vanilla</b> (HTML/CSS/JS, Three.js via CDN pour la 3D) et <b>stable Safari</b> (aucun flou / clip-text / backdrop-filter). Ouvre une démo, copie le bloc entre <code>FX:COPY:START</code> et <code>FX:COPY:END</code>, adapte les variables. On assemble un site ultra-tendance à partir de ces briques.</p>
+      <div class="legend">
+        <span><b>24</b> composants</span>
+        <span><b>6</b> familles</span>
+        <span><b>0</b> flou / clip-text</span>
+        <span>reduced-motion géré</span>
+      </div>
+    </section>
+    <div class="rule"></div>
+
+    <!-- 3D -->
+    <section class="group">
+      <h2>3D · WebGL (Three.js)</h2>
+      <div class="grid">
+        <a class="card" href="components/product-3d.html" target="_blank" rel="noopener"><span class="dot"></span><span class="tag">Three.js</span><h3>product-3d</h3><p>Objet produit 3D (gélule/canette) qui tourne, suit la souris et réagit au scroll.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/particle-network.html" target="_blank" rel="noopener"><span class="dot"></span><span class="tag">Three.js</span><h3>particle-network</h3><p>Champ de particules 3D reliées (constellation/réseau) réactif au curseur.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/shader-aurora.html" target="_blank" rel="noopener"><span class="dot"></span><span class="tag">Three.js · GLSL</span><h3>shader-aurora</h3><p>Plan plein écran, shader de flux fluide bleu/violet/orange, réactif souris + scroll.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/globe-arcs.html" target="_blank" rel="noopener"><span class="dot"></span><span class="tag">Three.js</span><h3>globe-arcs</h3><p>Sphère de points + nœuds + arcs logistiques lumineux animés.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+      </div>
+    </section>
+
+    <!-- BG-GLOW -->
+    <section class="group">
+      <h2>Fonds &amp; glow (CSS, sans flou)</h2>
+      <div class="grid">
+        <a class="card" href="components/aurora-bg.html" target="_blank" rel="noopener"><span class="tag">CSS</span><h3>aurora-bg</h3><p>Nappes de dégradés qui dérivent lentement — aurora premium, sans blur.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/spotlight-cursor.html" target="_blank" rel="noopener"><span class="tag">CSS · JS</span><h3>spotlight-cursor</h3><p>Halo radial qui suit le curseur sur une carte/section.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/sparkles-meteors.html" target="_blank" rel="noopener"><span class="tag">CSS · JS</span><h3>sparkles-meteors</h3><p>Étincelles scintillantes + météores diagonaux. Overlay hero.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/grain-vignette.html" target="_blank" rel="noopener"><span class="tag">CSS · SVG</span><h3>grain-vignette</h3><p>Grain (SVG texture) + vignette — texture premium subtile.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+      </div>
+    </section>
+
+    <!-- SCROLL -->
+    <section class="group">
+      <h2>Scroll (le cœur des sites « incroyables »)</h2>
+      <div class="grid">
+        <a class="card" href="components/smooth-scroll.html" target="_blank" rel="noopener"><span class="tag">JS</span><h3>smooth-scroll</h3><p>Smooth scroll lerp façon Lenis. Scroll natif sous reduced-motion.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/scroll-scrub-pin.html" target="_blank" rel="noopener"><span class="tag">JS</span><h3>scroll-scrub-pin</h3><p>Section pinnée animée selon la progression du scroll (type ScrollTrigger).</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/horizontal-scroll.html" target="_blank" rel="noopener"><span class="tag">JS</span><h3>horizontal-scroll</h3><p>Défilement horizontal piloté par le scroll vertical (pin).</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/parallax-layers.html" target="_blank" rel="noopener"><span class="tag">CSS · JS</span><h3>parallax-layers</h3><p>Parallaxe multi-couches (scroll + souris), data-speed configurable.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+      </div>
+    </section>
+
+    <!-- TYPO -->
+    <section class="group">
+      <h2>Typographie &amp; kinetic</h2>
+      <div class="grid">
+        <a class="card" href="components/kinetic-word-reveal.html" target="_blank" rel="noopener"><span class="tag">CSS · JS</span><h3>kinetic-word-reveal</h3><p>Titre révélé mot par mot (masque + stagger).</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/marquee-infinite.html" target="_blank" rel="noopener"><span class="tag">CSS</span><h3>marquee-infinite</h3><p>Bandeau défilant infini, pause au survol, masque de bord.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/word-morph.html" target="_blank" rel="noopener"><span class="tag">JS</span><h3>word-morph</h3><p>Un mot qui se métamorphose entre plusieurs (sans gooey).</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/count-up.html" target="_blank" rel="noopener"><span class="tag">JS</span><h3>count-up</h3><p>Compteurs animés au scroll (format fr-FR, préfixe/suffixe).</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+      </div>
+    </section>
+
+    <!-- UI -->
+    <section class="group">
+      <h2>Boutons &amp; cartes</h2>
+      <div class="grid">
+        <a class="card" href="components/magnetic-button.html" target="_blank" rel="noopener"><span class="tag">JS</span><h3>magnetic-button</h3><p>Bouton magnétique qui suit le curseur et revient au repos.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/moving-border-cta.html" target="_blank" rel="noopener"><span class="tag">CSS</span><h3>moving-border-cta</h3><p>CTA à bordure conique animée (liseré lumineux qui tourne).</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/tilt-card-3d.html" target="_blank" rel="noopener"><span class="tag">CSS · JS</span><h3>tilt-card-3d</h3><p>Carte inclinée en 3D au survol + reflet qui suit le curseur.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/bento-grid.html" target="_blank" rel="noopener"><span class="tag">CSS · JS</span><h3>bento-grid</h3><p>Grille bento avec spotlight curseur, hover-lift, bordure lumineuse.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+      </div>
+    </section>
+
+    <!-- BLOCS -->
+    <section class="group">
+      <h2>Blocs &amp; « Ciao Kombucha »</h2>
+      <div class="grid">
+        <a class="card" href="components/product-carousel.html" target="_blank" rel="noopener"><span class="dot"></span><span class="tag">JS</span><h3>product-carousel</h3><p>Carrousel produit (flèches + glisser) avec couleur de thème par item.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/color-morph-sections.html" target="_blank" rel="noopener"><span class="tag">CSS · JS</span><h3>color-morph-sections</h3><p>La couleur de thème change en douceur par section au scroll.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/custom-cursor.html" target="_blank" rel="noopener"><span class="tag">JS</span><h3>custom-cursor</h3><p>Curseur personnalisé qui grossit sur les éléments interactifs.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+        <a class="card" href="components/sticky-cta.html" target="_blank" rel="noopener"><span class="tag">CSS · JS</span><h3>sticky-cta</h3><p>CTA collant qui apparaît au scroll + bouton back-to-top.</p><span class="open">Ouvrir la démo<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"/></svg></span></a>
+      </div>
+    </section>
+
+    <footer>
+      <b>FX-BANK</b> — banque d'effets Intégral Pharma. Vanilla, Safari-safe (aucun <code>filter:blur</code> / <code>backdrop-filter</code> / <code>background-clip:text</code>), <code>prefers-reduced-motion</code> géré. Copie le bloc <code>FX:COPY</code> de chaque composant pour l'intégrer. — Skill Claude : <code>fx-bank</code>.
+    </footer>
+  </div>
+</body>
+</html>

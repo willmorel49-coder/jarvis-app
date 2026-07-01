@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Product 3D</title>
+<!--
+/* FX-BANK · PRODUCT-3D
+   QUOI : objet produit 3D (gélule bicolore orange+argent) qui tourne, suit la souris et réagit au scroll.
+   QUAND : hero de landing produit, section "packshot vivant", mise en avant d un objet phare.
+   DEPENDANCES : Three.js r128 CDN.
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré (rotation figée).
+   COPIER : le bloc entre les balises <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --bleu:#0050E6; --orange:#F39A1B; --encre:#0A0E1A; --clair:#F8FAFC; }
+  *{ box-sizing:border-box; margin:0; }
+  html,body{ height:100%; }
+  body{
+    background:
+      radial-gradient(120% 90% at 70% 10%, rgba(0,80,230,.18), transparent 60%),
+      radial-gradient(90% 70% at 20% 90%, rgba(243,154,27,.14), transparent 60%),
+      var(--encre);
+    color:var(--clair); font-family:"DM Sans",system-ui,sans-serif; overflow-x:hidden;
+  }
+  .demo-head{ text-align:center; padding:60px 20px 10px; }
+  .demo-head h1{ font-size:clamp(28px,5vw,52px); font-weight:800; letter-spacing:-.02em; }
+  .demo-head p{ opacity:.6; margin-top:8px; font-size:14px; }
+  .scroll-hint{ text-align:center; opacity:.4; font-size:12px; letter-spacing:.2em; text-transform:uppercase; margin-bottom:40px; }
+  .spacer{ height:120vh; } /* pour tester la réaction au scroll */
+
+  /* --- FX:COPY:START --- PRODUCT-3D (bloc réutilisable) --- */
+  .fx-product{ position:relative; width:100%; height:70vh; min-height:420px; }
+  .fx-product canvas{ display:block; width:100%; height:100%; }
+  /* Fallback poster si WebGL indisponible : dégradé + capsule stylisée */
+  .fx-product-fallback{
+    position:absolute; inset:0; display:none; place-items:center;
+    background:radial-gradient(60% 60% at 50% 40%, rgba(0,80,230,.25), transparent 70%);
+  }
+  .fx-product-fallback .pill{
+    width:120px; height:300px; border-radius:60px;
+    background:linear-gradient(180deg,#F39A1B 0 50%,#c9ced6 50% 100%);
+    box-shadow:0 40px 80px rgba(0,0,0,.5), inset -20px 0 40px rgba(0,0,0,.25);
+    transform:rotate(28deg);
+  }
+  .fx-product.no-webgl canvas{ display:none; }
+  .fx-product.no-webgl .fx-product-fallback{ display:grid; }
+  @media (prefers-reduced-motion:reduce){ .fx-product{ /* rotation neutralisée via JS */ } }
+  <!-- FX:COPY:END -->
+</style>
+</head>
+<body>
+
+  <div class="demo-head">
+    <h1>Product 3D</h1>
+    <p>La gélule tourne, suit ta souris et réagit au scroll.</p>
+  </div>
+
+  <!-- FX:COPY:START -->
+  <div class="fx-product" id="fxProduct">
+    <div class="fx-product-fallback"><div class="pill"></div></div>
+  </div>
+  <!-- FX:COPY:END -->
+
+  <p class="scroll-hint">↓ scrolle pour voir l objet réagir ↓</p>
+  <div class="spacer"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  // --- FX:COPY:START --- PRODUCT-3D · JS ---
+  (function(){
+    const host = document.getElementById('fxProduct');
+    if(!host) return;
+    const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+    // Détection WebGL -> fallback poster
+    let gl=null; try{ gl=document.createElement('canvas').getContext('webgl'); }catch(e){}
+    if(!window.THREE || !gl){ host.classList.add('no-webgl'); return; }
+
+    // >>> VARIABLES À CHANGER <<<
+    const COL_A = 0xF39A1B;   // moitié haute (orange marque)
+    const COL_B = 0xC9CED6;   // moitié basse (argent)
+    const BG    = null;       // fond transparent
+
+    const w = ()=>host.clientWidth, h = ()=>host.clientHeight;
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(38, w()/h(), 0.1, 100); cam.position.z = 7;
+    const rnd = new THREE.WebGLRenderer({antialias:true, alpha:true});
+    rnd.setPixelRatio(Math.min(devicePixelRatio,2)); rnd.setSize(w(),h());
+    rnd.shadowMap.enabled = true; host.appendChild(rnd.domElement);
+
+    // Env studio simple pour reflets métalliques
+    const pmrem = new THREE.PMREMGenerator(rnd);
+    const envScene = new THREE.Scene();
+    const g1 = new THREE.Mesh(new THREE.SphereGeometry(50,16,16),
+      new THREE.MeshBasicMaterial({color:0x1a2130, side:THREE.BackSide}));
+    envScene.add(g1);
+    const key = new THREE.Mesh(new THREE.PlaneGeometry(20,20),
+      new THREE.MeshBasicMaterial({color:0xffffff})); key.position.set(8,10,6); envScene.add(key);
+    const env = pmrem.fromScene(envScene).texture; scene.environment = env;
+
+    // La gélule = deux demi-capsules
+    const group = new THREE.Group();
+    function halfCapsule(color, top){
+      const mat = new THREE.MeshPhysicalMaterial({color, metalness:.45, roughness:.28, clearcoat:.6, clearcoatRoughness:.3, envMapIntensity:1.1});
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,1.35,48,1,true), mat);
+      const cap  = new THREE.Mesh(new THREE.SphereGeometry(.85,48,24,0,Math.PI*2,0,Math.PI/2), mat);
+      cap.position.y = .675; const g = new THREE.Group(); g.add(body,cap);
+      g.position.y = top ? .675 : -.675; if(!top) g.rotation.z = Math.PI;
+      return g;
+    }
+    group.add(halfCapsule(COL_A,true), halfCapsule(COL_B,false));
+    group.rotation.z = .35; scene.add(group);
+
+    // Ombre douce au sol
+    const shadow = new THREE.Mesh(new THREE.CircleGeometry(2.2,40),
+      new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:.35}));
+    shadow.rotation.x = -Math.PI/2; shadow.position.y = -2.6; scene.add(shadow);
+
+    scene.add(new THREE.AmbientLight(0xffffff,.5));
+    const d = new THREE.DirectionalLight(0xffffff,1.1); d.position.set(4,6,5); scene.add(d);
+    const blue = new THREE.PointLight(0x0050E6,.9,20); blue.position.set(-5,-2,4); scene.add(blue);
+
+    // Interaction souris + scroll
+    let mx=0,my=0,tmx=0,tmy=0,scrollT=0;
+    addEventListener('pointermove', e=>{ tmx=(e.clientX/innerWidth-.5); tmy=(e.clientY/innerHeight-.5); });
+    addEventListener('scroll', ()=>{ scrollT = (scrollY/(document.body.scrollHeight-innerHeight))||0; }, {passive:true});
+    addEventListener('resize', ()=>{ cam.aspect=w()/h(); cam.updateProjectionMatrix(); rnd.setSize(w(),h()); });
+
+    let t=0;
+    (function loop(){
+      requestAnimationFrame(loop);
+      t += reduce ? 0 : .01;
+      mx += (tmx-mx)*.06; my += (tmy-my)*.06;
+      group.rotation.y = reduce ? .5 : t*.6 + mx*1.2;       // boucle + souris
+      group.rotation.x = my*.7 - scrollT*.9;                 // souris + scroll
+      group.position.y = reduce ? 0 : Math.sin(t)*.12 - scrollT*.6;
+      rnd.render(scene,cam);
+    })();
+  })();
+  // --- FX:COPY:END ---
+  </script>
+</body>
+</html>

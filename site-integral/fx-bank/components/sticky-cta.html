@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Sticky CTA</title>
+<!--
+/* FX-BANK · STICKY CTA + BACK TO TOP
+   QUOI : Barre CTA collante qui slide-in après un certain scroll + bouton retour-haut.
+   QUAND : Landing produit/service, pages longues, pour garder l'appel à l'action à portée.
+   DEPENDANCES : aucune.
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #F8FAFC; color: #0A0E1A; }
+  .demo-hero { min-height: 90vh; display: grid; place-content: center; text-align: center; gap: 14px; padding: 8vh 6vw;
+    background: radial-gradient(120% 80% at 50% 0%, #E7EEFF, transparent 60%); }
+  .demo-hero h1 { font-size: clamp(30px, 7vw, 60px); letter-spacing: -.03em; }
+  .demo-hero p { opacity: .6; }
+  .demo-block { max-width: 640px; margin: 0 auto; padding: 60px 24px; line-height: 1.7; opacity: .85; }
+  .demo-block h2 { margin-bottom: 16px; font-size: 24px; letter-spacing: -.02em; }
+</style>
+</head>
+<body>
+  <header class="demo-hero">
+    <h1>Scrolle vers le bas.</h1>
+    <p>La barre CTA apparaît après ~600px, puis le bouton retour-haut.</p>
+  </header>
+  <main>
+    <section class="demo-block"><h2>Un peu de contenu</h2><p>La barre reste discrète tant qu'on est en haut de page : aucun élément flottant ne gêne la première impression. Continue de scroller.</p></section>
+    <section class="demo-block"><h2>Encore du contenu</h2><p>Une fois le seuil franchi, la barre collante glisse depuis le bas et le bouton retour-haut devient cliquable. Tout est accessible au clavier et respecte reduced-motion.</p></section>
+    <section class="demo-block"><h2>Fin de la démo</h2><p>Clique sur le bouton retour-haut pour remonter en douceur, ou sur le CTA pour l'action principale.</p></section>
+  </main>
+
+  <!-- FX:COPY:START -->
+  <!-- ============ FX STICKY CTA + BACK TO TOP ============ -->
+  <style>
+    .fxsticky{
+      --fx-bg:#0A0E1A; --fx-accent:#F39A1B; --fx-ink:#F8FAFC;
+      --fx-reveal:600px;               /* seuil d'apparition (px scrollés) — À CHANGER si besoin */
+      position:fixed; left:0; right:0; bottom:0; z-index:900;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:14px clamp(16px,4vw,32px);
+      background:var(--fx-bg); color:var(--fx-ink);
+      box-shadow:0 -10px 40px -12px rgba(0,0,0,.4);
+      transform:translateY(120%); transition:transform .45s cubic-bezier(.16,1,.3,1);
+    }
+    .fxsticky.is-visible{ transform:translateY(0); }
+    .fxsticky__label{ font-size:14px; font-weight:600; line-height:1.3; }
+    .fxsticky__label b{ color:var(--fx-accent); }
+    .fxsticky__btn{ flex:0 0 auto; border:none; cursor:pointer; font-weight:700; font-size:15px;
+      padding:12px 22px; border-radius:999px; color:#0A0E1A; background:var(--fx-accent);
+      transition:transform .2s, filter .2s; text-decoration:none; }
+    .fxsticky__btn:hover{ transform:translateY(-2px); }
+    .fxsticky__btn:focus-visible{ outline:2px solid var(--fx-ink); outline-offset:2px; }
+
+    /* Bouton retour-haut */
+    .fxtop{ position:fixed; right:clamp(16px,4vw,28px); bottom:84px; z-index:901;
+      width:46px; height:46px; border-radius:50%; border:none; cursor:pointer;
+      background:var(--fx-accent,#F39A1B); color:#0A0E1A; font-size:20px; line-height:1;
+      display:grid; place-items:center; box-shadow:0 10px 30px -8px rgba(0,0,0,.5);
+      opacity:0; transform:translateY(12px) scale(.9); pointer-events:none;
+      transition:opacity .35s ease, transform .35s ease; }
+    .fxtop.is-visible{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+    .fxtop:focus-visible{ outline:2px solid #0A0E1A; outline-offset:2px; }
+
+    @media (prefers-reduced-motion: reduce){
+      .fxsticky,.fxtop,.fxsticky__btn{ transition:none !important; }
+      html{ scroll-behavior:auto; }
+    }
+    @media (max-width:480px){ .fxsticky__label{ font-size:13px; } }
+  </style>
+
+  <!-- Barre CTA — remplace le texte / lien par les tiens -->
+  <div class="fxsticky" id="fxsticky" role="region" aria-label="Appel à l'action">
+    <span class="fxsticky__label">Prêt à démarrer ? <b>Offre valable ce mois-ci.</b></span>
+    <a href="#" class="fxsticky__btn">Je me lance</a>
+  </div>
+
+  <button class="fxtop" id="fxtop" aria-label="Revenir en haut de la page">↑</button>
+
+  <script>
+  (function(){
+    var bar=document.getElementById('fxsticky');
+    var top=document.getElementById('fxtop');
+    if(!bar||!top) return;
+    // Seuil lu depuis la variable CSS --fx-reveal (fallback 600)
+    var threshold=parseInt(getComputedStyle(bar).getPropertyValue('--fx-reveal'),10)||600;
+
+    var ticking=false;
+    function update(){
+      var y=window.pageYOffset||document.documentElement.scrollTop;
+      var show=y>threshold;
+      bar.classList.toggle('is-visible',show);
+      top.classList.toggle('is-visible',show);
+      ticking=false;
+    }
+    window.addEventListener('scroll',function(){
+      if(!ticking){ ticking=true; requestAnimationFrame(update); }
+    },{passive:true});
+
+    top.addEventListener('click',function(){
+      var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top:0, behavior: reduce ? 'auto' : 'smooth' });
+    });
+
+    update(); // état initial (au cas où la page est rechargée en cours de scroll)
+  })();
+  </script>
+  <!-- ============ /FX STICKY CTA + BACK TO TOP ============ -->
+  <!-- FX:COPY:END -->
+</body>
+</html>

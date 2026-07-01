@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Grain & Vignette</title>
+<!--
+/* FX-BANK · GRAIN & VIGNETTE
+   QUOI : Overlay premium — grain (SVG feTurbulence en texture fixe, PAS de filter sur le contenu) + vignette radiale.
+   QUAND : Texturer un fond de hero/section, casser l'aplat des gradients, ambiance cinéma/print.
+   DEPENDANCES : aucune (le grain est un SVG data-URI intégré, aucun fichier externe).
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. Le feTurbulence est une TEXTURE (background-image), pas un filter appliqué au contenu. reduced-motion géré.
+   COPIER : le bloc entre les balises <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  /* ---- Styles de DÉMO uniquement ---- */
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+    color:#F8FAFC;min-height:100vh;overflow:hidden;
+    background:radial-gradient(130% 130% at 20% 10%,#0050E6 0%,#0A0E1A 55%);
+    display:grid;place-items:center;
+  }
+  .demo-content{position:relative;z-index:2;text-align:center;padding:2rem}
+  .demo-content h1{font-size:clamp(2rem,6vw,4.5rem);font-weight:800;letter-spacing:-.03em}
+  .demo-content p{margin-top:1rem;opacity:.7}
+</style>
+</head>
+<body>
+
+<div class="demo-content">
+  <h1>Fond texturé grain</h1>
+  <p>Grain SVG fixe + vignette — donne une matière "print" au gradient.</p>
+</div>
+
+<!-- FX:COPY:START -->
+<!-- ===================== FX : GRAIN & VIGNETTE ===================== -->
+<!-- 1) Place ces DEUX overlays dans la zone à texturer (parent en position:relative). -->
+<!--    Ils passent PAR-DESSUS le contenu mais sans le bloquer (pointer-events:none). -->
+<div class="fx-vignette" aria-hidden="true"></div>
+<div class="fx-grain" aria-hidden="true"></div>
+
+<style>
+/* --- VARIABLES À CHANGER : intensité grain, force/couleur vignette --- */
+:root{
+  --grain-opacity:.10;          /* 0.05 subtil → 0.18 marqué */
+  --grain-scale:180px;          /* taille de la tuile de grain */
+  --vignette-color:10,14,26;    /* RGB des bords (ici encre #0A0E1A) */
+  --vignette-strength:.55;      /* opacité max des bords */
+}
+/* Vignette : radial-gradient transparent au centre, teinté sur les bords. Aucun blur. */
+.fx-vignette{
+  position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 45%,
+             transparent 55%,
+             rgba(var(--vignette-color),var(--vignette-strength)) 100%);
+}
+/* Grain : SVG feTurbulence encodé en data-URI, utilisé comme BACKGROUND-IMAGE (texture),
+   donc jamais un filter:blur appliqué au contenu => stable Safari. */
+.fx-grain{
+  position:absolute;inset:0;z-index:4;pointer-events:none;
+  opacity:var(--grain-opacity);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:var(--grain-scale) var(--grain-scale);
+  /* micro-scintillement optionnel (déplace la tuile) — retirer l'animation pour un grain 100% fixe */
+  animation:fx-grain-shift 8s steps(6) infinite;
+}
+@keyframes fx-grain-shift{
+  0%  {background-position:0 0}
+  20% {background-position:-30px 20px}
+  40% {background-position:20px -25px}
+  60% {background-position:-15px -10px}
+  80% {background-position:25px 15px}
+  100%{background-position:0 0}
+}
+@media (prefers-reduced-motion: reduce){
+  .fx-grain{animation:none} /* grain fixe, la texture reste visible */
+}
+</style>
+<!-- ===================== /FX : GRAIN & VIGNETTE ==================== -->
+<!-- FX:COPY:END -->
+
+</body>
+</html>

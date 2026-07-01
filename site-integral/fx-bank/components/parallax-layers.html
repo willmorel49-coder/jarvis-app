@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Parallax Layers</title>
+<!--
+/* FX-BANK · PARALLAX LAYERS
+   QUOI : Couches multi-vitesses au scroll (+ léger parallax souris) via translate3d, vitesse par data-speed.
+   QUAND : Hero de landing, sections "profondeur", décors qui respirent — profondeur premium sans lourdeur.
+   DEPENDANCES : aucune (vanilla pur).
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion → couches figées.
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --brand:#0050E6; --accent:#F39A1B; --ink:#0A0E1A; --light:#F8FAFC; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--ink);color:var(--light);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:hidden}
+
+  /* ============================================================= */
+  /* FX:COPY:START — PARALLAX LAYERS (CSS)                          */
+  /* ============================================================= */
+
+  /* 1) Scène = conteneur relatif qui découpe les couches. */
+  .fx-plx-scene{
+    position:relative; min-height:100vh; overflow:hidden;
+    display:grid; place-items:center; text-align:center;
+    background: radial-gradient(120% 80% at 50% 10%, #17203a, var(--ink) 70%);
+  }
+  /* 2) Chaque couche est positionnée en absolu et déplacée en JS via
+        --ty (scroll) et --mx/--my (souris). data-speed règle l'amplitude. */
+  .fx-plx-layer{
+    position:absolute; inset:0; pointer-events:none;
+    transform: translate3d(
+        calc(var(--mx,0) * 1px),
+        calc(var(--ty,0) * 1px + var(--my,0) * 1px),
+        0);
+    will-change:transform;
+  }
+  /* Décors : radial-gradients (pas de filter:blur — safe Safari). */
+  .fx-plx-blob{ position:absolute; border-radius:50%; }
+  .blob-a{ width:46vmax;height:46vmax; left:-10vmax; top:-8vmax;
+           background:radial-gradient(circle at 40% 40%, rgba(0,80,230,.55), transparent 62%); }
+  .blob-b{ width:34vmax;height:34vmax; right:-6vmax; top:20vmax;
+           background:radial-gradient(circle at 50% 50%, rgba(243,154,27,.45), transparent 62%); }
+  .blob-c{ width:22vmax;height:22vmax; left:12vmax; bottom:-6vmax;
+           background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.10), transparent 60%); }
+
+  /* Le contenu de premier plan reste interactif. */
+  .fx-plx-content{ position:relative; z-index:5; padding:2rem; }
+  .fx-plx-content h1{ font-size:clamp(2.4rem,8vw,6rem); letter-spacing:-.04em; line-height:1 }
+  .fx-plx-content p{ margin-top:1rem; color:#9fb0c9 }
+
+  /* 3) reduced-motion : on neutralise tout mouvement. */
+  @media (prefers-reduced-motion: reduce){
+    .fx-plx-layer{ transform:none !important; }
+  }
+  /* ============================================================= */
+  /* FX:COPY:END (CSS)                                             */
+
+  /* ---- DÉMO seulement ---- */
+  .demo-after{min-height:90vh;display:grid;place-items:center;padding:2rem;text-align:center;background:var(--light);color:var(--ink)}
+  .demo-after h2{font-size:clamp(1.6rem,5vw,3rem);letter-spacing:-.02em}
+  .demo-after p{margin-top:.6rem;opacity:.7}
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START — PARALLAX LAYERS (HTML) -->
+<!-- data-speed : + = va plus vite que le scroll (avant-plan), − = plus lent / inverse (arrière-plan lointain). -->
+<section class="fx-plx-scene" data-fx-plx>
+  <div class="fx-plx-layer" data-speed="-0.15"><div class="fx-plx-blob blob-a"></div></div>
+  <div class="fx-plx-layer" data-speed="0.10"><div class="fx-plx-blob blob-b"></div></div>
+  <div class="fx-plx-layer" data-speed="0.28"><div class="fx-plx-blob blob-c"></div></div>
+
+  <div class="fx-plx-content">
+    <h1>Profondeur<br>en parallaxe</h1>
+    <p>Chaque couche bouge à sa vitesse — scroll + souris.</p>
+  </div>
+</section>
+<!-- FX:COPY:END (HTML) -->
+
+  <section class="demo-after"><div><h2>Section suivante</h2><p>Les couches se sont décalées pendant le scroll.</p></div></section>
+
+<!-- FX:COPY:START — PARALLAX LAYERS (JS) -->
+<script>
+/* Parallax multi-vitesses (scroll + souris), vanilla.
+   VARIABLES :
+     • data-speed sur chaque .fx-plx-layer (scroll)   → amplitude verticale.
+     • MOUSE_AMP                                        → force du parallax souris.
+   ACCESSIBILITÉ : reduced-motion → aucun listener, couches figées. */
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+
+  var MOUSE_AMP = 18;   // ← px de débattement souris max (avant pondération par speed)
+
+  document.querySelectorAll('[data-fx-plx]').forEach(function (scene) {
+    var layers = Array.prototype.map.call(
+      scene.querySelectorAll('.fx-plx-layer'),
+      function (el){ return { el: el, speed: parseFloat(el.getAttribute('data-speed')) || 0 }; }
+    );
+    var mx = 0, my = 0, ticking = false;
+
+    function render(){
+      var rect = scene.getBoundingClientRect();
+      // décalage du centre de la scène par rapport au centre écran → parallax scroll
+      var center = rect.top + rect.height / 2 - window.innerHeight / 2;
+      layers.forEach(function (L){
+        L.el.style.setProperty('--ty', (-center * L.speed).toFixed(2));
+        L.el.style.setProperty('--mx', (mx * MOUSE_AMP * L.speed).toFixed(2));
+        L.el.style.setProperty('--my', (my * MOUSE_AMP * L.speed).toFixed(2));
+      });
+      ticking = false;
+    }
+    function schedule(){ if(!ticking){ ticking = true; requestAnimationFrame(render); } }
+
+    window.addEventListener('scroll', schedule, { passive:true });
+    window.addEventListener('resize', schedule);
+    // souris : normalisée −1..1 sur la scène
+    scene.addEventListener('pointermove', function (e){
+      var r = scene.getBoundingClientRect();
+      mx = ((e.clientX - r.left) / r.width  - 0.5) * 2;
+      my = ((e.clientY - r.top ) / r.height - 0.5) * 2;
+      schedule();
+    });
+    render();
+  });
+})();
+</script>
+<!-- FX:COPY:END (JS) -->
+
+</body>
+</html>

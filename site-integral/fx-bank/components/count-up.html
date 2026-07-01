@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Count Up</title>
+<!--
+/* FX-BANK · COUNT UP
+   QUOI : Compteurs qui s'incrémentent à leur apparition (IntersectionObserver), easeOutCubic via rAF, format fr-FR.
+   QUAND : Bloc de chiffres-clés, KPI, preuve sociale ("98%", "14 000 références", "+500 pharmacies").
+   DEPENDANCES : aucune
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion = valeur finale directe.
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --bleu:#0050E6; --orange:#F39A1B; --encre:#0A0E1A; --clair:#F8FAFC; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    min-height:100vh; display:grid; place-items:center;
+    background:radial-gradient(120% 120% at 50% 0%, #12203f 0%, var(--encre) 60%);
+    color:var(--clair); font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; padding:8vw 6vw;
+  }
+  .demo-tag{ font-size:.8rem; letter-spacing:.28em; text-transform:uppercase; color:var(--orange); text-align:center; margin-bottom:2.5rem; }
+  .demo-scroll{ font-size:.85rem; color:#7f8ea8; text-align:center; margin-top:3rem; }
+
+  /* FX:COPY:START */
+  /* ==== Count Up ==== */
+  .fx-stats{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:2.5rem 2rem; max-width:820px; margin-inline:auto; text-align:center;
+  }
+  .fx-stat__num{
+    font-size:clamp(2.6rem,7vw,4.4rem); font-weight:800; letter-spacing:-.03em;
+    line-height:1; color:var(--clair);
+  }
+  .fx-stat__num .fx-stat__accent{ color:var(--orange, #F39A1B); }  /* préfixe/suffixe accentué */
+  .fx-stat__label{ margin-top:.7rem; font-size:.95rem; color:#9fb0cc; letter-spacing:.02em; }
+
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+  <div>
+    <p class="demo-tag">FX-Bank · Typo</p>
+
+    <!-- FX:COPY:START -->
+    <!-- HTML : data-count = valeur cible. Options : data-prefix, data-suffix, data-decimals, data-duration (ms). -->
+    <div class="fx-stats">
+      <div class="fx-stat">
+        <div class="fx-stat__num" data-count="98" data-suffix="%"></div>
+        <div class="fx-stat__label">de disponibilité produits</div>
+      </div>
+      <div class="fx-stat">
+        <div class="fx-stat__num" data-count="14000"></div>
+        <div class="fx-stat__label">références au catalogue</div>
+      </div>
+      <div class="fx-stat">
+        <div class="fx-stat__num" data-count="45" data-prefix="−" data-suffix="%"></div>
+        <div class="fx-stat__label">de temps d'appro</div>
+      </div>
+      <div class="fx-stat">
+        <div class="fx-stat__num" data-count="500" data-suffix="+"></div>
+        <div class="fx-stat__label">pharmacies partenaires</div>
+      </div>
+    </div>
+
+    <script>
+    /* ==== Count Up — IntersectionObserver + rAF easeOutCubic ==== */
+    (function(){
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var nf = new Intl.NumberFormat('fr-FR');  // 14000 -> "14 000"
+
+      function format(el, val){
+        var dec = parseInt(el.dataset.decimals || '0', 10);
+        var pre = el.dataset.prefix || '';
+        var suf = el.dataset.suffix || '';
+        var body = dec > 0
+          ? val.toLocaleString('fr-FR', {minimumFractionDigits:dec, maximumFractionDigits:dec})
+          : nf.format(Math.round(val));
+        // préfixe/suffixe stylés via .fx-stat__accent
+        el.innerHTML =
+          (pre ? '<span class="fx-stat__accent">'+pre+'</span>' : '') +
+          body +
+          (suf ? '<span class="fx-stat__accent">'+suf+'</span>' : '');
+      }
+
+      function run(el){
+        var target = parseFloat(el.dataset.count) || 0;
+        var dur = parseInt(el.dataset.duration || '1600', 10);   // À CHANGER : durée du décompte
+        if(reduce){ format(el, target); return; }
+        var start = null;
+        function tick(ts){
+          if(start === null) start = ts;
+          var p = Math.min((ts - start) / dur, 1);
+          var eased = 1 - Math.pow(1 - p, 3);   // easeOutCubic
+          format(el, target * eased);
+          if(p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      }
+
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if(e.isIntersecting){ run(e.target); io.unobserve(e.target); }
+        });
+      }, { threshold:.4 });
+
+      document.querySelectorAll('[data-count]').forEach(function(el){
+        format(el, 0);      // état initial propre
+        io.observe(el);
+      });
+    })();
+    </script>
+    <!-- FX:COPY:END -->
+
+    <p class="demo-scroll">Les compteurs se déclenchent quand le bloc entre dans le viewport (déjà visible ici).</p>
+  </div>
+</body>
+</html>

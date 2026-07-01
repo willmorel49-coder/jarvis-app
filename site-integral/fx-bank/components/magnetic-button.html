@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Magnetic Button</title>
+<!--
+  FX-BANK · MAGNETIC BUTTON
+  QUOI : Bouton qui suit légèrement le curseur à proximité puis revient au repos.
+  QUAND : CTA hero, boutons "clé" qu'on veut rendre vivants et premium.
+  DEPENDANCES : aucune
+  SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+  COPIER : le bloc entre les balises FX:COPY:START et FX:COPY:END
+-->
+<style>
+  /* ---- Démo uniquement (page d'exposition) ---- */
+  :root{ --blue:#0050E6; --orange:#F39A1B; --ink:#0A0E1A; --light:#F8FAFC; }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; display:grid; place-items:center;
+    background:radial-gradient(1200px 600px at 50% -10%, #10193a 0%, var(--ink) 60%);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--light);
+  }
+  .demo-wrap{ text-align:center; padding:2rem; }
+  .demo-wrap h1{ font-size:clamp(1.2rem,3vw,1.8rem); font-weight:600; margin:0 0 .5rem; }
+  .demo-wrap p{ opacity:.55; font-size:.9rem; margin:0 0 2.5rem; }
+  .demo-row{ display:flex; gap:1.5rem; flex-wrap:wrap; justify-content:center; }
+
+<!-- FX:COPY:START -->
+  /* =====================================================================
+     MAGNETIC BUTTON — CSS
+     Variables à changer :
+       --fx-mag-bg      : couleur de fond du bouton
+       --fx-mag-fg      : couleur du texte
+       --fx-mag-radius  : rayon des coins
+     La force d'aimantation se règle dans le JS (fxMagStrength / fxMagRadius).
+     ===================================================================== */
+  .fx-magnetic{
+    --fx-mag-bg:#0050E6; --fx-mag-fg:#F8FAFC; --fx-mag-radius:999px;
+    position:relative; display:inline-flex; align-items:center; gap:.6rem;
+    padding:1rem 2.2rem; border:none; cursor:pointer;
+    background:var(--fx-mag-bg); color:var(--fx-mag-fg);
+    border-radius:var(--fx-mag-radius);
+    font:600 1rem/1 inherit; letter-spacing:.01em;
+    box-shadow:0 10px 30px -10px rgba(0,80,230,.55);
+    transition:transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease;
+    will-change:transform;
+  }
+  .fx-magnetic .fx-mag-label{ display:inline-block; transition:transform .25s cubic-bezier(.2,.8,.2,1); }
+  .fx-magnetic:hover{ box-shadow:0 16px 40px -8px rgba(0,80,230,.7); }
+  .fx-magnetic:focus-visible{ outline:2px solid #F39A1B; outline-offset:3px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-magnetic, .fx-magnetic .fx-mag-label{ transition:none !important; transform:none !important; }
+  }
+<!-- FX:COPY:END -->
+</style>
+</head>
+<body>
+  <div class="demo-wrap">
+    <h1>Bouton magnétique</h1>
+    <p>Approche le curseur — le bouton vient à toi, puis revient.</p>
+    <div class="demo-row">
+      <!-- FX:COPY:START -->
+      <!-- MAGNETIC BUTTON — HTML (le .fx-mag-label bouge un peu plus que le bouton) -->
+      <button class="fx-magnetic" data-fx-magnetic>
+        <span class="fx-mag-label">Découvrir Intégral</span>
+      </button>
+      <!-- FX:COPY:END -->
+      <button class="fx-magnetic" data-fx-magnetic style="--fx-mag-bg:#F39A1B;--fx-mag-fg:#0A0E1A;box-shadow:0 10px 30px -10px rgba(243,154,27,.55)">
+        <span class="fx-mag-label">Nous contacter</span>
+      </button>
+    </div>
+  </div>
+
+<!-- FX:COPY:START -->
+<script>
+/* =====================================================================
+   MAGNETIC BUTTON — JS (autonome, aucune dépendance)
+   Réglages :
+     fxMagRadius   : distance (px autour du bouton) où l'aimantation démarre
+     fxMagStrength : intensité du déplacement (0.1 discret … 0.5 fort)
+   Désactivé automatiquement sur tactile et en prefers-reduced-motion.
+   ===================================================================== */
+(function(){
+  const fxMagRadius = 90;     // <- rayon d'attraction
+  const fxMagStrength = 0.32; // <- intensité
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  if(reduce || coarse) return;
+
+  document.querySelectorAll('[data-fx-magnetic]').forEach(btn=>{
+    const label = btn.querySelector('.fx-mag-label');
+    function move(e){
+      const r = btn.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      const dx = e.clientX - cx, dy = e.clientY - cy;
+      const dist = Math.hypot(dx, dy);
+      if(dist < r.width/2 + fxMagRadius){
+        btn.style.transform = `translate(${dx*fxMagStrength}px, ${dy*fxMagStrength}px)`;
+        if(label) label.style.transform = `translate(${dx*fxMagStrength*0.4}px, ${dy*fxMagStrength*0.4}px)`;
+      } else { reset(); }
+    }
+    function reset(){
+      btn.style.transform = 'translate(0,0)';
+      if(label) label.style.transform = 'translate(0,0)';
+    }
+    // écoute globale pour capter l'approche avant même le hover
+    window.addEventListener('mousemove', move, {passive:true});
+    btn.addEventListener('mouseleave', reset);
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+</body>
+</html>

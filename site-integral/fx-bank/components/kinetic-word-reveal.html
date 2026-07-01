@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Kinetic Word Reveal</title>
+<!--
+/* FX-BANK · KINETIC WORD REVEAL
+   QUOI : Titre révélé mot par mot, chaque mot monte depuis un masque overflow (translateY 110% -> 0) avec délai croissant.
+   QUAND : Hero d'accueil, ouverture de section, apparition d'un titre fort au chargement.
+   DEPENDANCES : aucune
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --bleu:#0050E6; --orange:#F39A1B; --encre:#0A0E1A; --clair:#F8FAFC; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    min-height:100vh; display:grid; place-items:center;
+    background:radial-gradient(120% 120% at 20% 0%, #12203f 0%, var(--encre) 60%);
+    color:var(--clair); font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    padding:6vw;
+  }
+  .demo-wrap{ max-width:900px; }
+  .demo-tag{ font-size:.8rem; letter-spacing:.28em; text-transform:uppercase; color:var(--orange); margin-bottom:1.5rem; }
+  .demo-sub{ margin-top:1.5rem; color:#9fb0cc; max-width:44ch; line-height:1.6; }
+
+  /* FX:COPY:START */
+  /* ==== Kinetic Word Reveal ==== */
+  /* Chaque mot est enveloppé de .fx-kw > .fx-kw__i (via JS, ou à la main dans le HTML). */
+  .fx-kinetic{
+    font-size:clamp(2.2rem, 7vw, 5.5rem);
+    line-height:1.05; font-weight:800; letter-spacing:-.02em;
+  }
+  .fx-kw{               /* masque : coupe le mot pendant qu'il monte */
+    display:inline-block; overflow:hidden; vertical-align:top;
+    padding:.02em .01em;          /* petite marge anti-clip des jambages */
+  }
+  .fx-kw__i{            /* le mot qui se translate */
+    display:inline-block;
+    transform:translateY(110%);
+    opacity:0;
+    animation:fxKwUp .9s cubic-bezier(.16,.84,.28,1) forwards;
+    animation-delay:var(--d,0ms);  /* délai croissant, posé par JS */
+  }
+  /* accent optionnel : ajoute class="is-accent" sur un .fx-kw__i */
+  .fx-kw__i.is-accent{ color:var(--orange, #F39A1B); }
+
+  @keyframes fxKwUp{
+    to{ transform:translateY(0); opacity:1; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-kw__i{ animation:none; transform:none; opacity:1; }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+  <div class="demo-wrap">
+    <p class="demo-tag">FX-Bank · Typo</p>
+
+    <!-- FX:COPY:START -->
+    <!-- HTML : data-kinetic déclenche l'auto-wrapping. Marquez un mot accent avec [] autour. -->
+    <h1 class="fx-kinetic" data-kinetic>Anticipez [vos] appros, maîtrisez vos marges.</h1>
+
+    <script>
+    /* ==== Kinetic Word Reveal — auto-wrap ==== */
+    (function(){
+      var STAGGER = 80;   // ms entre chaque mot — À CHANGER pour accélérer/ralentir
+      document.querySelectorAll('[data-kinetic]').forEach(function(el){
+        var words = el.textContent.trim().split(/\s+/);
+        el.textContent = '';
+        words.forEach(function(w, i){
+          var accent = false;
+          if(/^\[.*\]$/.test(w)){ accent = true; w = w.slice(1,-1); }   // [mot] = accent
+          var mask = document.createElement('span'); mask.className = 'fx-kw';
+          var inner = document.createElement('span');
+          inner.className = 'fx-kw__i' + (accent ? ' is-accent' : '');
+          inner.textContent = w;
+          inner.style.setProperty('--d', (i * STAGGER) + 'ms');
+          mask.appendChild(inner);
+          el.appendChild(mask);
+          el.appendChild(document.createTextNode(' '));  // espace entre mots
+        });
+      });
+    })();
+    </script>
+    <!-- FX:COPY:END -->
+
+    <p class="demo-sub">Rechargez la page pour rejouer l'effet. Chaque mot monte derrière un masque avec un délai croissant — zéro flou, zéro clip-text (safe Safari).</p>
+  </div>
+</body>
+</html>
