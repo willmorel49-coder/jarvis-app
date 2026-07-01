@@ -56,6 +56,7 @@
   var mktEtab = '';         // '' = tous établissements · sinon code (CPR, HP, MSP, OPS, POS, SEP, SOP)
   var etabStockOnly = false;
   var catSortBy = 'pharma';   // 'pharma' = nb de pharmacies qui commandent · 'vol' = volume vendu
+  var catPerCat = 5;          // nb de produits par catégorie affichés sur le document (0 = tous)
 
   // ════════════════════════════════════════════
   // STORE (Supabase partagé + repli local)
@@ -387,6 +388,11 @@
       '<button class="mkt-etabchip' + (catSortBy === 'pharma' ? ' on' : '') + '" onclick="V2.mkt.catSort(\'pharma\')">Nb de pharmacies</button>' +
       '<button class="mkt-etabchip' + (catSortBy === 'vol' ? ' on' : '') + '" onclick="V2.mkt.catSort(\'vol\')">Volume vendu</button>' +
       '</div>';
+    var PERCATS = [3, 5, 10, 15, 0];
+    var perCatBar = '<div class="mkt-sortbar"><span class="mkt-sortlbl">Produits/catégorie sur le doc</span>' +
+      PERCATS.map(function (n) { return '<button class="mkt-etabchip' + (catPerCat === n ? ' on' : '') + '" onclick="V2.mkt.catPerCat(' + n + ')">' + (n === 0 ? 'Tous' : n) + '</button>'; }).join('') +
+      '</div>';
+    var docLabel = 'Générer le doc — top ' + (catPerCat > 0 ? catPerCat : 'tous') + '/catégorie' + (mktEtab ? ' · ' + mktEtab : '');
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap">' +
         '<button class="v2-back" style="margin-bottom:16px" onclick="V2.go(\'marketing\')">' + ICO('back', 16) + 'Marketing</button>' +
@@ -395,8 +401,9 @@
         '<div class="mkt-pick-src" style="margin:16px 0 10px">' + tabs + '</div>' +
         etabBar +
         sortBar +
+        perCatBar +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
-          '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.catPdf(\'' + cur.k + '\')">' + ICO('download', 16) + 'Générer le doc marketing (PDF)</button>' +
+          '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.catPdf(\'' + cur.k + '\')">' + ICO('download', 16) + esc(docLabel) + '</button>' +
           (cur.pdf ? '<a class="v2-btn v2-btn-ghost" href="' + cur.pdf + '" download>' + ICO('download', 16) + 'Catalogue ' + esc(cur.label) + ' d\'origine</a>' : '') +
         '</div>' +
         (cats || '<div class="v2-empty"><div class="v2-empty-d">Catalogue indisponible.</div></div>') +
@@ -797,6 +804,7 @@
       V2.go('marketing', 'new-selection');
     },
     catSort: function (mode) { catSortBy = (mode === 'vol') ? 'vol' : 'pharma'; V2.render(); },
+    catPerCat: function (n) { catPerCat = (+n) || 0; V2.render(); },
     // Liste parfaite d'une catégorie = produits les plus commandés (nb pharmacies), au prix de l'établissement choisi
     catList: function (catName) {
       var M = window.MKT_MIX || {};
@@ -832,39 +840,54 @@
       var data = M[conf[0]] || [];
       if (!data.length) { V2.toast('Catalogue vide', 'warn'); return; }
       var isItp = (srcKey === 'itp');
+      var byPharma = (catSortBy === 'pharma');
+      var perCat = catPerCat;   // 0 = tous
       var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
       var e2 = function (v) { return (v ? (+v).toFixed(2).replace('.', ',') : '—') + (v ? ' €' : ''); };
       V2.toast('Génération du PDF…');
       var secs = data.map(function (c) {
-        var trs = (c.rows || []).map(function (r, i) {
+        var rows = (c.rows || []).filter(function (r) { if (!(mktEtab && etabStockOnly)) return true; var er = etabRec(r.cip); return !!(er && er[1] > 0); });
+        rows = rows.slice();
+        rows.sort(byPharma
+          ? function (a, b) { return (b.sortie || 0) - (a.sortie || 0) || (b.vol || 0) - (a.vol || 0); }
+          : function (a, b) { return (b.vol || 0) - (a.vol || 0); });
+        if (perCat > 0) rows = rows.slice(0, perCat);
+        if (!rows.length) return '';
+        var trs = rows.map(function (r, i) {
+          var er = etabRec(r.cip); var pv = (er && er[0] > 0) ? er[0] : r.p; var stk = er ? er[1] : null;
           var metric = isItp
             ? '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;color:#1E9E6A;font-weight:700">' + (r.marge ? e2(r.marge) : '—') + '</td>'
-            : '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:800">' + (r.vol > 0 ? r.vol.toLocaleString('fr') : '—') + '</td>';
+            : '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:800">' + (byPharma ? ((r.sortie || 0) + '<span style="color:#9AA1B2;font-weight:500">/' + (r.total || M.total || '') + '</span>') : (r.vol > 0 ? r.vol.toLocaleString('fr') : '—')) + '</td>';
+          var stockTd = mktEtab ? '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:700;color:' + (stk > 0 ? '#1E9E6A' : '#E0556E') + '">' + (stk != null ? stk : '—') + '</td>' : '';
           return '<tr style="border-bottom:1px solid #EEF1F6">' +
             '<td style="padding:3px 6px;color:#9AA1B2;font-size:9px;text-align:right">' + (i + 1) + '</td>' +
             '<td style="padding:3px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.d || '').slice(0, 52)) + (r.o ? ' <span style="color:#C7791A;font-size:7px;font-weight:800">OFFRE</span>' : '') + '</td>' +
             '<td style="padding:3px 6px;font-family:monospace;font-size:8.5px;color:#737A8C">' + esc(r.cip || '') + '</td>' +
-            '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + e2(r.p) + '</td>' + metric +
+            '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + e2(pv) + '</td>' + metric + stockTd +
             '</tr>';
         }).join('');
+        var ths = ['#', 'Produit', 'CIP', 'Prix net', (isItp ? 'Marge/bte' : (byPharma ? 'Pharmacies' : 'Volume'))];
+        if (mktEtab) ths.push('Stock');
         return '<div style="margin-bottom:13px;page-break-inside:avoid">' +
           '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(90deg,#0050E622,transparent);border-left:4px solid #0050E6;border-radius:5px;margin-bottom:4px">' +
             '<div style="font-size:12px;font-weight:800;color:#10131C">' + esc(c.cat) + '</div>' +
-            '<div style="font-size:9px;color:#737A8C">' + (c.rows || []).length + ' réf.</div></div>' +
+            '<div style="font-size:9px;color:#737A8C">top ' + rows.length + '</div></div>' +
           '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#F4F6FB">' +
-            ['#', 'Produit', 'CIP', 'Prix net', (isItp ? 'Marge/bte' : 'Volume vendu')].map(function (h, k) {
+            ths.map(function (h, k) {
               return '<th style="padding:4px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#737A8C;text-align:' + (k < 3 ? 'left' : 'right') + '">' + h + '</th>';
             }).join('') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
-      }).join('');
+      }).filter(Boolean).join('');
+      if (!secs) { V2.toast('Aucun produit à afficher (essaie sans « en stock »)', 'warn'); return; }
+      var subt = 'Top ' + (perCat > 0 ? perCat + ' ' : '') + 'par catégorie · classé par ' + (byPharma ? 'nb de pharmacies qui commandent' : 'volume vendu (5 mois)') + (mktEtab ? ' · prix &amp; stock ' + esc(mktEtab) : ' · prix net indicatif');
       var html = '<div style="padding:18px 22px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
         '<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #10131C;padding-bottom:12px;margin-bottom:14px">' +
           '<div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>' +
           '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · sélection grossiste</div>' +
-            '<div style="font-size:18px;font-weight:800">' + esc(conf[1]) + '</div>' +
-            '<div style="font-size:10px;color:#737A8C">Classé par rayon · trié par volume vendu (5 mois) · prix net indicatif</div></div>' +
+            '<div style="font-size:18px;font-weight:800">' + esc(conf[1]) + (mktEtab ? ' · ' + esc(mktEtab) : '') + '</div>' +
+            '<div style="font-size:10px;color:#737A8C">' + subt + '</div></div>' +
           '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + dateStr + '</div>' +
         '</div>' + secs +
-        '<div style="margin-top:14px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · document commercial · « Volume vendu » = quantités écoulées sur 5 mois</div>' +
+        '<div style="margin-top:14px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · document commercial · « Pharmacies » = nombre d\'officines du réseau qui commandent le produit' + (mktEtab ? ' · prix/stock établissement ' + esc(mktEtab) : '') + '</div>' +
       '</div>';
       window.ensureHtml2Pdf().then(function () { return (document.fonts && document.fonts.ready) ? document.fonts.ready : null; }).then(function () {
         var wrap = document.createElement('div'); wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
