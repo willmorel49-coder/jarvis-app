@@ -35,8 +35,6 @@
   var COLS = [
     { k: 'rota', l: 'Rotation', sub: '/phie/an', fmt: num },
     { k: 'marge', l: 'Marge pharma.', sub: '/an (MDL)', fmt: eur, accent: 'var(--c-opp)' },
-    { k: 'remise', l: 'Remise Intégral', sub: '/an', fmt: eur, accent: 'var(--ip-blue)' },
-    { k: 'ca', l: 'CA achat', sub: 'HT /an', fmt: eur },
   ];
   function cap(s) { s = (s || '').toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); }
   function famBadge(k) { var f = FAM_BY[k]; if (!f || k === 'all') return ''; return '<span class="mol-fam" style="--fc:' + f.sc + '">' + esc(FAM_SHORT[k] || f.label) + '</span>'; }
@@ -70,20 +68,26 @@
     data.sort(function (a, b) { return (b[S.sort] || 0) - (a[S.sort] || 0); });
     var shown = data.slice(0, 200);
     var showStock = !!(window.ETAB_PRICES && S.etab);
-    var ncol = 9 + (showStock ? 1 : 0);
+    var ncol = 11 + (showStock ? 1 : 0);
     if (!shown.length) return '<tr><td colspan="' + ncol + '" style="padding:24px;text-align:center;color:var(--muted)">Aucun produit.</td></tr>';
     return shown.map(function (r, i) {
-      var er = etabRec(r.c); var px = (er && er[0] > 0) ? er[0] : null; var stk = er ? er[1] : null;
-      var stockTd = showStock ? '<td class="num mono" style="font-weight:700;color:' + (stk > 0 ? 'var(--c-opp)' : 'var(--c-rose)') + '">' + (stk != null ? num(stk) : '—') + '</td>' : '';
+      var er = etabRec(r.c);
+      var ppht = (er && er[0] > 0) ? er[0] : (r.ppht || 0);
+      var net = r.net || 0;
+      var stk = er ? er[1] : null;
+      var rpct = (ppht > 0 && net > 0 && net <= ppht) ? Math.round((ppht - net) / ppht * 1000) / 10 : (r.rpct || 0);
+      var stockTd = showStock ? '<td class="num mono" style="font-weight:800;color:' + (stk > 0 ? 'var(--c-opp)' : 'var(--c-rose)') + '">' + (stk != null ? num(stk) : '—') + '</td>' : '';
       return '<tr>' +
         '<td class="num" style="color:var(--muted-2);width:30px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
         '<td><span style="font-weight:700">' + esc(cap(r.d)) + '</span></td>' +
         '<td class="mono" style="color:var(--muted);font-size:11.5px">' + esc(r.c) + '</td>' +
         '<td>' + famBadge(r.f) + '</td>' +
-        '<td class="num mono">' + num(r.n) + '</td>' +
-        '<td class="num mono" style="color:var(--ip-blue);font-weight:800">' + (px != null ? eur(px) : '—') + '</td>' +
-        stockTd +
+        '<td class="num mono" style="font-weight:800">' + num(r.n) + '</td>' +
+        '<td class="num mono" style="color:var(--muted)">' + (ppht > 0 ? eur(ppht) : '—') + '</td>' +
+        '<td class="num mono" style="color:var(--ip-blue);font-weight:800">' + (net > 0 ? eur(net) : '—') + '</td>' +
+        '<td class="num">' + (rpct > 0 ? '<span class="mol-rem">−' + String(rpct).replace('.', ',') + '%</span>' : '<span style="color:var(--muted-2)">—</span>') + '</td>' +
         COLS.map(function (c) { return '<td class="num mono"' + (c.accent ? ' style="color:' + c.accent + ';font-weight:800"' : '') + '>' + c.fmt(r[c.k] || 0) + '</td>'; }).join('') +
+        stockTd +
       '</tr>';
     }).join('');
   }
@@ -140,20 +144,23 @@
       if (perCat > 0) rows = rows.slice(0, perCat);
       if (!rows.length) return '';
       var trs = rows.map(function (r, i) {
-        var er = etabRec(r.c); var px = (er && er[0] > 0) ? er[0] : null; var stk = er ? er[1] : null;
+        var er = etabRec(r.c);
+        var ppht = (er && er[0] > 0) ? er[0] : (r.ppht || 0);
+        var net = r.net || 0; var stk = er ? er[1] : null;
+        var rpct = (ppht > 0 && net > 0 && net <= ppht) ? Math.round((ppht - net) / ppht * 1000) / 10 : (r.rpct || 0);
         var stockTd = showStock ? '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:700;color:' + (stk > 0 ? '#1E9E6A' : '#E0556E') + '">' + (stk != null ? stk : '—') + '</td>' : '';
         return '<tr style="border-bottom:1px solid #EEF1F6">' +
           '<td style="padding:3px 6px;color:#9AA1B2;font-size:9px;text-align:right">' + (i + 1) + '</td>' +
           '<td style="padding:3px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc(cap(r.d).slice(0, 52)) + '</td>' +
           '<td style="padding:3px 6px;font-family:monospace;font-size:8.5px;color:#737A8C">' + esc(r.c) + '</td>' +
-          '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + e2(px) + '</td>' +
+          '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;color:#9AA1B2;text-decoration:line-through">' + e2(ppht) + '</td>' +
+          '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:800;color:#0050E6">' + e2(net) + '</td>' +
+          '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9px;font-weight:700;color:#0f7a52">' + (rpct > 0 ? '−' + String(rpct).replace('.', ',') + '%' : '—') + '</td>' +
           '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:800">' + num(r.n) + '</td>' +
           stockTd +
-          '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px">' + num(r.rota) + '</td>' +
-          '<td style="padding:3px 6px;text-align:right;font-family:monospace;font-size:9.5px;color:#1E9E6A;font-weight:700">' + e2(r.marge) + '</td>' +
           '</tr>';
       }).join('');
-      var ths = ['#', 'Produit', 'CIP', 'Prix net', 'Phies'].concat(showStock ? ['Stock'] : []).concat(['Rota/an', 'Marge']);
+      var ths = ['#', 'Produit', 'CIP', 'PPHT', 'Net remisé', 'Remise', 'Pharmacies'].concat(showStock ? ['Stock'] : []);
       return '<div style="margin-bottom:13px;page-break-inside:avoid">' +
         '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(90deg,' + FAM_BY[k].sc + '22,transparent);border-left:4px solid ' + FAM_BY[k].sc + ';border-radius:5px;margin-bottom:4px">' +
           '<div style="font-size:12px;font-weight:800;color:#10131C">' + esc(FAM_BY[k].label) + '</div><div style="font-size:9px;color:#737A8C">top ' + rows.length + '</div></div>' +
@@ -222,10 +229,12 @@
           '<div class="cat-count"><b id="mol-count" style="color:var(--ip-ink);font-family:var(--mono)">' + num(baseData().length) + '</b> produit(s)</div>' +
           '<div style="overflow-x:auto"><table class="v2-table mol-table"><thead><tr>' +
             '<th class="num">#</th><th>Produit</th><th>CIP13</th><th>Famille</th>' +
-            '<th class="num mol-th' + (S.sort === 'n' ? ' on' : '') + '" data-k="n" onclick="V2.molSort(\'n\')" style="cursor:pointer">Phies<small style="display:block;font-weight:500;color:var(--muted-2)">réseau ↕</small></th>' +
-            '<th class="num">Prix net<small style="display:block;font-weight:500;color:var(--muted-2)">PPHT</small></th>' +
-            (showStock ? '<th class="num">Stock</th>' : '') +
+            '<th class="num mol-th' + (S.sort === 'n' ? ' on' : '') + '" data-k="n" onclick="V2.molSort(\'n\')" style="cursor:pointer">Pharmacies<small style="display:block;font-weight:500;color:var(--muted-2)">réseau ↕</small></th>' +
+            '<th class="num">PPHT<small style="display:block;font-weight:500;color:var(--muted-2)">tarif</small></th>' +
+            '<th class="num">Net remisé<small style="display:block;font-weight:500;color:var(--muted-2)">réel</small></th>' +
+            '<th class="num">Remise</th>' +
             COLS.map(th).join('') +
+            (showStock ? '<th class="num">Stock</th>' : '') +
           '</tr></thead><tbody id="mol-tbody">' + rowsHtml() + '</tbody></table></div>' +
           '<div class="v2-page-sub" style="margin-top:14px;font-size:12px">Estimations à partir des ventes réelles du réseau (5 mois, annualisées) · marge MDL = produits remboursables · prix net + stock = établissement choisi · top 200 affichés.</div>' +
         '</div>';
@@ -241,6 +250,7 @@
       '.mol-table th.mol-th.on{color:var(--ip-blue)}' +
       '.mol-table td,.mol-table th{padding:8px 10px}' +
       '.mol-fam{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;color:var(--fc);background:color-mix(in srgb,var(--fc) 14%,transparent);white-space:nowrap}' +
+      '.mol-rem{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:800;color:#0f7a52;background:color-mix(in srgb,#1E9E6A 14%,#fff);font-family:var(--mono)}' +
       '.mol-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:11px 13px;background:color-mix(in srgb,var(--ip-blue) 4%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 15%,var(--line));border-radius:12px}' +
       '.mol-barlbl{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ip-blue)}' +
       '.mol-chips{display:flex;gap:6px;flex-wrap:wrap}' +

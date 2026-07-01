@@ -55,8 +55,8 @@ def famille(cip, ppht, net, remb, nat):
     if not remb:
         return 'nr'
     nl = (nat or '').lower()
-    if 'generique' in nl or 'générique' in nl or 'biosimilaire' in nl:
-        return 'genbio'
+    if 'biosimilaire' in nl: return 'biosim'
+    if 'generique' in nl or 'générique' in nl: return 'gen'
     p = ppht if ppht > 0 else net           # princeps / référent → tranche de prix
     if p <= 4.33: return 'pr_low'
     if p <= 468:  return 'pr_mid'
@@ -88,9 +88,15 @@ for c, a in ag.items():
     if nph < 3: continue
     k = 12.0 / NM / nph               # -> par pharmacie / an
     net = (a['ca'] / a['qte']) if a['qte'] else 0   # prix net achat moyen / boite
+    ppht = round(info[c]['ppht'], 2)
+    net_u = round(net, 2)                          # prix net remisé réel (CA/qté)
+    rem_pct = round((ppht - net_u) / ppht * 100, 1) if (ppht > 0 and net_u > 0 and net_u <= ppht) else 0
     rows.append({
         'c': c, 'd': info[c]['d'][:46], 'n': nph,
         'f': famille(c, info[c]['ppht'], net, info[c]['remb'], info[c]['nat']),
+        'ppht': ppht,                              # PPHT tarif grossiste
+        'net': net_u,                              # prix net remisé (réel achat)
+        'rpct': rem_pct,                           # % de remise (PPHT → net)
         'rota': round(a['qte'] * k),
         'marge': round(a['marge'] * k),
         'remise': round(max(0, a['tarif'] - a['ca']) * k),
