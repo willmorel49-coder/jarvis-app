@@ -52,6 +52,9 @@
   var docs = null;       // null = pas chargé · [] = chargé
   var docsErr = null;    // message d'erreur (ex : bucket pas encore créé)
   var docsBusy = false;  // upload en cours
+  // ── Prix + stock par établissement (fiches marketing par établissement) ──
+  var mktEtab = '';         // '' = tous établissements · sinon code (CPR, HP, MSP, OPS, POS, SEP, SOP)
+  var etabStockOnly = false;
 
   // ════════════════════════════════════════════
   // STORE (Supabase partagé + repli local)
@@ -126,6 +129,21 @@
                    url: c.storage.from(BUCKET).getPublicUrl(f.name).data.publicUrl };
         });
       }).catch(function (e) { docs = []; docsErr = (e && e.message) || 'err'; });
+  }
+
+  // ── Store prix/stock par établissement (etab-prices-data.js → window.ETAB_PRICES) ──
+  function ensureEtab(cb) {
+    if (window.ETAB_PRICES) { cb(); return; }
+    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260701e1';
+    s.onload = function () { cb(); }; s.onerror = function () { cb(); };
+    document.head.appendChild(s);
+  }
+  // renvoie [ppht, stock] pour un CIP dans l'établissement courant (ou combiné "Tous")
+  function etabRec(cip) {
+    var E = window.ETAB_PRICES; if (!E || cip == null || cip === '') return null;
+    cip = String(cip);
+    if (mktEtab && E.prices && E.prices[mktEtab]) return E.prices[mktEtab][cip] || null;
+    return (E.all && E.all[cip]) || null;
   }
 
   // ════════════════════════════════════════════
@@ -272,7 +290,7 @@
   function renderSite(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#fff">' +
-        '<iframe src="../../site-integral/index-typo.html?v=20260630z" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/index-typo.html?v=20260701a" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -282,7 +300,7 @@
   function renderPropositions(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/propositions/index.html?v=20260630z" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/propositions/index.html?v=20260701a" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
