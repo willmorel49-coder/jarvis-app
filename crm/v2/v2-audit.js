@@ -182,8 +182,36 @@
       root.innerHTML = top + '<div class="v2-wrap"><div id="aud">' + intro
         + '<div class="aud-preview-lbl">Aperçu du document</div>'
         + buildSheet(pid || null, name) + importSection() + '</div></div>';
+      animatePreview(root, d);
     }
   };
+
+  // ── Motion : n'anime QUE l'aperçu écran. buildSheet / le PDF restent statiques. ──
+  function animatePreview(root, d) {
+    var mo = V2.motion; if (!mo) return;
+    // 1) Count-up sur le grand montant hero « ≈ X € / an », déclenché à l'écran (inView).
+    //    On isole le nombre dans un <span data-count> (DOM écran uniquement) pour préserver
+    //    le « / an » stylé (.aud-yr). buildSheet reste inchangé -> le PDF reste statique.
+    var big = root.querySelector('#aud .aud-big');
+    var yr = big && big.querySelector('.aud-yr');
+    if (big && yr && d && d.net) {
+      // le 1er nœud texte de .aud-big contient « ≈ X € » ; on l'enveloppe pour cibler le compteur
+      var numNode = big.firstChild;
+      if (numNode && numNode.nodeType === 3) {
+        var span = document.createElement('span');
+        span.setAttribute('data-count', '');
+        span.textContent = numNode.textContent;
+        big.replaceChild(span, numNode);
+        mo.inView(span, function (el) { mo.countUp(el); }, { threshold: .4 });
+      }
+    }
+    // 2) Cascade d'entrée sur les rangées du tableau par tranche (1er tableau = détail par tranche)
+    var firstTable = root.querySelector('#aud .aud-sec table tbody');
+    if (firstTable) mo.stagger(firstTable.querySelectorAll('tr'), { step: 45, y: 6 });
+    // 3) Bouton « Générer le PDF à présenter » rendu magnétique
+    var cta = root.querySelector('#aud .aud-cta');
+    if (cta) mo.magnetic(cta);
+  }
 
   // API publique : permet à la fiche officine (v2-pharma) d'afficher l'audit d'une pharmacie.
   V2.audit = {

@@ -136,7 +136,7 @@
       if (stats.length) {
         html += '<div class="inf-stats">' + stats.map(function (s) {
           return '<div class="inf-stat a-' + s.a + '"><span class="ic">' + ICO(s.ico, 17, 2) + '</span>' +
-            '<span class="v"><b>' + s.n + '</b><span>' + s.l + '</span></span></div>';
+            '<span class="v"><b data-count="' + s.n + '">' + s.n + '</b><span>' + s.l + '</span></span></div>';
         }).join('') + '</div>';
       }
       if (recap && recap.une) {
@@ -218,6 +218,32 @@
 
       html += '</div>';
       root.innerHTML = html;
+
+      // ── Motion (façon Framer Motion, 100% vanilla, RM-safe via l'API) ──
+      var mo = V2.motion;
+      if (mo) {
+        // Compteurs « L'essentiel du jour » : count-up quand la ligne arrive à l'écran
+        var statsEl = root.querySelector('.inf-stats');
+        if (statsEl) {
+          mo.inView(statsEl, function (el) {
+            mo.stagger(el.querySelectorAll('.inf-stat'), { step: 60, y: 8 });
+            var cs = el.querySelectorAll('[data-count]');
+            for (var i = 0; i < cs.length; i++) mo.countUp(cs[i]);
+          });
+        }
+        // Cartes Opportunités Intégral : cascade d'entrée à l'écran
+        var oppsEl = root.querySelector('.inf-opps');
+        if (oppsEl) {
+          mo.inView(oppsEl, function (el) { mo.stagger(el.querySelectorAll('.inf-opp'), { step: 50, cap: 6, y: 10 }); });
+        }
+        // Rangées de rubriques (ruptures / rappels / actu) : cascade à l'écran
+        var lists = root.querySelectorAll('.inf-list');
+        for (var L = 0; L < lists.length; L++) {
+          (function (listEl) {
+            mo.inView(listEl, function (el) { mo.stagger(el.querySelectorAll('.inf-row'), { step: 34, cap: 10, y: 8 }); });
+          })(lists[L]);
+        }
+      }
     }
   };
 
@@ -312,11 +338,11 @@
       '.inf2 .inf-empty-t{font-size:18px;font-weight:700;color:var(--ip-ink);letter-spacing:-.01em}',
       '.inf2 .inf-empty-d{font-size:14px;max-width:38ch;line-height:1.5}',
       // apparition douce
-      '.inf2 .inf-hero,.inf2 .inf-stats,.inf2 .inf-une,.inf2 .inf-sec{animation:infin .45s var(--mo-ease-in) both}',
-      '.inf2 .inf-stats{animation-delay:.04s}.inf2 .inf-une{animation-delay:.08s}',
+      '.inf2 .inf-hero,.inf2 .inf-une,.inf2 .inf-sec{animation:infin .45s var(--mo-ease-in) both}',
+      '.inf2 .inf-une{animation-delay:.08s}',
       '.inf2 .inf-sec:nth-of-type(1){animation-delay:.10s}.inf2 .inf-sec:nth-of-type(2){animation-delay:.14s}.inf2 .inf-sec:nth-of-type(3){animation-delay:.18s}.inf2 .inf-sec:nth-of-type(4){animation-delay:.22s}',
       '@keyframes infin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}',
-      '@media(prefers-reduced-motion:reduce){.inf2 .inf-hero,.inf2 .inf-stats,.inf2 .inf-une,.inf2 .inf-sec{animation:none}.inf2 .inf-row,.inf2 .inf-opp,.inf2 .row-ext,.inf2 .opp-cta svg{transition:none}.inf2 .inf-eyebrow .live i,.inf2 .inf-spin{animation:none}}'
+      '@media(prefers-reduced-motion:reduce){.inf2 .inf-hero,.inf2 .inf-une,.inf2 .inf-sec{animation:none}.inf2 .inf-row,.inf2 .inf-opp,.inf2 .row-ext,.inf2 .opp-cta svg{transition:none}.inf2 .inf-eyebrow .live i,.inf2 .inf-spin{animation:none}}'
     ].join('');
     document.head.appendChild(st);
   }
