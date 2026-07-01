@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Scroll Scrub + Pin</title>
+<!--
+/* FX-BANK · SCROLL SCRUB + PIN
+   QUOI : Section "pinnée" (sticky) dont un contenu s'anime selon la PROGRESSION de scroll (scrub 0..1 → transform/opacity).
+   QUAND : Storytelling, reveals étape par étape, chiffres animés — un ScrollTrigger vanilla sans lib.
+   DEPENDANCES : aucune (vanilla pur).
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré (état final figé).
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --brand:#0050E6; --accent:#F39A1B; --ink:#0A0E1A; --light:#F8FAFC; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--ink);color:var(--light);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+
+  /* ============================================================= */
+  /* FX:COPY:START — SCRUB + PIN (CSS)                              */
+  /* ============================================================= */
+
+  /* 1) La section donne la "distance de scroll" : plus elle est haute,
+        plus l'animation dure. Ici 300vh = 3 écrans de scrub. */
+  .fx-pin-section{ position:relative; height:300vh; }   /* ← durée du scrub */
+
+  /* 2) L'écran pinné reste collé pendant qu'on traverse la section. */
+  .fx-pin-stage{
+    position:sticky; top:0; height:100vh;
+    display:grid; place-items:center; overflow:hidden;
+  }
+
+  /* 3) Éléments animés : on lit --p (progression 0..1 posée en JS) via
+        calc(). Aucune classe à toggler, tout est continu. */
+  .fx-scrub-title{
+    font-size:clamp(2.5rem,9vw,7rem); font-weight:800; letter-spacing:-.04em;
+    /* p:0 → décalé/transparent ; p:1 → net et centré */
+    transform: translate3d(0, calc((1 - var(--p,0)) * 40px), 0)
+               scale( calc(0.9 + var(--p,0) * 0.1) );
+    opacity: var(--p,0);
+  }
+  .fx-scrub-bar{                        /* barre de progression illustrative */
+    position:absolute; left:0; bottom:0; height:6px; width:100%;
+    transform: scaleX(var(--p,0)); transform-origin:left;
+    background:linear-gradient(90deg,var(--brand),var(--accent));
+  }
+  .fx-scrub-chip{                       /* pastille qui traverse l'écran */
+    position:absolute; top:12%;
+    left: calc(6% + var(--p,0) * 82%);
+    width:56px;height:56px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 0 0 rgba(243,154,27,.5);
+    transform: rotate( calc(var(--p,0) * 540deg) );
+  }
+  /* ============================================================= */
+  /* FX:COPY:END (CSS)                                             */
+  /* JS plus bas, également dans un bloc COPY.                      */
+
+  /* ---- DÉMO seulement ---- */
+  .demo-intro,.demo-outro{min-height:100vh;display:grid;place-items:center;text-align:center;padding:2rem}
+  .demo-intro{background:radial-gradient(120% 90% at 50% 0%, rgba(0,80,230,.3), transparent 60%)}
+  .demo-intro h2,.demo-outro h2{font-size:clamp(1.4rem,4vw,2.4rem);letter-spacing:-.02em}
+  .demo-intro p,.demo-outro p{margin-top:.8rem;color:#9fb0c9}
+  .fx-pin-section{background:var(--light);color:var(--ink)}
+  .demo-sub{position:absolute;bottom:12%;color:#5b6b86;font-size:.85rem;letter-spacing:.15em;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+  <section class="demo-intro">
+    <div><h2>Scrollez vers le bas</h2><p>La section suivante se fige et s'anime au rythme du scroll.</p></div>
+  </section>
+
+<!-- FX:COPY:START — SCRUB + PIN (HTML) -->
+<!-- La SECTION haute = piste de scroll ; le STAGE sticky = ce qu'on voit. -->
+<section class="fx-pin-section" data-fx-pin>
+  <div class="fx-pin-stage">
+    <div class="fx-scrub-chip"></div>
+    <h1 class="fx-scrub-title">Progression</h1>
+    <div class="fx-scrub-bar"></div>
+    <div class="demo-sub">progress = 0 → 1</div>
+  </div>
+</section>
+<!-- FX:COPY:END (HTML) -->
+
+  <section class="demo-outro">
+    <div><h2>Section terminée</h2><p>L'animation s'est jouée pile sur la hauteur de la section.</p></div>
+  </section>
+
+<!-- FX:COPY:START — SCRUB + PIN (JS) -->
+<script>
+/* Scrub lié au pin, vanilla — aucun ScrollTrigger requis.
+   PRINCIPE : progression = (haut de section franchi) / (hauteur scrollable).
+   On pose --p (0..1) sur le stage ; le CSS fait le reste via calc().
+   VARIABLES :
+     • La DURÉE du scrub se règle par la height de .fx-pin-section (CSS).
+   ACCESSIBILITÉ : reduced-motion → on fige --p à 1 (état final lisible). */
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-pin]').forEach(function (section) {
+    var stage = section.querySelector('.fx-pin-stage');
+    if (!stage) return;
+
+    if (reduce){ stage.style.setProperty('--p', 1); return; }   // état final figé
+
+    var ticking = false;
+    function compute(){
+      var rect = section.getBoundingClientRect();
+      var scrollable = section.offsetHeight - window.innerHeight; // distance utile
+      // rect.top passe de 0 (entrée) à -scrollable (sortie)
+      var p = scrollable > 0 ? (-rect.top / scrollable) : 0;
+      p = Math.max(0, Math.min(1, p));                            // clamp 0..1
+      stage.style.setProperty('--p', p.toFixed(4));
+      ticking = false;
+    }
+    function onScroll(){ if(!ticking){ ticking = true; requestAnimationFrame(compute); } }
+
+    window.addEventListener('scroll', onScroll, { passive:true });
+    window.addEventListener('resize', onScroll);
+    compute();   // état initial
+  });
+})();
+</script>
+<!-- FX:COPY:END (JS) -->
+
+</body>
+</html>

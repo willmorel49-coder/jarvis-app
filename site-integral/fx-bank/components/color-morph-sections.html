@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Color Morph Sections</title>
+<!--
+/* FX-BANK · COLOR MORPH SECTIONS
+   QUOI : Le fond/thème de page change en douceur d'une section à l'autre au scroll.
+   QUAND : Landing éditoriale, storytelling color-blocking, page « nos valeurs » par blocs.
+   DEPENDANCES : aucune (IntersectionObserver natif).
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+</style>
+</head>
+<body>
+
+  <!-- FX:COPY:START -->
+  <!-- ============ FX COLOR MORPH SECTIONS ============ -->
+  <style>
+    /* Le thème vit sur <body> (ou un wrapper). La transition douce se joue ici. */
+    .fxcm-page{
+      --fx-bg:#0A0E1A; --fx-ink:#F8FAFC; --fx-accent:#F39A1B;
+      background:var(--fx-bg); color:var(--fx-ink);
+      transition:background .9s ease, color .9s ease;
+      min-height:100vh;
+    }
+    .fxcm-section{ min-height:100vh; display:grid; place-content:center; text-align:center;
+      padding:12vh 6vw; gap:20px; }
+    .fxcm-eyebrow{ text-transform:uppercase; letter-spacing:.28em; font-size:12px; font-weight:700;
+      color:var(--fx-accent); transition:color .9s ease; }
+    .fxcm-title{ font-size:clamp(32px,7vw,72px); line-height:1.02; letter-spacing:-.03em; font-weight:800; }
+    .fxcm-text{ max-width:520px; margin:0 auto; opacity:.72; font-size:clamp(15px,2vw,18px); line-height:1.6; }
+    .fxcm-chip{ justify-self:center; margin-top:8px; padding:9px 20px; border-radius:999px; font-weight:700;
+      font-size:14px; color:#0A0E1A; background:var(--fx-accent); transition:background .9s ease; }
+    @media (prefers-reduced-motion: reduce){
+      .fxcm-page,.fxcm-eyebrow,.fxcm-chip{ transition:none !important; }
+      html{ scroll-behavior:auto; }
+    }
+  </style>
+
+  <div class="fxcm-page" id="fxcmPage">
+    <!-- Chaque section porte son thème : data-bg / data-ink / data-accent (À CHANGER) -->
+    <section class="fxcm-section" data-bg="#0A0E1A" data-ink="#F8FAFC" data-accent="#F39A1B">
+      <p class="fxcm-eyebrow">Encre profonde</p>
+      <h2 class="fxcm-title">On commence<br>dans le noir.</h2>
+      <p class="fxcm-text">Le thème de la page suit la section visible. Scrolle pour voir le fond fondre d'une couleur à l'autre.</p>
+      <span class="fxcm-chip">Section 01</span>
+    </section>
+
+    <section class="fxcm-section" data-bg="#0050E6" data-ink="#F8FAFC" data-accent="#F39A1B">
+      <p class="fxcm-eyebrow">Bleu marque</p>
+      <h2 class="fxcm-title">Puis le bleu<br>prend le relais.</h2>
+      <p class="fxcm-text">Fond, texte et accent basculent ensemble, en douceur, sans à-coups ni recharge.</p>
+      <span class="fxcm-chip">Section 02</span>
+    </section>
+
+    <section class="fxcm-section" data-bg="#F39A1B" data-ink="#1A1004" data-accent="#0050E6">
+      <p class="fxcm-eyebrow">Orange énergie</p>
+      <h2 class="fxcm-title">L'orange<br>réchauffe le tout.</h2>
+      <p class="fxcm-text">Ici le texte passe en encre foncée pour rester lisible sur fond clair.</p>
+      <span class="fxcm-chip">Section 03</span>
+    </section>
+
+    <section class="fxcm-section" data-bg="#F8FAFC" data-ink="#0A0E1A" data-accent="#0050E6">
+      <p class="fxcm-eyebrow">Clair repos</p>
+      <h2 class="fxcm-title">Et on respire<br>en clair.</h2>
+      <p class="fxcm-text">Dernier bloc lumineux. Recompose autant de sections que tu veux : ça suit.</p>
+      <span class="fxcm-chip">Section 04</span>
+    </section>
+  </div>
+
+  <script>
+  (function(){
+    var page=document.getElementById('fxcmPage');
+    if(!page) return;
+    var sections=[].slice.call(page.querySelectorAll('.fxcm-section'));
+
+    function paint(el){
+      if(el.dataset.bg)    page.style.setProperty('--fx-bg', el.dataset.bg);
+      if(el.dataset.ink)   page.style.setProperty('--fx-ink', el.dataset.ink);
+      if(el.dataset.accent)page.style.setProperty('--fx-accent', el.dataset.accent);
+    }
+
+    // La section la plus visible pilote le thème.
+    var io=new IntersectionObserver(function(entries){
+      var best=null;
+      entries.forEach(function(e){
+        if(e.isIntersecting && (!best || e.intersectionRatio>best.intersectionRatio)) best=e;
+      });
+      if(best) paint(best.target);
+    },{ threshold:[.5,.75] , rootMargin:'-10% 0px -10% 0px'});
+
+    sections.forEach(function(s){ io.observe(s); });
+    paint(sections[0]); // état initial
+  })();
+  </script>
+  <!-- ============ /FX COLOR MORPH SECTIONS ============ -->
+  <!-- FX:COPY:END -->
+
+</body>
+</html>

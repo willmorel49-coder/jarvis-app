@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Globe Arcs</title>
+<!--
+/* FX-BANK · GLOBE-ARCS
+   QUOI : sphère de points (répartition Fibonacci) + noeuds + arcs lumineux animés (QuadraticBezier) avec particules qui défilent, rotation lente.
+   QUAND : section "réseau national / maillage pharmacies / logistique", hero data géographique.
+   DEPENDANCES : Three.js r128 CDN.
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré (rotation figée, particules calmées).
+   COPIER : le bloc entre les balises <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --bleu:#0050E6; --orange:#F39A1B; --encre:#0A0E1A; --clair:#F8FAFC; }
+  *{ box-sizing:border-box; margin:0; }
+  html,body{ height:100%; }
+  body{
+    background:radial-gradient(90% 90% at 50% 40%, rgba(0,80,230,.12), transparent 60%), var(--encre);
+    color:var(--clair); font-family:"DM Sans",system-ui,sans-serif; overflow:hidden;
+  }
+  .demo-overlay{ position:fixed; left:0; right:0; top:48px; text-align:center; z-index:2; pointer-events:none; }
+  .demo-overlay h1{ font-size:clamp(28px,5vw,54px); font-weight:800; letter-spacing:-.02em; }
+  .demo-overlay p{ opacity:.55; margin-top:8px; font-size:14px; }
+
+  /* --- FX:COPY:START --- GLOBE-ARCS (bloc réutilisable) --- */
+  .fx-globe{ position:fixed; inset:0; z-index:1; }
+  .fx-globe canvas{ display:block; width:100%; height:100%; }
+  /* Fallback : globe stylisé en CSS (radial-gradients) si WebGL absent */
+  .fx-globe-fallback{
+    position:absolute; inset:0; display:none; place-items:center;
+  }
+  .fx-globe-fallback .ball{
+    width:min(60vmin,420px); aspect-ratio:1; border-radius:50%;
+    background:
+      radial-gradient(40% 40% at 35% 30%, rgba(0,80,230,.9), transparent 70%),
+      radial-gradient(60% 60% at 65% 70%, rgba(243,154,27,.5), transparent 70%),
+      #10192e;
+    box-shadow:0 0 120px rgba(0,80,230,.4), inset 0 0 80px rgba(0,0,0,.6);
+  }
+  .fx-globe.no-webgl canvas{ display:none; }
+  .fx-globe.no-webgl .fx-globe-fallback{ display:grid; }
+  <!-- FX:COPY:END -->
+</style>
+</head>
+<body>
+
+  <!-- FX:COPY:START -->
+  <div class="fx-globe" id="fxGlobe"><div class="fx-globe-fallback"><div class="ball"></div></div></div>
+  <!-- FX:COPY:END -->
+
+  <div class="demo-overlay">
+    <div>
+      <h1>Globe Arcs</h1>
+      <p>Un maillage qui tourne, des arcs qui pulsent.</p>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  // --- FX:COPY:START --- GLOBE-ARCS · JS ---
+  (function(){
+    const host=document.getElementById('fxGlobe');
+    if(!host) return;
+    const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+    let gl=null; try{ gl=document.createElement('canvas').getContext('webgl'); }catch(e){}
+    if(!window.THREE || !gl){ host.classList.add('no-webgl'); return; }
+
+    // >>> VARIABLES À CHANGER <<<
+    const R=16;               // rayon du globe
+    const DOTS=900;           // points de surface
+    const NODES=22;           // noeuds actifs (origines/cibles d arcs)
+    const ARCS=14;            // nb d arcs simultanés
+    const C_DOT=0x2b3f66, C_NODE=0x8fb4ff, C_ARC=0x0050E6, C_TRAVEL=0xF39A1B;
+
+    const w=()=>host.clientWidth, h=()=>host.clientHeight;
+    const scene=new THREE.Scene();
+    const cam=new THREE.PerspectiveCamera(45,w()/h(),.1,200); cam.position.z=44;
+    const rnd=new THREE.WebGLRenderer({antialias:true,alpha:true});
+    rnd.setPixelRatio(Math.min(devicePixelRatio,2)); rnd.setSize(w(),h()); host.appendChild(rnd.domElement);
+    const world=new THREE.Group(); world.rotation.x=.35; scene.add(world);
+
+    // Points en spirale de Fibonacci sur la sphère
+    function fib(i,n){ const y=1-(i/(n-1))*2, r=Math.sqrt(1-y*y), th=i*Math.PI*(3-Math.sqrt(5));
+      return new THREE.Vector3(Math.cos(th)*r, y, Math.sin(th)*r).multiplyScalar(R); }
+    const dp=new Float32Array(DOTS*3);
+    for(let i=0;i<DOTS;i++){ fib(i,DOTS).toArray(dp,i*3); }
+    const dg=new THREE.BufferGeometry(); dg.setAttribute('position',new THREE.BufferAttribute(dp,3));
+    world.add(new THREE.Points(dg,new THREE.PointsMaterial({color:C_DOT,size:.28,transparent:true,opacity:.85})));
+
+    // Noeuds mis en avant
+    const nodePts=[]; const ng=new THREE.BufferGeometry(); const np=new Float32Array(NODES*3);
+    for(let i=0;i<NODES;i++){ const v=fib(Math.floor(Math.random()*DOTS),DOTS); v.toArray(np,i*3); nodePts.push(v); }
+    ng.setAttribute('position',new THREE.BufferAttribute(np,3));
+    world.add(new THREE.Points(ng,new THREE.PointsMaterial({color:C_NODE,size:.9,transparent:true,opacity:1})));
+
+    // Arcs = QuadraticBezier au-dessus de la surface + particule voyageuse
+    const arcs=[];
+    function newArc(){
+      const a=nodePts[Math.floor(Math.random()*NODES)], b=nodePts[Math.floor(Math.random()*NODES)];
+      if(a===b) return null;
+      const mid=a.clone().add(b).multiplyScalar(.5).normalize().multiplyScalar(R*(1.15+a.distanceTo(b)/(R*3)));
+      const curve=new THREE.QuadraticBezierCurve3(a,mid,b);
+      const pts=curve.getPoints(40);
+      const g=new THREE.BufferGeometry().setFromPoints(pts);
+      const line=new THREE.Line(g,new THREE.LineBasicMaterial({color:C_ARC,transparent:true,opacity:0}));
+      const dotG=new THREE.BufferGeometry(); dotG.setAttribute('position',new THREE.BufferAttribute(new Float32Array(3),3));
+      const dot=new THREE.Points(dotG,new THREE.PointsMaterial({color:C_TRAVEL,size:1.4,transparent:true,opacity:1}));
+      world.add(line,dot);
+      return {curve,line,dot,dotG,t:0,life:0,dur:2+Math.random()*2};
+    }
+    for(let i=0;i<ARCS;i++){ const a=newArc(); if(a) arcs.push(a); }
+
+    let tmx=0,tmy=0,mx=0,my=0;
+    addEventListener('pointermove',e=>{ tmx=e.clientX/innerWidth-.5; tmy=e.clientY/innerHeight-.5; });
+    addEventListener('resize',()=>{ cam.aspect=w()/h(); cam.updateProjectionMatrix(); rnd.setSize(w(),h()); });
+
+    const clock=new THREE.Clock();
+    (function loop(){
+      requestAnimationFrame(loop);
+      const dt=Math.min(clock.getDelta(),.05);
+      if(!reduce) world.rotation.y += .0025;
+      mx+=(tmx-mx)*.05; my+=(tmy-my)*.05;
+      world.rotation.y += mx*.01; world.rotation.x = .35 + my*.4;
+
+      arcs.forEach((a,i)=>{
+        a.life += reduce?dt*.4:dt;
+        a.t = (a.life % a.dur)/a.dur;
+        const fade = Math.sin(Math.min(a.t*Math.PI,Math.PI)); // pulse d apparition
+        a.line.material.opacity = .15 + fade*.5;
+        const p=a.curve.getPoint(a.t);
+        a.dotG.attributes.position.setXYZ(0,p.x,p.y,p.z); a.dotG.attributes.position.needsUpdate=true;
+        a.dot.material.opacity=fade;
+        if(a.life>a.dur){ // recycle l arc
+          world.remove(a.line,a.dot); const n=newArc(); if(n) arcs[i]=n;
+        }
+      });
+      rnd.render(scene,cam);
+    })();
+  })();
+  // --- FX:COPY:END ---
+  </script>
+</body>
+</html>

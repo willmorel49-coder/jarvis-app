@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Marquee Infinite</title>
+<!--
+/* FX-BANK · MARQUEE INFINITE
+   QUOI : Bandeau défilant infini, piste dupliquée translatée en boucle, pause au survol, fondu sur les bords.
+   QUAND : Rangée de logos partenaires, mots-clés défilants, preuve sociale, ticker.
+   DEPENDANCES : aucune
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. Fondu via mask-image (gradient). reduced-motion géré.
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --bleu:#0050E6; --orange:#F39A1B; --encre:#0A0E1A; --clair:#F8FAFC; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    min-height:100vh; display:flex; flex-direction:column; justify-content:center; gap:2.5rem;
+    background:var(--encre); color:var(--clair);
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; padding:6vw 0;
+  }
+  .demo-tag{ font-size:.8rem; letter-spacing:.28em; text-transform:uppercase; color:var(--orange); text-align:center; }
+
+  /* FX:COPY:START */
+  /* ==== Marquee Infinite ==== */
+  /* Duplique la piste (aria-hidden) pour une boucle sans couture. */
+  .fx-marquee{
+    --gap:3rem;            /* espace entre items */
+    --speed:26s;          /* durée d'un cycle — plus grand = plus lent */
+    position:relative; overflow:hidden; width:100%;
+    display:flex; user-select:none;
+    /* fondu des bords (compatible Safari via -webkit-mask) */
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+            mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+  }
+  .fx-marquee__track{
+    display:flex; gap:var(--gap); padding-right:var(--gap);
+    flex:0 0 auto; min-width:100%;
+    animation:fxMarquee var(--speed) linear infinite;
+    will-change:transform;
+  }
+  .fx-marquee:hover .fx-marquee__track{ animation-play-state:paused; }   /* pause au survol */
+  .fx-marquee[data-reverse] .fx-marquee__track{ animation-direction:reverse; }
+
+  .fx-marquee__item{
+    flex:0 0 auto; display:inline-flex; align-items:center; gap:.6rem;
+    font-size:clamp(1.1rem,2.5vw,1.7rem); font-weight:700; letter-spacing:-.01em;
+    color:#c7d3ea; white-space:nowrap;
+  }
+  .fx-marquee__item b{ color:var(--orange, #F39A1B); }   /* accent au choix */
+  .fx-marquee__dot{ color:var(--bleu, #0050E6); font-size:1.4em; line-height:0; }
+
+  @keyframes fxMarquee{
+    from{ transform:translateX(0); }
+    to{   transform:translateX(-50%); }   /* -50% car piste dupliquée = 2× le contenu */
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-marquee__track{ animation:none; }
+    .fx-marquee{ overflow-x:auto; }        /* défilement manuel accessible */
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+  <p class="demo-tag">FX-Bank · Typo</p>
+
+  <!-- FX:COPY:START -->
+  <!-- Marquee : le 2e .fx-marquee__track est aria-hidden (copie visuelle pour la boucle). -->
+  <div class="fx-marquee" aria-label="Nos engagements">
+    <div class="fx-marquee__track">
+      <span class="fx-marquee__item">Ni franco <span class="fx-marquee__dot">•</span></span>
+      <span class="fx-marquee__item">Ni engagement <span class="fx-marquee__dot">•</span></span>
+      <span class="fx-marquee__item"><b>+14 000</b> références <span class="fx-marquee__dot">•</span></span>
+      <span class="fx-marquee__item">Remises <b>6–9%</b> <span class="fx-marquee__dot">•</span></span>
+      <span class="fx-marquee__item">Livraison J+1 <span class="fx-marquee__dot">•</span></span>
+    </div>
+    <!-- copie identique pour la boucle sans couture -->
+    <div class="fx-marquee__track" aria-hidden="true">
+      <span class="fx-marquee__item">Ni franco <span class="fx-marquee__dot">•</span></span>
+      <span class="fx-marquee__item">Ni engagement <span class="fx-marquee__dot">•</span></span>
+      <span class="fx-marquee__item"><b>+14 000</b> références <span class="fx-marquee__dot">•</span></span>
+      <span class="fx-marquee__item">Remises <b>6–9%</b> <span class="fx-marquee__dot">•</span></span>
+      <span class="fx-marquee__item">Livraison J+1 <span class="fx-marquee__dot">•</span></span>
+    </div>
+  </div>
+  <!-- FX:COPY:END -->
+
+  <!-- Démo : 2e bandeau en sens inverse, plus lent -->
+  <div class="fx-marquee" data-reverse style="--speed:38s;" aria-label="Partenaires">
+    <div class="fx-marquee__track">
+      <span class="fx-marquee__item">PHARMA</span><span class="fx-marquee__item">SANTÉ</span>
+      <span class="fx-marquee__item">OFFICINE</span><span class="fx-marquee__item">GROSSISTE</span>
+      <span class="fx-marquee__item">RÉPARTITION</span><span class="fx-marquee__item">OFFILOG</span>
+    </div>
+    <div class="fx-marquee__track" aria-hidden="true">
+      <span class="fx-marquee__item">PHARMA</span><span class="fx-marquee__item">SANTÉ</span>
+      <span class="fx-marquee__item">OFFICINE</span><span class="fx-marquee__item">GROSSISTE</span>
+      <span class="fx-marquee__item">RÉPARTITION</span><span class="fx-marquee__item">OFFILOG</span>
+    </div>
+  </div>
+</body>
+</html>

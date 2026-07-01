@@ -293,6 +293,12 @@
             '<span class="mkt-link-s">Galerie des directions design à présenter à la direction.</span></span>' +
             '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
           '</a>' +
+          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'fxbank\')">' +
+            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Banque d\'effets (FX-BANK)</span>' +
+            '<span class="mkt-link-s">24 composants 3D / motion / design prêts à assembler pour un site ultra-tendance.</span></span>' +
+            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
+          '</a>' +
         '</div>' +
         (backend === 'local'
           ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Activer le partage entre vous</b><br>' +
@@ -307,7 +313,7 @@
   function renderSite(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#fff">' +
-        '<iframe src="../../site-integral/index-typo.html?v=20260701a" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/index-typo.html?v=20260701b" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -317,7 +323,17 @@
   function renderPropositions(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/propositions/index.html?v=20260701a" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/propositions/index.html?v=20260701b" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+      '</div>';
+  }
+
+  // ════════════════════════════════════════════
+  // FX-BANK (banque d'effets — catalogue)
+  // ════════════════════════════════════════════
+  function renderFxBank(root) {
+    root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
+      '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#06080F">' +
+        '<iframe src="../../site-integral/fx-bank/index.html?v=20260701b" title="FX-BANK — banque d\'effets" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -1055,6 +1071,7 @@
       if (param === 'catalogues') renderCatalogues(root);
       else if (param === 'site') renderSite(root);
       else if (param === 'propositions') renderPropositions(root);
+      else if (param === 'fxbank') renderFxBank(root);
       else if (param === 'docs') renderDocs(root);
       else if (param) renderEditor(root, param); else renderList(root);
     }

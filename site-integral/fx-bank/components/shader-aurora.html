@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Shader Aurora</title>
+<!--
+/* FX-BANK · SHADER-AURORA
+   QUOI : plan plein écran ShaderMaterial GLSL, flux fluide (fbm domain-warp) bleu/violet/orange qui ondule, réactif souris + scroll.
+   QUAND : fond de hero premium, section d ouverture, ambiance "flux / énergie / IA".
+   DEPENDANCES : Three.js r128 CDN.
+   SAFARI : effet 100% en shader (pas de filter:blur/backdrop-filter). Fallback dégradé CSS si WebGL absent. reduced-motion : temps figé.
+   COPIER : le bloc entre les balises <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --bleu:#0050E6; --orange:#F39A1B; --encre:#0A0E1A; --clair:#F8FAFC; }
+  *{ box-sizing:border-box; margin:0; }
+  html,body{ height:100%; }
+  body{ background:var(--encre); color:var(--clair); font-family:"DM Sans",system-ui,sans-serif; overflow-x:hidden; }
+  .demo-overlay{ position:fixed; inset:0; display:grid; place-items:center; pointer-events:none; z-index:2; text-align:center; }
+  .demo-overlay h1{ font-size:clamp(30px,6vw,72px); font-weight:800; letter-spacing:-.03em; text-shadow:0 4px 40px rgba(0,0,0,.4); }
+  .demo-overlay p{ opacity:.7; margin-top:10px; font-size:14px; }
+  .spacer{ position:relative; z-index:2; height:160vh; }
+
+  /* --- FX:COPY:START --- SHADER-AURORA (bloc réutilisable) --- */
+  .fx-aurora{ position:fixed; inset:0; z-index:1; }
+  .fx-aurora canvas{ display:block; width:100%; height:100%; }
+  /* Fallback dégradé animé léger (conic/radial, sans blur) si WebGL absent */
+  .fx-aurora-fallback{
+    position:absolute; inset:0; display:none;
+    background:
+      radial-gradient(70% 60% at 25% 30%, rgba(0,80,230,.55), transparent 60%),
+      radial-gradient(60% 55% at 80% 65%, rgba(243,154,27,.35), transparent 60%),
+      radial-gradient(80% 70% at 55% 55%, rgba(120,60,220,.4), transparent 65%),
+      var(--encre);
+  }
+  .fx-aurora.no-webgl canvas{ display:none; }
+  .fx-aurora.no-webgl .fx-aurora-fallback{ display:block; }
+  <!-- FX:COPY:END -->
+</style>
+</head>
+<body>
+
+  <!-- FX:COPY:START -->
+  <div class="fx-aurora" id="fxAurora"><div class="fx-aurora-fallback"></div></div>
+  <!-- FX:COPY:END -->
+
+  <div class="demo-overlay">
+    <div>
+      <h1>Shader Aurora</h1>
+      <p>Bouge la souris et scrolle : le flux répond.</p>
+    </div>
+  </div>
+  <div class="spacer"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  // --- FX:COPY:START --- SHADER-AURORA · JS ---
+  (function(){
+    const host=document.getElementById('fxAurora');
+    if(!host) return;
+    const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+    let gl=null; try{ gl=document.createElement('canvas').getContext('webgl'); }catch(e){}
+    if(!window.THREE || !gl){ host.classList.add('no-webgl'); return; }
+
+    // >>> VARIABLES À CHANGER <<< (couleurs du flux, en 0..1)
+    const C1=[0.00,0.31,0.90];  // bleu #0050E6
+    const C2=[0.47,0.24,0.86];  // violet
+    const C3=[0.95,0.60,0.11];  // orange #F39A1B
+    const SPEED=0.10;           // vitesse du flux
+
+    const w=()=>host.clientWidth, h=()=>host.clientHeight;
+    const scene=new THREE.Scene();
+    const cam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+    const rnd=new THREE.WebGLRenderer({antialias:true});
+    rnd.setPixelRatio(Math.min(devicePixelRatio,1.75)); rnd.setSize(w(),h()); host.appendChild(rnd.domElement);
+
+    const uniforms={
+      u_time:{value:0}, u_res:{value:new THREE.Vector2(w(),h())},
+      u_mouse:{value:new THREE.Vector2(.5,.5)}, u_scroll:{value:0},
+      u_c1:{value:new THREE.Vector3(...C1)}, u_c2:{value:new THREE.Vector3(...C2)}, u_c3:{value:new THREE.Vector3(...C3)}
+    };
+
+    const frag=`
+      precision highp float;
+      uniform float u_time,u_scroll; uniform vec2 u_res,u_mouse;
+      uniform vec3 u_c1,u_c2,u_c3;
+      // hash + noise + fbm classiques
+      float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+      float noise(vec2 p){
+        vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.-2.*f);
+        return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),
+                   mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y);
+      }
+      float fbm(vec2 p){ float v=0.,a=.5; for(int i=0;i<5;i++){ v+=a*noise(p); p*=2.02; a*=.5; } return v; }
+      void main(){
+        vec2 uv=gl_FragCoord.xy/u_res.xy;
+        vec2 p=(gl_FragCoord.xy-.5*u_res.xy)/u_res.y;
+        float t=u_time;
+        // domain warp
+        vec2 q=vec2(fbm(p*1.5+t*.1), fbm(p*1.5+vec2(5.2,1.3)-t*.12));
+        vec2 r=vec2(fbm(p*1.5+2.0*q+vec2(1.7,9.2)+t*.15+u_mouse*.6),
+                    fbm(p*1.5+2.0*q+vec2(8.3,2.8)-t*.13));
+        float f=fbm(p*1.5+2.0*r + u_scroll*1.2);
+        vec3 col=mix(u_c1,u_c2,clamp(f*f*2.2,0.,1.));
+        col=mix(col,u_c3,clamp(length(r)*.75,0.,1.));
+        col*= .55+.6*f;                          // relief
+        col+=u_c3*smoothstep(.55,.05,distance(uv,u_mouse))*.25; // halo souris
+        gl_FragColor=vec4(col,1.0);
+      }`;
+    const vert=`void main(){ gl_Position=vec4(position.xy,0.,1.); }`;
+
+    const quad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),
+      new THREE.ShaderMaterial({uniforms,vertexShader:vert,fragmentShader:frag}));
+    scene.add(quad);
+
+    let tmx=.5,tmy=.5;
+    addEventListener('pointermove',e=>{ tmx=e.clientX/innerWidth; tmy=1-e.clientY/innerHeight; });
+    addEventListener('scroll',()=>{ uniforms.u_scroll.value=(scrollY/(document.body.scrollHeight-innerHeight))||0; },{passive:true});
+    addEventListener('resize',()=>{ rnd.setSize(w(),h()); uniforms.u_res.value.set(w(),h()); });
+
+    let t=reduce?4.2:0;
+    (function loop(){
+      requestAnimationFrame(loop);
+      if(!reduce) t+=0.016*SPEED*6.0;
+      uniforms.u_time.value=t;
+      uniforms.u_mouse.value.x += (tmx-uniforms.u_mouse.value.x)*.05;
+      uniforms.u_mouse.value.y += (tmy-uniforms.u_mouse.value.y)*.05;
+      rnd.render(scene,cam);
+    })();
+  })();
+  // --- FX:COPY:END ---
+  </script>
+</body>
+</html>

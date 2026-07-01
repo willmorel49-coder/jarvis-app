@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Word Morph</title>
+<!--
+/* FX-BANK · WORD MORPH
+   QUOI : Un mot qui cycle entre plusieurs (fondu + glissement vertical + léger scale), sans aucun flou.
+   QUAND : Phrase d'accroche vivante ("Optimisez votre __"), slogan tournant, hero animé.
+   DEPENDANCES : aucune
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion = mot fixe.
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --bleu:#0050E6; --orange:#F39A1B; --encre:#0A0E1A; --clair:#F8FAFC; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    min-height:100vh; display:grid; place-items:center;
+    background:radial-gradient(130% 130% at 80% 10%, #16264a 0%, var(--encre) 55%);
+    color:var(--clair); font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; padding:6vw;
+  }
+  .demo-tag{ font-size:.8rem; letter-spacing:.28em; text-transform:uppercase; color:var(--orange); margin-bottom:1.4rem; }
+
+  /* FX:COPY:START */
+  /* ==== Word Morph ==== */
+  .fx-morph-line{
+    font-size:clamp(2rem,6vw,4.6rem); font-weight:800; letter-spacing:-.02em; line-height:1.15;
+  }
+  .fx-morph{                   /* conteneur du mot qui change */
+    position:relative; display:inline-grid;   /* grid = tous les mots se superposent, largeur = plus long */
+    vertical-align:baseline; color:var(--orange, #F39A1B);
+  }
+  .fx-morph__w{
+    grid-area:1/1;             /* superposition */
+    opacity:0; transform:translateY(.45em) scale(.94);
+    transition:opacity .5s ease, transform .5s cubic-bezier(.16,.84,.28,1);
+    white-space:nowrap;
+  }
+  .fx-morph__w.is-active{ opacity:1; transform:translateY(0) scale(1); }
+  .fx-morph__w.is-leaving{                     /* le mot sortant part vers le haut */
+    opacity:0; transform:translateY(-.45em) scale(.94);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-morph__w{ transition:none; }
+    /* JS neutralise le cycle : seul le premier mot reste visible */
+  }
+  /* FX:COPY:END */
+
+  .demo-static{ display:block; margin-top:.2em; color:#9fb0cc; font-size:clamp(1.1rem,3vw,1.6rem); font-weight:500; }
+</style>
+</head>
+<body>
+  <div>
+    <p class="demo-tag">FX-Bank · Typo</p>
+
+    <!-- FX:COPY:START -->
+    <!-- HTML : liste des mots via data-morph (séparés par |). Le 1er mot sert de repli reduced-motion. -->
+    <p class="fx-morph-line">
+      On optimise votre
+      <span class="fx-morph" data-morph="marge|conditions|couverture|trésorerie"></span>
+    </p>
+
+    <script>
+    /* ==== Word Morph — cycle ==== */
+    (function(){
+      var INTERVAL = 2200;  // ms d'affichage par mot — À CHANGER
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      document.querySelectorAll('[data-morph]').forEach(function(host){
+        var words = host.getAttribute('data-morph').split('|');
+        var spans = words.map(function(w, i){
+          var s = document.createElement('span');
+          s.className = 'fx-morph__w' + (i === 0 ? ' is-active' : '');
+          s.textContent = w;
+          host.appendChild(s);
+          return s;
+        });
+        if(reduce || spans.length < 2) return;   // repli : mot fixe
+
+        var cur = 0;
+        setInterval(function(){
+          var next = (cur + 1) % spans.length;
+          spans[cur].classList.remove('is-active');
+          spans[cur].classList.add('is-leaving');
+          spans[next].classList.remove('is-leaving');
+          spans[next].classList.add('is-active');
+          // nettoie l'état sortant après la transition
+          (function(prev){ setTimeout(function(){ prev.classList.remove('is-leaving'); }, 520); })(spans[cur]);
+          cur = next;
+        }, INTERVAL);
+      });
+    })();
+    </script>
+    <!-- FX:COPY:END -->
+
+    <span class="demo-static">Fondu + glissement + micro-scale — jamais de flou (safe Safari).</span>
+  </div>
+</body>
+</html>
