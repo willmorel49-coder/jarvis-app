@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>08 · Aurora géométrique — Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #FBFCFE;
+    --blue: #0050E6;
+    --orange: #F39A1B;
+    --ink: #0A1B3D;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+  }
+
+  body {
+    font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ---- Scène Aurora ---- */
+  .scene {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+  }
+
+  /* Arcs de dégradé conique NETS — formes lisibles et graphiques */
+  .arc {
+    position: absolute;
+    border-radius: 50%;
+    mix-blend-mode: multiply;
+    will-change: transform;
+  }
+
+  .arc--1 {
+    width: 78vmax;
+    height: 78vmax;
+    top: -22vmax;
+    left: -14vmax;
+    background: conic-gradient(
+      from 210deg at 50% 50%,
+      transparent 0deg,
+      rgba(0, 80, 230, 0.00) 30deg,
+      rgba(0, 80, 230, 0.55) 95deg,
+      rgba(0, 80, 230, 0.28) 150deg,
+      rgba(243, 154, 27, 0.00) 200deg,
+      transparent 360deg
+    );
+    filter: blur(46px);
+    animation: drift1 34s ease-in-out infinite alternate;
+  }
+
+  .arc--2 {
+    width: 64vmax;
+    height: 64vmax;
+    right: -18vmax;
+    bottom: -20vmax;
+    left: auto;
+    top: auto;
+    background: conic-gradient(
+      from 40deg at 50% 50%,
+      transparent 0deg,
+      rgba(243, 154, 27, 0.00) 20deg,
+      rgba(243, 154, 27, 0.50) 90deg,
+      rgba(243, 154, 27, 0.22) 150deg,
+      rgba(0, 80, 230, 0.30) 210deg,
+      rgba(0, 80, 230, 0.00) 270deg,
+      transparent 360deg
+    );
+    filter: blur(52px);
+    animation: drift2 42s ease-in-out infinite alternate;
+  }
+
+  /* Ruban linéaire net pour la lisibilité graphique */
+  .arc--3 {
+    width: 120vmax;
+    height: 30vmax;
+    top: 34%;
+    left: -10vmax;
+    border-radius: 40vmax;
+    transform: rotate(-14deg);
+    background: linear-gradient(
+      100deg,
+      rgba(0, 80, 230, 0.00) 0%,
+      rgba(0, 80, 230, 0.22) 22%,
+      rgba(120, 110, 190, 0.20) 50%,
+      rgba(243, 154, 27, 0.30) 78%,
+      rgba(243, 154, 27, 0.00) 100%
+    );
+    filter: blur(38px);
+    mix-blend-mode: multiply;
+    animation: drift3 48s ease-in-out infinite alternate;
+  }
+
+  /* Voile clair pour garder le fond propre et contenu */
+  .veil {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 50% 8%, rgba(251, 252, 254, 0) 40%, rgba(251, 252, 254, 0.72) 100%),
+      linear-gradient(180deg, rgba(251, 252, 254, 0.10), rgba(251, 252, 254, 0.35));
+    pointer-events: none;
+  }
+
+  @keyframes drift1 {
+    from { transform: rotate(0deg) scale(1); }
+    to   { transform: rotate(24deg) scale(1.08); }
+  }
+  @keyframes drift2 {
+    from { transform: rotate(0deg) scale(1); }
+    to   { transform: rotate(-20deg) scale(1.1); }
+  }
+  @keyframes drift3 {
+    from { transform: rotate(-14deg) translateX(0); }
+    to   { transform: rotate(-10deg) translateX(4vmax); }
+  }
+
+  /* ---- Étiquette ---- */
+  .tag {
+    position: fixed;
+    top: 22px;
+    left: 24px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 15px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(10, 27, 61, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    color: var(--ink);
+    box-shadow: 0 6px 22px rgba(10, 27, 61, 0.07);
+  }
+  .tag .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--orange));
+  }
+
+  /* ---- Fausse carte UI translucide ---- */
+  .ui-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    pointer-events: none;
+  }
+
+  .card {
+    pointer-events: auto;
+    width: min(420px, 92vw);
+    padding: 26px 26px 22px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    box-shadow:
+      0 20px 60px rgba(10, 27, 61, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 15px;
+  }
+  .brand .logo {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--blue), var(--orange));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 14px;
+    box-shadow: 0 4px 14px rgba(0, 80, 230, 0.35);
+  }
+  .brand small { display: block; font-weight: 500; font-size: 11px; color: rgba(10,27,61,0.5); }
+  .pill {
+    font-size: 11px; font-weight: 600;
+    padding: 5px 11px; border-radius: 999px;
+    background: rgba(0, 80, 230, 0.10); color: var(--blue);
+  }
+
+  .metric {
+    display: flex; align-items: flex-end; gap: 8px;
+    margin-bottom: 4px;
+  }
+  .metric .val { font-size: 34px; font-weight: 700; letter-spacing: -0.5px; }
+  .metric .delta {
+    font-size: 12px; font-weight: 600; color: #12a150;
+    padding-bottom: 7px;
+  }
+  .metric__label { font-size: 12px; color: rgba(10,27,61,0.55); margin-bottom: 18px; }
+
+  .rows { display: flex; flex-direction: column; gap: 12px; }
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 13px;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(10, 27, 61, 0.05);
+  }
+  .row .ico {
+    width: 30px; height: 30px; border-radius: 9px; flex: none;
+    background: rgba(0, 80, 230, 0.10);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .row .ico.orange { background: rgba(243, 154, 27, 0.16); }
+  .row .txt { flex: 1; min-width: 0; }
+  .row .txt b { font-size: 13.5px; font-weight: 600; display: block; }
+  .row .txt span { font-size: 11.5px; color: rgba(10,27,61,0.5); }
+  .row .amt { font-size: 13.5px; font-weight: 700; }
+
+  .bar {
+    height: 6px; border-radius: 6px; margin-top: 18px;
+    background: rgba(10, 27, 61, 0.08);
+    overflow: hidden;
+  }
+  .bar > i {
+    display: block; height: 100%; width: 72%;
+    background: linear-gradient(90deg, var(--blue), var(--orange));
+    border-radius: 6px;
+  }
+  .bar__label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: rgba(10,27,61,0.5);
+    margin-top: 8px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .arc { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="scene" aria-hidden="true">
+    <div class="arc arc--1"></div>
+    <div class="arc arc--3"></div>
+    <div class="arc arc--2"></div>
+    <div class="veil"></div>
+  </div>
+
+  <div class="tag"><span class="dot"></span>08 · Aurora géométrique</div>
+
+  <div class="ui-wrap">
+    <div class="card" role="presentation">
+      <div class="card__head">
+        <div class="brand">
+          <span class="logo">IP</span>
+          <span>Intégral Pharma<small>Tableau de bord</small></span>
+        </div>
+        <span class="pill">Ce mois</span>
+      </div>
+
+      <div class="metric">
+        <span class="val">18 420 €</span>
+        <span class="delta">▲ 6,4 %</span>
+      </div>
+      <div class="metric__label">Remises obtenues sur vos achats</div>
+
+      <div class="rows">
+        <div class="row">
+          <span class="ico">📦</span>
+          <span class="txt"><b>Commande #4821</b><span>Cœur de gamme · 142 réf.</span></span>
+          <span class="amt">4 120 €</span>
+        </div>
+        <div class="row">
+          <span class="ico orange">🏷️</span>
+          <span class="txt"><b>Abandon de marge</b><span>Appliqué automatiquement</span></span>
+          <span class="amt">+2 060 €</span>
+        </div>
+      </div>
+
+      <div class="bar"><i></i></div>
+      <div class="bar__label"><span>Objectif trimestre</span><span>72 %</span></div>
+    </div>
+  </div>
+
+</body>
+</html>
