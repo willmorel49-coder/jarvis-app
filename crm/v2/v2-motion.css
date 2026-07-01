@@ -50,7 +50,8 @@
 .fch-card,
 .off-card{
   transition:transform var(--mo-dur) var(--mo-ease-in),
-             box-shadow var(--mo-dur) var(--mo-ease-in);
+             box-shadow var(--mo-dur) var(--mo-ease-in),
+             border-color var(--mo-dur) var(--mo-ease-soft);
 }
 /* Lift only cards meant to be interactive (links/clickable).
    Une seule physique de survol pour toute l'app : amplitude --mo-lift,
@@ -66,6 +67,7 @@ a.fch-card:hover,
 a.off-card:hover{
   transform:translateY(var(--mo-lift));
   box-shadow:var(--sh-3);
+  border-color:var(--line-strong);
 }
 
 /* ============================================================

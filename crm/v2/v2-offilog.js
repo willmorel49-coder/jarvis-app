@@ -156,7 +156,7 @@
     }
     return '<div class="v2-kpis off-kpis">' +
       kpiCard('k1', 'Produits', V2.fmtNum(n), 'meilleures ventes Offilog') +
-      kpiCard('k2', 'Concurrent moins cher', V2.fmtNum(nAlert), 'produits où un concurrent est sous ton achat') +
+      kpiCard('k2', 'Concurrent moins cher', V2.fmtNum(nAlert), 'produits où un concurrent est sous ton achat', nAlert > 0 ? 'var(--bad)' : null) +
       kpiCard('k3', 'Prix Offilog moyen', pN ? V2.fmtEur(pSum / pN) : '—', 'sur la sélection') +
       kpiCard('k4', 'Réf. croisées', V2.fmtNum(nMatch), 'avec données concurrents') +
     '</div>';
@@ -188,7 +188,10 @@
       : '<div class="off-card-noimg">' + ICO('pill', 30, 1.4) + '</div>';
     var onMkt = mktSel.has(String(it.id));
     var alertCls = it.alert ? ' alert' : '';
-    // prix concurrent mini affiché en rouge SACRÉ uniquement quand il passe sous l'achat IP
+    // alerte prix (rouge SACRÉ) : un concurrent public passe SOUS ton prix d'achat IP.
+    // pastille dédiée dans le coin média + rappel chiffré sous le prix.
+    var alertFlag = it.alert
+      ? '<span class="off-card-flag" title="Un concurrent est moins cher que ton prix d\'achat">' + ICO('alert', 13, 2.2) + ' Alerte prix</span>' : '';
     var concBelow = it.alert && it.minConc > 0
       ? '<span class="off-card-conc mono">conc. ' + V2.fmtEur(it.minConc) + '</span>' : '';
     return '<div class="off-card' + sel + alertCls + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
@@ -196,6 +199,7 @@
         '<span class="off-rank mono">#' + it.rank + '</span>' +
         '<button class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + esc(it.id) + '\',this)" title="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
         img +
+        alertFlag +
       '</div>' +
       '<div class="off-card-body">' +
         (it.brand ? '<div class="off-card-brand">' + esc(it.brand) + '</div>' : '<div class="off-card-brand">&nbsp;</div>') +
@@ -212,17 +216,22 @@
     if (!it.matched) {
       return '<div class="off-cmp-row muted"><span class="off-cmp-na">Pas de données concurrents pour ce produit (hors périmètre veille).</span></div>';
     }
-    return CONC.map(function (src) {
+    // ligne de référence : le prix d'achat IP sert de seuil — tout ce qui passe dessous est en rouge
+    var ref = it.achat > 0
+      ? '<div class="off-cmp-ref"><span class="off-cmp-src"><span class="dot" style="background:var(--ip-blue)"></span>Ton achat IP (HT)</span>' +
+          '<span class="off-cmp-price mono">' + V2.fmtEur(it.achat) + '</span><span class="off-cmp-delta"></span></div>' : '';
+    var rows = CONC.map(function (src) {
       var v = numOr0(it.conc[src.key]);
-      if (v <= 0) return '<div class="off-cmp-row muted"><span class="off-cmp-src">' + src.label + '</span><span class="off-cmp-na">prix non connu</span></div>';
+      if (v <= 0) return '<div class="off-cmp-row muted"><span class="off-cmp-src"><span class="dot" style="background:' + src.color + '"></span>' + src.label + '</span><span class="off-cmp-na">prix non connu</span><span class="off-cmp-delta"></span></div>';
       var below = it.achat > 0 && v < it.achat;
       var delta = it.achat > 0 ? (v - it.achat) : 0;
-      return '<div class="off-cmp-row">' +
+      return '<div class="off-cmp-row' + (below ? ' below' : '') + '">' +
         '<span class="off-cmp-src"><span class="dot" style="background:' + src.color + '"></span>' + src.label + '</span>' +
         '<span class="off-cmp-price ' + (below ? 'bad' : '') + ' mono">' + V2.fmtEur(v) + '</span>' +
-        (it.achat > 0 ? '<span class="off-cmp-delta ' + (below ? 'bad' : 'ok') + '">' + (delta >= 0 ? '+' : '') + V2.fmtEur(delta) + '</span>' : '') +
+        (it.achat > 0 ? '<span class="off-cmp-delta ' + (below ? 'bad' : 'ok') + '">' + (delta >= 0 ? '+' : '') + V2.fmtEur(delta) + '</span>' : '<span class="off-cmp-delta"></span>') +
       '</div>';
     }).join('');
+    return ref + rows;
   }
   function inspector(it) {
     var img = it.img ? '<div class="off-insp-img"><img src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '';
@@ -550,7 +559,9 @@
       '.off-count{font-size:12px;color:var(--muted)}',
       '.off-sort{display:inline-flex;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px;box-shadow:var(--sh-1)}',
       '.off-sortbtn{border:none;background:transparent;border-radius:8px;padding:6px 11px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.16s var(--ease);white-space:nowrap}',
-      '.off-sortbtn.on{background:var(--pil-froid);color:#fff}',
+      '.off-sortbtn:hover:not(.on){color:var(--ip-ink);background:var(--card-2)}',
+      '.off-sortbtn:active{transform:scale(.97)}',
+      '.off-sortbtn.on{background:var(--pil-froid);color:#fff;box-shadow:0 1px 4px color-mix(in srgb,var(--pil-froid) 34%,transparent)}',
       '.off-stats-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:18px 0 12px}',
       '.off-kpis{margin-bottom:18px}',
       // grille de cartes photo
@@ -563,7 +574,12 @@
       // signature pilier : liseré 3px var(--bad) sur la carte en alerte (concurrent < achat IP) — seul usage du rouge
       '.off-card.alert{position:relative}',
       '.off-card.alert::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bad);border-radius:3px 0 0 3px;z-index:3}',
-      '.off-card-conc{font-size:10.5px;font-weight:700;color:var(--bad);font-variant-numeric:tabular-nums}',
+      '.off-card.alert{border-color:color-mix(in srgb,var(--bad) 30%,transparent)}',
+      '.off-card.alert:hover{border-color:color-mix(in srgb,var(--bad) 46%,transparent)}',
+      // pastille "Alerte prix" en pied de média — hiérarchie forte du signal rouge
+      '.off-card-flag{position:absolute;left:8px;bottom:8px;z-index:3;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.01em;color:#fff;background:var(--bad);padding:3px 8px 3px 6px;border-radius:8px;box-shadow:0 2px 7px color-mix(in srgb,var(--bad) 42%,transparent)}',
+      '.off-card-flag svg{flex:none}',
+      '.off-card-conc{font-size:10.5px;font-weight:800;color:var(--bad);font-variant-numeric:tabular-nums}',
       '.off-card-media{position:relative;height:150px;background:var(--surf-sunken);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line-2);padding:10px}',
       '.off-card-img{max-width:100%;max-height:100%;object-fit:contain}',
       '.off-card-noimg{color:var(--muted-2)}',
@@ -652,15 +668,21 @@
       '.off-cmp{margin-top:18px;padding:15px;background:var(--card-2);border:1px solid var(--line);border-radius:13px}',
       '.off-cmp-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:11px}',
       '.off-cmp-l span{text-transform:none;letter-spacing:0;font-weight:500}',
-      '.off-cmp-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-2)}',
+      '.off-cmp-row,.off-cmp-ref{display:grid;grid-template-columns:1fr auto 78px;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2)}',
       '.off-cmp-row:last-child{border-bottom:none}',
-      '.off-cmp-row.muted{opacity:.7}',
-      '.off-cmp-src{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;flex:1}',
+      '.off-cmp-row.muted{opacity:.65}',
+      // ligne de référence (achat IP) : le seuil, mis en avant en tête du comparatif
+      '.off-cmp-ref{margin:-4px -8px 4px;padding:9px 10px;background:var(--halo);border-radius:10px;border-bottom:none}',
+      '.off-cmp-ref .off-cmp-src{color:var(--ip-blue);font-weight:800}',
+      '.off-cmp-ref .off-cmp-price{color:var(--ip-blue)}',
+      // ligne concurrent sous le seuil : fond rouge léger = signal fort mais mesuré
+      '.off-cmp-row.below{background:color-mix(in srgb,var(--bad) 7%,transparent);margin:0 -8px;padding-left:10px;padding-right:10px;border-radius:9px;border-bottom-color:transparent}',
+      '.off-cmp-src{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;min-width:0}',
       '.off-cmp-src .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}',
-      '.off-cmp-price{font-size:14px;font-weight:700}',
+      '.off-cmp-price{font-size:14px;font-weight:700;text-align:right;white-space:nowrap}',
       '.off-cmp-price.bad{color:var(--bad)}',
-      '.off-cmp-na{font-size:12px;color:var(--muted);font-style:italic}',
-      '.off-cmp-delta{font-size:11px;font-weight:700;font-family:var(--mono);min-width:74px;text-align:right}',
+      '.off-cmp-na{font-size:12px;color:var(--muted);font-style:italic;text-align:right;white-space:nowrap}',
+      '.off-cmp-delta{font-size:11px;font-weight:700;font-family:var(--mono);text-align:right}',
       '.off-cmp-delta.bad{color:var(--bad)}.off-cmp-delta.ok{color:var(--ok)}',
       '.off-insp-cta{margin-top:20px;display:flex;flex-direction:column}',
       '.off-insp-cta .v2-btn{width:100%}',
