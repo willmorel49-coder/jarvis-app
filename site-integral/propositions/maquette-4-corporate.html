@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Intégral Pharma — Plus de marge, sur chaque commande.</title>
 <meta name="description" content="Intégral Pharma — grossiste-répartiteur de première intention. Groupe de grossistes français indépendant. De meilleures conditions, dès la première boîte.">
-<meta name="theme-color" content="#06163F">
+<meta name="theme-color" content="#FFFFFF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   INTÉGRAL PHARMA — Direction 4 : Corporate Confiance · Bleu profond
+   INTÉGRAL PHARMA — Direction 4 : Institutionnel clair · Corporate confiance
    Un seul fichier autonome. CSS + JS vanilla inline.
-   Motion premium 2026 (minimal & signifiant) recodé 100% vanilla.
-   Système : échelle typo claire, espacement 4/8px, easing homogène,
-   2 accents maîtrisés (bleu #0050E6 + orange #F39A1B).
+   CONCEPT : sérieux « grand groupe national ». Colonnes nettes, filets
+   institutionnels, gros KPI, réassurance, carte réseau en 2 colonnes.
+   FOND 100% CLAIR — aucun bloc sombre. Blanc / bleu très léger en aplats,
+   texte encre foncée, bleu dominant en accent, orange ponctuel.
+   Système : échelle typo claire, espacement 4/8px, easing homogène.
    Stabilité Safari : pas de background-clip:text, pas de backdrop-filter,
    pas de filter:blur grande surface, 1 seule vidéo autoplay max.
    ============================================================ */
@@ -25,27 +27,27 @@
   --blue:#0050E6;
   --blue-600:#0046C8;
   --blue-700:#0034A0;
-  --blue-900:#06163F;
-  --navy:#081232;
+  --blue-ink:#06163F;      /* bleu très foncé — TEXTE uniquement, jamais en fond de bloc */
   --orange:#F39A1B;
   --orange-600:#E08A0C;
+  --orange-ink:#7A4B00;    /* orange foncé lisible pour texte accent sur clair */
 
-  /* --- Neutres / fond (ambiance corporate claire) --- */
+  /* --- Neutres / fonds clairs (ambiance corporate institutionnelle) --- */
   --ink:#0B1736;
-  --muted:#56627F;
+  --muted:#54617E;
   --soft:#7B859E;
-  --line:#E4E9F4;
-  --line-2:#D2DDF4;
+  --line:#E2E8F5;
+  --line-2:#CFDAF1;
   --bg:#FFFFFF;
-  --bg-alt:#F5F8FE;
+  --bg-alt:#F5F8FE;        /* aplat bleu très léger */
+  --bg-tint:#EEF3FE;       /* aplat bleu léger (sections réassurance) */
   --card:#FFFFFF;
   --white:#FFFFFF;
 
-  /* --- Ombres --- */
+  /* --- Ombres douces (crédibilité, jamais dures) --- */
   --shadow-sm:0 1px 2px rgba(8,18,50,.05),0 2px 8px rgba(8,18,50,.04);
   --shadow:0 8px 30px rgba(8,18,50,.08),0 2px 8px rgba(8,18,50,.05);
-  --shadow-lg:0 30px 70px rgba(6,22,63,.16),0 8px 24px rgba(6,22,63,.08);
-  --shadow-blue:0 24px 60px rgba(0,80,230,.28);
+  --shadow-lg:0 30px 70px rgba(6,22,63,.14),0 8px 24px rgba(6,22,63,.07);
 
   /* --- Rayons --- */
   --r:8px;
@@ -88,6 +90,12 @@ h1,h2,h3,h4,h5{font-family:var(--font-display)}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px}
 section{position:relative}
 
+/* filet institutionnel : marqueur bleu/orange en tête de section */
+.rule{display:inline-flex;align-items:center;gap:6px;margin-bottom:18px}
+.rule i{display:block;height:3px;border-radius:2px}
+.rule i.b{width:34px;background:var(--blue)}
+.rule i.o{width:12px;background:var(--orange)}
+
 /* ---------- TYPO HELPERS ---------- */
 .eyebrow{
   display:inline-flex;align-items:center;gap:12px;font-family:var(--font-display);
@@ -96,16 +104,14 @@ section{position:relative}
 }
 .eyebrow .tick{width:26px;height:3px;background:var(--orange);border-radius:0;display:inline-block;transform-origin:left;transform:scaleX(.3);transition:transform .7s var(--ease) .1s}
 .reveal.in .eyebrow .tick{transform:scaleX(1)}
-.eyebrow.on-blue{color:#A9C6FF}
-.eyebrow.on-blue .tick{background:var(--orange)}
 
 h2.title{
   font-family:var(--font-display);
   font-size:clamp(31px,4.6vw,56px);font-weight:800;letter-spacing:-.025em;
-  line-height:1.02;margin:0 0 20px;
+  line-height:1.02;margin:0 0 20px;color:var(--ink);
 }
 .lead{font-size:clamp(17px,1.6vw,20px);color:var(--muted);max-width:60ch;margin:0;font-weight:450;line-height:1.65}
-.kicker-accent{color:var(--orange)}
+.kicker-accent{color:var(--blue)}
 .sec-head{max-width:760px;margin-bottom:54px}
 
 /* ============================================================
@@ -113,11 +119,11 @@ h2.title{
    ============================================================ */
 header.site{
   position:sticky;top:0;z-index:80;
-  background:rgba(255,255,255,.86);
+  background:rgba(255,255,255,.90);
   border-bottom:1px solid transparent;
   transition:background .3s var(--ease-soft),border-color .3s var(--ease-soft),box-shadow .3s var(--ease-soft);
 }
-header.site.scrolled{background:rgba(255,255,255,.97);border-bottom-color:var(--line);box-shadow:0 6px 22px rgba(8,18,50,.06)}
+header.site.scrolled{background:rgba(255,255,255,.98);border-bottom-color:var(--line);box-shadow:0 6px 22px rgba(8,18,50,.06)}
 .nav{display:flex;align-items:center;gap:30px;height:var(--header-h);transition:height .35s var(--ease-soft)}
 header.site.scrolled .nav{height:64px}
 .brand{display:flex;align-items:center;gap:0;flex-shrink:0}
@@ -143,24 +149,25 @@ header.site.scrolled .brand img{height:34px}
   display:inline-flex;align-items:center;justify-content:center;gap:9px;
   font-family:var(--font-display);font-weight:700;font-size:14.5px;letter-spacing:.01em;
   border:none;border-radius:6px;
-  padding:13px 24px;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s var(--ease-soft);
+  padding:13px 24px;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s var(--ease-soft),color .25s var(--ease-soft),border-color .25s var(--ease-soft);
   white-space:nowrap;position:relative;overflow:hidden;
 }
 .btn:active{transform:translateY(0) scale(.985)}
-/* balayage lumineux premium */
+/* balayage lumineux discret */
 .btn::before{
   content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;
   background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);
   transform:skewX(-18deg);transition:left .6s var(--ease);pointer-events:none;
 }
 .btn:hover::before{left:140%}
-.btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 22px rgba(0,80,230,.26)}
-.btn-primary:hover{background:var(--blue-600);transform:translateY(-2px) scale(1.02);box-shadow:0 14px 30px rgba(0,80,230,.34)}
-.btn-orange{background:var(--orange);color:#1a1304;box-shadow:0 8px 22px rgba(243,154,27,.30)}
-.btn-orange:hover{background:var(--orange-600);transform:translateY(-2px) scale(1.02);box-shadow:0 14px 30px rgba(243,154,27,.38)}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 22px rgba(0,80,230,.24)}
+.btn-primary:hover{background:var(--blue-600);transform:translateY(-2px) scale(1.02);box-shadow:0 14px 30px rgba(0,80,230,.30)}
+.btn-orange{background:var(--orange);color:#1a1304;box-shadow:0 8px 22px rgba(243,154,27,.26)}
+.btn-orange:hover{background:var(--orange-600);transform:translateY(-2px) scale(1.02);box-shadow:0 14px 30px rgba(243,154,27,.32)}
 .btn-orange::before{background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent)}
-.btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.45)}
-.btn-ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.8);transform:translateY(-2px)}
+/* variante claire (remplace l'ancien ghost sur fond sombre) */
+.btn-soft{background:#fff;color:var(--blue);border:1.5px solid var(--line-2);box-shadow:var(--shadow-sm)}
+.btn-soft:hover{border-color:var(--blue);color:var(--blue-600);transform:translateY(-2px);box-shadow:var(--shadow)}
 .btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--line);box-shadow:var(--shadow-sm)}
 .btn-outline:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}
 .btn .arrow{transition:transform .25s var(--ease)}
@@ -185,82 +192,90 @@ header.site.scrolled .brand img{height:34px}
 .mobile-menu .mm-cta .btn{width:100%}
 
 /* ============================================================
-   HERO
+   HERO — clair, institutionnel. Titre encre + accent bleu.
+   Vidéo cadrée dans un panneau clair à droite (1 vidéo autoplay).
    ============================================================ */
-.hero{position:relative;color:#fff;overflow:hidden;background:var(--blue-900)}
-.hero-media{position:absolute;inset:0;z-index:0;overflow:hidden}
-.hero-media video,.hero-media img.poster{
-  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-}
-.hero-veil{
-  position:absolute;inset:0;z-index:1;
+.hero{position:relative;color:var(--ink);overflow:hidden;background:var(--bg);
+  border-bottom:1px solid var(--line)}
+/* aplat bleu TRÈS léger + fine grille institutionnelle en fond */
+.hero::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background:
-    linear-gradient(180deg,rgba(6,22,63,.62) 0%,rgba(6,22,63,.50) 36%,rgba(6,22,63,.86) 100%),
-    linear-gradient(100deg,rgba(0,52,160,.55) 0%,rgba(6,22,63,.10) 55%);
+    radial-gradient(60% 70% at 88% 0%,rgba(0,80,230,.06),transparent 60%),
+    linear-gradient(180deg,#FBFDFF 0%,#F3F7FE 100%);
 }
-/* couche de dégradé bleu qui dérive lentement (SOBRE, aucun blur) */
-.hero-drift{
-  position:absolute;inset:-30% -20%;z-index:1;pointer-events:none;opacity:.55;
-  background:
-    radial-gradient(45% 55% at 22% 30%,rgba(0,80,230,.55),transparent 60%),
-    radial-gradient(40% 50% at 82% 72%,rgba(243,154,27,.18),transparent 60%);
-  animation:drift 26s var(--ease-soft) infinite alternate;
-}
-@keyframes drift{
-  0%{transform:translate3d(-3%,-2%,0) scale(1)}
-  100%{transform:translate3d(4%,3%,0) scale(1.08)}
-}
-/* fine grille SVG, statique et sobre */
 .hero-grid{
-  position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.10;
-  background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);
-  background-size:64px 64px;
-  -webkit-mask-image:radial-gradient(70% 70% at 50% 40%,#000 0%,transparent 78%);
-  mask-image:radial-gradient(70% 70% at 50% 40%,#000 0%,transparent 78%);
+  position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(6,22,63,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(6,22,63,.05) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(80% 80% at 30% 30%,#000 0%,transparent 82%);
+  mask-image:radial-gradient(80% 80% at 30% 30%,#000 0%,transparent 82%);
 }
-.hero-inner{position:relative;z-index:2;padding:104px 0 96px}
+.hero-inner{position:relative;z-index:2;padding:92px 0 84px;
+  display:grid;grid-template-columns:1.08fr .92fr;gap:56px;align-items:center}
 .hero-badge{
   display:inline-flex;align-items:center;gap:10px;font-family:var(--font-display);
-  font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
-  color:#CFE0FF;padding:9px 16px;border-radius:5px;
-  border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);margin-bottom:28px;
+  font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--blue);padding:8px 15px;border-radius:5px;
+  border:1px solid var(--line-2);background:#fff;margin-bottom:26px;box-shadow:var(--shadow-sm);
   opacity:0;transform:translateY(12px);
 }
 .hero-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 0 rgba(243,154,27,.6);animation:pulse 2.6s var(--ease) infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(243,154,27,.55)}70%{box-shadow:0 0 0 9px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(243,154,27,.5)}70%{box-shadow:0 0 0 9px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
 .hero h1{
   font-family:var(--font-display);
-  font-size:clamp(42px,7.2vw,88px);font-weight:900;letter-spacing:-.035em;line-height:.98;
-  margin:0 0 22px;max-width:16ch;
+  font-size:clamp(40px,6vw,74px);font-weight:900;letter-spacing:-.035em;line-height:.99;
+  margin:0 0 22px;max-width:15ch;color:var(--ink);
 }
-.hero h1 .accent{color:var(--orange)}
+.hero h1 .accent{color:var(--blue)}
 /* révélation par MOTS échelonnée */
 .hero h1 .w{display:inline-block;overflow:hidden;vertical-align:top}
 .hero h1 .w > span{display:inline-block;transform:translateY(105%);opacity:0;will-change:transform}
 .hero.ready h1 .w > span{transform:translateY(0);opacity:1;transition:transform .7s var(--ease),opacity .7s var(--ease)}
-.hero p.sub{font-size:clamp(18px,2vw,23px);color:#D8E3FB;max-width:46ch;margin:0 0 38px;font-weight:400;line-height:1.55;opacity:0;transform:translateY(14px)}
+.hero p.sub{font-size:clamp(18px,1.9vw,22px);color:var(--muted);max-width:46ch;margin:0 0 36px;font-weight:400;line-height:1.55;opacity:0;transform:translateY(14px)}
 .hero-cta{display:flex;gap:16px;flex-wrap:wrap;align-items:center;opacity:0;transform:translateY(14px)}
 .hero.ready .hero-badge,.hero.ready p.sub,.hero.ready .hero-cta{opacity:1;transform:none;transition:opacity .7s var(--ease),transform .7s var(--ease)}
 .hero.ready .hero-badge{transition-delay:.05s}
 .hero.ready p.sub{transition-delay:.5s}
 .hero.ready .hero-cta{transition-delay:.62s}
 .hero-trust{
-  display:flex;flex-wrap:wrap;gap:30px;margin-top:54px;padding-top:30px;
-  border-top:1px solid rgba(255,255,255,.16);max-width:760px;
+  display:flex;flex-wrap:wrap;gap:30px;margin-top:44px;padding-top:28px;
+  border-top:1px solid var(--line);max-width:640px;
   opacity:0;transform:translateY(14px);
 }
 .hero.ready .hero-trust{opacity:1;transform:none;transition:opacity .7s var(--ease) .74s,transform .7s var(--ease) .74s}
 .hero-trust .ht{display:flex;flex-direction:column;gap:2px}
-.hero-trust .ht b{font-family:var(--font-display);font-size:clamp(22px,2.4vw,30px);font-weight:800;letter-spacing:-.02em;color:#fff}
-.hero-trust .ht span{font-size:13px;color:#A9C0EC;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.hero-trust .ht b{font-family:var(--font-display);font-size:clamp(22px,2.4vw,30px);font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+.hero-trust .ht span{font-size:12px;color:var(--soft);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
 .hero-trust .ht b em{font-style:normal;color:var(--orange)}
 
-.scroll-hint{
-  position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:3;
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  color:#B9CDF2;font-family:var(--font-display);font-size:11px;letter-spacing:.26em;text-transform:uppercase;font-weight:700;
+/* panneau média clair et cadré (institutionnel) */
+.hero-media{
+  position:relative;border-radius:var(--r-xl);overflow:hidden;
+  border:1px solid var(--line-2);box-shadow:var(--shadow-lg);
+  aspect-ratio:4/5;background:#EAF1FF;
+  opacity:0;transform:translateY(18px) scale(.985);
 }
-.scroll-hint .line{width:1.5px;height:34px;background:linear-gradient(180deg,rgba(255,255,255,.5),transparent);position:relative;overflow:hidden}
+.hero.ready .hero-media{opacity:1;transform:none;transition:opacity .8s var(--ease) .3s,transform .8s var(--ease) .3s}
+.hero-media video,.hero-media img.poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* voile clair très léger pour lier la vidéo à la marque, sans assombrir */
+.hero-media .veil{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(6,22,63,.05),rgba(6,22,63,.16));}
+.hero-media .stamp{
+  position:absolute;left:16px;bottom:16px;z-index:2;
+  display:inline-flex;align-items:center;gap:9px;
+  background:rgba(255,255,255,.94);border:1px solid var(--line);
+  border-radius:8px;padding:9px 14px;box-shadow:var(--shadow-sm);
+  font-family:var(--font-display);font-size:12.5px;font-weight:700;color:var(--blue-ink);letter-spacing:.01em;
+}
+.hero-media .stamp .pin{width:8px;height:8px;border-radius:50%;background:var(--orange)}
+
+.scroll-hint{
+  position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:3;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:var(--soft);font-family:var(--font-display);font-size:11px;letter-spacing:.26em;text-transform:uppercase;font-weight:700;
+}
+.scroll-hint .line{width:1.5px;height:32px;background:linear-gradient(180deg,var(--line-2),transparent);position:relative;overflow:hidden}
 .scroll-hint .line::after{content:"";position:absolute;top:0;left:0;width:100%;height:40%;background:var(--orange);animation:scrolldot 2s var(--ease) infinite}
 @keyframes scrolldot{0%{transform:translateY(-100%)}60%,100%{transform:translateY(260%)}}
 
@@ -277,7 +292,7 @@ header.site.scrolled .brand img{height:34px}
 /* ============================================================
    MARQUEE labos
    ============================================================ */
-.marquee-wrap{padding:26px 0;background:var(--bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden}
+.marquee-wrap{padding:24px 0;background:var(--bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden}
 .marquee{
   display:flex;width:max-content;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
@@ -286,7 +301,7 @@ header.site.scrolled .brand img{height:34px}
 .marquee-track{display:flex;align-items:center;gap:56px;padding-right:56px;animation:scrollx 26s linear infinite}
 .marquee-wrap:hover .marquee-track,.marquee-wrap:focus-within .marquee-track{animation-play-state:paused}
 .marquee-track .ml{
-  font-family:var(--font-display);font-size:24px;font-weight:800;letter-spacing:-.01em;color:#9AA7C4;white-space:nowrap;
+  font-family:var(--font-display);font-size:23px;font-weight:800;letter-spacing:-.01em;color:#9AA7C4;white-space:nowrap;
   display:inline-flex;align-items:center;gap:14px;transition:color .25s var(--ease-soft);
 }
 .marquee-track .ml:hover{color:var(--blue)}
@@ -294,7 +309,7 @@ header.site.scrolled .brand img{height:34px}
 @keyframes scrollx{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
 /* ============================================================
-   VALEURS — bento + spotlight curseur
+   VALEURS — 3 colonnes nettes + spotlight curseur
    ============================================================ */
 .values{padding:96px 0;background:var(--bg)}
 .values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
@@ -307,7 +322,7 @@ header.site.scrolled .brand img{height:34px}
 /* spotlight piloté par --mx/--my (radial-gradient, AUCUN blur) */
 .value-card::after{
   content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .35s var(--ease);
-  background:radial-gradient(220px 220px at var(--mx,50%) var(--my,50%),rgba(0,80,230,.10),transparent 70%);
+  background:radial-gradient(220px 220px at var(--mx,50%) var(--my,50%),rgba(0,80,230,.09),transparent 70%);
 }
 .value-card:hover::after{opacity:1}
 .value-card::before{content:"";position:absolute;top:0;left:0;width:100%;height:4px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease)}
@@ -326,7 +341,7 @@ header.site.scrolled .brand img{height:34px}
 /* ============================================================
    NOS OFFRES (labos)
    ============================================================ */
-.offers{padding:104px 0;background:var(--bg-alt);overflow:hidden}
+.offers{padding:104px 0;background:var(--bg-alt);overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .offers-flex{display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:center}
 .labos-rail{display:flex;flex-direction:column;gap:14px}
 .labo-chip{
@@ -351,21 +366,15 @@ header.site.scrolled .brand img{height:34px}
 .offers-note b{color:var(--ink)}
 
 /* ============================================================
-   RÉSEAU / LE GROUPE
+   RÉSEAU / LE GROUPE — clair, carte en 2 colonnes
    ============================================================ */
-.network{padding:0;background:var(--blue);color:#fff;position:relative;overflow:hidden}
-.network::before{content:"";position:absolute;inset:0;background:
-  radial-gradient(80% 90% at 88% 8%,rgba(243,154,27,.18),transparent 60%),
-  radial-gradient(70% 80% at 4% 96%,rgba(0,52,160,.55),transparent 60%);pointer-events:none}
-.network-inner{position:relative;z-index:2;padding:100px 0}
+.network{padding:100px 0;background:var(--bg);position:relative;overflow:hidden}
 .network-top{display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:end;margin-bottom:48px}
-.network h2.title{color:#fff}
-.network .lead{color:#C7D8FB}
 .network-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:34px;align-items:start}
 @media(max-width:980px){.network-grid{grid-template-columns:1fr;gap:26px}}
 .net-map{
   background:#fff;border-radius:var(--r-lg);padding:10px 14px 10px;
-  box-shadow:var(--shadow-lg);margin-bottom:0;
+  border:1px solid var(--line-2);box-shadow:var(--shadow-lg);margin-bottom:0;
 }
 .net-map .map-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
   padding:12px 10px 14px;border-bottom:1px solid var(--line)}
@@ -381,23 +390,27 @@ header.site.scrolled .brand img{height:34px}
 @media(max-width:560px){.net-map .map-head{justify-content:flex-start}}
 .agencies{display:flex;flex-direction:column;gap:11px}
 .agency{
-  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:9px;
-  padding:14px 16px;transition:background .3s var(--ease-soft),border-color .3s var(--ease-soft),transform .3s var(--ease);
+  background:#fff;border:1px solid var(--line);border-radius:9px;
+  padding:14px 16px;box-shadow:var(--shadow-sm);
+  transition:border-color .3s var(--ease-soft),transform .3s var(--ease),box-shadow .3s var(--ease);
+  position:relative;
 }
+.agency::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:2px;background:var(--blue);opacity:.65;transition:opacity .3s var(--ease-soft)}
 @media(max-width:980px){.agencies{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}
 @media(max-width:600px){.agencies{grid-template-columns:repeat(2,1fr)}}
-.agency:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.4);transform:translateY(-4px)}
-.agency .ag-h{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.agency:hover{border-color:var(--line-2);transform:translateY(-4px);box-shadow:var(--shadow)}
+.agency:hover::before{opacity:1}
+.agency .ag-h{display:flex;align-items:center;gap:9px;margin-bottom:6px;padding-left:8px}
 .agency .ag-h .pin{width:9px;height:9px;border-radius:50%;background:var(--orange);flex-shrink:0}
-.agency h4{font-family:var(--font-display);font-size:16px;font-weight:800;margin:0;letter-spacing:-.01em}
-.agency p{margin:0;font-size:13.5px;color:#B7CCF4;font-weight:400}
-.agency .tag{display:inline-block;margin-top:9px;font-family:var(--font-display);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#0B1736;background:var(--orange);padding:3px 9px;border-radius:4px}
-.agency .tag.alt{background:rgba(255,255,255,.18);color:#fff}
+.agency h4{font-family:var(--font-display);font-size:16px;font-weight:800;margin:0;letter-spacing:-.01em;color:var(--ink)}
+.agency p{margin:0 0 0 8px;font-size:13.5px;color:var(--muted);font-weight:400}
+.agency .tag{display:inline-block;margin:9px 0 0 8px;font-family:var(--font-display);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#4A2E00;background:#FCE9C9;border:1px solid #F3D69B;padding:3px 9px;border-radius:4px}
+.agency .tag.alt{background:#EAF1FF;border-color:#CFE0FF;color:var(--blue-700)}
 
 /* ============================================================
-   CHIFFRES-CLÉS (compteurs)
+   CHIFFRES-CLÉS (compteurs) — gros KPI institutionnels
    ============================================================ */
-.stats{padding:90px 0;background:var(--bg)}
+.stats{padding:90px 0;background:var(--bg-alt);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
 .stat{
   text-align:left;padding:34px 30px;border-radius:var(--r-lg);
@@ -413,7 +426,7 @@ header.site.scrolled .brand img{height:34px}
 /* ============================================================
    OFFILOG
    ============================================================ */
-.offilog{padding:104px 0;background:var(--bg-alt);overflow:hidden}
+.offilog{padding:104px 0;background:var(--bg);overflow:hidden}
 .offilog-head{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:end;margin-bottom:46px}
 .offilog-metrics{display:flex;gap:38px;flex-wrap:wrap}
 .ometric b{display:block;font-family:var(--font-display);font-size:clamp(26px,3vw,40px);font-weight:800;color:var(--blue);letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
@@ -432,18 +445,19 @@ header.site.scrolled .brand img{height:34px}
 .cat span{font-family:var(--font-display);font-size:16px;font-weight:700;letter-spacing:-.01em}
 
 /* ============================================================
-   ACCOMPAGNEMENT — sticky-scroll
+   ACCOMPAGNEMENT — sticky-scroll, citation claire
    ============================================================ */
-.support{padding:104px 0;background:var(--bg)}
+.support{padding:104px 0;background:var(--bg-alt);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .support-head{display:grid;grid-template-columns:1.15fr .85fr;gap:50px;align-items:start;margin-bottom:56px}
 .support-sticky{position:sticky;top:110px;align-self:start}
 .support-quote{
-  background:linear-gradient(135deg,var(--blue),var(--blue-700));color:#fff;
-  border-radius:var(--r-xl);padding:40px 38px;box-shadow:var(--shadow-blue);position:relative;overflow:hidden;
+  background:var(--bg-tint);color:var(--ink);
+  border:1px solid var(--line-2);border-left:5px solid var(--blue);
+  border-radius:var(--r-xl);padding:38px 36px;box-shadow:var(--shadow);position:relative;overflow:hidden;
 }
-.support-quote::before{content:"\201C";position:absolute;top:-22px;right:24px;font-family:var(--font-display);font-size:160px;font-weight:900;color:rgba(255,255,255,.10);line-height:1}
-.support-quote p{margin:0;font-family:var(--font-display);font-size:clamp(19px,2vw,25px);font-weight:700;letter-spacing:-.02em;line-height:1.32;position:relative}
-.support-quote .sig{margin-top:22px;display:inline-flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--orange)}
+.support-quote::before{content:"\201C";position:absolute;top:-14px;right:24px;font-family:var(--font-display);font-size:150px;font-weight:900;color:rgba(0,80,230,.10);line-height:1}
+.support-quote p{margin:0;font-family:var(--font-display);font-size:clamp(19px,2vw,25px);font-weight:700;letter-spacing:-.02em;line-height:1.32;position:relative;color:var(--ink)}
+.support-quote .sig{margin-top:22px;display:inline-flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--orange-ink)}
 .support-quote .sig .tk{width:22px;height:2px;background:var(--orange)}
 .projects{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
 .project{
@@ -452,7 +466,7 @@ header.site.scrolled .brand img{height:34px}
   position:relative;
 }
 .project:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:var(--line-2)}
-.project .pic{width:58px;height:58px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0050E6,#0034A0);margin-bottom:22px;box-shadow:0 10px 24px rgba(0,80,230,.22);transition:transform .4s var(--ease)}
+.project .pic{width:58px;height:58px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0050E6,#0034A0);margin-bottom:22px;box-shadow:0 10px 24px rgba(0,80,230,.20);transition:transform .4s var(--ease)}
 .project:hover .pic{transform:translateY(-3px) scale(1.05)}
 .project .pic svg{width:30px;height:30px}
 .project h3{font-family:var(--font-display);font-size:19px;font-weight:800;letter-spacing:-.02em;margin:0 0 8px}
@@ -461,32 +475,29 @@ header.site.scrolled .brand img{height:34px}
 .support-cta{display:flex;justify-content:center;margin-top:50px}
 
 /* ============================================================
-   CARRIÈRES
+   CARRIÈRES — clair (remplace l'ancien bloc sombre)
    ============================================================ */
-.careers{padding:0;background:var(--navy);color:#fff;position:relative;overflow:hidden}
-.careers::before{content:"";position:absolute;inset:0;background:radial-gradient(70% 80% at 85% 10%,rgba(0,80,230,.4),transparent 60%),radial-gradient(60% 70% at 8% 92%,rgba(243,154,27,.12),transparent 60%)}
-.careers-inner{position:relative;z-index:2;padding:96px 0}
+.careers{padding:96px 0;background:var(--bg);position:relative;overflow:hidden}
 .careers-grid{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}
-.careers h2.title{color:#fff}
-.careers .lead{color:#B9CCF0}
 .jobs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .job{
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;
-  padding:22px 22px;transition:background .3s var(--ease-soft),border-color .3s var(--ease-soft),transform .35s var(--ease);
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:22px 22px;box-shadow:var(--shadow-sm);
+  transition:border-color .3s var(--ease-soft),transform .35s var(--ease),box-shadow .35s var(--ease);
   display:flex;flex-direction:column;gap:6px;
 }
-.job:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.36);transform:translateY(-5px)}
-.job .jic{width:42px;height:42px;border-radius:9px;background:rgba(0,80,230,.5);display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.job:hover{border-color:var(--line-2);transform:translateY(-5px);box-shadow:var(--shadow)}
+.job .jic{width:42px;height:42px;border-radius:9px;background:linear-gradient(135deg,#EAF1FF,#DCE8FF);display:flex;align-items:center;justify-content:center;margin-bottom:8px}
 .job .jic svg{width:22px;height:22px}
-.job h4{margin:0;font-family:var(--font-display);font-size:17px;font-weight:800;letter-spacing:-.01em}
-.job .arr{font-family:var(--font-display);font-size:12.5px;color:var(--orange);font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;transition:transform .25s var(--ease)}
+.job h4{margin:0;font-family:var(--font-display);font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.job .arr{font-family:var(--font-display);font-size:12.5px;color:var(--orange-ink);font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;transition:transform .25s var(--ease)}
 .job:hover .arr{transform:translateX(3px)}
 .careers-cta{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
 
 /* ============================================================
    CONTACT
    ============================================================ */
-.contact{padding:104px 0;background:var(--bg-alt)}
+.contact{padding:104px 0;background:var(--bg-alt);border-top:1px solid var(--line)}
 .contact-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:50px}
 .contact-info h2.title{margin-bottom:16px}
 .contact-info .lead{margin-bottom:36px}
@@ -517,25 +528,27 @@ a.cinfo:hover .cv{color:var(--blue)}
 .form-foot{margin-top:16px;font-size:13px;color:var(--soft);text-align:center}
 
 /* ============================================================
-   FOOTER
+   FOOTER — clair (remplace l'ancien footer sombre)
    ============================================================ */
-footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
-.foot-top{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;padding-bottom:44px;border-bottom:1px solid rgba(255,255,255,.12)}
-.foot-brand img{height:40px;margin-bottom:20px;filter:brightness(1.04)}
-.foot-brand p{margin:0;color:#9FB4DE;font-size:15px;max-width:38ch;line-height:1.65}
-.foot-brand .mention{margin-top:18px;display:inline-flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#CFE0FF;padding:8px 14px;border:1px solid rgba(255,255,255,.18);border-radius:5px}
+footer.site{background:var(--bg);color:var(--ink);padding:68px 0 30px;border-top:1px solid var(--line)}
+.foot-top{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;padding-bottom:42px;border-bottom:1px solid var(--line)}
+.foot-brand img{height:40px;margin-bottom:20px}
+.foot-brand p{margin:0;color:var(--muted);font-size:15px;max-width:38ch;line-height:1.65}
+.foot-brand .mention{margin-top:18px;display:inline-flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);padding:8px 14px;border:1px solid var(--line-2);background:#fff;border-radius:5px}
 .foot-brand .mention .dot{width:7px;height:7px;border-radius:0;transform:rotate(45deg);background:var(--orange)}
-.foot-col h5{font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#7E93C2;margin:0 0 18px}
-.foot-col a{display:block;color:#C7D5EF;font-size:15px;padding:7px 0;transition:color .2s var(--ease-soft),transform .2s var(--ease)}
-.foot-col a:hover{color:#fff;transform:translateX(3px)}
-.foot-bot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding-top:28px;color:#8295BE;font-size:14px}
+.foot-col h5{font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin:0 0 18px}
+.foot-col a{display:block;color:var(--muted);font-size:15px;padding:7px 0;transition:color .2s var(--ease-soft),transform .2s var(--ease)}
+.foot-col a:hover{color:var(--blue);transform:translateX(3px)}
+.foot-bot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding-top:26px;color:var(--soft);font-size:14px}
 .foot-bot .badges{display:flex;gap:10px;flex-wrap:wrap}
-.foot-bot .badges span{font-family:var(--font-display);font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#A9BCE2;border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:5px 13px}
+.foot-bot .badges span{font-family:var(--font-display);font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--blue-700);border:1px solid var(--line-2);background:#fff;border-radius:5px;padding:5px 13px}
 
 /* ============================================================
    RESPONSIVE
    ============================================================ */
 @media(max-width:980px){
+  .hero-inner{grid-template-columns:1fr;gap:40px}
+  .hero-media{aspect-ratio:16/10;max-height:460px;order:-1}
   .values-grid{grid-template-columns:1fr 1fr}
   .offers-flex{grid-template-columns:1fr;gap:40px}
   .network-top{grid-template-columns:1fr;gap:26px;align-items:start}
@@ -560,14 +573,14 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   body{font-size:16px}
   html{scroll-padding-top:80px}
   .wrap{padding:0 20px}
-  .hero-inner{padding:72px 0 84px}
+  .hero-inner{padding:64px 0 76px}
   .hero h1{font-size:clamp(34px,11vw,52px)}
   .hero-cta{flex-direction:column;align-items:stretch}
   .hero-cta .btn{width:100%}
   .hero-trust{gap:22px}
-  .values,.offers,.offilog,.support,.contact{padding:68px 0}
-  .network-inner,.careers-inner{padding:68px 0}
-  .stats{padding:60px 0}
+  .hero-media{aspect-ratio:4/3}
+  .values,.offers,.offilog,.support,.contact,.network,.careers{padding:64px 0}
+  .stats{padding:56px 0}
   .values-grid{grid-template-columns:1fr}
   .agencies{grid-template-columns:1fr}
   .stats-grid{grid-template-columns:1fr 1fr}
@@ -597,8 +610,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   .reveal{opacity:1!important;transform:none!important}
   .stat .bar,.value-card::before,.eyebrow .tick{transform:none!important}
   .labos-rail .labo-chip{opacity:1!important;transform:none!important}
-  .hero h1 .w > span,.hero-badge,.hero p.sub,.hero-cta,.hero-trust{opacity:1!important;transform:none!important}
-  .hero-drift{display:none!important}
+  .hero h1 .w > span,.hero-badge,.hero p.sub,.hero-cta,.hero-trust,.hero-media{opacity:1!important;transform:none!important}
   .hero-media video{display:none!important}
   .hero-media img.poster{display:block!important}
   .scroll-hint{display:none!important}
@@ -655,29 +667,31 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 
 <!-- ============================ HERO ============================ -->
 <section class="hero" id="hero" aria-label="Présentation">
-  <div class="hero-media" aria-hidden="true">
-    <img class="poster" src="../assets/poster.jpg" alt="">
-    <video autoplay muted loop playsinline poster="../assets/poster.jpg" id="heroVideo" preload="auto">
-      <source src="../assets/clip3.mp4" type="video/mp4">
-    </video>
-  </div>
-  <div class="hero-veil" aria-hidden="true"></div>
-  <div class="hero-drift" aria-hidden="true"></div>
   <div class="hero-grid" aria-hidden="true"></div>
   <div class="wrap">
     <div class="hero-inner">
-      <span class="hero-badge"><span class="dot" aria-hidden="true"></span>Grossiste-répartiteur de première intention</span>
-      <h1 data-split>Plus de marge, sur <span class="accent">chaque commande.</span></h1>
-      <p class="sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
-      <div class="hero-cta">
-        <a class="btn btn-orange btn-lg" href="#contact">Demander nos conditions<span class="arrow" aria-hidden="true">→</span></a>
-        <a class="btn btn-ghost btn-lg" href="#groupe">Découvrir le groupe</a>
+      <div class="hero-copy">
+        <span class="hero-badge"><span class="dot" aria-hidden="true"></span>Grossiste-répartiteur de première intention</span>
+        <h1 data-split>Plus de marge, sur <span class="accent">chaque commande.</span></h1>
+        <p class="sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
+        <div class="hero-cta">
+          <a class="btn btn-orange btn-lg" href="#contact">Demander nos conditions<span class="arrow" aria-hidden="true">→</span></a>
+          <a class="btn btn-soft btn-lg" href="#groupe">Découvrir le groupe</a>
+        </div>
+        <div class="hero-trust">
+          <div class="ht"><b><em>+</em>20 ans</b><span>d'expérience</span></div>
+          <div class="ht"><b>9 agences</b><span>en France</span></div>
+          <div class="ht"><b>National</b><span>couverture complète</span></div>
+          <div class="ht"><b>Offilog</b><span>+14 000 références</span></div>
+        </div>
       </div>
-      <div class="hero-trust">
-        <div class="ht"><b><em>+</em>20 ans</b><span>d'expérience</span></div>
-        <div class="ht"><b>9 agences</b><span>en France</span></div>
-        <div class="ht"><b>National</b><span>couverture complète</span></div>
-        <div class="ht"><b>Offilog</b><span>+14 000 références</span></div>
+      <div class="hero-media" aria-hidden="true">
+        <img class="poster" src="../assets/poster.jpg" alt="">
+        <video autoplay muted loop playsinline poster="../assets/poster.jpg" id="heroVideo" preload="auto">
+          <source src="../assets/clip3.mp4" type="video/mp4">
+        </video>
+        <span class="veil"></span>
+        <span class="stamp"><span class="pin" aria-hidden="true"></span>Répartition · Couverture nationale</span>
       </div>
     </div>
   </div>
@@ -711,6 +725,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 <section class="values" id="valeurs" aria-labelledby="valeurs-title">
   <div class="wrap">
     <div class="sec-head reveal">
+      <span class="rule" aria-hidden="true"><i class="b"></i><i class="o"></i></span>
       <span class="eyebrow"><span class="tick"></span>Nos valeurs</span>
       <h2 class="title" id="valeurs-title">Confiance · Engagement · <span class="kicker-accent">Respect.</span></h2>
       <p class="lead">Nous défendons l'officine indépendante, près de chez vous. Un groupe à taille humaine, présent sur le terrain, fidèle à ses pharmaciens.</p>
@@ -746,6 +761,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   <div class="wrap">
     <div class="offers-flex">
       <div class="reveal">
+        <span class="rule" aria-hidden="true"><i class="b"></i><i class="o"></i></span>
         <span class="eyebrow"><span class="tick"></span>Nos offres</span>
         <h2 class="title" id="offres-title">Les plus grands <span class="kicker-accent">laboratoires.</span></h2>
         <p class="lead">Un accès à un catalogue large et à des conditions adaptées à votre type d'officine. Les marques génériques de référence, négociées pour vous.</p>
@@ -767,70 +783,69 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 
 <!-- ============================ RÉSEAU / LE GROUPE ============================ -->
 <section class="network" id="groupe" aria-labelledby="groupe-title">
-  <div class="network-inner">
-    <div class="wrap">
-      <div class="network-top">
-        <div class="reveal">
-          <span class="eyebrow on-blue"><span class="tick"></span>Le groupe · Le réseau</span>
-          <h2 class="title" id="groupe-title">National.</h2>
-        </div>
-        <p class="lead reveal d2">9 agences réparties en France pour une livraison rapide, partout. Un maillage de proximité au service de votre officine.</p>
+  <div class="wrap">
+    <div class="network-top">
+      <div class="reveal">
+        <span class="rule" aria-hidden="true"><i class="b"></i><i class="o"></i></span>
+        <span class="eyebrow"><span class="tick"></span>Le groupe · Le réseau</span>
+        <h2 class="title" id="groupe-title">National.</h2>
       </div>
+      <p class="lead reveal d2">9 agences réparties en France pour une livraison rapide, partout. Un maillage de proximité au service de votre officine.</p>
+    </div>
 
-      <div class="network-grid">
-      <div class="net-map reveal">
-        <div class="map-head">
-          <span class="mh-t"><span class="pin" aria-hidden="true"></span>Le réseau Intégral · 9 agences en France</span>
-          <span class="mh-legend" aria-hidden="true">
-            <span><span class="lg o"></span>Siège</span>
-            <span><span class="lg b"></span>Agence</span>
-            <span><span class="lg d"></span>Partenaire</span>
-          </span>
-        </div>
-        <iframe id="netFrame" src="../map-component.html?mode=map" loading="lazy" scrolling="no" title="Carte des 9 agences Intégral Pharma en France"></iframe>
+    <div class="network-grid">
+    <div class="net-map reveal">
+      <div class="map-head">
+        <span class="mh-t"><span class="pin" aria-hidden="true"></span>Le réseau Intégral · 9 agences en France</span>
+        <span class="mh-legend" aria-hidden="true">
+          <span><span class="lg o"></span>Siège</span>
+          <span><span class="lg b"></span>Agence</span>
+          <span><span class="lg d"></span>Partenaire</span>
+        </span>
       </div>
+      <iframe id="netFrame" src="../map-component.html?mode=map" loading="lazy" scrolling="no" title="Carte des 9 agences Intégral Pharma en France"></iframe>
+    </div>
 
-      <div class="agencies">
-        <article class="agency reveal d1">
-          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Ouest Pharma Services</h4></div>
-          <p>St-Étienne-de-Montluc · 44</p>
-        </article>
-        <article class="agency reveal d1">
-          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Escale Pharma</h4></div>
-          <p>Chilly-Mazarin · 91</p>
-        </article>
-        <article class="agency reveal d1">
-          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Comptoir Pharmaceutique du Rhône</h4></div>
-          <p>Saint-Maurice-l'Exil · 38</p>
-        </article>
-        <article class="agency reveal d2">
-          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Sud Ouest Pharma</h4></div>
-          <p>Montayral · 47</p>
-        </article>
-        <article class="agency reveal d2">
-          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Pharm'Occitanie Services</h4></div>
-          <p>Villeneuve-lès-Béziers · 34</p>
-        </article>
-        <article class="agency reveal d2">
-          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Hyères Pharma</h4></div>
-          <p>Hyères · 83</p>
-          <span class="tag">Siège</span>
-        </article>
-        <article class="agency reveal d3">
-          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Sud Est Pharma</h4></div>
-          <p>Le Cannet-des-Maures · 83</p>
-        </article>
-        <article class="agency reveal d3">
-          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Mistral Santé Pharma</h4></div>
-          <p>Flassans-sur-Issole · 83</p>
-        </article>
-        <article class="agency reveal d3">
-          <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Pharmest</h4></div>
-          <p>Metz · 57</p>
-          <span class="tag alt">Partenaire</span>
-        </article>
-      </div>
-      </div>
+    <div class="agencies">
+      <article class="agency reveal d1">
+        <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Ouest Pharma Services</h4></div>
+        <p>St-Étienne-de-Montluc · 44</p>
+      </article>
+      <article class="agency reveal d1">
+        <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Escale Pharma</h4></div>
+        <p>Chilly-Mazarin · 91</p>
+      </article>
+      <article class="agency reveal d1">
+        <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Comptoir Pharmaceutique du Rhône</h4></div>
+        <p>Saint-Maurice-l'Exil · 38</p>
+      </article>
+      <article class="agency reveal d2">
+        <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Sud Ouest Pharma</h4></div>
+        <p>Montayral · 47</p>
+      </article>
+      <article class="agency reveal d2">
+        <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Pharm'Occitanie Services</h4></div>
+        <p>Villeneuve-lès-Béziers · 34</p>
+      </article>
+      <article class="agency reveal d2">
+        <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Hyères Pharma</h4></div>
+        <p>Hyères · 83</p>
+        <span class="tag">Siège</span>
+      </article>
+      <article class="agency reveal d3">
+        <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Sud Est Pharma</h4></div>
+        <p>Le Cannet-des-Maures · 83</p>
+      </article>
+      <article class="agency reveal d3">
+        <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Mistral Santé Pharma</h4></div>
+        <p>Flassans-sur-Issole · 83</p>
+      </article>
+      <article class="agency reveal d3">
+        <div class="ag-h"><span class="pin" aria-hidden="true"></span><h4>Pharmest</h4></div>
+        <p>Metz · 57</p>
+        <span class="tag alt">Partenaire</span>
+      </article>
+    </div>
     </div>
   </div>
 </section>
@@ -868,6 +883,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   <div class="wrap">
     <div class="offilog-head">
       <div class="reveal">
+        <span class="rule" aria-hidden="true"><i class="b"></i><i class="o"></i></span>
         <span class="eyebrow"><span class="tick"></span>Offilog · Parapharmacie</span>
         <h2 class="title" id="offilog-title">Toute la <span class="kicker-accent">parapharmacie.</span></h2>
         <p class="lead">Une plateforme complète pour piloter votre rayon para — large, claire et sans barrière à l'entrée.</p>
@@ -897,6 +913,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   <div class="wrap">
     <div class="support-head">
       <div class="reveal">
+        <span class="rule" aria-hidden="true"><i class="b"></i><i class="o"></i></span>
         <span class="eyebrow"><span class="tick"></span>Accompagnement · Titulaires</span>
         <h2 class="title" id="accompagnement-title">On le porte <span class="kicker-accent">avec vous.</span></h2>
         <p class="lead">Au-delà de la distribution, un partenaire qui s'investit dans vos projets de vie d'officine et vous accompagne à chaque étape.</p>
@@ -942,40 +959,39 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
 
 <!-- ============================ CARRIÈRES ============================ -->
 <section class="careers" id="carrieres" aria-labelledby="carrieres-title">
-  <div class="careers-inner">
-    <div class="wrap">
-      <div class="careers-grid">
-        <div class="reveal">
-          <span class="eyebrow on-blue"><span class="tick"></span>Carrières</span>
-          <h2 class="title" id="carrieres-title">Le groupe <span class="kicker-accent">recrute.</span></h2>
-          <p class="lead">Rejoindre Intégral Pharma, c'est intégrer un groupe de grossistes français indépendant, à taille humaine, fier de ses métiers et de son terrain.</p>
-          <div class="careers-cta">
-            <a class="btn btn-orange btn-lg" href="#contact">Voir les offres<span class="arrow" aria-hidden="true">→</span></a>
-            <a class="btn btn-ghost btn-lg" href="#contact">Postuler</a>
-          </div>
+  <div class="wrap">
+    <div class="careers-grid">
+      <div class="reveal">
+        <span class="rule" aria-hidden="true"><i class="b"></i><i class="o"></i></span>
+        <span class="eyebrow"><span class="tick"></span>Carrières</span>
+        <h2 class="title" id="carrieres-title">Le groupe <span class="kicker-accent">recrute.</span></h2>
+        <p class="lead">Rejoindre Intégral Pharma, c'est intégrer un groupe de grossistes français indépendant, à taille humaine, fier de ses métiers et de son terrain.</p>
+        <div class="careers-cta">
+          <a class="btn btn-orange btn-lg" href="#contact">Voir les offres<span class="arrow" aria-hidden="true">→</span></a>
+          <a class="btn btn-soft btn-lg" href="#contact">Postuler</a>
         </div>
-        <div class="jobs">
-          <article class="job reveal d1">
-            <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13v10H3z"/><path d="M16 10h4l1 3v4h-5"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></div>
-            <h4>Approvisionnement</h4>
-            <span class="arr">Postuler <span aria-hidden="true">→</span></span>
-          </article>
-          <article class="job reveal d2">
-            <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
-            <h4>Commercial</h4>
-            <span class="arr">Postuler <span aria-hidden="true">→</span></span>
-          </article>
-          <article class="job reveal d3">
-            <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18" stroke-width="2.6"/></svg></div>
-            <h4>Pharmacien responsable</h4>
-            <span class="arr">Postuler <span aria-hidden="true">→</span></span>
-          </article>
-          <article class="job reveal d4">
-            <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="13" height="8" rx="1.5"/><path d="M15 11h4l2 2v3h-6"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
-            <h4>Préparateur-chauffeur</h4>
-            <span class="arr">Postuler <span aria-hidden="true">→</span></span>
-          </article>
-        </div>
+      </div>
+      <div class="jobs">
+        <article class="job reveal d1">
+          <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13v10H3z"/><path d="M16 10h4l1 3v4h-5"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></div>
+          <h4>Approvisionnement</h4>
+          <span class="arr">Postuler <span aria-hidden="true">→</span></span>
+        </article>
+        <article class="job reveal d2">
+          <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
+          <h4>Commercial</h4>
+          <span class="arr">Postuler <span aria-hidden="true">→</span></span>
+        </article>
+        <article class="job reveal d3">
+          <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18" stroke-width="2.6"/></svg></div>
+          <h4>Pharmacien responsable</h4>
+          <span class="arr">Postuler <span aria-hidden="true">→</span></span>
+        </article>
+        <article class="job reveal d4">
+          <div class="jic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0050E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="13" height="8" rx="1.5"/><path d="M15 11h4l2 2v3h-6"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
+          <h4>Préparateur-chauffeur</h4>
+          <span class="arr">Postuler <span aria-hidden="true">→</span></span>
+        </article>
       </div>
     </div>
   </div>
@@ -986,6 +1002,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
   <div class="wrap">
     <div class="contact-grid">
       <div class="contact-info reveal">
+        <span class="rule" aria-hidden="true"><i class="b"></i><i class="o"></i></span>
         <span class="eyebrow"><span class="tick"></span>Contact</span>
         <h2 class="title" id="contact-title">Parlons de votre <span class="kicker-accent">officine.</span></h2>
         <p class="lead">Dites-nous l'essentiel — on vous recontacte et on vous chiffre vos conditions en rendez-vous, adaptées à votre officine.</p>
@@ -1251,7 +1268,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
     });
   }
 
-  /* ----- light parallax sur hero media (GPU transform only, will-change géré) ----- */
+  /* ----- light parallax sur le média hero (GPU transform only) ----- */
   var media = document.querySelector('.hero-media');
   if(!reduce && media){
     var ticking = false;
@@ -1262,7 +1279,7 @@ footer.site{background:var(--blue-900);color:#fff;padding:70px 0 32px}
         var y = window.scrollY;
         if(y < window.innerHeight){
           media.style.willChange = 'transform';
-          media.style.transform = 'translate3d(0,' + (y * 0.18) + 'px,0)';
+          media.style.transform = 'translate3d(0,' + (y * 0.05) + 'px,0)';
         } else {
           media.style.willChange = 'auto';
         }
