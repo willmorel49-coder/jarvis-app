@@ -61,7 +61,7 @@
       '<div class="v2-top">' +
         (back ||
          '<a class="v2-brand" onclick="V2.go(\'home\')"><span class="v2-logo">' + ICO('logo', 22) + '</span>' +
-         '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span></a>') +
+         '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '<span class="v2-brand-dot" aria-hidden="true"></span></span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span></a>') +
         '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>' +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
@@ -764,34 +764,88 @@
   // manifeste sobre. On ne touche ni structure ni classes : on raffine.
   function injectShellStyles() {
     if (document.getElementById('v2-shell-styles')) return;
+    // --v2-spark : étincelle chaude de marque (orange IP). Neutralisée en vert
+    // sous OPSO pour ne JAMAIS faire fuiter l\'orange dans l\'autre marque.
+    var isOpso = !!(window.V2_BRAND && window.V2_BRAND.opso);
+    var SPARK = isOpso ? 'var(--info)' : '#F39A1B';
     var css =
+      // Variable locale d\'étincelle, posée sur la racine du shell.
+      '.v2-top,.v2-login{--v2-spark:' + SPARK + '}' +
+
+      // ══ TOP BAR — raffinée ═══════════════════════════════════════════
       // (2) Wordmark signature : la baseline banale devient marque-outil mono.
       '.v2-brand-s{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;' +
         'font-size:9.5px;font-weight:500;color:var(--muted);line-height:1}' +
       '@media(max-width:640px){.v2-brand-s{font-size:9px;letter-spacing:.1em}}' +
-      // Liseré 3px de tête sur la topbar : seule grammaire d'appartenance,
-      // teinté par la lumière du pilier courant (var(--accent)).
+      // Point-étincelle après le wordmark : signature de marque minuscule.
+      '.v2-brand-dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-left:5px;' +
+        'vertical-align:middle;background:var(--v2-spark);' +
+        'box-shadow:0 0 0 2px color-mix(in srgb,var(--v2-spark) 20%,transparent)}' +
+      // Le wordmark respire au survol : lift signature + le logo prend sa lumière.
+      '.v2-brand{transition:transform .22s var(--mo-ease-soft,ease)}' +
+      '.v2-brand:hover{transform:translateY(-1px)}' +
+      '.v2-brand .v2-logo{transition:box-shadow .22s var(--mo-ease-soft,ease),transform .22s var(--mo-ease-soft,ease)}' +
+      '.v2-brand:hover .v2-logo{box-shadow:0 6px 18px color-mix(in srgb,var(--info) 34%,transparent);transform:translateY(-1px)}' +
+      // Liseré de tête sur la topbar : seule grammaire d\'appartenance, teintée
+      // par la lumière du pilier courant, prolongée d\'une pointe chaude à droite.
       '.v2-top{position:relative}' +
-      '.v2-top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;' +
-        'background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 34%,transparent),transparent 60%);' +
-        'pointer-events:none}' +
-      // Pastille recherche topbar : cible tactile terrain >= --tap-min sous mobile,
-      // sans grossir le glyphe (la hit-area s\'étend, l\'icône reste).
+      '.v2-top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;pointer-events:none;' +
+        'background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 34%,transparent),transparent 55%,' +
+        'transparent 88%,color-mix(in srgb,var(--v2-spark) 22%,transparent))}' +
+      // Pastille recherche ⌘K : plus posée, kbd raffiné, hit-area terrain sous mobile.
+      '.v2-top-search{transition:border-color .18s var(--ease-soft),box-shadow .2s var(--ease),transform .18s var(--ease-soft)}' +
+      '.v2-top-search:hover{transform:translateY(-1px)}' +
+      '.v2-top-search kbd{border:1px solid var(--line);box-shadow:0 1px 0 rgba(16,19,28,.04)}' +
       '@media(max-width:640px){.v2-top-search{min-width:var(--tap-min);min-height:var(--tap-min);' +
         'justify-content:center}}' +
-      // (3) LOGIN — manifeste de marque. Halo signature + baseline mono.
+      // Avatar : anneau discret pour un contour net sur fond clair.
+      '.v2-av{box-shadow:0 0 0 1px color-mix(in srgb,var(--info) 14%,transparent),0 2px 6px rgba(16,19,28,.12)}' +
+
+      // ══ LOGIN — première impression de marque ════════════════════════
+      // Scène : dégradé de marque sobre (double halo info) + trame de points
+      // très légère + pointe chaude en bas. Pas de backdrop-filter (Safari).
       '.v2-login{overflow:hidden}' +
       '.v2-login::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;' +
-        'background:radial-gradient(ellipse 70% 55% at 50% 0%,' +
-        'color-mix(in srgb,var(--info) 14%,var(--halo)),transparent 62%)}' +
-      '.v2-login-card{position:relative;z-index:1}' +
-      // Le monogramme arrive en mo-pop (settle spring réservé aux accents) ;
-      // l\'icône glisse sur la courbe d\'entrée canonique, jamais clinquant.
-      '.v2-login-logo{animation:v2-login-mono var(--mo-dur,300ms) var(--mo-ease-in,cubic-bezier(.32,.72,0,1)) both}' +
+        'background:' +
+          'radial-gradient(ellipse 72% 58% at 50% -6%,color-mix(in srgb,var(--info) 16%,var(--halo)),transparent 60%),' +
+          'radial-gradient(ellipse 46% 40% at 92% 104%,color-mix(in srgb,var(--v2-spark) 9%,transparent),transparent 62%),' +
+          'radial-gradient(circle at center,var(--card-2) 0.8px,transparent 0.9px);' +
+        'background-size:auto,auto,22px 22px;' +
+        'background-position:center top,center,center;' +
+        'opacity:1;-webkit-mask-image:radial-gradient(ellipse 90% 90% at 50% 30%,#000 55%,transparent 100%);' +
+        'mask-image:radial-gradient(ellipse 90% 90% at 50% 30%,#000 55%,transparent 100%)}' +
+      // Carte : bord premium (double liseré interne clair) + entrée en douceur.
+      '.v2-login-card{position:relative;z-index:1;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,' +
+        '0 0 0 1px var(--line),var(--sh-3);' +
+        'animation:v2-login-card var(--mo-dur,320ms) var(--mo-ease-in,cubic-bezier(.32,.72,0,1)) both}' +
+      '@keyframes v2-login-card{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}' +
+      // Le monogramme arrive en pop discret, jamais clinquant.
+      '.v2-login-logo{position:relative;box-shadow:0 8px 22px color-mix(in srgb,var(--info) 30%,transparent),' +
+        '0 1px 0 rgba(255,255,255,.35) inset;' +
+        'animation:v2-login-mono var(--mo-dur,320ms) var(--mo-ease-in,cubic-bezier(.32,.72,0,1)) both}' +
       '@keyframes v2-login-mono{from{opacity:0;transform:translateY(6px) scale(.92)}to{opacity:1;transform:none}}' +
-      // Baseline login en mono uppercase = même voix que le wordmark topbar.
-      '.v2-login p{font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;font-size:10.5px}' +
-      '@media (prefers-reduced-motion:reduce){.v2-login-logo{animation:none}}';
+      // Titre net, baseline login en mono uppercase = même voix que le wordmark.
+      '.v2-login h1{margin-bottom:5px}' +
+      '.v2-login p{font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;font-size:10.5px;' +
+        'color:var(--muted-2);margin-bottom:24px}' +
+      // Micro-séparateur d\'étincelle sous la baseline : signe de marque discret.
+      '.v2-login-spark{width:34px;height:2.5px;border-radius:2px;margin:0 auto 22px;' +
+        'background:linear-gradient(90deg,var(--info),var(--v2-spark));opacity:.9}' +
+      // Champs : les inputs de login gagnent en assise (padding, animation d\'entrée).
+      '.v2-login .v2-field{font-size:15px;margin-bottom:12px}' +
+      '.v2-login-fields{animation:v2-login-rise var(--mo-dur,320ms) var(--mo-ease-in,cubic-bezier(.32,.72,0,1)) 60ms both}' +
+      '@keyframes v2-login-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}' +
+      // Bouton « Afficher » : plus lisible au survol.
+      '#v2-eye{border-radius:8px;transition:color .15s var(--ease-soft),background .15s var(--ease-soft)}' +
+      '#v2-eye:hover{color:var(--ip-ink-2);background:var(--card-2)}' +
+      // Pied de carte : réassurance sobre en mono.
+      '.v2-login-foot{margin-top:22px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.11em;' +
+        'font-size:9px;color:var(--muted-2);display:flex;align-items:center;justify-content:center;gap:7px;line-height:1}' +
+      '.v2-login-foot::before{content:"";width:5px;height:5px;border-radius:50%;flex:0 0 auto;' +
+        'background:var(--c-mint);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-mint) 20%,transparent)}' +
+
+      '@media (prefers-reduced-motion:reduce){.v2-login-card,.v2-login-logo,.v2-login-fields{animation:none}' +
+        '.v2-brand,.v2-brand .v2-logo,.v2-top-search{transition:none}}';
     var st = document.createElement('style');
     st.id = 'v2-shell-styles';
     st.textContent = css;
@@ -829,16 +883,21 @@
     injectShellStyles();
     // Login = scène marque : la lumière neutre/info (bleu marque) pour le halo signature.
     try { document.documentElement.style.setProperty('--accent', 'var(--info)'); } catch (e) {}
-    root.innerHTML = '<div class="v2-login"><div class="v2-login-card mo-pop">' +
+    root.innerHTML = '<div class="v2-login"><div class="v2-login-card">' +
       '<div class="v2-login-logo">' + ICO('logo', 30) + '</div>' +
-      '<h1>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</h1><p>' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial · CRM') + '</p>' +
-      '<input class="v2-field" id="v2-email" type="email" inputmode="email" aria-label="Adresse email" placeholder="Email" autocomplete="username">' +
-      '<div style="position:relative">' +
-        '<input class="v2-field" id="v2-pass" type="password" aria-label="Mot de passe" placeholder="Mot de passe" autocomplete="current-password" style="padding-right:82px">' +
-        '<button type="button" id="v2-eye" aria-label="Afficher le mot de passe" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);font:600 12.5px/1 inherit;cursor:pointer;padding:10px">Afficher</button>' +
+      '<h1>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</h1>' +
+      '<p>' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial · CRM') + '</p>' +
+      '<div class="v2-login-spark" aria-hidden="true"></div>' +
+      '<div class="v2-login-fields">' +
+        '<input class="v2-field" id="v2-email" type="email" inputmode="email" aria-label="Adresse email" placeholder="Email" autocomplete="username">' +
+        '<div style="position:relative">' +
+          '<input class="v2-field" id="v2-pass" type="password" aria-label="Mot de passe" placeholder="Mot de passe" autocomplete="current-password" style="padding-right:82px">' +
+          '<button type="button" id="v2-eye" aria-label="Afficher le mot de passe" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);font:600 12.5px/1 inherit;cursor:pointer;padding:10px">Afficher</button>' +
+        '</div>' +
+        '<button class="v2-btn v2-btn-primary" id="v2-login-btn">Se connecter</button>' +
+        '<div class="v2-login-err" id="v2-login-err" role="alert"></div>' +
       '</div>' +
-      '<button class="v2-btn v2-btn-primary" id="v2-login-btn">Se connecter</button>' +
-      '<div class="v2-login-err" id="v2-login-err" role="alert"></div>' +
+      '<div class="v2-login-foot">Connexion sécurisée</div>' +
       '</div></div>';
     var btn = document.getElementById('v2-login-btn');
     var err = document.getElementById('v2-login-err');

@@ -43,9 +43,9 @@
     if (stylesInjected) return;
     stylesInjected = true;
     var css = [
-      /* Stagger reveal ramené à ~30ms (cohérent --mo-dur 300ms) */
-      '[data-reveal]{transition-delay:calc(var(--mo-i, 0) * 30ms)}',
-      '[data-reveal] .v2-kpi-v{transition-delay:calc(var(--mo-i, 0) * 30ms + 50ms)}',
+      /* Stagger reveal ~34ms (cohérent --mo-dur 300ms + base v2-motion.css) */
+      '[data-reveal]{transition-delay:calc(var(--mo-i, 0) * 34ms)}',
+      '[data-reveal] .v2-kpi-v{transition-delay:calc(var(--mo-i, 0) * 34ms + 60ms)}',
       /* Above-the-fold : déjà visible au render → pas de double-anim     */
       /* (reveal + mo-view-in). On force l'état final SANS transition.    */
       '[data-reveal].mo-instant{transition:none !important;transition-delay:0s !important;opacity:1;transform:none}',
@@ -284,6 +284,65 @@
     }, true);
   }
 
+  // ── Hover magnétique subtil sur .v2-btn (délégué, une seule fois) ───
+  // Le bouton « penche » de quelques px vers le curseur puis revient au
+  // repos avec un rattrapage ressort (courbe --ease en CSS). Amplitude
+  // minuscule → premium, jamais gadget. RM-safe, coarse-pointer-safe,
+  // et sans re-layout (transform pur piloté par variables CSS).
+  var MAG_MAX = 5;          // décalage max en px (sobre)
+  var magBound = false;
+  function bindMagnetic() {
+    if (magBound || RM) return;
+    // pas de magnétisme sur écrans tactiles (pas de survol pertinent)
+    try {
+      if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
+    } catch (e) {}
+    magBound = true;
+    var cur = null, ticking = false, lx = 0, ly = 0;
+
+    function apply() {
+      ticking = false;
+      if (!cur) return;
+      cur.style.setProperty('--mo-mx', lx.toFixed(2) + 'px');
+      cur.style.setProperty('--mo-my', ly.toFixed(2) + 'px');
+    }
+    function reset(el) {
+      if (!el) return;
+      el.classList.remove('mo-mag-live');
+      el.style.setProperty('--mo-mx', '0px');
+      el.style.setProperty('--mo-my', '0px');
+    }
+
+    document.addEventListener('pointermove', function (e) {
+      if (RM || e.pointerType === 'touch') return;
+      var btn = e.target && e.target.closest ? e.target.closest('.v2-btn') : null;
+      if (btn !== cur) {
+        if (cur) reset(cur);      // on a quitté l'ancien bouton
+        cur = btn;
+        if (cur) { cur.classList.add('mo-mag', 'mo-mag-live'); }
+      }
+      if (!cur) return;
+      try {
+        var r = cur.getBoundingClientRect();
+        // vecteur (curseur → centre), normalisé puis borné à MAG_MAX
+        var dx = e.clientX - (r.left + r.width / 2);
+        var dy = e.clientY - (r.top + r.height / 2);
+        lx = Math.max(-MAG_MAX, Math.min(MAG_MAX, dx * 0.35));
+        ly = Math.max(-MAG_MAX, Math.min(MAG_MAX, dy * 0.35));
+      } catch (err) { return; }
+      if (!ticking) { ticking = true; raf(apply); }
+    }, true);
+
+    // sortie : rattrapage ressort vers 0 (retire la classe -live → courbe --ease)
+    document.addEventListener('pointerleave', function () {
+      if (cur) { reset(cur); cur = null; }
+    }, true);
+    // filet : au relâchement/annulation, on relâche aussi l'attraction
+    document.addEventListener('pointerup', function () {
+      if (cur) { cur.classList.remove('mo-mag-live'); reset(cur); cur = null; }
+    }, true);
+  }
+
   // ── Passe complète post-render ──────────────────────────────────────
   function pass() {
     try {
@@ -335,6 +394,7 @@
   function start() {
     injectStyles();
     bindPress();
+    bindMagnetic();
     // tente d'envelopper render ; si pas prêt, réessaie quelques frames
     var tries = 0;
     (function tryWrap() {
