@@ -259,12 +259,6 @@
           '<div class="v2-page-sub" style="margin-bottom:0">L\'espace de Pauline &amp; Will — supports et sélections produits</div></div>' +
           shareNote +
         '</div>' +
-        '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'catalogues\')">' +
-          '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
-          '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Catalogues grossiste — L\'Intégral &amp; ITP</span>' +
-          '<span class="mkt-cat-s">Ta parapharma L\'Intégral par spécialité + les pansements/DM ITP (avec marge), classés par sorties. Consulter &amp; télécharger.</span></span>' +
-          '<span class="v2-row-chev">' + ICO('chev', 18) + '</span>' +
-        '</a>' +
         '<a class="mkt-cat-banner" onclick="V2.go(\'marketing\',\'propositions\')">' +
           '<span class="mkt-cat-ic">' + ICO('cat', 22) + '</span>' +
           '<span style="flex:1;min-width:0"><span class="mkt-cat-t">Maquettes du nouveau site internet — propositions</span>' +
@@ -395,8 +389,8 @@
     var docLabel = 'Générer le doc — top ' + (catPerCat > 0 ? catPerCat : 'tous') + '/catégorie' + (mktEtab ? ' · ' + mktEtab : '');
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap">' +
-        '<button class="v2-back" style="margin-bottom:16px" onclick="V2.go(\'marketing\')">' + ICO('back', 16) + 'Marketing</button>' +
-        '<div class="v2-page-title">Catalogues grossiste</div>' +
+        (V2.priceTabs ? V2.priceTabs('marketing:catalogues') : '') +
+        '<div class="v2-page-title">Catalogue &amp; prix — grossiste</div>' +
         '<div class="v2-page-sub">L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent. Bouton <b>« Créer la liste »</b> par catégorie = sélection parfaite des produits les plus commandés.</div>' +
         '<div class="mkt-pick-src" style="margin:16px 0 10px">' + tabs + '</div>' +
         etabBar +
