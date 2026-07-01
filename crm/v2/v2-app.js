@@ -607,13 +607,14 @@
           pmap.offilog.d = 'Ta parapharma : ton prix d\'achat IP comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000. Repère où un concurrent casse les prix.';
           pmap.offilog.go = 'Comparer les concurrents';
         }
+        // v2 simplifiée : 2 groupes clairs. Audit marge fusionné DANS la fiche pharmacie
+        // (onglet), Concurrents/Pilotage/Présentation accessibles mais en « Autres outils ».
         var MOMENTS = [
-          { lbl: 'Mes officines', c: 'var(--ip-blue)', keys: ['pharma', 'pilotage'] },
-          { lbl: 'Vendre', c: 'var(--c-mint)', keys: ['audit', 'molecules', 'presentation', 'marketing'] },
-          { lbl: 'Marché & veille', c: 'var(--c-rose)', keys: ['infos', 'offilog', 'groupements'] },
+          { lbl: 'L\'essentiel', c: 'var(--ip-blue)', keys: ['pharma', 'molecules', 'marketing', 'infos'] },
+          { lbl: 'Marché & réseau', c: 'var(--c-rose)', keys: ['offilog', 'groupements'] },
         ];
-        // catalogue replié dans « Catalogue & prix » ; fiches retiré (prospection = présentation seule)
-        var used = { catalogue: 1, fiches: 1 };
+        // catalogue grossiste médicaments replié · fiches retiré · audit fusionné dans la fiche pharmacie
+        var used = { catalogue: 1, fiches: 1, audit: 1 };
         pilHtml = MOMENTS.map(function (m) {
           var tiles = m.keys.map(function (k) { if (!pmap[k]) return ''; used[k] = 1; return tile(pmap[k]); }).filter(Boolean).join('');
           if (!tiles) return '';
