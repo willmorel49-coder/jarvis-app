@@ -457,8 +457,61 @@
     }
   };
 
+  // ── Accueil : styles premium injectés (bento + spotlight au survol) ──
+  // Tout est portée sous .v2-home-x pour ne rien casser ailleurs (login, shell, OPSO).
+  function injectHomeStyles() {
+    if (document.getElementById('v2-home-style')) return;
+    var st = document.createElement('style'); st.id = 'v2-home-style';
+    st.textContent = [
+      // Hero : plus d'air, halo dégradé sobre bleu→orange derrière le titre
+      '.v2-home-x .v2-hero{position:relative;margin-bottom:34px;padding-top:8px}',
+      // Halo hero : bleu IP (devient vert en OPSO via --ip-blue) + touche orange sobre côté droit
+      '.v2-home-x .v2-hero::before{content:"";position:absolute;left:50%;top:-30px;width:min(620px,86%);height:210px;transform:translateX(-50%);pointer-events:none;z-index:-1;background:radial-gradient(60% 100% at 30% 0%,color-mix(in srgb,var(--ip-blue) 11%,transparent),transparent 70%),radial-gradient(55% 100% at 78% 10%,color-mix(in srgb,var(--c-pilo) 9%,transparent),transparent 72%);filter:blur(6px)}',
+      '.v2-home-x .v2-eyebrow{background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);padding:6px 13px;border-radius:var(--r-pill);box-shadow:var(--sh-1)}',
+      '.v2-home-x .v2-hero h1{background:none}',
+      '.v2-home-x .v2-hero .ac{color:var(--ip-blue)}',
+      // Recherche : accent dégradé sur l\'icône, kbd plus net
+      '.v2-home-x .v2-search{background:linear-gradient(180deg,var(--card),var(--card-2))}',
+      '.v2-home-x .v2-search .srch-ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,color-mix(in srgb,var(--ip-blue) 14%,var(--card)),color-mix(in srgb,var(--c-pilo) 10%,var(--card)));color:var(--ip-blue);flex-shrink:0}',
+      '.v2-home-x .v2-search .srch-ic svg{color:var(--ip-blue)}',
+      // Sections « moment » : filet dégradé sous le titre
+      '.v2-home-x .v2-moment-h::after{background:linear-gradient(90deg,color-mix(in srgb,var(--mc,var(--line)) 40%,transparent),transparent)}',
+      // Tuiles bento : spotlight qui suit la souris + liseré dégradé au survol
+      '.v2-home-x .v2-pil{background:linear-gradient(180deg,var(--card),var(--card-2));transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft),border-color .28s var(--mo-ease-soft)}',
+      '.v2-home-x .v2-pil::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s var(--mo-ease-soft);background:radial-gradient(240px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--accent) 16%,transparent),transparent 62%)}',
+      '.v2-home-x .v2-pil:hover::after{opacity:1}',
+      '.v2-home-x .v2-pil::before{height:100%;width:3px;top:0;left:0;right:auto;background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 45%,transparent));transform:scaleY(1) scaleX(0);transform-origin:left center;transition:transform .3s var(--mo-ease-soft)}',
+      '.v2-home-x .v2-pil:hover::before{transform:scaleY(1) scaleX(1)}',
+      '.v2-home-x .v2-pil:hover{transform:translateY(-4px)}',
+      // Icône : fond dégradé teinté de l\'accent de la tuile
+      '.v2-home-x .v2-pil-ico{background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 16%,var(--card)),color-mix(in srgb,var(--accent) 6%,var(--card)));color:var(--accent);box-shadow:0 1px 0 rgba(255,255,255,.7) inset}',
+      '.v2-home-x .v2-pil-num{background:color-mix(in srgb,var(--accent) 10%,transparent);padding:3px 9px;border-radius:var(--r-pill);border:1px solid color-mix(in srgb,var(--accent) 20%,transparent)}',
+      // CTA « aller » : la flèche glisse au survol
+      '.v2-home-x .v2-pil-go{color:var(--accent);font-weight:700}',
+      '.v2-home-x .v2-pil-go .arrow{display:inline-block;transition:transform .28s var(--mo-ease-soft)}',
+      '.v2-home-x .v2-pil:hover .v2-pil-go .arrow{transform:translateX(4px)}',
+      // Apparition douce en cascade
+      '.v2-home-x .v2-moment,.v2-home-x .v2-hero,.v2-home-x .v2-search,.v2-home-x .v2-recent{animation:v2homeIn .5s var(--mo-ease-in) both}',
+      '.v2-home-x .v2-search{animation-delay:.04s}.v2-home-x .v2-recent{animation-delay:.08s}',
+      '.v2-home-x .v2-moment:nth-of-type(1){animation-delay:.10s}.v2-home-x .v2-moment:nth-of-type(2){animation-delay:.16s}.v2-home-x .v2-moment:nth-of-type(3){animation-delay:.22s}.v2-home-x .v2-moment:nth-of-type(4){animation-delay:.28s}',
+      '@keyframes v2homeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}',
+      // Accessibilité : on coupe animations + spotlight si mouvement réduit
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-moment,.v2-home-x .v2-hero,.v2-home-x .v2-search,.v2-home-x .v2-recent{animation:none}.v2-home-x .v2-pil,.v2-home-x .v2-pil-go .arrow{transition:none}.v2-home-x .v2-pil::after{display:none}}'
+    ].join('');
+    document.head.appendChild(st);
+  }
+  // Spotlight : la souris met à jour --mx/--my sur la tuile survolée
+  V2.homeSpot = function (e, el) {
+    try {
+      var r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+      el.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+    } catch (err) {}
+  };
+
   V2.pages.home = {
     render: function (root) {
+      injectHomeStyles();
       var phs = V2.pharmacies || [];
       // pharmacies récentes : par CA décroissant (proxy d'activité)
       var withCa = phs.map(function (p) {
@@ -526,7 +579,7 @@
       }
       function tile(p) {
         var nav = p.route ? ('V2.go(\'' + p.route.name + '\'' + (p.route.param ? ',\'' + p.route.param + '\'' : '') + ')') : ('V2.go(\'' + p.k + '\')');
-        return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onclick="' + nav + '">' +
+        return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onmousemove="V2.homeSpot(event,this)" onclick="' + nav + '">' +
           '<div class="v2-pil-head"><div class="v2-pil-ico">' + ICO(p.ico, 26) + '</div><span class="v2-pil-num">' + p.tag + '</span></div>' +
           '<div class="v2-pil-t">' + p.t + '</div><div class="v2-pil-d">' + p.d + '</div>' +
           '<div class="v2-pil-go">' + p.go + ' <span class="arrow">→</span></div></a>';
@@ -573,13 +626,13 @@
       var firstName = (V2.user && V2.user.name ? V2.user.name.split(' ')[0] : 'Will');
 
       root.innerHTML = topbar() +
-        '<div class="v2-wrap narrow">' +
+        '<div class="v2-wrap narrow v2-home-x">' +
           '<div class="v2-hero">' +
             '<span class="v2-eyebrow"><span class="dot"></span>' + cap(today) + ' · ' + nbPharma + ' officines actives</span>' +
-            '<h1>Bonjour ' + esc(firstName) + ', par où on commence ?</h1>' +
+            '<h1>Bonjour ' + esc(firstName) + ', <span class="ac">par où on commence ?</span></h1>' +
             '<p>Cherche une pharmacie, ou ouvre directement un de tes outils</p>' +
           '</div>' +
-          '<div class="v2-search" onclick="V2.onTopSearch()">' + ICO('search', 24, 2) +
+          '<div class="v2-search" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
             '<input readonly placeholder="Pharmacie, produit, page…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           '<div class="v2-recent">' + recentHtml + '</div>' +
           pilHtml +
