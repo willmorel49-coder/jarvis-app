@@ -106,12 +106,26 @@
     loop();
   };
 
+  function hideIfNotHome() {
+    if (V2.route && V2.route.name !== 'home') {
+      cleanup();
+      var f = document.getElementById('v2-bg-css'); if (f) f.remove();
+    }
+  }
+
   // Monkey-patch : monte le fond après le rendu de l'accueil (sans toucher v2-app.js)
   function hook() {
     if (!V2.pages || !V2.pages.home || V2.pages.home._bgHooked) return false;
     var orig = V2.pages.home.render;
     V2.pages.home.render = function (root) { orig.call(this, root); try { V2.mountHomeBg(root); } catch (e) {} };
-    V2.pages.home._bgHooked = true; return true;
+    V2.pages.home._bgHooked = true;
+    // retire le fond quand on quitte l'accueil (WebGL ET repli CSS)
+    if (V2.render && !V2.render._bgWrapped) {
+      var r = V2.render;
+      V2.render = function () { r.apply(this, arguments); try { hideIfNotHome(); } catch (e) {} };
+      V2.render._bgWrapped = true;
+    }
+    return true;
   }
   if (!hook()) { var n = 0, iv = setInterval(function () { if (hook() || ++n > 40) clearInterval(iv); }, 100); }
 })();
