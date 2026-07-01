@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intégral Pharma — Accueil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBFCFE;
+    --blue:#0050E6;
+    --orange:#F39A1B;
+    --ink:#1A2233;
+    --muted:#8A93A6;
+    --line:#EEF1F6;
+    --card-hover:#F4F7FC;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:'DM Sans',-apple-system,system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  .wrap{
+    max-width:520px;
+    margin:0 auto;
+    padding:72px 24px 96px;
+  }
+
+  /* En-tête */
+  .greet{
+    font-size:30px;
+    font-weight:600;
+    letter-spacing:-.02em;
+    color:var(--ink);
+  }
+  .date{
+    margin-top:6px;
+    font-size:15px;
+    color:var(--muted);
+    text-transform:capitalize;
+  }
+
+  /* Recherche */
+  .search{
+    position:relative;
+    margin-top:28px;
+  }
+  .search svg{
+    position:absolute;
+    left:14px;top:50%;
+    transform:translateY(-50%);
+    color:var(--muted);
+  }
+  .search input{
+    width:100%;
+    font-family:inherit;
+    font-size:15px;
+    color:var(--ink);
+    padding:12px 14px 12px 42px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:12px;
+    outline:none;
+    transition:border-color .18s ease, box-shadow .18s ease;
+  }
+  .search input::placeholder{color:var(--muted)}
+  .search input:focus{
+    border-color:#CFE0FF;
+    box-shadow:0 0 0 4px rgba(0,80,230,.08);
+  }
+
+  /* Section label */
+  .label{
+    margin:40px 0 6px;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+
+  /* Liste principale */
+  .list{
+    list-style:none;
+    border-top:1px solid var(--line);
+  }
+  .item{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:16px 8px;
+    border-bottom:1px solid var(--line);
+    text-decoration:none;
+    color:inherit;
+    border-radius:10px;
+    transition:background .16s ease;
+  }
+  .item:hover{background:var(--card-hover)}
+  .item:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .ic{
+    flex:0 0 40px;
+    width:40px;height:40px;
+    display:grid;place-items:center;
+    border-radius:11px;
+    background:#EDF2FF;
+    color:var(--blue);
+  }
+  .ic.warm{background:#FEF3E2;color:var(--orange)}
+  .txt{flex:1;min-width:0}
+  .name{font-size:16px;font-weight:500;letter-spacing:-.01em}
+  .desc{font-size:13px;color:var(--muted);margin-top:1px}
+  .chev{color:#C7CEDB;flex:0 0 auto}
+
+  /* Pharmacies récentes */
+  .recent{list-style:none;margin-top:2px}
+  .ph{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 8px;
+    text-decoration:none;
+    color:inherit;
+    border-radius:10px;
+    transition:background .16s ease;
+  }
+  .ph:hover{background:var(--card-hover)}
+  .ph:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .dot{
+    flex:0 0 8px;width:8px;height:8px;border-radius:50%;
+    background:var(--orange);
+  }
+  .ph-name{font-size:15px;font-weight:500}
+  .ph-meta{font-size:13px;color:var(--muted);margin-left:auto}
+
+  .more{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-top:26px;
+    font-size:14px;
+    color:var(--muted);
+    text-decoration:none;
+    transition:color .16s ease;
+  }
+  .more:hover{color:var(--blue)}
+
+  @media (max-width:480px){
+    .wrap{padding:48px 18px 72px}
+    .greet{font-size:26px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important}
+  }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <h1 class="greet">Bonjour Will</h1>
+    <p class="date" id="date"></p>
+
+    <div class="search">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="search" placeholder="Rechercher une pharmacie, un produit…" aria-label="Rechercher">
+    </div>
+
+    <p class="label">Espaces</p>
+    <ul class="list">
+      <li>
+        <a class="item" href="#pharmacies">
+          <span class="ic">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 9v11h14V9"/><path d="M12 12v4M10 14h4"/></svg>
+          </span>
+          <span class="txt">
+            <span class="name">Mes pharmacies</span>
+            <span class="desc">Fiches clients, historique et suivi</span>
+          </span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+      </li>
+      <li>
+        <a class="item" href="#catalogue">
+          <span class="ic">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 5v14M4 9h4M4 13h4"/></svg>
+          </span>
+          <span class="txt">
+            <span class="name">Catalogue &amp; prix</span>
+            <span class="desc">14 000 réfs, remises et tarifs nets</span>
+          </span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+      </li>
+      <li>
+        <a class="item" href="#marketing">
+          <span class="ic warm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.2-3"/></svg>
+          </span>
+          <span class="txt">
+            <span class="name">Marketing</span>
+            <span class="desc">Visuels produits et opérations</span>
+          </span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+      </li>
+      <li>
+        <a class="item" href="#infos">
+          <span class="ic warm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a5 5 0 0 1 5 5c0 3-2 4-2 7H9c0-3-2-4-2-7a5 5 0 0 1 5-5z"/><path d="M9 21h6"/></svg>
+          </span>
+          <span class="txt">
+            <span class="name">Infos du matin</span>
+            <span class="desc">Ruptures ANSM et opportunités du jour</span>
+          </span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+      </li>
+    </ul>
+
+    <p class="label">Consultées récemment</p>
+    <ul class="recent">
+      <li>
+        <a class="ph" href="#p1">
+          <span class="dot"></span>
+          <span class="ph-name">Pharmacie du Marché</span>
+          <span class="ph-meta">Rouen</span>
+        </a>
+      </li>
+      <li>
+        <a class="ph" href="#p2">
+          <span class="dot"></span>
+          <span class="ph-name">Pharmacie de la Gare</span>
+          <span class="ph-meta">Le Havre</span>
+        </a>
+      </li>
+      <li>
+        <a class="ph" href="#p3">
+          <span class="dot"></span>
+          <span class="ph-name">Grande Pharmacie Centrale</span>
+          <span class="ph-meta">Caen</span>
+        </a>
+      </li>
+    </ul>
+
+    <a class="more" href="#autres">
+      Autres outils
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+  </main>
+
+  <script>
+    (function(){
+      var d = new Date();
+      var s = d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
+      document.getElementById('date').textContent = s;
+    })();
+  </script>
+</body>
+</html>
