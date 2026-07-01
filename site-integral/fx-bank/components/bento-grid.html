@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Bento Grid</title>
+<!--
+  FX-BANK · BENTO GRID
+  QUOI : Grille bento responsive (cartes de tailles variées) avec spotlight curseur, hover-lift et bordure lumineuse.
+  QUAND : section "features", tableau de bord marketing, présentation d'atouts.
+  DEPENDANCES : aucune
+  SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+  COPIER : le bloc entre les balises FX:COPY:START et FX:COPY:END
+-->
+<style>
+  /* ---- Démo uniquement ---- */
+  :root{ --blue:#0050E6; --orange:#F39A1B; --ink:#0A0E1A; --light:#F8FAFC; }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; padding:3rem 1.5rem;
+    background:radial-gradient(1200px 700px at 50% -10%, #0f1836 0%, var(--ink) 60%);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--light);
+  }
+  .demo-head{ text-align:center; margin:0 auto 2.5rem; max-width:640px; }
+  .demo-head h1{ font-size:clamp(1.3rem,3.4vw,2rem); font-weight:600; margin:0 0 .5rem; }
+  .demo-head p{ opacity:.55; font-size:.95rem; margin:0; }
+
+<!-- FX:COPY:START -->
+  /* =====================================================================
+     BENTO GRID — CSS
+     Variables à changer :
+       --fx-bento-gap     : espace entre cartes
+       --fx-bento-radius  : rayon des cartes
+       --fx-bento-spot    : couleur du spotlight qui suit le curseur
+       --fx-bento-line    : couleur de la bordure lumineuse au survol
+     Tailles : ajoute .is-wide (2 colonnes) / .is-tall (2 lignes) sur une carte.
+     Aucun blur : profondeur via radial-gradient + rgba + transform.
+     ===================================================================== */
+  .fx-bento{
+    --fx-bento-gap:1rem; --fx-bento-radius:18px;
+    --fx-bento-spot:rgba(0,80,230,.35); --fx-bento-line:rgba(0,80,230,.6);
+    display:grid; gap:var(--fx-bento-gap); max-width:1000px; margin:0 auto;
+    grid-template-columns:repeat(4,1fr); grid-auto-rows:150px;
+  }
+  .fx-bento__card{
+    --mx:50%; --my:50%;
+    position:relative; overflow:hidden; border-radius:var(--fx-bento-radius);
+    padding:1.5rem; display:flex; flex-direction:column; justify-content:flex-end;
+    background:linear-gradient(160deg,#131c3d,#0c1330);
+    border:1px solid rgba(255,255,255,.07);
+    transition:transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease;
+    will-change:transform; grid-column:span 2;
+  }
+  .fx-bento__card.is-wide{ grid-column:span 2; }
+  .fx-bento__card.is-tall{ grid-row:span 2; }
+  /* spotlight curseur (radial-gradient positionné via --mx/--my) */
+  .fx-bento__card::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(260px 260px at var(--mx) var(--my), var(--fx-bento-spot), transparent 65%);
+    opacity:0; transition:opacity .3s ease;
+  }
+  /* bordure lumineuse (masque radial sur un bord en dégradé, sans blur) */
+  .fx-bento__card::after{
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    padding:1px; background:radial-gradient(200px 200px at var(--mx) var(--my), var(--fx-bento-line), transparent 60%);
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    opacity:0; transition:opacity .3s ease;
+  }
+  .fx-bento__card:hover{ transform:translateY(-6px); box-shadow:0 24px 50px -24px rgba(0,0,0,.8); }
+  .fx-bento__card:hover::before, .fx-bento__card:hover::after{ opacity:1; }
+  .fx-bento__card h3{ margin:0 0 .35rem; font-size:1.1rem; position:relative; }
+  .fx-bento__card p{ margin:0; font-size:.85rem; opacity:.6; line-height:1.45; position:relative; }
+  .fx-bento__stat{ font-size:2.2rem; font-weight:700; color:#F39A1B; margin:0 0 .2rem; position:relative; }
+
+  /* responsive : 2 colonnes sur tablette, 1 sur mobile */
+  @media (max-width:720px){
+    .fx-bento{ grid-template-columns:repeat(2,1fr); }
+    .fx-bento__card, .fx-bento__card.is-wide{ grid-column:span 2; }
+    .fx-bento__card.is-tall{ grid-row:span 1; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-bento__card{ transition:none; }
+    .fx-bento__card:hover{ transform:none; }
+    .fx-bento__card::before{ display:none; }
+  }
+<!-- FX:COPY:END -->
+</style>
+</head>
+<body>
+  <div class="demo-head">
+    <h1>Grille Bento</h1>
+    <p>Bouge le curseur sur les cartes — spotlight, lift et bordure lumineuse.</p>
+  </div>
+
+  <!-- FX:COPY:START -->
+  <!-- BENTO GRID — HTML (data-fx-bento sur la grille ; is-wide / is-tall pour varier les tailles) -->
+  <div class="fx-bento" data-fx-bento>
+    <div class="fx-bento__card is-tall">
+      <p class="fx-bento__stat">14 000+</p>
+      <h3>Références</h3>
+      <p>Un catalogue court, choisi, toujours disponible.</p>
+    </div>
+    <div class="fx-bento__card is-wide">
+      <h3>Sans franco ni engagement</h3>
+      <p>Vous commandez ce que vous voulez, quand vous voulez.</p>
+    </div>
+    <div class="fx-bento__card">
+      <p class="fx-bento__stat">6–9%</p>
+      <h3>Remises</h3>
+    </div>
+    <div class="fx-bento__card">
+      <h3>Offilog</h3>
+      <p>Plateforme réactive.</p>
+    </div>
+    <div class="fx-bento__card is-wide">
+      <h3>Accompagnement humain</h3>
+      <p>Une équipe qui connaît votre officine et répond vite.</p>
+    </div>
+  </div>
+  <!-- FX:COPY:END -->
+
+<!-- FX:COPY:START -->
+<script>
+/* =====================================================================
+   BENTO GRID — JS (autonome, aucune dépendance)
+   Met à jour --mx/--my par carte pour le spotlight + la bordure lumineuse.
+   Neutralisé en prefers-reduced-motion.
+   ===================================================================== */
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll('[data-fx-bento] .fx-bento__card').forEach(card=>{
+    card.addEventListener('mousemove', e=>{
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left)+'px');
+      card.style.setProperty('--my', (e.clientY - r.top)+'px');
+    });
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+</body>
+</html>

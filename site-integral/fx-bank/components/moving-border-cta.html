@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Moving Border CTA</title>
+<!--
+  FX-BANK · MOVING BORDER CTA
+  QUOI : CTA avec un liseré lumineux qui tourne autour du bouton (conic-gradient en rotation).
+  QUAND : bouton d'appel principal qu'on veut rendre "vivant" et haut de gamme.
+  DEPENDANCES : aucune
+  SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+  COPIER : le bloc entre les balises FX:COPY:START et FX:COPY:END
+-->
+<style>
+  /* ---- Démo uniquement ---- */
+  :root{ --blue:#0050E6; --orange:#F39A1B; --ink:#0A0E1A; --light:#F8FAFC; }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; display:grid; place-items:center;
+    background:radial-gradient(1000px 500px at 50% 0%, #101a3d 0%, var(--ink) 60%);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--light);
+  }
+  .demo-wrap{ text-align:center; padding:2rem; }
+  .demo-wrap h1{ font-size:clamp(1.2rem,3vw,1.8rem); font-weight:600; margin:0 0 .5rem; }
+  .demo-wrap p{ opacity:.55; font-size:.9rem; margin:0 0 2.5rem; }
+  .demo-row{ display:flex; gap:1.6rem; flex-wrap:wrap; justify-content:center; align-items:center; }
+
+<!-- FX:COPY:START -->
+  /* =====================================================================
+     MOVING BORDER CTA — CSS
+     Principe : une couche conic-gradient tourne (transform:rotate) derrière
+     un fond plein légèrement plus petit, laissant apparaître un liseré animé.
+     Variables à changer :
+       --fx-mb-c1 / --fx-mb-c2 : les deux couleurs du liseré
+       --fx-mb-bg              : fond plein du bouton
+       --fx-mb-fg              : couleur du texte
+       --fx-mb-border          : épaisseur du liseré (px)
+       --fx-mb-radius          : rayon des coins
+       --fx-mb-speed           : durée d'un tour
+     Pas de filter:blur — la douceur vient du dégradé conique lui-même.
+     ===================================================================== */
+  .fx-moving-border{
+    --fx-mb-c1:#0050E6; --fx-mb-c2:#F39A1B;
+    --fx-mb-bg:#0A0E1A; --fx-mb-fg:#F8FAFC;
+    --fx-mb-border:2px; --fx-mb-radius:14px; --fx-mb-speed:4s;
+    position:relative; display:inline-grid; place-items:center;
+    padding:var(--fx-mb-border); border-radius:var(--fx-mb-radius);
+    overflow:hidden; isolation:isolate; cursor:pointer;
+    text-decoration:none; background:transparent; border:none;
+  }
+  /* couche rotative = le liseré */
+  .fx-moving-border::before{
+    content:""; position:absolute; z-index:-1;
+    width:220%; aspect-ratio:1; top:50%; left:50%;
+    background:conic-gradient(from 0deg,
+       transparent 0deg, var(--fx-mb-c1) 60deg,
+       var(--fx-mb-c2) 140deg, transparent 220deg,
+       transparent 300deg, var(--fx-mb-c1) 360deg);
+    transform:translate(-50%,-50%);
+    animation:fx-mb-spin var(--fx-mb-speed) linear infinite;
+  }
+  /* halo statique doux (radial, sans blur) pour l'ambiance */
+  .fx-moving-border::after{
+    content:""; position:absolute; inset:calc(var(--fx-mb-border) * -3); z-index:-2;
+    background:radial-gradient(closest-side, rgba(0,80,230,.35), transparent 70%);
+    opacity:0; transition:opacity .35s ease;
+  }
+  .fx-moving-border:hover::after{ opacity:1; }
+  .fx-mb-inner{
+    display:inline-flex; align-items:center; gap:.55rem;
+    padding:.95rem 2.1rem; border-radius:calc(var(--fx-mb-radius) - var(--fx-mb-border));
+    background:var(--fx-mb-bg); color:var(--fx-mb-fg);
+    font:600 1rem/1 inherit; letter-spacing:.01em;
+    transition:transform .25s ease;
+  }
+  .fx-moving-border:hover .fx-mb-inner{ transform:translateY(-1px); }
+  .fx-moving-border:focus-visible{ outline:2px solid var(--fx-mb-c2); outline-offset:3px; }
+
+  @keyframes fx-mb-spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-moving-border::before{ animation:none;
+      background:conic-gradient(from 90deg, var(--fx-mb-c1), var(--fx-mb-c2), var(--fx-mb-c1)); }
+  }
+<!-- FX:COPY:END -->
+</style>
+</head>
+<body>
+  <div class="demo-wrap">
+    <h1>CTA à bordure animée</h1>
+    <p>Un liseré lumineux tourne en continu — fond plein, aucun flou.</p>
+    <div class="demo-row">
+      <!-- FX:COPY:START -->
+      <!-- MOVING BORDER CTA — HTML -->
+      <a class="fx-moving-border" href="#">
+        <span class="fx-mb-inner">Demander une démo →</span>
+      </a>
+      <!-- FX:COPY:END -->
+      <a class="fx-moving-border" href="#" style="--fx-mb-c1:#F39A1B;--fx-mb-c2:#0050E6;--fx-mb-radius:999px;--fx-mb-speed:6s">
+        <span class="fx-mb-inner">Rejoindre</span>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

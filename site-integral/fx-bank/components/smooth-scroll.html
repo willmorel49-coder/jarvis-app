@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Smooth Scroll (Lenis-like)</title>
+<!--
+/* FX-BANK · SMOOTH SCROLL (Lenis-like)
+   QUOI : Scroll fluide par interpolation (lerp) de la position via requestAnimationFrame + transform sur un wrapper.
+   QUAND : Sites vitrine/portfolio "premium" où le scroll natif paraît trop sec, pour un rendu Awwwards.
+   DEPENDANCES : aucune (vanilla pur).
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré (scroll natif restauré).
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{
+    --brand:#0050E6; --accent:#F39A1B; --ink:#0A0E1A; --light:#F8FAFC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--ink);color:var(--light);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+
+  /* ============================================================= */
+  /* FX:COPY:START — SMOOTH SCROLL (CSS + HTML + JS)                */
+  /* ============================================================= */
+
+  /* 1) STRUCTURE : le contenu de la page va dans #fx-smooth.
+        On le sort du flux et on le déplace par transform. Le <body>
+        garde une hauteur réelle (générée en JS) pour la barre native. */
+  html.fx-has-smooth{ overflow:hidden; }            /* on masque le scroll natif */
+  #fx-smooth{
+    position:fixed; top:0; left:0; width:100%;
+    will-change:transform;                          /* perf GPU */
+  }
+  /* ============================================================= */
+  /* Fin CSS copiable — le JS est plus bas, aussi dans le bloc COPY */
+  /* FX:COPY:END (CSS) */
+
+  /* ---- DÉMO seulement (non copiable) ---- */
+  .demo-hero{min-height:100vh;display:grid;place-items:center;text-align:center;padding:2rem;
+    background:radial-gradient(120% 90% at 50% 0%, rgba(0,80,230,.35), transparent 60%), var(--ink)}
+  .demo-hero h1{font-size:clamp(2.2rem,7vw,5rem);line-height:1.02;letter-spacing:-.03em}
+  .demo-hero p{margin-top:1rem;color:#9fb0c9;max-width:40ch}
+  .demo-hint{margin-top:2rem;font-size:.8rem;color:var(--accent);text-transform:uppercase;letter-spacing:.2em}
+  .demo-band{min-height:70vh;display:grid;place-items:center;padding:3rem}
+  .demo-band:nth-child(odd){background:var(--light);color:var(--ink)}
+  .demo-band h2{font-size:clamp(1.6rem,5vw,3rem);letter-spacing:-.02em}
+  .demo-card{max-width:60ch;text-align:center}
+  .demo-card small{display:block;margin-top:.8rem;opacity:.6}
+  @media (prefers-reduced-motion: reduce){ .demo-hint{display:none} }
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START — SMOOTH SCROLL (HTML wrapper) -->
+<!-- Tout le contenu défilant de la page vit à l'intérieur de #fx-smooth. -->
+<div id="fx-smooth">
+<!-- FX:COPY:END (HTML wrapper d'ouverture) -->
+
+  <!-- ===== contenu de démo (remplace-le par ta page) ===== -->
+  <header class="demo-hero">
+    <div>
+      <h1>Smooth<br>Scroll</h1>
+      <p>Le contenu glisse par interpolation. On lisse la distance restante à chaque frame.</p>
+      <div class="demo-hint">↓ Scrollez pour sentir l'inertie</div>
+    </div>
+  </header>
+  <section class="demo-band"><div class="demo-card"><h2>Interpolation lerp</h2><small>current += (target − current) × ease</small></div></section>
+  <section class="demo-band"><div class="demo-card"><h2>60 fps GPU</h2><small>translate3d sur un seul wrapper — pas de reflow</small></div></section>
+  <section class="demo-band"><div class="demo-card"><h2>Accessible</h2><small>prefers-reduced-motion → scroll natif restauré</small></div></section>
+  <!-- ===== fin contenu de démo ===== -->
+
+<!-- FX:COPY:START — fermeture wrapper -->
+</div>
+<!-- FX:COPY:END (HTML wrapper de fermeture) -->
+
+<!-- FX:COPY:START — SMOOTH SCROLL (JS) -->
+<script>
+/* Smooth scroll vanilla, style Lenis. À poser en bas du <body>.
+   VARIABLES À AJUSTER :
+     EASE  → plus petit = plus "lourd"/glissant (0.06–0.12 recommandé)
+   INTÉGRATION :
+     • Enveloppe TOUT ton contenu dans <div id="fx-smooth">…</div>.
+     • Pour un lien d'ancre, utilise fxScrollTo(target) (fourni plus bas)
+       plutôt que scrollIntoView (qui ne connaît pas notre position virtuelle). */
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var wrap = document.getElementById('fx-smooth');
+  if (!wrap || reduce) return;                 // reduced-motion : on garde le scroll natif
+
+  var EASE = 0.09;                             // ← douceur de l'inertie
+  var target = 0, current = 0, rafId = null, running = false;
+
+  // Le <body> doit avoir la hauteur réelle du contenu pour que la scrollbar existe.
+  function setBodyHeight(){ document.body.style.height = wrap.getBoundingClientRect().height + 'px'; }
+
+  document.documentElement.classList.add('fx-has-smooth');
+  setBodyHeight();
+
+  function onScroll(){ target = window.scrollY || window.pageYOffset; start(); }
+
+  function loop(){
+    current += (target - current) * EASE;
+    if (Math.abs(target - current) < 0.05) current = target;   // snap final
+    wrap.style.transform = 'translate3d(0,' + (-current) + 'px,0)';
+    if (current !== target){ rafId = requestAnimationFrame(loop); }
+    else { running = false; }
+  }
+  function start(){ if(!running){ running = true; rafId = requestAnimationFrame(loop); } }
+
+  // Recalcule la hauteur quand la fenêtre ou le contenu change (images, resize…).
+  var ro = ('ResizeObserver' in window) ? new ResizeObserver(setBodyHeight) : null;
+  if (ro) ro.observe(wrap);
+  window.addEventListener('resize', setBodyHeight);
+  window.addEventListener('load', setBodyHeight);
+  window.addEventListener('scroll', onScroll, { passive:true });
+
+  // API d'ancrage : fxScrollTo(elementOuY) — remplace scrollIntoView.
+  window.fxScrollTo = function(dest){
+    var y = (typeof dest === 'number') ? dest
+          : (dest.getBoundingClientRect().top + (window.scrollY||window.pageYOffset));
+    window.scrollTo({ top:y, behavior:'auto' });   // met à jour target via onScroll
+  };
+})();
+</script>
+<!-- FX:COPY:END (JS) -->
+
+</body>
+</html>

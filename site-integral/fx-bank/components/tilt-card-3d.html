@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Tilt Card 3D</title>
+<!--
+  FX-BANK · TILT CARD 3D
+  QUOI : Carte qui s'incline en 3D vers le curseur (perspective + rotateX/rotateY) avec un reflet qui suit.
+  QUAND : cartes produit / feature / témoignage qu'on veut rendre tangibles et premium.
+  DEPENDANCES : aucune
+  SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+  COPIER : le bloc entre les balises FX:COPY:START et FX:COPY:END
+-->
+<style>
+  /* ---- Démo uniquement ---- */
+  :root{ --blue:#0050E6; --orange:#F39A1B; --ink:#0A0E1A; --light:#F8FAFC; }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; display:grid; place-items:center;
+    background:radial-gradient(900px 500px at 50% -10%, #101a3d 0%, var(--ink) 60%);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--light);
+  }
+  .demo-wrap{ text-align:center; padding:2rem; }
+  .demo-wrap h1{ font-size:clamp(1.2rem,3vw,1.8rem); font-weight:600; margin:0 0 .5rem; }
+  .demo-wrap p{ opacity:.55; font-size:.9rem; margin:0 0 2.5rem; }
+  .demo-row{ display:flex; gap:2rem; flex-wrap:wrap; justify-content:center; }
+
+<!-- FX:COPY:START -->
+  /* =====================================================================
+     TILT CARD 3D — CSS
+     Variables à changer :
+       --fx-tilt-max     : angle max d'inclinaison (deg)
+       --fx-tilt-radius  : rayon des coins
+       --fx-tilt-bg      : fond de la carte
+       --fx-tilt-glow    : couleur du reflet qui suit le curseur
+     L'inclinaison est pilotée par le JS via --rx / --ry / --mx / --my.
+     ===================================================================== */
+  .fx-tilt{
+    --fx-tilt-max:12; --fx-tilt-radius:18px;
+    --fx-tilt-bg:linear-gradient(160deg,#141d3f,#0c1330);
+    --fx-tilt-glow:rgba(0,80,230,.55);
+    --rx:0deg; --ry:0deg; --mx:50%; --my:50%;
+    perspective:900px; /* la perspective vit sur le conteneur */
+  }
+  .fx-tilt__inner{
+    position:relative; width:min(300px,80vw); padding:2rem; border-radius:var(--fx-tilt-radius);
+    background:var(--fx-tilt-bg); border:1px solid rgba(255,255,255,.08);
+    transform:rotateX(var(--rx)) rotateY(var(--ry));
+    transform-style:preserve-3d;
+    transition:transform .4s cubic-bezier(.2,.8,.2,1);
+    box-shadow:0 30px 60px -30px rgba(0,0,0,.8);
+    will-change:transform;
+  }
+  /* reflet radial qui suit le curseur (aucun blur, juste un radial-gradient) */
+  .fx-tilt__inner::before{
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:radial-gradient(220px 220px at var(--mx) var(--my), var(--fx-tilt-glow), transparent 60%);
+    opacity:0; transition:opacity .3s ease;
+  }
+  .fx-tilt:hover .fx-tilt__inner::before{ opacity:1; }
+  /* contenu légèrement en avant pour l'effet de profondeur */
+  .fx-tilt__content{ transform:translateZ(35px); position:relative; }
+  .fx-tilt__content h3{ margin:0 0 .5rem; font-size:1.25rem; }
+  .fx-tilt__content p{ margin:0; opacity:.65; font-size:.9rem; line-height:1.5; }
+  .fx-tilt__badge{
+    display:inline-block; margin-bottom:1rem; padding:.3rem .7rem; border-radius:999px;
+    font-size:.72rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    background:rgba(243,154,27,.15); color:#F39A1B;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-tilt__inner{ transform:none !important; transition:none; }
+    .fx-tilt:hover .fx-tilt__inner::before{ opacity:0; }
+  }
+<!-- FX:COPY:END -->
+</style>
+</head>
+<body>
+  <div class="demo-wrap">
+    <h1>Carte inclinée 3D</h1>
+    <p>Survole — la carte s'incline vers le curseur, le reflet suit.</p>
+    <div class="demo-row">
+      <!-- FX:COPY:START -->
+      <!-- TILT CARD 3D — HTML (data-fx-tilt sur le conteneur .fx-tilt) -->
+      <div class="fx-tilt" data-fx-tilt>
+        <div class="fx-tilt__inner">
+          <div class="fx-tilt__content">
+            <span class="fx-tilt__badge">Intégral</span>
+            <h3>+14 000 références</h3>
+            <p>Un catalogue court-circuité, sans franco ni engagement, livré au meilleur prix.</p>
+          </div>
+        </div>
+      </div>
+      <!-- FX:COPY:END -->
+      <div class="fx-tilt" data-fx-tilt style="--fx-tilt-glow:rgba(243,154,27,.5)">
+        <div class="fx-tilt__inner">
+          <div class="fx-tilt__content">
+            <span class="fx-tilt__badge" style="background:rgba(0,80,230,.18);color:#5b8dff">Offilog</span>
+            <h3>Remises 6 à 9 %</h3>
+            <p>Des conditions claires, une plateforme réactive et un accompagnement humain.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- FX:COPY:START -->
+<script>
+/* =====================================================================
+   TILT CARD 3D — JS (autonome, aucune dépendance)
+   Réglage : l'angle max se lit dans --fx-tilt-max (CSS, en degrés).
+   Désactivé en prefers-reduced-motion et sur pointeur tactile.
+   ===================================================================== */
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  if(reduce || coarse) return;
+
+  document.querySelectorAll('[data-fx-tilt]').forEach(card=>{
+    const inner = card.querySelector('.fx-tilt__inner');
+    const max = parseFloat(getComputedStyle(card).getPropertyValue('--fx-tilt-max')) || 12;
+    function onMove(e){
+      const r = inner.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;   // 0..1
+      const py = (e.clientY - r.top) / r.height;   // 0..1
+      card.style.setProperty('--ry', ((px - .5) *  2 * max).toFixed(2)+'deg');
+      card.style.setProperty('--rx', ((py - .5) * -2 * max).toFixed(2)+'deg');
+      card.style.setProperty('--mx', (px*100).toFixed(1)+'%');
+      card.style.setProperty('--my', (py*100).toFixed(1)+'%');
+    }
+    function reset(){ card.style.setProperty('--rx','0deg'); card.style.setProperty('--ry','0deg'); }
+    card.addEventListener('mousemove', onMove);
+    card.addEventListener('mouseleave', reset);
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+</body>
+</html>

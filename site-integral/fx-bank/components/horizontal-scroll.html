@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Horizontal Scroll</title>
+<!--
+/* FX-BANK · HORIZONTAL SCROLL
+   QUOI : Rail qui défile HORIZONTALEMENT piloté par le scroll VERTICAL (section haute + sticky + translateX selon progression).
+   QUAND : Galeries, étapes produit, timelines, "nos services" — effet signature de landing.
+   DEPENDANCES : aucune (vanilla pur).
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion → pile verticale native.
+   COPIER : le bloc entre <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --brand:#0050E6; --accent:#F39A1B; --ink:#0A0E1A; --light:#F8FAFC; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--ink);color:var(--light);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+
+  /* ============================================================= */
+  /* FX:COPY:START — HORIZONTAL SCROLL (CSS)                        */
+  /* ============================================================= */
+
+  /* 1) Section haute = piste de scroll. La hauteur EN PLUS de 100vh
+        détermine la distance horizontale parcourue. En JS on la cale
+        pile sur la largeur à défiler ; ce fallback évite le saut au chargement. */
+  .fx-hz-section{ position:relative; height:400vh; }   /* ← ajusté auto en JS */
+
+  /* 2) Écran collé pendant qu'on traverse la section. */
+  .fx-hz-viewport{
+    position:sticky; top:0; height:100vh; overflow:hidden;
+    display:flex; align-items:center;
+  }
+
+  /* 3) Le rail : rangée de panneaux poussée par translateX (posé en JS). */
+  .fx-hz-rail{
+    display:flex; gap:2rem; padding:0 6vw;
+    will-change:transform;
+    transform: translate3d(var(--x,0),0,0);
+  }
+  .fx-hz-panel{
+    flex:0 0 auto; width:min(70vw,520px); height:64vh;
+    border-radius:22px; padding:2rem;
+    display:flex; flex-direction:column; justify-content:flex-end;
+    background:
+      radial-gradient(120% 80% at 20% 0%, rgba(0,80,230,.35), transparent 60%),
+      #11182b;
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .fx-hz-panel h3{font-size:clamp(1.4rem,3.5vw,2.4rem);letter-spacing:-.02em}
+  .fx-hz-panel span{color:var(--accent);font-size:.8rem;letter-spacing:.2em;text-transform:uppercase}
+  .fx-hz-panel p{margin-top:.5rem;color:#9fb0c9;max-width:34ch}
+
+  /* 4) FALLBACK reduced-motion : on annule le pin et on empile en vertical. */
+  @media (prefers-reduced-motion: reduce){
+    .fx-hz-section{ height:auto; }
+    .fx-hz-viewport{ position:static; height:auto; display:block; }
+    .fx-hz-rail{ flex-direction:column; transform:none; padding:6vw; }
+    .fx-hz-panel{ width:auto; height:auto; min-height:50vh; }
+  }
+  /* ============================================================= */
+  /* FX:COPY:END (CSS)                                             */
+
+  /* ---- DÉMO seulement ---- */
+  .demo-intro,.demo-outro{min-height:100vh;display:grid;place-items:center;text-align:center;padding:2rem}
+  .demo-intro{background:radial-gradient(120% 90% at 50% 0%, rgba(243,154,27,.22), transparent 60%)}
+  .demo-intro h2,.demo-outro h2{font-size:clamp(1.6rem,5vw,3rem);letter-spacing:-.02em}
+  .demo-intro p,.demo-outro p{margin-top:.8rem;color:#9fb0c9}
+</style>
+</head>
+<body>
+
+  <section class="demo-intro"><div><h2>Défilement horizontal</h2><p>Continuez à scroller vers le bas : le rail glisse latéralement.</p></div></section>
+
+<!-- FX:COPY:START — HORIZONTAL SCROLL (HTML) -->
+<!-- Ajoute/retire des .fx-hz-panel librement : la distance s'auto-calcule. -->
+<section class="fx-hz-section" data-fx-hz>
+  <div class="fx-hz-viewport">
+    <div class="fx-hz-rail">
+      <article class="fx-hz-panel"><span>01</span><h3>Découverte</h3><p>On cadre le besoin et les objectifs.</p></article>
+      <article class="fx-hz-panel"><span>02</span><h3>Design</h3><p>Direction artistique et maquettes.</p></article>
+      <article class="fx-hz-panel"><span>03</span><h3>Build</h3><p>Intégration front performante et accessible.</p></article>
+      <article class="fx-hz-panel"><span>04</span><h3>Lancement</h3><p>Mise en ligne, mesure, itérations.</p></article>
+    </div>
+  </div>
+</section>
+<!-- FX:COPY:END (HTML) -->
+
+  <section class="demo-outro"><div><h2>Fin du rail</h2><p>On repart en défilement vertical classique.</p></div></section>
+
+<!-- FX:COPY:START — HORIZONTAL SCROLL (JS) -->
+<script>
+/* Scroll horizontal piloté par le scroll vertical, vanilla.
+   PRINCIPE :
+     1. On mesure la largeur à défiler = (largeur rail − largeur écran).
+     2. On règle la HAUTEUR de la section pour offrir juste ce qu'il faut de scroll.
+     3. progression 0..1 dans la section → translateX = −distance × progression.
+   ACCESSIBILITÉ : reduced-motion → on ne touche à rien, le CSS empile en vertical. */
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+
+  document.querySelectorAll('[data-fx-hz]').forEach(function (section) {
+    var rail = section.querySelector('.fx-hz-rail');
+    if (!rail) return;
+    var distance = 0, ticking = false;
+
+    function measure(){
+      // largeur cachée à droite du rail
+      distance = Math.max(0, rail.scrollWidth - window.innerWidth);
+      // hauteur = 100vh (pin) + distance horizontale à parcourir
+      section.style.height = (window.innerHeight + distance) + 'px';
+      compute();
+    }
+    function compute(){
+      var rect = section.getBoundingClientRect();
+      var scrollable = section.offsetHeight - window.innerHeight;
+      var p = scrollable > 0 ? (-rect.top / scrollable) : 0;
+      p = Math.max(0, Math.min(1, p));
+      rail.style.setProperty('--x', (-distance * p) + 'px');
+      ticking = false;
+    }
+    function onScroll(){ if(!ticking){ ticking = true; requestAnimationFrame(compute); } }
+
+    window.addEventListener('scroll', onScroll, { passive:true });
+    window.addEventListener('resize', measure);
+    window.addEventListener('load', measure);
+    measure();
+  });
+})();
+</script>
+<!-- FX:COPY:END (JS) -->
+
+</body>
+</html>

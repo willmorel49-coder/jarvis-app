@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Spotlight Cursor</title>
+<!--
+/* FX-BANK · SPOTLIGHT CURSOR
+   QUOI : Halo radial-gradient qui suit le curseur (--mx/--my en pointermove) sur une carte/section, sans blur.
+   QUAND : Carte feature, panneau CTA, section hero, bento cell — révèle un highlight au survol.
+   DEPENDANCES : aucune.
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré.
+   COPIER : le bloc entre les balises <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  /* ---- Styles de DÉMO uniquement ---- */
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+    background:#0A0E1A;color:#F8FAFC;min-height:100vh;
+    display:grid;place-items:center;padding:2rem;gap:1.5rem;
+  }
+  .demo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;max-width:860px;width:100%}
+  .demo-hint{text-align:center;opacity:.55;font-size:.9rem;letter-spacing:.08em;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<p class="demo-hint">Bougez la souris sur les cartes</p>
+<div class="demo-grid">
+
+<!-- FX:COPY:START -->
+<!-- ===================== FX : SPOTLIGHT CURSOR ===================== -->
+<!-- 1) Ajoute la classe .fx-spot à toute carte/section + l'attribut data-fx-spot. -->
+<article class="fx-spot" data-fx-spot>
+  <h3>Anticipez vos appros</h3>
+  <p>Le halo suit votre curseur en temps réel, sans effet de flou.</p>
+</article>
+<article class="fx-spot" data-fx-spot>
+  <h3>Remises vérifiées</h3>
+  <p>Passez la souris ici — chaque carte a son propre spotlight.</p>
+</article>
+
+<style>
+/* --- VARIABLES À CHANGER : couleur du halo, taille, intensité --- */
+:root{
+  --spot-color:80,80,230;   /* RGB du halo (ici bleu #0050E6) */
+  --spot-size:340px;        /* diamètre du halo */
+  --spot-alpha:.28;         /* intensité max */
+}
+.fx-spot{
+  --mx:50%;--my:50%;                /* position par défaut (centre) */
+  position:relative;overflow:hidden;isolation:isolate;
+  padding:2rem;border-radius:20px;
+  background:#111726;border:1px solid rgba(255,255,255,.08);
+  transition:border-color .3s ease;
+}
+/* Le halo = pseudo-élément piloté par --mx/--my. transform:translateZ(0) => couche propre. */
+.fx-spot::before{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(var(--spot-size) circle at var(--mx) var(--my),
+             rgba(var(--spot-color),var(--spot-alpha)),transparent 65%);
+  opacity:0;transition:opacity .3s ease;transform:translateZ(0);
+}
+.fx-spot:hover{border-color:rgba(var(--spot-color),.4)}
+.fx-spot:hover::before{opacity:1}
+.fx-spot h3{font-size:1.25rem;font-weight:700;margin-bottom:.5rem}
+.fx-spot p{opacity:.7;line-height:1.5;font-size:.95rem}
+@media (prefers-reduced-motion: reduce){
+  .fx-spot::before,.fx-spot{transition:none}
+}
+</style>
+
+<script>
+/* Suit le pointeur et écrit --mx/--my sur la carte survolée. Un seul listener délégué. */
+(function(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll('[data-fx-spot]').forEach(function(el){
+    el.addEventListener('pointermove',function(e){
+      var r=el.getBoundingClientRect();
+      el.style.setProperty('--mx',(e.clientX-r.left)+'px');
+      el.style.setProperty('--my',(e.clientY-r.top)+'px');
+    });
+  });
+})();
+</script>
+<!-- ===================== /FX : SPOTLIGHT CURSOR ==================== -->
+<!-- FX:COPY:END -->
+
+</div>
+</body>
+</html>

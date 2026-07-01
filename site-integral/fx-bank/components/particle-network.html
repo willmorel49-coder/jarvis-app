@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX-BANK · Particle Network</title>
+<!--
+/* FX-BANK · PARTICLE-NETWORK
+   QUOI : champ de particules 3D reliées par des lignes (constellation/réseau), dérive douce + inclinaison vers le curseur.
+   QUAND : fond de hero/section tech, ambiance "réseau connecté / data / plateforme".
+   DEPENDANCES : Three.js r128 CDN.
+   SAFARI : aucun background-clip:text / backdrop-filter / filter:blur. reduced-motion géré (dérive figée).
+   COPIER : le bloc entre les balises <!-- FX:COPY:START --> et <!-- FX:COPY:END --> */
+-->
+<style>
+  :root{ --bleu:#0050E6; --orange:#F39A1B; --encre:#0A0E1A; --clair:#F8FAFC; }
+  *{ box-sizing:border-box; margin:0; }
+  html,body{ height:100%; }
+  body{ background:var(--encre); color:var(--clair); font-family:"DM Sans",system-ui,sans-serif; overflow:hidden; }
+  .demo-overlay{ position:fixed; inset:0; display:grid; place-items:center; pointer-events:none; z-index:2; text-align:center; }
+  .demo-overlay h1{ font-size:clamp(30px,6vw,68px); font-weight:800; letter-spacing:-.03em; }
+  .demo-overlay p{ opacity:.55; margin-top:10px; font-size:14px; }
+
+  /* --- FX:COPY:START --- PARTICLE-NETWORK (bloc réutilisable) --- */
+  .fx-net{ position:fixed; inset:0; z-index:1; }
+  .fx-net canvas{ display:block; width:100%; height:100%; }
+  /* Fallback : dégradé + points CSS statiques si WebGL absent */
+  .fx-net-fallback{
+    position:absolute; inset:0; display:none;
+    background:
+      radial-gradient(2px 2px at 20% 30%, rgba(0,80,230,.9), transparent),
+      radial-gradient(2px 2px at 70% 60%, rgba(243,154,27,.9), transparent),
+      radial-gradient(2px 2px at 45% 80%, rgba(248,250,252,.7), transparent),
+      radial-gradient(80% 80% at 50% 40%, rgba(0,80,230,.15), transparent 70%),
+      #0A0E1A;
+  }
+  .fx-net.no-webgl canvas{ display:none; }
+  .fx-net.no-webgl .fx-net-fallback{ display:block; }
+  <!-- FX:COPY:END -->
+</style>
+</head>
+<body>
+
+  <!-- FX:COPY:START -->
+  <div class="fx-net" id="fxNet"><div class="fx-net-fallback"></div></div>
+  <!-- FX:COPY:END -->
+
+  <div class="demo-overlay">
+    <div>
+      <h1>Particle Network</h1>
+      <p>Bouge la souris : le réseau s incline vers toi.</p>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  // --- FX:COPY:START --- PARTICLE-NETWORK · JS ---
+  (function(){
+    const host = document.getElementById('fxNet');
+    if(!host) return;
+    const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+    let gl=null; try{ gl=document.createElement('canvas').getContext('webgl'); }catch(e){}
+    if(!window.THREE || !gl){ host.classList.add('no-webgl'); return; }
+
+    // >>> VARIABLES À CHANGER <<<
+    const COUNT   = 140;      // nb de particules (baisse si perf faible)
+    const RADIUS  = 34;       // rayon du nuage
+    const LINKDIST= 8.5;      // distance max pour relier 2 points
+    const C_DOT   = 0x8fb4ff; // couleur points
+    const C_LINE  = 0x0050E6; // couleur lignes
+    const C_HL    = 0xF39A1B; // accent (points proches curseur)
+
+    const w=()=>host.clientWidth, h=()=>host.clientHeight;
+    const scene=new THREE.Scene();
+    const cam=new THREE.PerspectiveCamera(60,w()/h(),1,300); cam.position.z=52;
+    const rnd=new THREE.WebGLRenderer({antialias:true,alpha:true});
+    rnd.setPixelRatio(Math.min(devicePixelRatio,2)); rnd.setSize(w(),h()); host.appendChild(rnd.domElement);
+
+    // Points + vélocités
+    const pos=new Float32Array(COUNT*3), col=new Float32Array(COUNT*3), vel=[];
+    const cDot=new THREE.Color(C_DOT), cHl=new THREE.Color(C_HL);
+    for(let i=0;i<COUNT;i++){
+      const r=RADIUS*Math.cbrt(Math.random()), th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+      pos[i*3]=r*Math.sin(ph)*Math.cos(th); pos[i*3+1]=r*Math.sin(ph)*Math.sin(th); pos[i*3+2]=r*Math.cos(ph);
+      cDot.toArray(col,i*3);
+      vel.push([(Math.random()-.5)*.03,(Math.random()-.5)*.03,(Math.random()-.5)*.03]);
+    }
+    const pg=new THREE.BufferGeometry();
+    pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    pg.setAttribute('color',new THREE.BufferAttribute(col,3));
+    const points=new THREE.Points(pg,new THREE.PointsMaterial({size:.9,vertexColors:true,transparent:true,opacity:.95}));
+
+    // Lignes (recalculées chaque frame)
+    const lineGeo=new THREE.BufferGeometry();
+    const maxSeg=COUNT*10;
+    const linePos=new Float32Array(maxSeg*6);
+    lineGeo.setAttribute('position',new THREE.BufferAttribute(linePos,3));
+    const lines=new THREE.LineSegments(lineGeo,new THREE.LineBasicMaterial({color:C_LINE,transparent:true,opacity:.25}));
+
+    const world=new THREE.Group(); world.add(points,lines); scene.add(world);
+
+    let tmx=0,tmy=0,mx=0,my=0;
+    addEventListener('pointermove',e=>{ tmx=e.clientX/innerWidth-.5; tmy=e.clientY/innerHeight-.5; });
+    addEventListener('resize',()=>{ cam.aspect=w()/h(); cam.updateProjectionMatrix(); rnd.setSize(w(),h()); });
+
+    function rebuildLines(){
+      let n=0;
+      for(let i=0;i<COUNT;i++){
+        for(let j=i+1;j<COUNT;j++){
+          const dx=pos[i*3]-pos[j*3], dy=pos[i*3+1]-pos[j*3+1], dz=pos[i*3+2]-pos[j*3+2];
+          if(dx*dx+dy*dy+dz*dz < LINKDIST*LINKDIST && n<maxSeg){
+            linePos[n*6]=pos[i*3]; linePos[n*6+1]=pos[i*3+1]; linePos[n*6+2]=pos[i*3+2];
+            linePos[n*6+3]=pos[j*3]; linePos[n*6+4]=pos[j*3+1]; linePos[n*6+5]=pos[j*3+2]; n++;
+          }
+        }
+      }
+      lineGeo.setDrawRange(0,n*2); lineGeo.attributes.position.needsUpdate=true;
+    }
+
+    (function loop(){
+      requestAnimationFrame(loop);
+      if(!reduce){
+        for(let i=0;i<COUNT;i++){
+          for(let a=0;a<3;a++){
+            pos[i*3+a]+=vel[i][a];
+            if(pos[i*3+a]>RADIUS||pos[i*3+a]<-RADIUS) vel[i][a]*=-1;
+          }
+        }
+        pg.attributes.position.needsUpdate=true;
+      }
+      rebuildLines();
+      mx+=(tmx-mx)*.05; my+=(tmy-my)*.05;
+      world.rotation.y += reduce?0:.0012;                 // dérive lente
+      world.rotation.x = my*.6; world.rotation.y += mx*.02; // inclinaison vers curseur
+      rnd.render(scene,cam);
+    })();
+  })();
+  // --- FX:COPY:END ---
+  </script>
+</body>
+</html>
