@@ -864,27 +864,18 @@
         });
       });
 
-      // ── Count-up du grand CA hero, déclenché quand il arrive à l'écran ──
-      // (les 3 KPI .v2-kpi-v.mono sont déjà comptés par la couche motion globale.)
+      // ── Count-up des chiffres clés, déclenché à leur arrivée à l'écran ──
+      // L'ENTRÉE (fondu + glissé) des blocs est déjà pilotée par l'observer
+      // local du pilotage (classe .in, plus haut). On n'ajoute donc AUCUNE 2ᵉ
+      // animation d'entrée ici — sinon double mouvement saccadé. Uniquement le
+      // count-up (idempotent via data-mo-counted) : grand CA hero + les 3 KPI.
       if (_mo && _mo.inView && _mo.countUp) {
         var heroV = root.querySelector('.pilo-hero-v[data-count]');
         if (heroV) _mo.inView(heroV, function (el) { _mo.countUp(el); });
-      }
-
-      // ── Cascade d'entrée légère sur les cartes de la vue d'ensemble ──
-      // (conteneurs uniquement — jamais le canvas/graphe : Chart.js gère sa
-      //  propre anim. Ici le graphe 13 mois est en CSS, ses barres restent
-      //  pilotées par le bloc requestAnimationFrame plus haut.)
-      if (_mo && _mo.stagger && !_mo.reduced()) {
-        var overview = [];
-        var hero = root.querySelector('.pilo-hero');
         var kpis3 = root.querySelector('.pilo-kpis3');
-        if (hero) overview.push(hero);
-        if (kpis3) overview.push(kpis3);
-        // On neutralise le reveal local (opacity/translateY) sur ces 2 blocs
-        // pour éviter un double mouvement : seul le stagger les pilote.
-        overview.forEach(function (el) { el.classList.add('in'); });
-        if (overview.length) _mo.stagger(overview, { step: 60, y: 10, duration: 300 });
+        if (kpis3) _mo.inView(kpis3, function (el) {
+          Array.prototype.forEach.call(el.querySelectorAll('.v2-kpi-v.mono'), function (n) { _mo.countUp(n); });
+        });
       }
 
       // ── Bind chart hover ──
