@@ -801,20 +801,41 @@
   }
 
   function activitySection(sales, marge, ca) {
-    // 1. CA par mois
+    // 1. CA par mois — LE graphe, visible dès l'arrivée (plus de repli).
+    // Présentation « Launcher » : carte calme, mois record en accent, repères
+    // chiffrés dérivés des ventes réelles (aucune donnée inventée).
     var months = monthlyCA(sales);
     var maxM = months.reduce(function (m, x) { return Math.max(m, x.ca); }, 1);
+    var best = null;
+    months.forEach(function (m) { if (m.ca > 0 && (!best || m.ca > best.ca)) best = m; });
+    var nAct = months.filter(function (m) { return m.ca > 0; }).length;
+    var avgM = nAct ? months.reduce(function (s, m) { return s + m.ca; }, 0) / nAct : 0;
     var barsHtml = months.map(function (m) {
       var h = m.ca > 0 ? Math.max(5, m.ca / maxM * 100) : 0;
-      return '<div class="ph-mbar" title="' + esc(cap(MN_SHORT[m.month - 1]) + ' ' + m.year + ' · ' + V2.fmtEur(m.ca)) + '">' +
+      var hot = best && m.k === best.k;
+      return '<div class="ph-mbar' + (hot ? ' ph-mbar-hot' : '') + '" title="' + esc(cap(MN_SHORT[m.month - 1]) + ' ' + m.year + ' · ' + V2.fmtEur(m.ca)) + '">' +
         '<div class="ph-mbar-v mono">' + V2.fmtK(m.ca) + '</div>' +
         '<div class="ph-mbar-track"><span class="ph-mbar-fill" style="height:' + h + '%"></span></div>' +
         '<div class="ph-mbar-l">' + cap(MN_SHORT[m.month - 1]) + '</div></div>';
     }).join('');
+    // Repères sous le graphe (dérivés : moyenne, mois record, mois actifs)
+    var kf = function (l, v) {
+      return '<div class="ph-dash-kf"><span class="ph-dash-kf-l">' + l + '</span><span class="ph-dash-kf-v mono">' + v + '</span></div>';
+    };
+    var kfs = months.length
+      ? '<div class="ph-dash-kfs">' +
+          kf('Moyenne', V2.fmtEur(avgM) + '<small>/mois</small>') +
+          (best ? kf('Meilleur mois', esc(cap(MN_SHORT[best.month - 1])) + ' · ' + V2.fmtEur(best.ca)) : '') +
+          kf('Mois actifs', V2.fmtNum(nAct) + '<small>/' + months.length + '</small>') +
+        '</div>'
+      : '';
     var chartCard =
-      '<div class="v2-card" style="padding:18px 20px">' +
-        '<div class="v2-card-t" style="margin-bottom:16px">' + ICO('pilo', 17) + 'CA par mois</div>' +
-        (months.length ? '<div class="ph-mchart">' + barsHtml + '</div>'
+      '<div class="v2-card ph-dash-chart">' +
+        '<div class="ph-dash-head">' +
+          '<div class="v2-card-t">' + ICO('pilo', 17) + 'CA par mois</div>' +
+          (months.length && periodLabel() ? '<span class="ph-dash-period mono">' + esc(periodLabel()) + '</span>' : '') +
+        '</div>' +
+        (months.length ? '<div class="ph-mchart">' + barsHtml + '</div>' + kfs
                        : '<div class="v2-cat-empty" style="border:none;padding:10px 0">Aucune vente sur la période.</div>') +
       '</div>';
 
@@ -854,10 +875,11 @@
           : '<div class="v2-cat-empty">Aucun produit commandé identifié.</div>') +
       '</div>';
 
-    var open = sectionOpen('activity');
+    // Tableau de bord OUVERT en permanence (demande Will : les stats et le graphe
+    // CA apparaissent proprement DÈS L'ARRIVÉE sur l'officine — plus de repli).
     return '<div class="ph-activity ph-section">' +
-        sectionHead('Activité de l\'officine', 'son CA, ce qu\'elle commande et sa marge', 'activity', open) +
-        (open ? '<div class="ph-act-grid">' + chartCard + trCard + '</div>' : '') +
+        sectionHead('Activité de l\'officine', 'son CA mois par mois, ce qu\'elle commande et sa marge') +
+        '<div class="ph-act-grid">' + chartCard + trCard + '</div>' +
       '</div>';
   }
 
@@ -954,10 +976,11 @@
         '</div>' : '') +
       '</div>';
 
-    // ── Bloc STATS (pour le RDV) — sections repliables, repliées par défaut ──
-    // Métamorphose « Launcher » : on ne montre plus tout d'un coup. L'essentiel = quoi
-    // proposer (les listes à pousser). L'activité détaillée reste à un clic, repliée.
-    var stats = '<div class="ph-stats">' + activitySection(sales, marge, ca) + topByCatSection(sales) + '</div>';
+    // ── Tableau de bord de l'officine (VISIBLE dès l'arrivée) ──
+    // Demande Will : le graphe CA et les stats apparaissent proprement à l'ouverture.
+    // Le Top 5 par catégorie reste en secondaire, replié à un clic.
+    var dash = activitySection(sales, marge, ca);
+    var stats = '<div class="ph-stats">' + topByCatSection(sales) + '</div>';
 
     // ── Deux propositions de liste d'achats (PDF) ──
     var canShare = !!(V2.canShareFiles && V2.canShareFiles());
@@ -1021,9 +1044,11 @@
     })() : '';
 
     // ── Hub à onglets : l'en-tête reste fixe, le contenu bascule Vue d'ensemble / Audit ──
-    // Hiérarchie « Launcher » : d'abord L'ACTION évidente (quoi lui proposer, en bleu),
-    // ensuite seulement le contexte (activité, top 5, détail) — tout replié à un clic.
+    // Hiérarchie « Launcher » : 1) le tableau de bord (KPI en-tête + graphe CA +
+    // par tranche) VISIBLE dès l'arrivée ; 2) l'ACTION évidente (quoi lui proposer,
+    // en bleu) ; 3) le détail produit par produit et le Top 5, repliés à un clic.
     var apercu =
+      dash +
       sectionHead('Quoi lui proposer', 'ta liste d\'achats prête à sortir en PDF pour le rendez-vous') +
       props +
       listing +
@@ -2293,6 +2318,21 @@
       });
     }
 
+    // 2bis) Graphe CA du tableau de bord : les barres poussent en cascade depuis
+    //       la ligne de base (transform:scaleY uniquement — jamais width/height),
+    //       puis valeurs et repères fondent en douceur. RM-safe via V2.motion.
+    var fills = root.querySelectorAll('.ph-mchart .ph-mbar-fill');
+    for (var f = 0; f < fills.length; f++) {
+      M.animate(fills[f], [
+        { transform: 'scaleY(0)' },
+        { transform: 'scaleY(1)' }
+      ], { duration: 480, delay: 140 + Math.min(f, 12) * 50, easing: M.ease.out, to: { transform: 'scaleY(1)' } });
+    }
+    if (fills.length) {
+      M.stagger(root.querySelectorAll('.ph-mchart .ph-mbar-v'), { step: 50, y: 4, duration: 260, delay: 220 });
+      M.stagger(root.querySelectorAll('.ph-dash-kfs .ph-dash-kf'), { step: 60, y: 6, duration: 280, delay: 340 });
+    }
+
     // 3) CTA primaire (télécharger la liste d'achats PDF) rendu magnétique.
     var cta = root.querySelector('.phf-pdf:not(.phf-pdf-ghost)');
     if (cta) M.magnetic(cta);
@@ -2367,15 +2407,28 @@
       '.v2-cat-table-wrap{overflow-x:auto;border-top:1px solid var(--line)}',
       '.v2-cat-prod{font-weight:600}',
       '.v2-cat-empty{padding:22px 20px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}',
-      // ── Activité officine : grille + chart mensuel + tranches ──
-      '.ph-act-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;margin-bottom:6px}',
-      '@media(max-width:860px){.ph-act-grid{grid-template-columns:1fr}}',
-      '.ph-mchart{display:flex;align-items:flex-end;gap:10px;height:150px}',
+      // ── Tableau de bord officine : graphe CA visible dès l'arrivée ──
+      '.ph-act-grid{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:14px;margin-bottom:6px}',
+      '@media(max-width:960px){.ph-act-grid{grid-template-columns:1fr}}',
+      '.ph-dash-chart{padding:18px 20px 16px;display:flex;flex-direction:column}',
+      '.ph-dash-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}',
+      '.ph-dash-period{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}',
+      '.ph-mchart{display:flex;align-items:flex-end;gap:10px;height:168px;flex:1}',
       '.ph-mbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;min-width:0}',
-      '.ph-mbar-v{font-size:10.5px;font-weight:700;color:var(--ip-ink-2)}',
-      '.ph-mbar-track{flex:1;width:100%;max-width:42px;display:flex;align-items:flex-end;background:var(--line-2);border-radius:7px 7px 3px 3px;overflow:hidden}',
-      '.ph-mbar-fill{display:block;width:100%;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--c-fiche),var(--ip-blue-d));transition:height .6s var(--ease)}',
+      '.ph-mbar-v{font-size:10.5px;font-weight:700;color:var(--muted)}',
+      '.ph-mbar-track{flex:1;width:100%;max-width:44px;display:flex;align-items:flex-end;background:var(--line-2);border-radius:8px 8px 3px 3px;overflow:hidden}',
+      '.ph-mbar-fill{display:block;width:100%;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 46%,#fff),color-mix(in srgb,var(--ip-blue) 78%,#fff));transform-origin:50% 100%}',
       '.ph-mbar-l{font-size:11px;color:var(--muted);font-weight:600}',
+      /* Mois record : seul accent fort du graphe (hiérarchie calme façon Launcher) */
+      '.ph-mbar-hot .ph-mbar-fill{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d));box-shadow:0 2px 8px color-mix(in srgb,var(--ip-blue) 32%,transparent)}',
+      '.ph-mbar-hot .ph-mbar-v{color:var(--ip-blue);font-weight:800}',
+      '.ph-mbar-hot .ph-mbar-l{color:var(--ip-ink);font-weight:700}',
+      /* Repères dérivés sous le graphe (moyenne · meilleur mois · mois actifs) */
+      '.ph-dash-kfs{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}',
+      '.ph-dash-kf{flex:1;min-width:104px;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:9px 12px}',
+      '.ph-dash-kf-l{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}',
+      '.ph-dash-kf-v{display:block;font-size:14.5px;font-weight:800;letter-spacing:-.01em;margin-top:3px;color:var(--ip-ink)}',
+      '.ph-dash-kf-v small{font-size:10.5px;color:var(--muted);font-weight:600}',
       '.ph-tr-cat{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px}',
       '.ph-tr-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}',
       '.ph-tr-sub{font-size:11px;color:var(--muted);font-family:var(--mono);font-weight:500;margin-left:2px}',
@@ -2565,6 +2618,7 @@
       '#phft-c-apercu>.v2-section-head{margin-top:var(--section-gap,28px)}',
       '#phft-c-apercu>.v2-section-head:first-child{margin-top:6px}',
       '#phft-c-apercu>.ph-section{margin-top:var(--section-gap,28px)}',
+      '#phft-c-apercu>.ph-section:first-child{margin-top:6px}',
       '#phft-c-apercu>.ph-stats{margin-top:var(--section-gap,28px)}',
       '#phft-c-apercu .phf-props{margin-top:12px}',
       '@media(max-width:640px){.phf-bar2r{margin-left:0;width:100%}.phf-bar2 .phf-pdf{flex:1;justify-content:center}}',

@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intégral Pharma — Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#0050E6; --blue-dk:#0034A0; --blue-soft:#E6EEFF;
+  --orange:#F39A1B; --orange-dk:#C9760A; --orange-soft:#FFF1DC;
+  --ink:#0B1330; --muted:#5A6582; --line:#E5E9F4;
+  --bg:#F5F7FC; --card:#FFFFFF; --dark:#0B1330; --dark-2:#141E40;
+  --r:18px; --r-lg:26px; --r-pill:999px;
+  --display:'Space Grotesk',system-ui,sans-serif;
+  --head:'Inter Tight',system-ui,sans-serif;
+  --body:'Inter',system-ui,-apple-system,sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --snap:cubic-bezier(.34,1.4,.5,1);
+  --sh-sm:0 1px 2px rgba(11,19,48,.06),0 2px 8px rgba(11,19,48,.05);
+  --sh-md:0 8px 30px rgba(11,19,48,.10);
+  --sh-lg:0 24px 60px rgba(11,19,48,.16);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--body);color:var(--ink);background:var(--bg);
+  -webkit-font-smoothing:antialiased;line-height:1.55;overflow-x:hidden}
+h1,h2,h3,h4{font-family:var(--head);margin:0;letter-spacing:-.02em;line-height:1.08}
+p{margin:0}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+button{font-family:inherit}
+:focus-visible{outline:3px solid var(--orange);outline-offset:3px;border-radius:8px}
+.mono{font-family:var(--display)}
+
+/* ====== BADGES / PILLS ====== */
+.badge{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+  letter-spacing:.02em;padding:5px 12px;border-radius:var(--r-pill);
+  background:var(--blue-soft);color:var(--blue-dk);border:1px solid #d3e0ff}
+.badge.amber{background:var(--orange-soft);color:var(--orange-dk);border-color:#f6dcae}
+.badge.dark{background:var(--dark);color:#fff;border-color:transparent}
+.badge .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);
+  font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--blue)}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 0 0 rgba(243,154,27,.5);animation:pulse 2.6s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(243,154,27,.55)}70%{box-shadow:0 0 0 9px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+
+/* ====== ANNOUNCEMENT BAR ====== */
+.announce{background:linear-gradient(90deg,var(--blue),var(--blue-dk));color:#fff;
+  font-size:13.5px;font-weight:500;text-align:center;position:relative;overflow:hidden}
+.announce__in{display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:9px 44px 9px 16px;max-width:1180px;margin:0 auto}
+.announce b{font-weight:700}
+.announce .tag{font-family:var(--display);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;background:rgba(255,255,255,.16);padding:3px 9px;border-radius:var(--r-pill)}
+.announce__close{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,.16);border:0;color:#fff;width:26px;height:26px;border-radius:50%;
+  cursor:pointer;font-size:15px;line-height:1;transition:background .2s}
+.announce__close:hover{background:rgba(255,255,255,.3)}
+.announce.closed{display:none}
+
+/* ====== DOCK NAV ====== */
+.dockwrap{position:sticky;top:14px;z-index:60;display:flex;justify-content:center;
+  padding:0 16px;pointer-events:none}
+.dock{pointer-events:auto;display:flex;align-items:center;gap:4px;
+  background:rgba(11,19,48,.92);border:1px solid rgba(255,255,255,.08);
+  padding:7px 8px 7px 14px;border-radius:var(--r-pill);box-shadow:var(--sh-lg);
+  max-width:100%;transition:box-shadow .3s}
+.dock__brand{display:flex;align-items:center;gap:9px;padding-right:8px;margin-right:4px;
+  border-right:1px solid rgba(255,255,255,.12)}
+.dock__brand img{height:30px;width:auto;border-radius:6px;background:#fff;padding:3px}
+.dock__brand span{color:#fff;font-family:var(--display);font-weight:600;font-size:14px;white-space:nowrap}
+.dock a.item{color:#cdd5ec;font-size:13.5px;font-weight:500;padding:8px 12px;border-radius:var(--r-pill);
+  white-space:nowrap;transition:transform .25s var(--snap),background .25s,color .25s;transform-origin:center bottom}
+.dock a.item:hover{background:rgba(255,255,255,.1);color:#fff;transform:translateY(-3px) scale(1.12)}
+.dock .cta{margin-left:4px;background:var(--orange);color:#1c1100;font-weight:700;font-size:13.5px;
+  padding:9px 16px;border-radius:var(--r-pill);transition:transform .25s var(--snap),box-shadow .25s}
+.dock .cta:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(243,154,27,.4)}
+.dock__burger{display:none;background:none;border:0;color:#fff;font-size:20px;cursor:pointer;padding:8px}
+@media(max-width:900px){
+  .dock__links{display:none;position:absolute;top:calc(100% + 10px);right:16px;flex-direction:column;
+    background:var(--dark);border-radius:var(--r);padding:10px;gap:4px;box-shadow:var(--sh-lg);min-width:200px}
+  .dock__links.open{display:flex}
+  .dock__burger{display:block}
+  .dock{width:100%;justify-content:space-between}
+}
+.dock__links{display:flex;align-items:center;gap:2px}
+
+/* ====== BUTTONS ====== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  font-family:var(--head);font-weight:600;font-size:15px;padding:14px 26px;border-radius:var(--r-pill);
+  cursor:pointer;border:0;position:relative;transition:transform .2s var(--snap)}
+.btn:active{transform:scale(.97)}
+.btn svg{width:17px;height:17px}
+
+/* moving border */
+.btn-mb{position:relative;background:transparent;padding:3px;border-radius:var(--r-pill);isolation:isolate}
+.btn-mb::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-2;
+  background:conic-gradient(from 0deg,var(--blue),var(--orange),var(--blue),var(--orange),var(--blue));
+  animation:spin 4s linear infinite}
+@keyframes spin{to{transform:rotate(1turn)}}
+.btn-mb .inner{display:inline-flex;align-items:center;gap:9px;background:var(--dark);color:#fff;
+  font-family:var(--head);font-weight:600;font-size:15px;padding:13px 26px;border-radius:var(--r-pill)}
+
+/* shimmer */
+.btn-shimmer{background:var(--blue);color:#fff;overflow:hidden}
+.btn-shimmer::after{content:"";position:absolute;top:0;left:-130%;width:60%;height:100%;
+  background:linear-gradient(110deg,transparent,rgba(255,255,255,.55),transparent);
+  transform:skewX(-20deg);animation:shim 3.2s ease-in-out infinite}
+@keyframes shim{0%{left:-130%}55%,100%{left:160%}}
+
+/* magnetic */
+.btn-mag{background:var(--orange);color:#1c1100;font-weight:700;will-change:transform}
+
+.btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:var(--sh-sm)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue)}
+.btn-solid{background:var(--blue);color:#fff}
+.btn-solid:hover{background:var(--blue-dk)}
+
+/* ====== HERO ====== */
+.hero{position:relative;padding:46px 0 70px;overflow:hidden}
+.hero__bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero__bg::before{content:"";position:absolute;inset:0;
+  background:
+   radial-gradient(60% 50% at 78% 12%,rgba(243,154,27,.16),transparent 60%),
+   radial-gradient(55% 60% at 12% 30%,rgba(0,80,230,.16),transparent 60%)}
+.hero__grid{position:absolute;inset:0;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:radial-gradient(80% 70% at 50% 30%,#000,transparent 75%);
+  -webkit-mask-image:radial-gradient(80% 70% at 50% 30%,#000,transparent 75%)}
+.hero .wrap{position:relative;z-index:2;display:grid;grid-template-columns:1.1fr .9fr;gap:46px;align-items:center;padding-top:38px}
+@media(max-width:900px){.hero .wrap{grid-template-columns:1fr;gap:30px}}
+.hero h1{font-size:clamp(38px,6vw,72px);font-weight:700;margin:18px 0 0}
+.hero h1 .w{display:inline-block;opacity:0;transform:translateY(.5em);
+  animation:rise .7s var(--ease) forwards;animation-delay:var(--d,0s)}
+.hero h1 .accent{color:var(--blue)}
+@keyframes rise{to{opacity:1;transform:none}}
+.hero__sur{margin-bottom:6px}
+.hero__sub{margin-top:20px;font-size:18px;color:var(--muted);max-width:520px;
+  opacity:0;animation:rise .7s var(--ease) forwards;animation-delay:.9s}
+.hero__btns{margin-top:30px;display:flex;flex-wrap:wrap;gap:14px;
+  opacity:0;animation:rise .7s var(--ease) forwards;animation-delay:1.05s}
+.hero__vals{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px;
+  opacity:0;animation:rise .7s var(--ease) forwards;animation-delay:1.2s}
+.hero__media{position:relative;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-lg);
+  border:1px solid var(--line);aspect-ratio:4/5;background:#0b1330}
+.hero__media video{width:100%;height:100%;object-fit:cover;display:block}
+.hero__media .float{position:absolute;background:#fff;border-radius:14px;padding:11px 14px;
+  box-shadow:var(--sh-md);display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600}
+.hero__media .float.a{top:18px;left:18px;animation:bob 5s var(--ease) infinite}
+.hero__media .float.b{bottom:18px;right:18px;animation:bob 5.6s var(--ease) infinite .4s}
+.hero__media .float .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:var(--blue-soft);color:var(--blue)}
+.hero__media .float.b .ic{background:var(--orange-soft);color:var(--orange-dk)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+/* ====== SECTION SHELL ====== */
+section{position:relative}
+.sec{padding:78px 0}
+.sec__head{max-width:680px;margin-bottom:38px}
+.sec__head h2{font-size:clamp(28px,4vw,44px);font-weight:700;margin-top:14px}
+.sec__head p{margin-top:14px;color:var(--muted);font-size:17px}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+
+/* ====== COUNTERS ====== */
+.stats{background:var(--dark);color:#fff;padding:54px 0;position:relative;overflow:hidden}
+.stats::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(50% 80% at 80% 0%,rgba(0,80,230,.4),transparent 60%),
+   radial-gradient(40% 70% at 10% 100%,rgba(243,154,27,.22),transparent 60%)}
+.stats .grid{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center}
+@media(max-width:760px){.stats .grid{grid-template-columns:repeat(2,1fr);gap:30px}}
+.stat .num{font-family:var(--display);font-size:clamp(34px,5vw,52px);font-weight:700;line-height:1}
+.stat .num .p{color:var(--orange)}
+.stat .lbl{margin-top:8px;font-size:14px;color:#aab4d4;font-weight:500}
+
+/* ====== TABS ====== */
+.tabs__bar{display:inline-flex;position:relative;background:#fff;border:1px solid var(--line);
+  border-radius:var(--r-pill);padding:5px;box-shadow:var(--sh-sm);margin-bottom:34px;flex-wrap:wrap}
+.tabs__bar .ind{position:absolute;top:5px;bottom:5px;border-radius:var(--r-pill);
+  background:var(--blue);box-shadow:0 6px 16px rgba(0,80,230,.32);
+  transition:left .4s var(--snap),width .4s var(--snap);z-index:0}
+.tab{position:relative;z-index:1;border:0;background:none;cursor:pointer;font-family:var(--head);
+  font-weight:600;font-size:15px;color:var(--muted);padding:10px 22px;border-radius:var(--r-pill);
+  transition:color .3s}
+.tab[aria-selected="true"]{color:#fff}
+.tabpanel{display:none;animation:fade .5s var(--ease)}
+.tabpanel.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* offer labos chips */
+.labos-chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+.labo-chip{display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+  padding:13px 20px;border-radius:var(--r);font-family:var(--head);font-weight:600;font-size:16px;
+  box-shadow:var(--sh-sm);transition:transform .25s var(--snap),box-shadow .25s,border-color .25s}
+.labo-chip:hover{transform:translateY(-4px);box-shadow:var(--sh-md);border-color:var(--blue)}
+.labo-chip .dotc{width:9px;height:9px;border-radius:50%;background:var(--orange)}
+
+/* offilog cats */
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:8px}
+.cat{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px 16px;
+  box-shadow:var(--sh-sm);transition:transform .25s var(--snap),box-shadow .25s}
+.cat:hover{transform:translateY(-4px);box-shadow:var(--sh-md)}
+.cat .ic{width:38px;height:38px;border-radius:11px;background:var(--blue-soft);color:var(--blue);
+  display:grid;place-items:center;margin-bottom:11px}
+.cat h4{font-size:15px}
+
+/* ====== BENTO ====== */
+.bento{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:minmax(150px,auto);gap:16px}
+@media(max-width:860px){.bento{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.bento{grid-template-columns:1fr}}
+.bcard{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:24px;overflow:hidden;box-shadow:var(--sh-sm);transition:transform .3s var(--ease),box-shadow .3s}
+.bcard::before{content:"";position:absolute;inset:0;opacity:0;transition:opacity .35s;pointer-events:none;
+  background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),rgba(0,80,230,.12),transparent 65%)}
+.bcard:hover{transform:translateY(-5px);box-shadow:var(--sh-md);border-color:#cdd9f4}
+.bcard:hover::before{opacity:1}
+.bcard.span2{grid-column:span 2}
+@media(max-width:560px){.bcard.span2{grid-column:span 1}}
+.bcard .ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;margin-bottom:16px}
+.bcard.amber .ic{background:linear-gradient(135deg,var(--orange),var(--orange-dk))}
+.bcard h3{font-size:19px}
+.bcard p{margin-top:9px;color:var(--muted);font-size:14.5px;position:relative;z-index:1}
+.bcard .vals{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+
+/* ====== MARQUEE ====== */
+.marquee{overflow:hidden;padding:26px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:#fff;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.marquee__track{display:flex;gap:54px;width:max-content;animation:scroll 22s linear infinite}
+.marquee:hover .marquee__track{animation-play-state:paused}
+.marquee__item{font-family:var(--display);font-weight:600;font-size:26px;color:#9aa6c6;
+  display:flex;align-items:center;gap:14px;white-space:nowrap}
+.marquee__item .d{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+@keyframes scroll{to{transform:translateX(calc(-50% - 27px))}}
+
+/* ====== CAROUSEL ====== */
+.carousel{position:relative}
+.carousel__view{overflow:hidden;border-radius:var(--r-lg)}
+.carousel__track{display:flex;transition:transform .55s var(--ease)}
+.slide{min-width:100%;display:grid;grid-template-columns:1fr 1fr;gap:0;background:#fff;
+  border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+@media(max-width:720px){.slide{grid-template-columns:1fr}}
+.slide__media{background:linear-gradient(135deg,var(--blue),var(--dark));color:#fff;padding:40px;
+  display:flex;flex-direction:column;justify-content:space-between;min-height:280px;position:relative;overflow:hidden}
+.slide__media::after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-60px;bottom:-60px;
+  background:radial-gradient(circle,rgba(243,154,27,.5),transparent 70%)}
+.slide__media .big{font-family:var(--display);font-size:46px;font-weight:700}
+.slide__body{padding:40px}
+.slide__body h3{font-size:24px}
+.slide__body p{margin-top:12px;color:var(--muted)}
+.slide__body ul{margin:18px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.slide__body li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px}
+.slide__body li svg{width:18px;height:18px;color:var(--blue);flex:none;margin-top:2px}
+.carousel__nav{display:flex;align-items:center;justify-content:space-between;margin-top:22px}
+.carousel__dots{display:flex;gap:9px}
+.dot{width:9px;height:9px;border-radius:50%;background:#cdd5e8;border:0;cursor:pointer;transition:all .3s}
+.dot.active{background:var(--blue);width:26px;border-radius:var(--r-pill)}
+.arrow{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:#fff;cursor:pointer;
+  display:grid;place-items:center;box-shadow:var(--sh-sm);transition:transform .2s var(--snap),border-color .2s}
+.arrow:hover{transform:scale(1.08);border-color:var(--blue);color:var(--blue)}
+.arrows{display:flex;gap:10px}
+
+/* ====== ACCORDION ====== */
+.acc{display:grid;gap:12px}
+.acc__item{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
+  box-shadow:var(--sh-sm);transition:border-color .25s}
+.acc__item.open{border-color:var(--blue)}
+.acc__q{width:100%;text-align:left;background:none;border:0;cursor:pointer;padding:20px 22px;
+  font-family:var(--head);font-weight:600;font-size:17px;display:flex;justify-content:space-between;
+  align-items:center;gap:16px;color:var(--ink)}
+.acc__q .pm{width:30px;height:30px;border-radius:50%;background:var(--blue-soft);color:var(--blue);
+  display:grid;place-items:center;flex:none;transition:transform .35s var(--ease),background .25s}
+.acc__item.open .pm{transform:rotate(135deg);background:var(--blue);color:#fff}
+.acc__a{max-height:0;overflow:hidden;transition:max-height .4s var(--ease)}
+.acc__a p{padding:0 22px 20px;color:var(--muted);font-size:15px}
+
+/* ====== TOGGLE ====== */
+.switchbox{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:28px;
+  box-shadow:var(--sh-sm);display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px}
+.switch{display:inline-flex;align-items:center;gap:14px;font-family:var(--head);font-weight:600;font-size:15px}
+.switch__lbl{color:var(--muted);transition:color .3s}
+.switch__lbl.on{color:var(--ink)}
+.switch__track{width:62px;height:34px;border-radius:var(--r-pill);background:var(--blue);border:0;
+  cursor:pointer;position:relative;transition:background .3s;padding:0}
+.switch__track .knob{position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;
+  background:#fff;box-shadow:var(--sh-sm);transition:transform .35s var(--snap)}
+.switch__track[aria-checked="true"]{background:var(--orange)}
+.switch__track[aria-checked="true"] .knob{transform:translateX(28px)}
+.switch__msg{font-size:17px;font-weight:500;max-width:520px;min-height:54px;transition:opacity .3s}
+.switch__msg b{color:var(--blue)}
+
+/* ====== TOOLTIP ====== */
+.tip{position:relative;border-bottom:2px dotted var(--orange);cursor:help}
+.tip::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translate(-50%,6px);
+  background:var(--dark);color:#fff;font-family:var(--body);font-weight:500;font-size:12.5px;
+  padding:8px 12px;border-radius:10px;white-space:nowrap;box-shadow:var(--sh-md);
+  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:30}
+.tip:hover::after,.tip:focus-visible::after{opacity:1;transform:translate(-50%,0)}
+
+/* ====== ACCOMPAGNEMENT / PROJETS ====== */
+.proj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:34px}
+@media(max-width:860px){.proj-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.proj-grid{grid-template-columns:1fr}}
+.proj{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;
+  box-shadow:var(--sh-sm);transition:transform .3s var(--ease),box-shadow .3s}
+.proj:hover{transform:translateY(-6px);box-shadow:var(--sh-md)}
+.proj .ic{width:54px;height:54px;border-radius:15px;display:grid;place-items:center;margin-bottom:16px;
+  background:var(--blue-soft);color:var(--blue)}
+.proj:nth-child(even) .ic{background:var(--orange-soft);color:var(--orange-dk)}
+.proj h3{font-size:18px}
+.proj p{margin-top:8px;font-size:14px;color:var(--muted)}
+
+/* ====== CARRIERES ====== */
+.jobs{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.job{background:#fff;border:1px solid var(--line);border-radius:var(--r-pill);padding:14px 22px;
+  display:flex;align-items:center;gap:12px;font-family:var(--head);font-weight:600;box-shadow:var(--sh-sm);
+  transition:transform .25s var(--snap),border-color .25s}
+.job:hover{transform:translateY(-3px);border-color:var(--orange)}
+.job .ic{width:30px;height:30px;border-radius:9px;background:var(--orange-soft);color:var(--orange-dk);display:grid;place-items:center}
+
+/* ====== NETWORK / MAP ====== */
+.netcard{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-md)}
+.netcard__head{padding:24px 26px;border-bottom:1px solid var(--line);display:flex;
+  justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+#netFrame{width:100%;border:0;min-height:560px;display:block}
+
+/* ====== CONTACT ====== */
+.contact{background:var(--dark);color:#fff;border-radius:var(--r-lg);overflow:hidden;
+  display:grid;grid-template-columns:.85fr 1.15fr;position:relative}
+@media(max-width:820px){.contact{grid-template-columns:1fr}}
+.contact__side{padding:46px;position:relative;overflow:hidden;
+  background:linear-gradient(160deg,var(--dark-2),var(--dark))}
+.contact__side::after{content:"";position:absolute;width:280px;height:280px;border-radius:50%;
+  bottom:-100px;left:-60px;background:radial-gradient(circle,rgba(0,80,230,.5),transparent 70%)}
+.contact__side h2{color:#fff;font-size:30px}
+.contact__side p{color:#aeb8d6;margin-top:14px}
+.contact__coords{margin-top:30px;display:grid;gap:14px;position:relative;z-index:1}
+.contact__coords .row{display:flex;gap:12px;align-items:center;font-size:14.5px}
+.contact__coords .ic{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.08);
+  color:var(--orange);display:grid;place-items:center;flex:none}
+.contact__form{padding:46px;background:#fff;color:var(--ink)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:520px){.fgrid{grid-template-columns:1fr}}
+.field{position:relative}
+.field.full{grid-column:1/-1}
+.field input,.field textarea{width:100%;border:1px solid var(--line);border-radius:13px;
+  padding:20px 14px 8px;font-family:var(--body);font-size:15px;background:#fbfcff;color:var(--ink);
+  transition:border-color .25s,box-shadow .25s}
+.field textarea{min-height:108px;resize:vertical;padding-top:24px}
+.field label{position:absolute;left:14px;top:15px;color:var(--muted);font-size:15px;pointer-events:none;
+  transition:all .2s var(--ease)}
+.field input:focus,.field textarea:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,80,230,.12)}
+.field input:focus+label,.field input:not(:placeholder-shown)+label,
+.field textarea:focus+label,.field textarea:not(:placeholder-shown)+label{
+  top:7px;font-size:11px;font-weight:600;color:var(--blue);letter-spacing:.02em}
+
+/* ====== FLOATING ====== */
+.fab{position:fixed;right:22px;bottom:22px;z-index:70;display:flex;flex-direction:column;gap:12px;align-items:flex-end}
+.top-btn{width:50px;height:50px;border-radius:50%;background:var(--dark);color:#fff;border:0;cursor:pointer;
+  display:grid;place-items:center;box-shadow:var(--sh-lg);opacity:0;transform:translateY(20px);
+  pointer-events:none;transition:opacity .3s,transform .3s,background .25s}
+.top-btn.show{opacity:1;transform:none;pointer-events:auto}
+.top-btn:hover{background:var(--blue)}
+.fab .sticky-cta{background:var(--orange);color:#1c1100;font-weight:700;font-family:var(--head);
+  border:0;border-radius:var(--r-pill);padding:14px 22px;cursor:pointer;box-shadow:var(--sh-lg);
+  white-space:nowrap;transition:transform .2s var(--snap)}
+.fab .sticky-cta:hover{transform:translateY(-2px)}
+@media(max-width:560px){.fab .sticky-cta{display:none}}
+
+/* ====== FOOTER ====== */
+.footer{background:var(--dark);color:#cdd5ec;padding:54px 0 30px;margin-top:78px}
+.footer__top{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;
+  padding-bottom:30px;border-bottom:1px solid rgba(255,255,255,.1)}
+.footer__brand{display:flex;align-items:center;gap:12px}
+.footer__brand img{height:36px;background:#fff;padding:4px;border-radius:8px}
+.footer__brand .t{color:#fff;font-family:var(--display);font-weight:600;font-size:18px}
+.footer__brand .s{font-size:13px;color:#8d98ba}
+.footer nav{display:flex;gap:24px;flex-wrap:wrap}
+.footer nav a{font-size:14px;transition:color .2s}
+.footer nav a:hover{color:#fff}
+.footer__bot{margin-top:24px;font-size:13px;color:#8d98ba;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+
+/* ====== REDUCED MOTION ====== */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+  .hero h1 .w,.hero__sub,.hero__btns,.hero__vals{opacity:1!important;transform:none!important}
+  .reveal{opacity:1!important;transform:none!important}
+  .dock a.item:hover{transform:none}
+  .marquee__track{animation:none;transform:none}
+  .hero__media video{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ANNOUNCEMENT BAR -->
+<div class="announce" id="announce">
+  <div class="announce__in">
+    <span class="tag">Offilog</span>
+    <span><b>+14 000 références</b> · <b>0€ d'adhésion</b> — toute la parapharmacie, en un seul portail.</span>
+  </div>
+  <button class="announce__close" id="announceClose" aria-label="Fermer l'annonce">×</button>
+</div>
+
+<!-- DOCK NAV -->
+<div class="dockwrap">
+  <nav class="dock" aria-label="Navigation principale">
+    <div class="dock__brand">
+      <img src="../assets/logo.png" alt="Intégral Pharma">
+      <span>Intégral Pharma</span>
+    </div>
+    <button class="dock__burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
+    <div class="dock__links" id="dockLinks">
+      <a class="item" href="#offres">Nos offres</a>
+      <a class="item" href="#reseau">Le groupe</a>
+      <a class="item" href="#offilog">Offilog</a>
+      <a class="item" href="#accompagnement">Titulaires</a>
+      <a class="item" href="#carrieres">Carrières</a>
+      <a class="cta" href="#contact">Nous contacter</a>
+    </div>
+  </nav>
+</div>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero__bg"><div class="hero__grid"></div></div>
+  <div class="wrap">
+    <div>
+      <span class="eyebrow hero__sur"><span class="dot"></span> Grossiste-répartiteur de première intention</span>
+      <h1 id="heroTitle">
+        <span class="w">Plus</span> <span class="w">de</span> <span class="w accent">marge,</span><br>
+        <span class="w">sur</span> <span class="w">chaque</span> <span class="w">commande.</span>
+      </h1>
+      <p class="hero__sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
+      <div class="hero__btns">
+        <span class="btn btn-mb" role="button" tabindex="0" onclick="scrollTo2('#contact')">
+          <span class="inner">Demander nos conditions
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </span>
+        <button class="btn btn-shimmer" onclick="scrollTo2('#offilog')">Découvrir Offilog</button>
+        <button class="btn btn-mag" id="magBtn" onclick="scrollTo2('#reseau')">Voir le réseau</button>
+      </div>
+      <div class="hero__vals">
+        <span class="badge"><span class="d"></span>Confiance</span>
+        <span class="badge amber"><span class="d"></span>Engagement</span>
+        <span class="badge"><span class="d"></span>Respect</span>
+        <span class="badge dark">+20 ans d'indépendance</span>
+      </div>
+    </div>
+    <div class="hero__media">
+      <video src="../assets/clip3.mp4" poster="../assets/poster.jpg" muted playsinline loop autoplay preload="metadata"></video>
+      <div class="float a"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></span> Marge optimisée</div>
+      <div class="float b"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4 2 7L12 17l-6.5 3 2-7L2 9h7z"/></svg></span> 9 agences en France</div>
+    </div>
+  </div>
+</header>
+
+<!-- COUNTERS -->
+<section class="stats">
+  <div class="wrap grid">
+    <div class="stat reveal"><div class="num"><span class="p">+</span><span data-count="20">0</span></div><div class="lbl">ans d'expérience</div></div>
+    <div class="stat reveal"><div class="num"><span data-count="9">0</span></div><div class="lbl">agences en France</div></div>
+    <div class="stat reveal"><div class="num"><span class="p">+</span><span data-count="14000">0</span></div><div class="lbl">références Offilog</div></div>
+    <div class="stat reveal"><div class="num"><span class="p">+</span><span data-count="430">0</span></div><div class="lbl">laboratoires</div></div>
+  </div>
+</section>
+
+<!-- TABS -->
+<section class="sec" id="offres">
+  <div class="wrap">
+    <div class="sec__head reveal">
+      <span class="eyebrow"><span class="dot"></span> Tout en un</span>
+      <h2>Une offre, trois façons de la regarder.</h2>
+      <p>Naviguez entre nos offres, le portail Offilog et le groupe. Chaque onglet vous dit l'essentiel — le chiffrage précis, on vous le donne en rendez-vous.</p>
+    </div>
+
+    <div class="tabs__bar reveal" role="tablist" aria-label="Sélecteur de contenu">
+      <span class="ind" id="tabInd"></span>
+      <button class="tab" role="tab" aria-selected="true" id="t0" aria-controls="p0">Nos offres</button>
+      <button class="tab" role="tab" aria-selected="false" id="t1" aria-controls="p1">Offilog</button>
+      <button class="tab" role="tab" aria-selected="false" id="t2" aria-controls="p2">Le groupe</button>
+    </div>
+
+    <div class="tabpanel active" role="tabpanel" id="p0" aria-labelledby="t0">
+      <h3 style="font-size:24px;margin-bottom:6px">Les plus grands laboratoires.</h3>
+      <p style="color:var(--muted);margin-bottom:18px">Génériques et grandes marques, disponibles dès la première intention. Survolez un labo.</p>
+      <div class="labos-chips">
+        <span class="labo-chip tip" data-tip="Génériques & spécialités" tabindex="0"><span class="dotc"></span>Zentiva</span>
+        <span class="labo-chip tip" data-tip="Acteur mondial du générique" tabindex="0"><span class="dotc"></span>Teva</span>
+        <span class="labo-chip tip" data-tip="Gamme étendue France" tabindex="0"><span class="dotc"></span>EG Labo</span>
+        <span class="labo-chip tip" data-tip="Génériques de qualité" tabindex="0"><span class="dotc"></span>Zydus</span>
+        <span class="labo-chip tip" data-tip="Groupe pharmaceutique global" tabindex="0"><span class="dotc"></span>Viatris</span>
+      </div>
+    </div>
+
+    <div class="tabpanel" role="tabpanel" id="p1" aria-labelledby="t1" hidden>
+      <h3 style="font-size:24px;margin-bottom:6px">Toute la parapharmacie.</h3>
+      <p style="color:var(--muted);margin-bottom:18px"><b class="tip" data-tip="Catalogue Offilog" tabindex="0">+14 000 références</b> · <b>+430 laboratoires</b> · <b>0€ d'adhésion</b>.</p>
+      <div class="cats" id="catsTab"></div>
+    </div>
+
+    <div class="tabpanel" role="tabpanel" id="p2" aria-labelledby="t2" hidden>
+      <h3 style="font-size:24px;margin-bottom:6px">National.</h3>
+      <p style="color:var(--muted);margin-bottom:8px">9 agences, un seul groupe de grossistes français indépendant. Découvrez-les dans le carrousel et sur la carte plus bas.</p>
+      <div class="hero__vals" style="animation:none;opacity:1">
+        <span class="badge dark">Siège · Hyères (83)</span>
+        <span class="badge">Couverture nationale</span>
+        <span class="badge amber">1 partenaire · Metz</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENTO -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec__head reveal">
+      <span class="eyebrow"><span class="dot"></span> Pourquoi nous</span>
+      <h2>Ce qui change pour votre officine.</h2>
+    </div>
+    <div class="bento" id="bento">
+      <article class="bcard span2 spot reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 13l3-3 3 2 5-6"/></svg></span>
+        <h3>De meilleures conditions, dès la première boîte</h3>
+        <p>On améliore vos achats sur les références que vous commandez le plus. Pas de calcul compliqué : on vous le chiffre en rendez-vous.</p>
+        <div class="vals"><span class="badge">Première intention</span><span class="badge amber">Sur-mesure</span></div>
+      </article>
+      <article class="bcard amber spot reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+        <h3>Réactivité locale</h3>
+        <p>Une agence proche de chez vous, des équipes qui connaissent votre secteur.</p>
+      </article>
+      <article class="bcard spot reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/></svg></span>
+        <h3>+430 laboratoires</h3>
+        <p>Génériques et grandes marques réunis dans un seul interlocuteur.</p>
+      </article>
+      <article class="bcard amber spot reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+        <h3>Couverture nationale</h3>
+        <p>9 agences en France, avec un siège à Hyères.</p>
+      </article>
+      <article class="bcard span2 spot reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 14h5"/></svg></span>
+        <h3>Offilog : la parapharmacie en un portail</h3>
+        <p>+14 000 références, +430 laboratoires, 0€ d'adhésion. Commandez tout au même endroit.</p>
+        <div class="vals"><span class="badge">+14 000 réfs</span><span class="badge amber">0€ d'adhésion</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track" id="marquee">
+    <span class="marquee__item">Zentiva <span class="d"></span></span>
+    <span class="marquee__item">Teva <span class="d"></span></span>
+    <span class="marquee__item">EG Labo <span class="d"></span></span>
+    <span class="marquee__item">Zydus <span class="d"></span></span>
+    <span class="marquee__item">Viatris <span class="d"></span></span>
+  </div>
+</div>
+
+<!-- OFFILOG cats highlight -->
+<section class="sec" id="offilog">
+  <div class="wrap">
+    <div class="sec__head reveal">
+      <span class="eyebrow"><span class="dot"></span> Offilog</span>
+      <h2>Toute la parapharmacie.</h2>
+      <p>Un portail unique pour vos rayons : <b>+14 000 références</b>, <b>+430 laboratoires</b>, <b>0€ d'adhésion</b>.</p>
+    </div>
+    <div class="cats" id="catsMain"></div>
+  </div>
+</section>
+
+<!-- CAROUSEL : 4 projets d'accompagnement -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec__head reveal">
+      <span class="eyebrow"><span class="dot"></span> En images</span>
+      <h2>Quatre manières de vous accompagner.</h2>
+    </div>
+    <div class="carousel reveal" id="carousel">
+      <div class="carousel__view">
+        <div class="carousel__track" id="carTrack"></div>
+      </div>
+      <div class="carousel__nav">
+        <div class="carousel__dots" id="carDots"></div>
+        <div class="arrows">
+          <button class="arrow" id="carPrev" aria-label="Projet précédent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="18" height="18"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <button class="arrow" id="carNext" aria-label="Projet suivant">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOGGLE / SWITCH -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="switchbox reveal">
+      <span class="eyebrow"><span class="dot"></span> On s'adapte</span>
+      <div class="switch">
+        <span class="switch__lbl on" id="lblA">Officine de quartier</span>
+        <button class="switch__track" id="adaptSwitch" role="switch" aria-checked="false" aria-label="Type d'officine">
+          <span class="knob"></span>
+        </button>
+        <span class="switch__lbl" id="lblB">Grande officine</span>
+      </div>
+      <p class="switch__msg" id="adaptMsg">Une <b>officine de quartier</b> ? On vous suit de près, avec une agence locale et des conditions pensées pour votre volume réel.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ACCOMPAGNEMENT TITULAIRES -->
+<section class="sec" id="accompagnement" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec__head reveal">
+      <span class="eyebrow"><span class="dot"></span> Titulaires</span>
+      <h2>Vous êtes pharmacien titulaire et vous avez un projet de transfert, d'agrandissement, de cession de parts ou d'optimisation ? On le porte avec vous.</h2>
+    </div>
+    <div class="proj-grid">
+      <article class="proj reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg></span>
+        <h3>Transfert d'officine</h3>
+        <p>On vous épaule à chaque étape de votre transfert, de l'idée à l'ouverture.</p>
+      </article>
+      <article class="proj reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M21 3l-9 9"/><path d="M9 21H3v-6M3 21l9-9"/></svg></span>
+        <h3>Agrandissement</h3>
+        <p>Plus d'espace, plus de rayons : on accompagne votre montée en puissance.</p>
+      </article>
+      <article class="proj reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="3"/><path d="M3 21v-2a5 5 0 015-5M14 21v-1a5 5 0 015-5"/></svg></span>
+        <h3>Cession de parts</h3>
+        <p>Entrée ou sortie d'associé : on vous aide à structurer l'opération.</p>
+      </article>
+      <article class="proj reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7.7 2 2 0 11-4 0 1.6 1.6 0 00-2.7-.7l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00-1.5-2.7 2 2 0 010-4 1.6 1.6 0 001.5-2.7l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 002.7-.7 2 2 0 014 0 1.6 1.6 0 002.7.7l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8z"/></svg></span>
+        <h3>Optimisation</h3>
+        <p>Marge, gamme, organisation : on cherche les bons leviers avec vous.</p>
+      </article>
+    </div>
+    <div style="margin-top:30px" class="reveal">
+      <button class="btn btn-solid" onclick="scrollTo2('#contact')">En parler avec nous
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div>
+  </div>
+</section>
+
+<!-- NETWORK MAP -->
+<section class="sec" id="reseau" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec__head reveal">
+      <span class="eyebrow"><span class="dot"></span> Le réseau</span>
+      <h2>National.</h2>
+      <p>9 agences, un groupe de grossistes français indépendant. Survolez la carte pour explorer le maillage.</p>
+    </div>
+    <div class="netcard reveal">
+      <div class="netcard__head">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <span class="badge dark">Siège · Hyères (83)</span>
+          <span class="badge">9 agences</span>
+          <span class="badge amber">1 partenaire · Pharmest, Metz</span>
+        </div>
+        <span class="mono" style="color:var(--muted);font-size:13px">Couverture nationale</span>
+      </div>
+      <iframe id="netFrame" src="../map-component.html?mode=map" loading="lazy" scrolling="no" title="Carte du réseau Intégral Pharma" style="width:100%;border:0"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- CARRIERES -->
+<section class="sec" id="carrieres" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec__head reveal">
+      <span class="eyebrow"><span class="dot"></span> Rejoindre</span>
+      <h2>Le groupe recrute.</h2>
+      <p>Des métiers de terrain, partout en France, dans un groupe de grossistes français indépendant.</p>
+    </div>
+    <div class="jobs">
+      <span class="job reveal"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/></svg></span>Approvisionnement</span>
+      <span class="job reveal"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 13l3-3 3 2 5-6"/></svg></span>Commercial</span>
+      <span class="job reveal"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg></span>Pharmacien responsable</span>
+      <span class="job reveal"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 11h13v6H1z"/><path d="M14 13h4l3 3v1h-7"/><circle cx="5" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></span>Préparateur-chauffeur</span>
+    </div>
+    <div style="margin-top:28px" class="reveal">
+      <button class="btn btn-ghost" onclick="scrollTo2('#contact')">Voir les offres
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div>
+  </div>
+</section>
+
+<!-- ACCORDION FAQ -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap" style="max-width:840px">
+    <div class="sec__head reveal" style="margin:0 auto 38px;text-align:center">
+      <span class="eyebrow" style="justify-content:center"><span class="dot"></span> Questions</span>
+      <h2>Tout ce qu'on vous demande souvent.</h2>
+    </div>
+    <div class="acc" id="acc"></div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="sec" id="contact" style="padding-top:0">
+  <div class="wrap">
+    <div class="contact reveal">
+      <div class="contact__side">
+        <span class="eyebrow" style="color:#fff"><span class="dot"></span> Parlons-en</span>
+        <h2>On vous chiffre vos conditions en rendez-vous.</h2>
+        <p>Dites-nous qui vous êtes : on revient vers vous avec une proposition adaptée à votre officine.</p>
+        <div class="contact__coords">
+          <div class="row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span> contact@integralpharma.fr</div>
+          <div class="row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span> 758 Chemin de la Source, 83400 Hyères</div>
+        </div>
+      </div>
+      <form class="contact__form" id="contactForm">
+        <div class="fgrid">
+          <div class="field"><input id="f_nom" name="nom" placeholder=" " required><label for="f_nom">Nom</label></div>
+          <div class="field"><input id="f_off" name="officine" placeholder=" "><label for="f_off">Officine</label></div>
+          <div class="field"><input id="f_cp" name="cp" placeholder=" " inputmode="numeric"><label for="f_cp">Code postal</label></div>
+          <div class="field"><input id="f_mail" name="email" type="email" placeholder=" " required><label for="f_mail">Email</label></div>
+          <div class="field full"><input id="f_tel" name="tel" type="tel" placeholder=" "><label for="f_tel">Téléphone</label></div>
+          <div class="field full"><textarea id="f_msg" name="message" placeholder=" "></textarea><label for="f_msg">Message</label></div>
+        </div>
+        <button type="submit" class="btn btn-solid" style="margin-top:20px;width:100%">Envoyer ma demande
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <p style="margin-top:12px;font-size:12.5px;color:var(--muted)">Réponse rapide. On vous chiffre vos conditions en rendez-vous.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <img src="../assets/logo.png" alt="Intégral Pharma">
+        <div>
+          <div class="t">Intégral Pharma</div>
+          <div class="s">Groupe de grossistes français indépendant</div>
+        </div>
+      </div>
+      <nav aria-label="Pied de page">
+        <a href="#offres">Nos offres</a>
+        <a href="#reseau">Le groupe</a>
+        <a href="#offilog">Offilog</a>
+        <a href="#accompagnement">Titulaires</a>
+        <a href="#carrieres">Carrières</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+    <div class="footer__bot">
+      <span>© <span id="yr"></span> Intégral Pharma. Tous droits réservés.</span>
+      <span>Grossiste-répartiteur de première intention · Couverture nationale</span>
+    </div>
+  </div>
+</footer>
+
+<!-- FLOATING -->
+<div class="fab">
+  <button class="sticky-cta" onclick="scrollTo2('#contact')">Demander nos conditions</button>
+  <button class="top-btn" id="topBtn" aria-label="Remonter en haut">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="20" height="20"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+  </button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $ = function(s,c){return (c||document).querySelector(s);};
+  var $$ = function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s));};
+
+  /* year */
+  $('#yr').textContent = new Date().getFullYear();
+
+  /* announcement bar */
+  $('#announceClose').addEventListener('click',function(){ $('#announce').classList.add('closed'); });
+
+  /* burger */
+  var burger=$('#burger'), dockLinks=$('#dockLinks');
+  burger.addEventListener('click',function(){
+    var open=dockLinks.classList.toggle('open');
+    burger.setAttribute('aria-expanded',open?'true':'false');
+  });
+  $$('#dockLinks a').forEach(function(a){a.addEventListener('click',function(){dockLinks.classList.remove('open');burger.setAttribute('aria-expanded','false');});});
+
+  /* smooth scroll helper */
+  window.scrollTo2=function(sel){var el=$(sel);if(el){el.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'});}};
+
+  /* hero animated text stagger */
+  if(!RM){ $$('#heroTitle .w').forEach(function(w,i){ w.style.setProperty('--d',(0.15+i*0.09)+'s'); }); }
+
+  /* magnetic button */
+  if(!RM){
+    var mag=$('#magBtn');
+    mag.addEventListener('mousemove',function(e){
+      var r=mag.getBoundingClientRect();
+      var x=e.clientX-r.left-r.width/2, y=e.clientY-r.top-r.height/2;
+      requestAnimationFrame(function(){ mag.style.transform='translate('+(x*0.3)+'px,'+(y*0.4)+'px)'; });
+    });
+    mag.addEventListener('mouseleave',function(){ requestAnimationFrame(function(){ mag.style.transform=''; }); });
+    document.querySelectorAll('.btn-mb').forEach(function(b){
+      b.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();b.click();}});
+    });
+  }
+
+  /* reveal on scroll */
+  if(!RM && 'IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
+    },{threshold:0.12});
+    $$('.reveal').forEach(function(el){io.observe(el);});
+  } else { $$('.reveal').forEach(function(el){el.classList.add('in');}); }
+
+  /* count-up */
+  function countUp(el){
+    var target=parseInt(el.getAttribute('data-count'),10), dur=1500, start=null;
+    if(RM){ el.textContent=target.toLocaleString('fr-FR'); return; }
+    function step(t){ if(!start)start=t; var p=Math.min((t-start)/dur,1);
+      var e=1-Math.pow(1-p,3);
+      el.textContent=Math.round(target*e).toLocaleString('fr-FR');
+      if(p<1)requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  if('IntersectionObserver' in window){
+    var cio=new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting){ countUp(en.target); cio.unobserve(en.target);} });
+    },{threshold:0.4});
+    $$('[data-count]').forEach(function(el){cio.observe(el);});
+  } else { $$('[data-count]').forEach(countUp); }
+
+  /* TABS */
+  var tabs=$$('.tab'), panels=[$('#p0'),$('#p1'),$('#p2')], ind=$('#tabInd');
+  function setInd(t){ ind.style.left=t.offsetLeft+'px'; ind.style.width=t.offsetWidth+'px'; }
+  function selTab(i){
+    tabs.forEach(function(t,j){
+      var on=(j===i); t.setAttribute('aria-selected',on?'true':'false');
+      panels[j].classList.toggle('active',on);
+      if(on){panels[j].removeAttribute('hidden');}else{panels[j].setAttribute('hidden','');}
+    });
+    setInd(tabs[i]);
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener('click',function(){selTab(i);});
+    t.addEventListener('keydown',function(e){
+      if(e.key==='ArrowRight'){e.preventDefault();var n=(i+1)%tabs.length;tabs[n].focus();selTab(n);}
+      if(e.key==='ArrowLeft'){e.preventDefault();var p=(i-1+tabs.length)%tabs.length;tabs[p].focus();selTab(p);}
+    });
+  });
+  setTimeout(function(){setInd(tabs[0]);},60);
+  window.addEventListener('resize',function(){var on=tabs.filter(function(t){return t.getAttribute('aria-selected')==='true';})[0];if(on)setInd(on);});
+
+  /* Offilog categories */
+  var cats=[
+    ['Solaires','M12 4v2M12 18v2M4 12h2M18 12h2M6 6l1.5 1.5M16.5 16.5L18 18M18 6l-1.5 1.5M7.5 16.5L6 18'],
+    ['Soin du visage','M12 3a9 9 0 100 18 9 9 0 000-18zM9 10h.01M15 10h.01M9 15c1 1 5 1 6 0'],
+    ['Hygiène','M8 2h8v4H8zM6 6h12l-1 14H7z'],
+    ['Bébé','M9 12a3 3 0 006 0M9 9h.01M15 9h.01M12 3a9 9 0 100 18 9 9 0 000-18z'],
+    ['Cheveux','M5 20c0-7 3-14 7-14s7 7 7 14M9 20c0-5 1-9 3-9'],
+    ['Compléments','M10.5 3.5l10 10a5 5 0 01-7 7l-10-10a5 5 0 017-7zM7 7l10 10'],
+    ['Bio','M12 21s-7-4-7-11a7 7 0 0114 0c0 7-7 11-7 11zM12 3v18'],
+    ['Bucco-dentaire','M7 4c2 0 2 1 5 1s3-1 5-1c2 0 3 2 2 7-1 4-2 8-3 8s-1-4-4-4-3 4-4 4-2-4-3-8c-1-5 0-7 2-7z'],
+    ['Vétérinaire','M5 11a2 2 0 11.01 0M9 7a2 2 0 11.01 0M15 7a2 2 0 11.01 0M19 11a2 2 0 11.01 0M8 16c1-2 2-3 4-3s3 1 4 3 0 4-4 4-5-2-4-4z']
+  ];
+  function catHTML(){
+    return cats.map(function(c){
+      return '<div class="cat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20"><path d="'+c[1]+'"/></svg></span><h4>'+c[0]+'</h4></div>';
+    }).join('');
+  }
+  $('#catsMain').innerHTML=catHTML();
+  $('#catsTab').innerHTML=catHTML();
+
+  /* CAROUSEL */
+  var projects=[
+    {big:'01',tag:'Transfert',h:'Transfert d\'officine',p:'On porte votre projet de transfert de bout en bout, en lien avec votre agence locale.',li:['Étude du projet','Accompagnement administratif','Suivi jusqu\'à l\'ouverture']},
+    {big:'02',tag:'Croissance',h:'Agrandissement',p:'Plus de surface, plus de rayons : on vous aide à passer à l\'échelle sereinement.',li:['Optimisation des gammes','Logistique adaptée','Conseil sur l\'agencement']},
+    {big:'03',tag:'Associés',h:'Cession de parts',p:'Entrée ou sortie d\'associé : on structure l\'opération avec vous.',li:['Cadrage de l\'opération','Mise en relation utile','Continuité de l\'activité']},
+    {big:'04',tag:'Performance',h:'Optimisation',p:'On cherche ensemble les bons leviers de marge et d\'organisation.',li:['Analyse des achats','Pistes de marge','Organisation au quotidien']}
+  ];
+  var track=$('#carTrack'), dotsWrap=$('#carDots'), cur=0;
+  track.innerHTML=projects.map(function(pr){
+    return '<div class="slide"><div class="slide__media"><span class="badge dark" style="width:max-content">'+pr.tag+'</span><span class="big">'+pr.big+'</span></div>'+
+      '<div class="slide__body"><h3>'+pr.h+'</h3><p>'+pr.p+'</p><ul>'+
+      pr.li.map(function(l){return '<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l4 4 10-10"/></svg>'+l+'</li>';}).join('')+
+      '</ul></div></div>';
+  }).join('');
+  dotsWrap.innerHTML=projects.map(function(_,i){return '<button class="dot'+(i===0?' active':'')+'" aria-label="Aller au projet '+(i+1)+'"></button>';}).join('');
+  var dots=$$('.dot',dotsWrap);
+  function goCar(i){
+    cur=(i+projects.length)%projects.length;
+    track.style.transform='translateX(-'+(cur*100)+'%)';
+    dots.forEach(function(d,j){d.classList.toggle('active',j===cur);});
+  }
+  dots.forEach(function(d,i){d.addEventListener('click',function(){goCar(i);});});
+  $('#carNext').addEventListener('click',function(){goCar(cur+1);});
+  $('#carPrev').addEventListener('click',function(){goCar(cur-1);});
+  if(!RM){ setInterval(function(){goCar(cur+1);},6500); }
+
+  /* SWITCH */
+  var sw=$('#adaptSwitch'), msg=$('#adaptMsg'), lblA=$('#lblA'), lblB=$('#lblB');
+  var msgs=[
+    'Une <b>officine de quartier</b> ? On vous suit de près, avec une agence locale et des conditions pensées pour votre volume réel.',
+    'Une <b>grande officine</b> ? On encaisse vos gros volumes sans broncher, avec la même réactivité et un interlocuteur dédié.'
+  ];
+  sw.addEventListener('click',function(){
+    var on=sw.getAttribute('aria-checked')==='true'; on=!on;
+    sw.setAttribute('aria-checked',on?'true':'false');
+    lblA.classList.toggle('on',!on); lblB.classList.toggle('on',on);
+    msg.style.opacity='0';
+    setTimeout(function(){ msg.innerHTML=msgs[on?1:0]; msg.style.opacity='1'; }, RM?0:160);
+  });
+
+  /* ACCORDION */
+  var faq=[
+    ['Comment obtenir nos conditions ?','Contactez-nous via le formulaire : on prend rendez-vous et on vous chiffre des conditions adaptées à votre officine.'],
+    ['Quels laboratoires proposez-vous ?','Les plus grands : génériques et grandes marques, dont Zentiva, Teva, EG Labo, Zydus et Viatris, parmi plus de 430 laboratoires.'],
+    ['Qu\'est-ce qu\'Offilog ?','Notre portail parapharmacie : +14 000 références, +430 laboratoires, 0€ d\'adhésion. Solaires, soin du visage, hygiène, bébé, cheveux, compléments, bio, bucco-dentaire, vétérinaire.'],
+    ['Où livrez-vous ?','Partout en France, via nos 9 agences réparties sur le territoire, avec un siège à Hyères.'],
+    ['Comment rejoindre le groupe ?','Que vous soyez titulaire ou candidat, écrivez-nous : on étudie votre profil ou votre projet et on revient vers vous rapidement.']
+  ];
+  var acc=$('#acc');
+  acc.innerHTML=faq.map(function(f,i){
+    return '<div class="acc__item"><h3 style="margin:0"><button class="acc__q" aria-expanded="false" aria-controls="fa'+i+'">'+f[0]+
+      '<span class="pm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></span></button></h3>'+
+      '<div class="acc__a" id="fa'+i+'" role="region"><p>'+f[1]+'</p></div></div>';
+  }).join('');
+  $$('.acc__q',acc).forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var item=btn.closest('.acc__item'), a=item.querySelector('.acc__a'), open=item.classList.contains('open');
+      $$('.acc__item',acc).forEach(function(it){
+        it.classList.remove('open');
+        it.querySelector('.acc__a').style.maxHeight=null;
+        it.querySelector('.acc__q').setAttribute('aria-expanded','false');
+      });
+      if(!open){ item.classList.add('open'); a.style.maxHeight=a.scrollHeight+'px'; btn.setAttribute('aria-expanded','true'); }
+    });
+  });
+
+  /* BENTO spotlight */
+  if(!RM){
+    $$('.bcard.spot').forEach(function(card){
+      card.addEventListener('mousemove',function(e){
+        var r=card.getBoundingClientRect();
+        card.style.setProperty('--mx',(e.clientX-r.left)+'px');
+        card.style.setProperty('--my',(e.clientY-r.top)+'px');
+      });
+    });
+  }
+
+  /* back to top */
+  var topBtn=$('#topBtn');
+  window.addEventListener('scroll',function(){ topBtn.classList.toggle('show',window.scrollY>700); },{passive:true});
+  topBtn.addEventListener('click',function(){ window.scrollTo({top:0,behavior:RM?'auto':'smooth'}); });
+
+  /* contact form -> mailto */
+  $('#contactForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var f=e.target;
+    var body='Nom : '+f.nom.value+'%0D%0A'+
+      'Officine : '+f.officine.value+'%0D%0A'+
+      'Code postal : '+f.cp.value+'%0D%0A'+
+      'Email : '+f.email.value+'%0D%0A'+
+      'Téléphone : '+f.tel.value+'%0D%0A%0D%0A'+
+      'Message :%0D%0A'+f.message.value;
+    window.location.href='mailto:contact@integralpharma.fr?subject='+encodeURIComponent('Demande de conditions — '+(f.officine.value||f.nom.value))+'&body='+body;
+  });
+
+  /* map iframe auto-height */
+  var nf=$('#netFrame');
+  window.addEventListener('message',function(e){
+    if(e.data && e.data.ipAtlasHeight){ nf.style.height=e.data.ipAtlasHeight+'px'; }
+  });
+})();
+</script>
+</body>
+</html>
