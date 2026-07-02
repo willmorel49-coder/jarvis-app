@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0A0A0B" />
+<title>Intégral Pharma — Plus de marge, meilleures conditions</title>
+<meta name="description" content="Intégral Pharma, grossiste-répartiteur de première intention. Plus de marge et de meilleures conditions sur chaque commande, dès la première boîte, adaptées à chaque officine." />
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* ---- palette maîtrisée : blanc + encre + bleu + orange en accents ---- */
+  --blue:#0050E6;--blue-d:#0034A0;
+  --orange:#F39A1B;--orange-d:#D97E00;--orange-text:#A35400;
+  --ink:#0A0A0B;--ink2:#3A3F49;--muted:#5E6571;--muted2:#6B7280;
+  --bg:#ffffff;--black:#0A0A0B;
+  --field-border:#767C86;
+  /* épaisseurs de bordure (1px passif / 1.5px interactif) */
+  --bw:1px;--bw-strong:1.5px;
+  /* lift au hover par famille */
+  --lift-sm:-3px;--lift-md:-4px;--lift-lg:-6px;
+  /* soulignements animés */
+  --underline-h:1.5px;
+  /* mesure de lecture des intros */
+  --measure:540px;
+  /* filets & séparateurs (3 niveaux cohérents) */
+  --line:#ECECEF;--line2:#E2E2E6;--line3:#D6D6DB;
+  --hair:rgba(10,10,11,.08);
+  /* surfaces */
+  --surface2:#F4F5F7;
+  --font:'Satoshi','Inter',system-ui,sans-serif;--mono:'Geist Mono',ui-monospace,monospace;
+
+  /* ---- LANGAGE DE MOTION UNIFIÉ : un seul jeu d'easings + durées ---- */
+  --ease-net:cubic-bezier(.16,1,.3,1);      /* sortie premium, décélération nette */
+  --ease-snap:cubic-bezier(.34,1.4,.5,1);   /* léger overshoot maîtrisé (boutons) */
+  --ease-soft:cubic-bezier(.4,0,.2,1);      /* standard équilibré (couleurs/états) */
+  --t-fast:.18s;    /* feedback immédiat (couleur, focus) */
+  --t-base:.32s;    /* hover/lift de composant */
+  --t-slow:.6s;     /* survol image, lifts longs */
+  --t-reveal:.9s;   /* révélations au scroll */
+
+  /* ---- ombres douces COHÉRENTES (échelle unique, jamais ad hoc) ---- */
+  --sh-1:0 1px 2px rgba(16,24,40,.04);
+  --sh-2:0 1px 2px rgba(16,24,40,.04),0 12px 28px -22px rgba(16,24,40,.28);
+  --sh-3:0 1px 2px rgba(16,24,40,.05),0 28px 56px -26px rgba(16,24,40,.42);
+  --sh-blue:0 14px 30px -16px rgba(0,80,230,.5);
+  --sh-ink:0 14px 30px -16px rgba(10,10,11,.4);
+  --sh-nav:0 1px 0 var(--hair),0 10px 30px -24px rgba(16,24,40,.5);
+
+  /* ---- rayons cohérents ---- */
+  --r-xs:6px;--r-sm:10px;--r-md:14px;--r-lg:18px;--r-pill:999px;
+  --r-fac:8px; /* aspect document : facture */
+
+  /* ---- RYTHME D'ESPACEMENT (échelle modulaire, une seule source) ---- */
+  --s1:8px;--s2:14px;--s3:22px;--s4:34px;--s5:52px;--s6:80px;
+  --section:clamp(56px,8vh,104px);
+  --section-tight:clamp(40px,6vh,72px);
+  --gutter:28px;
+
+  /* durées d'easing canoniques additionnelles */
+  --t-trace:1s; /* tracés (underx/trin) */
+
+  /* échelle typographique fluide — planchers différenciés (anti-effondrement mobile) */
+  --giant:clamp(40px,5.2vw,72px);
+  --huge:clamp(34px,4.6vw,62px);
+  --big:clamp(26px,3.6vw,48px);
+  --sub:clamp(22px,2.6vw,32px);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;line-height:1.5;text-rendering:optimizeLegibility}
+a{color:inherit}
+img{max-width:100%;display:block}
+::selection{background:var(--ink);color:#fff}
+.wrap{max-width:1180px;margin:0 auto;padding:0 var(--gutter);position:relative;z-index:2}
+@media(max-width:560px){.wrap{padding:0 20px}}
+/* ancrage sous la nav sticky */
+section[id],header[id],[id].block,[id].videoband{scroll-margin-top:clamp(72px,8vh,88px)}
+
+/* ---- FOCUS-VISIBLE ACCESSIBLE & COHÉRENT (clavier uniquement) ---- */
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:var(--r-xs)}
+.btn:focus-visible{outline-offset:4px}
+a:focus-visible{outline-offset:4px}
+.cform input:focus-visible,.cform textarea:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
+
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.sr-h2{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* lien d'évitement clavier : caché jusqu'au focus, posé net en haut */
+.skip{position:absolute;left:12px;top:-60px;z-index:300;background:var(--ink);color:#fff;
+  font-family:var(--mono);font-size:12px;letter-spacing:.04em;font-weight:500;
+  padding:11px 18px;border-radius:var(--r-pill);text-decoration:none;box-shadow:var(--sh-3);
+  transition:top var(--t-base) var(--ease-net)}
+.skip:focus{top:12px;outline:2px solid var(--blue);outline-offset:3px}
+
+/* ---------- révélation par masque (kinetic) ---------- */
+/* padding-bottom = garde-fou anti-rognage des jambages (g,j,p,q) pendant et après le reveal ; marge négative compensatoire pour ne pas perturber le rythme vertical */
+.line{overflow:hidden;display:block;padding-bottom:.12em;margin-bottom:-.12em}
+.line>span{display:block;transform:translateY(110%);transition:transform var(--t-reveal) var(--ease-net)}
+.in .line>span,.line.in>span{transform:translateY(0)}
+.line.l2>span{transition-delay:.08s}
+.line.l3>span{transition-delay:.16s}
+.line.l4>span{transition-delay:.24s}
+
+/* stagger mot par mot */
+.kw{display:inline-block}
+.kw>i{display:inline-block;font-style:normal;transform:translateY(110%);opacity:0;transition:transform var(--t-reveal) var(--ease-net),opacity var(--t-reveal) var(--ease-net)}
+.in .kw>i,.kw.in>i{transform:translateY(0);opacity:1}
+.kw>i.s1{transition-delay:.00s}.kw>i.s2{transition-delay:.06s}.kw>i.s3{transition-delay:.12s}
+.kw>i.s4{transition-delay:.18s}.kw>i.s5{transition-delay:.24s}.kw>i.s6{transition-delay:.30s}
+.kw>i.s7{transition-delay:.36s}.kw>i.s8{transition-delay:.42s}
+
+/* tracking-in premium pour le mot accent */
+.trin{display:inline-block;letter-spacing:.06em;transition:letter-spacing var(--t-trace) var(--ease-net) .2s}
+.in .trin,.trin.in{letter-spacing:-.04em}
+
+/* filet dégradé orange->bleu tracé sous un mot accent */
+.underx{position:relative;display:inline-block;white-space:nowrap}
+.underx::after{content:"";position:absolute;left:0;right:0;bottom:-.06em;height:.07em;border-radius:6px;
+  background:linear-gradient(90deg,var(--orange),var(--blue));
+  transform:scaleX(0);transform-origin:left;transition:transform var(--t-trace) var(--ease-net) .45s}
+.in .underx::after,.underx.in::after{transform:scaleX(1)}
+
+.dotorange{color:var(--orange)}
+
+/* reveal sobre des composants */
+.r{opacity:0;transform:translateY(18px);transition:opacity var(--t-reveal) var(--ease-net),transform var(--t-reveal) var(--ease-net)}
+.r.in{opacity:1;transform:none}
+.r.d1{transition-delay:.08s}.r.d2{transition-delay:.16s}.r.d3{transition-delay:.24s}.r.d4{transition-delay:.32s}
+.r.d5{transition-delay:.40s}.r.d6{transition-delay:.48s}
+
+/* progress — filet vivant : la lumière respire légèrement le long du trait */
+.prog{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--orange),var(--blue));z-index:200;transition:width .12s linear;transform-origin:left}
+.prog::after{content:"";position:absolute;top:0;right:0;width:64px;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85));
+  opacity:0;transition:opacity var(--t-base) var(--ease-soft)}
+.prog.live::after{opacity:.6;animation:progGlow 2.4s var(--ease-soft) infinite}
+@keyframes progGlow{0%,100%{opacity:.25}50%{opacity:.7}}
+
+/* ============================================================
+   VIE AMBIANTE — accents qui respirent / dérivent très légèrement
+   transform/opacity only · amplitudes minuscules · jamais clignotant
+   ============================================================ */
+/* le point final orange (.dotorange) du titre HÉRO uniquement : respiration rare et
+   imperceptible une fois révélé (on évite de l'animer sur chaque titre → trop présent) */
+.hero.in h1 .dotorange{display:inline-block;animation:dotLive 5.5s var(--ease-soft) 1.2s infinite}
+@keyframes dotLive{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-.5px) scale(1.07)}}
+
+/* halo orange vivant derrière le hero — dérive très lente, transform only,
+   petit, jamais de blur sur grande surface (radial-gradient net, pas de filter) */
+.hero{position:relative}
+.hero-halo{position:absolute;top:-6%;right:4%;width:clamp(280px,34vw,520px);height:clamp(280px,34vw,520px);
+  border-radius:50%;pointer-events:none;z-index:0;opacity:0;
+  background:radial-gradient(circle at 50% 50%,rgba(243,154,27,.16),rgba(243,154,27,.05) 42%,transparent 68%);
+  transform:translate3d(0,0,0) scale(.9);
+  transition:opacity 1.2s var(--ease-net) .3s,transform 1.2s var(--ease-net) .3s}
+.hero.in .hero-halo{opacity:1;transform:translate3d(0,0,0) scale(1);animation:haloDrift 22s ease-in-out 1.4s infinite}
+@keyframes haloDrift{0%,100%{transform:translate3d(0,0,0) scale(1)}33%{transform:translate3d(-18px,14px,0) scale(1.05)}66%{transform:translate3d(12px,-10px,0) scale(.97)}}
+.hero .wrap{position:relative;z-index:2}
+
+
+/* ============================================================
+   SIGNATURE — séparateur "capsule de marque" entre sections
+   un filet fin centré sur une capsule orange→bleu qui se dessine
+   (scaleX du filet · la capsule respire). transform/opacity only.
+   ============================================================ */
+.sig-sep{display:flex;align-items:center;justify-content:center;gap:0;
+  margin:0 auto;max-width:1180px;padding:0 var(--gutter)}
+.sig-sep .ln{height:1px;flex:1;transform:scaleX(0);transform-origin:var(--o,left);
+  background:linear-gradient(90deg,transparent,var(--line3));
+  transition:transform var(--t-trace) var(--ease-net) .1s}
+.sig-sep .ln.r2{--o:right;background:linear-gradient(90deg,var(--line3),transparent)}
+.sig-sep.in .ln,.in .sig-sep .ln{transform:scaleX(1)}
+.sig-sep .cap{flex:none;width:30px;height:13px;margin:0 16px;border-radius:999px;
+  background:linear-gradient(115deg,var(--orange),var(--blue));
+  box-shadow:0 8px 18px -12px rgba(0,80,230,.6);
+  transform:scale(0) rotate(-12deg);opacity:0;
+  transition:transform .7s var(--ease-snap) .35s,opacity .5s var(--ease-net) .35s}
+.sig-sep.in .cap,.in .sig-sep .cap{transform:scale(1) rotate(-12deg);opacity:1;
+  animation:sigCapBreath 6s var(--ease-soft) 1.4s infinite}
+@keyframes sigCapBreath{0%,100%{transform:scale(1) rotate(-12deg)}50%{transform:scale(1.08) rotate(-9deg)}}
+/* perf : on suspend les respirations infinies quand l'élément quitte le viewport
+   (économie batterie + 60fps garanti). transform/opacity only, reduced-motion les coupe déjà. */
+.off-view .cap{animation-play-state:paused!important}
+.hero-media.off-view video{animation-play-state:paused!important}
+
+/* ============================================================
+   PICTOGRAMMES INTÉGRAL — SYSTÈME 100% SUR-MESURE (BESPOKE)
+   ------------------------------------------------------------
+   RÈGLE DE CONSTRUCTION SIGNATURE :
+   chaque picto est ASSEMBLÉ uniquement à partir de la CAPSULE de marque
+   (cellule "stadium" : rectangle aux deux bouts parfaitement arrondis,
+   ratio ~2.3:1, le même galet que le logo). Aucune forme libre.
+   · grille 24 · trait 1.7 · jointures rondes · bouts ronds
+   · DUOTONE : capsules bleues (corps) + UNE capsule orange "pleine"
+     récurrente (l'accent), avec parfois sa "couture" orange centrale
+     (le point de jonction des deux demi-pilules — l'ADN du logo).
+   · capsules inclinées à -12deg quand une lecture "humaine/lien" est voulue.
+   Résultat : famille reconnaissable au premier coup d'œil, jamais générique.
+   ============================================================ */
+.picto{width:var(--pz,40px);height:var(--pz,40px);display:block;overflow:visible}
+.picto *{fill:none;stroke:var(--blue);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
+  vector-effect:non-scaling-stroke}
+/* capsule = cellule de base. .cap-o : LA capsule accent, contour orange */
+.picto .acc{stroke:var(--orange)}
+/* capsule pleine orange (accent solide récurrent = signature forte) */
+.picto .fill-o{fill:var(--orange);stroke:none}
+.picto .dot{fill:var(--orange);stroke:none}        /* couture orange (jonction des 2 demi-pilules) */
+/* tracé : chaque capsule part "non dessinée" puis se trace au reveal du conteneur */
+.picto .draw{stroke-dasharray:var(--dl,120);stroke-dashoffset:var(--dl,120);
+  transition:stroke-dashoffset var(--t-trace) var(--ease-net) var(--dd,0s)}
+.in .picto .draw,.picto.in .draw{stroke-dashoffset:0}
+.picto .draw.w2{--dd:.12s}.picto .draw.w3{--dd:.24s}.picto .draw.w4{--dd:.36s}
+.picto .draw.w5{--dd:.48s}
+/* --rot : rotation de base de l'accent (par défaut 0). Comme la transform CSS
+   prime sur l'attribut SVG transform, on porte la rotation des accents animés
+   ici pour que pop/cap-live la COMPOSENT au lieu de l'écraser (zéro saut). */
+.picto .pop{transform:rotate(var(--rot,0deg)) scale(0);transform-box:fill-box;transform-origin:center;opacity:0;
+  transition:transform .5s var(--ease-snap) var(--dd,.4s),opacity .4s var(--ease-net) var(--dd,.4s)}
+.in .picto .pop,.picto.in .pop{transform:rotate(var(--rot,0deg)) scale(1);opacity:1}
+.picto .pop.w2{--dd:.5s}.picto .pop.w3{--dd:.6s}.picto .pop.w4{--dd:.7s}
+/* micro-vie au survol de la carte hôte : la capsule accent respire/pivote */
+.vcard:hover .picto .spin,.opl-cta:hover .picto .spin{animation:pictoSpin 1.1s var(--ease-net)}
+@keyframes pictoSpin{to{transform:rotate(360deg)}}
+/* la capsule accent "vit" très légèrement au survol (transform only) — compose la rotation de base */
+.vcard:hover .picto .cap-live,.sec-picto:hover .picto .cap-live{
+  animation:capLive .9s var(--ease-snap)}
+@keyframes capLive{
+  0%{transform:rotate(var(--rot,0deg)) scale(1)}
+  45%{transform:rotate(calc(var(--rot,0deg) - 3deg)) scale(1.14)}
+  100%{transform:rotate(var(--rot,0deg)) scale(1)}}
+.picto .cap-live{transform-box:fill-box;transform-origin:center;transform:rotate(var(--rot,0deg))}
+
+/* socle picto dans les cartes Valeurs : médaillon discret */
+.vcard .picto-w{width:46px;height:46px;border-radius:var(--r-md);background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;margin-bottom:18px;
+  transition:background var(--t-base) var(--ease-soft),transform var(--t-base) var(--ease-snap)}
+.vcard .picto-w .picto{--pz:26px}
+@media(min-width:781px){.vcard:hover .picto-w{background:#EAF1FF;transform:scale(1.06) rotate(-3deg)}}
+.vcard .picto-w .picto .spin{transform-box:fill-box;transform-origin:center}
+.vcard:hover .picto-w .picto .spin{animation:pictoSpin 1.1s var(--ease-net)}
+
+/* picto d'en-tête de section : posé à côté du kicker, discret */
+.sec-picto{display:none}
+.sec-picto .picto{--pz:30px}
+
+/* REDUCED MOTION : pictos figés/masqués, tout net (complément) */
+@media(prefers-reduced-motion:reduce){
+  .sig-sep .ln{transform:scaleX(1)!important}
+  .sig-sep .cap{transform:scale(1) rotate(-12deg)!important;opacity:1!important;animation:none!important}
+  .picto .draw{stroke-dashoffset:0!important;transition:none!important}
+  .picto .pop{transform:rotate(var(--rot,0deg)) scale(1)!important;opacity:1!important}
+  .picto .spin{animation:none!important;transform:none!important}
+  .picto .cap-live{animation:none!important;transform:rotate(var(--rot,0deg))!important}
+}
+
+/* ============================================================
+   SYSTÈME DE BOUTONS — premium, états soignés, micro-interactions
+   transform/opacity only · remplissage via pseudo (scale), pas de blur
+   ============================================================ */
+.btn{
+  --bx:0px;--by:0px; /* offset magnétique léger borné (piloté en JS) */
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  font-family:var(--font);font-weight:900;font-size:15px;letter-spacing:-.01em;line-height:1;
+  border:none;cursor:pointer;border-radius:var(--r-pill);
+  padding:15px 26px;text-decoration:none;position:relative;overflow:hidden;isolation:isolate;
+  -webkit-tap-highlight-color:transparent;
+  transform:translate3d(var(--bx),var(--by),0);
+  transition:transform var(--t-base) var(--ease-snap),box-shadow var(--t-base) var(--ease-net),color var(--t-fast) var(--ease-soft)}
+/* suivi magnétique : easing court non-overshoot pendant le mouvement (overshoot réservé hover/reset) */
+.btn.is-mag{transition:transform .12s var(--ease-soft),box-shadow var(--t-base) var(--ease-net),color var(--t-fast) var(--ease-soft)}
+.btn:hover{will-change:transform}
+.btn>span{position:relative;z-index:2;display:inline-flex;align-items:center;gap:9px;transition:transform var(--t-base) var(--ease-net)}
+/* flèche qui glisse — on isole la flèche du libellé */
+.btn .ar{display:inline-block;transition:transform var(--t-base) var(--ease-net)}
+.btn:hover .ar{transform:translateX(5px)}
+.btn:active{transition-duration:.06s}
+
+/* remplissage / inversion fluide via pseudo-élément (scaleY, transform only) */
+.btn::before{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;
+  transform:scaleY(0);transform-origin:bottom;
+  transition:transform var(--t-base) var(--ease-net)}
+.btn:hover::before{transform:scaleY(1)}
+
+/* PRIMAIRE : encre -> bleu (l'inversion arrive du bas) */
+.btn-primary{background:var(--ink);color:#fff;box-shadow:var(--sh-ink)}
+.btn-primary::before{background:var(--blue)}
+.btn-primary:hover{transform:translate3d(var(--bx),calc(var(--by) - 2px),0);box-shadow:var(--sh-blue)}
+.btn-primary:active{transform:translate3d(var(--bx),0,0) scale(.985);box-shadow:var(--sh-ink)}
+
+/* FANTÔME : contour encre -> remplissage encre + texte blanc */
+/* sync texte/remplissage : la couleur suit le ::before (--t-base + léger delay) pour éviter le flash blanc */
+.btn-ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 var(--bw-strong) var(--ink);transition:transform var(--t-base) var(--ease-snap),box-shadow var(--t-base) var(--ease-net),color var(--t-base) var(--ease-soft) .08s}
+.btn-ghost::before{background:var(--ink)}
+.btn-ghost:hover{color:#fff;box-shadow:inset 0 0 0 var(--bw-strong) var(--ink),var(--sh-2);transform:translate3d(var(--bx),calc(var(--by) - 2px),0)}
+.btn-ghost:active{transform:translate3d(var(--bx),0,0) scale(.985)}
+
+/* variante claire (sur fond sombre : sticky, footer) */
+.btn-light{background:#fff;color:var(--ink);box-shadow:var(--sh-2);transition:transform var(--t-base) var(--ease-snap),box-shadow var(--t-base) var(--ease-net),color var(--t-base) var(--ease-soft) .08s}
+.btn-light::before{background:var(--blue)}
+.btn-light:hover{color:#fff;box-shadow:var(--sh-3);transform:translate3d(var(--bx),calc(var(--by) - 2px),0)}
+.btn-light:active{transform:translate3d(var(--bx),0,0) scale(.985)}
+
+/* NAV — raffinée : filet qui s'affirme + ombre douce au scroll */
+.nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);border-bottom:var(--bw) solid var(--line);
+  transition:border-color var(--t-base) var(--ease-soft),box-shadow var(--t-base) var(--ease-soft),background var(--t-base) var(--ease-soft)}
+.nav.scrolled{border-color:var(--line2);box-shadow:var(--sh-nav);background:rgba(255,255,255,.97)}
+.nav-in{max-width:1180px;margin:0 auto;padding:13px var(--gutter);display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;position:relative}
+.brand img{height:38px;width:auto;transition:transform var(--t-slow) var(--ease-net)}
+.brand:hover img{transform:rotate(-5deg) scale(1.04)}
+.brand .tx{font-weight:900;font-size:16px;letter-spacing:-.03em;line-height:1.05}
+.brand .tx .o{color:var(--orange-text)}.brand .tx .b{color:var(--blue)}
+.brand .tx small{display:block;font-family:var(--mono);font-weight:500;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.nav-links{display:flex;gap:26px;margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.nav-links a{text-decoration:none;opacity:.78;position:relative;padding-bottom:4px;transition:opacity var(--t-fast) var(--ease-soft),color var(--t-fast) var(--ease-soft)}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:0;height:var(--underline-h);width:100%;border-radius:2px;background:linear-gradient(90deg,var(--orange),var(--blue));transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+.nav-links a:hover,.nav-links a.active{opacity:1;color:var(--ink)}
+.nav-links a:hover::after,.nav-links a.active::after{transform:scaleX(1)}
+.nav-links a.active::after{transform-origin:left}
+.nav .btn,.stickycta .btn{padding:11px 20px;font-size:14px}
+/* sous 980px : barre d'ancres scrollable (l'existant reste atteignable) */
+@media(max-width:980px){
+  .brand .tx small{display:none}
+  .nav-links{gap:6px;margin-left:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;max-width:100%;flex:1;justify-content:flex-end;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 100%);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 100%)}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-links a{flex:none;white-space:nowrap;padding:11px 10px;min-height:44px;display:inline-flex;align-items:center}
+  .nav-links a::after{bottom:8px;width:calc(100% - 20px);left:10px}
+}
+@media(max-width:600px){
+  .nav .btn,.stickycta .btn{padding:14px 18px}
+  /* compacter la barre : marque + ancres scrollables + CTA coexistent sur ~320px sans etrangler les ancres */
+  .nav-in{gap:12px;padding-left:16px;padding-right:16px}
+  .brand{gap:8px;flex:none}
+  .brand img{height:30px}
+  .brand .tx{font-size:14px}
+  .nav .btn{padding:13px 14px;font-size:13px}
+}
+@media(max-width:380px){
+  .nav-in{gap:8px}
+  .brand .tx{font-size:13px}
+  .nav .btn{padding:12px 12px}
+  .nav-links a{padding:11px 8px}
+}
+
+/* section scaffold */
+.block{padding:var(--section) 0;position:relative}
+.kicker{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:10px}
+.kicker .idx{color:var(--orange-text)}
+.kicker::before{content:"";width:22px;height:1px;background:var(--ink2);transform-origin:left;transform:scaleX(0);transition:transform var(--t-slow) var(--ease-net) .1s}
+.kicker.in::before,.in .kicker::before{transform:scaleX(1)}
+
+.lede{font-size:clamp(15px,1.2vw,18px);color:var(--ink2);max-width:var(--measure);margin:var(--s4) 0 0;font-weight:500;line-height:1.5;text-wrap:pretty}
+.lede b{font-weight:700;color:var(--ink)}
+/* second lede consécutif : rythme aéré (remplace les styles inline) */
+.lede+.lede,.lede-spaced{margin-top:var(--s5)}
+
+/* HERO */
+.hero{padding:var(--section) 0 var(--section-tight);overflow:hidden}
+.eyebrow{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:10px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+.hero h1{font-size:var(--giant);font-weight:900;letter-spacing:-.04em;line-height:.98;margin:var(--s3) 0 0;text-wrap:balance}
+.hero h1 .blue{color:var(--blue)}
+.hero .lede{margin-top:var(--s4)}
+.hero-cta{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s4)}
+.hero-cta.r{transition-delay:.5s}
+/* parallax multi-couches au scroll : porté par la MÉDIA hero (n'entre pas en conflit
+   avec les reveals .r/.line qui pilotent déjà transform). La vidéo dérive plus que
+   le texte → profondeur. Piloté JS via --hy. transform only. */
+/* vidéo hero bande cinématique 21:8 */
+.hero-media{margin-top:clamp(40px,6vh,72px);position:relative;border-radius:var(--r-md);overflow:hidden;background:var(--black);aspect-ratio:21/9;
+  box-shadow:var(--sh-3);--hmedia-s:1.03;
+  opacity:0;clip-path:inset(0 round var(--r-md));transform:translate3d(0,var(--hy,0px),0) scale(var(--hmedia-s));
+  transition:opacity var(--t-reveal) var(--ease-net) .45s,transform .8s var(--ease-net) .45s}
+.hero.in .hero-media{opacity:1;--hmedia-s:1}
+/* après l'entrée : la position parallax suit le scroll sans transition (réactif) */
+.hero-media.is-parallax{transition:none}
+/* la vidéo respire imperceptiblement à l'intérieur du cadre (Ken Burns ultra-léger) */
+.hero.in .hero-media video{animation:mediaBreath 26s ease-in-out 1.2s infinite}
+@keyframes mediaBreath{0%,100%{transform:scale(1.02)}50%{transform:scale(1.05)}}
+.hero-media video{width:100%;height:100%;object-fit:cover;display:block;opacity:1}
+/* léger filet intérieur pour ancrer la vidéo sur fond blanc */
+.hero-media::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);pointer-events:none}
+@media(max-width:680px){.hero-media{aspect-ratio:16/10}}
+/* KPIs alignés sous un filet 1px */
+
+/* transitions de section : un filet fin se trace au-dessus du kicker quand la section entre
+   → donne du rythme à l'enchaînement sans alourdir. scaleX only, accent orange→bleu. */
+.block .kicker,.values .kicker,.offilog-sec .kicker{position:relative}
+.block>.wrap>.kicker::after,.offilog-sec>.wrap>.kicker::after{content:"";position:absolute;left:0;top:-22px;height:2px;width:46px;border-radius:2px;background:linear-gradient(90deg,var(--orange),var(--blue));transform:scaleX(0);transform-origin:left;transition:transform var(--t-trace) var(--ease-net) .12s}
+.in>.wrap>.kicker::after,.kicker.in::after{transform:scaleX(1)}
+
+/* deux temps (problème / mécanisme) — porté par <h2 class="giant2"> */
+.giant2{font-size:var(--huge);font-weight:900;letter-spacing:-.04em;line-height:.98;margin-top:var(--s3);text-wrap:balance}
+.giant2 .orange{color:var(--orange)}
+.giant2 .blue{color:var(--blue)}
+/* contact : même police que les autres titres de section (plus d'inline style) */
+.contact-h2{font-size:var(--giant);line-height:.95;margin-top:18px}
+
+/* facture minimale — fond blanc explicite, lisibilité des chiffres préservée */
+.fac{margin-top:clamp(40px,5vh,60px);max-width:560px;background:#fff;border:var(--bw-strong) solid var(--line3);border-radius:var(--r-fac);padding:30px 30px 26px;display:flex;flex-direction:column}
+.fac-duo{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);margin-top:clamp(32px,4vh,48px);align-items:stretch}
+.fac-duo .fac{margin-top:0;max-width:none}
+/* Nos offres / partenaires labos */
+.part-grid{display:flex;flex-direction:column;gap:clamp(22px,3vh,34px);margin-top:clamp(32px,4vh,48px)}
+.part-group{border-top:1px solid var(--line);padding-top:14px}
+.part-lbl{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.part-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.part-chip{font-weight:800;font-size:clamp(16px,1.8vw,22px);letter-spacing:-.02em;color:var(--ink);padding:10px 18px;border:1px solid var(--line2);border-radius:var(--r-pill);transition:transform var(--t-base) var(--ease-net),border-color var(--t-base) var(--ease-soft),color var(--t-base) var(--ease-soft)}
+@media(hover:hover){.part-chip:hover{transform:translateY(-3px);border-color:var(--blue);color:var(--blue)}}
+/* mur de logos partenaires — carrousel qui défile proprement */
+.lwall-lbl{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:clamp(30px,4vh,48px)}
+.lwall{overflow:hidden;margin-top:18px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent)}
+.lwall-track{display:flex;align-items:center;gap:clamp(44px,6vw,96px);width:max-content;animation:lwallScroll 30s linear infinite}
+@media(hover:hover){.lwall:hover .lwall-track{animation-play-state:paused}}
+@keyframes lwallScroll{to{transform:translateX(-50%)}}
+.lwall-item{display:inline-flex;align-items:center;flex-shrink:0}
+.lwall-logo{height:38px;width:auto;max-width:150px;object-fit:contain;filter:grayscale(1);opacity:.5;transition:filter var(--t-base) var(--ease-net),opacity var(--t-base) var(--ease-net)}
+.lwall:hover .lwall-logo{opacity:.85}
+.lwall-logo:hover{filter:none;opacity:1}
+.lwall-txt{font-weight:800;font-size:clamp(18px,2vw,26px);letter-spacing:-.02em;color:var(--ink);opacity:.62}
+@media(prefers-reduced-motion:reduce){.lwall-track{animation:none;flex-wrap:wrap;justify-content:center;gap:28px}}
+@media(max-width:520px){.fac-duo{grid-template-columns:1fr;gap:16px}.fac{padding:22px 20px 20px}}
+@media(max-width:380px){.fac{padding:18px 16px 16px}.fac-row{gap:8px}.fac-row .lbl{font-size:13px;line-height:1.25}.fac-row .val{font-size:13px;white-space:nowrap}}
+@media(min-width:521px) and (max-width:720px){.fac-duo{gap:12px}.fac{padding:18px 16px}.fac-row{padding:10px 0;gap:8px}.fac-row .lbl{font-size:12.5px;line-height:1.25}.fac-row .val{font-size:12.5px;white-space:nowrap}.fac-total .lbl{font-size:13px}.fac-total .val{font-size:13.5px;white-space:nowrap}.fac-tag{font-size:10px;margin-bottom:14px}}
+.fac.good{border:var(--bw-strong) solid var(--ink)}
+/* la facture nette est l'élément-héros de la comparaison : réaction sobre au survol */
+.fac{transition:transform var(--t-base) var(--ease-net),box-shadow var(--t-base) var(--ease-net)}
+@media(hover:hover) and (min-width:521px){.fac.good:hover{transform:translateY(var(--lift-sm));box-shadow:var(--sh-2)}}
+.fac-tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;display:block}
+.fac.good .fac-tag{color:var(--ink)}
+.fac-row{display:flex;justify-content:space-between;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--line)}
+.fac-row .lbl{font-size:14px;color:var(--ink2)}
+.fac-row .val{font-family:var(--mono);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
+.fac-row.dim .lbl{color:var(--muted)}
+.fac-row .q{color:var(--orange-text)}
+.fac-row .ok{color:var(--blue)}
+/* facture floue : micro-vibrato des '??' — déclenché seulement quand la facture est révélée */
+.vibr{display:inline-block}
+.in .fac .vibr,.fac.in .vibr{animation:vibr 3s ease-in-out infinite}
+@keyframes vibr{0%,100%{transform:translate(0,0)}25%{transform:translate(.6px,-.5px)}50%{transform:translate(-.5px,.4px)}75%{transform:translate(.4px,.5px)}}
+/* facture good : ✓ qui s'impriment une à une */
+.fac.good .fac-row .val{overflow:hidden;display:inline-block}
+.fac.good .fac-row .val>span{display:inline-block;transform:translateY(110%);transition:transform .55s var(--ease-net)}
+.in .fac.good .fac-row .val>span,.fac.good.in .fac-row .val>span{transform:translateY(0)}
+.fac.good .fac-row:nth-child(2) .val>span{transition-delay:.08s}
+.fac.good .fac-row:nth-child(3) .val>span{transition-delay:.18s}
+.fac.good .fac-row:nth-child(4) .val>span{transition-delay:.28s}
+.fac.good .fac-row:nth-child(5) .val>span{transition-delay:.38s}
+.fac.good .fac-total .val>span{transition-delay:.5s}
+.fac-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:auto;padding-top:16px;border-top:2px solid var(--ink)}
+.fac-total .lbl{font-weight:900;font-size:15px;letter-spacing:-.02em}
+.fac-total .val{font-family:var(--mono);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.fac-total .val.q{color:var(--orange-text)}
+.fac-total .val.hl{color:var(--blue)}
+.fac.good .fac-total .val{overflow:hidden;display:inline-block}
+.fac.good .fac-total .val>span{display:inline-block;transform:translateY(110%);transition:transform .55s var(--ease-net)}
+.in .fac.good .fac-total .val>span,.fac.good.in .fac-total .val>span{transform:translateY(0)}
+
+/* LIEN-CTA premium : flèche qui glisse + soulignement net */
+.cta-line{display:inline-flex;align-items:center;gap:9px;min-height:44px;color:var(--blue);font-weight:900;font-size:15px;letter-spacing:-.01em;text-decoration:none;margin-top:var(--s4);position:relative;padding:8px 0}
+.cta-line span{display:inline-block;transition:transform var(--t-base) var(--ease-net)}
+.cta-line::after{content:"";position:absolute;left:0;bottom:6px;height:var(--underline-h);width:100%;border-radius:2px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+.cta-line:hover span{transform:translateX(5px)}
+.cta-line:hover::after{transform:scaleX(1)}
+
+/* LE GROUPE : carte interactive */
+.atlas-embed{width:100%;margin-top:clamp(40px,5vh,60px)}
+.atlas-embed iframe{width:100%;border:var(--bw) solid var(--line2);display:block;border-radius:var(--r-md);background:#fff;min-height:700px;box-shadow:var(--sh-2)}
+@media(max-width:880px){.atlas-embed iframe{min-height:560px}}
+@media(max-width:560px){.atlas-embed iframe{min-height:460px}}
+
+/* BANDE VIDÉO interstitielle (noir) */
+.videoband{position:relative;background:var(--black);overflow:hidden;min-height:clamp(360px,60vh,560px);display:flex;align-items:center}
+.videoband video,.videoband .vbposter{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.92}
+.videoband .ov{position:absolute;inset:0;background:linear-gradient(100deg,rgba(8,12,24,.82),rgba(8,12,24,.5) 55%,rgba(8,12,24,.42))}
+/* kicker de bande : un SEUL réglage (suppression du doublon plus bas). Amorce filet orange→bleu. */
+.videoband .vk{font-family:var(--mono);font-size:clamp(12px,1.2vw,14px);letter-spacing:.14em;text-transform:uppercase;color:#fff;display:inline-flex;align-items:center;gap:14px;margin-bottom:clamp(26px,3.5vh,40px)}
+.videoband .vk::before{content:"";width:30px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--orange),var(--blue));flex:none}
+.videoband .vstats{display:flex;flex-wrap:wrap;align-items:flex-end;gap:clamp(24px,3vw,38px) clamp(34px,5vw,76px)}
+/* chaque chiffre posé sur un filet vertical fin (sauf le dernier) : structure
+   de tableau de bord, cohérente avec les filets KPI hero / chiffres Offilog */
+.videoband .vs{position:relative;padding-right:clamp(24px,3vw,38px)}
+.videoband .vs:not(:last-child)::after{content:"";position:absolute;right:0;top:6px;bottom:8px;width:1px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.16) 28%,rgba(255,255,255,.16) 72%,transparent)}
+@media(max-width:600px){.videoband .vs::after{display:none!important}.videoband .vstats{gap:22px 0}.videoband .vs{padding-right:0;flex:1 1 100%}}
+@media(max-width:560px){.videoband .wrap{padding-left:20px;padding-right:20px}}
+.videoband .vs b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:clamp(46px,8vw,100px);letter-spacing:-.035em;line-height:.9;display:block;color:#fff}
+.videoband .vs b .u{color:var(--orange);font-size:.5em}
+/* un chiffre "mot" (ex. National) : Satoshi display, pas la mono à figures —
+   un long mot en face tabulaire détonne à 100px. Échelle réduite pour aligner les hauteurs visuelles. */
+.videoband .vs b.word{font-family:var(--font);font-weight:900;font-size:clamp(40px,6.6vw,82px);letter-spacing:-.045em}
+.videoband .vs span{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.92);display:block;margin-top:14px}
+.videoband .wrap{position:relative;z-index:3;color:#fff;padding:clamp(56px,10vh,110px) var(--gutter);transform:translateY(var(--par,0px))}
+/* scrim de texte localisé bas-gauche (protège libellés/chiffres sur pixels clairs, AA — pas de filter/blur) */
+.videoband .wrap::before{content:"";position:absolute;left:0;right:0;bottom:0;top:0;z-index:-1;pointer-events:none;background:linear-gradient(105deg,rgba(8,12,24,.62),rgba(8,12,24,.18) 58%,transparent 78%)}
+
+/* CONTACT */
+.contact-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:clamp(40px,6vw,84px);align-items:start;margin-top:clamp(46px,6vh,68px)}
+@media(max-width:900px){.contact-grid{grid-template-columns:1fr;gap:44px}}
+.cinfo .crow{padding:22px 0;border-bottom:var(--bw) solid var(--line)}
+.cinfo .crow:first-child{border-top:var(--bw) solid var(--line2)}
+.cinfo .l{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cinfo a,.cinfo .v{font-size:18px;font-weight:900;letter-spacing:-.02em;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;margin-top:6px;line-height:1.25;position:relative;transition:color var(--t-fast) var(--ease-soft)}
+/* lien identifiable au repos : soulignement permanent, qui s'affirme au survol */
+.cinfo a::after{content:"";position:absolute;left:0;bottom:8px;height:var(--underline-h);width:100%;background:var(--blue);transform:scaleX(1);transform-origin:left;border-radius:2px;opacity:.4;transition:transform var(--t-base) var(--ease-net),opacity var(--t-base) var(--ease-net)}
+.cinfo a:hover{color:var(--blue)}
+.cinfo a:hover::after{transform:scaleX(1);opacity:1}
+/* formulaire underline-only */
+.cform .fr{margin-bottom:26px}
+.cform label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;transition:color var(--t-fast) var(--ease-soft)}
+.cform label .req{color:var(--orange-text)}
+.cform label .opt{color:var(--muted2);text-transform:none;letter-spacing:0;font-weight:400}
+.cform .fr:focus-within label{color:var(--blue)}
+.cform .fr{position:relative}
+.cform input,.cform textarea{width:100%;font-family:var(--font);font-size:16px;color:var(--ink);background:transparent;border:none;border-bottom:1px solid var(--field-border);padding:8px 0;outline:none;transition:border-color var(--t-base) var(--ease-soft)}
+.cform input::placeholder,.cform textarea::placeholder{color:var(--muted2);transition:opacity var(--t-fast) var(--ease-soft)}
+.cform input:focus::placeholder,.cform textarea:focus::placeholder{opacity:.5}
+.cform input:focus,.cform textarea:focus{border-color:var(--ink)}
+.cform input.invalid,.cform textarea.invalid{border-color:#C2410C}
+/* filet accent qui se trace sous le champ actif (width-driven : robuste en reduced-motion) */
+.cform .fr::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:0;background:linear-gradient(90deg,var(--orange),var(--blue));transition:width var(--t-base) var(--ease-net)}
+.cform .fr:focus-within::after{width:100%}
+.cform .two{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+@media(max-width:520px){.cform .two{grid-template-columns:1fr}}
+.cform .btn{width:100%;justify-content:center;margin-top:10px}
+/* micro-feedback à l'envoi : le libellé bascule brièvement (transform/opacity only),
+   confirme l'action même si le client mail tarde à s'ouvrir */
+.cform .btn .lbl-sent{position:absolute;inset:0;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  opacity:0;transform:translateY(40%);transition:opacity var(--t-base) var(--ease-net),transform var(--t-base) var(--ease-net)}
+.cform .btn.is-sent>span{opacity:0;transform:translateY(-40%)}
+.cform .btn.is-sent .lbl-sent{opacity:1;transform:none;z-index:3}
+.cform .mini{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--muted);text-align:center;margin-top:18px}
+.cform .mini a{color:var(--blue);font-weight:500;text-decoration:none;border-bottom:var(--bw) solid currentColor}
+.cform .mini a:hover{color:var(--blue-d)}
+.cform .mini+.mini{margin-top:8px}
+.cform .form-feedback{font-family:var(--mono);font-size:12px;letter-spacing:.02em;color:var(--ink2);text-align:center;margin-top:14px;line-height:1.5}
+.cform .form-feedback a{color:var(--blue);font-weight:700}
+.cform .form-feedback[hidden]{display:none}
+
+/* FOOTER monumental */
+.foot{background:var(--black);color:#fff;padding:clamp(70px,10vh,120px) 0 clamp(40px,6vh,64px)}
+.foot .fbig{font-size:var(--big);font-weight:900;letter-spacing:-.04em;line-height:.98;text-wrap:balance}
+.foot .fbig .blue{color:#5e93ff}
+.foot .fmeta{margin-top:clamp(40px,6vh,64px);border-top:1px solid rgba(255,255,255,.14);padding-top:28px;display:flex;flex-wrap:wrap;gap:14px 30px;font-family:var(--mono);font-size:12px;letter-spacing:.03em;color:rgba(255,255,255,.6)}
+.foot .fmeta a{color:rgba(255,255,255,.85);text-decoration:none;position:relative;padding-bottom:2px;transition:color var(--t-fast) var(--ease-soft)}
+.foot .fmeta a::after{content:"";position:absolute;left:0;bottom:0;height:var(--underline-h);width:100%;border-radius:2px;background:rgba(255,255,255,.7);transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+.foot .fmeta a:hover{color:#fff}
+.foot .fmeta a:hover::after{transform:scaleX(1)}
+.foot .fmeta .sp{margin-left:auto}
+@media(max-width:560px){
+  .foot .fmeta .sp{margin-left:0}
+  /* zone tactile AA : liens footer cliquables sur 44px de haut */
+  .foot .fmeta a{min-height:44px;display:inline-flex;align-items:center}
+}
+
+/* STICKY CTA */
+.stickycta{position:fixed;left:0;right:0;bottom:0;z-index:150;background:var(--black);color:#fff;transform:translateY(115%);visibility:hidden;pointer-events:none;transition:transform .35s var(--ease-net),visibility 0s linear .35s}
+.stickycta.show{transform:none;visibility:visible;pointer-events:auto;transition:transform .35s var(--ease-net),visibility 0s}
+.stickycta .in{max-width:1180px;margin:0 auto;padding:13px var(--gutter);display:flex;align-items:center;gap:16px}
+.stickycta .t{font-weight:900;font-size:15px;letter-spacing:-.02em}
+.stickycta .t span{color:rgba(255,255,255,.6);font-weight:500;font-family:var(--mono);font-size:12px;letter-spacing:.03em}
+.stickycta .btn{margin-left:auto;white-space:nowrap}
+@media(max-width:600px){.stickycta .t span{display:none}.stickycta .in{padding:11px 20px}.stickycta .t{font-size:13px}}
+
+.hero-assise{font-size:clamp(17px,1.9vw,23px);font-weight:700;color:var(--ink);letter-spacing:-.02em;max-width:var(--measure);margin-top:var(--s4);line-height:1.28;text-wrap:balance}
+.hero-assise.r{transition-delay:.2s}
+
+/* ============================================================
+   VALEURS / RSE — bande humaine remontée (après le hero)
+   ============================================================ */
+.values{border-top:var(--bw) solid var(--line2);border-bottom:var(--bw) solid var(--line2);padding:var(--section-tight) 0}
+.values .vlede{font-size:clamp(17px,1.9vw,23px);font-weight:700;color:var(--ink);letter-spacing:-.02em;max-width:680px;margin-top:var(--s4);line-height:1.32;text-wrap:balance}
+.values .vlede b{color:var(--blue)}
+.val-grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:clamp(40px,6vh,64px);border-top:var(--bw) solid var(--line)}
+@media(max-width:780px){.val-grid{grid-template-columns:1fr}}
+.vcard{padding:30px 30px 30px;border-right:var(--bw) solid var(--line);position:relative;transition:transform var(--t-base) var(--ease-net)}
+.vcard:first-child{padding-left:0}
+.vcard:last-child{border-right:none}
+@media(max-width:780px){.vcard{border-right:none;border-bottom:var(--bw) solid var(--line);padding-left:0;padding-right:0}}
+/* survol sobre : remontée légère + filet accent qui se trace en haut */
+.vcard::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--orange),var(--blue));transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+@media(min-width:781px){.vcard:hover{transform:translateY(var(--lift-md))}.vcard:hover::before{transform:scaleX(1)}}
+.vcard .vn{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-text);font-weight:500}
+.vcard h3{font-size:clamp(24px,3vw,34px);font-weight:900;letter-spacing:-.03em;margin:14px 0 0;line-height:1}
+.vcard h3 .blue{color:var(--blue)}
+.vcard p{font-size:14px;color:var(--ink2);margin-top:12px;max-width:300px;line-height:1.5;text-wrap:pretty}
+
+/* ============================================================
+   OFFILOG — plateforme parapharmacie premium
+   accent doux propre à la section (vert/rosé très clair),
+   ancrage marque conservé. transform/opacity only.
+   ============================================================ */
+.offilog-sec{
+  --soft-ink:#5B6573;
+  background:linear-gradient(180deg,#FFFFFF 0%,#EFF5FC 100%);
+  border-top:var(--bw) solid var(--line2);border-bottom:var(--bw) solid var(--line2);
+  overflow:hidden;
+}
+.offilog-sec .kicker{color:var(--soft-ink)}
+.offilog-sec .kicker::before{background:var(--soft-ink)}
+.offilog-sec .giant2{color:var(--ink)}
+.offilog-sec .lede{color:var(--soft-ink)}
+.opl-name{display:inline-flex;align-items:baseline;gap:12px;margin-top:var(--s3);flex-wrap:wrap}
+.opl-name .opl-logo{font-size:clamp(30px,4.4vw,60px);font-weight:900;letter-spacing:-.045em;line-height:.95;color:var(--ink)}
+.opl-name .opl-tag{font-family:var(--mono);font-size:clamp(13px,1.4vw,16px);letter-spacing:-.01em;color:var(--soft-ink);font-weight:500}
+.opl-claim{font-size:clamp(16px,1.8vw,21px);font-weight:700;color:var(--ink);letter-spacing:-.02em;max-width:var(--measure);margin-top:var(--s4);line-height:1.3;text-wrap:balance}
+
+/* carrousel fluide de catégories — tuiles douces auto-suffisantes */
+.opl-rail{margin-top:clamp(40px,6vh,64px);overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.opl-track{display:flex;gap:var(--s3);width:max-content;transform:translateZ(0);animation:oplscroll 48s linear infinite}
+.opl-rail:hover .opl-track,.opl-rail:focus-within .opl-track{animation-play-state:paused}
+@keyframes oplscroll{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+.opl-tile{flex-shrink:0;width:clamp(150px,16vw,182px);border-radius:var(--r-lg);
+  background:#fff;border:var(--bw) solid var(--line);box-shadow:var(--sh-2);padding:22px 20px;display:flex;flex-direction:column;gap:16px;align-items:flex-start;transition:transform var(--t-base) var(--ease-net),box-shadow var(--t-base) var(--ease-net)}
+.opl-tile .ic{width:48px;height:48px;border-radius:var(--r-md);background:var(--surface2);display:flex;align-items:center;justify-content:center;transition:background var(--t-base) var(--ease-soft),transform var(--t-base) var(--ease-snap)}
+.opl-tile:hover .ic{background:#EAF1FF;transform:scale(1.08) rotate(-4deg)}
+/* icônes catégories : MÊME famille capsule que les pictos maison (duotone + accent orange) */
+.opl-tile .ic svg{width:24px;height:24px;stroke:var(--blue);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--t-base) var(--ease-net);overflow:visible}
+.opl-tile .ic svg .acc{stroke:var(--orange)}
+.opl-tile .ic svg .fill-o{fill:var(--orange);stroke:none}
+.opl-tile .ic svg .dot{fill:var(--orange);stroke:none}
+.opl-tile .ic svg .cap-live{transform-box:fill-box;transform-origin:center}
+.opl-tile .cn{font-weight:800;font-size:15px;letter-spacing:-.01em;color:var(--ink);line-height:1.2}
+.opl-tile:hover{transform:translateY(var(--lift-lg));box-shadow:var(--sh-3)}
+/* filet accent qui se trace en bas de la tuile survolée */
+.opl-tile{position:relative}
+.opl-tile::after{content:"";position:absolute;left:20px;right:20px;bottom:14px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--orange),var(--blue));transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+.opl-tile:hover::after{transform:scaleX(1)}
+/* tactile sans hover : défilement manuel des catégories (la moitié dupliquée reste atteignable) */
+@media(hover:none){
+  .opl-rail{overflow-x:auto;-webkit-overflow-scrolling:touch;-webkit-mask-image:none;mask-image:none}
+  .opl-track{animation:none}
+}
+
+/* chiffres-clés Offilog en ligne douce */
+.opl-facts{display:grid;grid-template-columns:repeat(3,1fr);margin-top:clamp(40px,6vh,64px);
+  border-top:1px solid rgba(0,0,0,.08)}
+@media(max-width:900px){.opl-facts{grid-template-columns:1fr 1fr}}
+.opl-fact{padding:24px 22px 4px;border-right:var(--bw) solid rgba(0,0,0,.07);transition:transform var(--t-base) var(--ease-net)}
+.opl-fact:first-child{padding-left:0}
+.opl-fact:last-child{border-right:none}
+@media(hover:hover){.opl-fact:hover{transform:translateY(-3px)}.opl-fact b{transition:color var(--t-fast) var(--ease-soft)}.opl-fact:hover b{color:var(--blue)}}
+@media(max-width:900px){.opl-fact:nth-child(2n){border-right:none}.opl-fact:nth-child(2n+1){padding-left:0}}
+.opl-fact b{font-family:var(--mono);font-size:clamp(27px,3.5vw,40px);font-weight:600;letter-spacing:-.02em;display:block;color:var(--ink)}
+.opl-fact b .u{color:var(--orange-text);font-size:.55em}
+.opl-fact span{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft-ink);font-weight:500;display:block;margin-top:8px}
+.offilog-sec .btn-ghost{border-color:var(--ink)}
+.opl-cta{margin-top:clamp(36px,5vh,52px)}
+
+/* ============================================================
+   ACCOMPAGNEMENT — minimal, distinctif (libellés + 1 CTA)
+   ============================================================ */
+.acc-row{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:clamp(34px,5vh,48px)}
+.acc-chip{display:inline-flex;align-items:center;gap:10px;min-height:44px;border:var(--bw-strong) solid var(--ink);border-radius:999px;
+  padding:13px 22px;font-weight:900;font-size:clamp(15px,1.7vw,19px);letter-spacing:-.02em;color:var(--ink);
+  background:transparent;transition:transform var(--t-base) var(--ease-snap),background var(--t-fast) var(--ease-soft),color var(--t-fast) var(--ease-soft)}
+.acc-chip .acc-n{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--orange-text);letter-spacing:.04em}
+.acc-chip:hover{transform:translateY(var(--lift-sm));background:var(--ink);color:#fff}
+.acc-chip:hover .acc-n{color:var(--orange)}
+.acc-chip:active{transform:translateY(0) scale(.98);transition-duration:.06s}
+/* Carrières (06) : variante surface claire pour distinguer la section
+   d'Accompagnement (05) au scan rapide — bordure fine + fond doux au repos,
+   même hover encre/blanc. Visuel uniquement. */
+.acc-row.careers .acc-chip{background:var(--surface2);border:var(--bw) solid var(--line2)}
+.acc-row.careers .acc-chip:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* REDUCED MOTION : tout posé net — fallback complet */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .r{opacity:1!important;transform:none!important}
+  .line>span,.kw>i{transform:none!important;opacity:1!important}
+  .trin{letter-spacing:-.04em!important}
+  .underx::after{transform:scaleX(1)!important}
+  .kicker::before,.vcard::before{transform:scaleX(1)!important}
+  .hero-media{opacity:1!important;transform:none!important;clip-path:none!important}
+  .fac.good .fac-row .val>span,.fac.good .fac-total .val>span{transform:none!important}
+  /* carrousel : pas d'animation, défilement manuel possible */
+  .opl-track{animation:none!important}
+  .opl-rail{overflow-x:auto!important;-webkit-mask-image:none!important;mask-image:none!important}
+  /* le filet du champ est piloté en width (pas en transform) : il reste neutre au repos */
+  .cform .fr::after{width:0}
+  .cform .fr:focus-within::after{width:100%}
+  /* sticky CTA : apparition instantanée au lieu de rester hors-écran */
+  .stickycta.show{transform:none!important;visibility:visible!important;pointer-events:auto!important}
+  /* boutons : pas de remplissage animé, on garde l'état au repos lisible ; offset magnétique neutralisé */
+  .btn{--bx:0px!important;--by:0px!important}
+  .btn::before{transform:scaleY(0)!important}
+  .btn,.btn:hover,.btn:active{transform:none!important}
+  .btn .ar,.cta-line span,.btn>span{transform:none!important}
+  .videoband .wrap{transform:none!important}
+  /* --- VIE AMBIANTE : tout posé net, aucune dérive/respiration --- */
+  .prog::after{opacity:0!important}
+  .prog.live::after{animation:none!important;opacity:0!important}
+  .hero.in h1 .dotorange{animation:none!important;transform:none!important}
+  .hero-halo{display:none!important}
+  .hero-media{transform:none!important;--hy:0px!important;--hmedia-s:1!important}
+  .hero.in .hero-media video{animation:none!important;transform:none!important}
+  .opl-tile::after{transform:scaleX(0)!important}
+  /* filets de section : tracés une fois (état final), sans animation */
+  .block>.wrap>.kicker::after,.offilog-sec>.wrap>.kicker::after,.kicker.in::after{transform:scaleX(1)!important;transition:none!important}
+}
+
+/* tracking display : relâcher le serrage en petit corps (mobile) */
+@media(max-width:600px){
+  .hero h1,.giant2,.foot .fbig{letter-spacing:-.02em}
+  .in .trin,.trin.in,.trin{letter-spacing:-.02em}
+}
+/* ---- AJUSTEMENTS TACTILES / ANTI-DEBORDEMENT (mobile fin) ---- */
+@media(max-width:420px){
+  /* CTA hero : pleine largeur => cibles tactiles franches, plus de wrap demi-largeur bancal */
+  .hero-cta{flex-direction:column;align-items:stretch;gap:12px}
+  .hero-cta .btn{width:100%}
+}
+/* filet de securite : les TRES longs mots d'affichage (parapharmacie/laboratoires/Approvisionnement)
+   peuvent se couper proprement plutot que deborder sur <=340px */
+@media(max-width:360px){
+  .giant2,.hero h1,.opl-name .opl-logo{overflow-wrap:break-word}
+}
+</style>
+</head>
+<body>
+
+<!-- Fond blanc propre : aucune couche de motion de fond. -->
+
+<a href="#hero" class="skip">Aller au contenu</a>
+
+<div class="prog" id="prog" aria-hidden="true"></div>
+
+<!-- NAV -->
+<nav class="nav" id="nav" aria-label="Navigation principale">
+  <div class="nav-in">
+    <a href="#" class="brand" id="brand">
+      <img src="assets/logo.png" alt="">
+      <span class="tx"><span class="o">Intégral</span> <span class="b">Pharma</span><small>Grossiste-répartiteur</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="#valeurs">Valeurs</a>
+      <a href="#offres">Offres</a>
+      <a href="#groupe">Le groupe</a>
+      <a href="#offilog">Offilog</a>
+      <a href="#accompagnement">Accompagnement</a>
+      <a href="#carrieres">Carrières</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <a href="#contact" class="btn btn-primary"><span>Nous écrire <i class="ar" aria-hidden="true">→</i></span></a>
+  </div>
+</nav>
+
+<!-- 1) HERO -->
+<header class="hero r" id="hero">
+  <div class="hero-halo" aria-hidden="true"></div>
+  <div class="wrap">
+    <span class="eyebrow r"><span class="dot" aria-hidden="true"></span>Grossiste-répartiteur · National</span>
+    <h1>
+      <span class="line"><span>Plus de marge,</span></span>
+      <span class="line l2"><span>sur chaque <span class="underx blue trin">commande<span class="dotorange">.</span></span></span></span>
+    </h1>
+    <p class="hero-assise r d1">De meilleures conditions, dès la 1<sup>re</sup>&nbsp;boîte — adaptées à chaque officine.</p>
+    <div class="hero-cta r">
+      <a href="#contact" class="btn btn-primary"><span>Demander nos conditions <i class="ar" aria-hidden="true">→</i></span></a>
+      <a href="#groupe" class="btn btn-ghost"><span>Découvrir le groupe</span></a>
+    </div>
+    <div class="hero-media">
+      <video id="heroVid" autoplay muted playsinline preload="auto" poster="assets/poster.jpg"><source src="assets/clip3.mp4" type="video/mp4"></video>
+    </div>
+  </div>
+</header>
+
+<!-- 01 VALEURS / RSE — remontées juste après le hero -->
+<section id="valeurs" class="values r">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">01</span> Valeurs</span>
+    <h2 class="sr-h2">Nos valeurs</h2>
+    <p class="vlede r d1">Défendre <b>l'officine indépendante</b>, près de chez vous, par des femmes et des hommes qui connaissent votre métier.</p>
+    <div class="val-grid">
+      <div class="vcard r d2">
+        <span class="picto-w" aria-hidden="true">
+          <!-- CONFIANCE — deux capsules-marque qui s'emboîtent (le lien direct),
+               soudées par la couture orange centrale (jonction des 2 demi-pilules) -->
+          <svg class="picto" viewBox="0 0 24 24" focusable="false">
+            <!-- capsule gauche, inclinée vers le centre -->
+            <rect class="draw" style="--dl:46" x="2.4" y="8.4" width="13" height="7.2" rx="3.6" transform="rotate(-16 8.9 12)"/>
+            <!-- capsule droite, inclinée en miroir : elles se recouvrent au centre -->
+            <rect class="draw w2" style="--dl:46" x="8.6" y="8.4" width="13" height="7.2" rx="3.6" transform="rotate(16 15.1 12)"/>
+            <!-- couture orange : le point de jonction, la confiance -->
+            <circle class="dot pop w2" cx="12" cy="12" r="1.7"/>
+          </svg>
+        </span>
+        <div class="vn">01</div>
+        <h3 class="blue">Confiance</h3>
+        <p>Une relation directe, sans intermédiaire, qui s'inscrit dans la durée.</p>
+      </div>
+      <div class="vcard r d3">
+        <span class="picto-w" aria-hidden="true">
+          <!-- ENGAGEMENT — une capsule verticale "plantée/ancrée" (parole tenue,
+               présence sur le territoire) ; la capsule accent orange est plantée
+               dedans : l'engagement pris et tenu. -->
+          <svg class="picto" viewBox="0 0 24 24" focusable="false">
+            <!-- capsule-marque debout (le pilier engagé) -->
+            <rect class="draw" style="--dl:52" x="8.4" y="2.6" width="7.2" height="18.8" rx="3.6"/>
+            <!-- couture orange à la jonction des 2 demi-pilules -->
+            <line class="draw w3 acc" style="--dl:7" x1="8.4" y1="12" x2="15.6" y2="12"/>
+            <!-- capsule accent orange pleine : l'acte d'engagement, planté au cœur -->
+            <rect class="fill-o pop w2 cap-live" x="9.9" y="13.6" width="4.2" height="5.4" rx="2.1"/>
+          </svg>
+        </span>
+        <div class="vn">02</div>
+        <h3>Engagement</h3>
+        <p>Aux côtés des pharmaciens, partout sur le territoire français.</p>
+      </div>
+      <div class="vcard r d4">
+        <span class="picto-w" aria-hidden="true">
+          <!-- RESPECT — une grande capsule-marque qui en abrite une petite,
+               orange et pleine : protéger, prendre soin de l'autre (l'officine,
+               l'équipe, le patient). La capsule contenue est l'accent. -->
+          <svg class="picto" viewBox="0 0 24 24" focusable="false">
+            <!-- capsule enveloppe (le soin porté), couchée -->
+            <rect class="draw" style="--dl:54" x="2.4" y="6.6" width="19.2" height="10.8" rx="5.4"/>
+            <!-- capsule accent orange pleine, abritée au centre -->
+            <rect class="fill-o pop w2 cap-live" x="9.2" y="9.4" width="5.6" height="5.2" rx="2.6"/>
+          </svg>
+        </span>
+        <div class="vn">03</div>
+        <h3>Respect</h3>
+        <p>De chaque officine, de chaque équipe, de chaque patient servi.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 NOS OFFRES — partenaires génériques -->
+<section id="offres" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">02</span> Nos offres</span>
+    <h2 class="giant2 r">
+      <span class="line"><span>Les plus grands</span></span>
+      <span class="line l2"><span class="blue">laboratoires<span class="dotorange">.</span></span></span>
+    </h2>
+    <p class="lede r d1">Génériques, princeps et parapharmacie. <b>Plus de marge et de meilleures conditions</b> sur chaque commande, dès la première boîte.</p>
+    <span class="lwall-lbl r d1">Une sélection de nos partenaires</span>
+    <div class="lwall r d1">
+      <div class="lwall-track" id="lwallTrack">
+        <span class="lwall-item"><img class="lwall-logo" src="https://logo.clearbit.com/zentiva.com" alt="Zentiva" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="lwall-txt" style="display:none">Zentiva</span></span>
+        <span class="lwall-item"><img class="lwall-logo" src="https://logo.clearbit.com/tevapharm.com" alt="Teva" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="lwall-txt" style="display:none">Teva</span></span>
+        <span class="lwall-item"><img class="lwall-logo" src="https://logo.clearbit.com/eglabo.fr" alt="EG Labo" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="lwall-txt" style="display:none">EG Labo</span></span>
+        <span class="lwall-item"><img class="lwall-logo" src="https://logo.clearbit.com/zyduslife.com" alt="Zydus" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="lwall-txt" style="display:none">Zydus</span></span>
+        <span class="lwall-item"><img class="lwall-logo" src="https://logo.clearbit.com/viatris.com" alt="Viatris" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="lwall-txt" style="display:none">Viatris</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- signature : séparateur capsule de marque -->
+<div class="sig-sep r" aria-hidden="true"><span class="ln"></span><span class="cap"></span><span class="ln r2"></span></div>
+
+<!-- 03 LE GROUPE -->
+<section id="groupe" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">03</span> Le groupe<span class="sec-picto" aria-hidden="true">
+      <!-- LE GROUPE / RÉSEAU — un maillage de capsules-marque (les sites)
+           reliées par des filets ; au cœur, LA capsule orange pleine (le hub).
+           Les nœuds ne sont pas des points génériques : ce sont des capsules. -->
+      <svg class="picto" viewBox="0 0 24 24" focusable="false">
+        <!-- filets de liaison (le réseau qui se trace) -->
+        <path class="draw w3" style="--dl:34" d="M5 6l7 6-7 6"/>
+        <path class="draw w4" style="--dl:34" d="M19 6l-7 6 7 6"/>
+        <!-- capsules-sites aux extrémités (inclinées : vivantes) -->
+        <rect class="draw" style="--dl:18" x="2.2" y="3.4" width="6.4" height="3.4" rx="1.7" transform="rotate(-12 5.4 5.1)"/>
+        <rect class="draw" style="--dl:18" x="15.4" y="3.4" width="6.4" height="3.4" rx="1.7" transform="rotate(12 18.6 5.1)"/>
+        <rect class="draw w2" style="--dl:18" x="2.2" y="17.2" width="6.4" height="3.4" rx="1.7" transform="rotate(12 5.4 18.9)"/>
+        <rect class="draw w2" style="--dl:18" x="15.4" y="17.2" width="6.4" height="3.4" rx="1.7" transform="rotate(-12 18.6 18.9)"/>
+        <!-- hub central : capsule accent orange pleine -->
+        <rect class="fill-o pop w2 cap-live" x="8.6" y="10" width="6.8" height="4" rx="2"/>
+      </svg></span></span>
+    <h2 class="giant2 r">
+      <span class="line"><span class="kw"><i class="s1">N</i><i class="s2">a</i><i class="s3">t</i><i class="s4">i</i><i class="s5">o</i><i class="s6">n</i><i class="s7">a</i><i class="s8">l</i></span><span class="dotorange">.</span></span>
+    </h2>
+    <p class="lede r d1">Grossiste-répartiteur de première intention, à vos côtés depuis plus de 20&nbsp;ans.</p>
+    <div class="atlas-embed r d1">
+      <iframe id="atlasFrame" src="map-component.html" title="Carte interactive des établissements Intégral Pharma" loading="lazy" scrolling="no"></iframe>
+    </div>
+
+    <p class="lede lede-spaced r d1">D'une livraison par semaine à une livraison par jour : un rythme calé sur votre officine.</p>
+  </div>
+</section>
+
+<!-- BANDE VIDÉO (interstitiel) -->
+<section class="videoband r" id="videoband">
+  <div class="vbposter" aria-hidden="true" style="background:#0A0A0B;opacity:1"></div>
+  <video id="bandVid" autoplay muted playsinline preload="metadata" poster="assets/poster.jpg"><source src="assets/band.mp4" type="video/mp4"></video>
+  <div class="ov"></div>
+  <div class="wrap">
+    <span class="vk">Au plus près des officines · partout en France</span>
+    <div class="vstats">
+      <div class="vs"><b data-count="20" data-prefix="+">+20</b><span>ans d'expérience</span></div>
+      <div class="vs"><b data-count="9">9</b><span>agences de proximité</span></div>
+      <div class="vs"><b class="word">National</b><span>présent partout</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 OFFILOG — plateforme parapharmacie premium -->
+<section id="offilog" class="offilog-sec block r">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">04</span> Parapharmacie</span>
+    <h2 class="giant2 r">
+      <span class="line"><span>Toute la</span></span>
+      <span class="line l2"><span class="blue">parapharmacie<span class="dotorange">.</span></span></span>
+    </h2>
+    <div class="opl-name r d1">
+      <span class="opl-logo">Offilog</span>
+      <span class="opl-tag">— notre plateforme dédiée</span>
+    </div>
+    <p class="opl-claim r d2">Toute votre parapharmacie commandée au même endroit, dans les mêmes conditions.</p>
+
+    <!-- carrousel de catégories -->
+    <div class="opl-rail r d3" tabindex="0" role="group" aria-label="Catégories de la parapharmacie Offilog (défilement)">
+      <!-- catégories : MÊME ADN capsule que les pictos maison — chaque tuile
+           = capsules bleues + 1 accent orange (capsule pleine ou couture). -->
+      <div class="opl-track" id="oplTrack" role="list" aria-label="Catégories de parapharmacie">
+        <!-- SOLAIRES : capsule-soleil au centre + capsules-rayons, accent orange = le soleil -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="fill-o cap-live" cx="12" cy="12" r="3.6"/><rect x="11" y="1.6" width="2" height="4.4" rx="1"/><rect x="11" y="18" width="2" height="4.4" rx="1"/><rect x="1.6" y="11" width="4.4" height="2" rx="1"/><rect x="18" y="11" width="4.4" height="2" rx="1"/><rect x="4" y="4" width="2" height="3.6" rx="1" transform="rotate(-45 5 5.8)"/><rect x="18" y="16.4" width="2" height="3.6" rx="1" transform="rotate(-45 19 18.2)"/><rect x="18" y="4" width="2" height="3.6" rx="1" transform="rotate(45 19 5.8)"/><rect x="4" y="16.4" width="2" height="3.6" rx="1" transform="rotate(45 5 18.2)"/></svg></span><span class="cn">Solaires</span></div>
+        <!-- SOIN DU VISAGE : grande capsule (le galet de soin) + couture orange + petite capsule accent (la goutte) -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6.5" width="18" height="11" rx="5.5"/><line class="acc" x1="12" y1="6.5" x2="12" y2="17.5"/><rect class="fill-o cap-live" x="14.2" y="10" width="4" height="4" rx="2"/></svg></span><span class="cn">Soin du visage</span></div>
+        <!-- HYGIÈNE & CORPS : flacon-capsule debout + capsule-bouchon orange (la pompe) -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6.5" y="8.5" width="11" height="13" rx="3.5"/><rect class="fill-o cap-live" x="9.5" y="3.2" width="5" height="3.4" rx="1.7"/><line x1="12" y1="6.6" x2="12" y2="8.5"/></svg></span><span class="cn">Hygiène & corps</span></div>
+        <!-- BÉBÉ & MAMAN : grande capsule qui en abrite une petite orange (protéger / câliner) -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="2.5" y="7" width="19" height="10" rx="5"/><rect class="fill-o cap-live" x="9" y="9.6" width="6" height="4.8" rx="2.4"/></svg></span><span class="cn">Bébé & maman</span></div>
+        <!-- CHEVEUX : trois capsules-mèches qui ondulent, la centrale orange -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4.4" y="3" width="3.6" height="18" rx="1.8" transform="rotate(10 6.2 12)"/><rect class="fill-o cap-live" x="10.2" y="3" width="3.6" height="18" rx="1.8" transform="rotate(-8 12 12)"/><rect x="16" y="3" width="3.6" height="18" rx="1.8" transform="rotate(10 17.8 12)"/></svg></span><span class="cn">Cheveux</span></div>
+        <!-- COMPLÉMENTS : LA capsule de marque par excellence — bicolore (bleu contour / orange plein) -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-32 12 12)"/><path class="fill-o cap-live" d="M9.94 18.36a4 4 0 01-5.66-5.66l3.18-3.18 5.66 5.66z" transform="rotate(-32 12 12)"/></svg></span><span class="cn">Compléments</span></div>
+        <!-- BIO & NATUREL : deux capsules-feuilles + tige + couture orange (la nervure) -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="11" y="4" width="2" height="17" rx="1"/><rect x="8" y="6.2" width="9" height="4.6" rx="2.3" transform="rotate(-32 12.5 8.5)"/><rect class="fill-o cap-live" x="8" y="11.2" width="9" height="4.6" rx="2.3" transform="rotate(32 12.5 13.5)"/></svg></span><span class="cn">Bio & naturel</span></div>
+        <!-- VÉTÉRINAIRE : capsule-corps + capsule-tête + capsules-oreilles, accent orange = museau -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="10" width="12" height="9" rx="4.5"/><rect x="4.4" y="4.8" width="3.4" height="6" rx="1.7" transform="rotate(-22 6.1 7.8)"/><rect x="16.2" y="4.8" width="3.4" height="6" rx="1.7" transform="rotate(22 17.9 7.8)"/><rect class="fill-o cap-live" x="10" y="13.6" width="4" height="3" rx="1.5"/></svg></span><span class="cn">Vétérinaire</span></div>
+        <!-- BUCCO-DENTAIRE : brosse = manche-capsule + tête-capsule, accent orange = les poils -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="14.4" width="18" height="3.6" rx="1.8" transform="rotate(-22 12 16.2)"/><rect class="fill-o cap-live" x="14.4" y="4.4" width="6.4" height="3.4" rx="1.7" transform="rotate(-22 17.6 6.1)"/></svg></span><span class="cn">Bucco-dentaire</span></div>
+        <!-- MINCEUR / ÉNERGIE : trois capsules qui décroissent + couture orange (l'élan) -->
+        <div class="opl-tile" role="listitem"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="14" height="3.4" rx="1.7"/><rect class="fill-o cap-live" x="5" y="11.3" width="10" height="3.4" rx="1.7"/><rect x="7" y="16.6" width="6" height="3.4" rx="1.7"/></svg></span><span class="cn">Compléments minceur</span></div>
+      </div>
+    </div>
+
+    <!-- chiffres-clés Offilog -->
+    <div class="opl-facts">
+      <div class="opl-fact r d3"><b class="mono" data-count="14000" data-prefix="+" data-sep>+14&nbsp;000</b><span>Références disponibles</span></div>
+      <div class="opl-fact r d3"><b class="mono" data-count="430" data-prefix="+">+430</b><span>Laboratoires</span></div>
+      <div class="opl-fact r d4"><b class="mono">0<span class="u">€</span></b><span>Sans adhésion</span></div>
+    </div>
+
+    <div class="opl-cta r d4">
+      <a href="#contact" class="btn btn-ghost" data-intent="Je souhaite découvrir Offilog (parapharmacie)."><span>Découvrir Offilog <i class="ar" aria-hidden="true">→</i></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- signature : séparateur capsule de marque -->
+<div class="sig-sep r" aria-hidden="true"><span class="ln"></span><span class="cap"></span><span class="ln r2"></span></div>
+
+<!-- 05 ACCOMPAGNEMENT — minimal, distinctif -->
+<section id="accompagnement" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">05</span> Accompagnement<span class="sec-picto" aria-hidden="true">
+      <!-- ACCOMPAGNEMENT — trois capsules-marque qui montent en marches
+           (le projet qu'on porte étape par étape) ; la capsule du sommet est
+           l'accent orange plein : l'objectif atteint, guidé jusqu'au bout. -->
+      <svg class="picto" viewBox="0 0 24 24" focusable="false">
+        <rect class="draw" style="--dl:30" x="2.4" y="15.6" width="8.4" height="3.8" rx="1.9"/>
+        <rect class="draw w2" style="--dl:30" x="6.4" y="10.4" width="8.4" height="3.8" rx="1.9"/>
+        <!-- sommet : capsule accent orange pleine, légèrement redressée -->
+        <rect class="fill-o pop w2 cap-live" style="--rot:-8deg" x="11.2" y="5" width="8.4" height="3.8" rx="1.9"/>
+      </svg></span></span>
+    <h2 class="giant2 r">
+      <span class="line"><span>Votre projet,</span></span>
+      <span class="line l2"><span class="blue">on le porte<span class="dotorange">.</span></span></span>
+    </h2>
+    <p class="lede r d1">Titulaires, on vous épaule à chaque étape de la vie de l'officine.</p>
+    <div class="acc-row r d2">
+      <span class="acc-chip"><span class="acc-n">01</span>Transfert</span>
+      <span class="acc-chip"><span class="acc-n">02</span>Agrandissement</span>
+      <span class="acc-chip"><span class="acc-n">03</span>Cession de parts</span>
+      <span class="acc-chip"><span class="acc-n">04</span>Optimisation</span>
+    </div>
+    <a href="#contact" class="cta-line r d3" data-intent="Je souhaite être accompagné sur un projet d'officine (transfert, agrandissement, cession de parts, optimisation).">En parler avec nous <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+<!-- 06 CARRIÈRES — concis et accueillant -->
+<section id="carrieres" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">06</span> Carrières<span class="sec-picto" aria-hidden="true">
+      <!-- CARRIÈRES — une équipe de capsules-marque debout, épaule contre épaule ;
+           la capsule orange pleine se dresse un peu plus haut : vous qui rejoignez.
+           Capsules verticales = personnes, sans tomber dans la silhouette générique. -->
+      <svg class="picto" viewBox="0 0 24 24" focusable="false">
+        <rect class="draw" style="--dl:34" x="2.6" y="7.4" width="4.4" height="14" rx="2.2"/>
+        <rect class="draw w2" style="--dl:36" x="8.2" y="5.4" width="4.4" height="16" rx="2.2"/>
+        <!-- la recrue : capsule accent orange pleine, plus haute -->
+        <rect class="fill-o pop w2 cap-live" x="13.8" y="3" width="4.4" height="18.4" rx="2.2"/>
+        <rect class="draw w3" style="--dl:34" x="19" y="7.4" width="2.6" height="14" rx="1.3"/>
+      </svg></span></span>
+    <h2 class="giant2 r">
+      <span class="line"><span>Le groupe</span></span>
+      <span class="line l2"><span class="blue">recrute<span class="dotorange">.</span></span></span>
+    </h2>
+    <p class="lede r d1">Rejoignez des équipes de proximité, au plus près des officines.</p>
+    <div class="acc-row careers r d2">
+      <span class="acc-chip"><span class="acc-n">01</span>Approvisionnement</span>
+      <span class="acc-chip"><span class="acc-n">02</span>Commercial</span>
+      <span class="acc-chip"><span class="acc-n">03</span>Pharmacien responsable</span>
+      <span class="acc-chip"><span class="acc-n">04</span>Préparateur-chauffeur</span>
+    </div>
+    <a href="#contact" class="cta-line r d3" data-intent="Candidature — je souhaite rejoindre les équipes Intégral Pharma.">Postuler <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+<!-- signature : séparateur capsule de marque -->
+<div class="sig-sep r" aria-hidden="true"><span class="ln"></span><span class="cap"></span><span class="ln r2"></span></div>
+
+<!-- 07 CONTACT -->
+<section id="contact" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">07</span> Contact</span>
+    <h2 class="giant2 contact-h2 r">
+      <span class="line"><span>Parlons-<span class="underx blue trin">en<span class="dotorange">.</span></span></span></span>
+    </h2>
+    <p class="lede r d1">Dites-nous où vous en êtes : on revient vers vous avec des conditions concrètes. 758 Chemin de la Source, 83400 Hyères.</p>
+    <div class="contact-grid">
+      <div class="cinfo r d1">
+        <div class="crow"><div class="l">Email</div><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a></div>
+        <div class="crow"><div class="l">LinkedIn</div><a href="https://www.linkedin.com/company/integralpharma" target="_blank" rel="noopener">Intégral Pharma <span aria-hidden="true">→</span></a></div>
+      </div>
+      <form class="cform r d2" id="cform" novalidate>
+        <div class="two">
+          <div class="fr"><label for="f-nom">Nom &amp; prénom <span class="req" aria-hidden="true">*</span><span class="sr-h2">obligatoire</span></label><input id="f-nom" name="nom" type="text" placeholder="Nom et prénom" autocomplete="name" aria-required="true" required></div>
+          <div class="fr"><label for="f-off">Votre officine <span class="opt">(facultatif)</span></label><input id="f-off" name="officine" type="text" placeholder="Nom de la pharmacie" autocomplete="organization"></div>
+        </div>
+        <div class="two">
+          <div class="fr"><label for="f-mail">Email <span class="req" aria-hidden="true">*</span><span class="sr-h2">obligatoire</span></label><input id="f-mail" name="email" type="email" placeholder="vous@pharmacie.fr" autocomplete="email" aria-required="true" required></div>
+          <div class="fr"><label for="f-tel">Téléphone <span class="opt">(facultatif)</span></label><input id="f-tel" name="tel" type="tel" inputmode="tel" placeholder="06 ..." autocomplete="tel"></div>
+        </div>
+        <div class="fr"><label for="f-cp">Code postal <span class="opt">(facultatif)</span></label><input id="f-cp" name="cp" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="ex. 83400" autocomplete="postal-code"></div>
+        <div class="fr"><label for="f-msg">Votre message <span class="opt">(facultatif)</span></label><textarea id="f-msg" name="msg" rows="3" placeholder="Votre demande…" enterkeyhint="send"></textarea></div>
+        <button type="submit" class="btn btn-primary"><span>Envoyer ma demande <i class="ar" aria-hidden="true">→</i></span><span class="lbl-sent" aria-hidden="true">Messagerie ouverte ✓</span></button>
+        <div class="form-feedback" id="formFeedback" role="status" aria-live="polite" hidden></div>
+        <div class="mini">Sinon, écrivez-nous directement à <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>.</div>
+        <div class="mini">Réponse sous 48h, par un interlocuteur dédié.</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- STICKY CTA -->
+<div class="stickycta" id="stickycta" aria-hidden="true" inert>
+  <div class="in">
+    <div class="t">Plus de marge <span>— meilleures conditions</span></div>
+    <a href="#contact" class="btn btn-light"><span>Nous écrire <i class="ar" aria-hidden="true">→</i></span></a>
+  </div>
+</div>
+
+<!-- FOOTER monumental -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="fbig"><span class="line r"><span>Plus de marge,</span></span><span class="line l2 r"><span>meilleures <span class="blue">conditions.</span></span></span></div>
+    <div class="fmeta">
+      <span>Intégral Pharma</span>
+      <a href="https://www.linkedin.com/company/integralpharma" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      <a href="mailto:contact@integralpharma.fr?subject=Demande%20de%20mentions%20l%C3%A9gales">Mentions légales</a>
+      <span class="sp">758 Chemin de la Source, 83400 Hyères · © 2026</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* ---------- pictogrammes : tracé au scroll (les .picto suivent leur section) ----------
+   on observe chaque .picto pour ajouter .in (déclenche stroke-dashoffset/pop).
+   les pictos dans .vcard/.kicker héritent déjà du .in parent, mais on sécurise
+   les cas isolés. léger : unobserve après déclenchement. */
+(function(){
+  if(reduce) return;
+  var pio=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); pio.unobserve(e.target);} });
+  },{threshold:.3});
+  document.querySelectorAll('.picto').forEach(function(p){ pio.observe(p); });
+  document.querySelectorAll('.sig-sep').forEach(function(s){ pio.observe(s); });
+})();
+
+/* ---------- perf : suspendre les animations infinies de respiration hors-viewport ----------
+   séparateurs (sigCapBreath) + média hero (mediaBreath). reste observé (pas unobserve)
+   pour reprendre/suspendre selon la visibilité. transform/opacity only. */
+(function(){
+  if(reduce) return;
+  var targets=[].slice.call(document.querySelectorAll('.sig-sep, .hero-media'));
+  if(!targets.length) return;
+  var avo=new IntersectionObserver(function(es){
+    es.forEach(function(e){ e.target.classList.toggle('off-view',!e.isIntersecting); });
+  },{threshold:0});
+  targets.forEach(function(t){ avo.observe(t); });
+})();
+
+/* ---------- progress + nav + sticky + parallax (un seul listener / une seule frame) ---------- */
+var prog=document.getElementById('prog'),nav=document.getElementById('nav');
+var sticky=document.getElementById('stickycta');
+var band=document.getElementById('videoband');
+var bandWrap=band&&band.querySelector('.wrap');
+var bandVisible=false;
+var ticking=false;
+/* hero media : parallax discret (la vidéo dérive un peu plus que le texte → profondeur) */
+var heroEl=document.getElementById('hero');
+var heroMedia=heroEl&&heroEl.querySelector('.hero-media');
+var heroMediaVisible=false;
+/* progress : repère lumineux vivant pendant le scroll, s'éteint au repos */
+var scrollIdle=null;
+function setStickyShown(show){
+  if(!sticky)return;
+  if(sticky.classList.contains('show')===show)return;
+  sticky.classList.toggle('show',show);
+  /* sortir le CTA du flux clavier/AT quand il est masqué */
+  if(show){ sticky.removeAttribute('aria-hidden'); sticky.removeAttribute('inert'); }
+  else{ sticky.setAttribute('aria-hidden','true'); sticky.setAttribute('inert',''); }
+}
+function frame(){
+  ticking=false;
+  /* --- lectures groupées --- */
+  var docH=document.documentElement.scrollHeight, h=docH-innerHeight, y=scrollY;
+  var bandRect=(!reduce&&band&&bandWrap)?band.getBoundingClientRect():null;
+  var heroRect=(!reduce&&heroMedia)?heroMedia.getBoundingClientRect():null;
+  /* --- écritures groupées --- */
+  var ratio = h>0 ? y/h : 0;
+  prog.style.width=(ratio*100)+'%';
+  nav.classList.toggle('scrolled',y>10);
+  setStickyShown(y>innerHeight*0.9 && (y+innerHeight < docH-520));
+  /* parallax hero media : ne s'active qu'une fois l'entrée terminée (is-parallax),
+     amplitude bornée, transform via --hy uniquement */
+  if(heroRect){
+    var hin=!(heroRect.bottom<0||heroRect.top>innerHeight);
+    if(hin){
+      if(!heroMediaVisible){ heroMedia.style.willChange='transform'; heroMediaVisible=true; }
+      /* progression de la média dans le viewport, centrée → -1..+1 */
+      var hp=(heroRect.top+heroRect.height/2-innerHeight/2)/innerHeight;
+      heroMedia.style.setProperty('--hy',(hp*-26).toFixed(1)+'px');
+    }else if(heroMediaVisible){ heroMedia.style.willChange='auto'; heroMediaVisible=false; }
+  }
+  if(bandRect){
+    var inView=!(bandRect.bottom<0||bandRect.top>innerHeight);
+    if(inView){
+      if(!bandVisible){ bandWrap.style.willChange='transform'; bandVisible=true; }
+      var p=(bandRect.top+bandRect.height/2-innerHeight/2)/innerHeight;
+      bandWrap.style.setProperty('--par',(p*-18).toFixed(1)+'px');
+    }else if(bandVisible){ bandWrap.style.willChange='auto'; bandVisible=false; }
+  }
+}
+addEventListener('scroll',function(){
+  if(!ticking){ ticking=true; requestAnimationFrame(frame);}
+  /* filet de progression vivant pendant le défilement, s'apaise au repos */
+  if(!reduce){
+    if(prog && !prog.classList.contains('live')) prog.classList.add('live');
+    if(scrollIdle) clearTimeout(scrollIdle);
+    scrollIdle=setTimeout(function(){ if(prog) prog.classList.remove('live'); },600);
+  }
+},{passive:true});
+addEventListener('resize',function(){ if(!ticking){ ticking=true; requestAnimationFrame(frame);} },{passive:true});
+/* état initial du sticky : masqué (inert) déjà posé dans le markup */
+frame();
+
+/* ---------- count-up (cubic out 1.3s, format fr-FR) ---------- */
+function countUp(el){
+  var t=+el.dataset.count; if(isNaN(t))return;
+  if(el._counted)return; el._counted=true; /* idempotent : sections + cartes observées séparément ne relancent pas l'anim (anti-stutter) */
+  if(reduce){ return; } /* valeur finale déjà dans le HTML */
+  var suf=el.dataset.suffix||'',pre=el.dataset.prefix||'',sep=el.dataset.sep!==undefined,t0=null;
+  /* séparateur de milliers aligné sur le markup statique (espace insécable U+00A0)
+     → aucun saut horizontal entre fin d'animation et valeur de repos */
+  function fmt(n){n=Math.round(n);return sep?n.toLocaleString('fr-FR').replace(/[  \s]/g,' '):n;}
+  function render(v){
+    var base=fmt(v);
+    el.innerHTML=pre+base+(suf?'<span class="u">'+suf+'</span>':'');
+  }
+  function step(now){
+    if(!t0)t0=now; var p=Math.min((now-t0)/1300,1),e=1-Math.pow(1-p,3);
+    render(t*e);
+    if(p<1)requestAnimationFrame(step);
+    else render(t);
+  }
+  /* démarrer une fois le conteneur opaque (fin du reveal .d3/.d4 ~ .24-.32s) */
+  setTimeout(function(){ requestAnimationFrame(step); }, 360);
+}
+
+/* ---------- reveal (masques, staggers, composants) ---------- */
+var io=new IntersectionObserver(function(es){
+  es.forEach(function(e){
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      if(e.target.querySelectorAll){ e.target.querySelectorAll('[data-count]').forEach(countUp); }
+      if(e.target.matches&&e.target.matches('[data-count]')){ countUp(e.target); }
+      io.unobserve(e.target);
+    }
+  });
+},{threshold:.18,rootMargin:'0px 0px -8% 0px'});
+/* .hero exclu : piloté par rAF d'ouverture (évite le double déclenchement) */
+document.querySelectorAll('.r,.giant2,.fac,h1,.kicker').forEach(function(el){ if(el.id==='hero')return; io.observe(el);});
+
+/* ---------- vidéos : ne jouer que la vidéo visible ---------- */
+var vio=new IntersectionObserver(function(es){
+  es.forEach(function(e){
+    var v=e.target;
+    if(e.isIntersecting){ var p=v.play&&v.play(); if(p&&p.catch)p.catch(function(){}); }
+    else if(v.pause){ v.pause(); }
+  });
+},{threshold:.2});
+document.querySelectorAll('video').forEach(function(v){vio.observe(v);});
+
+/* ---------- bande "Notre plateforme" : playlist ---------- */
+var bandVid=document.getElementById('bandVid');
+if(bandVid){
+  var clips=['assets/band.mp4','assets/clip3.mp4','assets/hero.mp4'], ci=0;
+  bandVid.addEventListener('ended',function(){
+    ci=(ci+1)%clips.length; bandVid.src=clips[ci];
+    var p=bandVid.play(); if(p&&p.catch)p.catch(function(){});
+  });
+}
+
+/* ---------- hero (haut) : playlist enchaînée des vidéos drone ---------- */
+var heroVid=document.getElementById('heroVid');
+if(heroVid){
+  var hclips=['assets/clip3.mp4','assets/hero.mp4','assets/band.mp4'], hi=0;
+  heroVid.addEventListener('ended',function(){
+    hi=(hi+1)%hclips.length; heroVid.src=hclips[hi];
+    var p=heroVid.play(); if(p&&p.catch)p.catch(function(){});
+  });
+}
+
+/* ---------- hero in (chorégraphie d'ouverture) ---------- */
+requestAnimationFrame(function(){
+  requestAnimationFrame(function(){
+    var hero=document.getElementById('hero');
+    hero.classList.add('in');
+    /* une fois l'entrée de la média terminée, on passe le suivi parallax en mode réactif
+       (transition:none) pour que --hy colle au scroll sans easing concurrent */
+    if(!reduce && heroMedia){
+      setTimeout(function(){ heroMedia.classList.add('is-parallax'); frame(); }, 1300);
+    }
+  });
+});
+
+/* ---------- carrousel Offilog : doubler le contenu pour boucle ----------
+   la moitié clonée est purement visuelle : on la sort de l'arbre d'accessibilité
+   (aria-hidden + role neutralisé) pour ne pas dupliquer la liste aux lecteurs d'écran. */
+(function(){
+  var m=document.getElementById('oplTrack');
+  if(!m) return;
+  var originals=[].slice.call(m.children);
+  originals.forEach(function(node){
+    var clone=node.cloneNode(true);
+    clone.setAttribute('aria-hidden','true');
+    clone.removeAttribute('role');
+    clone.querySelectorAll('[role]').forEach(function(el){ el.removeAttribute('role'); });
+    m.appendChild(clone);
+  });
+})();
+
+/* duplication du carrousel de logos partenaires (boucle continue) */
+(function(){
+  var t=document.getElementById('lwallTrack');
+  if(!t) return;
+  [].slice.call(t.children).forEach(function(node){
+    var c=node.cloneNode(true); c.setAttribute('aria-hidden','true'); t.appendChild(c);
+  });
+})();
+
+/* ---------- effet magnétique léger borné sur les boutons ----------
+   pointeur fin uniquement (souris), jamais en reduced-motion ni tactile.
+   transform only via --bx/--by, amplitude plafonnée. */
+var finePointer = matchMedia('(hover:hover) and (pointer:fine)').matches;
+if(!reduce && finePointer){
+  document.querySelectorAll('.btn').forEach(function(b){
+    var raf=null,tx=0,ty=0;
+    var MAX=6; /* px : amplitude max, discret */
+    function move(e){
+      var r=b.getBoundingClientRect();
+      var dx=(e.clientX-(r.left+r.width/2))/r.width;   /* -.5..+.5 */
+      var dy=(e.clientY-(r.top+r.height/2))/r.height;
+      tx=Math.max(-1,Math.min(1,dx*2))*MAX;
+      ty=Math.max(-1,Math.min(1,dy*2))*MAX;
+      if(!raf)raf=requestAnimationFrame(apply);
+    }
+    function apply(){ raf=null; b.style.setProperty('--bx',tx.toFixed(2)+'px'); b.style.setProperty('--by',ty.toFixed(2)+'px'); }
+    /* easing court non-overshoot pendant le suivi ; overshoot rétabli au repos/reset */
+    function enter(){ b.classList.add('is-mag'); b.style.willChange='transform'; }
+    function reset(){ b.classList.remove('is-mag'); tx=0;ty=0; b.style.setProperty('--bx','0px'); b.style.setProperty('--by','0px'); b.style.willChange='auto'; }
+    b.addEventListener('mouseenter',enter);
+    b.addEventListener('mousemove',move);
+    b.addEventListener('mouseleave',reset);
+  });
+}
+
+/* ---------- nav scroll-spy : lien actif selon la section visible ---------- */
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.nav-links a'));
+  if(!links.length)return;
+  var map={};
+  links.forEach(function(a){ var id=a.getAttribute('href'); if(id&&id.charAt(0)==='#'&&id.length>1){ map[id.slice(1)]=a; } });
+  var ids=Object.keys(map); if(!ids.length)return;
+  var current=null;
+  function setActive(id){
+    if(id===current)return; current=id;
+    links.forEach(function(a){a.classList.remove('active');});
+    var a=map[id]; if(a)a.classList.add('active');
+  }
+  var spy=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      /* on n'active qu'à l'entrée ; à la sortie on conserve le dernier actif (anti-clignotement) */
+      if(e.isIntersecting){ setActive(e.target.id); }
+    });
+  },{rootMargin:'-30% 0px -55% 0px',threshold:0});
+  ids.forEach(function(id){ var s=document.getElementById(id); if(s)spy.observe(s); });
+  /* haut de page : aucun lien actif tant qu'aucune section n'est entrée dans la bande */
+})();
+
+/* (le parallax de la bande vidéo est intégré au handler scroll unifié ci-dessus) */
+
+/* ---------- intent → pré-remplissage du message + focus ----------
+   les CTA porteurs d'un data-intent (Offilog, accompagnement, carrières)
+   amènent au même formulaire : on qualifie le lead sans inventer de page.
+   on ne remplace jamais un message déjà saisi. */
+(function(){
+  var msg=document.getElementById('f-msg'), first=document.getElementById('f-nom');
+  if(!msg)return;
+  document.querySelectorAll('[data-intent]').forEach(function(a){
+    a.addEventListener('click',function(){
+      var v=a.getAttribute('data-intent')||'';
+      if(v && msg.value.trim()===''){ msg.value=v; }
+      /* après le saut d'ancre, focus discret sur le 1er champ */
+      setTimeout(function(){ if(first)first.focus({preventScroll:true}); },420);
+    });
+  });
+})();
+
+/* ---------- contact form -> mailto (validation + feedback inline) ---------- */
+var cf=document.getElementById('cform');
+if(cf){
+  var fb=document.getElementById('formFeedback');
+  var elNom=cf.querySelector('[name="nom"]'),elMail=cf.querySelector('[name="email"]'),elCp=cf.querySelector('[name="cp"]');
+  function showFeedback(html){ if(fb){ fb.innerHTML=html; fb.hidden=false; } }
+  function markInvalid(el,bad){ if(el){ el.classList.toggle('invalid',!!bad); if(bad){el.setAttribute('aria-invalid','true');}else{el.removeAttribute('aria-invalid');} } }
+  cf.addEventListener('submit',function(e){
+    e.preventDefault();
+    var g=function(n){var el=cf.querySelector('[name="'+n+'"]');return el?el.value.trim():'';};
+    /* validation : Nom requis, Email format, CP si rempli */
+    var emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g('email'));
+    var cpVal=g('cp'); var cpOk=(cpVal==='')||/^[0-9]{5}$/.test(cpVal);
+    var nomOk=g('nom')!=='';
+    markInvalid(elNom,!nomOk); markInvalid(elMail,!emailOk); markInvalid(elCp,!cpOk);
+    var firstInvalid=null,firstMsg='';
+    if(!nomOk){firstInvalid=elNom;firstMsg='Merci d’indiquer votre nom.';}
+    else if(!emailOk){firstInvalid=elMail;firstMsg='Vérifiez votre adresse e-mail.';}
+    else if(!cpOk){firstInvalid=elCp;firstMsg='Le code postal doit comporter 5 chiffres.';}
+    if(firstInvalid){
+      showFeedback(firstMsg);
+      if(fb)firstInvalid.setAttribute('aria-describedby','formFeedback');
+      firstInvalid.focus();
+      return;
+    }
+    var body='Nom: '+g('nom')+'\nOfficine: '+g('officine')+'\nCode postal: '+g('cp')+'\nEmail: '+g('email')+'\nTéléphone: '+g('tel')+'\n\n'+g('msg');
+    showFeedback('Votre messagerie va s’ouvrir… Si rien ne se passe, écrivez-nous à <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>.');
+    /* micro-feedback visuel sur le bouton (transform/opacity only), restauré après 2s */
+    var sb=cf.querySelector('button[type="submit"]');
+    if(sb && !reduce){ sb.classList.add('is-sent'); setTimeout(function(){ sb.classList.remove('is-sent'); },2000); }
+    location.href='mailto:contact@integralpharma.fr?subject='+encodeURIComponent('Demande via le site — '+g('nom'))+'&body='+encodeURIComponent(body);
+  });
+  /* effacer l'état invalide à la saisie */
+  [elNom,elMail,elCp].forEach(function(el){ if(el)el.addEventListener('input',function(){ markInvalid(el,false); el.removeAttribute('aria-describedby'); }); });
+}
+})();
+</script>
+<script>(function(){var f=document.getElementById("atlasFrame");if(!f)return;function fit(){try{var d=f.contentDocument||f.contentWindow.document;if(d&&d.body){f.style.height=d.body.scrollHeight+"px";}}catch(e){}}f.addEventListener("load",function(){fit();setTimeout(fit,300);setTimeout(fit,1200);});addEventListener("resize",fit);addEventListener("message",function(e){if(e.data&&e.data.ipAtlasHeight){f.style.height=e.data.ipAtlasHeight+"px";}});})();</script>
+</body>
+</html>

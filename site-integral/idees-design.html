@@ -1,0 +1,154 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>10 directions design & motion — Intégral Pharma</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#0050E6;--blue-d:#0034A0;--orange:#F39A1B;--orange-d:#D97E00;--navy:#0A1430;--line:#E6EAF2;--muted:#6B7280;
+ --font:'Satoshi',system-ui,sans-serif;--mono:'Geist Mono',monospace}
+*{box-sizing:border-box;margin:0}
+body{font-family:var(--font);background:#eef1f7;color:var(--navy);padding:36px 20px}
+.head{max-width:1200px;margin:0 auto 24px}
+.head h1{font-size:clamp(24px,3.2vw,36px);font-weight:900;letter-spacing:-.02em}
+.head p{color:var(--muted);margin-top:8px;font-size:15px}
+.grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:780px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 20px 50px -38px rgba(10,20,48,.45)}
+.cap{display:flex;gap:12px;align-items:flex-start;padding:16px 18px 12px}
+.cap .n{font-family:var(--mono);color:var(--orange-d);font-weight:600;font-size:15px;margin-top:1px}
+.cap .t{font-weight:800;font-size:16px}
+.cap .d{color:var(--muted);font-size:12.5px;margin-top:2px}
+.cap .s{margin-left:auto;color:var(--orange);font-size:12px;letter-spacing:1px;white-space:nowrap}
+.pv{position:relative;height:250px;overflow:hidden;border-top:1px solid var(--line)}
+.pv .eb{position:absolute;top:18px;left:20px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);z-index:5}
+.pv .hl{position:absolute;left:20px;top:42px;font-weight:900;letter-spacing:-.03em;line-height:1.02;font-size:30px;z-index:5}
+.pv .cta{position:absolute;left:20px;bottom:20px;font-size:11px;font-weight:800;color:#fff;background:var(--blue);padding:8px 13px;border-radius:9px;z-index:5}
+.pv .dotacc{color:var(--orange)}
+
+/* 1 BLANC ABSOLU */
+.d1{background:#fff}
+.d1 .hl{overflow:hidden}
+.d1 .hl span{display:block;animation:up1 5s var(--ease) infinite}
+.d1 .w2{animation-delay:.15s}
+@keyframes up1{0%{transform:translateY(105%)}10%,80%{transform:translateY(0)}92%,100%{transform:translateY(105%)}}
+.d1 .rule{position:absolute;left:20px;bottom:64px;height:2px;width:160px;background:linear-gradient(90deg,var(--orange),var(--blue));transform:scaleX(0);transform-origin:left;animation:rule1 5s ease infinite;z-index:5}
+@keyframes rule1{0%,12%{transform:scaleX(0)}40%,80%{transform:scaleX(1)}95%,100%{transform:scaleX(0)}}
+
+/* 2 PAPIER & ENCRE */
+.d2{background:#faf8f3}
+.d2::before{content:"";position:absolute;inset:0;opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E")}
+.d2 .hl{color:#1a1a1a;animation:ink 4.5s ease infinite}
+@keyframes ink{0%{opacity:0;letter-spacing:.06em}20%,85%{opacity:1;letter-spacing:-.03em}100%{opacity:0;letter-spacing:.06em}}
+.d2 .stamp{position:absolute;right:22px;top:30px;width:54px;height:26px;border-radius:99px;background:linear-gradient(90deg,var(--orange),var(--blue));z-index:5;animation:stamp 4.5s var(--ease) infinite}
+@keyframes stamp{0%,30%{transform:scale(1.6);opacity:0}42%{transform:scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}
+
+/* 3 GRILLE DATA */
+.d3{background:#fff;background-image:radial-gradient(circle,rgba(10,20,48,.13) 1px,transparent 1px);background-size:18px 18px}
+.d3 .scan{position:absolute;top:0;bottom:0;width:2px;background:var(--orange);box-shadow:0 0 12px var(--orange);left:0;animation:scan 4s linear infinite;z-index:4}
+@keyframes scan{0%{left:0}100%{left:100%}}
+.d3 .hl{color:var(--navy)}
+
+/* 4 DÉGRADÉ RESPIRANT */
+.d4{background:#fff}
+.d4::before{content:"";position:absolute;width:300px;height:300px;border-radius:50%;right:-60px;top:-80px;background:radial-gradient(circle,rgba(0,80,230,.5),rgba(0,80,230,0) 70%);animation:breathe 6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1) translate(0,0);opacity:.7}50%{transform:scale(1.25) translate(-20px,20px);opacity:1}}
+
+/* 5 CAPSULE FIL */
+.d5{background:#fff}
+.d5 .thread{position:absolute;right:40px;top:0;bottom:0;z-index:4}
+.d5 svg{height:100%}
+.d5 .ln{fill:none;stroke:var(--blue);stroke-width:2;stroke-dasharray:300;stroke-dashoffset:300;animation:draw5 5s ease infinite}
+@keyframes draw5{0%,8%{stroke-dashoffset:300}55%,85%{stroke-dashoffset:0}100%{stroke-dashoffset:300}}
+.d5 .cp{position:absolute;right:30px;width:24px;height:11px;border-radius:99px;background:linear-gradient(90deg,var(--orange) 50%,var(--blue) 50%);z-index:5;opacity:0;animation:cp5 5s var(--ease) infinite}
+.d5 .c1{top:60px;animation-delay:.6s}.d5 .c2{top:120px;animation-delay:1.1s}.d5 .c3{top:180px;animation-delay:1.6s}
+@keyframes cp5{0%{opacity:0;transform:scale(0)}50%,85%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(0)}}
+
+/* 6 DARK PREMIUM */
+.d6{background:var(--navy)}
+.d6 .eb{color:#7fa8ff}
+.d6 .hl{color:#fff}
+.d6 .cta{background:var(--orange);color:#1a1208}
+.d6::before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(127,168,255,.18),transparent 70%);left:-40px;bottom:-60px;animation:drift6 7s ease-in-out infinite}
+@keyframes drift6{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,-30px)}}
+.d6 .uline{position:absolute;left:20px;bottom:64px;height:2px;width:150px;background:var(--orange);transform:scaleX(0);transform-origin:left;animation:rule1 5s ease infinite;z-index:5}
+
+/* 7 TYPO MONUMENTALE */
+.d7{background:#fff;display:flex;align-items:center;justify-content:center}
+.d7 .big{font-size:88px;font-weight:900;letter-spacing:-.05em;color:var(--navy);overflow:hidden;line-height:1}
+.d7 .big b{display:inline-block;animation:up7 5s var(--ease) infinite}
+@keyframes up7{0%{transform:translateY(110%)}14%,78%{transform:translateY(0)}94%,100%{transform:translateY(110%)}}
+.d7 .dot7{color:var(--orange)}
+.d7 .eb{z-index:6}
+
+/* 8 COLONNES ÉDITORIALES */
+.d8{background:#fff;display:flex}
+.d8 .col-l{width:38%;border-right:1px solid var(--line);padding:18px;display:flex;flex-direction:column;gap:9px;justify-content:center}
+.d8 .lab{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.d8 .lab.on{color:var(--blue);font-weight:600}
+.d8 .col-r{flex:1;padding:22px 18px;display:flex;flex-direction:column;justify-content:center;gap:8px;overflow:hidden}
+.d8 .li{height:9px;border-radius:6px;background:#e9edf5;animation:slide8 4.5s ease infinite}
+.d8 .li:nth-child(1){width:80%}.d8 .li:nth-child(2){width:95%;animation-delay:.12s}.d8 .li:nth-child(3){width:60%;animation-delay:.24s;background:var(--blue)}
+@keyframes slide8{0%{transform:translateX(14px);opacity:0}18%,85%{transform:none;opacity:1}100%{transform:translateX(14px);opacity:0}}
+
+/* 9 RÉVÉLATEUR ÉPURÉ */
+.d9{background:#fff}
+.d9 .rv{position:absolute;left:20px;top:60px;font-size:32px;font-weight:900;letter-spacing:-.03em;z-index:5}
+.d9 .g{position:absolute;left:0;top:0}
+.d9 .gb{color:var(--blue);animation:gb9 4s ease infinite}
+.d9 .go{color:var(--orange);animation:go9 4s ease infinite}
+.d9 .gn{color:var(--navy)}
+@keyframes gb9{0%{transform:translate(-7px,-5px);opacity:.7}45%,80%{transform:none;opacity:0}100%{transform:translate(-7px,-5px);opacity:.7}}
+@keyframes go9{0%{transform:translate(7px,5px);opacity:.7}45%,80%{transform:none;opacity:0}100%{transform:translate(7px,5px);opacity:.7}}
+
+/* 10 FLUX LOGISTIQUE */
+.d10{background:#fff;background-image:repeating-linear-gradient(58deg,transparent 0 26px,rgba(0,80,230,.05) 26px 27px)}
+.d10 .pel{position:absolute;width:18px;height:8px;border-radius:99px;background:linear-gradient(90deg,var(--orange),var(--blue));z-index:4;animation:flux 3.4s linear infinite}
+.d10 .p1{top:70px;animation-delay:0s}.d10 .p2{top:140px;animation-delay:1.1s}.d10 .p3{top:200px;animation-delay:2s}
+@keyframes flux{0%{left:-30px}100%{left:110%}}
+.d10 .hl{color:var(--navy)}
+
+.pv{--ease:cubic-bezier(.2,.7,.2,1)}
+.foot{max-width:1200px;margin:22px auto 0;color:var(--muted);font-size:13px}
+</style></head><body>
+<div class="head"><h1>🎨 10 directions design & motion — choisis tes préférées</h1>
+<p>Chaque aperçu tourne en boucle. Dis-moi les numéros (ex. « 1, 5, 7 ») et je construis la version finale du site dans cette direction.</p></div>
+
+<div class="grid">
+
+  <div class="card"><div class="cap"><span class="n">01</span><div><div class="t">Blanc absolu</div><div class="d">Style suisse / Apple — vide, grande typo, accents fins</div></div><span class="s">★★★★★</span></div>
+   <div class="pv d1"><span class="eb">Première intention</span><h3 class="hl"><span class="w1">Votre marge,</span><span class="w2">enfin en clair.</span></h3><div class="rule"></div><span class="cta">Ouvrir un compte</span></div></div>
+
+  <div class="card"><div class="cap"><span class="n">02</span><div><div class="t">Papier & encre</div><div class="d">Grain léger, la capsule en tampon, écriture qui s'imprime</div></div><span class="s">★★★★</span></div>
+   <div class="pv d2"><span class="eb">Première intention</span><h3 class="hl">Votre marge,<br>enfin en clair.</h3><div class="stamp"></div><span class="cta">Ouvrir un compte</span></div></div>
+
+  <div class="card"><div class="cap"><span class="n">03</span><div><div class="t">Grille de données</div><div class="d">Fond grille, une ligne orange qui scanne</div></div><span class="s">★★★★</span></div>
+   <div class="pv d3"><span class="eb">Première intention</span><h3 class="hl">Votre marge,<br>enfin en clair.</h3><div class="scan"></div><span class="cta">Ouvrir un compte</span></div></div>
+
+  <div class="card"><div class="cap"><span class="n">04</span><div><div class="t">Dégradé respirant</div><div class="d">Blanc + une tache douce qui respire</div></div><span class="s">★★★</span></div>
+   <div class="pv d4"><span class="eb">Première intention</span><h3 class="hl">Votre marge,<br>enfin en clair.</h3><span class="cta">Ouvrir un compte</span></div></div>
+
+  <div class="card"><div class="cap"><span class="n">05</span><div><div class="t">Capsule fil rouge</div><div class="d">Le motif capsule partout + fil cousu au scroll</div></div><span class="s">★★★★★</span></div>
+   <div class="pv d5"><span class="eb">Première intention</span><h3 class="hl">Votre marge,<br>enfin en clair.</h3>
+     <div class="thread"><svg viewBox="0 0 10 250" preserveAspectRatio="none"><path class="ln" d="M5 0 C9 60 1 120 5 180 S9 240 5 250"/></svg></div>
+     <span class="cp c1"></span><span class="cp c2"></span><span class="cp c3"></span><span class="cta">Ouvrir un compte</span></div></div>
+
+  <div class="card"><div class="cap"><span class="n">06</span><div><div class="t">Noir & or premium</div><div class="d">Bleu nuit, orange seul accent, révélation projecteur</div></div><span class="s">★★★★</span></div>
+   <div class="pv d6"><span class="eb">Première intention</span><h3 class="hl">Votre marge,<br>enfin en clair.</h3><div class="uline"></div><span class="cta">Ouvrir un compte</span></div></div>
+
+  <div class="card"><div class="cap"><span class="n">07</span><div><div class="t">Typo monumentale</div><div class="d">Le mot devient le design — cinétique, audacieux</div></div><span class="s">★★★★★</span></div>
+   <div class="pv d7"><span class="eb">Première intention</span><div class="big"><b>CLAIR<span class="dot7">.</span></b></div></div></div>
+
+  <div class="card"><div class="cap"><span class="n">08</span><div><div class="t">Colonnes éditoriales</div><div class="d">Split asymétrique, index collant à gauche</div></div><span class="s">★★★★</span></div>
+   <div class="pv d8"><div class="col-l"><span class="lab on">Le problème</span><span class="lab">Le mécanisme</span><span class="lab">Le groupe</span><span class="lab">Le potentiel</span></div><div class="col-r"><div class="li"></div><div class="li"></div><div class="li"></div></div></div></div>
+
+  <div class="card"><div class="cap"><span class="n">09</span><div><div class="t">Le Révélateur épuré</div><div class="d">Texte en double fantôme bleu/orange qui converge net</div></div><span class="s">★★★★</span></div>
+   <div class="pv d9"><span class="eb">Première intention</span>
+     <div class="rv"><span class="g gb">enfin en clair.</span><span class="g go">enfin en clair.</span><span class="g gn">enfin en clair.</span></div>
+     <span class="cta">Ouvrir un compte</span></div></div>
+
+  <div class="card"><div class="cap"><span class="n">10</span><div><div class="t">Flux logistique</div><div class="d">Fines lignes + capsules-pellets qui dérivent</div></div><span class="s">★★★</span></div>
+   <div class="pv d10"><span class="eb">Première intention</span><h3 class="hl">Votre marge,<br>enfin en clair.</h3><span class="pel p1"></span><span class="pel p2"></span><span class="pel p3"></span><span class="cta">Ouvrir un compte</span></div></div>
+
+</div>
+<div class="foot">Aperçus rapides du <b>fond + ambiance + motion</b> de chaque direction. La version finale appliquera la direction choisie à tout le site (sur la base stable actuelle).</div>
+</body></html>

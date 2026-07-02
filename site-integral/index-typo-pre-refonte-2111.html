@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0A0A0B" />
+<title>Intégral Pharma — Plus de marge, nette sur facture</title>
+<meta name="description" content="Intégral Pharma, grossiste-répartiteur. Plus de marge, nette sur facture, dès la 1ère boîte. Ni franco, ni engagement." />
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* ---- palette maîtrisée : blanc + encre + bleu + orange en accents ---- */
+  --blue:#0050E6;--blue-d:#0034A0;--blue-soft:#5e93ff;
+  --orange:#F39A1B;--orange-d:#D97E00;
+  --ink:#0A0A0B;--ink2:#3A3F49;--muted:#7A828F;--muted2:#9AA1AD;
+  --bg:#ffffff;--black:#0A0A0B;
+  /* filets & séparateurs (3 niveaux cohérents) */
+  --line:#ECECEF;--line2:#E2E2E6;--line3:#D6D6DB;
+  --hair:rgba(10,10,11,.08);
+  /* surfaces */
+  --surface:#FAFAFB;--surface2:#F4F5F7;
+  --font:'Satoshi','Inter',system-ui,sans-serif;--mono:'Geist Mono',ui-monospace,monospace;
+
+  /* ---- LANGAGE DE MOTION UNIFIÉ : un seul jeu d'easings + durées ---- */
+  --ease-net:cubic-bezier(.16,1,.3,1);      /* sortie premium, décélération nette */
+  --ease-snap:cubic-bezier(.34,1.4,.5,1);   /* léger overshoot maîtrisé (boutons) */
+  --ease-soft:cubic-bezier(.4,0,.2,1);      /* standard équilibré (couleurs/états) */
+  --t-fast:.18s;    /* feedback immédiat (couleur, focus) */
+  --t-base:.32s;    /* hover/lift de composant */
+  --t-slow:.6s;     /* survol image, lifts longs */
+  --t-reveal:.9s;   /* révélations au scroll */
+
+  /* ---- ombres douces COHÉRENTES (échelle unique, jamais ad hoc) ---- */
+  --sh-1:0 1px 2px rgba(16,24,40,.04);
+  --sh-2:0 1px 2px rgba(16,24,40,.04),0 12px 28px -22px rgba(16,24,40,.28);
+  --sh-3:0 1px 2px rgba(16,24,40,.05),0 28px 56px -26px rgba(16,24,40,.42);
+  --sh-blue:0 14px 30px -16px rgba(0,80,230,.5);
+  --sh-ink:0 14px 30px -16px rgba(10,10,11,.4);
+
+  /* ---- rayons cohérents ---- */
+  --r-xs:6px;--r-sm:10px;--r-md:14px;--r-lg:18px;--r-pill:999px;
+
+  /* ---- RYTHME D'ESPACEMENT (échelle modulaire, une seule source) ---- */
+  --s1:8px;--s2:14px;--s3:22px;--s4:34px;--s5:52px;--s6:80px;
+  --section:clamp(96px,15vh,180px);
+
+  /* échelle typographique fluide */
+  --giant:clamp(40px,6.5vw,92px);
+  --huge:clamp(40px,6vw,84px);
+  --big:clamp(30px,4.4vw,60px);
+  --sub:clamp(22px,2.6vw,32px);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;line-height:1.55;text-rendering:optimizeLegibility}
+a{color:inherit}
+img{max-width:100%;display:block}
+::selection{background:var(--ink);color:#fff}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px;position:relative;z-index:2}
+@media(max-width:560px){.wrap{padding:0 20px}}
+
+/* ---- FOCUS-VISIBLE ACCESSIBLE & COHÉRENT (clavier uniquement) ---- */
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:var(--r-xs)}
+.btn:focus-visible{outline-offset:4px}
+a:focus-visible{outline-offset:4px}
+.cform input:focus-visible,.cform textarea:focus-visible{outline:none}
+
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- révélation par masque (kinetic) ---------- */
+.line{overflow:hidden;display:block;padding-bottom:.02em}
+.line>span{display:block;transform:translateY(110%);transition:transform var(--t-reveal) var(--ease-net)}
+.in .line>span,.line.in>span{transform:translateY(0)}
+.line.l2>span{transition-delay:.08s}
+.line.l3>span{transition-delay:.16s}
+.line.l4>span{transition-delay:.24s}
+
+/* stagger mot par mot */
+.kw{display:inline-block}
+.kw>i{display:inline-block;font-style:normal;transform:translateY(110%);opacity:0;transition:transform .8s var(--ease-net),opacity .8s var(--ease-net)}
+.in .kw>i,.kw.in>i{transform:translateY(0);opacity:1}
+.kw>i.s1{transition-delay:.00s}.kw>i.s2{transition-delay:.06s}.kw>i.s3{transition-delay:.12s}
+.kw>i.s4{transition-delay:.18s}.kw>i.s5{transition-delay:.24s}.kw>i.s6{transition-delay:.30s}
+.kw>i.s7{transition-delay:.36s}.kw>i.s8{transition-delay:.42s}
+
+/* tracking-in premium pour le mot accent */
+.trin{display:inline-block;letter-spacing:.06em;transition:letter-spacing 1s var(--ease-net) .2s}
+.in .trin,.trin.in{letter-spacing:-.04em}
+
+/* filet dégradé orange->bleu tracé sous un mot accent */
+.underx{position:relative;display:inline-block;white-space:nowrap}
+.underx::after{content:"";position:absolute;left:0;right:0;bottom:-.06em;height:.07em;border-radius:6px;
+  background:linear-gradient(90deg,var(--orange),var(--blue));
+  transform:scaleX(0);transform-origin:left;transition:transform 1s var(--ease-net) .45s}
+.in .underx::after,.underx.in::after{transform:scaleX(1)}
+
+.dotorange{color:var(--orange)}
+
+/* reveal sobre des composants */
+.r{opacity:0;transform:translateY(18px);transition:opacity var(--t-reveal) var(--ease-net),transform var(--t-reveal) var(--ease-net)}
+.r.in{opacity:1;transform:none}
+.r.d1{transition-delay:.08s}.r.d2{transition-delay:.16s}.r.d3{transition-delay:.24s}.r.d4{transition-delay:.32s}
+
+/* progress */
+.prog{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--orange),var(--blue));z-index:200;transition:width .12s linear;transform-origin:left}
+
+/* ============================================================
+   SYSTÈME DE BOUTONS — premium, états soignés, micro-interactions
+   transform/opacity only · remplissage via pseudo (scale), pas de blur
+   ============================================================ */
+.btn{
+  --bx:0px;--by:0px; /* offset magnétique léger borné (piloté en JS) */
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  font-family:var(--font);font-weight:900;font-size:15px;letter-spacing:-.01em;line-height:1;
+  border:none;cursor:pointer;border-radius:var(--r-pill);
+  padding:15px 26px;text-decoration:none;position:relative;overflow:hidden;isolation:isolate;
+  -webkit-tap-highlight-color:transparent;
+  transform:translate3d(var(--bx),var(--by),0);
+  transition:transform var(--t-base) var(--ease-snap),box-shadow var(--t-base) var(--ease-net),color var(--t-fast) var(--ease-soft);
+  will-change:transform}
+.btn>span{position:relative;z-index:2;display:inline-flex;align-items:center;gap:9px;transition:transform var(--t-base) var(--ease-net)}
+/* flèche qui glisse — on isole la flèche du libellé */
+.btn .ar{display:inline-block;transition:transform var(--t-base) var(--ease-net);will-change:transform}
+.btn:hover .ar{transform:translateX(5px)}
+.btn:active{transition-duration:.06s}
+
+/* remplissage / inversion fluide via pseudo-élément (scaleY, transform only) */
+.btn::before{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;
+  transform:scaleY(0);transform-origin:bottom;
+  transition:transform var(--t-base) var(--ease-net)}
+.btn:hover::before{transform:scaleY(1)}
+
+/* PRIMAIRE : encre -> bleu (l'inversion arrive du bas) */
+.btn-primary{background:var(--ink);color:#fff;box-shadow:var(--sh-ink)}
+.btn-primary::before{background:var(--blue)}
+.btn-primary:hover{transform:translate3d(var(--bx),calc(var(--by) - 2px),0);box-shadow:var(--sh-blue)}
+.btn-primary:active{transform:translate3d(var(--bx),0,0) scale(.985);box-shadow:var(--sh-ink)}
+
+/* FANTÔME : contour encre -> remplissage encre + texte blanc */
+.btn-ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.btn-ghost::before{background:var(--ink)}
+.btn-ghost:hover{color:#fff;box-shadow:inset 0 0 0 1.5px var(--ink),var(--sh-2);transform:translate3d(var(--bx),calc(var(--by) - 2px),0)}
+.btn-ghost:active{transform:translate3d(var(--bx),0,0) scale(.985)}
+
+/* variante claire (sur fond sombre : sticky, footer) */
+.btn-light{background:#fff;color:var(--ink);box-shadow:var(--sh-2)}
+.btn-light::before{background:var(--blue)}
+.btn-light:hover{color:#fff;transform:translate3d(var(--bx),calc(var(--by) - 2px),0)}
+.btn-light:active{transform:translate3d(var(--bx),0,0) scale(.985)}
+
+/* NAV — raffinée : filet qui s'affirme + ombre douce au scroll */
+.nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);border-bottom:1px solid var(--line);
+  transition:border-color var(--t-base) var(--ease-soft),box-shadow var(--t-base) var(--ease-soft),background var(--t-base) var(--ease-soft)}
+.nav.scrolled{border-color:var(--line2);box-shadow:0 1px 0 var(--hair),0 10px 30px -24px rgba(16,24,40,.5);background:rgba(255,255,255,.97)}
+.nav-in{max-width:1180px;margin:0 auto;padding:13px 28px;display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;position:relative}
+.brand img{height:38px;width:auto;transition:transform var(--t-slow) var(--ease-net)}
+.brand:hover img{transform:rotate(-5deg) scale(1.04)}
+.brand .tx{font-weight:900;font-size:16px;letter-spacing:-.03em;line-height:1.05}
+.brand .tx .o{color:var(--orange-d)}.brand .tx .b{color:var(--blue)}
+.brand .tx small{display:block;font-family:var(--mono);font-weight:500;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.nav-links{display:flex;gap:26px;margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.nav-links a{text-decoration:none;opacity:.78;position:relative;padding-bottom:4px;transition:opacity var(--t-fast) var(--ease-soft),color var(--t-fast) var(--ease-soft)}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:0;height:1.5px;width:100%;border-radius:2px;background:linear-gradient(90deg,var(--orange),var(--blue));transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+.nav-links a:hover,.nav-links a.active{opacity:1;color:var(--ink)}
+.nav-links a:hover::after,.nav-links a.active::after{transform:scaleX(1)}
+.nav-links a.active::after{transform-origin:left}
+.nav .btn{padding:11px 20px;font-size:14px}
+@media(max-width:980px){.nav-links{display:none}.brand .tx small{display:none}}
+
+/* section scaffold */
+.block{padding:var(--section) 0;position:relative}
+.kicker{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:10px}
+.kicker .idx{color:var(--orange-d)}
+.kicker::before{content:"";width:22px;height:1px;background:var(--ink2);transform-origin:left;transform:scaleX(0);transition:transform var(--t-slow) var(--ease-net) .1s}
+.kicker.in::before,.in .kicker::before{transform:scaleX(1)}
+
+.lede{font-size:clamp(15px,1.2vw,18px);color:var(--ink2);max-width:460px;margin:var(--s4) 0 0;font-weight:500;line-height:1.5}
+.lede b{font-weight:700;color:var(--ink)}
+
+/* HERO */
+.hero{padding:clamp(72px,12vh,140px) 0 clamp(64px,10vh,110px);overflow:hidden}
+.eyebrow{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:10px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+.hero h1{font-size:var(--giant);font-weight:900;letter-spacing:-.04em;line-height:.95;margin:22px 0 0}
+.hero h1 .blue{color:var(--blue)}
+.hero .lede{margin-top:30px}
+.hero-cta{display:flex;gap:13px;flex-wrap:wrap;margin-top:34px}
+.hero-cta.r{transition-delay:1.1s}
+/* vidéo hero bande cinématique 21:8 */
+.hero-media{margin-top:clamp(40px,6vh,72px);position:relative;border-radius:var(--r-md);overflow:hidden;background:var(--black);aspect-ratio:21/9;
+  box-shadow:var(--sh-3);
+  opacity:0;clip-path:inset(0 round 14px);transform:scale(1.03);
+  transition:opacity var(--t-reveal) var(--ease-net) 1s,transform 1.1s var(--ease-net) 1s}
+.hero.in .hero-media{opacity:1;transform:scale(1)}
+.hero-media video{width:100%;height:100%;object-fit:cover;display:block;opacity:.94}
+/* léger filet intérieur pour ancrer la vidéo sur fond blanc */
+.hero-media::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);pointer-events:none}
+@media(max-width:680px){.hero-media{aspect-ratio:16/10}}
+/* KPIs alignés sous un filet 1px */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:clamp(40px,5vh,64px);border-top:1px solid var(--line2)}
+@media(max-width:680px){.kpis{grid-template-columns:1fr 1fr}}
+.kpi{padding:26px 22px 4px 0;border-right:1px solid var(--line)}
+.kpi:last-child{border-right:none}
+@media(max-width:680px){.kpi:nth-child(2n){border-right:none}.kpi{padding-right:18px}}
+.kpi b{font-family:var(--mono);font-size:clamp(28px,3.6vw,42px);font-weight:600;letter-spacing:-.02em;display:block;color:var(--ink)}
+.kpi b .u{color:var(--orange-d);font-size:.58em}
+.kpi span{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;display:block;margin-top:8px}
+
+/* deux temps (problème / mécanisme) */
+.giant2{font-size:var(--huge);font-weight:900;letter-spacing:-.04em;line-height:.95;margin-top:24px}
+.giant2 .orange{color:var(--orange)}
+.giant2 .blue{color:var(--blue)}
+
+/* facture minimale */
+.fac{margin-top:clamp(40px,5vh,60px);max-width:560px;border:1px solid var(--line2);border-radius:4px;padding:30px 30px 26px}
+.fac-duo{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:clamp(32px,4vh,48px);align-items:start}
+.fac-duo .fac{margin-top:0;max-width:none}
+@media(max-width:720px){.fac-duo{grid-template-columns:1fr}}
+.fac.good{border:1.5px solid var(--ink)}
+.fac-tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;display:block}
+.fac.good .fac-tag{color:var(--ink)}
+.fac-row{display:flex;justify-content:space-between;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--line)}
+.fac-row .lbl{font-size:14px;color:var(--ink2)}
+.fac-row .val{font-family:var(--mono);font-weight:600;font-size:14px}
+.fac-row.dim .lbl{color:var(--muted2)}
+.fac-row .q{color:var(--orange-d)}
+.fac-row .ok{color:var(--blue)}
+/* facture floue : micro-vibrato des '??' */
+.vibr{display:inline-block;animation:vibr 3s ease-in-out infinite}
+@keyframes vibr{0%,100%{transform:translate(0,0)}25%{transform:translate(.6px,-.5px)}50%{transform:translate(-.5px,.4px)}75%{transform:translate(.4px,.5px)}}
+/* facture good : ✓ qui s'impriment une à une */
+.fac.good .fac-row .val{overflow:hidden;display:inline-block}
+.fac.good .fac-row .val>span{display:inline-block;transform:translateY(110%);transition:transform .55s var(--ease-net)}
+.in .fac.good .fac-row .val>span,.fac.good.in .fac-row .val>span{transform:translateY(0)}
+.fac.good .fac-row:nth-child(2) .val>span{transition-delay:.08s}
+.fac.good .fac-row:nth-child(3) .val>span{transition-delay:.18s}
+.fac.good .fac-row:nth-child(4) .val>span{transition-delay:.28s}
+.fac.good .fac-row:nth-child(5) .val>span{transition-delay:.38s}
+.fac.good .fac-total .val>span{transition-delay:.5s}
+.fac-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;padding-top:16px;border-top:2px solid var(--ink)}
+.fac-total .lbl{font-weight:900;font-size:15px;letter-spacing:-.02em}
+.fac-total .val{font-family:var(--mono);font-weight:600;font-size:16px}
+.fac-total .val.q{color:var(--orange-d)}
+.fac-total .val.hl{color:var(--blue)}
+.fac.good .fac-total .val{overflow:hidden;display:inline-block}
+.fac.good .fac-total .val>span{display:inline-block;transform:translateY(110%);transition:transform .55s var(--ease-net)}
+.in .fac.good .fac-total .val>span,.fac.good.in .fac-total .val>span{transform:translateY(0)}
+
+/* LIEN-CTA premium : flèche qui glisse + soulignement net */
+.cta-line{display:inline-flex;align-items:center;gap:9px;color:var(--blue);font-weight:900;font-size:15px;letter-spacing:-.01em;text-decoration:none;margin-top:var(--s4);position:relative;padding-bottom:3px}
+.cta-line span{display:inline-block;transition:transform var(--t-base) var(--ease-net)}
+.cta-line::after{content:"";position:absolute;left:0;bottom:0;height:1.5px;width:100%;border-radius:2px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+.cta-line:hover span{transform:translateX(5px)}
+.cta-line:hover::after{transform:scaleX(1)}
+
+/* LE GROUPE : carte interactive */
+.atlas-embed{width:100%;margin-top:clamp(40px,5vh,60px)}
+.atlas-embed iframe{width:100%;border:1px solid var(--line2);display:block;border-radius:var(--r-sm);background:#fff;min-height:700px;box-shadow:var(--sh-2)}
+@media(max-width:880px){.atlas-embed iframe{min-height:1120px}}
+
+/* BANDE VIDÉO interstitielle (noir) */
+.videoband{position:relative;background:var(--black);overflow:hidden;min-height:clamp(360px,60vh,560px);display:flex;align-items:center}
+.videoband video,.videoband .vbposter{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.42}
+.videoband .ov{position:absolute;inset:0;background:linear-gradient(105deg,rgba(10,10,11,.78),rgba(10,10,11,.42))}
+.videoband .wrap{position:relative;z-index:3;color:#fff;padding:clamp(64px,10vh,110px) 28px;transform:translateY(var(--par,0px));will-change:transform}
+.videoband .vk{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.66);display:block;margin-bottom:22px}
+.videoband .q{font-size:var(--big);font-weight:900;letter-spacing:-.03em;line-height:1.02;max-width:960px}
+.videoband .q .orange{color:var(--orange)}
+.videoband .by{margin-top:26px;font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.6)}
+
+/* CONTACT */
+.contact-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:clamp(40px,6vw,84px);align-items:start;margin-top:clamp(46px,6vh,68px)}
+@media(max-width:860px){.contact-grid{grid-template-columns:1fr;gap:44px}}
+.cinfo .crow{padding:22px 0;border-bottom:1px solid var(--line)}
+.cinfo .crow:first-child{border-top:1px solid var(--line2)}
+.cinfo .l{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cinfo a,.cinfo .v{font-size:18px;font-weight:900;letter-spacing:-.02em;color:var(--ink);text-decoration:none;display:inline-block;margin-top:8px;line-height:1.25;position:relative;transition:color var(--t-fast) var(--ease-soft)}
+.cinfo a::after{content:"";position:absolute;left:0;bottom:-2px;height:1.5px;width:100%;background:var(--blue);transform:scaleX(0);transform-origin:left;border-radius:2px;transition:transform var(--t-base) var(--ease-net)}
+.cinfo a:hover{color:var(--blue)}
+.cinfo a:hover::after{transform:scaleX(1)}
+/* formulaire underline-only */
+.cform .fr{margin-bottom:26px}
+.cform label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;transition:color .25s}
+.cform .fr:focus-within label{color:var(--blue)}
+.cform .fr{position:relative}
+.cform input,.cform textarea{width:100%;font-family:var(--font);font-size:16px;color:var(--ink);background:transparent;border:none;border-bottom:1px solid var(--line2);padding:8px 0;outline:none;transition:border-color var(--t-base) var(--ease-soft)}
+.cform input::placeholder,.cform textarea::placeholder{color:var(--muted2);transition:opacity var(--t-fast) var(--ease-soft)}
+.cform input:focus::placeholder,.cform textarea:focus::placeholder{opacity:.5}
+.cform input:focus,.cform textarea:focus{border-color:var(--ink)}
+/* filet accent qui se trace sous le champ actif */
+.cform .fr::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;background:linear-gradient(90deg,var(--orange),var(--blue));transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+.cform .fr:focus-within::after{transform:scaleX(1)}
+.cform .two{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+@media(max-width:520px){.cform .two{grid-template-columns:1fr}}
+.cform .btn{width:100%;justify-content:center;margin-top:10px}
+.cform .mini{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--muted2);text-align:center;margin-top:18px}
+
+/* FOOTER monumental */
+.foot{background:var(--black);color:#fff;padding:clamp(70px,10vh,120px) 0 clamp(40px,6vh,64px)}
+.foot .fbig{font-size:var(--big);font-weight:900;letter-spacing:-.04em;line-height:.96}
+.foot .fbig .blue{color:#5e93ff}
+.foot .fmeta{margin-top:clamp(40px,6vh,64px);border-top:1px solid rgba(255,255,255,.14);padding-top:28px;display:flex;flex-wrap:wrap;gap:14px 30px;font-family:var(--mono);font-size:12px;letter-spacing:.03em;color:rgba(255,255,255,.6)}
+.foot .fmeta a{color:rgba(255,255,255,.85);text-decoration:none;position:relative;padding-bottom:2px;transition:color var(--t-fast) var(--ease-soft)}
+.foot .fmeta a::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;background:rgba(255,255,255,.7);transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+.foot .fmeta a:hover{color:#fff}
+.foot .fmeta a:hover::after{transform:scaleX(1)}
+.foot .fmeta .sp{margin-left:auto}
+@media(max-width:560px){.foot .fmeta .sp{margin-left:0}}
+
+/* STICKY CTA */
+.stickycta{position:fixed;left:0;right:0;bottom:0;z-index:150;background:var(--black);color:#fff;transform:translateY(115%);transition:transform .35s var(--ease-net)}
+.stickycta.show{transform:none}
+.stickycta .in{max-width:1180px;margin:0 auto;padding:13px 28px;display:flex;align-items:center;gap:16px}
+.stickycta .t{font-weight:900;font-size:15px;letter-spacing:-.02em}
+.stickycta .t span{color:rgba(255,255,255,.6);font-weight:500;font-family:var(--mono);font-size:12px;letter-spacing:.03em}
+.stickycta .btn{margin-left:auto;white-space:nowrap;padding:11px 20px;font-size:14px}
+@media(max-width:600px){.stickycta .t span{display:none}.stickycta .in{padding:11px 18px}.stickycta .t{font-size:13px}}
+
+/* ---------- GRAVITAS national / héritage ---------- */
+.gravitas{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-pill);padding:8px 16px;margin-bottom:22px;background:var(--surface);box-shadow:var(--sh-1)}
+.gravitas::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;animation:pulseDot 3.6s var(--ease-soft) infinite}
+@keyframes pulseDot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.7);opacity:.55}}
+.gravitas.r{transition-delay:.05s}
+@media(max-width:560px){.gravitas{letter-spacing:.12em;font-size:10.5px;white-space:normal;border-radius:14px}}
+.hero-assise{font-size:clamp(17px,1.9vw,23px);font-weight:700;color:var(--ink);letter-spacing:-.02em;max-width:640px;margin-top:24px;line-height:1.28}
+.hero-assise.r{transition-delay:.2s}
+
+/* ============================================================
+   VALEURS / RSE — bande humaine remontée (après le hero)
+   ============================================================ */
+.values{border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);padding:clamp(56px,9vh,110px) 0}
+.values .vlede{font-size:clamp(17px,1.9vw,23px);font-weight:700;color:var(--ink);letter-spacing:-.02em;max-width:680px;margin-top:18px;line-height:1.32}
+.values .vlede b{color:var(--blue)}
+.val-grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:clamp(40px,6vh,64px);border-top:1px solid var(--line)}
+@media(max-width:780px){.val-grid{grid-template-columns:1fr}}
+.vcard{padding:30px 30px 30px 0;border-right:1px solid var(--line);position:relative;transition:transform var(--t-base) var(--ease-net)}
+.vcard:last-child{border-right:none}
+@media(max-width:780px){.vcard{border-right:none;border-bottom:1px solid var(--line);padding-right:0}}
+/* survol sobre : remontée légère + filet accent qui se trace en haut */
+.vcard::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--orange),var(--blue));transform:scaleX(0);transform-origin:left;transition:transform var(--t-base) var(--ease-net)}
+@media(min-width:781px){.vcard:hover{transform:translateY(-4px)}.vcard:hover::before{transform:scaleX(1)}}
+.vcard .vn{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-d);font-weight:500}
+.vcard h3{font-size:clamp(24px,3vw,34px);font-weight:900;letter-spacing:-.03em;margin:14px 0 0;line-height:1}
+.vcard h3 .blue{color:var(--blue)}
+.vcard p{font-size:14px;color:var(--ink2);margin-top:12px;max-width:300px;line-height:1.5}
+
+/* ============================================================
+   OFFILOG — plateforme parapharmacie premium
+   accent doux propre à la section (vert/rosé très clair),
+   ancrage marque conservé. transform/opacity only.
+   ============================================================ */
+.offilog-sec{
+  --soft-ink:#5B6573;
+  background:linear-gradient(180deg,#FFFFFF 0%,#EFF5FC 100%);
+  border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);
+  overflow:hidden;
+}
+.offilog-sec .kicker{color:var(--soft-ink)}
+.offilog-sec .kicker::before{background:var(--soft-ink)}
+.offilog-sec .giant2{color:var(--ink)}
+.offilog-sec .lede{color:var(--soft-ink)}
+.opl-name{display:inline-flex;align-items:baseline;gap:12px;margin-top:22px;flex-wrap:wrap}
+.opl-name .opl-logo{font-size:clamp(30px,4.4vw,60px);font-weight:900;letter-spacing:-.045em;line-height:.95;color:var(--ink)}
+.opl-name .opl-tag{font-family:var(--mono);font-size:clamp(13px,1.4vw,16px);letter-spacing:-.01em;color:var(--soft-ink);font-weight:500}
+.opl-claim{font-size:clamp(16px,1.8vw,21px);font-weight:700;color:var(--ink);letter-spacing:-.02em;max-width:560px;margin-top:18px;line-height:1.3}
+
+/* carrousel fluide de catégories — tuiles douces auto-suffisantes */
+.opl-rail{margin-top:clamp(40px,6vh,64px);overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.opl-track{display:flex;gap:20px;width:max-content;animation:oplscroll 48s linear infinite}
+.opl-rail:hover .opl-track{animation-play-state:paused}
+@keyframes oplscroll{to{transform:translateX(-50%)}}
+.opl-tile{flex-shrink:0;width:clamp(160px,18vw,205px);border-radius:var(--r-lg);
+  background:#fff;border:1px solid var(--line);
+  box-shadow:var(--sh-2);
+  padding:14px;display:flex;flex-direction:column;position:relative;overflow:hidden;
+  transition:transform var(--t-slow) var(--ease-net),box-shadow var(--t-slow) var(--ease-net)}
+.opl-tile:hover{transform:translateY(-6px);box-shadow:var(--sh-3)}
+.opl-tile .ph{aspect-ratio:1/1;border-radius:var(--r-sm);background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.opl-tile .ph img{width:100%;height:100%;object-fit:contain;transition:transform var(--t-slow) var(--ease-net)}
+.opl-tile:hover .ph img{transform:scale(1.06)}
+
+/* chiffres-clés Offilog en ligne douce */
+.opl-facts{display:grid;grid-template-columns:repeat(4,1fr);margin-top:clamp(40px,6vh,64px);
+  border-top:1px solid rgba(0,0,0,.08)}
+@media(max-width:680px){.opl-facts{grid-template-columns:1fr 1fr}}
+.opl-fact{padding:24px 22px 4px 0;border-right:1px solid rgba(0,0,0,.07)}
+.opl-fact:last-child{border-right:none}
+@media(max-width:680px){.opl-fact:nth-child(2n){border-right:none}}
+.opl-fact b{font-family:var(--mono);font-size:clamp(26px,3.4vw,40px);font-weight:600;letter-spacing:-.02em;display:block;color:var(--ink)}
+.opl-fact b .u{color:var(--orange-d);font-size:.5em}
+.opl-fact span{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft-ink);font-weight:500;display:block;margin-top:8px}
+.offilog-sec .btn-ghost{border-color:var(--ink)}
+.opl-cta{margin-top:clamp(36px,5vh,52px)}
+
+/* ============================================================
+   ACCOMPAGNEMENT — minimal, distinctif (libellés + 1 CTA)
+   ============================================================ */
+.acc-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:clamp(34px,5vh,48px)}
+.acc-chip{display:inline-flex;align-items:center;gap:10px;border:1.5px solid var(--ink);border-radius:999px;
+  padding:13px 22px;font-weight:900;font-size:clamp(15px,1.7vw,19px);letter-spacing:-.02em;color:var(--ink);
+  background:transparent;transition:transform .3s var(--ease-snap),background .25s ease,color .25s ease}
+.acc-chip .acc-n{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--orange-d);letter-spacing:.04em}
+.acc-chip:hover{transform:translateY(-3px);background:var(--ink);color:#fff}
+.acc-chip:hover .acc-n{color:var(--orange)}
+
+/* REDUCED MOTION : tout posé net — fallback complet */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .r{opacity:1!important;transform:none!important}
+  .line>span,.kw>i{transform:none!important;opacity:1!important}
+  .trin{letter-spacing:-.04em!important}
+  .underx::after{transform:scaleX(1)!important}
+  .kicker::before,.vcard::before{transform:scaleX(1)!important}
+  .hero-media{opacity:1!important;transform:none!important;clip-path:none!important}
+  .fac.good .fac-row .val>span,.fac.good .fac-total .val>span{transform:none!important}
+  .opl-track{animation:none!important}
+  /* boutons : pas de remplissage animé, on garde l'état au repos lisible */
+  .btn::before{transform:scaleY(0)!important}
+  .btn,.btn:hover,.btn:active{transform:none!important}
+  .btn .ar,.cta-line span,.btn>span{transform:none!important}
+  .videoband .wrap{transform:none!important}
+  .gravitas::before{opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-in">
+    <a href="#" class="brand" id="brand">
+      <img src="assets/logo.png" alt="Intégral Pharma">
+      <span class="tx"><span class="o">Intégral</span> <span class="b">Pharma</span><small>Grossiste-répartiteur</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="#valeurs">Valeurs</a>
+      <a href="#transparence">Transparence</a>
+      <a href="#groupe">Le groupe</a>
+      <a href="#offilog">Offilog</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <a href="#contact" class="btn btn-primary"><span>Nous écrire <i class="ar">→</i></span></a>
+  </div>
+</nav>
+
+<!-- 1) HERO -->
+<header class="hero r" id="hero">
+  <div class="wrap">
+    <span class="gravitas r">Grossiste-répartiteur de 1ʳᵉ intention · depuis plus de 20 ans</span>
+    <h1>
+      <span class="line"><span>Plus de marge,</span></span>
+      <span class="line l2"><span>nette sur <span class="underx blue trin">facture<span class="dotorange">.</span></span></span></span>
+    </h1>
+    <p class="hero-assise r d1">Dès la 1ère boîte. Ni franco, ni engagement.</p>
+    <div class="hero-cta r">
+      <a href="#videoband" class="btn btn-primary"><span>Voir la vidéo <i class="ar">→</i></span></a>
+    </div>
+    <div class="hero-media">
+      <video autoplay muted loop playsinline preload="auto" poster="assets/poster.jpg"><source src="assets/hero.mp4" type="video/mp4"></video>
+    </div>
+  </div>
+</header>
+
+<!-- 01 VALEURS / RSE — remontées juste après le hero -->
+<section id="valeurs" class="values r">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">01</span> Valeurs</span>
+    <p class="vlede r d1">Défendre <b>l'officine indépendante</b>, près de chez vous, par des femmes et des hommes engagés.</p>
+    <div class="val-grid">
+      <div class="vcard r d1">
+        <div class="vn">01</div>
+        <h3 class="blue">Confiance</h3>
+        <p>Une relation directe, sans détour, dans la durée.</p>
+      </div>
+      <div class="vcard r d2">
+        <div class="vn">02</div>
+        <h3>Engagement</h3>
+        <p>Aux côtés des pharmaciens et des territoires français.</p>
+      </div>
+      <div class="vcard r d3">
+        <div class="vn">03</div>
+        <h3>Respect</h3>
+        <p>De chaque officine, de chaque équipe, de chaque patient.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 LA TRANSPARENCE — factures côte à côte -->
+<section id="transparence" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">02</span> Transparence</span>
+    <div class="giant2 r">
+      <span class="line"><span>La marge,</span></span>
+      <span class="line l2"><span class="blue">visible<span class="dotorange">.</span></span></span>
+    </div>
+    <p class="lede r d1">Le marché la cache derrière RFA, paliers, franco.</p>
+    <div class="fac-duo">
+      <div class="fac r d1">
+        <span class="fac-tag">Facture opaque</span>
+        <div class="fac-row"><span class="lbl">Remise sur facture</span><span class="val q">0,00 €</span></div>
+        <div class="fac-row dim"><span class="lbl">RFA annuel</span><span class="val"><span class="vibr">?? %</span></span></div>
+        <div class="fac-row dim"><span class="lbl">Palier</span><span class="val"><span class="vibr">?? €</span></span></div>
+        <div class="fac-row dim"><span class="lbl">Franco</span><span class="val"><span class="vibr">?? €</span></span></div>
+        <div class="fac-total"><span class="lbl">Marge réelle</span><span class="val q"><span class="vibr">?</span></span></div>
+      </div>
+      <div class="fac good r d2">
+        <span class="fac-tag">Facture Intégral</span>
+        <div class="fac-row"><span class="lbl">Remise nette</span><span class="val ok"><span>✓ visible</span></span></div>
+        <div class="fac-row"><span class="lbl">Dès la 1ère boîte</span><span class="val ok"><span>✓</span></span></div>
+        <div class="fac-row"><span class="lbl">Palier / franco</span><span class="val ok"><span>aucun</span></span></div>
+        <div class="fac-row"><span class="lbl">Engagement</span><span class="val ok"><span>aucun</span></span></div>
+        <div class="fac-total"><span class="lbl">Marge</span><span class="val hl"><span>nette</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 LE GROUPE -->
+<section id="groupe" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">03</span> Le groupe</span>
+    <div class="giant2 r">
+      <span class="line"><span class="kw"><i class="s1">N</i><i class="s2">a</i><i class="s3">t</i><i class="s4">i</i><i class="s5">o</i><i class="s6">n</i><i class="s7">a</i><i class="s8">l</i></span><span class="dotorange">.</span></span>
+    </div>
+    <p class="lede r d1">Grossiste-répartiteur de première intention depuis plus de 20 ans.</p>
+    <div class="atlas-embed r d1">
+      <iframe id="atlasFrame" src="map-component.html" title="Carte interactive des établissements Intégral Pharma" loading="lazy" scrolling="no"></iframe>
+    </div>
+
+    <p class="lede r d1" style="margin-top:clamp(24px,3vh,36px)">Livraison d'une fois par semaine à une fois par jour, partout en France.</p>
+  </div>
+</section>
+
+<!-- BANDE VIDÉO (interstitiel) -->
+<section class="videoband r" id="videoband">
+  <video id="bandVid" autoplay muted playsinline preload="auto" poster="assets/poster.jpg"><source src="assets/band.mp4" type="video/mp4"></video>
+  <div class="ov"></div>
+  <div class="wrap">
+    <span class="vk">En vidéo</span>
+    <div class="q">On prend la complexité. <span class="orange">Vous gardez la marge.</span></div>
+  </div>
+</section>
+
+<!-- 04 OFFILOG — plateforme parapharmacie premium -->
+<section id="offilog" class="offilog-sec block r">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">04</span> Parapharmacie</span>
+    <div class="giant2 r">
+      <span class="line"><span>Toute la</span></span>
+      <span class="line l2"><span class="blue">parapharmacie<span class="dotorange">.</span></span></span>
+    </div>
+    <div class="opl-name r d1">
+      <span class="opl-logo">Offilog</span>
+      <span class="opl-tag">— notre plateforme de parapharmacie</span>
+    </div>
+    <p class="opl-claim r d1">La plus grande collection de parapharmacie de France, en un seul compte.</p>
+
+    <!-- carrousel de vrais produits -->
+    <div class="opl-rail r d2">
+      <div class="opl-track" id="oplTrack">
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod1.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod2.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod3.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod4.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod5.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod6.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod7.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod8.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod9.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod10.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod11.jpg" alt="" loading="lazy"></div></div>
+        <div class="opl-tile"><div class="ph"><img src="assets/produits/prod12.jpg" alt="" loading="lazy"></div></div>
+      </div>
+    </div>
+
+    <!-- chiffres-clés Offilog -->
+    <div class="opl-facts">
+      <div class="opl-fact r d1"><b class="mono" data-count="14000" data-prefix="+" data-sep>+14 000</b><span>Références</span></div>
+      <div class="opl-fact r d1"><b class="mono" data-count="430" data-prefix="+">+430</b><span>Laboratoires</span></div>
+      <div class="opl-fact r d2"><b class="mono">0<span class="u">€</span></b><span>Adhésion</span></div>
+      <div class="opl-fact r d2"><b class="mono">100<span class="u">%</span></b><span>Du catalogue</span></div>
+    </div>
+
+    <div class="opl-cta r d2">
+      <a href="#contact" class="btn btn-ghost"><span>Découvrir Offilog <i class="ar">→</i></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- 05 ACCOMPAGNEMENT — minimal, distinctif -->
+<section id="accompagnement" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">05</span> Accompagnement</span>
+    <div class="giant2 r">
+      <span class="line"><span>Votre projet,</span></span>
+      <span class="line l2"><span class="blue">on le porte<span class="dotorange">.</span></span></span>
+    </div>
+    <p class="lede r d1">Pour les titulaires, à chaque étape de l'officine.</p>
+    <div class="acc-row r d1">
+      <span class="acc-chip"><span class="acc-n">01</span>Transfert</span>
+      <span class="acc-chip"><span class="acc-n">02</span>Agrandissement</span>
+      <span class="acc-chip"><span class="acc-n">03</span>Cession de parts</span>
+      <span class="acc-chip"><span class="acc-n">04</span>Optimisation</span>
+    </div>
+    <a href="#contact" class="cta-line r d2">En parler avec nous <span>→</span></a>
+  </div>
+</section>
+
+<!-- 06 CARRIÈRES — concis et accueillant -->
+<section id="carrieres" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">06</span> Carrières</span>
+    <div class="giant2 r">
+      <span class="line"><span>Le groupe</span></span>
+      <span class="line l2"><span class="blue">recrute<span class="dotorange">.</span></span></span>
+    </div>
+    <p class="lede r d1">Rejoignez des équipes proches du terrain.</p>
+    <div class="acc-row r d1">
+      <span class="acc-chip"><span class="acc-n">01</span>Approvisionnement</span>
+      <span class="acc-chip"><span class="acc-n">02</span>Commercial</span>
+      <span class="acc-chip"><span class="acc-n">03</span>Pharmacien responsable</span>
+      <span class="acc-chip"><span class="acc-n">04</span>Préparateur-chauffeur</span>
+    </div>
+    <a href="#contact" class="cta-line r d2">Postuler <span>→</span></a>
+  </div>
+</section>
+
+<!-- 07 CONTACT -->
+<section id="contact" class="block">
+  <div class="wrap">
+    <span class="kicker"><span class="idx">07</span> Contact</span>
+    <h2 style="font-size:var(--giant);font-weight:900;letter-spacing:-.04em;line-height:.95;margin:18px 0 0">
+      <span class="line r"><span>Parlons-<span class="underx blue trin">en<span class="dotorange">.</span></span></span></span>
+    </h2>
+    <p class="lede r d1">758 Chemin de la Source, 83400 Hyères.</p>
+    <div class="contact-grid">
+      <div class="cinfo r d1">
+        <div class="crow"><div class="l">Email</div><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a></div>
+        <div class="crow"><div class="l">LinkedIn</div><a href="https://www.linkedin.com/company/integralpharma" target="_blank" rel="noopener">Intégral Pharma →</a></div>
+      </div>
+      <form class="cform r d2" id="cform">
+        <div class="two">
+          <div class="fr"><label for="f-nom">Nom &amp; prénom</label><input id="f-nom" name="nom" type="text" placeholder="Votre nom" required></div>
+          <div class="fr"><label for="f-off">Votre officine</label><input id="f-off" name="officine" type="text" placeholder="Nom de la pharmacie"></div>
+        </div>
+        <div class="two">
+          <div class="fr"><label for="f-mail">Email</label><input id="f-mail" name="email" type="email" placeholder="vous@pharmacie.fr" required></div>
+          <div class="fr"><label for="f-tel">Téléphone</label><input id="f-tel" name="tel" type="tel" placeholder="06 ..."></div>
+        </div>
+        <div class="fr"><label for="f-cp">Code postal</label><input id="f-cp" name="cp" type="text" inputmode="numeric" maxlength="5" placeholder="ex. 83400"></div>
+        <div class="fr"><label for="f-msg">Votre message</label><textarea id="f-msg" name="msg" rows="3" placeholder="Votre demande…"></textarea></div>
+        <button type="submit" class="btn btn-primary"><span>Nous écrire <i class="ar">→</i></span></button>
+        <div class="mini">Réponse sous 48h.</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- STICKY CTA -->
+<div class="stickycta" id="stickycta">
+  <div class="in">
+    <div class="t">Plus de marge <span>— nette sur facture</span></div>
+    <a href="#contact" class="btn btn-light"><span>Nous écrire <i class="ar">→</i></span></a>
+  </div>
+</div>
+
+<!-- FOOTER monumental -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="fbig"><span class="line r"><span>Plus de marge,</span></span><span class="line l2 r"><span>nette sur <span class="blue">facture.</span></span></span></div>
+    <div class="fmeta">
+      <span>Intégral Pharma</span>
+      <a href="https://www.linkedin.com/company/integralpharma" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      <a href="#">Mentions légales</a>
+      <span class="sp">758 Chemin de la Source, 83400 Hyères · © 2026</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* ---------- progress + nav + sticky (un seul listener) ---------- */
+var prog=document.getElementById('prog'),nav=document.getElementById('nav');
+var sticky=document.getElementById('stickycta');
+var ticking=false;
+function onScroll(){
+  var docH=document.documentElement.scrollHeight, h=docH-innerHeight;
+  var ratio = h>0 ? scrollY/h : 0;
+  prog.style.width=(ratio*100)+'%';
+  nav.classList.toggle('scrolled',scrollY>10);
+  if(sticky){ var show=scrollY>innerHeight*0.9 && (scrollY+innerHeight < docH-520); sticky.classList.toggle('show',show); }
+  ticking=false;
+}
+addEventListener('scroll',function(){ if(!ticking){ ticking=true; requestAnimationFrame(onScroll);} },{passive:true});
+onScroll();
+
+/* ---------- count-up (cubic out 1.3s, format fr-FR) ---------- */
+function countUp(el){
+  var t=+el.dataset.count; if(isNaN(t))return;
+  if(reduce){ return; } /* valeur finale déjà dans le HTML */
+  var suf=el.dataset.suffix||'',pre=el.dataset.prefix||'',sep=el.dataset.sep!==undefined,t0=null;
+  function fmt(n){n=Math.round(n);return sep?n.toLocaleString('fr-FR'):n;}
+  function render(v){
+    var base=fmt(v);
+    el.innerHTML=pre+base+(suf?'<span class="u">'+suf+'</span>':'');
+  }
+  function step(now){
+    if(!t0)t0=now; var p=Math.min((now-t0)/1300,1),e=1-Math.pow(1-p,3);
+    render(t*e);
+    if(p<1)requestAnimationFrame(step);
+    else render(t);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ---------- reveal (masques, staggers, composants) ---------- */
+var io=new IntersectionObserver(function(es){
+  es.forEach(function(e){
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      if(e.target.querySelectorAll){ e.target.querySelectorAll('[data-count]').forEach(countUp); }
+      if(e.target.matches&&e.target.matches('[data-count]')){ countUp(e.target); }
+      io.unobserve(e.target);
+    }
+  });
+},{threshold:.18,rootMargin:'0px 0px -8% 0px'});
+document.querySelectorAll('.r,.giant2,.fac,h1,.hero,.kicker').forEach(function(el){io.observe(el);});
+
+/* ---------- vidéos : ne jouer que la vidéo visible ---------- */
+var vio=new IntersectionObserver(function(es){
+  es.forEach(function(e){
+    var v=e.target;
+    if(e.isIntersecting){ var p=v.play&&v.play(); if(p&&p.catch)p.catch(function(){}); }
+    else if(v.pause){ v.pause(); }
+  });
+},{threshold:.2});
+document.querySelectorAll('video').forEach(function(v){vio.observe(v);});
+
+/* ---------- bande "Notre plateforme" : playlist ---------- */
+var bandVid=document.getElementById('bandVid');
+if(bandVid){
+  var clips=['assets/band.mp4','assets/clip3.mp4','assets/hero.mp4'], ci=0;
+  bandVid.addEventListener('ended',function(){
+    ci=(ci+1)%clips.length; bandVid.src=clips[ci];
+    var p=bandVid.play(); if(p&&p.catch)p.catch(function(){});
+  });
+}
+
+/* ---------- hero in (chorégraphie d'ouverture) ---------- */
+requestAnimationFrame(function(){
+  requestAnimationFrame(function(){ document.getElementById('hero').classList.add('in'); });
+});
+
+/* ---------- carrousel Offilog : doubler le contenu pour boucle ---------- */
+(function(){
+  ['oplTrack'].forEach(function(id){
+    var m=document.getElementById(id);
+    if(m) m.innerHTML+=m.innerHTML;
+  });
+})();
+
+/* ---------- effet magnétique léger borné sur les boutons ----------
+   pointeur fin uniquement (souris), jamais en reduced-motion ni tactile.
+   transform only via --bx/--by, amplitude plafonnée. */
+var finePointer = matchMedia('(hover:hover) and (pointer:fine)').matches;
+if(!reduce && finePointer){
+  document.querySelectorAll('.btn').forEach(function(b){
+    var raf=null,tx=0,ty=0;
+    var MAX=6; /* px : amplitude max, discret */
+    function move(e){
+      var r=b.getBoundingClientRect();
+      var dx=(e.clientX-(r.left+r.width/2))/r.width;   /* -.5..+.5 */
+      var dy=(e.clientY-(r.top+r.height/2))/r.height;
+      tx=Math.max(-1,Math.min(1,dx*2))*MAX;
+      ty=Math.max(-1,Math.min(1,dy*2))*MAX;
+      if(!raf)raf=requestAnimationFrame(apply);
+    }
+    function apply(){ raf=null; b.style.setProperty('--bx',tx.toFixed(2)+'px'); b.style.setProperty('--by',ty.toFixed(2)+'px'); }
+    function reset(){ tx=0;ty=0; b.style.setProperty('--bx','0px'); b.style.setProperty('--by','0px'); }
+    b.addEventListener('mousemove',move);
+    b.addEventListener('mouseleave',reset);
+  });
+}
+
+/* ---------- nav scroll-spy : lien actif selon la section visible ---------- */
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.nav-links a'));
+  if(!links.length)return;
+  var map={};
+  links.forEach(function(a){ var id=a.getAttribute('href'); if(id&&id.charAt(0)==='#'&&id.length>1){ map[id.slice(1)]=a; } });
+  var ids=Object.keys(map); if(!ids.length)return;
+  var spy=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){a.classList.remove('active');});
+        var a=map[e.target.id]; if(a)a.classList.add('active');
+      }
+    });
+  },{rootMargin:'-45% 0px -50% 0px',threshold:0});
+  ids.forEach(function(id){ var s=document.getElementById(id); if(s)spy.observe(s); });
+})();
+
+/* ---------- parallax très léger sur la bande vidéo (transform only) ---------- */
+if(!reduce){
+  var band=document.getElementById('videoband');
+  var bandWrap=band&&band.querySelector('.wrap');
+  if(band&&bandWrap){
+    var praf=false;
+    function par(){
+      praf=false;
+      var r=band.getBoundingClientRect();
+      if(r.bottom<0||r.top>innerHeight)return;
+      var prog=(r.top+r.height/2-innerHeight/2)/innerHeight; /* ~ -1..1 */
+      bandWrap.style.setProperty('--par',(prog*-18).toFixed(1)+'px'); /* amplitude discrète */
+    }
+    addEventListener('scroll',function(){ if(!praf){praf=true;requestAnimationFrame(par);} },{passive:true});
+    par();
+  }
+}
+
+/* ---------- contact form -> mailto ---------- */
+var cf=document.getElementById('cform');
+if(cf)cf.addEventListener('submit',function(e){
+  e.preventDefault();
+  var g=function(n){var el=cf.querySelector('[name="'+n+'"]');return el?el.value:'';};
+  var body='Nom: '+g('nom')+'\nOfficine: '+g('officine')+'\nCode postal: '+g('cp')+'\nEmail: '+g('email')+'\nTéléphone: '+g('tel')+'\n\n'+g('msg');
+  location.href='mailto:contact@integralpharma.fr?subject='+encodeURIComponent('Demande via le site — '+g('nom'))+'&body='+encodeURIComponent(body);
+});
+})();
+</script>
+<script>(function(){var f=document.getElementById("atlasFrame");if(!f)return;function fit(){try{var d=f.contentDocument||f.contentWindow.document;if(d&&d.body){f.style.height=d.body.scrollHeight+"px";}}catch(e){}}f.addEventListener("load",function(){fit();setTimeout(fit,300);setTimeout(fit,1200);});addEventListener("resize",fit);addEventListener("message",function(e){if(e.data&&e.data.ipAtlasHeight){f.style.height=e.data.ipAtlasHeight+"px";}});})();</script>
+</body>
+</html>
