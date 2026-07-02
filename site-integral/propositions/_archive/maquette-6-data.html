@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intégral Pharma — Réseau logistique national</title>
+<meta name="description" content="Intégral Pharma — grossiste-répartiteur de première intention. Plus de marge, sur chaque commande. 9 agences, couverture nationale.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#0050E6;
+  --blue-dk:#003BAA;
+  --blue-ink:#0A1430;
+  --orange:#F39A1B;
+  --orange-dk:#D67F00;
+  --white:#FFFFFF;
+  --paper:#F6F8FC;
+  --paper-2:#EEF2FA;
+  --ink:#0B1733;
+  --muted:#56627E;
+  --faint:#8A95B0;
+  --line:#DCE3F0;
+  --line-2:#E7ECF6;
+  --grid:rgba(10,23,48,.055);
+  --grid-strong:rgba(10,23,48,.10);
+  --ok:#16A34A;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --ease-2:cubic-bezier(.65,0,.35,1);
+  --r:4px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;font-family:var(--sans);color:var(--ink);
+  background:var(--paper);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  line-height:1.55;overflow-x:hidden;
+}
+/* fine technical grid background */
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:46px 46px;
+  mask-image:radial-gradient(120% 90% at 50% 0%,#000 30%,transparent 100%);
+  -webkit-mask-image:radial-gradient(120% 90% at 50% 0%,#000 30%,transparent 100%);
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+button{font-family:inherit}
+:focus-visible{outline:2.5px solid var(--blue);outline-offset:3px;border-radius:2px}
+
+.wrap{max-width:1280px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.mono{font-family:var(--mono)}
+
+/* ===== labels / eyebrows ===== */
+.tag{
+  display:inline-flex;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--blue);
+}
+.tag .dot{width:7px;height:7px;background:var(--orange);border-radius:1px;flex:none}
+.tag.tk{
+  border:1px solid var(--line);background:var(--white);
+  padding:5px 11px;border-radius:2px;color:var(--muted);
+}
+.tag.tk b{color:var(--blue);font-weight:600}
+
+.sec-label{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--faint);display:flex;align-items:center;gap:14px;margin:0 0 26px;
+}
+.sec-label::before{content:attr(data-i);color:var(--blue);font-weight:600}
+.sec-label::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--line),transparent)}
+
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em;line-height:1.05}
+.h-display{font-size:clamp(40px,6.4vw,82px);font-weight:700;letter-spacing:-.035em;line-height:.98}
+.h-sec{font-size:clamp(30px,4.4vw,52px);letter-spacing:-.03em;line-height:1.02}
+.lede{color:var(--muted);font-size:clamp(15px,1.6vw,18px);max-width:54ch}
+
+/* ===== buttons ===== */
+.btn{
+  display:inline-flex;align-items:center;gap:10px;cursor:pointer;
+  font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:.02em;
+  padding:14px 22px;border-radius:var(--r);border:1px solid transparent;
+  transition:transform .35s var(--ease),background .25s,box-shadow .25s,color .25s,border-color .25s;
+  white-space:nowrap;text-transform:uppercase;letter-spacing:.06em;
+}
+.btn .arr{transition:transform .35s var(--ease)}
+.btn:hover .arr{transform:translateX(4px)}
+.btn--primary{background:var(--blue);color:#fff;box-shadow:0 1px 0 rgba(0,0,0,.04),0 14px 30px -16px rgba(0,80,230,.7)}
+.btn--primary:hover{background:var(--blue-dk);transform:translateY(-2px);box-shadow:0 20px 40px -18px rgba(0,80,230,.85)}
+.btn--ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn--ghost:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-2px)}
+.btn--orange{background:var(--orange);color:#3a2400}
+.btn--orange:hover{background:var(--orange-dk);color:#fff;transform:translateY(-2px)}
+
+/* ===================== HEADER ===================== */
+.hd{
+  position:sticky;top:0;z-index:60;
+  background:rgba(246,248,252,.86);
+  border-bottom:1px solid var(--line);
+  transition:box-shadow .3s,background .3s;
+}
+.hd.stuck{box-shadow:0 1px 0 var(--line),0 12px 30px -22px rgba(10,23,48,.5);background:rgba(246,248,252,.95)}
+.hd__in{display:flex;align-items:center;gap:26px;height:68px}
+.hd__logo{height:34px;width:auto}
+.hd__nav{display:flex;gap:4px;margin-left:14px}
+.hd__nav a{
+  font-size:13.5px;color:var(--muted);padding:8px 12px;border-radius:3px;
+  position:relative;transition:color .2s,background .2s;font-weight:500;
+}
+.hd__nav a:hover{color:var(--ink);background:var(--paper-2)}
+.hd__nav a::after{content:"";position:absolute;left:12px;right:12px;bottom:3px;height:1.5px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .3s var(--ease)}
+.hd__nav a:hover::after{transform:scaleX(1)}
+.hd__spacer{flex:1}
+.hd__status{
+  display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;
+  color:var(--muted);letter-spacing:.04em;
+}
+.hd__status .pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);position:relative}
+.hd__status .pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--ok);animation:pulse 2.4s var(--ease) infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.7}70%{transform:scale(3);opacity:0}100%{opacity:0}}
+.hd .btn{padding:11px 17px;font-size:12px}
+.burger{display:none;background:none;border:1px solid var(--line);border-radius:4px;width:42px;height:38px;cursor:pointer;flex-direction:column;gap:4px;align-items:center;justify-content:center}
+.burger span{width:18px;height:1.5px;background:var(--ink);transition:.3s}
+
+/* ===================== HERO ===================== */
+.hero{position:relative;padding:64px 0 38px;overflow:hidden}
+.hero__media{
+  position:absolute;inset:0;z-index:0;overflow:hidden;
+}
+.hero__media video,.hero__media img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+}
+.hero__media::after{
+  content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,rgba(246,248,252,.62) 0%,rgba(246,248,252,.86) 52%,var(--paper) 100%),
+    linear-gradient(90deg,rgba(246,248,252,.9) 0%,rgba(246,248,252,.35) 60%,transparent 100%);
+}
+.hero__grid-ov{
+  position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--grid-strong) 1px,transparent 1px),linear-gradient(90deg,var(--grid-strong) 1px,transparent 1px);
+  background-size:92px 92px;
+  mask-image:linear-gradient(180deg,#000,transparent 80%);
+  -webkit-mask-image:linear-gradient(180deg,#000,transparent 80%);
+}
+.hero__in{position:relative;z-index:2}
+.hero__top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:42px}
+.hero__coords{font-family:var(--mono);font-size:11.5px;color:var(--faint);letter-spacing:.06em}
+.hero__coords b{color:var(--blue);font-weight:600}
+.hero h1{margin:18px 0 0;max-width:16ch}
+.hero h1 .o{color:var(--orange)}
+.hero__sub{margin:24px 0 0;font-size:clamp(16px,1.9vw,21px);color:var(--muted);max-width:46ch;line-height:1.5}
+.hero__cta{display:flex;gap:14px;margin-top:38px;flex-wrap:wrap}
+
+/* hero readout strip */
+.hero__readout{
+  margin-top:48px;border:1px solid var(--line);background:var(--white);border-radius:var(--r);
+  display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;
+  box-shadow:0 24px 60px -40px rgba(10,23,48,.5);
+}
+.ro{padding:20px 22px;border-right:1px solid var(--line-2);position:relative;overflow:hidden}
+.ro:last-child{border-right:none}
+.ro__k{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.ro__v{font-family:var(--mono);font-size:clamp(26px,3vw,38px);font-weight:600;letter-spacing:-.02em;margin-top:7px;line-height:1}
+.ro__v .u{color:var(--orange);font-size:.55em;margin-left:2px;font-weight:500}
+.ro__bar{height:3px;background:var(--paper-2);border-radius:2px;margin-top:14px;overflow:hidden}
+.ro__bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--orange));border-radius:2px;transition:width 1.4s var(--ease)}
+.ro.in .ro__bar i{width:var(--w,80%)}
+
+/* ===================== TICKER ===================== */
+.ticker{
+  background:var(--blue-ink);color:#fff;border-top:1px solid #14224a;border-bottom:1px solid #14224a;
+  overflow:hidden;position:relative;z-index:2;
+}
+.ticker__rail{display:flex;width:max-content;animation:marq 38s linear infinite}
+.ticker:hover .ticker__rail{animation-play-state:paused}
+@keyframes marq{to{transform:translateX(-50%)}}
+.ticker__item{display:flex;align-items:center;gap:14px;padding:13px 0;white-space:nowrap}
+.ti-cell{display:flex;align-items:center;gap:11px;padding:0 30px;border-right:1px solid rgba(255,255,255,.1);font-family:var(--mono);font-size:12.5px;letter-spacing:.04em}
+.ti-cell .city{color:#fff;font-weight:500}
+.ti-cell .dep{color:var(--orange)}
+.ti-cell .st{display:inline-flex;align-items:center;gap:6px;color:#8FB4FF;font-size:11px}
+.ti-cell .st b{width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block;box-shadow:0 0 0 0 rgba(22,163,74,.6);animation:tip 2.6s var(--ease) infinite}
+@keyframes tip{0%{box-shadow:0 0 0 0 rgba(22,163,74,.55)}70%{box-shadow:0 0 0 6px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+
+/* ===================== generic section ===================== */
+section{position:relative;z-index:1}
+.S{padding:104px 0}
+.S--tight{padding:80px 0}
+
+/* ===================== VALEURS ===================== */
+.val__head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:48px}
+@media(max-width:760px){.val__head{grid-template-columns:1fr}}
+.val__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.vcard{
+  border:1px solid var(--line);background:var(--white);border-radius:var(--r);padding:30px 26px 26px;
+  position:relative;overflow:hidden;transition:transform .4s var(--ease),box-shadow .4s,border-color .4s;
+}
+.vcard::before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease)}
+.vcard:hover{transform:translateY(-4px);box-shadow:0 26px 50px -34px rgba(10,23,48,.55);border-color:var(--line)}
+.vcard:hover::before{transform:scaleX(1)}
+.vcard__n{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.1em}
+.vcard__t{font-size:23px;font-weight:700;margin:18px 0 10px;letter-spacing:-.02em}
+.vcard__d{color:var(--muted);font-size:14.5px;line-height:1.6}
+.vcard__ico{width:40px;height:40px;color:var(--blue)}
+
+/* ===================== OFFRES ===================== */
+.offers{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
+@media(max-width:880px){.offers{grid-template-columns:1fr;gap:34px}}
+.labos{border:1px solid var(--line);background:var(--white);border-radius:var(--r);overflow:hidden}
+.labos__hd{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line-2);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.labos__row{display:flex;align-items:center;gap:16px;padding:18px 20px;border-bottom:1px solid var(--line-2);transition:background .25s}
+.labos__row:last-child{border-bottom:none}
+.labos__row:hover{background:var(--paper)}
+.labos__idx{font-family:var(--mono);font-size:12px;color:var(--blue);width:30px}
+.labos__name{font-size:18px;font-weight:600;letter-spacing:-.01em;flex:1}
+.labos__meter{width:120px;height:6px;background:var(--paper-2);border-radius:3px;overflow:hidden}
+.labos__meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--orange));transition:width 1.2s var(--ease)}
+.labos.in .labos__meter i{width:var(--w)}
+.labos__tag{font-family:var(--mono);font-size:11px;color:var(--ok)}
+
+/* ===================== NETWORK / MAP ===================== */
+.net{position:relative}
+.net__frame{
+  border:1px solid var(--line);background:var(--white);border-radius:var(--r);overflow:hidden;
+  box-shadow:0 40px 90px -56px rgba(10,23,48,.55);
+}
+.net__bar{
+  display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--line-2);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+}
+.net__bar .lights{display:flex;gap:6px}
+.net__bar .lights b{width:10px;height:10px;border-radius:50%;background:var(--line);display:block}
+.net__bar .lights b:first-child{background:var(--orange)}
+.net__bar .grow{flex:1}
+.net__bar .live{display:flex;align-items:center;gap:7px;color:var(--ok)}
+.net__bar .live i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(22,163,74,.6);animation:tip 2.6s var(--ease) infinite}
+.net__layout{display:grid;grid-template-columns:1fr 320px}
+@media(max-width:1040px){.net__layout{grid-template-columns:1fr}}
+.net__map{border-right:1px solid var(--line-2);min-height:560px;position:relative}
+@media(max-width:1040px){.net__map{border-right:none;border-bottom:1px solid var(--line-2)}}
+.net__map iframe{width:100%;height:100%;min-height:560px;border:0;display:block}
+.net__side{padding:22px 20px;display:flex;flex-direction:column;gap:20px;background:var(--paper)}
+.gauge{}
+.gauge__k{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between}
+.gauge__k .val{color:var(--blue);font-weight:600}
+.gauge__track{height:7px;background:#fff;border:1px solid var(--line);border-radius:4px;margin-top:9px;overflow:hidden}
+.gauge__track i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--blue-dk));border-radius:4px;transition:width 1.5s var(--ease)}
+.gauge.in .gauge__track i{width:var(--w)}
+.gauge--o .gauge__track i{background:linear-gradient(90deg,var(--orange),var(--orange-dk))}
+.net__radial{display:flex;align-items:center;gap:16px;border-top:1px solid var(--line-2);padding-top:18px;margin-top:2px}
+.ring{width:96px;height:96px;flex:none;position:relative}
+.ring svg{transform:rotate(-90deg)}
+.ring__c{font-family:var(--mono);position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring__c b{font-size:24px;font-weight:600;color:var(--ink)}
+.ring__c small{font-size:9px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase}
+.net__radial p{margin:0;font-size:13px;color:var(--muted);line-height:1.5}
+.net__radial p b{color:var(--ink);font-weight:600}
+
+/* ===================== STATS BAND ===================== */
+.band{background:var(--blue-ink);color:#fff;border-top:1px solid #14224a;border-bottom:1px solid #14224a;position:relative;overflow:hidden}
+.band::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+.band__grid{display:grid;grid-template-columns:repeat(4,1fr);position:relative;z-index:1}
+@media(max-width:760px){.band__grid{grid-template-columns:1fr 1fr}}
+.stat{padding:54px 26px;border-right:1px solid rgba(255,255,255,.09);position:relative}
+.stat:last-child{border-right:none}
+@media(max-width:760px){.stat{border-bottom:1px solid rgba(255,255,255,.09)}.stat:nth-child(2n){border-right:none}}
+.stat__v{font-family:var(--mono);font-size:clamp(40px,5.4vw,64px);font-weight:600;letter-spacing:-.03em;line-height:1;display:flex;align-items:baseline}
+.stat__v .pre{color:var(--orange);margin-right:.06em}
+.stat__v .u{font-size:.4em;color:#8FB4FF;margin-left:.14em;letter-spacing:.02em}
+.stat__k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:#8FB4FF;margin-top:14px}
+.stat__bar{position:absolute;left:26px;right:26px;bottom:26px;height:2px;background:rgba(255,255,255,.1);overflow:hidden}
+.stat__bar i{display:block;height:100%;width:0;background:var(--orange);transition:width 1.6s var(--ease)}
+.stat.in .stat__bar i{width:100%}
+
+/* ===================== OFFILOG ===================== */
+.ofl{display:grid;grid-template-columns:.85fr 1.15fr;gap:48px;align-items:start}
+@media(max-width:920px){.ofl{grid-template-columns:1fr;gap:30px}}
+.ofl__stats{display:flex;gap:0;border:1px solid var(--line);border-radius:var(--r);background:var(--white);overflow:hidden;margin-top:28px}
+.ofl__stats div{flex:1;padding:18px;border-right:1px solid var(--line-2)}
+.ofl__stats div:last-child{border-right:none}
+.ofl__stats .n{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--blue)}
+.ofl__stats .l{font-size:11px;color:var(--faint);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:540px){.cats{grid-template-columns:1fr 1fr}}
+.cat{
+  border:1px solid var(--line);background:var(--white);border-radius:var(--r);padding:18px 16px;
+  display:flex;flex-direction:column;gap:14px;min-height:118px;
+  transition:transform .35s var(--ease),box-shadow .35s,border-color .35s;position:relative;overflow:hidden;
+}
+.cat:hover{transform:translateY(-3px);border-color:var(--blue);box-shadow:0 20px 40px -30px rgba(0,80,230,.6)}
+.cat__ix{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.1em}
+.cat__ico{width:26px;height:26px;color:var(--blue);margin-top:auto}
+.cat__n{font-weight:600;font-size:14.5px;letter-spacing:-.01em}
+
+/* ===================== ACCOMPAGNEMENT ===================== */
+.acc{display:grid;grid-template-columns:.9fr 1.1fr;gap:48px;align-items:start}
+@media(max-width:920px){.acc{grid-template-columns:1fr;gap:32px}}
+.acc__quote{font-size:clamp(20px,2.5vw,27px);font-weight:600;letter-spacing:-.02em;line-height:1.32}
+.acc__quote .o{color:var(--orange)}
+.acc__grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:540px){.acc__grid{grid-template-columns:1fr}}
+.proj{
+  border:1px solid var(--line);background:var(--white);border-radius:var(--r);padding:24px 22px;
+  transition:transform .4s var(--ease),box-shadow .4s,border-color .4s;position:relative;overflow:hidden;
+}
+.proj:hover{transform:translateY(-4px);box-shadow:0 26px 50px -34px rgba(10,23,48,.5);border-color:var(--line)}
+.proj__ico{width:46px;height:46px;color:var(--blue);margin-bottom:18px}
+.proj__ix{position:absolute;top:18px;right:20px;font-family:var(--mono);font-size:11px;color:var(--faint)}
+.proj__n{font-size:18px;font-weight:700;letter-spacing:-.02em}
+.proj__d{color:var(--muted);font-size:13.5px;margin-top:7px;line-height:1.55}
+
+/* ===================== CARRIERES ===================== */
+.car{}
+.car__list{border-top:1px solid var(--line)}
+.job{
+  display:grid;grid-template-columns:48px 1fr auto auto;gap:22px;align-items:center;
+  padding:26px 8px;border-bottom:1px solid var(--line);cursor:pointer;
+  transition:padding-left .35s var(--ease),background .25s;position:relative;
+}
+.job:hover{background:var(--white);padding-left:22px}
+.job__ix{font-family:var(--mono);font-size:13px;color:var(--blue)}
+.job__t{font-size:clamp(20px,2.4vw,28px);font-weight:600;letter-spacing:-.02em}
+.job__loc{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.04em}
+.job__arr{width:34px;height:34px;border:1px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.3s}
+.job:hover .job__arr{background:var(--blue);border-color:var(--blue);color:#fff;transform:rotate(-45deg)}
+@media(max-width:680px){.job{grid-template-columns:36px 1fr auto;gap:14px}.job__loc{display:none}}
+
+/* ===================== CONTACT ===================== */
+.ct{display:grid;grid-template-columns:.9fr 1.1fr;gap:52px;align-items:start}
+@media(max-width:920px){.ct{grid-template-columns:1fr;gap:34px}}
+.ct__info{display:flex;flex-direction:column;gap:22px}
+.ct__node{border:1px solid var(--line);background:var(--white);border-radius:var(--r);padding:22px;display:flex;gap:16px;align-items:flex-start}
+.ct__node svg{width:24px;height:24px;color:var(--blue);flex:none;margin-top:2px}
+.ct__node .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.ct__node .v{font-size:15.5px;font-weight:500;margin-top:5px;line-height:1.45}
+.form{border:1px solid var(--line);background:var(--white);border-radius:var(--r);padding:30px 28px;box-shadow:0 30px 70px -48px rgba(10,23,48,.5)}
+.form__grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{display:flex;flex-direction:column;gap:7px}
+.field.full{grid-column:1/-1}
+.field label{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.field input,.field textarea{
+  font-family:var(--sans);font-size:15px;color:var(--ink);background:var(--paper);
+  border:1px solid var(--line);border-radius:var(--r);padding:13px 14px;transition:border-color .2s,box-shadow .2s,background .2s;
+}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(0,80,230,.12)}
+.field textarea{resize:vertical;min-height:96px}
+.form__foot{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:22px;flex-wrap:wrap}
+.form__note{font-family:var(--mono);font-size:11px;color:var(--faint);max-width:30ch;line-height:1.5}
+
+/* ===================== FOOTER ===================== */
+.ft{background:var(--blue-ink);color:#fff;border-top:1px solid #14224a;position:relative;z-index:1;overflow:hidden}
+.ft::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:54px 54px;pointer-events:none}
+.ft__in{position:relative;z-index:1;padding:64px 0 30px}
+.ft__top{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;padding-bottom:42px;border-bottom:1px solid rgba(255,255,255,.1)}
+@media(max-width:760px){.ft__top{grid-template-columns:1fr}}
+.ft__logo{height:36px;width:auto;margin-bottom:18px;filter:brightness(0) invert(1);opacity:.95}
+.ft p{color:#9FB0D0;font-size:14px;max-width:34ch;line-height:1.6;margin:0}
+.ft__col h4{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#6E7FA8;margin:0 0 16px;font-weight:500}
+.ft__col a{display:block;color:#C5D0E6;font-size:14px;padding:6px 0;transition:color .2s,padding-left .2s}
+.ft__col a:hover{color:#fff;padding-left:6px}
+.ft__bot{display:flex;justify-content:space-between;align-items:center;gap:18px;padding-top:24px;flex-wrap:wrap}
+.ft__bot span{font-family:var(--mono);font-size:11.5px;color:#6E7FA8;letter-spacing:.04em}
+.ft__badge{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;color:#9FB0D0;border:1px solid rgba(255,255,255,.14);padding:7px 13px;border-radius:3px}
+.ft__badge .o{color:var(--orange)}
+
+/* ===== reveal ===== */
+.rev{opacity:0;transform:translateY(20px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.rev.in{opacity:1;transform:none}
+.rev[data-d="1"]{transition-delay:.08s}
+.rev[data-d="2"]{transition-delay:.16s}
+.rev[data-d="3"]{transition-delay:.24s}
+.rev[data-d="4"]{transition-delay:.32s}
+
+/* ===== responsive header ===== */
+@media(max-width:1080px){
+  .hd__nav,.hd__status{display:none}
+  .burger{display:flex}
+  .hd .btn{display:none}
+}
+@media(max-width:980px){
+  .hero__readout{grid-template-columns:1fr 1fr}
+  .ro:nth-child(2n){border-right:none}
+  .val__grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .wrap{padding:0 18px}
+  .S{padding:72px 0}
+  .hero__readout{grid-template-columns:1fr}
+  .ro{border-right:none;border-bottom:1px solid var(--line-2)}
+  .cats{grid-template-columns:1fr 1fr}
+  .form__grid{grid-template-columns:1fr}
+  .hero{padding:40px 0 30px}
+}
+
+/* mobile menu */
+.mnav{position:fixed;inset:0;z-index:200;background:var(--paper);transform:translateX(100%);transition:transform .4s var(--ease);display:flex;flex-direction:column;padding:24px}
+.mnav.open{transform:none}
+.mnav__top{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}
+.mnav__x{background:none;border:1px solid var(--line);border-radius:4px;width:42px;height:38px;font-size:20px;cursor:pointer}
+.mnav a{font-size:26px;font-weight:600;padding:14px 0;border-bottom:1px solid var(--line);color:var(--ink);letter-spacing:-.02em}
+.mnav .btn{margin-top:26px;justify-content:center}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+  .rev{opacity:1!important;transform:none!important}
+  .ro__bar i,.gauge__track i,.labos__meter i,.stat__bar i{width:var(--w,100%)!important;transition:none!important}
+  .ticker__rail{animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="hd" id="hd">
+  <div class="wrap hd__in">
+    <a href="#top" aria-label="Intégral Pharma — accueil"><img class="hd__logo" src="../assets/logo.png" alt="Intégral Pharma"></a>
+    <nav class="hd__nav" aria-label="Navigation principale">
+      <a href="#groupe">Le groupe</a>
+      <a href="#offres">Nos offres</a>
+      <a href="#offilog">Offilog</a>
+      <a href="#accompagnement">Accompagnement</a>
+      <a href="#carrieres">Carrières</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <span class="hd__spacer"></span>
+    <div class="hd__status"><span class="pulse"></span>9 AGENCES · ACTIVES</div>
+    <a href="#contact" class="btn btn--primary">Demander nos conditions <span class="arr">→</span></a>
+    <button class="burger" id="burger" aria-label="Ouvrir le menu"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<!-- mobile nav -->
+<div class="mnav" id="mnav" aria-hidden="true">
+  <div class="mnav__top">
+    <img class="hd__logo" src="../assets/logo.png" alt="Intégral Pharma">
+    <button class="mnav__x" id="mnavX" aria-label="Fermer">✕</button>
+  </div>
+  <a href="#groupe">Le groupe</a>
+  <a href="#offres">Nos offres</a>
+  <a href="#offilog">Offilog</a>
+  <a href="#accompagnement">Accompagnement</a>
+  <a href="#carrieres">Carrières</a>
+  <a href="#contact">Contact</a>
+  <a href="#contact" class="btn btn--primary">Demander nos conditions <span class="arr">→</span></a>
+</div>
+
+<span id="top"></span>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero__media">
+    <video autoplay muted loop playsinline poster="../assets/poster.jpg" aria-hidden="true">
+      <source src="../assets/clip3.mp4" type="video/mp4">
+    </video>
+    <img src="../assets/poster.jpg" alt="" aria-hidden="true" style="display:none">
+  </div>
+  <div class="hero__grid-ov"></div>
+  <div class="wrap hero__in">
+    <div class="hero__top">
+      <span class="tag"><span class="dot"></span>Grossiste-répartiteur de première intention</span>
+      <span class="hero__coords mono">LAT <b>43.1205</b> · LON <b>6.1286</b> · SIÈGE HYÈRES (83)</span>
+    </div>
+
+    <h1 class="h-display">Plus de marge,<br>sur <span class="o">chaque</span> commande.</h1>
+    <p class="hero__sub">De meilleures conditions, dès la première boîte — quelle que soit votre officine.</p>
+
+    <div class="hero__cta">
+      <a href="#contact" class="btn btn--primary">Demander nos conditions <span class="arr">→</span></a>
+      <a href="#groupe" class="btn btn--ghost">Découvrir le groupe <span class="arr">→</span></a>
+    </div>
+
+    <!-- readout strip -->
+    <div class="hero__readout" id="readout">
+      <div class="ro"><div class="ro__k">Expérience</div><div class="ro__v"><span class="cu" data-to="20">0</span><span class="u">+ ANS</span></div><div class="ro__bar"><i style="--w:90%"></i></div></div>
+      <div class="ro"><div class="ro__k">Agences réseau</div><div class="ro__v"><span class="cu" data-to="9">0</span></div><div class="ro__bar"><i style="--w:100%"></i></div></div>
+      <div class="ro"><div class="ro__k">Couverture</div><div class="ro__v">NAT<span class="u">.</span></div><div class="ro__bar"><i style="--w:96%"></i></div></div>
+      <div class="ro"><div class="ro__k">Offilog réfs</div><div class="ro__v"><span class="cu" data-to="14000" data-sep>0</span><span class="u">+</span></div><div class="ro__bar"><i style="--w:84%"></i></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TICKER ============ -->
+<div class="ticker" aria-label="Ticker du réseau des 9 sites" id="ticker">
+  <div class="ticker__rail" id="tickerRail">
+    <!-- filled by JS (duplicated for seamless loop) -->
+  </div>
+</div>
+
+<!-- ============ VALEURS ============ -->
+<section class="S">
+  <div class="wrap">
+    <p class="sec-label rev" data-i="01 /">Nos valeurs · le socle</p>
+    <div class="val__head">
+      <h2 class="h-sec rev">Confiance.<br>Engagement. Respect.</h2>
+      <p class="lede rev" data-d="1">Trois principes qui orientent chaque décision. Défendre l'officine indépendante, près de chez vous — avec une logistique qui tient ses promesses.</p>
+    </div>
+    <div class="val__grid">
+      <div class="vcard rev" data-d="1">
+        <svg class="vcard__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+        <div class="vcard__n">VAL_01</div>
+        <h3 class="vcard__t">Confiance</h3>
+        <p class="vcard__d">Une relation directe et durable. On vous accompagne dans le temps, avec des conditions claires et tenues.</p>
+      </div>
+      <div class="vcard rev" data-d="2">
+        <svg class="vcard__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v6"/><circle cx="12" cy="13" r="6"/><path d="M9.5 13l1.8 1.8L15 11"/></svg>
+        <div class="vcard__n">VAL_02</div>
+        <h3 class="vcard__t">Engagement</h3>
+        <p class="vcard__d">Indépendance assumée et démarche responsable. On porte les sujets RSE comme on porte vos commandes : sérieusement.</p>
+      </div>
+      <div class="vcard rev" data-d="3">
+        <svg class="vcard__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10z"/><circle cx="12" cy="11" r="2.4"/></svg>
+        <div class="vcard__n">VAL_03</div>
+        <h3 class="vcard__t">Respect</h3>
+        <p class="vcard__d">De l'officine indépendante, de votre métier, de votre territoire. La proximité n'est pas un slogan : c'est notre réseau.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NOS OFFRES ============ -->
+<section class="S S--tight" id="offres" style="background:linear-gradient(180deg,transparent,var(--paper-2) 40%,transparent)">
+  <div class="wrap">
+    <p class="sec-label rev" data-i="02 /">Nos offres · catalogue</p>
+    <div class="offers">
+      <div>
+        <h2 class="h-sec rev">Les plus grands<br>laboratoires.</h2>
+        <p class="lede rev" data-d="1" style="margin-top:22px">Un accès à un catalogue large et des conditions adaptées à votre profil d'officine. Nous travaillons avec les références majeures du marché du générique.</p>
+        <div class="rev" data-d="2" style="margin-top:30px"><a href="#contact" class="btn btn--orange">On vous le chiffre en rendez-vous <span class="arr">→</span></a></div>
+      </div>
+      <div class="labos rev" data-d="1" id="labos">
+        <div class="labos__hd"><span>Partenaires génériques</span><span>Disponibilité</span></div>
+        <div class="labos__row"><span class="labos__idx mono">01</span><span class="labos__name">Zentiva</span><span class="labos__meter"><i style="--w:96%"></i></span><span class="labos__tag">OK</span></div>
+        <div class="labos__row"><span class="labos__idx mono">02</span><span class="labos__name">Teva</span><span class="labos__meter"><i style="--w:98%"></i></span><span class="labos__tag">OK</span></div>
+        <div class="labos__row"><span class="labos__idx mono">03</span><span class="labos__name">EG Labo</span><span class="labos__meter"><i style="--w:94%"></i></span><span class="labos__tag">OK</span></div>
+        <div class="labos__row"><span class="labos__idx mono">04</span><span class="labos__name">Zydus</span><span class="labos__meter"><i style="--w:92%"></i></span><span class="labos__tag">OK</span></div>
+        <div class="labos__row"><span class="labos__idx mono">05</span><span class="labos__name">Viatris</span><span class="labos__meter"><i style="--w:97%"></i></span><span class="labos__tag">OK</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LE GROUPE / RÉSEAU ============ -->
+<section class="S" id="groupe">
+  <div class="wrap">
+    <p class="sec-label rev" data-i="03 /">Le groupe · le réseau</p>
+    <div class="val__head" style="margin-bottom:36px">
+      <h2 class="h-sec rev">National.</h2>
+      <p class="lede rev" data-d="1">9 sites en France pour une livraison rapide partout sur le territoire. Un seul tempo logistique, un groupe de grossistes français indépendant.</p>
+    </div>
+
+    <div class="net rev" data-d="1">
+      <div class="net__frame">
+        <div class="net__bar">
+          <span class="lights"><b></b><b></b><b></b></span>
+          <span>ATLAS · RÉSEAU INTÉGRAL — temps réel</span>
+          <span class="grow"></span>
+          <span class="live"><i></i>9/9 SITES EN LIGNE</span>
+        </div>
+        <div class="net__layout">
+          <div class="net__map">
+            <iframe src="../map-component.html" loading="lazy" title="Carte de France des 9 sites Intégral Pharma"></iframe>
+          </div>
+          <aside class="net__side" id="netSide">
+            <div class="gauge in" data-w="100%">
+              <div class="gauge__k"><span>Couverture nationale</span><span class="val">NATIONAL</span></div>
+              <div class="gauge__track" style="--w:100%"><i></i></div>
+            </div>
+            <div class="gauge" data-w="89%">
+              <div class="gauge__k"><span>Sud · Grand Sud-Est</span><span class="val">DENSE</span></div>
+              <div class="gauge__track" style="--w:89%"><i></i></div>
+            </div>
+            <div class="gauge" data-w="74%">
+              <div class="gauge__k"><span>Axe Ouest / Atlantique</span><span class="val">ACTIF</span></div>
+              <div class="gauge__track" style="--w:74%"><i></i></div>
+            </div>
+            <div class="gauge gauge--o" data-w="82%">
+              <div class="gauge__k"><span>Vitesse de livraison</span><span class="val">RAPIDE</span></div>
+              <div class="gauge__track" style="--w:82%"><i></i></div>
+            </div>
+            <div class="net__radial">
+              <div class="ring" id="ring">
+                <svg width="96" height="96" viewBox="0 0 96 96">
+                  <circle cx="48" cy="48" r="40" fill="none" stroke="#E2E8F4" stroke-width="8"/>
+                  <circle id="ringArc" cx="48" cy="48" r="40" fill="none" stroke="var(--blue)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+                </svg>
+                <div class="ring__c"><b><span class="cu" data-to="9">0</span></b><small>sites</small></div>
+              </div>
+              <p><b>8 établissements</b> sur le territoire + <b>1 partenaire</b> à Metz. Un maillage pensé pour servir votre officine, vite.</p>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHIFFRES-CLÉS BAND ============ -->
+<section class="band" id="bandStats">
+  <div class="wrap">
+    <div class="band__grid">
+      <div class="stat"><div class="stat__v"><span class="pre">+</span><span class="cu" data-to="20">0</span><span class="u">ANS</span></div><div class="stat__k">D'expérience</div><div class="stat__bar"><i></i></div></div>
+      <div class="stat"><div class="stat__v"><span class="cu" data-to="9">0</span></div><div class="stat__k">Agences</div><div class="stat__bar"><i></i></div></div>
+      <div class="stat"><div class="stat__v">NAT<span class="u">·FR</span></div><div class="stat__k">Couverture nationale</div><div class="stat__bar"><i></i></div></div>
+      <div class="stat"><div class="stat__v"><span class="pre">+</span><span class="cu" data-to="14000" data-sep>0</span></div><div class="stat__k">Offilog · références</div><div class="stat__bar"><i></i></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ OFFILOG ============ -->
+<section class="S" id="offilog">
+  <div class="wrap">
+    <p class="sec-label rev" data-i="04 /">Offilog · parapharmacie</p>
+    <div class="ofl">
+      <div>
+        <h2 class="h-sec rev">Toute la<br>parapharmacie.</h2>
+        <p class="lede rev" data-d="1" style="margin-top:22px">Une plateforme dédiée pour piloter votre parapharmacie, sans frais d'entrée. Un catalogue profond, des laboratoires partout en France.</p>
+        <div class="ofl__stats rev" data-d="2" id="oflStats">
+          <div><div class="n mono"><span class="cu" data-to="14000" data-sep>0</span>+</div><div class="l">Références</div></div>
+          <div><div class="n mono"><span class="cu" data-to="430">0</span>+</div><div class="l">Laboratoires</div></div>
+          <div><div class="n mono">0€</div><div class="l">Adhésion</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="cats">
+          <div class="cat rev" data-d="1"><div class="cat__ix mono">CAT_01</div><svg class="cat__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg><div class="cat__n">Solaires</div></div>
+          <div class="cat rev" data-d="2"><div class="cat__ix mono">CAT_02</div><svg class="cat__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M8.5 14.5a4.5 4.5 0 0 0 7 0"/></svg><div class="cat__n">Soin du visage</div></div>
+          <div class="cat rev" data-d="3"><div class="cat__ix mono">CAT_03</div><svg class="cat__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 12c0-3 2-5 5-5s5 2 5 5-2 7-5 7-5-4-5-7z"/><path d="M12 7V3"/></svg><div class="cat__n">Hygiène</div></div>
+          <div class="cat rev" data-d="1"><div class="cat__ix mono">CAT_04</div><svg class="cat__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="4"/><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/><path d="M16 5l2-1"/></svg><div class="cat__n">Bébé</div></div>
+          <div class="cat rev" data-d="2"><div class="cat__ix mono">CAT_05</div><svg class="cat__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-4 4-6 7-6 10a6 6 0 0 0 12 0c0-3-2-6-6-10z"/></svg><div class="cat__n">Cheveux</div></div>
+          <div class="cat rev" data-d="3"><div class="cat__ix mono">CAT_06</div><svg class="cat__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="18" rx="3"/><path d="M8 8h8M8 13h8"/></svg><div class="cat__n">Compléments</div></div>
+          <div class="cat rev" data-d="1"><div class="cat__ix mono">CAT_07</div><svg class="cat__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c5-3 8-7 8-12a8 8 0 0 0-8 0 8 8 0 0 0-8 0c0 5 3 9 8 12z"/><path d="M12 9v12"/></svg><div class="cat__n">Bio</div></div>
+          <div class="cat rev" data-d="2"><div class="cat__ix mono">CAT_08</div><svg class="cat__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3c1 2 1 4 0 6-2 3-2 9 3 12 5-3 5-9 3-12-1-2-1-4 0-6"/></svg><div class="cat__n">Bucco-dentaire</div></div>
+          <div class="cat rev" data-d="3"><div class="cat__ix mono">CAT_09</div><svg class="cat__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="9" r="2"/><circle cx="11" cy="6" r="2"/><circle cx="16" cy="9" r="2"/><path d="M8 16c0-2 1.8-3.5 4-3.5S16 14 16 16s-1 3-4 3-4-1-4-3z"/></svg><div class="cat__n">Vétérinaire</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ACCOMPAGNEMENT ============ -->
+<section class="S" id="accompagnement" style="background:linear-gradient(180deg,transparent,var(--paper-2) 40%,transparent)">
+  <div class="wrap">
+    <p class="sec-label rev" data-i="05 /">Accompagnement · titulaires</p>
+    <div class="acc">
+      <div>
+        <p class="acc__quote rev">Vous êtes pharmacien titulaire et vous avez un projet de transfert, d'agrandissement, de cession de parts ou d'optimisation ? <span class="o">On le porte avec vous.</span></p>
+        <div class="rev" data-d="1" style="margin-top:30px"><a href="#contact" class="btn btn--primary">En parler avec nous <span class="arr">→</span></a></div>
+      </div>
+      <div class="acc__grid">
+        <div class="proj rev" data-d="1">
+          <span class="proj__ix mono">P_01</span>
+          <svg class="proj__ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 36h8V20l8-7 8 7v16h8"/><path d="M6 36h36"/><path d="M30 20l8-6M38 14v6h-6"/></svg>
+          <div class="proj__n">Transfert d'officine</div>
+          <p class="proj__d">On sécurise et on accompagne le déménagement de votre point de vente.</p>
+        </div>
+        <div class="proj rev" data-d="2">
+          <span class="proj__ix mono">P_02</span>
+          <svg class="proj__ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="20" width="14" height="20"/><rect x="26" y="10" width="14" height="30"/><path d="M6 40h38"/><path d="M40 6v8M36 10h8"/></svg>
+          <div class="proj__n">Agrandissement</div>
+          <p class="proj__d">Plus de surface, plus de capacité : on vous aide à passer à l'échelle.</p>
+        </div>
+        <div class="proj rev" data-d="3">
+          <span class="proj__ix mono">P_03</span>
+          <svg class="proj__ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="7"/><circle cx="32" cy="32" r="7"/><path d="M23 16h10M16 23v10"/><path d="M33 12l-4 4 4 4"/></svg>
+          <div class="proj__n">Cession de parts</div>
+          <p class="proj__d">Entrée ou sortie d'associés : on cadre le montage avec vous.</p>
+        </div>
+        <div class="proj rev" data-d="4">
+          <span class="proj__ix mono">P_04</span>
+          <svg class="proj__ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 38l8-10 7 6 9-14 8 6"/><path d="M8 8v32h32"/><circle cx="16" cy="28" r="1.5"/><circle cx="23" cy="34" r="1.5"/></svg>
+          <div class="proj__n">Optimisation</div>
+          <p class="proj__d">Marge, achats, organisation : on regarde où gagner, ensemble.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CARRIÈRES ============ -->
+<section class="S" id="carrieres">
+  <div class="wrap">
+    <p class="sec-label rev" data-i="06 /">Carrières · le groupe recrute</p>
+    <div class="val__head" style="margin-bottom:18px">
+      <h2 class="h-sec rev">Le groupe recrute.</h2>
+      <p class="lede rev" data-d="1">Rejoignez un groupe de grossistes français indépendant, à taille humaine, partout en France.</p>
+    </div>
+    <div class="car__list rev" data-d="1">
+      <a class="job" href="#contact"><span class="job__ix mono">J_01</span><span class="job__t">Approvisionnement</span><span class="job__loc mono">RÉSEAU · 9 SITES</span><span class="job__arr">→</span></a>
+      <a class="job" href="#contact"><span class="job__ix mono">J_02</span><span class="job__t">Commercial</span><span class="job__loc mono">NATIONAL</span><span class="job__arr">→</span></a>
+      <a class="job" href="#contact"><span class="job__ix mono">J_03</span><span class="job__t">Pharmacien responsable</span><span class="job__loc mono">PAR AGENCE</span><span class="job__arr">→</span></a>
+      <a class="job" href="#contact"><span class="job__ix mono">J_04</span><span class="job__t">Préparateur-chauffeur</span><span class="job__loc mono">LIVRAISON</span><span class="job__arr">→</span></a>
+    </div>
+    <div class="rev" data-d="2" style="margin-top:34px;display:flex;gap:14px;flex-wrap:wrap">
+      <a href="#contact" class="btn btn--primary">Voir les offres <span class="arr">→</span></a>
+      <a href="#contact" class="btn btn--ghost">Postuler <span class="arr">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section class="S" id="contact" style="background:linear-gradient(180deg,transparent,var(--paper-2) 40%,transparent)">
+  <div class="wrap">
+    <p class="sec-label rev" data-i="07 /">Contact · ouvrir le dossier</p>
+    <div class="ct">
+      <div class="ct__info">
+        <h2 class="h-sec rev">Parlons de<br>votre officine.</h2>
+        <p class="lede rev" data-d="1" style="margin-top:6px">On vous chiffre vos conditions en rendez-vous, en fonction de votre profil. Concret, rapide, sans engagement.</p>
+        <div class="ct__node rev" data-d="2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          <div><div class="k">Email</div><div class="v">contact@integralpharma.fr</div></div>
+        </div>
+        <div class="ct__node rev" data-d="3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <div><div class="k">Siège</div><div class="v">758 Chemin de la Source<br>83400 Hyères</div></div>
+        </div>
+      </div>
+
+      <form class="form rev" data-d="1" action="mailto:contact@integralpharma.fr" method="post" enctype="text/plain">
+        <div class="form__grid">
+          <div class="field"><label for="f-nom">Nom</label><input id="f-nom" name="Nom" type="text" autocomplete="name" required></div>
+          <div class="field"><label for="f-off">Officine</label><input id="f-off" name="Officine" type="text" autocomplete="organization"></div>
+          <div class="field"><label for="f-cp">Code postal</label><input id="f-cp" name="Code postal" type="text" inputmode="numeric" autocomplete="postal-code"></div>
+          <div class="field"><label for="f-email">Email</label><input id="f-email" name="Email" type="email" autocomplete="email" required></div>
+          <div class="field full"><label for="f-tel">Téléphone</label><input id="f-tel" name="Téléphone" type="tel" autocomplete="tel"></div>
+          <div class="field full"><label for="f-msg">Message</label><textarea id="f-msg" name="Message" placeholder="Votre projet, vos questions…"></textarea></div>
+        </div>
+        <div class="form__foot">
+          <p class="form__note">Réponse rapide. On vous chiffre vos conditions en rendez-vous.</p>
+          <button type="submit" class="btn btn--primary">Envoyer <span class="arr">→</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="ft">
+  <div class="wrap ft__in">
+    <div class="ft__top">
+      <div>
+        <img class="ft__logo" src="../assets/logo.png" alt="Intégral Pharma">
+        <p>Grossiste-répartiteur de première intention. Plus de marge, sur chaque commande — quelle que soit votre officine.</p>
+      </div>
+      <div class="ft__col">
+        <h4>Navigation</h4>
+        <a href="#groupe">Le groupe</a>
+        <a href="#offres">Nos offres</a>
+        <a href="#offilog">Offilog</a>
+        <a href="#accompagnement">Accompagnement</a>
+      </div>
+      <div class="ft__col">
+        <h4>Le groupe</h4>
+        <a href="#carrieres">Carrières</a>
+        <a href="#contact">Contact</a>
+        <a href="#contact">Demander nos conditions</a>
+        <a href="#top">Haut de page</a>
+      </div>
+    </div>
+    <div class="ft__bot">
+      <span>© <span id="yr"></span> Intégral Pharma · Tous droits réservés</span>
+      <span class="ft__badge"><span class="o">◆</span> Groupe de grossistes français indépendant</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- header stuck ---- */
+  var hd = document.getElementById('hd');
+  function onScroll(){ hd.classList.toggle('stuck', window.scrollY > 8); }
+  onScroll(); window.addEventListener('scroll', onScroll, {passive:true});
+
+  /* ---- mobile menu ---- */
+  var mnav = document.getElementById('mnav');
+  function setMenu(o){ mnav.classList.toggle('open', o); mnav.setAttribute('aria-hidden', o?'false':'true'); document.body.style.overflow = o?'hidden':''; }
+  document.getElementById('burger').addEventListener('click', function(){ setMenu(true); });
+  document.getElementById('mnavX').addEventListener('click', function(){ setMenu(false); });
+  mnav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', function(){ setMenu(false); }); });
+
+  /* ---- year ---- */
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  /* ---- ticker build ---- */
+  var sites = [
+    {c:'St-Étienne-de-Montluc', d:'44', n:'Ouest Pharma Services'},
+    {c:'Chilly-Mazarin', d:'91', n:'Escale Pharma'},
+    {c:'Saint-Maurice-l’Exil', d:'38', n:'Comptoir Pharma. du Rhône'},
+    {c:'Montayral', d:'47', n:'Sud Ouest Pharma'},
+    {c:'Villeneuve-lès-Béziers', d:'34', n:'Pharm’Occitanie Services'},
+    {c:'Hyères', d:'83', n:'Hyères Pharma · siège'},
+    {c:'Le Cannet-des-Maures', d:'83', n:'Sud Est Pharma'},
+    {c:'Flassans-sur-Issole', d:'83', n:'Mistral Santé Pharma'},
+    {c:'Metz', d:'57', n:'Pharmest · partenaire'}
+  ];
+  var rail = document.getElementById('tickerRail');
+  function cell(s){
+    return '<span class="ti-cell"><span class="dep">'+s.d+'</span><span class="city">'+s.c+'</span><span class="st"><b></b>'+s.n+'</span></span>';
+  }
+  var seq = '<span class="ticker__item">'+ sites.map(cell).join('') +'</span>';
+  rail.innerHTML = seq + seq; // duplicate for seamless loop
+
+  /* ---- reveal ---- */
+  var revs = document.querySelectorAll('.rev');
+  if(reduce || !('IntersectionObserver' in window)){
+    revs.forEach(function(r){ r.classList.add('in'); });
+  } else {
+    var ro = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); ro.unobserve(e.target); } });
+    }, {threshold:.16, rootMargin:'0px 0px -8% 0px'});
+    revs.forEach(function(r){ ro.observe(r); });
+  }
+
+  /* ---- bars / gauges / meters fill on view ---- */
+  function fillOnView(sel, cls){
+    var els = document.querySelectorAll(sel);
+    if(reduce || !('IntersectionObserver' in window)){ els.forEach(function(e){ e.classList.add(cls||'in'); }); return; }
+    var o = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add(cls||'in'); o.unobserve(e.target); } });
+    }, {threshold:.3});
+    els.forEach(function(e){ o.observe(e); });
+  }
+  fillOnView('#readout .ro','in');
+  fillOnView('#labos','in');
+  fillOnView('#bandStats .stat','in');
+  // gauges (each has its own data-w already on track)
+  (function(){
+    var gs = document.querySelectorAll('.gauge');
+    if(reduce || !('IntersectionObserver' in window)){ gs.forEach(function(g){ g.classList.add('in'); }); return; }
+    var o = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); o.unobserve(e.target); } });
+    }, {threshold:.4});
+    gs.forEach(function(g){ o.observe(g); });
+  })();
+
+  /* ---- ring arc ---- */
+  (function(){
+    var arc = document.getElementById('ringArc'), ring = document.getElementById('ring');
+    if(!arc) return;
+    var full = 251.2, target = full * (1 - 1); // 9/9 -> full ring
+    if(reduce){ arc.style.strokeDashoffset = '0'; return; }
+    var o = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ requestAnimationFrame(function(){ arc.style.transition='stroke-dashoffset 1.6s cubic-bezier(.22,1,.36,1)'; arc.style.strokeDashoffset='0'; }); o.unobserve(e.target); } });
+    }, {threshold:.5});
+    o.observe(ring);
+  })();
+
+  /* ---- count-up ---- */
+  function fmt(n, sep){
+    n = Math.round(n);
+    if(sep) return n.toLocaleString('fr-FR');
+    return String(n);
+  }
+  function countUp(el){
+    var to = parseFloat(el.getAttribute('data-to'));
+    var sep = el.hasAttribute('data-sep');
+    if(reduce){ el.textContent = fmt(to, sep); return; }
+    var dur = 1500, start = null;
+    function step(t){
+      if(start===null) start=t;
+      var p = Math.min((t-start)/dur, 1);
+      var e = 1 - Math.pow(1-p, 3);
+      el.textContent = fmt(to*e, sep);
+      if(p<1) requestAnimationFrame(step);
+      else el.textContent = fmt(to, sep);
+    }
+    requestAnimationFrame(step);
+  }
+  var cus = document.querySelectorAll('.cu');
+  if(reduce || !('IntersectionObserver' in window)){
+    cus.forEach(countUp);
+  } else {
+    var co = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ countUp(e.target); co.unobserve(e.target); } });
+    }, {threshold:.6});
+    cus.forEach(function(c){ co.observe(c); });
+  }
+
+  /* ---- video fallback: if it can't play, show poster img ---- */
+  var v = document.querySelector('.hero__media video');
+  if(v){
+    var fb = document.querySelector('.hero__media img');
+    v.addEventListener('error', function(){ if(fb){ fb.style.display='block'; } v.style.display='none'; });
+    if(reduce){ try{ v.pause(); }catch(e){} }
+  }
+})();
+</script>
+</body>
+</html>
