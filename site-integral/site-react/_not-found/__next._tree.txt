@@ -1,2 +1,2 @@
-:HL["/jarvis-app/site-integral/site-react/_next/static/chunks/1ii26lw-5-jn3.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"jJ3fGdmREGPfHWJqvMFzI"}
+:HL["/jarvis-app/site-integral/site-react/_next/static/chunks/1k5ljysxw5r34.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"fQh3FqM3J3XQ2KUvdCeeU"}
