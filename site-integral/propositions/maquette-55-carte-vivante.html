@@ -1,1136 +1,355 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Intégral Pharma — La carte vivante du réseau</title>
 <meta name="description" content="Intégral Pharma, groupe de grossistes indépendant, grossiste-répartiteur de première intention. 9 agences, couverture nationale, Offilog +14 000 références. Plus de marge, dès la première boîte.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<!--
-  MAQUETTE 55 · « CARTE VIVANTE » — VERSION JOUR
-  CONCEPT : la France interactive EST toute l'expérience. Un canvas plein écran
-  dessine la France en points sur fond crème lumineux ; 9 agences BLEUES pulsent,
-  des arcs logistiques CORAIL circulent en continu, la menthe souligne en soutien.
-  Le scroll pilote une caméra (pan + zoom) qui explore la carte, section après
-  section — salle de contrôle logistique nationale, version lumineuse.
-  PALETTE : crème/blanc · bleu #0050E6 (agences) · corail #FF7A59 (arcs, CTA) ·
-  menthe #35D0BA (soutien). Vif mais doux, arrondi, aéré.
-  SAFARI : zéro background-clip:text, zéro backdrop-filter, zéro vidéo,
-  prefers-reduced-motion = carte figée + reveals instantanés.
-  Dépendances : Google Fonts uniquement. Canvas 2D vanilla.
--->
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   TOKENS & RESET — palette jour
-   ============================================================ */
-:root{
-  --creme:#FDFBF6;
-  --creme-2:#F5F8FF;
-  --panneau:rgba(255,255,255,.92);
-  --panneau-2:rgba(245,249,255,.9);
-  --ligne:rgba(15,55,135,.10);
-  --ligne-forte:rgba(15,55,135,.22);
-  --bleu:#0050E6;
-  --bleu-doux:#2E6BFF;
-  --bleu-txt:#0046C7;
-  --corail:#FF7A59;
-  --corail-vif:#E8542B;
-  --corail-txt:#C2401C;
-  --menthe:#35D0BA;
-  --menthe-txt:#0B8A78;
-  --encre:#101C33;
-  --gris:#43536F;
-  --gris-2:#5F7095;
-  --f-titre:"Space Grotesk",system-ui,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
-  --ease:cubic-bezier(.22,1,.36,1);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-html,body{background:var(--creme)}
-body{
-  color:var(--encre);
-  font-family:var(--f-titre);
-  line-height:1.5;
-  overflow-x:hidden;
-  -webkit-font-smoothing:antialiased;
-}
-img{max-width:100%;display:block}
-a{color:inherit;text-decoration:none}
-button{font:inherit;cursor:pointer}
-::selection{background:var(--menthe);color:#06251F}
+  :root{
+    --creme:#FDFBF6; --blanc:#FFFFFF; --ink:#101C33; --muted:#5C6A82; --line:#E9E7E0;
+    --blue:#0050E6; --coral:#FF7A59; --coral-ink:#C2401C; --mint:#35D0BA; --mint-ink:#12897A;
+    --f-titre:'Sora',sans-serif; --f-txt:'Inter',sans-serif; --f-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--f-txt);background:var(--creme);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 26px}
+  .btn{display:inline-flex;align-items:center;gap:9px;font:600 14px/1 var(--f-txt);border-radius:999px;padding:13px 22px;transition:transform .25s,box-shadow .25s,background .25s}
+  .btn-p{background:var(--blue);color:#fff;box-shadow:0 14px 30px -12px rgba(0,80,230,.55)}
+  .btn-p:hover{transform:translateY(-2px);box-shadow:0 18px 38px -12px rgba(0,80,230,.6)}
+  .btn-o{background:var(--creme);color:var(--ink);border:1px solid var(--line)}
+  .btn-o:hover{border-color:var(--blue);color:var(--blue)}
+  .eyebrow{font:700 12px/1 var(--f-mono);letter-spacing:.2em;text-transform:uppercase;color:var(--blue)}
 
-/* ============================================================
-   CANVAS CARTE — plein écran, fixe, sous tout le contenu
-   ============================================================ */
-#carte{
-  position:fixed;inset:0;z-index:0;
-  display:block;width:100%;height:100%;
-}
-/* voile de lisibilité au-dessus du canvas, sous le contenu */
-.voile{
-  position:fixed;inset:0;z-index:1;pointer-events:none;
-  background:
-    radial-gradient(120% 90% at 50% 110%, rgba(253,251,246,.88), transparent 55%),
-    radial-gradient(90% 70% at 0% 0%, rgba(253,251,246,.72), transparent 60%);
-}
-/* cadre HUD léger (pas de filter) */
-.cadre-hud{
-  position:fixed;inset:0;z-index:2;pointer-events:none;
-}
-.cadre-hud::before,.cadre-hud::after{
-  content:"";position:absolute;width:26px;height:26px;
-  border:1px solid var(--ligne-forte);
-}
-.cadre-hud::before{top:74px;left:18px;border-right:0;border-bottom:0}
-.cadre-hud::after{bottom:18px;right:18px;border-left:0;border-top:0}
-.hud-lat{
-  position:absolute;left:18px;top:50%;transform:rotate(180deg) translateY(50%);
-  writing-mode:vertical-rl;
-  font:500 10px/1 var(--f-mono);letter-spacing:.34em;color:var(--gris-2);
-}
-.hud-scan{
-  position:absolute;right:18px;top:50%;transform:translateY(-50%);
-  writing-mode:vertical-rl;
-  font:500 10px/1 var(--f-mono);letter-spacing:.34em;color:var(--gris-2);
-}
+  /* HEADER */
+  header.top{position:sticky;top:0;z-index:40;background:rgba(253,251,246,.9);border-bottom:1px solid var(--line)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+  header.top img{height:30px}
+  header.top nav{display:flex;gap:26px;align-items:center}
+  header.top nav a{font:500 14px/1 var(--f-txt);color:var(--muted)}
+  header.top nav a:hover{color:var(--ink)}
+  @media(max-width:820px){header.top nav a:not(.btn){display:none}}
 
-/* tooltip agence (DOM, positionné par JS au-dessus du canvas) */
-#tipAgence{
-  position:fixed;z-index:5;pointer-events:none;
-  transform:translate(-50%,calc(-100% - 18px));
-  background:#FFFFFF;color:var(--encre);
-  border:1px solid var(--ligne);
-  border-radius:12px;padding:10px 14px;min-width:170px;
-  opacity:0;transition:opacity .18s ease;
-  box-shadow:0 14px 40px rgba(16,44,110,.16);
-}
-#tipAgence.on{opacity:1}
-#tipAgence::after{
-  content:"";position:absolute;left:50%;bottom:-5px;width:10px;height:10px;
-  background:#FFFFFF;border-right:1px solid var(--ligne);border-bottom:1px solid var(--ligne);
-  transform:translateX(-50%) rotate(45deg);
-}
-#tipAgence .t-nom{font:600 13px/1.3 var(--f-titre)}
-#tipAgence .t-loc{font:500 10px/1.4 var(--f-mono);color:var(--gris);margin-top:3px;letter-spacing:.04em}
-#tipAgence .t-tag{
-  display:inline-block;margin-top:6px;font:600 9px/1 var(--f-mono);letter-spacing:.14em;
-  color:var(--corail-txt);background:rgba(255,122,89,.14);border:1px solid rgba(255,122,89,.42);
-  padding:4px 7px;border-radius:99px;text-transform:uppercase;
-}
+  /* HERO + MAP */
+  .hero{position:relative}
+  .hero .wrap{display:grid;grid-template-columns:1.02fr 1.1fr;gap:40px;align-items:center;padding:56px 26px 40px}
+  .hero h1{font:800 clamp(34px,5vw,60px)/1.02 var(--f-titre);letter-spacing:-.02em}
+  .hero h1 .acc{color:var(--coral-ink)}
+  .hero p.lead{margin-top:20px;max-width:46ch;font-size:clamp(16px,1.7vw,18px);color:var(--muted)}
+  .hero .cta{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap}
+  .hero .mini{margin-top:34px;display:flex;gap:26px;flex-wrap:wrap}
+  .hero .mini .m .v{font:800 26px/1 var(--f-titre);color:var(--ink)}
+  .hero .mini .m .v span{color:var(--coral-ink)}
+  .hero .mini .m .l{margin-top:5px;font:500 12px/1.3 var(--f-mono);letter-spacing:.05em;color:var(--muted)}
+  @media(max-width:900px){.hero .wrap{grid-template-columns:1fr;padding-top:36px}.hero .mapwrap{order:-1}}
 
-/* ============================================================
-   NAVIGATION
-   ============================================================ */
-.nav{
-  position:fixed;top:0;left:0;right:0;z-index:50;
-  display:flex;align-items:center;gap:28px;
-  padding:14px clamp(18px,3.4vw,44px);
-  border-bottom:1px solid transparent;
-  transition:background .3s ease,border-color .3s ease;
-}
-.nav.scrolled{background:rgba(253,251,246,.95);border-bottom-color:var(--ligne)}
-.nav-logo{display:flex;align-items:center;gap:11px}
-.nav-logo img{height:30px;width:auto}
-.nav-logo b{font:600 15px/1 var(--f-titre);letter-spacing:.02em}
-.nav-logo small{
-  display:block;font:500 8.5px/1 var(--f-mono);letter-spacing:.3em;
-  color:var(--gris);text-transform:uppercase;margin-top:4px;
-}
-.nav-liens{display:flex;gap:4px;margin-left:auto}
-.nav-liens a{
-  font:500 13px/1 var(--f-titre);color:var(--gris);
-  padding:10px 13px;border-radius:8px;
-  transition:color .18s ease,background .18s ease;
-}
-.nav-liens a:hover{color:var(--encre);background:rgba(0,80,230,.07)}
-.nav-cta{
-  font:600 13px/1 var(--f-titre);color:#33140A;background:var(--corail);
-  border:0;border-radius:99px;padding:12px 20px;
-  transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .2s ease;
-  box-shadow:0 0 0 0 rgba(255,122,89,0);
-}
-.nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(255,122,89,.4);background:#FF9276}
-.burger{
-  display:none;margin-left:auto;background:transparent;border:1px solid var(--ligne-forte);
-  border-radius:9px;width:42px;height:38px;color:var(--encre);
-}
-.menu-mobile{
-  position:fixed;inset:0;z-index:60;background:rgba(253,251,246,.98);
-  display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-}
-.menu-mobile.on{display:flex}
-.menu-mobile a{font:600 24px/1 var(--f-titre);padding:14px;color:var(--encre)}
-.menu-mobile .fermer{position:absolute;top:16px;right:16px;background:transparent;border:1px solid var(--ligne-forte);color:var(--encre);border-radius:9px;width:42px;height:38px}
+  /* La carte */
+  .mapwrap{position:relative}
+  .mapcard{position:relative;background:linear-gradient(180deg,#FFFFFF, #F7FAFF);border:1px solid var(--line);border-radius:26px;padding:14px 14px 8px;box-shadow:0 34px 80px -40px rgba(16,44,110,.35)}
+  .maphead{display:flex;align-items:center;justify-content:space-between;padding:6px 8px 12px}
+  .maphead .live{display:inline-flex;align-items:center;gap:8px;font:600 11px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mint-ink)}
+  .maphead .live .dot{width:8px;height:8px;border-radius:50%;background:var(--mint);position:relative}
+  .maphead .live .dot::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--mint);opacity:.6;animation:ping 2.4s ease-out infinite}
+  .maphead .count{font:600 11px/1 var(--f-mono);letter-spacing:.1em;color:var(--muted)}
+  @keyframes ping{0%{transform:scale(.6);opacity:.7}100%{transform:scale(1.9);opacity:0}}
+  svg.france{display:block;width:100%;height:auto}
+  .fr-fill{fill:url(#frFill);stroke:#BFD3F5;stroke-width:1.1}
+  .fr-inner{fill:none;stroke:rgba(0,80,230,.14);stroke-width:.6}
+  .arc{fill:none;stroke-linecap:round}
+  .ag-dot{cursor:pointer}
+  .ag-ring{fill:none}
+  .ag-label{font:600 12px var(--f-txt);fill:var(--ink)}
+  .ag-sub{font:500 9.5px var(--f-mono);fill:var(--muted);letter-spacing:.03em}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;padding:10px 8px 6px}
+  .legend .it{display:inline-flex;align-items:center;gap:7px;font:600 11px/1 var(--f-mono);letter-spacing:.04em;color:var(--muted)}
+  .legend .sw{width:11px;height:11px;border-radius:50%}
+  /* tooltip */
+  #tip{position:fixed;z-index:60;pointer-events:none;opacity:0;transform:translate(-50%,-125%);transition:opacity .18s;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 12px;box-shadow:0 16px 40px -18px rgba(16,44,110,.4)}
+  #tip.on{opacity:1}
+  #tip .n{font:600 13px/1.2 var(--f-titre);color:var(--ink)}
+  #tip .c{margin-top:3px;font:500 10px/1.3 var(--f-mono);color:var(--muted)}
 
-/* ============================================================
-   STRUCTURE DES SECTIONS (contenu au-dessus de la carte)
-   ============================================================ */
-main{position:relative;z-index:3}
-.sect{
-  position:relative;min-height:100vh;
-  display:flex;align-items:center;
-  padding:110px clamp(18px,4vw,56px) 80px;
-}
-.colonne{max-width:600px}
-.colonne.droite{margin-left:auto}
-.colonne.centre{margin-inline:auto;text-align:center;max-width:820px}
+  /* SECTIONS */
+  section.blk{padding:74px 0;border-top:1px solid var(--line)}
+  .shead .eyebrow{display:inline-block;margin-bottom:14px}
+  .shead h2{font:800 clamp(28px,3.6vw,42px)/1.05 var(--f-titre);letter-spacing:-.02em;max-width:20ch}
+  .shead p{margin-top:14px;max-width:56ch;color:var(--muted);font-size:17px}
+  .cards{margin-top:34px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:860px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--blanc);border:1px solid var(--line);border-radius:18px;padding:26px;transition:transform .3s,box-shadow .3s,border-color .3s}
+  .card:hover{transform:translateY(-6px);box-shadow:0 22px 46px -26px rgba(16,44,110,.22);border-color:rgba(0,80,230,.35)}
+  .card .ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(0,80,230,.09);color:var(--blue);margin-bottom:16px}
+  .card.o .ic{background:rgba(255,122,89,.14);color:var(--coral-ink)}
+  .card h3{font:700 19px/1.25 var(--f-titre)}
+  .card p{margin-top:9px;color:var(--muted);font-size:14.5px}
 
-.etiquette{
-  display:inline-flex;align-items:center;gap:9px;
-  font:600 10.5px/1 var(--f-mono);letter-spacing:.3em;text-transform:uppercase;
-  color:var(--corail-txt);margin-bottom:22px;
-}
-.etiquette::before{
-  content:"";width:26px;height:1px;background:var(--corail);
-}
-h1,h2{font-family:var(--f-titre);letter-spacing:-.03em;line-height:1.02;font-weight:700}
-h1{font-size:clamp(42px,7vw,92px)}
-h2{font-size:clamp(30px,4.6vw,56px)}
-.souligne{color:var(--corail-vif)}
-.bleuc{color:var(--bleu)}
-.chapo{
-  font-size:clamp(15px,1.6vw,18px);color:var(--gris);max-width:52ch;
-  margin-top:22px;line-height:1.65;
-}
-.chapo b{color:var(--encre);font-weight:600}
+  /* chiffres */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:20px;margin-top:10px}
+  @media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat .n{font:800 clamp(30px,4vw,46px)/1 var(--f-titre);letter-spacing:-.02em}
+  .stat .n .u{font-size:.42em;color:var(--muted);font-weight:600;margin-left:4px}
+  .stat .n .plus{color:var(--coral-ink)}
+  .stat .c{margin-top:8px;color:var(--muted);font-size:13.5px}
+  .stat .bar{margin-top:12px;height:3px;width:38px;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--coral))}
 
-/* reveals au scroll */
-.rv{opacity:0;transform:translateY(26px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
-.rv.in{opacity:1;transform:none}
-.rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}.rv.d4{transition-delay:.32s}
+  /* offilog */
+  .offilog{background:linear-gradient(120deg,#EAF1FF,#F3FBF8);border:1px solid var(--line);border-radius:26px;padding:44px;display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center}
+  @media(max-width:820px){.offilog{grid-template-columns:1fr;padding:30px}}
+  .offilog .big{font:800 clamp(40px,6vw,66px)/1 var(--f-titre);color:var(--blue);letter-spacing:-.02em}
+  .offilog .big .u{font-size:.28em;color:var(--ink);display:block;margin-top:8px;font-weight:600;letter-spacing:0}
+  .chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:6px}
+  .chip{font:600 12px/1 var(--f-mono);padding:9px 13px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .chip.b{border-color:rgba(0,80,230,.3);color:var(--blue)}
+  .chip.m{border-color:rgba(53,208,186,.4);color:var(--mint-ink)}
 
-/* boutons */
-.rang-btn{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
-.btn{
-  display:inline-flex;align-items:center;gap:10px;
-  font:600 15px/1 var(--f-titre);border-radius:99px;padding:16px 26px;
-  transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .2s ease,border-color .2s ease;
-  border:1px solid transparent;
-}
-.btn-plein{background:var(--corail);color:#33140A}
-.btn-plein:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(255,122,89,.45);background:#FF9276}
-.btn-ligne{border-color:var(--ligne-forte);color:var(--encre);background:rgba(255,255,255,.68)}
-.btn-ligne:hover{border-color:var(--bleu);color:var(--bleu-txt);transform:translateY(-2px)}
-.btn svg{width:16px;height:16px}
+  /* contact */
+  .cta-final{text-align:center;background:radial-gradient(60% 90% at 50% 0%,rgba(0,80,230,.08),transparent 60%),var(--creme)}
+  .cta-final h2{font:800 clamp(30px,4.5vw,52px)/1.03 var(--f-titre);letter-spacing:-.02em}
+  .cta-final p{margin:16px auto 0;max-width:52ch;color:var(--muted);font-size:17px}
+  .cta-final .cta{margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .note{margin-top:18px;font:500 12px/1 var(--f-mono);color:var(--muted)}
 
-/* ============================================================
-   HERO
-   ============================================================ */
-#hero{align-items:flex-end;padding-bottom:70px}
-#hero .colonne{max-width:760px}
-.hero-titre .ligne-mot{display:block;overflow:hidden}
-.hero-titre .mot{display:block;transform:translateY(110%);animation:leve 1s var(--ease) forwards}
-.hero-titre .ligne-mot:nth-child(2) .mot{animation-delay:.12s}
-.hero-titre .ligne-mot:nth-child(3) .mot{animation-delay:.24s}
-@keyframes leve{to{transform:none}}
-.hero-sous{
-  display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:26px;
-  font:500 11.5px/1.7 var(--f-mono);letter-spacing:.1em;color:var(--gris);
-  text-transform:uppercase;
-}
-.hero-sous span{display:inline-flex;align-items:center;gap:8px}
-.hero-sous i{width:5px;height:5px;border-radius:50%;background:var(--bleu);font-style:normal}
+  footer.ft{border-top:1px solid var(--line);padding:40px 0;color:var(--muted);font-size:13px}
+  footer.ft .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+  footer.ft b{color:var(--ink)}
 
-/* moniteur de flux (feed HUD, coin bas droit) */
-.moniteur{
-  position:fixed;right:clamp(16px,2.6vw,36px);bottom:clamp(16px,3vh,32px);z-index:4;
-  width:296px;border:1px solid var(--ligne);border-radius:14px;
-  background:var(--panneau);overflow:hidden;
-  box-shadow:0 16px 44px rgba(16,44,110,.12);
-  transition:opacity .5s ease,transform .5s ease;
-}
-.moniteur.cache{opacity:0;transform:translateY(14px);pointer-events:none}
-.moniteur-tete{
-  display:flex;align-items:center;gap:8px;
-  padding:10px 14px;border-bottom:1px solid var(--ligne);
-  font:600 9.5px/1 var(--f-mono);letter-spacing:.26em;color:var(--gris);text-transform:uppercase;
-}
-.pastille{width:7px;height:7px;border-radius:50%;background:var(--corail);animation:cligne 1.6s ease-in-out infinite}
-@keyframes cligne{0%,100%{opacity:1}50%{opacity:.25}}
-.moniteur-corps{padding:8px 14px 12px;display:flex;flex-direction:column-reverse;gap:6px;height:112px;overflow:hidden}
-.flux-ligne{
-  font:500 10px/1.5 var(--f-mono);color:var(--gris);letter-spacing:.03em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  opacity:0;transform:translateY(6px);transition:opacity .4s ease,transform .4s ease;
-}
-.flux-ligne.on{opacity:1;transform:none}
-.flux-ligne b{color:var(--bleu-txt);font-weight:500}
-.flux-ligne em{color:var(--corail-txt);font-style:normal}
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1)}
+  .reveal.in{opacity:1;transform:none}
 
-/* indicateur scroll */
-.descendre{
-  position:absolute;left:50%;bottom:22px;transform:translateX(-50%);
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  font:500 9.5px/1 var(--f-mono);letter-spacing:.3em;color:var(--gris-2);text-transform:uppercase;
-}
-.descendre .fil{width:1px;height:38px;background:var(--ligne-forte);position:relative;overflow:hidden}
-.descendre .fil::after{
-  content:"";position:absolute;left:0;top:-40%;width:100%;height:40%;
-  background:var(--corail);animation:coule 1.8s ease-in-out infinite;
-}
-@keyframes coule{to{top:110%}}
-
-/* ============================================================
-   CARTES « CE QU'ON APPORTE »
-   ============================================================ */
-.grille-3{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px;
-}
-.carte-offre{
-  position:relative;border:1px solid var(--ligne);border-radius:18px;
-  background:var(--panneau);padding:28px 26px 30px;overflow:hidden;
-  box-shadow:0 8px 28px rgba(16,44,110,.06);
-  transition:transform .3s var(--ease),border-color .3s ease,box-shadow .3s ease;
-}
-.carte-offre:hover{transform:translateY(-6px);border-color:rgba(255,122,89,.5);box-shadow:0 20px 44px rgba(16,44,110,.12)}
-.carte-offre::before{
-  content:"";position:absolute;inset:0;opacity:0;transition:opacity .3s ease;
-  background:radial-gradient(120% 90% at 50% -20%, rgba(255,122,89,.10), transparent 60%);
-}
-.carte-offre:hover::before{opacity:1}
-.carte-offre .idx{
-  font:600 10px/1 var(--f-mono);letter-spacing:.26em;color:var(--gris-2);
-}
-.carte-offre h3{font:600 21px/1.2 var(--f-titre);letter-spacing:-.01em;margin:16px 0 12px}
-.carte-offre p{font-size:14px;color:var(--gris);line-height:1.7}
-.carte-offre p b{color:var(--encre);font-weight:600}
-.carte-offre .picto{
-  width:44px;height:44px;border-radius:12px;margin-top:22px;
-  border:1px solid var(--ligne-forte);background:rgba(53,208,186,.08);
-  display:grid;place-items:center;color:var(--bleu);
-}
-.carte-offre .picto svg{width:20px;height:20px}
-
-/* ============================================================
-   RÉSEAU — LISTE DES 9 AGENCES
-   ============================================================ */
-#reseau .colonne{max-width:560px}
-.liste-agences{margin-top:36px;border-top:1px solid var(--ligne)}
-.agence{
-  display:flex;align-items:center;gap:16px;width:100%;text-align:left;
-  background:transparent;border:0;border-bottom:1px solid var(--ligne);
-  padding:15px 10px 15px 4px;color:var(--encre);border-radius:0;
-  transition:background .2s ease,padding-left .25s var(--ease);
-}
-.agence:hover,.agence.actif{background:rgba(0,80,230,.06);padding-left:14px}
-.agence .num{
-  font:600 10px/1 var(--f-mono);letter-spacing:.2em;color:var(--gris-2);width:26px;flex:none;
-}
-.agence .noms{flex:1;min-width:0}
-.agence .nom{font:600 15.5px/1.25 var(--f-titre);letter-spacing:-.01em}
-.agence .lieu{font:500 10.5px/1.5 var(--f-mono);color:var(--gris);letter-spacing:.06em;margin-top:2px}
-.agence .badge{
-  flex:none;font:600 9px/1 var(--f-mono);letter-spacing:.16em;text-transform:uppercase;
-  color:var(--corail-txt);border:1px solid rgba(232,84,43,.4);border-radius:99px;padding:5px 9px;
-  background:rgba(255,122,89,.10);
-}
-.agence .fleche{flex:none;color:var(--gris-2);transition:transform .25s var(--ease),color .2s ease}
-.agence:hover .fleche,.agence.actif .fleche{transform:translateX(4px);color:var(--corail-vif)}
-.note-reseau{
-  margin-top:22px;font:500 11px/1.8 var(--f-mono);color:var(--gris-2);letter-spacing:.05em;
-}
-
-/* ============================================================
-   OFFILOG
-   ============================================================ */
-#offilog .colonne{max-width:600px}
-.offilog-panneau{
-  margin-top:36px;border:1px solid var(--ligne);border-radius:20px;
-  background:var(--panneau);overflow:hidden;
-  box-shadow:0 12px 36px rgba(16,44,110,.08);
-}
-.offilog-tete{
-  display:flex;align-items:center;gap:10px;padding:13px 18px;
-  border-bottom:1px solid var(--ligne);background:var(--panneau-2);
-  font:600 10px/1 var(--f-mono);letter-spacing:.28em;color:var(--gris);text-transform:uppercase;
-}
-.offilog-tete i{font-style:normal;color:var(--corail-vif)}
-.offilog-corps{padding:26px 24px 28px}
-.offilog-num{
-  font:700 clamp(52px,7vw,84px)/1 var(--f-titre);letter-spacing:-.04em;
-}
-.offilog-num small{font-size:.38em;color:var(--corail-txt);letter-spacing:0;font-weight:600;vertical-align:.55em}
-.offilog-legende{font:500 12px/1.7 var(--f-mono);color:var(--gris);letter-spacing:.06em;margin-top:8px;text-transform:uppercase}
-.offilog-tags{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}
-.offilog-tags span{
-  font:500 11.5px/1 var(--f-mono);letter-spacing:.05em;color:var(--bleu-txt);
-  border:1px solid var(--ligne-forte);border-radius:99px;padding:9px 14px;
-  background:rgba(0,80,230,.06);
-}
-.barre-flux{
-  margin-top:26px;height:6px;border-radius:99px;background:rgba(0,80,230,.10);
-  position:relative;overflow:hidden;
-}
-.barre-flux::after{
-  content:"";position:absolute;top:0;left:-35%;width:35%;height:100%;border-radius:99px;
-  background:linear-gradient(90deg,transparent,var(--corail),transparent);
-  animation:passe 2.4s linear infinite;
-}
-@keyframes passe{to{left:110%}}
-
-/* ============================================================
-   CHIFFRES
-   ============================================================ */
-#chiffres{align-items:center}
-.grille-chiffres{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:48px;text-align:left;
-}
-.bloc-chiffre{
-  border:1px solid var(--ligne);border-radius:18px;background:var(--panneau);
-  padding:26px 24px 24px;position:relative;overflow:hidden;
-  box-shadow:0 8px 28px rgba(16,44,110,.06);
-  transition:transform .3s var(--ease),border-color .3s ease,box-shadow .3s ease;
-}
-.bloc-chiffre:hover{transform:translateY(-5px);border-color:rgba(53,208,186,.6);box-shadow:0 18px 40px rgba(16,44,110,.11)}
-.bloc-chiffre .tick{
-  position:absolute;top:14px;right:16px;font:600 9px/1 var(--f-mono);
-  letter-spacing:.2em;color:var(--gris-2);
-}
-.bloc-chiffre .val{
-  font:700 clamp(38px,4.6vw,58px)/1 var(--f-titre);letter-spacing:-.04em;
-}
-.bloc-chiffre .val .acc{color:var(--corail-txt)}
-.bloc-chiffre .lab{font:500 11px/1.6 var(--f-mono);color:var(--gris);letter-spacing:.08em;margin-top:12px;text-transform:uppercase}
-
-/* ============================================================
-   BANDEAU LABOS — marquee infini
-   ============================================================ */
-.bandeau{
-  position:relative;z-index:3;overflow:hidden;
-  border-top:1px solid var(--ligne);border-bottom:1px solid var(--ligne);
-  background:rgba(53,208,186,.07);padding:26px 0;
-}
-.bandeau-titre{
-  text-align:center;font:600 9.5px/1 var(--f-mono);letter-spacing:.34em;
-  color:var(--gris-2);text-transform:uppercase;margin-bottom:20px;
-}
-.defile{display:flex;width:max-content;animation:defile 30s linear infinite}
-@keyframes defile{to{transform:translateX(-50%)}}
-.defile-groupe{display:flex;align-items:center;flex:none}
-.defile-groupe span{
-  font:600 clamp(19px,2.4vw,27px)/1 var(--f-titre);letter-spacing:.02em;color:#93A3C4;
-  padding:0 34px;white-space:nowrap;transition:color .25s ease;
-}
-.defile-groupe span:hover{color:var(--encre)}
-.defile-groupe i{font-style:normal;color:var(--corail);font-size:12px}
-
-/* ============================================================
-   CONTACT / CTA FINAL
-   ============================================================ */
-#contact{min-height:88vh;text-align:center;align-items:center}
-#contact .colonne{max-width:860px;margin-inline:auto}
-.contact-note{
-  display:inline-flex;align-items:center;gap:10px;margin-top:30px;
-  font:500 11.5px/1.6 var(--f-mono);letter-spacing:.1em;color:var(--gris);
-  border:1px solid var(--ligne-forte);border-radius:99px;padding:11px 20px;
-  background:rgba(255,255,255,.72);text-transform:uppercase;
-}
-.contact-note i{font-style:normal;color:var(--corail-vif)}
-
-/* ============================================================
-   FOOTER
-   ============================================================ */
-footer{
-  position:relative;z-index:3;background:rgba(253,251,246,.97);
-  border-top:1px solid var(--ligne);
-  padding:52px clamp(18px,4vw,56px) 30px;
-}
-.pied{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:36px;max-width:1180px;margin-inline:auto}
-.pied-logo{display:flex;align-items:center;gap:11px;margin-bottom:16px}
-.pied-logo img{height:28px}
-.pied-logo b{font:600 15px/1 var(--f-titre)}
-.pied p{font-size:13px;color:var(--gris);line-height:1.7;max-width:36ch}
-.pied h4{font:600 10px/1 var(--f-mono);letter-spacing:.28em;color:var(--gris-2);text-transform:uppercase;margin-bottom:16px}
-.pied ul{list-style:none}
-.pied li{margin-bottom:10px}
-.pied li a{font-size:13.5px;color:var(--gris);transition:color .18s ease}
-.pied li a:hover{color:var(--corail-txt)}
-.mentions{
-  max-width:1180px;margin:44px auto 0;padding-top:20px;border-top:1px solid var(--ligne);
-  display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between;
-  font:500 10.5px/1.6 var(--f-mono);color:var(--gris-2);letter-spacing:.05em;
-}
-
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-@media(max-width:980px){
-  .nav-liens{display:none}
-  .nav .nav-cta{display:none}
-  .burger{display:grid;place-items:center}
-  .grille-3{grid-template-columns:1fr}
-  .grille-chiffres{grid-template-columns:repeat(2,1fr)}
-  .moniteur{display:none}
-  .colonne.droite{margin-left:0}
-  .sect{padding-top:96px}
-  .cadre-hud{display:none}
-}
-@media(max-width:520px){
-  .grille-chiffres{grid-template-columns:1fr 1fr}
-  .bloc-chiffre{padding:20px 16px}
-  .rang-btn .btn{width:100%;justify-content:center}
-}
-
-/* ============================================================
-   REDUCED MOTION — tout se fige proprement
-   ============================================================ */
-@media(prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
-  *,*::before,*::after{animation:none !important;transition:none !important}
-  .rv{opacity:1;transform:none}
-  .hero-titre .mot{transform:none}
-  .defile{animation:none;flex-wrap:wrap;width:auto;justify-content:center}
-}
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none!important;animation:none!important}
+    .reveal{opacity:1!important;transform:none!important}
+    html{scroll-behavior:auto}
+    .arc{stroke-dasharray:none!important;stroke-dashoffset:0!important}
+  }
 </style>
 </head>
 <body>
 
-<!-- ===================== CARTE VIVANTE (canvas plein écran) ===================== -->
-<canvas id="carte" aria-hidden="true"></canvas>
-<div class="voile" aria-hidden="true"></div>
-<div class="cadre-hud" aria-hidden="true">
-  <span class="hud-lat">RÉSEAU · FR · COUVERTURE NATIONALE</span>
-  <span class="hud-scan">INTÉGRAL PHARMA · CARTE VIVANTE</span>
-</div>
-<div id="tipAgence" role="status">
-  <div class="t-nom"></div>
-  <div class="t-loc"></div>
-  <span class="t-tag" hidden></span>
-</div>
-
-<!-- ===================== MONITEUR DE FLUX ===================== -->
-<aside class="moniteur" id="moniteur" aria-hidden="true">
-  <div class="moniteur-tete"><span class="pastille"></span> Flux du réseau — direct</div>
-  <div class="moniteur-corps" id="fluxCorps"></div>
-</aside>
-
-<!-- ===================== NAV ===================== -->
-<header class="nav" id="nav">
-  <a class="nav-logo" href="#hero" aria-label="Intégral Pharma — accueil">
-    <img src="../assets/logo.png" alt="Logo Intégral Pharma">
-    <span><b>Intégral&nbsp;Pharma</b><small>Grossiste-répartiteur</small></span>
-  </a>
-  <nav class="nav-liens" aria-label="Navigation principale">
-    <a href="#offres">Ce qu'on apporte</a>
-    <a href="#reseau">Le réseau</a>
-    <a href="#offilog">Offilog</a>
-    <a href="#chiffres">Chiffres</a>
-    <a href="#contact">Contact</a>
-  </nav>
-  <button class="nav-cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Demander nos conditions</button>
-  <button class="burger" id="burger" aria-label="Ouvrir le menu">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-  </button>
+<header class="top">
+  <div class="wrap">
+    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <nav>
+      <a href="#reseau">Le réseau</a>
+      <a href="#apport">Ce qu'on apporte</a>
+      <a href="#offilog">Offilog</a>
+      <a href="#contact" class="btn btn-p">Demander nos conditions</a>
+    </nav>
+  </div>
 </header>
-<div class="menu-mobile" id="menuMobile">
-  <button class="fermer" id="fermerMenu" aria-label="Fermer le menu">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-  </button>
-  <a href="#offres">Ce qu'on apporte</a>
-  <a href="#reseau">Le réseau</a>
-  <a href="#offilog">Offilog</a>
-  <a href="#chiffres">Chiffres</a>
-  <a href="#contact">Contact</a>
-</div>
 
-<main>
-
-  <!-- ===================== HERO ===================== -->
-  <section class="sect" id="hero" data-cam="285,255,1">
-    <div class="colonne">
-      <p class="etiquette">Groupe de grossistes indépendant · Première intention</p>
-      <h1 class="hero-titre" aria-label="Plus de marge, dès la première boîte.">
-        <span class="ligne-mot"><span class="mot">Plus de marge,</span></span>
-        <span class="ligne-mot"><span class="mot">dès la <span class="souligne">première</span></span></span>
-        <span class="ligne-mot"><span class="mot">boîte.</span></span>
-      </h1>
-      <p class="chapo">
-        Sous vos yeux : notre réseau, en direct. <b>9 agences</b> reliées en continu,
-        une <b>couverture nationale</b>, et un catalogue qui va
-        <b>du princeps au générique</b>. Intégral Pharma est votre grossiste-répartiteur
-        de première intention — indépendant, depuis plus de 20 ans.
-      </p>
-      <div class="rang-btn">
-        <a class="btn btn-plein" href="#contact">Demander nos conditions
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </a>
-        <a class="btn btn-ligne" href="#reseau">Explorer la carte</a>
+<section class="hero" id="reseau">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">Le réseau · France entière</span>
+      <h1>9 agences.<br><span class="acc">1 réseau vivant.</span></h1>
+      <p class="lead">De la Bretagne à la Méditerranée, nos implantations préparent et livrent au plus près de votre officine — pour plus de marge, dès la première boîte.</p>
+      <div class="cta">
+        <a href="#contact" class="btn btn-p">Demander nos conditions →</a>
+        <a href="#apport" class="btn btn-o">Ce qu'on apporte</a>
       </div>
-      <div class="hero-sous">
-        <span><i></i>9 agences</span>
-        <span><i></i>+430 laboratoires</span>
-        <span><i></i>Offilog · +14 000 références</span>
-        <span><i></i>+20 ans d'expérience</span>
+      <div class="mini">
+        <div class="m"><div class="v">9</div><div class="l">agences en France</div></div>
+        <div class="m"><div class="v">National</div><div class="l">couverture large</div></div>
+        <div class="m"><div class="v"><span>+</span>20 <span style="font-size:.5em;color:var(--muted)">ans</span></div><div class="l">d'expérience</div></div>
       </div>
     </div>
-    <div class="descendre" aria-hidden="true"><span>Explorer</span><span class="fil"></span></div>
-  </section>
 
-  <!-- ===================== CE QU'ON APPORTE ===================== -->
-  <section class="sect" id="offres" data-cam="250,240,1.25">
-    <div class="colonne" style="max-width:1080px;width:100%">
-      <p class="etiquette rv">Ce qu'on apporte</p>
-      <h2 class="rv d1">Un répartiteur pensé<br>pour <span class="bleuc">votre officine</span>.</h2>
-      <div class="grille-3">
-        <article class="carte-offre rv d1">
-          <span class="idx">01 / PREMIÈRE INTENTION</span>
-          <h3>Votre grossiste au quotidien</h3>
-          <p>Grossiste-répartiteur de <b>première intention</b> : le partenaire
-          de vos commandes de tous les jours, <b>du princeps au générique</b>,
-          adossé à <b>+430 laboratoires</b>.</p>
-          <span class="picto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 8.3L12 13l8.7-4.7M12 13v9"/></svg></span>
-        </article>
-        <article class="carte-offre rv d2">
-          <span class="idx">02 / INDÉPENDANCE</span>
-          <h3>Un groupe indépendant</h3>
-          <p>Un <b>groupe de grossistes indépendant</b>, fort de
-          <b>plus de 20 ans d'expérience</b>. Des décisions prises près du terrain,
-          au service des pharmaciens — pas d'un actionnaire lointain.</p>
-          <span class="picto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
-        </article>
-        <article class="carte-offre rv d3">
-          <span class="idx">03 / VOTRE MARGE</span>
-          <h3>Plus de marge, dès la première boîte</h3>
-          <p>Notre promesse tient en une phrase. Le détail de vos conditions ?
-          <b>Chiffré en rendez-vous</b>, sur vos volumes réels, avec votre interlocuteur dédié.</p>
-          <span class="picto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===================== LE RÉSEAU / 9 AGENCES ===================== -->
-  <section class="sect" id="reseau" data-cam="330,300,1.35">
-    <div class="colonne">
-      <p class="etiquette rv">Le groupe · Couverture nationale</p>
-      <h2 class="rv d1">9 agences.<br>Une carte <span class="souligne">vivante</span>.</h2>
-      <p class="chapo rv d2">Survolez une agence : la carte vous y emmène.
-      Chaque point est un site du groupe, chaque arc un flux du réseau.</p>
-      <div class="liste-agences rv d3" id="listeAgences" role="list"></div>
-      <p class="note-reseau rv d4">— Positions schématiques, orientées comme la France.</p>
-    </div>
-  </section>
-
-  <!-- ===================== OFFILOG ===================== -->
-  <section class="sect" id="offilog" data-cam="200,300,1.5">
-    <div class="colonne droite">
-      <p class="etiquette rv">Offilog · Le catalogue</p>
-      <h2 class="rv d1">Tout ce qui irrigue<br>le réseau.</h2>
-      <p class="chapo rv d2">Offilog, c'est le catalogue qui alimente la carte :
-      une profondeur de gamme pensée pour que votre première intention
-      soit aussi la bonne.</p>
-      <div class="offilog-panneau rv d3">
-        <div class="offilog-tete"><i>●</i> OFFILOG — CATALOGUE DU RÉSEAU</div>
-        <div class="offilog-corps">
-          <div class="offilog-num"><span data-compte="14000" data-prefixe="+"></span><small>réfs</small></div>
-          <p class="offilog-legende">Références disponibles · du princeps au générique</p>
-          <div class="offilog-tags">
-            <span>Princeps</span><span>Génériques</span><span>+430 laboratoires</span><span>Couverture nationale</span>
-          </div>
-          <div class="barre-flux" aria-hidden="true"></div>
+    <div class="mapwrap">
+      <div class="mapcard">
+        <div class="maphead">
+          <span class="live"><span class="dot"></span>Réseau en direct</span>
+          <span class="count">09 implantations · métropole</span>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===================== CHIFFRES ===================== -->
-  <section class="sect" id="chiffres" data-cam="250,265,0.92">
-    <div class="colonne centre" style="max-width:1080px;width:100%">
-      <p class="etiquette rv" style="justify-content:center">Le réseau en chiffres</p>
-      <h2 class="rv d1">La France entière,<br>en quatre repères.</h2>
-      <div class="grille-chiffres">
-        <div class="bloc-chiffre rv d1"><span class="tick">/ EXP</span>
-          <div class="val"><span data-compte="20" data-suffixe="+"></span></div>
-          <div class="lab">années d'expérience</div>
+        <svg class="france" viewBox="0 0 1000 960.1" role="img" aria-label="Carte de France des 9 agences Intégral Pharma">
+          <defs>
+            <linearGradient id="frFill" x1="0" y1="0" x2="0.6" y2="1">
+              <stop offset="0" stop-color="#F2F7FF"/>
+              <stop offset="1" stop-color="#EAF6F2"/>
+            </linearGradient>
+            <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#0050E6" stop-opacity=".16"/>
+              <stop offset="1" stop-color="#0050E6" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <path class="fr-fill" d="M825.35,356.64 821.65,358.05 817.82,356.58 815.8,357.67 816.66,361.49 812.79,363.48 812.17,365.94 808.99,371.04 817.91,369.18 820.02,370.24 820.37,372.88 817.4,373.88 816.38,376.48 812.82,377.47 813.7,381.53 806.31,388.65 806.73,389.82 797.13,397.03 796.54,398.67 797.67,400.11 791.23,405.51 783.1,407.52 779.43,412.2 781.21,416.7 779.36,423.68 780.27,426.39 769.08,434.54 757.93,445.19 760.94,448.18 755.51,455.96 755.58,458.96 755.06,460.61 761.28,465.88 757.54,473.14 758.59,476.5 748.74,480.05 749.46,482.03 750.21,482.97 747.76,487.71 750.35,486.49 753.24,486.93 754.82,485.86 759.67,486.58 765.53,480.94 770.37,478.29 770.85,475.79 769.89,475.17 768.16,476.44 766.41,473.57 770.79,465.22 773.65,465.14 776.48,467.71 784.89,461.61 786.91,462.52 798.58,461.38 803.71,462.79 801.74,466.88 807.52,473.88 803.74,480.85 803.41,487.26 809.94,488.71 808.68,495.83 812.52,494.29 817.44,500.73 819.63,507.7 817.16,509.71 816.28,512.67 812.63,514.89 808.52,514.84 807.9,517.03 804.7,516.03 804.2,526.61 807.49,530.39 810.38,530.95 811.26,533.63 816.84,535.02 815.28,539.71 816.91,547.7 820.41,548.65 820.32,550.69 823.63,551.18 824.48,554.46 828.77,557.55 827.5,561.42 824.09,564.73 825.69,571.59 821.77,575.52 819.7,574.34 814.27,576.27 812.71,579.47 809.61,580.16 809.23,582.76 806.55,583.45 801.32,580.7 799.38,582.69 795.16,583.32 792.1,586.14 794.45,589.17 795.25,593.96 799.86,594.71 799.67,596.88 801.19,599.66 799.86,601.97 800.88,602.32 800.51,604.9 808.15,610.18 811.12,610.38 812.3,608.97 818.22,612.85 816.74,616.01 821.6,626.36 818.09,625.4 814.2,626.75 813.29,629.04 814.47,632.24 813.32,632.36 810.99,637.97 808.59,638.53 807.15,641.05 808.84,645.57 813.17,650.54 809.63,651.2 810.04,657.12 813.63,661.09 814.05,663.26 816.38,664.86 817.5,668.87 829.21,672.22 835.45,677.88 839.59,677.68 840.63,680.24 842.98,679.59 844.96,680.58 845.33,678.92 854.24,676.6 857.81,676.91 859.2,674.38 861.96,674.97 860.89,678.98 864.08,683.59 863.76,685.61 860.5,689.12 859.51,693.83 854.37,696.68 853.71,701.18 849.63,703.8 851.61,711.93 848.72,715.29 846.69,714.45 843.22,718.03 839.16,719.1 839.79,721.43 838.49,722.43 837.42,719.5 836.79,721.4 835.52,720.24 832.46,721.37 830.5,725.04 826.72,724.87 824.85,731.05 825.49,734.96 822.93,732.41 819.11,735.72 817.58,734.31 814.02,735.33 811.42,743.9 809.38,746.02 807.32,745.65 807.09,747.58 799.53,747.46 797.63,753.96 789.27,760.81 794.78,761.45 795.73,760.69 796.68,761.74 794.49,764.17 795.37,768.02 793.15,769.42 793.24,770.9 791.47,771.45 790.1,769.3 787.12,769.01 783.12,772.48 775.92,773.25 774.37,775.83 774.55,778.59 768.58,775.35 763.56,776.07 760.82,779.63 760.74,783.55 761.94,783.83 760.32,784.27 756.64,783.4 759.41,781.66 757.86,778.9 751.88,779.21 750.73,777.04 745.7,776.98 745.16,775.27 742.82,776.97 744.5,777.5 743.79,779.22 746.91,779.08 746.9,780.57 743.12,779.56 740.94,782.32 739.18,782.06 737.03,780.09 737.69,775.94 735.18,775.81 735.16,773.63 730.34,772.81 729.75,769.71 725.59,769.13 724.08,771.22 719.61,766.6 717.35,767.94 707.01,766.49 709.32,762.25 707.41,759.89 709.13,758.63 704.87,752.38 699.49,755.49 687.68,755.72 682.35,746.2 678.76,745.96 677.0,747.46 677.98,745.88 676.43,746.31 674.59,743.84 676.0,747.86 672.92,746.41 675.15,748.6 673.99,749.21 674.84,749.78 673.27,751.07 676.86,752.66 678.94,750.9 674.69,755.16 668.2,753.44 661.54,753.65 655.28,750.9 657.52,747.43 654.55,744.05 629.91,742.04 626.29,739.21 627.44,736.01 626.13,734.45 618.07,734.5 610.23,739.01 604.3,745.2 600.21,747.89 599.58,748.61 594.25,750.76 585.76,760.9 579.24,759.41 571.04,763.96 563.47,771.74 559.17,778.8 554.85,792.49 556.2,794.92 553.98,815.26 555.87,830.52 561.4,833.25 561.02,836.06 563.58,840.9 557.8,841.7 554.87,837.2 550.02,837.96 548.61,836.63 546.61,838.85 541.39,838.9 537.43,843.04 534.4,842.08 530.58,843.99 529.23,845.68 530.58,849.81 523.79,848.38 521.0,850.61 517.8,849.68 514.48,844.79 502.82,840.74 499.33,842.67 495.92,842.33 491.63,847.76 486.94,849.06 483.79,845.53 481.85,839.12 478.85,839.48 474.01,836.31 468.22,834.88 469.48,828.67 471.87,827.44 468.03,825.1 468.51,823.63 459.66,822.63 455.97,819.95 451.66,820.41 451.41,823.97 448.81,824.58 445.57,816.58 443.21,815.14 443.54,813.73 436.57,813.7 434.85,813.26 430.82,814.59 425.13,807.14 418.89,807.26 417.26,805.65 414.77,806.8 410.21,803.47 400.16,800.55 397.44,802.51 398.16,805.82 396.63,807.73 397.8,808.73 396.69,810.64 398.49,813.74 397.82,816.43 393.15,815.17 381.76,816.41 377.63,813.55 373.1,817.8 370.82,813.99 365.5,812.12 352.64,816.9 349.76,816.05 349.06,813.89 346.73,813.4 343.16,806.34 341.38,806.98 333.07,801.55 327.65,805.92 324.43,806.21 320.23,803.59 318.61,806.75 316.15,807.66 316.27,805.37 314.23,805.14 313.75,802.82 308.93,798.09 305.41,796.66 305.0,791.92 303.87,789.93 299.51,791.59 293.72,790.39 291.34,791.35 280.07,784.84 278.33,785.94 276.43,783.42 271.94,782.36 270.28,782.65 267.36,779.98 269.63,775.55 264.88,778.26 263.44,783.93 258.16,781.76 256.57,778.43 260.39,774.52 262.31,768.61 261.89,762.08 252.08,759.08 250.47,759.67 249.35,762.72 247.4,762.59 246.4,757.63 241.49,757.34 239.42,758.46 238.8,755.23 235.57,753.03 235.73,750.79 242.7,749.01 243.75,749.71 247.99,745.51 258.31,724.48 267.48,674.93 270.91,647.13 270.83,638.89 275.84,627.95 278.24,628.63 278.25,630.21 287.48,629.22 286.06,626.68 283.55,624.73 285.13,624.87 283.92,623.6 276.58,617.37 276.18,620.21 272.42,625.34 271.09,632.34 270.45,630.63 277.04,566.87 277.5,550.18 281.96,541.91 288.49,539.89 286.08,536.21 284.97,536.62 273.59,529.22 273.14,531.11 274.43,531.59 272.55,531.12 272.02,527.79 272.14,520.7 279.03,518.9 277.08,514.14 280.2,513.54 282.87,507.82 281.28,505.42 283.46,504.48 279.87,499.89 283.88,500.56 284.24,499.04 280.92,491.19 278.28,489.89 279.15,488.13 276.27,486.97 276.82,485.43 274.02,486.31 271.79,484.71 274.53,481.87 274.79,479.81 280.34,474.87 279.72,472.58 276.87,469.28 274.34,470.35 273.85,474.61 267.92,469.46 268.76,472.41 269.38,472.83 268.13,472.56 264.96,467.6 256.71,467.4 253.7,461.63 244.85,460.06 236.1,453.04 233.96,452.93 230.73,441.62 225.14,433.87 223.65,433.84 221.44,429.96 212.15,421.66 211.55,415.2 214.38,414.31 219.88,403.8 222.72,401.89 221.09,398.65 214.61,393.8 205.25,391.9 210.74,388.23 209.66,378.28 201.69,382.12 196.36,377.93 193.72,378.4 193.03,379.94 185.46,376.77 187.86,375.89 188.32,373.03 184.87,368.73 190.75,364.53 192.96,364.85 191.39,363.96 191.32,361.89 188.93,361.63 188.61,357.59 190.92,358.58 193.43,357.21 186.08,354.35 184.86,355.71 179.72,356.31 184.19,353.56 183.26,353.35 184.42,351.84 182.74,350.94 182.86,352.94 181.46,353.68 181.2,350.68 180.13,353.86 177.33,352.99 180.41,354.71 177.55,355.44 176.61,357.64 173.2,356.4 167.56,358.1 165.38,356.76 165.23,355.15 161.74,353.46 162.55,352.55 161.24,352.57 161.3,351.55 163.68,351.16 165.27,353.39 167.05,352.24 167.19,353.34 167.29,351.54 168.85,353.3 169.74,352.0 171.19,353.49 173.32,352.89 174.42,348.49 174.91,349.54 176.0,347.97 175.9,343.66 174.53,343.07 174.3,345.64 175.51,346.61 174.25,346.2 175.12,347.35 173.95,348.33 173.85,347.03 170.11,345.42 173.21,345.99 171.39,343.5 170.01,344.61 169.18,343.36 169.71,345.31 164.47,345.42 164.64,347.48 162.7,347.35 162.65,349.77 161.42,348.12 160.44,348.52 159.93,346.82 159.55,348.51 159.51,344.76 158.22,344.57 156.99,341.95 158.4,346.19 157.65,348.56 160.22,351.7 157.1,351.09 155.75,348.27 156.1,350.21 153.73,348.18 154.1,350.47 152.58,348.79 151.8,350.17 149.07,350.75 149.27,349.22 146.99,347.62 147.26,355.83 150.13,359.9 146.69,359.18 144.97,354.13 146.62,352.27 146.03,348.75 141.69,343.03 141.73,340.67 146.53,337.78 144.37,337.97 145.87,336.34 147.05,337.29 147.7,335.42 148.47,335.83 145.36,335.92 146.46,333.26 144.81,334.91 142.29,333.64 144.34,337.44 142.66,337.76 142.3,338.72 141.31,338.35 142.25,339.53 141.19,342.92 135.0,338.6 131.7,338.87 134.15,337.89 137.11,338.7 134.77,337.08 131.45,336.74 135.38,332.87 136.64,328.85 136.45,330.97 134.3,332.44 133.95,331.73 132.57,333.47 129.71,325.71 129.19,327.55 131.88,334.78 129.77,337.62 124.91,337.73 120.53,331.39 121.14,327.79 119.83,325.26 120.92,323.49 119.53,322.73 120.9,328.12 119.69,331.78 112.81,330.44 112.79,329.54 110.35,330.39 108.1,327.59 112.79,325.91 109.46,326.26 109.43,325.34 106.92,327.87 105.76,324.05 106.22,328.69 98.89,329.12 95.9,324.77 96.97,322.63 95.28,323.18 95.81,322.49 90.82,317.82 90.7,323.08 86.26,323.4 83.59,322.26 86.24,323.18 84.04,321.0 82.81,322.1 79.91,317.27 82.37,314.75 83.85,315.14 83.67,313.8 82.24,314.36 83.02,311.97 81.57,311.13 82.63,312.1 81.46,313.79 81.63,315.7 80.06,316.29 79.55,318.97 77.83,318.39 80.79,319.83 81.75,322.28 78.23,324.15 77.3,320.67 76.31,322.66 75.14,321.96 78.62,325.61 76.8,328.41 75.1,327.49 74.78,328.92 64.68,328.32 64.32,326.16 66.47,323.99 63.47,315.7 59.13,310.83 53.9,307.96 54.41,305.73 56.83,305.35 53.75,305.61 53.85,307.58 51.79,309.16 47.28,306.43 40.64,305.32 42.74,304.53 42.36,302.97 52.96,301.76 62.09,298.93 65.49,298.76 67.42,301.03 67.79,299.77 69.58,300.5 71.22,294.27 69.79,293.84 68.16,289.67 64.69,289.41 58.38,286.42 56.11,287.41 52.69,293.02 51.69,286.7 53.35,285.24 48.25,284.71 47.94,282.32 51.91,281.86 51.09,278.56 54.19,276.52 52.5,280.07 54.15,281.86 56.4,279.61 55.15,281.14 56.3,282.23 61.74,281.31 64.2,282.83 71.62,280.98 70.42,283.04 71.93,284.47 75.05,284.75 75.64,285.99 82.03,286.12 81.72,288.16 82.42,284.96 80.02,286.02 73.32,284.64 71.31,282.42 76.94,280.79 70.77,279.14 72.79,277.92 67.19,278.99 71.42,275.09 67.51,276.71 68.23,274.63 65.87,276.18 66.27,275.51 64.22,278.04 61.89,278.09 62.87,276.49 59.14,277.84 62.66,272.63 71.35,266.67 62.69,271.85 60.72,271.28 60.12,272.66 57.04,272.78 49.06,276.83 43.59,275.38 41.94,277.56 38.18,277.48 38.03,274.66 40.0,274.16 37.32,274.5 38.79,272.84 37.07,269.25 39.04,264.47 40.92,263.82 38.7,263.28 38.33,259.55 41.32,255.89 42.9,256.37 43.09,254.69 47.98,254.11 49.98,254.65 50.61,256.01 55.93,256.85 49.23,253.81 50.05,251.21 50.18,252.46 53.6,252.1 57.27,254.19 51.78,250.84 53.57,248.29 56.46,249.69 60.35,247.98 63.12,248.35 60.67,246.52 67.55,244.62 69.9,246.04 68.44,247.5 69.99,248.29 76.49,246.69 74.71,246.23 76.84,243.91 81.01,242.87 84.06,243.19 85.65,244.6 86.13,241.77 91.41,239.82 92.51,250.26 93.68,251.76 92.67,246.78 94.75,244.8 96.66,245.29 95.87,246.65 98.85,249.33 98.38,251.3 98.85,250.89 101.47,249.03 99.39,248.51 98.37,245.01 99.59,245.94 99.12,243.3 100.65,241.18 101.23,241.82 101.44,240.54 110.81,243.5 112.98,242.81 112.03,246.13 114.33,243.75 115.6,245.25 117.83,244.36 117.06,240.29 119.13,237.67 116.82,236.66 116.85,234.65 122.44,229.1 122.4,230.38 123.95,229.18 125.29,231.21 127.27,230.85 126.71,232.95 129.63,232.5 134.4,229.08 138.19,229.33 140.7,226.27 142.05,229.48 140.13,233.75 140.97,233.9 143.76,228.59 150.65,225.02 149.14,226.4 150.45,227.34 149.3,227.07 149.49,229.57 150.66,229.94 147.61,236.65 150.71,230.77 154.99,230.98 155.05,232.83 152.63,234.31 154.9,234.57 153.69,235.02 156.46,236.23 158.87,235.57 160.21,237.13 159.41,240.48 166.95,246.66 167.32,252.33 174.53,256.2 174.03,258.43 176.88,262.16 176.72,258.18 179.82,258.6 185.41,252.05 190.42,249.46 189.56,247.47 192.81,246.82 194.27,248.42 200.8,243.65 202.61,245.83 199.54,250.02 201.0,250.76 205.4,247.55 207.87,254.36 209.03,251.13 210.05,253.97 212.11,249.97 213.47,251.14 211.82,248.62 218.6,248.34 218.3,249.5 219.59,249.66 221.89,253.76 221.14,254.92 223.33,257.48 221.81,262.14 224.17,258.82 224.96,259.44 222.84,253.15 224.15,253.58 220.94,251.78 219.92,246.9 222.36,245.48 222.57,244.07 225.78,243.75 224.55,242.99 226.08,242.18 228.14,243.11 232.03,241.44 232.41,244.26 230.63,245.64 230.75,249.01 237.23,251.49 251.91,248.85 253.91,250.56 258.3,249.27 259.9,247.83 264.4,248.63 261.33,245.91 262.71,243.21 258.19,246.34 254.16,243.12 252.5,239.27 249.88,237.69 249.69,230.48 247.29,229.32 249.3,227.52 251.26,219.9 251.27,223.27 251.16,211.02 254.27,211.56 250.65,210.18 249.3,213.35 248.08,209.63 247.63,203.09 249.26,200.84 247.32,192.68 250.07,192.26 247.1,191.28 245.88,193.01 243.01,186.36 244.02,186.5 240.76,182.45 242.96,181.95 239.28,181.6 235.77,177.69 237.78,178.35 236.33,177.36 234.27,177.73 231.5,164.99 229.2,163.14 232.13,158.71 231.55,153.16 229.84,150.66 225.15,148.96 225.76,144.16 229.38,146.17 231.55,145.09 233.48,147.6 242.54,149.38 243.67,150.75 246.98,150.74 246.05,151.31 247.27,152.1 248.59,150.99 255.65,149.52 256.7,147.05 263.6,146.16 270.12,147.23 272.59,155.73 270.94,155.26 269.6,159.02 269.7,157.68 268.1,158.08 267.75,162.46 276.68,174.7 276.92,178.57 279.81,179.61 283.14,176.3 291.55,175.85 304.38,180.21 327.86,181.88 339.01,186.55 348.22,185.06 355.08,181.62 362.69,175.02 369.09,172.7 376.41,172.06 376.17,170.63 371.85,170.37 371.83,170.86 361.59,168.82 358.22,164.63 364.95,147.85 367.74,145.4 376.44,142.04 392.8,132.07 406.18,129.93 417.57,125.71 422.29,125.83 432.98,120.98 449.48,108.2 452.85,99.98 456.27,97.49 459.6,100.26 465.22,100.57 463.19,97.42 460.98,97.28 458.98,93.63 456.32,93.17 455.57,91.05 457.11,83.29 461.42,83.1 462.42,84.38 456.73,79.84 458.71,66.71 462.88,69.21 458.14,62.85 457.36,48.85 459.71,48.77 460.05,44.11 458.59,34.75 462.7,33.92 472.62,26.57 491.99,21.81 494.25,23.37 493.52,21.91 496.11,20.26 498.06,21.71 499.03,19.01 498.21,18.66 500.98,19.29 509.61,16.86 513.13,17.48 522.25,14.06 524.21,22.36 526.25,23.58 527.77,27.93 525.14,30.32 526.23,31.03 525.81,37.01 528.54,40.36 530.74,39.77 534.11,40.78 538.61,48.66 542.43,49.32 546.28,51.8 549.49,46.06 556.3,43.48 558.21,44.06 559.78,42.16 562.4,42.97 566.08,50.1 569.39,51.63 569.43,53.5 568.52,55.68 571.51,67.93 577.38,70.99 582.1,69.35 583.92,67.27 586.49,68.24 585.5,71.42 592.74,70.94 596.03,74.98 596.76,79.76 595.81,83.0 599.83,88.93 599.33,87.52 600.62,88.21 602.12,84.64 608.63,84.46 611.9,86.72 620.21,83.82 623.76,88.53 626.16,89.24 627.77,93.41 629.51,92.63 628.27,91.61 629.6,90.54 632.22,92.19 632.88,94.07 628.46,97.97 628.53,102.69 627.0,105.27 631.64,105.35 631.71,107.9 633.65,111.25 628.86,113.79 627.33,116.62 628.95,118.73 627.89,120.32 631.5,121.32 631.64,122.24 638.92,121.03 649.82,123.17 653.06,122.67 656.99,119.64 664.3,118.37 664.3,109.9 672.85,102.11 677.54,105.19 675.84,106.99 675.8,109.61 674.58,108.57 673.58,111.68 672.67,111.85 673.94,114.46 670.59,121.23 674.58,123.17 677.06,127.01 674.7,131.43 676.27,135.53 674.72,137.84 678.51,138.52 684.41,137.2 685.84,139.28 690.79,140.88 693.08,145.43 695.17,145.31 695.65,147.36 702.55,147.34 706.49,151.23 704.65,153.93 705.22,155.24 707.82,153.39 712.99,156.97 714.4,159.97 715.58,166.05 721.57,163.22 724.97,165.11 727.32,161.06 734.13,161.97 735.79,159.89 738.66,162.26 739.96,162.26 741.95,165.95 746.77,165.99 748.88,166.88 750.44,169.99 753.55,170.46 754.72,169.16 757.33,170.19 759.26,166.59 766.54,164.7 773.0,168.83 774.87,169.11 779.14,168.21 786.41,172.35 787.18,173.69 786.62,175.22 790.05,179.26 788.2,180.65 794.81,187.09 794.54,189.28 796.27,189.94 797.01,192.91 798.67,193.25 798.24,196.81 799.76,197.9 806.66,198.58 807.4,196.03 806.01,193.22 808.01,192.65 809.82,193.42 812.04,192.4 818.93,195.65 820.49,202.87 823.71,198.76 823.69,200.35 827.28,201.91 829.06,201.17 830.0,202.51 833.2,201.43 836.45,202.42 838.54,199.76 840.7,199.57 841.27,197.06 846.23,196.11 845.79,197.9 849.4,197.57 849.48,200.62 852.32,204.41 858.44,206.65 859.74,208.72 867.26,209.21 869.66,207.48 874.18,210.34 878.69,208.12 881.43,211.01 888.9,214.63 896.22,216.59 897.91,216.18 891.84,224.26 888.31,232.83 884.64,234.22 883.5,236.59 880.85,236.97 879.77,240.96 872.13,248.15 869.63,253.6 869.84,260.41 867.44,262.62 865.08,272.06 865.81,278.22 862.44,280.65 860.67,288.22 854.9,298.01 854.53,306.25 857.8,312.1 853.46,321.24 853.86,324.57 851.78,330.85 852.83,335.33 850.62,338.31 851.27,341.42 855.94,347.51 855.04,349.63 849.66,353.49 851.73,354.6 849.71,355.34 850.24,357.35 848.92,358.68 845.17,357.5 844.91,358.75 846.68,359.87 842.02,363.34 838.16,362.79 833.02,364.37 831.83,362.7 828.0,362.29 829.69,357.55 825.35,356.64Z"/>
+          <path class="fr-fill" d="M975.57,895.97 975.83,909.9 973.63,913.45 974.36,916.36 971.96,917.18 972.32,919.05 969.13,918.21 967.67,921.05 968.75,922.06 970.59,920.3 973.19,921.66 971.54,924.63 966.99,927.49 967.87,931.72 967.09,933.89 963.71,935.99 963.47,938.62 966.48,937.27 965.98,938.63 963.35,942.82 960.77,942.88 957.4,939.86 955.14,940.29 956.99,935.69 953.63,935.35 954.09,932.48 951.57,934.34 948.55,931.61 947.72,932.68 946.19,931.02 943.66,931.18 940.65,927.89 938.49,927.97 939.07,925.98 935.02,924.64 935.65,923.07 934.32,921.38 935.56,917.59 940.74,915.95 943.26,911.99 936.35,909.81 934.54,911.15 933.93,907.16 929.6,908.91 929.25,907.35 926.46,906.99 931.04,903.93 930.31,901.2 933.98,900.27 934.6,898.37 932.62,897.2 935.13,896.27 934.65,893.55 935.84,892.08 932.12,888.85 930.29,891.28 924.93,891.29 923.13,892.37 923.98,888.38 922.21,885.71 926.87,884.54 926.73,881.11 932.08,877.49 930.48,876.19 928.88,871.55 926.4,872.46 923.14,869.63 921.46,869.78 921.44,867.94 919.84,868.25 921.92,866.17 920.01,865.86 921.56,865.01 920.58,860.51 918.76,859.69 928.56,856.62 926.37,853.6 922.81,852.7 924.36,850.6 923.39,849.11 919.69,850.56 918.78,847.2 923.1,845.32 923.22,842.72 926.24,842.5 925.85,840.13 927.79,837.55 925.8,836.89 927.1,833.05 930.43,832.04 929.92,827.26 930.89,826.81 931.0,828.8 932.98,828.11 935.02,829.09 936.09,824.85 940.36,824.24 941.21,822.31 944.59,820.84 945.73,821.9 950.34,820.9 953.06,818.96 952.87,815.91 957.4,812.59 963.8,812.37 968.19,818.0 969.91,816.42 971.7,811.06 971.47,806.03 969.61,802.64 971.32,799.5 970.28,796.65 972.74,793.94 971.57,787.46 976.93,785.82 979.61,788.32 978.87,790.67 981.48,805.86 978.54,818.44 984.24,830.48 985.9,864.13 985.18,872.76 976.25,887.01 975.57,895.97Z"/>
+          <g id="arcs"></g>
+          <g id="dots"></g>
+        </svg>
+        <div class="legend">
+          <span class="it"><span class="sw" style="background:var(--coral)"></span>Siège (Hyères)</span>
+          <span class="it"><span class="sw" style="background:var(--blue)"></span>Agences</span>
+          <span class="it"><span class="sw" style="background:var(--mint)"></span>Partenaire</span>
         </div>
-        <div class="bloc-chiffre rv d2"><span class="tick">/ AGN</span>
-          <div class="val"><span data-compte="9"></span></div>
-          <div class="lab">agences · couverture nationale</div>
-        </div>
-        <div class="bloc-chiffre rv d3"><span class="tick">/ REF</span>
-          <div class="val"><span data-compte="14000" data-prefixe="+"></span></div>
-          <div class="lab">références Offilog</div>
-        </div>
-        <div class="bloc-chiffre rv d4"><span class="tick">/ LAB</span>
-          <div class="val"><span data-compte="430" data-prefixe="+"></span></div>
-          <div class="lab">laboratoires · princeps &amp; génériques</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===================== BANDEAU LABOS ===================== -->
-  <div class="bandeau" aria-label="Laboratoires distribués">
-    <p class="bandeau-titre">Ils circulent sur la carte</p>
-    <div class="defile">
-      <div class="defile-groupe">
-        <span>Zentiva</span><i>◆</i><span>Teva</span><i>◆</i><span>EG Labo</span><i>◆</i><span>Zydus</span><i>◆</i><span>Viatris</span><i>◆</i><span>Biogaran</span><i>◆</i><span>Sandoz</span><i>◆</i><span>Arrow</span><i>◆</i>
-      </div>
-      <div class="defile-groupe" aria-hidden="true">
-        <span>Zentiva</span><i>◆</i><span>Teva</span><i>◆</i><span>EG Labo</span><i>◆</i><span>Zydus</span><i>◆</i><span>Viatris</span><i>◆</i><span>Biogaran</span><i>◆</i><span>Sandoz</span><i>◆</i><span>Arrow</span><i>◆</i>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ===================== CONTACT / CTA ===================== -->
-  <section class="sect" id="contact" data-cam="250,255,1.05">
-    <div class="colonne centre">
-      <p class="etiquette rv" style="justify-content:center">Passons au concret</p>
-      <h2 class="rv d1" style="font-size:clamp(36px,5.6vw,72px)">Votre officine mérite<br>sa place sur <span class="souligne">la carte</span>.</h2>
-      <p class="chapo rv d2" style="margin-inline:auto">Vos conditions ne se lisent pas sur un site :
-      elles se construisent avec vous. <b>Chiffré en rendez-vous</b>, sur vos chiffres à vous.</p>
-      <div class="rang-btn rv d3" style="justify-content:center">
-        <a class="btn btn-plein" href="#contact" onclick="return false" role="button">Demander nos conditions
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </a>
+<div id="tip"><div class="n"></div><div class="c"></div></div>
+
+<section class="blk" id="apport">
+  <div class="wrap">
+    <div class="shead reveal">
+      <span class="eyebrow">Ce qu'on apporte</span>
+      <h2>Un réseau au service de votre rentabilité.</h2>
+      <p>De meilleures conditions, un catalogue solide et un approvisionnement fiable — pensés pour toutes les officines.</p>
+    </div>
+    <div class="cards">
+      <div class="card o reveal">
+        <div class="ic">◆</div>
+        <h3>Plus de marge, dès la première boîte</h3>
+        <p>De meilleures conditions d'achat sur l'ensemble de vos commandes. On vous le chiffre précisément en rendez-vous.</p>
       </div>
-      <p class="contact-note rv d4"><i>●</i> Réponse sur les conditions : chiffré en rendez-vous</p>
-    </div>
-  </section>
-
-</main>
-
-<!-- ===================== FOOTER ===================== -->
-<footer>
-  <div class="pied">
-    <div>
-      <div class="pied-logo">
-        <img src="../assets/logo.png" alt="Logo Intégral Pharma">
-        <b>Intégral&nbsp;Pharma</b>
+      <div class="card reveal">
+        <div class="ic">▦</div>
+        <h3>Les plus grands laboratoires</h3>
+        <p>Un catalogue construit avec les principaux laboratoires du marché, du princeps au générique.</p>
       </div>
-      <p>Groupe de grossistes indépendant. Grossiste-répartiteur de première intention,
-      au service des pharmaciens depuis plus de 20 ans. 9 agences, couverture nationale.</p>
-    </div>
-    <div>
-      <h4>Explorer</h4>
-      <ul>
-        <li><a href="#offres">Ce qu'on apporte</a></li>
-        <li><a href="#reseau">Le réseau — 9 agences</a></li>
-        <li><a href="#offilog">Offilog · +14 000 références</a></li>
-        <li><a href="#chiffres">Chiffres</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Contact</h4>
-      <ul>
-        <li><a href="#contact">Demander nos conditions</a></li>
-        <li><a href="#contact">Prendre rendez-vous</a></li>
-      </ul>
+      <div class="card reveal">
+        <div class="ic">✦</div>
+        <h3>Une disponibilité fiable</h3>
+        <p>Un approvisionnement régulier, préparé au plus près de vous, sans mauvaise surprise au comptoir.</p>
+      </div>
     </div>
   </div>
-  <div class="mentions">
-    <span>© 2026 Intégral Pharma — Tous droits réservés</span>
-    <span>Maquette 55 · « Carte vivante » · Concept — version jour</span>
+</section>
+
+<section class="blk" id="chiffres">
+  <div class="wrap">
+    <div class="shead reveal" style="margin-bottom:34px">
+      <span class="eyebrow">En chiffres</span>
+      <h2>Solide, national, indépendant.</h2>
+    </div>
+    <div class="stats">
+      <div class="stat reveal"><div class="n"><span class="plus">+</span><span data-count="20">0</span><span class="u">ans</span></div><div class="c">d'expérience</div><div class="bar"></div></div>
+      <div class="stat reveal"><div class="n"><span data-count="9">0</span><span class="u">agences</span></div><div class="c">sur le territoire</div><div class="bar"></div></div>
+      <div class="stat reveal"><div class="n" style="color:var(--blue)">National</div><div class="c">couverture large</div><div class="bar"></div></div>
+      <div class="stat reveal"><div class="n"><span class="plus">+</span><span data-count="14000">0</span><span class="u">réfs</span></div><div class="c">sur Offilog</div><div class="bar"></div></div>
+      <div class="stat reveal"><div class="n"><span class="plus">+</span><span data-count="430">0</span><span class="u">labos</span></div><div class="c">référencés</div><div class="bar"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="offilog">
+  <div class="wrap">
+    <div class="offilog reveal">
+      <div>
+        <span class="eyebrow">Offilog</span>
+        <div class="big">+14 000<span class="u">références para, au même endroit</span></div>
+        <div class="chips">
+          <span class="chip b">Para</span><span class="chip">Solaires</span><span class="chip m">Bébé</span>
+          <span class="chip">Hygiène</span><span class="chip b">Compléments</span><span class="chip">Vétérinaire</span>
+        </div>
+      </div>
+      <div>
+        <p style="color:var(--muted);font-size:16px">Un catalogue complet pour développer votre rayon parapharmacie, avec de meilleures conditions à la clé. Le détail se chiffre en rendez-vous.</p>
+        <a href="#contact" class="btn btn-p" style="margin-top:18px">Découvrir Offilog →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="blk cta-final" id="contact">
+  <div class="wrap">
+    <h2 class="reveal">Rejoignez le réseau.</h2>
+    <p class="reveal">Parlons de votre officine : on vous chiffre nos conditions, simplement, en rendez-vous.</p>
+    <div class="cta reveal">
+      <a href="mailto:contact@integralpharma.fr?subject=Demande%20de%20conditions" class="btn btn-p">Demander nos conditions →</a>
+      <a href="#reseau" class="btn btn-o">Revoir le réseau</a>
+    </div>
+    <div class="note reveal">Groupe de grossistes français indépendant · grossiste-répartiteur de première intention</div>
+  </div>
+</section>
+
+<footer class="ft">
+  <div class="wrap">
+    <span><b>Intégral Pharma</b> — 9 agences · couverture nationale</span>
+    <span>Plus de marge, dès la première boîte.</span>
   </div>
 </footer>
 
 <script>
-/* ==========================================================================
-   CARTE VIVANTE — moteur canvas 2D (version jour)
-   - France en points (grille masquée par un polygone), 9 agences BLEUES,
-     arcs CORAIL animés, halos MENTHE en soutien — sur fond crème lumineux
-   - Caméra (pan+zoom) pilotée par le scroll (data-cam des sections)
-   - Survol des agences (canvas + liste DOM synchronisés)
-   ========================================================================== */
-(function(){
-"use strict";
-var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/* ---------- Données réseau (source de vérité) ---------- */
-var SITES = [
-  {nom:"Ouest Pharma Services",            loc:"St-Étienne-de-Montluc (44)",   x:150, y:238, tag:""},
-  {nom:"Escale Pharma",                    loc:"Chilly-Mazarin (91)",          x:262, y:170, tag:""},
-  {nom:"Comptoir Pharmaceutique du Rhône", loc:"Saint-Maurice-l'Exil (38)",    x:330, y:300, tag:""},
-  {nom:"Sud Ouest Pharma",                 loc:"Montayral (47)",               x:200, y:355, tag:""},
-  {nom:"Pharm'Occitanie Services",         loc:"Villeneuve-lès-Béziers (34)",  x:275, y:415, tag:""},
-  {nom:"Hyères Pharma",                    loc:"Hyères (83)",                  x:372, y:420, tag:"Siège"},
-  {nom:"Sud Est Pharma",                   loc:"Le Cannet-des-Maures (83)",    x:360, y:402, tag:""},
-  {nom:"Mistral Santé Pharma",             loc:"Flassans-sur-Issole (83)",     x:350, y:413, tag:""},
-  {nom:"Pharmest",                         loc:"Metz (57)",                    x:378, y:150, tag:"Partenaire"}
+const AG=[
+ {n:"Ouest Pharma Services",c:"St-Étienne-de-Montluc",t:"site",x:236.15,y:378.1,lx:-12,ly:2,a:"end"},
+ {n:"Escale Pharma",c:"Chilly-Mazarin",t:"site",x:506.74,y:242.05,lx:12,ly:-12,a:"start"},
+ {n:"Comptoir Pharmaceutique du Rhône",c:"Saint-Maurice-l'Exil",t:"site",x:669.97,y:558.24,lx:14,ly:4,a:"start"},
+ {n:"Sud Ouest Pharma",c:"Montayral",t:"site",x:415.96,y:645.7,lx:-12,ly:6,a:"end"},
+ {n:"Pharm'Occitanie Services",c:"Villeneuve-lès-Béziers",t:"site",x:569.05,y:756.32,lx:-10,ly:22,a:"end"},
+ {n:"Hyères Pharma",c:"Hyères — Siège",t:"siege",x:759.1,y:775.43,lx:16,ly:24,a:"start"},
+ {n:"Sud Est Pharma",c:"Le Cannet-des-Maures",t:"site",x:800,y:735,lx:14,ly:-2,a:"start"},
+ {n:"Mistral Santé Pharma",c:"Flassans-sur-Issole",t:"site",x:735,y:730,lx:-10,ly:-10,a:"end"},
+ {n:"Pharmest",c:"Metz — Partenaire",t:"partenaire",x:762.22,y:202.25,lx:14,ly:-8,a:"start"},
 ];
+const SVG="http://www.w3.org/2000/svg";
+const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const siege=AG.find(a=>a.t==="siege");
+const arcsG=document.getElementById("arcs");
+const dotsG=document.getElementById("dots");
+const col={site:"#0050E6",siege:"#FF7A59",partenaire:"#35D0BA"};
 
-/* Silhouette France (schématique) — espace 500 x 530 */
-var FRANCE = [
-  [232,70],[300,78],[340,60],[360,95],[352,130],[392,140],[420,175],
-  [400,215],[420,250],[398,285],[420,320],[390,360],[402,400],[380,432],
-  [345,430],[320,458],[292,438],[268,452],[250,430],[210,442],[188,412],
-  [150,392],[128,352],[150,320],[120,300],[100,262],[132,238],[112,205],
-  [140,170],[130,135],[168,120],[178,88],[232,70]
-];
-function dansPoly(px,py){
-  var inside=false, j=FRANCE.length-1;
-  for(var i=0;i<FRANCE.length;i++){
-    var xi=FRANCE[i][0], yi=FRANCE[i][1], xj=FRANCE[j][0], yj=FRANCE[j][1];
-    if(((yi>py)!==(yj>py)) && (px < (xj-xi)*(py-yi)/(yj-yi)+xi)) inside=!inside;
-    j=i;
-  }
-  return inside;
-}
-
-/* ---------- Canvas ---------- */
-var cv = document.getElementById('carte');
-var ctx = cv.getContext('2d');
-var W=0,H=0,DPR=1;
-var mobile = window.matchMedia('(max-width:980px)').matches;
-
-function taille(){
-  DPR = Math.min(window.devicePixelRatio||1, 2);
-  W = window.innerWidth; H = window.innerHeight;
-  cv.width = W*DPR; cv.height = H*DPR;
-  cv.style.width=W+'px'; cv.style.height=H+'px';
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-}
-taille();
-window.addEventListener('resize', function(){ taille(); if(reduce) rendu(0); });
-
-/* ---------- Points de la carte ---------- */
-var points=[];
-(function(){
-  var pas = mobile ? 12 : 8.5;
-  for(var gy=58; gy<=470; gy+=pas){
-    for(var gx=88; gx<=432; gx+=pas){
-      var jx=gx+(Math.random()*4-2), jy=gy+(Math.random()*4-2);
-      if(dansPoly(jx,jy)){
-        points.push({x:jx, y:jy, ph:Math.random()*Math.PI*2, r:.9+Math.random()*.9});
-      }
-    }
-  }
-})();
-
-/* ---------- Caméra ---------- */
-var cam = {x:285, y:255, z:1};           // état courant (lerpé)
-var camCible = {x:285, y:255, z:1};      // cible section
-var camSurvol = null;                    // override survol agence
-var sourisX=0, sourisY=0, parX=0, parY=0;
-
-function echelle(){
-  /* la carte (530 de haut) occupe ~86 % de la plus petite dimension */
-  return Math.min(W,H)*0.0016*1.05 * cam.z * (mobile? .92 : 1);
-}
-function versEcran(mx,my){
-  var s=echelle();
-  /* décale le centre à droite sur desktop pour laisser la colonne de texte */
-  var cx = W*(mobile? .5 : .62) + parX;
-  var cy = H*.52 + parY;
-  return [ (mx-cam.x)*s + cx, (my-cam.y)*s + cy, s ];
-}
-function versCarte(sx,sy){
-  var s=echelle();
-  var cx = W*(mobile? .5 : .62) + parX;
-  var cy = H*.52 + parY;
-  return [ (sx-cx)/s + cam.x, (sy-cy)/s + cam.y ];
-}
-
-/* ---------- Arcs logistiques ---------- */
-var arcs=[];
-var fluxCorps = document.getElementById('fluxCorps');
-var fluxCompteur = 0;
-
-function pousseFlux(a,b){
-  if(!fluxCorps) return;
-  fluxCompteur++;
-  var l=document.createElement('div');
-  l.className='flux-ligne';
-  l.innerHTML = '<em>#'+String(fluxCompteur).padStart(3,'0')+'</em> LIAISON · <b>'+a.nom+'</b> → <b>'+b.nom+'</b>';
-  fluxCorps.prepend(l);
-  requestAnimationFrame(function(){ l.classList.add('on'); });
-  while(fluxCorps.children.length>7) fluxCorps.removeChild(fluxCorps.lastChild);
-}
-function nouvelArc(){
-  var a=SITES[(Math.random()*SITES.length)|0], b=SITES[(Math.random()*SITES.length)|0];
-  if(a===b) return null;
-  var dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy);
-  if(d<30) return null;                                  /* évite les micro-arcs du Var */
-  var mx=(a.x+b.x)/2 - dy*.28, my=(a.y+b.y)/2 + dx*.28;  /* contrôle perpendiculaire */
-  pousseFlux(a,b);
-  return {a:a,b:b,cx:mx,cy:my,vie:0,dur:2.6+Math.random()*2.2};
-}
-function pointArc(arc,t){
-  var u=1-t;
-  return [ u*u*arc.a.x + 2*u*t*arc.cx + t*t*arc.b.x,
-           u*u*arc.a.y + 2*u*t*arc.cy + t*t*arc.b.y ];
-}
-var NB_ARCS = mobile? 4 : 7;
-
-/* ---------- Survol agences ---------- */
-var survol = -1;   /* index dans SITES */
-var tip = document.getElementById('tipAgence');
-
-function majTip(){
-  if(survol<0){ tip.classList.remove('on'); return; }
-  var s=SITES[survol], p=versEcran(s.x,s.y);
-  tip.querySelector('.t-nom').textContent = s.nom;
-  tip.querySelector('.t-loc').textContent = s.loc;
-  var tg=tip.querySelector('.t-tag');
-  if(s.tag){ tg.hidden=false; tg.textContent=s.tag; } else tg.hidden=true;
-  tip.style.left=p[0]+'px'; tip.style.top=p[1]+'px';
-  tip.classList.add('on');
-}
-
-cv.style.pointerEvents='none'; /* le canvas ne bloque jamais le contenu */
-window.addEventListener('pointermove', function(e){
-  sourisX = e.clientX/W-.5; sourisY = e.clientY/H-.5;
-  if(mobile || reduce) return;
-  /* détection de noeud sous le curseur (seulement hors éléments interactifs) */
-  var el = document.elementFromPoint(e.clientX,e.clientY);
-  var libre = el && !el.closest('a,button,.carte-offre,.offilog-panneau,.bloc-chiffre,.moniteur,.nav');
-  var trouve=-1;
-  if(libre){
-    var m=versCarte(e.clientX,e.clientY);
-    var meilleur=14/cam.z;
-    for(var i=0;i<SITES.length;i++){
-      var dx=SITES[i].x-m[0], dy=SITES[i].y-m[1], d=Math.sqrt(dx*dx+dy*dy);
-      if(d<meilleur){ meilleur=d; trouve=i; }
-    }
-  }
-  if(trouve!==survol && survolListe<0){ survol=trouve; majListeActif(); }
-});
-
-/* ---------- Rendu ---------- */
-var t0 = performance.now();
-function rendu(now){
-  var t=(now-t0)/1000;
-  ctx.clearRect(0,0,W,H);
-
-  /* fond : dégradés radiaux doux (pas de blur) — halo bleu + lueur menthe */
-  var g=ctx.createRadialGradient(W*.62,H*.5,0,W*.62,H*.5,Math.max(W,H)*.75);
-  g.addColorStop(0,'rgba(0,80,230,.06)');
-  g.addColorStop(.55,'rgba(0,80,230,.02)');
-  g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  var gm=ctx.createRadialGradient(W*.12,H*.1,0,W*.12,H*.1,Math.max(W,H)*.5);
-  gm.addColorStop(0,'rgba(53,208,186,.06)');
-  gm.addColorStop(1,'rgba(53,208,186,0)');
-  ctx.fillStyle=gm; ctx.fillRect(0,0,W,H);
-
-  /* graticule (écran) */
-  ctx.strokeStyle='rgba(0,60,160,.055)';
-  ctx.lineWidth=1;
-  var pasG=Math.max(70,Math.min(W,H)/9);
-  ctx.beginPath();
-  for(var gx=(W%pasG)/2; gx<W; gx+=pasG){ ctx.moveTo(gx,0); ctx.lineTo(gx,H); }
-  for(var gy=(H%pasG)/2; gy<H; gy+=pasG){ ctx.moveTo(0,gy); ctx.lineTo(W,gy); }
-  ctx.stroke();
-
-  /* caméra : lerp vers cible (ou survol) */
-  var cible = camSurvol || camCible;
-  cam.x += (cible.x-cam.x)*.055;
-  cam.y += (cible.y-cam.y)*.055;
-  cam.z += (cible.z-cam.z)*.055;
-  parX += (sourisX*-26-parX)*.05;
-  parY += (sourisY*-20-parY)*.05;
-
-  /* contour France (trait doux) */
-  ctx.beginPath();
-  for(var i=0;i<FRANCE.length;i++){
-    var p=versEcran(FRANCE[i][0],FRANCE[i][1]);
-    if(i===0) ctx.moveTo(p[0],p[1]); else ctx.lineTo(p[0],p[1]);
-  }
-  ctx.closePath();
-  ctx.strokeStyle='rgba(0,80,230,.16)';
-  ctx.lineWidth=1.2;
-  ctx.stroke();
-
-  /* points */
-  for(var i=0;i<points.length;i++){
-    var pt=points[i];
-    var p=versEcran(pt.x,pt.y);
-    if(p[0]<-20||p[0]>W+20||p[1]<-20||p[1]>H+20) continue;
-    var puls = reduce? .55 : .42 + .3*Math.sin(t*1.1+pt.ph);
-    ctx.globalAlpha = puls;
-    ctx.fillStyle = '#A9BCE0';
-    ctx.beginPath();
-    ctx.arc(p[0],p[1], pt.r*cam.z, 0, 6.2832);
-    ctx.fill();
-  }
-  ctx.globalAlpha=1;
-
-  /* arcs — corail */
+// arcs depuis le siège
+AG.forEach((a,i)=>{
+  if(a.t==="siege")return;
+  const mx=(siege.x+a.x)/2, my=(siege.y+a.y)/2;
+  const dx=a.x-siege.x, dy=a.y-siege.y;
+  const nx=-dy, ny=dx; const len=Math.hypot(nx,ny)||1;
+  const bow=Math.min(70,Math.hypot(dx,dy)*0.22);
+  const cx=mx+(nx/len)*bow, cy=my+(ny/len)*bow;
+  const p=document.createElementNS(SVG,"path");
+  p.setAttribute("class","arc");
+  p.setAttribute("d",`M${siege.x},${siege.y} Q${cx},${cy} ${a.x},${a.y}`);
+  p.setAttribute("stroke", a.t==="partenaire"?"rgba(53,208,186,.55)":"rgba(255,122,89,.5)");
+  p.setAttribute("stroke-width","1.6");
+  const L=p.getTotalLength?400:0;
   if(!reduce){
-    while(arcs.length<NB_ARCS){ var na=nouvelArc(); if(na) arcs.push(na); else break; }
-    for(var i=arcs.length-1;i>=0;i--){
-      var A=arcs[i];
-      A.vie += 1/60;
-      var pr = A.vie/A.dur;
-      if(pr>=1){ arcs.splice(i,1); continue; }
-      var fondu = Math.sin(Math.min(pr*Math.PI,Math.PI));    /* apparition/disparition */
-      var tete = Math.min(pr*1.25,1);                        /* progression du tracé */
-      /* trace la portion de courbe */
-      ctx.beginPath();
-      var seg=34;
-      for(var k=0;k<=seg;k++){
-        var tt=(k/seg)*tete;
-        var q=pointArc(A,tt), e=versEcran(q[0],q[1]);
-        if(k===0) ctx.moveTo(e[0],e[1]); else ctx.lineTo(e[0],e[1]);
-      }
-      ctx.strokeStyle='rgba(232,84,43,'+(0.16+fondu*.36)+')';
-      ctx.lineWidth=1.4;
-      ctx.stroke();
-      /* comète corail */
-      var qc=pointArc(A,tete), ec=versEcran(qc[0],qc[1]);
-      var rg=ctx.createRadialGradient(ec[0],ec[1],0,ec[0],ec[1],9*cam.z);
-      rg.addColorStop(0,'rgba(255,122,89,'+(0.9*fondu)+')');
-      rg.addColorStop(.4,'rgba(255,122,89,'+(0.32*fondu)+')');
-      rg.addColorStop(1,'rgba(255,122,89,0)');
-      ctx.fillStyle=rg;
-      ctx.beginPath(); ctx.arc(ec[0],ec[1],9*cam.z,0,6.2832); ctx.fill();
-      ctx.fillStyle='rgba(178,52,20,'+fondu+')';
-      ctx.beginPath(); ctx.arc(ec[0],ec[1],1.8*cam.z,0,6.2832); ctx.fill();
-    }
-  } else {
-    /* reduced-motion : arcs statiques discrets entre le siège et chaque agence */
-    var siege=SITES[5];
-    for(var i=0;i<SITES.length;i++){
-      if(i===5) continue;
-      var b=SITES[i];
-      var mx2=(siege.x+b.x)/2-(b.y-siege.y)*.25, my2=(siege.y+b.y)/2+(b.x-siege.x)*.25;
-      ctx.beginPath();
-      for(var k=0;k<=30;k++){
-        var tt=k/30,u=1-tt;
-        var qx=u*u*siege.x+2*u*tt*mx2+tt*tt*b.x, qy=u*u*siege.y+2*u*tt*my2+tt*tt*b.y;
-        var e=versEcran(qx,qy);
-        if(k===0)ctx.moveTo(e[0],e[1]);else ctx.lineTo(e[0],e[1]);
-      }
-      ctx.strokeStyle='rgba(232,84,43,.32)'; ctx.lineWidth=1.2; ctx.stroke();
-    }
+    p.style.strokeDasharray=L||"6 8";
+    if(L){p.style.strokeDashoffset=L; p.animate([{strokeDashoffset:L},{strokeDashoffset:0}],{duration:1400,delay:300+i*120,easing:"cubic-bezier(.2,.8,.2,1)",fill:"forwards"});}
   }
-
-  /* noeuds agences — bleu #0050E6, halo menthe en soutien */
-  for(var i=0;i<SITES.length;i++){
-    var s=SITES[i], p=versEcran(s.x,s.y);
-    var actif = (i===survol);
-    /* halo pulsant menthe */
-    if(!reduce){
-      var hp = ((t*.7 + i*.35)%1);
-      var hr = (6+hp*22)*cam.z;
-      ctx.beginPath(); ctx.arc(p[0],p[1],hr,0,6.2832);
-      ctx.strokeStyle='rgba(53,208,186,'+((1-hp)*.5)+')';
-      ctx.lineWidth=1.1;
-      ctx.stroke();
-    }
-    /* aura */
-    var ar=ctx.createRadialGradient(p[0],p[1],0,p[0],p[1],(actif?22:13)*cam.z);
-    ar.addColorStop(0, actif?'rgba(255,122,89,.4)':'rgba(0,80,230,.24)');
-    ar.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=ar;
-    ctx.beginPath(); ctx.arc(p[0],p[1],(actif?22:13)*cam.z,0,6.2832); ctx.fill();
-    /* coeur */
-    ctx.fillStyle = actif? '#E8542B' : (s.tag==='Siège'? '#0039B0' : '#0050E6');
-    ctx.beginPath(); ctx.arc(p[0],p[1],(actif?4.4:(s.tag==='Siège'?3.8:2.9))*cam.z,0,6.2832); ctx.fill();
-    /* étiquette au zoom */
-    if(cam.z>1.28 || actif){
-      ctx.font='500 '+Math.round(10*Math.min(cam.z,1.5))+'px "IBM Plex Mono", monospace';
-      ctx.fillStyle = actif?'rgba(178,52,20,.95)':'rgba(42,64,110,.7)';
-      ctx.fillText(s.nom, p[0]+10*cam.z, p[1]+3);
-    }
-  }
-
-  majTip();
-  if(!reduce) requestAnimationFrame(rendu);
-}
-if(reduce){ rendu(performance.now()); window.addEventListener('scroll',function(){ rendu(performance.now()); },{passive:true}); }
-else requestAnimationFrame(rendu);
-
-/* ---------- Caméra pilotée par les sections ---------- */
-var sections = Array.prototype.slice.call(document.querySelectorAll('[data-cam]'));
-var ioCam = new IntersectionObserver(function(entries){
-  entries.forEach(function(e){
-    if(e.isIntersecting){
-      var v=e.target.dataset.cam.split(',');
-      camCible={x:+v[0], y:+v[1], z:+v[2]};
-      if(reduce){ cam={x:+v[0],y:+v[1],z:+v[2]}; rendu(performance.now()); }
-    }
-  });
-},{threshold:.45});
-sections.forEach(function(s){ ioCam.observe(s); });
-
-/* ---------- Liste des agences (DOM) ---------- */
-var liste = document.getElementById('listeAgences');
-var survolListe = -1;
-SITES.forEach(function(s,i){
-  var b=document.createElement('button');
-  b.type='button'; b.className='agence'; b.setAttribute('role','listitem');
-  b.innerHTML =
-    '<span class="num">'+String(i+1).padStart(2,'0')+'</span>'+
-    '<span class="noms"><span class="nom">'+s.nom+'</span>'+
-    '<span class="lieu">'+s.loc+'</span></span>'+
-    (s.tag? '<span class="badge">'+s.tag+'</span>':'')+
-    '<span class="fleche"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>';
-  function focus(){
-    survolListe=i; survol=i;
-    camSurvol={x:s.x, y:s.y, z: mobile? 1.7 : 2.1};
-    majListeActif();
-    if(reduce){ cam={x:s.x,y:s.y,z:1.9}; rendu(performance.now()); }
-  }
-  function relache(){
-    survolListe=-1; survol=-1; camSurvol=null; majListeActif();
-    if(reduce){ cam={x:camCible.x,y:camCible.y,z:camCible.z}; rendu(performance.now()); }
-  }
-  b.addEventListener('pointerenter',focus);
-  b.addEventListener('focus',focus);
-  b.addEventListener('pointerleave',relache);
-  b.addEventListener('blur',relache);
-  b.addEventListener('click',focus);
-  liste.appendChild(b);
+  arcsG.appendChild(p);
 });
-function majListeActif(){
-  Array.prototype.forEach.call(liste.children,function(el,i){
-    el.classList.toggle('actif', i===survol);
-  });
-}
 
-/* ---------- Reveals ---------- */
-var ioRv = new IntersectionObserver(function(entries){
-  entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); ioRv.unobserve(e.target); } });
-},{threshold:.2});
-document.querySelectorAll('.rv').forEach(function(el){ ioRv.observe(el); });
-if(reduce) document.querySelectorAll('.rv').forEach(function(el){ el.classList.add('in'); });
+// points agences
+function mk(tag,attrs){const e=document.createElementNS(SVG,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+AG.forEach((a,i)=>{
+  const c=col[a.t]; const r=a.t==="siege"?7.5:a.t==="partenaire"?5.5:5;
+  const g=mk("g",{class:"ag-dot"});
+  // halo
+  g.appendChild(mk("circle",{cx:a.x,cy:a.y,r:r*3.2,fill:"url(#halo)"}));
+  // anneau pulsant
+  if(!reduce){
+    const ring=mk("circle",{cx:a.x,cy:a.y,r:r,class:"ag-ring",stroke:c,"stroke-width":"1.4","stroke-opacity":".7"});
+    ring.animate([{r:r,opacity:.7},{r:r*3.4,opacity:0}],{duration:2600,delay:i*180,iterations:Infinity,easing:"ease-out"});
+    g.appendChild(ring);
+  }
+  // point
+  g.appendChild(mk("circle",{cx:a.x,cy:a.y,r:r,fill:c,stroke:"#fff","stroke-width":a.t==="siege"?2:1.5}));
+  // label
+  const tx=mk("text",{x:a.x+a.lx,y:a.y+a.ly,class:"ag-label","text-anchor":a.a});
+  tx.textContent=a.c.split(" — ")[0].split("-lès-")[0].split("St-Étienne")[0]||a.c;
+  tx.textContent = a.t==="siege"?"Hyères":(a.t==="partenaire"?"Metz":a.c.split(",")[0]);
+  g.appendChild(tx);
+  // tooltip events
+  g.addEventListener("mousemove",e=>{const tip=document.getElementById("tip");tip.querySelector(".n").textContent=a.n;tip.querySelector(".c").textContent=a.c;tip.style.left=e.clientX+"px";tip.style.top=e.clientY+"px";tip.classList.add("on");});
+  g.addEventListener("mouseleave",()=>document.getElementById("tip").classList.remove("on"));
+  dotsG.appendChild(g);
+});
+// fix tooltip transform typo safeguard
+document.getElementById("tip").style.transform="translate(-50%,-125%)";
 
-/* ---------- Compteurs ---------- */
-var nf=new Intl.NumberFormat('fr-FR');
-function ecrit(el,v){
-  var pre=el.dataset.prefixe||'', suf=el.dataset.suffixe||'';
-  el.innerHTML=(pre?'<span class="acc">'+pre+'</span>':'')+nf.format(Math.round(v))+(suf?'<span class="acc">'+suf+'</span>':'');
-}
-var ioCpt=new IntersectionObserver(function(entries){
-  entries.forEach(function(e){
-    if(!e.isIntersecting) return;
-    ioCpt.unobserve(e.target);
-    var el=e.target, cible=parseFloat(el.dataset.compte)||0;
-    if(reduce){ ecrit(el,cible); return; }
-    var debut=null, dur=1500;
-    requestAnimationFrame(function boucle(ts){
-      if(debut===null) debut=ts;
-      var p=Math.min((ts-debut)/dur,1), ease=1-Math.pow(1-p,3);
-      ecrit(el,cible*ease);
-      if(p<1) requestAnimationFrame(boucle);
-    });
-  });
-},{threshold:.5});
-document.querySelectorAll('[data-compte]').forEach(function(el){ ecrit(el,0); ioCpt.observe(el); });
-
-/* ---------- Nav / menu mobile / moniteur ---------- */
-var nav=document.getElementById('nav');
-var moniteur=document.getElementById('moniteur');
-var pied=document.querySelector('footer');
-window.addEventListener('scroll',function(){
-  nav.classList.toggle('scrolled', window.scrollY>40);
-  /* le moniteur s'efface près du footer */
-  var r=pied.getBoundingClientRect();
-  moniteur.classList.toggle('cache', r.top < window.innerHeight);
-},{passive:true});
-
-var burger=document.getElementById('burger'), menu=document.getElementById('menuMobile');
-burger.addEventListener('click',function(){ menu.classList.add('on'); });
-document.getElementById('fermerMenu').addEventListener('click',function(){ menu.classList.remove('on'); });
-menu.querySelectorAll('a').forEach(function(a){ a.addEventListener('click',function(){ menu.classList.remove('on'); }); });
-
-/* amorce du flux au chargement */
-if(!reduce){ pousseFlux(SITES[1],SITES[0]); pousseFlux(SITES[5],SITES[3]); }
-})();
+// compteurs
+function runCount(el){const t=+el.dataset.count;const dur=1300;const s=performance.now();
+  function tick(now){const p=Math.min(1,(now-s)/dur);const e=1-Math.pow(1-p,3);el.textContent=Math.round(t*e).toLocaleString("fr-FR");if(p<1)requestAnimationFrame(tick);}
+  requestAnimationFrame(tick);}
+// reveals + counts
+const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");e.target.querySelectorAll?.("[data-count]").forEach(c=>{if(!c.dataset.done){c.dataset.done=1;if(reduce){c.textContent=(+c.dataset.count).toLocaleString("fr-FR");}else{runCount(c);}}});io.unobserve(e.target);}});},{threshold:.18});
+document.querySelectorAll(".reveal").forEach((el,i)=>{el.style.transitionDelay=Math.min(i,6)*60+"ms";io.observe(el);});
 </script>
 </body>
 </html>
