@@ -27,13 +27,31 @@ le double comptage, **ne sommer que la catégorie « tous prescripteurs »/« en
 Fichier : `generate_ameli_avg.py` (racine JARVIS/APP, Python 3.9 strict).
 
 Étapes :
-1. Appelle l'API data.gouv.fr `GET /api/1/datasets/536999d3a3a729239d20533a/` → liste des ressources.
-2. Sélectionne les **2 semestres les plus récents** (= ~12 mois glissants) par le titre/date.
-   Repli : « Medic'AM annuel <N> » si les semestres manquent.
-3. Télécharge ces XLS, parse avec pandas/openpyxl (gérer .xls **et** .xlsx).
-4. Filtre sur « tous prescripteurs », agrège `dénombrement` **par CIP13** sur la fenêtre.
-5. `moyenne_par_pharmacie_an = round(total_boites / 19000)` (constante `NB_PHARMA = 19000`,
-   documentée, cohérente avec le benchmark existant).
+1. Télécharge les **2 derniers ZIP semestriels directement sur Ameli** (PAS l'API data.gouv,
+   miroir périmé/mal libellé) : URL type
+   `https://www.assurance-maladie.ameli.fr/sites/default/files/AAAA-01-a-06_medic-am-par-type-de-prescripteur_serie-mensuelle.zip`
+   et `.../AAAA-07-a-12_...zip`. Le semestre en cours s'allonge chaque mois (ex. `2026-01-a-04`,
+   dernier mois réel **avril 2026**). Sonder les URLs pour trouver les 2 fichiers couvrant les 12 derniers mois.
+2. Chaque ZIP = **UN seul `.xls` binaire** (~16 Mo) → lire avec **xlrd** (openpyxl NE l'ouvre PAS).
+3. Prendre l'onglet **`MedicAM_*mois_tous_presc`** (= total). ⚠️ Vérifié : `tous = ville + hôpital`
+   → NE JAMAIS additionner les onglets. Exclure l'onglet `lisez-moi`.
+4. Format **large** : colonnes d'identité A→I (`CIP13`, `NOM COURT`, `PRODUIT`, `Code EphMRA`,
+   `Classe EphMRA`, `Code ATC`=ATC5, `Classe ATC`, `Code ATC 2`, `Libellé ATC 2`), puis par mois
+   3 colonnes `Base / Nombre de boites remboursées YYYY-MM / Montant`. En-têtes en ligne 1, data dès ligne 2.
+   → Ne sommer QUE les colonnes **« Nombre de boites remboursées YYYY-MM »** des 12 derniers mois.
+5. Agréger par **CIP13** (⚠️ stocké en flottant `3400...0` → `int` puis `str` 13 chiffres).
+   Sommer tous les CIP + les 12 mois → `total_boites` par CIP.
+6. `moyenne_par_pharmacie_an = round(total_boites / NB_OFFICINES)` avec
+   **`NB_OFFICINES = 20000`** (paramètre ; chiffre officiel CNOP 1er janv. 2025 = **20 242**,
+   France entière ; en baisse ~1 %/an → à réactualiser). *(Will avait dit 19 000 ; on retient
+   ~20 000, plus juste et documenté — à confirmer.)*
+7. **Garde-fou crédibilité** : le n°1 France (paracétamol) = ~430 M boîtes/an ÷ 20 242 ≈
+   **21 000 boîtes/officine/an**. Donc tout produit qui dépasse ~21 000 = **suspect** → à logger/écarter.
+
+Pièges de parsing (vérifiés sur fichier réel) : CIP13 flottant→str13 ; format large (prendre la
+bonne colonne « Nombre de boites » du bon mois, pas Base ni Montant) ; en-têtes avec `\n` internes
+à normaliser ; accents corrompus dans les libellés (`¿`) → se fier aux **codes** ATC/EphMRA, pas aux libellés ;
+« remboursé ≠ vendu » (sous-estime l'automédication non remboursée) → étiqueter « boîtes remboursées, indicatif ».
 6. Écrit `crm/v2/ameli-avg-data.js` :
    ```js
    // Ameli Medic'AM — moyenne boîtes remboursées / pharmacie / an (indicatif)
