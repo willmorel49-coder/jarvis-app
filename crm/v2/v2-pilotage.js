@@ -821,9 +821,6 @@
           Array.prototype.forEach.call(root.querySelectorAll('.pilo-bar-fill'), function (el) {
             el.style.width = (el.dataset.w || 0) + '%';
           });
-          Array.prototype.forEach.call(root.querySelectorAll('.pilo-cbar-fill'), function (el) {
-            el.style.height = (el.dataset.h || 0) + '%';
-          });
           // jauges (activation OPSO + meters KPI + couverture Ameli)
           Array.prototype.forEach.call(root.querySelectorAll('.opso-gauge-fill,.pilo-kpi-meter-fill'), function (el) {
             el.style.width = (el.dataset.w || 0) + '%';
@@ -878,6 +875,26 @@
         });
       }
 
+      // ── Graphe 13 mois : les barres POUSSENT depuis la base, en cascade ──
+      // Même grammaire que la fiche officine (applyPharmaMotion) : scaleY(0→1)
+      // uniquement (transform, jamais height), transform-origin base, une seule
+      // passe WAAPI, RM-safe (V2.motion pose l'état final sans animation).
+      // On anime les BARRES, pas la carte : son entrée reste gérée par le
+      // reveal .in de l'observer local — aucune double animation d'entrée.
+      if (_mo && _mo.animate) {
+        var cfills = root.querySelectorAll('.pilo-chart .pilo-cbar-fill');
+        for (var cf = 0; cf < cfills.length; cf++) {
+          _mo.animate(cfills[cf], [
+            { transform: 'scaleY(0)' },
+            { transform: 'scaleY(1)' }
+          ], { duration: 480, delay: 140 + Math.min(cf, 12) * 45, easing: _mo.ease && _mo.ease.out, to: { transform: 'scaleY(1)' } });
+        }
+        if (cfills.length && _mo.stagger) {
+          _mo.stagger(root.querySelectorAll('.pilo-chart .pilo-cbar-v'), { step: 45, y: 4, duration: 260, delay: 220 });
+          _mo.stagger(root.querySelectorAll('.pilo-kfs .pilo-kf'), { step: 60, y: 6, duration: 280, delay: 340 });
+        }
+      }
+
       // ── Bind chart hover ──
       chart.bind(root);
     }
@@ -908,37 +925,50 @@
     });
     var maxCa = bars.reduce(function (a, b) { return Math.max(a, b.ca); }, 0) || 1;
 
-    // Moyenne mensuelle (mois avec vente uniquement) → repère visuel
+    // Repères dérivés des vraies ventes : moyenne (mois actifs), mois record
     var nonEmpty = bars.filter(function (b) { return b.ca > 0; });
     var avg = nonEmpty.length ? nonEmpty.reduce(function (a, b) { return a + b.ca; }, 0) / nonEmpty.length : 0;
-    var avgPct = maxCa > 0 ? Math.min(97, avg / maxCa * 100) : 0;
+    var best = null;
+    bars.forEach(function (b) { if (b.ca > 0 && (!best || b.ca > best.ca)) best = b; });
 
+    // Grammaire fiche officine : valeur k€ au-dessus, barre qui pousse depuis
+    // la base, mois en dessous. Mois record = seul accent fort ; dernier mois marqué.
     var barsHtml = bars.map(function (b, i) {
-      var h = b.ca > 0 ? Math.max(3, b.ca / maxCa * 100) : 0;
+      var h = b.ca > 0 ? Math.max(4, b.ca / maxCa * 100) : 0;
       var isLast = (i === bars.length - 1);
-      var above = b.ca >= avg && b.ca > 0;
-      return '<div class="pilo-cbar" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca)) + '">' +
+      var hot = best && b.year === best.year && b.month === best.month;
+      return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (isLast ? ' pilo-cbar-cur' : '') + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca)) + '">' +
+        '<span class="pilo-cbar-v mono">' + V2.fmtK(b.ca) + '</span>' +
         '<div class="pilo-cbar-track">' +
-          '<span class="pilo-cbar-fill' + (isLast ? ' cur' : (above ? ' up' : '')) + '" data-h="' + h.toFixed(1) + '" style="height:0"></span>' +
+          '<span class="pilo-cbar-fill' + (isLast ? ' cur' : '') + '" style="height:' + h.toFixed(1) + '%"></span>' +
         '</div>' +
         '<span class="pilo-cbar-lbl' + (isLast ? ' on' : '') + '">' + b.mlabel + '</span>' +
       '</div>';
     }).join('');
 
-    // Ligne de moyenne (repère horizontal pointillé + étiquette)
-    var avgLine = avg > 0 ?
-      '<div class="pilo-avg" style="bottom:calc(' + avgPct.toFixed(1) + '% + 26px)">' +
-        '<span class="pilo-avg-lbl mono">moy. ' + V2.fmtEur(avg) + '</span>' +
-      '</div>' : '';
+    // Repères chiffrés sous le graphe (moyenne · meilleur mois · mois actifs),
+    // même présentation que le tableau de bord de la fiche officine.
+    function kf(l, v) {
+      return '<div class="pilo-kf"><span class="pilo-kf-l">' + l + '</span><span class="pilo-kf-v mono">' + v + '</span></div>';
+    }
+    var kfs =
+      '<div class="pilo-kfs">' +
+        (avg > 0 ? kf('Moyenne', V2.fmtEur(avg) + '<small>/mois</small>') : '') +
+        (best ? kf('Meilleur mois', esc(cap(best.full)) + ' · ' + V2.fmtEur(best.ca)) : '') +
+        kf('Mois actifs', V2.fmtNum(nonEmpty.length) + '<small>/' + bars.length + '</small>') +
+      '</div>';
 
+    var range = cap(bars[0].full) + ' ' + bars[0].year + ' → ' + cap(bars[bars.length - 1].full) + ' ' + bars[bars.length - 1].year;
     var html =
-      '<div class="v2-card" style="padding:18px 20px;margin-bottom:14px" data-reveal>' +
-        '<div class="v2-card-t" style="margin-bottom:4px">' + ICO('pilo', 17) + 'Évolution du CA · 13 mois</div>' +
-        '<div class="v2-page-sub" style="margin-bottom:14px">Survole une barre pour voir le détail mensuel' +
-          (avg > 0 ? ' · repère = moyenne mensuelle' : '') + '</div>' +
-        '<div class="pilo-chart" id="pilo-chart">' + avgLine + barsHtml +
+      '<div class="v2-card pilo-chart-card" data-reveal>' +
+        '<div class="pilo-chart-head">' +
+          '<div class="v2-card-t">' + ICO('pilo', 17) + 'Évolution du CA · 13 mois</div>' +
+          '<span class="pilo-chart-period mono">' + esc(range) + '</span>' +
+        '</div>' +
+        '<div class="pilo-chart" id="pilo-chart">' + barsHtml +
           '<div class="pilo-tip" id="pilo-tip"></div>' +
         '</div>' +
+        kfs +
       '</div>';
 
     function bind(root) {
@@ -968,7 +998,7 @@
     if (document.getElementById('pilo-styles')) return;
     var css =
       // ── Voix data (signature n°1) : tout chiffre mono, tabular, aligné ──
-      '.pilo-vals .mono,.pilo-fam-v .mono,.pilo-rank,.pilo-cbar-lbl,.pilo-tier-meta,.pilo-tip,.opso-chip-n,.opso-perim-nums .mono,.opso-gauge-labels .mono{font-feature-settings:"tnum" 1,"lnum" 1;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.02em}' +
+      '.pilo-vals .mono,.pilo-fam-v .mono,.pilo-rank,.pilo-cbar-lbl,.pilo-cbar-v,.pilo-kf-v,.pilo-chart-period,.pilo-tier-meta,.pilo-tip,.opso-chip-n,.opso-perim-nums .mono,.opso-gauge-labels .mono{font-feature-settings:"tnum" 1,"lnum" 1;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.02em}' +
       '.pilo-vals .v2-row-val,.pilo-vals .v2-row-meta{font-variant-numeric:tabular-nums lining-nums}' +
       '.pilo-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}' +
       '.pilo-seg{display:inline-flex;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:4px;box-shadow:var(--sh-1)}' +
@@ -1034,21 +1064,34 @@
       '.pilo-disc-body{padding:2px 20px 20px}' +
       '@media(max-width:560px){.pilo-disc-hint{flex:0 0 100%;order:3}.pilo-disc-sum{flex-wrap:wrap;gap:4px 10px}.pilo-disc-body{padding:2px 14px 16px}}' +
       '@media(prefers-reduced-motion:reduce){.pilo-disc-chev{transition:none}}' +
-      // chart 13 mois
-      '.pilo-chart{position:relative;display:flex;align-items:flex-end;gap:6px;height:160px;padding-top:8px}' +
-      '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;cursor:default;min-width:0}' +
-      '.pilo-cbar-track{flex:1;width:100%;max-width:34px;display:flex;align-items:flex-end;border-radius:7px 7px 3px 3px;overflow:hidden;background:var(--surf-sunken);box-shadow:inset 0 1px 2px rgba(16,19,28,.05)}' +
-      '.pilo-cbar-fill{display:block;width:100%;border-radius:7px 7px 3px 3px;background:color-mix(in srgb,var(--ip-blue) 42%,var(--surf-sunken));transition:height var(--mo-dur) var(--mo-ease-in),background .18s var(--ease)}' +
-      '.pilo-cbar-fill.up{background:color-mix(in srgb,var(--ip-blue) 72%,#fff)}' +
-      '.pilo-cbar-fill.cur{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d));box-shadow:0 2px 8px color-mix(in srgb,var(--ip-blue) 30%,transparent)}' +
-      '.pilo-cbar:hover .pilo-cbar-fill{background:var(--ip-blue)}' +
-      '.pilo-cbar:hover .pilo-cbar-fill.cur{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}' +
-      '@media(prefers-reduced-motion:reduce){.pilo-bar-fill,.pilo-cbar-fill,.opso-gauge-fill,.pilo-kpi-meter-fill{transition:none}}' +
+      // ── Chart 13 mois : la pièce maîtresse (grammaire fiche officine) ──
+      '.pilo-chart-card{padding:20px 22px 18px;margin-bottom:14px}' +
+      '.pilo-chart-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}' +
+      '.pilo-chart-period{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}' +
+      '.pilo-chart{position:relative;display:flex;align-items:flex-end;gap:8px;height:196px}' +
+      '@media(max-width:640px){.pilo-chart{gap:5px;height:168px}}' +
+      '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;cursor:default;min-width:0}' +
+      '.pilo-cbar-v{font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}' +
+      '@media(max-width:640px){.pilo-cbar-v{visibility:hidden}.pilo-cbar-hot .pilo-cbar-v,.pilo-cbar-cur .pilo-cbar-v{visibility:visible}}' +
+      '.pilo-cbar-track{flex:1;width:100%;max-width:40px;display:flex;align-items:flex-end;background:var(--line-2);border-radius:8px 8px 3px 3px;overflow:hidden}' +
+      '.pilo-cbar-fill{display:block;width:100%;border-radius:8px 8px 3px 3px;transform-origin:50% 100%;' +
+        'background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 46%,#fff),color-mix(in srgb,var(--ip-blue) 78%,#fff));transition:background .18s var(--ease)}' +
+      '.pilo-cbar:hover .pilo-cbar-fill{background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 62%,#fff),var(--ip-blue))}' +
+      /* dernier mois : accent soutenu + libellé bleu */
+      '.pilo-cbar-fill.cur{background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 80%,#fff),var(--ip-blue))}' +
+      /* mois record : SEUL accent fort du graphe (hiérarchie calme) */
+      '.pilo-cbar-hot .pilo-cbar-fill,.pilo-cbar-hot:hover .pilo-cbar-fill{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d));box-shadow:0 2px 8px color-mix(in srgb,var(--ip-blue) 32%,transparent)}' +
+      '.pilo-cbar-hot .pilo-cbar-v{color:var(--ip-blue);font-weight:800}' +
+      '.pilo-cbar-hot .pilo-cbar-lbl{color:var(--ip-ink);font-weight:700}' +
+      '@media(prefers-reduced-motion:reduce){.pilo-bar-fill,.opso-gauge-fill,.pilo-kpi-meter-fill{transition:none}}' +
       '.pilo-cbar-lbl{font-size:10.5px;color:var(--muted);font-weight:600;font-family:var(--mono)}' +
       '.pilo-cbar-lbl.on{color:var(--ip-blue);font-weight:700}' +
-      // repère de moyenne mensuelle (ligne pointillée)
-      '.pilo-avg{position:absolute;left:0;right:0;height:0;border-top:1px dashed color-mix(in srgb,var(--ip-ink) 24%,transparent);pointer-events:none;z-index:2}' +
-      '.pilo-avg-lbl{position:absolute;right:0;top:-8px;font-size:10px;font-weight:700;color:var(--muted);background:var(--card);padding:1px 6px;border-radius:6px;border:1px solid var(--line)}' +
+      /* repères dérivés sous le graphe (moyenne · meilleur mois · mois actifs) */
+      '.pilo-kfs{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}' +
+      '.pilo-kf{flex:1;min-width:110px;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:9px 12px}' +
+      '.pilo-kf-l{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}' +
+      '.pilo-kf-v{display:block;font-size:14.5px;font-weight:800;letter-spacing:-.01em;margin-top:3px;color:var(--ip-ink)}' +
+      '.pilo-kf-v small{font-size:10.5px;color:var(--muted);font-weight:600}' +
       '.pilo-tip{position:absolute;top:-6px;transform:translateX(-50%);background:var(--ip-ink);color:#fff;font-size:12px;font-weight:600;' +
         'padding:7px 11px;border-radius:9px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:var(--sh-pop);z-index:5;font-family:var(--mono)}' +
       '.pilo-tip.show{opacity:1}' +
