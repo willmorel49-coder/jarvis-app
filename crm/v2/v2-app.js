@@ -243,80 +243,100 @@
     if (document.getElementById('v2-pres-style')) return;
     var st = document.createElement('style'); st.id = 'v2-pres-style';
     st.textContent = [
-      '.pres-hero{position:relative;text-align:center;padding:40px 24px 32px;border-radius:var(--r-card);overflow:hidden;background:radial-gradient(circle at 82% -12%,rgba(255,255,255,.16),transparent 60%),linear-gradient(160deg,#0050E6,#0034A0);color:#fff;box-shadow:0 18px 40px rgba(0,52,160,.32)}',
-      '.pres-logo{width:64px;height:64px;border-radius:18px;margin:0 auto 16px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 6px 16px rgba(0,30,90,.18)}',
-      '.pres-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:800;opacity:.82;margin-bottom:12px}',
-      '.pres-h1{font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1.05}',
+      // ── Hero : bleu profond, halos doux, titre plein blanc (jamais clip-text — Safari)
+      '.pres-hero{position:relative;text-align:center;padding:46px 28px 36px;border-radius:var(--r-card);overflow:hidden;color:#fff;background:radial-gradient(120% 90% at 85% -10%,rgba(255,255,255,.16),transparent 55%),radial-gradient(80% 70% at 8% 110%,rgba(122,168,255,.20),transparent 62%),linear-gradient(160deg,#0050E6,#0034A0);box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 18px 44px rgba(0,52,160,.28)}',
+      '.pres-logo{width:64px;height:64px;border-radius:18px;margin:0 auto 16px;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 8px 20px rgba(0,30,90,.22)}',
+      '.pres-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.16em;font-weight:800;color:rgba(255,255,255,.88);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:var(--r-pill);padding:6px 13px;margin-bottom:14px}',
+      '.pres-h1{font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1.05;color:#fff}',
       '.pres-lead{font-size:18px;font-weight:700;margin-top:12px;letter-spacing:-.01em}',
-      '.pres-tag{font-size:13.5px;font-weight:500;opacity:.82;margin-top:10px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.5}',
-      '.pres-kpis{display:flex;justify-content:center;gap:0;margin-top:26px;flex-wrap:wrap}',
-      '.pres-kpi{padding:0 26px}',
-      '.pres-kpi+.pres-kpi{border-left:1px solid rgba(255,255,255,.18)}',
-      '.pres-kpi.mid .pres-kpi-v{font-size:30px}',
-      '.pres-kpi-v{font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:-.02em}',
-      '.pres-kpi-l{font-size:11.5px;opacity:.85;font-weight:600;margin-top:2px}',
-      '.pres-reassure{display:flex;justify-content:center;flex-wrap:wrap;gap:10px 14px;margin:16px 0 6px}',
-      '.pres-reassure-i{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:9px 16px;font-size:13.5px;font-weight:700;color:var(--ip-ink);box-shadow:var(--sh-1)}',
+      '.pres-tag{font-size:13.5px;font-weight:500;color:rgba(255,255,255,.84);margin-top:10px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.55}',
+      // KPI hero : cartes verre, la carte "mid" claque en blanc plein
+      '.pres-kpis{display:flex;justify-content:center;align-items:stretch;gap:12px;margin-top:28px;flex-wrap:wrap}',
+      '.pres-kpi{flex:1 1 150px;max-width:215px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:16px 18px;box-shadow:0 1px 0 rgba(255,255,255,.12) inset}',
+      '.pres-kpi.mid{background:rgba(255,255,255,.96);border-color:rgba(255,255,255,.9);box-shadow:0 12px 28px rgba(0,20,80,.28)}',
+      '.pres-kpi.mid .pres-kpi-v{color:var(--ip-blue);font-size:29px}',
+      '.pres-kpi.mid .pres-kpi-l{color:var(--ip-ink-2)}',
+      '.pres-kpi-v{font-family:var(--mono);font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.15}',
+      '.pres-kpi-l{font-size:11.5px;opacity:.88;font-weight:600;margin-top:4px;line-height:1.35}',
+      '.pres-reassure{display:flex;justify-content:center;flex-wrap:wrap;gap:10px 12px;margin:18px 0 6px}',
+      '.pres-reassure-i{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:10px 16px;font-size:13.5px;font-weight:700;color:var(--ip-ink);box-shadow:var(--sh-1)}',
       '.pres-reassure-i svg{color:var(--c-mint);flex-shrink:0}',
+      // ── Titres de section : point bleu + filet, comme le reste de l'app
+      '.pres-sec-t{font-size:12px;text-transform:uppercase;letter-spacing:.09em;font-weight:800;color:var(--muted);margin:34px 2px 14px;display:flex;align-items:center;gap:10px}',
+      '.pres-sec-t::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--ip-blue);flex-shrink:0}',
+      '.pres-sec-t::after{content:"";flex:1;height:1px;background:var(--line)}',
+      // ── Cartes : même langage que le Launcher (gradient card→card-2, spotlight --mx/--my)
+      '.pres-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}',
+      '@media(max-width:720px){.pres-grid{grid-template-columns:1fr}}',
+      '.pres-card{position:relative;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:22px 24px;overflow:hidden}',
+      '.pres-grid .pres-card{transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft),border-color .28s var(--mo-ease-soft)}',
+      '.pres-grid .pres-card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s var(--mo-ease-soft);background:radial-gradient(240px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--accent,var(--ip-blue)) 13%,transparent),transparent 62%)}',
+      '@media(hover:hover){.pres-grid .pres-card:hover{transform:translateY(-3px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--accent,var(--ip-blue)) 28%,var(--line))}.pres-grid .pres-card:hover::after{opacity:1}}',
+      '.pres-card-ic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;background:color-mix(in srgb,var(--accent,var(--ip-blue)) 11%,#fff);color:var(--accent,var(--ip-blue));border:1px solid color-mix(in srgb,var(--accent,var(--ip-blue)) 20%,transparent)}',
+      '.pres-card-t{font-size:16px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}',
+      '.pres-card-d{font-size:13.5px;color:var(--ip-ink-2);line-height:1.55}',
+      // ── Preuve chiffrée : bannières bleues + barème en tuiles à liseré
       '.pres-proof{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px}',
-      '.pres-proof-h{flex:1;min-width:200px;background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;border-radius:var(--r-card);padding:20px 22px;box-shadow:0 12px 28px rgba(0,52,160,.22)}',
-      '.pres-proof-v{font-family:var(--mono);font-size:27px;font-weight:700;letter-spacing:-.02em;line-height:1.1}',
+      '.pres-proof-h{flex:1;min-width:220px;position:relative;overflow:hidden;background:radial-gradient(110% 100% at 88% -14%,rgba(255,255,255,.18),transparent 58%),linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;border-radius:var(--r-card);padding:22px 24px;box-shadow:0 14px 30px rgba(0,52,160,.22)}',
+      '.pres-proof-v{font-family:var(--mono);font-size:29px;font-weight:700;letter-spacing:-.02em;line-height:1.1}',
       '.pres-proof-l{font-size:13px;font-weight:600;opacity:.9;margin-top:6px;line-height:1.4}',
       '.pres-tiers{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}',
-      '.pres-tier{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}',
-      '.pres-tier-r{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ip-blue)}',
-      '.pres-tier-v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:4px}',
+      '.pres-tier{flex:1;min-width:150px;position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:15px 17px 14px 19px;box-shadow:var(--sh-1)}',
+      '.pres-tier::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--ip-blue),color-mix(in srgb,var(--ip-blue) 25%,transparent))}',
+      '.pres-tier-r{display:inline-block;font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:6px;padding:3px 8px}',
+      '.pres-tier-v{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:9px;letter-spacing:-.02em}',
       '.pres-tier-l{font-size:12px;color:var(--muted);margin-top:3px}',
       '.pres-cta-line{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:14px;font-weight:700;color:var(--ip-blue);text-decoration:none;cursor:pointer}',
       '.pres-cta-line:hover{text-decoration:underline}',
-      '.pres-step-cta{margin:12px 0 2px 45px}',
-      '.pres-step-ok{width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--c-mint) 14%,#fff);color:var(--c-mint);display:flex;align-items:center;justify-content:center;flex-shrink:0}',
-      '.pres-dl{margin-top:6px}',
-      '.pres-sec-t{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);margin:30px 2px 14px;display:flex;align-items:center;gap:10px}',
-      '.pres-sec-t::after{content:"";flex:1;height:1px;background:var(--line)}',
-      '.pres-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}',
-      '@media(max-width:720px){.pres-grid{grid-template-columns:1fr}}',
-      '.pres-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:20px 22px}',
-      '.pres-card-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:13px}',
-      '.pres-card-t{font-size:16px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}',
-      '.pres-card-d{font-size:13.5px;color:var(--ip-ink-2);line-height:1.5}',
-      '.pres-step{display:flex;gap:15px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}',
-      '.pres-step:last-child{border-bottom:none}',
-      '.pres-step-n{width:30px;height:30px;border-radius:50%;background:var(--halo);color:var(--ip-blue);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono)}',
+      // ── Étapes : timeline verticale (pastilles reliées par un filet)
+      '.pres-steps{position:relative}',
+      '.pres-steps::before{content:"";position:absolute;left:15px;top:24px;bottom:24px;width:2px;background:var(--line)}',
+      '.pres-step{position:relative;display:flex;gap:16px;align-items:flex-start;padding:15px 0}',
+      '.pres-step-n{position:relative;width:32px;height:32px;border-radius:50%;background:var(--halo);color:var(--ip-blue);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono);border:1px solid color-mix(in srgb,var(--ip-blue) 22%,transparent);box-shadow:0 0 0 4px var(--card)}',
+      '.pres-step-ok{position:relative;width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--c-mint) 13%,#fff);color:var(--c-mint);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid color-mix(in srgb,var(--c-mint) 30%,transparent);box-shadow:0 0 0 4px var(--card)}',
       '.pres-step-t{font-weight:700;font-size:14.5px}',
       '.pres-step-d{font-size:13px;color:var(--muted);margin-top:2px}',
-      '.pres-contact{display:flex;align-items:center;gap:16px;background:var(--ip-ink);color:#fff;border-radius:var(--r-card);padding:20px 24px;flex-wrap:wrap}',
+      '.pres-step-cta{position:relative;margin:0 0 8px 48px}',
+      '.pres-dl{margin-top:2px}',
+      // ── Contact : carte encre avec halo bleu discret
+      '.pres-contact{position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;background:radial-gradient(100% 140% at 92% -30%,rgba(0,80,230,.38),transparent 58%),var(--ip-ink);color:#fff;border-radius:var(--r-card);padding:22px 26px;flex-wrap:wrap;box-shadow:0 16px 36px rgba(16,19,28,.16)}',
       '.pres-contact-n{font-size:17px;font-weight:800}',
       '.pres-contact-r{font-size:13px;opacity:.85;margin-top:2px}',
       '.pres-contact-c{margin-left:auto;text-align:right;font-family:var(--mono);font-size:13.5px;line-height:1.7}',
       '.pres-contact-c a{color:#fff;text-decoration:none}',
-      '.pres-send{margin-top:18px;background:color-mix(in srgb,var(--ip-blue) 5%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 20%,var(--line));border-radius:var(--r-card);padding:18px 20px}',
+      '.pres-contact-act{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}',
+      '.pres-contact .v2-btn-ghost{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28);color:#fff}',
+      '.pres-contact .v2-btn-ghost:hover{background:rgba(255,255,255,.2)}',
+      // ── Envoi du kit
+      '.pres-send{margin-top:18px;background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 5%,#fff),color-mix(in srgb,var(--ip-blue) 2%,#fff));border:1px solid color-mix(in srgb,var(--ip-blue) 18%,var(--line));border-radius:var(--r-card);padding:20px 22px}',
       '.pres-send-t{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.01em}',
       '.pres-send-t svg{color:var(--ip-blue)}',
       '.pres-send-d{font-size:13px;color:var(--ip-ink-2);margin:6px 0 12px;line-height:1.5}',
       '.pres-send-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}',
-      '.pres-send-in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:var(--r-control);padding:10px 13px;font-family:var(--font);font-size:14px;background:#fff}',
-      '@media print{.pres-hero .noprint,.pres-send.noprint,.pres-contact-act.noprint,.pres-step-cta .noprint{display:none!important}}',
-      '.pres-contact-act{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}',
-      '.pres-contact .v2-btn-ghost{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28);color:#fff}',
-      '.pres-contact .v2-btn-ghost:hover{background:rgba(255,255,255,.2)}',
+      '.pres-send-in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:var(--r-control);padding:11px 13px;font-family:var(--font);font-size:14px;background:#fff;transition:border-color .18s,box-shadow .18s}',
+      '.pres-send-in:focus{outline:none;border-color:color-mix(in srgb,var(--ip-blue) 45%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue) 13%,transparent)}',
+      // ── Impression : rien de masqué, états finaux posés, .noprint identique
+      '@media print{.pres-hero .noprint,.pres-send.noprint,.pres-contact-act.noprint,.pres-step-cta .noprint{display:none!important}.pres-hero *,.pres-eyebrow,.pres-h1,.pres-lead,.pres-tag,.pres-kpis,.pres-reassure-i,.pres-card,.pres-proof-h,.pres-tier,.pres-step,.pres-contact,.pres-send{opacity:1!important;transform:none!important;animation:none!important}}',
       '@media(max-width:480px){' +
+        '.pres-hero{padding:36px 18px 28px}' +
         '.pres-h1{font-size:25px}.pres-lead{font-size:16px}.pres-tag{font-size:13px}' +
-        '.pres-kpis{gap:0}.pres-kpi{padding:0 18px}.pres-kpi-v{font-size:21px}.pres-kpi.mid .pres-kpi-v{font-size:25px}' +
+        '.pres-kpi{max-width:none}.pres-kpi-v{font-size:21px}.pres-kpi.mid .pres-kpi-v{font-size:25px}' +
         '.pres-reassure-i{font-size:13px;padding:8px 13px}' +
-        '.pres-proof-v{font-size:23px}' +
+        '.pres-proof-v{font-size:24px}' +
         '.pres-step-cta{margin-left:0}' +
         '.pres-contact{flex-direction:column;align-items:stretch}.pres-contact-c{margin-left:0;text-align:left}' +
         '.pres-contact-act{margin-left:0;justify-content:stretch}.pres-contact-act .v2-btn{flex:1}' +
         '.pres-send-row{flex-direction:column}.pres-send-in,.pres-send-row .v2-btn{width:100%}' +
       '}',
-      '@media(prefers-reduced-motion:no-preference){' +
+      // ── Entrée du hero : écran uniquement (jamais en print) + RM-safe
+      '@media screen and (prefers-reduced-motion:no-preference){' +
         '@keyframes presIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}' +
-        '@keyframes presLogoIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}' +
+        '@keyframes presLogoIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}' +
         '.pres-hero .pres-logo{opacity:0;animation:presLogoIn .5s ease-out forwards}' +
-        '.pres-eyebrow,.pres-h1,.pres-lead,.pres-kpis,.pres-reassure{opacity:0;animation:presIn .5s ease-out forwards}' +
-        '.pres-eyebrow{animation-delay:.08s}.pres-h1{animation-delay:.16s}.pres-lead{animation-delay:.24s}.pres-kpis{animation-delay:.32s}.pres-reassure{animation-delay:.42s}' +
-      '}'
+        '.pres-eyebrow,.pres-h1,.pres-lead,.pres-tag,.pres-kpis{opacity:0;animation:presIn .5s ease-out forwards}' +
+        '.pres-eyebrow{animation-delay:.06s}.pres-h1{animation-delay:.14s}.pres-lead{animation-delay:.22s}.pres-tag{animation-delay:.28s}.pres-kpis{animation-delay:.36s}' +
+      '}',
+      '@media(prefers-reduced-motion:reduce){.pres-grid .pres-card{transition:none}.pres-grid .pres-card::after{display:none}}'
     ].join('');
     document.head.appendChild(st);
   }
@@ -362,7 +382,7 @@
       var ICODL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18.5h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       var ICOCHK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       var card = function (color, ico, t, d) {
-        return '<div class="pres-card"><div class="pres-card-ic" style="background:' + color + '">' + ICO(ico, 22) + '</div>' +
+        return '<div class="pres-card" style="--accent:' + color + '" onmousemove="V2.homeSpot(event,this)"><div class="pres-card-ic">' + ICO(ico, 22) + '</div>' +
           '<div class="pres-card-t">' + t + '</div><div class="pres-card-d">' + d + '</div></div>';
       };
       var step = function (n, t, d) {
@@ -378,9 +398,9 @@
             '<div class="pres-lead">Plus de marge sur chaque boîte. Sans franco, sans engagement.</div>' +
             '<div class="pres-tag">Un groupe de grossistes français à vos côtés. Acteur de la santé depuis plus de 20 ans, partenaire de proximité pour améliorer durablement la rentabilité de votre officine.</div>' +
             '<div class="pres-kpis">' +
-              '<div class="pres-kpi mid"><div class="pres-kpi-v">6–9 %</div><div class="pres-kpi-l">de marge, nets sur facture</div></div>' +
-              '<div class="pres-kpi"><div class="pres-kpi-v">0 €</div><div class="pres-kpi-l">ni franco ni engagement</div></div>' +
-              '<div class="pres-kpi"><div class="pres-kpi-v">' + nf(nbPara) + '</div><div class="pres-kpi-l">réfs parapharma, sans adhésion</div></div>' +
+              '<div class="pres-kpi mid"><div class="pres-kpi-v" data-count>6–9 %</div><div class="pres-kpi-l">de marge, nets sur facture</div></div>' +
+              '<div class="pres-kpi"><div class="pres-kpi-v" data-count>0 €</div><div class="pres-kpi-l">ni franco ni engagement</div></div>' +
+              '<div class="pres-kpi"><div class="pres-kpi-v" data-count>' + nf(nbPara) + '</div><div class="pres-kpi-l">réfs parapharma, sans adhésion</div></div>' +
             '</div>' +
           '</div>' +
 
@@ -400,15 +420,15 @@
 
           '<div class="pres-sec-t">Vos conditions — la preuve chiffrée</div>' +
           '<div class="pres-proof">' +
-            '<div class="pres-proof-h"><div class="pres-proof-v">jusqu\'à 27 %</div><div class="pres-proof-l">sur les génériques, dès la 1ère boîte</div></div>' +
-            '<div class="pres-proof-h"><div class="pres-proof-v">6–9 %</div><div class="pres-proof-l">de remise constatée, nets sur facture (PFHT)</div></div>' +
+            '<div class="pres-proof-h"><div class="pres-proof-v" data-count>jusqu\'à 27 %</div><div class="pres-proof-l">sur les génériques, dès la 1ère boîte</div></div>' +
+            '<div class="pres-proof-h"><div class="pres-proof-v" data-count>6–9 %</div><div class="pres-proof-l">de remise constatée, nets sur facture (PFHT)</div></div>' +
           '</div>' +
           '<div class="pres-card">' +
             '<div class="pres-card-d" style="font-size:13px;color:var(--muted)">Barème par tranche, en prix nets sur facture :</div>' +
             '<div class="pres-tiers">' +
-              '<div class="pres-tier"><div class="pres-tier-r">&lt; 4,33 €</div><div class="pres-tier-v">4,5 – 30 %</div><div class="pres-tier-l">petits prix</div></div>' +
-              '<div class="pres-tier"><div class="pres-tier-r">4,33 – 468 €</div><div class="pres-tier-v">3,89 %</div><div class="pres-tier-l">intermédiaires</div></div>' +
-              '<div class="pres-tier"><div class="pres-tier-r">&gt; 468 €</div><div class="pres-tier-v">19,50 €</div><div class="pres-tier-l">forfait fixe</div></div>' +
+              '<div class="pres-tier"><div class="pres-tier-r">&lt; 4,33 €</div><div class="pres-tier-v" data-count>4,5 – 30 %</div><div class="pres-tier-l">petits prix</div></div>' +
+              '<div class="pres-tier"><div class="pres-tier-r">4,33 – 468 €</div><div class="pres-tier-v" data-count>3,89 %</div><div class="pres-tier-l">intermédiaires</div></div>' +
+              '<div class="pres-tier"><div class="pres-tier-r">&gt; 468 €</div><div class="pres-tier-v" data-count>19,50 €</div><div class="pres-tier-l">forfait fixe</div></div>' +
             '</div>' +
             '<div class="pres-card-d" style="font-size:12.5px;color:var(--muted);margin-top:12px">Génériques : jusqu\'à 27 % dès la 1ère boîte. Livraison adaptée au secteur (de 2×/semaine à 1×/jour). Ni franco ni engagement imposé — l\'objectif se fixe ensemble, en bonne intelligence.</div>' +
             '<div class="pres-card-d" style="font-size:12.5px;color:var(--muted);margin-top:6px">Catalogue : ' + nf(nbRefN) + ' médicaments + ' + nf(nbPara) + ' réfs parapharma · ' + nf(nbOffre) + ' offres labo en ce moment (L\'Intégral, ITP, UPSA, Sanofi).</div>' +
@@ -416,13 +436,13 @@
           '</div>' +
 
           '<div class="pres-sec-t">Ouvrir un compte en 3 étapes</div>' +
-          '<div class="pres-card" style="padding:6px 22px 18px">' +
+          '<div class="pres-card" style="padding:8px 24px 18px"><div class="pres-steps">' +
             step('1', 'Téléchargez et remplissez le formulaire 2026', 'Le formulaire d\'ouverture de compte Intégral Pharma 2026.') +
             '<div class="pres-step-cta pres-dl"><a class="v2-btn v2-btn-primary noprint" href="ouverture-compte-integral-pharma-2026.pdf" download>' + ICODL + 'Télécharger le formulaire 2026</a></div>' +
             step('2', 'Renvoyez-le par e-mail avec votre RIB et votre Kbis', 'Joignez le formulaire rempli, votre RIB et votre Kbis (et pièces justificatives).') +
             '<div class="pres-step-cta"><a class="v2-btn v2-btn-ghost noprint" href="' + openHref + '">' + ICO('fiche', 16) + 'Envoyer par e-mail</a></div>' +
             '<div class="pres-step"><div class="pres-step-ok">' + ICOCHK + '</div><div><div class="pres-step-t">Vous recevez votre code PharmaML</div><div class="pres-step-d">Votre compte est ouvert : vous pouvez commander.</div></div></div>' +
-          '</div>' +
+          '</div></div>' +
 
           '<div class="pres-sec-t">Vos meilleures ventes par catégorie</div>' +
           '<div class="pres-card"><div class="pres-card-d" style="font-size:13.5px">Au comptoir, votre commercial vous présente les <b>meilleures ventes réelles du marché par catégorie</b>, avec le prix net Intégral Pharma et les offres labo du moment — la preuve concrète de la marge sur vos références à plus forte rotation.</div></div>' +
@@ -454,6 +474,24 @@
           '<div style="text-align:center;font-size:11px;color:var(--muted-2);margin-top:18px" class="noprint">Document commercial Intégral Pharma — sous réserve des conditions générales.</div>' +
           '<div style="height:30px"></div>' +
         '</div>';
+      // ── Motion (RM-safe via V2.motion, print intact : états finaux toujours posés) ──
+      if (V2.motion) {
+        var mo = V2.motion;
+        // cascade douce : chips de réassurance après le hero, puis cartes « Ce que vous gagnez »
+        mo.stagger(root.querySelectorAll('.pres-reassure-i'), { step: 55, delay: 420, y: 6 });
+        mo.stagger(root.querySelectorAll('.pres-grid .pres-card'), { step: 60, y: 10 });
+        // reveal à l'écran : preuve chiffrée, barème, étapes, contact, envoi du kit
+        var rv = root.querySelectorAll('.pres-proof-h, .pres-tier, .pres-step, .pres-contact, .pres-send');
+        for (var ri = 0; ri < rv.length; ri++) (function (el, i) {
+          mo.inView(el, function () { mo.enter(el, { y: 8, delay: (i % 4) * 50 }); });
+        })(rv[ri], ri);
+        // count-up des chiffres-clés quand ils arrivent à l'écran (les libellés non
+        // numériques sont laissés tels quels par l'API — texte officiel jamais altéré)
+        var cts = root.querySelectorAll('[data-count]');
+        for (var ci = 0; ci < cts.length; ci++) (function (el) {
+          mo.inView(el, function () { mo.countUp(el); });
+        })(cts[ci]);
+      }
     }
   };
 
