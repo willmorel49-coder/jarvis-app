@@ -7,14 +7,15 @@
 <meta name="description" content="Intégral Pharma, grossiste-répartiteur de première intention. Groupe de grossistes indépendant — 9 agences, couverture nationale, +14 000 références Offilog.">
 <!--
   ══════════════════════════════════════════════════════════════════
-  MAQUETTE 54 · « LA BOÎTE » — Objet 3D signature
-  Concept : le produit comme héros. Une capsule (cap orange franc,
-  corps argent, bague bleue) en three.js, FIXE derrière la page,
-  qui voyage de section en section au rythme du scroll — comme un
-  médicament qu'on suit de l'agence jusqu'au comptoir.
-  DA : « notice de médicament » éditoriale — codes mono façon RCP,
-  filets pointillés, code-barres décoratif, encre profonde + orange
-  franc + argent.
+  MAQUETTE 54 · « LA BOÎTE » — Objet 3D signature — ÉDITION CLAIRE
+  Concept : le produit comme héros. Une capsule (cap orange doré,
+  corps argent clair, bague bleue) en three.js, FIXE derrière la
+  page, qui voyage de section en section au rythme du scroll — comme
+  un médicament qu'on suit de l'agence jusqu'au comptoir.
+  DA : « notice de médicament » LUMINEUSE — fond crème/blanc, codes
+  mono façon RCP, filets pointillés, code-barres décoratif, encre
+  profonde sur papier clair + orange doré #F39A1B + bleu #0050E6.
+  Vif mais doux : accents joyeux, formes arrondies, dégradés aérés.
   Safari-safe : pas de background-clip:text, pas de backdrop-filter,
   0 vidéo, reduced-motion → tout figé à l'état final.
   ══════════════════════════════════════════════════════════════════
@@ -23,20 +24,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ══════════ TOKENS ══════════ */
+/* ══════════ TOKENS — notice claire ══════════ */
 :root{
-  --encre:#06080F;          /* fond nuit */
-  --encre-2:#0B101D;
-  --orange:#FF7A1A;         /* orange FRANC (cap de la capsule) */
-  --orange-vif:#FF8F3D;
-  --bleu:#2E6BFF;           /* bague / détails froids */
-  --bleu-marque:#0050E6;
-  --argent:#C9CED6;         /* corps de la capsule */
-  --creme:#F2EEE6;          /* section « carton » claire */
-  --blanc:#F8FAFC;
-  --gris:#96A0B5;
-  --ligne:rgba(200,210,230,.13);
-  --ligne-o:rgba(255,122,26,.35);
+  --creme:#FDF8EE;          /* fond papier crème (page) */
+  --blanc:#FFFFFF;          /* cartes / sections blanches */
+  --encre:#131A2A;          /* encre profonde (texte) */
+  --encre-2:#2B3550;
+  --orange:#F39A1B;         /* orange doré (cap de la capsule, boutons) */
+  --orange-vif:#FFAD3C;
+  --orange-txt:#CE6A00;     /* orange lisible pour le texte (AA sur clair) */
+  --bleu:#0050E6;           /* bague / détails froids */
+  --bleu-pale:#EAF1FF;      /* section « carton » bleutée */
+  --argent:#D8DEE8;         /* corps de la capsule */
+  --gris:#5A6478;           /* texte secondaire */
+  --ligne:rgba(19,26,42,.13);
+  --ligne-o:rgba(243,154,27,.5);
   --font-d:"Archivo",system-ui,sans-serif;
   --font-m:"IBM Plex Mono",ui-monospace,monospace;
 }
@@ -44,7 +46,7 @@
 html{scroll-behavior:smooth}
 @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
 body{
-  background:var(--encre); color:var(--blanc);
+  background:var(--creme); color:var(--encre);
   font-family:var(--font-d); font-weight:500;
   overflow-x:hidden;
   -webkit-font-smoothing:antialiased;
@@ -66,7 +68,7 @@ button{font:inherit; cursor:pointer}
 .stage-fallback .pill{
   width:110px; height:280px; border-radius:60px;
   background:linear-gradient(180deg,var(--orange) 0 48%, var(--bleu) 48% 52%, var(--argent) 52% 100%);
-  box-shadow:0 50px 90px rgba(0,0,0,.55), inset -22px 0 44px rgba(0,0,0,.28);
+  box-shadow:0 50px 90px rgba(19,26,42,.18), inset -22px 0 44px rgba(19,26,42,.1);
   transform:rotate(24deg);
 }
 #stage3d.no-webgl .stage-fallback{display:grid}
@@ -75,15 +77,15 @@ button{font:inherit; cursor:pointer}
 .ambient{
   position:fixed; inset:0; z-index:-1;
   background:
-    radial-gradient(90% 65% at 78% 12%, rgba(46,107,255,.14), transparent 62%),
-    radial-gradient(75% 60% at 15% 85%, rgba(255,122,26,.10), transparent 60%),
-    var(--encre);
+    radial-gradient(90% 65% at 78% 12%, rgba(0,80,230,.08), transparent 62%),
+    radial-gradient(75% 60% at 15% 85%, rgba(243,154,27,.12), transparent 60%),
+    var(--creme);
 }
 
 /* ══════════ PROGRESSION ══════════ */
 .progress{
   position:fixed; top:0; left:0; right:0; height:3px; z-index:60;
-  background:rgba(255,255,255,.06);
+  background:rgba(19,26,42,.07);
 }
 .progress b{
   display:block; height:100%; width:100%;
@@ -96,7 +98,7 @@ button{font:inherit; cursor:pointer}
   position:fixed; top:3px; left:0; right:0; z-index:50;
   display:flex; align-items:center; justify-content:space-between;
   padding:14px clamp(18px,4vw,44px);
-  background:linear-gradient(180deg, rgba(6,8,15,.92), rgba(6,8,15,.78) 70%, rgba(6,8,15,0));
+  background:linear-gradient(180deg, rgba(253,248,238,.95), rgba(253,248,238,.82) 70%, rgba(253,248,238,0));
   transition:transform .4s ease;
 }
 .nav.hide{transform:translateY(-110%)}
@@ -118,12 +120,13 @@ button{font:inherit; cursor:pointer}
   background:var(--orange); transform:scaleX(0); transform-origin:right;
   transition:transform .3s ease;
 }
-.nav-links a:hover{color:var(--blanc)}
+.nav-links a:hover{color:var(--encre)}
 .nav-links a:hover::after{transform:scaleX(1); transform-origin:left}
 .nav-cta{
   font-family:var(--font-m); font-size:.66rem; letter-spacing:.12em; text-transform:uppercase;
   color:var(--encre); background:var(--orange); border:none; border-radius:100px;
   padding:11px 20px; font-weight:500; transition:background .25s, transform .25s;
+  box-shadow:0 6px 18px rgba(243,154,27,.28);
 }
 .nav-cta:hover{background:var(--orange-vif); transform:translateY(-1px)}
 @media(max-width:860px){ .nav-links a{display:none} .nav-brand .tag{display:none} }
@@ -134,7 +137,7 @@ section{position:relative}
 .wrap{max-width:1240px; margin-inline:auto; padding-inline:clamp(20px,5vw,56px)}
 .mono{
   font-family:var(--font-m); font-size:.68rem; letter-spacing:.22em;
-  text-transform:uppercase; color:var(--orange);
+  text-transform:uppercase; color:var(--orange-txt);
 }
 .mono .idx{color:var(--gris)}
 .rule{
@@ -142,13 +145,13 @@ section{position:relative}
 }
 .rule::after{
   content:""; flex:1; height:1px;
-  background-image:linear-gradient(90deg, var(--ligne) 55%, transparent 0);
+  background-image:linear-gradient(90deg, rgba(19,26,42,.2) 55%, transparent 0);
   background-size:8px 1px;
 }
 h1,h2,h3{font-weight:800; letter-spacing:-.03em; line-height:1.02}
 h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
 .lead{color:var(--gris); font-weight:500; font-size:clamp(1rem,1.4vw,1.15rem); line-height:1.65; max-width:52ch}
-.accent{color:var(--orange)}
+.accent{color:var(--orange-txt)}
 .accent-b{color:var(--bleu)}
 
 /* reveal au scroll */
@@ -168,14 +171,14 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
 .btn:hover .arr{transform:translateX(5px)}
 .btn-orange{
   background:var(--orange); color:var(--encre);
-  box-shadow:0 10px 34px rgba(255,122,26,.28);
+  box-shadow:0 10px 34px rgba(243,154,27,.35);
 }
-.btn-orange:hover{transform:translateY(-2px); box-shadow:0 16px 44px rgba(255,122,26,.4)}
+.btn-orange:hover{transform:translateY(-2px); box-shadow:0 16px 44px rgba(243,154,27,.45)}
 .btn-ghost{
-  background:transparent; color:var(--blanc);
-  border:1px solid var(--ligne); box-shadow:none;
+  background:var(--blanc); color:var(--encre);
+  border:1px solid var(--ligne); box-shadow:0 4px 16px rgba(19,26,42,.05);
 }
-.btn-ghost:hover{border-color:var(--orange); color:var(--orange); transform:translateY(-2px)}
+.btn-ghost:hover{border-color:var(--orange); color:var(--orange-txt); transform:translateY(-2px)}
 
 /* ══════════ HERO ══════════ */
 .hero{
@@ -186,30 +189,31 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
 .hero-eyebrow{
   display:inline-flex; align-items:center; gap:10px;
   font-family:var(--font-m); font-size:.66rem; letter-spacing:.24em; text-transform:uppercase;
-  color:var(--argent); border:1px solid var(--ligne); border-radius:100px; padding:9px 18px;
-  margin-bottom:30px;
+  color:var(--gris); border:1px solid var(--ligne); border-radius:100px; padding:9px 18px;
+  margin-bottom:30px; background:var(--blanc);
+  box-shadow:0 4px 14px rgba(19,26,42,.05);
 }
-.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange); box-shadow:0 0 12px rgba(255,122,26,.9)}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange); box-shadow:0 0 12px rgba(243,154,27,.9)}
 .hero h1{
   font-size:clamp(2.9rem,7.4vw,6.4rem); font-weight:900; letter-spacing:-.045em; line-height:.98;
   text-wrap:balance;
 }
-.hero h1 .l2{color:var(--orange)}
+.hero h1 .l2{color:var(--orange-txt)}
 .hero .lead{margin-top:28px}
 .hero-ctas{display:flex; flex-wrap:wrap; gap:16px; margin-top:40px}
 .hero-note{
   margin-top:26px; font-family:var(--font-m); font-size:.66rem; letter-spacing:.14em;
   text-transform:uppercase; color:var(--gris);
 }
-.hero-note b{color:var(--argent); font-weight:500}
+.hero-note b{color:var(--encre); font-weight:500}
 /* colonne droite : cartouche « notice » autour de la capsule 3D */
 .hero-spec{
   justify-self:end; align-self:end;
-  border:1px dashed var(--ligne); border-radius:16px; padding:18px 20px;
+  border:1px dashed rgba(19,26,42,.22); border-radius:16px; padding:18px 20px;
   font-family:var(--font-m); font-size:.64rem; letter-spacing:.16em; text-transform:uppercase;
-  color:var(--gris); display:grid; gap:9px; background:rgba(6,8,15,.35);
+  color:var(--gris); display:grid; gap:9px; background:rgba(255,255,255,.72);
 }
-.hero-spec span b{color:var(--orange); font-weight:500}
+.hero-spec span b{color:var(--orange-txt); font-weight:500}
 .hero-scroll{
   position:absolute; left:50%; bottom:22px; transform:translateX(-50%);
   font-family:var(--font-m); font-size:.6rem; letter-spacing:.3em; text-transform:uppercase; color:var(--gris);
@@ -228,7 +232,7 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
 }
 
 /* ══════════ BANDEAU LABOS (marquee) ══════════ */
-.labos{padding:34px 0; border-top:1px solid var(--ligne); border-bottom:1px solid var(--ligne); background:rgba(11,16,29,.6)}
+.labos{padding:34px 0; border-top:1px solid var(--ligne); border-bottom:1px solid var(--ligne); background:rgba(255,255,255,.7)}
 .labos .mono{display:block; text-align:center; margin-bottom:22px; color:var(--gris)}
 .marquee{
   overflow:hidden; display:flex; user-select:none;
@@ -244,9 +248,9 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
 @keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .marquee-track span{
   font-weight:800; font-size:clamp(1.2rem,2.6vw,1.9rem); letter-spacing:-.02em;
-  color:#5E6A80; white-space:nowrap; transition:color .3s;
+  color:#A6AFC2; white-space:nowrap; transition:color .3s;
 }
-.marquee-track span:hover{color:var(--argent)}
+.marquee-track span:hover{color:var(--encre)}
 .marquee-track em{font-style:normal; color:var(--orange); font-size:.8em}
 @media(prefers-reduced-motion:reduce){ .marquee-track{animation:none} .marquee{overflow-x:auto} }
 
@@ -256,16 +260,17 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
 .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
 .card{
   position:relative; border:1px solid var(--ligne); border-radius:20px;
-  padding:30px 26px 34px; background:linear-gradient(160deg, rgba(20,27,45,.72), rgba(9,13,24,.85));
-  transition:transform .35s cubic-bezier(.22,.8,.26,1), border-color .35s;
+  padding:30px 26px 34px; background:var(--blanc);
+  box-shadow:0 10px 30px rgba(19,26,42,.06);
+  transition:transform .35s cubic-bezier(.22,.8,.26,1), border-color .35s, box-shadow .35s;
   overflow:hidden;
 }
 .card::before{ /* liseré lumineux haut */
-  content:""; position:absolute; top:0; left:10%; right:10%; height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,122,26,.55),transparent);
+  content:""; position:absolute; top:0; left:10%; right:10%; height:2px;
+  background:linear-gradient(90deg,transparent,rgba(243,154,27,.8),transparent);
   opacity:0; transition:opacity .35s;
 }
-.card:hover{transform:translateY(-6px); border-color:var(--ligne-o)}
+.card:hover{transform:translateY(-6px); border-color:var(--ligne-o); box-shadow:0 18px 44px rgba(19,26,42,.1)}
 .card:hover::before{opacity:1}
 .card .code{
   font-family:var(--font-m); font-size:.6rem; letter-spacing:.2em; color:var(--gris);
@@ -273,13 +278,13 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
 }
 .card .ico{
   width:46px; height:46px; border-radius:12px; display:grid; place-items:center;
-  background:rgba(255,122,26,.1); border:1px solid rgba(255,122,26,.28); color:var(--orange);
+  background:rgba(243,154,27,.14); border:1px solid rgba(243,154,27,.35); color:var(--orange-txt);
   margin-bottom:20px;
 }
 .card .ico svg{width:22px;height:22px}
 .card h3{font-size:1.35rem; margin-bottom:12px; letter-spacing:-.02em}
 .card p{color:var(--gris); line-height:1.6; font-size:.95rem}
-.card p b{color:var(--argent); font-weight:700}
+.card p b{color:var(--encre); font-weight:700}
 @media(max-width:900px){ .cards{grid-template-columns:1fr} }
 
 /* ══════════ SECTION GROUPE (9 agences) ══════════ */
@@ -291,22 +296,23 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
 .agence{
   aspect-ratio:1; border:1px solid var(--ligne); border-radius:16px;
   display:flex; flex-direction:column; justify-content:space-between;
-  padding:14px; background:rgba(11,16,29,.62);
+  padding:14px; background:var(--blanc);
+  box-shadow:0 6px 18px rgba(19,26,42,.05);
   transition:border-color .3s, background .3s, transform .3s;
 }
-.agence:hover{border-color:var(--ligne-o); background:rgba(255,122,26,.06); transform:translateY(-3px)}
-.agence .n{font-weight:900; font-size:clamp(1.4rem,3vw,2.1rem); letter-spacing:-.03em; color:var(--argent)}
+.agence:hover{border-color:var(--ligne-o); background:rgba(243,154,27,.08); transform:translateY(-3px)}
+.agence .n{font-weight:900; font-size:clamp(1.4rem,3vw,2.1rem); letter-spacing:-.03em; color:var(--encre)}
 .agence .lbl{font-family:var(--font-m); font-size:.55rem; letter-spacing:.22em; text-transform:uppercase; color:var(--gris)}
-.agence .pin{width:8px; height:8px; border-radius:50%; background:var(--orange); box-shadow:0 0 10px rgba(255,122,26,.8)}
+.agence .pin{width:8px; height:8px; border-radius:50%; background:var(--orange); box-shadow:0 0 10px rgba(243,154,27,.8)}
 .groupe-copy .lead{margin-top:24px}
 .groupe-points{margin-top:34px; display:grid; gap:0}
 .gp{
   display:flex; gap:16px; align-items:baseline; padding:16px 0;
-  border-top:1px dashed var(--ligne);
+  border-top:1px dashed rgba(19,26,42,.22);
 }
-.gp:last-child{border-bottom:1px dashed var(--ligne)}
-.gp .k{font-family:var(--font-m); font-size:.62rem; letter-spacing:.2em; color:var(--orange); min-width:52px}
-.gp .v{color:var(--argent); font-weight:600; font-size:1rem}
+.gp:last-child{border-bottom:1px dashed rgba(19,26,42,.22)}
+.gp .k{font-family:var(--font-m); font-size:.62rem; letter-spacing:.2em; color:var(--orange-txt); min-width:52px}
+.gp .v{color:var(--encre); font-weight:600; font-size:1rem}
 @media(max-width:900px){ .groupe-grid{grid-template-columns:1fr} .agences{order:2} }
 
 /* ══════════ OFFILOG ══════════ */
@@ -314,44 +320,45 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
 .offilog-grid{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); gap:clamp(36px,6vw,80px); align-items:center}
 .offilog-big{
   font-weight:900; letter-spacing:-.05em; line-height:.9;
-  font-size:clamp(4.4rem,12vw,10rem); color:var(--blanc);
+  font-size:clamp(4.4rem,12vw,10rem); color:var(--bleu);
 }
 .offilog-big small{
   display:block; font-size:clamp(1rem,2.4vw,1.6rem); font-weight:700;
-  letter-spacing:0; color:var(--orange); margin-top:10px;
+  letter-spacing:0; color:var(--orange-txt); margin-top:10px;
 }
 .offilog-copy h2{margin-bottom:22px}
 .offilog-list{margin-top:30px; display:grid; gap:14px}
 .oli{
   display:flex; align-items:center; gap:14px; padding:15px 18px;
-  border:1px solid var(--ligne); border-radius:14px; background:rgba(11,16,29,.6);
+  border:1px solid var(--ligne); border-radius:14px; background:var(--blanc);
+  box-shadow:0 6px 18px rgba(19,26,42,.05);
   transition:border-color .3s, transform .3s;
 }
-.oli:hover{border-color:var(--ligne-o); transform:translateX(6px)}
+.oli:hover{border-color:rgba(0,80,230,.4); transform:translateX(6px)}
 .oli .b{
   width:34px; height:34px; border-radius:10px; flex:0 0 auto;
   display:grid; place-items:center; color:var(--bleu);
-  background:rgba(46,107,255,.12); border:1px solid rgba(46,107,255,.3);
+  background:var(--bleu-pale); border:1px solid rgba(0,80,230,.25);
 }
 .oli .b svg{width:17px;height:17px}
-.oli span{color:var(--argent); font-weight:600; font-size:.96rem}
-.oli span b{color:var(--orange); font-weight:800}
+.oli span{color:var(--encre-2); font-weight:600; font-size:.96rem}
+.oli span b{color:var(--orange-txt); font-weight:800}
 @media(max-width:900px){ .offilog-grid{grid-template-columns:1fr} }
 
-/* ══════════ CHIFFRES — section « carton » claire ══════════ */
+/* ══════════ CHIFFRES — section « carton » bleutée ══════════ */
 .chiffres{
-  background:var(--creme); color:var(--encre);
+  background:var(--bleu-pale); color:var(--encre);
   padding:clamp(90px,14vh,170px) 0;
 }
-.chiffres .mono{color:#B4550E}
-.chiffres .rule::after{background-image:linear-gradient(90deg, rgba(6,8,15,.22) 55%, transparent 0)}
+.chiffres .mono{color:var(--bleu)}
+.chiffres .rule::after{background-image:linear-gradient(90deg, rgba(19,26,42,.22) 55%, transparent 0)}
 .chiffres h2{color:var(--encre); max-width:700px}
 .stats{
   margin-top:clamp(44px,7vh,80px);
   display:grid; grid-template-columns:repeat(4,1fr);
 }
 .stat{
-  padding:8px 26px 4px; border-left:1px solid rgba(6,8,15,.18);
+  padding:8px 26px 4px; border-left:1px solid rgba(19,26,42,.18);
 }
 .stat:first-child{border-left:none; padding-left:0}
 .stat .num{
@@ -359,13 +366,13 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
   font-size:clamp(2.6rem,5.6vw,4.6rem); color:var(--encre);
   font-variant-numeric:tabular-nums;
 }
-.stat .num .sfx{color:var(--orange)}
-.stat .lbl{margin-top:12px; color:#5C5648; font-weight:600; font-size:.92rem; line-height:1.45}
-.stat .k{font-family:var(--font-m); font-size:.58rem; letter-spacing:.24em; text-transform:uppercase; color:#B4550E; display:block; margin-bottom:16px}
+.stat .num .sfx{color:var(--orange-txt)}
+.stat .lbl{margin-top:12px; color:#4A5570; font-weight:600; font-size:.92rem; line-height:1.45}
+.stat .k{font-family:var(--font-m); font-size:.58rem; letter-spacing:.24em; text-transform:uppercase; color:var(--bleu); display:block; margin-bottom:16px}
 .chiffres-foot{
-  margin-top:clamp(44px,7vh,70px); padding-top:22px; border-top:1px dashed rgba(6,8,15,.25);
+  margin-top:clamp(44px,7vh,70px); padding-top:22px; border-top:1px dashed rgba(19,26,42,.25);
   display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;
-  font-family:var(--font-m); font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:#8A8272;
+  font-family:var(--font-m); font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:#5A6785;
 }
 @media(max-width:900px){
   .stats{grid-template-columns:1fr 1fr; gap:34px 0}
@@ -381,9 +388,9 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
   padding:clamp(110px,18vh,200px) 0 clamp(90px,14vh,150px);
   text-align:center; position:relative; overflow:hidden;
 }
-.contact::before{ /* projecteur derrière la capsule finale */
+.contact::before{ /* projecteur doux derrière la capsule finale */
   content:""; position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(46% 40% at 50% 42%, rgba(255,122,26,.16), transparent 70%);
+  background:radial-gradient(46% 40% at 50% 42%, rgba(243,154,27,.18), transparent 70%);
 }
 .contact .wrap{position:relative}
 .contact h2{
@@ -396,11 +403,11 @@ h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
   margin-top:30px; font-family:var(--font-m); font-size:.64rem; letter-spacing:.2em;
   text-transform:uppercase; color:var(--gris);
 }
-.contact-hint b{color:var(--orange); font-weight:500}
+.contact-hint b{color:var(--orange-txt); font-weight:500}
 
 /* ══════════ FOOTER ══════════ */
 footer{
-  border-top:1px solid var(--ligne); background:rgba(6,8,15,.92);
+  border-top:1px solid var(--ligne); background:var(--blanc);
   padding:56px 0 34px; position:relative; z-index:1;
 }
 .foot-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:36px; align-items:start}
@@ -408,19 +415,19 @@ footer{
 .foot-brand p{color:var(--gris); font-size:.9rem; line-height:1.6; max-width:34ch}
 .foot-col .mono{color:var(--gris); display:block; margin-bottom:16px}
 .foot-col a{
-  display:block; color:var(--argent); font-weight:600; font-size:.95rem;
+  display:block; color:var(--encre-2); font-weight:600; font-size:.95rem;
   padding:7px 0; transition:color .25s, transform .25s;
 }
-.foot-col a:hover{color:var(--orange); transform:translateX(4px)}
+.foot-col a:hover{color:var(--orange-txt); transform:translateX(4px)}
 /* code-barres décoratif façon boîte de médicament */
 .barcode{
   height:44px; margin:44px 0 20px;
   background:repeating-linear-gradient(90deg,
-    var(--argent) 0 2px, transparent 2px 6px,
-    var(--argent) 6px 9px, transparent 9px 11px,
-    var(--argent) 11px 12px, transparent 12px 18px,
-    var(--argent) 18px 22px, transparent 22px 25px);
-  opacity:.22;
+    var(--encre) 0 2px, transparent 2px 6px,
+    var(--encre) 6px 9px, transparent 9px 11px,
+    var(--encre) 11px 12px, transparent 12px 18px,
+    var(--encre) 18px 22px, transparent 22px 25px);
+  opacity:.16;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
           mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
 }
@@ -642,8 +649,8 @@ footer{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════
-   LA BOÎTE — capsule 3D signature (three.js r128)
-   Cap ORANGE FRANC + corps ARGENT + bague BLEUE.
+   LA BOÎTE — capsule 3D signature (three.js r128) — studio CLAIR
+   Cap ORANGE #F39A1B + corps ARGENT clair + bague BLEUE #0050E6.
    Fixe derrière la page ; sa pose (x, y, échelle, rotation) est
    interpolée entre les sections [data-pose] selon le scroll.
    reduced-motion → pose hero figée, aucun mouvement.
@@ -656,9 +663,9 @@ footer{
   try{ gl = document.createElement('canvas').getContext('webgl'); }catch(e){}
   if(!window.THREE || !gl){ host.classList.add('no-webgl'); return; }
 
-  var COL_ORANGE = 0xFF7A1A;   // orange FRANC
-  var COL_ARGENT = 0xC9CED6;   // argent
-  var COL_BLEU   = 0x2E6BFF;   // bague
+  var COL_ORANGE = 0xF39A1B;   // orange doré (cap)
+  var COL_ARGENT = 0xE2E6ED;   // argent clair (corps)
+  var COL_BLEU   = 0x0050E6;   // bague bleue
 
   var W = function(){ return host.clientWidth; };
   var H = function(){ return host.clientHeight; };
@@ -671,25 +678,27 @@ footer{
   rnd.setSize(W(), H());
   host.appendChild(rnd.domElement);
 
-  /* Env studio pour reflets métalliques */
+  /* Env studio CLAIR pour reflets métalliques lumineux */
   var pmrem = new THREE.PMREMGenerator(rnd);
   var envScene = new THREE.Scene();
   envScene.add(new THREE.Mesh(
     new THREE.SphereGeometry(50,16,16),
-    new THREE.MeshBasicMaterial({color:0x151B2A, side:THREE.BackSide})
+    new THREE.MeshBasicMaterial({color:0xF3EEE2, side:THREE.BackSide})
   ));
   var key = new THREE.Mesh(new THREE.PlaneGeometry(18,18), new THREE.MeshBasicMaterial({color:0xffffff}));
   key.position.set(8,10,6); envScene.add(key);
-  var warm = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.MeshBasicMaterial({color:0xFF7A1A}));
+  var warm = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.MeshBasicMaterial({color:0xF39A1B}));
   warm.position.set(-9,-4,5); warm.lookAt(0,0,0); envScene.add(warm);
+  var cool = new THREE.Mesh(new THREE.PlaneGeometry(9,9), new THREE.MeshBasicMaterial({color:0xBBD0FF}));
+  cool.position.set(9,-6,4); cool.lookAt(0,0,0); envScene.add(cool);
   scene.environment = pmrem.fromScene(envScene).texture;
 
   /* ── LA CAPSULE ── */
   var caps = new THREE.Group();
   function half(color, top, metal){
     var mat = new THREE.MeshPhysicalMaterial({
-      color:color, metalness:(metal?0.75:0.25), roughness:(metal?0.22:0.3),
-      clearcoat:0.7, clearcoatRoughness:0.25, envMapIntensity:1.15
+      color:color, metalness:(metal?0.7:0.2), roughness:(metal?0.24:0.3),
+      clearcoat:0.7, clearcoatRoughness:0.25, envMapIntensity:1.05
     });
     var g = new THREE.Group();
     g.add(new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,1.3,56,1,true), mat));
@@ -699,11 +708,11 @@ footer{
     if(!top) g.rotation.z = Math.PI;
     return g;
   }
-  caps.add(half(COL_ORANGE, true, false));    // cap orange franc
-  caps.add(half(COL_ARGENT, false, true));    // corps argent métal
+  caps.add(half(COL_ORANGE, true, false));    // cap orange doré
+  caps.add(half(COL_ARGENT, false, true));    // corps argent clair métal
   var ring = new THREE.Mesh(                  // bague bleue à la jointure
     new THREE.TorusGeometry(.855,.035,20,72),
-    new THREE.MeshPhysicalMaterial({color:COL_BLEU, metalness:.6, roughness:.25, envMapIntensity:1.4})
+    new THREE.MeshPhysicalMaterial({color:COL_BLEU, metalness:.55, roughness:.25, envMapIntensity:1.3})
   );
   ring.rotation.x = Math.PI/2; caps.add(ring);
   caps.rotation.z = .42;
@@ -714,7 +723,7 @@ footer{
   var satMats = [];
   for(var i=0;i<14;i++){
     var c = i%3===0 ? COL_ORANGE : (i%3===1 ? COL_ARGENT : COL_BLEU);
-    var m = new THREE.MeshPhysicalMaterial({color:c, metalness:.5, roughness:.3, transparent:true, opacity:0, envMapIntensity:1});
+    var m = new THREE.MeshPhysicalMaterial({color:c, metalness:.45, roughness:.3, transparent:true, opacity:0, envMapIntensity:1});
     satMats.push(m);
     var geo = THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(.09,.16,6,12) : new THREE.SphereGeometry(.12,14,14);
     var s = new THREE.Mesh(geo, m);
@@ -725,7 +734,7 @@ footer{
   }
   scene.add(satGroup);
 
-  /* ── Poussière lumineuse d'ambiance ── */
+  /* ── Poussière douce d'ambiance (encre pâle sur papier) ── */
   var dustGeo = new THREE.BufferGeometry();
   var N = 140, pos = new Float32Array(N*3);
   for(var j=0;j<N;j++){
@@ -734,14 +743,14 @@ footer{
     pos[j*3+2] = -2 - Math.random()*6;
   }
   dustGeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
-  var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({color:0x9FB3D9, size:.035, transparent:true, opacity:.5}));
+  var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({color:0x8FA0C6, size:.035, transparent:true, opacity:.4}));
   scene.add(dust);
 
-  /* ── Lumières ── */
-  scene.add(new THREE.AmbientLight(0xffffff,.45));
-  var sun = new THREE.DirectionalLight(0xffffff,1.15); sun.position.set(4,6,5); scene.add(sun);
-  var pO = new THREE.PointLight(COL_ORANGE,.8,22); pO.position.set(5,-3,4); scene.add(pO);
-  var pB = new THREE.PointLight(COL_BLEU,.9,22);  pB.position.set(-5,2,4);  scene.add(pB);
+  /* ── Lumières (studio lumineux) ── */
+  scene.add(new THREE.AmbientLight(0xffffff,.65));
+  var sun = new THREE.DirectionalLight(0xffffff,1.05); sun.position.set(4,6,5); scene.add(sun);
+  var pO = new THREE.PointLight(COL_ORANGE,.7,22); pO.position.set(5,-3,4); scene.add(pO);
+  var pB = new THREE.PointLight(COL_BLEU,.6,22);  pB.position.set(-5,2,4);  scene.add(pB);
 
   /* ── Poses par section : interpolation au scroll ── */
   var sections = Array.prototype.slice.call(document.querySelectorAll('[data-pose]'));
