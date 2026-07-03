@@ -253,10 +253,24 @@
       }
       var stockTgl = (ETABS.length && S.etab) ? ('<label class="mol-tgl"><input type="checkbox"' + (S.stockOnly ? ' checked' : '') + ' onchange="V2.molStockOnly(this.checked)"> En stock seulement</label>') : '';
 
-      // Barre d'action principale : établissement + export PDF (action évidente)
-      var actionBar = '<div class="mol-toolbar">' +
-          '<div class="mol-toolbar-l">' + etabSelect + stockTgl + '</div>' +
-          '<button id="mol-docbtn" class="v2-btn v2-btn-primary mol-doc" onclick="V2.molPdf()">' + ICO('download', 16) + 'Télécharger le PDF' + '</button>' +
+      // Panneau d'outils unique (façon Launcher) : recherche + établissement + action primaire PDF, familles en onglets dessous
+      var qVal = S.q.replace(/"/g, '&quot;');
+      var searchBox = '<div class="mol-search"><span>' + ICO('search', 18) + '</span><input id="mol-q" type="search" placeholder="Chercher un produit ou un CIP (doliprane, 3400…)" value="' + qVal + '" oninput="V2.molSearch(this.value)" autocomplete="off" aria-label="Chercher un produit ou un CIP"></div>';
+      var panel = '<div class="mol-panel">' +
+          '<div class="mol-panel-top">' + searchBox + etabSelect + stockTgl +
+            '<button id="mol-docbtn" class="v2-btn v2-btn-primary mol-doc" onclick="V2.molPdf()">' + ICO('download', 16) + 'Télécharger le PDF</button>' +
+          '</div>' +
+          '<div class="v2-segs mol-segs mol-panel-tabs">' + chips + '</div>' +
+        '</div>';
+
+      // Bandeau de repères : chiffres dérivés des VRAIES données catalogue (réseau)
+      var sR0 = 0, nR0 = 0;
+      (window.PROD_STATS || []).forEach(function (r) { if (r.rpct > 0) { sR0 += r.rpct; nR0++; } });
+      var avgR0 = nR0 ? Math.round(sR0 / nR0 * 10) / 10 : 0;
+      var kfs = '<div class="mol-kfs">' +
+          '<div class="mol-kf"><span class="mol-kf-l">Références</span><span class="mol-kf-v" data-count>' + num(c.all || 0) + '</span></div>' +
+          '<div class="mol-kf"><span class="mol-kf-l">Familles</span><span class="mol-kf-v">' + FAM_ORDER.length + '</span></div>' +
+          (avgR0 > 0 ? '<div class="mol-kf mol-kf-acc"><span class="mol-kf-l">Abandon de marge moyen</span><span class="mol-kf-v">−' + String(avgR0).replace('.', ',') + '%</span></div>' : '') +
         '</div>';
 
       // Options avancées repliées : nb de produits par catégorie + envoi Marketing
@@ -273,16 +287,16 @@
       var showStock = !!(window.ETAB_PRICES && S.etab);
       var msort = '<div class="mol-msort"><label>Trier par</label><select onchange="V2.molSort(this.value)">' +
         '<option value="n"' + (S.sort === 'n' ? ' selected' : '') + '>Nb de pharmacies</option><option value="rota"' + (S.sort === 'rota' ? ' selected' : '') + '>Rotation</option><option value="marge"' + (S.sort === 'marge' ? ' selected' : '') + '>Marge pharma.</option></select></div>';
-      var qVal = S.q.replace(/"/g, '&quot;');
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap">' +
-          '<div class="v2-page-title">Catalogue &amp; prix</div>' +
-          '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent. Pour chacun : ton <b>prix net remisé</b> et l\'<b>abandon de marge</b> Intégral, plus la rotation et la marge pharmacien.</div>' +
-          '<div class="mol-search"><span>' + ICO('search', 18) + '</span><input id="mol-q" type="search" placeholder="Chercher un produit ou un CIP (doliprane, 3400…)" value="' + qVal + '" oninput="V2.molSearch(this.value)" autocomplete="off"></div>' +
-          '<div class="v2-segs mol-segs">' + chips + '</div>' +
-          actionBar + advBar +
+          '<div class="mol-head"><div class="mol-head-l">' +
+            '<div class="v2-page-title">Catalogue &amp; prix</div>' +
+            '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent. Pour chacun : ton <b>prix net remisé</b> et l\'<b>abandon de marge</b> Intégral, plus la rotation et la marge pharmacien.</div>' +
+          '</div>' + kfs + '</div>' +
+          panel + advBar +
+          '<div class="mol-tcard">' +
           '<div class="mol-countrow"><span class="cat-count" id="mol-count"></span>' + msort + '</div>' +
-          '<div class="mol-scroll" style="overflow-x:auto"><table class="v2-table mol-table"><thead><tr>' +
+          '<div class="mol-scroll"><table class="v2-table mol-table"><thead><tr>' +
             '<th class="num">#</th><th>Produit</th><th>CIP13</th><th>Famille</th>' +
             '<th class="num mol-th' + (S.sort === 'n' ? ' on' : '') + '" data-k="n" onclick="V2.molSort(\'n\')" style="cursor:pointer">Pharmacies<small style="display:block;font-weight:500;color:var(--muted-2)">réseau ' + (S.sort === 'n' ? '↓' : '↕') + '</small></th>' +
             '<th class="num">PPHT<small style="display:block;font-weight:500;color:var(--muted-2)">tarif</small></th>' +
@@ -291,12 +305,14 @@
             COLS.map(th).join('') +
             (showStock ? '<th class="num">Stock</th>' : '') +
           '</tr></thead><tbody id="mol-tbody">' + rowsHtml() + '</tbody></table></div>' +
+          '</div>' +
           '<div class="v2-page-sub" style="margin-top:14px;font-size:12px">Ventes réelles du réseau (5 mois, annualisées) · marge MDL = remboursables · Net remisé = prix d\'achat moyen constaté · prix/stock = établissement choisi.</div>' +
         '</div>';
       fill();
       // Motion discret : cascade d'entrée sur les familles + les 1res lignes du tableau
       if (V2.motion) {
         try {
+          V2.motion.stagger(root.querySelectorAll('.mol-kf'), { step: 45, cap: 3, y: 6 });
           V2.motion.stagger(root.querySelectorAll('.mol-segs .v2-seg'), { step: 30, cap: 8, y: 6 });
           var firstRows = root.querySelectorAll('#mol-tbody tr:not(.mol-more)');
           V2.motion.stagger(Array.prototype.slice.call(firstRows, 0, 12), { step: 22, cap: 10, y: 7, delay: 60 });
@@ -311,9 +327,24 @@
   if (!document.getElementById('v2-mol-css')) {
     var st = document.createElement('style'); st.id = 'v2-mol-css';
     st.textContent =
-      '.mol-search{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md,14px);padding:11px 15px;margin:14px 0;box-shadow:var(--sh-1);transition:border-color .18s var(--ease),box-shadow .18s var(--ease),transform .18s var(--ease)}' +
+      // en-tête : titre + bandeau de repères (vraies données)
+      '.mol-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px 28px;flex-wrap:wrap;margin-bottom:18px}' +
+      '.mol-head-l{flex:1 1 380px;min-width:0}' +
+      '.mol-head .v2-page-sub{margin-bottom:0;max-width:620px}' +
+      '.mol-kfs{display:flex;gap:10px;flex-wrap:wrap}' +
+      '.mol-kf{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md,14px);padding:10px 15px;min-width:104px;box-shadow:var(--sh-1)}' +
+      '.mol-kf-l{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}' +
+      '.mol-kf-v{display:block;font-family:var(--mono);font-size:17px;font-weight:700;letter-spacing:-.02em;margin-top:4px;color:var(--ip-ink);font-variant-numeric:tabular-nums}' +
+      '.mol-kf-acc{border-color:color-mix(in srgb,var(--c-opp) 26%,var(--line));background:color-mix(in srgb,var(--c-opp) 4%,var(--card))}' +
+      '.mol-kf-acc .mol-kf-v{color:var(--c-mint-txt,#0F7A52)}' +
+      // panneau d'outils unique : recherche + établissement + PDF, onglets familles dessous
+      '.mol-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card,20px);box-shadow:var(--sh-1);margin:0 0 12px;overflow:hidden}' +
+      '.mol-panel-top{display:flex;align-items:flex-end;gap:12px 16px;flex-wrap:wrap;padding:16px 18px}' +
+      '.mol-panel-tabs{padding:13px 18px;border-top:1px solid var(--line-2,var(--line));background:var(--card-2,#f7f9fc)}' +
+      '.v2-segs.mol-panel-tabs{margin-bottom:0}' +
+      '.mol-search{flex:1 1 300px;min-width:230px;display:flex;align-items:center;gap:10px;background:var(--surf-sunken,#F4F6FB);border:1px solid var(--line);border-radius:var(--r-btn,12px);padding:0 14px;min-height:46px;transition:border-color .18s var(--ease),box-shadow .18s var(--ease),background .18s var(--ease)}' +
       '.mol-search:hover{border-color:color-mix(in srgb,var(--ip-blue) 25%,var(--line))}' +
-      '.mol-search:focus-within{border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--line));box-shadow:0 0 0 4px var(--halo),var(--sh-1);transform:translateY(-1px)}' +
+      '.mol-search:focus-within{background:#fff;border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--line));box-shadow:0 0 0 4px var(--halo)}' +
       '.mol-search span{color:var(--ip-blue);display:flex;flex-shrink:0}' +
       '.mol-search input{flex:1;min-width:0;border:none;outline:none;background:none;font-family:var(--font);font-size:16px;font-weight:500;color:var(--ip-ink)}' +
       '.mol-search input::placeholder{color:var(--muted)}' +
@@ -335,7 +366,7 @@
       '.mol-table tbody tr.mol-more:hover{background:none}' +
       '.mol-rk{color:var(--muted-2);width:34px;text-align:right;font-family:var(--mono);font-size:12px}' +
       '.mol-name{max-width:280px}.mol-name span{font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ip-ink-2,var(--ip-ink));transition:color .13s var(--ease)}' +
-      '.mol-cip{color:var(--muted);font-size:11.5px;width:1%;white-space:nowrap;letter-spacing:-.01em}' +
+      '.mol-cip{color:var(--muted-2);font-size:11px;width:1%;white-space:nowrap;letter-spacing:-.01em}' +
       '.mol-nph{font-weight:800;color:var(--ip-ink)}' +
       '.mol-ppht{color:var(--muted-2);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted-2) 50%,transparent);text-decoration-thickness:1px}' +
       '.mol-net{color:var(--ip-blue);font-weight:800;font-size:15px;background:color-mix(in srgb,var(--ip-blue) 5%,transparent);box-shadow:inset 2px 0 0 color-mix(in srgb,var(--ip-blue) 30%,transparent)}' +
@@ -352,18 +383,16 @@
       '.mol-segs .v2-seg.on{box-shadow:0 2px 8px color-mix(in srgb,var(--sc,var(--ip-blue)) 32%,transparent)}' +
       '.mol-segs .v2-seg .cnt{margin-left:6px;padding:1px 7px;border-radius:var(--r-pill,999px);font-family:var(--mono);font-size:11px;font-weight:800;color:var(--muted);background:color-mix(in srgb,var(--ip-ink) 7%,transparent)}' +
       '.mol-segs .v2-seg.on .cnt{background:color-mix(in srgb,#fff 24%,transparent);color:#fff;opacity:1}' +
-      // barre d'action principale (établissement + export PDF)
-      '.mol-toolbar{display:flex;align-items:flex-end;gap:14px 18px;flex-wrap:wrap;margin:14px 0 10px;padding:14px 16px;border-radius:var(--r-md,14px);background:linear-gradient(180deg,var(--card),var(--card-2,#f7f9fc));border:1px solid var(--line);box-shadow:var(--sh-1)}' +
-      '.mol-toolbar-l{display:flex;align-items:flex-end;gap:12px 16px;flex-wrap:wrap;flex:1;min-width:0}' +
-      '.mol-field{display:flex;flex-direction:column;gap:5px;min-width:220px}' +
+      // champs du panneau (établissement, stock, export PDF)
+      '.mol-field{display:flex;flex-direction:column;gap:5px;min-width:210px}' +
       '.mol-field-l{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}' +
       '.mol-select{min-height:42px;border:1px solid var(--line-strong,#d7dbe6);border-radius:var(--r-btn,12px);background:#fff;color:var(--ip-ink);font-family:inherit;font-size:14.5px;font-weight:600;padding:0 12px;cursor:pointer;transition:border-color .14s var(--ease),box-shadow .14s var(--ease)}' +
       '.mol-select:hover{border-color:color-mix(in srgb,var(--ip-blue) 35%,var(--line))}' +
       '.mol-select:focus{outline:none;border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--line));box-shadow:0 0 0 3px var(--halo)}' +
       '.mol-select-wait{display:flex;align-items:center;color:var(--muted);font-weight:500;opacity:.7;cursor:default}' +
-      '.mol-toolbar .mol-doc{min-height:42px;flex-shrink:0}' +
+      '.mol-panel-top .mol-doc{min-height:46px;flex-shrink:0}' +
       // options avancées repliées
-      '.mol-adv{margin:0 0 12px;border:1px solid var(--line);border-radius:var(--r-md,14px);background:var(--card-2,#f7f9fc);overflow:hidden}' +
+      '.mol-adv{margin:0 0 14px;border:1px solid var(--line);border-radius:var(--r-md,14px);background:var(--card-2,#f7f9fc);overflow:hidden}' +
       '.mol-adv>summary{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;font-size:13.5px;font-weight:700;color:var(--ip-ink-2,var(--ip-ink));list-style:none;-webkit-tap-highlight-color:transparent}' +
       '.mol-adv>summary::-webkit-details-marker{display:none}' +
       '.mol-adv>summary::before{content:"▸";color:var(--muted);font-size:12px;transition:transform .16s var(--ease)}' +
@@ -378,23 +407,35 @@
       '.mol-chip:active{transform:scale(.95)}' +
       '.mol-chip.on{background:var(--ip-blue);border-color:transparent;color:#fff;box-shadow:0 2px 8px color-mix(in srgb,var(--ip-blue) 32%,transparent)}' +
       '.mol-chip.on:hover{color:#fff;background:var(--ip-blue)}' +
-      '.mol-tgl{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ip-ink);cursor:pointer;align-self:center;padding:9px 13px;border-radius:var(--r-btn,12px);border:1px solid var(--line);background:#fff;transition:border-color .14s var(--ease),background .14s var(--ease)}' +
+      '.mol-tgl{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ip-ink);cursor:pointer;align-self:flex-end;min-height:44px;padding:9px 13px;border-radius:var(--r-btn,12px);border:1px solid var(--line);background:#fff;transition:border-color .14s var(--ease),background .14s var(--ease)}' +
       '.mol-tgl:hover{border-color:color-mix(in srgb,var(--ip-blue) 35%,var(--line));background:color-mix(in srgb,var(--ip-blue) 4%,#fff)}' +
       '.mol-tgl input{width:16px;height:16px;accent-color:var(--ip-blue)}' +
       '.mol-note{font-size:12px;color:var(--muted);margin:2px 0 8px;line-height:1.45}.mol-note b{color:var(--ip-ink-2,var(--ip-ink))}' +
-      '.mol-countrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 10px}' +
-      '.cat-count{font-size:13px;color:var(--muted)} .cat-count b{color:var(--ip-ink);font-family:var(--mono);font-weight:700}' +
+      // carte tableau : bandeau compteur + zone défilante (header sticky réellement actif)
+      '.mol-tcard{border:1px solid var(--line);border-radius:var(--r-md,14px);background:var(--card);box-shadow:var(--sh-1);overflow:hidden}' +
+      '.mol-countrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px 10px 20px;border-bottom:1px solid var(--line);background:var(--card-2,#f7f9fc)}' +
+      '.cat-count{font-size:12.5px;color:var(--muted)} .cat-count b{color:var(--ip-ink);font-family:var(--mono);font-weight:700}' +
       '.mol-msort{display:none}' +
-      '.mol-scroll{border:1px solid var(--line);border-radius:var(--r-md,14px);background:var(--card);box-shadow:var(--sh-1)}' +
+      '.mol-scroll{overflow:auto;max-height:min(76vh,880px);overscroll-behavior:contain}' +
       // mobile : cartes
       '@media(max-width:640px){' +
+        '.mol-head{margin-bottom:14px}' +
+        '.mol-kfs{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}' +
+        '.mol-kf{min-width:0;padding:9px 11px}.mol-kf-l{white-space:normal;font-size:9.5px}.mol-kf-v{font-size:15px}' +
+        // le panneau se déplie en flux : la recherche redevient sticky plein écran
+        '.mol-panel,.mol-panel-top{display:contents}' +
         '#mol-q{font-size:16px}' +
-        '.mol-search{position:sticky;top:0;z-index:20}' +
+        '.mol-search{position:sticky;top:0;z-index:20;background:var(--card);box-shadow:var(--sh-2);margin:0 0 12px}' +
+        '.mol-field{min-width:0;margin:0 0 10px}' +
+        '.mol-tgl{align-self:stretch;justify-content:flex-start;margin:0 0 10px}' +
+        '.mol-panel-top .mol-doc{width:100%;justify-content:center;margin:0 0 12px}' +
+        '.mol-panel-tabs{padding:0;border:none;background:none;margin-bottom:14px}' +
         '.mol-segs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}.mol-segs::-webkit-scrollbar{display:none}.mol-segs .v2-seg{flex:0 0 auto}' +
-        '.mol-toolbar{flex-direction:column;align-items:stretch;gap:12px}.mol-toolbar-l{flex-direction:column;align-items:stretch;gap:10px}.mol-field{min-width:0}.mol-tgl{align-self:stretch;justify-content:flex-start}.mol-doc{width:100%;justify-content:center}' +
         '.mol-adv-body .mol-doc{width:100%}' +
+        '.mol-tcard{border:none;background:none;box-shadow:none;border-radius:0;overflow:visible}' +
+        '.mol-countrow{padding:8px 2px;border:none;background:none;margin:0 0 8px}' +
         '.mol-msort{display:flex;align-items:center;gap:10px}.mol-msort label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}.mol-msort select{flex:1;min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ip-ink);font-family:inherit;font-size:15px;padding:0 12px}' +
-        '.mol-scroll{overflow-x:visible;border:none;border-radius:0;background:none;box-shadow:none}' +
+        '.mol-scroll{overflow:visible;max-height:none}' +
         '.mol-table thead{position:absolute;left:-9999px}' +
         '.mol-table,.mol-table tbody,.mol-table tr,.mol-table td{display:block;width:auto}' +
         '.mol-table tbody tr{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--rowc,var(--line));border-radius:var(--r-md,14px);padding:13px 15px 9px;margin:0 0 12px;box-shadow:var(--sh-1,0 1px 2px rgba(16,19,28,.05));position:relative}' +
