@@ -207,7 +207,7 @@ button{font-family:inherit;cursor:pointer;color:inherit}
 /* révélation ligne à ligne (masque overflow, pas de clip-text) */
 .wline{display:block;overflow:hidden;padding-bottom:.08em}
 html.js .wline span{display:inline-block;transform:translateY(112%);transition:transform 1.05s var(--ease)}
-.is-ready .wline span{transform:translateY(0)}
+html.js .is-ready .wline span{transform:translateY(0)}
 .wline:nth-child(2) span{transition-delay:.1s}
 .wline:nth-child(3) span{transition-delay:.2s}
 .hero__sub{
@@ -215,14 +215,14 @@ html.js .wline span{display:inline-block;transform:translateY(112%);transition:t
   font-size:clamp(.98rem,1.4vw,1.14rem);line-height:1.72;
 }
 html.js .hero__sub{opacity:0;transform:translateY(16px);transition:opacity .9s var(--ease) .45s,transform .9s var(--ease) .45s}
-.is-ready .hero__sub{opacity:1;transform:translateY(0)}
+html.js .is-ready .hero__sub{opacity:1;transform:translateY(0)}
 .hero__sub strong{color:var(--ink);font-weight:500}
 .hero__meta{
   margin-top:clamp(2rem,4.5vh,3.2rem);
   display:flex;flex-wrap:wrap;gap:1rem 1.2rem;
 }
 html.js .hero__meta{opacity:0;transform:translateY(12px);transition:opacity .9s var(--ease) .7s,transform .9s var(--ease) .7s}
-.is-ready .hero__meta{opacity:1;transform:translateY(0)}
+html.js .is-ready .hero__meta{opacity:1;transform:translateY(0)}
 .hero__meta div{
   display:flex;align-items:baseline;gap:.6rem;
   border:1px solid var(--line);border-radius:var(--r-pill);
