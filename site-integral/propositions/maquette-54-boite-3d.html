@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intégral Pharma — Plus de marge, dès la première boîte.</title>
+<meta name="description" content="Intégral Pharma, grossiste-répartiteur de première intention. Groupe de grossistes indépendant — 9 agences, couverture nationale, +14 000 références Offilog.">
+<!--
+  ══════════════════════════════════════════════════════════════════
+  MAQUETTE 54 · « LA BOÎTE » — Objet 3D signature
+  Concept : le produit comme héros. Une capsule (cap orange franc,
+  corps argent, bague bleue) en three.js, FIXE derrière la page,
+  qui voyage de section en section au rythme du scroll — comme un
+  médicament qu'on suit de l'agence jusqu'au comptoir.
+  DA : « notice de médicament » éditoriale — codes mono façon RCP,
+  filets pointillés, code-barres décoratif, encre profonde + orange
+  franc + argent.
+  Safari-safe : pas de background-clip:text, pas de backdrop-filter,
+  0 vidéo, reduced-motion → tout figé à l'état final.
+  ══════════════════════════════════════════════════════════════════
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ══════════ TOKENS ══════════ */
+:root{
+  --encre:#06080F;          /* fond nuit */
+  --encre-2:#0B101D;
+  --orange:#FF7A1A;         /* orange FRANC (cap de la capsule) */
+  --orange-vif:#FF8F3D;
+  --bleu:#2E6BFF;           /* bague / détails froids */
+  --bleu-marque:#0050E6;
+  --argent:#C9CED6;         /* corps de la capsule */
+  --creme:#F2EEE6;          /* section « carton » claire */
+  --blanc:#F8FAFC;
+  --gris:#96A0B5;
+  --ligne:rgba(200,210,230,.13);
+  --ligne-o:rgba(255,122,26,.35);
+  --font-d:"Archivo",system-ui,sans-serif;
+  --font-m:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+body{
+  background:var(--encre); color:var(--blanc);
+  font-family:var(--font-d); font-weight:500;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--orange); color:var(--encre)}
+img{max-width:100%; display:block}
+a{color:inherit; text-decoration:none}
+button{font:inherit; cursor:pointer}
+
+/* ══════════ CANVAS 3D FIXE (le héros) ══════════ */
+#stage3d{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+}
+#stage3d canvas{display:block; width:100%; height:100%}
+/* Fallback sans WebGL : capsule CSS */
+.stage-fallback{
+  display:none; position:absolute; inset:0; place-items:center;
+}
+.stage-fallback .pill{
+  width:110px; height:280px; border-radius:60px;
+  background:linear-gradient(180deg,var(--orange) 0 48%, var(--bleu) 48% 52%, var(--argent) 52% 100%);
+  box-shadow:0 50px 90px rgba(0,0,0,.55), inset -22px 0 44px rgba(0,0,0,.28);
+  transform:rotate(24deg);
+}
+#stage3d.no-webgl .stage-fallback{display:grid}
+
+/* halo d'ambiance derrière la capsule (gradients only — Safari OK) */
+.ambient{
+  position:fixed; inset:0; z-index:-1;
+  background:
+    radial-gradient(90% 65% at 78% 12%, rgba(46,107,255,.14), transparent 62%),
+    radial-gradient(75% 60% at 15% 85%, rgba(255,122,26,.10), transparent 60%),
+    var(--encre);
+}
+
+/* ══════════ PROGRESSION ══════════ */
+.progress{
+  position:fixed; top:0; left:0; right:0; height:3px; z-index:60;
+  background:rgba(255,255,255,.06);
+}
+.progress b{
+  display:block; height:100%; width:100%;
+  background:linear-gradient(90deg,var(--orange),var(--orange-vif));
+  transform:scaleX(var(--sp,0)); transform-origin:left;
+}
+
+/* ══════════ NAV ══════════ */
+.nav{
+  position:fixed; top:3px; left:0; right:0; z-index:50;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px clamp(18px,4vw,44px);
+  background:linear-gradient(180deg, rgba(6,8,15,.92), rgba(6,8,15,.78) 70%, rgba(6,8,15,0));
+  transition:transform .4s ease;
+}
+.nav.hide{transform:translateY(-110%)}
+.nav-brand{display:flex; align-items:center; gap:12px}
+.nav-brand img{height:34px; width:auto}
+.nav-brand .tag{
+  font-family:var(--font-m); font-size:.58rem; letter-spacing:.22em;
+  color:var(--gris); text-transform:uppercase; border-left:1px solid var(--ligne);
+  padding-left:12px; line-height:1.5;
+}
+.nav-links{display:flex; align-items:center; gap:clamp(14px,2.4vw,30px)}
+.nav-links a{
+  font-family:var(--font-m); font-size:.68rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--gris); position:relative; padding:4px 0;
+  transition:color .25s;
+}
+.nav-links a::after{
+  content:""; position:absolute; left:0; bottom:0; height:1px; width:100%;
+  background:var(--orange); transform:scaleX(0); transform-origin:right;
+  transition:transform .3s ease;
+}
+.nav-links a:hover{color:var(--blanc)}
+.nav-links a:hover::after{transform:scaleX(1); transform-origin:left}
+.nav-cta{
+  font-family:var(--font-m); font-size:.66rem; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--encre); background:var(--orange); border:none; border-radius:100px;
+  padding:11px 20px; font-weight:500; transition:background .25s, transform .25s;
+}
+.nav-cta:hover{background:var(--orange-vif); transform:translateY(-1px)}
+@media(max-width:860px){ .nav-links a{display:none} .nav-brand .tag{display:none} }
+
+/* ══════════ COMMUNS ══════════ */
+main{position:relative; z-index:1}
+section{position:relative}
+.wrap{max-width:1240px; margin-inline:auto; padding-inline:clamp(20px,5vw,56px)}
+.mono{
+  font-family:var(--font-m); font-size:.68rem; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--orange);
+}
+.mono .idx{color:var(--gris)}
+.rule{
+  display:flex; align-items:center; gap:14px; margin-bottom:26px;
+}
+.rule::after{
+  content:""; flex:1; height:1px;
+  background-image:linear-gradient(90deg, var(--ligne) 55%, transparent 0);
+  background-size:8px 1px;
+}
+h1,h2,h3{font-weight:800; letter-spacing:-.03em; line-height:1.02}
+h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
+.lead{color:var(--gris); font-weight:500; font-size:clamp(1rem,1.4vw,1.15rem); line-height:1.65; max-width:52ch}
+.accent{color:var(--orange)}
+.accent-b{color:var(--bleu)}
+
+/* reveal au scroll */
+.rv{opacity:0; transform:translateY(26px); transition:opacity .8s ease, transform .8s cubic-bezier(.22,.8,.26,1)}
+.rv.in{opacity:1; transform:none}
+.rv.d1{transition-delay:.08s} .rv.d2{transition-delay:.16s} .rv.d3{transition-delay:.24s} .rv.d4{transition-delay:.32s}
+@media(prefers-reduced-motion:reduce){ .rv{opacity:1; transform:none; transition:none} }
+
+/* boutons */
+.btn{
+  display:inline-flex; align-items:center; gap:12px;
+  font-family:var(--font-d); font-weight:700; font-size:.95rem; letter-spacing:.01em;
+  border-radius:100px; padding:17px 30px; border:none; position:relative; overflow:hidden;
+  transition:transform .3s cubic-bezier(.22,.8,.26,1), box-shadow .3s;
+}
+.btn .arr{transition:transform .3s}
+.btn:hover .arr{transform:translateX(5px)}
+.btn-orange{
+  background:var(--orange); color:var(--encre);
+  box-shadow:0 10px 34px rgba(255,122,26,.28);
+}
+.btn-orange:hover{transform:translateY(-2px); box-shadow:0 16px 44px rgba(255,122,26,.4)}
+.btn-ghost{
+  background:transparent; color:var(--blanc);
+  border:1px solid var(--ligne); box-shadow:none;
+}
+.btn-ghost:hover{border-color:var(--orange); color:var(--orange); transform:translateY(-2px)}
+
+/* ══════════ HERO ══════════ */
+.hero{
+  min-height:100svh; display:flex; align-items:center; padding-top:110px; padding-bottom:60px;
+}
+.hero .wrap{width:100%}
+.hero-grid{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); gap:30px; align-items:center}
+.hero-eyebrow{
+  display:inline-flex; align-items:center; gap:10px;
+  font-family:var(--font-m); font-size:.66rem; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--argent); border:1px solid var(--ligne); border-radius:100px; padding:9px 18px;
+  margin-bottom:30px;
+}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange); box-shadow:0 0 12px rgba(255,122,26,.9)}
+.hero h1{
+  font-size:clamp(2.9rem,7.4vw,6.4rem); font-weight:900; letter-spacing:-.045em; line-height:.98;
+  text-wrap:balance;
+}
+.hero h1 .l2{color:var(--orange)}
+.hero .lead{margin-top:28px}
+.hero-ctas{display:flex; flex-wrap:wrap; gap:16px; margin-top:40px}
+.hero-note{
+  margin-top:26px; font-family:var(--font-m); font-size:.66rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--gris);
+}
+.hero-note b{color:var(--argent); font-weight:500}
+/* colonne droite : cartouche « notice » autour de la capsule 3D */
+.hero-spec{
+  justify-self:end; align-self:end;
+  border:1px dashed var(--ligne); border-radius:16px; padding:18px 20px;
+  font-family:var(--font-m); font-size:.64rem; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--gris); display:grid; gap:9px; background:rgba(6,8,15,.35);
+}
+.hero-spec span b{color:var(--orange); font-weight:500}
+.hero-scroll{
+  position:absolute; left:50%; bottom:22px; transform:translateX(-50%);
+  font-family:var(--font-m); font-size:.6rem; letter-spacing:.3em; text-transform:uppercase; color:var(--gris);
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+}
+.hero-scroll i{
+  width:1px; height:44px; background:linear-gradient(180deg,var(--orange),transparent);
+  display:block; animation:drip 1.8s ease-in-out infinite;
+}
+@keyframes drip{0%{transform:scaleY(0);transform-origin:top}55%{transform:scaleY(1);transform-origin:top}56%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+@media(prefers-reduced-motion:reduce){ .hero-scroll i{animation:none} }
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr}
+  .hero{padding-top:210px} /* laisse la capsule respirer au-dessus du titre */
+  .hero-spec{display:none}
+}
+
+/* ══════════ BANDEAU LABOS (marquee) ══════════ */
+.labos{padding:34px 0; border-top:1px solid var(--ligne); border-bottom:1px solid var(--ligne); background:rgba(11,16,29,.6)}
+.labos .mono{display:block; text-align:center; margin-bottom:22px; color:var(--gris)}
+.marquee{
+  overflow:hidden; display:flex; user-select:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);
+          mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);
+}
+.marquee-track{
+  display:flex; gap:clamp(2.4rem,5vw,4.5rem); padding-right:clamp(2.4rem,5vw,4.5rem);
+  flex:0 0 auto; min-width:100%; align-items:center;
+  animation:mq 30s linear infinite; will-change:transform;
+}
+.marquee:hover .marquee-track{animation-play-state:paused}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.marquee-track span{
+  font-weight:800; font-size:clamp(1.2rem,2.6vw,1.9rem); letter-spacing:-.02em;
+  color:#5E6A80; white-space:nowrap; transition:color .3s;
+}
+.marquee-track span:hover{color:var(--argent)}
+.marquee-track em{font-style:normal; color:var(--orange); font-size:.8em}
+@media(prefers-reduced-motion:reduce){ .marquee-track{animation:none} .marquee{overflow-x:auto} }
+
+/* ══════════ SECTION OFFRES ══════════ */
+.apporte{padding:clamp(90px,14vh,160px) 0}
+.apporte-head{max-width:760px; margin-bottom:clamp(44px,6vh,70px)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+.card{
+  position:relative; border:1px solid var(--ligne); border-radius:20px;
+  padding:30px 26px 34px; background:linear-gradient(160deg, rgba(20,27,45,.72), rgba(9,13,24,.85));
+  transition:transform .35s cubic-bezier(.22,.8,.26,1), border-color .35s;
+  overflow:hidden;
+}
+.card::before{ /* liseré lumineux haut */
+  content:""; position:absolute; top:0; left:10%; right:10%; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,122,26,.55),transparent);
+  opacity:0; transition:opacity .35s;
+}
+.card:hover{transform:translateY(-6px); border-color:var(--ligne-o)}
+.card:hover::before{opacity:1}
+.card .code{
+  font-family:var(--font-m); font-size:.6rem; letter-spacing:.2em; color:var(--gris);
+  display:flex; justify-content:space-between; margin-bottom:26px; text-transform:uppercase;
+}
+.card .ico{
+  width:46px; height:46px; border-radius:12px; display:grid; place-items:center;
+  background:rgba(255,122,26,.1); border:1px solid rgba(255,122,26,.28); color:var(--orange);
+  margin-bottom:20px;
+}
+.card .ico svg{width:22px;height:22px}
+.card h3{font-size:1.35rem; margin-bottom:12px; letter-spacing:-.02em}
+.card p{color:var(--gris); line-height:1.6; font-size:.95rem}
+.card p b{color:var(--argent); font-weight:700}
+@media(max-width:900px){ .cards{grid-template-columns:1fr} }
+
+/* ══════════ SECTION GROUPE (9 agences) ══════════ */
+.groupe{padding:clamp(90px,14vh,160px) 0; border-top:1px solid var(--ligne)}
+.groupe-grid{display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:clamp(36px,6vw,80px); align-items:center}
+.agences{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+}
+.agence{
+  aspect-ratio:1; border:1px solid var(--ligne); border-radius:16px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  padding:14px; background:rgba(11,16,29,.62);
+  transition:border-color .3s, background .3s, transform .3s;
+}
+.agence:hover{border-color:var(--ligne-o); background:rgba(255,122,26,.06); transform:translateY(-3px)}
+.agence .n{font-weight:900; font-size:clamp(1.4rem,3vw,2.1rem); letter-spacing:-.03em; color:var(--argent)}
+.agence .lbl{font-family:var(--font-m); font-size:.55rem; letter-spacing:.22em; text-transform:uppercase; color:var(--gris)}
+.agence .pin{width:8px; height:8px; border-radius:50%; background:var(--orange); box-shadow:0 0 10px rgba(255,122,26,.8)}
+.groupe-copy .lead{margin-top:24px}
+.groupe-points{margin-top:34px; display:grid; gap:0}
+.gp{
+  display:flex; gap:16px; align-items:baseline; padding:16px 0;
+  border-top:1px dashed var(--ligne);
+}
+.gp:last-child{border-bottom:1px dashed var(--ligne)}
+.gp .k{font-family:var(--font-m); font-size:.62rem; letter-spacing:.2em; color:var(--orange); min-width:52px}
+.gp .v{color:var(--argent); font-weight:600; font-size:1rem}
+@media(max-width:900px){ .groupe-grid{grid-template-columns:1fr} .agences{order:2} }
+
+/* ══════════ OFFILOG ══════════ */
+.offilog{padding:clamp(90px,14vh,160px) 0; border-top:1px solid var(--ligne)}
+.offilog-grid{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); gap:clamp(36px,6vw,80px); align-items:center}
+.offilog-big{
+  font-weight:900; letter-spacing:-.05em; line-height:.9;
+  font-size:clamp(4.4rem,12vw,10rem); color:var(--blanc);
+}
+.offilog-big small{
+  display:block; font-size:clamp(1rem,2.4vw,1.6rem); font-weight:700;
+  letter-spacing:0; color:var(--orange); margin-top:10px;
+}
+.offilog-copy h2{margin-bottom:22px}
+.offilog-list{margin-top:30px; display:grid; gap:14px}
+.oli{
+  display:flex; align-items:center; gap:14px; padding:15px 18px;
+  border:1px solid var(--ligne); border-radius:14px; background:rgba(11,16,29,.6);
+  transition:border-color .3s, transform .3s;
+}
+.oli:hover{border-color:var(--ligne-o); transform:translateX(6px)}
+.oli .b{
+  width:34px; height:34px; border-radius:10px; flex:0 0 auto;
+  display:grid; place-items:center; color:var(--bleu);
+  background:rgba(46,107,255,.12); border:1px solid rgba(46,107,255,.3);
+}
+.oli .b svg{width:17px;height:17px}
+.oli span{color:var(--argent); font-weight:600; font-size:.96rem}
+.oli span b{color:var(--orange); font-weight:800}
+@media(max-width:900px){ .offilog-grid{grid-template-columns:1fr} }
+
+/* ══════════ CHIFFRES — section « carton » claire ══════════ */
+.chiffres{
+  background:var(--creme); color:var(--encre);
+  padding:clamp(90px,14vh,170px) 0;
+}
+.chiffres .mono{color:#B4550E}
+.chiffres .rule::after{background-image:linear-gradient(90deg, rgba(6,8,15,.22) 55%, transparent 0)}
+.chiffres h2{color:var(--encre); max-width:700px}
+.stats{
+  margin-top:clamp(44px,7vh,80px);
+  display:grid; grid-template-columns:repeat(4,1fr);
+}
+.stat{
+  padding:8px 26px 4px; border-left:1px solid rgba(6,8,15,.18);
+}
+.stat:first-child{border-left:none; padding-left:0}
+.stat .num{
+  font-weight:900; letter-spacing:-.04em; line-height:1;
+  font-size:clamp(2.6rem,5.6vw,4.6rem); color:var(--encre);
+  font-variant-numeric:tabular-nums;
+}
+.stat .num .sfx{color:var(--orange)}
+.stat .lbl{margin-top:12px; color:#5C5648; font-weight:600; font-size:.92rem; line-height:1.45}
+.stat .k{font-family:var(--font-m); font-size:.58rem; letter-spacing:.24em; text-transform:uppercase; color:#B4550E; display:block; margin-bottom:16px}
+.chiffres-foot{
+  margin-top:clamp(44px,7vh,70px); padding-top:22px; border-top:1px dashed rgba(6,8,15,.25);
+  display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  font-family:var(--font-m); font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:#8A8272;
+}
+@media(max-width:900px){
+  .stats{grid-template-columns:1fr 1fr; gap:34px 0}
+  .stat:nth-child(3){border-left:none; padding-left:0}
+}
+@media(max-width:520px){
+  .stats{grid-template-columns:1fr}
+  .stat{border-left:none; padding-left:0}
+}
+
+/* ══════════ CONTACT / CTA ══════════ */
+.contact{
+  padding:clamp(110px,18vh,200px) 0 clamp(90px,14vh,150px);
+  text-align:center; position:relative; overflow:hidden;
+}
+.contact::before{ /* projecteur derrière la capsule finale */
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(46% 40% at 50% 42%, rgba(255,122,26,.16), transparent 70%);
+}
+.contact .wrap{position:relative}
+.contact h2{
+  font-size:clamp(2.6rem,7vw,5.6rem); letter-spacing:-.045em; line-height:.98;
+  max-width:900px; margin-inline:auto;
+}
+.contact .lead{margin:26px auto 0; max-width:46ch}
+.contact-ctas{display:flex; justify-content:center; gap:16px; flex-wrap:wrap; margin-top:44px}
+.contact-hint{
+  margin-top:30px; font-family:var(--font-m); font-size:.64rem; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--gris);
+}
+.contact-hint b{color:var(--orange); font-weight:500}
+
+/* ══════════ FOOTER ══════════ */
+footer{
+  border-top:1px solid var(--ligne); background:rgba(6,8,15,.92);
+  padding:56px 0 34px; position:relative; z-index:1;
+}
+.foot-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:36px; align-items:start}
+.foot-brand img{height:38px; margin-bottom:16px}
+.foot-brand p{color:var(--gris); font-size:.9rem; line-height:1.6; max-width:34ch}
+.foot-col .mono{color:var(--gris); display:block; margin-bottom:16px}
+.foot-col a{
+  display:block; color:var(--argent); font-weight:600; font-size:.95rem;
+  padding:7px 0; transition:color .25s, transform .25s;
+}
+.foot-col a:hover{color:var(--orange); transform:translateX(4px)}
+/* code-barres décoratif façon boîte de médicament */
+.barcode{
+  height:44px; margin:44px 0 20px;
+  background:repeating-linear-gradient(90deg,
+    var(--argent) 0 2px, transparent 2px 6px,
+    var(--argent) 6px 9px, transparent 9px 11px,
+    var(--argent) 11px 12px, transparent 12px 18px,
+    var(--argent) 18px 22px, transparent 22px 25px);
+  opacity:.22;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+          mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+}
+.foot-legal{
+  display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  font-family:var(--font-m); font-size:.6rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gris);
+}
+@media(max-width:800px){ .foot-grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+
+<div class="ambient" aria-hidden="true"></div>
+
+<!-- ═══ SCÈNE 3D FIXE — la capsule héroïne ═══ -->
+<div id="stage3d" aria-hidden="true">
+  <div class="stage-fallback"><div class="pill"></div></div>
+</div>
+
+<div class="progress" aria-hidden="true"><b id="progressBar"></b></div>
+
+<!-- ═══ NAV ═══ -->
+<header class="nav" id="nav">
+  <a class="nav-brand" href="#hero" aria-label="Intégral Pharma — accueil">
+    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <span class="tag">Grossiste-répartiteur<br>de première intention</span>
+  </a>
+  <nav class="nav-links" aria-label="Navigation principale">
+    <a href="#apporte">L'offre</a>
+    <a href="#groupe">Le groupe</a>
+    <a href="#offilog">Offilog</a>
+    <a href="#chiffres">Chiffres</a>
+    <button class="nav-cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Demander nos conditions</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ═══ HERO ═══ -->
+  <section class="hero" id="hero" data-pose='{"x":1.9,"y":0.05,"s":1.12,"ry":0.4,"rz":0.42,"sat":0}'>
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <span class="hero-eyebrow rv"><span class="dot"></span>Groupe de grossistes indépendant</span>
+          <h1 class="rv d1">Plus de marge,<br><span class="l2">dès la première boîte.</span></h1>
+          <p class="lead rv d2">Intégral Pharma est un grossiste-répartiteur de première intention. Du princeps au générique, nous approvisionnons votre officine avec une idée fixe&nbsp;: votre rentabilité.</p>
+          <div class="hero-ctas rv d3">
+            <button class="btn btn-orange" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Demander nos conditions <span class="arr">→</span></button>
+            <a class="btn btn-ghost" href="#groupe">Découvrir le groupe</a>
+          </div>
+          <p class="hero-note rv d4"><b>+20 ans d'expérience</b> · 9 agences · couverture nationale</p>
+        </div>
+        <div class="hero-spec rv d3" aria-hidden="true">
+          <span>RÉF — <b>INTÉGRAL PHARMA</b></span>
+          <span>STATUT — <b>PREMIÈRE INTENTION</b></span>
+          <span>RÉSEAU — <b>9 AGENCES · NATIONAL</b></span>
+          <span>CATALOGUE — <b>OFFILOG · +14 000 RÉF.</b></span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-scroll" aria-hidden="true"><i></i>Suivre la boîte</div>
+  </section>
+
+  <!-- ═══ BANDEAU LABOS ═══ -->
+  <section class="labos" aria-label="Laboratoires référencés">
+    <span class="mono">Ils sont au catalogue — du princeps au générique</span>
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>Zentiva <em>◆</em></span><span>Teva <em>◆</em></span><span>EG Labo <em>◆</em></span><span>Zydus <em>◆</em></span><span>Viatris <em>◆</em></span><span>Biogaran <em>◆</em></span><span>Sandoz <em>◆</em></span><span>Arrow <em>◆</em></span>
+      </div>
+      <div class="marquee-track" aria-hidden="true">
+        <span>Zentiva <em>◆</em></span><span>Teva <em>◆</em></span><span>EG Labo <em>◆</em></span><span>Zydus <em>◆</em></span><span>Viatris <em>◆</em></span><span>Biogaran <em>◆</em></span><span>Sandoz <em>◆</em></span><span>Arrow <em>◆</em></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 01 · CE QU'ON APPORTE ═══ -->
+  <section class="apporte" id="apporte" data-pose='{"x":-1.85,"y":0,"s":0.8,"ry":2.4,"rz":-0.5,"sat":0}'>
+    <div class="wrap">
+      <div class="apporte-head">
+        <div class="rule rv"><span class="mono"><span class="idx">01 ·</span> Ce qu'on apporte</span></div>
+        <h2 class="rv d1">La répartition,<br>version <span class="accent">rentable</span>.</h2>
+        <p class="lead rv d2" style="margin-top:22px">Un répartiteur principal pensé pour l'officine&nbsp;: la profondeur de gamme d'un national, l'agilité d'un indépendant.</p>
+      </div>
+      <div class="cards">
+        <article class="card rv">
+          <div class="code"><span>BLOC A</span><span>·· ·</span></div>
+          <div class="ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M12 12v4"/><path d="M10 14h4"/></svg></div>
+          <h3>Première intention</h3>
+          <p>Pas un dépanneur d'appoint&nbsp;: votre <b>répartiteur principal</b>. La marge se joue sur le quotidien — dès la première boîte commandée.</p>
+        </article>
+        <article class="card rv d1">
+          <div class="code"><span>BLOC B</span><span>· ···</span></div>
+          <div class="ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 1 1 7-7l7 7a4.95 4.95 0 1 1-7 7Z"/><path d="m7 10 7 7"/></svg></div>
+          <h3>Du princeps au générique</h3>
+          <p>Toute la largeur du besoin de l'officine, avec <b>+430 laboratoires</b> référencés au catalogue. Une seule commande, tout le comptoir.</p>
+        </article>
+        <article class="card rv d2">
+          <div class="code"><span>BLOC C</span><span>··· ·</span></div>
+          <div class="ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><path d="M5 8v8l7 5 7-5V8"/></svg></div>
+          <h3>Indépendance</h3>
+          <p>Un <b>groupe de grossistes indépendant</b>&nbsp;: des décisions courtes, un interlocuteur qui connaît votre officine, pas un guichet anonyme.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 02 · LE GROUPE ═══ -->
+  <section class="groupe" id="groupe" data-pose='{"x":1.8,"y":0.1,"s":0.78,"ry":4.6,"rz":0.55,"sat":0}'>
+    <div class="wrap">
+      <div class="groupe-grid">
+        <div class="agences rv" aria-label="9 agences en France">
+          <div class="agence"><span class="pin"></span><div><div class="n">01</div><div class="lbl">Agence</div></div></div>
+          <div class="agence"><span class="pin"></span><div><div class="n">02</div><div class="lbl">Agence</div></div></div>
+          <div class="agence"><span class="pin"></span><div><div class="n">03</div><div class="lbl">Agence</div></div></div>
+          <div class="agence"><span class="pin"></span><div><div class="n">04</div><div class="lbl">Agence</div></div></div>
+          <div class="agence"><span class="pin"></span><div><div class="n">05</div><div class="lbl">Agence</div></div></div>
+          <div class="agence"><span class="pin"></span><div><div class="n">06</div><div class="lbl">Agence</div></div></div>
+          <div class="agence"><span class="pin"></span><div><div class="n">07</div><div class="lbl">Agence</div></div></div>
+          <div class="agence"><span class="pin"></span><div><div class="n">08</div><div class="lbl">Agence</div></div></div>
+          <div class="agence"><span class="pin"></span><div><div class="n">09</div><div class="lbl">Agence</div></div></div>
+        </div>
+        <div class="groupe-copy">
+          <div class="rule rv"><span class="mono"><span class="idx">02 ·</span> Le groupe</span></div>
+          <h2 class="rv d1">9 agences.<br>Une <span class="accent">couverture nationale</span>.</h2>
+          <p class="lead rv d2">Un maillage d'agences au plus près des officines, adossé à plus de vingt ans de métier. La force d'un réseau, la proximité d'un partenaire.</p>
+          <div class="groupe-points rv d3">
+            <div class="gp"><span class="k">R-01</span><span class="v">+20 ans d'expérience de la répartition</span></div>
+            <div class="gp"><span class="k">R-02</span><span class="v">9 agences réparties sur le territoire</span></div>
+            <div class="gp"><span class="k">R-03</span><span class="v">Couverture nationale des officines</span></div>
+            <div class="gp"><span class="k">R-04</span><span class="v">Groupe de grossistes indépendant</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 03 · OFFILOG ═══ -->
+  <section class="offilog" id="offilog" data-pose='{"x":-1.7,"y":0.05,"s":0.85,"ry":6.8,"rz":-0.35,"sat":1}'>
+    <div class="wrap">
+      <div class="offilog-grid">
+        <div class="offilog-copy">
+          <div class="rule rv"><span class="mono"><span class="idx">03 ·</span> Le catalogue Offilog</span></div>
+          <h2 class="rv d1">Une boîte peut en cacher <span class="accent-b">14&nbsp;000</span>.</h2>
+          <p class="lead rv d2">Derrière chaque référence, tout un catalogue&nbsp;: Offilog aligne plus de 14&nbsp;000 références pour couvrir le quotidien du comptoir, du princeps au générique.</p>
+          <div class="offilog-list rv d3">
+            <div class="oli"><span class="b"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span><span><b>+14 000</b> références au catalogue</span></div>
+            <div class="oli"><span class="b"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg></span><span><b>+430</b> laboratoires référencés</span></div>
+            <div class="oli"><span class="b"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span><span>Du <b>princeps</b> au <b>générique</b></span></div>
+          </div>
+        </div>
+        <div class="offilog-big rv" aria-hidden="true">+14<br>000<small>références Offilog</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 04 · CHIFFRES (section « carton ») ═══ -->
+  <section class="chiffres" id="chiffres" data-pose='{"x":0,"y":0,"s":0.4,"ry":8.4,"rz":0.4,"sat":0}'>
+    <div class="wrap">
+      <div class="rule rv"><span class="mono"><span class="idx">04 ·</span> La boîte, en chiffres</span></div>
+      <h2 class="rv d1">Ce qui est écrit sur la boîte est dans la boîte.</h2>
+      <div class="stats">
+        <div class="stat rv"><span class="k">EXP</span><div class="num"><span data-count="20" data-prefix="+"></span></div><div class="lbl">ans d'expérience de la répartition pharmaceutique</div></div>
+        <div class="stat rv d1"><span class="k">RÉSEAU</span><div class="num"><span data-count="9"></span></div><div class="lbl">agences — couverture nationale des officines</div></div>
+        <div class="stat rv d2"><span class="k">CATALOGUE</span><div class="num"><span data-count="14000" data-prefix="+"></span></div><div class="lbl">références au catalogue Offilog</div></div>
+        <div class="stat rv d3"><span class="k">LABOS</span><div class="num"><span data-count="430" data-prefix="+"></span></div><div class="lbl">laboratoires, du princeps au générique</div></div>
+      </div>
+      <div class="chiffres-foot rv d2">
+        <span>Intégral Pharma · Grossiste-répartiteur de première intention</span>
+        <span>Conditions&nbsp;: chiffré en rendez-vous</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 05 · CONTACT / CTA ═══ -->
+  <section class="contact" id="contact" data-pose='{"x":0,"y":-0.15,"s":1.05,"ry":10.6,"rz":0.42,"sat":0}'>
+    <div class="wrap">
+      <div class="rule rv" style="justify-content:center"><span class="mono"><span class="idx">05 ·</span> Parlons-en</span></div>
+      <h2 class="rv d1">Nos conditions&nbsp;?<br><span class="accent">Chiffré en rendez-vous.</span></h2>
+      <p class="lead rv d2">Chaque officine est différente — nos conditions se chiffrent en rendez-vous, face à vos volumes réels. Trente minutes suffisent pour poser les chiffres sur la table.</p>
+      <div class="contact-ctas rv d3">
+        <button class="btn btn-orange" type="button">Demander nos conditions <span class="arr">→</span></button>
+      </div>
+      <p class="contact-hint rv d4">Réponse d'un interlocuteur du groupe — <b>pas d'un robot</b></p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <img src="../assets/logo.png" alt="Intégral Pharma">
+        <p>Grossiste-répartiteur de première intention. Groupe de grossistes indépendant — 9 agences, couverture nationale.</p>
+      </div>
+      <div class="foot-col">
+        <span class="mono">Explorer</span>
+        <a href="#apporte">Ce qu'on apporte</a>
+        <a href="#groupe">Le groupe</a>
+        <a href="#offilog">Le catalogue Offilog</a>
+        <a href="#chiffres">Les chiffres</a>
+      </div>
+      <div class="foot-col">
+        <span class="mono">Contact</span>
+        <a href="#contact">Demander nos conditions</a>
+        <a href="#hero">Revenir à la boîte</a>
+      </div>
+    </div>
+    <div class="barcode" aria-hidden="true"></div>
+    <div class="foot-legal">
+      <span>© 2026 Intégral Pharma — Tous droits réservés</span>
+      <span>Du princeps au générique · +20 ans</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   LA BOÎTE — capsule 3D signature (three.js r128)
+   Cap ORANGE FRANC + corps ARGENT + bague BLEUE.
+   Fixe derrière la page ; sa pose (x, y, échelle, rotation) est
+   interpolée entre les sections [data-pose] selon le scroll.
+   reduced-motion → pose hero figée, aucun mouvement.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  var host = document.getElementById('stage3d');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var gl = null;
+  try{ gl = document.createElement('canvas').getContext('webgl'); }catch(e){}
+  if(!window.THREE || !gl){ host.classList.add('no-webgl'); return; }
+
+  var COL_ORANGE = 0xFF7A1A;   // orange FRANC
+  var COL_ARGENT = 0xC9CED6;   // argent
+  var COL_BLEU   = 0x2E6BFF;   // bague
+
+  var W = function(){ return host.clientWidth; };
+  var H = function(){ return host.clientHeight; };
+
+  var scene = new THREE.Scene();
+  var cam = new THREE.PerspectiveCamera(36, W()/H(), .1, 100);
+  cam.position.z = 7.2;
+  var rnd = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  rnd.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  rnd.setSize(W(), H());
+  host.appendChild(rnd.domElement);
+
+  /* Env studio pour reflets métalliques */
+  var pmrem = new THREE.PMREMGenerator(rnd);
+  var envScene = new THREE.Scene();
+  envScene.add(new THREE.Mesh(
+    new THREE.SphereGeometry(50,16,16),
+    new THREE.MeshBasicMaterial({color:0x151B2A, side:THREE.BackSide})
+  ));
+  var key = new THREE.Mesh(new THREE.PlaneGeometry(18,18), new THREE.MeshBasicMaterial({color:0xffffff}));
+  key.position.set(8,10,6); envScene.add(key);
+  var warm = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.MeshBasicMaterial({color:0xFF7A1A}));
+  warm.position.set(-9,-4,5); warm.lookAt(0,0,0); envScene.add(warm);
+  scene.environment = pmrem.fromScene(envScene).texture;
+
+  /* ── LA CAPSULE ── */
+  var caps = new THREE.Group();
+  function half(color, top, metal){
+    var mat = new THREE.MeshPhysicalMaterial({
+      color:color, metalness:(metal?0.75:0.25), roughness:(metal?0.22:0.3),
+      clearcoat:0.7, clearcoatRoughness:0.25, envMapIntensity:1.15
+    });
+    var g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,1.3,56,1,true), mat));
+    var cap = new THREE.Mesh(new THREE.SphereGeometry(.85,56,28,0,Math.PI*2,0,Math.PI/2), mat);
+    cap.position.y = .65; g.add(cap);
+    g.position.y = top ? .65 : -.65;
+    if(!top) g.rotation.z = Math.PI;
+    return g;
+  }
+  caps.add(half(COL_ORANGE, true, false));    // cap orange franc
+  caps.add(half(COL_ARGENT, false, true));    // corps argent métal
+  var ring = new THREE.Mesh(                  // bague bleue à la jointure
+    new THREE.TorusGeometry(.855,.035,20,72),
+    new THREE.MeshPhysicalMaterial({color:COL_BLEU, metalness:.6, roughness:.25, envMapIntensity:1.4})
+  );
+  ring.rotation.x = Math.PI/2; caps.add(ring);
+  caps.rotation.z = .42;
+  scene.add(caps);
+
+  /* ── SATELLITES (le catalogue qui gravite — section Offilog) ── */
+  var satGroup = new THREE.Group();
+  var satMats = [];
+  for(var i=0;i<14;i++){
+    var c = i%3===0 ? COL_ORANGE : (i%3===1 ? COL_ARGENT : COL_BLEU);
+    var m = new THREE.MeshPhysicalMaterial({color:c, metalness:.5, roughness:.3, transparent:true, opacity:0, envMapIntensity:1});
+    satMats.push(m);
+    var geo = THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(.09,.16,6,12) : new THREE.SphereGeometry(.12,14,14);
+    var s = new THREE.Mesh(geo, m);
+    var a = (i/14)*Math.PI*2, r = 2.15 + (i%4)*.22;
+    s.position.set(Math.cos(a)*r, Math.sin(a*2)*.5, Math.sin(a)*r);
+    s.rotation.set(a, a*1.7, 0);
+    satGroup.add(s);
+  }
+  scene.add(satGroup);
+
+  /* ── Poussière lumineuse d'ambiance ── */
+  var dustGeo = new THREE.BufferGeometry();
+  var N = 140, pos = new Float32Array(N*3);
+  for(var j=0;j<N;j++){
+    pos[j*3]   = (Math.random()-.5)*14;
+    pos[j*3+1] = (Math.random()-.5)*9;
+    pos[j*3+2] = -2 - Math.random()*6;
+  }
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({color:0x9FB3D9, size:.035, transparent:true, opacity:.5}));
+  scene.add(dust);
+
+  /* ── Lumières ── */
+  scene.add(new THREE.AmbientLight(0xffffff,.45));
+  var sun = new THREE.DirectionalLight(0xffffff,1.15); sun.position.set(4,6,5); scene.add(sun);
+  var pO = new THREE.PointLight(COL_ORANGE,.8,22); pO.position.set(5,-3,4); scene.add(pO);
+  var pB = new THREE.PointLight(COL_BLEU,.9,22);  pB.position.set(-5,2,4);  scene.add(pB);
+
+  /* ── Poses par section : interpolation au scroll ── */
+  var sections = Array.prototype.slice.call(document.querySelectorAll('[data-pose]'));
+  var poses = sections.map(function(el){
+    var p = JSON.parse(el.getAttribute('data-pose'));
+    p.el = el; return p;
+  });
+  function mids(){ /* progression (px) du centre de chaque section */
+    return poses.map(function(p){
+      var r = p.el.getBoundingClientRect();
+      return r.top + window.scrollY + r.height/2;
+    });
+  }
+  var M = mids();
+  var narrow = function(){ return window.innerWidth < 900; };
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function ease(t){ return t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
+  function poseAt(y){
+    if(y <= M[0]) return poses[0];
+    if(y >= M[M.length-1]) return poses[poses.length-1];
+    for(var i=0;i<M.length-1;i++){
+      if(y >= M[i] && y <= M[i+1]){
+        var t = ease((y - M[i]) / (M[i+1] - M[i]));
+        var A = poses[i], B = poses[i+1];
+        return { x:lerp(A.x,B.x,t), y:lerp(A.y,B.y,t), s:lerp(A.s,B.s,t),
+                 ry:lerp(A.ry,B.ry,t), rz:lerp(A.rz,B.rz,t), sat:lerp(A.sat,B.sat,t) };
+      }
+    }
+    return poses[0];
+  }
+
+  /* ── Souris (parallaxe légère) ── */
+  var mx=0,my=0,tmx=0,tmy=0;
+  if(!reduce){
+    window.addEventListener('pointermove', function(e){
+      tmx = e.clientX/window.innerWidth - .5;
+      tmy = e.clientY/window.innerHeight - .5;
+    }, {passive:true});
+  }
+  window.addEventListener('resize', function(){
+    cam.aspect = W()/H(); cam.updateProjectionMatrix();
+    rnd.setSize(W(), H()); M = mids();
+  });
+  window.addEventListener('load', function(){ M = mids(); });
+
+  var t = 0;
+  function frame(){
+    t += reduce ? 0 : .01;
+    mx += (tmx-mx)*.05; my += (tmy-my)*.05;
+
+    var center = window.scrollY + window.innerHeight/2;
+    var P = reduce ? poses[0] : poseAt(center);
+    var xFactor = narrow() ? .22 : 1;      // mobile : la capsule reste ± centrée
+
+    caps.position.x = P.x * xFactor + mx*.35;
+    caps.position.y = P.y + (reduce ? 0 : Math.sin(t*1.1)*.1) - my*.25;
+    var s = P.s * (narrow() ? .78 : 1);
+    caps.scale.set(s,s,s);
+    caps.rotation.y = P.ry + (reduce ? 0 : t*.35) + mx*.9;
+    caps.rotation.z = P.rz + my*.2;
+    caps.rotation.x = my*.4;
+
+    satGroup.position.copy(caps.position);
+    satGroup.scale.set(s,s,s);
+    satGroup.rotation.y = reduce ? 0 : t*.5;
+    satGroup.rotation.x = .3;
+    var so = reduce ? 0 : P.sat;
+    for(var k=0;k<satMats.length;k++) satMats[k].opacity = so*.95;
+
+    dust.rotation.y = reduce ? 0 : t*.02;
+
+    rnd.render(scene,cam);
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ══════════ Barre de progression + nav auto-hide ══════════ */
+(function(){
+  var bar = document.getElementById('progressBar');
+  var nav = document.getElementById('nav');
+  var lastY = 0, ticking = false;
+  function update(){
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.setProperty('--sp', max>0 ? (window.scrollY/max).toFixed(4) : 0);
+    var y = window.scrollY;
+    if(y > 160 && y > lastY + 4) nav.classList.add('hide');
+    else if(y < lastY - 4 || y <= 160) nav.classList.remove('hide');
+    lastY = y; ticking = false;
+  }
+  window.addEventListener('scroll', function(){
+    if(!ticking){ ticking = true; requestAnimationFrame(update); }
+  }, {passive:true});
+  update();
+})();
+
+/* ══════════ Reveals (IntersectionObserver) ══════════ */
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var els = document.querySelectorAll('.rv');
+  if(reduce || !('IntersectionObserver' in window)){
+    els.forEach(function(e){ e.classList.add('in'); }); return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  }, {threshold:.14, rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e){ io.observe(e); });
+})();
+
+/* ══════════ Count-up des chiffres ══════════ */
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var nf = new Intl.NumberFormat('fr-FR');
+  function paint(el, v){
+    var pre = el.dataset.prefix || '';
+    el.innerHTML = (pre ? '<span class="sfx">'+pre+'</span>' : '') + nf.format(Math.round(v));
+  }
+  function run(el){
+    var target = parseFloat(el.dataset.count)||0;
+    if(reduce){ paint(el, target); return; }
+    var t0 = null, dur = 1500;
+    function step(ts){
+      if(!t0) t0 = ts;
+      var p = Math.min(1, (ts-t0)/dur);
+      paint(el, target * (1 - Math.pow(1-p,3)));
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  var nums = document.querySelectorAll('[data-count]');
+  if(!('IntersectionObserver' in window)){
+    nums.forEach(function(el){ paint(el, parseFloat(el.dataset.count)||0); }); return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ run(en.target); io.unobserve(en.target); }
+    });
+  }, {threshold:.5});
+  nums.forEach(function(el){ paint(el, 0); io.observe(el); });
+})();
+</script>
+</body>
+</html>
