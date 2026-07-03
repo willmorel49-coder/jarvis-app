@@ -7,15 +7,18 @@
 <meta name="description" content="Intégral Pharma, grossiste-répartiteur de première intention. Groupe de grossistes indépendant — 9 agences, couverture nationale, +14 000 références Offilog.">
 <!--
   ══════════════════════════════════════════════════════════════════
-  MAQUETTE 54 · « LA BOÎTE » — Objet 3D signature — ÉDITION CLAIRE
-  Concept : le produit comme héros. Une capsule (cap orange doré,
+  MAQUETTE 54 · « LA BOÎTE » — Objet 3D signature — ÉDITION CLAIRE V2
+  Concept : le produit comme héros. Une capsule (cap ORANGE FRANC,
   corps argent clair, bague bleue) en three.js, FIXE derrière la
   page, qui voyage de section en section au rythme du scroll — comme
   un médicament qu'on suit de l'agence jusqu'au comptoir.
-  DA : « notice de médicament » LUMINEUSE — fond crème/blanc, codes
-  mono façon RCP, filets pointillés, code-barres décoratif, encre
-  profonde sur papier clair + orange doré #F39A1B + bleu #0050E6.
-  Vif mais doux : accents joyeux, formes arrondies, dégradés aérés.
+  DA : « notice de médicament » LUMINEUSE — papier crème, codes mono
+  façon RCP, filets pointillés, code-barres décoratif, encre profonde
+  + orange #F39A1B + bleu #0050E6. Punchy mais apaisant.
+  V2 : capsule recalibrée (orange franc, lumières baissées, ombre
+  portée douce, taille raisonnable), typo & rythme resserrés,
+  hiérarchie clarifiée, hover unifiés, menu mobile, focus visibles,
+  contrastes AA, reveals affinés (une seule signature de mouvement).
   Safari-safe : pas de background-clip:text, pas de backdrop-filter,
   0 vidéo, reduced-motion → tout figé à l'état final.
   ══════════════════════════════════════════════════════════════════
@@ -26,21 +29,27 @@
 <style>
 /* ══════════ TOKENS — notice claire ══════════ */
 :root{
-  --creme:#FDF8EE;          /* fond papier crème (page) */
-  --blanc:#FFFFFF;          /* cartes / sections blanches */
-  --encre:#131A2A;          /* encre profonde (texte) */
+  --creme:#FDF8EE;            /* fond papier crème (page) */
+  --blanc:#FFFFFF;            /* cartes / sections blanches */
+  --encre:#141B2C;            /* encre profonde (texte) */
   --encre-2:#2B3550;
-  --orange:#F39A1B;         /* orange doré (cap de la capsule, boutons) */
-  --orange-vif:#FFAD3C;
-  --orange-txt:#CE6A00;     /* orange lisible pour le texte (AA sur clair) */
-  --bleu:#0050E6;           /* bague / détails froids */
-  --bleu-pale:#EAF1FF;      /* section « carton » bleutée */
-  --argent:#D8DEE8;         /* corps de la capsule */
-  --gris:#5A6478;           /* texte secondaire */
-  --ligne:rgba(19,26,42,.13);
-  --ligne-o:rgba(243,154,27,.5);
+  --orange:#F39A1B;           /* orange franc (cap, boutons) */
+  --orange-vif:#FFA82F;
+  --orange-txt:#B45A00;       /* orange lisible AA (texte sur clair) */
+  --bleu:#0050E6;             /* bague / détails froids */
+  --bleu-pale:#EAF1FF;        /* section « carton » bleutée */
+  --gris:#565F74;             /* texte secondaire (AA sur crème) */
+  --ligne:rgba(20,27,44,.13);
+  --ligne-o:rgba(243,154,27,.55);
+  --ombre-s:0 6px 18px rgba(20,27,44,.05);
+  --ombre-m:0 12px 32px rgba(20,27,44,.07);
+  --ombre-l:0 22px 52px rgba(20,27,44,.11);
+  --r-s:14px; --r-m:20px; --r-l:28px;
   --font-d:"Archivo",system-ui,sans-serif;
   --font-m:"IBM Plex Mono",ui-monospace,monospace;
+  /* LA signature de mouvement — partout la même */
+  --ease:cubic-bezier(.22,.8,.26,1);
+  --dur:.55s;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -55,21 +64,32 @@ body{
 img{max-width:100%; display:block}
 a{color:inherit; text-decoration:none}
 button{font:inherit; cursor:pointer}
+a:focus-visible, button:focus-visible{
+  outline:2px solid var(--bleu); outline-offset:3px; border-radius:6px;
+}
+.skip{
+  position:fixed; top:-60px; left:16px; z-index:100;
+  background:var(--encre); color:#fff; padding:10px 18px; border-radius:0 0 12px 12px;
+  font-family:var(--font-m); font-size:.7rem; letter-spacing:.12em; text-transform:uppercase;
+  transition:top .3s var(--ease);
+}
+.skip:focus{top:0}
 
 /* ══════════ CANVAS 3D FIXE (le héros) ══════════ */
-#stage3d{
-  position:fixed; inset:0; z-index:0; pointer-events:none;
-}
+#stage3d{ position:fixed; inset:0; z-index:0; pointer-events:none; }
 #stage3d canvas{display:block; width:100%; height:100%}
-/* Fallback sans WebGL : capsule CSS */
-.stage-fallback{
-  display:none; position:absolute; inset:0; place-items:center;
-}
+/* Fallback sans WebGL : capsule CSS + ombre douce */
+.stage-fallback{ display:none; position:absolute; inset:0; place-items:center; }
 .stage-fallback .pill{
-  width:110px; height:280px; border-radius:60px;
-  background:linear-gradient(180deg,var(--orange) 0 48%, var(--bleu) 48% 52%, var(--argent) 52% 100%);
-  box-shadow:0 50px 90px rgba(19,26,42,.18), inset -22px 0 44px rgba(19,26,42,.1);
-  transform:rotate(24deg);
+  width:96px; height:250px; border-radius:60px;
+  background:linear-gradient(180deg,var(--orange) 0 47%, var(--bleu) 47% 53%, #DFE4EC 53% 100%);
+  box-shadow:inset -20px 0 40px rgba(20,27,44,.12), inset 10px 0 24px rgba(255,255,255,.5);
+  transform:rotate(24deg); position:relative;
+}
+.stage-fallback .pill::after{
+  content:""; position:absolute; left:50%; bottom:-70px; transform:translateX(-50%) rotate(-24deg);
+  width:220px; height:36px; border-radius:50%;
+  background:radial-gradient(50% 50% at 50% 50%, rgba(20,27,44,.18), transparent 70%);
 }
 #stage3d.no-webgl .stage-fallback{display:grid}
 
@@ -77,15 +97,15 @@ button{font:inherit; cursor:pointer}
 .ambient{
   position:fixed; inset:0; z-index:-1;
   background:
-    radial-gradient(90% 65% at 78% 12%, rgba(0,80,230,.08), transparent 62%),
-    radial-gradient(75% 60% at 15% 85%, rgba(243,154,27,.12), transparent 60%),
+    radial-gradient(90% 65% at 80% 10%, rgba(0,80,230,.07), transparent 62%),
+    radial-gradient(70% 58% at 12% 88%, rgba(243,154,27,.1), transparent 60%),
     var(--creme);
 }
 
 /* ══════════ PROGRESSION ══════════ */
 .progress{
-  position:fixed; top:0; left:0; right:0; height:3px; z-index:60;
-  background:rgba(19,26,42,.07);
+  position:fixed; top:0; left:0; right:0; height:3px; z-index:70;
+  background:rgba(20,27,44,.06);
 }
 .progress b{
   display:block; height:100%; width:100%;
@@ -95,17 +115,17 @@ button{font:inherit; cursor:pointer}
 
 /* ══════════ NAV ══════════ */
 .nav{
-  position:fixed; top:3px; left:0; right:0; z-index:50;
+  position:fixed; top:3px; left:0; right:0; z-index:60;
   display:flex; align-items:center; justify-content:space-between;
   padding:14px clamp(18px,4vw,44px);
-  background:linear-gradient(180deg, rgba(253,248,238,.95), rgba(253,248,238,.82) 70%, rgba(253,248,238,0));
-  transition:transform .4s ease;
+  background:linear-gradient(180deg, rgba(253,248,238,.97) 55%, rgba(253,248,238,.86) 80%, rgba(253,248,238,0));
+  transition:transform .45s var(--ease);
 }
-.nav.hide{transform:translateY(-110%)}
+.nav.hide{transform:translateY(-115%)}
 .nav-brand{display:flex; align-items:center; gap:12px}
 .nav-brand img{height:34px; width:auto}
 .nav-brand .tag{
-  font-family:var(--font-m); font-size:.58rem; letter-spacing:.22em;
+  font-family:var(--font-m); font-size:.58rem; letter-spacing:.2em;
   color:var(--gris); text-transform:uppercase; border-left:1px solid var(--ligne);
   padding-left:12px; line-height:1.5;
 }
@@ -113,332 +133,440 @@ button{font:inherit; cursor:pointer}
 .nav-links a{
   font-family:var(--font-m); font-size:.68rem; letter-spacing:.14em;
   text-transform:uppercase; color:var(--gris); position:relative; padding:4px 0;
-  transition:color .25s;
+  transition:color .25s var(--ease);
 }
 .nav-links a::after{
   content:""; position:absolute; left:0; bottom:0; height:1px; width:100%;
   background:var(--orange); transform:scaleX(0); transform-origin:right;
-  transition:transform .3s ease;
+  transition:transform .3s var(--ease);
 }
 .nav-links a:hover{color:var(--encre)}
 .nav-links a:hover::after{transform:scaleX(1); transform-origin:left}
 .nav-cta{
   font-family:var(--font-m); font-size:.66rem; letter-spacing:.12em; text-transform:uppercase;
   color:var(--encre); background:var(--orange); border:none; border-radius:100px;
-  padding:11px 20px; font-weight:500; transition:background .25s, transform .25s;
+  padding:11px 20px; font-weight:500;
+  transition:background .25s var(--ease), transform .25s var(--ease), box-shadow .25s var(--ease);
   box-shadow:0 6px 18px rgba(243,154,27,.28);
 }
-.nav-cta:hover{background:var(--orange-vif); transform:translateY(-1px)}
-@media(max-width:860px){ .nav-links a{display:none} .nav-brand .tag{display:none} }
+.nav-cta:hover{background:var(--orange-vif); transform:translateY(-1px); box-shadow:0 10px 24px rgba(243,154,27,.36)}
+.nav-cta:active{transform:translateY(0)}
+/* burger mobile */
+.nav-burger{
+  display:none; width:42px; height:42px; border-radius:12px;
+  border:1px solid var(--ligne); background:var(--blanc);
+  flex-direction:column; align-items:center; justify-content:center; gap:5px;
+  transition:border-color .25s var(--ease);
+}
+.nav-burger:hover{border-color:var(--ligne-o)}
+.nav-burger i{
+  display:block; width:16px; height:2px; border-radius:2px; background:var(--encre);
+  transition:transform .3s var(--ease), opacity .3s;
+}
+.nav-burger[aria-expanded="true"] i:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav-burger[aria-expanded="true"] i:nth-child(2){opacity:0}
+.nav-burger[aria-expanded="true"] i:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.nav-panel{
+  position:fixed; top:0; left:0; right:0; z-index:55;
+  background:var(--creme); border-bottom:1px solid var(--ligne);
+  padding:88px clamp(20px,6vw,40px) 26px; display:none;
+  box-shadow:0 24px 48px rgba(20,27,44,.1);
+}
+.nav-panel.open{display:block}
+.nav-panel a{
+  display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+  padding:15px 2px; border-bottom:1px dashed rgba(20,27,44,.18);
+  font-weight:700; font-size:1.15rem; letter-spacing:-.01em;
+}
+.nav-panel a .k{font-family:var(--font-m); font-size:.6rem; letter-spacing:.2em; color:var(--orange-txt)}
+.nav-panel .nav-cta{margin-top:20px; width:100%; padding:15px}
+@media(max-width:860px){
+  .nav-links{display:none}
+  .nav-brand .tag{display:none}
+  .nav-burger{display:flex}
+}
 
 /* ══════════ COMMUNS ══════════ */
 main{position:relative; z-index:1}
-section{position:relative}
-.wrap{max-width:1240px; margin-inline:auto; padding-inline:clamp(20px,5vw,56px)}
+section{position:relative; scroll-margin-top:84px}
+.wrap{max-width:1200px; margin-inline:auto; padding-inline:clamp(20px,5vw,56px)}
 .mono{
-  font-family:var(--font-m); font-size:.68rem; letter-spacing:.22em;
+  font-family:var(--font-m); font-size:.66rem; letter-spacing:.22em;
   text-transform:uppercase; color:var(--orange-txt);
 }
 .mono .idx{color:var(--gris)}
-.rule{
-  display:flex; align-items:center; gap:14px; margin-bottom:26px;
-}
+.rule{ display:flex; align-items:center; gap:14px; margin-bottom:clamp(20px,3vh,30px); }
 .rule::after{
   content:""; flex:1; height:1px;
-  background-image:linear-gradient(90deg, rgba(19,26,42,.2) 55%, transparent 0);
+  background-image:linear-gradient(90deg, rgba(20,27,44,.22) 55%, transparent 0);
   background-size:8px 1px;
 }
-h1,h2,h3{font-weight:800; letter-spacing:-.03em; line-height:1.02}
-h2{font-size:clamp(2.2rem,5.4vw,4.2rem)}
-.lead{color:var(--gris); font-weight:500; font-size:clamp(1rem,1.4vw,1.15rem); line-height:1.65; max-width:52ch}
+h1,h2,h3{font-weight:800; letter-spacing:-.03em; line-height:1.04; text-wrap:balance}
+h2{font-size:clamp(2.1rem,4.8vw,3.7rem)}
+.lead{color:var(--gris); font-weight:500; font-size:clamp(1rem,1.35vw,1.13rem); line-height:1.7; max-width:54ch}
+.lead b{color:var(--encre); font-weight:700}
 .accent{color:var(--orange-txt)}
 .accent-b{color:var(--bleu)}
 
-/* reveal au scroll */
-.rv{opacity:0; transform:translateY(26px); transition:opacity .8s ease, transform .8s cubic-bezier(.22,.8,.26,1)}
+/* reveal au scroll — UNE signature : translateY + fade, ease unique */
+.rv{opacity:0; transform:translateY(24px); transition:opacity .7s var(--ease), transform .7s var(--ease)}
 .rv.in{opacity:1; transform:none}
-.rv.d1{transition-delay:.08s} .rv.d2{transition-delay:.16s} .rv.d3{transition-delay:.24s} .rv.d4{transition-delay:.32s}
+.rv.d1{transition-delay:.07s} .rv.d2{transition-delay:.14s}
+.rv.d3{transition-delay:.21s} .rv.d4{transition-delay:.28s}
 @media(prefers-reduced-motion:reduce){ .rv{opacity:1; transform:none; transition:none} }
 
 /* boutons */
 .btn{
-  display:inline-flex; align-items:center; gap:12px;
+  display:inline-flex; align-items:center; justify-content:center; gap:12px;
   font-family:var(--font-d); font-weight:700; font-size:.95rem; letter-spacing:.01em;
-  border-radius:100px; padding:17px 30px; border:none; position:relative; overflow:hidden;
-  transition:transform .3s cubic-bezier(.22,.8,.26,1), box-shadow .3s;
+  border-radius:100px; padding:16px 30px; border:none; position:relative;
+  transition:transform .3s var(--ease), box-shadow .3s var(--ease), background .3s var(--ease), border-color .3s var(--ease), color .3s var(--ease);
 }
-.btn .arr{transition:transform .3s}
+.btn .arr{transition:transform .3s var(--ease)}
 .btn:hover .arr{transform:translateX(5px)}
+.btn:active{transform:translateY(0) scale(.99)}
 .btn-orange{
   background:var(--orange); color:var(--encre);
-  box-shadow:0 10px 34px rgba(243,154,27,.35);
+  box-shadow:0 10px 30px rgba(243,154,27,.32);
 }
-.btn-orange:hover{transform:translateY(-2px); box-shadow:0 16px 44px rgba(243,154,27,.45)}
+.btn-orange:hover{background:var(--orange-vif); transform:translateY(-2px); box-shadow:0 16px 40px rgba(243,154,27,.42)}
 .btn-ghost{
   background:var(--blanc); color:var(--encre);
-  border:1px solid var(--ligne); box-shadow:0 4px 16px rgba(19,26,42,.05);
+  border:1px solid var(--ligne); box-shadow:var(--ombre-s);
 }
-.btn-ghost:hover{border-color:var(--orange); color:var(--orange-txt); transform:translateY(-2px)}
+.btn-ghost:hover{border-color:var(--ligne-o); color:var(--orange-txt); transform:translateY(-2px); box-shadow:var(--ombre-m)}
 
 /* ══════════ HERO ══════════ */
 .hero{
-  min-height:100svh; display:flex; align-items:center; padding-top:110px; padding-bottom:60px;
+  min-height:100svh; display:flex; align-items:center;
+  padding-top:112px; padding-bottom:70px;
 }
 .hero .wrap{width:100%}
-.hero-grid{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); gap:30px; align-items:center}
+.hero-grid{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr); gap:30px; align-items:center}
 .hero-eyebrow{
   display:inline-flex; align-items:center; gap:10px;
-  font-family:var(--font-m); font-size:.66rem; letter-spacing:.24em; text-transform:uppercase;
+  font-family:var(--font-m); font-size:.64rem; letter-spacing:.22em; text-transform:uppercase;
   color:var(--gris); border:1px solid var(--ligne); border-radius:100px; padding:9px 18px;
-  margin-bottom:30px; background:var(--blanc);
-  box-shadow:0 4px 14px rgba(19,26,42,.05);
+  margin-bottom:clamp(22px,3.4vh,32px); background:var(--blanc);
+  box-shadow:var(--ombre-s);
 }
-.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange); box-shadow:0 0 12px rgba(243,154,27,.9)}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange); box-shadow:0 0 10px rgba(243,154,27,.85)}
 .hero h1{
-  font-size:clamp(2.9rem,7.4vw,6.4rem); font-weight:900; letter-spacing:-.045em; line-height:.98;
-  text-wrap:balance;
+  font-size:clamp(2.6rem,6.2vw,5.4rem); font-weight:900; letter-spacing:-.045em; line-height:1;
 }
 .hero h1 .l2{color:var(--orange-txt)}
-.hero .lead{margin-top:28px}
-.hero-ctas{display:flex; flex-wrap:wrap; gap:16px; margin-top:40px}
+/* révélation ligne à ligne (masque, une seule fois au chargement) */
+.hero h1 .line{display:block; overflow:hidden; padding-bottom:.08em; margin-bottom:-.08em}
+.hero h1 .line > span{display:block; transform:translateY(112%); transition:transform .9s var(--ease)}
+.hero h1 .line:nth-child(2) > span{transition-delay:.12s}
+body.loaded .hero h1 .line > span{transform:none}
+@media(prefers-reduced-motion:reduce){ .hero h1 .line > span{transform:none; transition:none} }
+.hero .lead{margin-top:clamp(20px,3vh,28px)}
+.hero-ctas{display:flex; flex-wrap:wrap; gap:14px; margin-top:clamp(28px,4.5vh,42px)}
 .hero-note{
-  margin-top:26px; font-family:var(--font-m); font-size:.66rem; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--gris);
+  margin-top:26px; font-family:var(--font-m); font-size:.64rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--gris); line-height:1.9;
 }
 .hero-note b{color:var(--encre); font-weight:500}
-/* colonne droite : cartouche « notice » autour de la capsule 3D */
+.hero-note .sep{color:var(--orange-txt); padding-inline:6px}
+/* colonne droite : cartouche « notice » sous la capsule 3D */
 .hero-spec{
-  justify-self:end; align-self:end;
-  border:1px dashed rgba(19,26,42,.22); border-radius:16px; padding:18px 20px;
-  font-family:var(--font-m); font-size:.64rem; letter-spacing:.16em; text-transform:uppercase;
-  color:var(--gris); display:grid; gap:9px; background:rgba(255,255,255,.72);
+  justify-self:end; align-self:end; min-width:min(320px,100%);
+  border:1px dashed rgba(20,27,44,.24); border-radius:var(--r-s); padding:18px 20px;
+  font-family:var(--font-m); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--gris); display:grid; gap:0; background:rgba(255,255,255,.75);
 }
-.hero-spec span b{color:var(--orange-txt); font-weight:500}
+.hero-spec span{
+  display:flex; justify-content:space-between; gap:14px; padding:8px 0;
+  border-bottom:1px dashed rgba(20,27,44,.14);
+}
+.hero-spec span:last-child{border-bottom:none}
+.hero-spec span b{color:var(--encre); font-weight:500; text-align:right}
+.hero-spec .t{
+  display:block; padding-bottom:10px; margin-bottom:4px; border-bottom:1px solid var(--ligne);
+  color:var(--orange-txt); letter-spacing:.24em;
+}
 .hero-scroll{
-  position:absolute; left:50%; bottom:22px; transform:translateX(-50%);
-  font-family:var(--font-m); font-size:.6rem; letter-spacing:.3em; text-transform:uppercase; color:var(--gris);
+  position:absolute; left:50%; bottom:20px; transform:translateX(-50%);
+  font-family:var(--font-m); font-size:.58rem; letter-spacing:.3em; text-transform:uppercase; color:var(--gris);
   display:flex; flex-direction:column; align-items:center; gap:10px;
 }
 .hero-scroll i{
-  width:1px; height:44px; background:linear-gradient(180deg,var(--orange),transparent);
-  display:block; animation:drip 1.8s ease-in-out infinite;
+  width:1px; height:42px; background:linear-gradient(180deg,var(--orange),transparent);
+  display:block; animation:drip 1.9s var(--ease) infinite;
 }
 @keyframes drip{0%{transform:scaleY(0);transform-origin:top}55%{transform:scaleY(1);transform-origin:top}56%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 @media(prefers-reduced-motion:reduce){ .hero-scroll i{animation:none} }
 @media(max-width:900px){
   .hero-grid{grid-template-columns:1fr}
-  .hero{padding-top:210px} /* laisse la capsule respirer au-dessus du titre */
+  .hero{padding-top:230px} /* la capsule respire au-dessus du titre */
   .hero-spec{display:none}
+  .hero-scroll{display:none}
+}
+@media(max-width:560px){
+  .hero{padding-top:200px}
+  .hero-ctas .btn{width:100%}
 }
 
 /* ══════════ BANDEAU LABOS (marquee) ══════════ */
-.labos{padding:34px 0; border-top:1px solid var(--ligne); border-bottom:1px solid var(--ligne); background:rgba(255,255,255,.7)}
+.labos{padding:36px 0 34px; border-top:1px solid var(--ligne); border-bottom:1px solid var(--ligne); background:rgba(255,255,255,.72)}
 .labos .mono{display:block; text-align:center; margin-bottom:22px; color:var(--gris)}
 .marquee{
   overflow:hidden; display:flex; user-select:none;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);
-          mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+          mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
 }
 .marquee-track{
   display:flex; gap:clamp(2.4rem,5vw,4.5rem); padding-right:clamp(2.4rem,5vw,4.5rem);
   flex:0 0 auto; min-width:100%; align-items:center;
-  animation:mq 30s linear infinite; will-change:transform;
+  animation:mq 32s linear infinite; will-change:transform;
 }
 .marquee:hover .marquee-track{animation-play-state:paused}
 @keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .marquee-track span{
-  font-weight:800; font-size:clamp(1.2rem,2.6vw,1.9rem); letter-spacing:-.02em;
-  color:#A6AFC2; white-space:nowrap; transition:color .3s;
+  font-weight:800; font-size:clamp(1.2rem,2.5vw,1.8rem); letter-spacing:-.02em;
+  color:#8892A8; white-space:nowrap; transition:color .3s var(--ease);
 }
 .marquee-track span:hover{color:var(--encre)}
-.marquee-track em{font-style:normal; color:var(--orange); font-size:.8em}
+.marquee-track em{font-style:normal; color:var(--orange); font-size:.72em}
 @media(prefers-reduced-motion:reduce){ .marquee-track{animation:none} .marquee{overflow-x:auto} }
 
-/* ══════════ SECTION OFFRES ══════════ */
-.apporte{padding:clamp(90px,14vh,160px) 0}
-.apporte-head{max-width:760px; margin-bottom:clamp(44px,6vh,70px)}
+/* ══════════ 01 · OFFRE ══════════ */
+.apporte{padding:clamp(90px,13vh,150px) 0}
+.apporte-head{max-width:720px; margin-bottom:clamp(40px,6vh,64px)}
+.apporte-head .lead{margin-top:20px}
 .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
 .card{
-  position:relative; border:1px solid var(--ligne); border-radius:20px;
-  padding:30px 26px 34px; background:var(--blanc);
-  box-shadow:0 10px 30px rgba(19,26,42,.06);
-  transition:transform .35s cubic-bezier(.22,.8,.26,1), border-color .35s, box-shadow .35s;
+  position:relative; border:1px solid var(--ligne); border-radius:var(--r-m);
+  padding:28px 26px 32px; background:var(--blanc);
+  box-shadow:var(--ombre-m);
+  transition:transform .35s var(--ease), border-color .35s var(--ease), box-shadow .35s var(--ease);
   overflow:hidden;
 }
 .card::before{ /* liseré lumineux haut */
   content:""; position:absolute; top:0; left:10%; right:10%; height:2px;
-  background:linear-gradient(90deg,transparent,rgba(243,154,27,.8),transparent);
-  opacity:0; transition:opacity .35s;
+  background:linear-gradient(90deg,transparent,rgba(243,154,27,.85),transparent);
+  opacity:0; transition:opacity .35s var(--ease);
 }
-.card:hover{transform:translateY(-6px); border-color:var(--ligne-o); box-shadow:0 18px 44px rgba(19,26,42,.1)}
+.card:hover{transform:translateY(-6px); border-color:var(--ligne-o); box-shadow:var(--ombre-l)}
 .card:hover::before{opacity:1}
 .card .code{
-  font-family:var(--font-m); font-size:.6rem; letter-spacing:.2em; color:var(--gris);
-  display:flex; justify-content:space-between; margin-bottom:26px; text-transform:uppercase;
+  font-family:var(--font-m); font-size:.58rem; letter-spacing:.2em; color:var(--gris);
+  display:flex; justify-content:space-between; margin-bottom:24px; text-transform:uppercase;
 }
 .card .ico{
-  width:46px; height:46px; border-radius:12px; display:grid; place-items:center;
-  background:rgba(243,154,27,.14); border:1px solid rgba(243,154,27,.35); color:var(--orange-txt);
-  margin-bottom:20px;
+  width:48px; height:48px; border-radius:14px; display:grid; place-items:center;
+  background:linear-gradient(160deg, rgba(243,154,27,.16), rgba(243,154,27,.08));
+  border:1px solid rgba(243,154,27,.35); color:var(--orange-txt);
+  margin-bottom:20px; transition:transform .35s var(--ease);
 }
+.card:hover .ico{transform:translateY(-3px) rotate(-4deg)}
 .card .ico svg{width:22px;height:22px}
-.card h3{font-size:1.35rem; margin-bottom:12px; letter-spacing:-.02em}
-.card p{color:var(--gris); line-height:1.6; font-size:.95rem}
+.card h3{font-size:1.3rem; margin-bottom:10px; letter-spacing:-.02em}
+.card p{color:var(--gris); line-height:1.65; font-size:.95rem}
 .card p b{color:var(--encre); font-weight:700}
-@media(max-width:900px){ .cards{grid-template-columns:1fr} }
+@media(max-width:960px){ .cards{grid-template-columns:1fr; max-width:560px} }
 
-/* ══════════ SECTION GROUPE (9 agences) ══════════ */
-.groupe{padding:clamp(90px,14vh,160px) 0; border-top:1px solid var(--ligne)}
-.groupe-grid{display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:clamp(36px,6vw,80px); align-items:center}
-.agences{
-  display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
-}
+/* ══════════ 02 · LE GROUPE (9 agences) ══════════ */
+.groupe{padding:clamp(90px,13vh,150px) 0; border-top:1px solid var(--ligne)}
+.groupe-grid{display:grid; grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr); gap:clamp(36px,6vw,80px); align-items:center}
+.agences{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
 .agence{
-  aspect-ratio:1; border:1px solid var(--ligne); border-radius:16px;
+  aspect-ratio:1; border:1px solid var(--ligne); border-radius:var(--r-s);
   display:flex; flex-direction:column; justify-content:space-between;
   padding:14px; background:var(--blanc);
-  box-shadow:0 6px 18px rgba(19,26,42,.05);
-  transition:border-color .3s, background .3s, transform .3s;
+  box-shadow:var(--ombre-s);
+  transition:border-color .3s var(--ease), background .3s var(--ease), transform .3s var(--ease), box-shadow .3s var(--ease);
 }
-.agence:hover{border-color:var(--ligne-o); background:rgba(243,154,27,.08); transform:translateY(-3px)}
-.agence .n{font-weight:900; font-size:clamp(1.4rem,3vw,2.1rem); letter-spacing:-.03em; color:var(--encre)}
-.agence .lbl{font-family:var(--font-m); font-size:.55rem; letter-spacing:.22em; text-transform:uppercase; color:var(--gris)}
-.agence .pin{width:8px; height:8px; border-radius:50%; background:var(--orange); box-shadow:0 0 10px rgba(243,154,27,.8)}
-.groupe-copy .lead{margin-top:24px}
-.groupe-points{margin-top:34px; display:grid; gap:0}
+.agence:hover{border-color:var(--ligne-o); background:#FFF7EA; transform:translateY(-4px); box-shadow:var(--ombre-m)}
+.agence .top{display:flex; justify-content:space-between; align-items:flex-start}
+.agence .n{font-weight:900; font-size:clamp(1.35rem,2.8vw,2rem); letter-spacing:-.03em; color:var(--encre)}
+.agence .lbl{font-family:var(--font-m); font-size:.54rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gris); margin-top:4px}
+.agence .pin{width:8px; height:8px; border-radius:50%; background:var(--orange); box-shadow:0 0 9px rgba(243,154,27,.8); flex:0 0 auto}
+.agence .code{font-family:var(--font-m); font-size:.52rem; letter-spacing:.16em; color:rgba(20,27,44,.34)}
+.agences-cap{
+  grid-column:1/-1; margin-top:4px; text-align:center;
+  font-family:var(--font-m); font-size:.6rem; letter-spacing:.22em; text-transform:uppercase; color:var(--gris);
+}
+.groupe-copy .lead{margin-top:22px}
+.groupe-points{margin-top:32px}
 .gp{
-  display:flex; gap:16px; align-items:baseline; padding:16px 0;
-  border-top:1px dashed rgba(19,26,42,.22);
+  display:flex; gap:18px; align-items:baseline; padding:15px 0;
+  border-top:1px dashed rgba(20,27,44,.2);
+  transition:padding-left .3s var(--ease);
 }
-.gp:last-child{border-bottom:1px dashed rgba(19,26,42,.22)}
-.gp .k{font-family:var(--font-m); font-size:.62rem; letter-spacing:.2em; color:var(--orange-txt); min-width:52px}
-.gp .v{color:var(--encre); font-weight:600; font-size:1rem}
-@media(max-width:900px){ .groupe-grid{grid-template-columns:1fr} .agences{order:2} }
+.gp:hover{padding-left:8px}
+.gp:last-child{border-bottom:1px dashed rgba(20,27,44,.2)}
+.gp .k{font-family:var(--font-m); font-size:.6rem; letter-spacing:.2em; color:var(--orange-txt); min-width:52px}
+.gp .v{color:var(--encre); font-weight:600; font-size:1rem; line-height:1.5}
+@media(max-width:900px){
+  .groupe-grid{grid-template-columns:1fr}
+  .agences{order:2; max-width:480px}
+}
 
-/* ══════════ OFFILOG ══════════ */
-.offilog{padding:clamp(90px,14vh,160px) 0; border-top:1px solid var(--ligne)}
+/* ══════════ 03 · OFFILOG ══════════ */
+.offilog{padding:clamp(90px,13vh,150px) 0; border-top:1px solid var(--ligne)}
 .offilog-grid{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); gap:clamp(36px,6vw,80px); align-items:center}
-.offilog-big{
-  font-weight:900; letter-spacing:-.05em; line-height:.9;
-  font-size:clamp(4.4rem,12vw,10rem); color:var(--bleu);
-}
-.offilog-big small{
-  display:block; font-size:clamp(1rem,2.4vw,1.6rem); font-weight:700;
-  letter-spacing:0; color:var(--orange-txt); margin-top:10px;
-}
-.offilog-copy h2{margin-bottom:22px}
-.offilog-list{margin-top:30px; display:grid; gap:14px}
+.offilog-copy .lead{margin-top:0}
+.offilog-copy h2{margin-bottom:20px}
+.offilog-list{margin-top:30px; display:grid; gap:12px}
 .oli{
   display:flex; align-items:center; gap:14px; padding:15px 18px;
-  border:1px solid var(--ligne); border-radius:14px; background:var(--blanc);
-  box-shadow:0 6px 18px rgba(19,26,42,.05);
-  transition:border-color .3s, transform .3s;
+  border:1px solid var(--ligne); border-radius:var(--r-s); background:var(--blanc);
+  box-shadow:var(--ombre-s);
+  transition:border-color .3s var(--ease), transform .3s var(--ease), box-shadow .3s var(--ease);
 }
-.oli:hover{border-color:rgba(0,80,230,.4); transform:translateX(6px)}
+.oli:hover{border-color:rgba(0,80,230,.4); transform:translateX(6px); box-shadow:var(--ombre-m)}
 .oli .b{
-  width:34px; height:34px; border-radius:10px; flex:0 0 auto;
+  width:36px; height:36px; border-radius:11px; flex:0 0 auto;
   display:grid; place-items:center; color:var(--bleu);
-  background:var(--bleu-pale); border:1px solid rgba(0,80,230,.25);
+  background:var(--bleu-pale); border:1px solid rgba(0,80,230,.22);
 }
 .oli .b svg{width:17px;height:17px}
-.oli span{color:var(--encre-2); font-weight:600; font-size:.96rem}
-.oli span b{color:var(--orange-txt); font-weight:800}
-@media(max-width:900px){ .offilog-grid{grid-template-columns:1fr} }
-
-/* ══════════ CHIFFRES — section « carton » bleutée ══════════ */
-.chiffres{
-  background:var(--bleu-pale); color:var(--encre);
-  padding:clamp(90px,14vh,170px) 0;
+.oli span:last-child{color:var(--encre-2); font-weight:600; font-size:.96rem}
+.oli b{color:var(--orange-txt); font-weight:800}
+/* fiche catalogue — le grand chiffre encadré façon boîte */
+.offilog-fiche{
+  justify-self:center; width:min(440px,100%);
+  background:var(--blanc); border:1px solid var(--ligne); border-radius:var(--r-l);
+  box-shadow:var(--ombre-l); padding:30px 30px 24px; position:relative; overflow:hidden;
+  transition:transform .4s var(--ease), box-shadow .4s var(--ease);
 }
-.chiffres .mono{color:var(--bleu)}
-.chiffres .rule::after{background-image:linear-gradient(90deg, rgba(19,26,42,.22) 55%, transparent 0)}
-.chiffres h2{color:var(--encre); max-width:700px}
-.stats{
-  margin-top:clamp(44px,7vh,80px);
-  display:grid; grid-template-columns:repeat(4,1fr);
+.offilog-fiche:hover{transform:translateY(-6px) rotate(-.4deg); box-shadow:0 30px 64px rgba(20,27,44,.14)}
+.offilog-fiche::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:6px;
+  background:linear-gradient(90deg,var(--bleu),var(--orange));
 }
-.stat{
-  padding:8px 26px 4px; border-left:1px solid rgba(19,26,42,.18);
+.offilog-fiche .head{
+  display:flex; justify-content:space-between; font-family:var(--font-m);
+  font-size:.58rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gris);
+  padding-bottom:16px; border-bottom:1px dashed rgba(20,27,44,.2); margin-bottom:18px;
 }
-.stat:first-child{border-left:none; padding-left:0}
-.stat .num{
-  font-weight:900; letter-spacing:-.04em; line-height:1;
-  font-size:clamp(2.6rem,5.6vw,4.6rem); color:var(--encre);
-  font-variant-numeric:tabular-nums;
+.offilog-fiche .big{
+  font-weight:900; letter-spacing:-.05em; line-height:.92;
+  font-size:clamp(4rem,9vw,6.4rem); color:var(--bleu); font-variant-numeric:tabular-nums;
 }
-.stat .num .sfx{color:var(--orange-txt)}
-.stat .lbl{margin-top:12px; color:#4A5570; font-weight:600; font-size:.92rem; line-height:1.45}
-.stat .k{font-family:var(--font-m); font-size:.58rem; letter-spacing:.24em; text-transform:uppercase; color:var(--bleu); display:block; margin-bottom:16px}
-.chiffres-foot{
-  margin-top:clamp(44px,7vh,70px); padding-top:22px; border-top:1px dashed rgba(19,26,42,.25);
-  display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;
-  font-family:var(--font-m); font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:#5A6785;
+.offilog-fiche .big small{
+  display:block; font-size:clamp(.95rem,2vw,1.15rem); font-weight:700;
+  letter-spacing:0; color:var(--orange-txt); margin-top:12px;
 }
-@media(max-width:900px){
-  .stats{grid-template-columns:1fr 1fr; gap:34px 0}
-  .stat:nth-child(3){border-left:none; padding-left:0}
-}
-@media(max-width:520px){
-  .stats{grid-template-columns:1fr}
-  .stat{border-left:none; padding-left:0}
-}
-
-/* ══════════ CONTACT / CTA ══════════ */
-.contact{
-  padding:clamp(110px,18vh,200px) 0 clamp(90px,14vh,150px);
-  text-align:center; position:relative; overflow:hidden;
-}
-.contact::before{ /* projecteur doux derrière la capsule finale */
-  content:""; position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(46% 40% at 50% 42%, rgba(243,154,27,.18), transparent 70%);
-}
-.contact .wrap{position:relative}
-.contact h2{
-  font-size:clamp(2.6rem,7vw,5.6rem); letter-spacing:-.045em; line-height:.98;
-  max-width:900px; margin-inline:auto;
-}
-.contact .lead{margin:26px auto 0; max-width:46ch}
-.contact-ctas{display:flex; justify-content:center; gap:16px; flex-wrap:wrap; margin-top:44px}
-.contact-hint{
-  margin-top:30px; font-family:var(--font-m); font-size:.64rem; letter-spacing:.2em;
-  text-transform:uppercase; color:var(--gris);
-}
-.contact-hint b{color:var(--orange-txt); font-weight:500}
-
-/* ══════════ FOOTER ══════════ */
-footer{
-  border-top:1px solid var(--ligne); background:var(--blanc);
-  padding:56px 0 34px; position:relative; z-index:1;
-}
-.foot-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:36px; align-items:start}
-.foot-brand img{height:38px; margin-bottom:16px}
-.foot-brand p{color:var(--gris); font-size:.9rem; line-height:1.6; max-width:34ch}
-.foot-col .mono{color:var(--gris); display:block; margin-bottom:16px}
-.foot-col a{
-  display:block; color:var(--encre-2); font-weight:600; font-size:.95rem;
-  padding:7px 0; transition:color .25s, transform .25s;
-}
-.foot-col a:hover{color:var(--orange-txt); transform:translateX(4px)}
-/* code-barres décoratif façon boîte de médicament */
-.barcode{
-  height:44px; margin:44px 0 20px;
+.offilog-fiche .mini-barcode{
+  height:30px; margin-top:22px; opacity:.22;
   background:repeating-linear-gradient(90deg,
     var(--encre) 0 2px, transparent 2px 6px,
     var(--encre) 6px 9px, transparent 9px 11px,
     var(--encre) 11px 12px, transparent 12px 18px,
     var(--encre) 18px 22px, transparent 22px 25px);
-  opacity:.16;
+}
+.offilog-fiche .ref{
+  margin-top:10px; display:flex; justify-content:space-between;
+  font-family:var(--font-m); font-size:.56rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gris);
+}
+@media(max-width:900px){ .offilog-grid{grid-template-columns:1fr} .offilog-fiche{order:2} }
+
+/* ══════════ 04 · CHIFFRES — section « carton » bleutée ══════════ */
+.chiffres{
+  background:linear-gradient(180deg,#EDF3FF, var(--bleu-pale));
+  color:var(--encre);
+  padding:clamp(90px,13vh,160px) 0;
+  border-top:1px solid rgba(0,80,230,.12);
+}
+.chiffres .mono{color:var(--bleu)}
+.chiffres .rule::after{background-image:linear-gradient(90deg, rgba(20,27,44,.22) 55%, transparent 0)}
+.chiffres h2{max-width:680px}
+.stats{
+  margin-top:clamp(40px,6.5vh,72px);
+  display:grid; grid-template-columns:repeat(4,1fr);
+}
+.stat{ padding:8px 26px 4px; border-left:1px solid rgba(20,27,44,.16); }
+.stat:first-child{border-left:none; padding-left:0}
+.stat .k{font-family:var(--font-m); font-size:.56rem; letter-spacing:.24em; text-transform:uppercase; color:var(--bleu); display:block; margin-bottom:16px}
+.stat .num{
+  font-weight:900; letter-spacing:-.04em; line-height:1;
+  font-size:clamp(2.5rem,5.2vw,4.3rem); color:var(--encre);
+  font-variant-numeric:tabular-nums;
+}
+.stat .num .sfx{color:var(--orange-txt)}
+.stat .lbl{margin-top:12px; color:#46516D; font-weight:600; font-size:.92rem; line-height:1.5; max-width:24ch}
+.chiffres-foot{
+  margin-top:clamp(40px,6.5vh,64px); padding-top:22px; border-top:1px dashed rgba(20,27,44,.25);
+  display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  font-family:var(--font-m); font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:#4E5A78;
+}
+@media(max-width:900px){
+  .stats{grid-template-columns:1fr 1fr; gap:36px 0}
+  .stat:nth-child(3){border-left:none; padding-left:0}
+}
+@media(max-width:520px){
+  .stats{grid-template-columns:1fr; gap:30px}
+  .stat{border-left:none; padding-left:0}
+}
+
+/* ══════════ 05 · CONTACT / CTA ══════════ */
+.contact{
+  padding:clamp(110px,17vh,190px) 0 clamp(90px,13vh,140px);
+  text-align:center; position:relative; overflow:hidden;
+}
+.contact::before{ /* projecteur doux derrière la capsule finale */
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(46% 40% at 50% 40%, rgba(243,154,27,.16), transparent 70%);
+}
+.contact .wrap{position:relative}
+.contact .rule{justify-content:center}
+.contact .rule::before{
+  content:""; flex:1; height:1px;
+  background-image:linear-gradient(90deg, rgba(20,27,44,.22) 55%, transparent 0);
+  background-size:8px 1px;
+}
+.contact h2{
+  font-size:clamp(2.4rem,6.4vw,5rem); letter-spacing:-.045em; line-height:1;
+  max-width:860px; margin-inline:auto;
+}
+.contact .lead{margin:24px auto 0; max-width:48ch}
+.contact-ctas{display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin-top:clamp(32px,5vh,44px)}
+.contact-hint{
+  margin-top:28px; font-family:var(--font-m); font-size:.62rem; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--gris);
+}
+.contact-hint b{color:var(--orange-txt); font-weight:500}
+@media(max-width:560px){ .contact-ctas .btn{width:100%} }
+
+/* ══════════ FOOTER ══════════ */
+footer{
+  border-top:1px solid var(--ligne); background:var(--blanc);
+  padding:60px 0 34px; position:relative; z-index:1;
+}
+.foot-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:40px; align-items:start}
+.foot-brand img{height:38px; margin-bottom:16px}
+.foot-brand p{color:var(--gris); font-size:.9rem; line-height:1.65; max-width:34ch}
+.foot-col .mono{color:var(--gris); display:block; margin-bottom:14px}
+.foot-col a{
+  display:block; color:var(--encre-2); font-weight:600; font-size:.95rem;
+  padding:7px 0; transition:color .25s var(--ease), transform .25s var(--ease);
+}
+.foot-col a:hover{color:var(--orange-txt); transform:translateX(4px)}
+/* code-barres décoratif façon boîte de médicament */
+.barcode{
+  height:44px; margin:46px 0 20px;
+  background:repeating-linear-gradient(90deg,
+    var(--encre) 0 2px, transparent 2px 6px,
+    var(--encre) 6px 9px, transparent 9px 11px,
+    var(--encre) 11px 12px, transparent 12px 18px,
+    var(--encre) 18px 22px, transparent 22px 25px);
+  opacity:.15;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
           mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
 }
 .foot-legal{
   display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap;
-  font-family:var(--font-m); font-size:.6rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gris);
+  font-family:var(--font-m); font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gris);
 }
-@media(max-width:800px){ .foot-grid{grid-template-columns:1fr} }
+@media(max-width:800px){ .foot-grid{grid-template-columns:1fr; gap:32px} }
 </style>
 </head>
 <body>
+
+<a class="skip" href="#apporte">Aller au contenu</a>
 
 <div class="ambient" aria-hidden="true"></div>
 
@@ -460,31 +588,43 @@ footer{
     <a href="#groupe">Le groupe</a>
     <a href="#offilog">Offilog</a>
     <a href="#chiffres">Chiffres</a>
-    <button class="nav-cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Demander nos conditions</button>
+    <button class="nav-cta" data-goto="contact">Demander nos conditions</button>
   </nav>
+  <button class="nav-burger" id="burger" aria-expanded="false" aria-controls="navPanel" aria-label="Ouvrir le menu"><i></i><i></i><i></i></button>
 </header>
+<div class="nav-panel" id="navPanel">
+  <a href="#apporte"><span>L'offre</span><span class="k">01</span></a>
+  <a href="#groupe"><span>Le groupe</span><span class="k">02</span></a>
+  <a href="#offilog"><span>Offilog</span><span class="k">03</span></a>
+  <a href="#chiffres"><span>Chiffres</span><span class="k">04</span></a>
+  <button class="nav-cta" data-goto="contact">Demander nos conditions</button>
+</div>
 
 <main>
 
   <!-- ═══ HERO ═══ -->
-  <section class="hero" id="hero" data-pose='{"x":1.9,"y":0.05,"s":1.12,"ry":0.4,"rz":0.42,"sat":0}'>
+  <section class="hero" id="hero" data-pose='{"x":2.05,"y":0.18,"s":0.78,"ry":0.4,"rz":0.45,"sat":0}'>
     <div class="wrap">
       <div class="hero-grid">
         <div>
           <span class="hero-eyebrow rv"><span class="dot"></span>Groupe de grossistes indépendant</span>
-          <h1 class="rv d1">Plus de marge,<br><span class="l2">dès la première boîte.</span></h1>
-          <p class="lead rv d2">Intégral Pharma est un grossiste-répartiteur de première intention. Du princeps au générique, nous approvisionnons votre officine avec une idée fixe&nbsp;: votre rentabilité.</p>
+          <h1>
+            <span class="line"><span>Plus de marge,</span></span>
+            <span class="line l2"><span class="l2">dès la première boîte.</span></span>
+          </h1>
+          <p class="lead rv d2">Intégral Pharma est un grossiste-répartiteur de première intention. Du princeps au générique, nous approvisionnons votre officine avec une idée fixe&nbsp;: <b>votre rentabilité</b>.</p>
           <div class="hero-ctas rv d3">
-            <button class="btn btn-orange" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Demander nos conditions <span class="arr">→</span></button>
+            <button class="btn btn-orange" data-goto="contact">Demander nos conditions <span class="arr">→</span></button>
             <a class="btn btn-ghost" href="#groupe">Découvrir le groupe</a>
           </div>
-          <p class="hero-note rv d4"><b>+20 ans d'expérience</b> · 9 agences · couverture nationale</p>
+          <p class="hero-note rv d4"><b>+20 ans d'expérience</b><span class="sep">·</span>9 agences<span class="sep">·</span>couverture nationale</p>
         </div>
         <div class="hero-spec rv d3" aria-hidden="true">
-          <span>RÉF — <b>INTÉGRAL PHARMA</b></span>
-          <span>STATUT — <b>PREMIÈRE INTENTION</b></span>
-          <span>RÉSEAU — <b>9 AGENCES · NATIONAL</b></span>
-          <span>CATALOGUE — <b>OFFILOG · +14 000 RÉF.</b></span>
+          <span class="t">Notice · Intégral Pharma</span>
+          <span>Statut <b>Première intention</b></span>
+          <span>Réseau <b>9 agences · national</b></span>
+          <span>Catalogue <b>Offilog · +14 000 réf.</b></span>
+          <span>Gamme <b>Princeps → générique</b></span>
         </div>
       </div>
     </div>
@@ -505,28 +645,28 @@ footer{
   </section>
 
   <!-- ═══ 01 · CE QU'ON APPORTE ═══ -->
-  <section class="apporte" id="apporte" data-pose='{"x":-1.85,"y":0,"s":0.8,"ry":2.4,"rz":-0.5,"sat":0}'>
+  <section class="apporte" id="apporte" data-pose='{"x":-1.7,"y":0,"s":0.66,"ry":2.4,"rz":-0.5,"sat":0}'>
     <div class="wrap">
       <div class="apporte-head">
         <div class="rule rv"><span class="mono"><span class="idx">01 ·</span> Ce qu'on apporte</span></div>
         <h2 class="rv d1">La répartition,<br>version <span class="accent">rentable</span>.</h2>
-        <p class="lead rv d2" style="margin-top:22px">Un répartiteur principal pensé pour l'officine&nbsp;: la profondeur de gamme d'un national, l'agilité d'un indépendant.</p>
+        <p class="lead rv d2">Un répartiteur principal pensé pour l'officine&nbsp;: la profondeur de gamme d'un national, l'agilité d'un indépendant.</p>
       </div>
       <div class="cards">
         <article class="card rv">
-          <div class="code"><span>BLOC A</span><span>·· ·</span></div>
+          <div class="code"><span>Bloc A</span><span>·· ·</span></div>
           <div class="ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M12 12v4"/><path d="M10 14h4"/></svg></div>
           <h3>Première intention</h3>
           <p>Pas un dépanneur d'appoint&nbsp;: votre <b>répartiteur principal</b>. La marge se joue sur le quotidien — dès la première boîte commandée.</p>
         </article>
         <article class="card rv d1">
-          <div class="code"><span>BLOC B</span><span>· ···</span></div>
+          <div class="code"><span>Bloc B</span><span>· ···</span></div>
           <div class="ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 1 1 7-7l7 7a4.95 4.95 0 1 1-7 7Z"/><path d="m7 10 7 7"/></svg></div>
           <h3>Du princeps au générique</h3>
           <p>Toute la largeur du besoin de l'officine, avec <b>+430 laboratoires</b> référencés au catalogue. Une seule commande, tout le comptoir.</p>
         </article>
         <article class="card rv d2">
-          <div class="code"><span>BLOC C</span><span>··· ·</span></div>
+          <div class="code"><span>Bloc C</span><span>··· ·</span></div>
           <div class="ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><path d="M5 8v8l7 5 7-5V8"/></svg></div>
           <h3>Indépendance</h3>
           <p>Un <b>groupe de grossistes indépendant</b>&nbsp;: des décisions courtes, un interlocuteur qui connaît votre officine, pas un guichet anonyme.</p>
@@ -536,19 +676,20 @@ footer{
   </section>
 
   <!-- ═══ 02 · LE GROUPE ═══ -->
-  <section class="groupe" id="groupe" data-pose='{"x":1.8,"y":0.1,"s":0.78,"ry":4.6,"rz":0.55,"sat":0}'>
+  <section class="groupe" id="groupe" data-pose='{"x":1.7,"y":0.1,"s":0.64,"ry":4.6,"rz":0.55,"sat":0}'>
     <div class="wrap">
       <div class="groupe-grid">
-        <div class="agences rv" aria-label="9 agences en France">
-          <div class="agence"><span class="pin"></span><div><div class="n">01</div><div class="lbl">Agence</div></div></div>
-          <div class="agence"><span class="pin"></span><div><div class="n">02</div><div class="lbl">Agence</div></div></div>
-          <div class="agence"><span class="pin"></span><div><div class="n">03</div><div class="lbl">Agence</div></div></div>
-          <div class="agence"><span class="pin"></span><div><div class="n">04</div><div class="lbl">Agence</div></div></div>
-          <div class="agence"><span class="pin"></span><div><div class="n">05</div><div class="lbl">Agence</div></div></div>
-          <div class="agence"><span class="pin"></span><div><div class="n">06</div><div class="lbl">Agence</div></div></div>
-          <div class="agence"><span class="pin"></span><div><div class="n">07</div><div class="lbl">Agence</div></div></div>
-          <div class="agence"><span class="pin"></span><div><div class="n">08</div><div class="lbl">Agence</div></div></div>
-          <div class="agence"><span class="pin"></span><div><div class="n">09</div><div class="lbl">Agence</div></div></div>
+        <div class="agences" aria-label="9 agences en France">
+          <div class="agence rv"><div class="top"><span class="code">IP-01</span><span class="pin"></span></div><div><div class="n">01</div><div class="lbl">Agence</div></div></div>
+          <div class="agence rv d1"><div class="top"><span class="code">IP-02</span><span class="pin"></span></div><div><div class="n">02</div><div class="lbl">Agence</div></div></div>
+          <div class="agence rv d2"><div class="top"><span class="code">IP-03</span><span class="pin"></span></div><div><div class="n">03</div><div class="lbl">Agence</div></div></div>
+          <div class="agence rv d1"><div class="top"><span class="code">IP-04</span><span class="pin"></span></div><div><div class="n">04</div><div class="lbl">Agence</div></div></div>
+          <div class="agence rv d2"><div class="top"><span class="code">IP-05</span><span class="pin"></span></div><div><div class="n">05</div><div class="lbl">Agence</div></div></div>
+          <div class="agence rv d3"><div class="top"><span class="code">IP-06</span><span class="pin"></span></div><div><div class="n">06</div><div class="lbl">Agence</div></div></div>
+          <div class="agence rv d2"><div class="top"><span class="code">IP-07</span><span class="pin"></span></div><div><div class="n">07</div><div class="lbl">Agence</div></div></div>
+          <div class="agence rv d3"><div class="top"><span class="code">IP-08</span><span class="pin"></span></div><div><div class="n">08</div><div class="lbl">Agence</div></div></div>
+          <div class="agence rv d4"><div class="top"><span class="code">IP-09</span><span class="pin"></span></div><div><div class="n">09</div><div class="lbl">Agence</div></div></div>
+          <span class="agences-cap rv d4">9 agences · couverture nationale</span>
         </div>
         <div class="groupe-copy">
           <div class="rule rv"><span class="mono"><span class="idx">02 ·</span> Le groupe</span></div>
@@ -566,34 +707,39 @@ footer{
   </section>
 
   <!-- ═══ 03 · OFFILOG ═══ -->
-  <section class="offilog" id="offilog" data-pose='{"x":-1.7,"y":0.05,"s":0.85,"ry":6.8,"rz":-0.35,"sat":1}'>
+  <section class="offilog" id="offilog" data-pose='{"x":-1.6,"y":0.05,"s":0.72,"ry":6.8,"rz":-0.35,"sat":1}'>
     <div class="wrap">
       <div class="offilog-grid">
         <div class="offilog-copy">
           <div class="rule rv"><span class="mono"><span class="idx">03 ·</span> Le catalogue Offilog</span></div>
           <h2 class="rv d1">Une boîte peut en cacher <span class="accent-b">14&nbsp;000</span>.</h2>
-          <p class="lead rv d2">Derrière chaque référence, tout un catalogue&nbsp;: Offilog aligne plus de 14&nbsp;000 références pour couvrir le quotidien du comptoir, du princeps au générique.</p>
+          <p class="lead rv d2" style="margin-top:20px">Derrière chaque référence, tout un catalogue&nbsp;: Offilog aligne plus de 14&nbsp;000 références pour couvrir le quotidien du comptoir, du princeps au générique.</p>
           <div class="offilog-list rv d3">
             <div class="oli"><span class="b"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span><span><b>+14 000</b> références au catalogue</span></div>
             <div class="oli"><span class="b"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg></span><span><b>+430</b> laboratoires référencés</span></div>
             <div class="oli"><span class="b"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span><span>Du <b>princeps</b> au <b>générique</b></span></div>
           </div>
         </div>
-        <div class="offilog-big rv" aria-hidden="true">+14<br>000<small>références Offilog</small></div>
+        <div class="offilog-fiche rv d1" aria-hidden="true">
+          <div class="head"><span>Fiche catalogue</span><span>Offilog</span></div>
+          <div class="big">+14&nbsp;000<small>références, du princeps au générique</small></div>
+          <div class="mini-barcode"></div>
+          <div class="ref"><span>Intégral Pharma</span><span>+430 labos</span></div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ═══ 04 · CHIFFRES (section « carton ») ═══ -->
-  <section class="chiffres" id="chiffres" data-pose='{"x":0,"y":0,"s":0.4,"ry":8.4,"rz":0.4,"sat":0}'>
+  <section class="chiffres" id="chiffres" data-pose='{"x":0,"y":0.15,"s":0.3,"ry":8.4,"rz":0.4,"sat":0}'>
     <div class="wrap">
       <div class="rule rv"><span class="mono"><span class="idx">04 ·</span> La boîte, en chiffres</span></div>
       <h2 class="rv d1">Ce qui est écrit sur la boîte est dans la boîte.</h2>
       <div class="stats">
-        <div class="stat rv"><span class="k">EXP</span><div class="num"><span data-count="20" data-prefix="+"></span></div><div class="lbl">ans d'expérience de la répartition pharmaceutique</div></div>
-        <div class="stat rv d1"><span class="k">RÉSEAU</span><div class="num"><span data-count="9"></span></div><div class="lbl">agences — couverture nationale des officines</div></div>
-        <div class="stat rv d2"><span class="k">CATALOGUE</span><div class="num"><span data-count="14000" data-prefix="+"></span></div><div class="lbl">références au catalogue Offilog</div></div>
-        <div class="stat rv d3"><span class="k">LABOS</span><div class="num"><span data-count="430" data-prefix="+"></span></div><div class="lbl">laboratoires, du princeps au générique</div></div>
+        <div class="stat rv"><span class="k">Expérience</span><div class="num"><span data-count="20" data-prefix="+"></span></div><div class="lbl">ans d'expérience de la répartition pharmaceutique</div></div>
+        <div class="stat rv d1"><span class="k">Réseau</span><div class="num"><span data-count="9"></span></div><div class="lbl">agences — couverture nationale des officines</div></div>
+        <div class="stat rv d2"><span class="k">Catalogue</span><div class="num"><span data-count="14000" data-prefix="+"></span></div><div class="lbl">références au catalogue Offilog</div></div>
+        <div class="stat rv d3"><span class="k">Labos</span><div class="num"><span data-count="430" data-prefix="+"></span></div><div class="lbl">laboratoires, du princeps au générique</div></div>
       </div>
       <div class="chiffres-foot rv d2">
         <span>Intégral Pharma · Grossiste-répartiteur de première intention</span>
@@ -603,13 +749,14 @@ footer{
   </section>
 
   <!-- ═══ 05 · CONTACT / CTA ═══ -->
-  <section class="contact" id="contact" data-pose='{"x":0,"y":-0.15,"s":1.05,"ry":10.6,"rz":0.42,"sat":0}'>
+  <section class="contact" id="contact" data-pose='{"x":0,"y":-0.08,"s":0.88,"ry":10.6,"rz":0.42,"sat":0}'>
     <div class="wrap">
-      <div class="rule rv" style="justify-content:center"><span class="mono"><span class="idx">05 ·</span> Parlons-en</span></div>
+      <div class="rule rv"><span class="mono"><span class="idx">05 ·</span> Parlons-en</span></div>
       <h2 class="rv d1">Nos conditions&nbsp;?<br><span class="accent">Chiffré en rendez-vous.</span></h2>
       <p class="lead rv d2">Chaque officine est différente — nos conditions se chiffrent en rendez-vous, face à vos volumes réels. Trente minutes suffisent pour poser les chiffres sur la table.</p>
       <div class="contact-ctas rv d3">
         <button class="btn btn-orange" type="button">Demander nos conditions <span class="arr">→</span></button>
+        <a class="btn btn-ghost" href="#apporte">Revoir l'offre</a>
       </div>
       <p class="contact-hint rv d4">Réponse d'un interlocuteur du groupe — <b>pas d'un robot</b></p>
     </div>
@@ -649,10 +796,15 @@ footer{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════
-   LA BOÎTE — capsule 3D signature (three.js r128) — studio CLAIR
-   Cap ORANGE #F39A1B + corps ARGENT clair + bague BLEUE #0050E6.
-   Fixe derrière la page ; sa pose (x, y, échelle, rotation) est
-   interpolée entre les sections [data-pose] selon le scroll.
+   LA BOÎTE — capsule 3D signature (three.js r128) — studio CLAIR V2
+   Cap ORANGE FRANC + corps argent clair + bague bleue #0050E6.
+   Recalibrage V2 :
+   · sRGBEncoding → couleurs fidèles (l'orange reste orange, pas jaune)
+   · lumières & env baissés (plus de dominante jaune sur le cap)
+   · pas de plan orange dans l'environnement (source du jaunissement)
+   · ombre portée douce (texture radiale) qui suit la capsule
+   · taille raisonnable (poses réduites), matériaux nets sur fond clair
+   Fixe derrière la page ; pose interpolée entre sections [data-pose].
    reduced-motion → pose hero figée, aucun mouvement.
    ══════════════════════════════════════════════════════════════ */
 (function(){
@@ -663,72 +815,94 @@ footer{
   try{ gl = document.createElement('canvas').getContext('webgl'); }catch(e){}
   if(!window.THREE || !gl){ host.classList.add('no-webgl'); return; }
 
-  var COL_ORANGE = 0xF39A1B;   // orange doré (cap)
-  var COL_ARGENT = 0xE2E6ED;   // argent clair (corps)
-  var COL_BLEU   = 0x0050E6;   // bague bleue
+  var COL_ORANGE = 0xE05A00;   // base rouge-orangé → rendu ORANGE FRANC éclairé
+  var COL_ARGENT = 0xDCE1EA;   // argent clair (corps)
+  var COL_BLEU   = 0x0046C8;   // bague bleue
 
   var W = function(){ return host.clientWidth; };
   var H = function(){ return host.clientHeight; };
 
   var scene = new THREE.Scene();
-  var cam = new THREE.PerspectiveCamera(36, W()/H(), .1, 100);
-  cam.position.z = 7.2;
+  var cam = new THREE.PerspectiveCamera(34, W()/H(), .1, 100);
+  cam.position.z = 7.6;
   var rnd = new THREE.WebGLRenderer({antialias:true, alpha:true});
   rnd.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   rnd.setSize(W(), H());
+  rnd.outputEncoding = THREE.sRGBEncoding; /* couleurs fidèles — anti-jaune */
   host.appendChild(rnd.domElement);
 
-  /* Env studio CLAIR pour reflets métalliques lumineux */
+  /* Env studio NEUTRE (blanc + fill froid léger — aucune source chaude,
+     c'est elle qui faisait virer le cap orange au jaune) */
   var pmrem = new THREE.PMREMGenerator(rnd);
   var envScene = new THREE.Scene();
   envScene.add(new THREE.Mesh(
     new THREE.SphereGeometry(50,16,16),
-    new THREE.MeshBasicMaterial({color:0xF3EEE2, side:THREE.BackSide})
+    new THREE.MeshBasicMaterial({color:0xEDEEF2, side:THREE.BackSide})
   ));
-  var key = new THREE.Mesh(new THREE.PlaneGeometry(18,18), new THREE.MeshBasicMaterial({color:0xffffff}));
-  key.position.set(8,10,6); envScene.add(key);
-  var warm = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.MeshBasicMaterial({color:0xF39A1B}));
-  warm.position.set(-9,-4,5); warm.lookAt(0,0,0); envScene.add(warm);
-  var cool = new THREE.Mesh(new THREE.PlaneGeometry(9,9), new THREE.MeshBasicMaterial({color:0xBBD0FF}));
-  cool.position.set(9,-6,4); cool.lookAt(0,0,0); envScene.add(cool);
+  var key = new THREE.Mesh(new THREE.PlaneGeometry(16,16), new THREE.MeshBasicMaterial({color:0xFFFFFF}));
+  key.position.set(7,10,6); key.lookAt(0,0,0); envScene.add(key);
+  var cool = new THREE.Mesh(new THREE.PlaneGeometry(9,9), new THREE.MeshBasicMaterial({color:0xD8E2F6}));
+  cool.position.set(-9,-5,4); cool.lookAt(0,0,0); envScene.add(cool);
   scene.environment = pmrem.fromScene(envScene).texture;
 
-  /* ── LA CAPSULE ── */
+  /* ── LA CAPSULE — matériaux nets ── */
   var caps = new THREE.Group();
   function half(color, top, metal){
-    var mat = new THREE.MeshPhysicalMaterial({
-      color:color, metalness:(metal?0.7:0.2), roughness:(metal?0.24:0.3),
-      clearcoat:0.7, clearcoatRoughness:0.25, envMapIntensity:1.05
+    var mat = new THREE.MeshPhysicalMaterial(metal ? {
+      /* corps argent : métal brossé doux */
+      color:color, metalness:0.8, roughness:0.32,
+      clearcoat:0.35, clearcoatRoughness:0.32, envMapIntensity:0.7
+    } : {
+      /* cap orange : plastique laqué mat — PAS métallique, env minimal
+         (c'est la lumière blanche qui faisait virer l'orange au jaune) */
+      color:color, metalness:0.0, roughness:0.42,
+      clearcoat:0.3, clearcoatRoughness:0.4, envMapIntensity:0.3
     });
     var g = new THREE.Group();
-    g.add(new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,1.3,56,1,true), mat));
-    var cap = new THREE.Mesh(new THREE.SphereGeometry(.85,56,28,0,Math.PI*2,0,Math.PI/2), mat);
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,1.3,64,1,true), mat));
+    var cap = new THREE.Mesh(new THREE.SphereGeometry(.85,64,32,0,Math.PI*2,0,Math.PI/2), mat);
     cap.position.y = .65; g.add(cap);
     g.position.y = top ? .65 : -.65;
     if(!top) g.rotation.z = Math.PI;
     return g;
   }
-  caps.add(half(COL_ORANGE, true, false));    // cap orange doré
+  caps.add(half(COL_ORANGE, true, false));    // cap orange franc laqué
   caps.add(half(COL_ARGENT, false, true));    // corps argent clair métal
   var ring = new THREE.Mesh(                  // bague bleue à la jointure
-    new THREE.TorusGeometry(.855,.035,20,72),
-    new THREE.MeshPhysicalMaterial({color:COL_BLEU, metalness:.55, roughness:.25, envMapIntensity:1.3})
+    new THREE.TorusGeometry(.856,.032,20,80),
+    new THREE.MeshPhysicalMaterial({color:COL_BLEU, metalness:.45, roughness:.28, envMapIntensity:.9})
   );
   ring.rotation.x = Math.PI/2; caps.add(ring);
-  caps.rotation.z = .42;
+  caps.rotation.z = .45;
   scene.add(caps);
+
+  /* ── OMBRE PORTÉE DOUCE (texture radiale, suit la capsule) ── */
+  var shCanvas = document.createElement('canvas');
+  shCanvas.width = shCanvas.height = 256;
+  var sctx = shCanvas.getContext('2d');
+  var grad = sctx.createRadialGradient(128,128,10,128,128,120);
+  grad.addColorStop(0,'rgba(20,27,44,.34)');
+  grad.addColorStop(.55,'rgba(20,27,44,.12)');
+  grad.addColorStop(1,'rgba(20,27,44,0)');
+  sctx.fillStyle = grad; sctx.fillRect(0,0,256,256);
+  var shTex = new THREE.CanvasTexture(shCanvas);
+  var shadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.6,1.15),
+    new THREE.MeshBasicMaterial({map:shTex, transparent:true, opacity:.5, depthWrite:false})
+  );
+  scene.add(shadow);
 
   /* ── SATELLITES (le catalogue qui gravite — section Offilog) ── */
   var satGroup = new THREE.Group();
   var satMats = [];
-  for(var i=0;i<14;i++){
-    var c = i%3===0 ? COL_ORANGE : (i%3===1 ? COL_ARGENT : COL_BLEU);
-    var m = new THREE.MeshPhysicalMaterial({color:c, metalness:.45, roughness:.3, transparent:true, opacity:0, envMapIntensity:1});
+  for(var i=0;i<12;i++){
+    var c = i%3===0 ? COL_ORANGE : (i%3===1 ? 0xC9D2E0 : COL_BLEU);
+    var m = new THREE.MeshPhysicalMaterial({color:c, metalness:.3, roughness:.35, transparent:true, opacity:0, envMapIntensity:.7});
     satMats.push(m);
-    var geo = THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(.09,.16,6,12) : new THREE.SphereGeometry(.12,14,14);
+    var geo = THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(.08,.14,6,12) : new THREE.SphereGeometry(.1,14,14);
     var s = new THREE.Mesh(geo, m);
-    var a = (i/14)*Math.PI*2, r = 2.15 + (i%4)*.22;
-    s.position.set(Math.cos(a)*r, Math.sin(a*2)*.5, Math.sin(a)*r);
+    var a = (i/12)*Math.PI*2, r = 2 + (i%4)*.2;
+    s.position.set(Math.cos(a)*r, Math.sin(a*2)*.45, Math.sin(a)*r);
     s.rotation.set(a, a*1.7, 0);
     satGroup.add(s);
   }
@@ -736,21 +910,21 @@ footer{
 
   /* ── Poussière douce d'ambiance (encre pâle sur papier) ── */
   var dustGeo = new THREE.BufferGeometry();
-  var N = 140, pos = new Float32Array(N*3);
+  var N = 110, pos = new Float32Array(N*3);
   for(var j=0;j<N;j++){
     pos[j*3]   = (Math.random()-.5)*14;
     pos[j*3+1] = (Math.random()-.5)*9;
     pos[j*3+2] = -2 - Math.random()*6;
   }
   dustGeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
-  var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({color:0x8FA0C6, size:.035, transparent:true, opacity:.4}));
+  var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({color:0x9AA8C8, size:.032, transparent:true, opacity:.35}));
   scene.add(dust);
 
-  /* ── Lumières (studio lumineux) ── */
-  scene.add(new THREE.AmbientLight(0xffffff,.65));
-  var sun = new THREE.DirectionalLight(0xffffff,1.05); sun.position.set(4,6,5); scene.add(sun);
-  var pO = new THREE.PointLight(COL_ORANGE,.7,22); pO.position.set(5,-3,4); scene.add(pO);
-  var pB = new THREE.PointLight(COL_BLEU,.6,22);  pB.position.set(-5,2,4);  scene.add(pB);
+  /* ── Lumières — intensités BASSES, blanc neutre (anti-jaune) ── */
+  scene.add(new THREE.AmbientLight(0xFFFFFF,.45));
+  var sun = new THREE.DirectionalLight(0xFFFFFF,.62); sun.position.set(3,5,6); scene.add(sun);
+  var fill = new THREE.DirectionalLight(0xE9F0FF,.3); fill.position.set(-5,-2,4); scene.add(fill);
+  var pB = new THREE.PointLight(COL_BLEU,.35,20); pB.position.set(-5,2,4); scene.add(pB);
 
   /* ── Poses par section : interpolation au scroll ── */
   var sections = Array.prototype.slice.call(document.querySelectorAll('[data-pose]'));
@@ -803,24 +977,31 @@ footer{
 
     var center = window.scrollY + window.innerHeight/2;
     var P = reduce ? poses[0] : poseAt(center);
-    var xFactor = narrow() ? .22 : 1;      // mobile : la capsule reste ± centrée
+    var xFactor = narrow() ? .2 : 1;      // mobile : la capsule reste ± centrée
 
-    caps.position.x = P.x * xFactor + mx*.35;
-    caps.position.y = P.y + (reduce ? 0 : Math.sin(t*1.1)*.1) - my*.25;
-    var s = P.s * (narrow() ? .78 : 1);
+    var bob = reduce ? 0 : Math.sin(t*1.1)*.08;
+    caps.position.x = P.x * xFactor + mx*.3;
+    caps.position.y = P.y + bob - my*.22;
+    var s = P.s * (narrow() ? .74 : 1);
     caps.scale.set(s,s,s);
-    caps.rotation.y = P.ry + (reduce ? 0 : t*.35) + mx*.9;
-    caps.rotation.z = P.rz + my*.2;
-    caps.rotation.x = my*.4;
+    caps.rotation.y = P.ry + (reduce ? 0 : t*.32) + mx*.8;
+    caps.rotation.z = P.rz + my*.18;
+    caps.rotation.x = my*.35;
+
+    /* ombre douce : sous la capsule, respire à l'inverse du flottement */
+    shadow.position.set(caps.position.x, caps.position.y - 2.05*s, caps.position.z - .4);
+    var shS = s * (1 - bob*.55);
+    shadow.scale.set(shS, shS, 1);
+    shadow.material.opacity = Math.max(0, Math.min(.5, .5 - bob*1.4)) * Math.min(1, s*1.6);
 
     satGroup.position.copy(caps.position);
     satGroup.scale.set(s,s,s);
-    satGroup.rotation.y = reduce ? 0 : t*.5;
+    satGroup.rotation.y = reduce ? 0 : t*.45;
     satGroup.rotation.x = .3;
     var so = reduce ? 0 : P.sat;
-    for(var k=0;k<satMats.length;k++) satMats[k].opacity = so*.95;
+    for(var k=0;k<satMats.length;k++) satMats[k].opacity = so*.9;
 
-    dust.rotation.y = reduce ? 0 : t*.02;
+    dust.rotation.y = reduce ? 0 : t*.018;
 
     rnd.render(scene,cam);
     requestAnimationFrame(frame);
@@ -837,14 +1018,40 @@ footer{
     var max = document.documentElement.scrollHeight - window.innerHeight;
     bar.style.setProperty('--sp', max>0 ? (window.scrollY/max).toFixed(4) : 0);
     var y = window.scrollY;
-    if(y > 160 && y > lastY + 4) nav.classList.add('hide');
-    else if(y < lastY - 4 || y <= 160) nav.classList.remove('hide');
+    if(document.getElementById('navPanel').classList.contains('open')){
+      nav.classList.remove('hide');
+    } else if(y > 180 && y > lastY + 4){ nav.classList.add('hide'); }
+    else if(y < lastY - 4 || y <= 180){ nav.classList.remove('hide'); }
     lastY = y; ticking = false;
   }
   window.addEventListener('scroll', function(){
     if(!ticking){ ticking = true; requestAnimationFrame(update); }
   }, {passive:true});
   update();
+})();
+
+/* ══════════ Menu mobile + CTA scroll ══════════ */
+(function(){
+  var burger = document.getElementById('burger');
+  var panel = document.getElementById('navPanel');
+  function close(){
+    panel.classList.remove('open');
+    burger.setAttribute('aria-expanded','false');
+    burger.setAttribute('aria-label','Ouvrir le menu');
+  }
+  burger.addEventListener('click', function(){
+    var open = panel.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    burger.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+  });
+  panel.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', close); });
+  document.querySelectorAll('[data-goto]').forEach(function(b){
+    b.addEventListener('click', function(){
+      close();
+      var el = document.getElementById(b.getAttribute('data-goto'));
+      if(el) el.scrollIntoView({behavior:'smooth'});
+    });
+  });
 })();
 
 /* ══════════ Reveals (IntersectionObserver) ══════════ */
@@ -862,6 +1069,13 @@ footer{
   els.forEach(function(e){ io.observe(e); });
 })();
 
+/* ══════════ Titre hero — révélation ligne à ligne ══════════ */
+(function(){
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){ document.body.classList.add('loaded'); });
+  });
+})();
+
 /* ══════════ Count-up des chiffres ══════════ */
 (function(){
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -873,7 +1087,7 @@ footer{
   function run(el){
     var target = parseFloat(el.dataset.count)||0;
     if(reduce){ paint(el, target); return; }
-    var t0 = null, dur = 1500;
+    var t0 = null, dur = 1400;
     function step(ts){
       if(!t0) t0 = ts;
       var p = Math.min(1, (ts-t0)/dur);
