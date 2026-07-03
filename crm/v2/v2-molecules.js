@@ -88,8 +88,11 @@
     }
     var rows = shown.map(function (r, i) {
       var p = pricing(r);
+      // Génériques : PAS d'abandon de marge Intégral (ce sont les génériqueurs
+      // qui gèrent leurs propres remises) → on affiche juste le prix, aucun %.
+      var showAb = r.f !== 'gen' && p.rpct > 0;
       var stockTd = showStock ? '<td class="num mono" data-label="Stock" style="font-weight:800;color:' + (p.stk > 0 ? 'var(--c-opp)' : 'var(--c-rose)') + '">' + (p.stk != null ? num(p.stk) : '—') + '</td>' : '';
-      var pphtTd = p.rpct > 0
+      var pphtTd = showAb
         ? '<td class="num mono mol-ppht" data-label="PPHT">' + (p.ppht > 0 ? eur(p.ppht) : '—') + '</td>'
         : '<td class="num mono" data-label="PPHT" style="color:var(--muted)">' + (p.ppht > 0 ? eur(p.ppht) : '—') + '</td>';
       return '<tr style="--rowc:' + (FAM_BY[r.f] ? FAM_BY[r.f].sc : 'transparent') + '">' +
@@ -100,7 +103,7 @@
         '<td class="num mono mol-nph" data-label="Pharmacies">' + num(r.n) + '</td>' +
         pphtTd +
         '<td class="num mono mol-net" data-label="Net remisé">' + (p.net > 0 ? eur(p.net) : '—') + '</td>' +
-        '<td class="num" data-label="Abandon de marge">' + (p.rpct > 0 ? '<span class="mol-rem">−' + String(p.rpct).replace('.', ',') + '%</span>' : '<span style="color:var(--muted-2)">—</span>') + '</td>' +
+        '<td class="num" data-label="Abandon de marge">' + (showAb ? '<span class="mol-rem">−' + String(p.rpct).replace('.', ',') + '%</span>' : '<span style="color:var(--muted-2)">—</span>') + '</td>' +
         COLS.map(function (c) { return '<td class="num mono" data-label="' + esc(c.l) + '"' + (c.accent ? ' style="color:' + c.accent + ';font-weight:800"' : '') + '>' + c.fmt(r[c.k] || 0) + '</td>'; }).join('') +
         stockTd +
       '</tr>';
@@ -172,15 +175,16 @@
       if (perCat > 0) rows = rows.slice(0, perCat);
       if (!rows.length) return '';
       var sEco = 0, sR = 0, sN = 0;
+      var isGen = (k === 'gen'); // générique : pas d'abandon de marge Intégral → juste le prix
       var trs = rows.map(function (r, i) {
-        var p = pricing(r); var eco = (p.rpct > 0) ? (p.ppht - p.net) : 0;
-        if (p.rpct > 0) { sEco += eco; sR += p.rpct; sN++; }
+        var p = pricing(r); var eco = (!isGen && p.rpct > 0) ? (p.ppht - p.net) : 0;
+        if (!isGen && p.rpct > 0) { sEco += eco; sR += p.rpct; sN++; }
         var stockTd = showStock ? '<td style="padding:5px 7px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:' + (p.stk > 0 ? '#1E9E6A' : '#E0556E') + '">' + (p.stk != null ? p.stk : '—') + '</td>' : '';
         return '<tr style="border-bottom:1px solid #EEF1F6;page-break-inside:avoid">' +
           '<td style="padding:5px 7px;color:#9AA1B2;font-size:9px;text-align:right">' + (i + 1) + '</td>' +
           '<td style="padding:5px 7px;font-size:11.5px;font-weight:600;color:#10131C">' + esc(cap(r.d).slice(0, 46)) + '</td>' +
           '<td style="padding:5px 7px;font-family:monospace;font-size:9.5px;color:#737A8C">' + esc(r.c) + '</td>' +
-          '<td style="padding:5px 7px;text-align:right;font-family:monospace;font-size:10.5px;color:#9AA1B2;text-decoration:' + (p.rpct > 0 ? 'line-through' : 'none') + '">' + e2(p.ppht) + '</td>' +
+          '<td style="padding:5px 7px;text-align:right;font-family:monospace;font-size:10.5px;color:#9AA1B2;text-decoration:' + ((!isGen && p.rpct > 0) ? 'line-through' : 'none') + '">' + e2(p.ppht) + '</td>' +
           '<td style="padding:5px 7px;text-align:right;font-family:monospace;font-size:12px;font-weight:800;color:#0050E6">' + e2(p.net) + '</td>' +
           '<td style="padding:5px 7px;text-align:right;font-family:monospace;font-size:10.5px;font-weight:800;color:#0f7a52">' + (eco > 0 ? '−' + e2(eco) : '—') + '</td>' +
           '<td style="padding:5px 7px;text-align:right"><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#E8F0FE;color:#0034A0;font-family:monospace;font-size:11px;font-weight:800">' + num(r.n) + '</span></td>' +
@@ -265,7 +269,7 @@
 
       // Bandeau de repères : chiffres dérivés des VRAIES données catalogue (réseau)
       var sR0 = 0, nR0 = 0;
-      (window.PROD_STATS || []).forEach(function (r) { if (r.rpct > 0) { sR0 += r.rpct; nR0++; } });
+      (window.PROD_STATS || []).forEach(function (r) { if (r.f !== 'gen' && r.rpct > 0) { sR0 += r.rpct; nR0++; } });
       var avgR0 = nR0 ? Math.round(sR0 / nR0 * 10) / 10 : 0;
       var kfs = '<div class="mol-kfs">' +
           '<div class="mol-kf"><span class="mol-kf-l">Références</span><span class="mol-kf-v" data-count>' + num(c.all || 0) + '</span></div>' +
