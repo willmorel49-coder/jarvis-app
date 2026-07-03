@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Grossiste-répartiteur de première intention</title>
+<meta name="description" content="Intégral Pharma, groupe de grossistes indépendant. Plus de marge, dès la première boîte.">
+<link rel="icon" href="../assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,340;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,340;1,9..144,400&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   INTÉGRAL PHARMA · MAQUETTE 59 · « SWISS LUXE ÉDITORIAL »
+   ----------------------------------------------------------------
+   Direction artistique : minimalisme suisse haut de gamme.
+   — Papier ivoire, encre profonde, un seul accent orange dosé au filet
+   — Serif éditoriale Fraunces (grands corps) × grotesk Inter (métadonnées)
+   — Grille stricte 12 colonnes, filets 1px, index numérotés, énorme
+     respiration verticale. Une grande image forte, cadrée au filet.
+   ----------------------------------------------------------------
+   SAFARI-SAFE : zéro background-clip:text, zéro backdrop-filter,
+   1 seule vidéo autoplay (muette, coupée si reduced-motion),
+   effets = transform/opacity + gradients rgba uniquement.
+   ================================================================ */
+
+:root{
+  --paper:#F5F2EB;             /* ivoire papier */
+  --paper-2:#EEEAE0;           /* ivoire ombré (blocs) */
+  --paper-3:#E7E2D5;           /* ivoire profond (image placeholders) */
+  --ink:#191712;               /* encre profonde */
+  --ink-2:#43403A;             /* encre secondaire */
+  --muted:#85806F;             /* gris chaud, légendes */
+  --line:rgba(25,23,18,.16);   /* filet fin */
+  --line-2:rgba(25,23,18,.34); /* filet appuyé */
+  --orange:#E88B12;            /* accent marque, lisible sur ivoire */
+  --orange-soft:rgba(232,139,18,.14);
+  --bleu:#0050E6;              /* réservé : focus / lien actif */
+  --serif:"Fraunces", Georgia, "Times New Roman", serif;
+  --sans:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gut:clamp(20px, 4.2vw, 84px);
+  --maxw:1600px;
+  --ease:cubic-bezier(.22,.9,.24,1);
+  --ease-2:cubic-bezier(.16,1,.3,1);
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+html, body{ background:var(--paper); }
+body{
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+::selection{ background:var(--ink); color:var(--paper); }
+img, video{ display:block; max-width:100%; }
+a{ color:inherit; text-decoration:none; }
+button{ font:inherit; color:inherit; background:none; border:0; cursor:pointer; }
+
+/* Grain très léger, papier — pur gradient, aucun filtre */
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:2000;
+  background:
+    radial-gradient(140% 90% at 50% -10%, rgba(25,23,18,.05), rgba(25,23,18,0) 55%),
+    radial-gradient(120% 80% at 50% 115%, rgba(25,23,18,.06), rgba(25,23,18,0) 55%);
+  mix-blend-mode:multiply;
+}
+
+/* ---------- Utilitaires typographiques ---------- */
+.serif{ font-family:var(--serif); }
+.k{ /* kicker petites capitales */
+  font-family:var(--sans); font-size:.72rem; font-weight:500;
+  letter-spacing:.32em; text-transform:uppercase; color:var(--ink-2);
+}
+.k .dot{ color:var(--orange); }
+.meta{ font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.idx{ /* numéro d'index de section */
+  font-family:var(--serif); font-weight:300; font-style:italic;
+  font-size:.95rem; color:var(--muted);
+}
+
+/* ---------- Structure : rails de grille visibles ---------- */
+.shell{ max-width:var(--maxw); margin-inline:auto; padding-inline:var(--gut); position:relative; }
+.rails{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  max-width:var(--maxw); margin-inline:auto;
+}
+.rails i{
+  position:absolute; top:0; bottom:0; width:1px;
+  background:var(--line); opacity:.5;
+}
+.rails i:nth-child(1){ left:var(--gut); }
+.rails i:nth-child(2){ left:50%; }
+.rails i:nth-child(3){ right:var(--gut); }
+@media (max-width:860px){ .rails i:nth-child(2){ display:none; } }
+
+main{ position:relative; z-index:1; }
+
+/* ---------- Préloader rideau ---------- */
+.curtain{
+  position:fixed; inset:0; z-index:3000; background:var(--ink);
+  display:flex; align-items:center; justify-content:center;
+  transition:transform 1s var(--ease-2) .15s;
+}
+.curtain.gone{ transform:translateY(-101%); }
+.curtain .mono{
+  font-family:var(--serif); font-style:italic; font-weight:300;
+  color:var(--paper); font-size:clamp(1.2rem, 3vw, 2rem);
+  letter-spacing:.02em; opacity:0; animation:curtainIn .8s var(--ease) .1s forwards;
+}
+.curtain .mono b{ font-style:normal; font-weight:400; color:var(--orange); }
+@keyframes curtainIn{ from{ opacity:0; transform:translateY(14px);} to{ opacity:1; transform:none;} }
+
+/* ---------- Barre de progression lecture ---------- */
+.progress{
+  position:fixed; top:0; left:0; height:2px; width:100%; z-index:2500;
+  background:transparent; pointer-events:none;
+}
+.progress i{
+  display:block; height:100%; width:100%; background:var(--ink);
+  transform-origin:0 50%; transform:scaleX(0);
+}
+
+/* ---------- Navigation ---------- */
+header.nav{
+  position:fixed; top:0; left:0; right:0; z-index:1500;
+  background:rgba(245,242,235,.94);
+  border-bottom:1px solid var(--line);
+  transition:transform .5s var(--ease);
+}
+header.nav.hide{ transform:translateY(-100%); }
+.nav-in{
+  max-width:var(--maxw); margin-inline:auto; padding-inline:var(--gut);
+  height:72px; display:flex; align-items:center; gap:2rem;
+}
+.brand{ display:flex; align-items:center; gap:.8rem; flex-shrink:0; }
+.brand img{ height:30px; width:auto; }
+.brand span{
+  font-family:var(--serif); font-weight:400; font-size:1.06rem; letter-spacing:.01em;
+}
+.brand span em{ font-style:italic; font-weight:300; }
+.nav-links{ display:flex; gap:2.2rem; margin-left:auto; }
+.nav-links a{
+  font-size:.78rem; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-2);
+  position:relative; padding:.35rem 0; transition:color .3s;
+}
+.nav-links a::after{
+  content:""; position:absolute; left:0; bottom:0; height:1px; width:100%;
+  background:var(--ink); transform:scaleX(0); transform-origin:100% 50%;
+  transition:transform .45s var(--ease);
+}
+.nav-links a:hover{ color:var(--ink); }
+.nav-links a:hover::after{ transform:scaleX(1); transform-origin:0 50%; }
+.nav-cta{
+  flex-shrink:0; margin-left:1rem;
+  font-size:.78rem; letter-spacing:.18em; text-transform:uppercase;
+  border:1px solid var(--ink); padding:.72rem 1.35rem; color:var(--ink);
+  position:relative; overflow:hidden; display:inline-block;
+}
+.nav-cta i{ position:absolute; inset:0; background:var(--ink); transform:translateY(101%); transition:transform .45s var(--ease); }
+.nav-cta b{ position:relative; z-index:1; font-weight:500; transition:color .35s; }
+.nav-cta:hover i{ transform:translateY(0); }
+.nav-cta:hover b{ color:var(--paper); }
+@media (max-width:1020px){ .nav-links{ display:none; } }
+@media (max-width:560px){ .nav-cta{ display:none; } .nav-in{ height:62px; } }
+
+/* ---------- Filet de section + entête d'index ---------- */
+.rule{ height:1px; background:var(--line); }
+.rule-strong{ height:1px; background:var(--line-2); }
+.sec-head{
+  display:flex; align-items:baseline; justify-content:space-between;
+  gap:1rem; padding:1.1rem 0 0;
+}
+
+/* ---------- Reveal générique (IO) ---------- */
+.rev{ opacity:0; transform:translateY(26px); transition:opacity .9s var(--ease), transform .9s var(--ease); }
+.rev.in{ opacity:1; transform:none; }
+.rev-line{ transform:scaleX(0); transform-origin:0 50%; transition:transform 1.2s var(--ease-2); }
+.rev-line.in{ transform:scaleX(1); }
+[data-stagger] > *{ opacity:0; transform:translateY(22px); transition:opacity .8s var(--ease), transform .8s var(--ease); }
+[data-stagger].in > *{ opacity:1; transform:none; }
+
+/* ---------- HERO ---------- */
+.hero{ padding-top:72px; }
+.hero-top{
+  display:grid; grid-template-columns:1fr 1fr; gap:1rem;
+  padding:1.4rem 0 0; align-items:baseline;
+}
+.hero-top .right{ text-align:right; }
+.hero-h1{
+  font-family:var(--serif);
+  font-weight:340;
+  font-size:clamp(3rem, 9.6vw, 9.8rem);
+  line-height:.98;
+  letter-spacing:-.015em;
+  padding:clamp(2.4rem,5vw,4.5rem) 0 clamp(2rem,4vw,3.4rem);
+  max-width:16ch;
+}
+.hero-h1 em{ font-style:italic; font-weight:300; }
+.hero-h1 .accent{ color:var(--orange); }
+/* Kinetic word reveal — chaque mot monte depuis un masque */
+.kw{ display:inline-block; overflow:hidden; vertical-align:bottom; padding-bottom:.06em; margin-bottom:-.06em; }
+.kw > i{
+  display:inline-block; font-style:inherit;
+  transform:translateY(115%);
+  transition:transform 1.05s var(--ease-2);
+}
+.kw.in > i{ transform:translateY(0); }
+
+.hero-meta{
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:2rem;
+  padding:1.4rem 0 1.6rem;
+}
+.hero-meta .cell{ max-width:34ch; }
+.hero-meta .cell .meta{ display:block; margin-bottom:.55rem; }
+.hero-meta .cell p{ font-size:.95rem; color:var(--ink-2); line-height:1.6; }
+.hero-meta .cell p b{ font-weight:600; color:var(--ink); }
+@media (max-width:860px){
+  .hero-meta{ grid-template-columns:1fr; gap:1.4rem; }
+  .hero-top{ grid-template-columns:1fr; }
+  .hero-top .right{ text-align:left; }
+}
+
+/* Grande image éditoriale, cadrée au filet, révélée au scroll */
+.figure{
+  position:relative; border:1px solid var(--line-2); overflow:hidden;
+  background:var(--paper-3);
+}
+.figure .frame{ overflow:hidden; }
+.figure img, .figure video{
+  width:100%; height:100%; object-fit:cover;
+  transform:scale(1.12);
+  transition:transform 1.8s var(--ease-2);
+  will-change:transform;
+}
+.figure.in img, .figure.in video{ transform:scale(1.001); }
+.figure .veil{
+  position:absolute; inset:0; background:var(--paper);
+  transform:translateY(0); transition:transform 1.3s var(--ease-2);
+}
+.figure.in .veil{ transform:translateY(-101%); }
+.figure figcaption{
+  position:absolute; left:0; right:0; bottom:0;
+  display:flex; justify-content:space-between; gap:1rem;
+  padding:.85rem 1.1rem;
+  font-size:.72rem; letter-spacing:.18em; text-transform:uppercase;
+  color:rgba(245,242,235,.92);
+  background:linear-gradient(to top, rgba(25,23,18,.55), rgba(25,23,18,0));
+}
+.hero-fig{ aspect-ratio:16/7.5; }
+@media (max-width:700px){ .hero-fig{ aspect-ratio:4/3.4; } }
+
+/* ---------- Bandeau labos (marquee) ---------- */
+.labos{ padding:0; }
+.labos .band{
+  overflow:hidden; white-space:nowrap;
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  padding:1.7rem 0;
+  position:relative;
+}
+.labos .band::before, .labos .band::after{
+  content:""; position:absolute; top:0; bottom:0; width:9%; z-index:2; pointer-events:none;
+}
+.labos .band::before{ left:0; background:linear-gradient(90deg, var(--paper), rgba(245,242,235,0)); }
+.labos .band::after{ right:0; background:linear-gradient(-90deg, var(--paper), rgba(245,242,235,0)); }
+.marq{ display:inline-flex; align-items:baseline; animation:marq 34s linear infinite; }
+.marq span{
+  font-family:var(--serif); font-weight:300;
+  font-size:clamp(1.5rem, 3.2vw, 2.5rem);
+  letter-spacing:.01em; color:var(--ink-2);
+  padding:0 2.6rem; position:relative;
+}
+.marq span:nth-child(even){ font-style:italic; }
+.marq span::after{
+  content:""; position:absolute; right:-3px; top:50%; width:6px; height:6px;
+  border-radius:50%; background:var(--orange); transform:translateY(-50%);
+}
+@keyframes marq{ to{ transform:translateX(-50%); } }
+.labos .legend{ display:flex; justify-content:space-between; padding:.9rem 0 0; }
+
+/* ---------- Sections communes ---------- */
+section{ padding:clamp(4.5rem, 9vw, 9.5rem) 0 0; }
+.sec-title{
+  font-family:var(--serif); font-weight:340;
+  font-size:clamp(2.2rem, 5.4vw, 4.6rem);
+  line-height:1.04; letter-spacing:-.012em;
+  max-width:18ch;
+  padding:clamp(1.6rem,3vw,2.6rem) 0 clamp(1.6rem,3vw,2.6rem);
+}
+.sec-title em{ font-style:italic; font-weight:300; }
+.sec-intro{ max-width:52ch; color:var(--ink-2); font-size:1.02rem; line-height:1.7; }
+
+/* ---------- Ce qu'on apporte : liste éditoriale ---------- */
+.offer-list{ counter-reset:offer; }
+.offer{
+  display:grid; grid-template-columns:minmax(60px, 140px) 1fr minmax(200px, 420px);
+  gap:2rem; align-items:start;
+  padding:2.3rem 0; border-top:1px solid var(--line);
+  position:relative; transition:padding-left .5s var(--ease);
+}
+.offer:last-child{ border-bottom:1px solid var(--line); }
+.offer::before{
+  counter-increment:offer;
+  content:"0" counter(offer);
+  font-family:var(--serif); font-style:italic; font-weight:300;
+  font-size:1rem; color:var(--muted); padding-top:.55rem;
+}
+.offer::after{
+  content:""; position:absolute; left:0; top:-1px; height:1px; width:0;
+  background:var(--orange); transition:width .6s var(--ease);
+}
+.offer:hover::after{ width:100%; }
+.offer h3{
+  font-family:var(--serif); font-weight:400;
+  font-size:clamp(1.5rem, 2.8vw, 2.3rem); line-height:1.12; letter-spacing:-.01em;
+  max-width:18ch; transition:transform .5s var(--ease);
+}
+.offer:hover h3{ transform:translateX(10px); }
+.offer h3 em{ font-style:italic; font-weight:300; color:var(--ink-2); }
+.offer p{ color:var(--ink-2); font-size:.96rem; line-height:1.65; padding-top:.4rem; }
+.offer p b{ color:var(--ink); font-weight:600; }
+@media (max-width:860px){
+  .offer{ grid-template-columns:48px 1fr; }
+  .offer p{ grid-column:2; }
+}
+
+/* ---------- Le groupe : chiffre 9 monumental ---------- */
+.group-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:clamp(2rem, 5vw, 5rem);
+  align-items:start; padding-top:1rem;
+}
+.big-nine{
+  font-family:var(--serif); font-weight:300;
+  font-size:clamp(11rem, 26vw, 26rem); line-height:.82; letter-spacing:-.04em;
+  color:var(--ink);
+  position:relative; display:inline-block;
+}
+.big-nine::after{
+  content:"agences"; position:absolute; right:-.2em; bottom:.1em;
+  font-size:clamp(1rem, 2vw, 1.5rem); font-style:italic; font-weight:300;
+  letter-spacing:.02em; color:var(--orange); transform:translateX(100%);
+  white-space:nowrap;
+}
+.group-copy p{ color:var(--ink-2); font-size:1.02rem; line-height:1.75; max-width:46ch; }
+.group-copy p + p{ margin-top:1.2rem; }
+.group-copy p b{ color:var(--ink); font-weight:600; }
+.group-tags{ display:flex; flex-wrap:wrap; gap:.6rem; margin-top:2rem; }
+.group-tags span{
+  font-size:.74rem; letter-spacing:.16em; text-transform:uppercase;
+  border:1px solid var(--line-2); padding:.55rem 1rem; color:var(--ink-2);
+}
+.group-fig{ aspect-ratio:16/8; margin-top:clamp(2.5rem, 5vw, 4.5rem); }
+@media (max-width:860px){
+  .group-grid{ grid-template-columns:1fr; }
+  .big-nine::after{ right:auto; left:100%; }
+}
+
+/* ---------- Offilog : bloc encre inversé ---------- */
+.offilog{ margin-top:clamp(4.5rem, 9vw, 9.5rem); background:var(--ink); color:var(--paper); }
+.offilog .shell{ padding-block:clamp(4rem, 8vw, 8rem); }
+.offilog .k{ color:rgba(245,242,235,.7); }
+.offilog .idx{ color:rgba(245,242,235,.5); }
+.offilog .rule, .offilog .rule-strong{ background:rgba(245,242,235,.22); }
+.offilog-grid{
+  display:grid; grid-template-columns:1.15fr .85fr; gap:clamp(2.5rem, 6vw, 6rem);
+  align-items:end; padding-top:1rem;
+}
+.offilog h2{
+  font-family:var(--serif); font-weight:340;
+  font-size:clamp(2.6rem, 6.4vw, 6rem); line-height:1; letter-spacing:-.015em;
+  padding:2rem 0 1.6rem;
+}
+.offilog h2 em{ font-style:italic; font-weight:300; color:var(--orange); }
+.offilog .lead{ color:rgba(245,242,235,.78); font-size:1.03rem; line-height:1.75; max-width:46ch; }
+.offilog .lead b{ color:var(--paper); font-weight:600; }
+.spec{ border-top:1px solid rgba(245,242,235,.22); }
+.spec-row{
+  display:flex; justify-content:space-between; align-items:baseline; gap:1.5rem;
+  padding:1.15rem 0; border-bottom:1px solid rgba(245,242,235,.22);
+  transition:padding-left .4s var(--ease);
+}
+.spec-row:hover{ padding-left:.7rem; }
+.spec-row .lbl{ font-size:.76rem; letter-spacing:.2em; text-transform:uppercase; color:rgba(245,242,235,.6); }
+.spec-row .val{ font-family:var(--serif); font-weight:340; font-size:clamp(1.3rem,2.4vw,1.9rem); letter-spacing:-.01em; text-align:right; }
+.spec-row .val em{ font-style:italic; font-weight:300; color:var(--orange); }
+.offilog .note{
+  margin-top:1.6rem; font-size:.82rem; letter-spacing:.06em; color:rgba(245,242,235,.55);
+  display:flex; align-items:center; gap:.6rem;
+}
+.offilog .note::before{ content:""; width:28px; height:1px; background:var(--orange); flex-shrink:0; }
+@media (max-width:860px){ .offilog-grid{ grid-template-columns:1fr; align-items:start; } }
+
+/* ---------- Chiffres : count-up sur grille filetée ---------- */
+.stats{
+  display:grid; grid-template-columns:repeat(4, 1fr);
+  border:1px solid var(--line-2); border-right:0; border-bottom:0;
+  margin-top:clamp(1.8rem, 3vw, 3rem);
+}
+.stat{
+  border-right:1px solid var(--line-2); border-bottom:1px solid var(--line-2);
+  padding:clamp(1.6rem, 3vw, 3rem) clamp(1.2rem, 2vw, 2.2rem) clamp(1.8rem, 3vw, 3.2rem);
+  position:relative; overflow:hidden;
+}
+.stat::before{
+  content:""; position:absolute; inset:0; background:var(--orange-soft);
+  transform:translateY(101%); transition:transform .5s var(--ease);
+}
+.stat:hover::before{ transform:translateY(0); }
+.stat > *{ position:relative; }
+.stat .n{
+  font-family:var(--serif); font-weight:300;
+  font-size:clamp(3rem, 6.5vw, 5.6rem); line-height:1; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.stat .n .sig{ font-size:.45em; font-style:italic; color:var(--orange); vertical-align:.5em; letter-spacing:0; }
+.stat .l{ margin-top:.9rem; font-size:.78rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+@media (max-width:860px){ .stats{ grid-template-columns:repeat(2, 1fr); } }
+
+/* ---------- Manifesto ligne à ligne ---------- */
+.manif{ padding-block:clamp(4rem, 8vw, 8rem) 0; }
+.manif .line-quote{
+  font-family:var(--serif); font-weight:340;
+  font-size:clamp(1.8rem, 4.4vw, 3.8rem); line-height:1.28; letter-spacing:-.01em;
+  max-width:26ch; margin-inline:auto; text-align:center;
+}
+.manif .line-quote em{ font-style:italic; font-weight:300; }
+.manif .line-quote .accent{ color:var(--orange); }
+.manif .sig-line{
+  margin:2.4rem auto 0; width:44px; height:1px; background:var(--orange);
+}
+
+/* ---------- Contact / CTA final ---------- */
+.contact .cta-title{
+  font-family:var(--serif); font-weight:340;
+  font-size:clamp(3rem, 9vw, 8.6rem); line-height:.98; letter-spacing:-.018em;
+  padding:clamp(2rem,4vw,3.4rem) 0;
+}
+.contact .cta-title em{ font-style:italic; font-weight:300; }
+.contact-grid{
+  display:grid; grid-template-columns:1.1fr .9fr; gap:clamp(2.5rem, 6vw, 6rem);
+  padding-bottom:clamp(3rem, 6vw, 5rem);
+}
+.contact-copy p{ color:var(--ink-2); font-size:1.02rem; line-height:1.75; max-width:44ch; }
+.contact-copy p + p{ margin-top:1.1rem; }
+.contact-copy p b{ color:var(--ink); font-weight:600; }
+.big-cta{
+  display:inline-flex; align-items:center; gap:1.2rem;
+  margin-top:2.4rem; padding:1.25rem 2.2rem;
+  border:1px solid var(--ink);
+  font-size:.85rem; letter-spacing:.2em; text-transform:uppercase; font-weight:500;
+  position:relative; overflow:hidden;
+  transition:transform .3s var(--ease);
+}
+.big-cta i{ position:absolute; inset:0; background:var(--ink); transform:translateY(101%); transition:transform .45s var(--ease); }
+.big-cta b, .big-cta svg{ position:relative; z-index:1; transition:color .35s; font-weight:500; }
+.big-cta:hover i{ transform:translateY(0); }
+.big-cta:hover b{ color:var(--paper); }
+.big-cta:hover svg{ stroke:var(--paper); }
+.big-cta svg{ stroke:var(--ink); }
+.form{ border-top:1px solid var(--line-2); }
+.form .frow{ border-bottom:1px solid var(--line); padding:1.3rem 0 .9rem; }
+.form label{ display:block; font-size:.72rem; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); margin-bottom:.45rem; }
+.form input, .form textarea{
+  width:100%; border:0; background:transparent; font:inherit; color:var(--ink);
+  font-family:var(--serif); font-size:1.25rem; font-weight:340; letter-spacing:0;
+  outline:none; resize:none;
+}
+.form input:focus, .form textarea:focus{ color:var(--bleu); }
+.form ::placeholder{ color:rgba(25,23,18,.3); font-style:italic; }
+.form .send{
+  margin-top:1.6rem; display:inline-flex; align-items:center; gap:.9rem;
+  font-size:.8rem; letter-spacing:.2em; text-transform:uppercase; font-weight:500;
+  padding:1rem 1.8rem; background:var(--ink); color:var(--paper);
+  transition:opacity .3s, transform .3s var(--ease);
+}
+.form .send:hover{ opacity:.88; transform:translateX(4px); }
+.form .fine{ margin-top:1rem; font-size:.78rem; color:var(--muted); letter-spacing:.04em; }
+@media (max-width:860px){ .contact-grid{ grid-template-columns:1fr; } }
+
+/* ---------- Footer ---------- */
+footer{ border-top:1px solid var(--line-2); margin-top:clamp(3rem, 6vw, 5rem); }
+.foot-in{
+  max-width:var(--maxw); margin-inline:auto; padding:2.6rem var(--gut) 2.2rem;
+  display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr; gap:2rem;
+}
+.foot-in .brand img{ height:26px; }
+.foot-in .tag{ margin-top:1rem; font-family:var(--serif); font-style:italic; font-weight:300; font-size:1rem; color:var(--ink-2); max-width:24ch; }
+.foot-col .meta{ display:block; margin-bottom:.9rem; }
+.foot-col a, .foot-col span{ display:block; font-size:.92rem; color:var(--ink-2); padding:.28rem 0; transition:color .3s, transform .3s var(--ease); }
+.foot-col a:hover{ color:var(--ink); transform:translateX(4px); }
+.foot-base{
+  max-width:var(--maxw); margin-inline:auto; padding:1.2rem var(--gut) 1.6rem;
+  border-top:1px solid var(--line);
+  display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+  font-size:.74rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+}
+@media (max-width:860px){ .foot-in{ grid-template-columns:1fr 1fr; } }
+
+/* ---------- Bouton retour haut ---------- */
+.top-btn{
+  position:fixed; right:calc(var(--gut) * .4); bottom:2rem; z-index:1400;
+  width:52px; height:52px; border:1px solid var(--line-2); border-radius:50%;
+  background:var(--paper); display:grid; place-items:center;
+  opacity:0; transform:translateY(14px); pointer-events:none;
+  transition:opacity .4s, transform .4s var(--ease), background .3s;
+}
+.top-btn.show{ opacity:1; transform:none; pointer-events:auto; }
+.top-btn:hover{ background:var(--ink); }
+.top-btn:hover svg{ stroke:var(--paper); }
+.top-btn svg{ stroke:var(--ink); transition:stroke .3s; }
+
+/* ---------- Reduced motion : tout figé, tout visible ---------- */
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior:auto; }
+  *, *::before, *::after{ animation:none !important; transition:none !important; }
+  .rev, [data-stagger] > *{ opacity:1 !important; transform:none !important; }
+  .rev-line{ transform:scaleX(1) !important; }
+  .kw > i{ transform:none !important; }
+  .figure img, .figure video{ transform:none !important; }
+  .figure .veil{ display:none; }
+  .curtain{ display:none; }
+  .marq{ animation:none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Rideau d'ouverture -->
+<div class="curtain" id="curtain" aria-hidden="true">
+  <div class="mono">Intégral <b>Pharma</b> — <em>édition n°59</em></div>
+</div>
+
+<!-- Progression de lecture -->
+<div class="progress" aria-hidden="true"><i id="pbar"></i></div>
+
+<!-- Rails de grille -->
+<div class="rails" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<!-- ================= NAVIGATION ================= -->
+<header class="nav" id="nav">
+  <div class="nav-in">
+    <a class="brand" href="#haut" aria-label="Intégral Pharma — retour en haut">
+      <img src="../assets/logo.png" alt="Logo Intégral Pharma">
+      <span>Intégral <em>Pharma</em></span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="#apports">L'offre</a>
+      <a href="#groupe">Le groupe</a>
+      <a href="#offilog">Offilog</a>
+      <a href="#chiffres">Chiffres</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="nav-cta" href="#contact"><i></i><b>Demander nos conditions</b></a>
+  </div>
+</header>
+
+<main id="haut">
+
+  <!-- ================= HERO ================= -->
+  <section class="hero shell" style="padding-top:110px;">
+    <div class="rule-strong rev-line" data-io></div>
+    <div class="hero-top">
+      <p class="k rev" data-io>Grossiste-répartiteur <span class="dot">·</span> première intention</p>
+      <p class="meta right rev" data-io>Groupe indépendant — France</p>
+    </div>
+
+    <h1 class="hero-h1" id="heroTitle" aria-label="Plus de marge, dès la première boîte.">
+      Plus de <em>marge</em>,<br>dès la première <span class="accent">boîte</span>.
+    </h1>
+
+    <div class="rule rev-line" data-io></div>
+    <div class="hero-meta" data-stagger data-io>
+      <div class="cell">
+        <span class="meta">01 — Le métier</span>
+        <p><b>Grossiste-répartiteur de première intention</b> : votre approvisionnement quotidien, pensé pour la rentabilité de l'officine.</p>
+      </div>
+      <div class="cell">
+        <span class="meta">02 — L'indépendance</span>
+        <p>Un <b>groupe de grossistes indépendant</b>, plus de 20 ans d'expérience au service des pharmaciens.</p>
+      </div>
+      <div class="cell">
+        <span class="meta">03 — L'ampleur</span>
+        <p><b>9 agences</b>, une couverture nationale, du princeps au générique.</p>
+      </div>
+    </div>
+
+    <figure class="figure hero-fig" data-io data-parallax>
+      <div class="frame" style="height:100%;">
+        <video src="../assets/hero.mp4" poster="../assets/poster.jpg" muted playsinline loop autoplay id="heroVideo"></video>
+      </div>
+      <div class="veil"></div>
+      <figcaption>
+        <span>Plateforme Intégral Pharma</span>
+        <span>fig. 01</span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= BANDEAU LABOS ================= -->
+  <section class="labos shell" aria-label="Laboratoires référencés">
+    <div class="sec-head">
+      <p class="k rev" data-io>Ils sont au catalogue</p>
+      <span class="idx rev" data-io>— i.</span>
+    </div>
+    <div class="band" style="margin-top:1.1rem;">
+      <div class="marq" id="marq" aria-hidden="true">
+        <span>Zentiva</span><span>Teva</span><span>EG&nbsp;Labo</span><span>Zydus</span>
+        <span>Viatris</span><span>Biogaran</span><span>Sandoz</span><span>Arrow</span>
+      </div>
+      <p style="position:absolute; left:-9999px;">Zentiva, Teva, EG Labo, Zydus, Viatris, Biogaran, Sandoz, Arrow.</p>
+    </div>
+    <div class="legend">
+      <span class="meta">+430 laboratoires référencés</span>
+      <span class="meta">Du princeps au générique</span>
+    </div>
+  </section>
+
+  <!-- ================= CE QU'ON APPORTE ================= -->
+  <section class="shell" id="apports">
+    <div class="rule-strong rev-line" data-io></div>
+    <div class="sec-head">
+      <p class="k rev" data-io>Ce qu'on apporte <span class="dot">·</span> à l'officine</p>
+      <span class="idx rev" data-io>— 02.</span>
+    </div>
+    <h2 class="sec-title rev" data-io>Une répartition pensée<br>pour votre <em>rentabilité</em>.</h2>
+
+    <div class="offer-list">
+      <article class="offer rev" data-io>
+        <h3>La marge, <em>au premier plan</em></h3>
+        <p>Notre promesse tient en une ligne : <b>plus de marge, dès la première boîte</b>. Le détail de nos conditions ? Il se chiffre en rendez-vous, sur vos volumes réels.</p>
+      </article>
+      <article class="offer rev" data-io>
+        <h3>Première intention, <em>au quotidien</em></h3>
+        <p>Un grossiste-répartiteur de <b>première intention</b> : nous sommes votre approvisionnement principal, pas un appoint. Du princeps au générique.</p>
+      </article>
+      <article class="offer rev" data-io>
+        <h3>L'indépendance <em>d'un groupe</em></h3>
+        <p>Un <b>groupe de grossistes indépendant</b> : des décisions prises près du terrain, plus de 20 ans d'expérience auprès des officines.</p>
+      </article>
+      <article class="offer rev" data-io>
+        <h3>La profondeur <em>Offilog</em></h3>
+        <p>Notre catalogue Offilog ouvre <b>plus de 14 000 références</b> issues de plus de 430 laboratoires. Une profondeur de gamme rare, en un point d'entrée.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ================= LE GROUPE ================= -->
+  <section class="shell" id="groupe">
+    <div class="rule-strong rev-line" data-io></div>
+    <div class="sec-head">
+      <p class="k rev" data-io>Le groupe <span class="dot">·</span> couverture nationale</p>
+      <span class="idx rev" data-io>— 03.</span>
+    </div>
+
+    <div class="group-grid">
+      <div class="rev" data-io>
+        <div class="big-nine">9</div>
+      </div>
+      <div class="group-copy rev" data-io>
+        <h2 class="sec-title" style="padding-top:0;">Neuf agences.<br><em>Une seule exigence.</em></h2>
+        <p>Intégral Pharma est un <b>groupe de grossistes indépendant</b> : neuf agences qui assurent ensemble une <b>couverture nationale</b>, au plus près de votre officine.</p>
+        <p>Plus de <b>20 ans d'expérience</b> de la répartition, et une conviction simple : la proximité et l'indépendance servent d'abord la rentabilité du pharmacien.</p>
+        <div class="group-tags" data-stagger data-io>
+          <span>Groupe indépendant</span>
+          <span>9 agences</span>
+          <span>Couverture nationale</span>
+          <span>+20 ans d'expérience</span>
+        </div>
+      </div>
+    </div>
+
+    <figure class="figure group-fig" data-io data-parallax>
+      <div class="frame" style="height:100%;">
+        <img src="../assets/poster.jpg" alt="Plateforme logistique Intégral Pharma" loading="lazy">
+      </div>
+      <div class="veil"></div>
+      <figcaption>
+        <span>Le réseau, vu du quai</span>
+        <span>fig. 02</span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= OFFILOG (bloc encre) ================= -->
+  <section class="offilog" id="offilog" style="padding-top:0;">
+    <div class="shell">
+      <div class="rule-strong rev-line" data-io style="background:rgba(245,242,235,.4);"></div>
+      <div class="sec-head">
+        <p class="k rev" data-io>Offilog <span class="dot">·</span> le catalogue</p>
+        <span class="idx rev" data-io>— 04.</span>
+      </div>
+
+      <div class="offilog-grid">
+        <div>
+          <h2 class="rev" data-io>Offilog,<br><em>la profondeur</em><br>de gamme.</h2>
+          <p class="lead rev" data-io>Un point d'entrée unique vers <b>plus de 14 000 références</b> : princeps, génériques et l'essentiel du comptoir, issus de <b>plus de 430 laboratoires</b>.</p>
+        </div>
+        <div>
+          <div class="spec" data-stagger data-io>
+            <div class="spec-row"><span class="lbl">Références</span><span class="val"><em>+</em>14 000</span></div>
+            <div class="spec-row"><span class="lbl">Laboratoires</span><span class="val"><em>+</em>430</span></div>
+            <div class="spec-row"><span class="lbl">Gamme</span><span class="val">Princeps <em>→</em> générique</span></div>
+            <div class="spec-row"><span class="lbl">Accès</span><span class="val">Un point d'entrée <em>unique</em></span></div>
+          </div>
+          <p class="note rev" data-io>Les conditions associées se chiffrent en rendez-vous.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CHIFFRES ================= -->
+  <section class="shell" id="chiffres">
+    <div class="rule-strong rev-line" data-io></div>
+    <div class="sec-head">
+      <p class="k rev" data-io>En chiffres <span class="dot">·</span> l'essentiel</p>
+      <span class="idx rev" data-io>— 05.</span>
+    </div>
+
+    <div class="stats" data-io id="statsGrid">
+      <div class="stat">
+        <div class="n"><span class="sig">+</span><span data-count="20">0</span></div>
+        <div class="l">Années d'expérience</div>
+      </div>
+      <div class="stat">
+        <div class="n"><span data-count="9">0</span></div>
+        <div class="l">Agences · couverture nationale</div>
+      </div>
+      <div class="stat">
+        <div class="n"><span class="sig">+</span><span data-count="14000">0</span></div>
+        <div class="l">Références Offilog</div>
+      </div>
+      <div class="stat">
+        <div class="n"><span class="sig">+</span><span data-count="430">0</span></div>
+        <div class="l">Laboratoires référencés</div>
+      </div>
+    </div>
+
+    <!-- Manifesto -->
+    <div class="manif">
+      <p class="line-quote" id="manifQuote" aria-label="Du princeps au générique, une même idée : plus de marge, dès la première boîte.">
+        Du <em>princeps</em> au <em>générique</em>, une même idée&nbsp;: <span class="accent">plus de marge</span>, dès la première boîte.
+      </p>
+      <div class="sig-line rev" data-io></div>
+    </div>
+  </section>
+
+  <!-- ================= CONTACT / CTA ================= -->
+  <section class="shell contact" id="contact">
+    <div class="rule-strong rev-line" data-io></div>
+    <div class="sec-head">
+      <p class="k rev" data-io>Contact <span class="dot">·</span> vos conditions</p>
+      <span class="idx rev" data-io>— 06.</span>
+    </div>
+
+    <h2 class="cta-title" id="ctaTitle" aria-label="Demander nos conditions.">
+      Demander<br><em>nos conditions</em>.
+    </h2>
+    <div class="rule rev-line" data-io></div>
+
+    <div class="contact-grid" style="padding-top:clamp(1.8rem,3vw,3rem);">
+      <div class="contact-copy rev" data-io>
+        <p><b>Nos conditions ne s'affichent pas ici — elles se chiffrent en rendez-vous.</b> Chaque officine a ses volumes, ses habitudes, sa réalité : c'est sur cette base qu'on parle chiffres, précisément.</p>
+        <p>Laissez-nous vos coordonnées : un interlocuteur du groupe vous recontacte et fixe avec vous un rendez-vous à l'officine.</p>
+        <a class="big-cta" href="#form-nom" id="ctaBtn">
+          <i></i><b>Prendre rendez-vous</b>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+
+      <form class="form rev" data-io onsubmit="return false;" aria-label="Formulaire de contact">
+        <div class="frow">
+          <label for="form-nom">Votre nom</label>
+          <input id="form-nom" type="text" name="nom" placeholder="Dr Nom Prénom" autocomplete="name">
+        </div>
+        <div class="frow">
+          <label for="form-officine">Votre officine</label>
+          <input id="form-officine" type="text" name="officine" placeholder="Pharmacie, ville">
+        </div>
+        <div class="frow">
+          <label for="form-email">Votre e-mail</label>
+          <input id="form-email" type="email" name="email" placeholder="vous@officine.fr" autocomplete="email">
+        </div>
+        <div class="frow">
+          <label for="form-msg">Votre message</label>
+          <textarea id="form-msg" name="message" rows="2" placeholder="Parlez-nous de votre officine…"></textarea>
+        </div>
+        <button class="send" type="submit" id="sendBtn">
+          Demander nos conditions
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <p class="fine">Réponse sur vos conditions : chiffrée en rendez-vous, sur vos volumes réels.</p>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="foot-in">
+    <div>
+      <a class="brand" href="#haut" aria-label="Intégral Pharma">
+        <img src="../assets/logo.png" alt="Logo Intégral Pharma">
+        <span class="serif" style="font-size:1rem;">Intégral <em>Pharma</em></span>
+      </a>
+      <p class="tag">Plus de marge, dès la première boîte.</p>
+    </div>
+    <div class="foot-col">
+      <span class="meta">Plan</span>
+      <a href="#apports">L'offre</a>
+      <a href="#groupe">Le groupe</a>
+      <a href="#offilog">Offilog</a>
+      <a href="#chiffres">Chiffres</a>
+    </div>
+    <div class="foot-col">
+      <span class="meta">Le groupe</span>
+      <span>Grossiste-répartiteur<br>de première intention</span>
+      <span>Groupe de grossistes<br>indépendant</span>
+    </div>
+    <div class="foot-col">
+      <span class="meta">Réseau</span>
+      <span>9 agences</span>
+      <span>Couverture nationale</span>
+      <a href="#contact">Demander nos conditions</a>
+    </div>
+  </div>
+  <div class="foot-base">
+    <span>© Intégral Pharma — maquette n°59 « Swiss Luxe »</span>
+    <span>Réservé aux professionnels de santé</span>
+  </div>
+</footer>
+
+<!-- Retour haut -->
+<button class="top-btn" id="topBtn" aria-label="Retour en haut de page">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script>
+(function(){
+  "use strict";
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- 0 · Rideau d'ouverture ---------- */
+  var curtain = document.getElementById("curtain");
+  if (reduced){ if (curtain) curtain.remove(); }
+  else {
+    window.addEventListener("load", function(){
+      setTimeout(function(){ curtain.classList.add("gone"); }, 450);
+      setTimeout(function(){ curtain.remove(); }, 1800);
+    });
+    /* filet de sécurité si load traîne */
+    setTimeout(function(){ if (curtain && !curtain.classList.contains("gone")) curtain.classList.add("gone"); }, 2600);
+  }
+
+  /* ---------- 1 · Kinetic word reveal (titres) ---------- */
+  function wrapWords(el){
+    if (!el) return;
+    var nodes = Array.prototype.slice.call(el.childNodes);
+    el.textContent = "";
+    nodes.forEach(function(node){
+      if (node.nodeType === 3){
+        node.textContent.split(/(\s+)/).forEach(function(part){
+          if (!part) return;
+          if (/^\s+$/.test(part)){ el.appendChild(document.createTextNode(" ")); return; }
+          var m = document.createElement("span"); m.className = "kw";
+          var i = document.createElement("i"); i.textContent = part;
+          m.appendChild(i); el.appendChild(m);
+        });
+      } else if (node.nodeType === 1 && node.tagName === "BR"){
+        el.appendChild(node);
+      } else if (node.nodeType === 1){
+        var clone = node.cloneNode(false);
+        clone.textContent = "";
+        node.textContent.split(/(\s+)/).forEach(function(part){
+          if (!part) return;
+          if (/^\s+$/.test(part)){ clone.appendChild(document.createTextNode(" ")); return; }
+          var m = document.createElement("span"); m.className = "kw";
+          var i = document.createElement("i"); i.textContent = part;
+          m.appendChild(i); clone.appendChild(m);
+        });
+        el.appendChild(clone);
+      }
+    });
+    el.setAttribute("data-kinetic","");
+  }
+  function playWords(el, base){
+    var words = el.querySelectorAll(".kw");
+    words.forEach(function(w, k){
+      w.querySelector("i").style.transitionDelay = (base + k * 70) + "ms";
+      w.classList.add("in");
+    });
+  }
+  if (!reduced){
+    wrapWords(document.getElementById("heroTitle"));
+    wrapWords(document.getElementById("manifQuote"));
+    wrapWords(document.getElementById("ctaTitle"));
+    window.addEventListener("load", function(){
+      playWords(document.getElementById("heroTitle"), 700);
+    });
+    setTimeout(function(){ playWords(document.getElementById("heroTitle"), 0); }, 2800); /* fallback */
+  }
+
+  /* ---------- 2 · IntersectionObserver : reveals ---------- */
+  if (!reduced && "IntersectionObserver" in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        var el = en.target;
+        el.classList.add("in");
+        if (el.hasAttribute("data-stagger")){
+          Array.prototype.forEach.call(el.children, function(c, k){
+            c.style.transitionDelay = (k * 90) + "ms";
+          });
+        }
+        if (el.hasAttribute("data-kinetic")) playWords(el, 80);
+        if (el.id === "statsGrid") runCounters(el);
+        io.unobserve(el);
+      });
+    }, { threshold:.18, rootMargin:"0px 0px -6% 0px" });
+    document.querySelectorAll("[data-io], [data-kinetic], #statsGrid").forEach(function(el){ io.observe(el); });
+  } else {
+    document.querySelectorAll("[data-io], [data-stagger]").forEach(function(el){ el.classList.add("in"); });
+    document.querySelectorAll("[data-count]").forEach(function(el){
+      el.textContent = Number(el.getAttribute("data-count")).toLocaleString("fr-FR");
+    });
+  }
+
+  /* ---------- 3 · Count-up (easeOutCubic, format fr-FR) ---------- */
+  var counted = false;
+  function runCounters(root){
+    if (counted) return; counted = true;
+    root.querySelectorAll("[data-count]").forEach(function(el){
+      var target = Number(el.getAttribute("data-count"));
+      var dur = 1600, t0 = null;
+      function tick(ts){
+        if (!t0) t0 = ts;
+        var p = Math.min((ts - t0) / dur, 1);
+        var e = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * e).toLocaleString("fr-FR");
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+
+  /* ---------- 4 · Parallaxe douce sur les figures (transform only) ---------- */
+  if (!reduced){
+    var figs = Array.prototype.slice.call(document.querySelectorAll("[data-parallax]"));
+    var ticking = false;
+    function parallax(){
+      ticking = false;
+      var vh = window.innerHeight;
+      figs.forEach(function(f){
+        var r = f.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > vh) return;
+        var media = f.querySelector("img, video");
+        if (!media || !f.classList.contains("in")) return;
+        var prog = (r.top + r.height / 2 - vh / 2) / vh; /* -0.5 → 0.5 env. */
+        media.style.transform = "scale(1.06) translateY(" + (prog * -26).toFixed(1) + "px)";
+      });
+    }
+    window.addEventListener("scroll", function(){
+      if (!ticking){ ticking = true; requestAnimationFrame(parallax); }
+    }, { passive:true });
+  }
+
+  /* ---------- 5 · Nav : masquage au scroll descendant + progression ---------- */
+  var nav = document.getElementById("nav");
+  var pbar = document.getElementById("pbar");
+  var topBtn = document.getElementById("topBtn");
+  var lastY = 0;
+  window.addEventListener("scroll", function(){
+    var y = window.scrollY || 0;
+    if (!reduced){
+      if (y > 140 && y > lastY) nav.classList.add("hide");
+      else nav.classList.remove("hide");
+    }
+    lastY = y;
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    if (pbar) pbar.style.transform = "scaleX(" + (h > 0 ? Math.min(y / h, 1) : 0) + ")";
+    if (topBtn) topBtn.classList.toggle("show", y > 900);
+  }, { passive:true });
+  if (topBtn) topBtn.addEventListener("click", function(){
+    window.scrollTo({ top:0, behavior: reduced ? "auto" : "smooth" });
+  });
+
+  /* ---------- 6 · Vidéo héro : 1 seule autoplay, coupée si reduced-motion ---------- */
+  var vid = document.getElementById("heroVideo");
+  if (vid){
+    if (reduced){
+      vid.removeAttribute("autoplay"); vid.removeAttribute("loop");
+      try { vid.pause(); } catch(e){}
+    } else if ("IntersectionObserver" in window){
+      new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          if (en.isIntersecting){ vid.play().catch(function(){}); }
+          else { vid.pause(); }
+        });
+      }, { threshold:.1 }).observe(vid);
+    }
+    vid.addEventListener("error", function(){
+      /* fallback : le poster / fond ivoire du cadre reste visible */
+      vid.style.display = "none";
+      var frame = vid.closest(".frame");
+      if (frame){
+        frame.style.background = "url('../assets/poster.jpg') center/cover no-repeat, var(--paper-3)";
+      }
+    });
+  }
+
+  /* ---------- 7 · Marquee : duplication pour boucle parfaite ---------- */
+  var marq = document.getElementById("marq");
+  if (marq){ marq.innerHTML += marq.innerHTML; }
+
+  /* ---------- 8 · Formulaire (maquette) ---------- */
+  var send = document.getElementById("sendBtn");
+  if (send) send.addEventListener("click", function(){
+    send.textContent = "Bien reçu — on vous recontacte.";
+  });
+
+  /* ---------- 9 · Ancres douces vers le formulaire ---------- */
+  var ctaBtn = document.getElementById("ctaBtn");
+  if (ctaBtn) ctaBtn.addEventListener("click", function(e){
+    var f = document.getElementById("form-nom");
+    if (f){ e.preventDefault(); f.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block:"center" }); setTimeout(function(){ f.focus({ preventScroll:true }); }, reduced ? 0 : 500); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Plus de marge, dès la première boîte.</title>
+<meta name="description" content="Intégral Pharma, grossiste-répartiteur de première intention. Groupe de grossistes indépendant, 9 agences, couverture nationale.">
+<!--
+  MAQUETTE 53 · KINETIC TYPO
+  Concept : la typographie EST le design. Mots géants, marquees, révélations
+  lettre à lettre, word-morph, chiffres qui comptent. Encre + orange.
+  Safari-safe : zéro background-clip:text, zéro backdrop-filter large,
+  zéro vidéo autoplay, prefers-reduced-motion géré partout.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+============================================================ */
+:root{
+  --encre:#0B0C10;          /* fond principal — noir encré */
+  --encre-2:#101218;
+  --papier:#F2EFE7;         /* section inversée */
+  --blanc:#F7F5EF;
+  --gris:#8B8E98;
+  --orange:#F39A1B;
+  --bleu:#0050E6;
+  --stroke:rgba(247,245,239,.16);
+  --font-display:"Archivo Black", "Archivo", system-ui, sans-serif;
+  --font-body:"Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:"Space Mono", ui-monospace, "SF Mono", monospace;
+  --nav-h:76px;
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+body{
+  background:var(--encre);
+  color:var(--blanc);
+  font-family:var(--font-body);
+  font-weight:500;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{ background:var(--orange); color:var(--encre); }
+img{ max-width:100%; display:block; }
+a{ color:inherit; text-decoration:none; }
+button{ font:inherit; cursor:pointer; }
+
+/* Grain très léger — image statique, aucun filter */
+.grain{
+  position:fixed; inset:-50px; z-index:60; pointer-events:none; opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   CURSEUR TEXTE (desktop) — petit rond difference, safe
+============================================================ */
+.cursor{
+  position:fixed; z-index:70; top:0; left:0;
+  width:14px; height:14px; border-radius:50%;
+  background:var(--blanc); mix-blend-mode:difference;
+  pointer-events:none; opacity:0;
+  transform:translate(-50%,-50%);
+  transition:width .25s ease, height .25s ease, opacity .3s ease;
+}
+.cursor.is-on{ opacity:1; }
+.cursor.is-big{ width:64px; height:64px; }
+@media (hover:none), (prefers-reduced-motion: reduce){ .cursor{ display:none; } }
+
+/* ============================================================
+   NAV
+============================================================ */
+.nav{
+  position:fixed; top:0; left:0; right:0; z-index:50;
+  height:var(--nav-h);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 clamp(16px,4vw,48px);
+  background:rgba(11,12,16,.86);            /* opaque-ish, pas de blur */
+  border-bottom:1px solid var(--stroke);
+  transform:translateY(0);
+  transition:transform .45s cubic-bezier(.16,.84,.28,1);
+}
+.nav.is-hidden{ transform:translateY(-100%); }
+.nav__brand{ display:flex; align-items:center; gap:12px; }
+.nav__brand img{ height:34px; width:auto; }
+.nav__brand span{
+  font-family:var(--font-display); font-size:.95rem; letter-spacing:.02em;
+  text-transform:uppercase; line-height:1;
+}
+.nav__brand small{ display:block; font-family:var(--font-mono); font-size:.55rem; color:var(--orange); letter-spacing:.3em; margin-top:3px; font-weight:400;}
+.nav__links{ display:flex; gap:clamp(14px,2.5vw,34px); align-items:center; }
+.nav__links a{
+  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--gris);
+  position:relative; padding:6px 0; transition:color .25s ease;
+}
+.nav__links a::after{
+  content:""; position:absolute; left:0; bottom:0; height:2px; width:100%;
+  background:var(--orange); transform:scaleX(0); transform-origin:right;
+  transition:transform .35s cubic-bezier(.16,.84,.28,1);
+}
+.nav__links a:hover{ color:var(--blanc); }
+.nav__links a:hover::after{ transform:scaleX(1); transform-origin:left; }
+.nav__cta{
+  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+  background:var(--orange); color:var(--encre); border:none;
+  padding:12px 20px; border-radius:999px; font-weight:700;
+  transition:transform .25s cubic-bezier(.16,.84,.28,1), background .25s ease;
+}
+.nav__cta:hover{ transform:translateY(-2px) scale(1.03); background:#ffb544; }
+@media (max-width:820px){ .nav__links a:not(.keep){ display:none; } }
+
+/* ============================================================
+   HERO — mots géants + marquee fantôme derrière
+============================================================ */
+.hero{
+  position:relative; min-height:100svh;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:calc(var(--nav-h) + 4vh) clamp(16px,4vw,48px) 10vh;
+  overflow:hidden;
+}
+/* halo radial — gradients only */
+.hero::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(90% 60% at 78% 18%, rgba(0,80,230,.16) 0%, transparent 60%),
+    radial-gradient(70% 55% at 12% 88%, rgba(243,154,27,.10) 0%, transparent 55%);
+}
+/* marquee fantôme géant derrière le titre */
+.ghost{
+  position:absolute; top:50%; left:0; width:100%; z-index:0;
+  transform:translateY(-50%);
+  overflow:hidden; pointer-events:none; user-select:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+          mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+}
+.ghost__track{
+  display:flex; gap:6vw; padding-right:6vw; width:max-content;
+  animation:ghostSlide 60s linear infinite;
+}
+.ghost__track span{
+  font-family:var(--font-display);
+  font-size:clamp(9rem, 26vw, 26rem); line-height:1; white-space:nowrap;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(247,245,239,.09);
+}
+@keyframes ghostSlide{ from{ transform:translateX(0);} to{ transform:translateX(-50%);} }
+
+.hero__inner{ position:relative; z-index:2; }
+.hero__eyebrow{
+  font-family:var(--font-mono); font-size:clamp(.62rem,1.4vw,.8rem); font-weight:400;
+  letter-spacing:.32em; text-transform:uppercase; color:var(--orange);
+  display:flex; align-items:center; gap:14px; margin-bottom:clamp(18px,3vh,34px);
+}
+.hero__eyebrow::before{ content:""; width:44px; height:2px; background:var(--orange); }
+
+.hero__title{
+  font-family:var(--font-display);
+  font-size:clamp(3.1rem, 12.5vw, 12.5rem);
+  line-height:.92; letter-spacing:-.015em; text-transform:uppercase;
+}
+.hero__title .line{ display:block; }
+.hero__title .line--accent{ color:var(--orange); }
+.hero__title .line--stroke{
+  color:transparent; -webkit-text-stroke:2px var(--blanc);
+}
+/* lettre à lettre : masque + inner */
+.ch{ display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:.06em; margin-bottom:-.06em; }
+.ch__i{
+  display:inline-block; transform:translateY(115%) rotate(6deg); opacity:0;
+  animation:chUp 1s cubic-bezier(.16,.84,.28,1) forwards;
+  animation-delay:var(--d,0ms);
+}
+@keyframes chUp{ to{ transform:translateY(0) rotate(0); opacity:1; } }
+
+.hero__sub{
+  margin-top:clamp(22px,4vh,44px);
+  display:flex; flex-wrap:wrap; align-items:center; gap:clamp(16px,3vw,40px);
+}
+.hero__subtext{
+  max-width:46ch; color:var(--gris); font-size:clamp(.95rem,1.6vw,1.15rem); line-height:1.65;
+  opacity:0; transform:translateY(18px);
+  animation:fadeUp .9s ease forwards; animation-delay:1.1s;
+}
+.hero__subtext b{ color:var(--blanc); font-weight:700; }
+@keyframes fadeUp{ to{ opacity:1; transform:translateY(0);} }
+
+.btn-big{
+  position:relative; display:inline-flex; align-items:center; gap:14px;
+  font-family:var(--font-display); font-size:clamp(.85rem,1.6vw,1.05rem);
+  text-transform:uppercase; letter-spacing:.04em;
+  color:var(--encre); background:var(--orange);
+  padding:clamp(16px,2.2vw,22px) clamp(24px,3.4vw,38px);
+  border:none; border-radius:999px; overflow:hidden;
+  opacity:0; transform:translateY(18px);
+  animation:fadeUp .9s ease forwards; animation-delay:1.25s;
+  transition:transform .25s cubic-bezier(.16,.84,.28,1);
+}
+.btn-big .arr{ font-family:var(--font-body); font-weight:700; font-size:1.25em; line-height:0; transition:transform .3s cubic-bezier(.16,.84,.28,1); }
+.btn-big:hover{ transform:translateY(-3px) scale(1.02); }
+.btn-big:hover .arr{ transform:translateX(6px); }
+.btn-big::after{
+  content:""; position:absolute; inset:0; border-radius:inherit;
+  background:radial-gradient(120% 120% at 50% 120%, rgba(255,255,255,.35), transparent 55%);
+  opacity:0; transition:opacity .3s ease;
+}
+.btn-big:hover::after{ opacity:1; }
+
+.hero__scroll{
+  position:absolute; bottom:26px; left:clamp(16px,4vw,48px); z-index:2;
+  font-family:var(--font-mono); font-size:.62rem; letter-spacing:.34em;
+  text-transform:uppercase; color:var(--gris); display:flex; align-items:center; gap:12px;
+}
+.hero__scroll .tick{ width:2px; height:34px; background:var(--stroke); position:relative; overflow:hidden; }
+.hero__scroll .tick::after{
+  content:""; position:absolute; left:0; top:-100%; width:100%; height:100%;
+  background:var(--orange); animation:tickDrop 1.8s cubic-bezier(.6,0,.4,1) infinite;
+}
+@keyframes tickDrop{ 0%{ top:-100%; } 55%{ top:0; } 100%{ top:100%; } }
+
+/* ============================================================
+   MARQUEES LABOS / MOTS — pistes dupliquées
+============================================================ */
+.band{ padding:clamp(30px,5vh,52px) 0; border-top:1px solid var(--stroke); border-bottom:1px solid var(--stroke); }
+.mq{
+  overflow:hidden; display:flex; user-select:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);
+          mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);
+}
+.mq + .mq{ margin-top:clamp(14px,2.4vh,26px); }
+.mq__track{
+  display:flex; align-items:center; gap:clamp(28px,4vw,64px); padding-right:clamp(28px,4vw,64px);
+  flex:0 0 auto; min-width:100%; width:max-content;
+  animation:mqSlide var(--speed,32s) linear infinite;
+  will-change:transform;
+}
+.mq[data-reverse] .mq__track{ animation-direction:reverse; }
+.mq:hover .mq__track{ animation-play-state:paused; }
+@keyframes mqSlide{ from{ transform:translateX(0);} to{ transform:translateX(-50%);} }
+.mq__item{
+  flex:0 0 auto; white-space:nowrap;
+  font-family:var(--font-display); text-transform:uppercase;
+  font-size:clamp(1.6rem,4.4vw,3.4rem); line-height:1;
+  color:var(--blanc);
+  transition:color .3s ease;
+}
+.mq__item:hover{ color:var(--orange); }
+.mq__item--ghost{ color:transparent; -webkit-text-stroke:1.5px rgba(247,245,239,.35); }
+.mq__item--ghost:hover{ -webkit-text-stroke-color:var(--orange); color:transparent; }
+.mq__sep{ flex:0 0 auto; width:10px; height:10px; border-radius:50%; background:var(--orange); }
+.mq--small .mq__item{ font-size:clamp(.8rem,1.6vw,1rem); font-family:var(--font-mono); font-weight:700; letter-spacing:.28em; color:var(--gris); }
+.mq--small .mq__sep{ width:6px; height:6px; background:var(--bleu); }
+.band__label{
+  text-align:center; font-family:var(--font-mono); font-size:.62rem; font-weight:400;
+  letter-spacing:.4em; text-transform:uppercase; color:var(--gris); margin-bottom:clamp(16px,2.6vh,26px);
+}
+
+/* ============================================================
+   SECTIONS COMMUNES
+============================================================ */
+.section{ position:relative; padding:clamp(80px,14vh,160px) clamp(16px,4vw,48px); }
+.sec-head{ margin-bottom:clamp(40px,7vh,84px); }
+.sec-index{
+  font-family:var(--font-mono); font-size:.68rem; font-weight:400; letter-spacing:.34em;
+  text-transform:uppercase; color:var(--orange); display:flex; align-items:center; gap:14px; margin-bottom:18px;
+}
+.sec-index::after{ content:""; flex:0 0 44px; height:2px; background:var(--orange); }
+.sec-title{
+  font-family:var(--font-display); text-transform:uppercase;
+  font-size:clamp(2.4rem,8.5vw,8rem); line-height:.95; letter-spacing:-.01em;
+}
+.sec-title .t-stroke{ color:transparent; -webkit-text-stroke:2px var(--blanc); }
+.sec-title .t-orange{ color:var(--orange); }
+/* révélation au scroll : lignes masquées */
+.rv{ display:block; overflow:hidden; padding-bottom:.08em; margin-bottom:-.08em; }
+.rv__i{ display:block; transform:translateY(110%); transition:transform 1s cubic-bezier(.16,.84,.28,1); transition-delay:var(--d,0ms); }
+.is-inview .rv__i{ transform:translateY(0); }
+
+/* ============================================================
+   OFFRES — lignes typo géantes interactives
+============================================================ */
+.rows{ border-top:1px solid var(--stroke); }
+.row{
+  position:relative; display:grid;
+  grid-template-columns:minmax(54px,90px) 1fr auto;
+  align-items:center; gap:clamp(12px,3vw,40px);
+  padding:clamp(26px,4.5vh,48px) 0;
+  border-bottom:1px solid var(--stroke);
+  overflow:hidden; cursor:pointer;
+}
+.row__bg{
+  position:absolute; inset:0; background:var(--orange);
+  transform:scaleY(0); transform-origin:bottom;
+  transition:transform .45s cubic-bezier(.16,.84,.28,1);
+  z-index:0;
+}
+.row:hover .row__bg{ transform:scaleY(1); }
+.row > *:not(.row__bg){ position:relative; z-index:1; }
+.row__num{
+  font-family:var(--font-mono); font-size:clamp(.7rem,1.4vw,.85rem); font-weight:700;
+  color:var(--orange); letter-spacing:.2em; transition:color .35s ease;
+}
+.row__main{ min-width:0; }
+.row__word{
+  font-family:var(--font-display); text-transform:uppercase;
+  font-size:clamp(1.5rem,5.4vw,4.6rem); line-height:1; letter-spacing:-.01em;
+  transition:color .35s ease, transform .45s cubic-bezier(.16,.84,.28,1);
+}
+.row__desc{
+  font-size:clamp(.82rem,1.5vw,1rem); color:var(--gris); margin-top:10px; max-width:60ch;
+  transition:color .35s ease;
+}
+.row__arr{
+  font-size:clamp(1.6rem,3.4vw,2.8rem); font-weight:700; color:var(--stroke);
+  transition:color .35s ease, transform .45s cubic-bezier(.16,.84,.28,1);
+}
+.row:hover .row__word{ color:var(--encre); transform:translateX(clamp(6px,1.5vw,20px)); }
+.row:hover .row__num, .row:hover .row__desc{ color:rgba(11,12,16,.75); }
+.row:hover .row__arr{ color:var(--encre); transform:translateX(6px) rotate(-45deg); }
+/* reveal en cascade */
+.row{ opacity:0; transform:translateY(34px); transition:opacity .8s ease, transform .8s cubic-bezier(.16,.84,.28,1); transition-delay:var(--d,0ms); }
+.rows.is-inview .row{ opacity:1; transform:translateY(0); }
+@media (max-width:640px){ .row{ grid-template-columns:44px 1fr auto; } }
+
+/* word-morph inline */
+.morph{ position:relative; display:inline-grid; vertical-align:baseline; color:var(--orange); }
+.morph__w{
+  grid-area:1/1; opacity:0; transform:translateY(.5em) scale(.94);
+  transition:opacity .5s ease, transform .5s cubic-bezier(.16,.84,.28,1);
+  white-space:nowrap;
+}
+.morph__w.is-active{ opacity:1; transform:translateY(0) scale(1); }
+.morph__w.is-leaving{ opacity:0; transform:translateY(-.5em) scale(.94); }
+
+/* ============================================================
+   LE GROUPE — le « 9 » monumental
+============================================================ */
+.groupe{ overflow:hidden; }
+.groupe__grid{
+  display:grid; grid-template-columns:auto 1fr; gap:clamp(20px,5vw,80px); align-items:center;
+}
+.nine{
+  font-family:var(--font-display); line-height:.8;
+  font-size:clamp(11rem,34vw,34rem);
+  color:var(--orange);
+  text-shadow:
+    -6px 6px 0 rgba(0,80,230,.35),
+    -12px 12px 0 rgba(0,80,230,.15);
+  transform:translateY(60px) scale(.92); opacity:0;
+  transition:transform 1.1s cubic-bezier(.16,.84,.28,1), opacity .9s ease;
+}
+.groupe.is-inview .nine{ transform:translateY(0) scale(1); opacity:1; }
+.groupe__txt .sec-title{ font-size:clamp(1.9rem,6.4vw,5.6rem); }
+.groupe__meta{
+  margin-top:clamp(20px,3.4vh,34px); display:grid; gap:14px; max-width:52ch;
+  color:var(--gris); font-size:clamp(.9rem,1.5vw,1.05rem); line-height:1.65;
+}
+.groupe__meta b{ color:var(--blanc); }
+.groupe__tags{ display:flex; flex-wrap:wrap; gap:10px; margin-top:clamp(18px,3vh,30px); }
+.tag{
+  font-family:var(--font-mono); font-size:.66rem; font-weight:700; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--blanc);
+  border:1px solid var(--stroke); border-radius:999px; padding:10px 16px;
+  transition:border-color .3s ease, color .3s ease, transform .3s ease;
+}
+.tag:hover{ border-color:var(--orange); color:var(--orange); transform:translateY(-2px); }
+/* mot NATIONALE vertical défilant */
+.groupe__vert{
+  position:absolute; top:0; right:clamp(4px,1.6vw,24px); height:100%;
+  overflow:hidden; pointer-events:none; user-select:none;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 15%,#000 85%,transparent);
+          mask-image:linear-gradient(180deg,transparent,#000 15%,#000 85%,transparent);
+}
+.groupe__vert-track{
+  display:flex; flex-direction:column; gap:2.4rem; padding-bottom:2.4rem;
+  animation:vertSlide 26s linear infinite;
+}
+@keyframes vertSlide{ from{ transform:translateY(0);} to{ transform:translateY(-50%);} }
+.groupe__vert span{
+  writing-mode:vertical-rl; font-family:var(--font-mono); font-size:.66rem; font-weight:700;
+  letter-spacing:.5em; text-transform:uppercase; color:rgba(247,245,239,.25);
+}
+@media (max-width:760px){
+  .groupe__grid{ grid-template-columns:1fr; }
+  .groupe__vert{ display:none; }
+}
+
+/* ============================================================
+   OFFILOG — inversion papier + compteur géant
+============================================================ */
+.offilog{
+  background:var(--papier); color:var(--encre);
+}
+.offilog .sec-index{ color:var(--bleu); }
+.offilog .sec-index::after{ background:var(--bleu); }
+.offilog .sec-title .t-stroke{ -webkit-text-stroke-color:var(--encre); }
+.offilog__count{
+  font-family:var(--font-display); line-height:.9; letter-spacing:-.02em;
+  font-size:clamp(4rem,17vw,17rem); color:var(--encre);
+  display:flex; align-items:baseline; flex-wrap:wrap; gap:.06em;
+}
+.offilog__count .plus{ color:var(--orange); }
+.offilog__refs{
+  font-family:var(--font-display); text-transform:uppercase;
+  font-size:clamp(1.3rem,4.6vw,3.8rem); line-height:1;
+  color:transparent; -webkit-text-stroke:2px var(--encre);
+  margin-top:8px;
+}
+.offilog__grid{
+  display:grid; grid-template-columns:1.2fr .8fr; gap:clamp(24px,5vw,80px);
+  align-items:end; margin-top:clamp(30px,6vh,60px);
+}
+.offilog__txt{ color:#4A4C55; font-size:clamp(.95rem,1.6vw,1.12rem); line-height:1.7; max-width:56ch; }
+.offilog__txt b{ color:var(--encre); }
+.offilog__list{ display:grid; gap:0; border-top:2px solid var(--encre); }
+.offilog__li{
+  display:flex; justify-content:space-between; align-items:center; gap:16px;
+  padding:16px 0; border-bottom:1px solid rgba(11,12,16,.18);
+  font-family:var(--font-mono); font-size:clamp(.72rem,1.3vw,.85rem); font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase;
+}
+.offilog__li em{ font-style:normal; color:var(--bleu); }
+@media (max-width:760px){ .offilog__grid{ grid-template-columns:1fr; } }
+
+/* ============================================================
+   CHIFFRES — stats plein cadre
+============================================================ */
+.stats{ border-top:1px solid var(--stroke); }
+.stats__grid{
+  display:grid; grid-template-columns:repeat(4,1fr);
+  border-left:1px solid var(--stroke);
+}
+.stat{
+  border-right:1px solid var(--stroke);
+  padding:clamp(24px,4vh,48px) clamp(14px,2.4vw,32px);
+  position:relative; overflow:hidden;
+}
+.stat::after{
+  content:""; position:absolute; left:0; bottom:0; height:4px; width:100%;
+  background:var(--orange); transform:scaleX(0); transform-origin:left;
+  transition:transform .8s cubic-bezier(.16,.84,.28,1); transition-delay:var(--d,0ms);
+}
+.stats.is-inview .stat::after{ transform:scaleX(1); }
+.stat__num{
+  font-family:var(--font-display); line-height:1;
+  font-size:clamp(2.4rem,6.5vw,6rem); letter-spacing:-.02em;
+  display:flex; align-items:baseline;
+}
+.stat__num .u{ font-size:.38em; color:var(--orange); margin-left:.12em; }
+.stat__label{
+  margin-top:14px; font-family:var(--font-mono); font-size:clamp(.6rem,1.1vw,.72rem);
+  font-weight:400; letter-spacing:.26em; text-transform:uppercase; color:var(--gris);
+}
+@media (max-width:820px){
+  .stats__grid{ grid-template-columns:repeat(2,1fr); }
+  .stat:nth-child(-n+2){ border-bottom:1px solid var(--stroke); }
+}
+
+/* ============================================================
+   CONTACT — final géant
+============================================================ */
+.contact{
+  min-height:92svh; display:flex; flex-direction:column; justify-content:center;
+  position:relative; overflow:hidden; text-align:center;
+}
+.contact::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(70% 60% at 50% 110%, rgba(243,154,27,.16) 0%, transparent 60%);
+}
+.contact__mega{
+  font-family:var(--font-display); text-transform:uppercase;
+  font-size:clamp(2.6rem,11vw,11rem); line-height:.95; letter-spacing:-.015em;
+}
+.contact__mega .l2{ color:transparent; -webkit-text-stroke:2px var(--blanc); }
+.contact__note{
+  margin:clamp(22px,4vh,40px) auto 0; max-width:52ch;
+  color:var(--gris); font-size:clamp(.95rem,1.6vw,1.15rem); line-height:1.7;
+}
+.contact__note b{ color:var(--orange); font-weight:700; }
+.contact__cta{ margin-top:clamp(26px,4.5vh,48px); display:flex; justify-content:center; }
+.contact .btn-big{ opacity:1; transform:none; animation:none; font-size:clamp(1rem,2.2vw,1.4rem); }
+/* couronne de mots tournants autour du CTA */
+.orbit{
+  position:relative; display:inline-grid; place-items:center;
+  padding:clamp(30px,6vw,70px);
+}
+.orbit svg{ position:absolute; inset:0; width:100%; height:100%; animation:spin 26s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg);} }
+.orbit svg text{
+  font-family:var(--font-mono); font-size:9.2px; font-weight:700; letter-spacing:.32em;
+  text-transform:uppercase; fill:rgba(247,245,239,.4);
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.footer{ border-top:1px solid var(--stroke); padding:clamp(40px,7vh,70px) clamp(16px,4vw,48px) 26px; }
+.footer__mq{ margin-bottom:clamp(30px,5vh,54px); }
+.footer__mq .mq__item{ font-size:clamp(2.4rem,8vw,7rem); color:transparent; -webkit-text-stroke:1.5px rgba(247,245,239,.22); }
+.footer__grid{
+  display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:clamp(24px,4vw,60px);
+  padding-bottom:clamp(28px,5vh,50px); border-bottom:1px solid var(--stroke);
+}
+.footer__brand{ display:flex; align-items:flex-start; gap:14px; }
+.footer__brand img{ height:40px; width:auto; }
+.footer__brand p{ color:var(--gris); font-size:.9rem; line-height:1.65; max-width:36ch; margin-top:6px; }
+.footer__brand strong{ display:block; font-family:var(--font-display); text-transform:uppercase; font-size:1rem; }
+.footer h4{
+  font-family:var(--font-mono); font-size:.62rem; font-weight:700; letter-spacing:.34em;
+  text-transform:uppercase; color:var(--orange); margin-bottom:16px;
+}
+.footer ul{ list-style:none; display:grid; gap:10px; }
+.footer ul a, .footer ul li{ color:var(--gris); font-size:.9rem; transition:color .25s ease; }
+.footer ul a:hover{ color:var(--blanc); }
+.footer__legal{
+  display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px;
+  padding-top:22px; font-family:var(--font-mono); font-size:.6rem; font-weight:400;
+  letter-spacing:.22em; text-transform:uppercase; color:#5A5D66;
+}
+@media (max-width:760px){ .footer__grid{ grid-template-columns:1fr; } }
+
+/* ============================================================
+   REDUCED MOTION — tout se fige proprement
+============================================================ */
+@media (prefers-reduced-motion: reduce){
+  .ch__i{ animation:none; transform:none; opacity:1; }
+  .hero__subtext, .btn-big{ animation:none; opacity:1; transform:none; }
+  .ghost__track, .mq__track, .groupe__vert-track, .orbit svg{ animation:none; }
+  .mq{ overflow-x:auto; }
+  .rv__i{ transform:none; transition:none; }
+  .row{ opacity:1; transform:none; transition:none; }
+  .nine{ opacity:1; transform:none; transition:none; }
+  .stats .stat::after{ transform:scaleX(1); transition:none; }
+  .hero__scroll .tick::after{ animation:none; top:0; }
+  .nav{ transition:none; }
+}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+<div class="cursor" aria-hidden="true"></div>
+
+<!-- ================= NAV ================= -->
+<header class="nav" id="nav">
+  <a class="nav__brand" href="#top" aria-label="Intégral Pharma — accueil">
+    <img src="../assets/logo.png" alt="Logo Intégral Pharma">
+    <span>Intégral Pharma<small>Grossiste-répartiteur</small></span>
+  </a>
+  <nav class="nav__links" aria-label="Navigation principale">
+    <a href="#offres">L'apport</a>
+    <a href="#groupe">Le groupe</a>
+    <a href="#offilog">Offilog</a>
+    <a href="#chiffres">Chiffres</a>
+    <a class="keep" href="#contact" style="display:none"></a>
+  </nav>
+  <button class="nav__cta" data-goto="#contact">Demander nos conditions</button>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero" id="top">
+  <div class="ghost" aria-hidden="true">
+    <div class="ghost__track">
+      <span>INTÉGRAL·PHARMA·</span><span>INTÉGRAL·PHARMA·</span>
+    </div>
+  </div>
+
+  <div class="hero__inner">
+    <p class="hero__eyebrow">Grossiste-répartiteur de première intention</p>
+    <h1 class="hero__title" id="heroTitle">
+      <span class="line" data-split>Plus de</span>
+      <span class="line line--accent" data-split>marge,</span>
+      <span class="line line--stroke" data-split>dès la première</span>
+      <span class="line" data-split>boîte.</span>
+    </h1>
+    <div class="hero__sub">
+      <p class="hero__subtext">
+        Un <b>groupe de grossistes indépendant</b>, du princeps au générique :
+        <b>9 agences</b>, couverture nationale, et un catalogue Offilog de
+        <b>+14&nbsp;000 références</b> issues de <b>+430 laboratoires</b>.
+      </p>
+      <button class="btn-big" data-goto="#contact">Demander nos conditions <span class="arr">→</span></button>
+    </div>
+  </div>
+
+  <div class="hero__scroll" aria-hidden="true"><span class="tick"></span> Défiler</div>
+</section>
+
+<!-- ================= BANDEAU LABOS ================= -->
+<section class="band" aria-label="Laboratoires distribués">
+  <p class="band__label">Du princeps au générique — +430 laboratoires, dont</p>
+  <div class="mq" style="--speed:34s">
+    <div class="mq__track">
+      <span class="mq__item">Zentiva</span><span class="mq__sep"></span>
+      <span class="mq__item mq__item--ghost">Teva</span><span class="mq__sep"></span>
+      <span class="mq__item">EG Labo</span><span class="mq__sep"></span>
+      <span class="mq__item mq__item--ghost">Zydus</span><span class="mq__sep"></span>
+      <span class="mq__item">Viatris</span><span class="mq__sep"></span>
+      <span class="mq__item mq__item--ghost">Biogaran</span><span class="mq__sep"></span>
+      <span class="mq__item">Sandoz</span><span class="mq__sep"></span>
+      <span class="mq__item mq__item--ghost">Arrow</span><span class="mq__sep"></span>
+    </div>
+    <div class="mq__track" aria-hidden="true">
+      <span class="mq__item">Zentiva</span><span class="mq__sep"></span>
+      <span class="mq__item mq__item--ghost">Teva</span><span class="mq__sep"></span>
+      <span class="mq__item">EG Labo</span><span class="mq__sep"></span>
+      <span class="mq__item mq__item--ghost">Zydus</span><span class="mq__sep"></span>
+      <span class="mq__item">Viatris</span><span class="mq__sep"></span>
+      <span class="mq__item mq__item--ghost">Biogaran</span><span class="mq__sep"></span>
+      <span class="mq__item">Sandoz</span><span class="mq__sep"></span>
+      <span class="mq__item mq__item--ghost">Arrow</span><span class="mq__sep"></span>
+    </div>
+  </div>
+  <div class="mq mq--small" data-reverse style="--speed:46s">
+    <div class="mq__track">
+      <span class="mq__item">Première intention</span><span class="mq__sep"></span>
+      <span class="mq__item">Indépendant</span><span class="mq__sep"></span>
+      <span class="mq__item">Couverture nationale</span><span class="mq__sep"></span>
+      <span class="mq__item">+20 ans d'expérience</span><span class="mq__sep"></span>
+      <span class="mq__item">Offilog</span><span class="mq__sep"></span>
+    </div>
+    <div class="mq__track" aria-hidden="true">
+      <span class="mq__item">Première intention</span><span class="mq__sep"></span>
+      <span class="mq__item">Indépendant</span><span class="mq__sep"></span>
+      <span class="mq__item">Couverture nationale</span><span class="mq__sep"></span>
+      <span class="mq__item">+20 ans d'expérience</span><span class="mq__sep"></span>
+      <span class="mq__item">Offilog</span><span class="mq__sep"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CE QU'ON APPORTE ================= -->
+<section class="section" id="offres">
+  <div class="sec-head" data-reveal>
+    <p class="sec-index">01 — L'apport</p>
+    <h2 class="sec-title">
+      <span class="rv"><span class="rv__i">Ce qu'on</span></span>
+      <span class="rv"><span class="rv__i" style="--d:120ms"><span class="t-orange">apporte</span> à</span></span>
+      <span class="rv"><span class="rv__i t-stroke" style="--d:240ms">votre officine.</span></span>
+    </h2>
+  </div>
+
+  <div class="rows" data-reveal>
+    <article class="row" data-goto="#contact">
+      <span class="row__bg" aria-hidden="true"></span>
+      <span class="row__num">/01</span>
+      <div class="row__main">
+        <h3 class="row__word">Première intention</h3>
+        <p class="row__desc">Votre répartiteur au quotidien : l'approvisionnement de l'officine, en direct, pensé pour la marge.</p>
+      </div>
+      <span class="row__arr" aria-hidden="true">→</span>
+    </article>
+    <article class="row" style="--d:90ms" data-goto="#offilog">
+      <span class="row__bg" aria-hidden="true"></span>
+      <span class="row__num">/02</span>
+      <div class="row__main">
+        <h3 class="row__word">Du <span class="morph" data-morph="princeps|générique"></span></h3>
+        <p class="row__desc">+430 laboratoires référencés dans Offilog — l'étendue d'un catalogue, la précision d'un partenaire.</p>
+      </div>
+      <span class="row__arr" aria-hidden="true">→</span>
+    </article>
+    <article class="row" style="--d:180ms" data-goto="#groupe">
+      <span class="row__bg" aria-hidden="true"></span>
+      <span class="row__num">/03</span>
+      <div class="row__main">
+        <h3 class="row__word">Groupe indépendant</h3>
+        <p class="row__desc">Un groupe de grossistes indépendant : des décisions proches du terrain, 9 agences, une couverture nationale.</p>
+      </div>
+      <span class="row__arr" aria-hidden="true">→</span>
+    </article>
+    <article class="row" style="--d:270ms" data-goto="#contact">
+      <span class="row__bg" aria-hidden="true"></span>
+      <span class="row__num">/04</span>
+      <div class="row__main">
+        <h3 class="row__word">Vos conditions ?</h3>
+        <p class="row__desc">Chiffré en rendez-vous — face à vos volumes réels, pas sur une plaquette.</p>
+      </div>
+      <span class="row__arr" aria-hidden="true">→</span>
+    </article>
+  </div>
+</section>
+
+<!-- ================= LE GROUPE ================= -->
+<section class="section groupe" id="groupe" data-reveal>
+  <div class="groupe__vert" aria-hidden="true">
+    <div class="groupe__vert-track">
+      <span>Couverture nationale</span><span>Couverture nationale</span>
+      <span>Couverture nationale</span><span>Couverture nationale</span>
+    </div>
+  </div>
+
+  <div class="sec-head">
+    <p class="sec-index">02 — Le groupe</p>
+  </div>
+
+  <div class="groupe__grid">
+    <div class="nine" aria-hidden="true">9</div>
+    <div class="groupe__txt">
+      <h2 class="sec-title">
+        <span class="rv"><span class="rv__i"><span class="t-orange">Agences.</span></span></span>
+        <span class="rv"><span class="rv__i" style="--d:120ms">Une couverture</span></span>
+        <span class="rv"><span class="rv__i t-stroke" style="--d:240ms">nationale.</span></span>
+      </h2>
+      <div class="groupe__meta">
+        <p><b>+20 ans d'expérience</b> de la répartition pharmaceutique, au sein d'un groupe de grossistes <b>indépendant</b>.</p>
+        <p>Neuf agences qui maillent le territoire pour servir votre officine, où qu'elle soit.</p>
+      </div>
+      <div class="groupe__tags" role="list">
+        <span class="tag" role="listitem">Indépendant</span>
+        <span class="tag" role="listitem">Première intention</span>
+        <span class="tag" role="listitem">9 agences</span>
+        <span class="tag" role="listitem">National</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= OFFILOG ================= -->
+<section class="section offilog" id="offilog" data-reveal>
+  <div class="sec-head">
+    <p class="sec-index">03 — Offilog</p>
+  </div>
+
+  <div class="offilog__count" aria-label="Plus de 14 000 références">
+    <span class="plus">+</span><span data-count="14000" data-sep="true">0</span>
+  </div>
+  <p class="offilog__refs">Références au catalogue</p>
+
+  <div class="offilog__grid">
+    <p class="offilog__txt">
+      <b>Offilog</b>, c'est notre catalogue : plus de <b>14&nbsp;000 références</b>
+      issues de plus de <b>430 laboratoires</b>, du princeps au générique.
+      Une profondeur de gamme au service d'une seule idée&nbsp;:
+      <b>plus de marge, dès la première boîte.</b>
+    </p>
+    <div class="offilog__list" data-reveal>
+      <div class="offilog__li"><span>Références</span><em>+14 000</em></div>
+      <div class="offilog__li"><span>Laboratoires</span><em>+430</em></div>
+      <div class="offilog__li"><span>Gamme</span><em>Princeps → Générique</em></div>
+      <div class="offilog__li"><span>Conditions</span><em>Chiffré en RDV</em></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHIFFRES ================= -->
+<section class="section stats" id="chiffres" data-reveal>
+  <div class="sec-head">
+    <p class="sec-index">04 — Les chiffres</p>
+    <h2 class="sec-title">
+      <span class="rv"><span class="rv__i">Noir sur <span class="t-orange">blanc.</span></span></span>
+    </h2>
+  </div>
+  <div class="stats__grid">
+    <div class="stat">
+      <div class="stat__num"><span>+</span><span data-count="20">0</span><span class="u">ans</span></div>
+      <p class="stat__label">d'expérience</p>
+    </div>
+    <div class="stat" style="--d:120ms">
+      <div class="stat__num"><span data-count="9">0</span></div>
+      <p class="stat__label">agences · national</p>
+    </div>
+    <div class="stat" style="--d:240ms">
+      <div class="stat__num"><span>+</span><span data-count="14000" data-sep="true">0</span></div>
+      <p class="stat__label">références Offilog</p>
+    </div>
+    <div class="stat" style="--d:360ms">
+      <div class="stat__num"><span>+</span><span data-count="430">0</span></div>
+      <p class="stat__label">laboratoires</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTACT ================= -->
+<section class="section contact" id="contact" data-reveal>
+  <h2 class="contact__mega">
+    <span class="rv"><span class="rv__i">Parlons</span></span>
+    <span class="rv l2"><span class="rv__i l2" style="--d:140ms">chiffres.</span></span>
+  </h2>
+  <p class="contact__note">
+    Vos conditions&nbsp;? <b>Chiffré en rendez-vous.</b>
+    Face à vos volumes, votre officine, votre réalité — pas une grille générique.
+  </p>
+  <div class="contact__cta">
+    <div class="orbit">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <defs><path id="circ" d="M100,100 m-84,0 a84,84 0 1,1 168,0 a84,84 0 1,1 -168,0"/></defs>
+        <text><textPath href="#circ">PLUS DE MARGE · DÈS LA PREMIÈRE BOÎTE · PLUS DE MARGE · DÈS LA PREMIÈRE BOÎTE ·</textPath></text>
+      </svg>
+      <button class="btn-big" data-goto="#contact-footer">Demander nos conditions <span class="arr">→</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="footer" id="contact-footer">
+  <div class="mq footer__mq" aria-hidden="true" style="--speed:50s">
+    <div class="mq__track">
+      <span class="mq__item">Intégral Pharma —&nbsp;</span>
+      <span class="mq__item">Intégral Pharma —&nbsp;</span>
+    </div>
+    <div class="mq__track" aria-hidden="true">
+      <span class="mq__item">Intégral Pharma —&nbsp;</span>
+      <span class="mq__item">Intégral Pharma —&nbsp;</span>
+    </div>
+  </div>
+
+  <div class="footer__grid">
+    <div class="footer__brand">
+      <img src="../assets/logo.png" alt="Logo Intégral Pharma">
+      <div>
+        <strong>Intégral Pharma</strong>
+        <p>Grossiste-répartiteur de première intention. Groupe de grossistes indépendant — 9 agences, couverture nationale.</p>
+      </div>
+    </div>
+    <div>
+      <h4>Explorer</h4>
+      <ul>
+        <li><a href="#offres">Ce qu'on apporte</a></li>
+        <li><a href="#groupe">Le groupe</a></li>
+        <li><a href="#offilog">Offilog</a></li>
+        <li><a href="#chiffres">Les chiffres</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Repères</h4>
+      <ul>
+        <li>+20 ans d'expérience</li>
+        <li>+14 000 références</li>
+        <li>+430 laboratoires</li>
+        <li>Du princeps au générique</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer__legal">
+    <span>© Intégral Pharma — Maquette concept « Kinetic Typo »</span>
+    <span>Conditions : chiffré en rendez-vous</span>
+  </div>
+</footer>
+
+<!-- ================= SCRIPTS ================= -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- 1) HERO : split lettre à lettre (masque + montée) ---------- */
+  (function splitHero(){
+    var lines = document.querySelectorAll("[data-split]");
+    var idx = 0;
+    lines.forEach(function(line){
+      var text = line.textContent;
+      line.textContent = "";
+      // On splitte par mot pour préserver les retours à la ligne naturels,
+      // puis chaque mot en lettres masquées.
+      text.trim().split(/\s+/).forEach(function(word, wi, arr){
+        var wordWrap = document.createElement("span");
+        wordWrap.style.display = "inline-block";
+        wordWrap.style.whiteSpace = "nowrap";
+        word.split("").forEach(function(chr){
+          var mask = document.createElement("span");
+          mask.className = "ch";
+          var inner = document.createElement("span");
+          inner.className = "ch__i";
+          inner.textContent = chr;
+          inner.style.setProperty("--d", (140 + idx * 26) + "ms");
+          mask.appendChild(inner);
+          wordWrap.appendChild(mask);
+          idx++;
+        });
+        line.appendChild(wordWrap);
+        if(wi < arr.length - 1) line.appendChild(document.createTextNode(" "));
+      });
+    });
+  })();
+
+  /* ---------- 2) Révélations au scroll (IntersectionObserver) ---------- */
+  (function reveals(){
+    var targets = document.querySelectorAll("[data-reveal], .rows");
+    if(!("IntersectionObserver" in window) || reduce){
+      targets.forEach(function(t){ t.classList.add("is-inview"); });
+      return;
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add("is-inview"); io.unobserve(e.target); }
+      });
+    }, { threshold:.18 });
+    targets.forEach(function(t){ io.observe(t); });
+  })();
+
+  /* ---------- 3) Word-morph (princeps <-> générique) ---------- */
+  (function morph(){
+    document.querySelectorAll("[data-morph]").forEach(function(host){
+      var words = host.getAttribute("data-morph").split("|");
+      var spans = words.map(function(w, i){
+        var s = document.createElement("span");
+        s.className = "morph__w" + (i === 0 ? " is-active" : "");
+        s.textContent = w;
+        host.appendChild(s);
+        return s;
+      });
+      if(reduce || spans.length < 2) return;
+      var cur = 0;
+      setInterval(function(){
+        var next = (cur + 1) % spans.length;
+        spans[cur].classList.remove("is-active");
+        spans[cur].classList.add("is-leaving");
+        spans[next].classList.remove("is-leaving");
+        spans[next].classList.add("is-active");
+        (function(prev){ setTimeout(function(){ prev.classList.remove("is-leaving"); }, 520); })(spans[cur]);
+        cur = next;
+      }, 2400);
+    });
+  })();
+
+  /* ---------- 4) Compteurs (rAF + easing) ---------- */
+  (function counters(){
+    function fmt(n, sep){
+      var s = Math.round(n).toString();
+      if(sep) s = s.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      return s;
+    }
+    function run(el){
+      var target = parseFloat(el.getAttribute("data-count"));
+      var sep = el.hasAttribute("data-sep");
+      if(reduce){ el.textContent = fmt(target, sep); return; }
+      var t0 = null, DUR = 1600;
+      function step(ts){
+        if(!t0) t0 = ts;
+        var p = Math.min((ts - t0) / DUR, 1);
+        var e = 1 - Math.pow(1 - p, 4);           // easeOutQuart
+        el.textContent = fmt(target * e, sep);
+        if(p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    var els = document.querySelectorAll("[data-count]");
+    if(!("IntersectionObserver" in window)){
+      els.forEach(function(el){ el.textContent = fmt(parseFloat(el.getAttribute("data-count")), el.hasAttribute("data-sep")); });
+      return;
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ run(e.target); io.unobserve(e.target); }
+      });
+    }, { threshold:.5 });
+    els.forEach(function(el){ io.observe(el); });
+    function fmtInit(){} // noop
+  })();
+
+  /* ---------- 5) Nav auto-hide + liens data-goto ---------- */
+  (function navigation(){
+    var nav = document.getElementById("nav");
+    var lastY = window.scrollY;
+    window.addEventListener("scroll", function(){
+      var y = window.scrollY;
+      if(y > 140 && y > lastY + 4) nav.classList.add("is-hidden");
+      else if(y < lastY - 4) nav.classList.remove("is-hidden");
+      lastY = y;
+    }, { passive:true });
+
+    document.querySelectorAll("[data-goto]").forEach(function(el){
+      el.addEventListener("click", function(){
+        var t = document.querySelector(el.getAttribute("data-goto"));
+        if(t) t.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
+      });
+    });
+  })();
+
+  /* ---------- 6) Curseur texte ---------- */
+  (function cursor(){
+    if(reduce || !window.matchMedia("(hover:hover)").matches) return;
+    var c = document.querySelector(".cursor");
+    var x = -100, y = -100, cx = -100, cy = -100;
+    window.addEventListener("mousemove", function(e){
+      x = e.clientX; y = e.clientY; c.classList.add("is-on");
+    }, { passive:true });
+    (function loop(){
+      cx += (x - cx) * .18; cy += (y - cy) * .18;
+      c.style.transform = "translate(" + (cx - 7) + "px," + (cy - 7) + "px)";
+      requestAnimationFrame(loop);
+    })();
+    document.querySelectorAll("a, button, .row").forEach(function(el){
+      el.addEventListener("mouseenter", function(){ c.classList.add("is-big"); });
+      el.addEventListener("mouseleave", function(){ c.classList.remove("is-big"); });
+    });
+  })();
+
+  /* ---------- 7) GSAP : cinétique au scroll ---------- */
+  (function kinetics(){
+    if(reduce || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") return;
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Le titre hero glisse doucement en quittant l'écran (parallax typo)
+    gsap.to("#heroTitle", {
+      yPercent: -18, opacity: .25, ease: "none",
+      scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true }
+    });
+    gsap.to(".ghost", {
+      xPercent: -8, ease: "none",
+      scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true }
+    });
+
+    // Titres de section : dérive horizontale subtile pendant le scroll
+    document.querySelectorAll(".sec-title").forEach(function(t, i){
+      gsap.fromTo(t,
+        { x: (i % 2 === 0 ? 60 : -60) },
+        { x: 0, ease: "none",
+          scrollTrigger: { trigger: t, start: "top 95%", end: "top 35%", scrub: true } });
+    });
+
+    // Le « 9 » : sur-zoom léger pendant la traversée de la section
+    gsap.fromTo(".nine", { scale: .9, rotate: -4 }, {
+      scale: 1.06, rotate: 0, ease: "none",
+      scrollTrigger: { trigger: ".groupe", start: "top 80%", end: "bottom 20%", scrub: true }
+    });
+
+    // Compteur Offilog : léger tracking qui se resserre
+    gsap.fromTo(".offilog__count", { letterSpacing: ".06em" }, {
+      letterSpacing: "-.02em", ease: "none",
+      scrollTrigger: { trigger: ".offilog", start: "top 85%", end: "top 25%", scrub: true }
+    });
+
+    // Skew de vélocité sur les marquees (kinetic feel)
+    var proxy = { skew: 0 },
+        skewSetters = Array.prototype.map.call(
+          document.querySelectorAll(".mq__track"),
+          function(el){ return gsap.quickSetter(el, "skewX", "deg"); }
+        ),
+        clamp = gsap.utils.clamp(-8, 8);
+    ScrollTrigger.create({
+      onUpdate: function(self){
+        var skew = clamp(self.getVelocity() / -420);
+        if(Math.abs(skew) > Math.abs(proxy.skew)){
+          proxy.skew = skew;
+          gsap.to(proxy, {
+            skew: 0, duration: .7, ease: "power3",
+            overwrite: true,
+            onUpdate: function(){ skewSetters.forEach(function(set){ set(proxy.skew); }); }
+          });
+        }
+      }
+    });
+
+    // Mega contact : montée en scale à l'arrivée
+    gsap.fromTo(".contact__mega", { scale: .92 }, {
+      scale: 1, ease: "none",
+      scrollTrigger: { trigger: ".contact", start: "top 90%", end: "top 30%", scrub: true }
+    });
+  })();
+})();
+</script>
+</body>
+</html>

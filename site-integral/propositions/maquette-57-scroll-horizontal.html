@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intégral Pharma — Le film de votre marge</title>
+<meta name="description" content="Intégral Pharma, grossiste-répartiteur de première intention. Plus de marge, dès la première boîte.">
+<link rel="icon" href="../assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   INTÉGRAL PHARMA · MAQUETTE 57 — « SCROLL CINÉMA HORIZONTAL »
+   Concept : le métier raconté comme un film. Un rail plein écran défile
+   horizontalement (piloté par le scroll vertical), chaque écran = un chapitre.
+   Letterbox, pellicule, grain, lueurs orange sur nuit d'encre.
+   SAFARI-SAFE : zéro background-clip:text, zéro backdrop-filter,
+   zéro vidéo autoplay, fallback prefers-reduced-motion complet.
+   ========================================================================== */
+:root{
+  --ink:#05070D;
+  --ink2:#0B101C;
+  --ink3:#111A2C;
+  --paper:#F4EFE6;         /* blanc chaud, papier de cinéma */
+  --mute:#8B93A6;
+  --line:rgba(244,239,230,.12);
+  --orange:#F39A1B;
+  --orange-soft:rgba(243,154,27,.16);
+  --blue:#0050E6;
+  --blue-soft:rgba(0,80,230,.22);
+  --serif:"Fraunces",Georgia,serif;
+  --sans:"Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --frame:clamp(14px,2.2vh,26px); /* hauteur des barres letterbox */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--ink);
+  color:var(--paper);
+  font-family:var(--sans);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--orange);color:var(--ink)}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+
+/* ---------- Grain pellicule (SVG statique, léger, pas de filter) ---------- */
+.grain{
+  position:fixed;inset:0;z-index:80;pointer-events:none;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  background-size:160px 160px;
+}
+
+/* ---------- Letterbox : barres haut / bas, façon écran large ---------- */
+.frame-bar{
+  position:fixed;left:0;right:0;height:var(--frame);z-index:70;
+  background:var(--ink);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 clamp(1rem,3vw,2.4rem);
+  font-size:.55rem;letter-spacing:.34em;text-transform:uppercase;color:#4A5468;
+  transition:transform .9s cubic-bezier(.7,0,.2,1);
+}
+.frame-bar--top{top:0;border-bottom:1px solid var(--line)}
+.frame-bar--bottom{bottom:0;border-top:1px solid var(--line)}
+.frame-bar b{color:var(--orange);font-weight:500}
+
+/* ---------- Progression du film ---------- */
+.reel-progress{
+  position:fixed;top:var(--frame);left:0;height:2px;width:0%;z-index:71;
+  background:linear-gradient(90deg,var(--blue),var(--orange));
+}
+
+/* ---------- Navigation ---------- */
+.nav{
+  position:fixed;top:var(--frame);left:0;right:0;z-index:60;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem clamp(1rem,3.4vw,2.6rem);
+}
+.nav__brand{display:flex;align-items:center;gap:.7rem}
+.nav__brand img{width:34px;height:34px;object-fit:contain}
+.nav__brand span{font-weight:600;letter-spacing:.02em;font-size:.98rem}
+.nav__brand small{display:block;font-size:.55rem;letter-spacing:.3em;text-transform:uppercase;color:var(--mute);font-weight:400}
+.nav__cta{
+  position:relative;overflow:hidden;
+  border:1px solid rgba(243,154,27,.55);border-radius:999px;
+  background:rgba(5,7,13,.72);
+  color:var(--paper);
+  font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;
+  padding:.72rem 1.3rem;
+  transition:border-color .3s,color .3s;
+}
+.nav__cta i{
+  position:absolute;inset:0;border-radius:999px;
+  background:var(--orange);
+  transform:translateY(102%);transition:transform .38s cubic-bezier(.6,0,.2,1);
+}
+.nav__cta em{position:relative;font-style:normal;transition:color .3s}
+.nav__cta:hover i{transform:translateY(0)}
+.nav__cta:hover em{color:var(--ink)}
+.nav__cta:hover{border-color:var(--orange)}
+
+/* ---------- Cartouche chapitre (fixe, bas gauche pendant le rail) ---------- */
+.slate{
+  position:fixed;left:clamp(1rem,3.4vw,2.6rem);bottom:calc(var(--frame) + 1.1rem);
+  z-index:60;display:flex;align-items:center;gap:.9rem;
+  opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:opacity .45s,transform .45s;
+}
+.slate.is-on{opacity:1;transform:translateY(0)}
+.slate__num{
+  font-family:var(--serif);font-weight:600;font-size:1.15rem;color:var(--orange);
+  min-width:3.4em;
+}
+.slate__sep{width:34px;height:1px;background:var(--line)}
+.slate__name{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--mute)}
+.slate__dots{display:flex;gap:.4rem;margin-left:.6rem}
+.slate__dots span{width:5px;height:5px;border-radius:50%;background:#2A3348;transition:background .3s,transform .3s}
+.slate__dots span.on{background:var(--orange);transform:scale(1.35)}
+
+/* ==========================================================================
+   HERO — ouverture du film
+   ========================================================================== */
+.hero{
+  position:relative;min-height:100vh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:calc(var(--frame) + 6rem) clamp(1.2rem,5vw,5rem) calc(var(--frame) + 3rem);
+  overflow:hidden;
+  background:
+    radial-gradient(90% 70% at 78% 12%, var(--blue-soft), transparent 55%),
+    radial-gradient(70% 60% at 12% 92%, var(--orange-soft), transparent 60%),
+    var(--ink);
+}
+.hero__kicker{
+  display:flex;align-items:center;gap:.8rem;
+  font-size:.68rem;letter-spacing:.34em;text-transform:uppercase;color:var(--orange);
+  margin-bottom:2rem;
+}
+.hero__kicker::before{content:"";width:44px;height:1px;background:var(--orange)}
+.hero h1{
+  font-family:var(--serif);font-weight:420;
+  font-size:clamp(2.6rem,8.4vw,7.6rem);
+  line-height:1.02;letter-spacing:-.02em;max-width:14ch;
+}
+.hero h1 .it{font-style:italic;font-weight:340;color:var(--orange)}
+/* révélation mot à mot (masque par overflow, pas de clip-text) */
+.wline{display:block;overflow:hidden;padding-bottom:.08em}
+.wline span{display:inline-block;transform:translateY(112%);transition:transform 1s cubic-bezier(.22,.9,.24,1)}
+.is-ready .wline span{transform:translateY(0)}
+.wline:nth-child(2) span{transition-delay:.12s}
+.wline:nth-child(3) span{transition-delay:.24s}
+.hero__sub{
+  margin-top:2.2rem;max-width:46ch;color:var(--mute);
+  font-size:clamp(.95rem,1.4vw,1.12rem);line-height:1.7;
+  opacity:0;transform:translateY(16px);transition:opacity .9s .5s,transform .9s .5s;
+}
+.is-ready .hero__sub{opacity:1;transform:translateY(0)}
+.hero__sub strong{color:var(--paper);font-weight:500}
+.hero__meta{
+  margin-top:3rem;display:flex;flex-wrap:wrap;gap:2.4rem;
+  opacity:0;transition:opacity .9s .75s;
+}
+.is-ready .hero__meta{opacity:1}
+.hero__meta div{font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;color:var(--mute)}
+.hero__meta b{display:block;color:var(--paper);font-size:.98rem;letter-spacing:.04em;margin-bottom:.3rem;font-weight:600}
+.hero__scroll{
+  position:absolute;right:clamp(1.2rem,4vw,3.4rem);bottom:calc(var(--frame) + 1.4rem);
+  display:flex;align-items:center;gap:.8rem;
+  font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--mute);
+}
+.hero__scroll svg{animation:nudge 2.2s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+/* titre géant fantôme derrière */
+.hero__ghost{
+  position:absolute;right:-4vw;bottom:-6vh;z-index:0;pointer-events:none;
+  font-family:var(--serif);font-weight:700;font-style:italic;
+  font-size:clamp(10rem,30vw,26rem);line-height:1;color:transparent;
+  -webkit-text-stroke:1px rgba(244,239,230,.07);
+}
+.hero > *:not(.hero__ghost){position:relative;z-index:1}
+
+/* ==========================================================================
+   RAIL HORIZONTAL — les chapitres
+   ========================================================================== */
+.reel{position:relative}
+.reel__viewport{
+  position:sticky;top:0;height:100vh;overflow:hidden;
+  display:flex;align-items:stretch;
+}
+.reel__rail{
+  display:flex;height:100vh;
+  will-change:transform;
+  transform:translate3d(var(--x,0),0,0);
+}
+.chapter{
+  position:relative;flex:0 0 auto;width:100vw;height:100vh;
+  padding:calc(var(--frame) + 5.4rem) clamp(1.2rem,5vw,5.5rem) calc(var(--frame) + 5.2rem);
+  display:flex;flex-direction:column;justify-content:center;
+  overflow:hidden;border-right:1px solid var(--line);
+}
+/* numéro géant en fond, parallaxe */
+.chapter__bignum{
+  position:absolute;top:50%;right:2vw;transform:translateY(-50%);
+  font-family:var(--serif);font-style:italic;font-weight:700;
+  font-size:clamp(14rem,42vh,30rem);line-height:1;
+  color:transparent;-webkit-text-stroke:1px rgba(244,239,230,.06);
+  pointer-events:none;z-index:0;white-space:nowrap;
+}
+.chapter > .chapter__in{position:relative;z-index:1;max-width:1200px}
+.chapter__tag{
+  display:flex;align-items:center;gap:.8rem;margin-bottom:1.6rem;
+  font-size:.64rem;letter-spacing:.34em;text-transform:uppercase;color:var(--orange);
+}
+.chapter__tag::before{content:"";width:36px;height:1px;background:var(--orange)}
+.chapter h2{
+  font-family:var(--serif);font-weight:420;letter-spacing:-.015em;
+  font-size:clamp(2rem,5.6vw,4.6rem);line-height:1.05;max-width:18ch;
+}
+.chapter h2 .it{font-style:italic;color:var(--orange);font-weight:340}
+.chapter p.lead{
+  margin-top:1.4rem;color:var(--mute);max-width:52ch;line-height:1.75;
+  font-size:clamp(.92rem,1.25vw,1.08rem);
+}
+.chapter p.lead strong{color:var(--paper);font-weight:500}
+
+/* --- Chapitre 1 : première intention --- */
+.ch-1{background:radial-gradient(80% 90% at 18% 30%, var(--blue-soft), transparent 58%), var(--ink)}
+.def{
+  margin-top:2.4rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:1rem;max-width:900px;
+}
+.def__card{
+  border:1px solid var(--line);border-radius:16px;padding:1.4rem 1.5rem;
+  background:linear-gradient(160deg,rgba(244,239,230,.04),rgba(244,239,230,0));
+  transition:transform .4s cubic-bezier(.3,.8,.3,1),border-color .4s;
+}
+.def__card:hover{transform:translateY(-6px);border-color:rgba(243,154,27,.5)}
+.def__card b{font-size:1.02rem;font-weight:600;letter-spacing:.01em}
+.def__card p{margin-top:.55rem;color:var(--mute);font-size:.85rem;line-height:1.6}
+.def__card i{display:block;font-style:normal;color:var(--orange);font-family:var(--serif);font-size:1.5rem;margin-bottom:.7rem}
+
+/* --- Chapitre 2 : le groupe / carte --- */
+.ch-2{background:radial-gradient(75% 85% at 80% 70%, var(--blue-soft), transparent 60%), var(--ink2)}
+.ch-2 .chapter__in{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:clamp(1.5rem,4vw,4rem);align-items:center;max-width:1250px}
+.map-wrap{position:relative;display:grid;place-items:center}
+.map-wrap svg{width:min(38vh,420px);height:auto;overflow:visible}
+.map-outline{fill:rgba(0,80,230,.10);stroke:rgba(244,239,230,.28);stroke-width:1.4;stroke-linejoin:round}
+.agency{fill:var(--orange)}
+.agency-pulse{fill:none;stroke:var(--orange);stroke-width:1.2;opacity:0;transform-origin:center;animation:pulse 2.8s ease-out infinite}
+@keyframes pulse{0%{opacity:.85;transform:scale(.4)}70%{opacity:0;transform:scale(2.6)}100%{opacity:0;transform:scale(2.6)}}
+.map-caption{
+  position:absolute;bottom:-.4rem;left:50%;transform:translateX(-50%);
+  font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--mute);white-space:nowrap;
+}
+.group-facts{margin-top:2rem;display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+.group-facts div{
+  display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
+  padding:1.05rem 0;border-bottom:1px solid var(--line);
+}
+.group-facts b{font-family:var(--serif);font-size:clamp(1.5rem,2.6vw,2.2rem);font-weight:500;color:var(--paper)}
+.group-facts span{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);text-align:right}
+
+/* --- Chapitre 3 : Offilog --- */
+.ch-3{background:radial-gradient(85% 80% at 22% 80%, var(--orange-soft), transparent 55%), var(--ink)}
+.offi-num{
+  font-family:var(--serif);font-weight:560;line-height:.95;letter-spacing:-.03em;
+  font-size:clamp(4.4rem,13vw,11rem);margin-top:1rem;
+}
+.offi-num small{display:block;font-family:var(--sans);font-weight:400;font-size:clamp(.8rem,1.4vw,1.05rem);letter-spacing:.24em;text-transform:uppercase;color:var(--mute);margin-top:.9rem}
+.offi-num .plus{color:var(--orange)}
+.marquee{
+  margin-top:2.6rem;overflow:hidden;border-block:1px solid var(--line);
+  padding:1.05rem 0;max-width:100%;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+}
+.marquee__track{display:flex;gap:3.5rem;width:max-content;animation:mq 26s linear infinite}
+.marquee__track span{
+  font-size:clamp(1rem,1.8vw,1.35rem);letter-spacing:.2em;text-transform:uppercase;
+  color:#5E6778;font-weight:500;white-space:nowrap;
+}
+.marquee__track span::after{content:"·";color:var(--orange);margin-left:3.5rem}
+@keyframes mq{to{transform:translateX(-50%)}}
+.marquee:hover .marquee__track{animation-play-state:paused}
+
+/* --- Chapitre 4 : les chiffres --- */
+.ch-4{background:radial-gradient(70% 80% at 50% 10%, var(--blue-soft), transparent 60%), var(--ink3)}
+.stats{
+  margin-top:2.6rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:2.4rem 2rem;max-width:1000px;
+}
+.stat b{
+  display:block;font-family:var(--serif);font-weight:520;line-height:1;letter-spacing:-.02em;
+  font-size:clamp(2.6rem,6vw,4.8rem);
+}
+.stat b .acc{color:var(--orange)}
+.stat span{display:block;margin-top:.8rem;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);line-height:1.7}
+.stat{border-left:1px solid var(--line);padding-left:1.3rem}
+
+/* --- Chapitre 5 : générique de fin / CTA --- */
+.ch-5{
+  border-right:none;align-items:center;text-align:center;
+  background:radial-gradient(70% 70% at 50% 60%, rgba(243,154,27,.20), transparent 62%), var(--ink);
+}
+.ch-5 .chapter__in{display:flex;flex-direction:column;align-items:center}
+.ch-5 .chapter__tag{justify-content:center}
+.ch-5 .chapter__tag::after{content:"";width:36px;height:1px;background:var(--orange)}
+.ch-5 h2{max-width:16ch}
+.big-cta{
+  margin-top:2.8rem;position:relative;overflow:hidden;
+  display:inline-flex;align-items:center;gap:1rem;
+  background:var(--orange);color:var(--ink);border:none;border-radius:999px;
+  font-size:clamp(.9rem,1.5vw,1.05rem);font-weight:600;letter-spacing:.06em;
+  padding:1.25rem 2.6rem;
+  transition:transform .35s cubic-bezier(.3,.8,.3,1),box-shadow .35s;
+  box-shadow:0 10px 44px rgba(243,154,27,.35);
+}
+.big-cta:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 18px 60px rgba(243,154,27,.5)}
+.big-cta svg{transition:transform .35s}
+.big-cta:hover svg{transform:translateX(5px)}
+.ch-5 .note{margin-top:1.4rem;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--mute)}
+
+/* ==========================================================================
+   CONTACT (vertical, après le film)
+   ========================================================================== */
+.contact{
+  position:relative;min-height:88vh;display:grid;place-items:center;text-align:center;
+  padding:calc(var(--frame) + 5rem) clamp(1.2rem,5vw,5rem);
+  background:
+    radial-gradient(60% 55% at 50% 100%, var(--blue-soft), transparent 65%),
+    var(--ink2);
+  border-top:1px solid var(--line);
+}
+.contact .kicker{font-size:.66rem;letter-spacing:.34em;text-transform:uppercase;color:var(--orange);margin-bottom:1.6rem}
+.contact h2{font-family:var(--serif);font-weight:420;font-size:clamp(2.2rem,6vw,5rem);line-height:1.06;letter-spacing:-.015em;max-width:18ch;margin-inline:auto}
+.contact h2 .it{font-style:italic;color:var(--orange);font-weight:340}
+.contact p{margin:1.6rem auto 0;color:var(--mute);max-width:50ch;line-height:1.75}
+.contact__row{margin-top:2.6rem;display:flex;flex-wrap:wrap;gap:1rem;justify-content:center}
+.ghost-cta{
+  border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--paper);
+  font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;padding:1.1rem 2rem;
+  transition:border-color .3s,background .3s;
+}
+.ghost-cta:hover{border-color:var(--orange);background:rgba(243,154,27,.08)}
+
+/* ---------- Footer ---------- */
+.footer{
+  border-top:1px solid var(--line);background:var(--ink);
+  padding:3.4rem clamp(1.2rem,5vw,5rem) calc(var(--frame) + 2.2rem);
+}
+.footer__grid{display:grid;grid-template-columns:1.4fr repeat(2,minmax(140px,1fr));gap:2.5rem;max-width:1250px;margin:0 auto}
+.footer__brand{display:flex;align-items:flex-start;gap:.9rem}
+.footer__brand img{width:40px;height:40px;object-fit:contain}
+.footer__brand b{font-size:1.05rem;font-weight:600}
+.footer__brand p{margin-top:.5rem;color:var(--mute);font-size:.84rem;line-height:1.7;max-width:34ch}
+.footer h4{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--orange);margin-bottom:1.1rem;font-weight:500}
+.footer ul{list-style:none;display:flex;flex-direction:column;gap:.65rem}
+.footer ul a{color:var(--mute);font-size:.88rem;transition:color .25s}
+.footer ul a:hover{color:var(--paper)}
+.footer__legal{
+  max-width:1250px;margin:2.8rem auto 0;padding-top:1.4rem;border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between;
+  font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#49536A;
+}
+
+/* ---------- Apparitions au scroll ---------- */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.3,.7,.3,1),transform .8s cubic-bezier(.3,.7,.3,1)}
+.rv.in{opacity:1;transform:translateY(0)}
+.rv[data-d="1"]{transition-delay:.1s}.rv[data-d="2"]{transition-delay:.2s}
+.rv[data-d="3"]{transition-delay:.3s}.rv[data-d="4"]{transition-delay:.4s}
+
+/* ---------- Responsive ---------- */
+@media (max-width:900px){
+  .ch-2 .chapter__in{grid-template-columns:1fr;gap:1.6rem}
+  .map-wrap svg{width:min(30vh,300px)}
+  .chapter{padding-top:calc(var(--frame) + 4.6rem)}
+  .chapter__bignum{font-size:clamp(9rem,30vh,16rem);right:-4vw}
+  .footer__grid{grid-template-columns:1fr 1fr}
+  .footer__grid > .footer__brand{grid-column:1/-1}
+  .slate__name{display:none}
+  .hero__ghost{display:none}
+}
+@media (max-width:560px){
+  .nav__brand small{display:none}
+  .nav__cta{font-size:.66rem;padding:.6rem .95rem}
+  .def{grid-template-columns:1fr;gap:.8rem}
+  .def__card{padding:1.1rem 1.2rem}
+  .stats{gap:1.6rem 1.2rem}
+  .group-facts b{font-size:1.4rem}
+}
+
+/* ==========================================================================
+   PREFERS-REDUCED-MOTION — le film devient un livre : tout empilé, tout lisible
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .reel{height:auto !important}
+  .reel__viewport{position:static;height:auto;overflow:visible;display:block}
+  .reel__rail{display:block;height:auto;transform:none}
+  .chapter{width:auto;height:auto;min-height:70vh;border-right:none;border-bottom:1px solid var(--line)}
+  .chapter__bignum{display:none}
+  .wline span{transform:none;transition:none}
+  .hero__sub,.hero__meta{opacity:1;transform:none;transition:none}
+  .rv{opacity:1;transform:none;transition:none}
+  .marquee__track{animation:none;flex-wrap:wrap;width:auto;gap:1.2rem 2rem}
+  .marquee__track span::after{margin-left:2rem}
+  .marquee{-webkit-mask-image:none;mask-image:none}
+  .agency-pulse{animation:none}
+  .hero__scroll svg{animation:none}
+  .slate{display:none}
+  .frame-bar{transition:none}
+  .big-cta,.big-cta:hover{transform:none}
+}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<!-- Letterbox -->
+<div class="frame-bar frame-bar--top" aria-hidden="true">
+  <span>Intégral Pharma <b>présente</b></span>
+  <span>Écran large · 2026</span>
+</div>
+<div class="frame-bar frame-bar--bottom" aria-hidden="true">
+  <span>Grossiste-répartiteur de première intention</span>
+  <span><b>Plus de marge, dès la première boîte.</b></span>
+</div>
+<div class="reel-progress" id="reelProgress" aria-hidden="true"></div>
+
+<!-- Navigation -->
+<header class="nav">
+  <a class="nav__brand" href="#top">
+    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <span>Intégral Pharma<small>Le film de votre marge</small></span>
+  </a>
+  <button class="nav__cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">
+    <i aria-hidden="true"></i><em>Demander nos conditions</em>
+  </button>
+</header>
+
+<!-- Cartouche chapitre -->
+<div class="slate" id="slate" aria-hidden="true">
+  <span class="slate__num" id="slateNum">CH.01</span>
+  <span class="slate__sep"></span>
+  <span class="slate__name" id="slateName">Première intention</span>
+  <span class="slate__dots" id="slateDots">
+    <span class="on"></span><span></span><span></span><span></span><span></span>
+  </span>
+</div>
+
+<!-- ============================ HERO ============================ -->
+<section class="hero" id="top">
+  <div class="hero__ghost" aria-hidden="true">marge</div>
+  <p class="hero__kicker">Séance unique · pour pharmaciens</p>
+  <h1>
+    <span class="wline"><span>Plus de marge,</span></span>
+    <span class="wline"><span>dès la <span class="it">première</span></span></span>
+    <span class="wline"><span>boîte.</span></span>
+  </h1>
+  <p class="hero__sub">
+    Intégral Pharma est un <strong>grossiste-répartiteur de première intention</strong>,
+    porté par un groupe de grossistes indépendant. L'histoire commence maintenant —
+    scrollez, le film défile.
+  </p>
+  <div class="hero__meta">
+    <div><b>+20 ans</b>d'expérience</div>
+    <div><b>9 agences</b>couverture nationale</div>
+    <div><b>+14 000</b>références Offilog</div>
+  </div>
+  <div class="hero__scroll" aria-hidden="true">
+    <svg width="14" height="18" viewBox="0 0 14 18" fill="none"><path d="M7 1v14m0 0 5-5m-5 5-5-5" stroke="#F39A1B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Le film commence</span>
+  </div>
+</section>
+
+<!-- ============================ RAIL HORIZONTAL ============================ -->
+<section class="reel" id="reel" data-reel>
+  <div class="reel__viewport">
+    <div class="reel__rail" id="rail">
+
+      <!-- CH.01 — Première intention -->
+      <article class="chapter ch-1" data-name="Première intention">
+        <div class="chapter__bignum" data-depth=".18" aria-hidden="true">01</div>
+        <div class="chapter__in">
+          <p class="chapter__tag">Chapitre 01 — Le rôle</p>
+          <h2>Votre <span class="it">première intention</span>, pas votre plan B.</h2>
+          <p class="lead">
+            Un répartiteur pensé pour passer <strong>en premier</strong> sur vos commandes
+            du quotidien — <strong>du princeps au générique</strong> — avec la solidité
+            d'un groupe de grossistes indépendant.
+          </p>
+          <div class="def">
+            <div class="def__card"><i>a.</i><b>Indépendant</b><p>Un groupe de grossistes indépendant : les décisions se prennent près du comptoir, pas à l'autre bout du monde.</p></div>
+            <div class="def__card"><i>b.</i><b>Généraliste</b><p>Du princeps au générique : une seule commande, tout le spectre de l'ordonnance.</p></div>
+            <div class="def__card"><i>c.</i><b>Éprouvé</b><p>Plus de vingt ans d'expérience au service des officines, partout en France.</p></div>
+          </div>
+        </div>
+      </article>
+
+      <!-- CH.02 — Le groupe -->
+      <article class="chapter ch-2" data-name="Le groupe">
+        <div class="chapter__bignum" data-depth=".14" aria-hidden="true">02</div>
+        <div class="chapter__in">
+          <div>
+            <p class="chapter__tag">Chapitre 02 — Le territoire</p>
+            <h2>9 agences. <span class="it">Une seule</span> couverture&nbsp;: nationale.</h2>
+            <p class="lead">
+              Un maillage d'agences au plus près de votre officine, adossé à un
+              <strong>groupe de grossistes indépendant</strong> présent sur tout le territoire.
+            </p>
+            <div class="group-facts">
+              <div><b>9</b><span>agences</span></div>
+              <div><b>National</b><span>couverture</span></div>
+              <div><b>+20 ans</b><span>d'expérience</span></div>
+            </div>
+          </div>
+          <div class="map-wrap" aria-label="Carte stylisée de France, 9 agences">
+            <svg viewBox="0 0 160 180" role="img" aria-hidden="true">
+              <path class="map-outline" d="M78 8 L108 6 L124 22 L118 44 L136 58 L140 86 L128 100 L136 126 L118 142 L88 150 L64 168 L46 152 L52 126 L22 110 L6 86 L26 74 L18 50 L44 40 L60 14 Z"/>
+              <g>
+                <circle class="agency-pulse" cx="82" cy="34" r="4"/><circle class="agency" cx="82" cy="34" r="3"/>
+                <circle class="agency-pulse" cx="112" cy="52" r="4"/><circle class="agency" cx="112" cy="52" r="3"/>
+                <circle class="agency-pulse" cx="46" cy="58" r="4"/><circle class="agency" cx="46" cy="58" r="3"/>
+                <circle class="agency-pulse" cx="80" cy="72" r="4"/><circle class="agency" cx="80" cy="72" r="3"/>
+                <circle class="agency-pulse" cx="118" cy="92" r="4"/><circle class="agency" cx="118" cy="92" r="3"/>
+                <circle class="agency-pulse" cx="52" cy="98" r="4"/><circle class="agency" cx="52" cy="98" r="3"/>
+                <circle class="agency-pulse" cx="92" cy="118" r="4"/><circle class="agency" cx="92" cy="118" r="3"/>
+                <circle class="agency-pulse" cx="120" cy="134" r="4"/><circle class="agency" cx="120" cy="134" r="3"/>
+                <circle class="agency-pulse" cx="62" cy="146" r="4"/><circle class="agency" cx="62" cy="146" r="3"/>
+              </g>
+            </svg>
+            <span class="map-caption">9 agences · couverture nationale</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- CH.03 — Offilog -->
+      <article class="chapter ch-3" data-name="Offilog">
+        <div class="chapter__bignum" data-depth=".16" aria-hidden="true">03</div>
+        <div class="chapter__in" style="max-width:1250px;width:100%">
+          <p class="chapter__tag">Chapitre 03 — Le catalogue</p>
+          <h2>Offilog, la <span class="it">profondeur</span> de champ.</h2>
+          <div class="offi-num">
+            <span class="plus">+</span>14&nbsp;000
+            <small>références · <span style="color:var(--orange)">+430</span> laboratoires · du princeps au générique</small>
+          </div>
+          <div class="marquee" aria-label="Laboratoires référencés">
+            <div class="marquee__track">
+              <span>Zentiva</span><span>Teva</span><span>EG Labo</span><span>Zydus</span><span>Viatris</span><span>Biogaran</span><span>Sandoz</span><span>Arrow</span>
+              <span aria-hidden="true">Zentiva</span><span aria-hidden="true">Teva</span><span aria-hidden="true">EG Labo</span><span aria-hidden="true">Zydus</span><span aria-hidden="true">Viatris</span><span aria-hidden="true">Biogaran</span><span aria-hidden="true">Sandoz</span><span aria-hidden="true">Arrow</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- CH.04 — Les chiffres -->
+      <article class="chapter ch-4" data-name="Les chiffres">
+        <div class="chapter__bignum" data-depth=".14" aria-hidden="true">04</div>
+        <div class="chapter__in">
+          <p class="chapter__tag">Chapitre 04 — La preuve</p>
+          <h2>Ce que disent <span class="it">les chiffres</span>.</h2>
+          <div class="stats">
+            <div class="stat"><b><span data-count="20" data-suffix="+"></span></b><span>ans d'expérience</span></div>
+            <div class="stat"><b><span data-count="9"></span></b><span>agences · couverture nationale</span></div>
+            <div class="stat"><b><span data-count="14000" data-prefix="+"></span></b><span>références Offilog</span></div>
+            <div class="stat"><b><span data-count="430" data-prefix="+"></span></b><span>laboratoires, du princeps au générique</span></div>
+          </div>
+        </div>
+      </article>
+
+      <!-- CH.05 — Générique de fin -->
+      <article class="chapter ch-5" data-name="Vos conditions">
+        <div class="chapter__bignum" data-depth=".14" aria-hidden="true">Fin</div>
+        <div class="chapter__in">
+          <p class="chapter__tag">Chapitre final — À vous de jouer</p>
+          <h2>La suite se joue <span class="it">dans votre officine</span>.</h2>
+          <p class="lead" style="text-align:center;margin-inline:auto">
+            Vos conditions&nbsp;? <strong>Chiffrées en rendez-vous</strong>, sur vos volumes réels.
+          </p>
+          <button class="big-cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">
+            Demander nos conditions
+            <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M1 7h15m0 0-5-5m5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <p class="note">Réponse type de nos équipes&nbsp;: «&nbsp;chiffré en rendez-vous&nbsp;»</p>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CONTACT ============================ -->
+<section class="contact" id="contact">
+  <div>
+    <p class="kicker rv">Après la séance</p>
+    <h2 class="rv" data-d="1">Un rendez-vous, un chiffrage, <span class="it">votre marge</span>.</h2>
+    <p class="rv" data-d="2">
+      Un membre du groupe vient chez vous, regarde vos volumes,
+      et vous répond précisément. Pas de promesse en l'air&nbsp;:
+      tout est chiffré en rendez-vous.
+    </p>
+    <div class="contact__row rv" data-d="3">
+      <button class="big-cta" onclick="alert('Maquette — le formulaire de prise de rendez-vous sera branché ici.')">
+        Demander nos conditions
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M1 7h15m0 0-5-5m5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="ghost-cta" onclick="document.getElementById('top').scrollIntoView({behavior:'smooth'})">Revoir le film</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="footer">
+  <div class="footer__grid">
+    <div class="footer__brand">
+      <img src="../assets/logo.png" alt="Intégral Pharma">
+      <div>
+        <b>Intégral Pharma</b>
+        <p>Grossiste-répartiteur de première intention.
+        Groupe de grossistes indépendant — plus de 20 ans d'expérience,
+        9 agences, couverture nationale.</p>
+      </div>
+    </div>
+    <div>
+      <h4>Chapitres</h4>
+      <ul>
+        <li><a href="#top">Ouverture</a></li>
+        <li><a href="#reel">Première intention</a></li>
+        <li><a href="#reel">Le groupe</a></li>
+        <li><a href="#reel">Offilog</a></li>
+        <li><a href="#contact">Vos conditions</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>L'offre</h4>
+      <ul>
+        <li><a href="#reel">Du princeps au générique</a></li>
+        <li><a href="#reel">Offilog · +14 000 références</a></li>
+        <li><a href="#reel">+430 laboratoires</a></li>
+        <li><a href="#contact">Demander nos conditions</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer__legal">
+    <span>© 2026 Intégral Pharma — Tous droits réservés</span>
+    <span>Plus de marge, dès la première boîte.</span>
+  </div>
+</footer>
+
+<script>
+/* =========================================================================
+   INTÉGRAL PHARMA · MAQUETTE 57 — JS vanilla, zéro dépendance
+   ========================================================================= */
+(function(){
+  'use strict';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Ouverture du film : révèle le hero ---------- */
+  window.addEventListener('load', function(){
+    document.body.classList.add('is-ready');
+  });
+  /* filet de sécurité si load a déjà eu lieu / fonts lentes */
+  setTimeout(function(){ document.body.classList.add('is-ready'); }, 700);
+
+  /* ---------- Barre de progression globale ---------- */
+  var progress = document.getElementById('reelProgress');
+  function updateProgress(){
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+    progress.style.width = (p * 100) + '%';
+  }
+  window.addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+
+  /* ---------- RAIL HORIZONTAL piloté par le scroll vertical ---------- */
+  var CHAPTERS = ['Première intention','Le groupe','Offilog','Les chiffres','Vos conditions'];
+  var slate = document.getElementById('slate');
+  var slateNum = document.getElementById('slateNum');
+  var slateName = document.getElementById('slateName');
+  var slateDots = document.getElementById('slateDots').children;
+
+  if(!reduce){
+    var section = document.querySelector('[data-reel]');
+    var rail = document.getElementById('rail');
+    var panels = rail.children;
+    var parallax = rail.querySelectorAll('[data-depth]');
+    var distance = 0, ticking = false, lastIdx = -1;
+
+    function measure(){
+      distance = Math.max(0, rail.scrollWidth - window.innerWidth);
+      /* hauteur de la piste = 1 écran (pin) + distance à parcourir */
+      section.style.height = (window.innerHeight + distance) + 'px';
+      compute();
+    }
+
+    function compute(){
+      var rect = section.getBoundingClientRect();
+      var scrollable = section.offsetHeight - window.innerHeight;
+      var p = scrollable > 0 ? (-rect.top / scrollable) : 0;
+      p = Math.max(0, Math.min(1, p));
+      var x = -distance * p;
+      rail.style.setProperty('--x', x + 'px');
+
+      /* parallaxe : les numéros géants glissent moins vite que le rail */
+      for(var i = 0; i < parallax.length; i++){
+        var d = parseFloat(parallax[i].getAttribute('data-depth')) || 0;
+        parallax[i].style.marginLeft = (-x * d) + 'px';
+      }
+
+      /* cartouche chapitre */
+      var inReel = rect.top < window.innerHeight * .5 && rect.bottom > window.innerHeight * .5;
+      slate.classList.toggle('is-on', inReel);
+      if(inReel){
+        var idx = Math.min(panels.length - 1, Math.round(p * (panels.length - 1)));
+        if(idx !== lastIdx){
+          lastIdx = idx;
+          slateNum.textContent = 'CH.0' + (idx + 1);
+          slateName.textContent = CHAPTERS[idx] || '';
+          for(var j = 0; j < slateDots.length; j++){
+            slateDots[j].classList.toggle('on', j === idx);
+          }
+        }
+      }
+      ticking = false;
+    }
+
+    function onScroll(){
+      if(!ticking){ ticking = true; requestAnimationFrame(compute); }
+    }
+
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', measure);
+    window.addEventListener('load', measure);
+    measure();
+  }
+
+  /* ---------- Count-up (IntersectionObserver + rAF easeOutCubic) ---------- */
+  var nf = new Intl.NumberFormat('fr-FR');
+  function fmt(el, val){
+    var pre = el.dataset.prefix || '';
+    var suf = el.dataset.suffix || '';
+    el.innerHTML =
+      (pre ? '<span class="acc">' + pre + '</span>' : '') +
+      nf.format(Math.round(val)) +
+      (suf ? '<span class="acc">' + suf + '</span>' : '');
+  }
+  function runCount(el){
+    var target = parseFloat(el.dataset.count) || 0;
+    if(reduce){ fmt(el, target); return; }
+    var dur = 1500, start = null;
+    function tick(ts){
+      if(start === null) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      fmt(el, target * (1 - Math.pow(1 - p, 3)));
+      if(p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  var counters = document.querySelectorAll('[data-count]');
+  if('IntersectionObserver' in window && !reduce){
+    var ioC = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ runCount(e.target); ioC.unobserve(e.target); }
+      });
+    }, {threshold:.35});
+    counters.forEach(function(el){ fmt(el, 0); ioC.observe(el); });
+  } else {
+    counters.forEach(function(el){ fmt(el, parseFloat(el.dataset.count) || 0); });
+  }
+
+  /* ---------- Révélations verticales (contact) ---------- */
+  var rvs = document.querySelectorAll('.rv');
+  if('IntersectionObserver' in window && !reduce){
+    var ioR = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); ioR.unobserve(e.target); }
+      });
+    }, {threshold:.2});
+    rvs.forEach(function(el){ ioR.observe(el); });
+  } else {
+    rvs.forEach(function(el){ el.classList.add('in'); });
+  }
+})();
+</script>
+</body>
+</html>
