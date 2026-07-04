@@ -81,7 +81,7 @@
     var total = data.length;
     var shown = data.slice(0, LIMIT);
     var showStock = !!(window.ETAB_PRICES && S.etab);
-    var ncol = 10 + (showStock ? 1 : 0);
+    var ncol = 11 + (showStock ? 1 : 0);
     if (!shown.length) {
       var why = S.q ? 'Aucun résultat pour « ' + esc(S.q) + ' ».' : (S.etab && S.stockOnly) ? 'Rien en stock dans ' + esc(S.etab) + '.' : 'Aucun produit dans cette catégorie.';
       return '<tr><td colspan="' + ncol + '" style="padding:26px;text-align:center;color:var(--muted)">' + why + '<br><button class="v2-btn v2-btn-ghost" style="margin-top:12px" onclick="V2.molReset()">Réinitialiser les filtres</button></td></tr>';
@@ -91,6 +91,7 @@
       // Génériques : PAS d'abandon de marge Intégral (ce sont les génériqueurs
       // qui gèrent leurs propres remises) → on affiche juste le prix, aucun %.
       var showAb = r.f !== 'gen' && p.rpct > 0;
+      var mkt = (window.V2 && V2.market) ? V2.market(r.c) : null; // Copilote · feed marché France
       var stockTd = showStock ? '<td class="num mono" data-label="Stock" style="font-weight:800;color:' + (p.stk > 0 ? 'var(--c-opp)' : 'var(--c-rose)') + '">' + (p.stk != null ? num(p.stk) : '—') + '</td>' : '';
       var pphtTd = showAb
         ? '<td class="num mono mol-ppht" data-label="PPHT">' + (p.ppht > 0 ? eur(p.ppht) : '—') + '</td>'
@@ -104,6 +105,7 @@
         pphtTd +
         '<td class="num mono mol-net" data-label="Net remisé">' + (p.net > 0 ? eur(p.net) : '—') + '</td>' +
         '<td class="num" data-label="Abandon de marge">' + (showAb ? '<span class="mol-rem">−' + String(p.rpct).replace('.', ',') + '%</span>' : '<span style="color:var(--muted-2)">—</span>') + '</td>' +
+        '<td class="num mono mol-frv" data-label="Moy. France/an">' + (mkt ? '<span title="Moyenne France indicative (Ameli, ' + (mkt.meta ? mkt.meta.mois : 12) + ' mois)">~' + num(mkt.avgYear) + '</span>' : '<span style="color:var(--muted-2)">—</span>') + '</td>' +
         COLS.map(function (c) { return '<td class="num mono" data-label="' + esc(c.l) + '"' + (c.accent ? ' style="color:' + c.accent + ';font-weight:800"' : '') + '>' + c.fmt(r[c.k] || 0) + '</td>'; }).join('') +
         stockTd +
       '</tr>';
@@ -306,11 +308,12 @@
             '<th class="num">PPHT<small style="display:block;font-weight:500;color:var(--muted-2)">tarif</small></th>' +
             '<th class="num mol-key">Net remisé<small style="display:block;font-weight:500;color:var(--muted-2)">ton prix</small></th>' +
             '<th class="num mol-key">Abandon<small style="display:block;font-weight:500;color:var(--muted-2)">de marge</small></th>' +
+            '<th class="num mol-fr" title="Moyenne indicative de boîtes remboursées par pharmacie en France (Ameli)">Moy. France<small style="display:block;font-weight:500;color:var(--muted-2)">boîtes/an · Ameli</small></th>' +
             COLS.map(th).join('') +
             (showStock ? '<th class="num">Stock</th>' : '') +
           '</tr></thead><tbody id="mol-tbody">' + rowsHtml() + '</tbody></table></div>' +
           '</div>' +
-          '<div class="v2-page-sub" style="margin-top:14px;font-size:12px">Ventes réelles du réseau (5 mois, annualisées) · marge MDL = remboursables · Net remisé = prix d\'achat moyen constaté · prix/stock = établissement choisi.</div>' +
+          '<div class="v2-page-sub" style="margin-top:14px;font-size:12px">Ventes réelles du réseau (5 mois, annualisées) · marge MDL = remboursables · Net remisé = prix d\'achat moyen constaté · prix/stock = établissement choisi · <b>Moy. France</b> = boîtes remboursées Ameli (12 mois) ÷ ~20 000 officines, à titre indicatif (remboursables uniquement).</div>' +
         '</div>';
       fill();
       // Motion discret : cascade d'entrée sur les familles + les 1res lignes du tableau
@@ -379,6 +382,7 @@
       '.mol-table thead th.mol-key small{color:color-mix(in srgb,var(--ip-blue) 70%,var(--muted-2)) !important}' +
       // colonnes secondaires (CIP, PPHT, rotation, marge) allégées pour la hiérarchie
       '.mol-table td.mol-cip,.mol-table td.mol-ppht{opacity:.85}' +
+      '.mol-table td.mol-frv{color:var(--muted)}.mol-table th.mol-fr{color:var(--muted-2)}' +
       '.mol-fam{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:11px;font-weight:700;letter-spacing:.01em;color:var(--fc);background:color-mix(in srgb,var(--fc) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fc) 24%,transparent);white-space:nowrap}' +
       '.mol-rem{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:12px;font-weight:800;font-family:var(--mono);letter-spacing:-.01em;color:var(--c-mint-txt,var(--c-opp));background:color-mix(in srgb,var(--c-opp) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c-opp) 26%,transparent)}' +
       // segs (familles)
