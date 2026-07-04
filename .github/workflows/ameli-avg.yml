@@ -1,0 +1,43 @@
+name: Copilote · marché France (Ameli)
+
+# Robot GRATUIT : télécharge Medic'AM (Assurance Maladie), recalcule la moyenne de
+# boîtes remboursées par pharmacie et par produit sur 12 mois glissants, et committe
+# crm/v2/ameli-avg-data.js que le CRM lit. Medic'AM se met à jour ~tous les mois/semestres.
+# Aucune clé, aucun coût. Déclenchable aussi à la main (workflow_dispatch).
+
+on:
+  schedule:
+    # 1x/mois (le 3, à une minute non-ronde). Medic'AM ne bouge pas plus souvent.
+    - cron: '41 4 3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ameli-avg
+  cancel-in-progress: false
+
+jobs:
+  ameli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les dépendances
+        run: pip install xlrd
+      - name: Recalculer le marché France
+        run: python3 generate_ameli_avg.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/ameli-avg-data.js; then
+            echo "Pas de changement (Medic'AM inchangé)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/ameli-avg-data.js
+            git commit -m "data(copilote): marché France Ameli $(date -u +%Y-%m-%d)"
+            git push
+          fi
