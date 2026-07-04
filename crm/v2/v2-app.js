@@ -563,7 +563,18 @@
       '.v2-home-x .v2-lch-mini:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line));transform:translateY(-1px);box-shadow:var(--sh-1)}',
       '.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:v2homeIn .5s var(--mo-ease-in) both}',
       '.v2-home-x .v2-lch-card:nth-of-type(1){animation-delay:.10s}.v2-home-x .v2-lch-card:nth-of-type(2){animation-delay:.14s}.v2-home-x .v2-lch-card:nth-of-type(3){animation-delay:.18s}.v2-home-x .v2-lch-card:nth-of-type(4){animation-delay:.22s}.v2-home-x .v2-lch-more{animation-delay:.28s}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:none}.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-arrow{transition:none}.v2-home-x .v2-lch-card::after{display:none}}'
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:none}.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-arrow{transition:none}.v2-home-x .v2-lch-card::after{display:none}}',
+      // ─── Carte vedette « Copilote » (pleine largeur, en tête de l\'accueil)
+      '.v2-home-x .v2-lch-feat{position:relative;display:flex;align-items:center;gap:18px;padding:22px 24px;margin-bottom:16px;border-radius:var(--r-lg,20px);text-decoration:none;color:#fff;cursor:pointer;overflow:hidden;background:linear-gradient(120deg,var(--ip-blue),#0034A0);box-shadow:0 14px 34px color-mix(in srgb,var(--ip-blue) 30%,transparent);transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft);animation:v2homeIn .5s var(--mo-ease-in) both}',
+      '.v2-home-x .v2-lch-feat::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(320px circle at var(--mx,80%) var(--my,0%),rgba(255,255,255,.18),transparent 60%)}',
+      '.v2-home-x .v2-lch-feat:hover{transform:translateY(-3px);box-shadow:0 20px 46px color-mix(in srgb,var(--ip-blue) 38%,transparent)}',
+      '.v2-home-x .v2-lch-feat-ic{flex:none;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.16);color:#fff}',
+      '.v2-home-x .v2-lch-feat-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;position:relative}',
+      '.v2-home-x .v2-lch-feat-tag{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.82)}',
+      '.v2-home-x .v2-lch-feat-t{font-size:19px;font-weight:800;letter-spacing:-.01em}',
+      '.v2-home-x .v2-lch-feat-d{font-size:13.5px;color:rgba(255,255,255,.86);line-height:1.4}',
+      '.v2-home-x .v2-lch-feat .v2-lch-arrow{position:static;color:rgba(255,255,255,.9);font-size:22px;flex:none}',
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-feat{animation:none;transition:none}}'
     ].join('');
     document.head.appendChild(st);
   }
@@ -608,6 +619,10 @@
       // Infos du matin (brief quotidien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
         P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'La veille du jour : ruptures ANSM, sécurité, réglementaire et actu officine — avec ton alternative IP pour chaque molécule en tension.', go: 'Voir la veille' });
+      }
+      // Copilote — hub global (croise marché France × ventes réseau) — app JARVIS
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) {
+        P.push({ k: 'copilote', cls: 'p1', accent: 'var(--ip-blue)', ico: 'spark', tag: 'Nouveau', t: 'Copilote', d: 'Le cerveau de ta tournée : croise le marché réel France avec tes ventes réseau pour repérer où pousser quoi.', go: 'Ouvrir le Copilote' });
       }
       // Pilier Molécules (analyse réseau : rotation + marge pharmacien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) {
@@ -681,7 +696,17 @@
             '<span class="v2-lch-meta"><span class="v2-lch-t">' + esc(p.t) + '</span><span class="v2-lch-d">' + (SUB[k] || '') + '</span></span></a>';
         }
         var big = ESSENTIAL.map(bigCard).filter(Boolean).join('');
-        pilHtml = '<div class="v2-lch-grid">' + big + '</div>';
+        var featured = '';
+        if (pmap.copilote) {
+          used.copilote = 1;
+          featured = '<a class="v2-lch-feat" onmousemove="V2.homeSpot(event,this)" onclick="V2.go(\'copilote\')">' +
+            '<span class="v2-lch-feat-ic">' + ICO('spark', 26) + '</span>' +
+            '<span class="v2-lch-feat-main"><span class="v2-lch-feat-tag">Nouveau · Copilote</span>' +
+            '<span class="v2-lch-feat-t">Le cerveau de ta tournée</span>' +
+            '<span class="v2-lch-feat-d">Le marché réel France croisé à tes ventes réseau — où pousser quoi, officine par officine.</span></span>' +
+            '<span class="v2-lch-arrow">→</span></a>';
+        }
+        pilHtml = featured + '<div class="v2-lch-grid">' + big + '</div>';
         var rest = P.filter(function (p) { return !used[p.k]; });
         if (rest.length) {
           pilHtml += '<div class="v2-lch-more"><span class="lbl">Autres outils</span>' +
@@ -717,6 +742,7 @@
     if (window.V2_BRAND && window.V2_BRAND.opso) PAGES.splice(2, 0, ['fiches', 'Fiches commerciales', 'fiche']); // OPSO garde les fiches
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) PAGES.splice(1, 0, ['copilote', 'Copilote (marché & opportunités)', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(3, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) PAGES.push(['audit', 'Audit Marge (par pharmacie)', 'pilo']);
