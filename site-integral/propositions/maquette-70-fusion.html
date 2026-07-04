@@ -44,6 +44,17 @@
   .nav-links a::after{content:"";position:absolute;left:0;bottom:0;width:0;height:2px;background:var(--or);transition:width .28s var(--e)}
   .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
   @media(max-width:900px){.nav-links{display:none}}
+  .burger{display:none;flex-direction:column;gap:5px;width:44px;height:44px;align-items:center;justify-content:center;background:none;border:0;cursor:pointer;padding:0}
+  .burger span{width:22px;height:2px;background:var(--ink);border-radius:2px;transition:transform .3s var(--e),opacity .2s}
+  .burger.on span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .burger.on span:nth-child(2){opacity:0}
+  .burger.on span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .mobile-menu{position:fixed;top:72px;left:0;right:0;background:#fff;border-bottom:1px solid var(--line);padding:14px 26px 24px;display:flex;flex-direction:column;transform:translateY(-14px);opacity:0;pointer-events:none;transition:transform .32s var(--e),opacity .32s var(--e);z-index:55;box-shadow:0 24px 44px -26px rgba(10,27,61,.35)}
+  .mobile-menu.on{transform:none;opacity:1;pointer-events:auto}
+  .mobile-menu a{padding:15px 2px;font-size:17px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--line)}
+  .mobile-menu .btn{margin-top:16px;justify-content:center}
+  @media(max-width:900px){.nav .btn-p{display:none}.burger{display:flex}}
+  @media(min-width:901px){.mobile-menu{display:none}}
 
   /* HERO */
   .hero{position:relative;padding:78px 0 56px;overflow:hidden}
@@ -185,8 +196,26 @@
       <a href="#contact">Contact</a>
     </nav>
     <a class="btn btn-p" href="#contact" style="padding:11px 19px;font-size:14px">Parlons de vos conditions</a>
+    <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#parcours">Votre parcours</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#independance">Indépendance</a>
+    <a href="#contact">Contact</a>
+    <a class="btn btn-p" href="#contact">Parlons de vos conditions</a>
   </div>
 </header>
+<script>
+(function(){
+  var burger=document.getElementById("burger"),menu=document.getElementById("mobileMenu");
+  if(!burger||!menu)return;
+  function set(open){burger.classList.toggle("on",open);menu.classList.toggle("on",open);burger.setAttribute("aria-expanded",open?"true":"false");document.body.style.overflow=open?"hidden":"";}
+  burger.addEventListener("click",function(){set(!menu.classList.contains("on"));});
+  menu.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){set(false);});});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")set(false);});
+})();
+</script>
 
 <main id="top">
 
