@@ -1,0 +1,41 @@
+name: Copilote · ruptures ANSM
+
+# Robot GRATUIT : récupère la liste ANSM des médicaments signalés en rupture / risque
+# de rupture, recalcule crm/v2/ruptures-data.js (croisé au catalogue par CIP13).
+# La liste ANSM est rééditée ~chaque mois. Aucune clé, aucun coût. Déclenchable à la main.
+
+on:
+  schedule:
+    - cron: '37 5 * * 1'   # tous les lundis (la liste ANSM bouge ~1x/mois)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ruptures
+  cancel-in-progress: false
+
+jobs:
+  ruptures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les dépendances
+        run: pip install openpyxl
+      - name: Recalculer les ruptures
+        run: python3 generate_ruptures.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/ruptures-data.js; then
+            echo "Pas de changement (liste ANSM inchangée)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/ruptures-data.js
+            git commit -m "data(copilote): ruptures ANSM $(date -u +%Y-%m-%d)"
+            git push
+          fi

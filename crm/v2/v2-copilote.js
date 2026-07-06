@@ -21,6 +21,12 @@
     return { avgYear: v, avgMonth: Math.round(v / 12 * 10) / 10, meta: A.meta };
   };
   V2.marketMeta = function () { return (window.AMELI_AVG && window.AMELI_AVG.meta) || null; };
+  // ── SOCLE · feed #2 · ruptures/tensions ANSM (par CIP13) ──
+  V2.rupture = function (cip) {
+    var R = window.RUPTURES;
+    if (!R || !R.data) return null;
+    return R.data[String(cip)] || null;   // { d: DCI, dt: date signalement } ou null
+  };
   V2.zone = V2.zone || function () { return null; };   // feed à venir (INSEE/FINESS)
   V2.reco = V2.reco || function () { return null; };   // feed à venir
 
@@ -99,6 +105,8 @@
       '.co-feed .d{width:8px;height:8px;border-radius:50%;background:var(--muted-2)}',
       '.co-feed.on{color:var(--ink);border-color:color-mix(in srgb,var(--c-opp) 40%,var(--line))}',
       '.co-feed.on .d{background:var(--c-opp);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-opp) 18%,transparent)}',
+      '.co-feed.on.warn .d{background:var(--c-amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-amber) 18%,transparent)}',
+      '.co-tension{display:inline-block;font-size:10.5px;font-weight:700;color:var(--c-amber-txt,#9A5B12);background:#FBF1E2;border:1px solid #F0E2C6;padding:1px 7px;border-radius:var(--r-pill);margin-left:8px;vertical-align:middle;white-space:nowrap}',
       '.co-sec{margin-top:30px}',
       '.co-sec-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}',
       '.co-sec-h h2{font-size:20px;font-weight:800;letter-spacing:-.02em;margin:0}',
@@ -132,19 +140,26 @@
     document.head.appendChild(st);
   }
 
-  function feedStrip() {
+  function feedStrip(nbTension) {
     var m = V2.marketMeta();
     return '<div class="co-feeds">' +
       '<span class="co-feed on"><span class="d"></span>Marché France' + (m ? ' · ' + esc(m.periode) : '') + '</span>' +
-      '<span class="co-feed"><span class="d"></span>Ruptures ANSM · bientôt</span>' +
+      (window.RUPTURES
+        ? '<span class="co-feed on warn"><span class="d"></span>Ruptures ANSM · ' + num(nbTension || 0) + ' produits en tension</span>'
+        : '<span class="co-feed"><span class="d"></span>Ruptures ANSM · bientôt</span>') +
       '<span class="co-feed"><span class="d"></span>Potentiel de zone · bientôt</span>' +
       '</div>';
+  }
+  function tensionBadge(cip) {
+    var rp = V2.rupture ? V2.rupture(cip) : null;
+    if (!rp) return '';
+    return ' <span class="co-tension" title="Signalé en rupture/risque de rupture à l\'ANSM' + (rp.dt ? ' · dernier signalement ' + esc(rp.dt) : '') + (rp.d ? ' · ' + esc(rp.d) : '') + '">⚠ tension</span>';
   }
 
   function marketRow(o) {
     var r = o.r, penPct = Math.round(o.pen * 100);
     return '<tr>' +
-      '<td><div class="co-prod">' + esc(cap(r.d)) + '</div><div class="co-cip">' + esc(r.c) + '</div></td>' +
+      '<td><div class="co-prod">' + esc(cap(r.d)) + tensionBadge(r.c) + '</div><div class="co-cip">' + esc(r.c) + '</div></td>' +
       '<td><span class="co-fam">' + (FAM[r.f] || r.f) + '</span></td>' +
       '<td class="num"><span class="co-fr">~' + num(o.fr) + '<small> /an</small></span></td>' +
       '<td class="num"><span class="co-pen"><span class="mono">' + num(r.n || 0) + '</span><span class="co-bar"><i style="width:' + penPct + '%"></i></span></span></td>' +
@@ -155,7 +170,7 @@
   function gapRow(o) {
     var r = o.r;
     return '<tr>' +
-      '<td><div class="co-prod">' + esc(cap(r.d)) + '</div><div class="co-cip">' + esc(r.c) + '</div></td>' +
+      '<td><div class="co-prod">' + esc(cap(r.d)) + tensionBadge(r.c) + '</div><div class="co-cip">' + esc(r.c) + '</div></td>' +
       '<td><span class="co-fam">' + (FAM[r.f] || r.f) + '</span></td>' +
       '<td class="num"><span class="co-fr">~' + num(o.fr) + '<small> /an</small></span></td>' +
       netCell(r) +
@@ -174,6 +189,9 @@
         if (V2.loadFiles) V2.loadFiles(['bench']).then(function () { V2.render(); });
         return;
       }
+
+      var nbTension = 0;
+      if (window.RUPTURES) PS().forEach(function (r) { if (V2.rupture(r.c)) nbTension++; });
 
       // Section 1 — gros marchés France sous-exploités
       var big = bigMarkets(18);
@@ -207,7 +225,7 @@
           '<div class="co-hero">' +
             '<h1>Copilote <span class="ac">·</span> le cerveau de ta tournée</h1>' +
             '<p>Ici on croise le <b>marché réel France</b> (ce qu\'une pharmacie moyenne vend) avec <b>tes ventes réseau</b>, pour repérer où pousser quoi. Chaque nouvelle source viendra enrichir cette même page.</p>' +
-            feedStrip() +
+            feedStrip(nbTension) +
           '</div>' +
           '<section class="co-sec">' +
             '<div class="co-sec-h"><h2>Les gros marchés France à sécuriser</h2><span class="co-pill">' + big.length + ' produits</span></div>' +
