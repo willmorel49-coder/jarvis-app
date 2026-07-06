@@ -85,6 +85,41 @@
     return out.slice(0, limit || 25);
   }
 
+  // ── INTELLIGENCE DE TOURNÉE (croisement produit × officine × zone) ──
+  var _topCips = null;
+  function topMarketCips(n) {
+    if (_topCips) return _topCips;
+    var arr = [];
+    PS().forEach(function (r) { var m = V2.market(r.c); if (m) arr.push({ c: String(r.c), fr: m.avgYear }); });
+    arr.sort(function (a, b) { return b.fr - a.fr; });
+    _topCips = arr.slice(0, n || 150).map(function (x) { return x.c; });
+    return _topCips;
+  }
+  // pour chaque officine : nb de gros marchés France non commandés (= à gagner) + zone
+  function tournee(dep) {
+    var top = topMarketCips(150);
+    var out = [];
+    (V2.pharmacies || []).forEach(function (p) {
+      var z = V2.zone ? V2.zone(p.id) : null;
+      if (dep && (!z || z.dep !== dep)) return;
+      var owned = orderedCips(p.id);
+      var miss = 0;
+      for (var i = 0; i < top.length; i++) { if (!owned[top[i]]) miss++; }
+      if (miss <= 0) return;
+      var pop = z ? z.pop : 0;
+      out.push({ p: p, miss: miss, z: z, score: miss * 1000 + Math.min(400, pop / 1000) });
+    });
+    out.sort(function (a, b) { return b.score - a.score; });
+    return out;
+  }
+  function tourneeDeps() {
+    var d = {};
+    (V2.pharmacies || []).forEach(function (p) { var z = V2.zone ? V2.zone(p.id) : null; if (z && z.dep) d[z.dep] = (d[z.dep] || 0) + 1; });
+    return Object.keys(d).sort();
+  }
+  var selDep = '';
+  V2.copiloteSelDep = function (d) { selDep = d; if (V2.render) V2.render(); };
+
   var selPid = null;
   function pharmaOptions() {
     var phs = (V2.pharmacies || []).slice();
@@ -115,6 +150,8 @@
       '.co-zone{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:11px 16px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--ip-blue) 4%,var(--card-2));font-size:13.5px;color:var(--ink)}',
       '.co-zone-i{display:inline-flex;align-items:center;gap:7px}.co-zone-i svg{color:var(--ip-blue)}.co-zone-i b{font-family:var(--mono);font-weight:800}',
       '.co-zone-src{margin-left:auto;font-size:11px;color:var(--muted-2)}',
+      '.co-table td.co-rank{font-family:var(--mono);font-weight:700;color:var(--muted-2);width:40px;text-align:center}',
+      '.co-opp{display:inline-block;font-family:var(--mono);font-weight:800;color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 9%,var(--card));padding:2px 10px;border-radius:var(--r-pill);white-space:nowrap}',
       '.co-tension{display:inline-block;font-size:10.5px;font-weight:700;color:var(--c-amber-txt,#9A5B12);background:#FBF1E2;border:1px solid #F0E2C6;padding:1px 7px;border-radius:var(--r-pill);margin-left:8px;vertical-align:middle;white-space:nowrap}',
       '.co-sec{margin-top:30px}',
       '.co-sec-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}',
@@ -189,6 +226,17 @@
       '</tr>';
   }
 
+  function tourRow(o, i) {
+    var p = o.p, z = o.z;
+    return '<tr>' +
+      '<td class="num co-rank">' + (i + 1) + '</td>' +
+      '<td><div class="co-prod">' + esc(p.name) + '</div><div class="co-cip">' + (z ? esc(z.c) + ' (' + esc(z.dep) + ')' : 'zone inconnue') + '</div></td>' +
+      '<td class="num mono">' + (z && z.pop ? num(z.pop) : '—') + '</td>' +
+      '<td class="num"><span class="co-opp">' + o.miss + ' à pousser</span></td>' +
+      '<td class="num"><button class="v2-btn v2-btn-primary" style="padding:6px 13px" onclick="V2.go(\'pharma\',\'' + esc(String(p.id)) + '\')">Visite</button></td>' +
+      '</tr>';
+  }
+
   V2.pages.copilote = {
     render: function (root) {
       injectCss();
@@ -238,6 +286,22 @@
         t2body +
         '<div class="co-foot">Produits à fort marché France que <b>' + esc(selName) + '</b> ne commande pas encore — à présenter à la prochaine visite.</div></div>';
 
+      // Section « Ma tournée » — intelligence de prospection (où concentrer les visites)
+      var tour = tournee(selDep);
+      var deps = tourneeDeps();
+      var depOpts = '<option value="">Tous secteurs</option>' + deps.map(function (d) { return '<option value="' + d + '"' + (d === selDep ? ' selected' : '') + '>Dép. ' + d + '</option>'; }).join('');
+      var tourTop = tour.slice(0, 25);
+      var tourSec = '<section class="co-sec">' +
+        '<div class="co-sec-h"><h2>Ma tournée · où concentrer les visites</h2><span class="co-pill">' + tour.length + ' officines</span></div>' +
+        '<p class="co-sub">Classées par ce que tu as à y gagner : les gros marchés France qu\'elles ne commandent pas encore, pondéré par la taille de leur zone. Filtre par département pour préparer une journée.</p>' +
+        '<div class="co-card">' +
+          '<div class="co-toolbar"><label>Secteur</label><select class="co-select" onchange="V2.copiloteSelDep(this.value)">' + depOpts + '</select></div>' +
+          '<div class="co-scroll"><table class="co-table"><thead><tr><th class="num">#</th><th>Officine</th><th class="num">Zone (hab.)</th><th class="num">À gagner</th><th class="num"></th></tr></thead><tbody>' +
+          (tourTop.length ? tourTop.map(tourRow).join('') : '<tr><td colspan="5" class="co-empty">Aucune opportunité dans ce secteur.</td></tr>') +
+          '</tbody></table></div>' +
+          '<div class="co-foot">Priorité = gros marchés France non commandés × taille de la zone. « À gagner » = combien de ces marchés (sur les 150 plus gros) l\'officine laisse passer.</div>' +
+        '</div></section>';
+
       root.innerHTML = top +
         '<div class="v2-wrap">' +
           '<div class="co-hero">' +
@@ -245,6 +309,7 @@
             '<p>Ici on croise le <b>marché réel France</b> (ce qu\'une pharmacie moyenne vend) avec <b>tes ventes réseau</b>, pour repérer où pousser quoi. Chaque nouvelle source viendra enrichir cette même page.</p>' +
             feedStrip(nbTension) +
           '</div>' +
+          tourSec +
           '<section class="co-sec">' +
             '<div class="co-sec-h"><h2>Les gros marchés France à sécuriser</h2><span class="co-pill">' + big.length + ' produits</span></div>' +
             '<p class="co-sub">Produits que la France consomme beaucoup mais que peu de tes officines commandent encore — les meilleures opportunités de volume, catalogue Intégral à l\'appui.</p>' +
