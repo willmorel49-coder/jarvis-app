@@ -37,6 +37,8 @@
   V2.stock = function (cip) { var S = window.STOCK_IP; return (S && S.data && S.data[String(cip)]) || 0; };
   // ── SOCLE · feed #5 · tendance marché (croissance YoY %) par CIP13 ──
   V2.tendance = function (cip) { var T = window.TENDANCE; if (!T || !T.data) return null; var v = T.data[String(cip)]; return v == null ? null : v; };
+  // ── SOCLE · feed #6 · nouveautés (AMM récente, BDPM) par CIP13 ──
+  V2.nouveaute = function (cip) { var N = window.NOUVEAUTES; if (!N || !N.data) return null; return N.data[String(cip)] || null; };
   V2.reco = V2.reco || function () { return null; };   // feed à venir
 
   // ── helpers ──
@@ -59,6 +61,7 @@
     if (g <= -8) return '<span class="co-grow dn">↓ ' + g + '%</span>';
     return '';
   }
+  function newBadge(cip) { return (V2.nouveaute && V2.nouveaute(cip)) ? '<span class="co-new">Nouveau</span>' : ''; }
 
   var FAM = { pr_low: 'Petits prix', pr_mid: 'Interméd.', pr_high: 'Chers', nr: 'NR', gen: 'Génér.', biosim: 'Biosim.' };
 
@@ -103,6 +106,20 @@
       out.push({ r: r, fr: m.avgYear, g: g });
     });
     out.sort(function (a, b) { return b.g - a.g; });
+    return out.slice(0, limit || 12);
+  }
+  // NOUVEAUTÉS : produits d'AMM récente (BDPM) éligibles (princeps en stock)
+  function nouveautesList(limit) {
+    var out = [];
+    PS().forEach(function (r) {
+      if (!eligible(r)) return;
+      var n = V2.nouveaute ? V2.nouveaute(r.c) : null;
+      if (!n) return;
+      var m = V2.market(r.c);
+      out.push({ r: r, nv: n, fr: m ? m.avgYear : 0, g: V2.tendance ? V2.tendance(r.c) : null });
+    });
+    // priorité aux nouveautés qui bougent déjà (volume France), puis aux plus récentes
+    out.sort(function (a, b) { return (b.fr - a.fr) || (b.nv.amm || '').localeCompare(a.nv.amm || ''); });
     return out.slice(0, limit || 12);
   }
   // par officine : gros marchés France qu'elle ne commande pas (= ce qu'elle laisse passer)
@@ -249,6 +266,10 @@
       '.co-arg .psh.up{color:#0F7A52}',
       '.co-grow-card{border-color:color-mix(in srgb,#0F7A52 26%,var(--line))}',
       '.co-pill-up{color:#0F7A52 !important;background:#E3F3EB !important}',
+      '.co-new{display:inline-block;font-family:var(--mono);font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#7A3E00;background:#FFE9CC;padding:1px 7px;border-radius:var(--r-pill,999px);margin-left:7px;vertical-align:middle;white-space:nowrap}',
+      '.co-new-card{border-color:color-mix(in srgb,#E08A00 30%,var(--line))}',
+      '.co-new-card .psh.nw{color:#B5670A}',
+      '.co-pill-new{color:#B5670A !important;background:#FFE9CC !important}',
       '.co-prix{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:auto;padding-top:4px}',
       '.co-net{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--ip-blue);font-variant-numeric:tabular-nums}',
       '.co-ab{font-size:11.5px;font-weight:700;color:var(--c-mint-txt,#0F7A52);background:color-mix(in srgb,var(--c-opp) 12%,var(--card));padding:2px 8px;border-radius:var(--r-pill)}',
@@ -348,7 +369,7 @@
   function argCard(o) {
     var r = o.r, s = stk(r.c), g = V2.tendance ? V2.tendance(r.c) : null;
     return '<div class="co-arg">' +
-      '<div class="t"><span class="psh">À pousser</span>' + esc(cap(r.d)) + tensionBadge(r.c) + growthBadge(r.c) + '</div>' +
+      '<div class="t"><span class="psh">À pousser</span>' + esc(cap(r.d)) + tensionBadge(r.c) + growthBadge(r.c) + newBadge(r.c) + '</div>' +
       '<p class="s">Une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an en France' + (g != null && g >= 8 ? ' · marché <b class="up">+' + g + '%</b> sur un an' : '') + ' · tu en as <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
@@ -360,6 +381,17 @@
     return '<div class="co-arg co-grow-card">' +
       '<div class="t"><span class="psh up">Marché en croissance</span>' + esc(cap(r.d)) + '<span class="co-grow up big">↑ +' + o.g + '%</span></div>' +
       '<p class="s"><b class="up">+' + o.g + '%</b> sur un an en France · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an · seulement <b>' + num(r.n || 0) + '</b> de tes officines le commandent · <b class="stk">' + num(s) + '</b> en stock.</p>' +
+      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
+      '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
+      '</div>';
+  }
+
+  // carte « nouveauté » — produit récemment arrivé sur le marché
+  function newCard(o) {
+    var r = o.r, s = stk(r.c), n = o.nv;
+    return '<div class="co-arg co-new-card">' +
+      '<div class="t"><span class="psh nw">Nouveau · AMM ' + esc(n.amm) + '</span>' + esc(cap(r.d)) + growthBadge(r.c) + '</div>' +
+      '<p class="s">' + (n.labo ? '<b>' + esc(cap(String(n.labo).toLowerCase())) + '</b> · ' : '') + (o.fr >= 20 ? 'la France en vend déjà <b>~' + num(o.fr) + '</b>/an · ' : 'marché qui démarre · ') + 'tu en as <b class="stk">' + num(s) + '</b> en stock — prends l\'avance.</p>' +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
@@ -511,6 +543,14 @@
           '<div class="co-args">' + grow.map(growCard).join('') + '</div></section>'
         : '';
 
+      // ── Nouveautés à ne pas rater (produits d'AMM récente en stock) ──
+      var nv = window.NOUVEAUTES ? nouveautesList(12) : [];
+      var nvSec = nv.length
+        ? '<section class="co-sec"><div class="co-sec-h"><h2>Nouveautés à ne pas rater</h2><span class="co-pill co-pill-new">' + nv.length + '</span></div>' +
+          '<p class="co-sub">Produits récemment arrivés sur le marché (AMM des 3 dernières années, BDPM) que tu as déjà en stock — prends l\'avance avant les concurrents.</p>' +
+          '<div class="co-args">' + nv.map(newCard).join('') + '</div></section>'
+        : '';
+
       // ── Saisonnalité — bande compacte (inchangée sur le fond) ──
       var saisonSec = '';
       if (window.SAISON && window.SAISON.data) {
@@ -550,6 +590,7 @@
           tourSec +
           focusSec +
           growSec +
+          nvSec +
           saisonSec +
           mktSec +
         '</div>';
