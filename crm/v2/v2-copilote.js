@@ -152,6 +152,10 @@
       '.co-zone-src{margin-left:auto;font-size:11px;color:var(--muted-2)}',
       '.co-table td.co-rank{font-family:var(--mono);font-weight:700;color:var(--muted-2);width:40px;text-align:center}',
       '.co-opp{display:inline-block;font-family:var(--mono);font-weight:800;color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 9%,var(--card));padding:2px 10px;border-radius:var(--r-pill);white-space:nowrap}',
+      '.co-saison{display:flex;flex-wrap:wrap;gap:10px;padding:16px}',
+      '.co-sais-i{display:inline-flex;align-items:center;gap:9px;padding:9px 14px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card-2)}',
+      '.co-sais-up{font-family:var(--mono);font-weight:800;color:var(--c-opp);font-size:13px}',
+      '.co-sais-l{font-size:13.5px;font-weight:600;color:var(--ink)}',
       '.co-tension{display:inline-block;font-size:10.5px;font-weight:700;color:var(--c-amber-txt,#9A5B12);background:#FBF1E2;border:1px solid #F0E2C6;padding:1px 7px;border-radius:var(--r-pill);margin-left:8px;vertical-align:middle;white-space:nowrap}',
       '.co-sec{margin-top:30px}',
       '.co-sec-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}',
@@ -302,6 +306,24 @@
           '<div class="co-foot">Priorité = gros marchés France non commandés × taille de la zone. « À gagner » = combien de ces marchés (sur les 150 plus gros) l\'officine laisse passer.</div>' +
         '</div></section>';
 
+      // Saisonnalité — classes thérapeutiques qui montent le mois en cours
+      var saisonSec = '';
+      if (window.SAISON && window.SAISON.data) {
+        var mo = (new Date()).getMonth() + 1;
+        var moLabel = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][mo];
+        var sarr = [];
+        for (var k in window.SAISON.data) { var sd = window.SAISON.data[k]; var sv = (sd.idx && sd.idx[mo - 1]) || 100; if (sv > 105) sarr.push({ l: sd.l, v: sv }); }
+        sarr.sort(function (a, b) { return b.v - a.v; });
+        var stop = sarr.slice(0, 8);
+        if (stop.length) {
+          saisonSec = '<section class="co-sec"><div class="co-sec-h"><h2>Saisonnalité · à anticiper en ' + moLabel + '</h2><span class="co-pill">' + stop.length + ' familles</span></div>' +
+            '<p class="co-sub">Classes thérapeutiques qui montent ce mois-ci en France (vs leur moyenne annuelle, Medic\'AM) — à mettre en avant et à ne pas laisser tomber en rupture.</p>' +
+            '<div class="co-card"><div class="co-saison">' +
+            stop.map(function (s) { return '<div class="co-sais-i"><span class="co-sais-up">+' + (s.v - 100) + '%</span><span class="co-sais-l">' + esc(cap(s.l.toLowerCase())) + '</span></div>'; }).join('') +
+            '</div><div class="co-foot">Indice mensuel Medic\'AM : 100 = moyenne annuelle. « +34 % » = ce mois-ci la classe se vend 34 % au-dessus de sa moyenne.</div></div></section>';
+        }
+      }
+
       root.innerHTML = top +
         '<div class="v2-wrap">' +
           '<div class="co-hero">' +
@@ -310,6 +332,7 @@
             feedStrip(nbTension) +
           '</div>' +
           tourSec +
+          saisonSec +
           '<section class="co-sec">' +
             '<div class="co-sec-h"><h2>Les gros marchés France à sécuriser</h2><span class="co-pill">' + big.length + ' produits</span></div>' +
             '<p class="co-sub">Produits que la France consomme beaucoup mais que peu de tes officines commandent encore — les meilleures opportunités de volume, catalogue Intégral à l\'appui.</p>' +
