@@ -120,6 +120,29 @@
   var selDep = '';
   V2.copiloteSelDep = function (d) { selDep = d; if (V2.render) V2.render(); };
 
+  // produits que le réseau commande ET en tension ANSM (à anticiper / alternative molécule)
+  function reseauRuptures(limit) {
+    if (!window.RUPTURES) return [];
+    var out = [];
+    PS().forEach(function (r) {
+      var rp = V2.rupture(r.c);
+      if (rp && (r.n || 0) > 0) out.push({ r: r, rp: rp });
+    });
+    out.sort(function (a, b) { return (b.r.n || 0) - (a.r.n || 0); });
+    return out.slice(0, limit || 15);
+  }
+  function rupRow(o) {
+    var r = o.r, rp = o.rp;
+    return '<tr>' +
+      '<td><div class="co-prod">' + esc(cap(r.d)) + '</div><div class="co-cip">' + esc(r.c) + '</div></td>' +
+      '<td><span class="co-fam co-fam-mol">' + esc(cap((rp.d || '—').toLowerCase())) + '</span></td>' +
+      '<td class="num mono">' + num(r.n || 0) + '</td>' +
+      '<td class="num co-cip">' + esc(rp.dt || '—') + '</td>' +
+      netCell(r) +
+      '<td class="num"><button class="v2-btn v2-btn-ghost" style="padding:6px 12px" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir</button></td>' +
+      '</tr>';
+  }
+
   var selPid = null;
   function pharmaOptions() {
     var phs = (V2.pharmacies || []).slice();
@@ -156,6 +179,8 @@
       '.co-sais-i{display:inline-flex;align-items:center;gap:9px;padding:9px 14px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card-2)}',
       '.co-sais-up{font-family:var(--mono);font-weight:800;color:var(--c-opp);font-size:13px}',
       '.co-sais-l{font-size:13.5px;font-weight:600;color:var(--ink)}',
+      '.co-fam-mol{color:var(--ip-blue-d,#0034A0);background:color-mix(in srgb,var(--ip-blue) 8%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 20%,var(--line))}',
+      '.co-pill-warn{color:var(--c-amber-txt,#9A5B12) !important;background:#FBF1E2 !important}',
       '.co-tension{display:inline-block;font-size:10.5px;font-weight:700;color:var(--c-amber-txt,#9A5B12);background:#FBF1E2;border:1px solid #F0E2C6;padding:1px 7px;border-radius:var(--r-pill);margin-left:8px;vertical-align:middle;white-space:nowrap}',
       '.co-sec{margin-top:30px}',
       '.co-sec-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}',
@@ -264,6 +289,16 @@
         '</tr></thead><tbody>' + big.map(marketRow).join('') + '</tbody></table></div>' +
         '<div class="co-foot">« Ton réseau » = nombre de tes officines qui commandent déjà ce produit (barre = couverture). Marché France Ameli, à titre indicatif.</div></div>';
 
+      // Section ruptures réseau — produits commandés par le réseau et en tension ANSM
+      var rupRes = reseauRuptures(15);
+      var rupSec = rupRes.length ? '<section class="co-sec">' +
+        '<div class="co-sec-h"><h2>Ruptures dans ton réseau</h2><span class="co-pill co-pill-warn">' + rupRes.length + ' produits</span></div>' +
+        '<p class="co-sub">Produits que tes officines commandent, actuellement signalés en rupture / risque de rupture à l\'ANSM. Anticipe le réassort, ou propose la molécule (DCI) comme alternative.</p>' +
+        '<div class="co-card"><div class="co-scroll"><table class="co-table"><thead><tr>' +
+        '<th>Produit</th><th>Molécule (DCI)</th><th class="num">Ton réseau</th><th class="num">Signalé le</th><th class="num">Net remisé</th><th class="num">Abandon</th><th class="num"></th>' +
+        '</tr></thead><tbody>' + rupRes.map(rupRow).join('') + '</tbody></table></div>' +
+        '<div class="co-foot">« Ton réseau » = nombre de tes officines qui commandent ce produit. Signalements ANSM (rupture / risque).</div></div></section>' : '';
+
       // Section 2 — par officine
       var phs = pharmaOptions();
       if (!selPid && phs.length) selPid = String(phs[0].id);
@@ -338,6 +373,7 @@
             '<p class="co-sub">Produits que la France consomme beaucoup mais que peu de tes officines commandent encore — les meilleures opportunités de volume, catalogue Intégral à l\'appui.</p>' +
             t1 +
           '</section>' +
+          rupSec +
           '<section class="co-sec">' +
             '<div class="co-sec-h"><h2>Par officine · ce qu\'elle laisse passer</h2></div>' +
             '<p class="co-sub">Choisis une officine : voici les gros marchés France qu\'elle ne commande pas encore. Ta liste d\'arguments pour la prochaine visite.</p>' +
