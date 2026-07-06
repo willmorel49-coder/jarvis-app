@@ -35,6 +35,8 @@
   };
   // ── SOCLE · stock Intégral disponible par CIP13 (tous établissements confondus) ──
   V2.stock = function (cip) { var S = window.STOCK_IP; return (S && S.data && S.data[String(cip)]) || 0; };
+  // ── SOCLE · feed #5 · tendance marché (croissance YoY %) par CIP13 ──
+  V2.tendance = function (cip) { var T = window.TENDANCE; if (!T || !T.data) return null; var v = T.data[String(cip)]; return v == null ? null : v; };
   V2.reco = V2.reco || function () { return null; };   // feed à venir
 
   // ── helpers ──
@@ -50,6 +52,13 @@
   function stk(cip) { return V2.stock ? V2.stock(cip) : 0; }
   function eligible(r) { return isPr(r.f) && stk(r.c) > 0; }
   function stockCell(cip) { var s = stk(cip); return '<td class="num mono co-stk">' + (s > 0 ? num(s) : '—') + '</td>'; }
+  function growthBadge(cip) {
+    var g = V2.tendance ? V2.tendance(cip) : null;
+    if (g == null) return '';
+    if (g >= 8) return '<span class="co-grow up">↑ +' + g + '%</span>';
+    if (g <= -8) return '<span class="co-grow dn">↓ ' + g + '%</span>';
+    return '';
+  }
 
   var FAM = { pr_low: 'Petits prix', pr_mid: 'Interméd.', pr_high: 'Chers', nr: 'NR', gen: 'Génér.', biosim: 'Biosim.' };
 
@@ -81,6 +90,20 @@
     });
     out.sort(function (a, b) { return b.opp - a.opp; });
     return out.slice(0, limit || 20);
+  }
+  // MARCHÉS EN CROISSANCE (vraie croissance YoY, hors reprises après rupture) sous-exploités
+  function growingMarkets(limit) {
+    var tot = totalPharma(), out = [];
+    PS().forEach(function (r) {
+      if (!eligible(r)) return;
+      if (V2.rupture && V2.rupture(r.c)) return;                 // exclut le bruit rupture-recovery
+      var g = V2.tendance ? V2.tendance(r.c) : null;
+      if (g == null || g < 12 || g > 250) return;                // vraie croissance
+      var m = V2.market(r.c); if (!m || m.avgYear < 80) return;   // marché significatif
+      out.push({ r: r, fr: m.avgYear, g: g });
+    });
+    out.sort(function (a, b) { return b.g - a.g; });
+    return out.slice(0, limit || 12);
   }
   // par officine : gros marchés France qu'elle ne commande pas (= ce qu'elle laisse passer)
   function officineGaps(pid, limit) {
@@ -220,6 +243,12 @@
       '.co-arg .s{font-size:13px;color:var(--muted);line-height:1.55;margin:0}',
       '.co-arg .s b{font-family:var(--mono);color:var(--ip-ink);font-variant-numeric:tabular-nums}',
       '.co-arg .s b.stk{color:var(--c-opp)}',
+      '.co-arg .s b.up{color:#0F7A52}',
+      '.co-grow{display:inline-block;font-family:var(--mono);font-weight:800;font-size:11px;padding:1px 7px;border-radius:var(--r-pill,999px);margin-left:7px;vertical-align:middle;white-space:nowrap}',
+      '.co-grow.up{color:#0F7A52;background:#E3F3EB}.co-grow.dn{color:#C7283D;background:#FBECEE}.co-grow.big{font-size:12.5px}',
+      '.co-arg .psh.up{color:#0F7A52}',
+      '.co-grow-card{border-color:color-mix(in srgb,#0F7A52 26%,var(--line))}',
+      '.co-pill-up{color:#0F7A52 !important;background:#E3F3EB !important}',
       '.co-prix{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:auto;padding-top:4px}',
       '.co-net{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--ip-blue);font-variant-numeric:tabular-nums}',
       '.co-ab{font-size:11.5px;font-weight:700;color:var(--c-mint-txt,#0F7A52);background:color-mix(in srgb,var(--c-opp) 12%,var(--card));padding:2px 8px;border-radius:var(--r-pill)}',
@@ -317,10 +346,20 @@
 
   // petite carte argument produit — le cœur du focus officine
   function argCard(o) {
-    var r = o.r, s = stk(r.c);
+    var r = o.r, s = stk(r.c), g = V2.tendance ? V2.tendance(r.c) : null;
     return '<div class="co-arg">' +
-      '<div class="t"><span class="psh">À pousser</span>' + esc(cap(r.d)) + tensionBadge(r.c) + '</div>' +
-      '<p class="s">Une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an en France · tu en as <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
+      '<div class="t"><span class="psh">À pousser</span>' + esc(cap(r.d)) + tensionBadge(r.c) + growthBadge(r.c) + '</div>' +
+      '<p class="s">Une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an en France' + (g != null && g >= 8 ? ' · marché <b class="up">+' + g + '%</b> sur un an' : '') + ' · tu en as <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
+      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
+      '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
+      '</div>';
+  }
+  // carte « marché en croissance » (nouvelle info marché)
+  function growCard(o) {
+    var r = o.r, s = stk(r.c);
+    return '<div class="co-arg co-grow-card">' +
+      '<div class="t"><span class="psh up">Marché en croissance</span>' + esc(cap(r.d)) + '<span class="co-grow up big">↑ +' + o.g + '%</span></div>' +
+      '<p class="s"><b class="up">+' + o.g + '%</b> sur un an en France · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an · seulement <b>' + num(r.n || 0) + '</b> de tes officines le commandent · <b class="stk">' + num(s) + '</b> en stock.</p>' +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
@@ -339,7 +378,7 @@
   // ligne légère « vue marché » (repliée, secondaire)
   function mktLine(o) {
     var r = o.r;
-    return '<div class="co-mkt"><div class="id"><div class="p">' + esc(cap(r.d)) + '<span class="co-fam">' + (FAM[r.f] || r.f) + '</span>' + tensionBadge(r.c) + '</div><div class="c">' + esc(r.c) + '</div></div>' +
+    return '<div class="co-mkt"><div class="id"><div class="p">' + esc(cap(r.d)) + '<span class="co-fam">' + (FAM[r.f] || r.f) + '</span>' + tensionBadge(r.c) + growthBadge(r.c) + '</div><div class="c">' + esc(r.c) + '</div></div>' +
       '<div class="ms">' +
       '<span class="m"><i>France</i><span>~' + num(o.fr) + '/an</span></span>' +
       '<span class="m"><i>Ton réseau</i><span>' + num(r.n || 0) + ' off.</span></span>' +
@@ -464,6 +503,14 @@
           '<div class="co-foot">Marché France Ameli (ce qu\'une pharmacie moyenne vend, indicatif) · uniquement des princeps en stock Intégral, tous établissements confondus · zone geo.api.gouv.fr.</div>' +
         '</div></section>';
 
+      // ── Marchés en croissance à saisir (nouvelle intelligence marché) ──
+      var grow = window.TENDANCE ? growingMarkets(12) : [];
+      var growSec = grow.length
+        ? '<section class="co-sec"><div class="co-sec-h"><h2>Marchés en croissance à saisir</h2><span class="co-pill co-pill-up">' + grow.length + '</span></div>' +
+          '<p class="co-sub">Marchés qui progressent en France sur un an (Medic\'AM) et que peu de tes officines commandent — la vague à prendre avant les autres.</p>' +
+          '<div class="co-args">' + grow.map(growCard).join('') + '</div></section>'
+        : '';
+
       // ── Saisonnalité — bande compacte (inchangée sur le fond) ──
       var saisonSec = '';
       if (window.SAISON && window.SAISON.data) {
@@ -502,6 +549,7 @@
           '</div>' +
           tourSec +
           focusSec +
+          growSec +
           saisonSec +
           mktSec +
         '</div>';
