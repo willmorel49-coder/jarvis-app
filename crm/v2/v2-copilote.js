@@ -33,6 +33,8 @@
     if (!Z || !Z.data) return null;
     return Z.data[String(pid)] || null;   // { c: commune, cc, dep, pop } ou null
   };
+  // ── SOCLE · stock Intégral disponible par CIP13 (tous établissements confondus) ──
+  V2.stock = function (cip) { var S = window.STOCK_IP; return (S && S.data && S.data[String(cip)]) || 0; };
   V2.reco = V2.reco || function () { return null; };   // feed à venir
 
   // ── helpers ──
@@ -42,6 +44,12 @@
   function eur(n) { return V2.fmtEur ? V2.fmtEur(n) : (Math.round(n) + ' €'); }
   function cap(s) { s = (s || '').toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); }
   function PS() { return window.PROD_STATS || []; }
+  // Règles Will : uniquement des PRINCEPS (pas de génériques/NR/biosim) + seulement
+  // ce qu'Intégral a en stock (tous établissements confondus).
+  function isPr(f) { return f === 'pr_low' || f === 'pr_mid' || f === 'pr_high'; }
+  function stk(cip) { return V2.stock ? V2.stock(cip) : 0; }
+  function eligible(r) { return isPr(r.f) && stk(r.c) > 0; }
+  function stockCell(cip) { var s = stk(cip); return '<td class="num mono co-stk">' + (s > 0 ? num(s) : '—') + '</td>'; }
 
   var FAM = { pr_low: 'Petits prix', pr_mid: 'Interméd.', pr_high: 'Chers', nr: 'NR', gen: 'Génér.', biosim: 'Biosim.' };
 
@@ -66,6 +74,7 @@
   function bigMarkets(limit) {
     var tot = totalPharma(), out = [];
     PS().forEach(function (r) {
+      if (!eligible(r)) return;
       var m = V2.market(r.c); if (!m) return;
       var pen = Math.min(1, (r.n || 0) / tot);
       out.push({ r: r, fr: m.avgYear, pen: pen, opp: m.avgYear * (1 - pen) });
@@ -77,6 +86,7 @@
   function officineGaps(pid, limit) {
     var owned = orderedCips(pid), out = [];
     PS().forEach(function (r) {
+      if (!eligible(r)) return;
       if (owned[String(r.c)]) return;
       var m = V2.market(r.c); if (!m || m.avgYear < 12) return;
       out.push({ r: r, fr: m.avgYear });
@@ -90,7 +100,7 @@
   function topMarketCips(n) {
     if (_topCips) return _topCips;
     var arr = [];
-    PS().forEach(function (r) { var m = V2.market(r.c); if (m) arr.push({ c: String(r.c), fr: m.avgYear }); });
+    PS().forEach(function (r) { if (!eligible(r)) return; var m = V2.market(r.c); if (m) arr.push({ c: String(r.c), fr: m.avgYear }); });
     arr.sort(function (a, b) { return b.fr - a.fr; });
     _topCips = arr.slice(0, n || 150).map(function (x) { return x.c; });
     return _topCips;
@@ -125,6 +135,7 @@
     if (!window.RUPTURES) return [];
     var out = [];
     PS().forEach(function (r) {
+      if (!eligible(r)) return;
       var rp = V2.rupture(r.c);
       if (rp && (r.n || 0) > 0) out.push({ r: r, rp: rp });
     });
@@ -139,6 +150,7 @@
       '<td class="num mono">' + num(r.n || 0) + '</td>' +
       '<td class="num co-cip">' + esc(rp.dt || '—') + '</td>' +
       netCell(r) +
+      stockCell(r.c) +
       '<td class="num"><button class="v2-btn v2-btn-ghost" style="padding:6px 12px" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir</button></td>' +
       '</tr>';
   }
@@ -181,6 +193,7 @@
       '.co-sais-l{font-size:13.5px;font-weight:600;color:var(--ink)}',
       '.co-fam-mol{color:var(--ip-blue-d,#0034A0);background:color-mix(in srgb,var(--ip-blue) 8%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 20%,var(--line))}',
       '.co-pill-warn{color:var(--c-amber-txt,#9A5B12) !important;background:#FBF1E2 !important}',
+      '.co-table td.co-stk{color:var(--c-opp);font-weight:700}',
       '.co-tension{display:inline-block;font-size:10.5px;font-weight:700;color:var(--c-amber-txt,#9A5B12);background:#FBF1E2;border:1px solid #F0E2C6;padding:1px 7px;border-radius:var(--r-pill);margin-left:8px;vertical-align:middle;white-space:nowrap}',
       '.co-sec{margin-top:30px}',
       '.co-sec-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}',
@@ -241,6 +254,7 @@
       '<td class="num"><span class="co-fr">~' + num(o.fr) + '<small> /an</small></span></td>' +
       '<td class="num"><span class="co-pen"><span class="mono">' + num(r.n || 0) + '</span><span class="co-bar"><i style="width:' + penPct + '%"></i></span></span></td>' +
       netCell(r) +
+      stockCell(r.c) +
       '<td class="num"><button class="v2-btn v2-btn-ghost" style="padding:6px 12px" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir</button></td>' +
       '</tr>';
   }
@@ -251,6 +265,7 @@
       '<td><span class="co-fam">' + (FAM[r.f] || r.f) + '</span></td>' +
       '<td class="num"><span class="co-fr">~' + num(o.fr) + '<small> /an</small></span></td>' +
       netCell(r) +
+      stockCell(r.c) +
       '<td class="num"><button class="v2-btn v2-btn-ghost" style="padding:6px 12px" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir</button></td>' +
       '</tr>';
   }
@@ -285,7 +300,7 @@
       var big = bigMarkets(18);
       var t1 = '<div class="co-card"><div class="co-scroll"><table class="co-table"><thead><tr>' +
         '<th>Produit</th><th>Famille</th><th class="num">Marché France</th><th class="num">Ton réseau</th>' +
-        '<th class="num">Net remisé</th><th class="num">Abandon</th><th class="num"></th>' +
+        '<th class="num">Net remisé</th><th class="num">Abandon</th><th class="num">Stock IP</th><th class="num"></th>' +
         '</tr></thead><tbody>' + big.map(marketRow).join('') + '</tbody></table></div>' +
         '<div class="co-foot">« Ton réseau » = nombre de tes officines qui commandent déjà ce produit (barre = couverture). Marché France Ameli, à titre indicatif.</div></div>';
 
@@ -295,7 +310,7 @@
         '<div class="co-sec-h"><h2>Ruptures dans ton réseau</h2><span class="co-pill co-pill-warn">' + rupRes.length + ' produits</span></div>' +
         '<p class="co-sub">Produits que tes officines commandent, actuellement signalés en rupture / risque de rupture à l\'ANSM. Anticipe le réassort, ou propose la molécule (DCI) comme alternative.</p>' +
         '<div class="co-card"><div class="co-scroll"><table class="co-table"><thead><tr>' +
-        '<th>Produit</th><th>Molécule (DCI)</th><th class="num">Ton réseau</th><th class="num">Signalé le</th><th class="num">Net remisé</th><th class="num">Abandon</th><th class="num"></th>' +
+        '<th>Produit</th><th>Molécule (DCI)</th><th class="num">Ton réseau</th><th class="num">Signalé le</th><th class="num">Net remisé</th><th class="num">Abandon</th><th class="num">Stock IP</th><th class="num"></th>' +
         '</tr></thead><tbody>' + rupRes.map(rupRow).join('') + '</tbody></table></div>' +
         '<div class="co-foot">« Ton réseau » = nombre de tes officines qui commandent ce produit. Signalements ANSM (rupture / risque).</div></div></section>' : '';
 
@@ -310,7 +325,7 @@
       var gaps = selPid ? officineGaps(selPid, 25) : [];
       var t2body = gaps.length
         ? '<div class="co-scroll"><table class="co-table"><thead><tr>' +
-          '<th>Produit</th><th>Famille</th><th class="num">Marché France</th><th class="num">Net remisé</th><th class="num">Abandon</th><th class="num"></th>' +
+          '<th>Produit</th><th>Famille</th><th class="num">Marché France</th><th class="num">Net remisé</th><th class="num">Abandon</th><th class="num">Stock IP</th><th class="num"></th>' +
           '</tr></thead><tbody>' + gaps.map(gapRow).join('') + '</tbody></table></div>'
         : '<div class="co-empty">Cette officine commande déjà les plus gros marchés France. 👍</div>';
       var z = selPid && V2.zone ? V2.zone(selPid) : null;
@@ -363,7 +378,7 @@
         '<div class="v2-wrap">' +
           '<div class="co-hero">' +
             '<h1>Copilote <span class="ac">·</span> le cerveau de ta tournée</h1>' +
-            '<p>Ici on croise le <b>marché réel France</b> (ce qu\'une pharmacie moyenne vend) avec <b>tes ventes réseau</b>, pour repérer où pousser quoi. Chaque nouvelle source viendra enrichir cette même page.</p>' +
+            '<p>Ici on croise le <b>marché réel France</b> (ce qu\'une pharmacie moyenne vend) avec <b>tes ventes réseau</b>, pour repérer où pousser quoi. On ne montre que les <b>princeps en stock Intégral</b> (tous établissements confondus).</p>' +
             feedStrip(nbTension) +
           '</div>' +
           tourSec +
