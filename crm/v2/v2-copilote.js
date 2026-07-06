@@ -27,7 +27,12 @@
     if (!R || !R.data) return null;
     return R.data[String(cip)] || null;   // { d: DCI, dt: date signalement } ou null
   };
-  V2.zone = V2.zone || function () { return null; };   // feed à venir (INSEE/FINESS)
+  // ── SOCLE · feed #3 · potentiel de zone (par officine) ──
+  V2.zone = function (pid) {
+    var Z = window.ZONE;
+    if (!Z || !Z.data) return null;
+    return Z.data[String(pid)] || null;   // { c: commune, cc, dep, pop } ou null
+  };
   V2.reco = V2.reco || function () { return null; };   // feed à venir
 
   // ── helpers ──
@@ -106,6 +111,10 @@
       '.co-feed.on{color:var(--ink);border-color:color-mix(in srgb,var(--c-opp) 40%,var(--line))}',
       '.co-feed.on .d{background:var(--c-opp);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-opp) 18%,transparent)}',
       '.co-feed.on.warn .d{background:var(--c-amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-amber) 18%,transparent)}',
+      '.co-feed.on.info .d{background:var(--ip-blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue) 18%,transparent)}',
+      '.co-zone{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:11px 16px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--ip-blue) 4%,var(--card-2));font-size:13.5px;color:var(--ink)}',
+      '.co-zone-i{display:inline-flex;align-items:center;gap:7px}.co-zone-i svg{color:var(--ip-blue)}.co-zone-i b{font-family:var(--mono);font-weight:800}',
+      '.co-zone-src{margin-left:auto;font-size:11px;color:var(--muted-2)}',
       '.co-tension{display:inline-block;font-size:10.5px;font-weight:700;color:var(--c-amber-txt,#9A5B12);background:#FBF1E2;border:1px solid #F0E2C6;padding:1px 7px;border-radius:var(--r-pill);margin-left:8px;vertical-align:middle;white-space:nowrap}',
       '.co-sec{margin-top:30px}',
       '.co-sec-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}',
@@ -147,7 +156,9 @@
       (window.RUPTURES
         ? '<span class="co-feed on warn"><span class="d"></span>Ruptures ANSM · ' + num(nbTension || 0) + ' produits en tension</span>'
         : '<span class="co-feed"><span class="d"></span>Ruptures ANSM · bientôt</span>') +
-      '<span class="co-feed"><span class="d"></span>Potentiel de zone · bientôt</span>' +
+      (window.ZONE
+        ? '<span class="co-feed on info"><span class="d"></span>Potentiel de zone · ' + num((window.ZONE.meta || {}).n || 0) + ' officines</span>'
+        : '<span class="co-feed"><span class="d"></span>Potentiel de zone · bientôt</span>') +
       '</div>';
   }
   function tensionBadge(cip) {
@@ -215,8 +226,15 @@
           '<th>Produit</th><th>Famille</th><th class="num">Marché France</th><th class="num">Net remisé</th><th class="num">Abandon</th><th class="num"></th>' +
           '</tr></thead><tbody>' + gaps.map(gapRow).join('') + '</tbody></table></div>'
         : '<div class="co-empty">Cette officine commande déjà les plus gros marchés France. 👍</div>';
+      var z = selPid && V2.zone ? V2.zone(selPid) : null;
+      var zoneStrip = z ? '<div class="co-zone">' +
+        '<span class="co-zone-i">' + ICO('pharma', 14) + esc(z.c) + (z.dep ? ' (' + esc(z.dep) + ')' : '') + '</span>' +
+        '<span class="co-zone-i">Population de la commune <b>' + num(z.pop) + '</b> hab.</span>' +
+        '<span class="co-zone-src">zone · geo.api.gouv.fr</span>' +
+        '</div>' : '';
       var t2 = '<div class="co-card">' +
         '<div class="co-toolbar"><label>Officine</label><select class="co-select" onchange="V2.copiloteSelPharma(this.value)">' + opts + '</select></div>' +
+        zoneStrip +
         t2body +
         '<div class="co-foot">Produits à fort marché France que <b>' + esc(selName) + '</b> ne commande pas encore — à présenter à la prochaine visite.</div></div>';
 
