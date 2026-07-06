@@ -1,0 +1,34 @@
+name: Copilote · tendance marché
+
+on:
+  schedule:
+    - cron: '53 4 6 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+concurrency:
+  group: tendance
+  cancel-in-progress: false
+
+jobs:
+  tendance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install xlrd
+      - run: python3 generate_tendance.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/tendance-data.js; then
+            echo "Pas de changement."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/tendance-data.js
+            git commit -m "data(copilote): tendance marché $(date -u +%Y-%m-%d)"
+            git push
+          fi
