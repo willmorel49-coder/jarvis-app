@@ -147,7 +147,7 @@
     if (window.MKT_NR) { cb(); return; }
     if (nrLoading) { setTimeout(function () { ensureNr(cb); }, 250); return; }
     nrLoading = true;
-    var s = document.createElement('script'); s.src = 'mkt-nr-data.js?v=20260703d24';
+    var s = document.createElement('script'); s.src = 'mkt-nr-data.js?v=20260703d25';
     s.onload = function () { nrLoading = false; cb(); }; s.onerror = function () { nrLoading = false; cb(); };
     document.head.appendChild(s);
   }
@@ -171,12 +171,13 @@
   function buildTop50() {
     var out = [];
     var PS = window.PROD_STATS || [];
-    [{ f: 'pr_low', cat: 'Princeps · petits prix', color: '#1E9E6A' },
-     { f: 'pr_mid', cat: 'Princeps · intermédiaire', color: '#0050E6' },
-     { f: 'pr_high', cat: 'Princeps · cher', color: '#C7791A' }].forEach(function (g) {
+    // Plus de petits prix (100) ; intermédiaire/cher restent à 50.
+    [{ f: 'pr_low', cat: 'Princeps · petits prix', color: '#1E9E6A', cap: 100 },
+     { f: 'pr_mid', cat: 'Princeps · intermédiaire', color: '#0050E6', cap: 50 },
+     { f: 'pr_high', cat: 'Princeps · cher', color: '#C7791A', cap: 50 }].forEach(function (g) {
       var rows = PS.filter(function (r) { return r.f === g.f && r.ppht > 0; });
       rows.sort(function (a, b) { return (b.n || 0) - (a.n || 0) || (b.rota || 0) - (a.rota || 0); });
-      rows = rows.slice(0, 50).map(function (r) {
+      rows = rows.slice(0, g.cap).map(function (r) {
         var pp = r.ppht;
         var net = (r.net > 0 && r.net < pp) ? r.net : Math.round((pp - t50Bareme(pp)) * 100) / 100;
         var rem = (pp > 0 && net > 0 && net < pp) ? Math.round((1 - net / pp) * 1000) / 10 : 0;
@@ -184,11 +185,15 @@
       });
       if (rows.length) out.push({ cat: g.cat, color: g.color, kind: 'princeps', rows: rows });
     });
-    var NR = window.MKT_NR, want = { 'Médicaments conseil (OTC non remboursables)': '#E0556E', 'Dispositifs médicaux': '#7C3AED', 'Parapharmacie': '#00B5D8' };
+    // Partie NR étoffée : 4 catégories, top 100 chacune (prix libre = net seul).
+    var NR = window.MKT_NR, want = {
+      'Médicaments conseil (OTC non remboursables)': '#E0556E', 'Dispositifs médicaux': '#7C3AED',
+      'Parapharmacie': '#00B5D8', 'Autres non remboursables': '#C7791A'
+    };
     if (NR && NR.cats) {
       NR.cats.forEach(function (c) {
         if (!want[c.cat]) return;
-        var rows = (c.rows || []).slice(0, 50).map(function (r) {
+        var rows = (c.rows || []).slice(0, 100).map(function (r) {
           return { d: r.d, cip: r.cip, ppht: 0, net: r.p || 0, remise: 0, signal: r.vol || 0, kind: 'nr' };
         });
         if (rows.length) out.push({ cat: c.cat, color: want[c.cat], kind: 'nr', rows: rows });
@@ -230,7 +235,7 @@
       '<div style="display:flex;align-items:center;gap:13px;border-bottom:2px solid #10131C;padding-bottom:13px;margin-bottom:15px">' +
         '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:16px">IP</div>' +
         '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · catalogue</div>' +
-          '<div style="font-size:19px;font-weight:800;letter-spacing:-.01em">Top 50 par catégorie — Princeps & Non remboursables</div>' +
+          '<div style="font-size:19px;font-weight:800;letter-spacing:-.01em">Catalogue par catégorie — Princeps & Non remboursables</div>' +
           '<div style="font-size:10px;color:#737A8C">' + totalProd + ' produits · princeps classés par nb de pharmacies qui commandent · NR par volume vendu · prix net indicatif</div></div>' +
         '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + dateStr + '</div>' +
       '</div>' + secs +
@@ -588,8 +593,8 @@
           : 'L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent. Bouton <b>« Créer la liste »</b> par catégorie = sélection parfaite des produits les plus commandés.') + '</div>' +
         '<div class="mkt-top50">' +
           '<div class="mkt-top50-ic">' + ICO('grid', 20, 2) + '</div>' +
-          '<div class="mkt-top50-txt"><div class="mkt-top50-t">Top 50 par catégorie</div>' +
-            '<div class="mkt-top50-s">Princeps (petits prix · intermédiaire · cher) + NR (OTC · dispositifs · parapharmacie) — les 50 plus demandés de chaque catégorie, avec PPHT, abandon et prix net.</div></div>' +
+          '<div class="mkt-top50-txt"><div class="mkt-top50-t">Catalogue par catégorie</div>' +
+            '<div class="mkt-top50-s">Princeps (petits prix : top 100 · intermédiaire · cher) + NR étoffé (OTC · dispositifs · parapharmacie · autres, top 100) — avec PPHT, abandon et prix net.</div></div>' +
           '<div class="mkt-top50-btns">' +
             '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.top50Pdf()">' + ICO('download', 15) + ' Fiche PDF</button>' +
             '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.top50Xlsx()">' + ICO('download', 15) + ' Excel</button>' +
@@ -1120,10 +1125,10 @@
         window.ensureHtml2Pdf().then(function () { return (document.fonts && document.fonts.ready) ? document.fonts.ready : null; }).then(function () {
           var wrap = document.createElement('div'); wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
           wrap.innerHTML = html; document.body.appendChild(wrap);
-          var fn = 'Top50-par-categorie-' + new Date().toISOString().slice(0, 10) + '.pdf';
+          var fn = 'Catalogue-par-categorie-' + new Date().toISOString().slice(0, 10) + '.pdf';
           window.html2pdf().from(wrap.firstChild).set({ filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
             html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] } })
-            .save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Fiche Top 50 téléchargée'); })
+            .save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Fiche catalogue téléchargée'); })
             .catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
         });
       });
@@ -1145,7 +1150,7 @@
           cats.forEach(function (c) {
             var isNr = c.kind === 'nr';
             var head = ['#', 'Produit', 'CIP', 'PPHT (€)', 'Abandon (%)', 'Prix net IP (€)', (isNr ? 'Volume vendu' : 'Nb pharmacies')];
-            var aoa = [['Intégral Pharma — Top 50 · ' + c.cat], [], head];
+            var aoa = [['Intégral Pharma — Catalogue · ' + c.cat], [], head];
             c.rows.forEach(function (r, i) {
               aoa.push([
                 i + 1, r.d, String(r.cip),
@@ -1160,8 +1165,8 @@
             ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
             XLSX.utils.book_append_sheet(wb, ws, sheetName(c.cat));
           });
-          XLSX.writeFile(wb, 'Top50-par-categorie-' + new Date().toISOString().slice(0, 10) + '.xlsx');
-          V2.toast('Excel Top 50 téléchargé');
+          XLSX.writeFile(wb, 'Catalogue-par-categorie-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+          V2.toast('Excel catalogue téléchargé');
         });
       });
     },
