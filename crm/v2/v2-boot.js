@@ -217,11 +217,23 @@
   var loaded = {}, pending = {};
   // Corrige le prix NR au tarif officiel PPHT (window.PPHT) directement dans le
   // benchmark : impacte partout (groupements, fiches, catalogue, listes).
+  // Abandon de marge Intégral sur un princeps = barème par tranche sur le PPHT :
+  // 0,18€ (≤4,33€) · 3,89% (≤468€) · 19,50€ (>468€). Net = PPHT − abandon.
+  function abandonBareme(pp) {
+    if (pp <= 4.33) return 0.18;
+    if (pp <= 468) return Math.round(pp * 0.0389 * 100) / 100;
+    return 19.50;
+  }
   V2.applyPPHT = function () {
     if (V2._pphtDone) return;
     var P = window.PPHT, NR = window.PPHT_NR || {}, B = window.BENCHMARK;
     if (!P || !B || !B.length) return;
-    var n = 0;
+    // Set des princeps (famille pr_*) d'après PROD_STATS : seuls eux ont l'abandon
+    // de marge (les génériques/NR gardent net = PPHT). Vide si non chargé → dégrade proprement.
+    var PR = {};
+    var PS = window.PROD_STATS;
+    if (PS && PS.length) { for (var k = 0; k < PS.length; k++) { var r = PS[k]; if (r && r.c && r.f && r.f.indexOf('pr_') === 0) PR[String(r.c)] = 1; } }
+    var n = 0, fixedAband = 0;
     for (var i = 0; i < B.length; i++) {
       var b = B[i], c = b && b.cip13 ? String(b.cip13) : '';
       if (!c || !(P[c] > 0)) continue;          // ignore PPHT absent ou ≤ 0 (ex Shingrix=0) → jamais de prix à 0
@@ -230,13 +242,20 @@
       // NR : marge libre PLM -> on aligne le prix IP sur le PPHT et on neutralise
       // l'offre labo (pas de tag OFFRE sur un NR). Remboursable : on garde le prix_ip réel.
       if (NR[c]) { if (!(b.prix_ip > 0 && b.prix_ip < pp)) b.prix_ip = pp; b.offre_ip = 0; }
+      // Princeps sans abandon dans les données (net = PPHT, ex prix_ht manquant à l'origine)
+      // → on applique le barème pour révéler le vrai net remisé. Les princeps déjà remisés
+      // (prix_ip < pp) et les offres Sanofi/UPSA (prix_ip plus bas) sont laissés intacts.
+      else if (PR[c] && b.prix_ip > 0 && b.prix_ip >= pp) {
+        b.prix_ip = Math.round((pp - abandonBareme(pp)) * 100) / 100;
+        fixedAband++;
+      }
       // recalcule la remise (évite les % aberrants pré-calculés quand prix_ht était 0)
       b.remise_pct = (b.prix_ht > 0 && b.prix_ip > 0 && b.prix_ip <= b.prix_ht)
         ? Math.round((1 - b.prix_ip / b.prix_ht) * 1000) / 10 : 0;
       n++;
     }
     V2._pphtDone = true;
-    try { console.log('[V2] PPHT appliqué à ' + n + ' produits'); } catch (e) {}
+    try { console.log('[V2] PPHT appliqué à ' + n + ' produits · abandon barème reconstitué sur ' + fixedAband + ' princeps'); } catch (e) {}
   };
   function bridge() {
     try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch (e) {}
@@ -254,7 +273,7 @@
   V2.loadFiles = function (keys) {
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // ⚠️ DOIT être bumpé en même temps que la version globale (sinon le SW ressert les vieilles données)
-    var V = '?v=20260703d21';
+    var V = '?v=20260703d22';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();
