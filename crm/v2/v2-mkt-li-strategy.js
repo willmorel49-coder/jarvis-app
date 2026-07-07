@@ -174,6 +174,50 @@
     return parts.join('\n\n');
   }
 
+  // ── Rédaction à partir de l'idée de l'utilisateur (un petit texte -> post complet) ──
+  function generateFromBrief(brief, pillar, tone, v) {
+    brief = String(brief || '').trim();
+    if (!brief) return generateFull({ pillar: pillar, tone: tone, v: v });
+    var hook = brief.charAt(0).toUpperCase() + brief.slice(1);
+    if (!/[.!?…»)]$/.test(hook)) hook += '.';
+    return generateFull({ hook: hook, core: '', pillar: pillar, tone: tone, v: v });
+  }
+
+  // ── Idées / descriptifs de visuel par pilier ──
+  var IMG_IDEAS = {
+    produit: [
+      'Photo produit héro sur fond clair épuré, lumière douce, un seul produit mis en avant, ombre subtile.',
+      'Flat lay (vue du dessus) de plusieurs produits d’une même gamme, fond pastel, composition aérée.',
+      'Gros plan macro sur la texture ou le packaging, lumière naturelle, détail qui donne envie.',
+      'Carrousel : 1 produit par slide avec son bénéfice en une ligne, fond aux couleurs de la marque.'
+    ],
+    conseil: [
+      'Carrousel pédagogique : 1 conseil par slide, gros chiffres, icônes simples, couleurs de marque.',
+      'Photo d’un pharmacien au comptoir en train de conseiller un patient, ambiance chaleureuse et lumineuse.',
+      'Schéma annoté du linéaire idéal (flèches, zones à mettre en avant), style clair et lisible.',
+      'Vitrine d’officine bien agencée, plan large, mise en avant saisonnière.'
+    ],
+    coulisses: [
+      'Photo grand angle de la plateforme logistique, allées de préparation, ambiance de travail réelle.',
+      'Portrait d’un collaborateur en action (préparation, livraison), plan mi-corps, lumière naturelle.',
+      'Vidéo courte / time-lapse du parcours d’un colis, de la préparation à l’expédition.',
+      'Gros plan sur un geste métier (scan, contrôle qualité), net et authentique.'
+    ],
+    recrutement: [
+      'Photo d’équipe souriante sur le lieu de travail, plan large lumineux, ambiance conviviale.',
+      'Portrait d’un collaborateur avec une courte citation en surimpression sobre.',
+      'Visuel « offre d’emploi » : intitulé du poste, lieu, logo, un seul CTA, fond de marque.',
+      'Coulisses d’une journée type d’un métier (préparateur, magasinier, commercial).'
+    ],
+    tempsfort: [
+      'Visuel événementiel aux couleurs de la marque : date bien lisible, message court, un seul focus.',
+      'Photo de l’équipe sur un salon / stand, ambiance conviviale et professionnelle.',
+      'Bandeau saisonnier illustré (soleil, feuilles, flocons…) selon la période, sobre et lisible.',
+      'Carte de remerciement / bilan avec un chiffre-clé mis en avant.'
+    ]
+  };
+  function generateImageIdea(pk, v) { return pickA(IMG_IDEAS[pk] || IMG_IDEAS.tempsfort, v); }
+
   // ── Moteur ──
   function poolFor(slot) { return slot.seasonal ? SEASON[slot.mo] : (ANGLES[slot.pillar] || ANGLES.tempsfort); }
   function anglesOf(slot) {
@@ -294,6 +338,9 @@
       '.lis-genb{border-color:#c3b6f2!important;color:#7c56e6!important;background:#f6f2ff!important}',
       '.lis-genb:hover{color:#5b2ec4!important;background:#efe8ff!important}',
       '.lis-abc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}',
+      '.lis-imgidea{margin-top:9px;font-size:12.5px;color:#475569;line-height:1.5;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:9px;padding:8px 11px}',
+      '.lis-imgidea b{color:#0f172a}',
+      '.lis-imgb{margin-left:6px;padding:2px 8px !important}',
       '.lis-ab{width:30px;height:30px;border-radius:8px;border:1px solid #E6E9F0;background:#fff;color:#6b7280;font:700 12px/1 inherit;cursor:pointer}',
       '.lis-ab.on{background:#8B5CF6;border-color:#8B5CF6;color:#fff}',
       '.lis-mini{background:#fff;border:1px solid #E6E9F0;color:#6b7280;border-radius:8px;padding:6px 10px;font:600 12px/1 inherit;cursor:pointer;margin-left:auto}',
@@ -378,6 +425,8 @@
         '<div class="lis-abc">' + abc +
           '<button class="lis-mini lis-genb" onclick="V2.lis.gentext(' + idx + ')">' + (s.gen ? '↻ Régénérer le texte' : '✍️ Générer le texte') + '</button>' +
           '<button class="lis-mini" onclick="V2.lis.other(' + idx + ')">↻ Autre idée</button></div>' +
+        '<div class="lis-imgidea"><b>Idée visuelle :</b> ' + esc(generateImageIdea(s.seasonal ? 'tempsfort' : s.pillar, s.imgv || 0)) +
+          ' <button class="lis-mini lis-imgb" onclick="V2.lis.otherImg(' + idx + ')">↻ Autre</button></div>' +
       '</div>';
     }).join('');
     return '<div class="lis-wrap">' +
@@ -413,6 +462,7 @@
   V2.lis.gen = function () { plan = buildPlan(cfg); stratId = (LI().newId ? LI().newId() : 'strat' + (new Date()).getTime()); step = 'preview'; draw(); };
   V2.lis.sel = function (idx, j) { if (plan[idx]) { plan[idx].sel = j; plan[idx].gen = ''; draw(); } };
   V2.lis.other = function (idx) { if (plan[idx]) { plan[idx].offset += 3; plan[idx].sel = 0; plan[idx].gen = ''; draw(); } };
+  V2.lis.otherImg = function (idx) { if (plan[idx]) { plan[idx].imgv = (plan[idx].imgv || 0) + 1; draw(); } };
   V2.lis.gentext = function (idx) {
     var s = plan[idx]; if (!s) return;
     var angs = anglesOf(s); var a = angs[s.sel] || angs[0];
@@ -441,6 +491,7 @@
       return {
         date: s.date.toISOString(), status: 'idee', pillar: pk,
         title: a.h, body: (s.gen || compose(a, cfg.tone, pk)), format: a.f,
+        image_brief: generateImageIdea(pk, s.imgv || 0),
         source: 'strategie', event_id: stratId, event_name: name, image_path: '', linkedin_url: ''
       };
     });
@@ -465,6 +516,18 @@
   V2.lis.genForEditor = function (pillar, title, v) {
     return generateFull({ hook: title || '', core: '', pillar: pillar || 'produit', tone: 'proche', v: v || 0 });
   };
+  // Rédiger un post complet à partir d'une idée courte de l'utilisateur
+  V2.lis.genFromBrief = function (pillar, brief, v) {
+    return generateFromBrief(brief, pillar || 'produit', 'proche', v || 0);
+  };
+  // Proposer une idée de post (accroche + angle) pour un pilier
+  V2.lis.suggestIdea = function (pillar, v) {
+    var pool = ANGLES[pillar || 'produit'] || ANGLES.produit;
+    var a = pool[((v || 0) % pool.length + pool.length) % pool.length];
+    return { h: a.h, core: a.core, format: a.f };
+  };
+  // Proposer une idée / description de visuel pour un pilier
+  V2.lis.genImageIdea = function (pillar, v) { return generateImageIdea(pillar || 'produit', v || 0); };
 
   V2.liStrategy = { open: function () { V2.lis.open(); }, _cfg: function () { return cfg; }, _plan: function () { return plan; }, _build: buildPlan, generateFull: generateFull };
 })();
