@@ -229,6 +229,11 @@
       '.li-gen{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:10px;border:1.5px solid #0057FF;color:#0057FF;background:#eef3ff;font:700 13px/1 inherit;cursor:pointer;transition:all .15s}',
       '.li-gen:hover{background:#dbe6ff}',
       '.li-gen svg{width:16px;height:16px}',
+      '.li-ideabox{background:#F8FAFC;border:1px solid #E6E9F0;border-radius:12px;padding:13px 14px;gap:10px}',
+      '.li-ideabtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}',
+      '.li-btn-ghost{background:#fff;border:1.5px solid #E6E9F0;color:#475569;height:36px;padding:0 14px;border-radius:10px;font:700 13px/1 inherit;cursor:pointer}',
+      '.li-btn-ghost:hover{border-color:#0057FF;color:#0057FF}',
+      '.li-imgidea{font-size:13px;color:#334155;line-height:1.5;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:10px;padding:10px 12px;margin-bottom:8px}',
       '.li-pillpick{display:flex;gap:8px;flex-wrap:wrap}',
       '.li-pp{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:11px;border:1.5px solid #E6E9F0;background:#fff;font:600 12.5px/1 inherit;color:#3a4152;cursor:pointer;transition:all .14s}',
       '.li-pp .li-cdot{width:11px;height:11px;border-radius:50%}',
@@ -316,12 +321,12 @@
   function fromRow(r) {
     return { id: r.id, date: r.date, status: r.status || 'idee', pillar: r.pillar || 'produit',
       title: r.title || '', body: r.body || '', image_path: r.image_path || '', linkedin_url: r.linkedin_url || '',
-      format: r.format || '', event_id: r.event_id || '', event_name: r.event_name || '', source: r.source || 'manuel',
+      format: r.format || '', image_brief: r.image_brief || '', event_id: r.event_id || '', event_name: r.event_name || '', source: r.source || 'manuel',
       created_at: r.created_at || null, updated_at: r.updated_at || null };
   }
   function toRow(p) {
     return { id: p.id, date: p.date, status: p.status, pillar: p.pillar, title: p.title, body: p.body,
-      image_path: p.image_path || '', linkedin_url: p.linkedin_url || '', format: p.format || '', event_id: p.event_id || '',
+      image_path: p.image_path || '', linkedin_url: p.linkedin_url || '', format: p.format || '', image_brief: p.image_brief || '', event_id: p.event_id || '',
       event_name: p.event_name || '', source: p.source || 'manuel',
       owner: (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
@@ -726,6 +731,12 @@
           '<input class="li-dr-title" value="' + esc(e.title) + '" oninput="V2.li.editField(\'title\',this.value)" placeholder="Titre du post…"></div>' +
           '<button class="li-close" onclick="V2.li.closeEditor()">' + ICO('close', 18, 2) + '</button></div>' +
         '<div class="li-dr-body">' +
+          '<div class="li-field li-ideabox"><label class="li-lab">Votre idée en quelques mots</label>' +
+            '<input class="li-inp" value="' + esc(e._brief || '') + '" oninput="V2.li.editField(\'_brief\',this.value)" placeholder="ex : lancement gamme solaire, disponible tout l\'été">' +
+            '<div class="li-ideabtns">' +
+              '<button class="li-gen" onclick="V2.li.writeFromIdea()">' + ICO('spark', 16) + 'Rédiger le post à partir de mon idée</button>' +
+              '<button class="li-btn li-btn-ghost" onclick="V2.li.suggestIdea()">Proposer une idée</button>' +
+            '</div></div>' +
           '<div class="li-field"><label class="li-lab">Texte du post <span id="li-count">' + (e.body || '').length + ' / 3000</span></label>' +
             '<div class="li-ta-wrap"><textarea class="li-ta" oninput="V2.li.editField(\'body\',this.value)" placeholder="Rédigez votre post LinkedIn…">' + esc(e.body) + '</textarea></div>' +
             '<button class="li-gen" onclick="V2.li.gentext()">' + ICO('spark', 16) + 'Générer le texte (selon le pilier)</button></div>' +
@@ -733,6 +744,9 @@
           '<div class="li-field"><label class="li-lab">Statut</label><div class="li-segstat">' + stat + '</div></div>' +
           '<div class="li-field"><label class="li-lab">Date & heure de publication</label>' +
             '<input class="li-inp" type="datetime-local" value="' + dt + '" oninput="V2.li.editField(\'date\',this.value)"></div>' +
+          '<div class="li-field"><label class="li-lab">Idée visuelle</label>' +
+            (e.image_brief ? '<div class="li-imgidea">' + esc(e.image_brief) + '</div>' : '') +
+            '<button class="li-gen" onclick="V2.li.imageIdea()">' + ICO('spark', 16) + (e.image_brief ? 'Autre idée d\'image' : 'Proposer une idée d\'image') + '</button></div>' +
           '<div class="li-field"><label class="li-lab">Visuel</label><div class="li-imgrow">' + img + '</div></div>' +
           '<div class="li-field"><label class="li-lab">Lien LinkedIn (après publication)</label>' +
             '<input class="li-inp" value="' + esc(e.linkedin_url) + '" oninput="V2.li.editField(\'linkedin_url\',this.value)" placeholder="https://www.linkedin.com/posts/…"></div>' +
@@ -788,6 +802,28 @@
     if (!V2.lis || !V2.lis.genForEditor) { alert('Assistant stratégie non chargé — rechargez la page.'); return; }
     editing._genv = (editing._genv == null) ? 0 : editing._genv + 1;
     editing.body = V2.lis.genForEditor(editing.pillar || 'produit', editing.title || '', editing._genv);
+    redrawEditor();
+  };
+  V2.li.writeFromIdea = function () {
+    if (!editing) return;
+    if (!V2.lis || !V2.lis.genFromBrief) { alert('Assistant stratégie non chargé — rechargez la page.'); return; }
+    var brief = editing._brief || editing.title || '';
+    if (!brief) { alert('Écris d’abord ton idée en quelques mots.'); return; }
+    editing._genv = (editing._genv == null) ? 0 : editing._genv + 1;
+    editing.body = V2.lis.genFromBrief(editing.pillar || 'produit', brief, editing._genv);
+    redrawEditor();
+  };
+  V2.li.suggestIdea = function () {
+    if (!editing || !V2.lis || !V2.lis.suggestIdea) return;
+    editing._sugv = (editing._sugv == null) ? 0 : editing._sugv + 1;
+    var s = V2.lis.suggestIdea(editing.pillar || 'produit', editing._sugv);
+    editing.title = s.h; if (!editing._brief) editing._brief = s.core;
+    redrawEditor();
+  };
+  V2.li.imageIdea = function () {
+    if (!editing || !V2.lis || !V2.lis.genImageIdea) return;
+    editing._imgv = (editing._imgv == null) ? 0 : editing._imgv + 1;
+    editing.image_brief = V2.lis.genImageIdea(editing.pillar || 'produit', editing._imgv);
     redrawEditor();
   };
   V2.li.closeEditor = function () { closeDrawer(); };
