@@ -1,0 +1,1089 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LinkedIn Intégral — Pipeline éditorial (Direction C)</title>
+<style>
+  :root{
+    --blue:#0057FF; --blue-600:#0047d6; --orange:#F39A1B; --ink:#0A0E1A;
+    --bg:#F8FAFC; --card:#FFFFFF; --line:#E6EBF2; --line-soft:#EEF2F7;
+    --muted:#5B6472; --muted-2:#8A93A3;
+    --p-produit:#0057FF; --p-conseil:#00B37A; --p-coulisses:#FFB020;
+    --p-recrut:#FF4D6D; --p-fort:#8B5CF6;
+    --radius:14px; --radius-lg:20px;
+    --shadow-sm:0 1px 2px rgba(10,14,26,.05), 0 1px 3px rgba(10,14,26,.04);
+    --shadow-md:0 6px 18px rgba(10,14,26,.08), 0 2px 6px rgba(10,14,26,.05);
+    --shadow-lg:0 24px 60px rgba(10,14,26,.16), 0 8px 24px rgba(10,14,26,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    line-height:1.45;
+  }
+  button{font-family:inherit; cursor:pointer}
+  ::selection{background:rgba(0,87,255,.15)}
+
+  /* ---------- App shell ---------- */
+  .app{display:flex; min-height:100vh}
+
+  /* ---------- Rail ---------- */
+  .rail{
+    width:224px; flex:0 0 224px; background:var(--card);
+    border-right:1px solid var(--line); display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh; padding:18px 14px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; padding:6px 8px 16px}
+  .brand .logo{
+    width:34px; height:34px; border-radius:10px; flex:0 0 34px;
+    background:
+      radial-gradient(120% 120% at 20% 15%, rgba(255,255,255,.35), rgba(255,255,255,0) 55%),
+      linear-gradient(135deg, var(--blue) 0%, #2a74ff 60%, var(--orange) 165%);
+    display:grid; place-items:center; color:#fff; box-shadow:var(--shadow-sm);
+  }
+  .brand .logo svg{width:19px;height:19px}
+  .brand .name{font-weight:700; font-size:14.5px; letter-spacing:-.2px}
+  .brand .sub{font-size:11px; color:var(--muted-2); margin-top:1px}
+
+  .nav-group{display:flex; flex-direction:column; gap:3px}
+  .nav-label{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); font-weight:700; padding:14px 10px 6px}
+  .nav-item{
+    display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:11px;
+    color:var(--muted); font-size:13.5px; font-weight:550; border:0; background:transparent;
+    width:100%; text-align:left; transition:background .15s, color .15s;
+  }
+  .nav-item svg{width:18px;height:18px; flex:0 0 18px; opacity:.85}
+  .nav-item:hover{background:var(--line-soft); color:var(--ink)}
+  .nav-item.active{background:rgba(0,87,255,.08); color:var(--blue); font-weight:650}
+  .nav-item.active svg{opacity:1}
+  .nav-item .badge{
+    margin-left:auto; background:var(--orange); color:#fff; font-size:11px; font-weight:700;
+    min-width:19px; height:19px; padding:0 5px; border-radius:20px; display:grid; place-items:center;
+  }
+  .nav-secondary .nav-item{font-size:12.5px; color:var(--muted-2)}
+  .nav-secondary .nav-item svg{opacity:.6}
+  .rail-spacer{flex:1 1 auto; min-height:14px}
+  .rail-foot{border-top:1px solid var(--line-soft); padding-top:12px; margin-top:8px}
+  .user{display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:12px}
+  .user:hover{background:var(--line-soft)}
+  .avatar{
+    width:32px;height:32px;border-radius:50%;flex:0 0 32px; display:grid;place-items:center;
+    color:#fff;font-weight:700;font-size:12.5px; background:linear-gradient(135deg,#0057FF,#8B5CF6);
+  }
+  .user .u-name{font-size:12.5px;font-weight:600;line-height:1.15}
+  .user .u-role{font-size:11px;color:var(--muted-2)}
+
+  /* ---------- Main ---------- */
+  .main{flex:1 1 auto; min-width:0; display:flex; flex-direction:column}
+  .topbar{
+    position:sticky; top:0; z-index:20; background:rgba(248,250,252,.92);
+    border-bottom:1px solid var(--line); padding:16px 26px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .page-title h1{font-size:20px; margin:0; letter-spacing:-.4px; font-weight:750}
+  .page-title p{margin:2px 0 0; font-size:12.5px; color:var(--muted)}
+  .topbar .spacer{flex:1 1 auto}
+
+  .segmented{display:inline-flex; background:var(--line-soft); border:1px solid var(--line); border-radius:11px; padding:3px; gap:2px}
+  .segmented button{
+    border:0; background:transparent; padding:6px 13px; border-radius:8px; font-size:12.5px;
+    font-weight:600; color:var(--muted); display:inline-flex; align-items:center; gap:6px;
+  }
+  .segmented button svg{width:14px;height:14px}
+  .segmented button.on{background:var(--card); color:var(--ink); box-shadow:var(--shadow-sm)}
+
+  .btn{border-radius:11px; font-size:13px; font-weight:650; padding:9px 15px; display:inline-flex; align-items:center; gap:8px; border:1px solid transparent; transition:transform .12s, box-shadow .15s, background .15s}
+  .btn svg{width:16px;height:16px}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--blue); color:#fff; box-shadow:0 3px 10px rgba(0,87,255,.28)}
+  .btn-primary:hover{background:var(--blue-600)}
+  .btn-ghost{background:var(--card); color:var(--ink); border-color:var(--line)}
+  .btn-ghost:hover{background:var(--line-soft)}
+  .btn-quiet{background:transparent; color:var(--muted); border-color:transparent}
+  .btn-quiet:hover{background:var(--line-soft); color:var(--ink)}
+
+  /* ---------- Sub toolbar (filters + legend) ---------- */
+  .subbar{padding:14px 26px 4px; display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .filters{display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+  .chip{
+    display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600;
+    padding:5px 11px 5px 9px; border-radius:20px; border:1px solid var(--line); background:var(--card);
+    color:var(--muted); transition:border-color .15s, background .15s, color .15s;
+  }
+  .chip .dot{width:9px;height:9px;border-radius:50%}
+  .chip:hover{background:var(--line-soft); color:var(--ink)}
+  .chip.on{color:var(--ink); border-color:transparent; background:var(--line-soft)}
+  .chip.chip-all.on{background:var(--ink); color:#fff}
+  .subbar .spacer{flex:1 1 auto}
+  .legend-note{font-size:11.5px; color:var(--muted-2); display:flex; align-items:center; gap:6px}
+  .legend-note svg{width:13px;height:13px}
+
+  /* ---------- Board ---------- */
+  .board-wrap{padding:14px 26px 40px; flex:1 1 auto}
+  .board{display:grid; grid-template-columns:repeat(4, minmax(240px,1fr)); gap:16px; align-items:start}
+  .col{background:transparent; display:flex; flex-direction:column; min-width:0}
+  .col-head{
+    display:flex; align-items:center; gap:9px; padding:4px 6px 12px; position:sticky; top:0;
+  }
+  .col-dot{width:10px;height:10px;border-radius:50%}
+  .col-title{font-size:13px; font-weight:700; letter-spacing:-.1px}
+  .col-count{font-size:11.5px; font-weight:700; color:var(--muted-2); background:var(--card); border:1px solid var(--line); border-radius:20px; min-width:20px; height:20px; padding:0 6px; display:grid; place-items:center}
+  .col-head .add{margin-left:auto; width:26px;height:26px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--muted); display:grid;place-items:center}
+  .col-head .add:hover{background:var(--blue); color:#fff; border-color:var(--blue)}
+  .col-head .add svg{width:15px;height:15px}
+  .drop{
+    background:linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,.2));
+    border:1px solid var(--line-soft); border-radius:16px; padding:9px; min-height:120px;
+    display:flex; flex-direction:column; gap:10px; transition:background .15s, border-color .15s;
+  }
+  .drop.dragover{border-color:var(--blue); background:rgba(0,87,255,.05)}
+
+  /* ---------- Card ---------- */
+  .card{
+    position:relative; background:var(--card); border:1px solid var(--line); border-radius:13px;
+    padding:12px 13px 11px; box-shadow:var(--shadow-sm); cursor:grab;
+    transition:box-shadow .16s, transform .12s, border-color .15s;
+  }
+  .card:hover{box-shadow:var(--shadow-md); transform:translateY(-1px); border-color:#dbe2ec}
+  .card:active{cursor:grabbing}
+  .card.dragging{opacity:.45; box-shadow:none; transform:scale(.98)}
+  .card::before{content:""; position:absolute; left:0; top:12px; bottom:12px; width:3.5px; border-radius:0 4px 4px 0; background:var(--pc,#ccc)}
+  .card-top{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700;
+    padding:3px 9px; border-radius:20px; color:var(--pc); background:var(--pc-bg);
+  }
+  .pill .pdot{width:7px;height:7px;border-radius:50%; background:var(--pc)}
+  .card-menu{margin-left:auto; color:var(--muted-2); display:grid; place-items:center; width:22px;height:22px; border-radius:6px}
+  .card-menu:hover{background:var(--line-soft); color:var(--ink)}
+  .card-menu svg{width:16px;height:16px}
+  .card-title{font-size:13.5px; font-weight:650; line-height:1.32; letter-spacing:-.15px; margin:0 0 9px; color:var(--ink)}
+  .card-foot{display:flex; align-items:center; gap:10px; font-size:11.5px; color:var(--muted)}
+  .card-date{display:inline-flex; align-items:center; gap:5px}
+  .card-date svg{width:13px;height:13px; opacity:.7}
+  .card-thumb{
+    margin-left:auto; width:30px;height:30px;border-radius:8px; flex:0 0 30px;
+    background-size:cover; background-position:center; border:1px solid var(--line);
+    display:grid; place-items:center; color:var(--muted-2);
+  }
+  .card-thumb svg{width:15px;height:15px}
+  .status-dot{width:13px;height:13px;border-radius:50%; flex:0 0 13px; position:relative}
+  .st-idee{border:1.6px dashed var(--muted-2); background:transparent}
+  .st-redaction{background:var(--pc); opacity:.42}
+  .st-pret{background:var(--pc)}
+  .st-publie{background:#00B37A; display:grid; place-items:center}
+  .st-publie svg{width:9px;height:9px; color:#fff}
+  .card.is-publie{opacity:.72}
+  .card.is-publie .card-title{color:var(--muted)}
+
+  .publish-cta{
+    margin-top:10px; width:100%; border:1px solid var(--blue); color:var(--blue); background:rgba(0,87,255,.05);
+    border-radius:9px; padding:7px; font-size:12px; font-weight:650; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .publish-cta:hover{background:var(--blue); color:#fff}
+  .publish-cta svg{width:14px;height:14px}
+
+  .col-empty{
+    border:1.5px dashed var(--line); border-radius:12px; padding:22px 14px; text-align:center;
+    color:var(--muted-2); font-size:12px; background:transparent;
+  }
+
+  /* ---------- Drawer (éditeur) ---------- */
+  .scrim{position:fixed; inset:0; background:rgba(10,14,26,.34); opacity:0; pointer-events:none; transition:opacity .25s; z-index:60}
+  .scrim.show{opacity:1; pointer-events:auto}
+  .drawer{
+    position:fixed; top:0; right:0; height:100vh; width:488px; max-width:94vw; background:var(--card);
+    box-shadow:var(--shadow-lg); transform:translateX(100%); transition:transform .3s cubic-bezier(.22,.61,.36,1);
+    z-index:70; display:flex; flex-direction:column;
+  }
+  .drawer.show{transform:translateX(0)}
+  .dr-head{padding:20px 22px 14px; border-bottom:1px solid var(--line-soft); display:flex; align-items:flex-start; gap:12px}
+  .dr-head .close{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:grid;place-items:center;flex:0 0 32px}
+  .dr-head .close:hover{background:var(--line-soft); color:var(--ink)}
+  .dr-head .close svg{width:17px;height:17px}
+  .dr-eyebrow{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); margin-bottom:6px}
+  .dr-title-input{
+    width:100%; border:0; outline:0; font-size:19px; font-weight:750; letter-spacing:-.3px; color:var(--ink);
+    padding:0; background:transparent; line-height:1.25;
+  }
+  .dr-title-input::placeholder{color:#c3cbd6}
+  .dr-body{flex:1 1 auto; overflow-y:auto; padding:18px 22px 20px}
+  .field{margin-bottom:18px}
+  .field > label{display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:8px; letter-spacing:.01em}
+  .pillar-picker{display:flex; gap:8px; flex-wrap:wrap}
+  .pp{
+    display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--muted);
+    padding:6px 11px 6px 9px; border-radius:20px; border:1.5px solid var(--line); background:var(--card);
+  }
+  .pp .pdot{width:9px;height:9px;border-radius:50%}
+  .pp.on{color:var(--ink); border-color:var(--pcx); background:var(--pcx-bg)}
+  .pp:hover{background:var(--line-soft)}
+
+  .seg-status{display:flex; background:var(--line-soft); border:1px solid var(--line); border-radius:11px; padding:3px}
+  .seg-status button{flex:1; border:0; background:transparent; padding:8px 6px; border-radius:8px; font-size:12px; font-weight:600; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:6px}
+  .seg-status button .sd{width:10px;height:10px;border-radius:50%}
+  .seg-status button.on{background:var(--card); color:var(--ink); box-shadow:var(--shadow-sm)}
+
+  .row2{display:grid; grid-template-columns:1fr 130px; gap:10px}
+  .inp{
+    width:100%; border:1.5px solid var(--line); border-radius:10px; padding:9px 11px; font-size:13px;
+    color:var(--ink); background:var(--card); outline:0; transition:border-color .15s, box-shadow .15s; font-family:inherit;
+  }
+  .inp:focus{border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,87,255,.12)}
+
+  .textzone{position:relative}
+  .textzone textarea{
+    width:100%; min-height:172px; resize:vertical; border:1.5px solid var(--line); border-radius:12px;
+    padding:13px 13px; font-size:13.5px; line-height:1.6; color:var(--ink); background:var(--card); outline:0;
+    font-family:inherit; transition:border-color .15s, box-shadow .15s;
+  }
+  .textzone textarea:focus{border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,87,255,.12)}
+  .tz-foot{display:flex; align-items:center; justify-content:space-between; margin-top:8px}
+  .char-count{font-size:11.5px; color:var(--muted-2)}
+  .btn-generate{
+    background:rgba(0,87,255,.06); color:var(--blue); border:1.5px solid rgba(0,87,255,.25);
+    border-radius:10px; padding:8px 13px; font-size:12.5px; font-weight:650; display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn-generate:hover{background:rgba(0,87,255,.11)}
+  .btn-generate svg{width:15px;height:15px}
+  .btn-generate.busy{opacity:.7; pointer-events:none}
+
+  .dropzone{
+    border:1.5px dashed var(--line); border-radius:12px; padding:18px; display:flex; align-items:center; gap:14px;
+    background:var(--line-soft); color:var(--muted);
+  }
+  .dropzone .thumb{width:56px;height:56px;border-radius:10px;flex:0 0 56px; display:grid;place-items:center; color:var(--muted-2); background:var(--card); border:1px solid var(--line)}
+  .dropzone .thumb svg{width:22px;height:22px}
+  .dropzone .dz-title{font-size:13px; font-weight:650; color:var(--ink)}
+  .dropzone .dz-sub{font-size:11.5px; color:var(--muted-2); margin-top:2px}
+  .dropzone .dz-btn{margin-left:auto; font-size:12px; font-weight:650; color:var(--blue); border:1px solid rgba(0,87,255,.25); background:var(--card); border-radius:9px; padding:7px 12px}
+
+  .dr-foot{padding:14px 22px; border-top:1px solid var(--line-soft); display:flex; align-items:center; gap:12px; background:var(--card)}
+  .dr-foot .del{font-size:12.5px; font-weight:600; color:var(--p-recrut); background:transparent; border:0; display:inline-flex; align-items:center; gap:6px}
+  .dr-foot .del:hover{text-decoration:underline}
+  .dr-foot .del svg{width:15px;height:15px}
+  .dr-foot .spacer{flex:1}
+
+  /* ---------- Assistant modal ---------- */
+  .modal{
+    position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:24px;
+    background:rgba(10,14,26,.38);
+  }
+  .modal.show{display:flex}
+  .modal-card{
+    position:relative; width:640px; max-width:100%; max-height:92vh; background:var(--card); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lg); display:flex; flex-direction:column; overflow:hidden;
+    transform:translateY(10px) scale(.99); opacity:0; transition:transform .28s cubic-bezier(.22,.61,.36,1), opacity .2s;
+  }
+  .modal.show .modal-card{transform:none; opacity:1}
+  .modal-head{padding:22px 26px 0; display:flex; align-items:flex-start; gap:14px}
+  .modal-head .m-ico{
+    width:42px;height:42px;border-radius:12px;flex:0 0 42px; display:grid;place-items:center; color:#fff;
+    background:linear-gradient(135deg,#0057FF,#8B5CF6); box-shadow:0 4px 12px rgba(0,87,255,.3);
+  }
+  .modal-head .m-ico svg{width:22px;height:22px}
+  .modal-head h2{margin:0; font-size:18px; letter-spacing:-.3px; font-weight:750}
+  .modal-head p{margin:3px 0 0; font-size:12.5px; color:var(--muted)}
+  .modal-head .close{margin-left:auto; width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:grid;place-items:center; flex:0 0 32px}
+  .modal-head .close:hover{background:var(--line-soft)}
+  .modal-head .close svg{width:17px;height:17px}
+
+  .steps{display:flex; align-items:center; gap:8px; padding:18px 26px 0}
+  .step-pip{flex:1; height:5px; border-radius:20px; background:var(--line)}
+  .step-pip.done{background:var(--blue)}
+  .step-pip.now{background:linear-gradient(90deg,var(--blue),#5b8cff)}
+  .step-meta{padding:14px 26px 2px; font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2)}
+
+  .modal-body{padding:6px 26px 22px; overflow-y:auto}
+  .q-title{font-size:17px; font-weight:700; letter-spacing:-.2px; margin:6px 0 4px}
+  .q-sub{font-size:13px; color:var(--muted); margin:0 0 18px}
+
+  .opt-grid{display:grid; grid-template-columns:1fr 1fr; gap:11px}
+  .opt{
+    text-align:left; border:1.5px solid var(--line); background:var(--card); border-radius:13px; padding:14px 15px;
+    display:flex; align-items:flex-start; gap:12px; transition:border-color .15s, background .15s, transform .12s;
+  }
+  .opt:hover{border-color:#cdd6e2; transform:translateY(-1px)}
+  .opt.on{border-color:var(--blue); background:rgba(0,87,255,.05)}
+  .opt .o-ico{width:36px;height:36px;border-radius:10px;flex:0 0 36px; display:grid;place-items:center; background:var(--line-soft); color:var(--blue)}
+  .opt.on .o-ico{background:var(--blue); color:#fff}
+  .opt .o-ico svg{width:19px;height:19px}
+  .opt .o-title{display:block; font-size:13.5px; font-weight:650}
+  .opt .o-desc{display:block; font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.4}
+
+  .cadence-row{display:flex; gap:10px; margin-bottom:16px}
+  .cad{flex:1; text-align:center; border:1.5px solid var(--line); border-radius:12px; padding:16px 8px; background:var(--card)}
+  .cad.on{border-color:var(--blue); background:rgba(0,87,255,.05)}
+  .cad .cad-n{font-size:22px; font-weight:800; color:var(--ink); letter-spacing:-.5px}
+  .cad .cad-l{font-size:11.5px; color:var(--muted); margin-top:2px}
+
+  .tone-row, .pil-row{display:flex; gap:9px; flex-wrap:wrap}
+  .tone{border:1.5px solid var(--line); background:var(--card); border-radius:20px; padding:9px 15px; font-size:12.5px; font-weight:600; color:var(--muted)}
+  .tone.on{border-color:var(--blue); background:rgba(0,87,255,.05); color:var(--ink)}
+  .pil-check{
+    display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); border-radius:12px; padding:11px 13px; background:var(--card);
+    font-size:13px; font-weight:600; width:100%;
+  }
+  .pil-check .pdot{width:11px;height:11px;border-radius:50%; flex:0 0 11px}
+  .pil-check .chk{margin-left:auto; width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line); display:grid;place-items:center; color:transparent}
+  .pil-check.on{border-color:var(--pcx); background:var(--pcx-bg)}
+  .pil-check.on .chk{background:var(--blue); border-color:var(--blue); color:#fff}
+  .pil-check .chk svg{width:13px;height:13px}
+  .pil-list{display:flex; flex-direction:column; gap:9px}
+
+  /* result plan */
+  .plan-summary{
+    background:linear-gradient(135deg, rgba(0,87,255,.06), rgba(139,92,246,.06));
+    border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:16px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .plan-summary .ps-n{font-size:30px; font-weight:800; color:var(--blue); letter-spacing:-1px; line-height:1}
+  .plan-summary .ps-txt{font-size:13px; color:var(--ink); font-weight:600}
+  .plan-summary .ps-sub{font-size:12px; color:var(--muted); margin-top:3px; font-weight:500}
+  .plan-list{display:flex; flex-direction:column; gap:8px}
+  .plan-item{
+    display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:11px; padding:10px 13px; background:var(--card);
+  }
+  .plan-item .pi-date{font-size:11.5px; font-weight:700; color:var(--muted-2); width:52px; flex:0 0 52px}
+  .plan-item .pi-pill{width:8px;height:8px;border-radius:50%; flex:0 0 8px}
+  .plan-item .pi-title{font-size:13px; font-weight:550; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .plan-item .pi-edit{font-size:11.5px; color:var(--blue); font-weight:650; opacity:0; transition:opacity .15s}
+  .plan-item:hover .pi-edit{opacity:1}
+
+  .modal-foot{padding:16px 26px; border-top:1px solid var(--line-soft); display:flex; align-items:center; gap:12px}
+  .modal-foot .spacer{flex:1}
+
+  /* toast */
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); z-index:90;
+    background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:12px 18px; border-radius:12px;
+    box-shadow:var(--shadow-lg); display:flex; align-items:center; gap:10px; opacity:0; pointer-events:none;
+    transition:opacity .2s, transform .25s;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .toast svg{width:17px;height:17px; color:#4ade80}
+
+  /* mini calendar peek (secondary access) */
+  .cal-note{margin:0 26px 24px; border:1px solid var(--line); border-radius:14px; background:var(--card); padding:16px 18px; display:flex; align-items:center; gap:14px; box-shadow:var(--shadow-sm)}
+  .cal-note .cn-ico{width:40px;height:40px;border-radius:11px;flex:0 0 40px;display:grid;place-items:center;background:var(--line-soft);color:var(--blue)}
+  .cal-note .cn-ico svg{width:20px;height:20px}
+  .cal-note .cn-title{font-size:13.5px;font-weight:650}
+  .cal-note .cn-sub{font-size:12px;color:var(--muted);margin-top:1px}
+  .cal-note .cn-btn{margin-left:auto}
+
+  /* section divider for demo (assistant + editor shown standalone below) */
+  .demo-strip{background:var(--card); border-top:1px solid var(--line); padding:30px 26px 10px}
+  .demo-strip h3{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); font-weight:800; margin:0 0 4px}
+  .demo-strip p{font-size:13px; color:var(--muted); margin:0 0 18px; max-width:640px}
+
+  @media (max-width:1080px){
+    .board{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width:720px){
+    .rail{position:fixed; z-index:50; transform:translateX(-100%); transition:transform .25s}
+    .rail.open{transform:none}
+    .board{grid-template-columns:1fr}
+    .drawer{width:100%}
+    .topbar{padding:14px 16px}
+    .subbar,.board-wrap,.cal-note{padding-left:16px;padding-right:16px}
+    .cal-note{margin-left:16px;margin-right:16px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important; animation:none !important}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ================= RAIL ================= -->
+  <aside class="rail" id="rail">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h10M4 17h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="name">Intégral Pharma</div>
+        <div class="sub">Studio LinkedIn</div>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Édito</div>
+      <button class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="4" height="16" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="10" y="4" width="4" height="10" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="17" y="4" width="4" height="13" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>
+        Pipeline
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 3v3M16 3v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Calendrier
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 5h14v10H8l-3 3V5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        À publier
+        <span class="badge">3</span>
+      </button>
+      <button class="nav-item" onclick="openAssistant()">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.9 4.3L18.5 9l-3.6 3 1 4.8L12 14.6 8.1 16.8l1-4.8L5.5 9l4.6-1.7L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        Assistant stratégie
+      </button>
+    </div>
+
+    <div class="rail-spacer"></div>
+
+    <div class="nav-group nav-secondary">
+      <div class="nav-label">Réglages</div>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 15V4m0 0L8 8m4-4l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 15v3a2 2 0 002 2h10a2 2 0 002-2v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Importer d'anciens posts
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19 12a7 7 0 00-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 00-1.7-1l-.3-2.5h-4l-.3 2.5a7 7 0 00-1.7 1l-2.4-1-2 3.5L4 11a7 7 0 000 2l-2 1.5 2 3.5 2.4-1a7 7 0 001.7 1l.3 2.5h4l.3-2.5a7 7 0 001.7-1l2.4 1 2-3.5L19 13a7 7 0 00.1-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        Réglages
+      </button>
+    </div>
+
+    <div class="rail-foot">
+      <div class="user">
+        <div class="avatar">PS</div>
+        <div>
+          <div class="u-name">Pauline S.</div>
+          <div class="u-role">Marketing · Intégral</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+    <header class="topbar">
+      <div class="page-title">
+        <h1>Pipeline éditorial</h1>
+        <p>Suivez chaque post de l'idée à la publication</p>
+      </div>
+      <div class="spacer"></div>
+      <div class="segmented" role="tablist" aria-label="Vue">
+        <button class="on">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="5" height="16" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="10" y="4" width="5" height="10" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="17" y="4" width="4" height="13" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>
+          Pipeline
+        </button>
+        <button onclick="toast('La vue Calendrier s\'ouvrirait ici')">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 3v3M16 3v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Calendrier
+        </button>
+        <button onclick="toast('La vue Liste s\'ouvrirait ici')">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+          Liste
+        </button>
+      </div>
+      <button class="btn btn-primary" onclick="openEditor(null,'idee')">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Nouveau post
+      </button>
+    </header>
+
+    <!-- Filters + legend -->
+    <div class="subbar">
+      <div class="filters" id="filters">
+        <button class="chip chip-all on" data-pillar="all">Tous les piliers</button>
+        <button class="chip" data-pillar="produit"><span class="dot" style="background:var(--p-produit)"></span>Produit</button>
+        <button class="chip" data-pillar="conseil"><span class="dot" style="background:var(--p-conseil)"></span>Conseil</button>
+        <button class="chip" data-pillar="coulisses"><span class="dot" style="background:var(--p-coulisses)"></span>Coulisses</button>
+        <button class="chip" data-pillar="recrut"><span class="dot" style="background:var(--p-recrut)"></span>Recrutement</button>
+        <button class="chip" data-pillar="fort"><span class="dot" style="background:var(--p-fort)"></span>Temps fort</button>
+      </div>
+      <div class="spacer"></div>
+      <div class="legend-note">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v5M12 8h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Couleur = pilier · Forme de la pastille = statut
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-wrap">
+      <div class="board" id="board"><!-- columns injected by JS --></div>
+    </div>
+
+    <!-- Secondary calendar access -->
+    <div class="cal-note">
+      <div class="cn-ico">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 3v3M16 3v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="cn-title">Vous préférez voir les dates ?</div>
+        <div class="cn-sub">Basculez sur le calendrier éditorial pour visualiser le rythme du mois.</div>
+      </div>
+      <button class="btn btn-ghost cn-btn" onclick="toast('La vue Calendrier s\'ouvrirait ici')">Ouvrir le calendrier</button>
+    </div>
+
+    <!-- ===== Demo strip: show Assistant + Editor as standalone too ===== -->
+    <div class="demo-strip">
+      <h3>Aperçus de la maquette</h3>
+      <p>Deux parcours secondaires, montrés ici pour la démonstration. En usage réel ils s'ouvrent en surimpression depuis le pipeline.</p>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px">
+        <button class="btn btn-ghost" onclick="openAssistant()">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.9 4.3L18.5 9l-3.6 3 1 4.8L12 14.6 8.1 16.8l1-4.8L5.5 9l4.6-1.7L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          Ouvrir l'Assistant stratégie
+        </button>
+        <button class="btn btn-ghost" onclick="openEditor('p8','pret')">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18 10l-4-4L4 16v4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M13 7l4 4" stroke="currentColor" stroke-width="1.8"/></svg>
+          Ouvrir l'éditeur d'un post
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ================= DRAWER: ÉDITEUR ================= -->
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="dr-head">
+    <div style="flex:1; min-width:0">
+      <div class="dr-eyebrow" id="drEyebrow">Nouveau post</div>
+      <input class="dr-title-input" id="drTitle" placeholder="Titre du post…" />
+    </div>
+    <button class="close" onclick="closeDrawer()" aria-label="Fermer">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div class="dr-body">
+    <div class="field">
+      <label>Pilier éditorial</label>
+      <div class="pillar-picker" id="drPillars"></div>
+    </div>
+
+    <div class="field">
+      <label>Statut</label>
+      <div class="seg-status" id="drStatus">
+        <button data-st="idee"><span class="sd" style="border:1.6px dashed var(--muted-2)"></span>Idée</button>
+        <button data-st="redaction"><span class="sd" style="background:var(--muted-2);opacity:.5"></span>Rédaction</button>
+        <button data-st="pret"><span class="sd" style="background:var(--blue)"></span>Prêt</button>
+        <button data-st="publie"><span class="sd" style="background:var(--p-conseil)"></span>Publié</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Date &amp; heure de publication</label>
+      <div class="row2">
+        <input class="inp" id="drDate" type="text" value="mardi 14 juillet 2026" />
+        <input class="inp" id="drTime" type="text" value="08:30" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Texte du post</label>
+      <div class="textzone">
+        <textarea id="drText" placeholder="Écrivez votre post… ou laissez l'assistant faire le premier jet."></textarea>
+        <div class="tz-foot">
+          <span class="char-count" id="drCount">0 caractère</span>
+          <button class="btn-generate" id="drGen" onclick="generateText()">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.6 3.8L17.5 8l-3.9 1.2L12 13l-1.6-3.8L6.5 8l3.9-1.2L12 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18 14l.8 1.9L21 17l-2.2.6L18 20l-.8-2.4L15 17l2.2-1.1L18 14z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            Générer le texte
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Visuel</label>
+      <div class="dropzone">
+        <div class="thumb">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/><circle cx="8.5" cy="10" r="1.6" stroke="currentColor" stroke-width="1.5"/><path d="M4 17l5-4 3 2 3-3 5 4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="dz-title">Ajouter un visuel</div>
+          <div class="dz-sub">JPG ou PNG · format carré ou paysage conseillé</div>
+        </div>
+        <button class="dz-btn" onclick="toast('Le sélecteur de fichier s\'ouvrirait ici')">Parcourir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dr-foot">
+    <button class="del" onclick="closeDrawer()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M10 7V5h4v2M6 7l1 12h10l1-12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Supprimer
+    </button>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost" id="drPublish" style="display:none" onclick="publishFromDrawer()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 12l16-7-7 16-2-7-7-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Programmer / Publier
+    </button>
+    <button class="btn btn-primary" onclick="saveDrawer()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Enregistrer
+    </button>
+  </div>
+</aside>
+
+<!-- ================= MODAL: ASSISTANT ================= -->
+<div class="modal" id="assistant">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="m-ico">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.9 4.3L18.5 9l-3.6 3 1 4.8L12 14.6 8.1 16.8l1-4.8L5.5 9l4.6-1.7L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <h2 id="asTitle">Assistant stratégie</h2>
+        <p id="asSubtitle">Répondez à 4 questions, on prépare votre plan de posts.</p>
+      </div>
+      <button class="close" onclick="closeAssistant()" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="steps" id="asSteps">
+      <span class="step-pip now"></span><span class="step-pip"></span><span class="step-pip"></span><span class="step-pip"></span>
+    </div>
+    <div class="step-meta" id="asMeta">Étape 1 sur 4 · Objectif</div>
+
+    <div class="modal-body" id="asBody"><!-- steps injected --></div>
+
+    <div class="modal-foot">
+      <button class="btn btn-quiet" id="asBack" onclick="asPrev()" style="visibility:hidden">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Retour
+      </button>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost" id="asRegen" onclick="asRegen()" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0114-5.3L20 8M20 4v4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Régénérer
+      </button>
+      <button class="btn btn-primary" id="asNext" onclick="asNext()">
+        Continuer
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TOAST ================= -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span id="toastMsg">Enregistré</span>
+</div>
+
+<script>
+/* ---------------- DATA ---------------- */
+const PILLARS = {
+  produit:   {label:"Produit",     color:"#0057FF", bg:"rgba(0,87,255,.10)"},
+  conseil:   {label:"Conseil",     color:"#00B37A", bg:"rgba(0,179,122,.12)"},
+  coulisses: {label:"Coulisses",   color:"#FFB020", bg:"rgba(255,176,32,.16)"},
+  recrut:    {label:"Recrutement", color:"#FF4D6D", bg:"rgba(255,77,109,.12)"},
+  fort:      {label:"Temps fort",  color:"#8B5CF6", bg:"rgba(139,92,246,.13)"}
+};
+const COLS = [
+  {id:"idee",      title:"Idée",      dot:"#8A93A3"},
+  {id:"redaction", title:"Rédaction", dot:"#0057FF"},
+  {id:"pret",      title:"Prêt",      dot:"#0057FF"},
+  {id:"publie",    title:"Publié",    dot:"#00B37A"}
+];
+let POSTS = [
+  {id:"p1", pillar:"coulisses", status:"idee",      title:"24h dans notre plateforme logistique de nuit", date:"ven 10 juil", time:"18:00", text:""},
+  {id:"p2", pillar:"conseil",   status:"idee",      title:"Optimiser vos commandes avant les ponts de l'été", date:"lun 20 juil", time:"08:30", text:""},
+  {id:"p3", pillar:"fort",      status:"idee",      title:"Journée sans tabac : vos officines mobilisées", date:"jeu 31 juil", time:"09:00", text:""},
+  {id:"p4", pillar:"produit",   status:"idee",      title:"Zoom sur la gamme dermato en disponibilité J+1", date:"mer 22 juil", time:"08:30", text:""},
+
+  {id:"p5", pillar:"produit",   status:"redaction", title:"Nouveau : disponibilité J+1 sur la gamme dermato", date:"mer 08 juil", time:"08:30", text:"Bonne nouvelle pour vos rayons dermo-cosmétique.\n\nÀ partir de cette semaine, notre gamme dermatologique passe en disponibilité J+1 sur l'ensemble de nos agences.\n\nCommandé avant 19h → livré le lendemain matin dans votre officine.\n\nMoins de ruptures, plus de conseil au comptoir."},
+  {id:"p6", pillar:"conseil",   status:"redaction", title:"5 réflexes anti-rupture pour la période estivale", date:"ven 11 juil", time:"08:30", text:"L'été, la demande change vite — et les ruptures arrivent au pire moment.\n\nNos 5 réflexes pour sécuriser vos stocks…"},
+  {id:"p7", pillar:"recrut",    status:"redaction", title:"On cherche un préparateur pour l'agence de Caen", date:"lun 13 juil", time:"11:00", text:""},
+
+  {id:"p8", pillar:"conseil",   status:"pret",      title:"3 réflexes pour sécuriser vos stocks avant l'été", date:"lun 06 juil", time:"08:30", text:"Avant les congés, un stock bien préparé, c'est un été serein au comptoir.\n\n1. Anticipez les antalgiques et solaires — la demande grimpe dès la première vague de chaleur.\n\n2. Vérifiez vos seuils de réappro sur les produits pédiatriques.\n\n3. Programmez vos commandes avant les ponts pour éviter les ruptures.\n\nBesoin d'un coup de main pour ajuster vos approvisionnements ? On est là.", ready:true},
+  {id:"p9", pillar:"fort",      status:"pret",      title:"14 juillet : vos officines livrées même les jours fériés", date:"mar 14 juil", time:"08:30", text:"Bonne fête nationale à toutes les équipes officinales.\n\nMême les jours fériés, la continuité des soins ne s'arrête pas — et nous non plus.\n\nMerci de prendre soin des Français toute l'année.", ready:true},
+  {id:"p10",pillar:"produit",   status:"pret",      title:"Retour en stock : les indispensables de la trousse d'été", date:"jeu 16 juil", time:"08:30", text:"Solaires, répulsifs, après-soleil, antihistaminiques…\n\nLes essentiels de l'été sont de retour en stock et disponibles en J+1.", ready:true},
+
+  {id:"p11",pillar:"recrut",    status:"publie",    title:"On recrute un préparateur — rejoignez l'aventure Intégral", date:"jeu 17 juin", time:"10:00", text:""},
+  {id:"p12",pillar:"coulisses", status:"publie",    title:"Rencontre avec Julien, chauffeur-livreur depuis 8 ans", date:"mar 24 juin", time:"18:00", text:""},
+  {id:"p13",pillar:"conseil",   status:"publie",    title:"Vaccination grippe : anticipez vos approvisionnements", date:"lun 30 juin", time:"08:30", text:""},
+  {id:"p14",pillar:"produit",   status:"publie",    title:"GLP-1 : le point sur les disponibilités cette semaine", date:"mer 02 juil", time:"08:30", text:""}
+];
+
+let activeFilter = "all";
+let editingId = null;
+
+/* ---------------- ICONS ---------------- */
+const ICO = {
+  cal:'<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 3v3M16 3v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  img:'<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M4 17l5-4 3 2 3-3 5 4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  dots:'<svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  send:'<svg viewBox="0 0 24 24" fill="none"><path d="M4 12l16-7-7 16-2-7-7-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>'
+};
+
+/* ---------------- RENDER BOARD ---------------- */
+function statusDotHtml(status, pillar){
+  const c = PILLARS[pillar].color;
+  if(status==="idee")      return '<span class="status-dot st-idee"></span>';
+  if(status==="redaction") return '<span class="status-dot st-redaction" style="--pc:'+c+'"></span>';
+  if(status==="pret")      return '<span class="status-dot st-pret" style="--pc:'+c+'"></span>';
+  return '<span class="status-dot st-publie">'+ICO.check+'</span>';
+}
+
+function cardHtml(p){
+  const P = PILLARS[p.pillar];
+  const isPub = p.status==="publie";
+  const ready = p.status==="pret";
+  return `
+  <div class="card ${isPub?'is-publie':''}" draggable="true" data-id="${p.id}"
+       style="--pc:${P.color}; --pc-bg:${P.bg}"
+       onclick="openEditor('${p.id}')">
+    <div class="card-top">
+      <span class="pill" style="--pc:${P.color}; --pc-bg:${P.bg}"><span class="pdot"></span>${P.label}</span>
+      <button class="card-menu" onclick="event.stopPropagation()" aria-label="Options">${ICO.dots}</button>
+    </div>
+    <p class="card-title">${p.title}</p>
+    <div class="card-foot">
+      ${statusDotHtml(p.status, p.pillar)}
+      <span class="card-date">${ICO.cal}${p.date}</span>
+      <span class="card-thumb">${ICO.img}</span>
+    </div>
+    ${ready?`<button class="publish-cta" onclick="event.stopPropagation();quickPublish('${p.id}')">${ICO.send}Publier maintenant</button>`:''}
+  </div>`;
+}
+
+function renderBoard(){
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  COLS.forEach(col=>{
+    let items = POSTS.filter(p=>p.status===col.id);
+    const totalInCol = items.length;
+    if(activeFilter!=="all") items = items.filter(p=>p.pillar===activeFilter);
+    const el = document.createElement("div");
+    el.className="col";
+    el.innerHTML = `
+      <div class="col-head">
+        <span class="col-dot" style="background:${col.dot}"></span>
+        <span class="col-title">${col.title}</span>
+        <span class="col-count">${totalInCol}</span>
+        <button class="add" onclick="openEditor(null,'${col.id}')" aria-label="Ajouter">${ICO.plus}</button>
+      </div>
+      <div class="drop" data-col="${col.id}">
+        ${items.map(cardHtml).join("") || `<div class="col-empty">${col.id==="idee"?'Aucune idée ici.<br>Cliquez + pour en ajouter une.':(col.id==="publie"?'Rien de publié pour ce filtre.':'Glissez une carte ici.')}</div>`}
+      </div>`;
+    board.appendChild(el);
+  });
+  wireDnD();
+}
+
+/* ---------------- DRAG & DROP ---------------- */
+let dragId=null;
+function wireDnD(){
+  document.querySelectorAll(".card").forEach(c=>{
+    c.addEventListener("dragstart",e=>{dragId=c.dataset.id; c.classList.add("dragging"); e.dataTransfer.effectAllowed="move";});
+    c.addEventListener("dragend",()=>{dragId=null; c.classList.remove("dragging");});
+  });
+  document.querySelectorAll(".drop").forEach(z=>{
+    z.addEventListener("dragover",e=>{e.preventDefault(); z.classList.add("dragover");});
+    z.addEventListener("dragleave",()=>z.classList.remove("dragover"));
+    z.addEventListener("drop",e=>{
+      e.preventDefault(); z.classList.remove("dragover");
+      if(!dragId) return;
+      const newStatus = z.dataset.col;
+      const p = POSTS.find(x=>x.id===dragId);
+      if(p && p.status!==newStatus){
+        p.status=newStatus;
+        p.ready = (newStatus==="pret");
+        renderBoard();
+        const map={idee:"Idée",redaction:"Rédaction",pret:"Prêt",publie:"Publié"};
+        toast('Déplacé vers « '+map[newStatus]+' »');
+      }
+    });
+  });
+}
+
+/* ---------------- FILTERS ---------------- */
+document.getElementById("filters").addEventListener("click",e=>{
+  const chip = e.target.closest(".chip"); if(!chip) return;
+  activeFilter = chip.dataset.pillar;
+  document.querySelectorAll("#filters .chip").forEach(c=>c.classList.toggle("on", c===chip));
+  renderBoard();
+});
+
+/* ---------------- DRAWER ---------------- */
+const drawer=document.getElementById("drawer"), scrim=document.getElementById("scrim");
+
+function buildPillarPicker(sel){
+  const wrap=document.getElementById("drPillars");
+  wrap.innerHTML="";
+  Object.entries(PILLARS).forEach(([k,v])=>{
+    const b=document.createElement("button");
+    b.className="pp"+(k===sel?" on":"");
+    b.style.setProperty("--pcx",v.color); b.style.setProperty("--pcx-bg",v.bg);
+    b.innerHTML=`<span class="pdot" style="background:${v.color}"></span>${v.label}`;
+    b.onclick=()=>{document.querySelectorAll("#drPillars .pp").forEach(x=>x.classList.remove("on")); b.classList.add("on"); drawerPillar=k;};
+    wrap.appendChild(b);
+  });
+}
+let drawerPillar="produit", drawerStatus="idee";
+
+function setDrawerStatus(st){
+  drawerStatus=st;
+  document.querySelectorAll("#drStatus button").forEach(b=>b.classList.toggle("on", b.dataset.st===st));
+  document.getElementById("drPublish").style.display = (st==="pret") ? "inline-flex" : "none";
+}
+document.getElementById("drStatus").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(b) setDrawerStatus(b.dataset.st);
+});
+
+document.getElementById("drText").addEventListener("input",e=>{
+  const n=e.target.value.length;
+  document.getElementById("drCount").textContent = n+" caractère"+(n>1?"s":"");
+});
+
+function openEditor(id, presetStatus){
+  editingId=id;
+  const genBtn=document.getElementById("drGen"); genBtn.classList.remove("busy");
+  if(id){
+    const p=POSTS.find(x=>x.id===id);
+    document.getElementById("drEyebrow").textContent="Modifier le post";
+    document.getElementById("drTitle").value=p.title;
+    document.getElementById("drText").value=p.text||"";
+    document.getElementById("drDate").value=frLongDate(p.date);
+    document.getElementById("drTime").value=p.time;
+    drawerPillar=p.pillar; buildPillarPicker(p.pillar);
+    setDrawerStatus(p.status);
+  }else{
+    document.getElementById("drEyebrow").textContent="Nouveau post";
+    document.getElementById("drTitle").value="";
+    document.getElementById("drText").value="";
+    document.getElementById("drDate").value="mardi 14 juillet 2026";
+    document.getElementById("drTime").value="08:30";
+    drawerPillar="produit"; buildPillarPicker("produit");
+    setDrawerStatus(presetStatus||"idee");
+  }
+  const n=document.getElementById("drText").value.length;
+  document.getElementById("drCount").textContent=n+" caractère"+(n>1?"s":"");
+  scrim.classList.add("show"); drawer.classList.add("show"); drawer.setAttribute("aria-hidden","false");
+}
+function closeDrawer(){ drawer.classList.remove("show"); scrim.classList.remove("show"); drawer.setAttribute("aria-hidden","true"); }
+
+function saveDrawer(){
+  const title=document.getElementById("drTitle").value.trim()||"Post sans titre";
+  const text=document.getElementById("drText").value;
+  if(editingId){
+    const p=POSTS.find(x=>x.id===editingId);
+    p.title=title; p.text=text; p.pillar=drawerPillar; p.status=drawerStatus; p.ready=(drawerStatus==="pret");
+  }else{
+    POSTS.push({id:"n"+Date.now(), pillar:drawerPillar, status:drawerStatus, title, text, date:"mar 14 juil", time:document.getElementById("drTime").value, ready:(drawerStatus==="pret")});
+  }
+  renderBoard(); closeDrawer(); toast("Post enregistré");
+}
+function publishFromDrawer(){
+  if(editingId){ const p=POSTS.find(x=>x.id===editingId); p.status="publie"; p.ready=false; }
+  renderBoard(); closeDrawer(); toast("Post publié sur LinkedIn");
+}
+
+/* ---- Fake text generation ---- */
+const GEN_TEXTS = {
+  produit:"Une bonne nouvelle pour vos rayons.\n\n{titre} — désormais disponible en J+1 sur l'ensemble de nos agences.\n\nCommandé avant 19h, livré le lendemain matin dans votre officine. Moins de ruptures, plus de temps pour le conseil au comptoir.\n\nVous voulez tester sur votre prochaine commande ? Parlons-en. 💊",
+  conseil:"Au comptoir, chaque conseil compte.\n\n{titre}\n\n1. Anticipez la demande saisonnière avant qu'elle n'explose.\n2. Vérifiez vos seuils de réapprovisionnement sur les références sensibles.\n3. Programmez vos commandes avant les jours fériés.\n\nUn stock bien préparé, c'est une officine sereine. On vous accompagne.",
+  coulisses:"Ce que vous ne voyez pas quand votre commande arrive à l'heure.\n\n{titre}\n\nDerrière chaque livraison, il y a des équipes engagées, de nuit comme de jour, pour que vos patients ne manquent de rien.\n\nMerci à celles et ceux qui font tourner la logistique du soin.",
+  recrut:"On agrandit l'équipe.\n\n{titre}\n\nChez Intégral Pharma, on met le soin au cœur de tout ce qu'on fait — et ça commence par nos collaborateurs.\n\nEnvie de rejoindre l'aventure ? Écrivez-nous, on serait ravis d'échanger.",
+  fort:"Aujourd'hui, on prend un instant.\n\n{titre}\n\nParce que la continuité des soins ne s'arrête jamais — et que derrière chaque officine, il y a des équipes qui prennent soin des Français toute l'année.\n\nMerci à vous."
+};
+function generateText(){
+  const btn=document.getElementById("drGen");
+  const title=document.getElementById("drTitle").value.trim()||"votre sujet";
+  btn.classList.add("busy"); btn.querySelector("span")?.remove();
+  const label=btn.childNodes[btn.childNodes.length-1];
+  btn.lastChild.textContent=" Génération…";
+  setTimeout(()=>{
+    const tpl=GEN_TEXTS[drawerPillar]||GEN_TEXTS.conseil;
+    document.getElementById("drText").value=tpl.replace("{titre}",title);
+    const n=document.getElementById("drText").value.length;
+    document.getElementById("drCount").textContent=n+" caractères";
+    btn.classList.remove("busy"); btn.lastChild.textContent=" Régénérer le texte";
+    if(drawerStatus==="idee") setDrawerStatus("redaction");
+  },650);
+}
+function quickPublish(id){ const p=POSTS.find(x=>x.id===id); p.status="publie"; p.ready=false; renderBoard(); toast("Post publié sur LinkedIn"); }
+
+function frLongDate(short){
+  // best-effort readable date from the demo short labels
+  return short.replace("lun","lundi").replace("mar","mardi").replace("mer","mercredi")
+    .replace("jeu","jeudi").replace("ven","vendredi")
+    .replace("juil"," juillet 2026").replace("juin"," juin 2026");
+}
+
+/* ---------------- ASSISTANT ---------------- */
+const assistant=document.getElementById("assistant");
+let asStep=1;
+const asState={obj:"notoriete", cad:2, tone:"chaleureux", pillars:{conseil:true,produit:true,coulisses:true,recrut:true,fort:true}};
+
+function openAssistant(){ asStep=1; renderAssistant(); assistant.classList.add("show"); }
+function closeAssistant(){ assistant.classList.remove("show"); }
+
+function renderSteps(){
+  const total=5; // 4 questions + result
+  const pips=document.querySelectorAll("#asSteps .step-pip");
+  pips.forEach((p,i)=>{
+    p.classList.remove("done","now");
+    if(i<asStep-1) p.classList.add("done");
+    else if(i===asStep-1 && asStep<=4) p.classList.add("now");
+    else if(asStep===5) p.classList.add("done");
+  });
+  const metas=["Objectif","Cadence","Ton","Piliers à couvrir"];
+  const meta=document.getElementById("asMeta");
+  if(asStep<=4) meta.textContent=`Étape ${asStep} sur 4 · ${metas[asStep-1]}`;
+  else meta.textContent="Votre plan est prêt";
+  document.getElementById("asBack").style.visibility = (asStep>1)?"visible":"hidden";
+  document.getElementById("asRegen").style.display = (asStep===5)?"inline-flex":"none";
+  const next=document.getElementById("asNext");
+  next.innerHTML = (asStep===4)
+    ? 'Générer le plan <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.6 3.8L17.5 8l-3.9 1.2L12 13l-1.6-3.8L6.5 8l3.9-1.2L12 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>'
+    : (asStep===5)
+      ? 'Ajouter ces posts au calendrier <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : 'Continuer <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+
+function renderAssistant(){
+  renderSteps();
+  const body=document.getElementById("asBody");
+  const sub=document.getElementById("asSubtitle");
+  if(asStep===1){
+    sub.textContent="Répondez à 4 questions, on prépare votre plan de posts.";
+    body.innerHTML=`
+      <div class="q-title">Quel est votre objectif principal ?</div>
+      <p class="q-sub">On adapte les thèmes et le ton en fonction.</p>
+      <div class="opt-grid">
+        ${optHtml("notoriete","Faire connaître nos officines partenaires","Renforcer la notoriété d'Intégral","M3 12l4-4 4 4 4-6 6 8")}
+        ${optHtml("recruter","Recruter","Attirer préparateurs & chauffeurs","M12 12a4 4 0 100-8 4 4 0 000 8zM4 20a8 8 0 0116 0")}
+        ${optHtml("service","Mettre en avant un service","Ex : disponibilité J+1, dépannage","M4 7h16M4 12h16M4 17h10")}
+        ${optHtml("fideliser","Fidéliser nos clients officines","Garder le lien, montrer les coulisses","M12 21s-7-4.5-7-10a4 4 0 017-2 4 4 0 017 2c0 5.5-7 10-7 10z")}
+      </div>`;
+    wireOpts("obj");
+  }else if(asStep===2){
+    body.innerHTML=`
+      <div class="q-title">À quelle cadence souhaitez-vous publier ?</div>
+      <p class="q-sub">Vous pourrez ajuster date par date ensuite.</p>
+      <div class="cadence-row">
+        ${cadHtml(1,"1 fois","par semaine")}
+        ${cadHtml(2,"2 fois","par semaine")}
+        ${cadHtml(3,"3 fois","par semaine")}
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">Sur quelle période ?</label>
+        <div class="row2" style="grid-template-columns:1fr 1fr">
+          <input class="inp" value="7 juillet 2026" />
+          <input class="inp" value="3 août 2026" />
+        </div>
+      </div>`;
+    document.querySelectorAll(".cad").forEach(c=>c.onclick=()=>{asState.cad=+c.dataset.n; document.querySelectorAll(".cad").forEach(x=>x.classList.toggle("on",x===c));});
+  }else if(asStep===3){
+    body.innerHTML=`
+      <div class="q-title">Quel ton pour vos posts ?</div>
+      <p class="q-sub">Le ton donne la personnalité de votre page.</p>
+      <div class="tone-row">
+        ${toneHtml("chaleureux","Pro &amp; chaleureux")}
+        ${toneHtml("expert","Expert")}
+        ${toneHtml("convivial","Convivial")}
+      </div>
+      <p style="font-size:12px;color:var(--muted-2);margin-top:16px">« Pro &amp; chaleureux » est recommandé pour une audience de pharmaciens.</p>`;
+    document.querySelectorAll(".tone").forEach(t=>t.onclick=()=>{asState.tone=t.dataset.t; document.querySelectorAll(".tone").forEach(x=>x.classList.toggle("on",x===t));});
+  }else if(asStep===4){
+    body.innerHTML=`
+      <div class="q-title">Quels piliers couvrir ?</div>
+      <p class="q-sub">On répartit vos posts sur les thèmes cochés.</p>
+      <div class="pil-list">
+        ${Object.entries(PILLARS).map(([k,v])=>`
+          <button class="pil-check ${asState.pillars[k]?'on':''}" data-p="${k}" style="--pcx:${v.color};--pcx-bg:${v.bg}">
+            <span class="pdot" style="background:${v.color}"></span>${v.label}
+            <span class="chk"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>`).join("")}
+      </div>`;
+    document.querySelectorAll(".pil-check").forEach(b=>b.onclick=()=>{const k=b.dataset.p; asState.pillars[k]=!asState.pillars[k]; b.classList.toggle("on",asState.pillars[k]);});
+  }else{
+    sub.textContent="Voici la proposition. Modifiez les titres ou régénérez.";
+    const plan=buildPlan();
+    const counts={};
+    plan.forEach(x=>counts[x.pillar]=(counts[x.pillar]||0)+1);
+    const summary=Object.entries(counts).map(([k,n])=>n+" "+PILLARS[k].label).join(" · ");
+    body.innerHTML=`
+      <div class="plan-summary">
+        <div class="ps-n">${plan.length}</div>
+        <div>
+          <div class="ps-txt">${plan.length} posts sur 4 semaines</div>
+          <div class="ps-sub">${summary}</div>
+        </div>
+      </div>
+      <div class="plan-list">
+        ${plan.map(x=>`
+          <div class="plan-item">
+            <span class="pi-date">${x.date}</span>
+            <span class="pi-pill" style="background:${PILLARS[x.pillar].color}"></span>
+            <span class="pi-title">${x.title}</span>
+            <span class="pi-edit">Modifier</span>
+          </div>`).join("")}
+      </div>`;
+  }
+}
+
+function optHtml(v,title,desc,path){
+  return `<button class="opt ${asState.obj===v?'on':''}" data-v="${v}">
+    <span class="o-ico"><svg viewBox="0 0 24 24" fill="none"><path d="${path}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span><span class="o-title">${title}</span><span class="o-desc">${desc}</span></span>
+  </button>`;
+}
+function wireOpts(key){
+  document.querySelectorAll(".opt").forEach(o=>o.onclick=()=>{asState[key]=o.dataset.v; document.querySelectorAll(".opt").forEach(x=>x.classList.toggle("on",x===o));});
+}
+function cadHtml(n,a,b){return `<button class="cad ${asState.cad===n?'on':''}" data-n="${n}"><div class="cad-n">${a.split(' ')[0]}</div><div class="cad-l">${b}</div></button>`;}
+function toneHtml(t,l){return `<button class="tone ${asState.tone===t?'on':''}" data-t="${t}">${l}</button>`;}
+
+const PLAN_TITLES = {
+  conseil:["Bien conserver les vaccins pendant les fortes chaleurs","Rentrée : anticipez la demande en produits de l'enfant","3 astuces pour fluidifier vos réappros de septembre"],
+  produit:["Nouveau : dépannage express sur les antibiotiques","Gamme solaire — dernières disponibilités de la saison"],
+  coulisses:["Une nuit avec notre équipe de préparation de commandes"],
+  recrut:["On recrute : rejoignez notre agence logistique"],
+  fort:["Journée mondiale du cœur : vos officines en première ligne"]
+};
+function buildPlan(){
+  const dates=["Lun 7","Jeu 10","Lun 14","Jeu 17","Lun 21","Jeu 24","Lun 28","Jeu 31"];
+  const active=Object.keys(asState.pillars).filter(k=>asState.pillars[k]);
+  const order=["conseil","produit","conseil","coulisses","produit","conseil","recrut","fort"].filter(p=>active.includes(p));
+  const idx={}; const plan=[];
+  order.slice(0,8).forEach((p,i)=>{
+    idx[p]=(idx[p]||0); const t=PLAN_TITLES[p][idx[p]%PLAN_TITLES[p].length]; idx[p]++;
+    plan.push({date:dates[i], pillar:p, title:t});
+  });
+  return plan;
+}
+
+function asNext(){
+  if(asStep<4){asStep++; renderAssistant();}
+  else if(asStep===4){asStep=5; renderAssistant();}
+  else{
+    // add plan to board
+    const plan=buildPlan();
+    plan.forEach((x,i)=>POSTS.push({id:"a"+Date.now()+i, pillar:x.pillar, status:"idee", title:x.title, text:"", date:x.date.toLowerCase()+" juil", time:"08:30"}));
+    renderBoard(); closeAssistant(); toast(plan.length+" posts ajoutés à votre pipeline");
+    asStep=1;
+  }
+}
+function asPrev(){ if(asStep>1){asStep--; renderAssistant();} }
+function asRegen(){ renderAssistant(); toast("Nouveau plan généré"); }
+
+/* ---------------- TOAST ---------------- */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById("toast");
+  document.getElementById("toastMsg").textContent=msg;
+  t.classList.add("show"); clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),2400);
+}
+
+/* ---------------- KEYBOARD ---------------- */
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ closeDrawer(); closeAssistant(); }
+});
+
+/* ---------------- INIT ---------------- */
+renderBoard();
+</script>
+</body>
+</html>
