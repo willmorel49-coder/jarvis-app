@@ -1889,7 +1889,7 @@
     var pharma = portraitPid ? (V2.pharmacies || []).find(function (p) { return String(p.id) === String(portraitPid); }) : null;
     var headName = pharma ? pharma.name : grpName;
     var headSub = pharma ? [pharma.code, pharma.ville].filter(function (x) { return x; }).join(' · ') : (panel + ' pharmacies du panel');
-    var COLS6 = '<colgroup><col style="width:40%"><col style="width:20%"><col style="width:16%"><col style="width:11%"><col style="width:13%"></colgroup>';
+    var COLS6 = '<colgroup><col style="width:34%"><col style="width:15%"><col style="width:14%"><col style="width:11%"><col style="width:15%"><col style="width:11%"></colgroup>';
 
     // ── Familles (en-tête de famille coloré + table dense, design "Tableau dense pro") ──
     var catHtml = sections.map(function (o) {
@@ -1900,8 +1900,9 @@
         return '<tr style="page-break-inside:avoid;background:' + bg + ';border-bottom:1px solid #F1F4F9">' +
           '<td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + badge + '</td>' +
           '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
-          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:#10131C;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
-          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:' + (r.remise > 0 ? o.cat.color : '#A8AFBE') + '">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#B6BFCE;white-space:nowrap">' + (r.remise > 0 && r.prix_ht > 0 ? '<span style="text-decoration:line-through">' + e2(r.prix_ht) + '</span>' : '—') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:' + (r.remise > 0 ? o.cat.color : '#A8AFBE') + '">' + (r.remise > 0 ? '−' + r.remise + ' %' : '—') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10.5px;font-weight:800;color:#0050E6;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
           '<td style="padding:6px 8px;text-align:center;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + r.sortie + '<span style="color:#A8AFBE">/' + panel + '</span></td>' +
           '</tr>';
       }).join('');
@@ -1942,7 +1943,7 @@
           '<div style="font-size:9px;color:#737A8C">Nbr pharma = pharmacies qui commandent / ' + panel + '</div>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-after:avoid">' + COLS6 +
-          '<thead><tr style="background:#10131C">' + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('Prix net IP', 'right') + thd('Remise', 'right') + thd('Nbr pharma', 'center') + '</tr></thead></table>' +
+          '<thead><tr style="background:#10131C">' + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('PPHT', 'right') + thd('Remise', 'right') + thd('Prix net IP', 'right') + thd('Nbr pharma', 'center') + '</tr></thead></table>' +
         (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
         // Pied
         '<div style="margin-top:16px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
