@@ -21,10 +21,13 @@ import urllib.request
 import xlrd
 
 OUT = os.path.join(os.path.dirname(__file__), "crm", "v2", "tendance-data.js")
+OUT_MOM = os.path.join(os.path.dirname(__file__), "crm", "v2", "momentum-data.js")
 BASE = "https://www.assurance-maladie.ameli.fr/sites/default/files/"
 SEMESTERS = ["2026-01-a-04", "2026-01-a-06", "2025-07-a-12", "2025-01-a-06"]
 SUFFIX = "_medic-am-par-type-de-prescripteur_serie-mensuelle.zip"
-MIN_2025 = 400   # volume plancher (sur les mois comparés) pour un signal fiable
+MIN_2025 = 400        # volume plancher (sur les mois comparés) pour un signal fiable
+MOM_WINDOW = 8        # nb de mois récents pour l'accélération (pente)
+MIN_MOM_RECENT = 500  # volume plancher sur la fenêtre récente (anti-bruit)
 
 
 def norm(s):
@@ -140,6 +143,46 @@ def main():
     ) % ("/".join(common), "/".join(common), items)
     open(OUT, "w", encoding="utf-8").write(js)
     print("Écrit %s (%d Ko, %d produits)" % (OUT, os.path.getsize(OUT) // 1024, len(data)))
+
+    # ── MOMENTUM / ACCÉLÉRATION : pente des ventes mensuelles sur la fenêtre récente ──
+    # Signal « ça décolle EN CE MOMENT » (mois par mois), plus précoce que le YoY.
+    window = sorted(months, key=lambda ym: ym[0] + ym[1])[-MOM_WINDOW:]
+    n = len(window)
+    sx = sum(range(n))
+    sxx = sum(i * i for i in range(n))
+    denom = n * sxx - sx * sx
+    mom = {}
+    for cip, mo in by_cip.items():
+        ys = [mo.get(ym, 0.0) for ym in window]
+        tot = sum(ys)
+        if tot < MIN_MOM_RECENT or denom == 0:
+            continue
+        mean = tot / n
+        if mean <= 0:
+            continue
+        sy = tot
+        sxy = sum(i * ys[i] for i in range(n))
+        slope = (n * sxy - sx * sy) / denom       # boîtes gagnées par mois
+        pct = round(slope / mean * 100)           # %/mois vs volume moyen de la fenêtre
+        if pct > 150:
+            pct = 150
+        if pct < -95:
+            pct = -95
+        if pct != 0:
+            mom[cip] = pct
+
+    upm = sorted(mom.items(), key=lambda x: -x[1])
+    print("Produits avec momentum : %d" % len(mom))
+    print("Top accélérations :", [(c, "+%d%%/mois" % g) for c, g in upm[:4]])
+    mlabel = window[0][0] + "-" + window[0][1] + "→" + window[-1][0] + "-" + window[-1][1]
+    mitems = ",".join('"%s":%d' % (c, g) for c, g in sorted(mom.items()))
+    mjs = (
+        "// Copilote — momentum/accélération (%% de progression par mois) par CIP13,\n"
+        "// pente des ventes Medic'AM sur les %d derniers mois (%s). Généré par generate_tendance.py.\n"
+        "window.MOMENTUM={meta:{fenetre:\"%s\",mois:%d,source:\"Medic'AM\"},data:{%s}};\n"
+    ) % (MOM_WINDOW, mlabel, mlabel, MOM_WINDOW, mitems)
+    open(OUT_MOM, "w", encoding="utf-8").write(mjs)
+    print("Écrit %s (%d Ko, %d produits)" % (OUT_MOM, os.path.getsize(OUT_MOM) // 1024, len(mom)))
 
 
 if __name__ == "__main__":
