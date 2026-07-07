@@ -369,7 +369,7 @@
   function renderPropositions(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/propositions/index.html?v=20260708a" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/propositions/index.html?v=20260708b" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
