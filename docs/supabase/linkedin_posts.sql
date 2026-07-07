@@ -7,6 +7,7 @@ create table if not exists public.linkedin_posts (
   title text default '',
   body text default '',
   image_path text default '',
+  format text default '',
   linkedin_url text default '',
   event_id text default '',
   event_name text default '',
@@ -15,6 +16,9 @@ create table if not exists public.linkedin_posts (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Si la table existe déjà, ajouter la colonne format :
+alter table public.linkedin_posts add column if not exists format text default '';
 
 alter table public.linkedin_posts enable row level security;
 
