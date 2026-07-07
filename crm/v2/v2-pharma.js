@@ -2045,8 +2045,11 @@
       document.body.appendChild(bd);
     }
     bd.querySelector('#pdfprev-sheet').innerHTML = html;
-    bd.querySelector('#pdfprev-dl').onclick = function () { pdfFromSheet(fn, 'save'); };
-    var sh = bd.querySelector('#pdfprev-sh'); if (sh) sh.onclick = function () { pdfFromSheet(fn, 'share', shareTitle); };
+    // Génère depuis un clone hors-écran positionné en top:0 (pdfGenerate) et NON
+    // depuis la feuille de l'aperçu (scrollée) : évite le blanc en haut de la page 1
+    // (html2canvas incluait le décalage de scroll de la modale). Même HTML = rendu identique.
+    bd.querySelector('#pdfprev-dl').onclick = function () { pdfGenerate(html, fn, 'save', shareTitle); };
+    var sh = bd.querySelector('#pdfprev-sh'); if (sh) sh.onclick = function () { pdfGenerate(html, fn, 'share', shareTitle); };
     bd.classList.add('open');
     requestAnimationFrame(function () { requestAnimationFrame(fitPrevSheet); });
     if (!V2._pdfPrevResize) { window.addEventListener('resize', fitPrevSheet); V2._pdfPrevResize = true; }
