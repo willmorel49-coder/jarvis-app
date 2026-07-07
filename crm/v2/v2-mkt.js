@@ -146,7 +146,7 @@
     if (window.MKT_NR) { cb(); return; }
     if (nrLoading) { setTimeout(function () { ensureNr(cb); }, 250); return; }
     nrLoading = true;
-    var s = document.createElement('script'); s.src = 'mkt-nr-data.js?v=20260703d19';
+    var s = document.createElement('script'); s.src = 'mkt-nr-data.js?v=20260703d20';
     s.onload = function () { nrLoading = false; cb(); }; s.onerror = function () { nrLoading = false; cb(); };
     document.head.appendChild(s);
   }
@@ -701,7 +701,7 @@
     var showPrice = th.showPrice !== false, showRemise = th.showRemise !== false;
     var showImg = th.showImg !== false;
     var anyImg = showImg && (it.products || []).some(function (p) { return p.img; });
-    var cols = (anyImg ? 1 : 0) + 3 + (showPrice ? 1 : 0) + (showRemise ? 1 : 0);
+    var cols = (anyImg ? 1 : 0) + 3 + (showPrice ? 2 : 0) + (showRemise ? 1 : 0);
     function prodTr(p, n) {
       var img = prodImg(p, forPdf);
       var ph = '<div style="width:34px;height:34px;border-radius:6px;background:#F1F4F9;display:flex;align-items:center;justify-content:center">' +
@@ -710,15 +710,20 @@
         ? '<td style="padding:6px 8px;width:40px;text-align:center">' + (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : ph) + '</td>'
         : '';
       var ref = p.cip ? esc(p.cip) : (p.ean ? esc(p.ean) : '—');
-      var rem = (p.remise > 0) ? String(p.remise).replace('.', ',') + ' %' : '—';
+      // PPHT connu, sinon reconstitué depuis la remise portée par le produit. 0 = NR/prix libre → net seul.
+      var ppht = p.ppht > 0 ? p.ppht : (p.remise > 0 && p.price > 0 ? Math.round(p.price / (1 - p.remise / 100) * 100) / 100 : 0);
+      var pct = (ppht > 0 && p.price > 0 && p.price < ppht) ? Math.round((1 - p.price / ppht) * 1000) / 10 : 0;
+      var pphtCell = pct > 0 ? '<span style="text-decoration:line-through;color:#B6BFCE">' + V2.fmtEur(ppht) + '</span>' : '—';
+      var remCell = pct > 0 ? '−' + String(pct).replace('.', ',') + ' %' : '—';
       return '<tr style="border-bottom:1px solid #ECEFF5;page-break-inside:avoid">' + thumb +
         '<td style="padding:7px 10px;text-align:center;font-size:9px;color:#9AA1B2;font-family:monospace;width:24px">' + n + '</td>' +
         '<td style="padding:7px 10px;font-size:11.5px;font-weight:600;color:#10131C">' + esc((p.name || '').slice(0, 62)) +
           (p.brand ? ' <span style="color:#9AA1B2;font-weight:500">· ' + esc(p.brand) + '</span>' : '') +
           (p.froid ? ' <span style="font-size:7.5px;color:#00B5D8;border:1px solid #b8edf7;border-radius:4px;padding:0 3px;vertical-align:middle">FROID</span>' : '') + '</td>' +
         '<td style="padding:7px 10px;font-family:monospace;font-size:10px;color:#737A8C">' + ref + '</td>' +
-        (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:800;color:' + acc + '">' + (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</td>' : '') +
-        (showRemise ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;font-weight:700;color:#1E9E6A">' + rem + '</td>' : '') +
+        (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:10.5px">' + pphtCell + '</td>' : '') +
+        (showRemise ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:10.5px;font-weight:700;color:' + (pct > 0 ? '#1E9E6A' : '#B6BFCE') + '">' + remCell + '</td>' : '') +
+        (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12.5px;font-weight:800;color:' + acc + '">' + (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</td>' : '') +
       '</tr>';
     }
     // regroupe par catégorie (ordre d'apparition) ; sous-titres si plusieurs catégories
@@ -742,7 +747,7 @@
       ? '<table style="width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden">' +
           '<thead><tr style="background:#F7F9FC;border-bottom:1.5px solid #E2E7F0">' +
             (anyImg ? '<th></th>' : '') + thh('#', 'center') + thh('Produit', 'left') + thh('Réf (CIP/EAN)', 'left') +
-            (showPrice ? thh('Prix IP', 'right') : '') + (showRemise ? thh('Remise', 'right') : '') +
+            (showPrice ? thh('PPHT', 'right') : '') + (showRemise ? thh('Abandon', 'right') : '') + (showPrice ? thh('Net IP', 'right') : '') +
           '</tr></thead><tbody>' + rows + '</tbody></table>'
       : '<div style="text-align:center;color:#9AA1B2;font-size:13px;padding:40px">Aucun produit.</div>';
     var footer = (it.footer && it.footer.trim()) ? esc(it.footer.trim()) : ('Prix nets HT indicatifs · ' + esc(dateStr));
@@ -840,7 +845,7 @@
     addCustom: function () {
       if (!editing) return;
       editing.products.push({ src: 'custom', key: 'c' + Date.now() + Math.round(Math.random() * 999),
-        id: '', name: '', brand: '', ean: '', cip: '', price: 0, remise: 0, img: '', froid: false });
+        id: '', name: '', brand: '', ean: '', cip: '', price: 0, remise: 0, ppht: 0, img: '', froid: false });
       refreshProducts();
       setTimeout(function () { var inp = document.querySelectorAll('.mkt-prow-namei'); if (inp.length) inp[inp.length - 1].focus(); }, 40);
     },
@@ -874,7 +879,7 @@
       var key = String(row.cip || row.d);
       var at = -1; for (var i = 0; i < catSel.length; i++) { if (catSel[i].key === key) { at = i; break; } }
       if (at >= 0) catSel.splice(at, 1);
-      else catSel.push({ src: 'cat', key: key, id: '', name: row.d, brand: '', ean: '', cip: row.cip ? String(row.cip) : '', price: row.p || 0, remise: 0, img: row.img || '', froid: !!row.froid, cat: row.cat || '' });
+      else catSel.push({ src: 'cat', key: key, id: '', name: row.d, brand: '', ean: '', cip: row.cip ? String(row.cip) : '', price: row.p || 0, remise: 0, ppht: 0, img: row.img || '', froid: !!row.froid, cat: row.cat || '' });
       var on = at < 0;
       var btn = document.getElementById('mkt-ca-' + fi);
       if (btn) { btn.classList.toggle('on', on); btn.title = on ? 'Retirer de ma sélection' : 'Ajouter à une fiche'; btn.innerHTML = ICO(on ? 'check' : 'plus', 15, 2.4); }
@@ -915,7 +920,7 @@
       var products = rows.map(function (r) {
         var er = etabRec(r.cip); var price = (er && er[0] > 0) ? er[0] : (r.p || 0);
         return { src: 'cat', key: String(r.cip || r.d), id: '', name: r.d, brand: '', ean: '',
-                 cip: r.cip ? String(r.cip) : '', price: price, remise: 0, img: catImg(r.cip) || '', froid: false, cat: catName };
+                 cip: r.cip ? String(r.cip) : '', price: price, remise: 0, ppht: 0, img: catImg(r.cip) || '', froid: false, cat: catName };
       });
       var suffix = mktEtab ? ' · ' + mktEtab : '';
       editing = { id: newId(), type: 'selection', title: catName + ' — top pharmacies' + suffix,
@@ -1004,17 +1009,18 @@
         var L = mixFlat(), gm = null;
         for (var m = 0; m < L.length; m++) if (String(L[m].id) === String(key)) { gm = L[m]; break; }
         if (!gm) return;
-        p = { src: 'mix', key: 'm' + gm.id, id: '', name: gm.name, brand: (gm.group === 'itp' ? 'ITP' : (gm.group === 'integral' ? 'L\'Intégral' : '')), ean: '', cip: gm.cip, price: gm.price, remise: gm.remise, img: '', froid: false, cat: gm.cat || '' };
+        p = { src: 'mix', key: 'm' + gm.id, id: '', name: gm.name, brand: (gm.group === 'itp' ? 'ITP' : (gm.group === 'integral' ? 'L\'Intégral' : '')), ean: '', cip: gm.cip, price: gm.price, remise: gm.remise, ppht: gm.ppht || 0, img: '', froid: false, cat: gm.cat || '' };
       } else if (src === 'offilog') {
         var O = window.OFFILOG_BEST || [], b = null;
         for (var i = 0; i < O.length; i++) if (String(O[i].id) === String(key)) { b = O[i]; break; }
         if (!b) return;
-        p = { src: 'offilog', key: 'o' + b.id, id: b.id, name: b.name, brand: b.brand || '', ean: b.ean || '', cip: '', price: b.price || 0, remise: 0, img: b.img || '', froid: false, cat: 'Parapharmacie' };
+        p = { src: 'offilog', key: 'o' + b.id, id: b.id, name: b.name, brand: b.brand || '', ean: b.ean || '', cip: '', price: b.price || 0, remise: 0, ppht: 0, img: b.img || '', froid: false, cat: 'Parapharmacie' };
       } else {
         var B = window.BENCHMARK || [], g = null;
         for (var j = 0; j < B.length; j++) if (String(B[j].cip13) === String(key)) { g = B[j]; break; }
         if (!g) return;
-        p = { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: refPriceB(g), remise: remiseB(g), img: '', froid: !!g.is_froid, cat: '' };
+        var _bpg = V2.bestPrice(g);
+        p = { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: _bpg.ip != null ? _bpg.ip : refPriceB(g), remise: _bpg.remise, ppht: _bpg.ht || 0, img: '', froid: !!g.is_froid, cat: '' };
       }
       if (editing.products.some(function (x) { return String(x.key) === String(p.key); })) return;
       editing.products.push(p); refreshProducts(); renderPickList();
