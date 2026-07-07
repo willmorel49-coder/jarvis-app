@@ -217,6 +217,13 @@
     var st = document.createElement('style'); st.id = 'v2-copilote-css';
     st.textContent = [
       /* héro calme */
+      '.co-maplink{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:15px 18px;background:linear-gradient(135deg,color-mix(in srgb,var(--ip-blue) 8%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--ip-blue) 22%,var(--line));border-radius:var(--r-card);box-shadow:var(--sh-1);cursor:pointer;text-decoration:none;color:inherit;transition:transform .16s var(--ease),box-shadow .16s var(--ease)}',
+      '.co-maplink:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
+      '.co-maplink-ic{width:44px;height:44px;flex:none;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--ip-blue),#0034A0)}',
+      '.co-maplink-txt{flex:1;min-width:0}',
+      '.co-maplink-t{display:block;font-weight:800;font-size:15px;letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.co-maplink-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.4}',
+      '.co-maplink-go{display:inline-flex;align-items:center;gap:3px;flex:none;font-weight:700;font-size:13px;color:var(--ip-blue)}',
       '.co-hero{position:relative;margin-bottom:20px}',
       '.co-hero h1{font-size:clamp(24px,4.6vw,34px);font-weight:800;letter-spacing:-.025em;margin:0 0 6px}',
       '.co-hero h1 .ac{color:var(--ip-blue)}',
@@ -631,6 +638,12 @@
             '<p>Où aller, quoi pousser. On croise le <b>marché France</b> avec <b>tes ventes réseau</b> — uniquement des <b>princeps en stock Intégral</b>.</p>' +
             feedStrip(nbTension) +
           '</div>' +
+          '<a class="co-maplink" onclick="V2.go(\'carte\')">' +
+            '<span class="co-maplink-ic">' + ICO('pharma', 22, 1.8) + '</span>' +
+            '<span class="co-maplink-txt"><span class="co-maplink-t">Carte nationale des pharmacies par UGA</span>' +
+              '<span class="co-maplink-s">Les ~23 000 officines de France (hors Corse) sur la carte — couleur par UGA, groupement ou segmentation.</span></span>' +
+            '<span class="co-maplink-go">Ouvrir ' + ICO('chev', 17) + '</span>' +
+          '</a>' +
           tourSec +
           focusSec +
           growSec +
