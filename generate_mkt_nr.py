@@ -30,8 +30,8 @@ FAM = {
     'PARA':   ('para', 'Parapharmacie', 3),
     'MED021': ('autre', 'Autres non remboursables', 4),
 }
-TOP_HEADLINE = 60      # taille de la catégorie « Top ventes hors-remboursable »
-TOP_PER_FAM = 50       # taille par catégorie famille
+TOP_HEADLINE = 80      # taille de la catégorie « Top ventes hors-remboursable »
+TOP_PER_FAM = 120      # taille par catégorie famille (marge pour « plus de NR » côté catalogue)
 
 # Produits sortis du périmètre NR (devenus remboursables) — à exclure du catalogue.
 # Mounjaro & Wegovy : plus NR depuis le 15/06/2026.
