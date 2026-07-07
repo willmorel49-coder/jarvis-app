@@ -487,7 +487,7 @@
     if (!p) return;
     var txt = p.body || '';
     function afterCopy() {
-      window.open('https://www.linkedin.com/company/setup/new/', '_blank'); // ouvre LinkedIn (page/compositeur)
+      window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank'); // ouvre le compositeur de post LinkedIn
       if (confirm('Texte copié. LinkedIn est ouvert : collez, ajoutez le visuel et publiez.\n\nMarquer ce post comme « Publié » ?')) {
         var url = prompt('Collez le lien du post publié (facultatif) :', p.linkedin_url || '');
         p.status = 'publie'; if (url) p.linkedin_url = url;
