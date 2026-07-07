@@ -112,10 +112,19 @@
     return !!(cip && _rembMap[cip] === true);   // si inconnu -> pas de MDL (on ne montre jamais de fausse marge)
   }
   function mdlOf(p) { return rembOf(p) ? margeMDL(netPrice(p)) : 0; }
+  // Prix net IP = prix_ip (déjà net : PPHT − abandon barème pour les princeps,
+  // = PPHT pour NR/génériques, = offre Sanofi/UPSA quand elle existe — cf. V2.bestPrice).
+  // On ne réapplique PAS remise_pct (ancien bug de double comptage).
   function netPrice(p) {
-    var prix = (p.prix_ip != null && p.prix_ip !== '') ? +p.prix_ip : 0;
-    var rem = (p.remise_pct != null && p.remise_pct !== '') ? +p.remise_pct : 0;
-    return prix * (1 - (rem / 100));
+    var v = (p.prix_ip != null && p.prix_ip !== '') ? +p.prix_ip : 0;
+    return isFinite(v) && v > 0 ? v : 0;
+  }
+  // % d'abandon de marge = (PPHT − net) / PPHT. 0 si NR/générique (net = PPHT) ou PPHT inconnu.
+  function abandonPct(p) {
+    var ht = (p.prix_ht != null && p.prix_ht !== '') ? +p.prix_ht : 0;
+    var ip = netPrice(p);
+    if (ht > 0 && ip > 0 && ip < ht) return Math.round((1 - ip / ht) * 1000) / 10;
+    return 0;
   }
   // Quantité + total ligne (utilisé dans totaux et PDF)
   function lineQty(p) { var q = (p.qty != null && p.qty !== '') ? +p.qty : 1; return (isFinite(q) && q >= 1) ? Math.round(q) : 1; }
@@ -153,15 +162,15 @@
             (qty > 1 ? ' · total <span id="fch-tot-line-' + i + '" style="color:var(--ip-blue);font-weight:700">' + V2.fmtEur(tot) + '</span>' : '<span id="fch-tot-line-' + i + '" style="display:none">' + V2.fmtEur(tot) + '</span>') +
           '</div>'+
         '</div>'+
-        '<div class="fch-pricewrap">'+
-          '<span class="fch-pricelab">Prix IP €</span>'+
-          '<input class="fch-price" type="number" inputmode="decimal" step="0.01" min="0" aria-label="Prix IP ligne ' + (i+1) + '" value="' + (p.prix_ip != null ? p.prix_ip : '') + '" '+
-            'oninput="V2.fiches.setPrice(' + i + ',this.value)">'+
+        '<div class="fch-pricewrap fch-ppht">'+
+          '<span class="fch-pricelab">PPHT €</span>'+
+          '<span class="fch-pphtv mono" id="fch-ppht-' + i + '">' + (p.prix_ht > 0 ? V2.fmtEur(+p.prix_ht) : '—') + '</span>'+
+          '<span class="fch-abchip" id="fch-ab-' + i + '"' + (abandonPct(p) > 0 ? '' : ' style="display:none"') + '>−' + String(abandonPct(p)).replace('.', ',') + '%</span>'+
         '</div>'+
         '<div class="fch-pricewrap">'+
-          '<span class="fch-pricelab">Remise %</span>'+
-          '<input class="fch-price fch-rem" type="number" inputmode="decimal" step="0.1" min="0" aria-label="Remise % ligne ' + (i+1) + '" value="' + (p.remise_pct != null ? p.remise_pct : '') + '" '+
-            'oninput="V2.fiches.setRemise(' + i + ',this.value)">'+
+          '<span class="fch-pricelab">Net IP €</span>'+
+          '<input class="fch-price" type="number" inputmode="decimal" step="0.01" min="0" aria-label="Prix net IP ligne ' + (i+1) + '" value="' + (p.prix_ip != null ? p.prix_ip : '') + '" '+
+            'oninput="V2.fiches.setPrice(' + i + ',this.value)">'+
         '</div>'+
         '<div class="fch-pricewrap">'+
           '<span class="fch-pricelab">Qté</span>'+
@@ -263,6 +272,9 @@
     'border:1px solid var(--line);border-radius:var(--r-control);padding:7px 9px;background:var(--card-2);outline:none;transition:.16s var(--ease)}'+
     '.fch-price:focus{border-color:var(--ip-blue);background:#fff;box-shadow:0 0 0 3px var(--halo)}'+
     '.fch-rem{width:60px}'+
+    '.fch-ppht{justify-content:center;min-width:74px}'+
+    '.fch-pphtv{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 55%,transparent)}'+
+    '.fch-abchip{font-size:10.5px;font-weight:800;color:var(--c-opp,#0F7A52);background:color-mix(in srgb,var(--c-opp,#0F7A52) 13%,#fff);padding:1px 6px;border-radius:999px}'+
     '.fch-qtywrap{display:flex;align-items:center;gap:4px}'+
     '.fch-qty{width:46px;-moz-appearance:textfield}'+
     '.fch-qty::-webkit-outer-spin-button,.fch-qty::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}'+
@@ -560,6 +572,8 @@
     var net = netPrice(p), mdl = mdlOf(p), qty = lineQty(p), tot = net * qty;
     var em = document.getElementById('fch-mdl-' + i); if (em) em.textContent = V2.fmtEur(mdl);
     var en = document.getElementById('fch-net-' + i); if (en) en.textContent = V2.fmtEur(net);
+    var ab = document.getElementById('fch-ab-' + i);
+    if (ab) { var pc = abandonPct(p); ab.textContent = '−' + String(pc).replace('.', ',') + '%'; ab.style.display = pc > 0 ? '' : 'none'; }
     var et = document.getElementById('fch-tot-line-' + i);
     if (et) {
       et.textContent = V2.fmtEur(tot);
@@ -761,18 +775,19 @@
     var hasQtyPdf = prods.some(function (p) { return lineQty(p) > 1; });
     var rows = prods.map(function (p, i) {
       var net = netPrice(p), mdl = mdlOf(p), qty = lineQty(p), tot = net * qty;
-      var prix = (p.prix_ip != null && p.prix_ip !== '') ? e2(p.prix_ip) : '—';
-      var rem = (p.remise_pct != null && p.remise_pct !== '' && +p.remise_pct > 0) ? String(p.remise_pct).replace('.', ',') + ' %' : '—';
+      var pct = abandonPct(p);
+      var ppht = (pct > 0 && p.prix_ht > 0) ? '<span style="text-decoration:line-through;color:#B6BFCE">' + e2(p.prix_ht) + '</span>' : '—';
+      var rem = pct > 0 ? '−' + String(pct).replace('.', ',') + ' %' : '—';
       return ''+
         '<tr style="border-bottom:1px solid #ECEFF5">'+
           '<td style="padding:9px 12px;font-size:10px;color:#9AA1B2;font-family:var(--mono);text-align:center;width:28px">' + (i + 1) + '</td>'+
           '<td style="padding:9px 12px;font-size:12px;font-weight:600;color:#10131C">' + esc(p.designation) +
             (p.is_froid ? ' <span style="font-size:8px;color:#00B5D8;border:1px solid #b8edf7;border-radius:5px;padding:1px 4px;vertical-align:middle">FROID</span>' : '') + '</td>'+
           '<td style="padding:9px 12px;font-size:11px;color:#737A8C;font-family:var(--mono)">' + esc(p.cip13 || '—') + '</td>'+
-          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#10131C;text-align:right;font-family:var(--mono)">' + prix + '</td>'+
-          '<td style="padding:9px 12px;font-size:12px;color:#737A8C;text-align:right;font-family:var(--mono)">' + rem + '</td>'+
+          '<td style="padding:9px 12px;font-size:11.5px;text-align:right;font-family:var(--mono)">' + ppht + '</td>'+
+          '<td style="padding:9px 12px;font-size:11.5px;font-weight:700;text-align:right;font-family:var(--mono);color:' + (pct > 0 ? '#1E9E6A' : '#B6BFCE') + '">' + rem + '</td>'+
           (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;color:#737A8C;text-align:center;font-family:var(--mono)">' + qty + '</td>' : '') +
-          '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(net) + '</td>'+
+          '<td style="padding:9px 12px;font-size:13px;font-weight:800;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(net) + '</td>'+
           (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(tot) + '</td>' : '') +
           '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#1E9E6A;text-align:right;font-family:var(--mono)">' + e2(hasQtyPdf ? mdl * qty : mdl) + '</td>'+
         '</tr>';
@@ -837,8 +852,8 @@
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:center">#</th>'+
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:left">Désignation</th>'+
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:left">CIP 13</th>'+
-            '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Prix IP</th>'+
-            '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Remise</th>'+
+            '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">PPHT</th>'+
+            '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Abandon</th>'+
             (hasQtyPdf ? '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:center">Qté</th>' : '') +
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Prix net</th>'+
             (hasQtyPdf ? '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Total</th>' : '') +

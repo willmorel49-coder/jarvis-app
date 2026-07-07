@@ -33,6 +33,10 @@ FAM = {
 TOP_HEADLINE = 60      # taille de la catégorie « Top ventes hors-remboursable »
 TOP_PER_FAM = 50       # taille par catégorie famille
 
+# Produits sortis du périmètre NR (devenus remboursables) — à exclure du catalogue.
+# Mounjaro & Wegovy : plus NR depuis le 15/06/2026.
+EXCLUDE_NAMES = ('MOUNJARO', 'WEGOVY')
+
 
 def ean_of(v):
     if v is None:
@@ -95,6 +99,9 @@ def main():
                 continue
             ean = ean_of(r[ix['ARTCODEBARRE']])
             if not ean or len(ean) < 8:
+                continue
+            nom_u = str(r[ix['PLVDESIGNATION']] or '').upper()
+            if any(x in nom_u for x in EXCLUDE_NAMES):   # sortis du NR (remboursables)
                 continue
             p = prod.get(ean)
             if p is None:
