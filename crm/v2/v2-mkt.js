@@ -306,6 +306,12 @@
         '<summary class="mkt-more-sum">' + ICO('cat', 16) + ' Maquettes &amp; outils du nouveau site' +
           '<span class="mkt-more-chev">' + ICO('chev', 16) + '</span></summary>' +
         '<div class="mkt-links">' +
+          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'linkedin\')">' +
+            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Rétroplanning LinkedIn</span>' +
+            '<span class="mkt-link-s">Calendrier éditorial · préparer et planifier vos posts</span></span>' +
+            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
+          '</a>' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
             '<span style="flex:1;min-width:0"><span class="mkt-link-t">Maquettes du nouveau site</span>' +
@@ -1133,6 +1139,7 @@
       else if (param === 'propositions') renderPropositions(root);
       else if (param === 'fxbank') renderFxBank(root);
       else if (param === 'docs') renderDocs(root);
+      else if (param === 'linkedin') { if (V2.mktLinkedin) V2.mktLinkedin.render(root); else root.innerHTML = ''; }
       else if (param) renderEditor(root, param); else renderList(root);
     }
   };
