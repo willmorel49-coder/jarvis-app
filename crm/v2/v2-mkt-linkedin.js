@@ -87,7 +87,8 @@
   var backend = 'local';
   var posts = [];
 
-  function newId() { return 'li' + Date.now() + Math.floor((window.performance && performance.now ? performance.now() : 0) % 1000); }
+  var _idc = 0;
+  function newId() { return 'li' + Date.now() + '_' + (_idc++); }
   function localAll() { try { var a = JSON.parse(localStorage.getItem(LS) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
   function localWrite(a) { try { localStorage.setItem(LS, JSON.stringify(a)); } catch (e) {} }
 
@@ -220,12 +221,14 @@
   }
 
   // ── Rendu ──
+  var loaded = false;
   function render(root) {
-    if (!posts.length) {
-      // premier rendu : charge puis re-render
+    if (!loaded) {
+      // premier rendu uniquement : charge puis re-render (évite la boucle quand aucun post)
+      loaded = true;
       loadPosts().then(function () { if (V2.route && V2.route.name === 'marketing' && V2.route.param === 'linkedin') V2.render(); });
     }
-    if (view === 'list') return renderList2(root);   // renderList2 en Task 8 ; d'ici là, fallback :
+    if (view === 'list') return renderList2(root);
     return renderCal(root);
   }
   var flt = { status: '', pillar: '', q: '' };
