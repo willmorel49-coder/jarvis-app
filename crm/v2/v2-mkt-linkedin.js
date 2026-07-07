@@ -47,7 +47,12 @@
       '.li-duedot{width:9px;height:9px;border-radius:50%;flex:none}' +
       '.li-duet{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
       '.li-dued{opacity:.6;font-size:12px}' +
-      '.mkt-badge{background:#FF4D6D;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:6px}';
+      '.mkt-badge{background:#FF4D6D;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:6px}' +
+      '.li-flt{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}.li-flt .li-in{width:auto;flex:1;min-width:140px}' +
+      '.li-lrow{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:7px;cursor:pointer}' +
+      '.li-lrow:hover{border-color:rgba(255,255,255,.2)}' +
+      '.li-lrow-d{opacity:.6;font-size:12px;width:82px;flex:none}.li-lrow-t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.li-lrow-s{font-size:12px;opacity:.85}.li-lrow-e{font-size:11px;background:rgba(139,92,246,.2);color:#c4b5fd;border-radius:999px;padding:2px 9px}';
     document.head.appendChild(s);
   })();
 
@@ -223,7 +228,37 @@
     if (view === 'list') return renderList2(root);   // renderList2 en Task 8 ; d'ici là, fallback :
     return renderCal(root);
   }
-  function renderList2(root) { renderCal(root); } // stub — remplacé en Task 8
+  var flt = { status: '', pillar: '', q: '' };
+  function renderList2(root) {
+    var rows = posts.slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); }).filter(function (p) {
+      if (flt.status && p.status !== flt.status) return false;
+      if (flt.pillar && p.pillar !== flt.pillar) return false;
+      if (flt.q && (p.title + ' ' + p.body + ' ' + p.event_name).toLowerCase().indexOf(flt.q.toLowerCase()) < 0) return false;
+      return true;
+    });
+    var opt = function (arr, cur, allLabel) {
+      return '<option value="">' + allLabel + '</option>' + arr.map(function (x) { return '<option value="' + x.k + '"' + (cur === x.k ? ' selected' : '') + '>' + esc(x.label) + '</option>'; }).join('');
+    };
+    var list = rows.map(function (p) {
+      var pc = pillar(p.pillar), st = statusOf(p.status);
+      return '<div class="li-lrow" onclick="V2.li.openPost(\'' + esc(p.id) + '\')">' +
+        '<span class="li-duedot" style="background:' + pc.color + '"></span>' +
+        '<span class="li-lrow-d">' + (p.date || '').slice(0, 10) + '</span>' +
+        '<span class="li-lrow-t">' + esc(p.title || p.body.slice(0, 60) || 'Post') + '</span>' +
+        '<span class="li-lrow-s">' + st.icon + ' ' + esc(st.label) + '</span>' +
+        (p.event_name ? '<span class="li-lrow-e">' + esc(p.event_name) + '</span>' : '') + '</div>';
+    }).join('') || '<p class="li-empty">Aucun post.</p>';
+    root.innerHTML = (V2.topbar ? V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) : '') +
+      '<div class="li-wrap"><div class="li-bar"><h1 class="li-h1">Rétroplanning LinkedIn</h1>' +
+        '<div class="li-actions">' +
+          '<button class="li-btn" onclick="V2.li.setView(\'cal\')">Calendrier</button>' +
+          '<button class="li-btn li-btn-p" onclick="V2.li.setView(\'list\')">Liste</button></div></div>' +
+        '<div class="li-flt">' +
+          '<input class="li-in" placeholder="Rechercher…" value="' + esc(flt.q) + '" oninput="V2.li.filter(\'q\',this.value)">' +
+          '<select class="li-in" onchange="V2.li.filter(\'status\',this.value)">' + opt(STATUSES, flt.status, 'Tous les statuts') + '</select>' +
+          '<select class="li-in" onchange="V2.li.filter(\'pillar\',this.value)">' + opt(PILLARS, flt.pillar, 'Tous les piliers') + '</select>' +
+        '</div>' + '<div class="li-listwrap">' + list + '</div></div>';
+  }
 
   // ── Éditeur de post ──
   var editing = null; // Post en cours d'édition (copie)
@@ -462,4 +497,6 @@
   };
 
   V2.mktLinkedin.dueCount = function () { try { return duePosts().length; } catch (e) { return 0; } };
+
+  V2.li.filter = function (k, v) { flt[k] = v; V2.render(); };
 })();
