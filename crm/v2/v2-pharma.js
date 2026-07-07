@@ -1901,7 +1901,7 @@
           '<td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + badge + '</td>' +
           '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#B6BFCE;white-space:nowrap">' + (r.remise > 0 && r.prix_ht > 0 ? '<span style="text-decoration:line-through">' + e2(r.prix_ht) + '</span>' : '—') + '</td>' +
-          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:' + (r.remise > 0 ? o.cat.color : '#A8AFBE') + '">' + (r.remise > 0 ? '−' + r.remise + ' %' : '—') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10px;font-weight:700;color:' + (r.remise > 0 ? o.cat.color : '#A8AFBE') + '">' + (r.remise > 0 ? '−' + String(r.remise).replace('.', ',') + ' %' : '—') + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10.5px;font-weight:800;color:#0050E6;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
           '<td style="padding:6px 8px;text-align:center;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + r.sortie + '<span style="color:#A8AFBE">/' + panel + '</span></td>' +
           '</tr>';
