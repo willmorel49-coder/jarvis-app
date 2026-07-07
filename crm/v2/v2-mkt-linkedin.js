@@ -321,7 +321,48 @@
       editing.image_path = path; drawEditor();
     });
   };
-  V2.li.newEvent = function () { alert('Temps fort (Task 6)'); };
+  var RETRO = [
+    { off: -14, title: 'Teaser',        pillar: 'tempsfort' },
+    { off: -7,  title: 'Annonce',       pillar: 'tempsfort' },
+    { off: -1,  title: 'Rappel',        pillar: 'tempsfort' },
+    { off: 0,   title: 'Jour J / live', pillar: 'tempsfort' },
+    { off: 2,   title: 'Retour / bilan',pillar: 'conseil'   }
+  ];
+
+  V2.li.newEvent = function () {
+    var host = document.getElementById('li-editor');
+    if (!host) { host = document.createElement('div'); host.id = 'li-editor'; document.body.appendChild(host); }
+    var todayStr = ymd(new Date());
+    host.innerHTML =
+      '<div class="li-ov" onclick="if(event.target===this)V2.li.closeEditor()"><div class="li-panel">' +
+        '<div class="li-panelhd"><b>Nouveau temps fort</b><button class="li-x" onclick="V2.li.closeEditor()">✕</button></div>' +
+        '<p class="li-lab">JARVIS créera automatiquement les posts brouillons à rebours : J-14, J-7, J-1, Jour J, J+2.</p>' +
+        '<label class="li-lab">Nom du temps fort</label>' +
+        '<input class="li-in" id="li-evname" placeholder="ex : Salon Pharmagora">' +
+        '<label class="li-lab">Date du jour J</label>' +
+        '<input class="li-in" id="li-evdate" type="date" value="' + todayStr + '">' +
+        '<div class="li-panelft"><span></span><div>' +
+          '<button class="li-btn" onclick="V2.li.closeEditor()">Annuler</button>' +
+          '<button class="li-btn li-btn-p" onclick="V2.li.genEvent()">Générer le rétroplanning</button></div></div>' +
+      '</div></div>';
+  };
+
+  V2.li.genEvent = function () {
+    var name = (document.getElementById('li-evname') || {}).value || '';
+    var dstr = (document.getElementById('li-evdate') || {}).value || '';
+    if (!name.trim() || !dstr) { alert('Renseignez un nom et une date.'); return; }
+    var evId = newId(), dJ = new Date(dstr + 'T09:00');
+    var chain = Promise.resolve();
+    RETRO.forEach(function (r) {
+      var d = new Date(dJ.getTime()); d.setDate(d.getDate() + r.off);
+      var p = { id: '', date: d.toISOString(), status: 'idee', pillar: r.pillar,
+        title: name + ' — ' + r.title, body: '', image_path: '', linkedin_url: '',
+        event_id: evId, event_name: name, source: 'retroplanning' };
+      chain = chain.then(function () { return savePost(p); });
+    });
+    document.getElementById('li-editor').innerHTML = '';
+    chain.then(function () { calRef = new Date(dJ.getTime()); calRef.setDate(1); V2.render(); });
+  };
   V2.li.importOpen = function () { alert('Import (Task 7)'); };
 
   V2.li.publish = function (id) {
