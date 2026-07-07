@@ -37,6 +37,8 @@
   V2.stock = function (cip) { var S = window.STOCK_IP; return (S && S.data && S.data[String(cip)]) || 0; };
   // ── SOCLE · feed #5 · tendance marché (croissance YoY %) par CIP13 ──
   V2.tendance = function (cip) { var T = window.TENDANCE; if (!T || !T.data) return null; var v = T.data[String(cip)]; return v == null ? null : v; };
+  // ── SOCLE · momentum/accélération (%/mois récent, pente Medic'AM) par CIP13 ──
+  V2.momentum = function (cip) { var M = window.MOMENTUM; if (!M || !M.data) return null; var v = M.data[String(cip)]; return v == null ? null : v; };
   // ── SOCLE · feed #6 · nouveautés (AMM récente, BDPM) par CIP13 ──
   V2.nouveaute = function (cip) { var N = window.NOUVEAUTES; if (!N || !N.data) return null; return N.data[String(cip)] || null; };
   V2.reco = V2.reco || function () { return null; };   // feed à venir
@@ -106,6 +108,22 @@
       out.push({ r: r, fr: m.avgYear, g: g });
     });
     out.sort(function (a, b) { return b.g - a.g; });
+    return out.slice(0, limit || 12);
+  }
+  // ACCÉLÉRATIONS : produits dont les ventes France accélèrent le plus récemment (%/mois)
+  function acceleratingList(limit) {
+    var out = [];
+    PS().forEach(function (r) {
+      if (!eligible(r)) return;
+      if (V2.rupture && V2.rupture(r.c)) return;                 // exclut le bruit rupture-recovery
+      var m = V2.momentum ? V2.momentum(r.c) : null;
+      if (m == null || m < 12) return;                           // forte accélération récente
+      // PAS de filtre sur le volume marché : les produits qui décollent sont
+      // souvent encore petits par pharmacie — c'est justement ce qu'on veut attraper tôt.
+      var mk = V2.market(r.c);
+      out.push({ r: r, fr: mk ? mk.avgYear : 0, m: m, g: V2.tendance ? V2.tendance(r.c) : null });
+    });
+    out.sort(function (a, b) { return b.m - a.m; });
     return out.slice(0, limit || 12);
   }
   // NOUVEAUTÉS : produits d'AMM récente (BDPM) éligibles (princeps en stock)
@@ -266,6 +284,12 @@
       '.co-arg .psh.up{color:#0F7A52}',
       '.co-grow-card{border-color:color-mix(in srgb,#0F7A52 26%,var(--line))}',
       '.co-pill-up{color:#0F7A52 !important;background:#E3F3EB !important}',
+      '.co-accel{display:inline-block;font-family:var(--mono);font-weight:800;font-size:11px;padding:1px 7px;border-radius:var(--r-pill,999px);margin-left:7px;vertical-align:middle;white-space:nowrap;color:#C2410C;background:#FFEDD5}',
+      '.co-accel.big{font-size:12.5px}',
+      '.co-accel-card{border-color:color-mix(in srgb,#EA580C 30%,var(--line))}',
+      '.co-arg .psh.ac{color:#C2410C}',
+      '.co-arg b.ac{color:#C2410C}',
+      '.co-pill-accel{color:#C2410C !important;background:#FFEDD5 !important}',
       '.co-new{display:inline-block;font-family:var(--mono);font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#7A3E00;background:#FFE9CC;padding:1px 7px;border-radius:var(--r-pill,999px);margin-left:7px;vertical-align:middle;white-space:nowrap}',
       '.co-new-card{border-color:color-mix(in srgb,#E08A00 30%,var(--line))}',
       '.co-new-card .psh.nw{color:#B5670A}',
@@ -381,6 +405,18 @@
     return '<div class="co-arg co-grow-card">' +
       '<div class="t"><span class="psh up">Marché en croissance</span>' + esc(cap(r.d)) + '<span class="co-grow up big">↑ +' + o.g + '%</span></div>' +
       '<p class="s"><b class="up">+' + o.g + '%</b> sur un an en France · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an · seulement <b>' + num(r.n || 0) + '</b> de tes officines le commandent · <b class="stk">' + num(s) + '</b> en stock.</p>' +
+      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
+      '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
+      '</div>';
+  }
+
+  // carte « accélération » — produit qui décolle en ce moment (%/mois)
+  function accelCard(o) {
+    var r = o.r, s = stk(r.c);
+    var gtxt = (o.g != null && o.g >= 8) ? ' · <b class="up">+' + o.g + '%</b> sur un an' : '';
+    return '<div class="co-arg co-accel-card">' +
+      '<div class="t"><span class="psh ac">Accélère en ce moment</span>' + esc(cap(r.d)) + '<span class="co-accel big">↗ +' + o.m + '%/mois</span></div>' +
+      '<p class="s">Ventes France en <b class="ac">+' + o.m + '%/mois</b> ces derniers mois' + gtxt + (o.fr >= 10 ? ' · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an' : ' · marché de niche qui grimpe') + ' · <b class="stk">' + num(s) + '</b> en stock.</p>' +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
@@ -543,6 +579,14 @@
           '<div class="co-args">' + grow.map(growCard).join('') + '</div></section>'
         : '';
 
+      // ── Ça décolle en ce moment (accélération récente, %/mois) ──
+      var accel = window.MOMENTUM ? acceleratingList(12) : [];
+      var accelSec = accel.length
+        ? '<section class="co-sec"><div class="co-sec-h"><h2>Ça décolle en ce moment</h2><span class="co-pill co-pill-accel">' + accel.length + '</span></div>' +
+          '<p class="co-sub">Produits dont les ventes France <b>accélèrent le plus ces derniers mois</b> (pente Medic\'AM) — le signal le plus précoce pour les attraper avant tout le monde. Princeps en stock Intégral.</p>' +
+          '<div class="co-args">' + accel.map(accelCard).join('') + '</div></section>'
+        : '';
+
       // ── Nouveautés à ne pas rater (produits d'AMM récente en stock) ──
       var nv = window.NOUVEAUTES ? nouveautesList(12) : [];
       var nvSec = nv.length
@@ -590,6 +634,7 @@
           tourSec +
           focusSec +
           growSec +
+          accelSec +
           nvSec +
           saisonSec +
           mktSec +
