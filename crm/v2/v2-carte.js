@@ -10,7 +10,7 @@
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = function () { return V2.icon ? V2.icon.apply(null, arguments) : ''; };
 
-  var CB = '?v=20260707m';
+  var CB = '?v=20260707q';
   var map = null, cluster = null, markers = null, D = null;
   var colorMode = 'uga', grpFocus = '';
   var GRP_COL = {}, canvas = null;
@@ -24,17 +24,31 @@
   function ensureLeaflet(cb) {
     if (window.L && window.L.markerClusterGroup) { cb(); return; }
     var V = 'vendor/leaflet/';
+    function loadMC() {
+      if (window.L.markerClusterGroup) { cb(); return; }
+      js(V + 'leaflet.markercluster.js' + CB, function (e) { cb(e || !window.L.markerClusterGroup ? 'err' : null); });
+    }
+    if (window.L) { loadMC(); return; }   // Leaflet déjà là → ne PAS le recharger
     css(V + 'leaflet.css' + CB);
     css(V + 'MarkerCluster.css' + CB);
     css(V + 'MarkerCluster.Default.css' + CB);
     js(V + 'leaflet.js' + CB, function (e) {
       if (e || !window.L) { cb('err'); return; }
-      js(V + 'leaflet.markercluster.js' + CB, function (e2) { cb(e2 || !window.L.markerClusterGroup ? 'err' : null); });
+      loadMC();
     });
   }
   function ensureData(cb) {
     if (window.PHARMA_FR) { cb(); return; }
-    js('pharma-fr-data.js' + CB, function (e) { cb(e || !window.PHARMA_FR ? 'err' : null); });
+    var done = false, fin = function (e) { if (!done) { done = true; cb(e); } };
+    var s = document.createElement('script'); s.src = 'pharma-fr-data.js' + CB;
+    s.onload = function () { fin(window.PHARMA_FR ? null : 'err'); };
+    s.onerror = function () { fin('err'); };
+    document.head.appendChild(s);
+    // filet de sécurité : on guette window.PHARMA_FR (le onload peut ne pas se propager)
+    var t0 = Date.now(), iv = setInterval(function () {
+      if (window.PHARMA_FR) { clearInterval(iv); fin(null); }
+      else if (Date.now() - t0 > 25000) { clearInterval(iv); fin('err'); }
+    }, 150);
   }
 
   function hsl(str) { var h = 0, i; str = String(str || ''); for (i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360; return 'hsl(' + h + ',62%,48%)'; }
