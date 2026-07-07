@@ -346,21 +346,24 @@
       ? '<span class="mkt-share ok">' + ICO('check', 14, 2) + ' Partagé avec Pauline</span>'
       : '<span class="mkt-share local">' + ICO('alert', 14, 2) + ' Enregistré sur cet appareil</span>';
 
-    // ── ÉTAPE 1 : je choisis ce que je fabrique (une action claire par carte) ──
+    // ── ÉTAPE 1 : le catalogue & prix est LE cœur de l'espace marketing ──
     var makeZone =
       '<div class="mkt-make">' +
-        '<button class="mkt-make-card mkt-make-support" onclick="V2.mkt.create(\'support\')">' +
-          '<span class="mkt-make-ic">' + ICO('fiche', 26, 1.8) + '</span>' +
-          '<span class="mkt-make-t">Un support à présenter</span>' +
-          '<span class="mkt-make-s">Un flyer avec photos, prix et une accroche — à montrer ou envoyer au pharmacien.</span>' +
-          '<span class="mkt-make-cta">' + ICO('plus', 17, 2.2) + ' Créer un support</span>' +
+        '<button class="mkt-make-card mkt-make-cat" onclick="V2.go(\'marketing\',\'catalogues\')">' +
+          '<span class="mkt-make-ic">' + ICO('grid', 26, 1.8) + '</span>' +
+          '<span class="mkt-make-t">Catalogue &amp; prix</span>' +
+          '<span class="mkt-make-s">Tous nos produits par catégorie — PPHT, abandon de marge et prix net, prix &amp; stock par établissement. « Créer la liste » en 1 clic.</span>' +
+          '<span class="mkt-make-cta">Ouvrir le catalogue ' + ICO('chev', 17, 2.2) + '</span>' +
         '</button>' +
-        '<button class="mkt-make-card mkt-make-selection" onclick="V2.mkt.create(\'selection\')">' +
-          '<span class="mkt-make-ic">' + ICO('list', 26, 1.8) + '</span>' +
-          '<span class="mkt-make-t">Une sélection à pousser</span>' +
-          '<span class="mkt-make-s">Une liste de produits du moment à mettre en avant auprès des pharmacies.</span>' +
-          '<span class="mkt-make-cta">' + ICO('plus', 17, 2.2) + ' Créer une sélection</span>' +
-        '</button>' +
+        '<div class="mkt-make-card mkt-make-t50">' +
+          '<span class="mkt-make-ic">' + ICO('download', 26, 1.8) + '</span>' +
+          '<span class="mkt-make-t">Catalogue par catégorie</span>' +
+          '<span class="mkt-make-s">Princeps (petits prix · intermédiaire · cher) + NR — les plus demandés de chaque catégorie, prêts à présenter.</span>' +
+          '<span class="mkt-make-t50btns">' +
+            '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.top50Pdf()">' + ICO('download', 15) + ' Fiche PDF</button>' +
+            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.top50Xlsx()">' + ICO('download', 15) + ' Excel</button>' +
+          '</span>' +
+        '</div>' +
       '</div>';
 
     // ── ÉTAPE 2 : mes créations récentes (une seule liste, plus de grilles répétées) ──
@@ -378,7 +381,7 @@
     } else {
       recentZone =
         '<div class="mkt-block">' +
-          '<div class="mkt-empty mkt-empty-first">Rien pour l\'instant. Choisis « Un support » ou « Une sélection » ci-dessus pour démarrer.</div>' +
+          '<div class="mkt-empty mkt-empty-first">Ouvre le <b>Catalogue &amp; prix</b> ci-dessus pour créer une liste — ou monte un support/sélection manuel depuis « Autres outils ».</div>' +
         '</div>';
     }
 
@@ -410,9 +413,21 @@
     // ── Accès annexes (repliés, discrets — c'est le côté « design du site », pas le quotidien) ──
     var moreZone =
       '<details class="mkt-more-box">' +
-        '<summary class="mkt-more-sum">' + ICO('cat', 16) + ' Maquettes &amp; outils du nouveau site' +
+        '<summary class="mkt-more-sum">' + ICO('cat', 16) + ' Autres outils (supports manuels, maquettes)' +
           '<span class="mkt-more-chev">' + ICO('chev', 16) + '</span></summary>' +
         '<div class="mkt-links">' +
+          '<a class="mkt-link" onclick="V2.mkt.create(\'support\')">' +
+            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('fiche', 18) + '</span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Support à présenter (flyer manuel)</span>' +
+            '<span class="mkt-link-s">Un flyer sur-mesure avec photos, prix et accroche.</span></span>' +
+            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
+          '</a>' +
+          '<a class="mkt-link" onclick="V2.mkt.create(\'selection\')">' +
+            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('list', 18) + '</span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Sélection à pousser (liste manuelle)</span>' +
+            '<span class="mkt-link-s">Une liste de produits du moment, montée à la main.</span></span>' +
+            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
+          '</a>' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
             '<span style="flex:1;min-width:0"><span class="mkt-link-t">Maquettes du nouveau site</span>' +
@@ -432,7 +447,7 @@
       '<div class="v2-wrap narrow mkt-launch">' +
         '<div class="mkt-head">' +
           '<div class="v2-page-title">Marketing</div>' +
-          '<div class="v2-page-sub" style="margin-bottom:0">Fabrique un support ou une sélection produits — l\'espace de Pauline &amp; Will.</div>' +
+          '<div class="v2-page-sub" style="margin-bottom:0">Le catalogue, les prix et les documents à présenter — l\'espace de Pauline &amp; Will.</div>' +
           '<div class="mkt-head-share">' + shareNote + '</div>' +
         '</div>' +
         makeZone +
@@ -584,7 +599,7 @@
       PERCATS.map(function (n) { return '<button class="mkt-etabchip' + (catPerCat === n ? ' on' : '') + '" onclick="V2.mkt.catPerCat(' + n + ')">' + (n === 0 ? 'Tous' : n) + '</button>'; }).join('') +
       '</div>';
     var docLabel = 'Générer le doc — top ' + (catPerCat > 0 ? catPerCat : 'tous') + '/catégorie' + (mktEtab ? ' · ' + mktEtab : '');
-    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+    root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div class="v2-wrap">' +
         (V2.priceTabs ? V2.priceTabs('marketing:catalogues') : '') +
         '<div class="v2-page-title">Catalogue &amp; prix — grossiste</div>' +
@@ -1391,6 +1406,11 @@
       '.mkt-make-card:active{transform:translateY(-1px)}',
       '.mkt-make-support{--_a:var(--ip-blue)}',
       '.mkt-make-selection{--_a:var(--c-opp)}',
+      '.mkt-make-cat{--_a:var(--ip-blue)}',
+      '.mkt-make-t50{--_a:var(--c-opp);cursor:default}',
+      '.mkt-make-t50:hover{transform:none;box-shadow:var(--sh-1);border-color:var(--line)}',
+      '.mkt-make-t50btns{display:flex;gap:8px;align-self:stretch;margin-top:6px}',
+      '.mkt-make-t50btns .v2-btn{flex:1;justify-content:center}',
       '.mkt-make-ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--_a);background:linear-gradient(150deg,color-mix(in srgb,var(--_a) 15%,var(--card)),color-mix(in srgb,var(--_a) 6%,var(--card)));margin-bottom:4px}',
       '.mkt-make-t{font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ip-ink)}',
       '.mkt-make-s{font-size:13px;color:var(--muted);line-height:1.4}',
