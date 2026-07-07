@@ -1,0 +1,1655 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Studio LinkedIn (Direction A)</title>
+<style>
+/* ============================================================
+   INTÉGRAL PHARMA — Studio LinkedIn — Direction A
+   File d'attente Pro (Buffer/Hootsuite-like), thème CLAIR.
+   Safari-safe : pas de background-clip:text, pas de backdrop-filter,
+   pas de blur grande surface. Glow = radial-gradient + rgba.
+   ============================================================ */
+
+:root{
+  --blue:#0057FF;
+  --blue-600:#0049d8;
+  --blue-050:#eef3ff;
+  --blue-100:#dbe6ff;
+  --orange:#F39A1B;
+  --orange-050:#fff6e8;
+  --ink:#0A0E1A;
+  --ink-70:#3a4152;
+  --ink-50:#6b7280;
+  --ink-35:#9aa1ae;
+  --bg:#F8FAFC;
+  --panel:#ffffff;
+  --line:#e7ebf1;
+  --line-soft:#eef1f6;
+
+  /* Piliers */
+  --p-produit:#0057FF;
+  --p-conseil:#00B37A;
+  --p-coulisses:#FFB020;
+  --p-recrut:#FF4D6D;
+  --p-fort:#8B5CF6;
+
+  --radius:16px;
+  --radius-sm:11px;
+  --shadow-sm:0 1px 2px rgba(10,14,26,.05), 0 1px 3px rgba(10,14,26,.05);
+  --shadow-md:0 6px 20px rgba(10,14,26,.08), 0 2px 6px rgba(10,14,26,.05);
+  --shadow-lg:0 24px 60px rgba(10,14,26,.18), 0 6px 18px rgba(10,14,26,.10);
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  font-size:15px;
+  line-height:1.5;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font-family:inherit}
+a{color:inherit;text-decoration:none}
+svg{display:block}
+::selection{background:var(--blue-100)}
+
+/* Scrollbars discrètes */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:#d7dde6;border-radius:20px;border:3px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background:#c3cbd6;background-clip:padding-box;border:3px solid transparent}
+
+/* ================= LAYOUT SHELL ================= */
+.app{
+  display:grid;
+  grid-template-columns:230px 1fr;
+  min-height:100vh;
+}
+
+/* ---------- RAIL ---------- */
+.rail{
+  position:sticky;top:0;height:100vh;
+  background:var(--panel);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+  padding:18px 14px;
+  z-index:30;
+}
+.brand{
+  display:flex;align-items:center;gap:11px;
+  padding:6px 8px 4px;
+  margin-bottom:18px;
+}
+.brand-logo{
+  width:34px;height:34px;border-radius:9px;flex:none;
+  background:
+    radial-gradient(120% 120% at 25% 15%, rgba(255,255,255,.45), rgba(255,255,255,0) 55%),
+    linear-gradient(135deg,#0057FF,#3a80ff);
+  box-shadow:0 4px 12px rgba(0,87,255,.35);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-name{font-weight:700;font-size:14.5px;letter-spacing:-.01em;line-height:1.15}
+.brand-name span{display:block;font-weight:500;font-size:11.5px;color:var(--ink-50)}
+
+.nav-group{display:flex;flex-direction:column;gap:3px}
+.nav-label{
+  font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink-35);padding:6px 10px 4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:11px;
+  padding:9px 11px;border-radius:10px;
+  color:var(--ink-70);font-weight:600;font-size:14px;
+  transition:background .16s var(--ease),color .16s var(--ease);
+  position:relative;width:100%;text-align:left;
+}
+.nav-item svg{width:19px;height:19px;flex:none;color:var(--ink-35);transition:color .16s}
+.nav-item:hover{background:var(--bg)}
+.nav-item.active{background:var(--blue-050);color:var(--blue)}
+.nav-item.active svg{color:var(--blue)}
+.nav-item .badge{
+  margin-left:auto;background:var(--orange);color:#fff;
+  font-size:11px;font-weight:800;line-height:1;
+  padding:3px 7px;border-radius:20px;min-width:20px;text-align:center;
+  box-shadow:0 2px 6px rgba(243,154,27,.4);
+}
+.rail-spacer{flex:1}
+.nav-secondary .nav-item{color:var(--ink-50);font-weight:500;font-size:13.5px}
+.nav-secondary .nav-item svg{width:17px;height:17px}
+.rail-divider{height:1px;background:var(--line);margin:12px 6px}
+
+.rail-user{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 8px;border-radius:11px;margin-top:6px;
+  transition:background .16s;
+}
+.rail-user:hover{background:var(--bg)}
+.avatar{
+  width:32px;height:32px;border-radius:50%;flex:none;
+  background:linear-gradient(135deg,#8B5CF6,#FF4D6D);
+  color:#fff;font-weight:700;font-size:12px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(139,92,246,.35);
+}
+.rail-user .who{line-height:1.2;min-width:0}
+.rail-user .who b{font-size:13px;font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail-user .who span{font-size:11.5px;color:var(--ink-50)}
+
+/* ---------- MAIN ---------- */
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:20;
+  background:rgba(248,250,252,.92);
+  border-bottom:1px solid var(--line);
+  padding:16px 26px 14px;
+}
+.topbar-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.page-title{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0}
+.page-sub{font-size:13px;color:var(--ink-50);margin-top:1px}
+
+.month-nav{display:flex;align-items:center;gap:4px;margin-left:6px}
+.icon-btn{
+  width:34px;height:34px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);background:var(--panel);
+  color:var(--ink-70);transition:all .15s var(--ease);
+}
+.icon-btn:hover{background:var(--bg);border-color:#d7dde6;color:var(--ink)}
+.icon-btn svg{width:17px;height:17px}
+.today-btn{
+  height:34px;padding:0 14px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel);
+  font-weight:600;font-size:13.5px;color:var(--ink-70);
+  transition:all .15s var(--ease);
+}
+.today-btn:hover{background:var(--bg);color:var(--ink)}
+
+.spacer{flex:1}
+
+/* Segmented view toggle */
+.seg{
+  display:inline-flex;background:#eef1f6;border-radius:10px;padding:3px;gap:2px;
+}
+.seg button{
+  padding:6px 14px;border-radius:8px;font-weight:600;font-size:13px;color:var(--ink-50);
+  transition:all .15s var(--ease);
+}
+.seg button.on{background:var(--panel);color:var(--ink);box-shadow:var(--shadow-sm)}
+
+.btn-primary{
+  display:inline-flex;align-items:center;gap:8px;
+  height:38px;padding:0 17px;border-radius:10px;
+  background:var(--blue);color:#fff;font-weight:700;font-size:14px;
+  box-shadow:0 4px 14px rgba(0,87,255,.28);
+  transition:transform .14s var(--ease),box-shadow .14s var(--ease),background .14s;
+}
+.btn-primary:hover{background:var(--blue-600);box-shadow:0 6px 20px rgba(0,87,255,.36);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary svg{width:17px;height:17px}
+
+.btn-ghost{
+  display:inline-flex;align-items:center;gap:7px;
+  height:38px;padding:0 15px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel);
+  font-weight:600;font-size:13.5px;color:var(--ink-70);
+  transition:all .15s var(--ease);
+}
+.btn-ghost:hover{background:var(--bg);border-color:#d7dde6;color:var(--ink)}
+.btn-ghost svg{width:16px;height:16px}
+
+/* Filter chips row */
+.filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+.chip{
+  display:inline-flex;align-items:center;gap:7px;
+  height:30px;padding:0 12px;border-radius:20px;
+  border:1px solid var(--line);background:var(--panel);
+  font-size:12.5px;font-weight:600;color:var(--ink-70);
+  transition:all .15s var(--ease);
+}
+.chip:hover{border-color:#d3dae4}
+.chip .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.on .dot{box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.filters .sep{width:1px;height:20px;background:var(--line);margin:0 2px}
+.filter-label{font-size:12px;color:var(--ink-35);font-weight:600;margin-right:2px}
+
+/* ---------- CONTENT ---------- */
+.content{padding:22px 26px 60px}
+
+/* ============ DIRECTION A : QUEUE + WEEK STRIP ============ */
+.workspace{
+  display:grid;
+  grid-template-columns:1fr 320px;
+  gap:22px;
+  align-items:start;
+}
+
+/* --- Week strip (aperçu calendrier semaine) --- */
+.weekcard{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:20px;
+}
+.weekcard-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--line-soft);
+}
+.weekcard-head h3{margin:0;font-size:14px;font-weight:700}
+.weekcard-head .rng{font-size:12.5px;color:var(--ink-50);font-weight:500}
+.weekgrid{display:grid;grid-template-columns:repeat(7,1fr)}
+.wday{
+  border-right:1px solid var(--line-soft);
+  min-height:118px;padding:9px 8px;position:relative;
+  transition:background .15s;
+}
+.wday:last-child{border-right:none}
+.wday:hover{background:#fbfcfe}
+.wday.today{background:var(--blue-050)}
+.wday .wd-top{display:flex;align-items:baseline;gap:5px;margin-bottom:8px}
+.wday .wd-name{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-35)}
+.wday.today .wd-name{color:var(--blue)}
+.wday .wd-num{font-size:14px;font-weight:700;color:var(--ink-70)}
+.wday.today .wd-num{color:var(--blue)}
+.wday.today .wd-num::after{
+  content:"";display:block;height:2px;border-radius:2px;background:var(--blue);margin-top:2px;
+}
+.wpill{
+  display:block;width:100%;text-align:left;
+  border-radius:8px;padding:6px 8px;margin-bottom:5px;
+  font-size:11px;font-weight:600;line-height:1.25;
+  color:var(--ink);position:relative;
+  border-left:3px solid var(--pc,#ccc);
+  background:var(--pcbg,#f2f4f8);
+  transition:transform .12s var(--ease),box-shadow .12s;
+  overflow:hidden;
+}
+.wpill:hover{transform:translateX(1px);box-shadow:var(--shadow-sm)}
+.wpill .wp-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;padding-right:14px}
+.wpill .st{position:absolute;top:6px;right:6px;width:12px;height:12px}
+.wday .add-here{
+  position:absolute;bottom:7px;right:7px;
+  width:22px;height:22px;border-radius:7px;
+  border:1px dashed #cdd5df;color:var(--ink-35);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:all .15s var(--ease);
+}
+.wday:hover .add-here{opacity:1}
+.wday .add-here:hover{background:var(--blue);color:#fff;border-color:var(--blue);border-style:solid}
+.wday .add-here svg{width:13px;height:13px}
+
+/* --- Queue (file d'attente) --- */
+.queue-head{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 12px}
+.queue-head h2{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:9px}
+.queue-head .count{font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-050);padding:3px 9px;border-radius:20px}
+.queue-head .legend-link{font-size:12.5px;color:var(--ink-50);font-weight:600}
+
+/* Day section in queue */
+.qday{margin-bottom:8px}
+.qday-label{
+  display:flex;align-items:center;gap:10px;
+  font-size:12px;font-weight:700;color:var(--ink-50);
+  text-transform:uppercase;letter-spacing:.04em;
+  padding:16px 2px 10px;
+}
+.qday-label .line{flex:1;height:1px;background:var(--line)}
+.qday-label.overdue{color:var(--orange)}
+
+/* Post card */
+.pcard{
+  display:grid;grid-template-columns:52px 1fr auto;gap:16px;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:15px 16px;margin-bottom:11px;
+  box-shadow:var(--shadow-sm);
+  transition:box-shadow .18s var(--ease),border-color .18s,transform .18s var(--ease);
+  position:relative;overflow:hidden;
+}
+.pcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pc,#ccc)}
+.pcard:hover{box-shadow:var(--shadow-md);border-color:#dbe2ec;transform:translateY(-1px)}
+.pcard.published{opacity:.72;background:#fcfdfe}
+.pcard.overdue{border-color:#f6d9ac}
+
+.pc-time{
+  text-align:center;padding-top:2px;
+}
+.pc-time .hm{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.pc-time .dd{font-size:11px;font-weight:600;color:var(--ink-35);margin-top:1px}
+.pc-time .thumb{
+  margin-top:9px;width:46px;height:46px;border-radius:9px;
+  background:var(--th,#eef1f6);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+}
+.pc-time .thumb svg{width:20px;height:20px;opacity:.9}
+
+.pc-body{min-width:0}
+.pc-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.pilar-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11.5px;font-weight:700;
+  padding:3px 9px 3px 8px;border-radius:20px;
+  color:var(--pc);background:var(--pcbg);
+}
+.pilar-tag .dot{width:8px;height:8px;border-radius:50%;background:var(--pc)}
+.status-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11.5px;font-weight:600;color:var(--ink-50);
+  padding:3px 9px;border-radius:20px;background:#f1f4f8;border:1px solid transparent;
+}
+.status-tag .sdot{width:11px;height:11px;flex:none}
+.pc-title{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:0 0 4px;line-height:1.3}
+.pc-excerpt{font-size:13px;color:var(--ink-50);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.pc-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;justify-content:center;white-space:nowrap}
+.mini-primary{
+  display:inline-flex;align-items:center;gap:7px;
+  height:34px;padding:0 14px;border-radius:9px;
+  background:var(--blue);color:#fff;font-weight:700;font-size:13px;
+  box-shadow:0 3px 10px rgba(0,87,255,.25);
+  transition:all .14s var(--ease);
+}
+.mini-primary:hover{background:var(--blue-600);transform:translateY(-1px)}
+.mini-primary svg{width:15px;height:15px}
+.mini-link{font-size:12.5px;font-weight:600;color:var(--ink-50);padding:4px 6px;border-radius:7px;transition:color .14s,background .14s}
+.mini-link:hover{color:var(--blue);background:var(--blue-050)}
+.done-tag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--p-conseil)}
+.done-tag svg{width:16px;height:16px}
+
+/* ---------- SIDEBAR (right) ---------- */
+.side{display:flex;flex-direction:column;gap:16px;position:sticky;top:150px}
+.sidecard{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);padding:17px 17px;
+}
+.sidecard h4{margin:0 0 13px;font-size:13px;font-weight:800;letter-spacing:.01em;display:flex;align-items:center;gap:8px}
+.sidecard h4 svg{width:16px;height:16px;color:var(--ink-35)}
+
+/* Assistant promo card */
+.promo{
+  border:1px solid var(--blue-100);
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(0,87,255,.09), rgba(0,87,255,0) 60%),
+    linear-gradient(180deg,#fbfcff,#ffffff);
+  position:relative;overflow:hidden;
+}
+.promo .spark{
+  width:40px;height:40px;border-radius:11px;margin-bottom:11px;
+  background:linear-gradient(135deg,#0057FF,#6b9bff);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px rgba(0,87,255,.3);
+}
+.promo .spark svg{width:21px;height:21px;color:#fff}
+.promo h4{margin:0 0 5px;font-size:15px}
+.promo p{margin:0 0 14px;font-size:13px;color:var(--ink-50);line-height:1.5}
+.promo .btn-primary{width:100%;justify-content:center;height:40px}
+
+/* Legend */
+.legend-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12.5px;font-weight:600;color:var(--ink-70)}
+.legend-row .sw{width:12px;height:12px;border-radius:4px;flex:none}
+.legend-row .n{color:var(--ink-35);font-weight:600;margin-left:auto;font-size:11.5px}
+.legend-note{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-50);line-height:1.5}
+.legend-note b{color:var(--ink-70)}
+
+/* Cadence mini */
+.cadence-bar{display:flex;gap:5px;margin:6px 0 12px}
+.cadence-bar .seg7{flex:1;height:30px;border-radius:7px;background:#eef1f6;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;font-size:9px;font-weight:700;color:var(--ink-35)}
+.cadence-bar .seg7.filled{background:var(--blue-050)}
+.cadence-bar .seg7 .bar{position:absolute;left:5px;right:5px;bottom:5px;border-radius:4px;background:var(--blue)}
+.cadence-line{font-size:12.5px;color:var(--ink-50);line-height:1.5}
+.cadence-line b{color:var(--ink)}
+
+/* ================= EMPTY / VUE HELPERS ================= */
+.section-anchor{scroll-margin-top:120px}
+
+/* ================= OVERLAYS COMMON ================= */
+.scrim{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(10,14,26,.42);
+  opacity:0;pointer-events:none;transition:opacity .28s var(--ease);
+}
+.scrim.show{opacity:1;pointer-events:auto}
+
+/* ---------- DRAWER (éditeur) ---------- */
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;z-index:110;
+  width:480px;max-width:94vw;
+  background:var(--panel);
+  box-shadow:var(--shadow-lg);
+  transform:translateX(102%);
+  transition:transform .34s var(--ease);
+  display:flex;flex-direction:column;
+}
+.drawer.show{transform:translateX(0)}
+.drawer-head{
+  padding:18px 22px 14px;border-bottom:1px solid var(--line);
+}
+.drawer-head-top{display:flex;align-items:flex-start;gap:12px}
+.drawer-eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);margin-bottom:8px}
+.title-input{
+  width:100%;border:none;outline:none;
+  font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--ink);
+  padding:2px 0;background:transparent;line-height:1.25;
+}
+.title-input::placeholder{color:var(--ink-35)}
+.close-x{
+  width:36px;height:36px;border-radius:10px;flex:none;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-50);
+  border:1px solid var(--line);background:var(--panel);transition:all .15s;
+}
+.close-x:hover{background:var(--bg);color:var(--ink)}
+.close-x svg{width:18px;height:18px}
+.gen-btn{
+  display:inline-flex;align-items:center;gap:8px;margin-top:14px;
+  height:38px;padding:0 15px;border-radius:10px;
+  border:1.5px solid var(--blue);color:var(--blue);background:var(--blue-050);
+  font-weight:700;font-size:13.5px;transition:all .15s var(--ease);
+}
+.gen-btn:hover{background:var(--blue-100)}
+.gen-btn svg{width:16px;height:16px}
+.gen-btn.loading{pointer-events:none;opacity:.75}
+
+.drawer-body{flex:1;overflow-y:auto;padding:20px 22px}
+.field{margin-bottom:20px}
+.field > label{display:block;font-size:12px;font-weight:700;color:var(--ink-70);margin-bottom:9px;letter-spacing:.01em}
+
+/* Pilar picker */
+.pilar-picker{display:flex;gap:8px;flex-wrap:wrap}
+.pilar-opt{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 13px;border-radius:11px;
+  border:1.5px solid var(--line);background:var(--panel);
+  font-size:12.5px;font-weight:600;color:var(--ink-70);
+  transition:all .14s var(--ease);
+}
+.pilar-opt .dot{width:11px;height:11px;border-radius:50%;background:var(--c)}
+.pilar-opt:hover{border-color:#d3dae4}
+.pilar-opt.sel{border-color:var(--c);background:var(--cbg);color:var(--c)}
+
+/* Segmented status */
+.seg-status{display:flex;background:#eef1f6;border-radius:11px;padding:3px}
+.seg-status button{
+  flex:1;padding:8px 4px;border-radius:8px;font-weight:600;font-size:12.5px;color:var(--ink-50);
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s var(--ease);
+}
+.seg-status button .sdot{width:12px;height:12px}
+.seg-status button.on{background:var(--panel);color:var(--ink);box-shadow:var(--shadow-sm)}
+
+/* date row */
+.date-row{display:flex;gap:10px}
+.date-row .inp{flex:1}
+.inp{
+  width:100%;height:40px;padding:0 12px;border-radius:10px;
+  border:1.5px solid var(--line);background:var(--panel);font-size:14px;color:var(--ink);
+  transition:border-color .15s,box-shadow .15s;
+}
+.inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-050)}
+.inp.time{max-width:110px}
+
+/* textarea */
+.ta-wrap{position:relative}
+.post-text{
+  width:100%;min-height:180px;padding:14px 14px 34px;border-radius:12px;
+  border:1.5px solid var(--line);background:var(--panel);
+  font-size:14px;line-height:1.6;color:var(--ink);resize:vertical;
+  transition:border-color .15s,box-shadow .15s;
+}
+.post-text:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-050)}
+.char-count{position:absolute;right:12px;bottom:11px;font-size:11.5px;font-weight:600;color:var(--ink-35);background:var(--panel);padding:1px 4px;border-radius:6px}
+
+/* visual dropzone */
+.dropzone{
+  border:1.5px dashed #d3dae4;border-radius:12px;
+  padding:22px;text-align:center;color:var(--ink-50);
+  transition:all .15s var(--ease);cursor:pointer;
+}
+.dropzone:hover{border-color:var(--blue);background:var(--blue-050);color:var(--blue)}
+.dropzone svg{width:24px;height:24px;margin:0 auto 8px;color:var(--ink-35)}
+.dropzone:hover svg{color:var(--blue)}
+.dropzone b{font-weight:700;font-size:13.5px}
+.dropzone span{display:block;font-size:12px;margin-top:2px;color:var(--ink-35)}
+
+.drawer-foot{
+  padding:14px 22px;border-top:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;background:var(--panel);
+}
+.drawer-foot .btn-primary{flex:1;justify-content:center;height:42px}
+.drawer-foot .del{font-size:13px;font-weight:600;color:#e0455f;padding:8px 10px;border-radius:8px;transition:background .14s}
+.drawer-foot .del:hover{background:#fff0f2}
+.publish-cta{
+  display:none;align-items:center;gap:8px;
+  height:42px;padding:0 16px;border-radius:11px;
+  border:1.5px solid var(--p-conseil);color:var(--p-conseil);background:#eafaf3;
+  font-weight:700;font-size:13.5px;
+}
+.publish-cta svg{width:16px;height:16px}
+
+/* ---------- MODALE (assistant / import) ---------- */
+.modal{
+  position:fixed;z-index:110;top:50%;left:50%;
+  transform:translate(-50%,-46%);opacity:0;pointer-events:none;
+  width:680px;max-width:94vw;max-height:92vh;
+  background:var(--panel);border-radius:20px;
+  box-shadow:var(--shadow-lg);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:opacity .28s var(--ease),transform .28s var(--ease);
+}
+.modal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.modal-head{padding:22px 26px 0;position:relative}
+.modal-head .close-x{position:absolute;top:18px;right:20px}
+.modal-eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--blue)}
+.modal-head h2{margin:8px 0 3px;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.modal-head p{margin:0;font-size:13.5px;color:var(--ink-50)}
+
+/* stepper */
+.stepper{display:flex;align-items:center;gap:0;padding:20px 26px 6px}
+.step{display:flex;align-items:center;gap:9px}
+.step .num{
+  width:26px;height:26px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12.5px;font-weight:800;
+  background:#eef1f6;color:var(--ink-35);transition:all .2s;
+}
+.step .lab{font-size:12.5px;font-weight:600;color:var(--ink-35);white-space:nowrap}
+.step.active .num{background:var(--blue);color:#fff;box-shadow:0 3px 8px rgba(0,87,255,.3)}
+.step.active .lab{color:var(--ink)}
+.step.done .num{background:var(--p-conseil);color:#fff}
+.step.done .lab{color:var(--ink-70)}
+.step-line{flex:1;height:2px;background:#eef1f6;margin:0 10px;border-radius:2px;min-width:14px}
+.step-line.done{background:var(--p-conseil)}
+
+.modal-body{padding:18px 26px 8px;overflow-y:auto;flex:1}
+.modal-panel{display:none}
+.modal-panel.on{display:block;animation:fadeUp .3s var(--ease)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.q-title{font-size:16px;font-weight:800;margin:0 0 4px}
+.q-sub{font-size:13px;color:var(--ink-50);margin:0 0 18px}
+
+/* option cards */
+.opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.opt-card{
+  display:flex;align-items:flex-start;gap:12px;text-align:left;
+  padding:15px 15px;border-radius:13px;
+  border:1.5px solid var(--line);background:var(--panel);
+  transition:all .15s var(--ease);
+}
+.opt-card:hover{border-color:#d3dae4;background:#fbfcfe}
+.opt-card.sel{border-color:var(--blue);background:var(--blue-050)}
+.opt-card .oc-ic{
+  width:38px;height:38px;border-radius:10px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--blue-050);color:var(--blue);
+}
+.opt-card.sel .oc-ic{background:var(--blue);color:#fff}
+.opt-card .oc-ic svg{width:19px;height:19px}
+.opt-card b{font-size:14px;font-weight:700;display:block;margin-bottom:2px}
+.opt-card span{font-size:12px;color:var(--ink-50);line-height:1.4}
+.opt-check{margin-left:auto;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center}
+.opt-card.sel .opt-check{background:var(--blue);border-color:var(--blue)}
+.opt-card.sel .opt-check svg{width:12px;height:12px;color:#fff}
+.opt-card:not(.sel) .opt-check svg{display:none}
+
+/* cadence pills */
+.pill-row{display:flex;gap:10px;flex-wrap:wrap}
+.pill-choice{
+  padding:11px 18px;border-radius:11px;border:1.5px solid var(--line);
+  font-weight:700;font-size:14px;color:var(--ink-70);background:var(--panel);
+  transition:all .15s var(--ease);
+}
+.pill-choice span{display:block;font-size:11px;font-weight:500;color:var(--ink-35)}
+.pill-choice:hover{border-color:#d3dae4}
+.pill-choice.sel{border-color:var(--blue);background:var(--blue-050);color:var(--blue)}
+.pill-choice.sel span{color:var(--blue)}
+
+.range-row{display:flex;gap:12px;margin-top:16px}
+.range-row .field-mini{flex:1}
+.field-mini label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-70);margin-bottom:6px}
+
+/* tone chips */
+.tone-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 15px;border-radius:11px;border:1.5px solid var(--line);
+  font-weight:600;font-size:13.5px;color:var(--ink-70);background:var(--panel);
+  transition:all .15s var(--ease);margin:0 8px 8px 0;
+}
+.tone-chip small{color:var(--ink-35);font-weight:500}
+.tone-chip.sel{border-color:var(--blue);background:var(--blue-050);color:var(--blue)}
+
+/* pillars weight */
+.wrow{display:flex;align-items:center;gap:13px;padding:11px 0;border-bottom:1px solid var(--line-soft)}
+.wrow:last-child{border:none}
+.wrow .chk{
+  width:22px;height:22px;border-radius:7px;border:1.5px solid var(--line);flex:none;
+  display:flex;align-items:center;justify-content:center;background:var(--panel);transition:all .14s;
+}
+.wrow.on .chk{background:var(--c);border-color:var(--c)}
+.wrow.on .chk svg{width:13px;height:13px;color:#fff}
+.wrow:not(.on) .chk svg{display:none}
+.wrow .pn{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px;min-width:150px}
+.wrow .pn .dot{width:11px;height:11px;border-radius:50%;background:var(--c)}
+.wrow .weight{flex:1;display:flex;align-items:center;gap:9px}
+.wrow .track{flex:1;height:6px;border-radius:6px;background:#eef1f6;position:relative;overflow:hidden}
+.wrow .track .fill{position:absolute;left:0;top:0;bottom:0;background:var(--c);border-radius:6px}
+.wrow .wnum{font-size:12.5px;font-weight:700;color:var(--ink-70);min-width:52px;text-align:right}
+.wrow.off{opacity:.45}
+
+/* result plan */
+.plan-summary{
+  display:flex;align-items:center;gap:14px;
+  padding:15px 17px;border-radius:13px;margin-bottom:16px;
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(0,87,255,.08), rgba(0,87,255,0) 55%),
+    #fbfcff;
+  border:1px solid var(--blue-100);
+}
+.plan-summary .big{font-size:30px;font-weight:800;color:var(--blue);letter-spacing:-.03em;line-height:1}
+.plan-summary .desc b{font-size:14px;font-weight:700;display:block}
+.plan-summary .desc span{font-size:12.5px;color:var(--ink-50)}
+.plan-mix{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;max-width:180px;justify-content:flex-end}
+.plan-mix .mx{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;color:var(--pc);background:var(--pcbg)}
+
+.plan-list{display:flex;flex-direction:column;gap:9px;max-height:290px;overflow-y:auto;padding-right:4px}
+.plan-item{
+  display:grid;grid-template-columns:auto 60px 1fr auto;gap:12px;align-items:center;
+  padding:11px 13px;border-radius:11px;border:1px solid var(--line);background:var(--panel);
+  transition:border-color .14s,box-shadow .14s;
+}
+.plan-item:hover{border-color:#d3dae4;box-shadow:var(--shadow-sm)}
+.plan-item .pbar{width:4px;height:34px;border-radius:3px;background:var(--pc)}
+.plan-item .pdate{font-size:12px;font-weight:700;color:var(--ink-70);text-align:center;line-height:1.2}
+.plan-item .pdate span{display:block;font-size:10px;font-weight:600;color:var(--ink-35);text-transform:uppercase}
+.plan-item .pt{min-width:0}
+.plan-item .pt input{
+  width:100%;border:none;background:transparent;font-size:13.5px;font-weight:600;color:var(--ink);
+  padding:4px 6px;border-radius:7px;transition:background .14s;
+}
+.plan-item .pt input:hover{background:var(--bg)}
+.plan-item .pt input:focus{outline:none;background:var(--blue-050);box-shadow:0 0 0 2px var(--blue-100)}
+.plan-item .pt .pl{font-size:11px;font-weight:700;color:var(--pc)}
+.plan-item .pedit{width:30px;height:30px;border-radius:8px;color:var(--ink-35);display:flex;align-items:center;justify-content:center;transition:all .14s}
+.plan-item .pedit:hover{background:var(--bg);color:var(--ink-70)}
+.plan-item .pedit svg{width:15px;height:15px}
+
+.modal-foot{
+  padding:16px 26px;border-top:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;background:var(--panel);
+}
+.modal-foot .spacer{flex:1}
+.modal-foot .btn-primary{height:42px}
+.modal-foot .btn-ghost{height:42px}
+
+/* toast */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+  z-index:200;opacity:0;pointer-events:none;
+  display:flex;align-items:center;gap:11px;
+  background:var(--ink);color:#fff;font-weight:600;font-size:13.5px;
+  padding:12px 18px;border-radius:12px;box-shadow:var(--shadow-lg);
+  transition:opacity .25s var(--ease),transform .25s var(--ease);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast svg{width:18px;height:18px;color:#4ade80}
+.toast.blue svg{color:#7aa7ff}
+
+/* section divider for demo layout */
+.demo-band{
+  margin:0 0 6px;padding:38px 26px 8px;border-top:1px dashed var(--line);
+}
+.demo-band .k{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);background:var(--orange-050);display:inline-block;padding:4px 10px;border-radius:20px}
+.demo-band h2{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:11px 0 4px}
+.demo-band p{font-size:13.5px;color:var(--ink-50);margin:0;max-width:640px}
+
+/* static preview frames for stacked demo of drawer & modal */
+.preview-frame{
+  position:relative;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  background:
+    linear-gradient(0deg, rgba(10,14,26,.02), rgba(10,14,26,.02)),
+    #f2f5f9;
+  box-shadow:var(--shadow-sm);margin:18px 26px 0;
+  min-height:120px;
+}
+.preview-frame .pf-mock-cal{
+  position:absolute;inset:0;padding:20px;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;opacity:.5;
+}
+.preview-frame .pf-mock-cal .cc{background:#fff;border-radius:8px;border:1px solid var(--line)}
+
+/* embed drawer/modal statically inside frame */
+.static-drawer{
+  position:relative;margin-left:auto;width:480px;max-width:96%;
+  background:var(--panel);box-shadow:var(--shadow-lg);
+  border-top-left-radius:18px;border-bottom-left-radius:18px;
+  display:flex;flex-direction:column;
+}
+.static-modal{
+  position:relative;margin:26px auto;width:680px;max-width:94%;
+  background:var(--panel);border-radius:18px;box-shadow:var(--shadow-lg);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+
+.hidden{display:none !important}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width:1100px){
+  .workspace{grid-template-columns:1fr}
+  .side{position:static;flex-direction:row;flex-wrap:wrap}
+  .side .sidecard{flex:1;min-width:240px}
+}
+@media (max-width:860px){
+  .app{grid-template-columns:70px 1fr}
+  .brand-name,.nav-item span.txt,.nav-label,.rail-user .who,.nav-item .badge{display:none}
+  .rail{padding:16px 10px;align-items:center}
+  .nav-item{justify-content:center;padding:11px}
+  .brand{justify-content:center;margin-bottom:14px}
+  .rail-user{justify-content:center}
+  .weekgrid{grid-template-columns:repeat(7,minmax(90px,1fr));overflow-x:auto}
+  .weekgrid{display:flex}
+  .weekgrid .wday{min-width:120px;flex:1}
+  .content{padding:18px 14px 50px}
+  .topbar{padding:14px 14px 12px}
+}
+@media (max-width:620px){
+  .pcard{grid-template-columns:1fr;gap:10px}
+  .pc-time{display:flex;align-items:center;gap:12px;text-align:left}
+  .pc-time .thumb{margin-top:0}
+  .pc-actions{flex-direction:row;align-items:center;justify-content:flex-start}
+  .opt-grid{grid-template-columns:1fr}
+  .stepper .lab{display:none}
+  .page-title{font-size:19px}
+  .drawer{width:100%}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+  .btn-primary:hover,.pcard:hover,.mini-primary:hover{transform:none !important}
+}
+</style>
+
+<div class="app">
+  <!-- ============ RAIL ============ -->
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 20V9l8-5 8 5v11" stroke="#fff" stroke-width="2" stroke-linjoin="round" stroke-linecap="round"/><path d="M9 20v-6h6v6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="brand-name">Intégral Pharma<span>Studio LinkedIn</span></div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Publication</div>
+      <button class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4.5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 3v3M16 3v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="txt">Calendrier</span>
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+        <span class="txt">À publier</span>
+        <span class="badge">3</span>
+      </button>
+      <button class="nav-item" onclick="openAssistant()">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span class="txt">Assistant stratégie</span>
+      </button>
+    </div>
+
+    <div class="rail-spacer"></div>
+
+    <div class="nav-group nav-secondary">
+      <div class="rail-divider"></div>
+      <button class="nav-item" onclick="openImport()">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 15V3M8 7l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="txt">Importer d'anciens posts</span>
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 7 2.6h.1A1.6 1.6 0 0 0 8.9 1H9a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 15 2.6a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z" stroke="currentColor" stroke-width="1.4"/></svg>
+        <span class="txt">Réglages</span>
+      </button>
+    </div>
+
+    <div class="rail-user">
+      <div class="avatar">PS</div>
+      <div class="who"><b>Pauline S.</b><span>Intégral Pharma</span></div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <!-- topbar -->
+    <div class="topbar">
+      <div class="topbar-row">
+        <div>
+          <h1 class="page-title">Juillet 2026</h1>
+          <div class="page-sub">Votre file de publication LinkedIn</div>
+        </div>
+        <div class="month-nav">
+          <button class="icon-btn" aria-label="Mois précédent"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="today-btn">Aujourd'hui</button>
+          <button class="icon-btn" aria-label="Mois suivant"><svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="seg" role="tablist">
+          <button>Mois</button>
+          <button>Semaine</button>
+          <button class="on">File</button>
+        </div>
+        <button class="btn-primary" onclick="openEditorNew()">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Nouveau post
+        </button>
+      </div>
+
+      <!-- filtres discrets -->
+      <div class="filters">
+        <span class="filter-label">Piliers</span>
+        <button class="chip on"><span class="dot" style="background:var(--p-produit)"></span>Produit</button>
+        <button class="chip on"><span class="dot" style="background:var(--p-conseil)"></span>Conseil</button>
+        <button class="chip on"><span class="dot" style="background:var(--p-coulisses)"></span>Coulisses</button>
+        <button class="chip on"><span class="dot" style="background:var(--p-recrut)"></span>Recrutement</button>
+        <button class="chip on"><span class="dot" style="background:var(--p-fort)"></span>Temps fort</button>
+        <span class="sep"></span>
+        <button class="chip">Tous les statuts
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="margin-left:2px"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- content -->
+    <div class="content">
+      <div class="workspace">
+        <!-- ======= COLONNE PRINCIPALE ======= -->
+        <div class="queue-col">
+
+          <!-- APERÇU SEMAINE -->
+          <div class="weekcard">
+            <div class="weekcard-head">
+              <h3>Cette semaine en un coup d'œil</h3>
+              <span class="rng">Lun 6 → Dim 12 juillet</span>
+            </div>
+            <div class="weekgrid">
+              <!-- lun 6 -->
+              <div class="wday today">
+                <div class="wd-top"><span class="wd-name">Lun</span><span class="wd-num">6</span></div>
+                <button class="wpill" style="--pc:var(--p-conseil);--pcbg:#e6f7f0" onclick="openEditorEdit(this)" data-title="3 réflexes pour sécuriser vos stocks avant l'été" data-pilar="conseil" data-status="pret">
+                  <span class="wp-title">3 réflexes stocks avant l'été</span>
+                  <svg class="st" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" fill="#00B37A"/></svg>
+                </button>
+                <button class="add-here" aria-label="Planifier ce jour" onclick="openEditorNew()"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+              </div>
+              <!-- mar 7 -->
+              <div class="wday">
+                <div class="wd-top"><span class="wd-name">Mar</span><span class="wd-num">7</span></div>
+                <button class="add-here" onclick="openEditorNew()"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+              </div>
+              <!-- mer 8 -->
+              <div class="wday">
+                <div class="wd-top"><span class="wd-name">Mer</span><span class="wd-num">8</span></div>
+                <button class="wpill" style="--pc:var(--p-produit);--pcbg:#e9f0ff" onclick="openEditorEdit(this)" data-title="Nouveau : disponibilité J+1 sur la gamme dermato" data-pilar="produit" data-status="redaction">
+                  <span class="wp-title">Dispo J+1 gamme dermato</span>
+                  <svg class="st" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#cfe0ff" stroke="#0057FF" stroke-width="1.4"/></svg>
+                </button>
+                <button class="add-here" onclick="openEditorNew()"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+              </div>
+              <!-- jeu 9 -->
+              <div class="wday">
+                <div class="wd-top"><span class="wd-name">Jeu</span><span class="wd-num">9</span></div>
+                <button class="add-here" onclick="openEditorNew()"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+              </div>
+              <!-- ven 10 -->
+              <div class="wday">
+                <div class="wd-top"><span class="wd-name">Ven</span><span class="wd-num">10</span></div>
+                <button class="wpill" style="--pc:var(--p-coulisses);--pcbg:#fff4e0" onclick="openEditorEdit(this)" data-title="24h dans notre plateforme logistique de nuit" data-pilar="coulisses" data-status="idee">
+                  <span class="wp-title">24h dans la plateforme de nuit</span>
+                  <svg class="st" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#fff" stroke="#FFB020" stroke-width="1.6" stroke-dasharray="2.6 2.2"/></svg>
+                </button>
+                <button class="add-here" onclick="openEditorNew()"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+              </div>
+              <!-- sam 11 -->
+              <div class="wday">
+                <div class="wd-top"><span class="wd-name">Sam</span><span class="wd-num">11</span></div>
+                <button class="add-here" onclick="openEditorNew()"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+              </div>
+              <!-- dim 12 -->
+              <div class="wday">
+                <div class="wd-top"><span class="wd-name">Dim</span><span class="wd-num">12</span></div>
+                <button class="add-here" onclick="openEditorNew()"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- FILE D'ATTENTE -->
+          <div class="queue-head">
+            <h2>Votre file <span class="count">11 posts</span></h2>
+            <a class="legend-link" href="#">Voir tout le mois →</a>
+          </div>
+
+          <!-- ===== EN RETARD ===== -->
+          <div class="qday">
+            <div class="qday-label overdue">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 16.5h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
+              En retard — à traiter
+              <span class="line"></span>
+            </div>
+
+            <div class="pcard overdue" style="--pc:var(--p-recrut);--pcbg:#ffe9ee;--th:linear-gradient(135deg,#FF4D6D,#ff7d95)" onclick="openEditorEdit(this)" data-title="On recrute un préparateur — rejoignez l'aventure Intégral" data-pilar="recrut" data-status="pret">
+              <div class="pc-time">
+                <div class="hm">09:00</div><div class="dd">Ven 3 juil</div>
+                <div class="thumb"><svg viewBox="0 0 24 24" fill="none"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Zm-6 0h-4V5h4v2Z" fill="#fff"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Recrutement</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" fill="#00B37A"/></svg>Prêt</span>
+                </div>
+                <h3 class="pc-title">On recrute un préparateur — rejoignez l'aventure Intégral</h3>
+                <p class="pc-excerpt">Notre plateforme de Caen s'agrandit. Vous aimez la précision, le travail d'équipe et le sens du service pharmaceutique ? On a une place pour vous…</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <button class="mini-primary" onclick="publishPost(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>Publier</button>
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Ouvrir</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== AUJOURD'HUI ===== -->
+          <div class="qday">
+            <div class="qday-label">Aujourd'hui — Lundi 6 juillet<span class="line"></span></div>
+
+            <div class="pcard" style="--pc:var(--p-conseil);--pcbg:#e6f7f0;--th:linear-gradient(135deg,#00B37A,#3fd39f)" onclick="openEditorEdit(this)" data-title="3 réflexes pour sécuriser vos stocks avant l'été" data-pilar="conseil" data-status="pret">
+              <div class="pc-time">
+                <div class="hm">08:30</div><div class="dd">Aujourd'hui</div>
+                <div class="thumb"><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 6 9 17l-5-5" stroke="#fff" stroke-width="0"/><rect x="4" y="4" width="16" height="16" rx="3" stroke="#fff" stroke-width="1.6"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Conseil officine</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" fill="#00B37A"/></svg>Prêt</span>
+                </div>
+                <h3 class="pc-title">3 réflexes pour sécuriser vos stocks avant l'été</h3>
+                <p class="pc-excerpt">Ruptures saisonnières, congés, hausse de la demande solaire… Voici comment anticiper sereinement vos approvisionnements de juillet-août avec Intégral.</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <button class="mini-primary" onclick="publishPost(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>Publier</button>
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Ouvrir</button>
+              </div>
+            </div>
+
+            <div class="pcard" style="--pc:var(--p-fort);--pcbg:#f1eafe;--th:linear-gradient(135deg,#8B5CF6,#b18cff)" onclick="openEditorEdit(this)" data-title="Journée mondiale des pharmaciens : merci à celles et ceux qui veillent" data-pilar="fort" data-status="pret">
+              <div class="pc-time">
+                <div class="hm">17:00</div><div class="dd">Aujourd'hui</div>
+                <div class="thumb"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.5-.8L12 3Z" fill="#fff"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Temps fort</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" fill="#00B37A"/></svg>Prêt</span>
+                </div>
+                <h3 class="pc-title">Journée des pharmaciens : merci à celles et ceux qui veillent</h3>
+                <p class="pc-excerpt">Derrière chaque ordonnance, une expertise. Aujourd'hui, toute l'équipe Intégral salue les 621 officines partenaires qui prennent soin de leurs patients.</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <button class="mini-primary" onclick="publishPost(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>Publier</button>
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Ouvrir</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== À VENIR ===== -->
+          <div class="qday">
+            <div class="qday-label">Cette semaine<span class="line"></span></div>
+
+            <div class="pcard" style="--pc:var(--p-produit);--pcbg:#e9f0ff;--th:linear-gradient(135deg,#0057FF,#4d88ff)" onclick="openEditorEdit(this)" data-title="Nouveau : disponibilité J+1 sur la gamme dermato" data-pilar="produit" data-status="redaction">
+              <div class="pc-time">
+                <div class="hm">10:00</div><div class="dd">Mer 8 juil</div>
+                <div class="thumb"><svg viewBox="0 0 24 24" fill="none"><path d="M3 7l9-4 9 4-9 4-9-4Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 7v10l9 4 9-4V7M12 11v10" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Produit</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#cfe0ff" stroke="#0057FF" stroke-width="1.4"/></svg>Rédaction</span>
+                </div>
+                <h3 class="pc-title">Nouveau : disponibilité J+1 sur la gamme dermato</h3>
+                <p class="pc-excerpt">Plus de 400 références dermatologiques désormais livrées le lendemain. Fini l'attente pour vos patients aux peaux sensibles…</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Continuer la rédaction</button>
+              </div>
+            </div>
+
+            <div class="pcard" style="--pc:var(--p-coulisses);--pcbg:#fff4e0;--th:linear-gradient(135deg,#FFB020,#ffca63)" onclick="openEditorEdit(this)" data-title="24h dans notre plateforme logistique de nuit" data-pilar="coulisses" data-status="idee">
+              <div class="pc-time">
+                <div class="hm">12:30</div><div class="dd">Ven 10 juil</div>
+                <div class="thumb"><svg viewBox="0 0 24 24" fill="none"><path d="M17 8a5 5 0 1 1-9.6 1.9A4 4 0 1 0 6 18h11a4 4 0 0 0 0-8Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Coulisses</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#fff" stroke="#FFB020" stroke-width="1.6" stroke-dasharray="2.6 2.2"/></svg>Idée</span>
+                </div>
+                <h3 class="pc-title">24h dans notre plateforme logistique de nuit</h3>
+                <p class="pc-excerpt">Reportage : de la commande de 22h à la livraison de 7h. Découvrez les équipes qui préparent vos colis pendant que vos officines dorment.</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Développer l'idée</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== SEMAINE PROCHAINE ===== -->
+          <div class="qday">
+            <div class="qday-label">Semaine prochaine<span class="line"></span></div>
+
+            <div class="pcard" style="--pc:var(--p-fort);--pcbg:#f1eafe;--th:linear-gradient(135deg,#8B5CF6,#b18cff)" onclick="openEditorEdit(this)" data-title="Bonne fête nationale, vos officines livrées même les jours fériés" data-pilar="fort" data-status="pret">
+              <div class="pc-time">
+                <div class="hm">08:00</div><div class="dd">Mar 14 juil</div>
+                <div class="thumb"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.5-.8L12 3Z" fill="#fff"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Temps fort</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" fill="#00B37A"/></svg>Prêt</span>
+                </div>
+                <h3 class="pc-title">Bonne fête nationale — vos officines livrées même les jours fériés</h3>
+                <p class="pc-excerpt">Le 14 juillet, nos plateformes restent mobilisées. Parce qu'une rupture n'attend pas un jour férié, Intégral assure vos livraisons prioritaires.</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <button class="mini-primary" onclick="publishPost(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>Programmer</button>
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Ouvrir</button>
+              </div>
+            </div>
+
+            <div class="pcard" style="--pc:var(--p-conseil);--pcbg:#e6f7f0;--th:linear-gradient(135deg,#00B37A,#3fd39f)" onclick="openEditorEdit(this)" data-title="Canicule : les bons gestes de conservation à rappeler au comptoir" data-pilar="conseil" data-status="redaction">
+              <div class="pc-time">
+                <div class="hm">11:00</div><div class="dd">Jeu 16 juil</div>
+                <div class="thumb"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="#fff" stroke-width="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Conseil officine</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#cfe0ff" stroke="#0057FF" stroke-width="1.4"/></svg>Rédaction</span>
+                </div>
+                <h3 class="pc-title">Canicule : les bons gestes de conservation à rappeler au comptoir</h3>
+                <p class="pc-excerpt">Insuline, collyres, suppositoires… Un mémo pratique à partager avec vos patients quand le thermomètre s'affole.</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Continuer la rédaction</button>
+              </div>
+            </div>
+
+            <div class="pcard" style="--pc:var(--p-produit);--pcbg:#e9f0ff;--th:linear-gradient(135deg,#0057FF,#4d88ff)" onclick="openEditorEdit(this)" data-title="Génériques : 27% de remise fabricant sur une sélection de printemps" data-pilar="produit" data-status="idee">
+              <div class="pc-time">
+                <div class="hm">09:30</div><div class="dd">Ven 17 juil</div>
+                <div class="thumb"><svg viewBox="0 0 24 24" fill="none"><path d="M7 7h.01M7 12l5 5 8-8-.5-4.5L15 2 7 7Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Produit</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#fff" stroke="#FFB020" stroke-width="1.6" stroke-dasharray="2.6 2.2"/></svg>Idée</span>
+                </div>
+                <h3 class="pc-title">Génériques : une sélection avantageuse pour vos marges d'été</h3>
+                <p class="pc-excerpt">Mettre en avant l'offre génériqueur du moment sans dévoiler les conditions commerciales détaillées. À affiner avec le service achats.</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Développer l'idée</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== DÉJÀ PUBLIÉ ===== -->
+          <div class="qday">
+            <div class="qday-label">Déjà publié<span class="line"></span></div>
+
+            <div class="pcard published" style="--pc:var(--p-recrut);--pcbg:#ffe9ee" onclick="openEditorEdit(this)" data-title="Merci pour vos 5 000 abonnés — la logistique pharma qui vous ressemble" data-pilar="recrut" data-status="publie">
+              <div class="pc-time">
+                <div class="hm">10:00</div><div class="dd">Mer 1 juil</div>
+                <div class="thumb" style="--th:#f1f4f8"><svg viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" stroke="#9aa1ae" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Recrutement</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#00B37A"/><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Publié</span>
+                </div>
+                <h3 class="pc-title">Merci pour vos 5 000 abonnés — la logistique pharma qui vous ressemble</h3>
+                <p class="pc-excerpt">Cap franchi ! Un immense merci aux pharmaciens qui nous suivent et nous font confiance au quotidien.</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <span class="done-tag"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Publié · 142 réactions</span>
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Voir</button>
+              </div>
+            </div>
+
+            <div class="pcard published" style="--pc:var(--p-coulisses);--pcbg:#fff4e0" onclick="openEditorEdit(this)" data-title="Notre nouvelle flotte de véhicules réfrigérés arrive cet été" data-pilar="coulisses" data-status="publie">
+              <div class="pc-time">
+                <div class="hm">15:00</div><div class="dd">Ven 27 juin</div>
+                <div class="thumb" style="--th:#f1f4f8"><svg viewBox="0 0 24 24" fill="none"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7" stroke="#9aa1ae" stroke-width="1.6" stroke-linejoin="round"/><circle cx="5.5" cy="18.5" r="2" stroke="#9aa1ae" stroke-width="1.6"/><circle cx="18.5" cy="18.5" r="2" stroke="#9aa1ae" stroke-width="1.6"/></svg></div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-meta">
+                  <span class="pilar-tag"><span class="dot"></span>Coulisses</span>
+                  <span class="status-tag"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#00B37A"/><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Publié</span>
+                </div>
+                <h3 class="pc-title">Notre nouvelle flotte de véhicules réfrigérés arrive cet été</h3>
+                <p class="pc-excerpt">Chaîne du froid maîtrisée de bout en bout : 12 nouveaux camions pour garantir l'intégrité de vos produits thermosensibles.</p>
+              </div>
+              <div class="pc-actions" onclick="event.stopPropagation()">
+                <span class="done-tag"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Publié · 87 réactions</span>
+                <button class="mini-link" onclick="openEditorEdit(this.closest('.pcard'))">Voir</button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /queue-col -->
+
+        <!-- ======= SIDEBAR DROITE ======= -->
+        <aside class="side">
+          <!-- Assistant promo -->
+          <div class="sidecard promo">
+            <div class="spark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3.2" stroke="#fff" stroke-width="2"/></svg></div>
+            <h4>Pas d'idée cette semaine ?</h4>
+            <p>Répondez à 4 questions, l'assistant remplit votre file de posts prêts à retoucher.</p>
+            <button class="btn-primary" onclick="openAssistant()">Lancer l'assistant</button>
+          </div>
+
+          <!-- Cadence -->
+          <div class="sidecard">
+            <h4><svg viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 14l3-3 3 3 4-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Votre rythme</h4>
+            <div class="cadence-bar">
+              <div class="seg7 filled">L<div class="bar" style="height:60%"></div></div>
+              <div class="seg7">M</div>
+              <div class="seg7 filled">M<div class="bar" style="height:38%"></div></div>
+              <div class="seg7">J</div>
+              <div class="seg7 filled">V<div class="bar" style="height:38%"></div></div>
+              <div class="seg7">S</div>
+              <div class="seg7">D</div>
+            </div>
+            <div class="cadence-line"><b>3 posts</b> cette semaine · cible <b>3/sem.</b> Vous êtes dans le rythme 👍</div>
+          </div>
+
+          <!-- Légende -->
+          <div class="sidecard">
+            <h4><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Les 5 piliers</h4>
+            <div class="legend-row"><span class="sw" style="background:var(--p-produit)"></span>Produit<span class="n">3</span></div>
+            <div class="legend-row"><span class="sw" style="background:var(--p-conseil)"></span>Conseil officine<span class="n">2</span></div>
+            <div class="legend-row"><span class="sw" style="background:var(--p-coulisses)"></span>Coulisses<span class="n">2</span></div>
+            <div class="legend-row"><span class="sw" style="background:var(--p-recrut)"></span>Recrutement<span class="n">2</span></div>
+            <div class="legend-row"><span class="sw" style="background:var(--p-fort)"></span>Temps fort<span class="n">2</span></div>
+            <div class="legend-note"><b>Statut :</b> contour pointillé = idée · plein clair = rédaction · plein = prêt · coche = publié.</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         DÉMO STATIQUE : les mêmes composants, montrés dépliés
+         (l'assistant + l'éditeur) pour la revue design.
+         ============================================================ -->
+    <div class="demo-band">
+      <span class="k">Vue rapprochée</span>
+      <h2>Assistant stratégie — le mini-quiz</h2>
+      <p>Un parcours guidé en 4 étapes qui dépose un plan de posts daté directement dans la file. Cliquez « Lancer l'assistant » ci-dessus pour la version interactive.</p>
+    </div>
+    <div class="preview-frame">
+      <div class="static-modal" style="margin:26px auto">
+        <div class="modal-head">
+          <div class="modal-eyebrow">Assistant stratégie</div>
+          <h2 style="margin:8px 0 3px">Écran de résultat</h2>
+          <p>Un plan sur mesure, prêt à déposer dans votre file.</p>
+        </div>
+        <div class="modal-body" style="max-height:none">
+          <div class="plan-summary">
+            <div class="big">8</div>
+            <div class="desc"><b>posts sur 4 semaines</b><span>en statut « idée », à retoucher quand vous voulez</span></div>
+            <div class="plan-mix">
+              <span class="mx" style="--pc:var(--p-conseil);--pcbg:#e6f7f0">3 Conseil</span>
+              <span class="mx" style="--pc:var(--p-produit);--pcbg:#e9f0ff">2 Produit</span>
+              <span class="mx" style="--pc:var(--p-coulisses);--pcbg:#fff4e0">1 Coulisses</span>
+              <span class="mx" style="--pc:var(--p-recrut);--pcbg:#ffe9ee">1 Recrut.</span>
+              <span class="mx" style="--pc:var(--p-fort);--pcbg:#f1eafe">1 Temps fort</span>
+            </div>
+          </div>
+          <div class="plan-list" style="max-height:none">
+            <div class="plan-item" style="--pc:var(--p-conseil)"><div class="pbar"></div><div class="pdate">Lun<span>21 juil</span></div><div class="pt"><input value="Bien conserver ses médicaments en été"><div class="pl">Conseil officine</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+            <div class="plan-item" style="--pc:var(--p-produit)"><div class="pbar"></div><div class="pdate">Jeu<span>24 juil</span></div><div class="pt"><input value="Zoom sur notre gamme d'antalgiques disponible J+1"><div class="pl">Produit</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+            <div class="plan-item" style="--pc:var(--p-fort)"><div class="pbar"></div><div class="pdate">Lun<span>28 juil</span></div><div class="pt"><input value="Retour sur une belle année aux côtés des officines"><div class="pl">Temps fort</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+            <div class="plan-item" style="--pc:var(--p-coulisses)"><div class="pbar"></div><div class="pdate">Jeu<span>31 juil</span></div><div class="pt"><input value="Rencontre avec Karim, préparateur de commandes de nuit"><div class="pl">Coulisses</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-ghost"><svg viewBox="0 0 24 24" fill="none"><path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.5 9A9 9 0 0 0 6 5.3L1 10M3.5 15A9 9 0 0 0 18 18.7l5-4.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Régénérer</button>
+          <div class="spacer"></div>
+          <button class="btn-primary" onclick="fakeAdd()">Ajouter ces posts au calendrier</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-band">
+      <span class="k">Vue rapprochée</span>
+      <h2>Éditeur de post — panneau latéral</h2>
+      <p>Titre, texte, pilier, statut, date, visuel et génération du texte, sans jamais quitter la file. Cliquez n'importe quelle carte ou « Nouveau post » pour la version qui glisse depuis la droite.</p>
+    </div>
+    <div class="preview-frame">
+      <div class="pf-mock-cal">
+        <div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div>
+      </div>
+      <div class="static-drawer">
+        <div class="drawer-head">
+          <div class="drawer-eyebrow">Modifier le post</div>
+          <div class="drawer-head-top">
+            <input class="title-input" value="3 réflexes pour sécuriser vos stocks avant l'été">
+            <button class="close-x"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          </div>
+          <button class="gen-btn"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/></svg>Générer le texte</button>
+        </div>
+        <div class="drawer-body">
+          <div class="field">
+            <label>Pilier éditorial</label>
+            <div class="pilar-picker">
+              <button class="pilar-opt" style="--c:var(--p-produit);--cbg:#e9f0ff"><span class="dot"></span>Produit</button>
+              <button class="pilar-opt sel" style="--c:var(--p-conseil);--cbg:#e6f7f0"><span class="dot"></span>Conseil</button>
+              <button class="pilar-opt" style="--c:var(--p-coulisses);--cbg:#fff4e0"><span class="dot"></span>Coulisses</button>
+              <button class="pilar-opt" style="--c:var(--p-recrut);--cbg:#ffe9ee"><span class="dot"></span>Recrut.</button>
+              <button class="pilar-opt" style="--c:var(--p-fort);--cbg:#f1eafe"><span class="dot"></span>Temps fort</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Statut</label>
+            <div class="seg-status">
+              <button><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#fff" stroke="#9aa1ae" stroke-width="1.4" stroke-dasharray="2.4 2"/></svg>Idée</button>
+              <button><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#dfe6f0" stroke="#9aa1ae" stroke-width="1.2"/></svg>Rédaction</button>
+              <button class="on"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" fill="#00B37A"/></svg>Prêt</button>
+              <button><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#00B37A"/><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Publié</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Date et heure de publication</label>
+            <div class="date-row">
+              <input class="inp" type="text" value="Lundi 6 juillet 2026">
+              <input class="inp time" type="text" value="08:30">
+            </div>
+          </div>
+          <div class="field">
+            <label>Texte du post</label>
+            <div class="ta-wrap">
+              <textarea class="post-text">Ruptures saisonnières, congés d'équipe, hausse de la demande solaire… L'été met vos stocks à l'épreuve. 🌡️
+
+Voici 3 réflexes simples pour aborder juillet-août sereinement :
+
+1️⃣ Anticipez vos commandes sur les familles à forte rotation estivale (solaires, antihistaminiques, antidiarrhéiques).
+2️⃣ Identifiez vos références sensibles aux ruptures et sécurisez un stock tampon.
+3️⃣ Appuyez-vous sur la disponibilité J+1 Intégral pour réappro sans surstockage.
+
+Chez Intégral Pharma, nos plateformes restent mobilisées tout l'été pour que vos patients ne manquent de rien.
+
+Et vous, quel est votre réflexe n°1 avant les vacances ? 👇</textarea>
+              <span class="char-count">648 / 3000</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Visuel</label>
+            <div class="dropzone">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="8.5" r="1.8" stroke="currentColor" stroke-width="1.6"/><path d="m21 15-5-5L5 21" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              <b>Ajouter un visuel</b>
+              <span>Glissez une image ici, ou cliquez pour parcourir</span>
+            </div>
+          </div>
+        </div>
+        <div class="drawer-foot">
+          <button class="btn-primary"><svg viewBox="0 0 24 24" fill="none"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M17 21v-8H7v8M7 3v5h8" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>Enregistrer</button>
+          <button class="publish-cta" style="display:inline-flex"><svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>Programmer</button>
+          <button class="del">Supprimer</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ============ SCRIM + DRAWER (interactif) ============ -->
+<div class="scrim" id="scrim" onclick="closeAll()"></div>
+
+<div class="drawer" id="drawer" role="dialog" aria-label="Éditeur de post">
+  <div class="drawer-head">
+    <div class="drawer-eyebrow" id="drawerEyebrow">Nouveau post</div>
+    <div class="drawer-head-top">
+      <input class="title-input" id="drawerTitle" placeholder="Titre du post…">
+      <button class="close-x" onclick="closeAll()" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <button class="gen-btn" id="genBtn" onclick="generateText()"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/></svg><span id="genLabel">Générer le texte</span></button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Pilier éditorial</label>
+      <div class="pilar-picker" id="pilarPicker">
+        <button class="pilar-opt" data-p="produit" style="--c:var(--p-produit);--cbg:#e9f0ff" onclick="selPilar(this)"><span class="dot"></span>Produit</button>
+        <button class="pilar-opt" data-p="conseil" style="--c:var(--p-conseil);--cbg:#e6f7f0" onclick="selPilar(this)"><span class="dot"></span>Conseil</button>
+        <button class="pilar-opt" data-p="coulisses" style="--c:var(--p-coulisses);--cbg:#fff4e0" onclick="selPilar(this)"><span class="dot"></span>Coulisses</button>
+        <button class="pilar-opt" data-p="recrut" style="--c:var(--p-recrut);--cbg:#ffe9ee" onclick="selPilar(this)"><span class="dot"></span>Recrut.</button>
+        <button class="pilar-opt" data-p="fort" style="--c:var(--p-fort);--cbg:#f1eafe" onclick="selPilar(this)"><span class="dot"></span>Temps fort</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Statut</label>
+      <div class="seg-status" id="segStatus">
+        <button data-s="idee" onclick="selStatus(this)"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#fff" stroke="#9aa1ae" stroke-width="1.4" stroke-dasharray="2.4 2"/></svg>Idée</button>
+        <button data-s="redaction" onclick="selStatus(this)"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#dfe6f0" stroke="#9aa1ae" stroke-width="1.2"/></svg>Rédaction</button>
+        <button data-s="pret" onclick="selStatus(this)"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" fill="#00B37A"/></svg>Prêt</button>
+        <button data-s="publie" onclick="selStatus(this)"><svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#00B37A"/><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Publié</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Date et heure de publication</label>
+      <div class="date-row">
+        <input class="inp" id="drawerDate" type="text" value="Lundi 6 juillet 2026">
+        <input class="inp time" type="text" value="08:30">
+      </div>
+    </div>
+    <div class="field">
+      <label>Texte du post</label>
+      <div class="ta-wrap">
+        <textarea class="post-text" id="postText" oninput="countChars()" placeholder="Écrivez votre post, ou cliquez « Générer le texte » pour un premier jet…"></textarea>
+        <span class="char-count" id="charCount">0 / 3000</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Visuel</label>
+      <div class="dropzone">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="8.5" r="1.8" stroke="currentColor" stroke-width="1.6"/><path d="m21 15-5-5L5 21" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <b>Ajouter un visuel</b>
+        <span>Glissez une image ici, ou cliquez pour parcourir</span>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn-primary" onclick="savePost()"><svg viewBox="0 0 24 24" fill="none"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M17 21v-8H7v8M7 3v5h8" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>Enregistrer</button>
+    <button class="publish-cta" id="publishCta" onclick="publishFromDrawer()"><svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>Programmer</button>
+    <button class="del" onclick="closeAll()">Supprimer</button>
+  </div>
+</div>
+
+<!-- ============ MODALE ASSISTANT (interactif) ============ -->
+<div class="modal" id="assistant" role="dialog" aria-label="Assistant stratégie">
+  <div class="modal-head">
+    <button class="close-x" onclick="closeAll()" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <div class="modal-eyebrow">Assistant stratégie</div>
+    <h2 id="asstTitle">Quel est votre objectif ?</h2>
+    <p id="asstSub">On adapte le plan à ce que vous voulez obtenir.</p>
+  </div>
+  <div class="stepper" id="stepper">
+    <div class="step active"><span class="num">1</span><span class="lab">Objectif</span></div>
+    <div class="step-line"></div>
+    <div class="step"><span class="num">2</span><span class="lab">Cadence</span></div>
+    <div class="step-line"></div>
+    <div class="step"><span class="num">3</span><span class="lab">Ton</span></div>
+    <div class="step-line"></div>
+    <div class="step"><span class="num">4</span><span class="lab">Piliers</span></div>
+  </div>
+  <div class="modal-body">
+    <!-- étape 1 -->
+    <div class="modal-panel on" data-panel="1">
+      <div class="opt-grid">
+        <button class="opt-card sel" onclick="pickOpt(this)"><div class="oc-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Notoriété officines</b><span>Être visible auprès des pharmaciens</span></div><div class="opt-check"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div></button>
+        <button class="opt-card" onclick="pickOpt(this)"><div class="oc-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M22 11h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><b>Recruter</b><span>Attirer de nouveaux talents</span></div><div class="opt-check"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div></button>
+        <button class="opt-card" onclick="pickOpt(this)"><div class="oc-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2.5 6.5L21 9l-5 4 1.5 7L12 16l-5.5 4L8 13 3 9l6.5-.5L12 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div><b>Mettre en avant un service</b><span>Dispo J+1, chaîne du froid…</span></div><div class="opt-check"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div></button>
+        <button class="opt-card" onclick="pickOpt(this)"><div class="oc-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.5 1-1a5.5 5.5 0 0 0 0-7.9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div><div><b>Fidéliser</b><span>Renforcer le lien avec vos clients</span></div><div class="opt-check"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div></button>
+      </div>
+    </div>
+    <!-- étape 2 -->
+    <div class="modal-panel" data-panel="2">
+      <p class="q-sub">À quelle fréquence souhaitez-vous publier ?</p>
+      <div class="pill-row">
+        <button class="pill-choice" onclick="pickPill(this)">1×<span>par semaine</span></button>
+        <button class="pill-choice sel" onclick="pickPill(this)">2×<span>par semaine</span></button>
+        <button class="pill-choice" onclick="pickPill(this)">3×<span>par semaine</span></button>
+      </div>
+      <div class="range-row">
+        <div class="field-mini"><label>À partir du</label><input class="inp" type="text" value="Lundi 21 juillet 2026"></div>
+        <div class="field-mini"><label>Jusqu'au</label><input class="inp" type="text" value="Dimanche 17 août 2026"></div>
+      </div>
+    </div>
+    <!-- étape 3 -->
+    <div class="modal-panel" data-panel="3">
+      <p class="q-sub">Sur quel ton l'assistant doit-il écrire ?</p>
+      <div>
+        <button class="tone-chip sel" onclick="pickTone(this)">Pro &amp; chaleureux <small>(défaut)</small></button>
+        <button class="tone-chip" onclick="pickTone(this)">Expert</button>
+        <button class="tone-chip" onclick="pickTone(this)">Convivial</button>
+      </div>
+      <p class="legend-note" style="margin-top:18px;border:none;padding:0">Vous pourrez retoucher chaque texte : rien n'est figé.</p>
+    </div>
+    <!-- étape 4 -->
+    <div class="modal-panel" data-panel="4">
+      <p class="q-sub">Quels piliers couvrir, et avec quel poids ?</p>
+      <div id="weights">
+        <div class="wrow on" style="--c:var(--p-conseil)" onclick="toggleW(this)"><div class="chk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="pn"><span class="dot"></span>Conseil officine</div><div class="weight"><div class="track"><div class="fill" style="width:65%"></div></div><span class="wnum">Souvent</span></div></div>
+        <div class="wrow on" style="--c:var(--p-produit)" onclick="toggleW(this)"><div class="chk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="pn"><span class="dot"></span>Produit</div><div class="weight"><div class="track"><div class="fill" style="width:45%"></div></div><span class="wnum">Parfois</span></div></div>
+        <div class="wrow on" style="--c:var(--p-coulisses)" onclick="toggleW(this)"><div class="chk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="pn"><span class="dot"></span>Coulisses</div><div class="weight"><div class="track"><div class="fill" style="width:30%"></div></div><span class="wnum">Un peu</span></div></div>
+        <div class="wrow on" style="--c:var(--p-recrut)" onclick="toggleW(this)"><div class="chk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="pn"><span class="dot"></span>Recrutement</div><div class="weight"><div class="track"><div class="fill" style="width:20%"></div></div><span class="wnum">Un peu</span></div></div>
+        <div class="wrow" style="--c:var(--p-fort)" onclick="toggleW(this)"><div class="chk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="pn"><span class="dot"></span>Temps fort</div><div class="weight"><div class="track"><div class="fill" style="width:15%"></div></div><span class="wnum">Rare</span></div></div>
+      </div>
+    </div>
+    <!-- résultat -->
+    <div class="modal-panel" data-panel="5">
+      <div class="plan-summary">
+        <div class="big">8</div>
+        <div class="desc"><b>posts sur 4 semaines</b><span>en statut « idée », à retoucher quand vous voulez</span></div>
+        <div class="plan-mix">
+          <span class="mx" style="--pc:var(--p-conseil);--pcbg:#e6f7f0">3 Conseil</span>
+          <span class="mx" style="--pc:var(--p-produit);--pcbg:#e9f0ff">2 Produit</span>
+          <span class="mx" style="--pc:var(--p-coulisses);--pcbg:#fff4e0">1 Coulisses</span>
+          <span class="mx" style="--pc:var(--p-recrut);--pcbg:#ffe9ee">1 Recrut.</span>
+          <span class="mx" style="--pc:var(--p-fort);--pcbg:#f1eafe">1 Temps fort</span>
+        </div>
+      </div>
+      <div class="plan-list">
+        <div class="plan-item" style="--pc:var(--p-conseil)"><div class="pbar"></div><div class="pdate">Lun<span>21 juil</span></div><div class="pt"><input value="Bien conserver ses médicaments quand il fait chaud"><div class="pl">Conseil officine</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+        <div class="plan-item" style="--pc:var(--p-produit)"><div class="pbar"></div><div class="pdate">Jeu<span>24 juil</span></div><div class="pt"><input value="Zoom sur nos antalgiques disponibles en J+1"><div class="pl">Produit</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+        <div class="plan-item" style="--pc:var(--p-conseil)"><div class="pbar"></div><div class="pdate">Lun<span>28 juil</span></div><div class="pt"><input value="Voyages d'été : la trousse à pharmacie idéale"><div class="pl">Conseil officine</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+        <div class="plan-item" style="--pc:var(--p-coulisses)"><div class="pbar"></div><div class="pdate">Jeu<span>31 juil</span></div><div class="pt"><input value="Rencontre avec Karim, préparateur de nuit"><div class="pl">Coulisses</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+        <div class="plan-item" style="--pc:var(--p-produit)"><div class="pbar"></div><div class="pdate">Lun<span>4 août</span></div><div class="pt"><input value="Rentrée : anticipez vos commandes scolaires santé"><div class="pl">Produit</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+        <div class="plan-item" style="--pc:var(--p-conseil)"><div class="pbar"></div><div class="pdate">Jeu<span>7 août</span></div><div class="pt"><input value="Piqûres et coups de soleil : vos conseils au comptoir"><div class="pl">Conseil officine</div></div><button class="pedit"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-foot" id="asstFoot">
+    <button class="btn-ghost" id="asstBack" style="visibility:hidden" onclick="asstBack()"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour</button>
+    <div class="spacer"></div>
+    <button class="btn-primary" id="asstNext" onclick="asstNext()">Continuer<svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- ============ MODALE IMPORT (interactif) ============ -->
+<div class="modal" id="import" role="dialog" aria-label="Importer d'anciens posts">
+  <div class="modal-head">
+    <button class="close-x" onclick="closeAll()" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <div class="modal-eyebrow">Importer d'anciens posts</div>
+    <h2>Reconstituez votre historique</h2>
+    <p>Collez un ancien post LinkedIn : on le range à sa date, en « publié ».</p>
+  </div>
+  <div class="modal-body">
+    <div class="field" style="margin-bottom:16px">
+      <label style="display:block;font-size:12px;font-weight:700;color:var(--ink-70);margin-bottom:9px">Texte de l'ancien post</label>
+      <textarea class="post-text" style="min-height:120px" placeholder="Collez ici le texte de votre publication passée…">Cet été, toute l'équipe Intégral reste mobilisée pour vos officines. Merci de votre confiance ! 🚚💊</textarea>
+    </div>
+    <div class="range-row">
+      <div class="field-mini"><label>Date de publication</label><input class="inp" type="text" value="Lundi 30 juin 2026"></div>
+      <div class="field-mini"><label>Pilier</label>
+        <select class="inp"><option>Coulisses</option><option>Produit</option><option>Conseil officine</option><option>Recrutement</option><option>Temps fort</option></select>
+      </div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <div class="spacer"></div>
+    <button class="btn-ghost" onclick="closeAll()">Annuler</button>
+    <button class="btn-primary" onclick="fakeImport()">Ajouter à l'historique</button>
+  </div>
+</div>
+
+<!-- toast -->
+<div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="toastMsg">Enregistré</span></div>
+
+<script>
+/* ============ util ============ */
+var scrim = document.getElementById('scrim');
+var drawer = document.getElementById('drawer');
+var assistant = document.getElementById('assistant');
+var importM = document.getElementById('import');
+var toastEl = document.getElementById('toast');
+
+function showScrim(){ scrim.classList.add('show'); }
+function closeAll(){
+  scrim.classList.remove('show');
+  drawer.classList.remove('show');
+  assistant.classList.remove('show');
+  importM.classList.remove('show');
+}
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeAll(); });
+
+function toast(msg, blue){
+  document.getElementById('toastMsg').textContent = msg;
+  toastEl.classList.toggle('blue', !!blue);
+  toastEl.classList.add('show');
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(function(){ toastEl.classList.remove('show'); }, 2600);
+}
+
+/* ============ éditeur (drawer) ============ */
+var PIL_LABEL = {produit:'Produit',conseil:'Conseil',coulisses:'Coulisses',recrut:'Recrut.',fort:'Temps fort'};
+
+function openEditorNew(){
+  document.getElementById('drawerEyebrow').textContent = 'Nouveau post';
+  document.getElementById('drawerTitle').value = '';
+  document.getElementById('postText').value = '';
+  setPilar('conseil');
+  setStatus('idee');
+  countChars();
+  drawer.classList.add('show'); showScrim();
+  setTimeout(function(){ document.getElementById('drawerTitle').focus(); },260);
+}
+function openEditorEdit(card){
+  document.getElementById('drawerEyebrow').textContent = 'Modifier le post';
+  document.getElementById('drawerTitle').value = card.getAttribute('data-title') || '';
+  setPilar(card.getAttribute('data-pilar') || 'conseil');
+  setStatus(card.getAttribute('data-status') || 'redaction');
+  // texte d'exemple selon pilier
+  var t = card.getAttribute('data-title') || '';
+  document.getElementById('postText').value = card.querySelector('.pc-excerpt') ? card.querySelector('.pc-excerpt').textContent.trim() : '';
+  if(!document.getElementById('postText').value){
+    document.getElementById('postText').value = '';
+  }
+  countChars();
+  drawer.classList.add('show'); showScrim();
+}
+function selPilar(btn){ setPilar(btn.getAttribute('data-p')); }
+function setPilar(p){
+  var opts = document.querySelectorAll('#pilarPicker .pilar-opt');
+  opts.forEach(function(o){ o.classList.toggle('sel', o.getAttribute('data-p')===p); });
+}
+function selStatus(btn){ setStatus(btn.getAttribute('data-s')); }
+function setStatus(s){
+  var opts = document.querySelectorAll('#segStatus button');
+  opts.forEach(function(o){ o.classList.toggle('on', o.getAttribute('data-s')===s); });
+  var pub = document.getElementById('publishCta');
+  pub.style.display = (s==='pret') ? 'inline-flex' : 'none';
+}
+function countChars(){
+  var v = document.getElementById('postText').value.length;
+  document.getElementById('charCount').textContent = v + ' / 3000';
+}
+function savePost(){ closeAll(); toast('Post enregistré dans votre file'); }
+function publishFromDrawer(){ closeAll(); toast('Post programmé — il partira à l\'heure prévue'); }
+
+/* génération de texte simulée */
+var GEN = {
+  produit:"Bonne nouvelle pour vos rayons ! 💊\n\n[Nouveau produit] rejoint notre catalogue, disponible en J+1 sur l'ensemble de nos plateformes.\n\n✔️ Livraison rapide, sans surstockage\n✔️ Traçabilité complète\n✔️ Un interlocuteur dédié pour vos questions\n\nParlez-en à votre commercial Intégral ou retrouvez la fiche sur votre Offilog.\n\nQuels produits aimeriez-vous voir arriver en priorité ? 👇",
+  conseil:"Au comptoir, un bon conseil fait toute la différence. 🩺\n\nVoici notre mémo du moment pour accompagner vos patients :\n\n1️⃣ [Premier réflexe]\n2️⃣ [Deuxième réflexe]\n3️⃣ [Troisième réflexe]\n\nChez Intégral Pharma, on vous aide à avoir le bon produit au bon moment pour délivrer le bon conseil.\n\nEt vous, quelle question revient le plus souvent à votre officine cet été ? 👇",
+  coulisses:"Dans les coulisses d'Intégral Pharma… 🌙\n\nPendant que vos officines ferment, nos équipes préparent, contrôlent et chargent vos commandes pour une livraison au petit matin.\n\nDerrière chaque colis, ce sont des femmes et des hommes engagés pour la santé de vos patients.\n\nMerci à eux. 👏\n\nEnvie de découvrir nos métiers ? Dites-le en commentaire ! 👇",
+  recrut:"On recrute ! 🤝\n\nIntégral Pharma agrandit ses équipes et recherche [poste] pour rejoindre l'aventure.\n\nCe qu'on offre :\n✔️ Une entreprise à taille humaine\n✔️ Un vrai sens du service pharmaceutique\n✔️ Des équipes soudées\n\nVous vous reconnaissez ? Postulez ou partagez autour de vous ! 👇",
+  fort:"Aujourd'hui, on prend un moment pour le dire : merci. 🙏\n\n[Occasion / temps fort]\n\nDerrière chaque officine, il y a des équipes qui prennent soin des autres au quotidien. Chez Intégral Pharma, nous sommes fiers de vous accompagner.\n\nBelle journée à toutes et tous ! 👇"
+};
+function generateText(){
+  var btn = document.getElementById('genBtn');
+  var lab = document.getElementById('genLabel');
+  if(btn.classList.contains('loading')) return;
+  btn.classList.add('loading'); lab.textContent = 'Génération…';
+  var sel = document.querySelector('#pilarPicker .pilar-opt.sel');
+  var p = sel ? sel.getAttribute('data-p') : 'conseil';
+  setTimeout(function(){
+    document.getElementById('postText').value = GEN[p] || GEN.conseil;
+    countChars();
+    btn.classList.remove('loading'); lab.textContent = 'Régénérer le texte';
+    toast('Premier jet généré — à vous de le personnaliser', true);
+  }, 900);
+}
+
+/* publier depuis la file */
+function publishPost(btn){
+  var card = btn.closest('.pcard');
+  card.classList.add('published');
+  var actions = card.querySelector('.pc-actions');
+  actions.innerHTML = '<span class="done-tag"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Publié à l\'instant</span>';
+  var st = card.querySelector('.status-tag');
+  if(st) st.innerHTML = '<svg class="sdot" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#00B37A"/><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Publié';
+  toast('Post publié sur LinkedIn 🎉');
+}
+
+/* ============ assistant (modale, 4 étapes + résultat) ============ */
+var asstStep = 1; // 1..4 puis 5=résultat
+var ASST_TITLES = {
+  1:['Quel est votre objectif ?','On adapte le plan à ce que vous voulez obtenir.'],
+  2:['À quel rythme publier ?','Choisissez une cadence tenable dans le temps.'],
+  3:['Sur quel ton écrire ?','L\'assistant s\'adapte à la voix d\'Intégral.'],
+  4:['Quels piliers couvrir ?','Cochez et pondérez vos thèmes.'],
+  5:['Votre plan est prêt !','Retouchez les titres puis déposez-les dans la file.']
+};
+function openAssistant(){
+  asstStep = 1; renderAsst();
+  assistant.classList.add('show'); showScrim();
+}
+function renderAsst(){
+  document.querySelectorAll('#assistant .modal-panel').forEach(function(p){
+    p.classList.toggle('on', +p.getAttribute('data-panel')===asstStep);
+  });
+  // stepper
+  var steps = document.querySelectorAll('#stepper .step');
+  var lines = document.querySelectorAll('#stepper .step-line');
+  steps.forEach(function(s,i){
+    var n=i+1;
+    s.classList.toggle('active', n===asstStep && asstStep<=4);
+    s.classList.toggle('done', n<asstStep || asstStep===5);
+  });
+  lines.forEach(function(l,i){ l.classList.toggle('done', (i+1)<asstStep || asstStep===5); });
+  // titres
+  document.getElementById('asstTitle').textContent = ASST_TITLES[asstStep][0];
+  document.getElementById('asstSub').textContent = ASST_TITLES[asstStep][1];
+  // boutons
+  document.getElementById('asstBack').style.visibility = (asstStep>1) ? 'visible' : 'hidden';
+  var next = document.getElementById('asstNext');
+  if(asstStep===4){ next.innerHTML = 'Générer le plan <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/></svg>'; }
+  else if(asstStep===5){ next.innerHTML = 'Ajouter ces posts au calendrier'; }
+  else { next.innerHTML = 'Continuer <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+  // regen button on result
+  document.getElementById('asstBack').innerHTML = (asstStep===5)
+    ? '<svg viewBox="0 0 24 24" fill="none"><path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.5 9A9 9 0 0 0 6 5.3L1 10M3.5 15A9 9 0 0 0 18 18.7l5-4.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Régénérer'
+    : '<svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour';
+}
+function asstNext(){
+  if(asstStep===5){ closeAll(); toast('8 posts ajoutés à votre file en statut « idée »'); return; }
+  asstStep++; renderAsst();
+}
+function asstBack(){
+  if(asstStep===5){ // régénérer
+    toast('Nouveau plan généré', true); return;
+  }
+  if(asstStep>1){ asstStep--; renderAsst(); }
+}
+
+/* pickers assistant */
+function pickOpt(el){ el.parentNode.querySelectorAll('.opt-card').forEach(function(o){o.classList.remove('sel')}); el.classList.add('sel'); }
+function pickPill(el){ el.parentNode.querySelectorAll('.pill-choice').forEach(function(o){o.classList.remove('sel')}); el.classList.add('sel'); }
+function pickTone(el){ el.parentNode.querySelectorAll('.tone-chip').forEach(function(o){o.classList.remove('sel')}); el.classList.add('sel'); }
+function toggleW(row){ row.classList.toggle('on'); row.classList.toggle('off', !row.classList.contains('on')); }
+
+/* ============ import ============ */
+function openImport(){ importM.classList.add('show'); showScrim(); }
+function fakeImport(){ closeAll(); toast('Post ajouté à votre historique (statut publié)'); }
+function fakeAdd(){ toast('8 posts ajoutés à votre file en statut « idée »'); }
+</script>
