@@ -246,6 +246,7 @@
   }
 
   function renderList(root) {
+    if (V2.mktLinkedin && V2.mktLinkedin.loadPosts && !V2.mktLinkedin._posts().length) V2.mktLinkedin.loadPosts().then(function () { if (V2.route && V2.route.name === 'marketing' && !V2.route.param) V2.render(); });
     var supports = (items || []).filter(function (x) { return x.type !== 'selection'; });
     var selections = (items || []).filter(function (x) { return x.type === 'selection'; });
     var all = (items || []).slice().sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
@@ -308,7 +309,9 @@
         '<div class="mkt-links">' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'linkedin\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Rétroplanning LinkedIn</span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Rétroplanning LinkedIn' +
+              ((V2.mktLinkedin && V2.mktLinkedin.dueCount && V2.mktLinkedin.dueCount() > 0) ? ' <b class="mkt-badge">' + V2.mktLinkedin.dueCount() + '</b>' : '') +
+            '</span>' +
             '<span class="mkt-link-s">Calendrier éditorial · préparer et planifier vos posts</span></span>' +
             '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
           '</a>' +

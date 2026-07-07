@@ -41,7 +41,13 @@
       '.li-imgrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}' +
       '.li-imgprev img{max-width:160px;border-radius:8px;display:block;margin-bottom:6px}' +
       '.li-panelft{display:flex;justify-content:space-between;gap:8px;margin-top:16px}' +
-      '.li-del{border-color:#FF4D6D;color:#FF4D6D}';
+      '.li-del{border-color:#FF4D6D;color:#FF4D6D}' +
+      '.li-due{background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.3);border-radius:12px;padding:12px 14px;margin:6px 0 14px}' +
+      '.li-duerow{display:flex;align-items:center;gap:10px;margin-top:8px}' +
+      '.li-duedot{width:9px;height:9px;border-radius:50%;flex:none}' +
+      '.li-duet{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.li-dued{opacity:.6;font-size:12px}' +
+      '.mkt-badge{background:#FF4D6D;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:6px}';
     document.head.appendChild(s);
   })();
 
@@ -142,6 +148,12 @@
 
   function postsOnDay(d) { return posts.filter(function (p) { return sameDay(p.date, d); }); }
 
+  function duePosts() {
+    var now = Date.now();
+    return posts.filter(function (p) { return p.status !== 'publie' && p.date && new Date(p.date).getTime() <= now; })
+      .sort(function (a, b) { return new Date(a.date) - new Date(b.date); });
+  }
+
   function renderCal(root) {
     var y = calRef.getFullYear(), m = calRef.getMonth();
     var first = new Date(y, m, 1);
@@ -169,6 +181,17 @@
 
     root.innerHTML = (V2.topbar ? V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) : '') +
       '<div class="li-wrap">' +
+        (function () {
+          var due = duePosts(); if (!due.length) return '';
+          var rows = due.map(function (p) {
+            return '<div class="li-duerow"><span class="li-duedot" style="background:' + pillar(p.pillar).color + '"></span>' +
+              '<span class="li-duet">' + esc(p.title || p.body.slice(0, 40) || 'Post') + '</span>' +
+              '<span class="li-dued">' + (p.date || '').slice(0, 10) + '</span>' +
+              '<button class="li-btn" onclick="V2.li.openPost(\'' + esc(p.id) + '\')">Ouvrir</button>' +
+              '<button class="li-btn li-btn-p" onclick="V2.li.publish(\'' + esc(p.id) + '\')">Publier</button></div>';
+          }).join('');
+          return '<div class="li-due"><b>⚠ À publier (' + due.length + ')</b>' + rows + '</div>';
+        })() +
         '<div class="li-bar">' +
           '<h1 class="li-h1">Rétroplanning LinkedIn</h1>' +
           '<div class="li-actions">' +
@@ -300,4 +323,23 @@
   };
   V2.li.newEvent = function () { alert('Temps fort (Task 6)'); };
   V2.li.importOpen = function () { alert('Import (Task 7)'); };
+
+  V2.li.publish = function (id) {
+    var p = null; for (var i = 0; i < posts.length; i++) if (posts[i].id === id) p = posts[i];
+    if (!p) return;
+    var txt = p.body || '';
+    function afterCopy() {
+      window.open('https://www.linkedin.com/company/setup/new/', '_blank'); // ouvre LinkedIn (page/compositeur)
+      if (confirm('Texte copié. LinkedIn est ouvert : collez, ajoutez le visuel et publiez.\n\nMarquer ce post comme « Publié » ?')) {
+        var url = prompt('Collez le lien du post publié (facultatif) :', p.linkedin_url || '');
+        p.status = 'publie'; if (url) p.linkedin_url = url;
+        savePost(p).then(function () { V2.render(); });
+      }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(afterCopy, function () { window.prompt('Copiez le texte :', txt); afterCopy(); });
+    } else { window.prompt('Copiez le texte :', txt); afterCopy(); }
+  };
+
+  V2.mktLinkedin.dueCount = function () { try { return duePosts().length; } catch (e) { return 0; } };
 })();
