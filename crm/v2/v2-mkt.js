@@ -42,6 +42,7 @@
 
   var items = null;          // null = pas encore chargé
   var backend = 'local';     // 'supabase' | 'local'
+  var liKicked = false;      // posts LinkedIn chargés une seule fois (badge « à publier »)
   var editing = null;
   var pickSrc = 'mix';       // source : 'mix' (sélection grossiste) | 'gros' (catalogue méd.) | 'offilog'
   var catSrc = 'nrreal';   // Catalogues : 'nrreal' (ventes NR réelles) | 'nr' | 'integral' | 'itp' | 'best'
@@ -146,9 +147,95 @@
     if (window.MKT_NR) { cb(); return; }
     if (nrLoading) { setTimeout(function () { ensureNr(cb); }, 250); return; }
     nrLoading = true;
-    var s = document.createElement('script'); s.src = 'mkt-nr-data.js?v=20260703d20';
+    var s = document.createElement('script'); s.src = 'mkt-nr-data.js?v=20260703d24';
     s.onload = function () { nrLoading = false; cb(); }; s.onerror = function () { nrLoading = false; cb(); };
     document.head.appendChild(s);
+  }
+  // SheetJS chargé à la demande (export Excel) — même lib que l'import (v2-audit)
+  var xlsxLoading = false;
+  function ensureXLSX(cb) {
+    if (window.XLSX) { cb(true); return; }
+    if (xlsxLoading) { setTimeout(function () { ensureXLSX(cb); }, 250); return; }
+    xlsxLoading = true;
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js';
+    s.onload = function () { xlsxLoading = false; cb(!!window.XLSX); };
+    s.onerror = function () { xlsxLoading = false; cb(false); };
+    document.head.appendChild(s);
+  }
+
+  // ══ TOP 50 PAR CATÉGORIE (Princeps + NR, hors génériques) ══
+  function t50Bareme(pp) { if (pp <= 4.33) return 0.18; if (pp <= 468) return Math.round(pp * 0.0389 * 100) / 100; return 19.50; }
+  // Construit les catégories : 3 familles princeps (PROD_STATS, top 50 par nb de
+  // pharmacies qui commandent) + 3 catégories NR (MKT_NR, top 50 par volume vendu).
+  function buildTop50() {
+    var out = [];
+    var PS = window.PROD_STATS || [];
+    [{ f: 'pr_low', cat: 'Princeps · petits prix', color: '#1E9E6A' },
+     { f: 'pr_mid', cat: 'Princeps · intermédiaire', color: '#0050E6' },
+     { f: 'pr_high', cat: 'Princeps · cher', color: '#C7791A' }].forEach(function (g) {
+      var rows = PS.filter(function (r) { return r.f === g.f && r.ppht > 0; });
+      rows.sort(function (a, b) { return (b.n || 0) - (a.n || 0) || (b.rota || 0) - (a.rota || 0); });
+      rows = rows.slice(0, 50).map(function (r) {
+        var pp = r.ppht;
+        var net = (r.net > 0 && r.net < pp) ? r.net : Math.round((pp - t50Bareme(pp)) * 100) / 100;
+        var rem = (pp > 0 && net > 0 && net < pp) ? Math.round((1 - net / pp) * 1000) / 10 : 0;
+        return { d: r.d, cip: r.c, ppht: pp, net: net, remise: rem, signal: r.n || 0, kind: 'princeps' };
+      });
+      if (rows.length) out.push({ cat: g.cat, color: g.color, kind: 'princeps', rows: rows });
+    });
+    var NR = window.MKT_NR, want = { 'Médicaments conseil (OTC non remboursables)': '#E0556E', 'Dispositifs médicaux': '#7C3AED', 'Parapharmacie': '#00B5D8' };
+    if (NR && NR.cats) {
+      NR.cats.forEach(function (c) {
+        if (!want[c.cat]) return;
+        var rows = (c.rows || []).slice(0, 50).map(function (r) {
+          return { d: r.d, cip: r.cip, ppht: 0, net: r.p || 0, remise: 0, signal: r.vol || 0, kind: 'nr' };
+        });
+        if (rows.length) out.push({ cat: c.cat, color: want[c.cat], kind: 'nr', rows: rows });
+      });
+    }
+    return out;
+  }
+  function t50Eur(v) { return (v ? (+v).toFixed(2).replace('.', ',') : '—') + (v ? ' €' : ''); }
+  // Belle fiche PDF : sections par catégorie, colonnes PPHT → abandon → prix net.
+  function top50Html(cats) {
+    var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    var totalProd = cats.reduce(function (s, c) { return s + c.rows.length; }, 0);
+    var secs = cats.map(function (c) {
+      var isNr = c.kind === 'nr';
+      var trs = c.rows.map(function (r, i) {
+        var ppht = (r.remise > 0 && r.ppht > 0) ? '<span style="text-decoration:line-through;color:#B6BFCE">' + t50Eur(r.ppht) + '</span>' : '—';
+        var rem = r.remise > 0 ? '−' + String(r.remise).replace('.', ',') + ' %' : '—';
+        var sig = isNr ? (r.signal > 0 ? r.signal.toLocaleString('fr') : '—') : (r.signal + '<span style="color:#9AA1B2;font-weight:500">/621</span>');
+        return '<tr style="border-bottom:1px solid #EEF1F6">' +
+          '<td style="padding:3px 7px;color:#9AA1B2;font-size:9px;text-align:right">' + (i + 1) + '</td>' +
+          '<td style="padding:3px 7px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.d || '').slice(0, 52)) + '</td>' +
+          '<td style="padding:3px 7px;font-family:monospace;font-size:8.5px;color:#737A8C">' + esc(r.cip || '') + '</td>' +
+          '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:9.5px">' + ppht + '</td>' +
+          '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:700;color:' + (r.remise > 0 ? '#1E9E6A' : '#B6BFCE') + '">' + rem + '</td>' +
+          '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:11px;font-weight:800;color:#0050E6">' + t50Eur(r.net) + '</td>' +
+          '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:700;color:#10131C">' + sig + '</td>' +
+          '</tr>';
+      }).join('');
+      return '<div style="margin-bottom:13px;page-break-inside:avoid">' +
+        '<div style="display:flex;align-items:center;gap:8px;padding:6px 11px;background:' + c.color + ';border-radius:6px 6px 0 0">' +
+          '<div style="font-size:11.5px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.4px">' + esc(c.cat) + '</div>' +
+          '<div style="font-size:9px;color:rgba(255,255,255,.85);margin-left:auto;font-weight:700">top ' + c.rows.length + '</div></div>' +
+        '<table style="width:100%;border-collapse:collapse;border:1px solid #ECEFF5;border-top:none"><thead><tr style="background:#F7F9FC">' +
+          ['#', 'Produit', 'CIP', 'PPHT', 'Abandon', 'Prix net IP', (isNr ? 'Volume' : 'Pharmacies')].map(function (h, k) {
+            return '<th style="padding:5px 7px;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;text-align:' + (k === 1 || k === 2 ? 'left' : 'right') + '">' + h + '</th>';
+          }).join('') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
+    }).join('');
+    return '<div style="width:794px;box-sizing:border-box;padding:26px 28px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C;background:#fff">' +
+      '<div style="display:flex;align-items:center;gap:13px;border-bottom:2px solid #10131C;padding-bottom:13px;margin-bottom:15px">' +
+        '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:16px">IP</div>' +
+        '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma · catalogue</div>' +
+          '<div style="font-size:19px;font-weight:800;letter-spacing:-.01em">Top 50 par catégorie — Princeps & Non remboursables</div>' +
+          '<div style="font-size:10px;color:#737A8C">' + totalProd + ' produits · princeps classés par nb de pharmacies qui commandent · NR par volume vendu · prix net indicatif</div></div>' +
+        '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + dateStr + '</div>' +
+      '</div>' + secs +
+      '<div style="margin-top:14px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · document commercial · Prix nets HT indicatifs · Princeps : PPHT − abandon de marge · NR/parapharmacie : prix libre</div>' +
+    '</div>';
   }
   // renvoie [ppht, stock] pour un CIP dans l'établissement courant (ou combiné "Tous")
   function etabRec(cip) {
@@ -246,7 +333,7 @@
   }
 
   function renderList(root) {
-    if (V2.mktLinkedin && V2.mktLinkedin.loadPosts && !V2.mktLinkedin._posts().length) V2.mktLinkedin.loadPosts().then(function () { if (V2.route && V2.route.name === 'marketing' && !V2.route.param) V2.render(); });
+    if (!liKicked && V2.mktLinkedin && V2.mktLinkedin.loadPosts) { liKicked = true; V2.mktLinkedin.loadPosts().then(function () { if (V2.route && V2.route.name === 'marketing' && !V2.route.param) V2.render(); }); }
     var supports = (items || []).filter(function (x) { return x.type !== 'selection'; });
     var selections = (items || []).filter(function (x) { return x.type === 'selection'; });
     var all = (items || []).slice().sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
@@ -301,20 +388,26 @@
         '</a>' +
       '</div>';
 
+    // ── ZONE LinkedIn : outil du quotidien, accès visible direct ──
+    var liDue = (V2.mktLinkedin && V2.mktLinkedin.dueCount) ? V2.mktLinkedin.dueCount() : 0;
+    var liZone =
+      '<div class="mkt-block">' +
+        '<a class="mkt-bigrow" onclick="V2.go(\'marketing\',\'linkedin\')">' +
+          '<span class="mkt-bigrow-ic" style="background:linear-gradient(150deg,#0A66C2,#004182)">' + ICO('cal', 22, 1.8) + '</span>' +
+          '<span class="mkt-bigrow-txt"><span class="mkt-bigrow-t">Rétroplanning LinkedIn' +
+            (liDue > 0 ? ' <b class="mkt-badge">' + liDue + ' à publier</b>' : '') +
+          '</span>' +
+          '<span class="mkt-bigrow-s">Calendrier éditorial : retrouve tes anciens posts, prépare et planifie les prochains, publie en 1 clic.</span></span>' +
+          '<span class="mkt-bigrow-go">Ouvrir ' + ICO('chev', 17) + '</span>' +
+        '</a>' +
+      '</div>';
+
     // ── Accès annexes (repliés, discrets — c'est le côté « design du site », pas le quotidien) ──
     var moreZone =
       '<details class="mkt-more-box">' +
         '<summary class="mkt-more-sum">' + ICO('cat', 16) + ' Maquettes &amp; outils du nouveau site' +
           '<span class="mkt-more-chev">' + ICO('chev', 16) + '</span></summary>' +
         '<div class="mkt-links">' +
-          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'linkedin\')">' +
-            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Rétroplanning LinkedIn' +
-              ((V2.mktLinkedin && V2.mktLinkedin.dueCount && V2.mktLinkedin.dueCount() > 0) ? ' <b class="mkt-badge">' + V2.mktLinkedin.dueCount() + '</b>' : '') +
-            '</span>' +
-            '<span class="mkt-link-s">Calendrier éditorial · préparer et planifier vos posts</span></span>' +
-            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
-          '</a>' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
             '<span style="flex:1;min-width:0"><span class="mkt-link-t">Maquettes du nouveau site</span>' +
@@ -339,6 +432,7 @@
         '</div>' +
         makeZone +
         recentZone +
+        liZone +
         docsZone +
         moreZone +
         (backend === 'local'
@@ -492,6 +586,15 @@
         '<div class="v2-page-sub">' + (isNr
           ? 'Nos <b>vraies ventes hors-remboursable</b> (OTC, dispositifs, parapharmacie) classées par volume réellement vendu' + (NR && NR.meta ? ' sur ' + esc((NR.meta.etabs || []).join('/')) : '') + '. Choisis un établissement pour le prix &amp; le stock à jour, puis <b>« Créer la liste »</b> pour un catalogue vendeur.'
           : 'L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent. Bouton <b>« Créer la liste »</b> par catégorie = sélection parfaite des produits les plus commandés.') + '</div>' +
+        '<div class="mkt-top50">' +
+          '<div class="mkt-top50-ic">' + ICO('grid', 20, 2) + '</div>' +
+          '<div class="mkt-top50-txt"><div class="mkt-top50-t">Top 50 par catégorie</div>' +
+            '<div class="mkt-top50-s">Princeps (petits prix · intermédiaire · cher) + NR (OTC · dispositifs · parapharmacie) — les 50 plus demandés de chaque catégorie, avec PPHT, abandon et prix net.</div></div>' +
+          '<div class="mkt-top50-btns">' +
+            '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.top50Pdf()">' + ICO('download', 15) + ' Fiche PDF</button>' +
+            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.top50Xlsx()">' + ICO('download', 15) + ' Excel</button>' +
+          '</div>' +
+        '</div>' +
         '<div class="mkt-pick-src" style="margin:16px 0 10px">' + tabs + '</div>' +
         etabBar +
         sortBar +
@@ -1006,6 +1109,62 @@
           .catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
       });
     },
+    // ── Top 50 par catégorie : belle fiche PDF ──
+    top50Pdf: function () {
+      ensureNr(function () {
+        var cats = buildTop50();
+        if (!cats.length) { V2.toast('Catalogue en cours de chargement…', 'warn'); return; }
+        if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
+        V2.toast('Génération du PDF…');
+        var html = top50Html(cats);
+        window.ensureHtml2Pdf().then(function () { return (document.fonts && document.fonts.ready) ? document.fonts.ready : null; }).then(function () {
+          var wrap = document.createElement('div'); wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
+          wrap.innerHTML = html; document.body.appendChild(wrap);
+          var fn = 'Top50-par-categorie-' + new Date().toISOString().slice(0, 10) + '.pdf';
+          window.html2pdf().from(wrap.firstChild).set({ filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] } })
+            .save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Fiche Top 50 téléchargée'); })
+            .catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
+        });
+      });
+    },
+    // ── Top 50 par catégorie : bel export Excel (1 onglet par catégorie) ──
+    top50Xlsx: function () {
+      ensureNr(function () {
+        var cats = buildTop50();
+        if (!cats.length) { V2.toast('Catalogue en cours de chargement…', 'warn'); return; }
+        V2.toast('Génération de l\'Excel…');
+        ensureXLSX(function (ok) {
+          if (!ok || !window.XLSX) { V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; }
+          var used = {};
+          function sheetName(name) {
+            var n = String(name).replace(/[\[\]\:\*\?\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 28);
+            var base = n; var i = 2; while (used[n.toLowerCase()]) { n = (base.slice(0, 25) + ' ' + i); i++; } used[n.toLowerCase()] = 1; return n;
+          }
+          var wb = XLSX.utils.book_new();
+          cats.forEach(function (c) {
+            var isNr = c.kind === 'nr';
+            var head = ['#', 'Produit', 'CIP', 'PPHT (€)', 'Abandon (%)', 'Prix net IP (€)', (isNr ? 'Volume vendu' : 'Nb pharmacies')];
+            var aoa = [['Intégral Pharma — Top 50 · ' + c.cat], [], head];
+            c.rows.forEach(function (r, i) {
+              aoa.push([
+                i + 1, r.d, String(r.cip),
+                (r.remise > 0 && r.ppht > 0) ? +r.ppht.toFixed(2) : '',
+                r.remise > 0 ? r.remise : '',
+                r.net ? +r.net.toFixed(2) : '',
+                r.signal || 0
+              ]);
+            });
+            var ws = XLSX.utils.aoa_to_sheet(aoa);
+            ws['!cols'] = [{ wch: 4 }, { wch: 42 }, { wch: 15 }, { wch: 10 }, { wch: 11 }, { wch: 13 }, { wch: 13 }];
+            ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
+            XLSX.utils.book_append_sheet(wb, ws, sheetName(c.cat));
+          });
+          XLSX.writeFile(wb, 'Top50-par-categorie-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+          V2.toast('Excel Top 50 téléchargé');
+        });
+      });
+    },
     openPicker: openPicker, closePicker: closePicker,
     setPickSrc: function (s) {
       pickSrc = s;
@@ -1205,6 +1364,13 @@
       '.mkt-cat-banner{display:flex;align-items:center;gap:14px;margin-top:14px;padding:16px 18px;background:linear-gradient(150deg,color-mix(in srgb,var(--c-cat) 8%,#fff),var(--card));border:1px solid color-mix(in srgb,var(--c-cat) 22%,var(--line));border-radius:var(--r-card);box-shadow:var(--sh-1);cursor:pointer;text-decoration:none;color:inherit;transition:.16s var(--ease)}',
       '.mkt-cat-banner:hover{box-shadow:var(--sh-2);transform:translateY(-1px)}',
       '.mkt-cat-ic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-cat),#4d35a0)}',
+      '.mkt-top50{display:flex;align-items:center;gap:14px;margin:14px 0 4px;padding:15px 18px;background:linear-gradient(135deg,color-mix(in srgb,var(--ip-blue) 8%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--ip-blue) 22%,var(--line));border-radius:var(--r-card);box-shadow:var(--sh-1)}',
+      '.mkt-top50-ic{width:42px;height:42px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--ip-blue),#0034A0)}',
+      '.mkt-top50-txt{flex:1;min-width:0}',
+      '.mkt-top50-t{font-weight:800;font-size:15.5px;letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.mkt-top50-s{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}',
+      '.mkt-top50-btns{display:flex;gap:8px;flex-shrink:0}',
+      '@media(max-width:640px){.mkt-top50{flex-wrap:wrap}.mkt-top50-btns{width:100%}.mkt-top50-btns .v2-btn{flex:1;justify-content:center}}',
       '.mkt-cat-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
       '.mkt-cat-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}',
       // ═══ Accueil Marketing « Launcher » : calme, centré, 1 action claire par zone ═══
@@ -1238,6 +1404,7 @@
       '.mkt-bigrow-ic{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-rose),#b1304a)}',
       '.mkt-bigrow-txt{flex:1;min-width:0}',
       '.mkt-bigrow-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.mkt-badge{display:inline-block;vertical-align:middle;margin-left:7px;padding:2px 9px;border-radius:999px;background:#FF4D6D;color:#fff;font-size:11px;font-weight:800;letter-spacing:.01em}',
       '.mkt-bigrow-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.4}',
       '.mkt-bigrow-go{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;font-weight:700;font-size:13px;color:var(--muted-2);transition:color .16s var(--ease)}',
       // ── Accès annexes repliés (progressive disclosure) ──
