@@ -130,6 +130,50 @@
     return angle.h + '\n\n' + angle.core + '\n\n' + cta + '\n\n' + (HASH[pk] || HASH.tempsfort) + ' #IntégralPharma';
   }
 
+  // ── Moteur de rédaction (post complet, 100% local) ──
+  var AMP = {
+    produit: ['Une offre large, c’est moins de fournisseurs à gérer et plus de temps pour vos patients.', 'Chaque référence disponible, c’est une vente qui ne vous échappe pas.', 'Bien équiper ses rayons, c’est répondre présent quand le patient a besoin de vous.'],
+    conseil: ['Un rayon vivant attire l’œil et déclenche l’achat d’impulsion.', 'Le bon conseil au bon moment, c’est un patient qui revient.', 'Anticiper la saison, c’est valoriser vos rayons avant tout le monde.'],
+    coulisses: ['Derrière chaque livraison à l’heure, il y a une organisation sans faille.', 'La logistique, c’est le maillon invisible qui fait votre disponibilité.', 'Proximité et réactivité : deux mots, un seul objectif — vous servir vite et bien.'],
+    recrutement: ['On grandit, et on cherche des personnes qui aiment le concret et le collectif.', 'Rejoindre la répartition, c’est un métier utile, au cœur de la santé de proximité.', 'Ici, l’esprit d’équipe n’est pas un slogan : c’est le quotidien.'],
+    tempsfort: ['Les temps forts de la profession, ce sont des moments d’échange qui comptent.', 'Rester connecté à l’actualité, c’est mieux accompagner votre officine.', 'Une info utile au bon moment vous fait gagner un temps précieux.']
+  };
+  var BULLETS = {
+    produit: [['Dermocosmétique et soins ciblés', 'Univers bébé et maman', 'Nature, aroma et compléments'], ['Nouveautés repérées pour vous', 'Marques attendues par vos patients', 'Gammes saisonnières prêtes à l’emploi']],
+    conseil: [['Mettez la nouveauté à hauteur des yeux', 'Créez un univers saisonnier cohérent', 'Associez les produits complémentaires'], ['Un message clair en vitrine', 'Une gamme phare par saison', 'Un conseil personnalisé au comptoir']],
+    coulisses: [['Réception et contrôle des produits', 'Préparation soignée de vos commandes', 'Expédition au plus près de vos besoins'], ['Chaîne du froid maîtrisée', 'Traçabilité à chaque étape', 'Réactivité sur le réassort']],
+    recrutement: [['Un métier de terrain qui a du sens', 'Une équipe soudée et bienveillante', 'La fierté d’aider les pharmacies'], ['Préparateur de commandes', 'Magasinier', 'Commercial terrain']],
+    tempsfort: [['Anticipez la demande de la saison', 'Préparez vos rayons en amont', 'Communiquez au bon moment'], ['Un rendez-vous à ne pas manquer', 'Des échanges concrets avec la profession', 'Des idées à ramener en officine']]
+  };
+  var VALUE = {
+    produit: ['Chez Intégral Pharma, on met la largeur de gamme au service de votre officine.', 'Notre métier : vous simplifier l’appro pour que vous restiez concentré sur le conseil.'],
+    conseil: ['On partage ce qui marche sur le terrain, parce que votre réussite fait la nôtre.', 'Chez Intégral Pharma, le conseil se joue à deux : vous et nous.'],
+    coulisses: ['Chez Intégral Pharma, la logistique est un métier de précision au service des officines.', 'La proximité n’est pas un slogan : c’est ce qui fait notre réactivité.'],
+    recrutement: ['Chez Intégral Pharma, on avance ensemble : proximité, engagement, fiabilité.', 'Un collectif où chacun compte, au service des pharmacies.'],
+    tempsfort: ['Chez Intégral Pharma, on avance aux côtés des pharmaciens, saison après saison.', 'Votre partenaire répartiteur, présent sur les moments qui comptent.']
+  };
+  function pickA(arr, v) { if (!arr || !arr.length) return ''; return arr[((v % arr.length) + arr.length) % arr.length]; }
+  function toneEmoji(tone, pk) { if (tone !== 'punchy') return ''; return ({ produit: '📦', conseil: '💡', coulisses: '🚚', recrutement: '🚀', tempsfort: '📣' })[pk] || '✨'; }
+  function generateFull(o) {
+    var tone = o.tone || 'proche', pk = o.pillar || 'produit', v = o.v || 0;
+    var hook = o.hook || pickA(AMP[pk], v);
+    var core = o.core || pickA(AMP[pk], v);
+    var amp = pickA(AMP[pk], v + 1);
+    var bset = (BULLETS[pk] && BULLETS[pk].length) ? BULLETS[pk][((v % BULLETS[pk].length) + BULLETS[pk].length) % BULLETS[pk].length] : null;
+    var val = pickA(VALUE[pk], v + 1);
+    var cta = (pk === 'recrutement') ? CTA[tone].rec : CTA[tone].def;
+    var em = toneEmoji(tone, pk);
+    var parts = [];
+    parts.push((em ? em + ' ' : '') + hook);
+    if (core) parts.push(core);
+    if (amp && amp !== core) parts.push(amp);
+    if (bset && bset.length) parts.push(bset.map(function (x) { return '• ' + x; }).join('\n'));
+    if (val) parts.push(val);
+    parts.push(cta);
+    parts.push((HASH[pk] || HASH.tempsfort) + ' #IntégralPharma');
+    return parts.join('\n\n');
+  }
+
   // ── Moteur ──
   function poolFor(slot) { return slot.seasonal ? SEASON[slot.mo] : (ANGLES[slot.pillar] || ANGLES.tempsfort); }
   function anglesOf(slot) {
@@ -242,6 +286,9 @@
       '.lis-tag.pil{background:var(--pcb,rgba(139,92,246,.2));color:#fff}',
       '.lis-hook{font-weight:700;font-size:15px;color:#fff;margin:4px 0 6px;line-height:1.35}',
       '.lis-core{font-size:13px;color:#aeb9d6;line-height:1.5;margin-bottom:10px}',
+      '.lis-gen{white-space:pre-wrap;font-size:13px;color:#e8eeff;line-height:1.55;background:#0a1226;border:1px solid rgba(139,92,246,.28);border-radius:10px;padding:12px 13px;margin-bottom:10px;max-height:340px;overflow:auto}',
+      '.lis-genb{border-color:rgba(139,92,246,.55)!important;color:#c9b8ff!important}',
+      '.lis-genb:hover{color:#fff!important;background:rgba(139,92,246,.18)!important}',
       '.lis-abc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}',
       '.lis-ab{width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:#0a1226;color:#c9d5f0;font:700 12px/1 inherit;cursor:pointer}',
       '.lis-ab.on{background:#8B5CF6;border-color:#8B5CF6;color:#fff}',
@@ -322,8 +369,10 @@
           '<button class="lis-mini lis-del" onclick="V2.lis.remove(' + idx + ')">Supprimer</button>' +
         '</div>' +
         '<div class="lis-hook">' + esc(a.h) + '</div>' +
-        '<div class="lis-core">' + esc(a.core) + '</div>' +
-        '<div class="lis-abc">' + abc + '<button class="lis-mini" onclick="V2.lis.other(' + idx + ')">↻ Autre idée</button></div>' +
+        (s.gen ? '<div class="lis-gen">' + esc(s.gen) + '</div>' : '<div class="lis-core">' + esc(a.core) + '</div>') +
+        '<div class="lis-abc">' + abc +
+          '<button class="lis-mini lis-genb" onclick="V2.lis.gentext(' + idx + ')">' + (s.gen ? '↻ Régénérer le texte' : '✍️ Générer le texte') + '</button>' +
+          '<button class="lis-mini" onclick="V2.lis.other(' + idx + ')">↻ Autre idée</button></div>' +
       '</div>';
     }).join('');
     return '<div class="lis-wrap">' +
@@ -357,8 +406,15 @@
     draw();
   };
   V2.lis.gen = function () { plan = buildPlan(cfg); stratId = (LI().newId ? LI().newId() : 'strat' + (new Date()).getTime()); step = 'preview'; draw(); };
-  V2.lis.sel = function (idx, j) { if (plan[idx]) { plan[idx].sel = j; draw(); } };
-  V2.lis.other = function (idx) { if (plan[idx]) { plan[idx].offset += 3; plan[idx].sel = 0; draw(); } };
+  V2.lis.sel = function (idx, j) { if (plan[idx]) { plan[idx].sel = j; plan[idx].gen = ''; draw(); } };
+  V2.lis.other = function (idx) { if (plan[idx]) { plan[idx].offset += 3; plan[idx].sel = 0; plan[idx].gen = ''; draw(); } };
+  V2.lis.gentext = function (idx) {
+    var s = plan[idx]; if (!s) return;
+    var angs = anglesOf(s); var a = angs[s.sel] || angs[0];
+    s.genv = s.gen ? ((s.genv || 0) + 1) : (s.genv || 0);
+    s.gen = generateFull({ hook: a.h, core: a.core, pillar: (s.seasonal ? 'tempsfort' : s.pillar), tone: cfg.tone, v: s.genv || 0 });
+    draw();
+  };
   V2.lis.remove = function (idx) { plan.splice(idx, 1); draw(); };
   V2.lis.regen = function () {
     // relance en variant les offsets (aléatoire navigateur)
@@ -376,9 +432,10 @@
     var name = 'Stratégie ' + o.label + ' — ' + fmtDate(plan[0].date);
     var rows = plan.map(function (s) {
       var angs = anglesOf(s); var a = angs[s.sel] || angs[0];
+      var pk = s.seasonal ? 'tempsfort' : s.pillar;
       return {
-        date: s.date.toISOString(), status: 'idee', pillar: (s.seasonal ? 'tempsfort' : s.pillar),
-        title: a.h, body: compose(a, cfg.tone, s.seasonal ? 'tempsfort' : s.pillar), format: a.f,
+        date: s.date.toISOString(), status: 'idee', pillar: pk,
+        title: a.h, body: (s.gen || compose(a, cfg.tone, pk)), format: a.f,
         source: 'strategie', event_id: stratId, event_name: name, image_path: '', linkedin_url: ''
       };
     });
@@ -399,5 +456,10 @@
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600);
   }
 
-  V2.liStrategy = { open: function () { V2.lis.open(); }, _cfg: function () { return cfg; }, _plan: function () { return plan; }, _build: buildPlan };
+  // Génération de texte pour l'éditeur d'un post (depuis le calendrier)
+  V2.lis.genForEditor = function (pillar, title, v) {
+    return generateFull({ hook: title || '', core: '', pillar: pillar || 'produit', tone: 'proche', v: v || 0 });
+  };
+
+  V2.liStrategy = { open: function () { V2.lis.open(); }, _cfg: function () { return cfg; }, _plan: function () { return plan; }, _build: buildPlan, generateFull: generateFull };
 })();
