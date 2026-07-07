@@ -14,6 +14,8 @@
       '.li-actions{display:flex;gap:8px;flex-wrap:wrap}' +
       '.li-btn{background:#0e1730;color:#e8eeff;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 12px;font:600 13px/1 inherit;cursor:pointer}' +
       '.li-btn-p{background:#0057FF;border-color:#0057FF;color:#fff}' +
+      '.li-btn-strat{background:linear-gradient(135deg,#8B5CF6,#0057FF);border-color:transparent;color:#fff;font-weight:700}' +
+      '.li-btn-strat:hover{filter:brightness(1.08)}' +
       '.li-calbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 10px}' +
       '.li-nav{background:transparent;border:1px solid rgba(255,255,255,.14);color:inherit;border-radius:8px;width:34px;height:34px;cursor:pointer}' +
       '.li-navtoday{width:auto;padding:0 12px}' +
@@ -95,12 +97,12 @@
   function fromRow(r) {
     return { id: r.id, date: r.date, status: r.status || 'idee', pillar: r.pillar || 'produit',
       title: r.title || '', body: r.body || '', image_path: r.image_path || '', linkedin_url: r.linkedin_url || '',
-      event_id: r.event_id || '', event_name: r.event_name || '', source: r.source || 'manuel',
+      format: r.format || '', event_id: r.event_id || '', event_name: r.event_name || '', source: r.source || 'manuel',
       created_at: r.created_at || null, updated_at: r.updated_at || null };
   }
   function toRow(p) {
     return { id: p.id, date: p.date, status: p.status, pillar: p.pillar, title: p.title, body: p.body,
-      image_path: p.image_path || '', linkedin_url: p.linkedin_url || '', event_id: p.event_id || '',
+      image_path: p.image_path || '', linkedin_url: p.linkedin_url || '', format: p.format || '', event_id: p.event_id || '',
       event_name: p.event_name || '', source: p.source || 'manuel',
       owner: (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
@@ -203,6 +205,7 @@
           '<div class="li-actions">' +
             '<button class="li-btn" onclick="V2.li.setView(\'cal\')">Calendrier</button>' +
             '<button class="li-btn" onclick="V2.li.setView(\'list\')">Liste</button>' +
+            '<button class="li-btn li-btn-strat" onclick="V2.lis&&V2.lis.open()">✨ Assistant stratégie</button>' +
             '<button class="li-btn li-btn-p" onclick="V2.li.newAt(\'' + todayStr + '\')">+ Post</button>' +
             '<button class="li-btn" onclick="V2.li.newEvent()">+ Temps fort</button>' +
             '<button class="li-btn" onclick="V2.li.importOpen()">Import</button>' +
@@ -254,6 +257,7 @@
     root.innerHTML = (V2.topbar ? V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) : '') +
       '<div class="li-wrap"><div class="li-bar"><h1 class="li-h1">Rétroplanning LinkedIn</h1>' +
         '<div class="li-actions">' +
+          '<button class="li-btn li-btn-strat" onclick="V2.lis&&V2.lis.open()">✨ Assistant stratégie</button>' +
           '<button class="li-btn" onclick="V2.li.setView(\'cal\')">Calendrier</button>' +
           '<button class="li-btn li-btn-p" onclick="V2.li.setView(\'list\')">Liste</button></div></div>' +
         '<div class="li-flt">' +
@@ -318,7 +322,8 @@
   }
 
   V2.mktLinkedin = { render: render, PILLARS: PILLARS, STATUSES: STATUSES, pillar: pillar, statusOf: statusOf,
-    loadPosts: loadPosts, savePost: savePost, removePost: removePost, _posts: function () { return posts; }, newId: newId };
+    loadPosts: loadPosts, savePost: savePost, removePost: removePost, _posts: function () { return posts; }, newId: newId,
+    goCal: function (d) { view = 'cal'; if (d) { calRef = new Date(d); calRef.setDate(1); } V2.render(); } };
   V2.li = V2.li || {};
 
   V2.li.setView = function (v) { view = v; V2.render(); };
