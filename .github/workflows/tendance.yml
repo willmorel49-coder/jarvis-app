@@ -23,12 +23,12 @@ jobs:
       - run: python3 generate_tendance.py
       - name: Committer si changement
         run: |
-          if git diff --quiet -- crm/v2/tendance-data.js; then
+          if git diff --quiet -- crm/v2/tendance-data.js crm/v2/momentum-data.js; then
             echo "Pas de changement."
           else
             git config user.name  "JARVIS copilote"
             git config user.email "actions@users.noreplace.github.com"
-            git add crm/v2/tendance-data.js
-            git commit -m "data(copilote): tendance marché $(date -u +%Y-%m-%d)"
+            git add crm/v2/tendance-data.js crm/v2/momentum-data.js
+            git commit -m "data(copilote): tendance + momentum marché $(date -u +%Y-%m-%d)"
             git push
           fi
