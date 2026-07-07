@@ -363,7 +363,86 @@
     document.getElementById('li-editor').innerHTML = '';
     chain.then(function () { calRef = new Date(dJ.getTime()); calRef.setDate(1); V2.render(); });
   };
-  V2.li.importOpen = function () { alert('Import (Task 7)'); };
+  function parseCsv(text) {
+    var rows = [], row = [], cur = '', i = 0, inQ = false, ch;
+    text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    for (; i < text.length; i++) {
+      ch = text[i];
+      if (inQ) {
+        if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+        else cur += ch;
+      } else if (ch === '"') inQ = true;
+      else if (ch === ',') { row.push(cur); cur = ''; }
+      else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else cur += ch;
+    }
+    if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(function (r) { return r.length && !(r.length === 1 && r[0] === ''); });
+  }
+
+  var importRows = null, importMap = { date: -1, body: -1, url: -1 };
+
+  V2.li.importOpen = function () {
+    var host = document.getElementById('li-editor');
+    if (!host) { host = document.createElement('div'); host.id = 'li-editor'; document.body.appendChild(host); }
+    host.innerHTML =
+      '<div class="li-ov" onclick="if(event.target===this)V2.li.closeEditor()"><div class="li-panel">' +
+        '<div class="li-panelhd"><b>Importer mes anciens posts</b><button class="li-x" onclick="V2.li.closeEditor()">✕</button></div>' +
+        '<p class="li-lab">Déposez le fichier <b>.csv</b> de l\'export LinkedIn (Paramètres → Confidentialité → Obtenir une copie de vos données → Publications). On repère les colonnes date / texte / lien.</p>' +
+        '<label class="li-btn">Choisir le fichier CSV<input type="file" accept=".csv,text/csv" style="display:none" onchange="V2.li.importFile(this)"></label>' +
+        '<div id="li-impbody"></div>' +
+      '</div></div>';
+  };
+
+  V2.li.importFile = function (input) {
+    var f = input.files && input.files[0]; if (!f) return;
+    var rdr = new FileReader();
+    rdr.onload = function () {
+      importRows = parseCsv(String(rdr.result));
+      if (!importRows.length) { document.getElementById('li-impbody').innerHTML = '<p class="li-lab">Fichier vide ou illisible.</p>'; return; }
+      var head = importRows[0];
+      // auto-détection
+      importMap = { date: -1, body: -1, url: -1 };
+      head.forEach(function (h, idx) {
+        var l = String(h).toLowerCase();
+        if (importMap.date < 0 && /date/.test(l)) importMap.date = idx;
+        if (importMap.body < 0 && /(comment|content|text|texte|message|share)/.test(l)) importMap.body = idx;
+        if (importMap.url < 0 && /(link|url|lien)/.test(l)) importMap.url = idx;
+      });
+      var opts = function (sel) { return head.map(function (h, idx) { return '<option value="' + idx + '"' + (sel === idx ? ' selected' : '') + '>' + esc(h || ('Colonne ' + (idx + 1))) + '</option>'; }).join(''); };
+      document.getElementById('li-impbody').innerHTML =
+        '<p class="li-lab">' + (importRows.length - 1) + ' ligne(s) détectée(s). Vérifiez les colonnes :</p>' +
+        '<label class="li-lab">Date</label><select class="li-in" onchange="V2.li.setMap(\'date\',this.value)">' + opts(importMap.date) + '</select>' +
+        '<label class="li-lab">Texte</label><select class="li-in" onchange="V2.li.setMap(\'body\',this.value)">' + opts(importMap.body) + '</select>' +
+        '<label class="li-lab">Lien</label><select class="li-in" onchange="V2.li.setMap(\'url\',this.value)">' + opts(importMap.url) + '</select>' +
+        '<div class="li-panelft"><span></span><button class="li-btn li-btn-p" onclick="V2.li.doImport()">Importer</button></div>';
+    };
+    rdr.readAsText(f, 'utf-8');
+  };
+  V2.li.setMap = function (k, v) { importMap[k] = parseInt(v, 10); };
+
+  V2.li.doImport = function () {
+    if (!importRows || importRows.length < 2) return;
+    var existing = {}; posts.forEach(function (p) { existing[(p.linkedin_url || '') + '|' + (p.date || '').slice(0, 10)] = 1; });
+    var chain = Promise.resolve(), added = 0;
+    for (var r = 1; r < importRows.length; r++) {
+      var row = importRows[r];
+      var rawDate = importMap.date >= 0 ? row[importMap.date] : '';
+      var body = importMap.body >= 0 ? (row[importMap.body] || '') : '';
+      var url = importMap.url >= 0 ? (row[importMap.url] || '') : '';
+      var d = new Date(rawDate); if (isNaN(d.getTime())) d = new Date();
+      var key = (url || '') + '|' + ymd(d);
+      if (existing[key]) continue; existing[key] = 1;
+      (function (dd, bb, uu) {
+        var p = { id: '', date: dd.toISOString(), status: 'publie', pillar: 'produit',
+          title: bb.slice(0, 40), body: bb, image_path: '', linkedin_url: uu, event_id: '', event_name: '', source: 'import' };
+        chain = chain.then(function () { return savePost(p); });
+      })(d, body, url); added++;
+    }
+    importRows = null;
+    document.getElementById('li-editor').innerHTML = '';
+    chain.then(function () { alert(added + ' ancien(s) post(s) importé(s).'); V2.render(); });
+  };
 
   V2.li.publish = function (id) {
     var p = null; for (var i = 0; i < posts.length; i++) if (posts[i].id === id) p = posts[i];
