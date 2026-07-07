@@ -214,8 +214,8 @@
         var sig = isNr ? (r.signal > 0 ? r.signal.toLocaleString('fr') : '—') : (r.signal + '<span style="color:#9AA1B2;font-weight:500">/621</span>');
         return '<tr style="border-bottom:1px solid #EEF1F6">' +
           '<td style="padding:3px 7px;color:#9AA1B2;font-size:9px;text-align:right">' + (i + 1) + '</td>' +
-          '<td style="padding:3px 7px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.d || '').slice(0, 52)) + '</td>' +
-          '<td style="padding:3px 7px;font-family:monospace;font-size:8.5px;color:#737A8C">' + esc(r.cip || '') + '</td>' +
+          '<td style="padding:3px 7px;font-size:10px;font-weight:600;color:#10131C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc((r.d || '').slice(0, 44)) + '</td>' +
+          '<td style="padding:3px 7px;font-family:monospace;font-size:8.5px;color:#737A8C;overflow:hidden;white-space:nowrap">' + esc(r.cip || '') + '</td>' +
           '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:9.5px">' + ppht + '</td>' +
           '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:700;color:' + (r.remise > 0 ? '#1E9E6A' : '#B6BFCE') + '">' + rem + '</td>' +
           '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:11px;font-weight:800;color:#0050E6">' + t50Eur(r.net) + '</td>' +
@@ -226,7 +226,9 @@
         '<div style="display:flex;align-items:center;gap:8px;padding:6px 11px;background:' + c.color + ';border-radius:6px 6px 0 0;page-break-after:avoid;page-break-inside:avoid">' +
           '<div style="font-size:11.5px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.4px">' + esc(c.cat) + '</div>' +
           '<div style="font-size:9px;color:rgba(255,255,255,.85);margin-left:auto;font-weight:700">top ' + c.rows.length + '</div></div>' +
-        '<table style="width:100%;border-collapse:collapse;border:1px solid #ECEFF5;border-top:none"><thead><tr style="background:#F7F9FC">' +
+        '<table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #ECEFF5;border-top:none">' +
+          '<colgroup><col style="width:5%"><col style="width:34%"><col style="width:15%"><col style="width:12%"><col style="width:11%"><col style="width:12%"><col style="width:11%"></colgroup>' +
+          '<thead><tr style="background:#F7F9FC">' +
           ['#', 'Produit', 'CIP', 'PPHT', 'Abandon', 'Prix net IP', (isNr ? 'Volume' : 'Pharmacies')].map(function (h, k) {
             return '<th style="padding:5px 7px;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;text-align:' + (k === 1 || k === 2 ? 'left' : 'right') + '">' + h + '</th>';
           }).join('') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
