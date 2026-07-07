@@ -222,8 +222,8 @@
           '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:700;color:#10131C">' + sig + '</td>' +
           '</tr>';
       }).join('');
-      return '<div style="margin-bottom:13px;page-break-inside:avoid">' +
-        '<div style="display:flex;align-items:center;gap:8px;padding:6px 11px;background:' + c.color + ';border-radius:6px 6px 0 0">' +
+      return '<div style="margin-bottom:13px">' +
+        '<div style="display:flex;align-items:center;gap:8px;padding:6px 11px;background:' + c.color + ';border-radius:6px 6px 0 0;page-break-after:avoid;page-break-inside:avoid">' +
           '<div style="font-size:11.5px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.4px">' + esc(c.cat) + '</div>' +
           '<div style="font-size:9px;color:rgba(255,255,255,.85);margin-left:auto;font-weight:700">top ' + c.rows.length + '</div></div>' +
         '<table style="width:100%;border-collapse:collapse;border:1px solid #ECEFF5;border-top:none"><thead><tr style="background:#F7F9FC">' +
