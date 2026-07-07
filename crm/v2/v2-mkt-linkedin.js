@@ -26,7 +26,22 @@
       '.li-cell.li-today{border-color:#0057FF;box-shadow:inset 0 0 0 1px #0057FF}' +
       '.li-num{font-size:12px;opacity:.6}' +
       '.li-pill{display:flex;align-items:center;gap:5px;width:100%;text-align:left;margin-top:4px;padding:4px 6px;border:0;border-left:3px solid var(--pc);border-radius:6px;background:rgba(255,255,255,.06);color:inherit;font:600 11px/1.2 inherit;cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}' +
-      '.li-empty{opacity:.7;margin-top:20px}';
+      '.li-empty{opacity:.7;margin-top:20px}' +
+      '.li-ov{position:fixed;inset:0;z-index:200;background:rgba(3,6,14,.6);display:flex;justify-content:flex-end}' +
+      '.li-panel{width:min(520px,94vw);height:100%;overflow:auto;background:#0b1020;border-left:1px solid rgba(255,255,255,.12);padding:18px 20px;display:flex;flex-direction:column;gap:6px}' +
+      '.li-panelhd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}' +
+      '.li-x{background:transparent;border:0;color:inherit;font-size:18px;cursor:pointer}' +
+      '.li-lab{font-size:12px;opacity:.7;margin-top:10px}' +
+      '.li-in,.li-ta{width:100%;background:#0e1730;border:1px solid rgba(255,255,255,.14);border-radius:8px;color:inherit;padding:9px 11px;font:inherit}' +
+      '.li-ta{min-height:120px;resize:vertical;line-height:1.5}' +
+      '#li-count{float:right;opacity:.6}' +
+      '.li-chips{display:flex;gap:7px;flex-wrap:wrap}' +
+      '.li-ch{background:#0e1730;border:1px solid rgba(255,255,255,.14);border-left:3px solid var(--pc,transparent);border-radius:999px;color:inherit;padding:7px 12px;font:600 12px/1 inherit;cursor:pointer}' +
+      '.li-ch.on{background:#0057FF;border-color:#0057FF}' +
+      '.li-imgrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}' +
+      '.li-imgprev img{max-width:160px;border-radius:8px;display:block;margin-bottom:6px}' +
+      '.li-panelft{display:flex;justify-content:space-between;gap:8px;margin-top:16px}' +
+      '.li-del{border-color:#FF4D6D;color:#FF4D6D}';
     document.head.appendChild(s);
   })();
 
@@ -187,6 +202,60 @@
   }
   function renderList2(root) { renderCal(root); } // stub — remplacé en Task 8
 
+  // ── Éditeur de post ──
+  var editing = null; // Post en cours d'édition (copie)
+
+  function openEditor(p) {
+    editing = p ? JSON.parse(JSON.stringify(p)) : {
+      id: '', date: new Date().toISOString(), status: 'idee', pillar: 'produit',
+      title: '', body: '', image_path: '', linkedin_url: '', event_id: '', event_name: '', source: 'manuel'
+    };
+    drawEditor();
+  }
+  function drawEditor() {
+    var host = document.getElementById('li-editor');
+    if (!host) { host = document.createElement('div'); host.id = 'li-editor'; document.body.appendChild(host); }
+    if (!editing) { host.innerHTML = ''; return; }
+    var e = editing, dt = (e.date || '').slice(0, 16); // yyyy-mm-ddThh:mm
+    var pills = PILLARS.map(function (p) {
+      return '<button class="li-ch' + (e.pillar === p.k ? ' on' : '') + '" style="--pc:' + p.color + '" onclick="V2.li.editField(\'pillar\',\'' + p.k + '\')">' + esc(p.label) + '</button>';
+    }).join('');
+    var stat = STATUSES.map(function (s) {
+      return '<button class="li-ch' + (e.status === s.k ? ' on' : '') + '" onclick="V2.li.editField(\'status\',\'' + s.k + '\')">' + s.icon + ' ' + esc(s.label) + '</button>';
+    }).join('');
+    var img = e.image_path
+      ? '<div class="li-imgprev"><img src="' + esc(imgUrl(e.image_path)) + '" alt=""><button class="li-btn" onclick="V2.li.editField(\'image_path\',\'\')">Retirer</button></div>'
+      : '<label class="li-btn">Ajouter un visuel<input type="file" accept="image/*" style="display:none" onchange="V2.li.uploadImg(this)"></label>' +
+        '<input class="li-in" placeholder="…ou coller une URL d\'image" value="" oninput="V2.li.editField(\'image_path\',this.value)">';
+    host.innerHTML =
+      '<div class="li-ov" onclick="if(event.target===this)V2.li.closeEditor()"><div class="li-panel">' +
+        '<div class="li-panelhd"><b>' + (e.id ? 'Modifier le post' : 'Nouveau post') + '</b>' +
+          '<button class="li-x" onclick="V2.li.closeEditor()">✕</button></div>' +
+        '<label class="li-lab">Titre court</label>' +
+        '<input class="li-in" value="' + esc(e.title) + '" oninput="V2.li.editField(\'title\',this.value)" placeholder="ex : Teaser salon Pharmagora">' +
+        '<label class="li-lab">Texte du post <span id="li-count">' + (e.body || '').length + ' / 3000</span></label>' +
+        '<textarea class="li-ta" oninput="V2.li.editField(\'body\',this.value)" placeholder="Rédigez votre post LinkedIn…">' + esc(e.body) + '</textarea>' +
+        '<label class="li-lab">Pilier</label><div class="li-chips">' + pills + '</div>' +
+        '<label class="li-lab">Statut</label><div class="li-chips">' + stat + '</div>' +
+        '<label class="li-lab">Date & heure</label>' +
+        '<input class="li-in" type="datetime-local" value="' + dt + '" oninput="V2.li.editField(\'date\',this.value)">' +
+        '<label class="li-lab">Visuel</label><div class="li-imgrow">' + img + '</div>' +
+        '<label class="li-lab">Lien LinkedIn (après publication)</label>' +
+        '<input class="li-in" value="' + esc(e.linkedin_url) + '" oninput="V2.li.editField(\'linkedin_url\',this.value)" placeholder="https://www.linkedin.com/posts/…">' +
+        '<div class="li-panelft">' +
+          (e.id ? '<button class="li-btn li-del" onclick="V2.li.del()">Supprimer</button>' : '<span></span>') +
+          '<div><button class="li-btn" onclick="V2.li.closeEditor()">Annuler</button>' +
+          '<button class="li-btn li-btn-p" onclick="V2.li.save()">Enregistrer</button></div>' +
+        '</div>' +
+      '</div></div>';
+  }
+  function imgUrl(path) {
+    if (!path) return '';
+    if (/^https?:/.test(path)) return path;
+    var c = sb(); if (c && c.storage) { try { return c.storage.from('marketing-media').getPublicUrl(path).data.publicUrl; } catch (e) {} }
+    return path;
+  }
+
   V2.mktLinkedin = { render: render, PILLARS: PILLARS, STATUSES: STATUSES, pillar: pillar, statusOf: statusOf,
     loadPosts: loadPosts, savePost: savePost, removePost: removePost, _posts: function () { return posts; }, newId: newId };
   V2.li = V2.li || {};
@@ -195,8 +264,40 @@
   V2.li.prevMonth = function () { calRef.setMonth(calRef.getMonth() - 1); V2.render(); };
   V2.li.nextMonth = function () { calRef.setMonth(calRef.getMonth() + 1); V2.render(); };
   V2.li.today = function () { calRef = new Date(); calRef.setDate(1); V2.render(); };
-  V2.li.newAt = function (iso) { alert('Nouveau post le ' + iso + ' (éditeur en Task 4)'); };
-  V2.li.openPost = function (id) { alert('Ouvrir post ' + id + ' (éditeur en Task 4)'); };
+  V2.li.newAt = function (iso) {
+    var d = new Date(); if (iso && iso.length >= 10) { d = new Date(iso + 'T09:00'); }
+    openEditor({ id: '', date: d.toISOString(), status: 'idee', pillar: 'produit', title: '', body: '', image_path: '', linkedin_url: '', event_id: '', event_name: '', source: 'manuel' });
+  };
+  V2.li.openPost = function (id) { var p = null; for (var i = 0; i < posts.length; i++) if (posts[i].id === id) p = posts[i]; if (p) openEditor(p); };
+  V2.li.editField = function (f, v) {
+    if (!editing) return;
+    if (f === 'date') { var d = new Date(v); if (!isNaN(d.getTime())) editing.date = d.toISOString(); return; }
+    editing[f] = v;
+    if (f === 'body') { var c = document.getElementById('li-count'); if (c) c.textContent = v.length + ' / 3000'; }
+    if (f === 'pillar' || f === 'status' || f === 'image_path') drawEditor();
+  };
+  V2.li.closeEditor = function () { editing = null; drawEditor(); };
+  V2.li.save = function () {
+    if (!editing) return;
+    var p = editing; editing = null; drawEditor();
+    savePost(p).then(function () { V2.render(); });
+  };
+  V2.li.del = function () {
+    if (!editing || !editing.id) { V2.li.closeEditor(); return; }
+    if (!confirm('Supprimer ce post ?')) return;
+    var id = editing.id; editing = null; drawEditor();
+    removePost(id).then(function () { V2.render(); });
+  };
+  V2.li.uploadImg = function (input) {
+    var f = input.files && input.files[0]; if (!f || !editing) return;
+    var c = sb();
+    if (!(c && c.storage) || backend !== 'supabase') { alert('Upload d\'image indisponible hors-ligne. Collez une URL d\'image à la place.'); return; }
+    var path = 'linkedin/' + Date.now() + '_' + f.name.replace(/[^a-zA-Z0-9._-]/g, '');
+    c.storage.from('marketing-media').upload(path, f, { upsert: true }).then(function (r) {
+      if (r.error) { alert('Échec de l\'upload : ' + r.error.message); return; }
+      editing.image_path = path; drawEditor();
+    });
+  };
   V2.li.newEvent = function () { alert('Temps fort (Task 6)'); };
   V2.li.importOpen = function () { alert('Import (Task 7)'); };
 })();
