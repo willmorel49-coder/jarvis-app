@@ -300,6 +300,7 @@
         '<input class="li-in" value="' + esc(e.title) + '" oninput="V2.li.editField(\'title\',this.value)" placeholder="ex : Teaser salon Pharmagora">' +
         '<label class="li-lab">Texte du post <span id="li-count">' + (e.body || '').length + ' / 3000</span></label>' +
         '<textarea class="li-ta" oninput="V2.li.editField(\'body\',this.value)" placeholder="Rédigez votre post LinkedIn…">' + esc(e.body) + '</textarea>' +
+        '<button class="li-btn li-btn-strat" style="margin:2px 0 8px;align-self:flex-start" onclick="V2.li.gentext()">✍️ Générer le texte (selon le pilier)</button>' +
         '<label class="li-lab">Pilier</label><div class="li-chips">' + pills + '</div>' +
         '<label class="li-lab">Statut</label><div class="li-chips">' + stat + '</div>' +
         '<label class="li-lab">Date & heure</label>' +
@@ -341,6 +342,13 @@
     editing[f] = v;
     if (f === 'body') { var c = document.getElementById('li-count'); if (c) c.textContent = v.length + ' / 3000'; }
     if (f === 'pillar' || f === 'status' || f === 'image_path') drawEditor();
+  };
+  V2.li.gentext = function () {
+    if (!editing) return;
+    if (!V2.lis || !V2.lis.genForEditor) { alert('Assistant stratégie non chargé — rechargez la page.'); return; }
+    editing._genv = (editing._genv == null) ? 0 : editing._genv + 1;
+    editing.body = V2.lis.genForEditor(editing.pillar || 'produit', editing.title || '', editing._genv);
+    drawEditor();
   };
   V2.li.closeEditor = function () { editing = null; drawEditor(); };
   V2.li.save = function () {
