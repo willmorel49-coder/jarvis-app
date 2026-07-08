@@ -425,7 +425,7 @@
           '<div class="pres-sec-t">Vos conditions — la preuve chiffrée</div>' +
           '<div class="pres-proof">' +
             '<div class="pres-proof-h"><div class="pres-proof-v" data-count>jusqu\'à 27 %</div><div class="pres-proof-l">sur les génériques, dès la 1ère boîte</div></div>' +
-            '<div class="pres-proof-h"><div class="pres-proof-v" data-count>6–9 %</div><div class="pres-proof-l">de remise constatée, nets sur facture (PFHT)</div></div>' +
+            '<div class="pres-proof-h"><div class="pres-proof-v" data-count>6–9 %</div><div class="pres-proof-l">d\'abandon de marge constaté, net sur facture (PFHT)</div></div>' +
           '</div>' +
           '<div class="pres-card">' +
             '<div class="pres-card-d" style="font-size:13px;color:var(--muted)">Barème par tranche, en prix nets sur facture :</div>' +
@@ -630,7 +630,7 @@
       }
       // Pilier Molécules (analyse réseau : rotation + marge pharmacien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) {
-        P.push({ k: 'molecules', cls: 'p3', accent: '#7C3AED', ico: 'cat', tag: 'Réseau', t: 'Par molécule', d: 'Ce qu\'une pharmacie moyenne fait sur chaque molécule : rotation, marge pharmacien et ta remise. Pour chiffrer ce que ça rapporte au comptoir.', go: 'Voir les molécules' });
+        P.push({ k: 'molecules', cls: 'p3', accent: '#7C3AED', ico: 'cat', tag: 'Réseau', t: 'Par molécule', d: 'Ce qu\'une pharmacie moyenne fait sur chaque molécule : rotation, marge pharmacien et ton abandon de marge. Pour chiffrer ce que ça rapporte au comptoir.', go: 'Voir les molécules' });
       }
       // Audit Marge (abandon de marge par pharmacie) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {

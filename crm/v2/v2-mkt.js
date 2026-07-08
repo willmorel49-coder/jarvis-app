@@ -725,7 +725,7 @@
         '</div>' +
       '</div>' +
       '<label class="mkt-prow-f"><span>Prix €</span><input type="number" inputmode="decimal" step="0.01" min="0" value="' + (p.price != null && p.price !== 0 ? p.price : '') + '" aria-label="Prix" oninput="V2.mkt.setProd(' + i + ',\'price\',this.value)"></label>' +
-      '<label class="mkt-prow-f"><span>Remise %</span><input type="number" inputmode="decimal" step="0.1" min="0" value="' + (p.remise != null && p.remise !== 0 ? p.remise : '') + '" aria-label="Remise" oninput="V2.mkt.setProd(' + i + ',\'remise\',this.value)"></label>' +
+      '<label class="mkt-prow-f"><span>Abandon %</span><input type="number" inputmode="decimal" step="0.1" min="0" value="' + (p.remise != null && p.remise !== 0 ? p.remise : '') + '" aria-label="Abandon de marge" oninput="V2.mkt.setProd(' + i + ',\'remise\',this.value)"></label>' +
       '<button class="mkt-prow-x" onclick="V2.mkt.removeProduct(' + i + ')" title="Retirer">' + ICO('close', 15, 2) + '</button>' +
     '</div>';
   }
@@ -923,7 +923,7 @@
           '<label class="mkt-sw mkt-sw-pick" title="Fond libre"><input type="color" value="' + esc(th.bg) + '" oninput="V2.mkt.setBg(this.value)"></label></div></div>' +
         '<div class="mkt-perso-row"><span class="mkt-perso-l">Affichage</span><div class="mkt-toggles">' +
           '<button class="mkt-tg' + (th.showPrice !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showPrice\',this)">Prix</button>' +
-          '<button class="mkt-tg' + (th.showRemise !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showRemise\',this)">Remises</button>' +
+          '<button class="mkt-tg' + (th.showRemise !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showRemise\',this)">Abandon</button>' +
           '<button class="mkt-tg' + (th.showImg !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showImg\',this)">Photos</button>' +
         '</div></div>' +
         '<div class="mkt-perso-row"><span class="mkt-perso-l">Mentions</span>' +

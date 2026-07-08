@@ -844,7 +844,7 @@ function acts(p){return `<div class="acts">${p.telephone?`<a class="a-call" href
 // chargement progressif
 function loadFull(cb){
   if(FULL){cb();return}
-  fetch('pharmacies.json').then(r=>r.json()).then(j=>{
+  fetch('pharmacies.json?v=2').then(r=>r.json()).then(j=>{
     FULL=j;ALL=[];GROUPS.forEach(g=>{g.pharmacies=j[g.nom]||[];g.pharmacies.forEach(p=>ALL.push(Object.assign({_g:g.nom},p)))});cb();
   }).catch(()=>{cb()});
 }
