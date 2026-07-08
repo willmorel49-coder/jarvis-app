@@ -55,12 +55,20 @@
     if (S.etab && E.prices && E.prices[S.etab]) return E.prices[S.etab][cip] || null;
     return (E.all && E.all[cip]) || null;
   }
+  // barème d'abandon de marge Intégral sur les princeps : 0,18€ ≤4,33€ / 3,89% jusqu'à 468€ / 19,50€ au-delà
+  function abBareme(pp) { if (pp <= 4.33) return 0.18; if (pp <= 468) return Math.round(pp * 0.0389 * 100) / 100; return 19.50; }
   // prix effectifs d'une ligne : PPHT (étab prioritaire) + net + remise%
   function pricing(r) {
     var er = etabRec(r.c);
     var ppht = (er && er[0] > 0) ? er[0] : (r.ppht || 0);
     var net = r.net || 0;
     var stk = er ? er[1] : null;
+    // Princeps sans net renseigné (typiquement les petits prix) : on applique le barème d'abandon
+    // de marge. Les offres spéciales (Sanofi/UPSA) sont déjà dans r.net et restent prioritaires.
+    var isPrinceps = (r.f === 'pr_low' || r.f === 'pr_mid' || r.f === 'pr_high');
+    if (isPrinceps && ppht > 0 && !(net > 0 && net < ppht)) {
+      net = Math.round((ppht - abBareme(ppht)) * 100) / 100;
+    }
     var rpct = (ppht > 0 && net > 0 && net < ppht) ? Math.round((ppht - net) / ppht * 1000) / 10 : (er ? 0 : (r.rpct || 0));
     return { ppht: ppht, net: net, stk: stk, rpct: rpct };
   }

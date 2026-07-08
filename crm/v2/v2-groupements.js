@@ -172,7 +172,7 @@
 
   function ensureGrpPoints(cb) {
     if (GP) { cb(); return; }
-    fetch('points.json?v=5', { cache: 'force-cache' })
+    fetch('points.json?v=6', { cache: 'force-cache' })
       .then(function (r) { return r.json(); })
       .then(function (j) { GP = Array.isArray(j) ? j : []; cb(); })
       .catch(function () { GP = []; cb(); });
@@ -238,12 +238,16 @@
     });
   };
   function gcLegend() {
-    return gcOrder.map(function (g, i) {
-      return '<label class="gc-row" data-nm="' + esc(g.toLowerCase()) + '">' +
-        '<input type="checkbox"' + (gcChecked[g] ? ' checked' : '') + ' onchange="V2.gcToggle(' + i + ')">' +
-        '<span class="gc-dot" style="background:' + grpColor(g) + '"></span>' +
-        '<span class="gc-nm">' + esc(g) + '</span><span class="gc-ct">' + gcCounts[g] + '</span></label>';
-    }).join('');
+    // Affichage par ordre alphabétique (index conservé vers gcOrder pour le toggle & la couleur par poids).
+    return gcOrder.map(function (g, i) { return { g: g, i: i }; })
+      .sort(function (a, b) { return a.g.localeCompare(b.g, 'fr', { sensitivity: 'base' }); })
+      .map(function (o) {
+        var g = o.g;
+        return '<label class="gc-row" data-nm="' + esc(g.toLowerCase()) + '">' +
+          '<input type="checkbox"' + (gcChecked[g] ? ' checked' : '') + ' onchange="V2.gcToggle(' + o.i + ')">' +
+          '<span class="gc-dot" style="background:' + grpColor(g) + '"></span>' +
+          '<span class="gc-nm">' + esc(g) + '</span><span class="gc-ct">' + gcCounts[g] + '</span></label>';
+      }).join('');
   }
   function renderGrpCarte(root) {
     var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
