@@ -55,3 +55,25 @@ create or replace function public.increment_improvement_votes(imp_id uuid)
     update public.improvements set votes = votes + 1 where id = imp_id returning votes;
   $$;
 grant execute on function public.increment_improvement_votes(uuid) to authenticated;
+
+-- ── 3. PROFIL COMMERCIAL (grossistes / génériqueurs / LGO / robot…) ──
+-- 1 ligne par fiche (client ou groupement), champs libres en jsonb.
+create table if not exists public.profils (
+  id              uuid primary key default gen_random_uuid(),
+  scope_type      text not null check (scope_type in ('client','groupement')),
+  scope_id        text not null,
+  data            jsonb not null default '{}'::jsonb,   -- {gros1,gros2,gen1,gen2,lgo,robot,autre,…}
+  updated_by      uuid references auth.users(id) on delete set null,
+  updated_by_name text not null default '',
+  updated_at      timestamptz not null default now(),
+  unique (scope_type, scope_id)
+);
+
+alter table public.profils enable row level security;
+
+create policy profils_select on public.profils
+  for select to authenticated using (true);                     -- toute l'équipe lit
+create policy profils_upsert_ins on public.profils
+  for insert to authenticated with check (true);                -- toute l'équipe complète
+create policy profils_upsert_upd on public.profils
+  for update to authenticated using (true) with check (true);   -- et met à jour
