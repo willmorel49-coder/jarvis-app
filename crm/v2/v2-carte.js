@@ -14,6 +14,10 @@
 
   var CB = '?v=20260707u';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
+  var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
+  var depot = null;              // { n, lat, lng } point de départ/retour (optionnel)
+  var pickDepotMode = false;     // clic carte suivant = définir le dépôt
+  var SPEED = 45, SERVICE = 8;   // km/h moyens · minutes par arrêt (rendement)
   var colorMode = 'comm';        // comm | type | uga | grp
   var commFocus = '', grpFocus = '', typeFocus = 'all';   // all | clients | prospects
   var COMM_COL = {}, GRP_COL = {};
@@ -25,12 +29,16 @@
   function css(href) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); }
   function js(src, cb) { var s = document.createElement('script'); s.src = src; s.onload = cb; s.onerror = function () { cb('err'); }; document.head.appendChild(s); }
   function ensureLeaflet(cb) {
-    if (window.L && window.L.markerClusterGroup) { cb(); return; }
     var V = 'vendor/leaflet/';
-    function loadMC() { if (window.L.markerClusterGroup) { cb(); return; } js(V + 'leaflet.markercluster.js' + CB, function (e) { cb(e || !window.L.markerClusterGroup ? 'err' : null); }); }
-    if (window.L) { loadMC(); return; }
+    // clustering OPTIONNEL : on tente le plugin mais on n'échoue jamais dessus
+    function afterL() { if (window.L.markerClusterGroup) { cb(); return; } js(V + 'leaflet.markercluster.js' + CB, function () { cb(); }); }
+    if (window.L) { afterL(); return; }
     css(V + 'leaflet.css' + CB); css(V + 'MarkerCluster.css' + CB); css(V + 'MarkerCluster.Default.css' + CB);
-    js(V + 'leaflet.js' + CB, function (e) { if (e || !window.L) { cb('err'); return; } loadMC(); });
+    js(V + 'leaflet.js' + CB, function () {});
+    var t0 = Date.now(), iv = setInterval(function () {
+      if (window.L) { clearInterval(iv); afterL(); }
+      else if (Date.now() - t0 > 15000) { clearInterval(iv); cb('err'); }
+    }, 100);
   }
   function ensureData(cb) {
     if (window.PHARMA_FR) { cb(); return; }
@@ -112,17 +120,23 @@
   function rebuild() {
     if (!map) return;
     if (cluster) { map.removeLayer(cluster); cluster = null; }
-    // clustering désactivé plus tôt (zoom 9) + points plus gros = clic bien plus facile
-    cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 48, disableClusteringAtZoom: 9, removeOutsideVisibleBounds: true });
-    cluster.on('click', function (e) { var p = D.p[e.layer._pi]; if (p) e.layer.bindPopup(popupHtml(p, e.layer._pi), { minWidth: 216 }).openPopup(); });
+    var useCluster = !!window.L.markerClusterGroup;
+    function openPop(e) { var p = D.p[e.layer._pi]; if (p) e.layer.bindPopup(popupHtml(p, e.layer._pi), { minWidth: 216 }).openPopup(); }
+    if (useCluster) {
+      cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 48, disableClusteringAtZoom: 9, removeOutsideVisibleBounds: true });
+      cluster.on('click', openPop);
+    } else {
+      cluster = window.L.layerGroup();   // repli sans clustering (clic direct par marqueur)
+    }
     markers = [];
     var pts = D.p, arr = [];
     for (var i = 0; i < pts.length; i++) {
       var p = pts[i]; if (!pass(p)) continue;
       var m = window.L.circleMarker([p[0], p[1]], markerStyle(p, i));
-      m._pi = i; markers.push(m); arr.push(m);
+      m._pi = i; if (!useCluster) m.on('click', openPop); markers.push(m); arr.push(m);
     }
-    cluster.addLayers(arr); map.addLayer(cluster);
+    if (useCluster) cluster.addLayers(arr); else for (var a = 0; a < arr.length; a++) cluster.addLayer(arr[a]);
+    map.addLayer(cluster);
     var cn = document.getElementById('carte-count'); if (cn) cn.textContent = markers.length.toLocaleString('fr') + ' pharmacies';
   }
   function recolor() { if (markers) for (var k = 0; k < markers.length; k++) markers[k].setStyle({ fillColor: colorFor(D.p[markers[k]._pi]) }); }
@@ -146,27 +160,89 @@
       Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lng - a.lng) * r / 2) * Math.sin((b.lng - a.lng) * r / 2);
     return 2 * R * Math.asin(Math.sqrt(s));
   }
-  function tourDistance() { var d = 0; for (var j = 1; j < tour.length; j++) d += haversine(tour[j - 1], tour[j]); return d; }
+  // Suite ordonnée des points = dépôt (si défini) + arrêts (+ retour au dépôt)
+  function routeStops() { var a = []; if (depot) a.push(depot); for (var j = 0; j < tour.length; j++) a.push(tour[j]); if (depot && tour.length) a.push(depot); return a; }
+  function routeKm() { var pts = routeStops(), d = 0; for (var j = 1; j < pts.length; j++) d += haversine(pts[j - 1], pts[j]); return d; }
+  function tourDistance() { return routeKm(); }
+  function estMinutes() { var km = routeKm(); return Math.round(km / SPEED * 60 + tour.length * SERVICE); }
+  function fmtDur(min) { var h = Math.floor(min / 60), m = min % 60; return h ? (h + ' h ' + (m < 10 ? '0' : '') + m) : (m + ' min'); }
+
   V2.carteTour = function (i) {
     var p = D.p[i], k = keyOf(p), pos = tourPos(k);
     if (pos >= 0) tour.splice(pos, 1);
     else tour.push({ k: k, n: p[6], v: p[7], c: p[8], t: p[9], lat: p[0], lng: p[1] });
-    saveTour(); updateTourBar(); refreshMarkerStyle(i);
+    saveTour(); updateTourBar(); refreshMarkerStyle(i); drawTourLine();
     var b = document.getElementById('cn-tour-' + i);
     if (b) { var inT = tourPos(k) >= 0; b.classList.toggle('in', inT); b.textContent = inT ? '✓ Dans ma tournée' : '+ Ajouter à ma tournée'; }
     if (document.getElementById('cn-tourpanel')) renderTourPanel();
   };
-  V2.carteTourOptimize = function () {
-    if (tour.length < 3) return;
-    var rest = tour.slice(1), out = [tour[0]], cur = tour[0];
+  // Optimisation : plus proche voisin (depuis le dépôt si défini) puis amélioration 2-opt
+  function nearestOrder(pts, startRef) {
+    var rest = pts.slice(), out = [], cur = startRef || rest.shift();
+    if (!startRef) out.push(cur);
     while (rest.length) {
       var bi = 0, bd = Infinity;
       for (var j = 0; j < rest.length; j++) { var d = haversine(cur, rest[j]); if (d < bd) { bd = d; bi = j; } }
       cur = rest.splice(bi, 1)[0]; out.push(cur);
     }
-    tour = out; saveTour(); renderTourPanel();
-    if (V2.toast) V2.toast('Ordre optimisé (au plus court)');
+    return out;
+  }
+  function pathLen(seq, head, tail) {
+    var d = 0, prev = head || seq[0], s = head ? 0 : 1;
+    for (var j = s; j < seq.length; j++) { d += haversine(prev, seq[j]); prev = seq[j]; }
+    if (tail) d += haversine(prev, tail);
+    return d;
+  }
+  function twoOpt(seq, head, tail) {
+    var improved = true, n = seq.length, guard = 0;
+    while (improved && guard++ < 60) {
+      improved = false;
+      for (var a = 0; a < n - 1; a++) {
+        for (var b = a + 1; b < n; b++) {
+          var A = a === 0 ? head : seq[a - 1]; if (!A) continue;
+          var B = seq[a], C = seq[b], Dd = (b + 1 < n) ? seq[b + 1] : tail; if (!Dd) continue;
+          var delta = (haversine(A, C) + haversine(B, Dd)) - (haversine(A, B) + haversine(C, Dd));
+          if (delta < -1e-6) { for (var lo = a, hi = b; lo < hi; lo++, hi--) { var tmp = seq[lo]; seq[lo] = seq[hi]; seq[hi] = tmp; } improved = true; }
+        }
+      }
+    }
+    return seq;
+  }
+  V2.carteTourOptimize = function () {
+    if (tour.length < 2) return;
+    var seq = nearestOrder(tour, depot || null);
+    if (depot) seq.shift();                    // retire le dépôt du début, reste = arrêts ordonnés
+    seq = twoOpt(seq, depot || null, depot || null);
+    tour = seq; saveTour(); renderTourPanel(); drawTourLine();
+    if (V2.toast) V2.toast('Tournée optimisée · ' + Math.round(routeKm()) + ' km');
   };
+  // Tracé de la tournée sur la carte (ligne + pastilles numérotées)
+  function drawTourLine() {
+    if (!map || !window.L) return;
+    if (tourLayer) { map.removeLayer(tourLayer); tourLayer = null; }
+    var pts = routeStops(); if (pts.length < 2) return;
+    tourLayer = window.L.layerGroup();
+    window.L.polyline(pts.map(function (s) { return [s.lat, s.lng]; }), { color: '#0050E6', weight: 3, opacity: 0.85, dashArray: '1,0' }).addTo(tourLayer);
+    if (depot) window.L.marker([depot.lat, depot.lng]) && window.L.circleMarker([depot.lat, depot.lng], { radius: 9, color: '#fff', weight: 2, fillColor: '#10131C', fillOpacity: 1 }).bindTooltip('Dépôt : ' + esc(depot.n || ''), { direction: 'top' }).addTo(tourLayer);
+    tour.forEach(function (s, j) {
+      window.L.circleMarker([s.lat, s.lng], { radius: 11, color: '#fff', weight: 2, fillColor: '#0050E6', fillOpacity: 1 })
+        .bindTooltip(String(j + 1) + '. ' + esc(s.n || ''), { direction: 'top' })
+        .bindPopup('<b>' + (j + 1) + '. ' + esc(s.n || '') + '</b><br>' + esc(s.v || '') + ' ' + esc(s.c || ''))
+        .addTo(tourLayer);
+    });
+    tourLayer.addTo(map);
+  }
+  V2.carteTourFit = function () {
+    if (!map || !window.L) return; var pts = routeStops(); if (!pts.length) return;
+    map.fitBounds(window.L.latLngBounds(pts.map(function (s) { return [s.lat, s.lng]; })).pad(0.15));
+  };
+  // Dépôt : définir par clic sur la carte
+  V2.carteDepotPick = function () {
+    pickDepotMode = true;
+    if (V2.toast) V2.toast('Clique un point sur la carte pour définir le dépôt');
+    var mp = document.getElementById('carte-map'); if (mp) mp.style.cursor = 'crosshair';
+  };
+  V2.carteDepotClear = function () { depot = null; try { localStorage.removeItem('jarvis_depot_v1'); } catch (e) {} drawTourLine(); renderTourPanel(); };
   V2.carteTourItinerary = function () {
     if (!tour.length) return;
     window.open('https://www.google.com/maps/dir/' + tour.map(function (s) { return s.lat + ',' + s.lng; }).join('/'), '_blank');
@@ -186,8 +262,8 @@
       '&location=' + encodeURIComponent(tour[0].n + ' ' + tour[0].v + ' ' + tour[0].c);
     window.open(url, '_blank');
   };
-  V2.carteTourRemove = function (j) { if (tour[j]) { tour.splice(j, 1); saveTour(); updateTourBar(); renderTourPanel(); rebuild(); } };
-  V2.carteTourClear = function () { tour = []; saveTour(); updateTourBar(); renderTourPanel(); rebuild(); };
+  V2.carteTourRemove = function (j) { if (tour[j]) { tour.splice(j, 1); saveTour(); updateTourBar(); renderTourPanel(); rebuild(); drawTourLine(); } };
+  V2.carteTourClear = function () { tour = []; saveTour(); updateTourBar(); renderTourPanel(); rebuild(); drawTourLine(); };
   V2.carteTourClose = function () { var el = document.getElementById('cn-tourpanel'); if (el) el.remove(); };
   V2.carteTourOpen = function () {
     if (!document.getElementById('cn-tourpanel')) {
@@ -204,16 +280,30 @@
         '<div class="cn-tmain"><b>' + esc(s.n) + '</b><span>' + esc(s.v) + ' · ' + esc(s.c) + (s.t ? ' · ' + esc(s.t) : '') + '</span></div>' +
         '<button class="cn-trm" onclick="V2.carteTourRemove(' + j + ')" title="Retirer">✕</button></div>';
     }).join('') || '<div class="cn-tempty">Ta tournée est vide.<br>Clique une pharmacie sur la carte, puis « + Ajouter à ma tournée ».</div>';
-    var km = tour.length > 1 ? ' · ~' + Math.round(tourDistance()) + ' km' : '';
+    var kmTot = Math.round(routeKm());
+    var perStop = tour.length ? (Math.round(kmTot / tour.length * 10) / 10) : 0;
+    var metrics = tour.length ? '<div class="cn-tmetrics">' +
+      '<div class="cn-tmetric"><b>' + tour.length + '</b><span>arrêt' + (tour.length > 1 ? 's' : '') + '</span></div>' +
+      '<div class="cn-tmetric"><b>' + kmTot + ' km</b><span>total' + (depot ? ' (dépôt inclus)' : '') + '</span></div>' +
+      '<div class="cn-tmetric"><b>' + fmtDur(estMinutes()) + '</b><span>temps estimé</span></div>' +
+      '<div class="cn-tmetric"><b>' + perStop + '</b><span>km / arrêt</span></div>' +
+      '</div>' : '';
+    var pinSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+    var depotRow = '<div class="cn-tdepot">' + pinSvg +
+      (depot ? '<span>Départ : <b>' + esc(depot.n || 'Dépôt') + '</b></span><button class="cn-tlink" onclick="V2.carteDepotPick()">changer</button><button class="cn-tlink" onclick="V2.carteDepotClear()">retirer</button>'
+             : '<span>Aucun dépôt défini</span><button class="cn-tlink" onclick="V2.carteDepotPick()">définir le départ</button>') +
+      '</div>';
     el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
-      '<div class="cn-phead"><div><b>Ma tournée de prospection</b><small>' + tour.length + ' arrêt' + (tour.length > 1 ? 's' : '') + km + '</small></div>' +
+      '<div class="cn-phead"><div><b>Ma tournée</b><small>' + tour.length + ' arrêt' + (tour.length > 1 ? 's' : '') + (tour.length > 1 ? ' · ~' + kmTot + ' km' : '') + '</small></div>' +
         '<button class="cn-px" onclick="V2.carteTourClose()">✕</button></div>' +
+      metrics + depotRow +
       '<div class="cn-plist">' + rows + '</div>' +
       (tour.length ? '<div class="cn-pacts">' +
-        (tour.length > 2 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourOptimize()">Optimiser l\'ordre</button>' : '') +
+        (tour.length >= 2 ? '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourOptimize()">Optimiser la tournée</button>' : '') +
+        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourFit()">Voir le tracé</button>' : '') +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourItinerary()">Itinéraire GPS</button>' +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourAgenda()">Agenda</button>' +
         '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourClear()">Vider</button>' +
-        '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourAgenda()">Ajouter à l\'agenda</button>' +
-        '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourItinerary()">Lancer l\'itinéraire</button>' +
         '</div>' : '') +
       '</div>';
   }
@@ -273,7 +363,7 @@
       '.cn-tourbar b{font-weight:700}',
       '.cn-tourbar button{border:none;background:#F59E0B;color:#10131C;font:inherit;font-weight:800;font-size:13px;padding:8px 14px;border-radius:999px;cursor:pointer}',
       // panneau tournée
-      '.cn-panel{position:fixed;inset:0;z-index:3000;background:rgba(16,19,28,.4);backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center}',
+      '.cn-panel{position:fixed;inset:0;z-index:3000;background:rgba(16,19,28,.48);display:flex;align-items:flex-end;justify-content:center}',
       '@media(min-width:640px){.cn-panel{align-items:center}}',
       '.cn-pdialog{width:100%;max-width:460px;max-height:82vh;display:flex;flex-direction:column;background:var(--card,#fff);border-radius:18px 18px 0 0;overflow:hidden}',
       '@media(min-width:640px){.cn-pdialog{border-radius:18px}}',
@@ -287,6 +377,13 @@
       '.cn-tmain span{font-size:12px;color:var(--muted)}',
       '.cn-trm{flex:none;border:none;background:transparent;color:var(--muted-2);font-size:15px;cursor:pointer;padding:4px 8px}',
       '.cn-tempty{padding:32px 20px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.5}',
+      '.cn-tmetrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}',
+      '.cn-tmetric{text-align:center;background:var(--card-2,#F4F6FB);border-radius:10px;padding:8px 4px}',
+      '.cn-tmetric b{display:block;font-size:15px;font-weight:800;color:var(--ip-blue,#0057FF)}',
+      '.cn-tmetric span{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}',
+      '.cn-tdepot{display:flex;align-items:center;gap:7px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ip-ink)}',
+      '.cn-tdepot svg{color:var(--muted);flex-shrink:0}',
+      '.cn-tlink{background:none;border:none;color:var(--ip-blue,#0057FF);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:2px 4px}',
       '.cn-pacts{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}',
       '.cn-pacts .v2-btn{flex:1 1 auto}',
     ].join('\n');
@@ -296,6 +393,7 @@
   function boot(root) {
     D = window.PHARMA_FR;
     loadTour();
+    try { var dp = JSON.parse(localStorage.getItem('jarvis_depot_v1') || 'null'); if (dp && dp.lat) depot = dp; } catch (e) {}
     computeColors();
     var commOpts = '<option value="">Tous les commerciaux</option>' +
       D.comm.slice(1).map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
@@ -307,7 +405,15 @@
     map = window.L.map(root.querySelector('#carte-map'), { preferCanvas: true, zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
     canvas = window.L.canvas({ padding: 0.5 });
     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 18, subdomains: 'abcd' }).addTo(map);
-    setTimeout(function () { map.invalidateSize(); rebuild(); updateTourBar(); }, 60);
+    map.on('click', function (e) {
+      if (!pickDepotMode) return;
+      pickDepotMode = false; var mp = document.getElementById('carte-map'); if (mp) mp.style.cursor = '';
+      depot = { n: 'Dépôt', lat: e.latlng.lat, lng: e.latlng.lng };
+      try { localStorage.setItem('jarvis_depot_v1', JSON.stringify(depot)); } catch (er) {}
+      drawTourLine(); if (document.getElementById('cn-tourpanel')) renderTourPanel();
+      if (V2.toast) V2.toast('Dépôt défini');
+    });
+    setTimeout(function () { map.invalidateSize(); rebuild(); updateTourBar(); drawTourLine(); }, 60);
     setTimeout(function () { if (map) map.invalidateSize(); }, 420);
     if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && V2.route && V2.route.name === 'carte') map.invalidateSize(); }); }
   }
