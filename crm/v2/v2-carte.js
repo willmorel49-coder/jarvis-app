@@ -470,7 +470,7 @@
   V2.pages.carte = {
     render: function (root) {
       injectCss();
-      root.innerHTML = V2.topbar({ back: true, backTo: 'copilote', backLabel: 'Copilote' }) +
+      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="cn-wrap">' +
           '<div class="cn-bar">' +
             '<div class="cn-title">Carte nationale <small id="carte-count">chargement…</small></div>' +

@@ -793,9 +793,15 @@
       // Repères pour les intitulés dépliables (aide à la lecture, pas des objectifs)
       var nbGrp = grpList.length;
 
+      var marcheLink = (V2.pages && V2.pages.marche && !opso)
+        ? '<a class="pilo-marche" onclick="V2.go(\'marche\')">' + ICO('spark', 17) +
+            '<span><b>Marché &amp; opportunités</b><small>Marché France × tes ventes réseau : où pousser quoi, princeps en stock Intégral.</small></span>' +
+            '<span class="pilo-marche-go">Ouvrir ' + ICO('chev', 16) + '</span></a>'
+        : '';
       root.innerHTML = top +
         '<div class="v2-wrap">' +
           header +
+          marcheLink +
           (opsoSect ? opsoSect.html : '') +
           // ── ESSENTIEL, toujours visible : où j'en suis en un coup d'œil ──
           kpis +
@@ -1052,6 +1058,13 @@
       '.pilo-tier-meta{font-size:10.5px;color:var(--muted-2);margin-top:4px}' +
       '.pilo-ameli-sub{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.005em}' +
       // ── Blocs dépliables (progressive disclosure) : le détail reste calme et rangé ──
+      '.pilo-marche{display:flex;align-items:center;gap:12px;margin-top:var(--sp-4,16px);padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-card,14px);background:var(--card);box-shadow:var(--sh-1);cursor:pointer;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}' +
+      '.pilo-marche:hover{border-color:var(--ip-blue,#0057FF);transform:translateY(-1px)}' +
+      '.pilo-marche>svg:first-child{color:var(--ip-blue,#0057FF);flex-shrink:0}' +
+      '.pilo-marche span:nth-child(2){flex:1;min-width:0}' +
+      '.pilo-marche b{display:block;font-size:14.5px;font-weight:700}' +
+      '.pilo-marche small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}' +
+      '.pilo-marche-go{display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:700;color:var(--ip-blue,#0057FF);white-space:nowrap}' +
       '.pilo-disc{margin-top:var(--sp-4);border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);box-shadow:var(--sh-1);overflow:hidden}' +
       '.pilo-disc[open]{box-shadow:var(--sh-2)}' +
       '.pilo-disc-sum{display:flex;align-items:center;gap:12px;padding:17px 20px;cursor:pointer;list-style:none;user-select:none;transition:background .16s var(--ease)}' +
