@@ -176,6 +176,71 @@
     requestAnimationFrame(function () { ex.classList.add('show'); });
   };
 
+  // ── Barres flottantes « app » : installation (PWA) + mise à jour dispo ──
+  function ensureAppbarCss() {
+    if (document.getElementById('v2-appbar-css')) return;
+    var s = document.createElement('style'); s.id = 'v2-appbar-css';
+    s.textContent = [
+      '.v2-appbar{position:fixed;left:50%;bottom:20px;transform:translate(-50%,150%);z-index:9500;width:max-content;max-width:min(560px,calc(100vw - 32px));opacity:0;transition:transform .34s cubic-bezier(.2,.8,.2,1),opacity .34s}',
+      '.v2-appbar.show{transform:translate(-50%,0);opacity:1}',
+      '.v2-appbar-update{bottom:20px;z-index:9600}',
+      '.v2-appbar-in{display:flex;align-items:center;gap:12px;padding:11px 12px 11px 15px;background:var(--card,#fff);border:1px solid var(--line,#E4E8F0);border-radius:16px;box-shadow:0 14px 40px rgba(16,19,28,.22)}',
+      '.v2-appbar-ic{flex:none;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff));color:var(--ip-blue,#0050E6)}',
+      '.v2-appbar-update .v2-appbar-ic{background:color-mix(in srgb,var(--c-opp,#12A150) 15%,#fff);color:var(--c-opp,#0f7a52)}',
+      '.v2-appbar-lbl{flex:1;min-width:0;font-size:13px;font-weight:500;color:var(--ip-ink,#10131C);line-height:1.35}',
+      '.v2-appbar-go{flex:none;white-space:nowrap}',
+      '.v2-appbar-x{flex:none;border:none;background:none;cursor:pointer;color:var(--muted,#737A8C);width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center}',
+      '.v2-appbar-x:hover{background:var(--card-2,#F2F5FA);color:var(--ip-ink,#10131C)}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+  var SVG_REFRESH = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>';
+  var SVG_X = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+  // Proposée uniquement sur l'accueil, si installable et pas déjà installée/refusée.
+  V2.installBanner = function () {
+    ensureAppbarCss();
+    var ex = document.getElementById('v2-installbar');
+    var installed = false;
+    try { installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
+    var dismissed = false; try { dismissed = localStorage.getItem('v2-install-dismissed') === '1'; } catch (e) {}
+    var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    var canPrompt = !!window.__deferredInstall || isIOS;
+    var onHome = V2.route && V2.route.name === 'home';
+    var upd = document.getElementById('v2-updatebar');
+    var updShowing = !!(upd && upd.classList.contains('show'));
+    if (installed || dismissed || !canPrompt || !onHome || updShowing) { if (ex) ex.classList.remove('show'); return; }
+    if (!ex) { ex = document.createElement('div'); ex.id = 'v2-installbar'; ex.className = 'v2-appbar v2-appbar-install'; document.body.appendChild(ex); }
+    ex.innerHTML =
+      '<div class="v2-appbar-in">' +
+        '<span class="v2-appbar-ic">' + ICO('plus', 17, 2.2) + '</span>' +
+        '<span class="v2-appbar-lbl">Installe JARVIS sur ton écran d\'accueil — comme une appli, accès direct</span>' +
+        '<button class="v2-btn v2-btn-primary v2-appbar-go" onclick="V2.installApp()">Installer</button>' +
+        '<button class="v2-appbar-x" title="Plus tard" aria-label="Plus tard" onclick="V2.dismissInstall()">' + SVG_X + '</button>' +
+      '</div>';
+    requestAnimationFrame(function () { ex.classList.add('show'); });
+  };
+  V2.dismissInstall = function () {
+    try { localStorage.setItem('v2-install-dismissed', '1'); } catch (e) {}
+    var ex = document.getElementById('v2-installbar'); if (ex) ex.classList.remove('show');
+  };
+
+  // Affichée quand un nouveau service worker a pris la main (nouvelle version déployée).
+  V2.showUpdateBanner = function () {
+    ensureAppbarCss();
+    window.__swUpdateReady = false;
+    var ib = document.getElementById('v2-installbar'); if (ib) ib.classList.remove('show'); // la MAJ prime
+    var ex = document.getElementById('v2-updatebar');
+    if (!ex) { ex = document.createElement('div'); ex.id = 'v2-updatebar'; ex.className = 'v2-appbar v2-appbar-update'; document.body.appendChild(ex); }
+    ex.innerHTML =
+      '<div class="v2-appbar-in">' +
+        '<span class="v2-appbar-ic">' + SVG_REFRESH + '</span>' +
+        '<span class="v2-appbar-lbl">Une nouvelle version de JARVIS est disponible</span>' +
+        '<button class="v2-btn v2-btn-primary v2-appbar-go" onclick="location.reload()">Actualiser</button>' +
+      '</div>';
+    requestAnimationFrame(function () { ex.classList.add('show'); });
+  };
+
   // Accent de PILIER courant : chaque écran a SA lumière (halo de tête + liserés).
   // Mappe la route vers le token var(--pil-*) correspondant ; défaut = bleu marque.
   var ROUTE_ACCENT = {
@@ -208,6 +273,8 @@
       root.innerHTML = topbar({ back: true }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-t">Une erreur est survenue</div><div class="v2-empty-d">' + (e && e.message ? e.message : '') + '</div><button class="v2-btn v2-btn-primary" onclick="V2.go(\'home\')">Retour à l\'accueil</button></div></div>';
     }
     if (V2.updateCartBar) V2.updateCartBar();
+    if (V2.installBanner) V2.installBanner();
+    if (window.__swUpdateReady && V2.showUpdateBanner) V2.showUpdateBanner();
   };
 
   // ════════════════════════════════════════════
