@@ -57,11 +57,15 @@
       ? '<button class="v2-back" onclick="V2.go(\'' + (opts.backTo || 'home') + '\')">' + ICO('back', 16) + (opts.backLabel || 'Accueil') + '</button>'
       : '';
     var initials = (V2.user && V2.user.name ? V2.user.name.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('') : 'WM').toUpperCase();
+    // Le logo Intégral Pharma est TOUJOURS présent et cliquable → accueil (depuis n'importe où).
+    // Sur une page interne, on l'affiche en version compacte (logo seul) à côté du bouton retour.
+    var brand = '<a class="v2-brand' + (back ? ' v2-brand-compact' : '') + '" onclick="V2.go(\'home\')" title="Accueil" aria-label="Accueil">' +
+      '<span class="v2-logo">' + ICO('logo', 22) + '</span>' +
+      (back ? '' : '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '<span class="v2-brand-dot" aria-hidden="true"></span></span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span>') +
+      '</a>';
     return '' +
       '<div class="v2-top">' +
-        (back ||
-         '<a class="v2-brand" onclick="V2.go(\'home\')"><span class="v2-logo">' + ICO('logo', 22) + '</span>' +
-         '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '<span class="v2-brand-dot" aria-hidden="true"></span></span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span></a>') +
+        back + brand +
         '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>' +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
