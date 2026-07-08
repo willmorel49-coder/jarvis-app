@@ -102,6 +102,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
   padding:14px 26px;background:rgba(251,252,254,.78);backdrop-filter:saturate(180%) blur(20px);
   -webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line)}
 .v2-brand{display:flex;align-items:center;gap:12px;cursor:pointer;text-decoration:none;color:inherit}
+.v2-brand-compact{gap:0}
 .v2-logo{width:38px;height:38px;border-radius:11px;position:relative;flex-shrink:0;
   background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));
   box-shadow:0 4px 12px rgba(0,80,230,.28),0 1px 0 rgba(255,255,255,.25) inset;
