@@ -67,6 +67,7 @@
       '<div class="v2-top">' +
         back + brand +
         '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>' +
+        ((!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen) ? '<button class="v2-idea" title="Proposer une amélioration à l\'équipe" aria-label="Proposer une amélioration" onclick="V2.remonteeOpen()">' + ICO('spark', 16, 2) + '</button>' : '') +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
   }
@@ -703,6 +704,10 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
         P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
       }
+      // Remontées équipe (mur d'idées interne) — app JARVIS
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.remontees) {
+        P.push({ k: 'remontees', cls: 'p6', accent: '#7C3AED', ico: 'spark', tag: 'Équipe', t: 'Remontées', d: 'Le mur d\'idées de l\'équipe : propose une amélioration de l\'appli, vote pour celles des autres, suis leur avancement.', go: 'Voir les remontées' });
+      }
       // Pilier marketing : uniquement en mode OPSO (module v2-marketing chargé)
       if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) {
         P.splice(2, 0, { k: 'marketing', cls: 'p2', ico: 'fiche', tag: 'A4', t: 'Fiches marketing OPSO', d: 'Crée une sélection de produits négociée par Intégral Pharma, en charte Normandie Pharma, prête à imprimer pour tes adhérents.', go: 'Créer une sélection' });
@@ -964,6 +969,8 @@
         'justify-content:center}}' +
       // Avatar : anneau discret pour un contour net sur fond clair.
       '.v2-av{box-shadow:0 0 0 1px color-mix(in srgb,var(--info) 14%,transparent),0 2px 6px rgba(16,19,28,.12)}' +
+      '.v2-idea{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .16s,border-color .16s,background .16s,transform .16s}' +
+      '.v2-idea:hover{color:var(--ip-blue);border-color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 8%,var(--card));transform:translateY(-1px)}' +
 
       // ══ LOGIN — première impression de marque ════════════════════════
       // Scène : dégradé de marque sobre (double halo info) + trame de points
