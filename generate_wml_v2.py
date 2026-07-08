@@ -201,7 +201,7 @@ SOURCES = [
     ('Florent', 'FML'),      # Florent
     ('Morgane', 'MDC'),      # Morgane
 ]
-MONTHS_NUM = [1, 2, 3, 4, 5]
+MONTHS_NUM = [1, 2, 3, 4, 5, 6]
 OUT = os.path.join(BASE, 'crm', 'v2', 'wml-officines-data.js')
 PALETTE = ['#1E9E6A', '#0050E6', '#C7791A', '#6D4FC4', '#00B5D8',
            '#E0556E', '#0034A0', '#13794F', '#A65F12', '#4F3A99']
