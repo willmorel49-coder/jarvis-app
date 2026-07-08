@@ -273,11 +273,10 @@
 
   // ── Piliers éditoriaux (modifiable) ──
   var PILLARS = [
-    { k: 'produit',     label: 'Produit',              color: '#0057FF' },
-    { k: 'conseil',     label: 'Conseil officine',     color: '#00B37A' },
-    { k: 'coulisses',   label: 'Coulisses / logistique', color: '#FFB020' },
-    { k: 'recrutement', label: 'Recrutement',          color: '#FF4D6D' },
-    { k: 'tempsfort',   label: 'Temps fort',           color: '#8B5CF6' }
+    { k: 'causes',   label: 'Grandes causes',        color: '#FF4D6D' },
+    { k: 'joie',     label: 'Joie & bonne humeur',   color: '#FFB020' },
+    { k: 'pharma',   label: 'Merci aux pharmaciens', color: '#0057FF' },
+    { k: 'patients', label: 'Aux côtés des patients', color: '#00B37A' }
   ];
   // fonds clairs précalculés (Safari-safe, pas de color-mix)
   var PBG = { produit: '#e9f0ff', conseil: '#e6f7f0', coulisses: '#fff4e0', recrutement: '#ffe9ee', tempsfort: '#f1eafe' };
@@ -319,7 +318,7 @@
   function localWrite(a) { try { localStorage.setItem(LS, JSON.stringify(a)); } catch (e) {} }
 
   function fromRow(r) {
-    return { id: r.id, date: r.date, status: r.status || 'idee', pillar: r.pillar || 'produit',
+    return { id: r.id, date: r.date, status: r.status || 'idee', pillar: r.pillar || 'causes',
       title: r.title || '', body: r.body || '', image_path: r.image_path || '', linkedin_url: r.linkedin_url || '',
       format: r.format || '', image_brief: r.image_brief || '', event_id: r.event_id || '', event_name: r.event_name || '', source: r.source || 'manuel',
       created_at: r.created_at || null, updated_at: r.updated_at || null };
@@ -441,7 +440,7 @@
     var opts = '<option value="">Tous les statuts</option>' + STATUSES.map(function (s) {
       return '<option value="' + s.k + '"' + (flt.status === s.k ? ' selected' : '') + '>' + esc(s.label) + '</option>';
     }).join('');
-    return '<span class="li-flabel">Piliers</span>' + chips + '<span class="li-toolsep"></span>' +
+    return '<span class="li-flabel">Familles</span>' + chips + '<span class="li-toolsep"></span>' +
       '<select class="li-statsel" onchange="V2.li.setStatusFilter(this.value)">' + opts + '</select>';
   }
   function toolbar(o) {
@@ -455,7 +454,7 @@
       '</div>' +
       '<div class="li-toolrow">' +
         '<button class="li-btn li-btn-strat" onclick="V2.lis&&V2.lis.open()">' + ICO('spark', 16) + 'Assistant stratégie</button>' +
-        '<button class="li-btn" onclick="V2.li.newEvent()">' + ICO('cal', 16, 1.8) + 'Temps fort</button>' +
+        '<button class="li-btn" onclick="V2.li.newEvent()">' + ICO('cal', 16, 1.8) + 'Événement</button>' +
         '<button class="li-btn" onclick="V2.li.importOpen()">' + ICO('download', 16, 2) + 'Import</button>' +
         '<span class="li-toolsep"></span>' + filterChips() +
       '</div>';
@@ -467,7 +466,7 @@
   function legendBar() {
     var pil = PILLARS.map(function (p) { return '<span class="li-li"><span class="li-ldot" style="background:' + p.color + '"></span>' + esc(p.label) + '</span>'; }).join('');
     return '<div class="li-legend">' +
-      '<div class="li-lgrp"><span class="li-lgtitle">Piliers</span>' + pil + '</div>' +
+      '<div class="li-lgrp"><span class="li-lgtitle">Familles</span>' + pil + '</div>' +
       '<div class="li-ldiv"></div>' +
       '<div class="li-lgrp"><span class="li-lgtitle">Statut</span>' +
         '<span class="li-li"><span class="li-sd" style="border:1.6px dashed #9aa1ae"></span>Idée</span>' +
@@ -561,7 +560,7 @@
       '<div class="li-stat"><b>' + nbMonth + '</b><span>ce mois</span></div>' +
       '<div class="li-stat" style="color:' + (nbDue ? '#F39A1B' : '#0A0E1A') + '"><b>' + nbDue + '</b><span>à publier</span></div>' +
       '<div class="li-stat" style="color:#00B37A"><b>' + nbPub + '</b><span>publiés</span></div></div></div>';
-    var leg = '<div class="li-sidecard"><h4>Piliers éditoriaux</h4>' +
+    var leg = '<div class="li-sidecard"><h4>Familles éditoriales</h4>' +
       PILLARS.map(function (p) { return '<div class="li-legrow"><span class="li-sw" style="background:' + p.color + '"></span>' + esc(p.label) + '</div>'; }).join('') +
       '<div class="li-legnote"><b>Couleur</b> = pilier · <b>Forme</b> de la pastille = statut (contour pointillé : idée · plein clair : rédaction · plein : prêt · coche verte : publié).</div></div>';
     return '<div class="li-side">' + promo + rythme + leg + '</div>';
@@ -700,7 +699,7 @@
 
   function openEditor(p) {
     editing = p ? JSON.parse(JSON.stringify(p)) : {
-      id: '', date: new Date().toISOString(), status: 'idee', pillar: 'produit',
+      id: '', date: new Date().toISOString(), status: 'idee', pillar: 'causes',
       title: '', body: '', image_path: '', linkedin_url: '', event_id: '', event_name: '', source: 'manuel'
     };
     mountDrawer(editorHtml());
@@ -718,7 +717,7 @@
         '<span class="li-cdot" style="background:' + p.color + '"></span>' + esc(p.label) + '</button>';
     }).join('');
     var stat = STATUSES.map(function (s) {
-      return '<button class="' + (e.status === s.k ? 'on' : '') + '" onclick="V2.li.editField(\'status\',\'' + s.k + '\')">' + statusMark(s.k, e.pillar || 'produit') + esc(s.label) + '</button>';
+      return '<button class="' + (e.status === s.k ? 'on' : '') + '" onclick="V2.li.editField(\'status\',\'' + s.k + '\')">' + statusMark(s.k, e.pillar || 'causes') + esc(s.label) + '</button>';
     }).join('');
     var img = e.image_path
       ? '<div class="li-imgprev"><img src="' + esc(imgUrl(e.image_path)) + '" alt=""><button class="li-btn" onclick="V2.li.editField(\'image_path\',\'\')">Retirer le visuel</button></div>'
@@ -740,7 +739,7 @@
           '<div class="li-field"><label class="li-lab">Texte du post <span id="li-count">' + (e.body || '').length + ' / 3000</span></label>' +
             '<div class="li-ta-wrap"><textarea class="li-ta" oninput="V2.li.editField(\'body\',this.value)" placeholder="Rédigez votre post LinkedIn…">' + esc(e.body) + '</textarea></div>' +
             '<button class="li-gen" onclick="V2.li.gentext()">' + ICO('spark', 16) + 'Générer le texte (selon le pilier)</button></div>' +
-          '<div class="li-field"><label class="li-lab">Pilier éditorial</label><div class="li-pillpick">' + pills + '</div></div>' +
+          '<div class="li-field"><label class="li-lab">Famille éditoriale</label><div class="li-pillpick">' + pills + '</div></div>' +
           '<div class="li-field"><label class="li-lab">Statut</label><div class="li-segstat">' + stat + '</div></div>' +
           '<div class="li-field"><label class="li-lab">Date & heure de publication</label>' +
             '<input class="li-inp" type="datetime-local" value="' + dt + '" oninput="V2.li.editField(\'date\',this.value)"></div>' +
@@ -784,10 +783,10 @@
   // ── Création / édition ──
   V2.li.newAt = function (iso) {
     var d = new Date(); if (iso && iso.length >= 10) { d = new Date(iso + 'T09:00'); }
-    openEditor({ id: '', date: d.toISOString(), status: 'idee', pillar: 'produit', title: '', body: '', image_path: '', linkedin_url: '', event_id: '', event_name: '', source: 'manuel' });
+    openEditor({ id: '', date: d.toISOString(), status: 'idee', pillar: 'causes', title: '', body: '', image_path: '', linkedin_url: '', event_id: '', event_name: '', source: 'manuel' });
   };
   V2.li.newStatus = function (st) {
-    openEditor({ id: '', date: new Date().toISOString(), status: st || 'idee', pillar: 'produit', title: '', body: '', image_path: '', linkedin_url: '', event_id: '', event_name: '', source: 'manuel' });
+    openEditor({ id: '', date: new Date().toISOString(), status: st || 'idee', pillar: 'causes', title: '', body: '', image_path: '', linkedin_url: '', event_id: '', event_name: '', source: 'manuel' });
   };
   V2.li.openPost = function (id) { var p = byId(id); if (p) openEditor(p); };
   V2.li.editField = function (f, v) {
@@ -801,7 +800,7 @@
     if (!editing) return;
     if (!V2.lis || !V2.lis.genForEditor) { alert('Assistant stratégie non chargé — rechargez la page.'); return; }
     editing._genv = (editing._genv == null) ? 0 : editing._genv + 1;
-    editing.body = V2.lis.genForEditor(editing.pillar || 'produit', editing.title || '', editing._genv);
+    editing.body = V2.lis.genForEditor(editing.pillar || 'causes', editing.title || '', editing._genv);
     redrawEditor();
   };
   V2.li.writeFromIdea = function () {
@@ -810,20 +809,20 @@
     var brief = editing._brief || editing.title || '';
     if (!brief) { alert('Écris d’abord ton idée en quelques mots.'); return; }
     editing._genv = (editing._genv == null) ? 0 : editing._genv + 1;
-    editing.body = V2.lis.genFromBrief(editing.pillar || 'produit', brief, editing._genv);
+    editing.body = V2.lis.genFromBrief(editing.pillar || 'causes', brief, editing._genv);
     redrawEditor();
   };
   V2.li.suggestIdea = function () {
     if (!editing || !V2.lis || !V2.lis.suggestIdea) return;
     editing._sugv = (editing._sugv == null) ? 0 : editing._sugv + 1;
-    var s = V2.lis.suggestIdea(editing.pillar || 'produit', editing._sugv);
+    var s = V2.lis.suggestIdea(editing.pillar || 'causes', editing._sugv);
     editing.title = s.h; if (!editing._brief) editing._brief = s.core;
     redrawEditor();
   };
   V2.li.imageIdea = function () {
     if (!editing || !V2.lis || !V2.lis.genImageIdea) return;
     editing._imgv = (editing._imgv == null) ? 0 : editing._imgv + 1;
-    editing.image_brief = V2.lis.genImageIdea(editing.pillar || 'produit', editing._imgv);
+    editing.image_brief = V2.lis.genImageIdea(editing.pillar || 'causes', editing._imgv);
     redrawEditor();
   };
   V2.li.closeEditor = function () { closeDrawer(); };
@@ -863,10 +862,10 @@
 
   // ── Temps fort (rétroplanning) ──
   var RETRO = [
-    { off: -14, title: 'Teaser',        pillar: 'tempsfort' },
-    { off: -7,  title: 'Annonce',       pillar: 'tempsfort' },
-    { off: -1,  title: 'Rappel',        pillar: 'tempsfort' },
-    { off: 0,   title: 'Jour J / live', pillar: 'tempsfort' },
+    { off: -14, title: 'Teaser',        pillar: 'causes' },
+    { off: -7,  title: 'Annonce',       pillar: 'causes' },
+    { off: -1,  title: 'Rappel',        pillar: 'causes' },
+    { off: 0,   title: 'Jour J / live', pillar: 'causes' },
     { off: 2,   title: 'Retour / bilan',pillar: 'conseil'   }
   ];
   V2.li.newEvent = function () {
@@ -875,7 +874,7 @@
       '<div class="li-scrim" onclick="V2.li.closeEditor()"></div>' +
       '<aside class="li-drawer">' +
         '<div class="li-dr-head"><div style="flex:1"><div class="li-dr-eyebrow">Rétroplanning</div>' +
-          '<div class="li-dr-title" style="font-size:19px">Nouveau temps fort</div></div>' +
+          '<div class="li-dr-title" style="font-size:19px">Nouvel événement ou cause</div></div>' +
           '<button class="li-close" onclick="V2.li.closeEditor()">' + ICO('close', 18, 2) + '</button></div>' +
         '<div class="li-dr-body">' +
           '<p class="li-note">JARVIS créera automatiquement les posts brouillons à rebours : J-14, J-7, J-1, Jour J, J+2.</p>' +
@@ -976,7 +975,7 @@
       var key = (url || '') + '|' + ymd(d);
       if (existing[key]) continue; existing[key] = 1;
       (function (dd, bb, uu) {
-        var p = { id: '', date: dd.toISOString(), status: 'publie', pillar: 'produit',
+        var p = { id: '', date: dd.toISOString(), status: 'publie', pillar: 'causes',
           title: bb.slice(0, 40), body: bb, image_path: '', linkedin_url: uu, event_id: '', event_name: '', source: 'import' };
         chain = chain.then(function () { return savePost(p); });
       })(d, body, url); added++;
