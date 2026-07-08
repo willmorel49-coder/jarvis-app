@@ -8,23 +8,14 @@
   function esc(s) { return (V2.esc ? V2.esc(s) : String(s == null ? '' : s)); }
   function LI() { return V2.mktLinkedin || null; }
   function PILL() { return (LI() && LI().PILLARS) || [
-    { k: 'produit', label: 'Produit', color: '#0057FF' },
-    { k: 'conseil', label: 'Conseil officine', color: '#00B37A' },
-    { k: 'coulisses', label: 'Coulisses / logistique', color: '#FFB020' },
-    { k: 'recrutement', label: 'Recrutement', color: '#FF4D6D' },
-    { k: 'tempsfort', label: 'Temps fort', color: '#8B5CF6' }
+    { k: 'causes', label: 'Grandes causes', color: '#FF4D6D' },
+    { k: 'joie', label: 'Joie & bonne humeur', color: '#FFB020' },
+    { k: 'pharma', label: 'Merci aux pharmaciens', color: '#0057FF' },
+    { k: 'patients', label: 'Aux côtés des patients', color: '#00B37A' }
   ]; }
   function pillMeta(k) { var a = PILL(); for (var i = 0; i < a.length; i++) if (a[i].k === k) return a[i]; return a[0]; }
 
-  // ── Options du quiz ──
-  var OBJECTIVES = [
-    { k: 'notoriete', label: 'Notoriété', sub: 'Se faire connaître', w: { produit: 2, conseil: 2, coulisses: 3, recrutement: 1, tempsfort: 2 } },
-    { k: 'recruter', label: 'Recruter', sub: 'Attirer des talents', w: { produit: 1, conseil: 1, coulisses: 3, recrutement: 4, tempsfort: 1 } },
-    { k: 'offre', label: 'Mettre en avant l’offre / Offilog', sub: 'Valoriser le catalogue', w: { produit: 4, conseil: 2, coulisses: 2, recrutement: 1, tempsfort: 2 } },
-    { k: 'fideliser', label: 'Fidéliser les officines clientes', sub: 'Renforcer la relation', w: { produit: 2, conseil: 4, coulisses: 2, recrutement: 1, tempsfort: 2 } },
-    { k: 'conquerir', label: 'Conquérir de nouvelles officines', sub: 'Prospecter', w: { produit: 3, conseil: 3, coulisses: 3, recrutement: 1, tempsfort: 2 } }
-  ];
-  function objOf(k) { for (var i = 0; i < OBJECTIVES.length; i++) if (OBJECTIVES[i].k === k) return OBJECTIVES[i]; return OBJECTIVES[0]; }
+  // ── Options du quiz (assistant simplifié : pas d'objectif commercial) ──
   var TONES = [
     { k: 'expert', label: 'Expert & factuel' },
     { k: 'proche', label: 'Proche & humain' },
@@ -34,134 +25,125 @@
   var HORIZONS = [4, 8, 12];
   var FMT = { carrousel: 'Carrousel', video: 'Vidéo', photo: 'Photo', texte: 'Texte' };
 
-  // ── Banque d’angles (le cœur) — jamais de conditions commerciales, ni UPSA/Sanofi ──
+  // ── Banque d’angles (le cœur) — soutien & joie, jamais d’auto-promo ni de prise de parti ──
   var ANGLES = {
-    produit: [
-      { h: 'Plus de 14 000 références parapharma, un seul partenaire.', f: 'carrousel', core: 'Dermocosmétique, bébé, nature, vétérinaire, hygiène… La parapharmacie Offilog rassemble une largeur de gamme rare pour équiper vos rayons sans multiplier les interlocuteurs.' },
-      { h: 'La rupture n’est pas une fatalité.', f: 'texte', core: 'La disponibilité, c’est notre métier. On travaille chaque jour pour que le produit que votre patient attend soit là quand il le demande.' },
-      { h: 'Nouveautés parapharma : ce qui arrive dans vos rayons.', f: 'carrousel', core: 'On veille sur les lancements pour vous faire gagner du temps. Voici une sélection de nouveautés à repérer pour la saison qui vient.' },
-      { h: '430 marques, une seule commande.', f: 'photo', core: 'Simplifier votre sourcing, c’est libérer du temps au comptoir. Retrouvez l’essentiel de la parapharmacie au même endroit, en une seule commande.' },
-      { h: 'Comment on sélectionne les produits qui tournent vraiment.', f: 'carrousel', core: 'Derrière chaque référence, il y a un choix. On privilégie ce qui répond à une vraie demande en officine, pas ce qui remplit un catalogue.' },
-      { h: 'Anticipez vos rayons avant la demande.', f: 'texte', core: 'Allergies, solaire, immunité… Chaque saison a ses pics. Préparer ses linéaires en amont, c’est éviter la rupture au pire moment.' },
-      { h: 'Le réassort express, votre allié anti-rupture.', f: 'photo', core: 'Un manque repéré le matin, comblé au plus vite : la réactivité logistique fait toute la différence sur vos ventes.' },
-      { h: 'Dermocosmétique, bébé, nature, vétérinaire… tout au même endroit.', f: 'carrousel', core: 'Une gamme large et cohérente pour couvrir tous les besoins de vos patients, du soin quotidien au conseil spécialisé.' }
+    causes: [
+      { h: 'Octobre Rose : ensemble contre le cancer du sein.', f: 'photo', core: 'Ce mois-ci, on porte le ruban rose. Sensibiliser, encourager le dépistage, soutenir celles et ceux qui luttent : chacun peut agir à son échelle.' },
+      { h: 'Movember : et si on parlait de la santé des hommes ?', f: 'photo', core: 'Un sujet trop souvent passé sous silence. En novembre, on ose en parler, avec bienveillance, pour encourager la prévention.' },
+      { h: 'Journée mondiale du diabète : informer, c’est déjà agir.', f: 'carrousel', core: 'Mieux connaître, mieux prévenir. Quelques repères simples pour comprendre et accompagner, sans dramatiser.' },
+      { h: 'Don du sang : un geste simple qui sauve des vies.', f: 'texte', core: 'Quelques minutes de son temps, un impact immense. On soutient toutes celles et ceux qui se mobilisent.' },
+      { h: 'Semaine de la vaccination : la prévention nous concerne tous.', f: 'carrousel', core: 'S’informer sereinement, en parler avec son pharmacien : la prévention avance quand on la partage.' },
+      { h: 'Journée mondiale de la santé mentale : prendre soin de soi compte aussi.', f: 'texte', core: 'La santé, c’est aussi celle qu’on ne voit pas. Un mot d’attention, une écoute : ça change tout.' },
+      { h: 'Téléthon : petits gestes, grande solidarité.', f: 'photo', core: 'Quand chacun apporte sa pierre, on soulève des montagnes. Bravo à toutes les mobilisations partout en France.' },
+      { h: 'Journée sans tabac : encourager, jamais juger.', f: 'texte', core: 'Chaque pas compte. On soutient celles et ceux qui essaient, avec bienveillance et sans leçon.' }
     ],
-    conseil: [
-      { h: '3 astuces merchandising pour dynamiser votre linéaire ce mois-ci.', f: 'carrousel', core: '1) Placez la nouveauté à hauteur des yeux. 2) Créez un univers saisonnier. 3) Croisez les produits complémentaires. Des gestes simples, un impact réel.' },
-      { h: 'Gérer son stock sans immobiliser sa trésorerie.', f: 'texte', core: 'Le bon équilibre : assez pour ne jamais manquer, pas trop pour ne pas dormir sur du stock. Quelques repères pour ajuster vos commandes.' },
-      { h: 'La tendance parapharma que vos patients vont réclamer.', f: 'carrousel', core: 'Les attentes évoluent vite : naturalité, routines ciblées, made in France. Anticiper la demande, c’est prendre une longueur d’avance.' },
-      { h: 'Votre vitrine capte-t-elle l’attention en 3 secondes ?', f: 'photo', core: 'Une vitrine claire, saisonnière et lisible arrête le passant. Un message, une gamme, un appel à entrer : l’essentiel tient en peu de mots.' },
-      { h: 'Transformer un conseil en vente additionnelle, sans forcer.', f: 'texte', core: 'La vente additionnelle réussie part d’un vrai besoin patient. Le bon réflexe : compléter, pas pousser. Le conseil fait le reste.' },
-      { h: 'Les 5 produits à mettre en avant avant chaque changement de saison.', f: 'carrousel', core: 'Un rétroplanning simple de vos mises en avant vous évite de courir après la saison. Voici comment structurer vos temps forts.' },
-      { h: 'Fidéliser un patient parapharma : ce qui fait la différence.', f: 'texte', core: 'Un conseil personnalisé, un suivi, une disponibilité réelle. La fidélité se construit au comptoir, une attention à la fois.' },
-      { h: 'Former votre équipe sur les nouveautés : la méthode simple.', f: 'photo', core: 'Cinq minutes par nouveauté, une fiche claire, un référent produit. Une équipe qui connaît ses gammes vend mieux et conseille juste.' }
+    joie: [
+      { h: 'Un petit sourire pour bien commencer la semaine.', f: 'photo', core: 'Parce qu’une bonne journée commence souvent par un bon état d’esprit. Belle semaine à toutes les officines !' },
+      { h: 'La bonne nouvelle santé de la semaine.', f: 'texte', core: 'Un peu de positif, ça fait du bien. On partage une nouvelle qui donne le sourire et redonne de l’énergie.' },
+      { h: 'Merci pour tout ce que vous faites, ça compte énormément.', f: 'photo', core: 'Un simple merci, mais du fond du cœur, à toutes celles et ceux qui prennent soin des autres au quotidien.' },
+      { h: 'Une citation qui fait du bien aujourd’hui.', f: 'photo', core: 'Prendre soin des autres, c’est déjà prendre soin du monde. Un petit rappel pour illuminer la journée.' },
+      { h: 'Célébrons les petites victoires du quotidien.', f: 'texte', core: 'Un patient soulagé, un sourire échangé, une équipe soudée : ce sont ces moments qui donnent du sens.' },
+      { h: 'Un grand bravo à toutes les équipes sur le terrain.', f: 'photo', core: 'Vous êtes présents, jour après jour, avec le sourire. Aujourd’hui, on prend le temps de vous applaudir.' },
+      { h: 'La photo qui donne le sourire cette semaine.', f: 'photo', core: 'Un moment de complicité, un instant de joie partagée : la santé, c’est aussi de l’humain et de la bonne humeur.' },
+      { h: 'Un peu de douceur dans un monde qui va vite.', f: 'texte', core: 'On ralentit une seconde, on respire, on savoure. Prendre soin de soi commence par de petites attentions.' }
     ],
-    coulisses: [
-      { h: 'Dans les coulisses de notre plateforme logistique.', f: 'video', core: 'Chaque jour, des milliers de références transitent pour rejoindre vos officines. Visite guidée de ce qui se passe avant votre livraison.' },
-      { h: 'De la commande à votre comptoir : le parcours d’un colis.', f: 'carrousel', core: 'Réception, préparation, contrôle, expédition. Derrière un délai tenu, il y a une chaîne millimétrée. On vous montre les étapes.' },
-      { h: 'Chaîne du froid : comment on protège vos produits sensibles.', f: 'texte', core: 'Températures maîtrisées de bout en bout : c’est la condition d’un produit sûr. Un savoir-faire discret mais essentiel.' },
-      { h: 'L’équipe qui prépare vos commandes chaque matin.', f: 'photo', core: 'Derrière chaque livraison, des femmes et des hommes engagés. Coup de projecteur sur ceux qui font tourner la logistique.' },
-      { h: 'Pourquoi la proximité change tout dans la répartition.', f: 'texte', core: 'Être proche, c’est livrer vite et bien connaître les besoins du terrain. La proximité n’est pas un slogan, c’est un service.' },
-      { h: 'Nos engagements qualité, au quotidien.', f: 'carrousel', core: 'Traçabilité, contrôles, rigueur : la qualité se joue sur les détails, tous les jours. Voici comment on la garantit.' },
-      { h: 'Une journée type sur notre plateforme.', f: 'video', core: 'Du premier colis préparé à la dernière expédition : 24 heures dans les coulisses de votre partenaire répartiteur.' },
-      { h: 'La technologie qui fiabilise vos livraisons.', f: 'photo', core: 'Préparation assistée, contrôle qualité, suivi : les outils au service d’un objectif simple, la bonne commande au bon moment.' }
+    pharma: [
+      { h: 'Merci aux pharmaciens, ces professionnels de proximité.', f: 'photo', core: 'Toujours là, souvent le premier réflexe santé. Aujourd’hui, on met à l’honneur celles et ceux qui veillent sur nous.' },
+      { h: 'L’officine, ce lieu où l’on prend vraiment le temps.', f: 'texte', core: 'Écouter, rassurer, orienter : derrière chaque conseil, il y a une attention sincère et une vraie expertise.' },
+      { h: 'Derrière chaque conseil, une vraie expertise.', f: 'carrousel', core: 'Des années de formation au service d’un mot juste au bon moment. Bravo aux pharmaciens pour leur professionnalisme.' },
+      { h: 'Les pharmaciens, premiers soutiens de votre santé au quotidien.', f: 'photo', core: 'Accessibles, disponibles, humains. On salue ce rôle essentiel, souvent discret mais si précieux.' },
+      { h: 'Bravo aux équipes d’officine, présentes en toutes circonstances.', f: 'photo', core: 'Été comme hiver, jours fériés compris, elles répondent présentes. Un immense merci pour cet engagement.' },
+      { h: 'Un métier de cœur autant que de compétence.', f: 'texte', core: 'On ne devient pas pharmacien par hasard. Merci de mettre autant d’humanité dans votre expertise.' },
+      { h: 'Aux pharmaciens de garde : merci de veiller sur nous.', f: 'photo', core: 'Quand tout est fermé, l’officine de garde reste une lumière rassurante. Merci pour ces nuits au service des autres.' },
+      { h: 'Célébrons celles et ceux qui font vivre nos officines.', f: 'carrousel', core: 'Préparateurs, pharmaciens, équipes : chaque maillon compte. Un grand bravo à toute la profession.' }
     ],
-    recrutement: [
-      { h: 'On recrute : rejoignez l’aventure Intégral Pharma.', f: 'photo', core: 'On grandit, et on cherche des personnes qui aiment le terrain, le concret et l’esprit d’équipe. Et si c’était vous ?' },
-      { h: 'Préparateur, magasinier, commercial : nos métiers qui recrutent.', f: 'carrousel', core: 'Plusieurs postes, une même exigence : le service. Découvrez les métiers qui font la répartition et rejoignez-nous.' },
-      { h: 'Pourquoi on aime travailler ici.', f: 'video', core: 'Des équipes soudées, un vrai sens du service, et la fierté d’aider les officines au quotidien. Nos collègues en parlent mieux que nous.' },
-      { h: 'Portrait : rencontrez un membre de notre équipe.', f: 'photo', core: 'Chaque parcours compte. On vous présente celles et ceux qui font Intégral Pharma, dans leurs mots.' },
-      { h: 'Nos valeurs, ce qui nous fait avancer ensemble.', f: 'carrousel', core: 'Proximité, engagement, fiabilité. Ce ne sont pas que des mots : c’est ce qu’on met en pratique chaque jour, ensemble.' },
-      { h: 'Vous connaissez la bonne personne ? La cooptation est ouverte.', f: 'texte', core: 'Les meilleures rencontres viennent souvent d’une recommandation. Partagez nos offres autour de vous, on s’occupe du reste.' },
-      { h: 'Ce qu’on offre au-delà du poste.', f: 'texte', core: 'Un métier de terrain qui a du sens, une équipe qui se serre les coudes, et la satisfaction d’être utile aux pharmacies. Ça compte.' },
-      { h: 'Nos alternants racontent leur quotidien.', f: 'video', core: 'Se former en travaillant sur le concret : nos alternants partagent ce qu’ils apprennent et pourquoi ils ont choisi la répartition.' }
-    ],
-    tempsfort: [
-      { h: 'Nous étions présents auprès de la profession.', f: 'photo', core: 'Rencontrer les pharmaciens, écouter le terrain, partager nos engagements : les temps forts du métier sont des moments qui comptent.' },
-      { h: 'Une info utile pour votre officine cette semaine.', f: 'texte', core: 'On relaie l’essentiel de l’actualité qui touche votre quotidien, pour vous faire gagner du temps et de la visibilité.' },
-      { h: 'Bilan et perspectives : merci à nos partenaires.', f: 'carrousel', core: 'Un cap franchi, c’est d’abord une aventure collective. Merci aux équipes et aux officines qui nous font confiance.' },
-      { h: 'L’actualité qui change la donne en officine.', f: 'texte', core: 'Le métier bouge. On décrypte ce qui compte vraiment pour vous, sans bruit inutile.' }
+    patients: [
+      { h: '3 gestes simples pour prendre soin de vous cet hiver.', f: 'carrousel', core: 'Se laver les mains, bien s’aérer, écouter son corps : la prévention tient souvent à de petits réflexes. Parlez-en avec votre pharmacien.' },
+      { h: 'Bien s’hydrater : le réflexe santé de la saison.', f: 'texte', core: 'Un verre d’eau régulier, ça change beaucoup de choses. Un rappel tout simple pour prendre soin de soi.' },
+      { h: 'Sommeil : et si on en prenait vraiment soin ?', f: 'carrousel', core: 'Mieux dormir, c’est mieux vivre. Quelques repères doux pour retrouver des nuits réparatrices.' },
+      { h: 'La prévention, c’est l’affaire de tous.', f: 'texte', core: 'Un dépistage, un vaccin, un conseil : autant de petits pas vers une meilleure santé, pour soi et pour ses proches.' },
+      { h: 'Prendre soin de sa santé mentale, jour après jour.', f: 'photo', core: 'Souffler, parler, s’accorder du repos. Prendre soin de sa tête est aussi important que du reste. Vous n’êtes pas seuls.' },
+      { h: 'Bien vieillir : quelques réflexes qui changent tout.', f: 'carrousel', core: 'Bouger un peu, garder le lien, suivre ses traitements : bien vieillir, ça se prépare en douceur, avec les bons conseils.' },
+      { h: 'Vaccination : parlez-en avec votre pharmacien.', f: 'texte', core: 'Une question, un doute ? Votre pharmacien est là pour vous informer, simplement et sans pression.' },
+      { h: 'Écouter son corps, un premier pas vers le bien-être.', f: 'photo', core: 'Fatigue, tension, petits signaux : votre corps vous parle. S’écouter, c’est déjà prendre soin de soi.' }
     ]
   };
 
   // ── Angles saisonniers (temps forts pharma) par mois (0=janv … 11=déc) ──
+  // Grandes causes & moments fédérateurs par mois (0=janv … 11=déc) — jamais clivant
   var SEASON = {
-    0: [ { h: 'Nouvelle année : cap sur la prévention et les bonnes résolutions.', f: 'carrousel', core: 'Arrêt du tabac, sommeil, vitalité : janvier est le mois des bonnes résolutions. L’occasion de mettre en avant les gammes qui accompagnent vos patients.' },
-         { h: 'Immunité d’hiver : on soutient vos rayons au bon moment.', f: 'texte', core: 'Le froid s’installe, les défenses baissent. Vitamine D, probiotiques, ORL : anticipez la demande pour ne pas être pris de court.' } ],
-    1: [ { h: 'Pic hivernal : disponibilité maximale sur les indispensables.', f: 'texte', core: 'Rhume, gorge, nez qui coule : février met la pression sur les rayons. On veille à la disponibilité pour que vous ne manquiez de rien.' },
-         { h: 'Peaux sèches, mains abîmées : le rayon soin à ne pas négliger.', f: 'photo', core: 'Le froid agresse la peau. Baumes, cold creams, soins réparateurs : un temps fort simple à mettre en avant en vitrine.' } ],
-    2: [ { h: 'Le printemps arrive : préparez la saison des allergies.', f: 'carrousel', core: 'Les premiers pollens approchent. Anticipez vos rayons antihistaminiques et solutions locales avant le pic de demande.' },
-         { h: 'Reprise du sport : accompagnez vos patients actifs.', f: 'texte', core: 'Beaux jours = retour à l’activité. Compléments, récupération, protection : un univers à valoriser dès mars.' } ],
-    3: [ { h: 'Allergies aux pollens : soyez prêts avant vos patients.', f: 'carrousel', core: 'Avril, pleine saison pollinique. Une mise en avant claire aide vos patients à trouver la bonne réponse, vite.' },
-         { h: 'Envie de renouveau : le rayon détox et vitalité.', f: 'photo', core: 'Le printemps donne envie de repartir du bon pied. Un temps fort vitalité qui parle à tout le monde.' } ],
-    4: [ { h: 'Préparez la peau au soleil, dès maintenant.', f: 'carrousel', core: 'Avant les vacances, la demande solaire démarre. Anticiper le rayon, c’est capter la saison au bon moment.' },
-         { h: 'Allergies : le pic se poursuit, restons disponibles.', f: 'texte', core: 'La saison pollinique bat son plein. On maintient la disponibilité sur les indispensables pour tenir la demande.' } ],
-    5: [ { h: 'Solaire, moustiques, bien-être : l’été s’installe dans vos rayons.', f: 'carrousel', core: 'Protection solaire, anti-moustiques, hydratation : juin lance la saison estivale. Un temps fort à ne pas rater.' },
-         { h: 'Trousse de vacances : le réflexe conseil de la saison.', f: 'photo', core: 'Vos patients partent : proposez la trousse essentielle. Un conseil utile qui fait aussi la vente additionnelle.' } ],
-    6: [ { h: 'Plein été : disponibilité solaire et petits soins du quotidien.', f: 'texte', core: 'Juillet, la demande solaire culmine. On assure la disponibilité pour que vos rayons ne se vident pas au pire moment.' },
-         { h: 'Voyages : les indispensables à mettre en avant.', f: 'carrousel', core: 'Mal des transports, digestion, protection : l’été voyage. Un univers pratique à valoriser en vitrine.' } ],
-    7: [ { h: 'Août : anticipez déjà la rentrée de vos rayons.', f: 'texte', core: 'Pendant que l’été continue, la rentrée se prépare. Immunité, sommeil, retour au calme : prenez de l’avance sur septembre.' },
-         { h: 'Solaire : la saison n’est pas finie.', f: 'photo', core: 'Le soleil tape encore. Maintenir la mise en avant solaire en août, c’est prolonger un temps fort rentable.' } ],
-    8: [ { h: 'Rentrée : on est prêts, et vous ?', f: 'carrousel', core: 'Immunité, poux, fatigue, reprise : septembre concentre les besoins. Un rétroplanning de rayons pour aborder la rentrée sereinement.' },
-         { h: 'Immunité de rentrée : anticipez la demande.', f: 'texte', core: 'La reprise fragilise les défenses. Vitamines, probiotiques, ORL : préparez vos rayons avant le premier coup de froid.' } ],
-    9: [ { h: 'Octobre Rose : on se mobilise à vos côtés.', f: 'photo', core: 'La prévention est l’affaire de tous. Un temps fort de sensibilisation qui a du sens, en officine comme en ligne.' },
-         { h: 'Vaccination et immunité : le rayon de la saison.', f: 'carrousel', core: 'L’automne relance la demande ORL et immunité. Une mise en avant claire guide vos patients au bon moment.' } ],
-    10: [ { h: 'Movember : parlons santé masculine.', f: 'photo', core: 'Novembre met la santé des hommes en lumière. Un sujet trop souvent tu, une belle occasion de conseil et de prévention.' },
-          { h: 'Froid et rhumes : disponibilité sur les indispensables.', f: 'texte', core: 'Le pic hivernal approche. On assure la disponibilité pour que vos rayons ORL tiennent la cadence.' } ],
-    11: [ { h: 'Fêtes de fin d’année : coffrets et idées cadeaux bien-être.', f: 'carrousel', core: 'Décembre, saison des cadeaux. Dermocosmétique, coffrets, bien-être : un temps fort à forte valeur pour vos rayons.' },
-          { h: 'Hiver et immunité : on termine l’année en soutien.', f: 'texte', core: 'Froid, fatigue, excès des fêtes : accompagnez vos patients avec les bonnes gammes. On veille à la disponibilité.' } ]
+    0: [ { h: 'Bonne année ! Nos vœux de santé pour tous.', f: 'photo', core: 'Une nouvelle année commence, remplie de bonnes intentions. On vous souhaite santé, énergie et de beaux moments, tout simplement.' },
+         { h: 'Bonnes résolutions : et si on prenait soin de soi, en douceur ?', f: 'texte', core: 'Pas de pression, juste de petites attentions au quotidien. Prendre soin de sa santé, c’est le plus beau des projets.' } ],
+    1: [ { h: 'Journée mondiale contre le cancer : informer, soutenir, espérer.', f: 'photo', core: 'Le 4 février, on se rappelle que la prévention et la recherche avancent grâce à la mobilisation de tous. Bravo à celles et ceux qui luttent.' },
+         { h: 'Un peu de tendresse au cœur de l’hiver.', f: 'photo', core: 'La bienveillance, c’est bon pour la santé. Un mot gentil, un sourire : le meilleur des remèdes se partage.' } ],
+    2: [ { h: 'Journée mondiale du sommeil : et si on dormait mieux ?', f: 'carrousel', core: 'Le sommeil, c’est la base d’une bonne santé. Quelques repères doux pour retrouver des nuits paisibles.' },
+         { h: 'Journée mondiale de l’eau : un geste simple, un grand bienfait.', f: 'texte', core: 'Bien s’hydrater, c’est prendre soin de soi tous les jours. Un rappel tout simple, mais essentiel.' } ],
+    3: [ { h: 'Journée mondiale de la santé : la santé, notre bien le plus précieux.', f: 'photo', core: 'Le 7 avril, on célèbre celles et ceux qui prennent soin de nous. Merci à tous les professionnels de santé.' },
+         { h: 'Le printemps, une belle occasion de repartir du bon pied.', f: 'texte', core: 'Un peu de mouvement, de lumière, de douceur : la belle saison invite à prendre soin de soi, tranquillement.' } ],
+    4: [ { h: 'Semaine de la vaccination : la prévention nous concerne tous.', f: 'carrousel', core: 'S’informer sereinement, poser ses questions à son pharmacien : la prévention avance quand on en parle ensemble.' },
+         { h: 'Fête du travail : merci à celles et ceux qui prennent soin des autres.', f: 'photo', core: 'Le 1er mai, on pense à tous les professionnels de santé, présents au quotidien. Un grand merci pour votre engagement.' } ],
+    5: [ { h: 'Journée mondiale du don du sang : un geste qui sauve des vies.', f: 'photo', core: 'Le 14 juin, on salue les donneurs et les bénévoles. Quelques minutes de générosité, un impact immense.' },
+         { h: 'Fête de la musique : un peu de joie fait toujours du bien.', f: 'photo', core: 'La musique adoucit et rassemble. Belle fête à toutes et à tous — la bonne humeur, c’est aussi de la santé.' } ],
+    6: [ { h: 'Bonne fête nationale à toutes et à tous !', f: 'photo', core: 'Le 14 juillet, on célèbre ce qui nous rassemble. Belle journée, et pensée pour ceux qui veillent, même les jours de fête.' },
+         { h: 'L’été, le bon moment pour souffler et se ressourcer.', f: 'texte', core: 'Un peu de repos, du soleil avec modération, de belles retrouvailles : prendre soin de soi passe aussi par la détente.' } ],
+    7: [ { h: 'Un été tout en douceur : prenez soin de vous.', f: 'photo', core: 'Chaleur, vacances, moments partagés : on savoure, en restant à l’écoute de son corps. Bel été à toutes et à tous.' },
+         { h: 'Pensée pour les équipes qui assurent tout l’été.', f: 'texte', core: 'Pendant que certains se reposent, d’autres veillent. Merci aux officines ouvertes et présentes, même en plein été.' } ],
+    8: [ { h: 'Bonne rentrée à toutes et à tous !', f: 'photo', core: 'Nouvelle saison, nouvelle énergie. On vous souhaite une rentrée douce, sereine et pleine de belles choses.' },
+         { h: 'Journée mondiale du cœur : prenons soin du nôtre.', f: 'carrousel', core: 'Le 29 septembre, un petit rappel bienveillant : bouger, souffler, s’écouter. Le cœur nous le rendra.' } ],
+    9: [ { h: 'Octobre Rose : ensemble contre le cancer du sein.', f: 'photo', core: 'Tout le mois, on porte le ruban rose. Sensibiliser, encourager le dépistage, soutenir : chacun peut agir à son échelle.' },
+         { h: 'Journée mondiale de la santé mentale : prendre soin de soi compte aussi.', f: 'texte', core: 'Le 10 octobre, on rappelle que la santé, c’est aussi celle qu’on ne voit pas. Écouter, en parler : ça change tout.' } ],
+    10: [ { h: 'Movember : parlons de la santé des hommes.', f: 'photo', core: 'Tout novembre, on ose aborder un sujet trop souvent tu, avec bienveillance, pour encourager la prévention.' },
+          { h: 'Journée mondiale du diabète : informer, c’est déjà aider.', f: 'carrousel', core: 'Le 14 novembre, quelques repères simples pour mieux comprendre et accompagner, sans dramatiser.' } ],
+    11: [ { h: 'Téléthon : petits gestes, grande solidarité.', f: 'photo', core: 'Début décembre, on salue toutes les mobilisations partout en France. Ensemble, on soulève des montagnes.' },
+          { h: 'Belles fêtes de fin d’année à toutes et à tous.', f: 'photo', core: 'Chaleur, partage et bienveillance : on vous souhaite de douces fêtes. Et pensée pour ceux qui veillent sur notre santé.' } ]
   };
 
-  // ── Rédaction (CTA + hashtags par ton / pilier) ──
+  // ── Rédaction (CTA + hashtags par famille) ──
   var CTA = {
-    expert: { def: 'Échangeons — votre équipe Intégral Pharma reste à votre disposition.', rec: 'Intéressé·e, ou vous connaissez la bonne personne ? Contactez-nous.' },
-    proche: { def: 'Une question, une envie d’en discuter ? Écrivez-nous 👇', rec: 'Envie de nous rejoindre ? Parlons-en 👇' },
-    punchy: { def: 'On en parle ? 👇', rec: 'Ça vous tente ? Postulez 👇' }
+    expert: { def: 'Chez Intégral Pharma, nous sommes fiers de soutenir celles et ceux qui prennent soin de la santé.' },
+    proche: { def: 'Et vous, comment le vivez-vous ? Partagez en commentaire 👇' },
+    punchy: { def: 'Partagez pour faire passer le message 💛' }
   };
   var HASH = {
-    produit: '#Parapharmacie #Officine #Offilog',
-    conseil: '#Officine #ConseilOfficine #Pharmacie',
-    coulisses: '#Logistique #Répartition #Coulisses',
-    recrutement: '#Recrutement #Emploi #TeamIntégral',
-    tempsfort: '#Pharmacie #Officine #Santé'
+    causes: '#Santé #Prévention #Solidarité',
+    joie: '#BonneHumeur #Sourire #Positif',
+    pharma: '#Pharmaciens #Officine #MerciLesPharmaciens',
+    patients: '#Santé #Prévention #BienÊtre'
   };
   function compose(angle, tone, pk) {
-    var cta = (pk === 'recrutement') ? CTA[tone].rec : CTA[tone].def;
-    return angle.h + '\n\n' + angle.core + '\n\n' + cta + '\n\n' + (HASH[pk] || HASH.tempsfort) + ' #IntégralPharma';
+    var cta = (CTA[tone] || CTA.proche).def;
+    return angle.h + '\n\n' + angle.core + '\n\n' + cta + '\n\n' + (HASH[pk] || HASH.causes) + ' #IntégralPharma';
   }
 
   // ── Moteur de rédaction (post complet, 100% local) ──
   var AMP = {
-    produit: ['Une offre large, c’est moins de fournisseurs à gérer et plus de temps pour vos patients.', 'Chaque référence disponible, c’est une vente qui ne vous échappe pas.', 'Bien équiper ses rayons, c’est répondre présent quand le patient a besoin de vous.'],
-    conseil: ['Un rayon vivant attire l’œil et déclenche l’achat d’impulsion.', 'Le bon conseil au bon moment, c’est un patient qui revient.', 'Anticiper la saison, c’est valoriser vos rayons avant tout le monde.'],
-    coulisses: ['Derrière chaque livraison à l’heure, il y a une organisation sans faille.', 'La logistique, c’est le maillon invisible qui fait votre disponibilité.', 'Proximité et réactivité : deux mots, un seul objectif — vous servir vite et bien.'],
-    recrutement: ['On grandit, et on cherche des personnes qui aiment le concret et le collectif.', 'Rejoindre la répartition, c’est un métier utile, au cœur de la santé de proximité.', 'Ici, l’esprit d’équipe n’est pas un slogan : c’est le quotidien.'],
-    tempsfort: ['Les temps forts de la profession, ce sont des moments d’échange qui comptent.', 'Rester connecté à l’actualité, c’est mieux accompagner votre officine.', 'Une info utile au bon moment vous fait gagner un temps précieux.']
+    causes: ['Se mobiliser pour une cause, c’est rappeler que la santé nous concerne tous.', 'Informer sans juger, encourager sans imposer : c’est notre façon de soutenir.', 'Chaque prise de conscience compte, et chaque petit geste peut faire la différence.'],
+    joie: ['Un peu de positivité fait toujours du bien, surtout quand on parle de santé.', 'Célébrer les bons moments, c’est aussi une manière de prendre soin les uns des autres.', 'La bonne humeur, ça se partage — et c’est plutôt contagieux.'],
+    pharma: ['Les pharmaciens sont souvent le premier contact santé du quotidien.', 'Écoute, conseil, disponibilité : l’officine, c’est un vrai soutien humain.', 'Derrière le comptoir, il y a des femmes et des hommes engagés, jour après jour.'],
+    patients: ['La prévention et le bien-être commencent par de petits gestes simples.', 'Prendre soin de soi, c’est aussi prendre soin de ses proches.', 'Une information claire, au bon moment, peut vraiment aider.']
   };
   var BULLETS = {
-    produit: [['Dermocosmétique et soins ciblés', 'Univers bébé et maman', 'Nature, aroma et compléments'], ['Nouveautés repérées pour vous', 'Marques attendues par vos patients', 'Gammes saisonnières prêtes à l’emploi']],
-    conseil: [['Mettez la nouveauté à hauteur des yeux', 'Créez un univers saisonnier cohérent', 'Associez les produits complémentaires'], ['Un message clair en vitrine', 'Une gamme phare par saison', 'Un conseil personnalisé au comptoir']],
-    coulisses: [['Réception et contrôle des produits', 'Préparation soignée de vos commandes', 'Expédition au plus près de vos besoins'], ['Chaîne du froid maîtrisée', 'Traçabilité à chaque étape', 'Réactivité sur le réassort']],
-    recrutement: [['Un métier de terrain qui a du sens', 'Une équipe soudée et bienveillante', 'La fierté d’aider les pharmacies'], ['Préparateur de commandes', 'Magasinier', 'Commercial terrain']],
-    tempsfort: [['Anticipez la demande de la saison', 'Préparez vos rayons en amont', 'Communiquez au bon moment'], ['Un rendez-vous à ne pas manquer', 'Des échanges concrets avec la profession', 'Des idées à ramener en officine']]
+    causes: [['S’informer sur la cause', 'En parler autour de soi', 'Soutenir les initiatives près de chez vous'], ['Le dépistage sauve des vies', 'La prévention est l’affaire de tous', 'Chaque geste solidaire compte']],
+    joie: [['Un sourire', 'Un merci sincère', 'Une bonne nouvelle à partager'], ['Célébrer les petites victoires', 'Encourager autour de soi', 'Cultiver le positif au quotidien']],
+    pharma: [['Un accueil bienveillant', 'Un conseil personnalisé', 'Une présence en toutes circonstances'], ['De l’écoute', 'De l’expertise', 'De la proximité']],
+    patients: [['Bien s’hydrater', 'Bien dormir', 'Bouger un peu chaque jour'], ['S’informer auprès de son pharmacien', 'Écouter son corps', 'Ne pas négliger la prévention']]
   };
   var VALUE = {
-    produit: ['Chez Intégral Pharma, on met la largeur de gamme au service de votre officine.', 'Notre métier : vous simplifier l’appro pour que vous restiez concentré sur le conseil.'],
-    conseil: ['On partage ce qui marche sur le terrain, parce que votre réussite fait la nôtre.', 'Chez Intégral Pharma, le conseil se joue à deux : vous et nous.'],
-    coulisses: ['Chez Intégral Pharma, la logistique est un métier de précision au service des officines.', 'La proximité n’est pas un slogan : c’est ce qui fait notre réactivité.'],
-    recrutement: ['Chez Intégral Pharma, on avance ensemble : proximité, engagement, fiabilité.', 'Un collectif où chacun compte, au service des pharmacies.'],
-    tempsfort: ['Chez Intégral Pharma, on avance aux côtés des pharmaciens, saison après saison.', 'Votre partenaire répartiteur, présent sur les moments qui comptent.']
+    causes: ['Chez Intégral Pharma, nous soutenons les causes qui font avancer la santé de tous.', 'Fédérer autour de la santé, sans jamais diviser : c’est notre engagement.'],
+    joie: ['Chez Intégral Pharma, on croit qu’un peu de joie fait beaucoup de bien.', 'Répandre du positif, c’est notre petite contribution au quotidien.'],
+    pharma: ['Chez Intégral Pharma, nous sommes fiers de soutenir les pharmaciens, chaque jour.', 'Les officines prennent soin de tous — nous avons à cœur de les soutenir.'],
+    patients: ['Chez Intégral Pharma, la santé des patients est au cœur de tout ce que nous faisons.', 'Aux côtés des pharmaciens pour mieux accompagner chaque patient.']
   };
   function pickA(arr, v) { if (!arr || !arr.length) return ''; return arr[((v % arr.length) + arr.length) % arr.length]; }
-  function toneEmoji(tone, pk) { if (tone !== 'punchy') return ''; return ({ produit: '📦', conseil: '💡', coulisses: '🚚', recrutement: '🚀', tempsfort: '📣' })[pk] || '✨'; }
+  function toneEmoji(tone, pk) { if (tone !== 'punchy') return ''; return ({ causes: '🎗️', joie: '☀️', pharma: '💙', patients: '🌿' })[pk] || '💛'; }
   function generateFull(o) {
-    var tone = o.tone || 'proche', pk = o.pillar || 'produit', v = o.v || 0;
+    var tone = o.tone || 'proche', pk = o.pillar || 'causes', v = o.v || 0;
     var hook = o.hook || pickA(AMP[pk], v);
     var core = o.core || pickA(AMP[pk], v);
     var amp = pickA(AMP[pk], v + 1);
     var bset = (BULLETS[pk] && BULLETS[pk].length) ? BULLETS[pk][((v % BULLETS[pk].length) + BULLETS[pk].length) % BULLETS[pk].length] : null;
     var val = pickA(VALUE[pk], v + 1);
-    var cta = (pk === 'recrutement') ? CTA[tone].rec : CTA[tone].def;
+    var cta = (CTA[tone] || CTA.proche).def;
     var em = toneEmoji(tone, pk);
     var parts = [];
     parts.push((em ? em + ' ' : '') + hook);
@@ -170,7 +152,7 @@
     if (bset && bset.length) parts.push(bset.map(function (x) { return '• ' + x; }).join('\n'));
     if (val) parts.push(val);
     parts.push(cta);
-    parts.push((HASH[pk] || HASH.tempsfort) + ' #IntégralPharma');
+    parts.push((HASH[pk] || HASH.causes) + ' #IntégralPharma');
     return parts.join('\n\n');
   }
 
@@ -185,41 +167,35 @@
 
   // ── Idées / descriptifs de visuel par pilier ──
   var IMG_IDEAS = {
-    produit: [
-      'Photo produit héro sur fond clair épuré, lumière douce, un seul produit mis en avant, ombre subtile.',
-      'Flat lay (vue du dessus) de plusieurs produits d’une même gamme, fond pastel, composition aérée.',
-      'Gros plan macro sur la texture ou le packaging, lumière naturelle, détail qui donne envie.',
-      'Carrousel : 1 produit par slide avec son bénéfice en une ligne, fond aux couleurs de la marque.'
+    causes: [
+      'Bandeau aux couleurs de la cause (ruban rose, moustache…), message court et sobre, respectueux.',
+      'Visuel de sensibilisation : un chiffre-clé + un appel bienveillant, fond aux couleurs de la marque.',
+      'Photo solidaire et lumineuse (mains jointes, équipe mobilisée), ton chaleureux et positif.',
+      'Illustration simple et lisible de la journée mondiale concernée, sans dramatiser.'
     ],
-    conseil: [
-      'Carrousel pédagogique : 1 conseil par slide, gros chiffres, icônes simples, couleurs de marque.',
-      'Photo d’un pharmacien au comptoir en train de conseiller un patient, ambiance chaleureuse et lumineuse.',
-      'Schéma annoté du linéaire idéal (flèches, zones à mettre en avant), style clair et lisible.',
-      'Vitrine d’officine bien agencée, plan large, mise en avant saisonnière.'
+    joie: [
+      'Visuel positif et coloré avec une citation courte qui fait sourire.',
+      'Photo authentique d’un sourire ou d’un moment de complicité, lumière douce.',
+      'Carte « belle semaine » aux couleurs de la marque, message chaleureux.',
+      'Illustration légère et bienveillante, épurée, sans texte superflu.'
     ],
-    coulisses: [
-      'Photo grand angle de la plateforme logistique, allées de préparation, ambiance de travail réelle.',
-      'Portrait d’un collaborateur en action (préparation, livraison), plan mi-corps, lumière naturelle.',
-      'Vidéo courte / time-lapse du parcours d’un colis, de la préparation à l’expédition.',
-      'Gros plan sur un geste métier (scan, contrôle qualité), net et authentique.'
+    pharma: [
+      'Portrait chaleureux d’un pharmacien ou d’une équipe d’officine, plan mi-corps, lumière naturelle.',
+      'Photo du comptoir d’officine, ambiance humaine et lumineuse.',
+      'Carte « merci » aux pharmaciens, sobre et sincère, aux couleurs de la marque.',
+      'Gros plan sur un geste de conseil (mains, échange), authentique et positif.'
     ],
-    recrutement: [
-      'Photo d’équipe souriante sur le lieu de travail, plan large lumineux, ambiance conviviale.',
-      'Portrait d’un collaborateur avec une courte citation en surimpression sobre.',
-      'Visuel « offre d’emploi » : intitulé du poste, lieu, logo, un seul CTA, fond de marque.',
-      'Coulisses d’une journée type d’un métier (préparateur, magasinier, commercial).'
-    ],
-    tempsfort: [
-      'Visuel événementiel aux couleurs de la marque : date bien lisible, message court, un seul focus.',
-      'Photo de l’équipe sur un salon / stand, ambiance conviviale et professionnelle.',
-      'Bandeau saisonnier illustré (soleil, feuilles, flocons…) selon la période, sobre et lisible.',
-      'Carte de remerciement / bilan avec un chiffre-clé mis en avant.'
+    patients: [
+      'Carrousel prévention : 1 conseil par slide, clair, rassurant, icônes simples.',
+      'Photo lumineuse d’une personne qui prend soin d’elle (eau, marche, sommeil).',
+      'Visuel bien-être : 3 gestes illustrés par des icônes douces.',
+      'Illustration pédagogique et bienveillante, ton rassurant.'
     ]
   };
-  function generateImageIdea(pk, v) { return pickA(IMG_IDEAS[pk] || IMG_IDEAS.tempsfort, v); }
+  function generateImageIdea(pk, v) { return pickA(IMG_IDEAS[pk] || IMG_IDEAS.causes, v); }
 
   // ── Moteur ──
-  function poolFor(slot) { return slot.seasonal ? SEASON[slot.mo] : (ANGLES[slot.pillar] || ANGLES.tempsfort); }
+  function poolFor(slot) { return slot.seasonal ? SEASON[slot.mo] : (ANGLES[slot.pillar] || ANGLES.causes); }
   function anglesOf(slot) {
     var pool = poolFor(slot), o = slot.offset % pool.length, out = [];
     for (var i = 0; i < Math.min(3, pool.length); i++) out.push(pool[(o + i) % pool.length]);
@@ -236,20 +212,11 @@
     for (i = 0; i < cands.length; i++) { r -= (w[cands[i]] || 1); if (r <= 0) return cands[i]; }
     return cands[cands.length - 1];
   }
-  function dominantPillar(objKey) {
-    var w = objOf(objKey).w, best = null, bv = -1;
-    for (var k in w) if (w.hasOwnProperty(k) && w[k] > bv) { bv = w[k]; best = k; }
-    return best;
-  }
   function pillarSequence(cfg) {
     var n = cfg.cadence * cfg.horizon;
-    var w = {}; var ow = objOf(cfg.objective).w;
-    PILL().forEach(function (p) { w[p.k] = ow[p.k] || 1; });
-    cfg.themes.forEach(function (k) { w[k] = (w[k] || 1) + 3; });
-    var allowed = cfg.themes.length ? cfg.themes.slice() : PILL().map(function (p) { return p.k; });
-    // l'objectif s'exprime toujours : son pilier dominant est garanti et mis en avant
-    var dom = dominantPillar(cfg.objective);
-    if (dom) { if (allowed.indexOf(dom) === -1) allowed.push(dom); w[dom] = (w[dom] || 1) + 3; }
+    // familles à privilégier, à poids égal (pas d'objectif commercial)
+    var allowed = (cfg.themes && cfg.themes.length) ? cfg.themes.slice() : PILL().map(function (p) { return p.k; });
+    var w = {}; allowed.forEach(function (k) { w[k] = 1; });
     var seq = [], last = null, i;
     for (i = 0; i < n; i++) {
       var cand = allowed.filter(function (k) { return k !== last; });
@@ -282,7 +249,7 @@
         var date = new Date(start);
         date.setDate(start.getDate() + w * 7 + (days[d] - 1)); date.setHours(9, 0, 0, 0);
         var pk = seq[i++]; var mo = date.getMonth();
-        var seasonal = (pk === 'tempsfort' && SEASON[mo] && SEASON[mo].length);
+        var seasonal = (pk === 'causes' && SEASON[mo] && SEASON[mo].length);
         var offset;
         if (seasonal) { offset = (seasonOff[mo] || 0); seasonOff[mo] = offset + 1; }
         else { offset = (pillOff[pk] || 0); pillOff[pk] = offset + 1; }
@@ -294,7 +261,7 @@
 
   // ── État ──
   var isOpen = false, step = 'quiz', plan = [];
-  var cfg = { objective: 'notoriete', cadence: 2, horizon: 4, tone: 'expert', themes: ['produit', 'conseil', 'coulisses'], start: null };
+  var cfg = { cadence: 2, horizon: 4, tone: 'proche', themes: ['causes', 'joie', 'pharma', 'patients'], start: null };
   var stratId = '';
 
   // ── CSS (injecté une fois, thème sombre cohérent avec la vue LinkedIn) ──
@@ -380,12 +347,11 @@
     return '<div class="lis-wrap">' +
       '<div class="lis-top"><div class="lis-title"><span class="g">✨</span> Assistant stratégie</div>' +
       '<button class="lis-x" onclick="V2.lis.close()">✕</button></div>' +
-      '<div class="lis-sub">Réponds à ces quelques questions : je te génère un plan de posts daté, équilibré et prêt à suivre.</div>' +
-      '<div class="lis-q"><div class="lis-ql">🎯 Ton objectif principal</div>' + seg('objective', OBJECTIVES, cfg.objective, true) + '</div>' +
+      '<div class="lis-sub">Quelques réponses et je te génère un plan de posts daté, positif et prêt à suivre — calé sur les grandes causes du calendrier.</div>' +
       '<div class="lis-q"><div class="lis-ql">📅 Cadence de publication</div>' + segNum('cadence', CADENCES, cfg.cadence, ' / sem.') + '</div>' +
       '<div class="lis-q"><div class="lis-ql">🗓️ Sur combien de semaines</div>' + segNum('horizon', HORIZONS, cfg.horizon, ' sem.') + '</div>' +
       '<div class="lis-q"><div class="lis-ql">🗣️ Ton dominant</div>' + seg('tone', TONES, cfg.tone, false) + '</div>' +
-      '<div class="lis-q"><div class="lis-ql">🧩 Thèmes à privilégier <small style="font-weight:500;color:#8493b8">(plusieurs possibles)</small></div>' + themeOpts + '</div>' +
+      '<div class="lis-q"><div class="lis-ql">🧩 Familles à privilégier <small style="font-weight:500;color:#8493b8">(plusieurs possibles)</small></div>' + themeOpts + '</div>' +
       '<div class="lis-q"><div class="lis-ql">▶️ Démarrer le</div>' +
         '<input type="date" class="lis-date" value="' + startVal() + '" onchange="V2.lis.pick(\'start\',this.value)"> ' +
         '<span style="color:#8493b8;font-size:12.5px">par défaut : lundi prochain</span></div>' +
@@ -401,11 +367,9 @@
   var MON = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
   function fmtDate(d) { return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]; }
   function previewHtml() {
-    var o = objOf(cfg.objective);
     var recap = '<div class="lis-recap">' +
       '<span><b>' + plan.length + '</b> posts</span>' +
       '<span><b>' + cfg.horizon + '</b> semaines · <b>' + cfg.cadence + '</b>/sem.</span>' +
-      '<span>Objectif : <b>' + esc(o.label) + '</b></span>' +
       '<span>Ton : <b>' + esc((TONES.filter(function (t) { return t.k === cfg.tone; })[0] || TONES[0]).label) + '</b></span>' +
       '</div>';
     var cards = plan.map(function (s, idx) {
@@ -416,7 +380,7 @@
       return '<div class="lis-card" style="--pc:' + pm.color + '">' +
         '<div class="lis-crow">' +
           '<span class="lis-date2">' + fmtDate(s.date) + '</span>' +
-          '<span class="lis-tag pil" style="--pcb:' + pm.color + '33">' + esc(s.seasonal ? 'Temps fort' : pm.label) + '</span>' +
+          '<span class="lis-tag pil" style="--pcb:' + pm.color + '33">' + esc(s.seasonal ? 'Grande cause' : pm.label) + '</span>' +
           '<span class="lis-tag">' + esc(FMT[a.f] || 'Texte') + '</span>' +
           '<button class="lis-mini lis-del" onclick="V2.lis.remove(' + idx + ')">Supprimer</button>' +
         '</div>' +
@@ -425,7 +389,7 @@
         '<div class="lis-abc">' + abc +
           '<button class="lis-mini lis-genb" onclick="V2.lis.gentext(' + idx + ')">' + (s.gen ? '↻ Régénérer le texte' : '✍️ Générer le texte') + '</button>' +
           '<button class="lis-mini" onclick="V2.lis.other(' + idx + ')">↻ Autre idée</button></div>' +
-        '<div class="lis-imgidea"><b>Idée visuelle :</b> ' + esc(generateImageIdea(s.seasonal ? 'tempsfort' : s.pillar, s.imgv || 0)) +
+        '<div class="lis-imgidea"><b>Idée visuelle :</b> ' + esc(generateImageIdea(s.seasonal ? 'causes' : s.pillar, s.imgv || 0)) +
           ' <button class="lis-mini lis-imgb" onclick="V2.lis.otherImg(' + idx + ')">↻ Autre</button></div>' +
       '</div>';
     }).join('');
@@ -467,7 +431,7 @@
     var s = plan[idx]; if (!s) return;
     var angs = anglesOf(s); var a = angs[s.sel] || angs[0];
     s.genv = s.gen ? ((s.genv || 0) + 1) : (s.genv || 0);
-    s.gen = generateFull({ hook: a.h, core: a.core, pillar: (s.seasonal ? 'tempsfort' : s.pillar), tone: cfg.tone, v: s.genv || 0 });
+    s.gen = generateFull({ hook: a.h, core: a.core, pillar: (s.seasonal ? 'causes' : s.pillar), tone: cfg.tone, v: s.genv || 0 });
     draw();
   };
   V2.lis.remove = function (idx) { plan.splice(idx, 1); draw(); };
@@ -483,11 +447,10 @@
   };
   V2.lis.add = function () {
     if (!plan.length || !LI()) return;
-    var o = objOf(cfg.objective);
-    var name = 'Stratégie ' + o.label + ' — ' + fmtDate(plan[0].date);
+    var name = 'Plan éditorial — ' + fmtDate(plan[0].date);
     var rows = plan.map(function (s) {
       var angs = anglesOf(s); var a = angs[s.sel] || angs[0];
-      var pk = s.seasonal ? 'tempsfort' : s.pillar;
+      var pk = s.seasonal ? 'causes' : s.pillar;
       return {
         date: s.date.toISOString(), status: 'idee', pillar: pk,
         title: a.h, body: (s.gen || compose(a, cfg.tone, pk)), format: a.f,
@@ -514,20 +477,20 @@
 
   // Génération de texte pour l'éditeur d'un post (depuis le calendrier)
   V2.lis.genForEditor = function (pillar, title, v) {
-    return generateFull({ hook: title || '', core: '', pillar: pillar || 'produit', tone: 'proche', v: v || 0 });
+    return generateFull({ hook: title || '', core: '', pillar: pillar || 'causes', tone: 'proche', v: v || 0 });
   };
   // Rédiger un post complet à partir d'une idée courte de l'utilisateur
   V2.lis.genFromBrief = function (pillar, brief, v) {
-    return generateFromBrief(brief, pillar || 'produit', 'proche', v || 0);
+    return generateFromBrief(brief, pillar || 'causes', 'proche', v || 0);
   };
   // Proposer une idée de post (accroche + angle) pour un pilier
   V2.lis.suggestIdea = function (pillar, v) {
-    var pool = ANGLES[pillar || 'produit'] || ANGLES.produit;
+    var pool = ANGLES[pillar || 'causes'] || ANGLES.causes;
     var a = pool[((v || 0) % pool.length + pool.length) % pool.length];
     return { h: a.h, core: a.core, format: a.f };
   };
   // Proposer une idée / description de visuel pour un pilier
-  V2.lis.genImageIdea = function (pillar, v) { return generateImageIdea(pillar || 'produit', v || 0); };
+  V2.lis.genImageIdea = function (pillar, v) { return generateImageIdea(pillar || 'causes', v || 0); };
 
   V2.liStrategy = { open: function () { V2.lis.open(); }, _cfg: function () { return cfg; }, _plan: function () { return plan; }, _build: buildPlan, generateFull: generateFull };
 })();
