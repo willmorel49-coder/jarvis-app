@@ -37,6 +37,32 @@
     if (V2.route && V2.route.name === 'infos') V2.render();
   };
   var CHECK_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  var COPY_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+  // « Nouveau depuis ta dernière visite » : compare la date des infos à la dernière ouverture.
+  var SEEN_KEY = 'jarvis_infos_seen', seenBaseline = null;
+  function seenBase() { if (seenBaseline === null) { try { seenBaseline = localStorage.getItem(SEEN_KEY) || ''; } catch (e) { seenBaseline = ''; } } return seenBaseline; }
+  function markSeen() { try { localStorage.setItem(SEEN_KEY, new Date().toISOString().slice(0, 10)); } catch (e) {} }
+
+  // « Copier le brief du matin » : texte prêt à coller (WhatsApp/mail) — veille pure, AUCUN prix ni abandon.
+  function fallbackCopy(txt) { try { var ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;left:-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch (e) {} }
+  V2.infosCopyBrief = function (btn) {
+    if (!DATA) return;
+    var lines = [], d = ''; try { d = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) {}
+    lines.push('Infos du matin — ' + cap(d));
+    if (DATA.recap && DATA.recap.text) lines.push('', DATA.recap.text.replace(/\n+/g, ' '));
+    var its = DATA.items || [];
+    var rup = (DATA.ruptures_live && DATA.ruptures_live.length) ? DATA.ruptures_live : its.filter(function (i) { return i.cat === 'ruptures'; });
+    if (rup.length) { lines.push('', 'Ruptures & tensions :'); rup.slice(0, 8).forEach(function (r) { lines.push('- ' + cap((r.titre || '').toLowerCase())); }); }
+    var rap = DATA.rappels || [];
+    if (rap.length) { lines.push('', 'Rappels de produits :'); rap.slice(0, 6).forEach(function (r) { lines.push('- ' + cap((r.titre || '').toLowerCase())); }); }
+    var act = its.filter(function (i) { return i.cat !== 'ruptures'; });
+    if (act.length) { lines.push('', 'Actu officine :'); act.slice(0, 6).forEach(function (i) { lines.push('- ' + (i.titre || '')); }); }
+    var txt = lines.join('\n');
+    var ok = function () { if (V2.toast) V2.toast('Brief copié ✅'); if (btn) { var t = btn.getAttribute('data-lbl') || btn.textContent; btn.innerHTML = 'Copié ✅'; setTimeout(function () { btn.innerHTML = COPY_SVG + t; }, 1500); } };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, function () { fallbackCopy(txt); ok(); }); else { fallbackCopy(txt); ok(); } }
+    catch (e) { fallbackCopy(txt); ok(); }
+  };
 
   function load(cb) {
     if (LOADED || FAILED) { cb(); return; }
@@ -79,8 +105,10 @@
       for (var k = 0; k < keys.length; k++) { if (d.indexOf(keys[k]) >= 0) { match = true; break; } }
       if (!match) continue;
       var c = String(b.cip13 || ''); if (seen[c]) continue; seen[c] = 1;
+      var stk = V2.stock ? V2.stock(c) : 1;
+      if (V2.stock && stk <= 0) continue;   // on ne pousse jamais une alternative en rupture chez Intégral
       var bp = V2.bestPrice ? V2.bestPrice(b) : { ip: b.prix_ip, remise: b.remise_pct };
-      hits.push({ d: b.designation || '', cip: c, ip: bp.ip, remise: bp.remise || 0, rank: b.ip_rank_qty || 9999 });
+      hits.push({ d: b.designation || '', cip: c, ip: bp.ip, remise: bp.remise || 0, rank: b.ip_rank_qty || 9999, stock: stk });
     }
     hits.sort(function (a, b) { return (b.remise - a.remise) || (a.rank - b.rank); });
     return hits.slice(0, 2);
@@ -135,6 +163,8 @@
       }
 
       var rsrc = rlive.length ? rlive : ruptures;
+      var base = seenBase();
+      var nbNew = base ? items.filter(function (i) { return i.day && i.day > base; }).length : 0;
 
       // ════════ HERO : titre + date + une phrase ════════
       var lede = (recap && recap.text) ? esc(recap.text).replace(/\n+/g, ' ')
@@ -142,9 +172,10 @@
       var html = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap narrow inf2">' +
           '<div class="inf-hero">' +
-            '<div class="inf-eyebrow"><span class="live"><i></i>Veille du jour</span> · ' + esc(topDate()) + '</div>' +
+            '<div class="inf-eyebrow"><span class="live"><i></i>Veille du jour</span> · ' + esc(topDate()) + (nbNew ? ' · <span class="inf-new">+' + nbNew + ' nouvelle' + (nbNew > 1 ? 's' : '') + ' depuis ta dernière visite</span>' : '') + '</div>' +
             '<h1>Infos du matin</h1>' +
             '<p class="inf-lede">' + lede + '</p>' +
+            '<button class="inf-copy" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + COPY_SVG + 'Copier le brief</button>' +
           '</div>';
 
       // ════════ L'ESSENTIEL = les filtres : chaque carte affiche/masque sa rubrique (mémorisé) ════════
@@ -260,6 +291,7 @@
 
       html += '</div>';
       root.innerHTML = html;
+      markSeen();   // la prochaine ouverture comparera à aujourd'hui
 
       // ── Motion (façon Framer Motion, 100% vanilla, RM-safe via l'API) ──
       var mo = V2.motion;
@@ -314,6 +346,10 @@
       '@keyframes infpulse{0%,100%{opacity:1}50%{opacity:.4}}',
       '.inf2 .inf-hero h1{font-size:clamp(28px,5vw,38px);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:0 0 10px}',
       '.inf2 .inf-lede{color:var(--muted);font-size:15px;line-height:1.5;max-width:56ch;margin:0 auto;font-weight:450}',
+      '.inf2 .inf-new{color:var(--c-opp,#12a150);font-weight:700}',
+      '.inf2 .inf-copy{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:8px 15px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink);border-radius:var(--r-pill,999px);font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-1);transition:transform .16s,border-color .16s,color .16s}',
+      '.inf2 .inf-copy:hover{transform:translateY(-1px);border-color:var(--ip-blue);color:var(--ip-blue)}',
+      '.inf2 .inf-copy svg{flex:none}',
       // ── L'ESSENTIEL : compteurs ──
       '.inf2 .inf-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}',
       '@media(max-width:720px){.inf2 .inf-stats{grid-template-columns:repeat(2,1fr)}}',
