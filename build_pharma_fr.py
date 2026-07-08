@@ -82,7 +82,7 @@ def main():
     it = ws.iter_rows(values_only=True)
     hdr = [str(c) for c in next(it)]
     ix = {h: i for i, h in enumerate(hdr)}
-    ci = {k: ix.get(k) for k in ('Etablissement', 'Titulaire', 'CP', 'Ville', 'UGA', 'SEGMENTATION', 'Groupement')}
+    ci = {k: ix.get(k) for k in ('Etablissement', 'Titulaire', 'CP', 'Ville', 'UGA', 'SEGMENTATION', 'Groupement', 'Téléphone')}
 
     pharmas = []          # (name, ville, cp, uga, grp, seg)
     need = {}             # (ville,cp) -> None
@@ -98,7 +98,8 @@ def main():
         uga = str(r[ci['UGA']] or '').strip()
         grp = str(r[ci['Groupement']] or '').strip() or '—'
         seg = str(r[ci['SEGMENTATION']] or '').strip() or 'Non défini'
-        pharmas.append((name, ville, cp, uga, grp, seg))
+        tel = str(r[ci['Téléphone']] or '').strip() if ci['Téléphone'] is not None else ''
+        pharmas.append((name, ville, cp, uga, grp, seg, tel))
         need[(ville, cp)] = None
     wb.close()
     print('Pharmacies (hors Corse) :', len(pharmas), '| communes uniques :', len(need))
@@ -130,7 +131,7 @@ def main():
     ugas, grps, segs = {}, {}, {}
     P = []
     dropped = 0
-    for (name, ville, cp, uga, grp, seg) in pharmas:
+    for (name, ville, cp, uga, grp, seg, tel) in pharmas:
         c = coords.get((ville, cp))
         if not c:
             dropped += 1
@@ -147,7 +148,7 @@ def main():
         ui = ugas.setdefault(uga, len(ugas))
         gi = grps.setdefault(grp, len(grps))
         si = segs.setdefault(seg, len(segs))
-        P.append([lat, lng, ui, gi, si, name[:40], ville[:24]])
+        P.append([lat, lng, ui, gi, si, name[:40], ville[:24], cp, tel[:18]])
 
     inv = lambda d: [k for k, _ in sorted(d.items(), key=lambda x: x[1])]
     data = {
