@@ -248,6 +248,59 @@
     if (!map || !window.L) return; var pts = routeStops(); if (!pts.length) return;
     map.fitBounds(window.L.latLngBounds(pts.map(function (s) { return [s.lat, s.lng]; })).pad(0.15));
   };
+
+  // ── PROSPECTION / densification : prospects proches de la tournée, classés par km ajoutés ──
+  var PROSPECT_RADIUS = 8;   // km autour du trajet
+  function routeKmFor(arr) { var pts = []; if (depot) pts.push(depot); for (var j = 0; j < arr.length; j++) pts.push(arr[j]); if (depot && arr.length) pts.push(depot); var d = 0; for (var k = 1; k < pts.length; k++) d += haversine(pts[k - 1], pts[k]); return d; }
+  function nearRoute(P) { var pts = routeStops(), m = Infinity; for (var j = 0; j < pts.length; j++) { var d = haversine(pts[j], P); if (d < m) m = d; } return m; }
+  function bestInsert(P) { var base = routeKmFor(tour), best = { pos: tour.length, add: Infinity }; for (var k = 0; k <= tour.length; k++) { var tmp = tour.slice(); tmp.splice(k, 0, P); var add = routeKmFor(tmp) - base; if (add < best.add) { best.add = add; best.pos = k; } } return best; }
+  function computeProspects() {
+    if (!D || !tour.length) return [];
+    var out = [];
+    for (var i = 0; i < D.p.length; i++) {
+      var p = D.p[i]; if (!isProspect(p)) continue;
+      if (tourPos(keyOf(p)) >= 0) continue;
+      var P = { lat: p[0], lng: p[1] };
+      var nr = nearRoute(P); if (nr > PROSPECT_RADIUS) continue;
+      var bi = bestInsert(P);
+      out.push({ i: i, n: p[6], v: p[7], c: p[8], t: p[9], near: nr, add: bi.add, pos: bi.pos });
+    }
+    out.sort(function (a, b) { return a.add - b.add; });
+    return out.slice(0, 30);
+  }
+  V2.carteProsRadius = function (v) { PROSPECT_RADIUS = parseInt(v, 10) || 8; renderProsPanel(); };
+  V2.carteProspects = function () {
+    if (!tour.length) { if (V2.toast) V2.toast('Compose d\'abord une tournée'); return; }
+    if (!document.getElementById('cn-prospanel')) {
+      var el = document.createElement('div'); el.id = 'cn-prospanel'; el.className = 'cn-panel';
+      el.onclick = function (e) { if (e.target === el) V2.carteProsClose(); };
+      document.body.appendChild(el);
+    }
+    renderProsPanel();
+  };
+  V2.carteProsClose = function () { var el = document.getElementById('cn-prospanel'); if (el) el.remove(); };
+  V2.carteProsAdd = function (i) {
+    var p = D.p[i]; if (!p) return; var P = { k: keyOf(p), n: p[6], v: p[7], c: p[8], t: p[9], lat: p[0], lng: p[1] };
+    var bi = bestInsert({ lat: p[0], lng: p[1] });
+    tour.splice(bi.pos, 0, P); saveTour(); updateTourBar(); refreshMarkerStyle(i); drawTourLine();
+    renderProsPanel(); if (document.getElementById('cn-tourpanel')) renderTourPanel();
+    if (V2.toast) V2.toast('Prospect ajouté (+' + (Math.round(bi.add * 10) / 10) + ' km)');
+  };
+  function renderProsPanel() {
+    var el = document.getElementById('cn-prospanel'); if (!el) return;
+    var list = computeProspects();
+    var rows = list.map(function (r) {
+      return '<div class="cn-prow"><div class="cn-tmain"><b>' + esc(r.n) + '</b><span>' + esc(r.v) + ' · ' + esc(r.c) + ' · à ' + (Math.round(r.near * 10) / 10) + ' km du trajet</span></div>' +
+        '<div class="cn-padd">+' + (Math.round(r.add * 10) / 10) + ' km</div>' +
+        '<button class="v2-btn v2-btn-primary cn-paddbtn" onclick="V2.carteProsAdd(' + r.i + ')">+ Ajouter</button></div>';
+    }).join('') || '<div class="cn-tempty">Aucun prospect dans un rayon de ' + PROSPECT_RADIUS + ' km du trajet.<br>Élargis le rayon ci-dessus.</div>';
+    el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
+      '<div class="cn-phead"><div><b>Prospects sur ma tournée</b><small>' + list.length + ' prospect' + (list.length > 1 ? 's' : '') + ' · classés par km ajoutés</small></div>' +
+        '<button class="cn-px" onclick="V2.carteProsClose()">✕</button></div>' +
+      '<div class="cn-prosbar">Rayon autour du trajet : <b>' + PROSPECT_RADIUS + ' km</b>' +
+        '<input type="range" min="2" max="25" step="1" value="' + PROSPECT_RADIUS + '" oninput="V2.carteProsRadius(this.value)"></div>' +
+      '<div class="cn-plist">' + rows + '</div></div>';
+  }
   // Dépôt : définir par clic sur la carte
   V2.carteDepotPick = function () {
     pickDepotMode = true;
@@ -343,6 +396,7 @@
       '<div class="cn-plist">' + rows + '</div>' +
       (tour.length ? '<div class="cn-pacts">' +
         (tour.length >= 2 ? '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourOptimize()">Optimiser la tournée</button>' : '') +
+        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteProspects()">Prospects proches</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourFit()">Voir le tracé</button>' : '') +
         '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourItinerary()">Itinéraire GPS</button>' +
         '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourAgenda()">Agenda</button>' +
@@ -430,6 +484,14 @@
       '.cn-depsel{flex:1;min-width:0;font:inherit;font-size:12.5px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px}',
       '.cn-depmk{background:none;border:none}',
       '.cn-depmk span{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:#0A0E1A;color:#fff;border:2px solid #fff;border-radius:8px;font:800 10px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.35)}',
+      '.cn-prosbar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ip-ink)}',
+      '.cn-prosbar input{flex:1}',
+      '.cn-prow{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}',
+      '.cn-prow .cn-tmain{flex:1;min-width:0;display:flex;flex-direction:column}',
+      '.cn-prow .cn-tmain b{font-size:13.5px;font-weight:700}',
+      '.cn-prow .cn-tmain span{font-size:11.5px;color:var(--muted)}',
+      '.cn-padd{font-size:12.5px;font-weight:800;color:#C2410C;white-space:nowrap}',
+      '.cn-paddbtn{flex:0 0 auto;padding:7px 11px;font-size:12px}',
       '.cn-pacts{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}',
       '.cn-pacts .v2-btn{flex:1 1 auto}',
     ].join('\n');
