@@ -12,7 +12,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260707t';
+  var CB = '?v=20260707u';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var colorMode = 'comm';        // comm | type | uga | grp
   var commFocus = '', grpFocus = '', typeFocus = 'all';   // all | clients | prospects
@@ -45,10 +45,16 @@
     }, 150);
   }
 
+  var PROSPECT_COL = '#F59E0B';   // ambre bien visible pour repérer les prospects
   function hsl(str) { var h = 0, i; str = String(str || ''); for (i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360; return 'hsl(' + h + ',62%,48%)'; }
   function isClient(p) { return (D.seg[p[4]] || '').indexOf('Client') === 0; }
+  function isProspect(p) { return D.seg[p[4]] === 'Prospect'; }
   function colorFor(p) {
-    if (colorMode === 'comm') return p[5] ? (COMM_COL[p[5]] || '#94A3B8') : '#D4DAE3';
+    if (colorMode === 'comm') {
+      if (p[5]) return COMM_COL[p[5]] || '#94A3B8';        // dans un portefeuille commercial
+      if (isProspect(p)) return PROSPECT_COL;              // prospect libre → ambre visible
+      return '#D4DAE3';
+    }
     if (colorMode === 'type') return SEG_COL[D.seg[p[4]]] || '#AEB6C4';
     if (colorMode === 'grp') return GRP_COL[p[3]] || '#CBD2DD';
     return hsl(D.uga[p[2]] || '');
@@ -64,12 +70,13 @@
     GRP_COL = {}; top.forEach(function (g, i) { GRP_COL[g] = PALETTE[i]; });
   }
 
-  function popupHtml(p) {
+  function popupHtml(p, i) {
     var q = encodeURIComponent((p[6] || '') + ' ' + (p[7] || '') + ' ' + (p[8] || ''));
     var gmaps = 'https://www.google.com/maps/search/?api=1&query=' + q;
     var dir = 'https://www.google.com/maps/dir/?api=1&destination=' + q;
     var tel = (p[9] || '').replace(/[^0-9+]/g, '');
     var mail = p[11] || '', comm = p[5] ? D.comm[p[5]] : '';
+    var inT = i != null && inTour(i);
     return '<div class="cn-pop">' +
       '<b class="cn-pop-n">' + esc(p[6] || 'Pharmacie') + '</b>' +
       (p[10] ? '<div class="cn-pop-tit">' + esc(p[10]) + '</div>' : '') +
@@ -83,6 +90,7 @@
       (tel || mail ? '<div class="cn-pop-contact">' +
         (tel ? '<a href="tel:' + esc(tel) + '">' + esc(p[9]) + '</a>' : '') +
         (mail ? '<a href="mailto:' + esc(mail) + '">' + esc(mail) + '</a>' : '') + '</div>' : '') +
+      (i != null ? '<button class="cn-tour-btn' + (inT ? ' in' : '') + '" id="cn-tour-' + i + '" onclick="V2.carteTour(' + i + ')">' + (inT ? '✓ Dans ma tournée' : '+ Ajouter à ma tournée') + '</button>' : '') +
       '<div class="cn-pop-btns">' +
         '<a class="cn-pop-btn on" href="' + gmaps + '" target="_blank" rel="noopener">Fiche Google Maps</a>' +
         '<a class="cn-pop-btn" href="' + dir + '" target="_blank" rel="noopener">Itinéraire</a>' +
@@ -97,29 +105,125 @@
     return true;
   }
 
+  function markerStyle(p, i) {
+    var t = inTour(i);
+    return { renderer: canvas, radius: t ? 7 : 5.5, color: t ? '#10131C' : '#fff', weight: t ? 2 : 0.9, fillColor: colorFor(p), fillOpacity: 0.95 };
+  }
   function rebuild() {
     if (!map) return;
     if (cluster) { map.removeLayer(cluster); cluster = null; }
-    cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 52, disableClusteringAtZoom: 11, removeOutsideVisibleBounds: true });
-    cluster.on('click', function (e) { var p = D.p[e.layer._pi]; if (p) e.layer.bindPopup(popupHtml(p), { minWidth: 210 }).openPopup(); });
+    // clustering désactivé plus tôt (zoom 9) + points plus gros = clic bien plus facile
+    cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 48, disableClusteringAtZoom: 9, removeOutsideVisibleBounds: true });
+    cluster.on('click', function (e) { var p = D.p[e.layer._pi]; if (p) e.layer.bindPopup(popupHtml(p, e.layer._pi), { minWidth: 216 }).openPopup(); });
     markers = [];
     var pts = D.p, arr = [];
     for (var i = 0; i < pts.length; i++) {
       var p = pts[i]; if (!pass(p)) continue;
-      var m = window.L.circleMarker([p[0], p[1]], { renderer: canvas, radius: 4.5, color: '#fff', weight: 0.8, fillColor: colorFor(p), fillOpacity: 0.92 });
+      var m = window.L.circleMarker([p[0], p[1]], markerStyle(p, i));
       m._pi = i; markers.push(m); arr.push(m);
     }
     cluster.addLayers(arr); map.addLayer(cluster);
     var cn = document.getElementById('carte-count'); if (cn) cn.textContent = markers.length.toLocaleString('fr') + ' pharmacies';
   }
   function recolor() { if (markers) for (var k = 0; k < markers.length; k++) markers[k].setStyle({ fillColor: colorFor(D.p[markers[k]._pi]) }); }
+  function refreshMarkerStyle(i) { if (!markers) return; for (var k = 0; k < markers.length; k++) if (markers[k]._pi === i) { markers[k].setStyle(markerStyle(D.p[i], i)); break; } }
+
+  // ── PLAN DE TOURNÉE (sélection de pharmacies → journée de prospection) ──
+  var TOUR_KEY = 'jarvis_tour_v1', tour = [];
+  function keyOf(p) { return (p[6] || '') + '|' + (p[8] || ''); }
+  function loadTour() { try { var t = JSON.parse(localStorage.getItem(TOUR_KEY) || '[]'); tour = t && t.length ? t : []; } catch (e) { tour = []; } }
+  function saveTour() { try { localStorage.setItem(TOUR_KEY, JSON.stringify(tour)); } catch (e) {} }
+  function tourPos(k) { for (var j = 0; j < tour.length; j++) if (tour[j].k === k) return j; return -1; }
+  function inTour(i) { return D && D.p[i] ? tourPos(keyOf(D.p[i])) >= 0 : false; }
+  function updateTourBar() {
+    var b = document.getElementById('cn-tourbar'); if (!b) return;
+    b.classList.toggle('on', tour.length > 0);
+    var n = document.getElementById('cn-tourbar-n'); if (n) n.textContent = tour.length + ' pharmacie' + (tour.length > 1 ? 's' : '') + ' dans ta tournée';
+  }
+  function haversine(a, b) {
+    var R = 6371, r = Math.PI / 180;
+    var s = Math.sin((b.lat - a.lat) * r / 2) * Math.sin((b.lat - a.lat) * r / 2) +
+      Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lng - a.lng) * r / 2) * Math.sin((b.lng - a.lng) * r / 2);
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+  function tourDistance() { var d = 0; for (var j = 1; j < tour.length; j++) d += haversine(tour[j - 1], tour[j]); return d; }
+  V2.carteTour = function (i) {
+    var p = D.p[i], k = keyOf(p), pos = tourPos(k);
+    if (pos >= 0) tour.splice(pos, 1);
+    else tour.push({ k: k, n: p[6], v: p[7], c: p[8], t: p[9], lat: p[0], lng: p[1] });
+    saveTour(); updateTourBar(); refreshMarkerStyle(i);
+    var b = document.getElementById('cn-tour-' + i);
+    if (b) { var inT = tourPos(k) >= 0; b.classList.toggle('in', inT); b.textContent = inT ? '✓ Dans ma tournée' : '+ Ajouter à ma tournée'; }
+    if (document.getElementById('cn-tourpanel')) renderTourPanel();
+  };
+  V2.carteTourOptimize = function () {
+    if (tour.length < 3) return;
+    var rest = tour.slice(1), out = [tour[0]], cur = tour[0];
+    while (rest.length) {
+      var bi = 0, bd = Infinity;
+      for (var j = 0; j < rest.length; j++) { var d = haversine(cur, rest[j]); if (d < bd) { bd = d; bi = j; } }
+      cur = rest.splice(bi, 1)[0]; out.push(cur);
+    }
+    tour = out; saveTour(); renderTourPanel();
+    if (V2.toast) V2.toast('Ordre optimisé (au plus court)');
+  };
+  V2.carteTourItinerary = function () {
+    if (!tour.length) return;
+    window.open('https://www.google.com/maps/dir/' + tour.map(function (s) { return s.lat + ',' + s.lng; }).join('/'), '_blank');
+  };
+  V2.carteTourAgenda = function () {
+    if (!tour.length) return;
+    var d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0);
+    var end = new Date(d.getTime() + 8 * 3600 * 1000);
+    var pad = function (x) { return (x < 10 ? '0' : '') + x; };
+    var fmt = function (t) { return t.getFullYear() + pad(t.getMonth() + 1) + pad(t.getDate()) + 'T' + pad(t.getHours()) + pad(t.getMinutes()) + '00'; };
+    var details = 'Tournée de prospection Intégral (' + tour.length + ' pharmacies) :%0A' +
+      tour.map(function (s, j) { return (j + 1) + '. ' + s.n + ' — ' + s.v + ' ' + s.c + (s.t ? ' — ' + s.t : ''); }).join('%0A') +
+      '%0A%0AItinéraire : https://www.google.com/maps/dir/' + tour.map(function (s) { return s.lat + ',' + s.lng; }).join('/');
+    var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+      '&text=' + encodeURIComponent('Tournée prospection — ' + tour.length + ' pharmacies') +
+      '&dates=' + fmt(d) + '/' + fmt(end) + '&details=' + details +
+      '&location=' + encodeURIComponent(tour[0].n + ' ' + tour[0].v + ' ' + tour[0].c);
+    window.open(url, '_blank');
+  };
+  V2.carteTourRemove = function (j) { if (tour[j]) { tour.splice(j, 1); saveTour(); updateTourBar(); renderTourPanel(); rebuild(); } };
+  V2.carteTourClear = function () { tour = []; saveTour(); updateTourBar(); renderTourPanel(); rebuild(); };
+  V2.carteTourClose = function () { var el = document.getElementById('cn-tourpanel'); if (el) el.remove(); };
+  V2.carteTourOpen = function () {
+    if (!document.getElementById('cn-tourpanel')) {
+      var el = document.createElement('div'); el.id = 'cn-tourpanel'; el.className = 'cn-panel';
+      el.onclick = function (e) { if (e.target === el) V2.carteTourClose(); };
+      document.body.appendChild(el);
+    }
+    renderTourPanel();
+  };
+  function renderTourPanel() {
+    var el = document.getElementById('cn-tourpanel'); if (!el) return;
+    var rows = tour.map(function (s, j) {
+      return '<div class="cn-trow"><span class="cn-tnum">' + (j + 1) + '</span>' +
+        '<div class="cn-tmain"><b>' + esc(s.n) + '</b><span>' + esc(s.v) + ' · ' + esc(s.c) + (s.t ? ' · ' + esc(s.t) : '') + '</span></div>' +
+        '<button class="cn-trm" onclick="V2.carteTourRemove(' + j + ')" title="Retirer">✕</button></div>';
+    }).join('') || '<div class="cn-tempty">Ta tournée est vide.<br>Clique une pharmacie sur la carte, puis « + Ajouter à ma tournée ».</div>';
+    var km = tour.length > 1 ? ' · ~' + Math.round(tourDistance()) + ' km' : '';
+    el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
+      '<div class="cn-phead"><div><b>Ma tournée de prospection</b><small>' + tour.length + ' arrêt' + (tour.length > 1 ? 's' : '') + km + '</small></div>' +
+        '<button class="cn-px" onclick="V2.carteTourClose()">✕</button></div>' +
+      '<div class="cn-plist">' + rows + '</div>' +
+      (tour.length ? '<div class="cn-pacts">' +
+        (tour.length > 2 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourOptimize()">Optimiser l\'ordre</button>' : '') +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourClear()">Vider</button>' +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourAgenda()">Ajouter à l\'agenda</button>' +
+        '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourItinerary()">Lancer l\'itinéraire</button>' +
+        '</div>' : '') +
+      '</div>';
+  }
 
   function legendHtml() {
     var lg = function (c, t) { return '<span class="cn-lg"><i style="background:' + c + '"></i>' + esc(t) + '</span>'; };
     if (colorMode === 'comm') {
       var out = '';
       for (var k = 1; k < D.comm.length; k++) out += lg(COMM_COL[k], D.comm[k]);
-      return out + lg('#D4DAE3', 'Hors réseau');
+      return out + lg(PROSPECT_COL, 'Prospect (à conquérir)') + lg('#D4DAE3', 'Hors réseau');
     }
     if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A') + lg(SEG_COL['Client B'], 'Client B') + lg(SEG_COL['Client C'], 'Client C') + lg(SEG_COL.Prospect, 'Prospect') + lg('#AEB6C4', 'Non défini');
     if (colorMode === 'grp') return Object.keys(GRP_COL).map(function (g) { return lg(GRP_COL[g], D.grp[g]); }).join('') + lg('#CBD2DD', 'Autres');
@@ -161,12 +265,37 @@
       '.cn-pop-btns{display:flex;gap:6px;margin-top:10px}',
       '.cn-pop-btn{flex:1;text-align:center;font-size:12px;font-weight:700;padding:7px 8px;border-radius:8px;text-decoration:none;border:1px solid #E2E7F0;color:#10131C}',
       '.cn-pop-btn.on{background:#0050E6;color:#fff;border-color:#0050E6}',
+      '.cn-tour-btn{width:100%;margin-top:9px;padding:8px;border:1.5px solid #C2410C;background:#FFF7ED;color:#C2410C;font-weight:800;font-size:12.5px;border-radius:9px;cursor:pointer}',
+      '.cn-tour-btn.in{background:#0F7A52;border-color:#0F7A52;color:#fff}',
+      // barre tournée flottante
+      '.cn-tourbar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%) translateY(120%);z-index:600;display:flex;align-items:center;gap:12px;padding:9px 12px 9px 16px;background:var(--ip-ink,#10131C);color:#fff;border-radius:999px;box-shadow:0 12px 30px rgba(16,19,28,.35);transition:transform .22s var(--ease,ease);white-space:nowrap}',
+      '.cn-tourbar.on{transform:translateX(-50%) translateY(0)}',
+      '.cn-tourbar b{font-weight:700}',
+      '.cn-tourbar button{border:none;background:#F59E0B;color:#10131C;font:inherit;font-weight:800;font-size:13px;padding:8px 14px;border-radius:999px;cursor:pointer}',
+      // panneau tournée
+      '.cn-panel{position:fixed;inset:0;z-index:3000;background:rgba(16,19,28,.4);backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center}',
+      '@media(min-width:640px){.cn-panel{align-items:center}}',
+      '.cn-pdialog{width:100%;max-width:460px;max-height:82vh;display:flex;flex-direction:column;background:var(--card,#fff);border-radius:18px 18px 0 0;overflow:hidden}',
+      '@media(min-width:640px){.cn-pdialog{border-radius:18px}}',
+      '.cn-phead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}',
+      '.cn-phead b{font-size:16px;font-weight:800;color:var(--ip-ink)}.cn-phead small{display:block;font-size:12px;color:var(--muted);margin-top:2px}',
+      '.cn-px{border:none;background:var(--card-2);width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--muted)}',
+      '.cn-plist{flex:1;overflow-y:auto;padding:8px 12px}',
+      '.cn-trow{display:flex;align-items:center;gap:11px;padding:9px 6px;border-bottom:1px solid var(--line)}',
+      '.cn-tnum{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ip-blue);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}',
+      '.cn-tmain{flex:1;min-width:0}.cn-tmain b{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.cn-tmain span{font-size:12px;color:var(--muted)}',
+      '.cn-trm{flex:none;border:none;background:transparent;color:var(--muted-2);font-size:15px;cursor:pointer;padding:4px 8px}',
+      '.cn-tempty{padding:32px 20px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.5}',
+      '.cn-pacts{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}',
+      '.cn-pacts .v2-btn{flex:1 1 auto}',
     ].join('\n');
     document.head.appendChild(s);
   }
 
   function boot(root) {
     D = window.PHARMA_FR;
+    loadTour();
     computeColors();
     var commOpts = '<option value="">Tous les commerciaux</option>' +
       D.comm.slice(1).map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
@@ -178,7 +307,7 @@
     map = window.L.map(root.querySelector('#carte-map'), { preferCanvas: true, zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
     canvas = window.L.canvas({ padding: 0.5 });
     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 18, subdomains: 'abcd' }).addTo(map);
-    setTimeout(function () { map.invalidateSize(); rebuild(); }, 60);
+    setTimeout(function () { map.invalidateSize(); rebuild(); updateTourBar(); }, 60);
     setTimeout(function () { if (map) map.invalidateSize(); }, 420);
     if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && V2.route && V2.route.name === 'carte') map.invalidateSize(); }); }
   }
@@ -200,6 +329,8 @@
           '</div>' +
           '<div class="cn-legend" id="carte-legend"></div>' +
           '<div class="cn-maparea"><div id="carte-map"></div>' +
+            '<div class="cn-tourbar" id="cn-tourbar"><b id="cn-tourbar-n">0 pharmacie</b>' +
+              '<button onclick="V2.carteTourOpen()">Voir / organiser</button></div>' +
             '<div class="cn-load" id="carte-load"><div class="v2-spinner"></div><div>Chargement de la carte nationale…</div></div>' +
           '</div>' +
         '</div>';
