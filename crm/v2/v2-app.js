@@ -626,7 +626,7 @@
       }
       // Copilote — hub global (croise marché France × ventes réseau) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) {
-        P.push({ k: 'copilote', cls: 'p1', accent: 'var(--ip-blue)', ico: 'spark', tag: 'Nouveau', t: 'Copilote', d: 'Le cerveau de ta tournée : croise le marché réel France avec tes ventes réseau pour repérer où pousser quoi.', go: 'Ouvrir le Copilote' });
+        P.push({ k: 'copilote', cls: 'p1', accent: 'var(--ip-blue)', ico: 'spark', tag: 'Nouveau', t: 'Copilote', d: 'Le cerveau de la tournée : la carte de tes officines pour optimiser tes tournées de livraison et repérer les prospects sur tes axes.', go: 'Ouvrir la carte' });
       }
       // Pilier Molécules (analyse réseau : rotation + marge pharmacien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) {
@@ -746,7 +746,8 @@
     if (window.V2_BRAND && window.V2_BRAND.opso) PAGES.splice(2, 0, ['fiches', 'Fiches commerciales', 'fiche']); // OPSO garde les fiches
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) PAGES.splice(1, 0, ['copilote', 'Copilote (marché & opportunités)', 'spark']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) PAGES.splice(1, 0, ['copilote', 'Copilote (carte & tournées)', 'spark']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.marche) PAGES.splice(2, 0, ['marche', 'Marché & opportunités', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(3, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) PAGES.push(['audit', 'Audit Marge (par pharmacie)', 'pilo']);
