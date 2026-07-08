@@ -15,9 +15,22 @@
   var CB = '?v=20260707u';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
+  var depotLayer = null;         // marqueurs des établissements Intégral
   var depot = null;              // { n, lat, lng } point de départ/retour (optionnel)
   var pickDepotMode = false;     // clic carte suivant = définir le dépôt
   var SPEED = 45, SERVICE = 8;   // km/h moyens · minutes par arrêt (rendement)
+  // Établissements Intégral (source : site vitrine map-component) — points de départ/retour
+  var DEPOTS = [
+    { s: 'OPS', n: 'Ouest Pharma Services', city: 'St-Étienne-de-Montluc', lat: 47.2789, lng: -1.7806 },
+    { s: 'CPR', n: 'Comptoir Pharmaceutique du Rhône', city: "Saint-Maurice-l'Exil", lat: 45.3936, lng: 4.7806 },
+    { s: 'SOP', n: 'Sud Ouest Pharma', city: 'Montayral', lat: 44.4783, lng: 0.9389 },
+    { s: 'POS', n: "Pharm'Occitanie Services", city: 'Villeneuve-lès-Béziers', lat: 43.3206, lng: 3.2542 },
+    { s: 'HP', n: 'Hyères Pharma', city: 'Hyères', lat: 43.1206, lng: 6.1286 },
+    { s: 'SEP', n: 'Sud Est Pharma', city: 'Le Cannet-des-Maures', lat: 43.3925, lng: 6.3406 },
+    { s: 'MSP', n: 'Mistral Santé Pharma', city: 'Flassans-sur-Issole', lat: 43.3614, lng: 6.1828 },
+    { s: 'ESC', n: 'Escale Pharma', city: 'Chilly-Mazarin', lat: 48.7028, lng: 2.3119 },
+    { s: 'PME', n: 'Pharmest', city: 'Metz', lat: 49.1193, lng: 6.1757 }
+  ];
   var colorMode = 'comm';        // comm | type | uga | grp
   var commFocus = '', grpFocus = '', typeFocus = 'all';   // all | clients | prospects
   var COMM_COL = {}, GRP_COL = {};
@@ -210,8 +223,7 @@
   }
   V2.carteTourOptimize = function () {
     if (tour.length < 2) return;
-    var seq = nearestOrder(tour, depot || null);
-    if (depot) seq.shift();                    // retire le dépôt du début, reste = arrêts ordonnés
+    var seq = nearestOrder(tour, depot || null);  // depot = point de départ (non inclus dans seq)
     seq = twoOpt(seq, depot || null, depot || null);
     tour = seq; saveTour(); renderTourPanel(); drawTourLine();
     if (V2.toast) V2.toast('Tournée optimisée · ' + Math.round(routeKm()) + ' km');
@@ -243,6 +255,32 @@
     var mp = document.getElementById('carte-map'); if (mp) mp.style.cursor = 'crosshair';
   };
   V2.carteDepotClear = function () { depot = null; try { localStorage.removeItem('jarvis_depot_v1'); } catch (e) {} drawTourLine(); renderTourPanel(); };
+  function setDepot(d) { depot = d; try { localStorage.setItem('jarvis_depot_v1', JSON.stringify(depot)); } catch (e) {} drawTourLine(); if (document.getElementById('cn-tourpanel')) renderTourPanel(); }
+  V2.carteDepotSet = function (v) {
+    var i = parseInt(v, 10); if (isNaN(i) || !DEPOTS[i]) return;
+    var d = DEPOTS[i]; setDepot({ n: (d.s ? d.s + ' — ' : '') + d.city, lat: d.lat, lng: d.lng, di: i });
+  };
+  V2.carteDepotAuto = function () {
+    if (!tour.length) { if (V2.toast) V2.toast('Ajoute d\'abord des arrêts'); return; }
+    var cx = 0, cy = 0; tour.forEach(function (s) { cx += s.lat; cy += s.lng; }); cx /= tour.length; cy /= tour.length;
+    var bi = 0, bd = Infinity;
+    DEPOTS.forEach(function (d, i) { var dd = haversine({ lat: cx, lng: cy }, d); if (dd < bd) { bd = dd; bi = i; } });
+    V2.carteDepotSet(bi);
+    if (V2.toast) V2.toast('Dépôt le plus proche : ' + DEPOTS[bi].city);
+  };
+  // Marqueurs des établissements Intégral (toujours visibles)
+  function drawDepots() {
+    if (!map || !window.L) return;
+    if (depotLayer) { map.removeLayer(depotLayer); depotLayer = null; }
+    depotLayer = window.L.layerGroup();
+    DEPOTS.forEach(function (d, i) {
+      var ic = window.L.divIcon({ className: 'cn-depmk', html: '<span>' + esc(d.s || '◆') + '</span>', iconSize: [30, 30], iconAnchor: [15, 15] });
+      window.L.marker([d.lat, d.lng], { icon: ic, zIndexOffset: 900 })
+        .bindPopup('<b>' + esc(d.n) + '</b><br>' + esc(d.city) + '<br><button class="cn-pop-btn" style="margin-top:8px;width:100%;cursor:pointer" onclick="V2.carteDepotSet(' + i + ')">Départ de ma tournée</button>')
+        .addTo(depotLayer);
+    });
+    depotLayer.addTo(map);
+  }
   V2.carteTourItinerary = function () {
     if (!tour.length) return;
     window.open('https://www.google.com/maps/dir/' + tour.map(function (s) { return s.lat + ',' + s.lng; }).join('/'), '_blank');
@@ -289,9 +327,14 @@
       '<div class="cn-tmetric"><b>' + perStop + '</b><span>km / arrêt</span></div>' +
       '</div>' : '';
     var pinSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+    var depOpts = '<option value="">— Dépôt de départ —</option>' + DEPOTS.map(function (d, i) {
+      return '<option value="' + i + '"' + (depot && depot.di === i ? ' selected' : '') + '>' + esc((d.s ? d.s + ' · ' : '') + d.city) + '</option>';
+    }).join('');
     var depotRow = '<div class="cn-tdepot">' + pinSvg +
-      (depot ? '<span>Départ : <b>' + esc(depot.n || 'Dépôt') + '</b></span><button class="cn-tlink" onclick="V2.carteDepotPick()">changer</button><button class="cn-tlink" onclick="V2.carteDepotClear()">retirer</button>'
-             : '<span>Aucun dépôt défini</span><button class="cn-tlink" onclick="V2.carteDepotPick()">définir le départ</button>') +
+      '<select class="cn-depsel" onchange="V2.carteDepotSet(this.value)">' + depOpts + '</select>' +
+      '<button class="cn-tlink" onclick="V2.carteDepotAuto()">le plus proche</button>' +
+      '<button class="cn-tlink" onclick="V2.carteDepotPick()">clic carte</button>' +
+      (depot ? '<button class="cn-tlink" onclick="V2.carteDepotClear()">retirer</button>' : '') +
       '</div>';
     el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
       '<div class="cn-phead"><div><b>Ma tournée</b><small>' + tour.length + ' arrêt' + (tour.length > 1 ? 's' : '') + (tour.length > 1 ? ' · ~' + kmTot + ' km' : '') + '</small></div>' +
@@ -384,6 +427,9 @@
       '.cn-tdepot{display:flex;align-items:center;gap:7px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ip-ink)}',
       '.cn-tdepot svg{color:var(--muted);flex-shrink:0}',
       '.cn-tlink{background:none;border:none;color:var(--ip-blue,#0057FF);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:2px 4px}',
+      '.cn-depsel{flex:1;min-width:0;font:inherit;font-size:12.5px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px}',
+      '.cn-depmk{background:none;border:none}',
+      '.cn-depmk span{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:#0A0E1A;color:#fff;border:2px solid #fff;border-radius:8px;font:800 10px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.35)}',
       '.cn-pacts{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}',
       '.cn-pacts .v2-btn{flex:1 1 auto}',
     ].join('\n');
@@ -413,7 +459,7 @@
       drawTourLine(); if (document.getElementById('cn-tourpanel')) renderTourPanel();
       if (V2.toast) V2.toast('Dépôt défini');
     });
-    setTimeout(function () { map.invalidateSize(); rebuild(); updateTourBar(); drawTourLine(); }, 60);
+    setTimeout(function () { map.invalidateSize(); rebuild(); updateTourBar(); drawDepots(); drawTourLine(); }, 60);
     setTimeout(function () { if (map) map.invalidateSize(); }, 420);
     if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && V2.route && V2.route.name === 'carte') map.invalidateSize(); }); }
   }
