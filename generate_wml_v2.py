@@ -325,6 +325,10 @@ OVERRIDE = {
 enseignes = load_enseignes()
 addr = load_geoloc_addr()
 grp_cip, grp_name = load_groupements()
+# CA par officine (somme du montant net HT sur toute la période)
+ca_by_code = {}
+for srow in sales:
+    ca_by_code[srow[0]] = ca_by_code.get(srow[0], 0) + (srow[6] or 0)
 officines = []
 nb_grp = 0
 for i, code in enumerate(sorted(active.keys())):
@@ -343,6 +347,7 @@ for i, code in enumerate(sorted(active.keys())):
         'tel': info.get('tel', ''),
         'groupement': grp,
         'potentiel': info.get('potentiel'),
+        'ca': round(ca_by_code.get(code, 0)),
         'comms': sorted(comms.get(code, [])),
         'color': PALETTE[i % len(PALETTE)],
     })
@@ -453,7 +458,7 @@ except Exception as e:
 geocode_officines(officines)
 
 # ── 4. Écriture JS ──
-months_lbl = 'Jan-Mai 2026'
+months_lbl = 'Jan-Juin 2026'
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write('// WML Officines + Ventes — source de vérité CRM V2\n')
     f.write('// {} officines actives · {} lignes de ventes · {}\n'.format(

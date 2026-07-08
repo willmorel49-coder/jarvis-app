@@ -12,7 +12,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260708i';
+  var CB = '?v=20260708j';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
   var depotLayer = null;         // marqueurs des établissements Intégral
@@ -34,6 +34,7 @@
   var colorMode = 'comm';        // comm | type | uga | grp
   var commFocus = '', grpFocus = '', typeFocus = 'all';   // all | clients | prospects
   var searchTerm = '';   // recherche nom / ville / cp / titulaire
+  var listSort = 'nom';  // tri de la liste : nom | ca
   var COMM_COL = {}, GRP_COL = {};
   var PALETTE = ['#0050E6', '#EA580C', '#0F7A52', '#7C3AED', '#C7283D', '#00B5D8', '#C7791A',
     '#DB2777', '#2563EB', '#16A34A', '#9333EA', '#DC2626', '#0891B2', '#CA8A04'];
@@ -71,6 +72,8 @@
   function hsl(str) { var h = 0, i; str = String(str || ''); for (i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360; return 'hsl(' + h + ',62%,48%)'; }
   function isClient(p) { return (D.seg[p[4]] || '').indexOf('Client') === 0; }
   function isProspect(p) { return D.seg[p[4]] === 'Prospect'; }
+  function caOf(p) { return (p && p[12]) || 0; }
+  function eurK(n) { n = n || 0; return n >= 1000 ? (Math.round(n / 100) / 10).toLocaleString('fr') + ' k€' : Math.round(n) + ' €'; }
   function colorFor(p) {
     if (colorMode === 'comm') {
       if (p[5]) return COMM_COL[p[5]] || '#94A3B8';        // dans un portefeuille commercial
@@ -105,6 +108,7 @@
       '<div class="cn-pop-a">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + '</div>' +
       '<div class="cn-pop-tags">' +
         '<span class="cn-tag ' + (isClient(p) ? 'cl' : (D.seg[p[4]] === 'Prospect' ? 'pr' : '')) + '">' + esc(D.seg[p[4]]) + '</span>' +
+        (caOf(p) > 0 ? '<span class="cn-tag ca">CA ' + eurK(caOf(p)) + '</span>' : '') +
         (comm ? '<span class="cn-tag co">' + esc(comm) + '</span>' : '') +
         '<span class="cn-tag">UGA ' + esc(D.uga[p[2]] || '—') + '</span>' +
         (D.grp[p[3]] && D.grp[p[3]] !== '—' ? '<span class="cn-tag">' + esc(D.grp[p[3]]) + '</span>' : '') +
@@ -456,6 +460,9 @@
       '.cn-pop-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}',
       '.cn-tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:#EEF1F6;color:#3A4150}',
       '.cn-tag.cl{background:#E3F3EB;color:#0B6E43}.cn-tag.pr{background:#E7EFFE;color:#1E5FD0}.cn-tag.co{background:#FFF0E6;color:#C2410C}',
+      '.cn-tag.ca{background:#0A0E1A;color:#fff}',
+      '.cn-sortlbl{font-size:11.5px;font-weight:700;color:var(--muted);margin-left:4px}',
+      '.cn-sortseg button{font-size:12px;padding:5px 10px}',
       '.cn-pop-contact{display:flex;flex-direction:column;gap:2px;margin-top:8px}',
       '.cn-pop-contact a{font-size:12.5px;font-weight:700;color:#0050E6;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.cn-pop-btns{display:flex;gap:6px;margin-top:10px}',
@@ -624,6 +631,8 @@
   function renderListPanel() {
     var el = document.getElementById('cn-listpanel'); if (!el) return;
     var ids = filtered(), total = ids.length, cap = 400;
+    if (listSort === 'ca') ids.sort(function (a, b) { return caOf(D.p[b]) - caOf(D.p[a]); });
+    else ids.sort(function (a, b) { return norm(D.p[a][6]) < norm(D.p[b][6]) ? -1 : 1; });
     var shown = ids.slice(0, cap);
     var rows = shown.map(function (i) {
       var p = D.p[i], cl = isClient(p), pr = D.seg[p[4]] === 'Prospect', inT = tourPos(keyOf(p)) >= 0;
@@ -634,6 +643,7 @@
           '<span class="cn-lsub">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + (p[10] ? ' · ' + esc(p[10]) : '') + '</span>' +
           '<span class="cn-ltags">' +
             '<span class="cn-tag ' + (cl ? 'cl' : (pr ? 'pr' : '')) + '">' + esc(statusLabel(p)) + '</span>' +
+            (caOf(p) > 0 ? '<span class="cn-tag ca">CA ' + eurK(caOf(p)) + '</span>' : '') +
             (comm ? '<span class="cn-tag co">' + esc(comm) + '</span>' : '') +
             (D.grp[p[3]] && D.grp[p[3]] !== '—' ? '<span class="cn-tag">' + esc(D.grp[p[3]]) + '</span>' : '') +
             (p[9] ? '<span class="cn-tag">' + esc(p[9]) + '</span>' : '') +
@@ -645,8 +655,10 @@
     el.innerHTML = '<div class="cn-pdialog cn-listdlg" onclick="event.stopPropagation()">' +
       '<div class="cn-phead"><div><b>Liste des pharmacies</b><small>' + total.toLocaleString('fr') + ' résultat' + (total > 1 ? 's' : '') + (total > cap ? ' · ' + cap + ' affichés (affine la recherche)' : '') + '</small></div>' +
         '<button class="cn-px" onclick="V2.carteListClose()">✕</button></div>' +
-      '<div class="cn-prosbar"><input id="cn-search2" type="search" class="cn-search" style="flex:1" placeholder="Rechercher…" value="' + esc(searchTerm) + '" oninput="V2.carteSearch(this.value);document.getElementById(\'cn-search\')&&(document.getElementById(\'cn-search\').value=this.value)"></div>' +
+      '<div class="cn-prosbar"><input id="cn-search2" type="search" class="cn-search" style="flex:1" placeholder="Rechercher…" value="' + esc(searchTerm) + '" oninput="V2.carteSearch(this.value);document.getElementById(\'cn-search\')&&(document.getElementById(\'cn-search\').value=this.value)">' +
+        '<span class="cn-sortlbl">Trier :</span><div class="cn-seg cn-sortseg"><button' + (listSort === 'nom' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'nom\')">Nom</button><button' + (listSort === 'ca' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'ca\')">CA</button></div></div>' +
       '<div class="cn-plist">' + rows + '</div></div>';
   }
+  V2.carteListSort = function (s) { listSort = s; renderListPanel(); };
   V2.carteListRefreshRow = function () { if (document.getElementById('cn-listpanel')) renderListPanel(); };
 })();
