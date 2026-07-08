@@ -35,7 +35,14 @@
       { h: 'Semaine de la vaccination : la prévention nous concerne tous.', f: 'carrousel', core: 'S’informer sereinement, en parler avec son pharmacien : la prévention avance quand on la partage.' },
       { h: 'Journée mondiale de la santé mentale : prendre soin de soi compte aussi.', f: 'texte', core: 'La santé, c’est aussi celle qu’on ne voit pas. Un mot d’attention, une écoute : ça change tout.' },
       { h: 'Téléthon : petits gestes, grande solidarité.', f: 'photo', core: 'Quand chacun apporte sa pierre, on soulève des montagnes. Bravo à toutes les mobilisations partout en France.' },
-      { h: 'Journée sans tabac : encourager, jamais juger.', f: 'texte', core: 'Chaque pas compte. On soutient celles et ceux qui essaient, avec bienveillance et sans leçon.' }
+      { h: 'Journée sans tabac : encourager, jamais juger.', f: 'texte', core: 'Chaque pas compte. On soutient celles et ceux qui essaient, avec bienveillance et sans leçon.' },
+      { h: 'Journée mondiale du cœur : prenons soin du nôtre.', f: 'carrousel', core: 'Bouger, souffler, s’écouter : quelques réflexes simples pour chouchouter notre cœur, à tout âge.' },
+      { h: 'Semaine bleue : célébrons nos aînés.', f: 'photo', core: 'Un immense merci à celles et ceux qui accompagnent nos aînés au quotidien. Le lien, c’est aussi de la santé.' },
+      { h: 'Journée mondiale de l’AVC : reconnaître, réagir, sauver.', f: 'carrousel', core: 'Les bons réflexes peuvent tout changer. Informer sans effrayer, c’est déjà protéger.' },
+      { h: 'Journée mondiale de l’hygiène des mains : un geste qui protège.', f: 'texte', core: 'Un geste tout simple, un impact réel sur la santé de tous. Un petit rappel bienveillant.' },
+      { h: 'Semaine de la vue : prendre soin de ses yeux.', f: 'photo', core: 'On y pense rarement, et pourtant. Un rappel doux pour ne pas oublier ce sens si précieux.' },
+      { h: 'Journée mondiale de lutte contre le sida : informer et soutenir.', f: 'texte', core: 'Sans tabou et sans jugement, on rappelle l’importance de l’information et de la solidarité.' },
+      { h: 'Semaine de la vaccination : posez toutes vos questions.', f: 'texte', core: 'Aucune question n’est bête. Votre pharmacien est là pour vous informer, en toute sérénité.' }
     ],
     joie: [
       { h: 'Un petit sourire pour bien commencer la semaine.', f: 'photo', core: 'Parce qu’une bonne journée commence souvent par un bon état d’esprit. Belle semaine à toutes les officines !' },
@@ -45,7 +52,14 @@
       { h: 'Célébrons les petites victoires du quotidien.', f: 'texte', core: 'Un patient soulagé, un sourire échangé, une équipe soudée : ce sont ces moments qui donnent du sens.' },
       { h: 'Un grand bravo à toutes les équipes sur le terrain.', f: 'photo', core: 'Vous êtes présents, jour après jour, avec le sourire. Aujourd’hui, on prend le temps de vous applaudir.' },
       { h: 'La photo qui donne le sourire cette semaine.', f: 'photo', core: 'Un moment de complicité, un instant de joie partagée : la santé, c’est aussi de l’humain et de la bonne humeur.' },
-      { h: 'Un peu de douceur dans un monde qui va vite.', f: 'texte', core: 'On ralentit une seconde, on respire, on savoure. Prendre soin de soi commence par de petites attentions.' }
+      { h: 'Un peu de douceur dans un monde qui va vite.', f: 'texte', core: 'On ralentit une seconde, on respire, on savoure. Prendre soin de soi commence par de petites attentions.' },
+      { h: 'Vendredi, c’est permis : une petite dose de bonne humeur.', f: 'photo', core: 'La semaine se termine, place au sourire. Un bon week-end à toutes les équipes d’officine !' },
+      { h: 'Le mot gentil du jour.', f: 'texte', core: 'Un compliment sincère ne coûte rien et peut illuminer une journée. À qui allez-vous l’offrir aujourd’hui ?' },
+      { h: 'On adore cette initiative qui fait chaud au cœur.', f: 'photo', core: 'Il existe partout de belles idées qui font du bien. On aime les mettre en lumière et les partager.' },
+      { h: 'Petit rappel : vous faites un travail formidable.', f: 'photo', core: 'Dans les journées chargées, on l’oublie parfois. Alors on le redit : bravo, et merci pour tout.' },
+      { h: 'La minute feel-good de la semaine.', f: 'texte', core: 'Une pause positive au milieu de la routine. Respirez, souriez : ça fait un bien fou.' },
+      { h: 'Un merci en image à toutes les équipes.', f: 'photo', core: 'Parce qu’un grand merci se dit aussi avec le cœur. À vous toutes et tous, un immense bravo.' },
+      { h: 'Belle journée à toutes et à tous, tout simplement.', f: 'photo', core: 'Pas de grand message aujourd’hui, juste une pensée positive et sincère pour bien démarrer.' }
     ],
     pharma: [
       { h: 'Merci aux pharmaciens, ces professionnels de proximité.', f: 'photo', core: 'Toujours là, souvent le premier réflexe santé. Aujourd’hui, on met à l’honneur celles et ceux qui veillent sur nous.' },
@@ -55,7 +69,14 @@
       { h: 'Bravo aux équipes d’officine, présentes en toutes circonstances.', f: 'photo', core: 'Été comme hiver, jours fériés compris, elles répondent présentes. Un immense merci pour cet engagement.' },
       { h: 'Un métier de cœur autant que de compétence.', f: 'texte', core: 'On ne devient pas pharmacien par hasard. Merci de mettre autant d’humanité dans votre expertise.' },
       { h: 'Aux pharmaciens de garde : merci de veiller sur nous.', f: 'photo', core: 'Quand tout est fermé, l’officine de garde reste une lumière rassurante. Merci pour ces nuits au service des autres.' },
-      { h: 'Célébrons celles et ceux qui font vivre nos officines.', f: 'carrousel', core: 'Préparateurs, pharmaciens, équipes : chaque maillon compte. Un grand bravo à toute la profession.' }
+      { h: 'Célébrons celles et ceux qui font vivre nos officines.', f: 'carrousel', core: 'Préparateurs, pharmaciens, équipes : chaque maillon compte. Un grand bravo à toute la profession.' },
+      { h: 'Le pharmacien, ce héros du quotidien souvent discret.', f: 'photo', core: 'Pas de cape, mais une présence rassurante à chaque coin de rue. Merci pour tout ce que vous faites.' },
+      { h: 'Un immense merci pour votre patience et votre écoute.', f: 'photo', core: 'Prendre le temps, expliquer, rassurer : c’est un art. Bravo pour cette bienveillance de chaque instant.' },
+      { h: 'L’officine, un repère rassurant dans chaque quartier.', f: 'texte', core: 'Un lieu où l’on se sent accueilli, écouté, compris. Merci d’être ce point d’ancrage pour tant de gens.' },
+      { h: 'Bravo pour votre disponibilité, même dans les moments difficiles.', f: 'photo', core: 'Quand tout se complique, vous êtes là. Merci pour ce dévouement sans faille au service des autres.' },
+      { h: 'Vous méritez qu’on le dise : merci d’être là.', f: 'photo', core: 'Un merci tout simple, mais du fond du cœur, à toutes les équipes d’officine. Vous êtes essentiels.' },
+      { h: 'Le sourire derrière le comptoir change une journée.', f: 'texte', core: 'Un accueil chaleureux, un mot gentil : parfois, c’est ça qui fait toute la différence. Merci pour ça.' },
+      { h: 'Aux étudiants et préparateurs : la relève a du cœur.', f: 'photo', core: 'Ils apprennent, s’investissent et prennent soin des autres avec passion. Bravo à toute la relève de l’officine.' }
     ],
     patients: [
       { h: '3 gestes simples pour prendre soin de vous cet hiver.', f: 'carrousel', core: 'Se laver les mains, bien s’aérer, écouter son corps : la prévention tient souvent à de petits réflexes. Parlez-en avec votre pharmacien.' },
@@ -65,7 +86,14 @@
       { h: 'Prendre soin de sa santé mentale, jour après jour.', f: 'photo', core: 'Souffler, parler, s’accorder du repos. Prendre soin de sa tête est aussi important que du reste. Vous n’êtes pas seuls.' },
       { h: 'Bien vieillir : quelques réflexes qui changent tout.', f: 'carrousel', core: 'Bouger un peu, garder le lien, suivre ses traitements : bien vieillir, ça se prépare en douceur, avec les bons conseils.' },
       { h: 'Vaccination : parlez-en avec votre pharmacien.', f: 'texte', core: 'Une question, un doute ? Votre pharmacien est là pour vous informer, simplement et sans pression.' },
-      { h: 'Écouter son corps, un premier pas vers le bien-être.', f: 'photo', core: 'Fatigue, tension, petits signaux : votre corps vous parle. S’écouter, c’est déjà prendre soin de soi.' }
+      { h: 'Écouter son corps, un premier pas vers le bien-être.', f: 'photo', core: 'Fatigue, tension, petits signaux : votre corps vous parle. S’écouter, c’est déjà prendre soin de soi.' },
+      { h: 'Bien manger, sans se prendre la tête : quelques repères.', f: 'carrousel', core: 'Pas de régime miracle, juste du bon sens et du plaisir. De petites habitudes qui font du bien, durablement.' },
+      { h: 'Bouger un peu chaque jour, c’est déjà beaucoup.', f: 'texte', core: 'Une marche, quelques étirements : le corps adore le mouvement. Nul besoin d’en faire trop pour se sentir mieux.' },
+      { h: 'Prendre ses médicaments au bon moment : nos astuces.', f: 'carrousel', core: 'Un pilulier, un rappel sur le téléphone, un rituel : de petites méthodes simples pour ne rien oublier.' },
+      { h: 'Le stress, ça se soulage aussi : petits gestes apaisants.', f: 'texte', core: 'Respirer, faire une pause, en parler : quelques réflexes doux pour relâcher la pression au quotidien.' },
+      { h: 'Protéger sa peau du soleil, toute l’année.', f: 'texte', core: 'Le soleil ne prévient pas. Un geste protecteur simple pour prendre soin de sa peau, en toute saison.' },
+      { h: 'Garder le lien avec ses proches, c’est bon pour la santé.', f: 'photo', core: 'Un appel, une visite, un sourire partagé : le lien social est un vrai soin. Prenez soin les uns des autres.' },
+      { h: 'Un doute sur un symptôme ? Votre pharmacien peut vous aider.', f: 'texte', core: 'Avant de s’inquiéter, on peut simplement demander. Votre pharmacien est un premier interlocuteur précieux.' }
     ]
   };
 
@@ -195,10 +223,13 @@
   function generateImageIdea(pk, v) { return pickA(IMG_IDEAS[pk] || IMG_IDEAS.causes, v); }
 
   // ── Moteur ──
-  function poolFor(slot) { return slot.seasonal ? SEASON[slot.mo] : (ANGLES[slot.pillar] || ANGLES.causes); }
+  function poolFor(slot) {
+    if (slot.seasonal) return (SEASON[slot.mo] || []).concat(ANGLES.causes);  // causes du mois EN PREMIER, puis toute la banque causes
+    return ANGLES[slot.pillar] || ANGLES.causes;
+  }
   function anglesOf(slot) {
     var pool = poolFor(slot), o = slot.offset % pool.length, out = [];
-    for (var i = 0; i < Math.min(3, pool.length); i++) out.push(pool[(o + i) % pool.length]);
+    for (var i = 0; i < Math.min(2, pool.length); i++) out.push(pool[(o + i) % pool.length]);
     return out;
   }
   function mondayOf(d) {
@@ -304,6 +335,17 @@
       '.lis-gen{white-space:pre-wrap;font-size:13px;color:#0A0E1A;line-height:1.55;background:#faf8ff;border:1px solid #e4d9fb;border-radius:10px;padding:12px 13px;margin-bottom:10px;max-height:340px;overflow:auto}',
       '.lis-genb{border-color:#c3b6f2!important;color:#7c56e6!important;background:#f6f2ff!important}',
       '.lis-genb:hover{color:#5b2ec4!important;background:#efe8ff!important}',
+      '.lis-choose{font-weight:700;font-size:12.5px;color:#475569;margin:2px 0 8px}',
+      '.lis-opts2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}',
+      '@media (max-width:620px){.lis-opts2{grid-template-columns:1fr}}',
+      '.lis-opt2{display:flex;flex-direction:column;gap:5px;text-align:left;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;padding:12px 13px;cursor:pointer;font:inherit;transition:border-color .15s,box-shadow .15s}',
+      '.lis-opt2:hover{border-color:#c9d3e6}',
+      '.lis-opt2.on{border-color:var(--pc,#0057FF);box-shadow:0 0 0 3px rgba(0,87,255,.10)}',
+      '.lis-opt2-top{display:flex;align-items:center;gap:7px}',
+      '.lis-opt2-num{font-size:11px;font-weight:800;color:var(--pc,#0057FF);text-transform:uppercase;letter-spacing:.03em}',
+      '.lis-opt2.on .lis-opt2-num::after{content:" ✓"}',
+      '.lis-opt2-h{font-weight:700;font-size:13.5px;color:#0f172a;line-height:1.3}',
+      '.lis-opt2-core{font-size:12px;color:#64748b;line-height:1.45}',
       '.lis-abc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}',
       '.lis-imgidea{margin-top:9px;font-size:12.5px;color:#475569;line-height:1.5;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:9px;padding:8px 11px}',
       '.lis-imgidea b{color:#0f172a}',
@@ -373,22 +415,26 @@
       '<span>Ton : <b>' + esc((TONES.filter(function (t) { return t.k === cfg.tone; })[0] || TONES[0]).label) + '</b></span>' +
       '</div>';
     var cards = plan.map(function (s, idx) {
-      var pm = pillMeta(s.pillar); var angs = anglesOf(s); var a = angs[s.sel] || angs[0];
-      var abc = angs.map(function (x, j) {
-        return '<button class="lis-ab' + (j === s.sel ? ' on' : '') + '" title="Angle ' + 'ABC'.charAt(j) + '" onclick="V2.lis.sel(' + idx + ',' + j + ')">' + 'ABC'.charAt(j) + '</button>';
+      var pm = pillMeta(s.pillar); var angs = anglesOf(s); if (s.sel >= angs.length) s.sel = 0; var a = angs[s.sel] || angs[0];
+      var opts = angs.map(function (x, j) {
+        return '<button class="lis-opt2' + (j === s.sel ? ' on' : '') + '" onclick="V2.lis.sel(' + idx + ',' + j + ')">' +
+          '<span class="lis-opt2-top"><span class="lis-opt2-num">Idée ' + (j + 1) + '</span>' +
+          '<span class="lis-tag">' + esc(FMT[x.f] || 'Texte') + '</span></span>' +
+          '<span class="lis-opt2-h">' + esc(x.h) + '</span>' +
+          '<span class="lis-opt2-core">' + esc(x.core) + '</span></button>';
       }).join('');
       return '<div class="lis-card" style="--pc:' + pm.color + '">' +
         '<div class="lis-crow">' +
           '<span class="lis-date2">' + fmtDate(s.date) + '</span>' +
           '<span class="lis-tag pil" style="--pcb:' + pm.color + '33">' + esc(s.seasonal ? 'Grande cause' : pm.label) + '</span>' +
-          '<span class="lis-tag">' + esc(FMT[a.f] || 'Texte') + '</span>' +
           '<button class="lis-mini lis-del" onclick="V2.lis.remove(' + idx + ')">Supprimer</button>' +
         '</div>' +
-        '<div class="lis-hook">' + esc(a.h) + '</div>' +
-        (s.gen ? '<div class="lis-gen">' + esc(s.gen) + '</div>' : '<div class="lis-core">' + esc(a.core) + '</div>') +
-        '<div class="lis-abc">' + abc +
-          '<button class="lis-mini lis-genb" onclick="V2.lis.gentext(' + idx + ')">' + (s.gen ? '↻ Régénérer le texte' : '✍️ Générer le texte') + '</button>' +
-          '<button class="lis-mini" onclick="V2.lis.other(' + idx + ')">↻ Autre idée</button></div>' +
+        '<div class="lis-choose">Choisis ton idée du jour :</div>' +
+        '<div class="lis-opts2">' + opts + '</div>' +
+        (s.gen ? '<div class="lis-gen">' + esc(s.gen) + '</div>' : '') +
+        '<div class="lis-abc">' +
+          '<button class="lis-mini lis-genb" onclick="V2.lis.gentext(' + idx + ')">' + (s.gen ? '↻ Régénérer le texte' : '✍️ Générer le texte de l’idée choisie') + '</button>' +
+          '<button class="lis-mini" onclick="V2.lis.other(' + idx + ')">↻ 2 autres idées</button></div>' +
         '<div class="lis-imgidea"><b>Idée visuelle :</b> ' + esc(generateImageIdea(s.seasonal ? 'causes' : s.pillar, s.imgv || 0)) +
           ' <button class="lis-mini lis-imgb" onclick="V2.lis.otherImg(' + idx + ')">↻ Autre</button></div>' +
       '</div>';
@@ -396,7 +442,7 @@
     return '<div class="lis-wrap">' +
       '<div class="lis-top"><div class="lis-title"><span class="g">✨</span> Ton plan éditorial</div>' +
       '<button class="lis-x" onclick="V2.lis.close()">✕</button></div>' +
-      '<div class="lis-sub">Ajuste chaque post (angle A/B/C, autre idée, supprimer), puis ajoute tout au calendrier.</div>' +
+      '<div class="lis-sub">Pour chaque jour, choisis une des 2 idées proposées (ou « 2 autres idées »), puis ajoute tout au calendrier.</div>' +
       recap + (cards || '<div class="lis-sub">Aucun post — reviens au quiz.</div>') +
       '<div class="lis-cta">' +
         '<button class="lis-btn" onclick="V2.lis.back()">‹ Modifier le quiz</button>' +
@@ -425,7 +471,7 @@
   };
   V2.lis.gen = function () { plan = buildPlan(cfg); stratId = (LI().newId ? LI().newId() : 'strat' + (new Date()).getTime()); step = 'preview'; draw(); };
   V2.lis.sel = function (idx, j) { if (plan[idx]) { plan[idx].sel = j; plan[idx].gen = ''; draw(); } };
-  V2.lis.other = function (idx) { if (plan[idx]) { plan[idx].offset += 3; plan[idx].sel = 0; plan[idx].gen = ''; draw(); } };
+  V2.lis.other = function (idx) { if (plan[idx]) { plan[idx].offset += 2; plan[idx].sel = 0; plan[idx].gen = ''; draw(); } };
   V2.lis.otherImg = function (idx) { if (plan[idx]) { plan[idx].imgv = (plan[idx].imgv || 0) + 1; draw(); } };
   V2.lis.gentext = function (idx) {
     var s = plan[idx]; if (!s) return;
