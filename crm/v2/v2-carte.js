@@ -33,6 +33,7 @@
   ];
   var colorMode = 'comm';        // comm | type | uga | grp
   var commFocus = '', grpFocus = '', typeFocus = 'all';   // all | clients | prospects
+  var searchTerm = '';   // recherche nom / ville / cp / titulaire
   var COMM_COL = {}, GRP_COL = {};
   var PALETTE = ['#0050E6', '#EA580C', '#0F7A52', '#7C3AED', '#C7283D', '#00B5D8', '#C7791A',
     '#DB2777', '#2563EB', '#16A34A', '#9333EA', '#DC2626', '#0891B2', '#CA8A04'];
@@ -123,7 +124,13 @@
     if (typeFocus === 'prospects' && D.seg[p[4]] !== 'Prospect') return false;
     if (commFocus && D.comm[p[5]] !== commFocus) return false;
     if (grpFocus && D.grp[p[3]] !== grpFocus) return false;
+    if (searchTerm && !matchTxt(p)) return false;
     return true;
+  }
+  function norm(s) { s = String(s || '').toLowerCase(); return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s; }
+  function matchTxt(p) {
+    var q = norm(searchTerm);
+    return norm(p[6]).indexOf(q) >= 0 || norm(p[7]).indexOf(q) >= 0 || norm(p[8]).indexOf(q) >= 0 || norm(p[10]).indexOf(q) >= 0;
   }
 
   function markerStyle(p, i) {
@@ -146,7 +153,9 @@
     for (var i = 0; i < pts.length; i++) {
       var p = pts[i]; if (!pass(p)) continue;
       var m = window.L.circleMarker([p[0], p[1]], markerStyle(p, i));
-      m._pi = i; if (!useCluster) m.on('click', openPop); markers.push(m); arr.push(m);
+      m._pi = i; if (!useCluster) m.on('click', openPop);
+      m.on('mouseover', function () { if (!this._ntt) { this._ntt = 1; this.bindTooltip(esc(D.p[this._pi][6] || ''), { direction: 'top', offset: [0, -3] }); } this.openTooltip(); });
+      markers.push(m); arr.push(m);
     }
     if (useCluster) cluster.addLayers(arr); else for (var a = 0; a < arr.length; a++) cluster.addLayer(arr[a]);
     map.addLayer(cluster);
@@ -492,6 +501,17 @@
       '.cn-prow .cn-tmain span{font-size:11.5px;color:var(--muted)}',
       '.cn-padd{font-size:12.5px;font-weight:800;color:#C2410C;white-space:nowrap}',
       '.cn-paddbtn{flex:0 0 auto;padding:7px 11px;font-size:12px}',
+      '.cn-search{font:inherit;font-size:13px;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:var(--r-control,10px);padding:7px 11px;min-width:220px}',
+      '.cn-listbtn{font:inherit;font-size:13px;font-weight:700;color:var(--ip-blue,#0057FF);background:var(--card);border:1px solid var(--line);border-radius:var(--r-control,10px);padding:7px 13px;cursor:pointer}',
+      '.cn-listbtn:hover{border-color:var(--ip-blue,#0057FF)}',
+      '.cn-listdlg{max-width:520px}',
+      '.cn-lrow{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line)}',
+      '.cn-lmain{flex:1;min-width:0;cursor:pointer}',
+      '.cn-lmain b{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.cn-lsub{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.cn-ltags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}',
+      '.cn-ladd{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ip-blue,#0057FF);font-size:16px;font-weight:800;cursor:pointer}',
+      '.cn-ladd.in{background:var(--ip-blue,#0057FF);color:#fff;border-color:var(--ip-blue,#0057FF)}',
       '.cn-pacts{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}',
       '.cn-pacts .v2-btn{flex:1 1 auto}',
     ].join('\n');
@@ -538,7 +558,9 @@
             '<div class="cn-title">Carte nationale <small id="carte-count">chargement…</small></div>' +
             '<div class="cn-grp"><span class="cn-lbl">Voir</span><div class="cn-seg">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div></div>' +
             '<div class="cn-grp"><span class="cn-lbl">Couleur</span><div class="cn-seg">' + segBtn('comm', 'Commercial') + segBtn('type', 'Client/Prospect') + segBtn('uga', 'UGA') + segBtn('grp', 'Groupement') + '</div></div>' +
-            '<div class="cn-grp cn-spacer"><select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
+            '<div class="cn-grp cn-spacer"><input id="cn-search" class="cn-search" type="search" placeholder="Rechercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
+              '<button class="cn-listbtn" onclick="V2.carteListOpen()">Liste</button></div>' +
+            '<div class="cn-grp"><select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
               '<select id="cn-grpsel" class="cn-sel" onchange="V2.carteGrp(this.value)"></select></div>' +
           '</div>' +
           '<div class="cn-legend" id="carte-legend"></div>' +
@@ -571,6 +593,58 @@
     ['all', 'clients', 'prospects'].forEach(function (k) { var b = document.getElementById('ct-' + k); if (b) b.classList.toggle('on', k === t); });
     rebuild();
   };
-  V2.carteComm = function (v) { commFocus = v || ''; rebuild(); };
-  V2.carteGrp = function (v) { grpFocus = v || ''; rebuild(); };
+  V2.carteComm = function (v) { commFocus = v || ''; rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); };
+  V2.carteGrp = function (v) { grpFocus = v || ''; rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); };
+  var _searchTO = null;
+  V2.carteSearch = function (v) {
+    searchTerm = v || '';
+    if (_searchTO) clearTimeout(_searchTO);
+    _searchTO = setTimeout(function () { rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); }, 220);
+  };
+  // ── LISTE-DONNÉES : voir précisément noms + infos, filtrable, cliquable ──
+  function filtered() { var out = []; if (!D) return out; for (var i = 0; i < D.p.length; i++) if (pass(D.p[i])) out.push(i); return out; }
+  V2.carteListOpen = function () {
+    if (!document.getElementById('cn-listpanel')) {
+      var el = document.createElement('div'); el.id = 'cn-listpanel'; el.className = 'cn-panel';
+      el.onclick = function (e) { if (e.target === el) V2.carteListClose(); };
+      document.body.appendChild(el);
+    }
+    renderListPanel();
+  };
+  V2.carteListClose = function () { var el = document.getElementById('cn-listpanel'); if (el) el.remove(); };
+  V2.carteLocate = function (i) {
+    var p = D.p[i]; if (!p || !map) return;
+    map.setView([p[0], p[1]], 15, { animate: true });
+    window.L.popup({ minWidth: 216 }).setLatLng([p[0], p[1]]).setContent(popupHtml(p, i)).openOn(map);
+    V2.carteListClose();
+  };
+  function statusLabel(p) { return D.seg[p[4]] || '—'; }
+  function renderListPanel() {
+    var el = document.getElementById('cn-listpanel'); if (!el) return;
+    var ids = filtered(), total = ids.length, cap = 400;
+    var shown = ids.slice(0, cap);
+    var rows = shown.map(function (i) {
+      var p = D.p[i], cl = isClient(p), pr = D.seg[p[4]] === 'Prospect', inT = tourPos(keyOf(p)) >= 0;
+      var comm = p[5] ? D.comm[p[5]] : '';
+      return '<div class="cn-lrow">' +
+        '<div class="cn-lmain" onclick="V2.carteLocate(' + i + ')">' +
+          '<b>' + esc(p[6] || 'Pharmacie') + '</b>' +
+          '<span class="cn-lsub">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + (p[10] ? ' · ' + esc(p[10]) : '') + '</span>' +
+          '<span class="cn-ltags">' +
+            '<span class="cn-tag ' + (cl ? 'cl' : (pr ? 'pr' : '')) + '">' + esc(statusLabel(p)) + '</span>' +
+            (comm ? '<span class="cn-tag co">' + esc(comm) + '</span>' : '') +
+            (D.grp[p[3]] && D.grp[p[3]] !== '—' ? '<span class="cn-tag">' + esc(D.grp[p[3]]) + '</span>' : '') +
+            (p[9] ? '<span class="cn-tag">' + esc(p[9]) + '</span>' : '') +
+          '</span>' +
+        '</div>' +
+        '<button class="cn-ladd' + (inT ? ' in' : '') + '" onclick="V2.carteTour(' + i + ');V2.carteListRefreshRow(' + i + ')" title="Tournée">' + (inT ? '✓' : '+') + '</button>' +
+      '</div>';
+    }).join('') || '<div class="cn-tempty">Aucune pharmacie ne correspond.<br>Change les filtres ou la recherche.</div>';
+    el.innerHTML = '<div class="cn-pdialog cn-listdlg" onclick="event.stopPropagation()">' +
+      '<div class="cn-phead"><div><b>Liste des pharmacies</b><small>' + total.toLocaleString('fr') + ' résultat' + (total > 1 ? 's' : '') + (total > cap ? ' · ' + cap + ' affichés (affine la recherche)' : '') + '</small></div>' +
+        '<button class="cn-px" onclick="V2.carteListClose()">✕</button></div>' +
+      '<div class="cn-prosbar"><input id="cn-search2" type="search" class="cn-search" style="flex:1" placeholder="Rechercher…" value="' + esc(searchTerm) + '" oninput="V2.carteSearch(this.value);document.getElementById(\'cn-search\')&&(document.getElementById(\'cn-search\').value=this.value)"></div>' +
+      '<div class="cn-plist">' + rows + '</div></div>';
+  }
+  V2.carteListRefreshRow = function () { if (document.getElementById('cn-listpanel')) renderListPanel(); };
 })();
