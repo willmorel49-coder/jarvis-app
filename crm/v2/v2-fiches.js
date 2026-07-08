@@ -762,7 +762,9 @@
   // ════════════════════════════════════════════
   // DOCUMENT (HTML partagé : aperçu live + PDF)
   // ════════════════════════════════════════════
-  function buildSheetHtml(fiche) {
+  // client=true → export destiné au pharmacien : on NE communique JAMAIS l'abandon de marge
+  // (colonne masquée). PPHT + prix net restent affichés. L'écran (aperçu) reste complet.
+  function buildSheetHtml(fiche, client) {
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
     var title = fiche.title && fiche.title.trim() ? fiche.title : 'Fiche commerciale';
     var prods = fiche.products || [];
@@ -785,7 +787,7 @@
             (p.is_froid ? ' <span style="font-size:8px;color:#00B5D8;border:1px solid #b8edf7;border-radius:5px;padding:1px 4px;vertical-align:middle">FROID</span>' : '') + '</td>'+
           '<td style="padding:9px 12px;font-size:11px;color:#737A8C;font-family:var(--mono)">' + esc(p.cip13 || '—') + '</td>'+
           '<td style="padding:9px 12px;font-size:11.5px;text-align:right;font-family:var(--mono)">' + ppht + '</td>'+
-          '<td style="padding:9px 12px;font-size:11.5px;font-weight:700;text-align:right;font-family:var(--mono);color:' + (pct > 0 ? '#1E9E6A' : '#B6BFCE') + '">' + rem + '</td>'+
+          (client ? '' : '<td style="padding:9px 12px;font-size:11.5px;font-weight:700;text-align:right;font-family:var(--mono);color:' + (pct > 0 ? '#1E9E6A' : '#B6BFCE') + '">' + rem + '</td>')+
           (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;color:#737A8C;text-align:center;font-family:var(--mono)">' + qty + '</td>' : '') +
           '<td style="padding:9px 12px;font-size:13px;font-weight:800;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(net) + '</td>'+
           (hasQtyPdf ? '<td style="padding:9px 12px;font-size:12px;font-weight:700;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(tot) + '</td>' : '') +
@@ -853,15 +855,15 @@
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:left">Désignation</th>'+
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:left">CIP 13</th>'+
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">PPHT</th>'+
-            '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Abandon</th>'+
+            (client ? '' : '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Abandon</th>')+
             (hasQtyPdf ? '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:center">Qté</th>' : '') +
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Prix net</th>'+
             (hasQtyPdf ? '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Total</th>' : '') +
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Marge MDL</th>'+
           '</tr></thead>'+
-          '<tbody>' + (rows || '<tr><td colspan="' + (hasQtyPdf ? 9 : 7) + '" style="padding:24px;text-align:center;color:#9AA1B2;font-size:12px">Aucun produit</td></tr>') + '</tbody>'+
+          '<tbody>' + (rows || '<tr><td colspan="' + (client ? (hasQtyPdf ? 8 : 6) : (hasQtyPdf ? 9 : 7)) + '" style="padding:24px;text-align:center;color:#9AA1B2;font-size:12px">Aucun produit</td></tr>') + '</tbody>'+
           (count ? '<tfoot><tr style="border-top:2px solid #10131C;background:#F4F8FF">'+
-            '<td colspan="' + (hasQtyPdf ? 7 : 5) + '" style="padding:13px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#10131C;text-align:right">Totaux ' + (hasQtyPdf ? '(quantités incluses)' : '(base 1 boîte / réf.)') + '</td>'+
+            '<td colspan="' + (client ? (hasQtyPdf ? 6 : 4) : (hasQtyPdf ? 7 : 5)) + '" style="padding:13px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#10131C;text-align:right">Totaux' + (hasQtyPdf ? '(quantités incluses)' : '(base 1 boîte / réf.)') + '</td>'+
             '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(totNet) + '</td>'+
             (hasQtyPdf ? '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:var(--mono)"></td>' : '') +
             '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#1E9E6A;text-align:right;font-family:var(--mono)">' + e2(totMdl) + '</td>'+
@@ -881,7 +883,7 @@
   function buildPdfNode(fiche) {
     var node = document.createElement('div');
     node.style.cssText = 'position:fixed;left:-10000px;top:0';
-    node.innerHTML = buildSheetHtml(fiche);
+    node.innerHTML = buildSheetHtml(fiche, true);   // PDF = destiné au client → abandon masqué
     return node;
   }
 

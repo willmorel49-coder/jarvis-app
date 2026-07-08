@@ -218,7 +218,6 @@
           '<td style="padding:3px 7px;font-size:10px;font-weight:600;color:#10131C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc((r.d || '').slice(0, 44)) + '</td>' +
           '<td style="padding:3px 7px;font-family:monospace;font-size:8.5px;color:#737A8C;overflow:hidden;white-space:nowrap">' + esc(r.cip || '') + '</td>' +
           '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:9.5px">' + ppht + '</td>' +
-          '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:700;color:' + (r.remise > 0 ? '#1E9E6A' : '#B6BFCE') + '">' + rem + '</td>' +
           '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:11px;font-weight:800;color:#0050E6">' + t50Eur(r.net) + '</td>' +
           '<td style="padding:3px 7px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:700;color:#10131C">' + sig + '</td>' +
           '</tr>';
@@ -228,9 +227,9 @@
           '<div style="font-size:11.5px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.4px">' + esc(c.cat) + '</div>' +
           '<div style="font-size:9px;color:rgba(255,255,255,.85);margin-left:auto;font-weight:700">top ' + c.rows.length + '</div></div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #ECEFF5;border-top:none">' +
-          '<colgroup><col style="width:5%"><col style="width:34%"><col style="width:15%"><col style="width:12%"><col style="width:11%"><col style="width:12%"><col style="width:11%"></colgroup>' +
+          '<colgroup><col style="width:5%"><col style="width:38%"><col style="width:16%"><col style="width:13%"><col style="width:15%"><col style="width:13%"></colgroup>' +
           '<thead><tr style="background:#F7F9FC">' +
-          ['#', 'Produit', 'CIP', 'PPHT', 'Abandon', 'Prix net IP', (isNr ? 'Volume' : 'Pharmacies')].map(function (h, k) {
+          ['#', 'Produit', 'CIP', 'PPHT', 'Prix net IP', (isNr ? 'Volume' : 'Pharmacies')].map(function (h, k) {
             return '<th style="padding:5px 7px;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;text-align:' + (k === 1 || k === 2 ? 'left' : 'right') + '">' + h + '</th>';
           }).join('') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
     }).join('');
@@ -242,7 +241,7 @@
           '<div style="font-size:10px;color:#737A8C">' + totalProd + ' produits · princeps classés par nb de pharmacies qui commandent · NR par volume vendu · prix net indicatif</div></div>' +
         '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + dateStr + '</div>' +
       '</div>' + secs +
-      '<div style="margin-top:14px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · document commercial · Prix nets HT indicatifs · Princeps : PPHT − abandon de marge · NR/parapharmacie : prix libre</div>' +
+      '<div style="margin-top:14px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · document commercial · Prix nets HT indicatifs · NR/parapharmacie : prix libre</div>' +
     '</div>';
   }
   // renvoie [ppht, stock] pour un CIP dans l'établissement courant (ou combiné "Tous")
@@ -839,7 +838,8 @@
     var acc = th.accent || '#0050E6';
     var grad = 'linear-gradient(120deg,' + acc + ' 0%,' + darken(acc, 0.6) + ' 100%)';
     var bg = th.bg || '#FFFFFF';
-    var showPrice = th.showPrice !== false, showRemise = th.showRemise !== false;
+    // À l'impression (PDF client) on ne communique JAMAIS l'abandon de marge, quel que soit le toggle.
+    var showPrice = th.showPrice !== false, showRemise = (th.showRemise !== false) && !forPdf;
     var showImg = th.showImg !== false;
     var anyImg = showImg && (it.products || []).some(function (p) { return p.img; });
     var cols = (anyImg ? 1 : 0) + 3 + (showPrice ? 2 : 0) + (showRemise ? 1 : 0);

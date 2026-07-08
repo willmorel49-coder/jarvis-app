@@ -800,6 +800,61 @@
       '</div>';
   }
 
+  // ── Détail mois par mois × catégorie (CA net réel, WML Intégral) ──
+  function monthlyByCat(sales) {
+    var bIdx = benchIndex(), by = {};
+    sales.forEach(function (s) {
+      if (!s.month || !s.year) return;
+      var mk = s.year * 12 + (s.month - 1);
+      var cip = String(s.artCode || '');
+      var b = cip ? bIdx.get(cip) : null;
+      var cat = (b ? classify(b, cip) : null) || 'other';
+      if (!by[mk]) by[mk] = { mk: mk, year: s.year, month: s.month, total: 0, byCat: {} };
+      by[mk].byCat[cat] = (by[mk].byCat[cat] || 0) + (s.mntNetHt || 0);
+      by[mk].total += s.mntNetHt || 0;
+    });
+    return Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return a.mk - b.mk; });
+  }
+
+  function monthCatSection(sales) {
+    var months = monthlyByCat(sales);
+    if (!months.length) return '';
+    var catTot = {}, othTot = 0;
+    months.forEach(function (m) {
+      Object.keys(m.byCat).forEach(function (c) {
+        if (c === 'other') othTot += m.byCat[c]; else catTot[c] = (catTot[c] || 0) + m.byCat[c];
+      });
+    });
+    var rowsCats = CATS.filter(function (c) { return (catTot[c.key] || 0) > 0; });
+    if (!rowsCats.length && othTot <= 0) return '';
+    var open = sectionOpen('monthcat');
+    var head = sectionHead('Détail mois par mois — par catégorie', 'le CA net réparti par tranche et par mois', 'monthcat', open);
+    if (!open) return '<div class="ph-section ph-mcat">' + head + '</div>';
+
+    function rowHtml(label, color, key) {
+      var vals = months.map(function (m) { return m.byCat[key] || 0; });
+      var maxv = vals.reduce(function (a, b) { return Math.max(a, b); }, 0);
+      var tot = (key === 'other') ? othTot : (catTot[key] || 0);
+      var cells = vals.map(function (v) {
+        var bg = (v > 0 && maxv > 0) ? ' style="background:color-mix(in srgb,' + color + ' ' + Math.max(9, Math.round(v / maxv * 46)) + '%,transparent)"' : '';
+        return '<td class="ph-mcat-c mono"' + bg + '>' + (v > 0 ? V2.fmtK(v) : '<span class="ph-mcat-z">·</span>') + '</td>';
+      }).join('');
+      return '<tr><th class="ph-mcat-rh"><span class="ph-mcat-dot" style="background:' + color + '"></span>' + esc(label) + '</th>' +
+        cells + '<td class="ph-mcat-tot mono">' + V2.fmtK(tot) + '</td></tr>';
+    }
+    var body = rowsCats.map(function (c) { return rowHtml(c.label, c.color, c.key); }).join('');
+    if (othTot > 0) body += rowHtml('Hors catégories', '#9AA1B2', 'other');
+    var grand = months.reduce(function (a, m) { return a + m.total; }, 0);
+    body += '<tr class="ph-mcat-trow"><th class="ph-mcat-rh">Total</th>' +
+      months.map(function (m) { return '<td class="ph-mcat-c mono">' + V2.fmtK(m.total) + '</td>'; }).join('') +
+      '<td class="ph-mcat-tot mono">' + V2.fmtK(grand) + '</td></tr>';
+    var thMonths = months.map(function (m) { return '<th class="ph-mcat-mth">' + MN_SHORT[m.month - 1] + '</th>'; }).join('');
+    return '<div class="ph-section ph-mcat">' + head +
+      '<div class="ph-mcat-wrap"><table class="ph-mcat-table">' +
+        '<thead><tr><th class="ph-mcat-rh ph-mcat-corner">Catégorie</th>' + thMonths + '<th class="ph-mcat-tot">Total</th></tr></thead>' +
+        '<tbody>' + body + '</tbody></table></div></div>';
+  }
+
   function activitySection(sales, marge, ca) {
     // 1. CA par mois — LE graphe, visible dès l'arrivée (plus de repli).
     // Présentation « Launcher » : carte calme, mois record en accent, repères
@@ -980,7 +1035,7 @@
     // Demande Will : le graphe CA et les stats apparaissent proprement à l'ouverture.
     // Le Top 5 par catégorie reste en secondaire, replié à un clic.
     var dash = activitySection(sales, marge, ca);
-    var stats = '<div class="ph-stats">' + topByCatSection(sales) + '</div>';
+    var stats = '<div class="ph-stats">' + topByCatSection(sales) + monthCatSection(sales) + '</div>';
 
     // ── Deux propositions de liste d'achats (PDF) ──
     var canShare = !!(V2.canShareFiles && V2.canShareFiles());
@@ -2439,6 +2494,20 @@
       '.ph-tr-bar{height:4px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:6px}',
       '.ph-tr-bar span{display:block;height:100%;border-radius:999px}',
       // ── Top 5 par catégorie ──
+      // ── Détail mois par mois × catégorie (heatmap calme) ──
+      '.ph-mcat{margin-top:var(--section-gap,20px)}',
+      '.ph-mcat-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card)}',
+      '.ph-mcat-table{border-collapse:collapse;width:100%;font-size:12.5px}',
+      '.ph-mcat-table th,.ph-mcat-table td{padding:7px 11px;white-space:nowrap;border-bottom:1px solid var(--line-2,var(--line))}',
+      '.ph-mcat-table tbody tr:last-child td,.ph-mcat-table tbody tr:last-child th{border-bottom:none}',
+      '.ph-mcat-corner{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}',
+      '.ph-mcat-mth{text-align:right;font-size:11px;font-weight:700;color:var(--muted);text-transform:capitalize}',
+      '.ph-mcat-rh{text-align:left;font-weight:600;color:var(--ip-ink);position:sticky;left:0;background:var(--card);z-index:1}',
+      '.ph-mcat-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}',
+      '.ph-mcat-c{text-align:right;font-variant-numeric:tabular-nums;color:var(--ip-ink);font-weight:600}',
+      '.ph-mcat-z{color:var(--muted-2)}',
+      '.ph-mcat-tot{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:var(--ip-blue);background:var(--card-2)}',
+      '.ph-mcat-trow th,.ph-mcat-trow td{font-weight:800;background:var(--card-2);color:var(--ip-ink);border-top:1px solid var(--line)}',
       '.ph-top-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}',
       '.ph-top-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden}',
       '.ph-top-head{display:flex;align-items:center;gap:9px;padding:12px 15px;border-bottom:1px solid var(--line)}',
