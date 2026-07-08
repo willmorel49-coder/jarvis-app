@@ -1108,6 +1108,7 @@
       props +
       listing +
       stats +
+      (V2.profil ? V2.profil.section('client', pid) : '') +
       (V2.notes ? V2.notes.section('client', pid) : '');
     var auditTab = (V2.audit && window.WML_SALES && window.PROD_STATS)
       ? '<div id="aud">' + V2.audit.sheetFor(pid) + V2.audit.importSection() + '</div>' : '';
@@ -1124,6 +1125,7 @@
         '<div id="phft-c-apercu">' + apercu + '</div>' +
         (auditTab ? '<div id="phft-c-audit" style="display:none">' + auditTab + '</div>' : '') +
       '</div>';
+    if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
   }
 
@@ -1713,12 +1715,14 @@
         '<button class="v2-back" style="margin-bottom:16px" onclick="V2.pharmaGroupBack()">' + ICO('back', 16) + 'Tous les groupements</button>' +
         hero +
         membersCard +
+        (V2.profil ? V2.profil.section('groupement', grpName) : '') +
         (V2.notes ? V2.notes.section('groupement', grpName) : '') +
         sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies qui les commandent (Sortie)') +
         prodToolbar(data.ovKey) +
         catsHtml +
       '</div>' +
       pharmaCartbar();
+    if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
 
     refreshCartbar();
