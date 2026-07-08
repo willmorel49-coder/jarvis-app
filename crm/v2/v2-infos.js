@@ -18,6 +18,26 @@
   function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
   var DATA = null, LOADED = false, FAILED = false;
+
+  // Préférences d'affichage : ce que l'utilisateur veut voir le matin (mémorisé localement).
+  var PREF_KEY = 'jarvis_infos_prefs_v1';
+  function loadPrefs() {
+    var d = { officine: 1, opps: 1, ruptures: 1, rappels: 1 };
+    try {
+      var p = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
+      for (var k in d) if (p[k] === 0) d[k] = 0;
+    } catch (e) {}
+    return d;
+  }
+  var PREFS = loadPrefs();
+  V2.infosPrefToggle = function (k) {
+    if (!(k in PREFS)) return;
+    PREFS[k] = PREFS[k] ? 0 : 1;
+    try { localStorage.setItem(PREF_KEY, JSON.stringify(PREFS)); } catch (e) {}
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  var CHECK_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
   function load(cb) {
     if (LOADED || FAILED) { cb(); return; }
     var day = ''; try { day = new Date().toISOString().slice(0, 10); } catch (e) {}
@@ -127,23 +147,48 @@
             '<p class="inf-lede">' + lede + '</p>' +
           '</div>';
 
-      // ════════ L'ESSENTIEL : compteurs calmes en une ligne ════════
+      // ════════ L'ESSENTIEL = les filtres : chaque carte affiche/masque sa rubrique (mémorisé) ════════
+      // Ordre : Actu officine EN AVANT, puis Opportunités, Ruptures, Rappels.
       var stats = [];
-      if (rtot) stats.push({ n: rtot, l: (rtot > 1 ? 'ruptures ou tensions' : 'rupture ou tension'), a: 'rose', ico: 'alert' });
-      if (rappels.length) stats.push({ n: rappels.length, l: (rappels.length > 1 ? 'produits rappelés' : 'produit rappelé'), a: 'amber', ico: 'alert' });
-      if (actu.length) stats.push({ n: actu.length, l: (actu.length > 1 ? 'actus officine' : 'actu officine'), a: 'blue', ico: 'list' });
-      if (opps.length) stats.push({ n: opps.length, l: (opps.length > 1 ? 'opportunités Intégral' : 'opportunité Intégral'), a: 'green', ico: 'spark' });
+      if (actu.length) stats.push({ key: 'officine', n: actu.length, l: (actu.length > 1 ? 'actus officine' : 'actu officine'), a: 'blue', ico: 'list' });
+      if (opps.length) stats.push({ key: 'opps', n: opps.length, l: (opps.length > 1 ? 'opportunités Intégral' : 'opportunité Intégral'), a: 'green', ico: 'spark' });
+      if (rtot) stats.push({ key: 'ruptures', n: rtot, l: (rtot > 1 ? 'ruptures ou tensions' : 'rupture ou tension'), a: 'rose', ico: 'alert' });
+      if (rappels.length) stats.push({ key: 'rappels', n: rappels.length, l: (rappels.length > 1 ? 'produits rappelés' : 'produit rappelé'), a: 'amber', ico: 'alert' });
       if (stats.length) {
+        html += '<div class="inf-pick-h">Ce que je veux voir ce matin<span>touche une carte pour l’afficher ou la masquer</span></div>';
         html += '<div class="inf-stats">' + stats.map(function (s) {
-          return '<div class="inf-stat a-' + s.a + '"><span class="ic">' + ICO(s.ico, 17, 2) + '</span>' +
-            '<span class="v"><b data-count="' + s.n + '">' + s.n + '</b><span>' + s.l + '</span></span></div>';
+          var on = PREFS[s.key] !== 0;
+          return '<button type="button" class="inf-stat a-' + s.a + (on ? '' : ' off') + '" aria-pressed="' + on + '" ' +
+            'title="' + (on ? 'Masquer' : 'Afficher') + '" onclick="V2.infosPrefToggle(\'' + s.key + '\')">' +
+            '<span class="ic">' + ICO(s.ico, 17, 2) + '</span>' +
+            '<span class="v"><b data-count="' + s.n + '">' + s.n + '</b><span>' + s.l + '</span></span>' +
+            '<span class="tg">' + CHECK_SVG + '</span>' +
+          '</button>';
         }).join('') + '</div>';
       }
       if (recap && recap.une) {
         html += '<div class="inf-une"><span class="tag">À la une</span><span>' + esc(recap.une) + '</span></div>';
       }
 
-      // ════════ SECTION 1 · OPPORTUNITÉS INTÉGRAL (l'important d'abord) ════════
+      // ════════ ACTU OFFICINE (mise en avant, regroupée par rubrique) ════════
+      var secActu = '';
+      if (actu.length) {
+        var actuSorted = actu.slice().sort(function (a, b) { return (b.today ? 1 : 0) - (a.today ? 1 : 0); });
+        var aRows = actuSorted.slice(0, 12).map(function (i) {
+          var rb = rubricOf(i);
+          return '<a class="inf-row"' + (i.url ? ' href="' + esc(i.url) + '" target="_blank" rel="noopener"' : '') + '>' +
+            '<span class="row-em">' + (RUBR_EM[rb] || '📰') + '</span>' +
+            '<span class="row-body"><b>' + esc(i.titre) + '</b>' +
+              '<span>' + esc(i.source || RUBR_LB[rb] || 'Actu') + '</span></span>' +
+            (i.url ? '<span class="row-ext">' + ICO('chev', 15, 2) + '</span>' : '') + '</a>';
+        }).join('');
+        secActu = section('list', 'blue', 'Actu officine',
+          'Économie, génériques, sécurité, métier — l\'essentiel de la presse pro.',
+          '<div class="inf-list">' + aRows + '</div>');
+      }
+
+      // ════════ OPPORTUNITÉS INTÉGRAL ════════
+      var secOpps = '';
       if (opps.length) {
         var oppRows = opps.slice(0, 6).map(function (o) {
           var a = o.alt[0];
@@ -163,12 +208,13 @@
             '<span class="opp-cta">Voir la fiche produit ' + ICO('chev', 15, 2.4) + '</span>' +
           '</a>';
         }).join('');
-        html += section('spark', 'green', 'Opportunités Intégral',
+        secOpps = section('spark', 'green', 'Opportunités Intégral',
           'Molécule en tension = vente à sécuriser. Pour chacune, l\'alternative référencée Intégral.',
           '<div class="inf-opps">' + oppRows + '</div>');
       }
 
-      // ════════ SECTION 2 · RUPTURES & TENSIONS ════════
+      // ════════ RUPTURES & TENSIONS ════════
+      var secRupt = '';
       if (rsrc.length) {
         var rRows = rsrc.slice(0, 14).map(function (r) {
           var ty = statutType(r.statut);
@@ -182,11 +228,12 @@
             (r.url ? '<span class="row-ext">' + ICO('chev', 15, 2) + '</span>' : '') + '</a>';
         }).join('');
         var rSub = 'Surveillance ANSM.' + (rsrc.length > 14 ? ' Les ' + Math.min(rsrc.length, 14) + ' dernières alertes.' : '');
-        html += section('alert', 'rose', 'Ruptures & tensions', rSub,
+        secRupt = section('alert', 'rose', 'Ruptures & tensions', rSub,
           '<div class="inf-list">' + rRows + '</div>');
       }
 
-      // ════════ SECTION 3 · RAPPELS PARAPHARMA ════════
+      // ════════ RAPPELS PARAPHARMA ════════
+      var secRappels = '';
       if (rappels.length) {
         var rapRows = rappels.slice(0, 8).map(function (r) {
           return '<a class="inf-row"' + (r.url ? ' href="' + esc(r.url) + '" target="_blank" rel="noopener"' : '') + '>' +
@@ -195,26 +242,21 @@
               '<span>' + [r.marque ? esc(r.marque) : '', r.risque ? esc(r.risque) : ''].filter(Boolean).join(' · ') + '</span></span>' +
             (r.url ? '<span class="row-ext">' + ICO('chev', 15, 2) + '</span>' : '') + '</a>';
         }).join('');
-        html += section('alert', 'amber', 'Rappels parapharma',
+        secRappels = section('alert', 'amber', 'Rappels parapharma',
           'RappelConso — à retirer des rayons et signaler aux patients.',
           '<div class="inf-list">' + rapRows + '</div>');
       }
 
-      // ════════ SECTION 4 · ACTU MÉTIER (regroupée par rubrique) ════════
-      if (actu.length) {
-        var actuSorted = actu.slice().sort(function (a, b) { return (b.today ? 1 : 0) - (a.today ? 1 : 0); });
-        var aRows = actuSorted.slice(0, 10).map(function (i) {
-          var rb = rubricOf(i);
-          return '<a class="inf-row"' + (i.url ? ' href="' + esc(i.url) + '" target="_blank" rel="noopener"' : '') + '>' +
-            '<span class="row-em">' + (RUBR_EM[rb] || '📰') + '</span>' +
-            '<span class="row-body"><b>' + esc(i.titre) + '</b>' +
-              '<span>' + esc(i.source || RUBR_LB[rb] || 'Actu') + '</span></span>' +
-            (i.url ? '<span class="row-ext">' + ICO('chev', 15, 2) + '</span>' : '') + '</a>';
-        }).join('');
-        html += section('list', 'blue', 'Actu officine',
-          'Économie, génériques, sécurité, métier — l\'essentiel de la presse pro.',
-          '<div class="inf-list">' + aRows + '</div>');
+      // ── Assemblage selon les préférences (officine en avant) ──
+      var body = '';
+      if (PREFS.officine) body += secActu;
+      if (PREFS.opps) body += secOpps;
+      if (PREFS.ruptures) body += secRupt;
+      if (PREFS.rappels) body += secRappels;
+      if (!body) {
+        body = '<div class="inf-allhidden">Tout est masqué. Touche une carte ci-dessus pour réafficher une rubrique.</div>';
       }
+      html += body;
 
       html += '</div>';
       root.innerHTML = html;
@@ -280,6 +322,19 @@
       '.inf2 .inf-stat .v{display:flex;flex-direction:column;line-height:1.15;min-width:0}',
       '.inf2 .inf-stat .v b{font-size:22px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}',
       '.inf2 .inf-stat .v span{font-size:12.5px;color:var(--muted);font-weight:500}',
+      // ── Cartes "L'essentiel" transformées en filtres cliquables ──
+      '.inf2 .inf-pick-h{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;font-size:13px;font-weight:700;color:var(--ip-ink);margin:2px 0 11px;letter-spacing:-.01em}',
+      '.inf2 .inf-pick-h span{font-size:12px;font-weight:500;color:var(--muted)}',
+      '.inf2 button.inf-stat{cursor:pointer;width:100%;text-align:left;font:inherit;position:relative;-webkit-appearance:none;appearance:none;transition:transform .2s var(--mo-ease-soft),box-shadow .2s var(--mo-ease-soft),opacity .2s}',
+      '.inf2 button.inf-stat:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
+      '.inf2 button.inf-stat:focus-visible{outline:2px solid var(--acc);outline-offset:2px}',
+      '.inf2 .inf-stat .v{padding-right:22px}',
+      '.inf2 .inf-stat .tg{position:absolute;top:9px;right:9px;width:19px;height:19px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--acc);color:#fff;border:1.5px solid var(--acc);transition:background .18s,border-color .18s,color .18s}',
+      '.inf2 .inf-stat.off{opacity:.6}',
+      '.inf2 .inf-stat.off .tg{background:transparent;border-color:var(--line-strong);color:transparent}',
+      '.inf2 .inf-stat.off .ic{background:var(--card-2);color:var(--muted-2)}',
+      '.inf2 .inf-stat.off .v b{color:var(--muted)}',
+      '.inf2 .inf-allhidden{padding:28px 20px;text-align:center;color:var(--muted);font-size:14px;line-height:1.5;background:var(--card-2);border:1px dashed var(--line-strong);border-radius:var(--r-md)}',
       // À la une
       '.inf2 .inf-une{display:flex;align-items:flex-start;gap:11px;padding:14px 16px;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);font-size:14px;font-weight:500;line-height:1.4;margin-bottom:var(--sp-7)}',
       '.inf2 .inf-une .tag{flex:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 10%,var(--card));padding:4px 9px;border-radius:var(--r-pill)}',
