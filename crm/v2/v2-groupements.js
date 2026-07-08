@@ -432,9 +432,12 @@
   V2.grpGo = function (v) { view = v; V2.go('groupements'); };
   function tabs() { return V2.grpSpaceTabs(view === 'grossistes' ? 'grossistes' : 'carte'); }
 
+  // Fusionné dans le Copilote : « Groupements » ouvre désormais la carte unique
+  // (le Copilote a le mode Couleur=Groupement + filtre groupement + CA + tournées).
   V2.pages.groupements = {
     render: function (root) {
-      renderGrpCarte(root);   // carte de France native : tous les groupements, légende à cocher
+      if (V2.pages.carte) { V2.pages.carte.render(root); return; }
+      renderGrpCarte(root);
     }
   };
 

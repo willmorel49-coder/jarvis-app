@@ -715,10 +715,7 @@
         // App JARVIS : espace Marketing de Pauline & Will (supports + sélections à pousser)
         P.splice(2, 0, { k: 'marketing', cls: 'p6', accent: '#E0556E', ico: 'spark', tag: 'Pauline & Will', t: 'Marketing', d: 'Fabriquez vos supports (flyers produits avec photos et prix) et vos sélections à pousser aux pharmacies. À deux, au même endroit.', go: 'Ouvrir le marketing' });
       }
-      // Espace Groupements : cartographie + grossistes + onglet « Opportunités groupements » (génération PDF)
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) {
-        P.push({ k: 'groupements', cls: 'p7', accent: '#0034A0', ico: 'grid', tag: 'Carte + listes', t: 'Groupements', d: 'La cartographie de prospection, les grossistes, et les opportunités par groupement (liste d\'achats à pousser en PDF) — réunis en onglets.', go: 'Ouvrir les groupements' });
-      }
+      // Groupements : fusionné dans le Copilote (carte unique + outils terrain). Plus de carte séparée.
       // Mode prospection : pitch à montrer au comptoir
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) {
         P.push({ k: 'presentation', cls: 'p1', accent: 'var(--c-opp)', ico: 'pharma', tag: 'Prospect', t: 'Présentation Intégral Pharma', d: 'Le pitch à montrer au comptoir : qui est Intégral Pharma et comment travailler avec nous. Pour convaincre un prospect en 2 minutes.', go: 'Lancer la présentation' });
@@ -824,7 +821,6 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(3, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) PAGES.push(['audit', 'Audit Marge (par pharmacie)', 'pilo']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) PAGES.push(['presentation', 'Présentation Intégral Pharma', 'pharma']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.groupements) PAGES.push(['groupements', 'Groupements (carte)', 'grid']);
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
     // Pharmacies
     (V2.pharmacies || []).forEach(function (p) {
