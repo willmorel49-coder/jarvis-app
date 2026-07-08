@@ -42,19 +42,24 @@ def load_cache():
 
 
 def wml_commercials():
-    """ID officine (CRM) -> commercial. Nos clients réseau, comme la carte secteur."""
+    """ID officine (CRM) -> commercial + CA. Nos clients réseau, comme la carte secteur."""
     path = os.path.join(ROOT, 'crm', 'v2', 'wml-officines-data.js')
-    out = {}
+    comm, ca = {}, {}
     try:
         txt = open(path, encoding='utf-8').read()
     except Exception:
-        return out
+        return comm, ca
     for obj in re.findall(r'\{[^{}]*\}', txt):
         mid = re.search(r'"id":"?([\w-]+)"?', obj)
+        if not mid:
+            continue
         mc = re.search(r'"comms":\[\s*"([^"]+)"', obj)
-        if mid and mc:
-            out[mid.group(1)] = mc.group(1)
-    return out
+        mca = re.search(r'"ca":(\d+)', obj)
+        if mc:
+            comm[mid.group(1)] = mc.group(1)
+        if mca:
+            ca[mid.group(1)] = int(mca.group(1))
+    return comm, ca
 
 
 def ban_bulk(rows):
@@ -102,10 +107,10 @@ def main():
     ci = {k: ix.get(k) for k in ('ID', 'Etablissement', 'Titulaire', 'CP', 'Ville', 'UGA',
                                  'SEGMENTATION', 'Groupement', 'Téléphone', 'Email', 'Statut')}
 
-    comm_by_id = wml_commercials()   # ID officine -> commercial (nos clients réseau)
+    comm_by_id, ca_by_id = wml_commercials()   # ID officine -> commercial + CA (nos clients réseau)
     SEG_MAP = {'clients a': 'Client A', 'clients b': 'Client B', 'clients c': 'Client C', 'prospects': 'Prospect'}
 
-    pharmas = []          # (name, tit, ville, cp, uga, grp, seg, tel, mail, comm)
+    pharmas = []          # (name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca)
     need = {}             # (ville,cp) -> None
     for r in it:
         if str(r[ci['Statut']] or '').strip().lower() == 'supprimée':
@@ -124,8 +129,10 @@ def main():
         seg = SEG_MAP.get(str(r[ci['SEGMENTATION']] or '').strip().lower(), 'Non défini')
         tel = str(r[ci['Téléphone']] or '').strip()
         mail = str(r[ci['Email']] or '').strip()
-        comm = comm_by_id.get(str(r[ci['ID']] or '').strip(), '')
-        pharmas.append((name, tit, ville, cp, uga, grp, seg, tel, mail, comm))
+        _id = str(r[ci['ID']] or '').strip()
+        comm = comm_by_id.get(_id, '')
+        ca = ca_by_id.get(_id, 0)
+        pharmas.append((name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca))
         need[(ville, cp)] = None
     wb.close()
     print('Pharmacies (hors Corse) :', len(pharmas), '| communes uniques :', len(need))
@@ -157,7 +164,7 @@ def main():
     ugas, grps, segs, comms = {}, {}, {}, {'': 0}   # comm index 0 = pas notre client
     P = []
     dropped = 0
-    for (name, tit, ville, cp, uga, grp, seg, tel, mail, comm) in pharmas:
+    for (name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca) in pharmas:
         c = coords.get((ville, cp))
         if not c:
             dropped += 1
@@ -175,7 +182,7 @@ def main():
         gi = grps.setdefault(grp, len(grps))
         si = segs.setdefault(seg, len(segs))
         ki = comms.setdefault(comm, len(comms))
-        P.append([lat, lng, ui, gi, si, ki, name[:40], ville[:22], cp, tel[:18], tit[:34], mail[:44]])
+        P.append([lat, lng, ui, gi, si, ki, name[:40], ville[:22], cp, tel[:18], tit[:34], mail[:44], ca or 0])
 
     inv = lambda d: [k for k, _ in sorted(d.items(), key=lambda x: x[1])]
     nClients = sum(1 for p in P if segs and inv(segs)[p[4]].startswith('Client'))
@@ -187,7 +194,7 @@ def main():
     with open(OUT, 'w', encoding='utf-8') as fh:
         fh.write('// Copilote — carte nationale pharmacies (hors Corse) : UGA, groupement,\n')
         fh.write('// segmentation client/prospect, commercial réseau. build_pharma_fr.py.\n')
-        fh.write('// Chaque point: [lat,lng,ugaIdx,grpIdx,segIdx,commIdx,nom,ville,cp,tel,titulaire,email]\n')
+        fh.write('// Chaque point: [lat,lng,ugaIdx,grpIdx,segIdx,commIdx,nom,ville,cp,tel,titulaire,email,ca]\n')
         fh.write('window.PHARMA_FR=' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
     print('OK ->', OUT, '(%.1f Mo, %d pts, %d clients, %d UGA, %d comm, %d dropped)'
           % (os.path.getsize(OUT) / 1048576.0, len(P), nClients, len(ugas), len(comms) - 1, dropped))
