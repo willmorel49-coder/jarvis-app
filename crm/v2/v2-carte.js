@@ -526,7 +526,9 @@
     var commOpts = '<option value="">Tous les commerciaux</option>' +
       D.comm.slice(1).map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
     var grpOpts = '<option value="">Tous les groupements</option>' +
-      D.grp.map(function (g) { return (g === '—') ? '' : '<option>' + esc(g) + '</option>'; }).join('');
+      D.grp.filter(function (g) { return g && g !== '—'; })
+        .sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); })
+        .map(function (g) { return '<option>' + esc(g) + '</option>'; }).join('');
     root.querySelector('#cn-comm').innerHTML = commOpts;
     root.querySelector('#cn-grpsel').innerHTML = grpOpts;
     root.querySelector('#carte-legend').innerHTML = legendHtml();
