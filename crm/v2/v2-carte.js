@@ -12,7 +12,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260708j';
+  var CB = '?v=20260708l';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
   var depotLayer = null;         // marqueurs des établissements Intégral
@@ -511,6 +511,9 @@
       '.cn-search{font:inherit;font-size:13px;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:var(--r-control,10px);padding:7px 11px;min-width:220px}',
       '.cn-listbtn{font:inherit;font-size:13px;font-weight:700;color:var(--ip-blue,#0057FF);background:var(--card);border:1px solid var(--line);border-radius:var(--r-control,10px);padding:7px 13px;cursor:pointer}',
       '.cn-listbtn:hover{border-color:var(--ip-blue,#0057FF)}',
+      '.cn-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 16px;border-bottom:1px solid var(--line);background:var(--card)}',
+      '.cn-tools button{font:inherit;font-size:12px;font-weight:700;color:var(--ip-ink);background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}',
+      '.cn-tools button:hover{border-color:var(--ip-blue,#0057FF);color:var(--ip-blue,#0057FF)}',
       '.cn-listdlg{max-width:520px}',
       '.cn-lrow{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line)}',
       '.cn-lmain{flex:1;min-width:0;cursor:pointer}',
@@ -573,6 +576,12 @@
               '<select id="cn-grpsel" class="cn-sel" onchange="V2.carteGrp(this.value)"></select></div>' +
           '</div>' +
           '<div class="cn-legend" id="carte-legend"></div>' +
+          '<div class="cn-tools"><span class="cn-lbl">Outils terrain</span>' +
+            '<button onclick="V2.carteTourOpen()">Ma tournée</button>' +
+            '<button onclick="V2.go(\'pharma\',\'groupements\')">Listes d\'achats groupements</button>' +
+            '<button onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
+            '<button onclick="V2.go(\'sagitta\')">Sagitta (répartiteur)</button>' +
+          '</div>' +
           '<div class="cn-maparea"><div id="carte-map"></div>' +
             '<div class="cn-tourbar" id="cn-tourbar"><b id="cn-tourbar-n">0 pharmacie</b>' +
               '<button onclick="V2.carteTourOpen()">Voir / organiser</button></div>' +
