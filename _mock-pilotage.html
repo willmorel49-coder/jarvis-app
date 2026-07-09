@@ -1,0 +1,173 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pilotage — 5 directions</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,'Segoe UI',Inter,system-ui,sans-serif;background:#e9edf3;color:#10131C;padding:26px;-webkit-font-smoothing:antialiased}
+  .mono{font-family:'Geist Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+  .dir-head{display:flex;align-items:baseline;gap:12px;margin:6px 2px -6px}
+  .dir-head b{font-size:15px;font-weight:800;letter-spacing:-.02em}
+  .dir-head span{font-size:12.5px;color:#6b7280}
+  .num{font-variant-numeric:tabular-nums}
+  /* ---- structure commune d'une slice dashboard ---- */
+  .slice{border-radius:18px;padding:26px 28px;overflow:hidden}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+  .kpi{padding:15px 16px;border-radius:13px}
+  .kpi-l{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:#8A91A4}
+  .kpi-v{font-size:23px;font-weight:700;letter-spacing:-.03em;margin-top:6px;font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums}
+  .kpi-v small{font-size:11px;font-weight:600;color:#8A91A4}
+  .kpi-d{font-size:11.5px;font-weight:700;margin-top:6px}
+  .chart-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+  .chart-h b{font-size:14px;font-weight:800;letter-spacing:-.01em}
+  .chart-h span{font-size:11px;color:#8A91A4;font-family:'Geist Mono',monospace}
+  .chart{position:relative;display:flex;align-items:flex-end;gap:6px;height:170px;padding-top:20px}
+  .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
+  .bar .v{font-size:10px;font-weight:700;color:#8A91A4;margin-bottom:4px;font-family:'Geist Mono',monospace}
+  .bar .d{font-size:8.5px;font-weight:800;margin-bottom:2px;font-family:'Geist Mono',monospace}
+  .bar .d.up{color:#0F7A52}.bar .d.dn{color:#C7283D}
+  .bar .track{width:100%;max-width:38px;border-radius:6px 6px 0 0;position:relative;overflow:hidden}
+  .bar .fill{position:absolute;left:0;right:0;bottom:0;border-radius:6px 6px 0 0}
+  .bar .lbl{font-size:10px;color:#8A91A4;margin-top:7px;font-weight:600}
+
+  /* ===================== DIR 1 · COLD LEDGER ===================== */
+  .d1{background:#fff;border:1px solid rgba(16,19,28,.08)}
+  .d1 .kpi{background:#fff;border:1px solid rgba(16,19,28,.07);box-shadow:0 1px 2px rgba(16,19,28,.04)}
+  .d1 .kpi-v{color:#10131C}
+  .d1 .kpi-d.up{color:#0F7A52;background:rgba(15,122,82,.1);padding:2px 8px;border-radius:7px;display:inline-block}
+  .d1 .kpi-d.dn{color:#C7283D;background:rgba(199,40,61,.1);padding:2px 8px;border-radius:7px;display:inline-block}
+  .d1 .kdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+  .d1 .chart{background:repeating-linear-gradient(to top,rgba(16,19,28,.05) 0 1px,transparent 1px 42px)}
+  .d1 .track{max-width:32px}
+  .d1 .avg{position:absolute;left:0;right:0;border-top:1px dashed #9AA1B2;height:0}
+  .d1 .avg span{position:absolute;right:0;top:-16px;font-size:9px;color:#737A8C;font-family:'Geist Mono',monospace;background:#fff;padding:0 4px}
+
+  /* ===================== DIR 2 · EDITORIAL ===================== */
+  .d2{background:#FBFAF7;border:1px solid #EAE6DE}
+  .d2 .hero{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid #10131C;padding-bottom:16px;margin-bottom:8px}
+  .d2 .hero .big{font-size:58px;font-weight:800;letter-spacing:-.04em;line-height:.9;font-family:'Geist Mono',monospace}
+  .d2 .rule{height:4px;width:64px;background:#B85C1E;margin:14px 0 20px}
+  .d2 .hero .idx{text-align:right}
+  .d2 .hero .idx .u{font-size:16px;font-weight:800;color:#0F7A52;font-family:'Geist Mono',monospace}
+  .d2 .hero .idx .k{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#8a8578;font-weight:700}
+  .d2 .kpis{grid-template-columns:repeat(4,1fr)}
+  .d2 .kpi{background:transparent;border-left:2px solid #EAE6DE;border-radius:0;padding:2px 0 2px 14px}
+  .d2 .kpi-v{font-size:20px}
+  .d2 .kpi-d.up{color:#0F7A52}.d2 .kpi-d.dn{color:#B85C1E}
+  .d2 .track{max-width:30px;border-radius:0}
+  .d2 .fill{border-radius:0;background:#D8D2C6!important}
+  .d2 .bar.rec .fill{background:#B85C1E!important}
+  .d2 .bar.rec .v{color:#B85C1E}
+
+  /* ===================== DIR 3 · POULS ===================== */
+  .d3{background:#fff;border:1px solid #E7ECF3}
+  .d3 .hero{position:relative;border-radius:14px;padding:20px 22px;margin-bottom:18px;background:radial-gradient(120% 140% at 15% 0%,rgba(0,80,230,.1),rgba(0,80,230,0) 60%),#fff;border:1px solid #E7ECF3;box-shadow:0 6px 22px rgba(0,80,230,.07)}
+  .d3 .hero .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#8A91A4;font-weight:700}
+  .d3 .hero .big{font-size:44px;font-weight:800;letter-spacing:-.035em;font-family:'Geist Mono',monospace;margin-top:2px}
+  .d3 .hero .dl{color:#0F7A52;font-weight:800;font-size:13px;margin-top:4px}
+  .d3 .kpi{background:#F7F9FC;border:1px solid #EAEFF6;box-shadow:0 2px 6px rgba(16,19,28,.05)}
+  .d3 .kpi-d.up{color:#0F7A52}.d3 .kpi-d.dn{color:#C7283D}
+  .d3 .fill{background:linear-gradient(180deg,#3B82F6,#0050E6)!important}
+  .d3 .bar.rec .fill{background:linear-gradient(180deg,#0050E6,#0034A0)!important}
+  .d3 .traj{position:absolute;inset:20px 0 24px;pointer-events:none;overflow:visible}
+  .d3 .ping{position:absolute;width:12px;height:12px;border-radius:50%;background:#0050E6;box-shadow:0 0 0 6px rgba(0,80,230,.18)}
+
+  /* ===================== DIR 4 · DARK COCKPIT ===================== */
+  .d4{background:linear-gradient(180deg,#0d1017,#0a0c11);border:1px solid rgba(255,255,255,.07);color:#E9ECF3}
+  .d4 .kpi{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+  .d4 .kpi-l{color:#8A93A6}
+  .d4 .kpi-v{color:#F3F5FA}
+  .d4 .kpi-d.up{color:#34D399}.d4 .kpi-d.dn{color:#FB7185}
+  .d4 .chart-h b{color:#F3F5FA}
+  .d4 .chart{background:repeating-linear-gradient(to top,rgba(255,255,255,.05) 0 1px,transparent 1px 42px)}
+  .d4 .fill{background:linear-gradient(180deg,#38BDF8,#2563EB)!important;box-shadow:0 0 14px rgba(56,189,248,.35)}
+  .d4 .bar.rec .fill{background:linear-gradient(180deg,#22D3EE,#0EA5E9)!important;box-shadow:0 0 20px rgba(34,211,238,.5)}
+  .d4 .bar .v,.d4 .bar .lbl{color:#8A93A6}
+  .d4 .bar.cur .lbl{color:#38BDF8;font-weight:800}
+  .d4 .bar .d.up{color:#34D399}.d4 .bar .d.dn{color:#FB7185}
+
+  /* ===================== DIR 5 · WARM MINIMAL ===================== */
+  .d5{background:#FFFDFB;border:1px solid #F0EAE4}
+  .d5 .kpi{background:#fff;border:1px solid #F1EBE4;border-radius:16px;box-shadow:0 3px 12px rgba(120,90,40,.06)}
+  .d5 .kpi-l{color:#A6957F}
+  .d5 .kpi-v{color:#2A2622}
+  .d5 .kpi-d.up{color:#0F7A52}.d5 .kpi-d.dn{color:#D06A4A}
+  .d5 .track{max-width:34px;border-radius:10px 10px 4px 4px}
+  .d5 .fill{background:#E9C9A8!important;border-radius:10px 10px 4px 4px}
+  .d5 .bar.rec .fill{background:#E08B4C!important}
+  .d5 .bar.rec .v{color:#D06A4A}
+  .d5 .chart-h b{color:#2A2622}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="dir-head"><b>Pilotage — 5 directions</b><span>même contenu (KPI + graphe 13 mois avec évolutions), 5 styles à comparer</span></div>
+
+  <div><div class="dir-head"><b>1 · Cold Ledger</b><span>SaaS premium monochrome — filets fins, un seul bleu, ligne de moyenne. (reco escouade)</span></div>
+    <div class="slice d1" id="s1"></div></div>
+
+  <div><div class="dir-head"><b>2 · Editorial — « La Une du CA »</b><span>chiffre-héros géant, filet terracotta, mise en page magazine financier</span></div>
+    <div class="slice d2" id="s2"></div></div>
+
+  <div><div class="dir-head"><b>3 · Pouls (Living Signal)</b><span>héro avec halo, barres dégradées + tracé + battement sur le mois courant</span></div>
+    <div class="slice d3" id="s3"></div></div>
+
+  <div><div class="dir-head"><b>4 · Dark Cockpit</b><span>poste de pilotage sombre, données lumineuses (néon maîtrisé)</span></div>
+    <div class="slice d4" id="s4"></div></div>
+
+  <div><div class="dir-head"><b>5 · Warm Minimal</b><span>très clair, arrondi, un accent chaud, respiration généreuse</span></div>
+    <div class="slice d5" id="s5"></div></div>
+</div>
+
+<script>
+  var DATA=[{m:'J',v:0},{m:'J',v:0},{m:'A',v:0},{m:'S',v:0},{m:'O',v:198},{m:'N',v:222},{m:'D',v:240},{m:'J',v:268},{m:'F',v:255},{m:'M',v:300},{m:'A',v:372},{m:'M',v:460,rec:true},{m:'J',v:417,cur:true}];
+  var max=460;
+  function evol(i){ if(i<1)return null; var p=DATA[i-1].v,c=DATA[i].v; if(p>0&&c>0)return Math.round((c-p)/p*100); return null; }
+  function kpis(delta){ return '<div class="kpis">'+
+    '<div class="kpi"><div class="kpi-l"><span class="kdot" style="background:#0050E6"></span>CA net HT · juin</div><div class="kpi-v">416 831 €</div><div class="kpi-d '+(delta<0?'dn':'up')+'">'+(delta<0?'▼ ':'▲ +')+Math.abs(delta)+',4 % vs mois dernier</div></div>'+
+    '<div class="kpi"><div class="kpi-l"><span class="kdot" style="background:#12A150"></span>vs moyenne</div><div class="kpi-v">318 k€<small>/mois</small></div><div class="kpi-d up">▲ +31 % vs moyenne</div></div>'+
+    '<div class="kpi"><div class="kpi-l"><span class="kdot" style="background:#F5A524"></span>Meilleur mois</div><div class="kpi-v">460 k€</div><div class="kpi-d" style="color:#8A91A4">Mai 2026</div></div>'+
+    '<div class="kpi"><div class="kpi-l"><span class="kdot" style="background:#7C3AED"></span>Pharmacies actives</div><div class="kpi-v">76<small>/630</small></div><div class="kpi-d" style="color:#8A91A4">12 % du réseau</div></div>'+
+  '</div>'; }
+  function bars(showAllD, avgLine){
+    var h='<div class="chart">';
+    if(avgLine){ var ap=Math.round(318/max*100); h+='<div class="avg" style="bottom:'+ap+'%"><span>moy. 318 k€</span></div>'; }
+    DATA.forEach(function(b,i){ var e=evol(i); var hh=b.v>0?Math.max(5,b.v/max*100):0;
+      var showd=(e!=null)&&(showAllD||b.rec||b.cur);
+      h+='<div class="bar'+(b.rec?' rec':'')+(b.cur?' cur':'')+'">'+
+        (showd?'<div class="d '+(e>=0?'up':'dn')+'">'+(e>=0?'+':'')+e+'%</div>':'')+
+        (b.v>0?'<div class="v">'+b.v+'k</div>':'<div class="v">·</div>')+
+        '<div class="track" style="height:100%"><span class="fill" style="height:'+hh+'%"></span></div>'+
+        '<div class="lbl">'+b.m+'</div></div>';
+    });
+    h+='</div>'; return h;
+  }
+  // 1 Cold Ledger : monochrome tonal + ligne moyenne
+  document.getElementById('s1').innerHTML=kpis(12)+'<div class="chart-h"><b>Évolution du CA · 13 mois</b><span>juin 2025 → juin 2026</span></div>'+bars(false,true);
+  (function(){ document.querySelectorAll('#s1 .bar').forEach(function(bar,i){ var b=DATA[i]; var hh=b.v>0?b.v/max:0; var t=Math.round(16+hh*48); var f=bar.querySelector('.fill'); if(f){ f.style.background= b.rec?'linear-gradient(180deg,#0050E6,#0034A0)':('color-mix(in srgb,#0050E6 '+t+'%, #ffffff)'); if(b.cur){f.style.background='color-mix(in srgb,#0050E6 40%,#fff)';f.style.boxShadow='inset 0 0 0 1px #0050E6';} } }); })();
+  // 2 Editorial
+  document.getElementById('s2').innerHTML=
+    '<div class="hero"><div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:#8a8578;font-weight:700">CA net HT · juin 2026</div><div class="big">416 831 €</div></div>'+
+    '<div class="idx"><div class="k">vs mois dernier</div><div class="u">▲ +12,4 %</div></div></div>'+
+    '<div class="rule"></div>'+kpis(12).replace('kpis','kpis')+'<div class="chart-h"><b>Évolution du CA · 13 mois</b><span>juin 2025 → juin 2026</span></div>'+bars(false,false);
+  // 3 Pouls
+  document.getElementById('s3').innerHTML=
+    '<div class="hero"><div class="l">CA net HT · juin 2026</div><div class="big">416 831 €</div><div class="dl">▲ +12,4 % vs mois dernier</div></div>'+
+    kpis(12)+'<div class="chart-h"><b>Évolution du CA · 13 mois</b><span>le présent bat une fois</span></div>'+bars(false,false);
+  (function(){ var ch=document.querySelector('#s3 .chart'); if(!ch)return; var cur=ch.querySelector('.bar.cur'); if(cur){ var t=cur.querySelector('.track'); var p=document.createElement('div'); p.className='ping'; p.style.left=(cur.offsetLeft+cur.offsetWidth/2-6)+'px'; p.style.bottom=(417/max*100*1.5)+'px'; ch.appendChild(p);}
+    // tracé polyline
+    var svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('class','traj'); svg.style.position='absolute'; svg.style.inset='20px 0 24px'; svg.setAttribute('width','100%'); svg.setAttribute('height','130'); svg.setAttribute('preserveAspectRatio','none');
+    var pts=DATA.map(function(b,i){ var x=(i+0.5)/DATA.length*100; var y=100-(b.v/max*100); return b.v>0?[x,y]:null;}).filter(Boolean);
+    var d=pts.map(function(p,i){return (i?'L':'M')+p[0]+' '+p[1];}).join(' ');
+    svg.innerHTML='<path d="'+d+'" fill="none" stroke="#0050E6" stroke-width="1.6" vector-effect="non-scaling-stroke" opacity=".55" stroke-linejoin="round"/>';
+    svg.setAttribute('viewBox','0 0 100 100'); ch.appendChild(svg);
+  })();
+  // 4 Dark cockpit
+  document.getElementById('s4').innerHTML=kpis(12)+'<div class="chart-h"><b>Évolution du CA · 13 mois</b><span>juin 2025 → juin 2026</span></div>'+bars(false,false);
+  // 5 Warm minimal
+  document.getElementById('s5').innerHTML=kpis(12)+'<div class="chart-h"><b>Évolution du CA · 13 mois</b><span>juin 2025 → juin 2026</span></div>'+bars(false,false);
+
+  // affichage d'une seule direction via ?d=N (pour captures propres)
+  var _d=new URLSearchParams(location.search).get('d');
+  if(_d){ var blocks=document.querySelectorAll('.wrap > div'); Array.prototype.forEach.call(blocks,function(el,i){ if(i===0)return; if(String(i)!==String(_d)) el.style.display='none'; }); }
+</script>
+</body></html>
