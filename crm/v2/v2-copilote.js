@@ -682,16 +682,17 @@
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir</button></div>';
   }
 
-  // Le Copilote devient la CARTE des tournées ; l'ancien écran marché passe en page « marche » (accessible depuis Pilotage).
-  V2.pages.copilote = { render: function (root) { if (V2.pages.carte) V2.pages.carte.render(root); else root.innerHTML = ''; } };
+  // Le Copilote EST le cerveau de la tournée (Top opportunités · ta tournée · prépare ta visite).
+  // La carte nationale reste à un clic depuis ce cerveau (bloc « Carte nationale » en tête).
+  V2.pages.copilote = { render: function (root) { V2.pages.marche.render(root); } };
   V2.pages.marche = {
     render: function (root) {
       injectCss();
       var hasData = !!(window.AMELI_AVG && window.PROD_STATS && (V2.sales || []).length);
-      var top = V2.topbar ? V2.topbar({ back: true, backTo: 'pilotage', backLabel: 'Pilotage' }) : '';
+      var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';
 
       if (!hasData) {
-        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="co-hero"><h1>Marché &amp; opportunités</h1><p>Chargement des données réseau…</p></div></div>';
+        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="co-hero"><h1>Copilote</h1><p>Chargement des données réseau…</p></div></div>';
         if (V2.loadFiles) V2.loadFiles(['bench']).then(function () { V2.render(); });
         return;
       }
