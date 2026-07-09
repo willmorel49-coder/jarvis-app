@@ -55,7 +55,6 @@
   function isPr(f) { return f === 'pr_low' || f === 'pr_mid' || f === 'pr_high'; }
   function stk(cip) { return V2.stock ? V2.stock(cip) : 0; }
   function eligible(r) { return isPr(r.f) && stk(r.c) > 0; }
-  function stockCell(cip) { var s = stk(cip); return '<td class="num mono co-stk">' + (s > 0 ? num(s) : '—') + '</td>'; }
   function growthBadge(cip) {
     var g = V2.tendance ? V2.tendance(cip) : null;
     if (g == null) return '';
@@ -78,12 +77,6 @@
     (V2.sales || []).forEach(function (x) { if (String(x.pharmacyId) === String(pid) && x.qte > 0) s[String(x.artCode)] = 1; });
     return s;
   }
-  function netCell(r) {
-    var showAb = r.f !== 'gen' && r.rpct > 0;
-    return '<td class="num mono co-net">' + (r.net > 0 ? eur(r.net) : '—') + '</td>' +
-      '<td class="num">' + (showAb ? '<span class="co-ab">−' + String(r.rpct).replace('.', ',') + '%</span>' : '<span class="co-dash">—</span>') + '</td>';
-  }
-
   // gros marchés France sous-exploités par TON réseau (marché France élevé × faible pénétration)
   function bigMarkets(limit) {
     var tot = totalPharma(), out = [];
