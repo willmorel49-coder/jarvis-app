@@ -13,8 +13,8 @@
     var s = document.createElement('style'); s.id = 'li-css';
     s.textContent = [
       /* ── tokens locaux (clair) ── */
-      '#v2-root .li-wrap{--li-blue:#0057FF;--li-blue600:#0047d6;--li-blue050:#eef3ff;--li-blue100:#dbe6ff;',
-      '--li-orange:#F39A1B;--li-ink:#0A0E1A;--li-ink70:#3a4152;--li-ink50:#6b7280;--li-ink35:#9aa1ae;',
+      '#v2-root .li-wrap{--li-blue:var(--ip-blue);--li-blue600:#0047d6;--li-blue050:#eef3ff;--li-blue100:#dbe6ff;',
+      '--li-orange:#F39A1B;--li-ink:var(--ip-ink);--li-ink70:#3a4152;--li-ink50:#6b7280;--li-ink35:#9aa1ae;',
       '--li-bg:#F8FAFC;--li-panel:#fff;--li-line:#E6E9F0;--li-line2:#eef1f6;',
       '--li-sh-sm:0 1px 2px rgba(10,14,26,.05),0 1px 3px rgba(10,14,26,.05);',
       '--li-sh-md:0 6px 20px rgba(10,14,26,.08),0 2px 6px rgba(10,14,26,.05);',
@@ -213,7 +213,7 @@
       /* ── DRAWER / ÉDITEUR ── */
       '.li-scrim{position:fixed;inset:0;z-index:200;background:rgba(10,14,26,.42);opacity:0;transition:opacity .28s var(--li-ease)}',
       '.li-scrim.li-open{opacity:1}',
-      '.li-drawer{--li-blue:#0057FF;--li-blue600:#0047d6;--li-blue050:#eef3ff;--li-blue100:#dbe6ff;--li-ink:#0A0E1A;--li-ink70:#3a4152;--li-ink50:#6b7280;--li-ink35:#9aa1ae;--li-bg:#F8FAFC;--li-panel:#fff;--li-line:#E6E9F0;--li-line2:#eef1f6;--li-ease:cubic-bezier(.22,.61,.36,1);--li-sh-sm:0 1px 2px rgba(10,14,26,.05),0 1px 3px rgba(10,14,26,.05);--li-sh-md:0 6px 20px rgba(10,14,26,.08),0 2px 6px rgba(10,14,26,.05);',
+      '.li-drawer{--li-blue:var(--ip-blue);--li-blue600:#0047d6;--li-blue050:#eef3ff;--li-blue100:#dbe6ff;--li-ink:var(--ip-ink);--li-ink70:#3a4152;--li-ink50:#6b7280;--li-ink35:#9aa1ae;--li-bg:#F8FAFC;--li-panel:#fff;--li-line:#E6E9F0;--li-line2:#eef1f6;--li-ease:cubic-bezier(.22,.61,.36,1);--li-sh-sm:0 1px 2px rgba(10,14,26,.05),0 1px 3px rgba(10,14,26,.05);--li-sh-md:0 6px 20px rgba(10,14,26,.08),0 2px 6px rgba(10,14,26,.05);',
       'position:fixed;top:0;right:0;bottom:0;z-index:210;width:480px;max-width:94vw;background:#fff;box-shadow:0 24px 60px rgba(10,14,26,.18),0 6px 18px rgba(10,14,26,.10);transform:translateX(102%);transition:transform .34s var(--li-ease);display:flex;flex-direction:column;color:#0A0E1A}',
       '.li-drawer.li-open{transform:translateX(0)}',
       '.li-dr-head{padding:18px 22px 14px;border-bottom:1px solid #E6E9F0;display:flex;align-items:flex-start;gap:12px}',
