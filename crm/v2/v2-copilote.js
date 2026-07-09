@@ -856,8 +856,8 @@
       root.innerHTML = top +
         '<div class="v2-wrap">' +
           '<div class="co-hero">' +
-            '<h1>Marché &amp; opportunités<span class="ac">.</span></h1>' +
-            '<p>Quoi pousser, où décroche le réseau. On croise le <b>marché France</b> avec <b>tes ventes réseau</b> — uniquement des <b>princeps en stock Intégral</b>.</p>' +
+            '<h1>Copilote<span class="ac">.</span></h1>' +
+            '<p>Le cerveau de ta tournée : quoi pousser, où décroche le réseau. On croise le <b>marché France</b> avec <b>tes ventes réseau</b> — uniquement des <b>princeps en stock Intégral</b>.</p>' +
             feedStrip(nbTension) +
           '</div>' +
           '<a class="co-maplink" onclick="V2.go(\'carte\')">' +
