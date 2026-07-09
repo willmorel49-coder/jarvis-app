@@ -1054,25 +1054,18 @@
     var dash = activitySection(sales, marge, ca);
     var stats = '<div class="ph-stats">' + topByCatSection(sales) + monthCatSection(sales) + '</div>';
 
-    // ── Deux propositions de liste d'achats (PDF) ──
-    var canShare = !!(V2.canShareFiles && V2.canShareFiles());
-    var propCard = function (scope, color, title, sub, n) {
+    // ── Listes d'achats PDF : boutons COMPACTS en haut de la fiche (au lieu des grosses cartes) ──
+    var pdfBtn = function (scope, label, n, cls) {
       if (n <= 0) return '';
-      return '<div class="phf-prop" style="--pc:' + color + '">' +
-        '<div class="phf-prop-ic">' + ICO('fiche', 22) + '</div>' +
-        '<div class="phf-prop-main"><div class="phf-prop-t">' + title + '</div><div class="phf-prop-s">' + sub + '</div></div>' +
-        '<div class="phf-prop-n mono">' + V2.fmtNum(n) + '<small>produits</small></div>' +
-        '<div class="phf-prop-acts">' +
-          '<button class="phf-pdf" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'' + scope + '\')">' + ICO('download', 16) + 'Télécharger</button>' +
-          (canShare ? '<button class="phf-pdf phf-pdf-ghost" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'' + scope + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
-        '</div>' +
-      '</div>';
+      return '<button class="phf-actbtn ' + (cls || '') + '" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'' + scope + '\')" title="ce qu\'elle n\'a pas encore, prêt en PDF">' +
+        ICO('download', 15) + label + ' <b class="mono">' + V2.fmtNum(n) + '</b></button>';
     };
-    var props = '<div class="phf-props">' +
-      propCard('reseau', 'var(--ip-blue)', 'Liste réseau Intégral Pharma', 'ce que tout le réseau commande et qu\'elle n\'a pas', nReseau) +
-      (hasGrp ? propCard('groupement', 'var(--c-opp)', 'Liste de son groupement · ' + esc(g.name), 'ce que son groupement commande et qu\'elle n\'a pas', nGrp) : '') +
-      ((nReseau <= 0 && !hasGrp) ? '<div class="v2-card"><div class="phf-empty">Cette officine commande déjà l\'essentiel du catalogue.</div></div>' : '') +
-    '</div>';
+    var pdfButtons = (nReseau > 0 || (hasGrp && nGrp > 0)) ?
+      '<div class="phf-actions">' +
+        '<span class="phf-actions-l">Listes à proposer</span>' +
+        pdfBtn('reseau', 'Réseau Intégral', nReseau, 'phf-actbtn-net') +
+        (hasGrp ? pdfBtn('groupement', esc(g.name), nGrp, 'phf-actbtn-grp') : '') +
+      '</div>' : '';
 
     // ── Listing : best rotations de son groupement, avec marqueur commande / ne commande pas ──
     var rot = grpBestRotations(pid, 60);
@@ -1119,13 +1112,19 @@
     // Hiérarchie « Launcher » : 1) le tableau de bord (KPI en-tête + graphe CA +
     // par tranche) VISIBLE dès l'arrivée ; 2) l'ACTION évidente (quoi lui proposer,
     // en bleu) ; 3) le détail produit par produit et le Top 5, repliés à un clic.
+    // Profil « Infos officine » = repliable (ne pas encombrer la fiche)
+    var profilSec = V2.profil ? (function () {
+      var open = sectionOpen('profil');
+      return '<div class="ph-section">' +
+        sectionHead('Infos officine', 'grossistes, génériqueurs, logiciel — à compléter', 'profil', open) +
+        (open ? V2.profil.section('client', pid) : '') +
+      '</div>';
+    })() : '';
     var apercu =
       dash +
-      sectionHead('Quoi lui proposer', 'ta liste d\'achats prête à sortir en PDF pour le rendez-vous') +
-      props +
       listing +
       stats +
-      (V2.profil ? V2.profil.section('client', pid) : '') +
+      profilSec +
       (V2.notes ? V2.notes.section('client', pid) : '');
     var auditTab = (V2.audit && window.WML_SALES && window.PROD_STATS)
       ? '<div id="aud">' + V2.audit.sheetFor(pid) + V2.audit.importSection() + '</div>' : '';
@@ -1138,6 +1137,7 @@
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
         head +
+        pdfButtons +
         tabs +
         '<div id="phft-c-apercu">' + apercu + '</div>' +
         (auditTab ? '<div id="phft-c-audit" style="display:none">' + auditTab + '</div>' : '') +
@@ -2710,6 +2710,14 @@
       '.phf-hcontacts{display:flex;gap:8px}',
       '.phf-cbtn2{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ip-blue);background:var(--card-2);border:1px solid var(--line-strong);border-radius:var(--r-btn);padding:9px 12px;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s}',
       '.phf-cbtn2:hover{background:#fff;border-color:var(--ip-blue)}',
+      // Boutons compacts « Listes à proposer » (en haut de la fiche)
+      '.phf-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:14px 0 2px}',
+      '.phf-actions-l{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:2px}',
+      '.phf-actbtn{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#fff;background:var(--ip-blue);border:1px solid var(--ip-blue);border-radius:var(--r-btn,11px);padding:9px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,80,230,.22);transition:transform .15s var(--ease),box-shadow .15s var(--ease)}',
+      '.phf-actbtn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,80,230,.28)}',
+      '.phf-actbtn b{font-weight:800;background:rgba(255,255,255,.22);padding:1px 7px;border-radius:999px;font-size:12px}',
+      '.phf-actbtn-grp{background:var(--c-opp);border-color:var(--c-opp);box-shadow:0 2px 8px rgba(18,161,80,.22)}',
+      '.phf-actbtn-grp:hover{box-shadow:0 6px 16px rgba(18,161,80,.28)}',
       '.phf-bar2{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}',
       '.phf-refwrap{display:flex;align-items:center;gap:10px}',
       '.phf-refwrap .phf-ref-h{margin:0;white-space:nowrap}',

@@ -928,6 +928,9 @@
       var ix = byK[mkey(s.year, s.month)];
       if (ix != null) bars[ix].ca += (s.mntNetHt || 0);
     });
+    // Retire les mois VIDES en tête (avant le 1er mois avec des ventes) : pas de colonnes fantômes.
+    var _f = 0; while (_f < bars.length - 1 && bars[_f].ca <= 0) _f++;
+    if (_f > 0) bars = bars.slice(_f);
     var maxCa = bars.reduce(function (a, b) { return Math.max(a, b.ca); }, 0) || 1;
 
     // Repères dérivés des vraies ventes : moyenne (mois actifs), mois record
@@ -974,7 +977,7 @@
     var html =
       '<div class="v2-card pilo-chart-card" data-reveal>' +
         '<div class="pilo-chart-head">' +
-          '<div class="v2-card-t">' + ICO('pilo', 17) + 'Évolution du CA · 13 mois</div>' +
+          '<div class="v2-card-t">' + ICO('pilo', 17) + 'Évolution du CA · ' + bars.length + ' mois</div>' +
           '<span class="pilo-chart-period mono">' + esc(range) + '</span>' +
         '</div>' +
         '<div class="pilo-readout" id="pilo-readout"></div>' +

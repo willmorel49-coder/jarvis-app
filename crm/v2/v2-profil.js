@@ -13,10 +13,11 @@
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var TABLE = 'profils', LS = 'jarvis_profils_v1';
 
-  var GROS = ['OCP', 'CERP', 'Alliance Healthcare', 'Phoenix Pharma', 'Sagitta', 'Cophana', 'Autre'];
-  var GEN = ['Biogaran', 'Viatris (Mylan)', 'EG Labo', 'Teva', 'Sandoz', 'Zentiva', 'Arrow', 'Cristers', 'Autre'];
-  var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Autre'];
-  var ROBOT = ['Aucun', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Autre'];
+  // Listes PRÉCISES (pas de « Autre » : le bouton « ➕ préciser… » ajoute une valeur exacte au besoin).
+  var GROS = ['OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Welcoop', 'Giphar Répartition'];
+  var GEN = ['Biogaran', 'Viatris (Mylan)', 'EG Labo', 'Teva', 'Sandoz', 'Zentiva', 'Arrow', 'Cristers', 'Zydus', 'Bouchara-Recordati', 'Sun Pharma', 'Substipharm'];
+  var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Péripharm', 'Pharmavitale', 'Santé Cegedim'];
+  var ROBOT = ['Aucun', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Tecny-Farma', 'Apostore', 'Omnicell'];
   // Config des champs — ajouter/retirer ici suffit.
   var FIELDS = [
     { k: 'gros1', l: 'Grossiste n°1', opts: GROS },
@@ -67,7 +68,8 @@
               if (f.text) return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
                 '<input type="text" data-fk="' + f.k + '" placeholder="—" onchange="V2.profil.set(this)"></label>';
               return '<label class="v2-profil-f"><span>' + esc(f.l) + '</span><select data-fk="' + f.k + '" onchange="V2.profil.set(this)">' +
-                '<option value="">—</option>' + f.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select></label>';
+                '<option value="">—</option>' + f.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') +
+                '<option value="__add__">➕ préciser…</option></select></label>';
             }).join('') +
           '</div></div>';
     },
@@ -80,9 +82,17 @@
     set: function (el) {
       var box = el.closest('.v2-profil-box'); if (!box) return;
       if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour modifier le profil'); fill(box); return; }
+      // « ➕ préciser… » : saisir une valeur exacte non listée (puis elle rejoint la liste de ce champ)
+      if (el.tagName === 'SELECT' && el.value === '__add__') {
+        var custom = (window.prompt('Préciser la valeur exacte :', '') || '').trim();
+        if (!custom) { el.value = ''; return; }
+        var opt = document.createElement('option'); opt.textContent = custom; opt.value = custom;
+        el.insertBefore(opt, el.querySelector('option[value="__add__"]'));
+        el.value = custom;
+      }
       var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid'), data = {};
       Array.prototype.forEach.call(box.querySelectorAll('[data-fk]'), function (f) {
-        var v = (f.value || '').trim(); if (v) data[f.getAttribute('data-fk')] = v;
+        var v = (f.value || '').trim(); if (v && v !== '__add__') data[f.getAttribute('data-fk')] = v;
       });
       var rec = save(st, sid, data);
       setMeta(box, rec);
@@ -95,7 +105,13 @@
     load(st, sid).then(function (res) {
       var rec = res.rec; var data = (rec && rec.data) || {};
       Array.prototype.forEach.call(box.querySelectorAll('[data-fk]'), function (f) {
-        var v = data[f.getAttribute('data-fk')]; if (v != null) f.value = v;
+        var v = data[f.getAttribute('data-fk')]; if (v == null) return;
+        if (f.tagName === 'SELECT') {
+          var found = false;
+          Array.prototype.forEach.call(f.options, function (o) { if (o.value === v || o.textContent === v) found = true; });
+          if (!found && v) { var opt = document.createElement('option'); opt.textContent = v; opt.value = v; f.insertBefore(opt, f.querySelector('option[value="__add__"]')); }
+        }
+        f.value = v;
       });
       setMeta(box, rec);
     });
