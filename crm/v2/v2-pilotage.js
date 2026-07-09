@@ -434,6 +434,12 @@
   }
 
   // ════════════════════════════════════════════
+  // Composants réutilisés par la fiche officine (homogénéisation stats + évolutions).
+  V2.deltaHtml = deltaHtml;
+  V2.build13MonthChart = build13MonthChart;
+  V2.monthlyCaSeries = monthlyCaSeries;
+  V2.miniSparkline = sparkline;
+
   // PAGE
   // ════════════════════════════════════════════
   V2.pages.pilotage = {
@@ -908,6 +914,7 @@
 
   // ── Mini bar chart CSS 13 mois ────────────────
   function build13MonthChart(sales) {
+    injectStyles();   // garantit les styles du chart même hors page Pilotage (ex : fiche officine)
     var months = availableMonths(sales);
     if (!months.length) return { html: '', bind: function () {} };
     var last = months[months.length - 1];
@@ -943,8 +950,15 @@
       var h = b.ca > 0 ? Math.max(4, b.ca / maxCa * 100) : 0;
       var isLast = (i === bars.length - 1);
       var hot = best && b.year === best.year && b.month === best.month;
-      return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (isLast ? ' pilo-cbar-cur' : '') + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca)) + '">' +
-        '<span class="pilo-cbar-v mono">' + V2.fmtK(b.ca) + '</span>' +
+      // évolution vs mois précédent (si les deux mois ont des ventes)
+      var pc = i > 0 ? bars[i - 1].ca : 0, dchip = '', dtip = '';
+      if (b.ca > 0 && pc > 0) {
+        var dd = (b.ca - pc) / pc * 100, up = dd >= 0;
+        dchip = '<span class="pilo-cbar-d ' + (up ? 'up' : 'dn') + '">' + (up ? '+' : '') + Math.round(dd) + '%</span>';
+        dtip = ' · ' + (up ? '▲ +' : '▼ ') + Math.round(dd) + '% vs mois préc.';
+      }
+      return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (isLast ? ' pilo-cbar-cur' : '') + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca) + dtip) + '">' +
+        '<span class="pilo-cbar-v mono">' + V2.fmtK(b.ca) + '</span>' + dchip +
         '<div class="pilo-cbar-track">' +
           '<span class="pilo-cbar-fill' + (isLast ? ' cur' : '') + '" style="height:' + h.toFixed(1) + '%"></span>' +
         '</div>' +
@@ -978,6 +992,8 @@
       '</div>';
 
     function bind(root) {
+      // révèle le chart même hors page Pilotage (la fiche n'a pas d'observer data-reveal)
+      var card = root.querySelector('.pilo-chart-card'); if (card) card.classList.add('in');
       var tip = root.querySelector('#pilo-tip');
       var chartEl = root.querySelector('#pilo-chart');
       if (!tip || !chartEl) return;
@@ -1085,6 +1101,9 @@
       '@media(max-width:640px){.pilo-chart{gap:5px;height:168px}}' +
       '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;cursor:default;min-width:0}' +
       '.pilo-cbar-v{font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}' +
+      '.pilo-cbar-d{font-size:9px;font-weight:800;line-height:1;white-space:nowrap;margin-top:1px}' +
+      '.pilo-cbar-d.up{color:#0F7A52}.pilo-cbar-d.dn{color:#E0556E}' +
+      '@media(max-width:640px){.pilo-cbar-d{display:none}}' +
       '@media(max-width:640px){.pilo-cbar-v{visibility:hidden}.pilo-cbar-hot .pilo-cbar-v,.pilo-cbar-cur .pilo-cbar-v{visibility:visible}}' +
       '.pilo-cbar-track{flex:1;width:100%;max-width:40px;display:flex;align-items:flex-end;background:var(--line-2);border-radius:8px 8px 3px 3px;overflow:hidden}' +
       '.pilo-cbar-fill{display:block;width:100%;border-radius:8px 8px 3px 3px;transform-origin:50% 100%;' +

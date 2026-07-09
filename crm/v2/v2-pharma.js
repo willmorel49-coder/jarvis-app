@@ -22,6 +22,7 @@
   var sectionCollapsed = {};
   function sectionOpen(key) { return (key in sectionCollapsed) ? !sectionCollapsed[key] : false; }
   var searchQuery = '';
+  var _chartBind = null;   // bind du chart 13 mois (homogénéisé avec Pilotage), appelé après render
   // Sélection de produits cochés (bouton +) pour le PDF RDV — propre à une pharma
   var selCips = null;   // Set des CIP cochés
   var selPid = null;    // pharma à laquelle appartient la sélection courante
@@ -831,6 +832,16 @@
     var head = sectionHead('Détail mois par mois — par catégorie', 'le CA net réparti par tranche et par mois', 'monthcat', open);
     if (!open) return '<div class="ph-section ph-mcat">' + head + '</div>';
 
+    // évolution du dernier mois vs le mois précédent (par catégorie)
+    function evolCell(vals) {
+      var n = vals.length;
+      if (n >= 2) {
+        var last = vals[n - 1], prev = vals[n - 2];
+        if (last > 0 && prev > 0) { var d = (last - prev) / prev * 100, up = d >= 0; return '<td class="ph-mcat-ev ' + (up ? 'up' : 'dn') + '">' + (up ? '▲ +' : '▼ ') + Math.round(d) + '%</td>'; }
+        if (last > 0 && prev === 0) return '<td class="ph-mcat-ev up">nouveau</td>';
+      }
+      return '<td class="ph-mcat-ev">—</td>';
+    }
     function rowHtml(label, color, key) {
       var vals = months.map(function (m) { return m.byCat[key] || 0; });
       var maxv = vals.reduce(function (a, b) { return Math.max(a, b); }, 0);
@@ -840,18 +851,18 @@
         return '<td class="ph-mcat-c mono"' + bg + '>' + (v > 0 ? V2.fmtK(v) : '<span class="ph-mcat-z">·</span>') + '</td>';
       }).join('');
       return '<tr><th class="ph-mcat-rh"><span class="ph-mcat-dot" style="background:' + color + '"></span>' + esc(label) + '</th>' +
-        cells + '<td class="ph-mcat-tot mono">' + V2.fmtK(tot) + '</td></tr>';
+        cells + '<td class="ph-mcat-tot mono">' + V2.fmtK(tot) + '</td>' + evolCell(vals) + '</tr>';
     }
     var body = rowsCats.map(function (c) { return rowHtml(c.label, c.color, c.key); }).join('');
     if (othTot > 0) body += rowHtml('Hors catégories', '#9AA1B2', 'other');
     var grand = months.reduce(function (a, m) { return a + m.total; }, 0);
     body += '<tr class="ph-mcat-trow"><th class="ph-mcat-rh">Total</th>' +
       months.map(function (m) { return '<td class="ph-mcat-c mono">' + V2.fmtK(m.total) + '</td>'; }).join('') +
-      '<td class="ph-mcat-tot mono">' + V2.fmtK(grand) + '</td></tr>';
+      '<td class="ph-mcat-tot mono">' + V2.fmtK(grand) + '</td>' + evolCell(months.map(function (m) { return m.total; })) + '</tr>';
     var thMonths = months.map(function (m) { return '<th class="ph-mcat-mth">' + MN_SHORT[m.month - 1] + '</th>'; }).join('');
     return '<div class="ph-section ph-mcat">' + head +
       '<div class="ph-mcat-wrap"><table class="ph-mcat-table">' +
-        '<thead><tr><th class="ph-mcat-rh ph-mcat-corner">Catégorie</th>' + thMonths + '<th class="ph-mcat-tot">Total</th></tr></thead>' +
+        '<thead><tr><th class="ph-mcat-rh ph-mcat-corner">Catégorie</th>' + thMonths + '<th class="ph-mcat-tot">Total</th><th class="ph-mcat-ev-h">Évol</th></tr></thead>' +
         '<tbody>' + body + '</tbody></table></div></div>';
   }
 
@@ -860,39 +871,43 @@
     // Présentation « Launcher » : carte calme, mois record en accent, repères
     // chiffrés dérivés des ventes réelles (aucune donnée inventée).
     var months = monthlyCA(sales);
-    var maxM = months.reduce(function (m, x) { return Math.max(m, x.ca); }, 1);
     var best = null;
     months.forEach(function (m) { if (m.ca > 0 && (!best || m.ca > best.ca)) best = m; });
     var nAct = months.filter(function (m) { return m.ca > 0; }).length;
     var avgM = nAct ? months.reduce(function (s, m) { return s + m.ca; }, 0) / nAct : 0;
-    var barsHtml = months.map(function (m) {
-      var h = m.ca > 0 ? Math.max(5, m.ca / maxM * 100) : 0;
-      var hot = best && m.k === best.k;
-      return '<div class="ph-mbar' + (hot ? ' ph-mbar-hot' : '') + '" title="' + esc(cap(MN_SHORT[m.month - 1]) + ' ' + m.year + ' · ' + V2.fmtEur(m.ca)) + '">' +
-        '<div class="ph-mbar-v mono">' + V2.fmtK(m.ca) + '</div>' +
-        '<div class="ph-mbar-track"><span class="ph-mbar-fill" style="height:' + h + '%"></span></div>' +
-        '<div class="ph-mbar-l">' + cap(MN_SHORT[m.month - 1]) + '</div></div>';
-    }).join('');
-    // Repères sous le graphe (dérivés : moyenne, mois record, mois actifs)
-    var kf = function (l, v) {
-      return '<div class="ph-dash-kf"><span class="ph-dash-kf-l">' + l + '</span><span class="ph-dash-kf-v mono">' + v + '</span></div>';
-    };
-    var kfs = months.length
-      ? '<div class="ph-dash-kfs">' +
-          kf('Moyenne', V2.fmtEur(avgM) + '<small>/mois</small>') +
-          (best ? kf('Meilleur mois', esc(cap(MN_SHORT[best.month - 1])) + ' · ' + V2.fmtEur(best.ca)) : '') +
-          kf('Mois actifs', V2.fmtNum(nAct) + '<small>/' + months.length + '</small>') +
+    var lastM = months.length ? months[months.length - 1] : null;
+    var prevM = months.length > 1 ? months[months.length - 2] : null;
+    var delta = V2.deltaHtml || function () { return ''; };
+
+    // ── Bandeau KPI + évolutions (homogénéisé avec Pilotage : .v2-kpis / .v2-kpi) ──
+    var kpiBand = lastM
+      ? '<div class="v2-kpis ph-kpis">' +
+          '<div class="v2-kpi"><div class="v2-kpi-l">CA ' + esc(cap(MN_SHORT[lastM.month - 1])) + ' ' + lastM.year + '</div>' +
+            '<div class="v2-kpi-v mono">' + V2.fmtEur(lastM.ca) + '</div>' +
+            delta(lastM.ca, prevM ? prevM.ca : NaN, 'mois dernier') + '</div>' +
+          '<div class="v2-kpi"><div class="v2-kpi-l">vs sa moyenne</div>' +
+            '<div class="v2-kpi-v mono">' + V2.fmtEur(avgM) + '<small>/mois</small></div>' +
+            delta(lastM.ca, avgM, 'moyenne') + '</div>' +
+          '<div class="v2-kpi"><div class="v2-kpi-l">Meilleur mois</div>' +
+            '<div class="v2-kpi-v mono">' + (best ? V2.fmtEur(best.ca) : '—') + '</div>' +
+            '<div class="v2-kpi-d" style="color:var(--muted)">' + (best ? esc(cap(MN_SHORT[best.month - 1]) + ' ' + best.year) : '') + '</div></div>' +
+          '<div class="v2-kpi"><div class="v2-kpi-l">Mois actifs</div>' +
+            '<div class="v2-kpi-v mono">' + V2.fmtNum(nAct) + '<small>/' + months.length + '</small></div>' +
+            '<div class="v2-kpi-d" style="color:var(--muted)">avec des ventes</div></div>' +
         '</div>'
       : '';
-    var chartCard =
-      '<div class="v2-card ph-dash-chart">' +
-        '<div class="ph-dash-head">' +
-          '<div class="v2-card-t">' + ICO('pilo', 17) + 'CA par mois</div>' +
-          (months.length && periodLabel() ? '<span class="ph-dash-period mono">' + esc(periodLabel()) + '</span>' : '') +
-        '</div>' +
-        (months.length ? '<div class="ph-mchart">' + barsHtml + '</div>' + kfs
-                       : '<div class="v2-cat-empty" style="border:none;padding:10px 0">Aucune vente sur la période.</div>') +
-      '</div>';
+
+    // ── Graphe CA par mois : LE MÊME que Pilotage (évolutions par mois incluses) ──
+    var chartCard;
+    if (months.length && V2.build13MonthChart) {
+      var chartObj = V2.build13MonthChart(sales);
+      _chartBind = chartObj.bind || null;
+      chartCard = chartObj.html;
+    } else {
+      _chartBind = null;
+      chartCard = '<div class="v2-card"><div class="ph-dash-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'CA par mois</div></div>' +
+        '<div class="v2-cat-empty" style="border:none;padding:10px 0">Aucune vente sur la période.</div></div>';
+    }
 
     // 2. Commandé par tranche
     var oc = ownedByCat(sales);
@@ -934,7 +949,9 @@
     // CA apparaissent proprement DÈS L'ARRIVÉE sur l'officine — plus de repli).
     return '<div class="ph-activity ph-section">' +
         sectionHead('Activité de l\'officine', 'son CA mois par mois, ce qu\'elle commande et sa marge') +
-        '<div class="ph-act-grid">' + chartCard + trCard + '</div>' +
+        kpiBand +
+        chartCard +
+        '<div class="ph-act-below">' + trCard + '</div>' +
       '</div>';
   }
 
@@ -1125,6 +1142,7 @@
         '<div id="phft-c-apercu">' + apercu + '</div>' +
         (auditTab ? '<div id="phft-c-audit" style="display:none">' + auditTab + '</div>' : '') +
       '</div>';
+    if (_chartBind) { try { _chartBind(root); } catch (e) {} _chartBind = null; }
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
   }
@@ -2515,6 +2533,16 @@
       '.ph-mcat-c{text-align:right;font-variant-numeric:tabular-nums;color:var(--ip-ink);font-weight:600}',
       '.ph-mcat-z{color:var(--muted-2)}',
       '.ph-mcat-tot{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:var(--ip-blue);background:var(--card-2)}',
+      '.ph-mcat-ev-h{text-align:right;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}',
+      '.ph-mcat-ev{text-align:right;font-size:11px;font-weight:800;white-space:nowrap;color:var(--muted-2)}',
+      '.ph-mcat-ev.up{color:#0F7A52}.ph-mcat-ev.dn{color:#E0556E}',
+      // bandeau KPI de la fiche = mêmes cartes que Pilotage, juste resserré
+      '.ph-kpis{margin-bottom:14px}',
+      '.ph-act-below{margin-top:16px}',
+      '.ph-kpis .v2-kpi{padding:13px 15px}',
+      '.ph-kpis .v2-kpi-v{font-size:21px;margin-top:5px;white-space:nowrap}',
+      '.ph-kpis .v2-kpi-v small{font-size:11px;font-weight:600;color:var(--muted)}',
+      '.ph-kpis .v2-kpi-d{font-size:11.5px;line-height:1.3}',
       '.ph-mcat-trow th,.ph-mcat-trow td{font-weight:800;background:var(--card-2);color:var(--ip-ink);border-top:1px solid var(--line)}',
       '.ph-top-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}',
       '.ph-top-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden}',
