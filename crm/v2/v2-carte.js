@@ -14,6 +14,7 @@
 
   var CB = '?v=20260708s';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
+  var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
   var depotLayer = null;         // marqueurs des établissements Intégral
   var depot = null;              // { n, lat, lng } point de départ/retour (optionnel)
@@ -152,29 +153,41 @@
     var r = t ? 7 : (colorMode === 'ca' ? caRadius(caOf(p)) : 5.5);
     return { renderer: canvas, radius: r, color: t ? '#10131C' : '#fff', weight: t ? 2 : 0.9, fillColor: colorFor(p), fillOpacity: 0.95 };
   }
+  // Mode « Bulles CA » : un seul bleu, translucide, rayon = CA (les grosses cibles ressortent)
+  function bubbleStyle(p, i) {
+    var t = inTour(i);
+    return { renderer: canvas, radius: t ? 8 : caRadius(caOf(p)), color: t ? '#10131C' : '#0050E6', weight: t ? 2 : 0.6, fillColor: '#0050E6', fillOpacity: 0.32 };
+  }
   function rebuild() {
     if (!map) return;
     if (cluster) { map.removeLayer(cluster); cluster = null; }
-    var useCluster = !!window.L.markerClusterGroup;
+    markers = [];
+    var pts = D.p, cn = document.getElementById('carte-count');
+    // indices filtrés
+    var idx = []; for (var i = 0; i < pts.length; i++) if (pass(pts[i])) idx.push(i);
+
+    // ── POINTS (marqueurs, cluster) ou BULLES CA (taille = CA, sans cluster, seulement le CA>0) ──
+    var bulles = (displayMode === 'bulles');
+    var useCluster = !bulles && !!window.L.markerClusterGroup;
     function openPop(e) { var p = D.p[e.layer._pi]; if (p) e.layer.bindPopup(popupHtml(p, e.layer._pi), { minWidth: 216 }).openPopup(); }
     if (useCluster) {
       cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 48, disableClusteringAtZoom: 9, removeOutsideVisibleBounds: true });
       cluster.on('click', openPop);
     } else {
-      cluster = window.L.layerGroup();   // repli sans clustering (clic direct par marqueur)
+      cluster = window.L.layerGroup();
     }
-    markers = [];
-    var pts = D.p, arr = [];
-    for (var i = 0; i < pts.length; i++) {
-      var p = pts[i]; if (!pass(p)) continue;
-      var m = window.L.circleMarker([p[0], p[1]], markerStyle(p, i));
-      m._pi = i; if (!useCluster) m.on('click', openPop);
+    var arr = [];
+    for (var k = 0; k < idx.length; k++) {
+      var ii = idx[k], p = pts[ii];
+      if (bulles && caOf(p) <= 0) continue;   // bulles = uniquement les officines avec du CA
+      var m = window.L.circleMarker([p[0], p[1]], bulles ? bubbleStyle(p, ii) : markerStyle(p, ii));
+      m._pi = ii; if (!useCluster) m.on('click', openPop);
       m.on('mouseover', function () { if (!this._ntt) { this._ntt = 1; this.bindTooltip(esc(D.p[this._pi][6] || ''), { direction: 'top', offset: [0, -3] }); } this.openTooltip(); });
       markers.push(m); arr.push(m);
     }
     if (useCluster) cluster.addLayers(arr); else for (var a = 0; a < arr.length; a++) cluster.addLayer(arr[a]);
     map.addLayer(cluster);
-    var cn = document.getElementById('carte-count'); if (cn) cn.textContent = markers.length.toLocaleString('fr') + ' pharmacies';
+    if (cn) cn.textContent = markers.length.toLocaleString('fr') + (bulles ? ' officines avec CA' : ' pharmacies');
   }
   function recolor() { if (markers) for (var k = 0; k < markers.length; k++) markers[k].setStyle(markerStyle(D.p[markers[k]._pi], markers[k]._pi)); }
   function refreshMarkerStyle(i) { if (!markers) return; for (var k = 0; k < markers.length; k++) if (markers[k]._pi === i) { markers[k].setStyle(markerStyle(D.p[i], i)); break; } }
@@ -507,6 +520,7 @@
       '.cn-side .cn-sel{max-width:none;width:100%}',
       '.cn-side .cn-search{width:100%}',
       '.cn-side .cn-legend{padding:0;border:none;background:none;flex-direction:column;gap:6px}',
+      '.cn-lg-note{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.4}',
       '.cn-side .cn-tools{padding:0;border:none;background:none;flex-direction:column;align-items:stretch;gap:8px}',
       '.cn-side .cn-tools button{width:100%;text-align:left}',
       '@media(max-width:760px){.cn-wrap{flex-direction:column}.cn-side{width:100%;max-height:46vh;border-right:none;border-bottom:1px solid var(--line)}}',
@@ -651,6 +665,7 @@
 
   function segBtn(k, lbl) { return '<button id="cb-' + k + '"' + (colorMode === k ? ' class="on"' : '') + ' onclick="V2.carteColor(\'' + k + '\')">' + lbl + '</button>'; }
   function typeBtn(k, lbl) { return '<button id="ct-' + k + '"' + (typeFocus === k ? ' class="on"' : '') + ' onclick="V2.carteType(\'' + k + '\')">' + lbl + '</button>'; }
+  function dispBtn(k, lbl) { return '<button id="cd-' + k + '"' + (displayMode === k ? ' class="on"' : '') + ' onclick="V2.carteDisplay(\'' + k + '\')">' + lbl + '</button>'; }
 
   V2.pages.carte = {
     render: function (root) {
@@ -661,6 +676,7 @@
             '<div class="cn-title">Carte nationale <small id="carte-count">chargement…</small></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Voir</span><div class="cn-seg">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Couleur</span><div class="cn-seg cn-seg-wrap">' + segBtn('comm', 'Commercial') + segBtn('type', 'Client/Prospect') + segBtn('ca', 'CA (taille)') + segBtn('uga', 'UGA') + segBtn('grp', 'Groupement') + '</div></div>' +
+            '<div class="cn-sgroup"><span class="cn-lbl">Affichage</span><div class="cn-seg cn-seg-wrap">' + dispBtn('points', 'Points') + dispBtn('bulles', 'Bulles CA') + '</div></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Filtrer</span>' +
               '<select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
               '<select id="cn-deptsel" class="cn-sel" onchange="V2.carteDept(this.value)"></select>' +
@@ -694,9 +710,17 @@
 
   V2.carteColor = function (m) {
     colorMode = m;
-    ['comm', 'type', 'uga', 'grp'].forEach(function (k) { var b = document.getElementById('cb-' + k); if (b) b.classList.toggle('on', k === m); });
-    var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml();
-    recolor();
+    ['comm', 'type', 'ca', 'uga', 'grp'].forEach(function (k) { var b = document.getElementById('cb-' + k); if (b) b.classList.toggle('on', k === m); });
+    if (displayMode === 'points') { var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml(); recolor(); }
+  };
+  // Mode d'affichage : Points (marqueurs) · Bulles CA (taille = CA)
+  V2.carteDisplay = function (m) {
+    displayMode = m;
+    ['points', 'bulles'].forEach(function (k) { var b = document.getElementById('cd-' + k); if (b) b.classList.toggle('on', k === m); });
+    var lg = document.getElementById('carte-legend');
+    if (lg) lg.innerHTML = (m === 'bulles') ? '<span class="cn-lg-note">Taille du point = chiffre d\'affaires</span>'
+      : legendHtml();
+    rebuild();
   };
   V2.carteType = function (t) {
     typeFocus = t;
