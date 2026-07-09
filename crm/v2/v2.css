@@ -201,9 +201,9 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .v2-moment-h::after{content:"";flex:1;height:1px;background:var(--line)}
 /* Sous-onglets des espaces fusionnés (Catalogue & prix / Fiches & présentation) */
 .v2-subnav{display:flex;gap:4px;margin:0 0 20px;padding:4px;background:var(--card-2,var(--card));border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-1);overflow-x:auto;-webkit-overflow-scrolling:touch}
-.v2-subtab{flex:0 0 auto;padding:9px 16px;border-radius:var(--r-control);font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background .18s var(--ease-soft),color .18s var(--ease-soft),box-shadow .18s var(--ease);text-decoration:none}
-.v2-subtab:hover{color:var(--ip-ink);background:var(--card)}
-.v2-subtab.on{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-1)}
+.v2-subtab{flex:0 0 auto;padding:9px 16px;border-radius:var(--r-control);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background .18s var(--ease-soft),color .18s var(--ease-soft),box-shadow .18s var(--ease);text-decoration:none}
+.v2-subtab:hover{color:var(--ip-ink);background:var(--card-2)}
+.v2-subtab.on{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px rgba(0,80,230,.28)}
 .v2-pil{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
   padding:25px 25px 23px;cursor:pointer;overflow:hidden;box-shadow:var(--sh-2);text-decoration:none;color:inherit;
   transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s var(--ease)}
