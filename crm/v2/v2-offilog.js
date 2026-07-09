@@ -217,7 +217,7 @@
     var alertFlag = it.alert
       ? '<span class="off-card-flag" title="Un concurrent est moins cher que ton prix d\'achat">' + ICO('alert', 13, 2.2) + ' Alerte prix</span>' : '';
     var concBelow = it.alert && it.minConc > 0
-      ? '<span class="off-card-conc mono">conc. ' + V2.fmtEur(it.minConc) + '</span>' : '';
+      ? '<span class="off-card-conc mono" title="Un concurrent public passe sous ton prix d\'achat Intégral">conc. ' + V2.fmtEur(it.minConc) + (it.achat > 0 ? ' &lt; achat ' + V2.fmtEur(it.achat) : '') + '</span>' : '';
     return '<div class="off-card' + sel + alertCls + '" data-id="' + esc(it.id) + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
       '<div class="off-card-media">' +
         '<span class="off-rank mono">#' + it.rank + '</span>' +

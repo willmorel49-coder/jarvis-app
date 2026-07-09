@@ -25,13 +25,13 @@
   var FAMS = [
     { k: 'all',    label: 'Tout',                   sc: '#0050E6' },
     { k: 'p_low',  label: 'Princeps · 0–4,33€',     sc: '#1E9E6A' },
-    { k: 'p_mid',  label: 'Princeps · 4,33–468€',   sc: '#0050E6' },
+    { k: 'p_mid',  label: 'Princeps · 4,33–468€',   sc: '#F5A524' },
     { k: 'p_high', label: 'Princeps · >468€',       sc: '#C7791A' },
     { k: 'froid',  label: 'Froid',                  sc: '#00B5D8' },
     { k: 'gen',    label: 'Génériques',             sc: '#737A8C' },
-    { k: 'genp',   label: 'Génériques partenaires', sc: '#1E9E6A' },
+    { k: 'genp',   label: 'Génériques partenaires', sc: '#8A6D3B' },
     { k: 'bio',    label: 'Biosimilaires',          sc: '#6D4FC4' },
-    { k: 'nr',     label: 'Non remboursés',         sc: '#C7791A' },
+    { k: 'nr',     label: 'Non remboursés',         sc: '#E5484D' },
   ];
   var FAM_BY_KEY = {}; FAMS.forEach(function (f) { FAM_BY_KEY[f.k] = f; });
   var FAM_SHORT = {
