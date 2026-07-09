@@ -466,6 +466,11 @@
       '.co-det[open]>summary .ch{transform:rotate(90deg)}',
       '.co-det>summary .co-pill{margin-left:auto}',
       '.co-det .co-sub{padding:0 18px 4px}',
+      '.co-explore-sub{font-weight:500;font-size:12.5px;color:var(--muted)}',
+      '@media(max-width:560px){.co-explore-sub{display:none}}',
+      '.co-explore-body{padding:4px 16px 14px}',
+      '.co-explore-body>.co-sec{margin:0;padding-top:14px}',
+      '.co-explore-body>.co-sec+.co-sec{border-top:1px solid var(--line-2);margin-top:14px}',
       '.co-mkt{border-top:1px solid var(--line-2);padding:12px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}',
       '.co-mkt .id{flex:1 1 200px;min-width:0}',
       '.co-mkt .id .p{font-weight:700;font-size:14px;color:var(--ip-ink)}',
@@ -842,16 +847,24 @@
         }
       }
 
-      // ── Vue marché — SECONDAIRE, repliée par défaut ──
-      var mktSec = '<section class="co-sec"><details class="co-det">' +
-        '<summary><span class="ch">' + ICO('chev', 13) + '</span>Vue marché · gros marchés France' + (rupRes.length ? ' &amp; tensions réseau' : '') + '<span class="co-pill">' + (big.length + rupRes.length) + '</span></summary>' +
+      // ── Vue marché — gros marchés France (dans « Explorer le marché ») ──
+      var mktSec = '<section class="co-sec"><div class="co-sec-h"><h2>Gros marchés France' + (rupRes.length ? ' &amp; tensions réseau' : '') + '</h2><span class="co-pill">' + (big.length + rupRes.length) + '</span></div>' +
         '<p class="co-sub">Les produits que la France consomme beaucoup mais que peu de tes officines commandent — pour creuser au calme, pas indispensable en visite.</p>' +
         big.map(mktLine).join('') +
         (rupRes.length
           ? '<div class="co-mkth">Produits en tension dans ton réseau (' + rupRes.length + ') — anticipe le réassort, ou propose la molécule (DCI) en alternative</div>' + rupRes.map(rupLine).join('')
           : '') +
         '<div class="co-foot">« Ton réseau » = nombre de tes officines qui commandent déjà ce produit. Marché France Ameli, à titre indicatif · signalements ANSM (rupture / risque).</div>' +
-        '</details></section>';
+        '</section>';
+
+      // ── Tout le marché regroupé sous UN seul volet repliable (l'essentiel respire au-dessus) ──
+      var nMarche = grow.length + accel.length + nv.length + big.length + rupRes.length;
+      var marcheSec = (growSec || accelSec || nvSec || saisonSec || mktSec)
+        ? '<section class="co-sec"><details class="co-det co-explore">' +
+            '<summary><span class="ch">' + ICO('chev', 13) + '</span>Explorer le marché<span class="co-explore-sub"> · croissance, accélérations, nouveautés, saison — à creuser au calme</span>' + (nMarche ? '<span class="co-pill">' + nMarche + '</span>' : '') + '</summary>' +
+            '<div class="co-explore-body">' + growSec + accelSec + nvSec + saisonSec + mktSec + '</div>' +
+          '</details></section>'
+        : '';
 
       root.innerHTML = top +
         '<div class="v2-wrap">' +
@@ -869,11 +882,7 @@
           topSec +
           tourSec +
           focusSec +
-          growSec +
-          accelSec +
-          nvSec +
-          saisonSec +
-          mktSec +
+          marcheSec +
         '</div>';
 
       // motion léger : cascade d'entrée des cartes (RM-safe via V2.motion)
