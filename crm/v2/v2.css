@@ -482,7 +482,7 @@ html{-webkit-tap-highlight-color:transparent}
 /* ── POLISH round 2 (synthèse agents 2026-06-29) ── */
 /* Ripple tactile (point de contact) */
 .mo-rippling{overflow:hidden}
-.mo-ripple{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.14;transform:scale(0);animation:mo-ripple .46s cubic-bezier(.32,.72,0,1) forwards;z-index:0}
+.mo-rippling .mo-ripple{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.14;transform:scale(0);animation:mo-ripple .46s cubic-bezier(.32,.72,0,1) forwards;z-index:0}
 @keyframes mo-ripple{to{transform:scale(1);opacity:0}}
 /* Fiche officine — premium (specificité .ph-detail pour gagner sur le CSS injecté) */
 .ph-detail .phf-hcard{position:relative;overflow:hidden}
@@ -496,9 +496,6 @@ html{-webkit-tap-highlight-color:transparent}
   .ph-detail .phf-r-gap .phf-desig::after{content:" · À pousser";font-size:9px;font-weight:800;color:var(--c-amber)}
 }
 @media (prefers-reduced-motion:reduce){.mo-ripple{display:none}}
-/* Pilotage : le CA est le chiffre roi */
-.v2-kpi.k1 .v2-kpi-v{font-size:32px}
-@media (max-width:640px){.v2-kpi.k1 .v2-kpi-v{font-size:24px}}
 /* Stagger d'arrivée des tuiles d'accueil (CSS pur, RM-safe) */
 @media (prefers-reduced-motion:no-preference){
   .v2-piliers .v2-pil{animation:moTileIn .42s cubic-bezier(.32,.72,0,1) both}

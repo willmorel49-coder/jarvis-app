@@ -768,7 +768,7 @@
             '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement OPSO Santé' : ' · ton tableau de bord commercial')) + '</div>' +
           '</div>' +
           '<div style="display:flex;gap:0;flex-wrap:wrap;align-items:center">' + commSeg +
-            '<div class="pilo-seg">' + seg('current', 'Mois courant') + seg('3m', '3 mois') + seg('year', 'Année') + '</div>' +
+            '<div class="pilo-seg">' + seg('current', 'Dernier mois') + seg('3m', '3 mois') + seg('year', 'Année') + '</div>' +
           '</div>' +
         '</div>';
 
