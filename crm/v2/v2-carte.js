@@ -513,7 +513,7 @@
     if (document.getElementById('v2-carte-css')) return;
     var s = document.createElement('style'); s.id = 'v2-carte-css';
     s.textContent = [
-      '.cn-wrap{display:flex;flex-direction:row;height:calc(100vh - 54px);height:calc(100dvh - 54px);min-height:520px}',
+      '.cn-wrap{display:flex;flex-direction:row;height:calc(100vh - var(--topbar-h,60px));height:calc(100dvh - var(--topbar-h,60px));min-height:520px}',
       '.cn-side{width:288px;flex:none;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:16px 15px 22px;display:flex;flex-direction:column;gap:16px}',
       '.cn-sgroup{display:flex;flex-direction:column;gap:8px}',
       '.cn-seg-wrap{flex-wrap:wrap}',
@@ -550,7 +550,7 @@
       '.cn-tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:#EEF1F6;color:#3A4150}',
       '.cn-tag.cl{background:#E3F3EB;color:#0B6E43}.cn-tag.pr{background:#E7EFFE;color:#1E5FD0}.cn-tag.co{background:#FFF0E6;color:#C2410C}',
       '.cn-tag.ca{background:#0A0E1A;color:#fff}',
-      '.cn-fiche-btn{display:block;width:100%;margin-top:9px;padding:9px;border:none;border-radius:9px;background:#0057FF;color:#fff;font:700 13px/1 inherit;cursor:pointer}',
+      '.cn-fiche-btn{display:block;width:100%;margin-top:9px;padding:9px;border:none;border-radius:9px;background:var(--ip-blue);color:#fff;font:700 13px/1 inherit;cursor:pointer}',
       '.cn-fkpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 16px 12px}',
       '.cn-fkpi{text-align:center;background:var(--card-2,#F4F6FB);border-radius:10px;padding:9px 4px}',
       '.cn-fkpi b{display:block;font-size:15px;font-weight:800;color:var(--ip-blue,#0057FF)}',
@@ -558,7 +558,7 @@
       '.cn-fsec{padding:6px 16px 12px}.cn-fsec h4{margin:0 0 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-2)}',
       '.cn-fspark{display:flex;align-items:flex-end;gap:8px;height:64px}',
       '.cn-fbar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px}',
-      '.cn-fbar i{width:100%;max-width:26px;background:linear-gradient(180deg,#3B82F6,#0057FF);border-radius:4px 4px 0 0;display:block}',
+      '.cn-fbar i{width:100%;max-width:26px;background:linear-gradient(180deg,#3B82F6,var(--ip-blue));border-radius:4px 4px 0 0;display:block}',
       '.cn-fbar span{font-size:10px;color:var(--muted)}',
       '.cn-ftrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px}',
       '.cn-ftrow span{color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cn-ftrow b{color:var(--ip-ink);white-space:nowrap}',
@@ -711,7 +711,9 @@
   V2.carteColor = function (m) {
     colorMode = m;
     ['comm', 'type', 'ca', 'uga', 'grp'].forEach(function (k) { var b = document.getElementById('cb-' + k); if (b) b.classList.toggle('on', k === m); });
-    if (displayMode === 'points') { var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml(); recolor(); }
+    // Choisir une couleur n'a de sens qu'en mode Points : si on est en Bulles, on y revient pour que le clic ait un effet visible.
+    if (displayMode !== 'points') { V2.carteDisplay('points'); return; }
+    var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml(); recolor();
   };
   // Mode d'affichage : Points (marqueurs) · Bulles CA (taille = CA)
   V2.carteDisplay = function (m) {

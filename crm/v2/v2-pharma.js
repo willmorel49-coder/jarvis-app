@@ -1037,7 +1037,7 @@
           (loc ? '<div class="phf-hloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
         '</div>' +
         '<div class="phf-hkpis">' +
-          kpi('À pousser', V2.fmtNum(nReseau), 'phf-push', nReseau) +
+          kpi('Opportunités', V2.fmtNum(nReseau), 'phf-push', nReseau) +
           kpi('CA cumulé', V2.fmtEur(ca), '', ca) +
           kpi('Marge MDL', V2.fmtEur(marge), 'phf-pos', marge) +
           kpi('Références', V2.fmtNum(nbRefs), '', nbRefs) +
@@ -2535,7 +2535,7 @@
       '.ph-mcat-tot{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:var(--ip-blue);background:var(--card-2)}',
       '.ph-mcat-ev-h{text-align:right;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}',
       '.ph-mcat-ev{text-align:right;font-size:11px;font-weight:800;white-space:nowrap;color:var(--muted-2)}',
-      '.ph-mcat-ev.up{color:#0F7A52}.ph-mcat-ev.dn{color:#E0556E}',
+      '.ph-mcat-ev.up{color:var(--c-mint-txt)}.ph-mcat-ev.dn{color:var(--c-rose)}',
       // bandeau KPI de la fiche = mêmes cartes que Pilotage, juste resserré
       '.ph-kpis{margin-bottom:14px}',
       '.ph-act-below{margin-top:16px}',
