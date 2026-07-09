@@ -893,21 +893,13 @@
       // passe WAAPI, RM-safe (V2.motion pose l'état final sans animation).
       // On anime les BARRES, pas la carte : son entrée reste gérée par le
       // reveal .in de l'observer local — aucune double animation d'entrée.
-      if (_mo && _mo.animate) {
-        var cfills = root.querySelectorAll('.pilo-chart .pilo-cbar-fill');
-        for (var cf = 0; cf < cfills.length; cf++) {
-          _mo.animate(cfills[cf], [
-            { transform: 'scaleY(0)' },
-            { transform: 'scaleY(1)' }
-          ], { duration: 480, delay: 140 + Math.min(cf, 12) * 45, easing: _mo.ease && _mo.ease.out, to: { transform: 'scaleY(1)' } });
-        }
-        if (cfills.length && _mo.stagger) {
-          _mo.stagger(root.querySelectorAll('.pilo-chart .pilo-cbar-v'), { step: 45, y: 4, duration: 260, delay: 220 });
-          _mo.stagger(root.querySelectorAll('.pilo-kfs .pilo-kf'), { step: 60, y: 6, duration: 280, delay: 340 });
-        }
+      // La pousse des barres est désormais dans chart.bind() → homogène Pilotage ↔ fiche officine.
+      if (_mo && _mo.stagger) {
+        _mo.stagger(root.querySelectorAll('.pilo-chart .pilo-cbar-v'), { step: 45, y: 4, duration: 260, delay: 220 });
+        _mo.stagger(root.querySelectorAll('.pilo-kfs .pilo-kf'), { step: 60, y: 6, duration: 280, delay: 340 });
       }
 
-      // ── Bind chart hover ──
+      // ── Bind chart (sélection de mois + pousse + tooltip) ──
       chart.bind(root);
     }
   };
@@ -957,7 +949,7 @@
         dchip = '<span class="pilo-cbar-d ' + (up ? 'up' : 'dn') + '">' + (up ? '+' : '') + Math.round(dd) + '%</span>';
         dtip = ' · ' + (up ? '▲ +' : '▼ ') + Math.round(dd) + '% vs mois préc.';
       }
-      return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (isLast ? ' pilo-cbar-cur' : '') + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca) + dtip) + '">' +
+      return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (isLast ? ' pilo-cbar-cur' : '') + '" data-i="' + i + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca) + dtip) + '">' +
         '<span class="pilo-cbar-v mono">' + V2.fmtK(b.ca) + '</span>' + dchip +
         '<div class="pilo-cbar-track">' +
           '<span class="pilo-cbar-fill' + (isLast ? ' cur' : '') + '" style="height:' + h.toFixed(1) + '%"></span>' +
@@ -985,6 +977,8 @@
           '<div class="v2-card-t">' + ICO('pilo', 17) + 'Évolution du CA · 13 mois</div>' +
           '<span class="pilo-chart-period mono">' + esc(range) + '</span>' +
         '</div>' +
+        '<div class="pilo-readout" id="pilo-readout"></div>' +
+        '<div class="pilo-hint">Touche un mois pour voir son évolution</div>' +
         '<div class="pilo-chart" id="pilo-chart">' + barsHtml +
           '<div class="pilo-tip" id="pilo-tip"></div>' +
         '</div>' +
@@ -996,21 +990,59 @@
       var card = root.querySelector('.pilo-chart-card'); if (card) card.classList.add('in');
       var tip = root.querySelector('#pilo-tip');
       var chartEl = root.querySelector('#pilo-chart');
-      if (!tip || !chartEl) return;
-      Array.prototype.forEach.call(root.querySelectorAll('.pilo-cbar'), function (el) {
-        var show = function () {
-          tip.textContent = el.dataset.tip;
-          tip.classList.add('show');
-          var cr = chartEl.getBoundingClientRect();
-          var er = el.getBoundingClientRect();
-          var x = er.left - cr.left + er.width / 2;
-          tip.style.left = Math.min(Math.max(x, 70), cr.width - 70) + 'px';
-        };
-        el.addEventListener('mouseenter', show);
-        el.addEventListener('pointerdown', show);   // lecture au doigt (mobile terrain)
-        el.addEventListener('mouseleave', function () { tip.classList.remove('show'); });
+      var readout = root.querySelector('#pilo-readout');
+      var barEls = root.querySelectorAll('.pilo-cbar');
+      if (!chartEl) return;
+
+      // ── Barres qui POUSSENT (homogène Pilotage ↔ fiche officine) ──
+      var mo = V2.motion || null;
+      if (mo && mo.animate) {
+        var fills = root.querySelectorAll('.pilo-chart .pilo-cbar-fill');
+        for (var cf = 0; cf < fills.length; cf++) {
+          mo.animate(fills[cf], [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }],
+            { duration: 460, delay: 120 + Math.min(cf, 12) * 42, easing: mo.ease && mo.ease.out, to: { transform: 'scaleY(1)' } });
+        }
+      }
+
+      // ── Choisir un mois → encart d'évolution ──
+      function selectMonth(i) {
+        var b = bars[i]; if (!b) return;
+        Array.prototype.forEach.call(barEls, function (el) { el.classList.toggle('sel', (+el.dataset.i) === i); });
+        if (!readout) return;
+        var prev = i > 0 ? bars[i - 1].ca : 0;
+        var evHtml;
+        if (b.ca > 0 && prev > 0) {
+          var up = b.ca >= prev, pct = Math.round(Math.abs((b.ca - prev) / prev * 100));
+          evHtml = '<span class="pilo-ro-d ' + (up ? 'up' : 'dn') + '">' + (up ? '▲ +' : '▼ ') + pct + ' % vs mois préc.</span>';
+        } else { evHtml = '<span class="pilo-ro-d mut">' + (b.ca > 0 ? 'premier mois' : 'pas de vente') + '</span>'; }
+        var avgHtml = (b.ca > 0 && avg > 0)
+          ? '<span class="pilo-ro-a mono">' + (b.ca >= avg ? '+' : '−') + Math.round(Math.abs((b.ca - avg) / avg * 100)) + ' % vs moyenne</span>' : '';
+        readout.innerHTML = '<span class="pilo-ro-m">' + esc(cap(b.full) + ' ' + b.year) + '</span>' +
+          '<span class="pilo-ro-v mono">' + V2.fmtEur(b.ca) + '</span>' + evHtml + avgHtml;
+      }
+      Array.prototype.forEach.call(barEls, function (el) {
+        el.addEventListener('click', function () { selectMonth(+el.dataset.i); });
       });
-      chartEl.addEventListener('pointerleave', function () { tip.classList.remove('show'); });
+      // Défaut = dernier mois ; mais si le dernier semble PARTIEL (chute >60% vs préc.),
+      // on sélectionne le dernier mois complet — évite un « −89% » trompeur à l'ouverture.
+      var defI = bars.length - 1;
+      if (defI > 0 && bars[defI].ca > 0 && bars[defI - 1].ca > 0 && bars[defI].ca < bars[defI - 1].ca * 0.4) defI = defI - 1;
+      selectMonth(defI);
+
+      // ── Tooltip au survol (conservé) ──
+      if (tip) {
+        Array.prototype.forEach.call(barEls, function (el) {
+          var show = function () {
+            tip.textContent = el.dataset.tip; tip.classList.add('show');
+            var cr = chartEl.getBoundingClientRect(), er = el.getBoundingClientRect();
+            var x = er.left - cr.left + er.width / 2;
+            tip.style.left = Math.min(Math.max(x, 70), cr.width - 70) + 'px';
+          };
+          el.addEventListener('mouseenter', show);
+          el.addEventListener('mouseleave', function () { tip.classList.remove('show'); });
+        });
+        chartEl.addEventListener('pointerleave', function () { tip.classList.remove('show'); });
+      }
     }
     return { html: html, bind: bind };
   }
@@ -1097,6 +1129,21 @@
       '.pilo-chart-card{padding:20px 22px 18px;margin-bottom:14px}' +
       '.pilo-chart-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}' +
       '.pilo-chart-period{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}' +
+      // ── Encart d\'évolution du mois choisi (sélection sur le graphe) ──
+      '.pilo-readout{display:flex;align-items:center;flex-wrap:wrap;gap:8px 13px;margin:14px 0 4px;padding:11px 15px;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md)}' +
+      '.pilo-ro-m{font-size:13.5px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em;text-transform:capitalize}' +
+      '.pilo-ro-v{font-size:16px;font-weight:800;color:var(--ip-blue);font-variant-numeric:tabular-nums}' +
+      '.pilo-ro-d{font-size:11.5px;font-weight:800;display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px}' +
+      '.pilo-ro-d.up{color:var(--c-mint-txt,#0F7A52);background:color-mix(in srgb,#0F7A52 12%,transparent)}' +
+      '.pilo-ro-d.dn{color:var(--c-rose-txt,#C7283D);background:color-mix(in srgb,#C7283D 12%,transparent)}' +
+      '.pilo-ro-d.mut{color:var(--muted);background:var(--card)}' +
+      '.pilo-ro-a{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}' +
+      '.pilo-hint{font-size:10.5px;color:var(--muted-2,#9AA1B2);font-weight:600;margin:0 0 8px 2px}' +
+      '.pilo-cbar{cursor:pointer;transition:transform .15s var(--ease)}' +
+      '.pilo-cbar:hover{transform:translateY(-2px)}' +
+      '.pilo-cbar.sel .pilo-cbar-track{box-shadow:0 0 0 2px var(--ip-blue),0 0 0 5px color-mix(in srgb,var(--ip-blue) 16%,transparent)}' +
+      '.pilo-cbar.sel .pilo-cbar-lbl{color:var(--ip-blue);font-weight:800}' +
+      '.pilo-cbar.sel .pilo-cbar-v{color:var(--ip-blue)}' +
       '.pilo-chart{position:relative;display:flex;align-items:flex-end;gap:8px;height:196px}' +
       '@media(max-width:640px){.pilo-chart{gap:5px;height:168px}}' +
       '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;cursor:default;min-width:0}' +
