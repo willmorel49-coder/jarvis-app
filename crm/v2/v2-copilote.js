@@ -332,6 +332,9 @@
       '.co-tb.te{background:#FDECEF;color:#C02640}',
       '.co-tb.nw{background:#EAF0FF;color:#0050E6}',
       '.co-pill-top{background:var(--ip-blue);color:#fff}',
+      '.co-spark-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px}',
+      '.co-spark-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-2,#9AA1B2)}',
+      '.co-spark{display:block;flex:none}',
       '@media(prefers-color-scheme:dark){.co-tb.ac{background:rgba(194,65,12,.18)}.co-tb.up{background:rgba(15,122,82,.2)}.co-tb.te{background:rgba(192,38,64,.2)}.co-tb.nw{background:rgba(0,80,230,.2)}}',
       '.co-pill-accel{color:#C2410C !important;background:#FFEDD5 !important}',
       '.co-new{display:inline-block;font-family:var(--mono);font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#7A3E00;background:#FFE9CC;padding:1px 7px;border-radius:var(--r-pill,999px);margin-left:7px;vertical-align:middle;white-space:nowrap}',
@@ -439,6 +442,7 @@
     return '<div class="co-arg">' +
       '<div class="t"><span class="psh">À pousser</span>' + esc(cap(r.d)) + tensionBadge(r.c) + growthBadge(r.c) + newBadge(r.c) + '</div>' +
       '<p class="s">Une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an en France' + (g != null && g >= 8 ? ' · marché <b class="up">+' + g + '%</b> sur un an' : '') + ' · tu en as <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
+      sparkRow(r.c) +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
@@ -449,6 +453,7 @@
     return '<div class="co-arg co-grow-card">' +
       '<div class="t"><span class="psh up">Marché en croissance</span>' + esc(cap(r.d)) + '<span class="co-grow up big">↑ +' + o.g + '%</span></div>' +
       '<p class="s"><b class="up">+' + o.g + '%</b> sur un an en France · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an · seulement <b>' + num(r.n || 0) + '</b> de tes officines le commandent · <b class="stk">' + num(s) + '</b> en stock.</p>' +
+      sparkRow(r.c) +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
@@ -461,9 +466,43 @@
     return '<div class="co-arg co-accel-card">' +
       '<div class="t"><span class="psh ac">Accélère en ce moment</span>' + esc(cap(r.d)) + '<span class="co-accel big">↗ +' + o.m + '%/mois</span></div>' +
       '<p class="s">Ventes France en <b class="ac">+' + o.m + '%/mois</b> ces derniers mois' + gtxt + (o.fr >= 10 ? ' · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an' : ' · marché de niche qui grimpe') + ' · <b class="stk">' + num(s) + '</b> en stock.</p>' +
+      sparkRow(r.c) +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
+  }
+
+  // index cip13 → produit benchmark (mémoïsé) pour la mini-courbe 13 mois
+  var _benchMap = null;
+  function benchMap() {
+    if (_benchMap) return _benchMap;
+    _benchMap = new Map();
+    var B = window.BENCHMARK || [];
+    for (var i = 0; i < B.length; i++) { var b = B[i]; if (b.cip13 != null) _benchMap.set(String(b.cip13), b); }
+    return _benchMap;
+  }
+  // mini-courbe des ventes France sur 13 mois (Ameli) — SVG inline, aucune lib
+  function sparkline(cip) {
+    var b = benchMap().get(String(cip)), m = b && b.ameli_months;
+    if (!m) return '';
+    var vals = []; for (var i = 0; i < m.length; i++) if (typeof m[i] === 'number') vals.push(m[i]);
+    if (vals.length < 4) return '';
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals), span = (max - min) || 1;
+    var w = 78, h = 22, n = vals.length;
+    var pts = vals.map(function (v, i) {
+      var x = (i / (n - 1)) * (w - 2) + 1;
+      var y = (h - 2) - ((v - min) / span) * (h - 4);
+      return (Math.round(x * 10) / 10) + ',' + (Math.round(y * 10) / 10);
+    }).join(' ');
+    var up = vals[n - 1] >= vals[0], col = up ? '#0F7A52' : '#9AA1B2';
+    var ly = Math.round(((h - 2) - ((vals[n - 1] - min) / span) * (h - 4)) * 10) / 10;
+    return '<svg class="co-spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" fill="none" aria-hidden="true">' +
+      '<polyline points="' + pts + '" stroke="' + col + '" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<circle cx="' + (w - 1) + '" cy="' + ly + '" r="2.1" fill="' + col + '"/></svg>';
+  }
+  function sparkRow(cip) {
+    var sp = sparkline(cip);
+    return sp ? '<div class="co-spark-row"><span class="co-spark-l">13 mois France</span>' + sp + '</div>' : '';
   }
 
   // carte « top opportunité » — cumule les signaux (badges) + le pourquoi en une phrase
@@ -485,6 +524,7 @@
       '<div class="t"><span class="psh top">Top opportunité</span>' + esc(cap(r.d)) + '</div>' +
       (badges ? '<div class="co-tbadges">' + badges + '</div>' : '') +
       '<p class="s">' + why.join(' · ') + ' · <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
+      sparkRow(r.c) +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
@@ -496,6 +536,7 @@
     return '<div class="co-arg co-new-card">' +
       '<div class="t"><span class="psh nw">Nouveau · AMM ' + esc(n.amm) + '</span>' + esc(cap(r.d)) + growthBadge(r.c) + '</div>' +
       '<p class="s">' + (n.labo ? '<b>' + esc(cap(String(n.labo).toLowerCase())) + '</b> · ' : '') + (o.fr >= 20 ? 'la France en vend déjà <b>~' + num(o.fr) + '</b>/an · ' : 'marché qui démarre · ') + 'tu en as <b class="stk">' + num(s) + '</b> en stock — prends l\'avance.</p>' +
+      sparkRow(r.c) +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
