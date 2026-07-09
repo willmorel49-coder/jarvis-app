@@ -421,11 +421,7 @@
   V2.concTabs = function (active) {
     return '<div class="grp-hd">' +
       '<div class="grp-hd-t">Grossistes et concurrents</div>' +
-      '<div class="grp-hd-s">Comparez les prix des concurrents et suivez le répartiteur Sagitta près de chez vos clients.</div>' +
-      '<div class="grp-tabs" role="tablist">' +
-        '<button class="grp-tab' + (active === 'prix' ? ' on' : '') + '" onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
-        '<button class="grp-tab' + (active === 'sagitta' ? ' on' : '') + '" onclick="V2.go(\'sagitta\')">Répartiteur Sagitta</button>' +
-      '</div>' +
+      '<div class="grp-hd-s">Comparez les prix des concurrents près de chez vos clients.</div>' +
     '</div>';
   };
   // navigue vers la carte groupements en réglant la sous-vue (depuis n'importe quelle page)
@@ -441,9 +437,10 @@
     }
   };
 
-  // Sagitta = veille répartiteur, déplacée dans l'espace « Grossistes concurrents » (onglets V2.concTabs)
+  // Sagitta (répartiteur) FUSIONNÉ dans la carte nationale unique → redirection.
   V2.pages.sagitta = {
     render: function (root) {
+      if (V2.pages.carte) { V2.pages.carte.render(root); return; }
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
       root.innerHTML = top + V2.concTabs('sagitta') +
         '<div class="ps-bar">' +
