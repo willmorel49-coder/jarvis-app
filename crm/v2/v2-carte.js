@@ -500,7 +500,16 @@
     if (document.getElementById('v2-carte-css')) return;
     var s = document.createElement('style'); s.id = 'v2-carte-css';
     s.textContent = [
-      '.cn-wrap{display:flex;flex-direction:column;height:calc(100vh - 54px);height:calc(100dvh - 54px);min-height:520px}',
+      '.cn-wrap{display:flex;flex-direction:row;height:calc(100vh - 54px);height:calc(100dvh - 54px);min-height:520px}',
+      '.cn-side{width:288px;flex:none;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:16px 15px 22px;display:flex;flex-direction:column;gap:16px}',
+      '.cn-sgroup{display:flex;flex-direction:column;gap:8px}',
+      '.cn-seg-wrap{flex-wrap:wrap}',
+      '.cn-side .cn-sel{max-width:none;width:100%}',
+      '.cn-side .cn-search{width:100%}',
+      '.cn-side .cn-legend{padding:0;border:none;background:none;flex-direction:column;gap:6px}',
+      '.cn-side .cn-tools{padding:0;border:none;background:none;flex-direction:column;align-items:stretch;gap:8px}',
+      '.cn-side .cn-tools button{width:100%;text-align:left}',
+      '@media(max-width:760px){.cn-wrap{flex-direction:column}.cn-side{width:100%;max-height:46vh;border-right:none;border-bottom:1px solid var(--line)}}',
       '.cn-bar{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:9px 16px;border-bottom:1px solid var(--line);background:var(--card)}',
       '.cn-title{font-weight:800;font-size:15px;color:var(--ip-ink);display:flex;align-items:baseline;gap:8px}',
       '.cn-title small{font-weight:600;font-size:12px;color:var(--muted)}',
@@ -648,22 +657,23 @@
       injectCss();
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="cn-wrap">' +
-          '<div class="cn-bar">' +
+          '<aside class="cn-side">' +
             '<div class="cn-title">Carte nationale <small id="carte-count">chargement…</small></div>' +
-            '<div class="cn-grp"><span class="cn-lbl">Voir</span><div class="cn-seg">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div></div>' +
-            '<div class="cn-grp"><span class="cn-lbl">Couleur</span><div class="cn-seg">' + segBtn('comm', 'Commercial') + segBtn('type', 'Client/Prospect') + segBtn('ca', 'CA (taille)') + segBtn('uga', 'UGA') + segBtn('grp', 'Groupement') + '</div></div>' +
-            '<div class="cn-grp cn-spacer"><input id="cn-search" class="cn-search" type="search" placeholder="Rechercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
-              '<button class="cn-listbtn" onclick="V2.carteListOpen()">Liste</button></div>' +
-            '<div class="cn-grp"><select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
+            '<div class="cn-sgroup"><span class="cn-lbl">Voir</span><div class="cn-seg">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div></div>' +
+            '<div class="cn-sgroup"><span class="cn-lbl">Couleur</span><div class="cn-seg cn-seg-wrap">' + segBtn('comm', 'Commercial') + segBtn('type', 'Client/Prospect') + segBtn('ca', 'CA (taille)') + segBtn('uga', 'UGA') + segBtn('grp', 'Groupement') + '</div></div>' +
+            '<div class="cn-sgroup"><span class="cn-lbl">Filtrer</span>' +
+              '<select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
               '<select id="cn-deptsel" class="cn-sel" onchange="V2.carteDept(this.value)"></select>' +
               '<select id="cn-grpsel" class="cn-sel" onchange="V2.carteGrp(this.value)"></select></div>' +
-          '</div>' +
-          '<div class="cn-legend" id="carte-legend"></div>' +
-          '<div class="cn-tools"><span class="cn-lbl">Outils terrain</span>' +
-            '<button onclick="V2.carteTourOpen()">Ma tournée</button>' +
-            '<button onclick="V2.go(\'pharma\',\'groupements\')">Listes d\'achats groupements</button>' +
-            '<button onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
-          '</div>' +
+            '<div class="cn-sgroup"><input id="cn-search" class="cn-search" type="search" placeholder="Chercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
+              '<button class="cn-listbtn" onclick="V2.carteListOpen()">Liste des officines</button></div>' +
+            '<div class="cn-sgroup"><span class="cn-lbl">Légende</span><div class="cn-legend" id="carte-legend"></div></div>' +
+            '<div class="cn-sgroup cn-tools"><span class="cn-lbl">Outils terrain</span>' +
+              '<button onclick="V2.carteTourOpen()">Ma tournée</button>' +
+              '<button onclick="V2.go(\'pharma\',\'groupements\')">Listes d\'achats groupements</button>' +
+              '<button onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
+            '</div>' +
+          '</aside>' +
           '<div class="cn-maparea"><div id="carte-map"></div>' +
             '<div class="cn-tourbar" id="cn-tourbar"><b id="cn-tourbar-n">0 pharmacie</b>' +
               '<button onclick="V2.carteTourOpen()">Voir / organiser</button></div>' +
