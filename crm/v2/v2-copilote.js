@@ -140,6 +140,31 @@
     out.sort(function (a, b) { return (b.fr - a.fr) || (b.nv.amm || '').localeCompare(a.nv.amm || ''); });
     return out.slice(0, limit || 12);
   }
+  // TOP OPPORTUNITÉS DU JOUR — score unifié qui fusionne tous les signaux par produit
+  // (accélération %/mois + croissance YoY + gros marché France + tension ANSM + nouveauté),
+  // parmi les princeps EN STOCK. Les produits qui cumulent le plus de signaux ressortent.
+  function topOpportunities(limit) {
+    var out = [];
+    PS().forEach(function (r) {
+      if (!eligible(r)) return;                                  // princeps en stock uniquement
+      var mk = V2.market(r.c), fr = mk ? mk.avgYear : 0;
+      var mom = V2.momentum ? V2.momentum(r.c) : null;           // pente récente %/mois
+      var ten = V2.tendance ? V2.tendance(r.c) : null;           // croissance sur un an %
+      var rup = V2.rupture ? V2.rupture(r.c) : null;             // tension/rupture ANSM
+      var nv = V2.nouveaute ? V2.nouveaute(r.c) : null;          // AMM récente
+      var sc = 0, tags = [];
+      if (mom != null && mom >= 12) { sc += Math.min(mom, 60) * 1.4; tags.push({ k: 'accel', v: mom }); }
+      if (ten != null && ten >= 12 && ten <= 250) { sc += Math.min(ten, 120) * 0.6; tags.push({ k: 'grow', v: ten }); }
+      if (fr > 0) sc += Math.min(fr, 400) * 0.10;                // levier = taille du marché France
+      if (rup) { sc += 40; tags.push({ k: 'tension' }); }        // vente à sécuriser
+      if (nv) { sc += 25; tags.push({ k: 'new', v: nv.amm }); }
+      if (!tags.length || sc <= 0) return;                       // au moins un signal fort
+      out.push({ r: r, fr: fr, s: stk(r.c), mom: mom, ten: ten, rup: rup, nv: nv, sc: sc, tags: tags });
+    });
+    out.sort(function (a, b) { return b.sc - a.sc; });
+    return out.slice(0, limit || 8);
+  }
+
   // par officine : gros marchés France qu'elle ne commande pas (= ce qu'elle laisse passer)
   function officineGaps(pid, limit) {
     var owned = orderedCips(pid), out = [];
@@ -296,6 +321,18 @@
       '.co-accel-card{border-color:color-mix(in srgb,#EA580C 30%,var(--line))}',
       '.co-arg .psh.ac{color:#C2410C}',
       '.co-arg b.ac{color:#C2410C}',
+      // ── Top opportunités du jour ──
+      '.co-arg .s b.te,.co-arg b.te{color:#E0556E}',
+      '.co-top-card{border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line));background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 5%,var(--card)),var(--card));box-shadow:0 2px 10px color-mix(in srgb,var(--ip-blue) 8%,transparent)}',
+      '.co-arg .psh.top{color:var(--ip-blue)}',
+      '.co-tbadges{display:flex;flex-wrap:wrap;gap:6px}',
+      '.co-tb{font-size:10.5px;font-weight:800;letter-spacing:.01em;padding:3px 8px;border-radius:999px;white-space:nowrap;line-height:1.3}',
+      '.co-tb.ac{background:#FFF1E8;color:#C2410C}',
+      '.co-tb.up{background:#E9F8F0;color:#0F7A52}',
+      '.co-tb.te{background:#FDECEF;color:#C02640}',
+      '.co-tb.nw{background:#EAF0FF;color:#0050E6}',
+      '.co-pill-top{background:var(--ip-blue);color:#fff}',
+      '@media(prefers-color-scheme:dark){.co-tb.ac{background:rgba(194,65,12,.18)}.co-tb.up{background:rgba(15,122,82,.2)}.co-tb.te{background:rgba(192,38,64,.2)}.co-tb.nw{background:rgba(0,80,230,.2)}}',
       '.co-pill-accel{color:#C2410C !important;background:#FFEDD5 !important}',
       '.co-new{display:inline-block;font-family:var(--mono);font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#7A3E00;background:#FFE9CC;padding:1px 7px;border-radius:var(--r-pill,999px);margin-left:7px;vertical-align:middle;white-space:nowrap}',
       '.co-new-card{border-color:color-mix(in srgb,#E08A00 30%,var(--line))}',
@@ -424,6 +461,30 @@
     return '<div class="co-arg co-accel-card">' +
       '<div class="t"><span class="psh ac">Accélère en ce moment</span>' + esc(cap(r.d)) + '<span class="co-accel big">↗ +' + o.m + '%/mois</span></div>' +
       '<p class="s">Ventes France en <b class="ac">+' + o.m + '%/mois</b> ces derniers mois' + gtxt + (o.fr >= 10 ? ' · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an' : ' · marché de niche qui grimpe') + ' · <b class="stk">' + num(s) + '</b> en stock.</p>' +
+      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
+      '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
+      '</div>';
+  }
+
+  // carte « top opportunité » — cumule les signaux (badges) + le pourquoi en une phrase
+  function topCard(o) {
+    var r = o.r, s = o.s;
+    var badges = o.tags.map(function (t) {
+      if (t.k === 'accel') return '<span class="co-tb ac">↗ +' + t.v + '%/mois</span>';
+      if (t.k === 'grow') return '<span class="co-tb up">↑ +' + t.v + '%/an</span>';
+      if (t.k === 'tension') return '<span class="co-tb te">Tension ANSM</span>';
+      if (t.k === 'new') return '<span class="co-tb nw">Nouveau · ' + esc(t.v) + '</span>';
+      return '';
+    }).join('');
+    var why = [];
+    if (o.mom != null && o.mom >= 12) why.push('accélère <b class="ac">+' + o.mom + '%/mois</b>');
+    if (o.ten != null && o.ten >= 12) why.push('marché <b class="up">+' + o.ten + '%/an</b>');
+    if (o.fr >= 10) why.push('~<b>' + num(o.fr) + '</b>/an par pharmacie');
+    if (o.rup) why.push('<b class="te">en tension</b>');
+    return '<div class="co-arg co-top-card">' +
+      '<div class="t"><span class="psh top">Top opportunité</span>' + esc(cap(r.d)) + '</div>' +
+      (badges ? '<div class="co-tbadges">' + badges + '</div>' : '') +
+      '<p class="s">' + why.join(' · ') + ' · <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
@@ -580,6 +641,14 @@
           '<div class="co-foot">Marché France Ameli (ce qu\'une pharmacie moyenne vend, indicatif) · uniquement des princeps en stock Intégral, tous établissements confondus · zone geo.api.gouv.fr.</div>' +
         '</div></section>';
 
+      // ── Top opportunités du jour — LA synthèse en tête (fusion de tous les signaux) ──
+      var topOpp = topOpportunities(8);
+      var topSec = topOpp.length
+        ? '<section class="co-sec co-sec-top"><div class="co-sec-h"><h2>Top opportunités du jour</h2><span class="co-pill co-pill-top">' + topOpp.length + '</span></div>' +
+          '<p class="co-sub">Les produits qui <b>cumulent le plus de signaux</b> — accélération, croissance, gros marché, tension — et que tu as <b>en stock</b>. À pousser en priorité aujourd\'hui.</p>' +
+          '<div class="co-args">' + topOpp.map(topCard).join('') + '</div></section>'
+        : '';
+
       // ── Marchés en croissance à saisir (nouvelle intelligence marché) ──
       var grow = window.TENDANCE ? growingMarkets(12) : [];
       var growSec = grow.length
@@ -646,6 +715,7 @@
               '<span class="co-maplink-s">Les ~23 000 officines de France (hors Corse) sur la carte — couleur par UGA, groupement ou segmentation.</span></span>' +
             '<span class="co-maplink-go">Ouvrir ' + ICO('chev', 17) + '</span>' +
           '</a>' +
+          topSec +
           tourSec +
           focusSec +
           growSec +
