@@ -260,7 +260,6 @@
   function inspector(it) {
     var img = it.img ? '<div class="off-insp-img"><img src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '';
     function kpi(l, v, col) { return '<div class="off-kpi"><div class="off-kpi-l">' + l + '</div><div class="off-kpi-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + v + '</div></div>'; }
-    var alertBanner = ''; // alerte rouge retirée (à la demande) — la comparaison de prix reste affichée
     var pzBlock = '';
     if (it.pz && it.pz.price > 0) {
       var oP = it.price, pP = it.pz.price;
@@ -288,7 +287,6 @@
       '<div class="off-insp-body">' +
         img +
         '<div class="off-badges">' + badges + '</div>' +
-        alertBanner +
         '<div class="off-kpi-grid">' +
           kpi('Prix Offilog', it.price > 0 ? V2.fmtEur(it.price) : '—', 'var(--pil-froid)') +
           kpi('Rang ventes', '#' + it.rank) +
@@ -752,9 +750,6 @@
       '.off-insp-img img{max-width:100%;max-height:100%;object-fit:contain}',
       '.off-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}',
       '.off-badge{display:inline-block;padding:3px 9px;border-radius:8px;font-size:10.5px;font-weight:700;background:color-mix(in srgb,var(--bc) 13%,#fff);color:var(--bc)}',
-      '.off-alert{display:flex;gap:11px;align-items:flex-start;padding:13px 15px;border-radius:13px;background:color-mix(in srgb,var(--c-rose) 8%,#fff);border:1px solid color-mix(in srgb,var(--c-rose) 28%,transparent);margin-bottom:16px;font-size:12.5px;line-height:1.5;color:var(--ip-ink-2)}',
-      '.off-alert-ic{color:var(--c-rose);flex-shrink:0;margin-top:1px}',
-      '.off-alert b{color:var(--c-rose)}',
       '.off-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
       '.off-kpi{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}',
       '.off-kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:5px}',
