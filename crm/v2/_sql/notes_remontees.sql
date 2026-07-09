@@ -77,3 +77,11 @@ create policy profils_upsert_ins on public.profils
   for insert to authenticated with check (true);                -- toute l'équipe complète
 create policy profils_upsert_upd on public.profils
   for update to authenticated using (true) with check (true);   -- et met à jour
+
+-- ── 4. DROITS D'ACCÈS (indispensable) ────────────────────────────────
+-- La RLS autorise les LIGNES, mais PostgreSQL exige aussi un GRANT au niveau
+-- table. Sur ce projet les privilèges par défaut ne le font pas → sans ces
+-- GRANT, un utilisateur connecté reçoit « permission denied for table » (42501).
+grant select, insert, update, delete on public.notes        to authenticated;
+grant select, insert, update, delete on public.improvements to authenticated;
+grant select, insert, update, delete on public.profils      to authenticated;
