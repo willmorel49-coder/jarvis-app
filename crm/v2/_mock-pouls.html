@@ -1,7 +1,6 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Pilotage · Pouls (maquette claire)</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   :root{
     --bg:#EAEFF6; --ink:#0F1420; --muted:#6B7488; --muted2:#9AA2B2;
@@ -31,7 +30,7 @@
 
   /* HERO clair */
   .hero{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:#fff;padding:30px 32px;margin-bottom:16px;box-shadow:var(--sh1)}
-  .hero .aurora{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:.5}
+  .hero .aurora{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:.32}
   .hero .aurora span{position:absolute;width:60%;height:220%;top:-60%;border-radius:50%;will-change:transform}
   .hero .aurora .a{left:-10%;background:radial-gradient(closest-side,rgba(0,80,230,.22),transparent 70%);animation:au1 22s ease-in-out infinite alternate}
   .hero .aurora .b{left:45%;background:radial-gradient(closest-side,rgba(124,58,237,.16),transparent 70%);animation:au2 30s ease-in-out infinite alternate}
@@ -97,7 +96,6 @@
   @media(prefers-reduced-motion:reduce){.fill{transform:translateX(-50%) scaleY(1)!important;transition:none}.avg{transform:scaleX(1)}.hero .aurora span{animation:none}.ping{opacity:1}}
 </style></head>
 <body>
-<div id="fxNet"></div>
 <div class="wrap">
   <div class="top"><div class="brand"></div><div class="t">Pilotage · Réseau Intégral</div>
     <div class="seg"><button class="on">Mois</button><button>3 mois</button><button>Année</button></div></div>
@@ -124,8 +122,6 @@
         <div class="grid"></div>
         <div class="avg" id="avg"><span>moy. 318 k€</span></div>
         <div class="bars" id="bars"></div>
-        <svg class="traj" id="traj" viewBox="0 0 100 100" preserveAspectRatio="none"><path id="trajP" d="" vector-effect="non-scaling-stroke"/></svg>
-        <div class="dot" id="dot" style="display:none"></div>
         <div class="ping" id="ping"></div>
       </div>
       <div class="xlabels" id="xlabels"></div>
@@ -184,52 +180,18 @@ document.getElementById('xlabels').innerHTML=DATA.map(function(b){return '<div'+
  svg.innerHTML='<defs><linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0050E6" stop-opacity=".22"/><stop offset="1" stop-color="#0050E6" stop-opacity="0"/></linearGradient></defs>'+
   '<path d="'+area+'" fill="url(#hs)"/><path d="'+d+'" fill="none" stroke="#0050E6" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke" pathLength="1" stroke-dasharray="1" stroke-dashoffset="'+(reduce?0:1)+'">'+(reduce?'':'<animate attributeName="stroke-dashoffset" from="1" to="0" dur="1.1s" begin="0.25s" fill="freeze" calcMode="spline" keySplines=".2 .8 .2 1" keyTimes="0;1" values="1;0"/>')+'</path>';})();
 
-/* CHART : barres poussent, tracé se dessine (même repère .plot), point + ping */
+/* CHART : barres poussent, ligne de moyenne, battement sur le mois courant (SANS tracé) */
 (function(){
- var pts=DATA.map(function(b,i){return b.v>0?[(i+0.5)/N*100,100-(b.v/MAX*100)]:null;}).filter(Boolean);
- var d=pts.map(function(p,i){return(i?'L':'M')+p[0].toFixed(2)+' '+p[1].toFixed(2);}).join(' ');
- var pth=document.getElementById('trajP');pth.setAttribute('d',d);
- var len=pth.getTotalLength?pth.getTotalLength():100;pth.style.strokeDasharray=len;pth.style.strokeDashoffset=reduce?0:len;
  document.getElementById('avg').style.bottom=(AVG/MAX*100)+'%';
- // point + ping sur le mois courant (dans le repère .plot, en %)
- var cur=DATA[N-1];var cx=(N-0.5)/N*100,cy=(cur.v/MAX*100);
- var dot=document.getElementById('dot');dot.style.left=cx+'%';dot.style.bottom=cy+'%';
+ var cur=DATA[N-1],cx=(N-0.5)/N*100,cy=(cur.v/MAX*100);
  var ping=document.getElementById('ping');ping.style.left=cx+'%';ping.style.bottom=cy+'%';
  function play(){
   document.querySelectorAll('.fill').forEach(function(f,i){setTimeout(function(){f.style.transform='translateX(-50%) scaleY(1)';},reduce?0:90+i*32);});
   setTimeout(function(){document.getElementById('avg').classList.add('in');},reduce?0:400);
-  if(!reduce){setTimeout(function(){pth.style.transition='stroke-dashoffset 1.05s cubic-bezier(.2,.8,.2,1)';pth.style.strokeDashoffset=0;},560);}
-  setTimeout(function(){dot.style.display='block';ping.classList.add('go');},reduce?0:1500);
+  setTimeout(function(){ping.classList.add('go');},reduce?0:1400);
  }
  var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){play();io.disconnect();}});},{threshold:.15});
  io.observe(document.getElementById('chart'));
-})();
-
-/* particle-network 3D (clair, discret) */
-(function(){var host=document.getElementById('fxNet');var gl=null;try{gl=document.createElement('canvas').getContext('webgl');}catch(e){}
- if(!window.THREE||!gl||reduce){document.body.classList.add('no-webgl');return;}
- var COUNT=110,RADIUS=34,LINK=8.5;
- var w=function(){return innerWidth;},h=function(){return innerHeight;};
- var scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(60,w()/h(),1,300);cam.position.z=54;
- var rnd=new THREE.WebGLRenderer({antialias:true,alpha:true});rnd.setPixelRatio(Math.min(devicePixelRatio,2));rnd.setSize(w(),h());host.appendChild(rnd.domElement);
- var pos=new Float32Array(COUNT*3),vel=[];
- for(var i=0;i<COUNT;i++){var r=RADIUS*Math.cbrt(Math.random()),th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
-  pos[i*3]=r*Math.sin(ph)*Math.cos(th);pos[i*3+1]=r*Math.sin(ph)*Math.sin(th);pos[i*3+2]=r*Math.cos(ph);
-  vel.push([(Math.random()-.5)*.03,(Math.random()-.5)*.03,(Math.random()-.5)*.03]);}
- var pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
- var points=new THREE.Points(pg,new THREE.PointsMaterial({size:.8,color:0x2E7DFF,transparent:true,opacity:.85}));
- var lineGeo=new THREE.BufferGeometry(),maxSeg=COUNT*10,linePos=new Float32Array(maxSeg*6);
- lineGeo.setAttribute('position',new THREE.BufferAttribute(linePos,3));
- var lines=new THREE.LineSegments(lineGeo,new THREE.LineBasicMaterial({color:0x0050E6,transparent:true,opacity:.16}));
- var world=new THREE.Group();world.add(points,lines);scene.add(world);
- var tmx=0,tmy=0,mx=0,my=0;
- addEventListener('pointermove',function(e){tmx=e.clientX/innerWidth-.5;tmy=e.clientY/innerHeight-.5;});
- addEventListener('resize',function(){cam.aspect=w()/h();cam.updateProjectionMatrix();rnd.setSize(w(),h());});
- function rebuild(){var n=0;for(var i=0;i<COUNT;i++)for(var j=i+1;j<COUNT;j++){var dx=pos[i*3]-pos[j*3],dy=pos[i*3+1]-pos[j*3+1],dz=pos[i*3+2]-pos[j*3+2];
-  if(dx*dx+dy*dy+dz*dz<LINK*LINK&&n<maxSeg){linePos[n*6]=pos[i*3];linePos[n*6+1]=pos[i*3+1];linePos[n*6+2]=pos[i*3+2];linePos[n*6+3]=pos[j*3];linePos[n*6+4]=pos[j*3+1];linePos[n*6+5]=pos[j*3+2];n++;}}
-  lineGeo.setDrawRange(0,n*2);lineGeo.attributes.position.needsUpdate=true;}
- (function loop(){requestAnimationFrame(loop);for(var i=0;i<COUNT;i++)for(var a=0;a<3;a++){pos[i*3+a]+=vel[i][a];if(pos[i*3+a]>RADIUS||pos[i*3+a]<-RADIUS)vel[i][a]*=-1;}
-  pg.attributes.position.needsUpdate=true;rebuild();mx+=(tmx-mx)*.05;my+=(tmy-my)*.05;world.rotation.y+=.001;world.rotation.x=my*.5;world.rotation.y+=mx*.02;rnd.render(scene,cam);})();
 })();
 </script>
 </body></html>
