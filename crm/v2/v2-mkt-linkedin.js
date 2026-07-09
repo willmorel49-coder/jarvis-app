@@ -571,7 +571,7 @@
     var total = 0; buckets.forEach(function (b) { total += b.posts.length; });
     var qhtml = '<div class="li-qhead"><h2>Votre file<span class="li-count">' + total + ' post' + (total > 1 ? 's' : '') + '</span></h2>' +
       '<button class="li-linkbtn" onclick="V2.li.setView(\'cal\')">Voir tout le mois →</button></div>';
-    if (!total) qhtml += '<div class="li-empty">Aucun post pour l’instant.<br>Cliquez « + Nouveau post » ou lancez l’Assistant stratégie ✨</div>';
+    if (!total) qhtml += '<div class="li-empty">Aucun post pour l’instant.<br>Clique sur « + Nouveau post » ou lance l’Assistant stratégie.</div>';
     else buckets.forEach(function (b) {
       if (!b.posts.length) return;
       qhtml += '<div class="li-qday"><div class="li-qlabel' + (b.overdue ? ' li-overdue' : '') + '">' +

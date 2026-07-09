@@ -387,17 +387,17 @@
       return '<button class="lis-opt' + on + '" onclick="V2.lis.theme(\'' + p.k + '\')">' + esc(p.label) + '</button>';
     }).join('') + '</div>';
     return '<div class="lis-wrap">' +
-      '<div class="lis-top"><div class="lis-title"><span class="g">✨</span> Assistant stratégie</div>' +
+      '<div class="lis-top"><div class="lis-title">Assistant stratégie</div>' +
       '<button class="lis-x" onclick="V2.lis.close()">✕</button></div>' +
       '<div class="lis-sub">Quelques réponses et je te génère un plan de posts daté, positif et prêt à suivre — calé sur les grandes causes du calendrier.</div>' +
-      '<div class="lis-q"><div class="lis-ql">📅 Cadence de publication</div>' + segNum('cadence', CADENCES, cfg.cadence, ' / sem.') + '</div>' +
-      '<div class="lis-q"><div class="lis-ql">🗓️ Sur combien de semaines</div>' + segNum('horizon', HORIZONS, cfg.horizon, ' sem.') + '</div>' +
-      '<div class="lis-q"><div class="lis-ql">🗣️ Ton dominant</div>' + seg('tone', TONES, cfg.tone, false) + '</div>' +
-      '<div class="lis-q"><div class="lis-ql">🧩 Familles à privilégier <small style="font-weight:500;color:#8493b8">(plusieurs possibles)</small></div>' + themeOpts + '</div>' +
-      '<div class="lis-q"><div class="lis-ql">▶️ Démarrer le</div>' +
+      '<div class="lis-q"><div class="lis-ql">Cadence de publication</div>' + segNum('cadence', CADENCES, cfg.cadence, ' / sem.') + '</div>' +
+      '<div class="lis-q"><div class="lis-ql">Sur combien de semaines</div>' + segNum('horizon', HORIZONS, cfg.horizon, ' sem.') + '</div>' +
+      '<div class="lis-q"><div class="lis-ql">Ton dominant</div>' + seg('tone', TONES, cfg.tone, false) + '</div>' +
+      '<div class="lis-q"><div class="lis-ql">Familles à privilégier <small style="font-weight:500;color:#8493b8">(plusieurs possibles)</small></div>' + themeOpts + '</div>' +
+      '<div class="lis-q"><div class="lis-ql">Démarrer le</div>' +
         '<input type="date" class="lis-date" value="' + startVal() + '" onchange="V2.lis.pick(\'start\',this.value)"> ' +
         '<span style="color:#8493b8;font-size:12.5px">par défaut : lundi prochain</span></div>' +
-      '<div class="lis-cta"><button class="lis-btn-p lis-btn" onclick="V2.lis.gen()">✨ Générer mon plan (' + (cfg.cadence * cfg.horizon) + ' posts)</button></div>' +
+      '<div class="lis-cta"><button class="lis-btn-p lis-btn" onclick="V2.lis.gen()">Générer mon plan (' + (cfg.cadence * cfg.horizon) + ' posts)</button></div>' +
       '</div>';
   }
   function startVal() {
@@ -440,14 +440,14 @@
       '</div>';
     }).join('');
     return '<div class="lis-wrap">' +
-      '<div class="lis-top"><div class="lis-title"><span class="g">✨</span> Ton plan éditorial</div>' +
+      '<div class="lis-top"><div class="lis-title">Ton plan éditorial</div>' +
       '<button class="lis-x" onclick="V2.lis.close()">✕</button></div>' +
       '<div class="lis-sub">Pour chaque jour, choisis une des 2 idées proposées (ou « 2 autres idées »), puis ajoute tout au calendrier.</div>' +
       recap + (cards || '<div class="lis-sub">Aucun post — reviens au quiz.</div>') +
       '<div class="lis-cta">' +
         '<button class="lis-btn" onclick="V2.lis.back()">‹ Modifier le quiz</button>' +
         '<button class="lis-btn" onclick="V2.lis.regen()">↻ Régénérer tout</button>' +
-        '<button class="lis-btn-p lis-btn" onclick="V2.lis.add()">＋ Ajouter au calendrier (' + plan.length + ')</button>' +
+        '<button class="lis-btn-p lis-btn" onclick="V2.lis.add()">Ajouter au calendrier (' + plan.length + ')</button>' +
       '</div></div>';
   }
   function draw() {
@@ -511,7 +511,7 @@
     chain.then(function () {
       isOpen = false; draw();
       if (LI().goCal) LI().goCal(first);
-      try { toast(rows.length + ' posts ajoutés au calendrier ✨'); } catch (e) {}
+      try { toast(rows.length + ' posts ajoutés au calendrier'); } catch (e) {}
     });
   };
 
