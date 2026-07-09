@@ -668,18 +668,9 @@
         var ca = V2.sumCA(V2.sales.filter(function (s) { return s.pharmacyId === p.id; }));
         return { p: p, ca: ca };
       }).filter(function (x) { return x.ca > 0; }).sort(function (a, b) { return b.ca - a.ca; });
-      var recent = withCa.slice(0, 3);
-      var COLORS = ['var(--c-opp)', 'var(--c-pilo)', 'var(--c-fiche)'];
-
       var nbPharma = withCa.length;
       var caTotal = withCa.reduce(function (s, x) { return s + x.ca; }, 0);
       var today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-      var recentHtml = recent.length
-        ? recent.map(function (x, i) {
-            return '<a class="v2-rchip" onclick="V2.go(\'pharma\',\'' + x.p.id + '\')"><span class="d" style="background:' + COLORS[i] + '"></span>' + esc(x.p.name) + '</a>';
-          }).join('') + '<span class="v2-rchip more" onclick="V2.go(\'pharma\')">toutes mes officines</span>'
-        : '<span class="v2-rchip more" onclick="V2.go(\'pharma\')">voir mes officines</span>';
 
       var P = [
         { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Officines', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas, son audit marge — classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
@@ -798,7 +789,6 @@
           '</div>' +
           '<div class="v2-search" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
             '<input readonly placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
-          '<div class="v2-recent">' + recentHtml + '</div>' +
           pilHtml +
         '</div>';
     }
