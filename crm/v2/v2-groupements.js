@@ -421,7 +421,7 @@
   V2.concTabs = function (active) {
     return '<div class="grp-hd">' +
       '<div class="grp-hd-t">Grossistes et concurrents</div>' +
-      '<div class="grp-hd-s">Comparez les prix des concurrents près de chez vos clients.</div>' +
+      '<div class="grp-hd-s">Vos prix d\'achat Intégral comparés aux prix publics des enseignes concurrentes.</div>' +
     '</div>';
   };
   // navigue vers la carte groupements en réglant la sous-vue (depuis n'importe quelle page)
