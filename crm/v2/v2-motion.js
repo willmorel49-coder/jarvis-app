@@ -272,6 +272,7 @@
         if (!host) return;
         if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
         host.classList.add('mo-rippling');
+        var stale = host.querySelectorAll('.mo-ripple'); for (var q = 0; q < stale.length; q++) stale[q].remove();
         var r = host.getBoundingClientRect(), size = Math.max(r.width, r.height) * 1.1;
         var ink = document.createElement('span');
         ink.className = 'mo-ripple';
