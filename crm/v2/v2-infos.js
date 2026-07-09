@@ -107,6 +107,8 @@
       var c = String(b.cip13 || ''); if (seen[c]) continue; seen[c] = 1;
       var stk = V2.stock ? V2.stock(c) : 1;
       if (V2.stock && stk <= 0) continue;   // on ne pousse jamais une alternative en rupture chez Intégral
+      var an = norm(b.artnature || '');     // générique = pas d'abandon de marge → on ne le pousse pas comme « opportunité »
+      if (an === 'generique' || an === 'generique_partenaire' || an === 'generique partenaire') continue;
       var bp = V2.bestPrice ? V2.bestPrice(b) : { ip: b.prix_ip, remise: b.remise_pct };
       hits.push({ d: b.designation || '', cip: c, ip: bp.ip, remise: bp.remise || 0, rank: b.ip_rank_qty || 9999, stock: stk });
     }
@@ -336,7 +338,6 @@
     var st = document.createElement('style'); st.id = 'v2-infos-css';
     st.textContent = [
       // accents locaux par thème (mappés sur tokens v2.css)
-      '.inf2{--a-rose:var(--c-rose);--a-amber:var(--c-amber);--a-blue:var(--ip-blue);--a-green:var(--c-opp)}',
       '.inf2 .a-rose{--acc:var(--c-rose)}.inf2 .a-amber{--acc:var(--c-amber)}.inf2 .a-blue{--acc:var(--ip-blue)}.inf2 .a-green{--acc:var(--c-opp)}',
       // ── HERO ──
       '.inf2 .inf-hero{text-align:center;margin-bottom:var(--sp-6)}',

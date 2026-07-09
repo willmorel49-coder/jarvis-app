@@ -123,7 +123,7 @@
   }
 
   V2.molFilter = function (k) { S.chip = k; save(); V2.render(); };
-  V2.molSort = function (k) { S.sort = k; save(); fill(true); syncHead(); var ms = document.getElementById('mol-msort'); if (ms) ms.value = k; };
+  V2.molSort = function (k) { S.sort = k; save(); fill(true); syncHead(); };
   V2.molEtab = function (code) { S.etab = code || ''; save(); if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'molecules') V2.render(); }); V2.render(); };
   V2.molStockOnly = function (on) { S.stockOnly = !!on; save(); V2.render(); };
   V2.molPerCat = function (n) { S.perCat = (+n) || 0; save(); V2.render(); };
