@@ -12,7 +12,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260708l';
+  var CB = '?v=20260708n';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
   var depotLayer = null;         // marqueurs des établissements Intégral
@@ -35,6 +35,9 @@
   var commFocus = '', grpFocus = '', typeFocus = 'all';   // all | clients | prospects
   var searchTerm = '';   // recherche nom / ville / cp / titulaire
   var listSort = 'nom';  // tri de la liste : nom | ca
+  var deptFocus = '';    // filtre département (2 chiffres, 3 pour DOM)
+  var caMin = 0;         // filtre CA minimum (€)
+  var DEPT_NAMES = { '01': 'Ain', '02': 'Aisne', '03': 'Allier', '04': 'Alpes-de-Hte-Provence', '05': 'Hautes-Alpes', '06': 'Alpes-Maritimes', '07': 'Ardèche', '08': 'Ardennes', '09': 'Ariège', '10': 'Aube', '11': 'Aude', '12': 'Aveyron', '13': 'Bouches-du-Rhône', '14': 'Calvados', '15': 'Cantal', '16': 'Charente', '17': 'Charente-Maritime', '18': 'Cher', '19': 'Corrèze', '21': "Côte-d'Or", '22': "Côtes-d'Armor", '23': 'Creuse', '24': 'Dordogne', '25': 'Doubs', '26': 'Drôme', '27': 'Eure', '28': 'Eure-et-Loir', '29': 'Finistère', '30': 'Gard', '31': 'Haute-Garonne', '32': 'Gers', '33': 'Gironde', '34': 'Hérault', '35': 'Ille-et-Vilaine', '36': 'Indre', '37': 'Indre-et-Loire', '38': 'Isère', '39': 'Jura', '40': 'Landes', '41': 'Loir-et-Cher', '42': 'Loire', '43': 'Haute-Loire', '44': 'Loire-Atlantique', '45': 'Loiret', '46': 'Lot', '47': 'Lot-et-Garonne', '48': 'Lozère', '49': 'Maine-et-Loire', '50': 'Manche', '51': 'Marne', '52': 'Haute-Marne', '53': 'Mayenne', '54': 'Meurthe-et-Moselle', '55': 'Meuse', '56': 'Morbihan', '57': 'Moselle', '58': 'Nièvre', '59': 'Nord', '60': 'Oise', '61': 'Orne', '62': 'Pas-de-Calais', '63': 'Puy-de-Dôme', '64': 'Pyrénées-Atlantiques', '65': 'Hautes-Pyrénées', '66': 'Pyrénées-Orientales', '67': 'Bas-Rhin', '68': 'Haut-Rhin', '69': 'Rhône', '70': 'Haute-Saône', '71': 'Saône-et-Loire', '72': 'Sarthe', '73': 'Savoie', '74': 'Haute-Savoie', '75': 'Paris', '76': 'Seine-Maritime', '77': 'Seine-et-Marne', '78': 'Yvelines', '79': 'Deux-Sèvres', '80': 'Somme', '81': 'Tarn', '82': 'Tarn-et-Garonne', '83': 'Var', '84': 'Vaucluse', '85': 'Vendée', '86': 'Vienne', '87': 'Haute-Vienne', '88': 'Vosges', '89': 'Yonne', '90': 'Belfort', '91': 'Essonne', '92': 'Hauts-de-Seine', '93': 'Seine-St-Denis', '94': 'Val-de-Marne', '95': "Val-d'Oise", '971': 'Guadeloupe', '972': 'Martinique', '973': 'Guyane', '974': 'La Réunion', '976': 'Mayotte' };
   var COMM_COL = {}, GRP_COL = {};
   var PALETTE = ['#0050E6', '#EA580C', '#0F7A52', '#7C3AED', '#C7283D', '#00B5D8', '#C7791A',
     '#DB2777', '#2563EB', '#16A34A', '#9333EA', '#DC2626', '#0891B2', '#CA8A04'];
@@ -82,6 +85,7 @@
     }
     if (colorMode === 'type') return SEG_COL[D.seg[p[4]]] || '#AEB6C4';
     if (colorMode === 'grp') return GRP_COL[p[3]] || '#CBD2DD';
+    if (colorMode === 'ca') { var c = caOf(p); if (!c) return '#E2E6EC'; if (c >= 50000) return '#7A0C2E'; if (c >= 20000) return '#C7283D'; if (c >= 8000) return '#EA580C'; if (c >= 2000) return '#F59E0B'; return '#FCD34D'; }
     return hsl(D.uga[p[2]] || '');
   }
 
@@ -123,11 +127,14 @@
       '</div></div>';
   }
 
+  function deptOf(cp) { cp = String(cp || '').replace(/\s/g, ''); if (cp.length < 2) return ''; return /^97/.test(cp) ? cp.slice(0, 3) : cp.slice(0, 2); }
   function pass(p) {
     if (typeFocus === 'clients' && !isClient(p)) return false;
     if (typeFocus === 'prospects' && D.seg[p[4]] !== 'Prospect') return false;
     if (commFocus && D.comm[p[5]] !== commFocus) return false;
     if (grpFocus && D.grp[p[3]] !== grpFocus) return false;
+    if (deptFocus && deptOf(p[8]) !== deptFocus) return false;
+    if (caMin && caOf(p) < caMin) return false;
     if (searchTerm && !matchTxt(p)) return false;
     return true;
   }
@@ -427,6 +434,7 @@
     }
     if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A') + lg(SEG_COL['Client B'], 'Client B') + lg(SEG_COL['Client C'], 'Client C') + lg(SEG_COL.Prospect, 'Prospect') + lg('#AEB6C4', 'Non défini');
     if (colorMode === 'grp') return Object.keys(GRP_COL).map(function (g) { return lg(GRP_COL[g], D.grp[g]); }).join('') + lg('#CBD2DD', 'Autres');
+    if (colorMode === 'ca') return lg('#FCD34D', '< 2 k€') + lg('#F59E0B', '2–8 k€') + lg('#EA580C', '8–20 k€') + lg('#C7283D', '20–50 k€') + lg('#7A0C2E', '≥ 50 k€') + lg('#E2E6EC', 'Pas de CA');
     return '<span class="cn-lg-txt">' + (D ? D.uga.length : 0) + ' UGA · une couleur par secteur</span>';
   }
 
@@ -539,7 +547,11 @@
       D.grp.filter(function (g) { return g && g !== '—'; })
         .sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); })
         .map(function (g) { return '<option>' + esc(g) + '</option>'; }).join('');
+    var depSet = {}; D.p.forEach(function (p) { var d = deptOf(p[8]); if (d) depSet[d] = 1; });
+    var deptOpts = '<option value="">Tous les départements</option>' +
+      Object.keys(depSet).sort().map(function (d) { return '<option value="' + d + '">' + d + ' · ' + esc(DEPT_NAMES[d] || '') + '</option>'; }).join('');
     root.querySelector('#cn-comm').innerHTML = commOpts;
+    root.querySelector('#cn-deptsel').innerHTML = deptOpts;
     root.querySelector('#cn-grpsel').innerHTML = grpOpts;
     root.querySelector('#carte-legend').innerHTML = legendHtml();
     map = window.L.map(root.querySelector('#carte-map'), { preferCanvas: true, zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
@@ -569,10 +581,11 @@
           '<div class="cn-bar">' +
             '<div class="cn-title">Carte nationale <small id="carte-count">chargement…</small></div>' +
             '<div class="cn-grp"><span class="cn-lbl">Voir</span><div class="cn-seg">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div></div>' +
-            '<div class="cn-grp"><span class="cn-lbl">Couleur</span><div class="cn-seg">' + segBtn('comm', 'Commercial') + segBtn('type', 'Client/Prospect') + segBtn('uga', 'UGA') + segBtn('grp', 'Groupement') + '</div></div>' +
+            '<div class="cn-grp"><span class="cn-lbl">Couleur</span><div class="cn-seg">' + segBtn('comm', 'Commercial') + segBtn('type', 'Client/Prospect') + segBtn('ca', 'CA') + segBtn('uga', 'UGA') + segBtn('grp', 'Groupement') + '</div></div>' +
             '<div class="cn-grp cn-spacer"><input id="cn-search" class="cn-search" type="search" placeholder="Rechercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
               '<button class="cn-listbtn" onclick="V2.carteListOpen()">Liste</button></div>' +
             '<div class="cn-grp"><select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
+              '<select id="cn-deptsel" class="cn-sel" onchange="V2.carteDept(this.value)"></select>' +
               '<select id="cn-grpsel" class="cn-sel" onchange="V2.carteGrp(this.value)"></select></div>' +
           '</div>' +
           '<div class="cn-legend" id="carte-legend"></div>' +
@@ -613,6 +626,7 @@
   };
   V2.carteComm = function (v) { commFocus = v || ''; rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); };
   V2.carteGrp = function (v) { grpFocus = v || ''; rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); };
+  V2.carteDept = function (v) { deptFocus = v || ''; rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); };
   var _searchTO = null;
   V2.carteSearch = function (v) {
     searchTerm = v || '';
