@@ -145,9 +145,12 @@
     return norm(p[6]).indexOf(q) >= 0 || norm(p[7]).indexOf(q) >= 0 || norm(p[8]).indexOf(q) >= 0 || norm(p[10]).indexOf(q) >= 0;
   }
 
+  // taille du point : uniforme, sauf en mode « CA » où le rayon grandit avec le CA (grosses cibles = gros points)
+  function caRadius(c) { if (!c || c <= 0) return 4; return Math.min(13, 4.5 + Math.sqrt(c / 1000) * 1.15); }
   function markerStyle(p, i) {
     var t = inTour(i);
-    return { renderer: canvas, radius: t ? 7 : 5.5, color: t ? '#10131C' : '#fff', weight: t ? 2 : 0.9, fillColor: colorFor(p), fillOpacity: 0.95 };
+    var r = t ? 7 : (colorMode === 'ca' ? caRadius(caOf(p)) : 5.5);
+    return { renderer: canvas, radius: r, color: t ? '#10131C' : '#fff', weight: t ? 2 : 0.9, fillColor: colorFor(p), fillOpacity: 0.95 };
   }
   function rebuild() {
     if (!map) return;
@@ -173,7 +176,7 @@
     map.addLayer(cluster);
     var cn = document.getElementById('carte-count'); if (cn) cn.textContent = markers.length.toLocaleString('fr') + ' pharmacies';
   }
-  function recolor() { if (markers) for (var k = 0; k < markers.length; k++) markers[k].setStyle({ fillColor: colorFor(D.p[markers[k]._pi]) }); }
+  function recolor() { if (markers) for (var k = 0; k < markers.length; k++) markers[k].setStyle(markerStyle(D.p[markers[k]._pi], markers[k]._pi)); }
   function refreshMarkerStyle(i) { if (!markers) return; for (var k = 0; k < markers.length; k++) if (markers[k]._pi === i) { markers[k].setStyle(markerStyle(D.p[i], i)); break; } }
 
   // ── PLAN DE TOURNÉE (sélection de pharmacies → journée de prospection) ──
@@ -648,7 +651,7 @@
           '<div class="cn-bar">' +
             '<div class="cn-title">Carte nationale <small id="carte-count">chargement…</small></div>' +
             '<div class="cn-grp"><span class="cn-lbl">Voir</span><div class="cn-seg">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div></div>' +
-            '<div class="cn-grp"><span class="cn-lbl">Couleur</span><div class="cn-seg">' + segBtn('comm', 'Commercial') + segBtn('type', 'Client/Prospect') + segBtn('ca', 'CA') + segBtn('uga', 'UGA') + segBtn('grp', 'Groupement') + '</div></div>' +
+            '<div class="cn-grp"><span class="cn-lbl">Couleur</span><div class="cn-seg">' + segBtn('comm', 'Commercial') + segBtn('type', 'Client/Prospect') + segBtn('ca', 'CA (taille)') + segBtn('uga', 'UGA') + segBtn('grp', 'Groupement') + '</div></div>' +
             '<div class="cn-grp cn-spacer"><input id="cn-search" class="cn-search" type="search" placeholder="Rechercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
               '<button class="cn-listbtn" onclick="V2.carteListOpen()">Liste</button></div>' +
             '<div class="cn-grp"><select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
@@ -660,7 +663,6 @@
             '<button onclick="V2.carteTourOpen()">Ma tournée</button>' +
             '<button onclick="V2.go(\'pharma\',\'groupements\')">Listes d\'achats groupements</button>' +
             '<button onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
-            '<button onclick="V2.go(\'sagitta\')">Sagitta (répartiteur)</button>' +
           '</div>' +
           '<div class="cn-maparea"><div id="carte-map"></div>' +
             '<div class="cn-tourbar" id="cn-tourbar"><b id="cn-tourbar-n">0 pharmacie</b>' +
