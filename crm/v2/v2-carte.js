@@ -647,6 +647,8 @@
     root.querySelector('#cn-deptsel').innerHTML = deptOpts;
     root.querySelector('#cn-grpsel').innerHTML = grpOpts;
     root.querySelector('#carte-legend').innerHTML = legendHtml();
+    // Nettoie une éventuelle carte précédente (évite l'accumulation d'instances Leaflet au fil des visites).
+    if (map) { try { map.remove(); } catch (e) {} map = null; cluster = null; markers = null; }
     map = window.L.map(root.querySelector('#carte-map'), { preferCanvas: true, zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
     canvas = window.L.canvas({ padding: 0.5 });
     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 18, subdomains: 'abcd' }).addTo(map);

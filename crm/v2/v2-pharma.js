@@ -2708,7 +2708,7 @@
       '.phf-hkpi:has(.phf-push) .phf-hkpi-l{color:var(--c-amber-txt)}',
       '.phf-hkpi:has(.phf-push):hover{box-shadow:0 6px 16px color-mix(in srgb,var(--c-amber) 22%,transparent)}',
       '.phf-hcontacts{display:flex;gap:8px}',
-      '.phf-cbtn2{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ip-blue);background:var(--card-2);border:1px solid var(--line-strong);border-radius:var(--r-btn);padding:9px 12px;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s}',
+      '.phf-cbtn2{display:inline-flex;align-items:center;gap:6px;min-height:var(--tap-min,44px);box-sizing:border-box;font-size:12.5px;font-weight:700;color:var(--ip-blue);background:var(--card-2);border:1px solid var(--line-strong);border-radius:var(--r-btn);padding:9px 12px;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s}',
       '.phf-cbtn2:hover{background:#fff;border-color:var(--ip-blue)}',
       // Boutons compacts « Listes à proposer » (en haut de la fiche)
       '.phf-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:14px 0 2px}',
