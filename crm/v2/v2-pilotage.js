@@ -120,11 +120,21 @@
     var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
     if (mode === 'current') {
+      // Même garde-fou que le graphe : si le dernier mois pèse < 40 % du précédent,
+      // c'est un mois partiel (début de mois) → on affiche le dernier mois COMPLET.
+      // Évite un « CA net » riquiqui et un « −89 % » trompeur en tête de page.
+      var idx = months.length - 1;
+      if (idx > 0) {
+        var sA = V2.sumCA(sales.filter(function (s) { return mkey(s.year, s.month) === mkey(months[idx].year, months[idx].month); }));
+        var sB = V2.sumCA(sales.filter(function (s) { return mkey(s.year, s.month) === mkey(months[idx - 1].year, months[idx - 1].month); }));
+        if (sB > 0 && sA > 0 && sA < sB * 0.4) idx = idx - 1;
+      }
+      var cur = months[idx], curK = mkey(cur.year, cur.month);
       return {
-        label: cap(MN[last.month - 1]) + ' ' + last.year,
+        label: cap(MN[cur.month - 1]) + ' ' + cur.year,
         prevLabel: 'mois précédent',
-        inPeriod: function (s) { return mkey(s.year, s.month) === lastK; },
-        inPrev: function (s) { return mkey(s.year, s.month) === lastK - 1; },
+        inPeriod: function (s) { return mkey(s.year, s.month) === curK; },
+        inPrev: function (s) { return mkey(s.year, s.month) === curK - 1; },
       };
     }
     if (mode === '3m') {
