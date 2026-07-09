@@ -62,7 +62,7 @@
     var s = size || 24;
     var sw = strokeW || 1.7;
     return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-           'stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
+           'stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + inner + '</svg>';
   }
   window.ICO = ICO;
   window.V2_ICONS = P;
