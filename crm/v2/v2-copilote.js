@@ -236,6 +236,102 @@
   }
   V2.copiloteSelPharma = function (id) { selPid = id; if (V2.render) V2.render(); };
 
+  // ════ EXPORT « FICHE DE VISITE » (2 destinataires × 2 formats) ════
+  // mode 'client' = à laisser au pharmacien → PPHT + net remisé, JAMAIS l'abandon de marge.
+  // mode 'interne' = ma prépa → tout (abandon, marge pharmacien, stock), « ne pas laisser au client ».
+  function visiteName() {
+    var phs = pharmaOptions();
+    for (var i = 0; i < phs.length; i++) if (String(phs[i].id) === String(selPid)) return phs[i].name;
+    return 'Officine';
+  }
+  function visiteRows() {
+    if (!selPid) return [];
+    return officineGaps(selPid, 20).map(function (o) {
+      var r = o.r;
+      return { d: r.d, cip: r.c, ppht: r.ppht || 0, net: r.net || 0, ab: (r.f !== 'gen' && r.rpct > 0) ? r.rpct : 0, fr: o.fr, stk: stk(r.c) };
+    });
+  }
+  function visiteText(mode) {
+    var rows = visiteRows(); if (!rows.length) return '';
+    var isInt = mode === 'interne', L = [];
+    var d = ''; try { d = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }); } catch (e) {}
+    L.push('Fiche de visite — ' + visiteName());
+    L.push(d + (isInt ? ' · USAGE INTERNE — ne pas laisser au client' : ''));
+    L.push('', 'Produits à proposer (marché France que l\'officine ne commande pas encore) :');
+    rows.forEach(function (x) {
+      var s = '- ' + cap(x.d);
+      if (x.net > 0) s += ' — ' + eur(x.net).replace(/ /g, ' ') + ' net';
+      if (isInt && x.ab > 0) s += ' (abandon ' + String(x.ab).replace('.', ',') + '%)';
+      if (x.fr >= 10) s += ' · ~' + num(x.fr) + '/an France';
+      if (isInt) s += ' · stock ' + num(x.stk);
+      L.push(s);
+    });
+    L.push('', 'Intégral Pharma');
+    return L.join('\n');
+  }
+  function visiteHtml(mode) {
+    var rows = visiteRows(), isInt = mode === 'interne';
+    var dateStr = ''; try { dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }); } catch (e) {}
+    function e2(v) { return (v ? (+v).toFixed(2).replace('.', ',') + ' €' : '—'); }
+    var cols = isInt
+      ? ['#', 'Produit', 'CIP', 'PPHT', 'Net remisé', 'Abandon', 'Stock', '~/an France']
+      : ['#', 'Produit', 'CIP', 'PPHT', 'Net remisé', '~/an France'];
+    var trs = rows.map(function (x, i) {
+      var tds = '<td style="padding:6px 9px;color:#9AA1B2;font-size:9px;text-align:right">' + (i + 1) + '</td>' +
+        '<td style="padding:6px 9px;font-size:10.5px;font-weight:600;color:#10131C">' + esc(cap(x.d)) + '</td>' +
+        '<td style="padding:6px 9px;font-family:monospace;font-size:9px;color:#737A8C">' + esc(x.cip) + '</td>' +
+        '<td style="padding:6px 9px;text-align:right;font-family:monospace;font-size:9.5px;color:#737A8C">' + e2(x.ppht) + '</td>' +
+        '<td style="padding:6px 9px;text-align:right;font-family:monospace;font-size:11px;font-weight:800;color:#0050E6">' + e2(x.net) + '</td>' +
+        (isInt ? '<td style="padding:6px 9px;text-align:right;font-family:monospace;font-size:9.5px;font-weight:700;color:#1E9E6A">' + (x.ab > 0 ? '−' + String(x.ab).replace('.', ',') + '%' : '—') + '</td>' : '') +
+        (isInt ? '<td style="padding:6px 9px;text-align:right;font-family:monospace;font-size:9.5px;color:#10131C">' + num(x.stk) + '</td>' : '') +
+        '<td style="padding:6px 9px;text-align:right;font-family:monospace;font-size:9.5px;color:#10131C">~' + num(x.fr) + '</td>';
+      return '<tr style="border-bottom:1px solid #EEF1F6">' + tds + '</tr>';
+    }).join('');
+    return '<div style="width:794px;box-sizing:border-box;padding:34px 40px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C;background:#fff">' +
+      '<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #10131C;padding-bottom:12px;margin-bottom:6px">' +
+        '<div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg,#0050E6,#0034A0);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px">IP</div>' +
+        '<div style="flex:1"><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Intégral Pharma</div>' +
+          '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em">Fiche de visite — ' + esc(visiteName()) + '</div></div>' +
+        '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + esc(dateStr) + '</div>' +
+      '</div>' +
+      (isInt ? '<div style="margin:10px 0;padding:7px 11px;background:#FFF1E8;border:1px solid #F6C9A8;border-radius:8px;font-size:10px;font-weight:800;color:#C2410C;text-transform:uppercase;letter-spacing:.04em">Usage interne — ne pas laisser au client</div>' : '') +
+      '<p style="font-size:11px;color:#737A8C;margin:10px 0 12px">Produits que le marché France consomme et que cette officine ne commande pas encore — tes arguments pour la visite.</p>' +
+      '<table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr style="background:#F7F9FC">' +
+        cols.map(function (h, k) { return '<th style="padding:6px 9px;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;text-align:' + (k === 1 || k === 2 ? 'left' : 'right') + '">' + h + '</th>'; }).join('') +
+      '</tr></thead><tbody>' + (trs || '<tr><td colspan="' + cols.length + '" style="padding:20px;text-align:center;color:#9AA1B2">Cette officine commande déjà les gros marchés France.</td></tr>') + '</tbody></table>' +
+      '<div style="margin-top:16px;padding-top:8px;border-top:1px solid #E5E9F2;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">Intégral Pharma · Marché France Ameli indicatif · princeps en stock Intégral' + (isInt ? ' · document interne' : ' · prix nets HT indicatifs') + '</div>' +
+    '</div>';
+  }
+  V2.copiloteVisite = function (mode, fmt) {
+    if (!selPid) { if (V2.toast) V2.toast('Choisis d\'abord une officine'); return; }
+    if (fmt === 'copy') {
+      var txt = visiteText(mode); if (!txt) { if (V2.toast) V2.toast('Rien à exporter pour cette officine'); return; }
+      var ok = function () { if (V2.toast) V2.toast('Fiche copiée ✅'); };
+      try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, function () { copyFallback(txt); ok(); }); else { copyFallback(txt); ok(); } }
+      catch (e) { copyFallback(txt); ok(); }
+      return;
+    }
+    // PDF
+    if (!window.ensureHtml2Pdf) { if (V2.toast) V2.toast('Module PDF indisponible'); return; }
+    if (V2.toast) V2.toast('Génération du PDF…');
+    window.ensureHtml2Pdf().then(function () {
+      var node = document.createElement('div');
+      node.style.cssText = 'position:fixed;left:-10000px;top:0';
+      node.innerHTML = visiteHtml(mode);
+      document.body.appendChild(node);
+      var fname = 'Fiche-visite-' + (mode === 'interne' ? 'prepa-' : '') + visiteName().replace(/[^\w-]+/g, '_').slice(0, 40) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+      window.html2pdf().set({
+        margin: 0, filename: fname, image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
+      }).from(node.firstChild).save().then(function () {
+        if (node.parentNode) node.parentNode.removeChild(node); if (V2.toast) V2.toast('PDF téléchargé');
+      }).catch(function () { if (node.parentNode) node.parentNode.removeChild(node); if (V2.toast) V2.toast('Échec du PDF', 'error'); });
+    }).catch(function () { if (V2.toast) V2.toast('Impossible de charger le module PDF', 'error'); });
+  };
+  function copyFallback(txt) { try { var ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;left:-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch (e) {} }
+
   // ── styles (mobile-first : cartes, chips, cibles 44px) ──
   function injectCss() {
     if (document.getElementById('v2-copilote-css')) return;
@@ -302,6 +398,17 @@
       '.co-lab{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}',
       '.co-select{font:inherit;font-size:14px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:var(--r-btn,12px);padding:10px 12px;min-height:44px;max-width:100%;cursor:pointer}',
       '.co-facts .v2-btn{min-height:44px}',
+      // barre « Fiche de visite »
+      '.co-visite{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 16px 14px;padding:12px 14px;background:var(--card-2);border:1px solid var(--line);border-radius:12px}',
+      '.co-visite-l{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:2px}',
+      '.co-visite-l svg{color:var(--ip-blue)}',
+      '.co-visite-grp{display:inline-flex;align-items:center;gap:7px;padding:5px 8px;border:1px solid var(--line);border-radius:10px;background:var(--card)}',
+      '.co-visite-t{font-size:12px;font-weight:700;color:var(--ip-ink)}',
+      '.co-visite-t small{color:var(--muted);font-weight:600}',
+      '.co-visite-int{border-color:color-mix(in srgb,#C2410C 30%,var(--line))}',
+      '.co-visite-int .co-visite-t{color:#C2410C}',
+      '.co-vbtn{border:1px solid var(--line-strong);background:var(--card);border-radius:8px;padding:5px 11px;font:inherit;font-size:12px;font-weight:700;color:var(--ip-ink);cursor:pointer;min-height:32px}',
+      '.co-vbtn:hover{border-color:var(--ip-blue);color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 7%,var(--card))}',
       /* petites cartes argument produit */
       '.co-args{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding:16px}',
       '.co-arg{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:var(--r-md,14px);background:var(--card);padding:14px;box-shadow:var(--sh-1)}',
@@ -679,6 +786,15 @@
             '</div>' +
           '</div>' +
           argsHtml + secuHtml +
+          (gaps.length ? '<div class="co-visite">' +
+            '<span class="co-visite-l">' + ICO('download', 14, 2) + 'Fiche de visite</span>' +
+            '<div class="co-visite-grp"><span class="co-visite-t">Pour le pharmacien</span>' +
+              '<button class="co-vbtn" onclick="V2.copiloteVisite(\'client\',\'pdf\')">PDF</button>' +
+              '<button class="co-vbtn" onclick="V2.copiloteVisite(\'client\',\'copy\')">Copier</button></div>' +
+            '<div class="co-visite-grp co-visite-int"><span class="co-visite-t">Ma prépa <small>(interne)</small></span>' +
+              '<button class="co-vbtn" onclick="V2.copiloteVisite(\'interne\',\'pdf\')">PDF</button>' +
+              '<button class="co-vbtn" onclick="V2.copiloteVisite(\'interne\',\'copy\')">Copier</button></div>' +
+          '</div>' : '') +
           '<div class="co-foot">Marché France Ameli (ce qu\'une pharmacie moyenne vend, indicatif) · uniquement des princeps en stock Intégral, tous établissements confondus · zone geo.api.gouv.fr.</div>' +
         '</div></section>';
 
