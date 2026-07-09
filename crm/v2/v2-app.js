@@ -66,7 +66,7 @@
     return '' +
       '<div class="v2-top">' +
         back + brand +
-        '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>' +
+        ((V2.route && V2.route.name === 'home') ? '' : '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>') +
         ((!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen) ? '<button class="v2-idea" title="Proposer une amélioration à l\'équipe" aria-label="Proposer une amélioration" onclick="V2.remonteeOpen()">' + ICO('spark', 16, 2) + '</button>' : '') +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
@@ -504,7 +504,7 @@
             '</div>' +
             '<div class="pres-card-d" style="font-size:12.5px;color:var(--muted);margin-top:12px">Génériques : jusqu\'à 27 % dès la 1ère boîte. Livraison adaptée au secteur (de 2×/semaine à 1×/jour). Ni franco ni engagement imposé — l\'objectif se fixe ensemble, en bonne intelligence.</div>' +
             '<div class="pres-card-d" style="font-size:12.5px;color:var(--muted);margin-top:6px">Catalogue : ' + nf(nbRefN) + ' médicaments + ' + nf(nbPara) + ' réfs parapharma · ' + nf(nbOffre) + ' offres labo en ce moment (L\'Intégral, ITP, UPSA, Sanofi).</div>' +
-            '<div class="pres-cta-line" style="cursor:default">Ces conditions vous intéressent ? Ouvrez un compte ci-dessous ↓</div>' +
+            '<div style="margin-top:16px;font-size:14px;font-weight:600;color:var(--muted)">Ces conditions vous intéressent ? Ouvrez un compte ci-dessous ↓</div>' +
           '</div>' +
 
           '<div class="pres-sec-t">Ouvrir un compte en 3 étapes</div>' +
@@ -787,8 +787,8 @@
             '<h1>Bonjour <span class="ac">' + esc(firstName) + '</span></h1>' +
             '<p class="v2-hero-sub">' + cap(today) + ' · <b>' + nbPharma + '</b> officines actives</p>' +
           '</div>' +
-          '<div class="v2-search" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
-            '<input readonly placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
+          '<div class="v2-search" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
+            '<input readonly aria-hidden="true" tabindex="-1" placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           pilHtml +
         '</div>';
     }
