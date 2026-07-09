@@ -12,7 +12,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260708p';
+  var CB = '?v=20260708r';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
   var depotLayer = null;         // marqueurs des établissements Intégral
@@ -178,6 +178,9 @@
 
   // ── PLAN DE TOURNÉE (sélection de pharmacies → journée de prospection) ──
   var TOUR_KEY = 'jarvis_tour_v1', tour = [];
+  var TOURS_KEY = 'jarvis_tours_v2';   // tournées enregistrées (nommées)
+  function loadTours() { try { var a = JSON.parse(localStorage.getItem(TOURS_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function writeTours(a) { try { localStorage.setItem(TOURS_KEY, JSON.stringify(a)); } catch (e) {} }
   function keyOf(p) { return (p[6] || '') + '|' + (p[8] || ''); }
   function loadTour() { try { var t = JSON.parse(localStorage.getItem(TOUR_KEY) || '[]'); tour = t && t.length ? t : []; } catch (e) { tour = []; } }
   function saveTour() { try { localStorage.setItem(TOUR_KEY, JSON.stringify(tour)); } catch (e) {} }
@@ -377,6 +380,56 @@
   V2.carteTourRemove = function (j) { if (tour[j]) { tour.splice(j, 1); saveTour(); updateTourBar(); renderTourPanel(); rebuild(); drawTourLine(); } };
   V2.carteTourClear = function () { tour = []; saveTour(); updateTourBar(); renderTourPanel(); rebuild(); drawTourLine(); };
   V2.carteTourClose = function () { var el = document.getElementById('cn-tourpanel'); if (el) el.remove(); };
+
+  // ── Tournées enregistrées (nommées) ──
+  V2.carteTourSaveAs = function () {
+    if (!tour.length) return;
+    var nm = window.prompt('Nom de la tournée :', 'Tournée du ' + new Date().toLocaleDateString('fr'));
+    if (nm == null) return;
+    var all = loadTours();
+    all.unshift({ id: 't' + Date.now(), name: (nm || 'Tournée').slice(0, 60), ts: Date.now(), depot: depot, tour: tour.slice() });
+    writeTours(all.slice(0, 60));
+    renderTourPanel();
+    if (V2.toast) V2.toast('Tournée enregistrée : ' + (nm || 'Tournée'));
+  };
+  V2.carteToursOpen = function () {
+    if (!document.getElementById('cn-savedpanel')) {
+      var el = document.createElement('div'); el.id = 'cn-savedpanel'; el.className = 'cn-panel';
+      el.onclick = function (e) { if (e.target === el) V2.carteToursClose(); };
+      document.body.appendChild(el);
+    }
+    renderSavedPanel();
+  };
+  V2.carteToursClose = function () { var el = document.getElementById('cn-savedpanel'); if (el) el.remove(); };
+  V2.carteTourLoad = function (id) {
+    var all = loadTours(), t = null;
+    for (var i = 0; i < all.length; i++) if (all[i].id === id) t = all[i];
+    if (!t) return;
+    tour = (t.tour || []).slice(); depot = t.depot || null;
+    try { depot ? localStorage.setItem('jarvis_depot_v1', JSON.stringify(depot)) : localStorage.removeItem('jarvis_depot_v1'); } catch (e) {}
+    saveTour(); updateTourBar(); rebuild(); drawTourLine();
+    V2.carteToursClose(); V2.carteTourOpen(); V2.carteTourFit();
+  };
+  V2.carteTourDelete = function (id) {
+    var all = loadTours().filter(function (t) { return t.id !== id; });
+    writeTours(all); renderSavedPanel();
+  };
+  function renderSavedPanel() {
+    var el = document.getElementById('cn-savedpanel'); if (!el) return;
+    var all = loadTours();
+    var rows = all.map(function (t) {
+      var km = 0; var pts = []; if (t.depot) pts.push(t.depot); (t.tour || []).forEach(function (s) { pts.push(s); }); if (t.depot && (t.tour || []).length) pts.push(t.depot);
+      for (var j = 1; j < pts.length; j++) km += haversine(pts[j - 1], pts[j]);
+      return '<div class="cn-lrow"><div class="cn-lmain" onclick="V2.carteTourLoad(\'' + t.id + '\')">' +
+        '<b>' + esc(t.name) + '</b>' +
+        '<span class="cn-lsub">' + (t.tour || []).length + ' arrêt' + ((t.tour || []).length > 1 ? 's' : '') + ' · ~' + Math.round(km) + ' km' + (t.depot ? ' · ' + esc(t.depot.n || 'dépôt') : '') + '</span></div>' +
+        '<button class="cn-trm" onclick="V2.carteTourDelete(\'' + t.id + '\')" title="Supprimer">✕</button></div>';
+    }).join('') || '<div class="cn-tempty">Aucune tournée enregistrée.<br>Compose une tournée puis « Enregistrer ».</div>';
+    el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
+      '<div class="cn-phead"><div><b>Mes tournées</b><small>' + all.length + ' enregistrée' + (all.length > 1 ? 's' : '') + '</small></div>' +
+        '<button class="cn-px" onclick="V2.carteToursClose()">✕</button></div>' +
+      '<div class="cn-plist">' + rows + '</div></div>';
+  }
   V2.carteTourOpen = function () {
     if (!document.getElementById('cn-tourpanel')) {
       var el = document.createElement('div'); el.id = 'cn-tourpanel'; el.className = 'cn-panel';
@@ -415,14 +468,15 @@
         '<button class="cn-px" onclick="V2.carteTourClose()">✕</button></div>' +
       metrics + depotRow +
       '<div class="cn-plist">' + rows + '</div>' +
-      (tour.length ? '<div class="cn-pacts">' +
+      '<div class="cn-pacts">' +
         (tour.length >= 2 ? '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourOptimize()">Optimiser la tournée</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteProspects()">Prospects proches</button>' : '') +
-        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourFit()">Voir le tracé</button>' : '') +
-        '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourItinerary()">Itinéraire GPS</button>' +
-        '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourAgenda()">Agenda</button>' +
-        '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourClear()">Vider</button>' +
-        '</div>' : '') +
+        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourSaveAs()">Enregistrer</button>' : '') +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.carteToursOpen()">Mes tournées</button>' +
+        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourItinerary()">Itinéraire GPS</button>' : '') +
+        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourAgenda()">Agenda</button>' : '') +
+        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourClear()">Vider</button>' : '') +
+        '</div>' +
       '</div>';
   }
 
