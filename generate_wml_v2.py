@@ -457,6 +457,44 @@ except Exception as e:
 # ── 3quater. Géocodage des officines (carte de secteur) ──
 geocode_officines(officines)
 
+# ── 3quinquies. Détail par officine pour la FICHE de la carte Copilote ──
+# (CA mensuel + top produits + nb produits + potentiel), fichier compact chargé à la demande.
+def load_benchmark_names():
+    names = {}
+    try:
+        txt = open(os.path.join(BASE, 'crm', 'benchmark-data.js'), encoding='utf-8').read()
+        for m in _re.finditer(r'designation:"([^"]*)"[^}]*?cip13:"(\d+)"', txt):
+            names[m.group(2)] = m.group(1)
+    except Exception as e:
+        print('  [bench] err', e)
+    return names
+
+name_by_cip = load_benchmark_names()
+pot_by_code = {o['id']: o.get('potentiel') for o in officines}
+_det = {}
+for srow in sales:
+    code, mois, comm, cip, qte, pu, mnt = srow
+    d = _det.setdefault(code, {'m': [0] * 6, 'prod': {}})
+    if isinstance(mois, int) and 1 <= mois <= 6:
+        d['m'][mois - 1] += (mnt or 0)
+    d['prod'][cip] = d['prod'].get(cip, 0) + (mnt or 0)
+CARTE_DETAIL = {}
+for code, d in _det.items():
+    top = sorted(d['prod'].items(), key=lambda x: -x[1])[:6]
+    pot = pot_by_code.get(code)
+    CARTE_DETAIL[code] = {
+        'm': [round(x) for x in d['m']],
+        'top': [[name_by_cip.get(c, c), round(v)] for c, v in top if v > 0],
+        'np': len(d['prod']),
+        'pot': (round(pot) if isinstance(pot, (int, float)) else None),
+    }
+DET_OUT = os.path.join(BASE, 'crm', 'v2', 'carte-detail.js')
+with open(DET_OUT, 'w', encoding='utf-8') as f:
+    f.write('// Détail par officine pour la fiche de la carte Copilote (CA mensuel, top produits).\n')
+    f.write('// {id: {m:[jan..juin], top:[[nom,ca]...], np:nbProduits, pot:potentiel}}\n')
+    f.write('window.CARTE_DETAIL=' + json.dumps(CARTE_DETAIL, ensure_ascii=False, separators=(',', ':')) + ';\n')
+print('  [fiche] carte-detail.js : {} officines, {:.0f} Ko'.format(len(CARTE_DETAIL), os.path.getsize(DET_OUT) / 1024))
+
 # ── 4. Écriture JS ──
 months_lbl = 'Jan-Juin 2026'
 with open(OUT, 'w', encoding='utf-8') as f:
