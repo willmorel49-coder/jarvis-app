@@ -270,7 +270,7 @@ a.off-card:hover{
 .v2-card-link:focus-visible,
 .v2-row:focus-visible{
   outline:none;
-  box-shadow:0 0 0 3px var(--halo, rgba(0,80,230,.22));
+  box-shadow:0 0 0 2px var(--card),0 0 0 4px color-mix(in srgb,var(--accent,var(--ip-blue)) 55%,transparent);
   transition:box-shadow var(--mo-dur-fast) var(--mo-ease-soft);
 }
 
