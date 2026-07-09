@@ -21,11 +21,11 @@
   var FAMS = [
     { k: 'all',    label: 'Tout',                     sc: '#0050E6' },
     { k: 'pr_low', label: 'Princeps · petits prix',   sc: '#1E9E6A' },
-    { k: 'pr_mid', label: 'Princeps · intermédiaire', sc: '#0050E6' },
+    { k: 'pr_mid', label: 'Princeps · intermédiaire', sc: '#F5A524' },
     { k: 'pr_high',label: 'Princeps · cher',          sc: '#C7791A' },
-    { k: 'nr',     label: 'NR',                        sc: '#E0556E' },
-    { k: 'gen',    label: 'Génériques',               sc: '#7C3AED' },
-    { k: 'biosim', label: 'Biosimilaires',            sc: '#00B5D8' },
+    { k: 'nr',     label: 'NR',                        sc: '#E5484D' },
+    { k: 'gen',    label: 'Génériques',               sc: '#737A8C' },
+    { k: 'biosim', label: 'Biosimilaires',            sc: '#6D4FC4' },
   ];
   var FAM_BY = {}; FAMS.forEach(function (f) { FAM_BY[f.k] = f; });
   var FAM_SHORT = { pr_low: 'Princeps petits prix', pr_mid: 'Princeps intermédiaire', pr_high: 'Princeps cher', nr: 'NR', gen: 'Génériques', biosim: 'Biosimilaires' };
