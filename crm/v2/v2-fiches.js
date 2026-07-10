@@ -666,7 +666,11 @@
   }
   function openSelector() {
     var B = window.BENCHMARK;
-    if (!B || !B.length) { V2.toast('Chargement du catalogue…'); V2.loadFiles(['bench']).then(function () { openSelector(); }); return; }
+    if (!B || !B.length) {   // une seule tentative de chargement → pas de boucle infinie si le catalogue échoue
+      if (openSelector._tried) { V2.toast('Catalogue indisponible — vérifie ta connexion', 'error'); return; }
+      openSelector._tried = true;
+      V2.toast('Chargement du catalogue…'); V2.loadFiles(['bench']).then(function () { openSelector(); }); return;
+    }
     var bd = document.getElementById('fch-sel'); if (!bd) return;
     bd.classList.add('open');
     var inp = document.getElementById('fch-sel-input');
@@ -872,7 +876,6 @@
           (count ? '<tfoot><tr style="border-top:2px solid #10131C;background:#F4F8FF">'+
             '<td colspan="' + (client ? (hasQtyPdf ? 6 : 4) : (hasQtyPdf ? 7 : 5)) + '" style="padding:13px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#10131C;text-align:right">Totaux' + (hasQtyPdf ? '(quantités incluses)' : '(base 1 boîte / réf.)') + '</td>'+
             '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:var(--mono)">' + e2(totNet) + '</td>'+
-            (hasQtyPdf ? '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#0050E6;text-align:right;font-family:var(--mono)"></td>' : '') +
             '<td style="padding:13px 12px;font-size:14px;font-weight:800;color:#1E9E6A;text-align:right;font-family:var(--mono)">' + e2(totMdl) + '</td>'+
           '</tr></tfoot>' : '') +
         '</table>'+
