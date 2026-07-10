@@ -11,6 +11,10 @@
   var V2 = window.V2 = window.V2 || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var TABLE = 'notes', LS = 'jarvis_notes_v1';
+  // Dictée vocale (SpeechRecognition natif) : état courant + détection + icône micro
+  var _rec = null, _recBtn = null;
+  function voiceSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+  var MIC_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21M8.5 21h7"/></svg>';
 
   function sb() { return (V2.sb && V2.sb()) || null; }
   function localMap() { try { return JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) { return {}; } }
@@ -41,9 +45,45 @@
           '<div class="v2-notes-list"><div class="v2-notes-empty">Chargement…</div></div>' +
           '<div class="v2-notes-add">' +
             '<textarea class="v2-notes-ta" rows="2" placeholder="Ajouter une note (visible par l\'équipe)…"></textarea>' +
+            (voiceSupported() ? '<button type="button" class="v2-notes-mic" onclick="V2.notes.dictate(this)" title="Dicter la note à la voix" aria-label="Dicter à la voix">' + MIC_SVG + '</button>' : '') +
             '<button class="v2-btn v2-btn-primary v2-notes-btn" onclick="V2.notes.add(this)">Ajouter</button>' +
           '</div>' +
         '</div>';
+    },
+
+    // Dictée vocale (API navigateur native SpeechRecognition — zéro dépendance, zéro coût).
+    // Toggle : 1er clic démarre l'écoute (fr-FR), 2e clic arrête. Le texte s'écrit dans la note.
+    dictate: function (btn) {
+      var box = btn.closest('.v2-notes-box'); if (!box) return;
+      var ta = box.querySelector('.v2-notes-ta'); if (!ta) return;
+      // déjà en écoute sur ce bouton → on arrête
+      if (_rec && _recBtn === btn) { try { _rec.stop(); } catch (e) {} return; }
+      if (_rec) { try { _rec.stop(); } catch (e) {} }
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { if (V2.toast) V2.toast('La dictée vocale n\'est pas disponible sur ce navigateur'); return; }
+      var rec = new SR();
+      rec.lang = 'fr-FR'; rec.continuous = true; rec.interimResults = true;
+      var base = ta.value ? (ta.value.replace(/\s+$/, '') + ' ') : '';
+      var finalTxt = '';
+      rec.onstart = function () { _rec = rec; _recBtn = btn; btn.classList.add('rec'); btn.title = 'Arrêter la dictée'; if (V2.toast) V2.toast('Dictée en cours — parle, puis re-touche le micro'); };
+      rec.onresult = function (e) {
+        var interim = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          var t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) finalTxt += t + ' '; else interim += t;
+        }
+        ta.value = (base + finalTxt + interim).replace(/\s+/g, ' ').replace(/^\s/, '');
+      };
+      rec.onerror = function (ev) {
+        if (ev && (ev.error === 'not-allowed' || ev.error === 'service-not-allowed')) { if (V2.toast) V2.toast('Micro refusé : autorise le microphone dans le navigateur'); }
+        else if (ev && ev.error === 'no-speech') { if (V2.toast) V2.toast('Rien entendu — réessaie'); }
+      };
+      rec.onend = function () {
+        btn.classList.remove('rec'); btn.title = 'Dicter la note à la voix';
+        ta.value = (base + finalTxt).trim(); if (ta.value) ta.focus();
+        _rec = null; _recBtn = null;
+      };
+      try { rec.start(); } catch (e) { if (V2.toast) V2.toast('Impossible de démarrer la dictée'); }
     },
 
     // charge tous les conteneurs pas encore hydratés
@@ -129,7 +169,13 @@
       '.v2-notes-add{display:flex;gap:9px;align-items:flex-end;margin-top:12px}',
       '.v2-notes-ta{flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:11px;padding:10px 12px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card);resize:vertical;min-height:44px}',
       '.v2-notes-ta:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo,color-mix(in srgb,var(--ip-blue) 18%,transparent))}',
-      '.v2-notes-btn{flex:none;white-space:nowrap}'
+      '.v2-notes-btn{flex:none;white-space:nowrap}',
+      // Bouton micro (dictée vocale) : repos = gris, écoute = rouge qui pulse
+      '.v2-notes-mic{flex:none;width:44px;height:44px;border-radius:11px;border:1px solid var(--line-strong);background:var(--card);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:color .16s var(--ease),border-color .16s var(--ease),background .16s var(--ease)}',
+      '.v2-notes-mic:hover{color:var(--ip-blue);border-color:color-mix(in srgb,var(--ip-blue) 36%,var(--line))}',
+      '.v2-notes-mic.rec{color:#fff;background:var(--c-rose,#FF4D6D);border-color:var(--c-rose,#FF4D6D);animation:v2micpulse 1.3s ease-in-out infinite}',
+      '@keyframes v2micpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c-rose,#FF4D6D) 55%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--c-rose,#FF4D6D) 0%,transparent)}}',
+      '@media(prefers-reduced-motion:reduce){.v2-notes-mic.rec{animation:none}}'
     ].join('');
     document.head.appendChild(s);
   }
