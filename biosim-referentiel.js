@@ -18,7 +18,7 @@ const BIOSIM_REFERENTIEL = [
     reference: "Humira", reference_labo: "AbbVie", canal: "ville",
     substituable: true, substituable_date: "2025-02-20",
     biosimilaires: [
-      { nom: "Amgevita", labo: "Amgen", annee: 2018 },
+      { nom: "Amgevita", labo: "Amgen", annee: 2018, distrib: "Teva" },
       { nom: "Imraldi", labo: "Biogen / Samsung Bioepis", annee: 2018 },
       { nom: "Hulio", labo: "Viatris / Fujifilm", annee: 2018 },
       { nom: "Hyrimoz", labo: "Sandoz", annee: 2018 },
@@ -146,6 +146,7 @@ const BIOSIM_REFERENTIEL = [
     biosimilaires: [
       { nom: "Zarzio", labo: "Sandoz", annee: 2009 },
       { nom: "Tevagrastim", labo: "Teva", annee: 2008 },
+      { nom: "Ratiograstim", labo: "Teva / ratiopharm", annee: 2008 },
       { nom: "Nivestim", labo: "Pfizer / Hospira", annee: 2010 },
       { nom: "Accofil", labo: "Accord", annee: 2014 },
       { nom: "Grastofil", labo: "Accord / Apotex", annee: 2013 },
@@ -164,7 +165,7 @@ const BIOSIM_REFERENTIEL = [
       { nom: "Grasustek", labo: "Mundipharma", annee: 2019 },
       { nom: "Nyvepria", labo: "Pfizer", annee: 2020 },
       { nom: "Cegfila", labo: "Mundipharma", annee: 2020 },
-      { nom: "Stimufend", labo: "Fresenius Kabi", annee: 2022 },
+      { nom: "Stimufend", labo: "Fresenius Kabi", annee: 2022, distrib: "Teva" },
       { nom: "Udenyca", labo: "Accord / Coherus", annee: 2019 },
       { nom: "Dyrupeg", labo: "Stada", annee: 2023 },
     ],
@@ -217,6 +218,7 @@ const BIOSIM_REFERENTIEL = [
       { nom: "Byooviz", labo: "Biogen / Samsung Bioepis", annee: 2021 },
       { nom: "Ranivisio", labo: "Teva / Bioeq", annee: 2022 },
       { nom: "Ximluci", labo: "Stada / Xbrane", annee: 2022 },
+      { nom: "Rimmyrah", labo: "Lupin", annee: 2024 },
     ],
   },
   {
@@ -272,6 +274,9 @@ const BIOSIM_REFERENTIEL = [
       { nom: "Inhixa", labo: "Techdow", annee: 2016 },
       { nom: "Ghemaxan", labo: "Techdow", annee: 2017 },
       { nom: "Crusia (Becat)", labo: "Rovi", annee: 2017 },
+      { nom: "Enoxaparine Arrow", labo: "Arrow / Apotex", annee: 2021 },
+      { nom: "Enoxaparine Biogaran", labo: "Biogaran", annee: 2021 },
+      { nom: "Enoxaparine Teva", labo: "Teva", annee: 2021 },
     ],
   },
   {
