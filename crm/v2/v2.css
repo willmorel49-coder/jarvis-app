@@ -468,8 +468,14 @@ html{-webkit-tap-highlight-color:transparent}
 .v2-kpi::before{background:linear-gradient(180deg,var(--accent,var(--ip-blue)),color-mix(in srgb,var(--accent,var(--ip-blue)) 22%,transparent))}
 
 @media (max-width:640px){
-  /* cibles tactiles : plancher 44px sans grossir le glyphe */
-  .v2-subtab,.v2-tab,.ph-vtab,.grp-tab,.v2-seg,.v2-rchip{min-height:var(--tap-min,44px);display:inline-flex;align-items:center}
+  /* ANTI-ZOOM iOS : tout champ < 16px fait zoomer Safari au focus. On plancher
+     à 16px sur mobile pour TOUTE l'app (login, fiches, marketing, filtres, carte…).
+     !important pour battre les font-size par classe ; mobile-only → desktop intact. */
+  input,select,textarea{font-size:16px!important}
+  /* cibles tactiles : plancher 44px sans grossir le glyphe (liste étendue à toute l'app) */
+  .v2-subtab,.v2-tab,.ph-vtab,.grp-tab,.v2-seg,.v2-rchip,.v2-back,.pilo-segbtn,.pilo-commbtn,.co-vbtn,.cat-pg,.off-pg,.v2-lch-mini,.net-scope-b,.phf-rf,.phf-segref-b{min-height:var(--tap-min,44px);display:inline-flex;align-items:center}
+  /* table dans une carte : autoriser le scroll horizontal (sinon overflow:hidden coupe la fin) */
+  .v2-card:has(> .v2-table){overflow-x:auto;-webkit-overflow-scrolling:touch}
   /* ⌘K en bottom-sheet : à portée du pouce, au-dessus du clavier */
   .v2-cmdk-bd{align-items:flex-end;padding-top:0}
   .v2-cmdk{width:100%;max-width:100%;max-height:80vh;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom)}

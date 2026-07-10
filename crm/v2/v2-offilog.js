@@ -700,6 +700,8 @@
       '.off-mktbar .clr{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;display:flex;padding:4px}',
       '.off-mktbar .clr:hover{color:#fff}',
       '@media(max-width:680px){.off-mktbar .ttl{width:130px}}',
+      // Mobile : la barre flottante se replie (elle est centrée en position:fixed → débordait des 2 côtés). Titre sur sa propre ligne, boutons pleine largeur.
+      '@media(max-width:560px){.off-mktbar{flex-wrap:wrap;justify-content:center;left:10px;right:10px;max-width:none;transform:none;bottom:calc(14px + env(safe-area-inset-bottom));padding:12px 14px}.off-mktbar .ttl{order:5;flex:1 1 100%;width:auto}.off-mktbar .v2-btn{flex:1 1 auto}.off-mktbar .clr{margin-left:auto}}',
       // modal aperçu fiche marketing
       '.off-mkt-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
       '.off-mkt-modal.open{opacity:1;pointer-events:auto}',
@@ -776,6 +778,7 @@
       '.off-insp-cta{margin-top:20px;display:flex;flex-direction:column}',
       '.off-insp-cta .v2-btn{width:100%}',
       '@media(max-width:1100px){.off-insp{width:350px}}',
+      '@media(max-width:640px){.off-insp{height:100dvh;padding-bottom:env(safe-area-inset-bottom)}}',
     ].join('');
     document.head.appendChild(s);
   }

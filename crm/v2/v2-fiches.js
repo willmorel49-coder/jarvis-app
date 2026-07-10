@@ -293,6 +293,13 @@
       '.fch-qty{min-height:var(--tap-min)}'+
       '.fch-qstep{height:var(--tap-min);width:var(--tap-min)}'+
       '.fch-rmbtn{width:var(--tap-min);height:var(--tap-min)}'+
+      // la ligne produit se replie : le nom prend toute la 1re ligne, le reste (PPHT/Net IP/Qté/Marge/retirer) s\'enroule dessous → plus rien de coupé hors écran
+      '.fch-prow{flex-wrap:wrap;column-gap:12px;row-gap:10px;padding:14px}'+
+      '.fch-prow-idx{display:none}'+
+      '.fch-prow-main{flex:1 1 100%}'+
+      '.fch-pricewrap{align-items:flex-start}'+
+      // barre de totaux compacte (les gros nombres mono ne débordent plus)
+      '.fch-tot{padding:10px 12px}.fch-tot-v{font-size:15px}.fch-tot-l{font-size:9px}'+
     '}'+
     '.fch-editbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}'+
     // barre totaux

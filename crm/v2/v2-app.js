@@ -704,7 +704,7 @@
       '.v2-home-x .v2-search input{font-size:16px}',
       '.v2-home-x .v2-recent{justify-content:center}',
       '.v2-home-x .v2-lch-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:10px}',
-      '@media(max-width:640px){.v2-home-x .v2-lch-grid{grid-template-columns:1fr;gap:12px}}',
+      '@media(max-width:640px){.v2-home-x .v2-lch-grid{grid-template-columns:1fr;gap:12px}.v2-home-x .v2-search kbd{display:none}}',
       '.v2-home-x .v2-lch-card{position:relative;display:flex;flex-direction:column;gap:42px;min-height:150px;padding:24px 22px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-lg,20px);text-decoration:none;color:var(--ip-ink);cursor:pointer;overflow:hidden;transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft),border-color .28s var(--mo-ease-soft)}',
       '.v2-home-x .v2-lch-card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s var(--mo-ease-soft);background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--accent) 14%,transparent),transparent 62%)}',
       '.v2-home-x .v2-lch-card:hover{transform:translateY(-4px);box-shadow:var(--sh-2,0 18px 42px rgba(16,24,43,.10));border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}',
@@ -1081,6 +1081,7 @@
       '@keyframes v2-login-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}' +
       // Bouton « Afficher » : plus lisible au survol.
       '#v2-eye{border-radius:8px;transition:color .15s var(--ease-soft),background .15s var(--ease-soft)}' +
+      '@media(max-width:640px){#v2-eye{min-height:44px;display:flex;align-items:center}}' +
       '#v2-eye:hover{color:var(--ip-ink-2);background:var(--card-2)}' +
       // Pied de carte : réassurance sobre en mono.
       '.v2-login-foot{margin-top:22px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.11em;' +
