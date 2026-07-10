@@ -211,6 +211,9 @@ td:last-child,th:last-child{text-align:right}
   // contact personnalisable via ?rep=Nom&mail=...&tel=...
   var qs=new URLSearchParams(location.search);
   var rep=qs.get('rep'), mail=qs.get('mail'), tel=qs.get('tel');
+  // Sécurité (page publique) : on ne garde mail/tel que s'ils ont un format sûr, sinon on les ignore (anti-injection HTML)
+  if(mail && !/^[^\s@"'<>]+@[^\s@"'<>]+\.[^\s@"'<>]{2,}$/.test(mail)) mail=null;
+  if(tel && !/^[+\d\s.()\-]{6,20}$/.test(tel)) tel=null;
   if(rep){ document.getElementById('c-name').textContent=rep; }
   var coord=[];
   if(mail) coord.push('<a href="mailto:'+mail+'" style="color:#fff;text-decoration:none">'+mail+'</a>');
