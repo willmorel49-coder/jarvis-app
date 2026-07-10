@@ -1,0 +1,9 @@
+{
+  "_comment": "Template MCP servers pour ce projet. Copier vers ~/.claude/settings.json (scope user) ou .claude/settings.local.json (scope projet perso, ignore par git). Voir .claude/README.md pour les instructions.",
+  "mcpServers": {
+    "albo": {
+      "type": "http",
+      "url": "https://mcp.albo.inc/mcp"
+    }
+  }
+}
