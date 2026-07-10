@@ -66,7 +66,7 @@
     (window.SAGITTA_SHORTLIST || []).forEach(function (s) { if (s && s.cip13 != null) sagittaSet.add(String(s.cip13)); });
     benchByCip = new Map();
     sortedBench = B.slice().sort(function (a, b) { return (a.ip_rank_qty || 9e9) - (b.ip_rank_qty || 9e9); });
-    B.forEach(function (b) { b._fam = classify(b); if (b.cip13 != null) benchByCip.set(String(b.cip13), b); });
+    B.forEach(function (b) { b._fam = classify(b); if (b.cip13 != null && String(b.cip13).trim() !== '') benchByCip.set(String(b.cip13), b); });   // ne pas indexer les CIP vides (sinon tous collident sur la clé '' → mauvais produit)
     idxBuilt = true;
   }
 
@@ -349,6 +349,7 @@
 
   V2.catPage = function (p) { S.page = p; V2.render(); try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {} };
   V2.catSelect = function (cip) {
+    if (cip != null && !benchByCip.has(String(cip))) return;   // produit sans CIP réel → non sélectionnable (avant : ouvrait le mauvais produit)
     S.sel = (cip == null || (S.sel != null && String(S.sel) === String(cip))) ? null : cip;
     V2.render();
   };
@@ -498,7 +499,9 @@
   V2.pages.catalogue = {
     render: function (root, param) {
       injectCss();
-      if (param != null && param !== '' && String(param) !== String(S.sel)) S.sel = param;
+      // consommer le param de deep-link UNE fois (avant : re-forçait S.sel à chaque render → inspecteur inrefermable)
+      if (param != null && param !== '' && String(param) !== String(S._lastParam)) S.sel = param;
+      S._lastParam = param;
 
       if (!window.BENCHMARK) {
         root.innerHTML = V2.topbar({ back: true }) +

@@ -105,9 +105,11 @@
       var c = sb();
       var done = function () { if (ta) ta.value = ''; if (V2.toast) V2.toast('Note ajoutée'); renderBox(box); };
       if (c) {
+        // échec Supabase → NE PAS faire croire que c'est sauvé (avant : sauvé en local + « Note ajoutée » puis disparue au re-render qui relit Supabase)
+        var fail = function () { btn.disabled = false; btn.textContent = 'Ajouter'; if (V2.toast) V2.toast('Note non enregistrée — réessaie', 'error'); };
         c.from(TABLE).insert({ scope_type: st, scope_id: String(sid), author_id: V2.user.id, author_name: V2.user.name || '', body: body })
-          .then(function (r) { if (r.error) addLocal(st, sid, body); done(); })
-          .catch(function () { addLocal(st, sid, body); done(); });
+          .then(function (r) { if (r.error) fail(); else done(); })
+          .catch(function () { fail(); });
       } else { addLocal(st, sid, body); done(); }
     },
 
