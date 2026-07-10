@@ -88,7 +88,7 @@
       // « ➕ préciser… » : saisir une valeur exacte non listée (puis elle rejoint la liste de ce champ)
       if (el.tagName === 'SELECT' && el.value === '__add__') {
         var custom = (window.prompt('Préciser la valeur exacte :', '') || '').trim();
-        if (!custom) { el.value = ''; return; }
+        if (!custom) { fill(box); return; }   // annulation → on restaure les valeurs enregistrées (avant : el.value='' effaçait le champ à la sauvegarde suivante)
         var opt = document.createElement('option'); opt.textContent = custom; opt.value = custom;
         el.insertBefore(opt, el.querySelector('option[value="__add__"]'));
         el.value = custom;

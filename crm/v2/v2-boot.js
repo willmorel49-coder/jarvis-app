@@ -36,7 +36,7 @@
     // (≤ 50% du PPHT). Sans PPHT (prix_ht=0, ex vaccins à offre_ip aberrante 2,86 vs 73€)
     // → offre ignorée d'office. La remise se calcule TOUJOURS sur le PPHT.
     var offre = off > 0 && ht > 0 && off < ht && off >= ht * 0.5;
-    var ip = offre ? off : ip0;                                      // prix le plus bas
+    var ip = (offre && (!ip0 || off < ip0)) ? off : ip0;             // prix le plus bas : l'offre seulement si elle bat le net standard
     var remise = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
     return { ip: ip > 0 ? ip : null, ht: ht > 0 ? ht : null, remise: remise, offre: offre && (!ip0 || off < ip0) };
   };

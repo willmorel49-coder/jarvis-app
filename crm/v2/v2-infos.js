@@ -65,7 +65,8 @@
   };
 
   function load(cb) {
-    if (LOADED || FAILED) { cb(); return; }
+    if (LOADED) { cb(); return; }
+    FAILED = false;   // nouvelle tentative à chaque entrée sur la page (avant : un seul échec figeait la page toute la session)
     var day = ''; try { day = new Date().toISOString().slice(0, 10); } catch (e) {}
     try {
       fetch('infos-jour.json?d=' + day, { cache: 'no-store' })
