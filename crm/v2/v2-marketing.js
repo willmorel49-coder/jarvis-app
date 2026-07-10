@@ -320,12 +320,15 @@
     for (var i = 0; i < B.length; i++) { if (String(B[i].cip13) === String(cip)) { b = B[i]; break; } }
     if (!b || !editing) return;
     if (editing.products.some(function (p) { return String(p.cip13) === String(cip); })) return;
-    var offre = b.offre_ip ? String(b.offre_ip) : (b.remise_pct ? ('-' + Math.round(b.remise_pct) + '% groupement') : '');
+    // Prix : passer par bestPrice (tient compte de l'offre labo) ; libellé offre : « Offre labo » ou rien —
+    // JAMAIS le nombre offre_ip brut ni « -X% groupement » (règle : on n'imprime pas les conditions sur un doc remis).
+    var bp = V2.bestPrice ? V2.bestPrice(b) : { ip: (b.prix_ip != null ? b.prix_ip : b.prix_ht), ht: b.prix_ht, offre: false };
+    var offre = bp.offre ? 'Offre labo' : '';
     editing.products.push({
       cip13: b.cip13, designation: b.designation, categorie: b.categorie || '',
       picto: pictoFor(b.categorie),
-      prixPromo: b.prix_ip != null ? b.prix_ip : (b.prix_ht != null ? b.prix_ht : ''),
-      prixPublic: (b.prix_ht != null && b.prix_ip != null && b.prix_ht > b.prix_ip) ? b.prix_ht : '',
+      prixPromo: bp.ip != null ? bp.ip : '',
+      prixPublic: (bp.ht != null && bp.ip != null && bp.ht > bp.ip) ? bp.ht : '',
       offre: offre
     });
     renderEditorBody();

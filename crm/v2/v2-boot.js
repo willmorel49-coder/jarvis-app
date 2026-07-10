@@ -120,7 +120,12 @@
 
     V2.pharmacies = listing.map(function (a) {
       var cip = norm(a.cip || a.code);
-      var db = byCip[cip] || byName[(a.nom || a.name || '').trim().toUpperCase()];
+      var db = byCip[cip];
+      if (!db) {   // fallback par NOM : uniquement si la ville concorde (sinon on rattache un homonyme d'une autre région)
+        var dbN = byName[(a.nom || a.name || '').trim().toUpperCase()];
+        var vA = (a.ville || '').trim().toUpperCase(), vN = (dbN && dbN.ville || '').trim().toUpperCase();
+        if (dbN && vA && vN && vA === vN) db = dbN;
+      }
       var hasStats = !!statsByCip[cip];
       return {
         id: db ? db.id : ('LST-' + (cip || (a.nom || a.name || '').trim())),
@@ -136,8 +141,11 @@
 
     // Injecte les ventes "stats officine" sur la bonne pharmacie (par CIP)
     var phByCip = {}; V2.pharmacies.forEach(function (p) { var c = norm(p.code); if (c) phByCip[c] = p; });
+    // pharmacies ayant déjà des ventes WML → ne PAS ré-injecter leurs stats (sinon CA doublé : les stats sont les mêmes commandes)
+    var hasWmlSales = {}; V2.sales.forEach(function (s) { hasWmlSales[String(s.pharmacyId)] = 1; });
     Object.keys(statsByCip).forEach(function (c) {
       var ph = phByCip[c]; if (!ph) return;
+      if (hasWmlSales[String(ph.id)]) return;   // déjà des ventes WML → skip (les stats ne servent qu'aux officines absentes de WML)
       statsByCip[c].forEach(function (r) {
         // réparti à parts égales sur chaque mois de la période
         refMonths.forEach(function (m) {
