@@ -303,7 +303,9 @@
     });
   }
   function openSelector() {
-    if (!window.BENCHMARK || !window.BENCHMARK.length) {
+    if (!window.BENCHMARK || !window.BENCHMARK.length) {   // une seule tentative → pas de boucle infinie si le catalogue échoue
+      if (openSelector._tried) { V2.toast('Catalogue indisponible — vérifie ta connexion', 'error'); return; }
+      openSelector._tried = true;
       V2.toast('Chargement du catalogue…'); V2.loadFiles(['bench']).then(openSelector); return;
     }
     var bd = document.getElementById('mkt-sel-bd'); if (!bd) return;
