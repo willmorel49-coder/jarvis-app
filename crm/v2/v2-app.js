@@ -47,7 +47,9 @@
     var h = (location.hash || '').replace(/^#/, '');
     if (!h) return { name: 'home', param: null };
     var parts = h.split('/');
-    return { name: parts[0] || 'home', param: parts[1] ? decodeURIComponent(parts[1]) : null };
+    var param = null;
+    if (parts[1]) { try { param = decodeURIComponent(parts[1]); } catch (e) { param = parts[1]; } }  // lien malformé → pas de crash/spinner figé
+    return { name: parts[0] || 'home', param: param };
   }
 
   // ── SHELL (topbar) ────────────────────────────
@@ -108,7 +110,8 @@
     setTimeout(function () {
       function close(e) {
         if (e.type === 'keydown' && e.key !== 'Escape') return;
-        if (e.type === 'click' && m.contains(e.target)) return;
+        // ignorer aussi le clic sur l'avatar → laisse le toggle de V2.userMenu refermer proprement
+        if (e.type === 'click' && (m.contains(e.target) || (e.target.closest && e.target.closest('.v2-av')))) return;
         if (m.parentNode) m.parentNode.removeChild(m);
         document.removeEventListener('click', close, true);
         document.removeEventListener('keydown', close, true);
@@ -337,6 +340,8 @@
     if (lo) lo.textContent = V2.fmtNum(Math.round(v * 0.06));
     if (hi) hi.textContent = V2.fmtNum(Math.round(v * 0.09));
   };
+  // Scroll vers la section « Ouvrir un compte » — PAS d'ancre #hash (collision avec le routeur hash de l'app)
+  V2.presScrollOpen = function () { var e = document.getElementById('pres-open'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
   // ════════════════════════════════════════════
   // PAGE PRÉSENTATION — pitch prospect au comptoir
@@ -494,13 +499,14 @@
     render: function (root) {
       injectPresStyles();
       // charge le catalogue pour des chiffres réels (sinon valeurs de repli)
-      if (!window.BENCHMARK && V2.loadFiles) {
+      if (!window.BENCHMARK && V2.loadFiles && !V2._presBenchTried) {
+        V2._presBenchTried = true;   // une seule tentative → pas de boucle de rendu si le chargement échoue
         root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
           '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>';
         V2.loadFiles(['bench']).then(function () { V2.render(); });
         return;
       }
-      var B = window.BENCHMARK || [];
+      var B = window.BENCHMARK || [];   // repli si le benchmark n'a pas chargé (valeurs de repli plus bas)
       var nf = function (n) { return V2.fmtNum(n); };
       var nbRefN = B.length || 10500;
       var nbRemb = 0, nbOffre = 0, nbFroid = 0, nbGx = 0, nbBio = 0;
@@ -556,7 +562,7 @@
               '<div class="pres-kpi"><div class="pres-kpi-v">0 €</div><div class="pres-kpi-l">franco à 0 € : commandez même 1 boîte</div></div>' +
               '<div class="pres-kpi"><div class="pres-kpi-v">+14 000</div><div class="pres-kpi-l">réfs parapharma, sans adhésion</div></div>' +
             '</div>' +
-            '<div class="pres-hero-cta noprint"><a class="pres-hero-btn" href="#pres-open">' + ICODL + 'Ouvrir un compte</a></div>' +
+            '<div class="pres-hero-cta noprint"><a class="pres-hero-btn" href="javascript:void(0)" onclick="V2.presScrollOpen();return false">' + ICODL + 'Ouvrir un compte</a></div>' +
           '</div>' +
 
           '<div class="pres-reassure">' +
@@ -587,7 +593,7 @@
             '</div>' +
             '<div class="pres-card-d" style="font-size:12.5px;color:var(--ip-ink-2);margin-top:12px">Génériques : jusqu\'à 27 % de remise génériqueur dès la 1ère boîte — <b>pas d\'abandon de marge additionnel</b> (l\'abandon 6–9 % concerne le princeps). Livraison jusqu\'à 1×/jour selon secteur. Ni franco ni engagement imposé — l\'objectif se fixe ensemble.</div>' +
             '<div class="pres-card-d" style="font-size:12.5px;color:var(--ip-ink-2);margin-top:6px">Catalogue : ' + nf(nbRefN) + ' médicaments + 14 000 réfs parapharma · ' + nf(nbOffre) + ' références en offre en ce moment — programmes L\'Intégral, ITP, UPSA, Sanofi.</div>' +
-            '<a href="#pres-open" class="pres-cta-line" style="margin-top:16px">' + ICODL + 'Ces conditions vous intéressent ? Ouvrez un compte</a>' +
+            '<a href="javascript:void(0)" onclick="V2.presScrollOpen();return false" class="pres-cta-line" style="margin-top:16px">' + ICODL + 'Ces conditions vous intéressent ? Ouvrez un compte</a>' +
           '</div>' +
 
           sect('Combien ça vous rapporte') +
@@ -957,6 +963,7 @@
     });
   }
   V2.openCmdk = function () {
+    if (!V2.user) return;   // pas de recherche/navigation tant qu'on n'est pas connecté (écran login)
     var bd = document.getElementById('v2-cmdk'); if (!bd) return;
     bd.classList.add('open');
     var inp = document.getElementById('v2-cmdk-input');
