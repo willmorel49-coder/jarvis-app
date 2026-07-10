@@ -145,9 +145,21 @@
     if (dp && dp.prompt) { try { dp.prompt(); } catch (e) {} window.__deferredInstall = null; return; }
     var ua = navigator.userAgent || '';
     var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    var steps = isIOS
-      ? '1. Touche le bouton <b>Partager</b> (le carré avec une flèche ⬆) en bas de Safari<br>2. Choisis <b>« Sur l\'écran d\'accueil »</b><br>3. Valide avec <b>Ajouter</b>'
-      : '1. Ouvre le menu du navigateur (<b>⋮</b> en haut à droite)<br>2. Choisis <b>« Installer l\'application »</b> ou <b>« Ajouter à l\'écran d\'accueil »</b>';
+    var isWin = /Windows/i.test(ua);
+    var isEdge = /Edg\//i.test(ua);
+    var isFirefox = /Firefox/i.test(ua);
+    var steps;
+    if (isIOS) {
+      steps = '1. Touche le bouton <b>Partager</b> (le carré avec une flèche ⬆) en bas de Safari<br>2. Choisis <b>« Sur l\'écran d\'accueil »</b><br>3. Valide avec <b>Ajouter</b>';
+    } else if (isFirefox) {
+      steps = 'Firefox n\'installe pas les applis web sur ordinateur. Ouvre le CRM dans <b>Microsoft Edge</b> ou <b>Google Chrome</b>, puis clique l\'icône d\'installation à droite de la barre d\'adresse.';
+    } else if (isWin && isEdge) {
+      steps = '1. Clique l\'icône <b>d\'installation</b> à droite de la barre d\'adresse (un écran avec une flèche)<br>2. <i>Ou</i> menu <b>···</b> (en haut à droite) → <b>Applications</b> → <b>Installer ce site en tant qu\'application</b><br>3. Confirme avec <b>Installer</b>';
+    } else if (isWin) {
+      steps = '1. Clique l\'icône <b>d\'installation</b> à droite de la barre d\'adresse (un écran avec une flèche ⬇)<br>2. <i>Ou</i> menu <b>⋮</b> (en haut à droite) → <b>Caster, enregistrer et partager</b> → <b>Installer la page en tant qu\'application…</b><br>3. Confirme avec <b>Installer</b>';
+    } else {
+      steps = '1. Ouvre le menu du navigateur (<b>⋮</b> en haut à droite)<br>2. Choisis <b>« Installer l\'application »</b> ou <b>« Ajouter à l\'écran d\'accueil »</b>';
+    }
     var o = document.createElement('div');
     o.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(16,19,28,.5);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)';
     o.innerHTML =
@@ -778,6 +790,10 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) {
         P.push({ k: 'molecules', cls: 'p3', accent: '#7C3AED', ico: 'cat', tag: 'Réseau', t: 'Par molécule', d: 'Ce qu\'une pharmacie moyenne fait sur chaque molécule : rotation, marge pharmacien et ton abandon de marge. Pour chiffrer ce que ça rapporte au comptoir.', go: 'Voir les molécules' });
       }
+      // Base Biosimilaires (marché FR × réseau IP) — app JARVIS
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) {
+        P.push({ k: 'biosimilaires', cls: 'p3', accent: '#6D4FC4', ico: 'cat', tag: 'Marché FR', t: 'Biosimilaires', d: 'La base complète des biosimilaires France : substituables en officine et labos partenaires (Zentiva, EG, Teva) en tête, croisés à tes ventes et stocks réseau.', go: 'Ouvrir la base' });
+      }
       // Audit Marge (abandon de marge par pharmacie) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
         P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
@@ -896,6 +912,7 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) PAGES.splice(2, 0, ['carte', 'Carte des officines', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(3, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) PAGES.push(['audit', 'Audit Marge (par pharmacie)', 'pilo']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) PAGES.push(['presentation', 'Présentation Intégral Pharma', 'pharma']);
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
