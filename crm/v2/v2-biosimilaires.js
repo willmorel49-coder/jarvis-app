@@ -85,7 +85,9 @@
       '.bs-tag.ip{background:#EDE7FA;color:' + PURPLE + '}',
       '.bs-tag.no{background:#F1F4F8;color:#A0A9B8}',
       '.bs-tag.pr{background:#E7ECF3;color:#5A6b80}',
-      '.bs-dl{display:inline-flex;align-items:center;gap:7px;background:' + NAVY + ';color:#fff;border-radius:11px;padding:9px 15px;font-size:13px;font-weight:700;text-decoration:none;margin-top:6px}',
+      '.bs-dls{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}',
+      '.bs-dl{display:inline-flex;align-items:center;gap:7px;background:' + NAVY + ';color:#fff;border-radius:11px;padding:9px 15px;font-size:13px;font-weight:700;text-decoration:none}',
+      '.bs-dl.alt{background:#fff;color:' + NAVY + ';border:1.5px solid ' + NAVY + '}',
       '.bs-legend{font-size:11.5px;color:#8894A6;margin:14px 2px 0;line-height:1.7}',
       '.bs-legend b{color:#5A6b80}'
     ].join('');
@@ -230,7 +232,10 @@
         '<div class="v2-wrap bs-wrap">' +
           '<h1 style="font-size:26px;font-weight:800;color:' + NAVY + ';margin:8px 0 2px">Base Biosimilaires</h1>' +
           '<p style="color:#737A8C;font-size:14px;margin:0 0 4px">Tous les biosimilaires disponibles en France, croisés à tes ventes et stocks réseau. Les <b style="color:' + GREEN + '">substituables en officine</b> et les <b style="color:' + ORANGE + '">labos partenaires</b> en tête.</p>' +
-          '<a class="bs-dl" href="../../base-biosimilaires.xlsx" download>' + ICO('fiche', 15) + ' Télécharger l\'Excel complet</a>' +
+          '<div class="bs-dls">' +
+            '<a class="bs-dl" href="../../base-biosimilaires.xlsx" download>' + ICO('fiche', 15) + ' Excel complet</a>' +
+            '<a class="bs-dl alt" href="../../biosim-poster-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche PDF (à remettre au pharmacien)</a>' +
+          '</div>' +
           stats + filters +
           '<div class="bs-count" id="bs-count">' + countLabel() + '</div>' +
           '<div id="bs-list">' + renderList() + '</div>' +
