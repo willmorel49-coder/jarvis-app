@@ -9,3 +9,4 @@ CLAUDE.local.md
 .env.*.local
 .claude/cache/
 .claude/.tmp/
+.claude/settings.local.json
