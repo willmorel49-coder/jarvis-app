@@ -2857,6 +2857,12 @@
       '.opp-add{position:relative}',
       '.opp-add:active{transform:scale(.97)}',
       '@media(max-width:640px){.opp-add::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:var(--tap-min);height:var(--tap-min)}}',
+      // ── Mobile terrain : toggles réseau/groupement empilés (fini le débordement latéral du libellé long) ──
+      '@media(max-width:640px){.net-scope{flex-direction:column}.net-scope-b{white-space:normal;text-align:left;min-width:0;justify-content:flex-start}}',
+      // ── Table audit/rotations : 1re colonne (produit) collante pendant le scroll horizontal, comme la table Opportunités ──
+      '@media(max-width:640px){.phf-tbl th:first-child,.phf-tbl td:first-child{position:sticky;left:0;z-index:1;background:var(--card)}.phf-tbl thead th:first-child{background:var(--card-2)}.phf-tbl tbody tr:hover td:first-child{background:var(--surf-sunken)}}',
+      // ── Boutons d\'action denses (coche/retirer) : zone tactile élargie à 44px sans changer le visuel ──
+      '@media(max-width:640px){.phf-check,.ph-rmprod,.pl-rm{position:relative}.phf-check::before,.ph-rmprod::before,.pl-rm::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:var(--tap-min,44px);height:var(--tap-min,44px)}}',
       // ── Table opportunités : sous mobile, replier OPS/CPR/HP, épingler produit + action ──
       // Ciblé .ph-opp-tbl uniquement (n\'affecte pas la table groupements à 7 colonnes data).
       '@media(max-width:640px){' +

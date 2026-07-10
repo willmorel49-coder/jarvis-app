@@ -1618,6 +1618,10 @@
       '.mkt-catbar{position:sticky;bottom:14px;display:none;align-items:center;justify-content:space-between;gap:14px;margin-top:18px;padding:12px 16px;border-radius:14px;background:var(--ip-ink);color:#fff;box-shadow:0 12px 34px rgba(8,16,40,.28)}',
       '.mkt-catbar.on{display:flex}',
       '.mkt-catbar #mkt-catbar-n{font-weight:700;font-size:13.5px}',
+      // Mobile : barre de sélection empilée (libellé au-dessus, 2 CTA pleine largeur) au lieu de déborder
+      '@media(max-width:560px){.mkt-catbar{flex-direction:column;align-items:stretch;gap:10px}.mkt-catbar>div{width:100%}.mkt-catbar>div .v2-btn{flex:1;justify-content:center}}',
+      // Mobile : les 5 onglets sources deviennent une bande scrollable horizontalement (au lieu de se casser sur 3 lignes)
+      '@media(max-width:640px){.mkt-pick-src{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}.mkt-srcbtn{flex:0 0 auto;white-space:nowrap}}',
       '.mkt-pick-ic{width:40px;height:40px;border-radius:9px;background:var(--card-2);display:flex;align-items:center;justify-content:center;color:var(--ip-blue);flex-shrink:0}',
       '.mkt-prow-pill{display:flex;align-items:center;justify-content:center;color:var(--ip-blue);background:var(--card-2)}',
       '.mkt-pick-list{overflow-y:auto;padding:8px}',
