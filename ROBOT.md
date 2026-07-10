@@ -141,3 +141,28 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 | Veille concurrentielle | nAlerte CRM : produits Offilog où prix public conc. (Leclerc/Drak/Cap3000) < prix achat IP — dashboard, catalogue Offilog, fiche pharmacie (showPharmaDetail), fiche de visite (CRM + OPSO) |
 
 **Backlog → voir `tasks/todo.md`**
+
+---
+
+## §10 Règles métier NON NÉGOCIABLES (tous agents, toutes features)
+
+| Règle | Détail |
+|-------|--------|
+| Abandon de marge, jamais « remise » | Toujours dire/écrire « abandon de marge » (« remise » n'est pas légal pour ça). « Net remisé » toléré à l'oral. |
+| Barème par tranche | Prix net grossiste : 0–4,33 € (petits prix) · 4,33–468 € · >468 €. Marge MDL (REMBOURSABLES uniquement) : 0,18 € fixe ≤4,33 € · 3,9 % jusqu'à 468 € · 19,50 € fixe au-delà. NR = marge libre. |
+| NR & génériques | Prix libre → afficher UNIQUEMENT le prix net IP : aucun %, aucun abandon. Génériques : juste le prix (les génériqueurs gèrent leurs remises). Exception : offres Sanofi/UPSA = champ `offre_ip`. |
+| Conditions commerciales | On MONTRE les remises/conditions à l'écran en rdv ; on ne les IMPRIME jamais sur un doc remis au pharmacien, ni sur un support public (site vitrine, LinkedIn). |
+| Identité Intégral | « Groupe de grossistes français » / « grossiste-répartiteur ». NE PAS décrire Intégral comme un « groupement » (les groupements = les groupes d'achat des pharmacies = la feature Groupements, autre chose). |
+| Ton & positionnement | Pro, jamais familier ni auto-promo agressive. Soutenir pharmaciens ET patients (cf. positionnement LinkedIn). |
+| 2 marques distinctes | CRM Intégral Pharma (bleu) ≠ OPSO/Normandie Pharma (vert). Ne pas mélanger chartes ni logos. |
+
+> ⚠️ À CONFIRMER avec Will (non gravé car non vérifié) : liste exacte des génériqueurs « partenaires » ; statut NR de Wegovy/Mounjaro (dit sorti du NR au 15/06). Demander avant de coder une règle dessus.
+
+## §11 Mode de travail avec Will
+
+1. **Autonomie** (Will l'a explicitement autorisée) : ne pas s'arrêter pour demander « je continue ? ». Finir le lot entier, puis faire un rapport. S'arrêter UNIQUEMENT pour : action irréversible, changement de périmètre, ou info que seul Will a.
+2. **Nouveau design / refonte visuelle** : NE JAMAIS coder directement une direction. D'abord 5-6 **variantes numérotées** dans une page HTML avec sélecteur, déployer, donner le lien, attendre les numéros choisis. Après 2 rejets visuels → exiger 2-3 références (Pinterest/Dribbble/screenshots).
+3. **Livraison** : jamais dire « c'est en ligne » sans preuve. Après un push touchant `crm/v2/` : `bash scripts/attendre-prod.sh <token ?v=>` (attend que la nouvelle version soit VRAIMENT servie), ouvrir/screenshoter la page modifiée (mobile 390px si UI), PUIS finir le message par l'**URL prod exacte cliquable**.
+4. **PDF / fiches** : générer le vrai PDF et vérifier chaque page (rien de coupé, pas de page blanche d'entête) AVANT de livrer.
+5. **Avant tout push touchant `crm/v2/`** : réflexe gardien-deploiement (syntaxe + `?v=` bumpé + `sw.js` VER synchro) ; si UI modifiée → verif-mobile.
+6. **Poids** : l'app a déjà figé le Mac/Safari de Will. Tout nouveau `*-data.js` > 500 Ko → chargé en différé (`V2.loadFiles`), jamais dans le boot.
