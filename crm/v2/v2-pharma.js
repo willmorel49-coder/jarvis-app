@@ -1186,8 +1186,10 @@
       if (gEl) {
         gEl.innerHTML = ICO('download', 16) + 'Liste d\'achats';
         gEl.onclick = function () {
-          if (grp) { V2.grpDownloadPdf(encodeURIComponent(String(selPid).slice(4))); }
-          else { V2.pharmaListPdf(String(selPid)); }
+          var pid = String(selPid);
+          if (pid.indexOf('GRP:') === 0) { V2.grpDownloadPdf(encodeURIComponent(pid.slice(4)).replace(/'/g, '%27')); }
+          else if (pid.indexOf('LST:') === 0) { V2.listDownloadPdf(pid.slice(4)); }   // liste perso → bon PDF (avant : « Pharmacie introuvable »)
+          else { V2.pharmaListPdf(pid); }
         };
       }
       bar.classList.add('show');
@@ -1482,7 +1484,7 @@
       }).save().then(function () {
         cleanP(); V2.toast('PDF téléchargé');
       }).catch(function (e) { console.error(e); cleanP(); V2.toast('Erreur PDF', 'error'); });
-    });
+    }).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifie ta connexion', 'error'); });
   };
 
   // Aperçu visuel (modal) de la prépa RDV avant téléchargement — WYSIWYG
@@ -1576,7 +1578,7 @@
   function ovRestoreAll(key) { var ov = overridesGet(key); ov.removed = {}; ovWrite(key, ov); }
   // barre d'outils produits (réafficher les masqués + ajouter un produit)
   function prodToolbar(ovKey) {
-    var rm = Object.keys(overridesGet(ovKey).removed).length, enc = encodeURIComponent(ovKey);
+    var rm = Object.keys(overridesGet(ovKey).removed).length, enc = encodeURIComponent(ovKey).replace(/'/g, '%27');
     return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:-4px 0 12px;flex-wrap:wrap">' +
       (rm ? '<button class="v2-btn v2-btn-ghost" onclick="V2.itemRestoreAll(\'' + enc + '\')">' + ICO('back', 15) + rm + ' produit' + (rm > 1 ? 's' : '') + ' masqué' + (rm > 1 ? 's' : '') + ' · réafficher</button>' : '<span></span>') +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.itemAddOpen(\'' + enc + '\')">' + ICO('plus', 16) + 'Ajouter un produit</button>' +
@@ -1631,7 +1633,7 @@
   function renderGroupementsList(root) {
     var list = groupementList();
     var rows = list.map(function (g) {
-      return '<a class="v2-row" onclick="V2.pharmaGroup(\'' + encodeURIComponent(g.name) + '\')">' +
+      return '<a class="v2-row" onclick="V2.pharmaGroup(\'' + encodeURIComponent(g.name).replace(/'/g, '%27') + '\')">' +
         grpLogo(g.name) +
         '<span class="v2-row-name">' + esc(g.name) + '</span>' +
         '<span class="v2-row-opp mono">' + g.active + ' / ' + g.nb + ' actives</span>' +
@@ -1649,7 +1651,7 @@
 
   function renderGrpCatCard(o, idx, panel, ovKey) {
     var c = o.cat, key = 'g_' + c.key;
-    var enc = ovKey ? encodeURIComponent(ovKey) : '';
+    var enc = ovKey ? encodeURIComponent(ovKey).replace(/'/g, '%27') : '';
     var collapsed = (key in grpCollapsed) ? grpCollapsed[key] : (idx !== 0);
     var head =
       '<div class="v2-cat-head" onclick="V2.grpToggleCat(\'' + c.key + '\')">' +
@@ -1698,9 +1700,9 @@
             '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + data.panel + ' pharmacie' + (data.panel > 1 ? 's' : '') + ' active' + (data.panel > 1 ? 's' : '') + ' · ' + total + ' produits commandés · ' + periodLabel() + '</div>' +
           '</div>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-            '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName) + '\')">' +
+            '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName).replace(/'/g, '%27') + '\')">' +
               ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
-            (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName) + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
+            (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName).replace(/'/g, '%27') + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
           '</div>' +
         '</div>' +
       '</div>';
