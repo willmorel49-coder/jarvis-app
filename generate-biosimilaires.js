@@ -276,6 +276,48 @@ const molecules = BIOSIM_REFERENTIEL.map((mol) => {
   applyStd(refEnrich);
   biosimilaires.forEach(applyStd);
 
+  // ── Toutes les présentations (formes/dosages) de la molécule, avec PPHT + net IP ──
+  // On normalise la désignation (dosage + dispositif + nb) pour fusionner les
+  // orthographes multiples des sources ; on garde distinct par (forme × PPHT).
+  function parseForm(d) {
+    let s = " " + String(d || "").toUpperCase().replace(/,/g, ".").replace(/µ/g, "U") + " ";
+    s = s.replace(/(\d)\s+(\d)/g, "$1$2"); // « 10 000UI » → « 10000UI »
+    const dm = s.match(/(\d+(?:\.\d+)?)\s*(MUI|MU|MG|MICROGRAMMES?|MCG|UG|UI)/);
+    let dose = "";
+    if (dm) {
+      let u = dm[2];
+      if (u === "MU") u = "MUI"; else if (/MICROGRAMMES?|MCG|UG/.test(u)) u = "µg";
+      dose = dm[1].replace(/\.0$/, "") + " " + u;
+    }
+    const dev = /STYL/.test(s) ? "stylo" : (/SER|SRG|SERG/.test(s) ? "seringue" : (/CPR|COMP/.test(s) ? "comprimé" : ""));
+    const nums = s.match(/\b\d+\b/g) || [];
+    let cnt = nums.length ? nums[nums.length - 1] : "";
+    if (cnt === "0") cnt = "";
+    return { dose, dev, cnt };
+  }
+  // groupe par (dosage × nb × PPHT) ; le dispositif (stylo/seringue) départage
+  // à l'intérieur, et les lignes sans dispositif sont absorbées si un dispositif existe.
+  const grp = {};
+  for (const c of allCands) {
+    const f = parseForm(c.design);
+    const ppht = Math.round(c.ppht * 100) / 100;
+    const gk = f.dose + "|" + f.cnt + "|" + ppht.toFixed(2);
+    if (!grp[gk]) grp[gk] = { dose: f.dose, cnt: f.cnt, ppht, net: Math.round(c.net * 100) / 100, devs: new Set() };
+    if (f.dev) grp[gk].devs.add(f.dev);
+  }
+  const presentations = [];
+  for (const g of Object.values(grp)) {
+    const devs = g.devs.size ? [...g.devs] : [""];
+    for (const dev of devs) {
+      presentations.push({
+        form: (g.dose || "autre présentation") + (dev ? " · " + dev : "") + (g.cnt ? " × " + g.cnt : ""),
+        ppht: g.ppht, net: g.net,
+        abandon: g.ppht > 0 ? Math.round(((g.ppht - g.net) / g.ppht) * 1000) / 10 : null,
+      });
+    }
+  }
+  presentations.sort((a, b) => a.ppht - b.ppht || a.form.localeCompare(b.form));
+
   // rollups molécule
   const ameli_boxes_total = biosimilaires.reduce((a, b) => a + b.ameli_boxes, 0) + refEnrich.ameli_boxes;
   const biosim_ameli_boxes = biosimilaires.reduce((a, b) => a + b.ameli_boxes, 0);
@@ -289,7 +331,7 @@ const molecules = BIOSIM_REFERENTIEL.map((mol) => {
     canal: mol.canal, substituable: mol.substituable,
     substituable_date: mol.substituable_date, note: mol.note || null,
     reference_enrich: refEnrich,
-    biosimilaires,
+    biosimilaires, presentations,
     mol_stats: ms ? { pharmacies: ms.n, rotation: ms.rota, marge: ms.marge, remise: ms.remise, ca_pharma_an: ms.ca } : null,
     ameli_boxes_total, biosim_ameli_boxes, penetration,
     referenced_ip, has_partenaire,

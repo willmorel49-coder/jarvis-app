@@ -403,6 +403,140 @@
           "prix_pack_std": "LIBMYRIS 40 MG SOL INJ STYLO 2"
         }
       ],
+      "presentations": [
+        {
+          "form": "20 MG · seringue × 1",
+          "ppht": 98.74,
+          "net": 94.9,
+          "abandon": 3.9
+        },
+        {
+          "form": "40 MG · seringue × 1",
+          "ppht": 177.68,
+          "net": 170.77,
+          "abandon": 3.9
+        },
+        {
+          "form": "40 MG · stylo × 1",
+          "ppht": 177.68,
+          "net": 170.77,
+          "abandon": 3.9
+        },
+        {
+          "form": "20 MG · seringue × 2",
+          "ppht": 196.85,
+          "net": 189.19,
+          "abandon": 3.9
+        },
+        {
+          "form": "40 MG · seringue × 1",
+          "ppht": 197.36,
+          "net": 189.68,
+          "abandon": 3.9
+        },
+        {
+          "form": "20 MG · seringue × 2",
+          "ppht": 218.65,
+          "net": 210.14,
+          "abandon": 3.9
+        },
+        {
+          "form": "40 MG · seringue × 2",
+          "ppht": 354.74,
+          "net": 340.94,
+          "abandon": 3.9
+        },
+        {
+          "form": "40 MG · stylo × 2",
+          "ppht": 354.74,
+          "net": 340.94,
+          "abandon": 3.9
+        },
+        {
+          "form": "80 MG · seringue × 1",
+          "ppht": 354.74,
+          "net": 340.94,
+          "abandon": 3.9
+        },
+        {
+          "form": "80 MG · stylo × 1",
+          "ppht": 354.74,
+          "net": 340.94,
+          "abandon": 3.9
+        },
+        {
+          "form": "40 MG · seringue × 2",
+          "ppht": 394.08,
+          "net": 378.75,
+          "abandon": 3.9
+        },
+        {
+          "form": "40 MG · stylo × 2",
+          "ppht": 394.08,
+          "net": 378.75,
+          "abandon": 3.9
+        },
+        {
+          "form": "80 MG · seringue × 1",
+          "ppht": 394.08,
+          "net": 378.75,
+          "abandon": 3.9
+        },
+        {
+          "form": "80 MG · stylo × 1",
+          "ppht": 394.08,
+          "net": 378.75,
+          "abandon": 3.9
+        },
+        {
+          "form": "80 MG · stylo × 2",
+          "ppht": 695.45,
+          "net": 675.95,
+          "abandon": 2.8
+        },
+        {
+          "form": "40 MG · stylo × 4",
+          "ppht": 769.03,
+          "net": 749.53,
+          "abandon": 2.5
+        },
+        {
+          "form": "80 MG · seringue × 2",
+          "ppht": 769.03,
+          "net": 749.53,
+          "abandon": 2.5
+        },
+        {
+          "form": "40 MG · seringue × 6",
+          "ppht": 1026.6,
+          "net": 1007.1,
+          "abandon": 1.9
+        },
+        {
+          "form": "40 MG · stylo × 6",
+          "ppht": 1026.6,
+          "net": 1007.1,
+          "abandon": 1.9
+        },
+        {
+          "form": "80 MG × 3",
+          "ppht": 1026.6,
+          "net": 1007.1,
+          "abandon": 1.9
+        },
+        {
+          "form": "80 MG · stylo × 3",
+          "ppht": 1136.98,
+          "net": 1117.48,
+          "abandon": 1.7
+        },
+        {
+          "form": "80 MG · stylo × 3",
+          "ppht": 1137.61,
+          "net": 1118.11,
+          "abandon": 1.7
+        }
+      ],
       "mol_stats": {
         "pharmacies": 146,
         "rotation": 7,
@@ -565,6 +699,38 @@
           "prix_ip_std": 424,
           "abandon_std": 3.9,
           "prix_pack_std": "NEPEXTO 50MG INJ STY1ML 4"
+        }
+      ],
+      "presentations": [
+        {
+          "form": "10 MG × 4",
+          "ppht": 106.35,
+          "net": 102.21,
+          "abandon": 3.9
+        },
+        {
+          "form": "25 MG · seringue × 4",
+          "ppht": 220.88,
+          "net": 212.29,
+          "abandon": 3.9
+        },
+        {
+          "form": "25 MG · stylo × 4",
+          "ppht": 220.88,
+          "net": 212.29,
+          "abandon": 3.9
+        },
+        {
+          "form": "50 MG · seringue × 4",
+          "ppht": 441.16,
+          "net": 424,
+          "abandon": 3.9
+        },
+        {
+          "form": "50 MG · stylo × 4",
+          "ppht": 441.16,
+          "net": 424,
+          "abandon": 3.9
         }
       ],
       "mol_stats": {
@@ -737,6 +903,32 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [
+        {
+          "form": "120 MG · seringue × 1",
+          "ppht": 146.36,
+          "net": 140.67,
+          "abandon": 3.9
+        },
+        {
+          "form": "120 MG · stylo × 1",
+          "ppht": 146.36,
+          "net": 140.67,
+          "abandon": 3.9
+        },
+        {
+          "form": "120 MG · seringue × 2",
+          "ppht": 292.11,
+          "net": 280.75,
+          "abandon": 3.9
+        },
+        {
+          "form": "120 MG × 2",
+          "ppht": 318.21,
+          "net": 305.83,
+          "abandon": 3.9
+        }
+      ],
       "mol_stats": {
         "pharmacies": 98,
         "rotation": 7,
@@ -851,6 +1043,32 @@
           "prix_ip_std": null,
           "abandon_std": null,
           "prix_pack_std": null
+        }
+      ],
+      "presentations": [
+        {
+          "form": "100 MG · seringue × 1",
+          "ppht": 477.98,
+          "net": 458.48,
+          "abandon": 4.1
+        },
+        {
+          "form": "100 MG · stylo × 1",
+          "ppht": 477.98,
+          "net": 458.48,
+          "abandon": 4.1
+        },
+        {
+          "form": "50 MG · seringue × 1",
+          "ppht": 477.98,
+          "net": 458.48,
+          "abandon": 4.1
+        },
+        {
+          "form": "50 MG · stylo × 1",
+          "ppht": 477.98,
+          "net": 458.48,
+          "abandon": 4.1
         }
       ],
       "mol_stats": {
@@ -1136,6 +1354,56 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [
+        {
+          "form": "45 MG · seringue × 1",
+          "ppht": 1053.17,
+          "net": 1033.67,
+          "abandon": 1.9
+        },
+        {
+          "form": "45 MG · stylo × 1",
+          "ppht": 1053.17,
+          "net": 1033.67,
+          "abandon": 1.9
+        },
+        {
+          "form": "90 MG · seringue × 1",
+          "ppht": 1053.17,
+          "net": 1026.84,
+          "abandon": 2.5
+        },
+        {
+          "form": "90 MG · stylo × 1",
+          "ppht": 1053.17,
+          "net": 1026.84,
+          "abandon": 2.5
+        },
+        {
+          "form": "45 MG · stylo × 1",
+          "ppht": 1393.18,
+          "net": 1373.68,
+          "abandon": 1.4
+        },
+        {
+          "form": "90 MG · seringue × 1",
+          "ppht": 1393.18,
+          "net": 1373.68,
+          "abandon": 1.4
+        },
+        {
+          "form": "90 MG · stylo × 1",
+          "ppht": 1393.18,
+          "net": 1373.68,
+          "abandon": 1.4
+        },
+        {
+          "form": "45 MG · seringue × 1",
+          "ppht": 2033.21,
+          "net": 2013.71,
+          "abandon": 1
+        }
+      ],
       "mol_stats": {
         "pharmacies": 46,
         "rotation": 6,
@@ -1286,6 +1554,44 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [
+        {
+          "form": "162 MG · seringue × 1",
+          "ppht": 112.95,
+          "net": 108.56,
+          "abandon": 3.9
+        },
+        {
+          "form": "162 MG · stylo × 1",
+          "ppht": 112.95,
+          "net": 108.56,
+          "abandon": 3.9
+        },
+        {
+          "form": "162 MG · seringue × 4",
+          "ppht": 449.93,
+          "net": 432.43,
+          "abandon": 3.9
+        },
+        {
+          "form": "162 MG · stylo × 4",
+          "ppht": 449.93,
+          "net": 432.43,
+          "abandon": 3.9
+        },
+        {
+          "form": "162 MG · seringue × 4",
+          "ppht": 534.39,
+          "net": 514.89,
+          "abandon": 3.6
+        },
+        {
+          "form": "162 MG · stylo × 4",
+          "ppht": 534.39,
+          "net": 514.89,
+          "abandon": 3.6
+        }
+      ],
       "mol_stats": {
         "pharmacies": 7,
         "rotation": 7,
@@ -1365,6 +1671,7 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [],
       "mol_stats": null,
       "ameli_boxes_total": 0,
       "biosim_ameli_boxes": 0,
@@ -1522,6 +1829,7 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [],
       "mol_stats": null,
       "ameli_boxes_total": 0,
       "biosim_ameli_boxes": 0,
@@ -1819,6 +2127,7 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [],
       "mol_stats": null,
       "ameli_boxes_total": 0,
       "biosim_ameli_boxes": 0,
@@ -2144,6 +2453,7 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [],
       "mol_stats": null,
       "ameli_boxes_total": 0,
       "biosim_ameli_boxes": 0,
@@ -2437,6 +2747,62 @@
           "prix_ip_std": null,
           "abandon_std": null,
           "prix_pack_std": null
+        }
+      ],
+      "presentations": [
+        {
+          "form": "12 MUI × 1",
+          "ppht": 27.77,
+          "net": 26.69,
+          "abandon": 3.9
+        },
+        {
+          "form": "12 MUI · seringue × 1",
+          "ppht": 28.4,
+          "net": 27.3,
+          "abandon": 3.9
+        },
+        {
+          "form": "30 MUI · seringue × 1",
+          "ppht": 54.62,
+          "net": 52.5,
+          "abandon": 3.9
+        },
+        {
+          "form": "48 MUI · seringue × 1",
+          "ppht": 88.46,
+          "net": 85.02,
+          "abandon": 3.9
+        },
+        {
+          "form": "48 MUI · seringue × 1",
+          "ppht": 89.09,
+          "net": 85.62,
+          "abandon": 3.9
+        },
+        {
+          "form": "30 MUI · seringue × 5",
+          "ppht": 270.53,
+          "net": 260.01,
+          "abandon": 3.9
+        },
+        {
+          "form": "30 MUI × 5",
+          "ppht": 271.71,
+          "net": 261.14,
+          "abandon": 3.9
+        },
+        {
+          "form": "48 MUI · seringue × 5",
+          "ppht": 439.79,
+          "net": 422.68,
+          "abandon": 3.9
+        },
+        {
+          "form": "48 MUI · seringue × 5",
+          "ppht": 440.42,
+          "net": 423.29,
+          "abandon": 3.9
         }
       ],
       "mol_stats": {
@@ -2813,6 +3179,26 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [
+        {
+          "form": "6 MG · seringue × 1",
+          "ppht": 363.39,
+          "net": 349.25,
+          "abandon": 3.9
+        },
+        {
+          "form": "6 MG · stylo × 1",
+          "ppht": 363.39,
+          "net": 349.25,
+          "abandon": 3.9
+        },
+        {
+          "form": "6 MG · seringue × 1",
+          "ppht": 363.4,
+          "net": 349.26,
+          "abandon": 3.9
+        }
+      ],
       "mol_stats": {
         "pharmacies": 89,
         "rotation": 7,
@@ -3020,6 +3406,104 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [
+        {
+          "form": "1000 UI · seringue × 6",
+          "ppht": 25.2,
+          "net": 24.22,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation × 6",
+          "ppht": 25.2,
+          "net": 24.22,
+          "abandon": 3.9
+        },
+        {
+          "form": "10000 UI · seringue × 1",
+          "ppht": 41.58,
+          "net": 39.96,
+          "abandon": 3.9
+        },
+        {
+          "form": "2000 UI · seringue × 6",
+          "ppht": 49.79,
+          "net": 47.85,
+          "abandon": 3.9
+        },
+        {
+          "form": "3000 UI · seringue × 6",
+          "ppht": 74.35,
+          "net": 71.46,
+          "abandon": 3.9
+        },
+        {
+          "form": "20000 UI · seringue × 1",
+          "ppht": 82.55,
+          "net": 79.34,
+          "abandon": 3.9
+        },
+        {
+          "form": "4000 UI · seringue × 6",
+          "ppht": 98.93,
+          "net": 95.08,
+          "abandon": 3.9
+        },
+        {
+          "form": "30000 UI",
+          "ppht": 123.5,
+          "net": 118.7,
+          "abandon": 3.9
+        },
+        {
+          "form": "30000 UI · seringue × 1",
+          "ppht": 123.5,
+          "net": 118.7,
+          "abandon": 3.9
+        },
+        {
+          "form": "5000 UI · seringue × 6",
+          "ppht": 123.5,
+          "net": 118.7,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation × 1",
+          "ppht": 123.5,
+          "net": 118.7,
+          "abandon": 3.9
+        },
+        {
+          "form": "6000 UI · seringue × 6",
+          "ppht": 148.08,
+          "net": 142.32,
+          "abandon": 3.9
+        },
+        {
+          "form": "40000 UI · seringue × 1",
+          "ppht": 164.46,
+          "net": 158.06,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation · seringue × 1",
+          "ppht": 164.46,
+          "net": 158.06,
+          "abandon": 3.9
+        },
+        {
+          "form": "8000 UI · seringue × 6",
+          "ppht": 197.23,
+          "net": 189.56,
+          "abandon": 3.9
+        },
+        {
+          "form": "10000 UI · seringue × 6",
+          "ppht": 246.38,
+          "net": 236.8,
+          "abandon": 3.9
+        }
+      ],
       "mol_stats": {
         "pharmacies": 10,
         "rotation": 6,
@@ -3142,6 +3626,38 @@
           "prix_pack_std": "SEMGLEE 100U/ML INJ STYLO3ML 5"
         }
       ],
+      "presentations": [
+        {
+          "form": "autre présentation × 1",
+          "ppht": 22.59,
+          "net": 21.71,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation × 1",
+          "ppht": 31.19,
+          "net": 29.97,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation × 5",
+          "ppht": 31.19,
+          "net": 29.98,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation · stylo × 5",
+          "ppht": 32.63,
+          "net": 31.36,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation × 5",
+          "ppht": 33.59,
+          "net": 32.28,
+          "abandon": 3.9
+        }
+      ],
       "mol_stats": {
         "pharmacies": 253,
         "rotation": 27,
@@ -3256,6 +3772,32 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [
+        {
+          "form": "autre présentation × 1",
+          "ppht": 11.78,
+          "net": 11.32,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation × 5",
+          "ppht": 17.4,
+          "net": 16.72,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation × 5",
+          "ppht": 17.82,
+          "net": 16.13,
+          "abandon": 9.5
+        },
+        {
+          "form": "autre présentation · stylo × 5",
+          "ppht": 20.39,
+          "net": 19.59,
+          "abandon": 3.9
+        }
+      ],
       "mol_stats": {
         "pharmacies": 184,
         "rotation": 20,
@@ -3345,6 +3887,56 @@
           "prix_ip_std": null,
           "abandon_std": null,
           "prix_pack_std": null
+        }
+      ],
+      "presentations": [
+        {
+          "form": "100 UI × 1",
+          "ppht": 13.14,
+          "net": 12.63,
+          "abandon": 3.9
+        },
+        {
+          "form": "25300 UI × 5",
+          "ppht": 22.13,
+          "net": 21.27,
+          "abandon": 3.9
+        },
+        {
+          "form": "300 UI × 5",
+          "ppht": 22.13,
+          "net": 21.27,
+          "abandon": 3.9
+        },
+        {
+          "form": "50300 UI × 5",
+          "ppht": 22.13,
+          "net": 21.27,
+          "abandon": 3.9
+        },
+        {
+          "form": "100 UI × 5",
+          "ppht": 25.97,
+          "net": 24.96,
+          "abandon": 3.9
+        },
+        {
+          "form": "300 UI · stylo × 5",
+          "ppht": 25.97,
+          "net": 24.96,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation × 5",
+          "ppht": 28.78,
+          "net": 27.66,
+          "abandon": 3.9
+        },
+        {
+          "form": "200 UI × 5",
+          "ppht": 59.24,
+          "net": 56.94,
+          "abandon": 3.9
         }
       ],
       "mol_stats": {
@@ -3529,6 +4121,20 @@
           "prix_ip_std": 277.23,
           "abandon_std": 3.9,
           "prix_pack_std": "RIMMYRAH 10MG/ML INJ 0,23ML1+A"
+        }
+      ],
+      "presentations": [
+        {
+          "form": "10 MG",
+          "ppht": 288.45,
+          "net": 277.23,
+          "abandon": 3.9
+        },
+        {
+          "form": "10 MG · seringue × 1",
+          "ppht": 288.45,
+          "net": 277.23,
+          "abandon": 3.9
         }
       ],
       "mol_stats": {
@@ -3799,6 +4405,38 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [
+        {
+          "form": "40 MG · seringue × 1",
+          "ppht": 227.38,
+          "net": 218.53,
+          "abandon": 3.9
+        },
+        {
+          "form": "40 MG · seringue × 1",
+          "ppht": 312.4,
+          "net": 300.25,
+          "abandon": 3.9
+        },
+        {
+          "form": "114.3 MG · seringue × 1",
+          "ppht": 377.65,
+          "net": 362.92,
+          "abandon": 3.9
+        },
+        {
+          "form": "4 MG × 1",
+          "ppht": 513.38,
+          "net": 493.88,
+          "abandon": 3.8
+        },
+        {
+          "form": "114.3 MG × 1",
+          "ppht": 613.9,
+          "net": 594.4,
+          "abandon": 3.2
+        }
+      ],
       "mol_stats": {
         "pharmacies": 229,
         "rotation": 16,
@@ -4010,6 +4648,44 @@
           "prix_ip_std": null,
           "abandon_std": null,
           "prix_pack_std": null
+        }
+      ],
+      "presentations": [
+        {
+          "form": "autre présentation · stylo",
+          "ppht": 42.77,
+          "net": 41.11,
+          "abandon": 3.9
+        },
+        {
+          "form": "20 µg · stylo × 1",
+          "ppht": 185.33,
+          "net": 178.12,
+          "abandon": 3.9
+        },
+        {
+          "form": "20 µg × 2",
+          "ppht": 185.33,
+          "net": 178.12,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation · stylo × 1",
+          "ppht": 185.33,
+          "net": 178.12,
+          "abandon": 3.9
+        },
+        {
+          "form": "autre présentation · stylo × 1",
+          "ppht": 185.96,
+          "net": 178.73,
+          "abandon": 3.9
+        },
+        {
+          "form": "20 µg · stylo × 1",
+          "ppht": 189.02,
+          "net": 181.67,
+          "abandon": 3.9
         }
       ],
       "mol_stats": {
@@ -4341,6 +5017,38 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [
+        {
+          "form": "60 MG · seringue × 1",
+          "ppht": 87.13,
+          "net": 83.74,
+          "abandon": 3.9
+        },
+        {
+          "form": "120 MG",
+          "ppht": 143.71,
+          "net": 138.12,
+          "abandon": 3.9
+        },
+        {
+          "form": "120 MG · seringue × 1",
+          "ppht": 143.71,
+          "net": 138.12,
+          "abandon": 3.9
+        },
+        {
+          "form": "60 MG · seringue × 1",
+          "ppht": 144.79,
+          "net": 139.16,
+          "abandon": 3.9
+        },
+        {
+          "form": "120 MG · seringue × 1",
+          "ppht": 239.11,
+          "net": 229.81,
+          "abandon": 3.9
+        }
+      ],
       "mol_stats": {
         "pharmacies": 100,
         "rotation": 4,
@@ -4593,6 +5301,74 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [
+        {
+          "form": "2000 UI · seringue × 2",
+          "ppht": 3.94,
+          "net": 3.76,
+          "abandon": 4.6
+        },
+        {
+          "form": "4000 UI · seringue × 2",
+          "ppht": 7.78,
+          "net": 7.48,
+          "abandon": 3.9
+        },
+        {
+          "form": "6000 UI · seringue × 2",
+          "ppht": 8.97,
+          "net": 8.62,
+          "abandon": 3.9
+        },
+        {
+          "form": "8000 UI · seringue × 2",
+          "ppht": 10.05,
+          "net": 9.66,
+          "abandon": 3.9
+        },
+        {
+          "form": "2000 UI · seringue × 6",
+          "ppht": 11.67,
+          "net": 11.22,
+          "abandon": 3.9
+        },
+        {
+          "form": "4000 UI · seringue × 6",
+          "ppht": 23.34,
+          "net": 22.43,
+          "abandon": 3.9
+        },
+        {
+          "form": "6000 UI · seringue × 10",
+          "ppht": 44.85,
+          "net": 43.11,
+          "abandon": 3.9
+        },
+        {
+          "form": "8000 UI · seringue × 10",
+          "ppht": 50.2,
+          "net": 48.25,
+          "abandon": 3.9
+        },
+        {
+          "form": "10000 UI · seringue × 10",
+          "ppht": 62.46,
+          "net": 60.03,
+          "abandon": 3.9
+        },
+        {
+          "form": "12000 UI · seringue × 10",
+          "ppht": 104.43,
+          "net": 100.37,
+          "abandon": 3.9
+        },
+        {
+          "form": "15000 UI · seringue × 10",
+          "ppht": 129.93,
+          "net": 124.88,
+          "abandon": 3.9
+        }
+      ],
       "mol_stats": {
         "pharmacies": 79,
         "rotation": 23,
@@ -4722,6 +5498,74 @@
           "prix_pack_std": "BEMFOLA 300 UI SOL INJ STYLO 1"
         }
       ],
+      "presentations": [
+        {
+          "form": "75 UI · stylo × 1",
+          "ppht": 13.04,
+          "net": 12.53,
+          "abandon": 3.9
+        },
+        {
+          "form": "150 UI · stylo × 1",
+          "ppht": 26.77,
+          "net": 25.73,
+          "abandon": 3.9
+        },
+        {
+          "form": "150 UI · stylo × 1",
+          "ppht": 31.89,
+          "net": 30.65,
+          "abandon": 3.9
+        },
+        {
+          "form": "225 UI · stylo × 1",
+          "ppht": 37.9,
+          "net": 36.43,
+          "abandon": 3.9
+        },
+        {
+          "form": "300 UI · stylo × 1",
+          "ppht": 50.35,
+          "net": 48.39,
+          "abandon": 3.9
+        },
+        {
+          "form": "300 UI · stylo × 1",
+          "ppht": 63.14,
+          "net": 60.68,
+          "abandon": 3.9
+        },
+        {
+          "form": "450 UI · stylo × 1",
+          "ppht": 75.21,
+          "net": 72.28,
+          "abandon": 3.9
+        },
+        {
+          "form": "450 UI · stylo × 1",
+          "ppht": 94.41,
+          "net": 90.74,
+          "abandon": 3.9
+        },
+        {
+          "form": "900 UI × 1",
+          "ppht": 149.79,
+          "net": 143.96,
+          "abandon": 3.9
+        },
+        {
+          "form": "900 UI · stylo × 1",
+          "ppht": 188.17,
+          "net": 180.85,
+          "abandon": 3.9
+        },
+        {
+          "form": "1050 UI · seringue × 1",
+          "ppht": 218.78,
+          "net": 210.27,
+          "abandon": 3.9
+        }
+      ],
       "mol_stats": {
         "pharmacies": 41,
         "rotation": 31,
@@ -4811,6 +5655,62 @@
           "prix_ip_std": 892.51,
           "abandon_std": 2.1,
           "prix_pack_std": "OMNITROPE 10 MG SOL INJ CS 5"
+        }
+      ],
+      "presentations": [
+        {
+          "form": "5 MG × 1",
+          "ppht": 94.61,
+          "net": 90.93,
+          "abandon": 3.9
+        },
+        {
+          "form": "10 MG × 1",
+          "ppht": 188.58,
+          "net": 181.24,
+          "abandon": 3.9
+        },
+        {
+          "form": "15 MG × 1",
+          "ppht": 282.56,
+          "net": 271.57,
+          "abandon": 3.9
+        },
+        {
+          "form": "5 MG × 5",
+          "ppht": 470.52,
+          "net": 451.02,
+          "abandon": 4.1
+        },
+        {
+          "form": "10 MG × 5",
+          "ppht": 912.01,
+          "net": 892.51,
+          "abandon": 2.1
+        },
+        {
+          "form": "5 MG × 10",
+          "ppht": 912.01,
+          "net": 892.51,
+          "abandon": 2.1
+        },
+        {
+          "form": "15 MG × 5",
+          "ppht": 1351.45,
+          "net": 1331.95,
+          "abandon": 1.4
+        },
+        {
+          "form": "10 MG × 10",
+          "ppht": 1790.9,
+          "net": 1771.4,
+          "abandon": 1.1
+        },
+        {
+          "form": "15 MG × 10",
+          "ppht": 2669.78,
+          "net": 2650.28,
+          "abandon": 0.7
         }
       ],
       "mol_stats": {
@@ -4920,6 +5820,7 @@
           "prix_pack_std": null
         }
       ],
+      "presentations": [],
       "mol_stats": null,
       "ameli_boxes_total": 0,
       "biosim_ameli_boxes": 0,
