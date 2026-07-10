@@ -147,14 +147,14 @@
   // (vert). Les autres chiffres (total / prix moyen / réf. croisées) passent en
   // petit, discrets, sous les deux tuiles-verdict.
   function verdictBand(list) {
-    var n = list.length, nAlert = 0, nMatch = 0, pSum = 0, pN = 0;
+    var n = list.length, nAlert = 0, nMatch = 0, nGood = 0, pSum = 0, pN = 0;
     for (var i = 0; i < list.length; i++) {
       var it = list[i];
       if (it.alert) nAlert++;
       if (it.matched) nMatch++;
+      if (it.achat > 0 && it.minConc > 0 && !it.alert) nGood++;   // « bien placé » = produit réellement comparé (achat + prix concurrent) où ton achat tient (avant : comptait des produits jamais comparés)
       if (it.price > 0) { pSum += it.price; pN++; }
     }
-    var nGood = nMatch - nAlert; if (nGood < 0) nGood = 0;
     // Tuile ALERTE (rouge) — cliquable : filtre direct sur les produits battus.
     var alertActive = S.chip === 'alerte';
     var alertTile = '<button type="button" class="off-verdict off-verdict-bad' + (nAlert > 0 ? ' hot' : ' cold') + (alertActive ? ' active' : '') +
@@ -813,7 +813,9 @@
   V2.pages.offilog = {
     render: function (root, param) {
       injectCss();
-      if (param != null && param !== '' && String(param) !== String(S.sel)) S.sel = param;
+      // consommer le param de deep-link UNE fois (avant : re-forçait S.sel à chaque render → inspecteur inrefermable)
+      if (param != null && param !== '' && String(param) !== String(S._lastParam)) S.sel = param;
+      S._lastParam = param;
 
       // Données : meilleures ventes (requis) + OFFILOG (veille, optionnel, en fond)
       if (!window.OFFILOG_BEST) {
