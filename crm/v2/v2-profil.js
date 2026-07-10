@@ -14,7 +14,9 @@
   var TABLE = 'profils', LS = 'jarvis_profils_v1';
 
   // Listes PRÉCISES (pas de « Autre » : le bouton « ➕ préciser… » ajoute une valeur exacte au besoin).
-  var GROS = ['OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Welcoop', 'Giphar Répartition'];
+  // Intégral Pharma en tête (savoir si l'officine travaille déjà avec nous), puis les majors nationaux,
+  // puis les grossistes/short-liners régionaux concurrents (Ouest surtout). Complétable via « ➕ préciser… ».
+  var GROS = ['Intégral Pharma', 'OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Welcoop', 'Giphar Répartition', 'Anjou Santé', 'Mezeghel', 'Epsilon', 'Pharmest', 'Axipharm'];
   var GEN = ['Biogaran', 'Viatris (Mylan)', 'EG Labo', 'Teva', 'Sandoz', 'Zentiva', 'Arrow', 'Cristers', 'Zydus', 'Bouchara-Recordati', 'Sun Pharma', 'Substipharm'];
   var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Péripharm', 'Pharmavitale', 'Santé Cegedim'];
   var ROBOT = ['Aucun', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Tecny-Farma', 'Apostore', 'Omnicell'];
@@ -22,6 +24,7 @@
   var FIELDS = [
     { k: 'gros1', l: 'Grossiste n°1', opts: GROS },
     { k: 'gros2', l: 'Grossiste n°2', opts: GROS },
+    { k: 'gros3', l: 'Grossiste n°3', opts: GROS },
     { k: 'gen1', l: 'Génériqueur n°1', opts: GEN },
     { k: 'gen2', l: 'Génériqueur n°2', opts: GEN },
     { k: 'lgo', l: 'Logiciel (LGO)', opts: LGO },
