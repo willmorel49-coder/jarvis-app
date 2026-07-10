@@ -6,6 +6,9 @@
       "Bash(sudo:*)",
       "Bash(git push --force:*)",
       "Bash(git reset --hard:*)",
+      "Bash(git add -A:*)",
+      "Bash(git add --all:*)",
+      "Bash(git add .)",
       "Bash(:* > /dev/sda)",
       "Bash(curl:* | bash)",
       "Bash(npm publish:*)"
