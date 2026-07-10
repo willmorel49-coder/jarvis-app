@@ -191,6 +191,7 @@
       '.mkt-prow-fields input{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;color:var(--text);font:inherit;font-size:12.5px}',
       '.mkt-prow-fields input::placeholder{color:var(--muted-2)}',
       '.mkt-rm{flex-shrink:0;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card-2);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}',
+      '@media(max-width:640px){.mkt-rm{width:var(--tap-min,44px);height:var(--tap-min,44px)}}',
       '.mkt-rm:hover{border-color:var(--c-rose,#FF4D6D);color:var(--c-rose,#FF4D6D)}',
       '.mkt-prev-wrap{position:sticky;top:18px;background:#e9ecef;border-radius:14px;padding:18px;overflow:auto;max-height:calc(100vh - 120px)}',
       '.mkt-prev-scale{transform-origin:top center;margin:0 auto}',

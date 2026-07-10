@@ -469,6 +469,9 @@
       '.cat-insp-cta{margin-top:22px}',
       '.cat-insp-cta .v2-btn{width:100%}',
       '@media(max-width:1100px){.cat-insp{width:340px}}',
+      '@media(max-width:640px){.cat-insp{height:100dvh;padding-bottom:env(safe-area-inset-bottom)}}',
+      // Mobile : masquer #, CIP13, CA IP, Vol Ameli, Rang → garder Produit/Famille/Prix HT/Prix IP/Remise/Vol IP lisibles sans scroller loin (la ligne reste cliquable pour le détail)
+      '@media(max-width:640px){.cat-table-scroll .v2-table th:nth-child(1),.cat-table-scroll .v2-table td:nth-child(1),.cat-table-scroll .v2-table th:nth-child(3),.cat-table-scroll .v2-table td:nth-child(3),.cat-table-scroll .v2-table th:nth-child(9),.cat-table-scroll .v2-table td:nth-child(9),.cat-table-scroll .v2-table th:nth-child(10),.cat-table-scroll .v2-table td:nth-child(10),.cat-table-scroll .v2-table th:nth-child(11),.cat-table-scroll .v2-table td:nth-child(11){display:none}}',
     ].join('');
     document.head.appendChild(s);
   }

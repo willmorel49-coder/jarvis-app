@@ -134,7 +134,10 @@
       '.gp-pop-tel:hover{background:color-mix(in srgb,var(--ip-blue) 16%,#fff)}' +
       '.gp-pop-tel svg{flex:none}' +
       // Sagitta mobile : carte d'abord, barre de filtres qui passe à la ligne
-      '@media(max-width:820px){.sag-map{order:-1}.ps-bar{flex-wrap:wrap}.ps-dept{flex:1 1 100%;max-width:none}}';
+      '@media(max-width:820px){.sag-map{order:-1}.ps-bar{flex-wrap:wrap}.ps-dept{flex:1 1 100%;max-width:none}}' +
+      // Mobile ≤640 : onglets qui se replient (fini le débordement latéral) + bandeaux moins gourmands en marge
+      '@media(max-width:640px){.grp-tabs{display:flex;flex-wrap:wrap;max-width:100%}.grp-tab{flex:0 0 auto}' +
+        '.grp-hd,.ps-bar,.grp-bar,.grp-sub{padding-left:14px;padding-right:14px}.gc-head,.gc-tools{padding-left:12px;padding-right:12px}}';
     document.head.appendChild(st);
   }
 

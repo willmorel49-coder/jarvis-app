@@ -1140,6 +1140,7 @@
       '@media(prefers-reduced-motion:reduce){.pilo-disc-chev{transition:none}}' +
       // ── Chart 13 mois : la pièce maîtresse (grammaire fiche officine) ──
       '.pilo-chart-card{padding:20px 22px 18px;margin-bottom:14px}' +
+      '@media(max-width:640px){.pilo-chart-card{padding:16px 14px}}' +
       '.pilo-chart-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}' +
       '.pilo-chart-period{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}' +
       // ── Encart d\'évolution du mois choisi (sélection sur le graphe) ──
