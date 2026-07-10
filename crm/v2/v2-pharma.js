@@ -2071,7 +2071,7 @@
         worker.save().then(function () { cleanup(); V2.toast('PDF téléchargé'); })
           .catch(function (e) { console.error(e); cleanup(); V2.toast('Erreur PDF', 'error'); });
       }
-    });
+    }).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifie ta connexion', 'error'); });
   }
 
   // Génère le PDF DEPUIS l'élément exact de l'aperçu (ce que l'utilisateur voit) -> rendu identique.
@@ -2097,7 +2097,7 @@
       } else {
         worker.save().then(function () { done('PDF téléchargé'); }).catch(function (e) { console.error(e); done('Erreur PDF'); });
       }
-    });
+    }).catch(function (e) { console.error(e); sheet.style.transform = prevT; V2.toast('Module PDF indisponible — vérifie ta connexion', 'error'); });
   }
 
   // Aperçu avant impression — modal WYSIWYG (réutilise le style .prepa-*)
