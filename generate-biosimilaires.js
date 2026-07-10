@@ -49,6 +49,7 @@ const amAvg = (loadNames(path.join(V2, "ameli-avg-data.js"), ["AMELI_AVG"]).AMEL
 const stock = loadNames(path.join(CRM, "stock.js"), ["STOCK"]).STOCK || {};
 const etabPrices = loadNames(path.join(V2, "etab-prices-data.js"), ["ETAB_PRICES"]).ETAB_PRICES || {};
 const mktNr = loadNames(path.join(V2, "mkt-nr-data.js"), ["MKT_NR"]).MKT_NR || {};
+const PPHT = loadNames(path.join(V2, "ppht-data.js"), ["PPHT"]).PPHT || {}; // tarif grossiste HT par CIP13 (TOUS produits)
 const estab = loadNames(path.join(CRM, "establishments-aggregate.js"), [
   "OPS_AGGREGATE", "CPR_AGGREGATE", "HP_AGGREGATE",
   "MSP_AGGREGATE", "POS_AGGREGATE", "SEP_AGGREGATE", "SOP_AGGREGATE",
@@ -157,6 +158,14 @@ for (const [name, agg] of Object.entries(estab)) {
   }
 }
 
+// PPHT officiel (tarif grossiste) par CIP13 sur les produits déjà indexés
+for (const [cip13, s] of Object.entries(byCip13)) {
+  if (PPHT[cip13] != null) s.ppht_official = PPHT[cip13];
+}
+
+// Barème d'abandon de marge Intégral : net = PPHT − (0,18€ ≤4,33€ / 3,89% ≤468€ / 19,50€ au-delà)
+function abBareme(pp) { if (pp <= 4.33) return 0.18; if (pp <= 468) return Math.round(pp * 0.0389 * 100) / 100; return 19.5; }
+
 // mol-stats par DCI (MAJUSCULES)
 const molIndex = {};
 for (const m of molStats) molIndex[(m.m || "").toUpperCase()] = m;
@@ -235,6 +244,38 @@ const molecules = BIOSIM_REFERENTIEL.map((mol) => {
     return { ...bs, partenaire: en.partenaire, acteur_majeur: en.acteur_majeur, ...en };
   });
 
+  // ── Pack STANDARD de la molécule (pour un poster comparable marque à marque) ──
+  // On prend le PPHT le plus fréquent parmi toutes les présentations (le pack que
+  // la plupart des marques partagent), départagé par le volume Ameli. Puis pour
+  // chaque marque on retient sa présentation la plus proche de ce PPHT standard.
+  const allCands = [refEnrich, ...biosimilaires].flatMap((e) => e.cands || []);
+  const freq = {};
+  for (const c of allCands) {
+    const k = c.ppht.toFixed(2);
+    if (!freq[k]) freq[k] = { ppht: c.ppht, n: 0, boxes: 0 };
+    freq[k].n++; freq[k].boxes += c.boxes;
+  }
+  const modes = Object.values(freq).sort((a, b) => b.n - a.n || b.boxes - a.boxes || b.ppht - a.ppht);
+  const stdPpht = modes.length ? modes[0].ppht : null;
+  function applyStd(e) {
+    e.prix_ppht_std = null; e.prix_ip_std = null; e.abandon_std = null; e.prix_pack_std = null;
+    if (stdPpht == null || !e.cands || !e.cands.length) { delete e.cands; return; }
+    let best = null;
+    for (const c of e.cands) {
+      const d = Math.abs(c.ppht - stdPpht);
+      if (!best || d < best.d || (d === best.d && c.boxes > best.c.boxes)) best = { c, d };
+    }
+    if (best) {
+      e.prix_ppht_std = Math.round(best.c.ppht * 100) / 100;
+      e.prix_ip_std = Math.round(best.c.net * 100) / 100;
+      e.prix_pack_std = best.c.design || null;
+      e.abandon_std = best.c.ppht > 0 ? Math.round(((best.c.ppht - best.c.net) / best.c.ppht) * 1000) / 10 : null;
+    }
+    delete e.cands; // ne pas alourdir la sortie
+  }
+  applyStd(refEnrich);
+  biosimilaires.forEach(applyStd);
+
   // rollups molécule
   const ameli_boxes_total = biosimilaires.reduce((a, b) => a + b.ameli_boxes, 0) + refEnrich.ameli_boxes;
   const biosim_ameli_boxes = biosimilaires.reduce((a, b) => a + b.ameli_boxes, 0);
@@ -262,8 +303,11 @@ function enrichNoRound(products, refLabo, distrib) {
     cips: [], labos_reels: [], dans_catalogue: false,
     ameli_boxes: 0, ameli_ca: 0, ip_qty: 0, ip_ca: 0,
     ip_intern_ca: 0, ip_intern_qte: 0, stock_dispo: 0,
-    prix_ppht: null, prix_ip: null, boites_par_pharma_an: 0,
+    prix_ppht: null, prix_ip: null, abandon_pct: null,
+    prix_pack: null, boites_par_pharma_an: 0,
   };
+  let lead = null; // pack dominant : la présentation la plus vendue (Ameli) qui a un PPHT
+  e.cands = [];    // tous les prix candidats (pour choisir un pack standard au niveau molécule)
   for (const s of products) {
     e.cips.push(s.cip13);
     for (const l of s.labos) if (!e.labos_reels.includes(l)) e.labos_reels.push(l);
@@ -276,11 +320,21 @@ function enrichNoRound(products, refLabo, distrib) {
     e.ip_intern_qte += s.ip_intern_qte || 0;
     e.stock_dispo += (s.stock_dispo || 0) + (s.etab_stock || 0);
     e.boites_par_pharma_an += s.boites_par_pharma_an || 0;
-    const ppht = s.cat_prix_ht ?? s.bench_prix_ht ?? s.etab_ppht ?? s.nr_prix;
-    if (ppht != null && (e.prix_ppht == null || ppht < e.prix_ppht)) {
-      e.prix_ppht = ppht;
-      e.prix_ip = s.cat_prix_ip ?? s.bench_prix_ip ?? null;
-    }
+    // PPHT de la présentation (priorité : catalogue > benchmark > tarif PPHT officiel > étab > NR)
+    const ppht = s.cat_prix_ht ?? s.bench_prix_ht ?? s.ppht_official ?? s.etab_ppht ?? s.nr_prix;
+    if (ppht == null) continue;
+    // net IP réel si connu (catalogue/benchmark), sinon calculé PPHT − barème d'abandon
+    const netReal = s.cat_prix_ip ?? s.bench_prix_ip ?? null;
+    const cand = { cip: s.cip13, ppht, net: netReal != null ? netReal : Math.round((ppht - abBareme(ppht)) * 100) / 100, boxes: s.ameli_boxes || 0, design: (s.designations[0] || "") };
+    e.cands.push(cand);
+    // pack dominant (page CRM) = la présentation la plus vendue ; départage par PPHT.
+    if (!lead || cand.boxes > lead.boxes || (cand.boxes === lead.boxes && cand.ppht > lead.ppht)) lead = cand;
+  }
+  if (lead) {
+    e.prix_ppht = lead.ppht;
+    e.prix_ip = lead.net;
+    e.prix_pack = lead.design || null;
+    e.abandon_pct = lead.ppht > 0 ? Math.round(((lead.ppht - lead.net) / lead.ppht) * 1000) / 10 : null;
   }
   const allLabos = [refLabo, distrib, ...e.labos_reels].filter(Boolean);
   e.partenaire = allLabos.some(partnerMatch);

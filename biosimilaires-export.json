@@ -54,13 +54,19 @@
         "ip_intern_ca": 29232.3,
         "ip_intern_qte": 88,
         "stock_dispo": 0,
-        "prix_ppht": 354.74,
-        "prix_ip": 340.94,
+        "prix_ppht": 394.08,
+        "prix_ip": 378.75,
+        "abandon_pct": 3.9,
+        "prix_pack": "HUMIRA 40 MG SOL INJ STYLO + TAMP 2",
         "boites_par_pharma_an": 16,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 354.74,
+        "prix_ip_std": 340.94,
+        "abandon_std": 3.9,
+        "prix_pack_std": "HUMIRA 40MG INJ SRG0,4ML 2+T."
       },
       "biosimilaires": [
         {
@@ -99,10 +105,16 @@
           "ip_intern_ca": 101141.66,
           "ip_intern_qte": 224,
           "stock_dispo": 13,
-          "prix_ppht": 197.36,
-          "prix_ip": 189.68,
+          "prix_ppht": 354.74,
+          "prix_ip": 340.94,
+          "abandon_pct": 3.9,
+          "prix_pack": "AMGEVITA 40MG INJ STY0,4ML 2",
           "boites_par_pharma_an": 10,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 354.74,
+          "prix_ip_std": 340.94,
+          "abandon_std": 3.9,
+          "prix_pack_std": "AMGEVITA 40MG INJ STY0,4ML 2"
         },
         {
           "nom": "Imraldi",
@@ -127,9 +139,15 @@
           "stock_dispo": 0,
           "prix_ppht": 394.08,
           "prix_ip": 378.75,
+          "abandon_pct": 3.9,
+          "prix_pack": "IMRALDI 40MG INJ STYL0,4ML 2",
           "boites_par_pharma_an": 3,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 354.74,
+          "prix_ip_std": 340.94,
+          "abandon_std": 3.9,
+          "prix_pack_std": "IMRALDI 40 MG, SOLUTION INJ SERINGUE 2"
         },
         {
           "nom": "Hulio",
@@ -157,9 +175,15 @@
           "stock_dispo": 0,
           "prix_ppht": 394.08,
           "prix_ip": 378.75,
+          "abandon_pct": 3.9,
+          "prix_pack": "HULIO 40MG INJ STYL0,8ML 2 +T.",
           "boites_par_pharma_an": 6,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 354.74,
+          "prix_ip_std": 340.94,
+          "abandon_std": 3.9,
+          "prix_pack_std": "HULIO 40 MG SOL INJ SRG + TAMP 2"
         },
         {
           "nom": "Hyrimoz",
@@ -193,11 +217,17 @@
           "ip_intern_ca": 18421.53,
           "ip_intern_qte": 43,
           "stock_dispo": 18,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 354.74,
+          "prix_ip": 340.94,
+          "abandon_pct": 3.9,
+          "prix_pack": "HYRIMOZ 40 MG SOL INJ STYLO 0,4ML 2",
           "boites_par_pharma_an": 6,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 354.74,
+          "prix_ip_std": 340.94,
+          "abandon_std": 3.9,
+          "prix_pack_std": "HYRIMOZ 40 MG SOL INJ STYLO 0,4ML 2"
         },
         {
           "nom": "Idacio",
@@ -220,11 +250,17 @@
           "ip_intern_ca": 2950.94,
           "ip_intern_qte": 8,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 354.74,
+          "prix_ip": 340.94,
+          "abandon_pct": 3.9,
+          "prix_pack": "IDACIO 40 MG SOL INJ STYLO 2",
           "boites_par_pharma_an": 2,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 354.74,
+          "prix_ip_std": 340.94,
+          "abandon_std": 3.9,
+          "prix_pack_std": "IDACIO 40 MG SOL INJ STYLO 2"
         },
         {
           "nom": "Amsparity",
@@ -245,11 +281,17 @@
           "ip_intern_ca": 0,
           "ip_intern_qte": 0,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 354.74,
+          "prix_ip": 340.94,
+          "abandon_pct": 3.9,
+          "prix_pack": "AMSPARITY 40 MG SOL INJ STYLO + TAMP 2",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 354.74,
+          "prix_ip_std": 340.94,
+          "abandon_std": 3.9,
+          "prix_pack_std": "AMSPARITY 40 MG SOL INJ STYLO + TAMP 2"
         },
         {
           "nom": "Yuflyma",
@@ -281,9 +323,15 @@
           "stock_dispo": 105,
           "prix_ppht": 394.08,
           "prix_ip": 378.75,
+          "abandon_pct": 3.9,
+          "prix_pack": "YUFLYMA 40MG INJ STY0,4ML 2 +T",
           "boites_par_pharma_an": 9,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 354.74,
+          "prix_ip_std": 340.94,
+          "abandon_std": 3.9,
+          "prix_pack_std": "YUFLYMA 80 MG SOL INJ SRG 1"
         },
         {
           "nom": "Hukyndra",
@@ -308,11 +356,17 @@
           "ip_intern_ca": 19864.36,
           "ip_intern_qte": 55,
           "stock_dispo": 18,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 354.74,
+          "prix_ip": 340.94,
+          "abandon_pct": 3.9,
+          "prix_pack": "HUKYNDRA 40 MG SOL INJ STYLO + TAMP 2",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 354.74,
+          "prix_ip_std": 340.94,
+          "abandon_std": 3.9,
+          "prix_pack_std": "HUKYNDRA 40 MG SOL INJ STYLO + TAMP 2"
         },
         {
           "nom": "Libmyris",
@@ -336,11 +390,17 @@
           "ip_intern_ca": 1780.32,
           "ip_intern_qte": 5,
           "stock_dispo": 4,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 354.74,
+          "prix_ip": 340.94,
+          "abandon_pct": 3.9,
+          "prix_pack": "LIBMYRIS 40 MG SOL INJ STYLO 2",
           "boites_par_pharma_an": 2,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 354.74,
+          "prix_ip_std": 340.94,
+          "abandon_std": 3.9,
+          "prix_pack_std": "LIBMYRIS 40 MG SOL INJ STYLO 2"
         }
       ],
       "mol_stats": {
@@ -389,13 +449,19 @@
         "ip_intern_ca": 38070.78,
         "ip_intern_qte": 99,
         "stock_dispo": 4,
-        "prix_ppht": null,
-        "prix_ip": null,
+        "prix_ppht": 441.16,
+        "prix_ip": 424,
+        "abandon_pct": 3.9,
+        "prix_pack": "ENBREL 50MG SOL INJ STYLO 4",
         "boites_par_pharma_an": 5,
         "partenaire": true,
         "distrib": null,
         "acteur_majeur": true,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 441.16,
+        "prix_ip_std": 424,
+        "abandon_std": 3.9,
+        "prix_pack_std": "ENBREL 50MG SOL INJ STYLO 4"
       },
       "biosimilaires": [
         {
@@ -422,9 +488,15 @@
           "stock_dispo": 0,
           "prix_ppht": 441.16,
           "prix_ip": 424,
+          "abandon_pct": 3.9,
+          "prix_pack": "BENEPALI 50 MG SOL INJ STYLO 4",
           "boites_par_pharma_an": 6,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 441.16,
+          "prix_ip_std": 424,
+          "abandon_std": 3.9,
+          "prix_pack_std": "BENEPALI 50 MG SOL INJ STYLO 4"
         },
         {
           "nom": "Erelzi",
@@ -448,11 +520,17 @@
           "ip_intern_ca": 6373.48,
           "ip_intern_qte": 15,
           "stock_dispo": 1,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 441.16,
+          "prix_ip": 424,
+          "abandon_pct": 3.9,
+          "prix_pack": "ERELZI 50MG SOL INJ STYLO 4",
           "boites_par_pharma_an": 3,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 441.16,
+          "prix_ip_std": 424,
+          "abandon_std": 3.9,
+          "prix_pack_std": "ERELZI 50MG SOL INJ STYLO 4"
         },
         {
           "nom": "Nepexto",
@@ -478,9 +556,15 @@
           "stock_dispo": 0,
           "prix_ppht": 441.16,
           "prix_ip": 424,
+          "abandon_pct": 3.9,
+          "prix_pack": "NEPEXTO 50MG INJ STY1ML 4",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 441.16,
+          "prix_ip_std": 424,
+          "abandon_std": 3.9,
+          "prix_pack_std": "NEPEXTO 50MG INJ STY1ML 4"
         }
       ],
       "mol_stats": {
@@ -520,11 +604,17 @@
         "stock_dispo": 0,
         "prix_ppht": null,
         "prix_ip": null,
+        "abandon_pct": null,
+        "prix_pack": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": false
+        "disponible_ip": false,
+        "prix_ppht_std": null,
+        "prix_ip_std": null,
+        "abandon_std": null,
+        "prix_pack_std": null
       },
       "biosimilaires": [
         {
@@ -545,9 +635,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Remsima",
@@ -574,9 +670,15 @@
           "stock_dispo": 9,
           "prix_ppht": 318.21,
           "prix_ip": 305.83,
+          "abandon_pct": 3.9,
+          "prix_pack": "REMSIMA 120MG INJ STY1ML 2",
           "boites_par_pharma_an": 13,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 146.36,
+          "prix_ip_std": 140.67,
+          "abandon_std": 3.9,
+          "prix_pack_std": "REMSIMA 120MG SOL INJ STYLO 1"
         },
         {
           "nom": "Flixabi",
@@ -596,9 +698,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Zessly",
@@ -618,9 +726,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -665,13 +779,19 @@
         "ip_intern_ca": 87759.71,
         "ip_intern_qte": 168,
         "stock_dispo": 17,
-        "prix_ppht": null,
-        "prix_ip": null,
+        "prix_ppht": 477.98,
+        "prix_ip": 458.48,
+        "abandon_pct": 4.1,
+        "prix_pack": "SIMPONI 50 MG INJ STYLO 1",
         "boites_par_pharma_an": 11,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 477.98,
+        "prix_ip_std": 458.48,
+        "abandon_std": 4.1,
+        "prix_pack_std": "SIMPONI 50 MG INJ STYLO 1"
       },
       "biosimilaires": [
         {
@@ -693,9 +813,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Gotenfia",
@@ -716,9 +842,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -762,13 +894,19 @@
         "ip_intern_ca": 0,
         "ip_intern_qte": 0,
         "stock_dispo": 0,
-        "prix_ppht": null,
-        "prix_ip": null,
+        "prix_ppht": 1393.18,
+        "prix_ip": 1373.68,
+        "abandon_pct": 1.4,
+        "prix_pack": "STELARA 90 MG SOL INJ SER 1",
         "boites_par_pharma_an": 8,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 1393.18,
+        "prix_ip_std": 1373.68,
+        "abandon_std": 1.4,
+        "prix_pack_std": "STELARA 90 MG SOL INJ SER 1"
       },
       "biosimilaires": [
         {
@@ -794,9 +932,15 @@
           "stock_dispo": 2,
           "prix_ppht": 1053.17,
           "prix_ip": 1026.84,
+          "abandon_pct": 2.5,
+          "prix_pack": "UZPRUVO 90MG INJ SRG1ML 1",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 1053.17,
+          "prix_ip_std": 1026.84,
+          "abandon_std": 2.5,
+          "prix_pack_std": "UZPRUVO 90MG INJ SRG1ML 1"
         },
         {
           "nom": "Wezenla",
@@ -821,11 +965,17 @@
           "ip_intern_ca": 32205.19,
           "ip_intern_qte": 31,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 1053.17,
+          "prix_ip": 1033.67,
+          "abandon_pct": 1.9,
+          "prix_pack": "WEZENLA 90 MG SOL INJ SRG 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 1053.17,
+          "prix_ip_std": 1033.67,
+          "abandon_std": 1.9,
+          "prix_pack_std": "WEZENLA 90 MG SOL INJ SRG 1"
         },
         {
           "nom": "Pyzchiva",
@@ -850,11 +1000,17 @@
           "ip_intern_ca": 8279.3,
           "ip_intern_qte": 8,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 1053.17,
+          "prix_ip": 1033.67,
+          "abandon_pct": 1.9,
+          "prix_pack": "PYZCHIVA 90 MG SOL INJ SRG 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 1053.17,
+          "prix_ip_std": 1033.67,
+          "abandon_std": 1.9,
+          "prix_pack_std": "PYZCHIVA 90 MG SOL INJ SRG 1"
         },
         {
           "nom": "Steqeyma",
@@ -879,11 +1035,17 @@
           "ip_intern_ca": 14492.7,
           "ip_intern_qte": 14,
           "stock_dispo": 4,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 1053.17,
+          "prix_ip": 1033.67,
+          "abandon_pct": 1.9,
+          "prix_pack": "STEQEYMA 90 MG SOL A DILUER PERF SER 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 1053.17,
+          "prix_ip_std": 1033.67,
+          "abandon_std": 1.9,
+          "prix_pack_std": "STEQEYMA 90 MG SOL A DILUER PERF SER 1"
         },
         {
           "nom": "Otulfi",
@@ -905,11 +1067,17 @@
           "ip_intern_ca": 4134.76,
           "ip_intern_qte": 4,
           "stock_dispo": 1,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 1053.17,
+          "prix_ip": 1033.67,
+          "abandon_pct": 1.9,
+          "prix_pack": "OTULFI 90 MG SOL INJ SGR 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 1053.17,
+          "prix_ip_std": 1033.67,
+          "abandon_std": 1.9,
+          "prix_pack_std": "OTULFI 90 MG SOL INJ SGR 1"
         },
         {
           "nom": "Imuldosa",
@@ -929,9 +1097,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Yesintek",
@@ -951,9 +1125,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -996,13 +1176,19 @@
         "ip_intern_ca": 87440,
         "ip_intern_qte": 118,
         "stock_dispo": 0,
-        "prix_ppht": null,
-        "prix_ip": null,
+        "prix_ppht": 534.39,
+        "prix_ip": 514.89,
+        "abandon_pct": 3.6,
+        "prix_pack": "ROACTEMRA 162 MG SOL INJ STYLO 4",
         "boites_par_pharma_an": 7,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 534.39,
+        "prix_ip_std": 514.89,
+        "abandon_std": 3.6,
+        "prix_pack_std": "ROACTEMRA 162 MG SOL INJ STYLO 4"
       },
       "biosimilaires": [
         {
@@ -1026,11 +1212,17 @@
           "ip_intern_ca": 910.3,
           "ip_intern_qte": 2,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 449.93,
+          "prix_ip": 432.43,
+          "abandon_pct": 3.9,
+          "prix_pack": "TYENNE 162 MG SOL INJ STYLO 4",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 449.93,
+          "prix_ip_std": 432.43,
+          "abandon_std": 3.9,
+          "prix_pack_std": "TYENNE 162 MG SOL INJ STYLO 4"
         },
         {
           "nom": "Avtozma",
@@ -1053,11 +1245,17 @@
           "ip_intern_ca": 4419.89,
           "ip_intern_qte": 38,
           "stock_dispo": 1,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 112.95,
+          "prix_ip": 108.56,
+          "abandon_pct": 3.9,
+          "prix_pack": "AVTOZMA 162MG INJ SRG0,9ML 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 112.95,
+          "prix_ip_std": 108.56,
+          "abandon_std": 3.9,
+          "prix_pack_std": "AVTOZMA 162MG INJ SRG0,9ML 1"
         },
         {
           "nom": "Acvrio",
@@ -1077,9 +1275,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -1119,11 +1323,17 @@
         "stock_dispo": 0,
         "prix_ppht": null,
         "prix_ip": null,
+        "abandon_pct": null,
+        "prix_pack": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": false
+        "disponible_ip": false,
+        "prix_ppht_std": null,
+        "prix_ip_std": null,
+        "abandon_std": null,
+        "prix_pack_std": null
       },
       "biosimilaires": [
         {
@@ -1144,9 +1354,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": null,
@@ -1180,11 +1396,17 @@
         "stock_dispo": 0,
         "prix_ppht": null,
         "prix_ip": null,
+        "abandon_pct": null,
+        "prix_pack": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": false
+        "disponible_ip": false,
+        "prix_ppht_std": null,
+        "prix_ip_std": null,
+        "abandon_std": null,
+        "prix_pack_std": null
       },
       "biosimilaires": [
         {
@@ -1205,9 +1427,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Rixathon",
@@ -1227,9 +1455,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Ruxience",
@@ -1249,9 +1483,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Ituxredi",
@@ -1271,9 +1511,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": null,
@@ -1307,11 +1553,17 @@
         "stock_dispo": 0,
         "prix_ppht": null,
         "prix_ip": null,
+        "abandon_pct": null,
+        "prix_pack": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": false
+        "disponible_ip": false,
+        "prix_ppht_std": null,
+        "prix_ip_std": null,
+        "abandon_std": null,
+        "prix_pack_std": null
       },
       "biosimilaires": [
         {
@@ -1332,9 +1584,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Kanjinti",
@@ -1354,9 +1612,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Ontruzant",
@@ -1376,9 +1640,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Trazimera",
@@ -1398,9 +1668,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Ogivri",
@@ -1420,9 +1696,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Zercepac",
@@ -1442,9 +1724,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Dazublys",
@@ -1464,9 +1752,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Herwenda",
@@ -1486,9 +1780,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Tuznue",
@@ -1508,9 +1808,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": null,
@@ -1544,11 +1850,17 @@
         "stock_dispo": 0,
         "prix_ppht": null,
         "prix_ip": null,
+        "abandon_pct": null,
+        "prix_pack": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": false
+        "disponible_ip": false,
+        "prix_ppht_std": null,
+        "prix_ip_std": null,
+        "abandon_std": null,
+        "prix_pack_std": null
       },
       "biosimilaires": [
         {
@@ -1569,9 +1881,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Zirabev",
@@ -1591,9 +1909,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Aybintio",
@@ -1613,9 +1937,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Alymsys",
@@ -1635,9 +1965,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Oyavas",
@@ -1657,9 +1993,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Abevmy",
@@ -1679,9 +2021,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Equidacent",
@@ -1701,9 +2049,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Onbevzi",
@@ -1723,9 +2077,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Vegzelma",
@@ -1745,9 +2105,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Avzivi",
@@ -1767,9 +2133,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": null,
@@ -1806,13 +2178,19 @@
         "ip_intern_ca": 2037.78,
         "ip_intern_qte": 26,
         "stock_dispo": 1,
-        "prix_ppht": null,
-        "prix_ip": null,
+        "prix_ppht": 54.62,
+        "prix_ip": 52.5,
+        "abandon_pct": 3.9,
+        "prix_pack": "NEUPOGEN 30 MU SOL INJ SER 1",
         "boites_par_pharma_an": 1,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 54.62,
+        "prix_ip_std": 52.5,
+        "abandon_std": 3.9,
+        "prix_pack_std": "NEUPOGEN 30 MU SOL INJ SER 1"
       },
       "biosimilaires": [
         {
@@ -1850,9 +2228,15 @@
           "stock_dispo": 34,
           "prix_ppht": 54.62,
           "prix_ip": 52.5,
+          "abandon_pct": 3.9,
+          "prix_pack": "ZARZIO 30MU/0,5ML INJ SRG 1",
           "boites_par_pharma_an": 22,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 54.62,
+          "prix_ip_std": 52.5,
+          "abandon_std": 3.9,
+          "prix_pack_std": "ZARZIO 30MU/0,5ML INJ SRG 1"
         },
         {
           "nom": "Tevagrastim",
@@ -1877,11 +2261,17 @@
           "ip_intern_ca": 675.32,
           "ip_intern_qte": 11,
           "stock_dispo": 1,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 54.62,
+          "prix_ip": 52.5,
+          "abandon_pct": 3.9,
+          "prix_pack": "TEVAGRASTIM 30 MUI/0,5 ML SRG INJ 1",
           "boites_par_pharma_an": 3,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 54.62,
+          "prix_ip_std": 52.5,
+          "abandon_std": 3.9,
+          "prix_pack_std": "TEVAGRASTIM 30 MUI/0,5 ML SRG INJ 1"
         },
         {
           "nom": "Ratiograstim",
@@ -1904,11 +2294,17 @@
           "ip_intern_ca": 0,
           "ip_intern_qte": 0,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 54.62,
+          "prix_ip": 52.5,
+          "abandon_pct": 3.9,
+          "prix_pack": "RATIOGRASTIM 30MUI/0,5ML INJ DSP SEC 1",
           "boites_par_pharma_an": 5,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 54.62,
+          "prix_ip_std": 52.5,
+          "abandon_std": 3.9,
+          "prix_pack_std": "RATIOGRASTIM 30MUI/0,5ML INJ DSP SEC 1"
         },
         {
           "nom": "Nivestim",
@@ -1937,11 +2333,17 @@
           "ip_intern_ca": 9884.3,
           "ip_intern_qte": 142,
           "stock_dispo": 27,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 54.62,
+          "prix_ip": 52.5,
+          "abandon_pct": 3.9,
+          "prix_pack": "NIVESTIM 30 MUI SOL INJ 1",
           "boites_par_pharma_an": 7,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 54.62,
+          "prix_ip_std": 52.5,
+          "abandon_std": 3.9,
+          "prix_pack_std": "NIVESTIM 30 MUI SOL INJ 1"
         },
         {
           "nom": "Accofil",
@@ -1970,9 +2372,15 @@
           "stock_dispo": 1,
           "prix_ppht": 54.62,
           "prix_ip": 52.5,
+          "abandon_pct": 3.9,
+          "prix_pack": "ACCOFIL 30MU/0,5ML INJ S.1 +P",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 54.62,
+          "prix_ip_std": 52.5,
+          "abandon_std": 3.9,
+          "prix_pack_std": "ACCOFIL 30MU/0,5ML INJ S.1 +P"
         },
         {
           "nom": "Grastofil",
@@ -1992,9 +2400,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Zefylti",
@@ -2014,9 +2428,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -2058,13 +2478,19 @@
         "ip_intern_ca": 7570,
         "ip_intern_qte": 17,
         "stock_dispo": 0,
-        "prix_ppht": null,
-        "prix_ip": null,
+        "prix_ppht": 363.4,
+        "prix_ip": 349.26,
+        "abandon_pct": 3.9,
+        "prix_pack": "NEULASTA 6 MG SER SOL INJ 1",
         "boites_par_pharma_an": 1,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 363.4,
+        "prix_ip_std": 349.26,
+        "abandon_std": 3.9,
+        "prix_pack_std": "NEULASTA 6 MG SER SOL INJ 1"
       },
       "biosimilaires": [
         {
@@ -2087,11 +2513,17 @@
           "ip_intern_ca": 15066.77,
           "ip_intern_qte": 43,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 363.4,
+          "prix_ip": 349.26,
+          "abandon_pct": 3.9,
+          "prix_pack": "ZIEXTENZO 6 MG SER SOL INJ 1",
           "boites_par_pharma_an": 4,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 363.4,
+          "prix_ip_std": 349.26,
+          "abandon_std": 3.9,
+          "prix_pack_std": "ZIEXTENZO 6 MG SER SOL INJ 1"
         },
         {
           "nom": "Pelgraz",
@@ -2115,11 +2547,17 @@
           "ip_intern_ca": 15042.68,
           "ip_intern_qte": 43,
           "stock_dispo": 20,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 363.39,
+          "prix_ip": 349.25,
+          "abandon_pct": 3.9,
+          "prix_pack": "PELGRAZ 6 MG SER SOL INJ SERINGUE 1",
           "boites_par_pharma_an": 2,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 363.39,
+          "prix_ip_std": 349.25,
+          "abandon_std": 3.9,
+          "prix_pack_std": "PELGRAZ 6 MG SER SOL INJ SERINGUE 1"
         },
         {
           "nom": "Pelmeg",
@@ -2144,11 +2582,17 @@
           "ip_intern_ca": 9791.13,
           "ip_intern_qte": 28,
           "stock_dispo": 10,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 363.4,
+          "prix_ip": 349.26,
+          "abandon_pct": 3.9,
+          "prix_pack": "PELMEG 6 MG SER SOL INJ 1",
           "boites_par_pharma_an": 2,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 363.4,
+          "prix_ip_std": 349.26,
+          "abandon_std": 3.9,
+          "prix_pack_std": "PELMEG 6 MG SER SOL INJ 1"
         },
         {
           "nom": "Fulphila",
@@ -2171,11 +2615,17 @@
           "ip_intern_ca": 14371.29,
           "ip_intern_qte": 41,
           "stock_dispo": 7,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 363.4,
+          "prix_ip": 349.26,
+          "abandon_pct": 3.9,
+          "prix_pack": "FULPHILA 6 MG SER SOL INJ SERINGUE 1",
           "boites_par_pharma_an": 2,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 363.4,
+          "prix_ip_std": 349.26,
+          "abandon_std": 3.9,
+          "prix_pack_std": "FULPHILA 6 MG SER SOL INJ SERINGUE 1"
         },
         {
           "nom": "Grasustek",
@@ -2199,9 +2649,15 @@
           "stock_dispo": 18,
           "prix_ppht": 363.4,
           "prix_ip": 349.26,
+          "abandon_pct": 3.9,
+          "prix_pack": "GRASUSTEK 6MG INJ SRG.S0,6ML 1",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 363.4,
+          "prix_ip_std": 349.26,
+          "abandon_std": 3.9,
+          "prix_pack_std": "GRASUSTEK 6MG INJ SRG.S0,6ML 1"
         },
         {
           "nom": "Nyvepria",
@@ -2223,11 +2679,17 @@
           "ip_intern_ca": 2872.68,
           "ip_intern_qte": 8,
           "stock_dispo": 1,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 363.4,
+          "prix_ip": 349.26,
+          "abandon_pct": 3.9,
+          "prix_pack": "NYVEPRIA 6 MG, SOL INJ SER 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 363.4,
+          "prix_ip_std": 349.26,
+          "abandon_std": 3.9,
+          "prix_pack_std": "NYVEPRIA 6 MG, SOL INJ SER 1"
         },
         {
           "nom": "Cegfila",
@@ -2249,11 +2711,17 @@
           "ip_intern_ca": 4587.93,
           "ip_intern_qte": 13,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 363.4,
+          "prix_ip": 349.26,
+          "abandon_pct": 3.9,
+          "prix_pack": "CEGFILA 6 MG SER SOL INJ SERINGUE 1",
           "boites_par_pharma_an": 3,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 363.4,
+          "prix_ip_std": 349.26,
+          "abandon_std": 3.9,
+          "prix_pack_std": "CEGFILA 6 MG SER SOL INJ SERINGUE 1"
         },
         {
           "nom": "Stimufend",
@@ -2277,10 +2745,16 @@
           "ip_intern_ca": 2446.02,
           "ip_intern_qte": 7,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 363.4,
+          "prix_ip": 349.26,
+          "abandon_pct": 3.9,
+          "prix_pack": "STIMUFEND 6 MG SOL INJ SRG 1",
           "boites_par_pharma_an": 1,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 363.4,
+          "prix_ip_std": 349.26,
+          "abandon_std": 3.9,
+          "prix_pack_std": "STIMUFEND 6 MG SOL INJ SRG 1"
         },
         {
           "nom": "Udenyca",
@@ -2300,9 +2774,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Dyrupeg",
@@ -2322,9 +2802,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -2378,11 +2864,17 @@
         "stock_dispo": 8,
         "prix_ppht": 164.46,
         "prix_ip": 158.06,
+        "abandon_pct": 3.9,
+        "prix_pack": "EPREX 40000U/ML INJ SRG1ML 1",
         "boites_par_pharma_an": 3,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 123.5,
+        "prix_ip_std": 118.7,
+        "abandon_std": 3.9,
+        "prix_pack_std": "EPREX 30 000UI/0,75ML SOL INJ SER 1"
       },
       "biosimilaires": [
         {
@@ -2419,9 +2911,15 @@
           "stock_dispo": 35,
           "prix_ppht": 123.5,
           "prix_ip": 118.7,
+          "abandon_pct": 3.9,
+          "prix_pack": "BINOCRIT 30000UI INJ 0,75ML1+A",
           "boites_par_pharma_an": 25,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 123.5,
+          "prix_ip_std": 118.7,
+          "abandon_std": 3.9,
+          "prix_pack_std": "BINOCRIT 30000UI INJ 0,75ML1+A"
         },
         {
           "nom": "Abseamed",
@@ -2441,9 +2939,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Retacrit",
@@ -2477,9 +2981,15 @@
           "stock_dispo": 16,
           "prix_ppht": 123.5,
           "prix_ip": 118.7,
+          "abandon_pct": 3.9,
+          "prix_pack": "RETACRIT 30000U/0,75ML S.1+D",
           "boites_par_pharma_an": 10,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 123.5,
+          "prix_ip_std": 118.7,
+          "abandon_std": 3.9,
+          "prix_pack_std": "RETACRIT 30000U/0,75ML S.1+D"
         },
         {
           "nom": "Silapo",
@@ -2499,9 +3009,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -2547,11 +3063,17 @@
         "stock_dispo": 227,
         "prix_ppht": 33.59,
         "prix_ip": 32.28,
+        "abandon_pct": 3.9,
+        "prix_pack": "LANTUS 100U/ML INJ SOLO3ML 5",
         "boites_par_pharma_an": 65,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 33.59,
+        "prix_ip_std": 32.28,
+        "abandon_std": 3.9,
+        "prix_pack_std": "LANTUS 100U/ML INJ SOLO3ML 5"
       },
       "biosimilaires": [
         {
@@ -2577,9 +3099,15 @@
           "stock_dispo": 0,
           "prix_ppht": 31.19,
           "prix_ip": 29.97,
+          "abandon_pct": 3.9,
+          "prix_pack": "ABASAGLAR 100U STY(1-80U) 3ML5",
           "boites_par_pharma_an": 77,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 31.19,
+          "prix_ip_std": 29.97,
+          "abandon_std": 3.9,
+          "prix_pack_std": "ABASAGLAR 100U STY(1-80U) 3ML5"
         },
         {
           "nom": "Semglee",
@@ -2601,11 +3129,17 @@
           "ip_intern_ca": 31.36,
           "ip_intern_qte": 1,
           "stock_dispo": 3,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 32.63,
+          "prix_ip": 31.36,
+          "abandon_pct": 3.9,
+          "prix_pack": "SEMGLEE 100U/ML INJ STYLO3ML 5",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 32.63,
+          "prix_ip_std": 31.36,
+          "abandon_std": 3.9,
+          "prix_pack_std": "SEMGLEE 100U/ML INJ STYLO3ML 5"
         }
       ],
       "mol_stats": {
@@ -2650,13 +3184,19 @@
         "ip_intern_ca": 67605,
         "ip_intern_qte": 3588,
         "stock_dispo": 0,
-        "prix_ppht": 11.78,
-        "prix_ip": 11.32,
+        "prix_ppht": 20.39,
+        "prix_ip": 19.59,
+        "abandon_pct": 3.9,
+        "prix_pack": "NOVORAPID FLEXPEN STYLO3ML 5",
         "boites_par_pharma_an": 186,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 20.39,
+        "prix_ip_std": 19.59,
+        "abandon_std": 3.9,
+        "prix_pack_std": "NOVORAPID FLEXPEN STYLO3ML 5"
       },
       "biosimilaires": [
         {
@@ -2677,9 +3217,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Kirsty",
@@ -2699,9 +3245,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -2751,13 +3303,19 @@
         "ip_intern_ca": 53046.05,
         "ip_intern_qte": 2076,
         "stock_dispo": 31,
-        "prix_ppht": 13.14,
-        "prix_ip": 12.63,
+        "prix_ppht": 25.97,
+        "prix_ip": 24.96,
+        "abandon_pct": 3.9,
+        "prix_pack": "HUMALOG 100UI/ML KWIKPEN 3ML 5",
         "boites_par_pharma_an": 97,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 22.13,
+        "prix_ip_std": 21.27,
+        "abandon_std": 3.9,
+        "prix_pack_std": "HUMALOG 300 UI SOL INJ CART 5"
       },
       "biosimilaires": [
         {
@@ -2778,9 +3336,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -2824,11 +3388,17 @@
         "stock_dispo": 0,
         "prix_ppht": 288.45,
         "prix_ip": 277.23,
+        "abandon_pct": 3.9,
+        "prix_pack": "LUCENTIS 10MG/ML INJ SRG 1",
         "boites_par_pharma_an": 14,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 288.45,
+        "prix_ip_std": 277.23,
+        "abandon_std": 3.9,
+        "prix_pack_std": "LUCENTIS 10MG/ML INJ SRG 1"
       },
       "biosimilaires": [
         {
@@ -2851,11 +3421,17 @@
           "ip_intern_ca": 5269.24,
           "ip_intern_qte": 19,
           "stock_dispo": 15,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 288.45,
+          "prix_ip": 277.23,
+          "abandon_pct": 3.9,
+          "prix_pack": "BYOOVIZ 10 MG/ML SOL INJ 1",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 288.45,
+          "prix_ip_std": 277.23,
+          "abandon_std": 3.9,
+          "prix_pack_std": "BYOOVIZ 10 MG/ML SOL INJ 1"
         },
         {
           "nom": "Ranivisio",
@@ -2878,11 +3454,17 @@
           "ip_intern_ca": 8663.7,
           "ip_intern_qte": 31,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 288.45,
+          "prix_ip": 277.23,
+          "abandon_pct": 3.9,
+          "prix_pack": "RANIVISIO 10 MG/ML SOL INJ 1",
           "boites_par_pharma_an": 2,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 288.45,
+          "prix_ip_std": 277.23,
+          "abandon_std": 3.9,
+          "prix_pack_std": "RANIVISIO 10 MG/ML SOL INJ 1"
         },
         {
           "nom": "Ximluci",
@@ -2904,11 +3486,17 @@
           "ip_intern_ca": 277.23,
           "ip_intern_qte": 1,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 288.45,
+          "prix_ip": 277.23,
+          "abandon_pct": 3.9,
+          "prix_pack": "XIMLUCI 10 MG/ML SOL INJ 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 288.45,
+          "prix_ip_std": 277.23,
+          "abandon_std": 3.9,
+          "prix_pack_std": "XIMLUCI 10 MG/ML SOL INJ 1"
         },
         {
           "nom": "Rimmyrah",
@@ -2930,11 +3518,17 @@
           "ip_intern_ca": 0,
           "ip_intern_qte": 0,
           "stock_dispo": 1,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 288.45,
+          "prix_ip": 277.23,
+          "abandon_pct": 3.9,
+          "prix_pack": "RIMMYRAH 10MG/ML INJ 0,23ML1+A",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 288.45,
+          "prix_ip_std": 277.23,
+          "abandon_std": 3.9,
+          "prix_pack_std": "RIMMYRAH 10MG/ML INJ 0,23ML1+A"
         }
       ],
       "mol_stats": {
@@ -2981,11 +3575,17 @@
         "stock_dispo": 37,
         "prix_ppht": 312.4,
         "prix_ip": 300.25,
+        "abandon_pct": 3.9,
+        "prix_pack": "EYLEA 40MG/ML INJ SRG 1",
         "boites_par_pharma_an": 55,
         "partenaire": true,
         "distrib": null,
         "acteur_majeur": true,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 312.4,
+        "prix_ip_std": 300.25,
+        "abandon_std": 3.9,
+        "prix_pack_std": "EYLEA 40MG/ML INJ SRG 1"
       },
       "biosimilaires": [
         {
@@ -3008,11 +3608,17 @@
           "ip_intern_ca": 3286.83,
           "ip_intern_qte": 15,
           "stock_dispo": 9,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 227.38,
+          "prix_ip": 218.53,
+          "abandon_pct": 3.9,
+          "prix_pack": "AFQLIR 40 MG/ML SOL INJ SER 1",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 227.38,
+          "prix_ip_std": 218.53,
+          "abandon_std": 3.9,
+          "prix_pack_std": "AFQLIR 40 MG/ML SOL INJ SER 1"
         },
         {
           "nom": "Yesafili",
@@ -3033,9 +3639,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Opuviz",
@@ -3056,9 +3668,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Eydenzelt",
@@ -3079,9 +3697,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Pavblu",
@@ -3104,11 +3728,17 @@
           "ip_intern_ca": 3077.19,
           "ip_intern_qte": 14,
           "stock_dispo": 1,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 227.38,
+          "prix_ip": 218.53,
+          "abandon_pct": 3.9,
+          "prix_pack": "PAVBLU 40MG/ML SRG0,09ML 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 227.38,
+          "prix_ip_std": 218.53,
+          "abandon_std": 3.9,
+          "prix_pack_std": "PAVBLU 40MG/ML SRG0,09ML 1"
         },
         {
           "nom": "Mynzepli",
@@ -3129,9 +3759,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Ahzantive",
@@ -3152,9 +3788,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -3198,11 +3840,17 @@
         "stock_dispo": 2,
         "prix_ppht": 189.02,
         "prix_ip": 181.67,
+        "abandon_pct": 3.9,
+        "prix_pack": "FORSTEO 20MCG/80MCL INJ STYLO 1",
         "boites_par_pharma_an": 1,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 189.02,
+        "prix_ip_std": 181.67,
+        "abandon_std": 3.9,
+        "prix_pack_std": "FORSTEO 20MCG/80MCL INJ STYLO 1"
       },
       "biosimilaires": [
         {
@@ -3227,11 +3875,17 @@
           "ip_intern_ca": 19215.76,
           "ip_intern_qte": 110,
           "stock_dispo": 18,
-          "prix_ppht": 41.2,
-          "prix_ip": null,
+          "prix_ppht": 185.33,
+          "prix_ip": 178.12,
+          "abandon_pct": 3.9,
+          "prix_pack": "MOVYMIA 20MCG/80MCL INJ 2,4ML1",
           "boites_par_pharma_an": 3,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 185.33,
+          "prix_ip_std": 178.12,
+          "abandon_std": 3.9,
+          "prix_pack_std": "MOVYMIA 20MCG/80MCL INJ 2,4ML1"
         },
         {
           "nom": "Terrosa",
@@ -3253,11 +3907,17 @@
           "ip_intern_ca": 1250.47,
           "ip_intern_qte": 7,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 185.33,
+          "prix_ip": 178.12,
+          "abandon_pct": 3.9,
+          "prix_pack": "TERROSA 20 MCG/80MCL INJ STYLO 1",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 185.33,
+          "prix_ip_std": 178.12,
+          "abandon_std": 3.9,
+          "prix_pack_std": "TERROSA 20 MCG/80MCL INJ STYLO 1"
         },
         {
           "nom": "Livogiva",
@@ -3279,11 +3939,17 @@
           "ip_intern_ca": 5038.35,
           "ip_intern_qte": 27,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 185.33,
+          "prix_ip": 178.12,
+          "abandon_pct": 3.9,
+          "prix_pack": "LIVOGIVA 20MICROG/80 MCL INJ STYLO 1",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 185.33,
+          "prix_ip_std": 178.12,
+          "abandon_std": 3.9,
+          "prix_pack_std": "LIVOGIVA 20MICROG/80 MCL INJ STYLO 1"
         },
         {
           "nom": "Sondelbay",
@@ -3305,11 +3971,17 @@
           "ip_intern_ca": 1071.14,
           "ip_intern_qte": 6,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 185.96,
+          "prix_ip": 178.73,
+          "abandon_pct": 3.9,
+          "prix_pack": "SONDELBAY 20MICROG/80 MCL INJ STYLO 1",
           "boites_par_pharma_an": 1,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 185.96,
+          "prix_ip_std": 178.73,
+          "abandon_std": 3.9,
+          "prix_pack_std": "SONDELBAY 20MICROG/80 MCL INJ STYLO 1"
         },
         {
           "nom": "Kauliv",
@@ -3329,9 +4001,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -3377,11 +4055,17 @@
         "stock_dispo": 11,
         "prix_ppht": 144.79,
         "prix_ip": 139.16,
+        "abandon_pct": 3.9,
+        "prix_pack": "PROLIA 60MG INJ SRG1ML 1 P/A",
         "boites_par_pharma_an": 16,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 144.79,
+        "prix_ip_std": 139.16,
+        "abandon_std": 3.9,
+        "prix_pack_std": "PROLIA 60MG INJ SRG1ML 1 P/A"
       },
       "biosimilaires": [
         {
@@ -3405,11 +4089,17 @@
           "ip_intern_ca": 665.58,
           "ip_intern_qte": 6,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 143.71,
+          "prix_ip": 138.12,
+          "abandon_pct": 3.9,
+          "prix_pack": "WYOST 120MG INJ FL1,7ML 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 143.71,
+          "prix_ip_std": 138.12,
+          "abandon_std": 3.9,
+          "prix_pack_std": "WYOST 120MG INJ FL1,7ML 1"
         },
         {
           "nom": "Obodence / Xbryk",
@@ -3432,11 +4122,17 @@
           "ip_intern_ca": 0,
           "ip_intern_qte": 0,
           "stock_dispo": 3,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 143.71,
+          "prix_ip": 138.12,
+          "abandon_pct": 3.9,
+          "prix_pack": "XBRYK 120MG SOL INJ FL1,7ML",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 143.71,
+          "prix_ip_std": 138.12,
+          "abandon_std": 3.9,
+          "prix_pack_std": "XBRYK 120MG SOL INJ FL1,7ML"
         },
         {
           "nom": "Stoboclo / Osenvelt",
@@ -3459,11 +4155,17 @@
           "ip_intern_ca": 337.28,
           "ip_intern_qte": 4,
           "stock_dispo": 2,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 143.71,
+          "prix_ip": 138.12,
+          "abandon_pct": 3.9,
+          "prix_pack": "OSENVELT 120MG INJ FL1,7ML 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 143.71,
+          "prix_ip_std": 138.12,
+          "abandon_std": 3.9,
+          "prix_pack_std": "OSENVELT 120MG INJ FL1,7ML 1"
         },
         {
           "nom": "Osvyrti / Jubereq",
@@ -3483,9 +4185,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Izamby / Denbrayce",
@@ -3505,9 +4213,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Conexxence / Bomyntra",
@@ -3530,11 +4244,17 @@
           "ip_intern_ca": 307.3,
           "ip_intern_qte": 3,
           "stock_dispo": 2,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 143.71,
+          "prix_ip": 138.12,
+          "abandon_pct": 3.9,
+          "prix_pack": "BOMYNTRA 120MG INJ SRG1,7ML 1",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 143.71,
+          "prix_ip_std": 138.12,
+          "abandon_std": 3.9,
+          "prix_pack_std": "BOMYNTRA 120MG INJ SRG1,7ML 1"
         },
         {
           "nom": "Bildyos / Bilprevda",
@@ -3554,9 +4274,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Kefdensis / Zvogra",
@@ -3576,9 +4302,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Ponlimsi / Degevma",
@@ -3598,9 +4330,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -3652,13 +4390,19 @@
         "ip_intern_ca": 15130.84,
         "ip_intern_qte": 657,
         "stock_dispo": 126,
-        "prix_ppht": null,
-        "prix_ip": null,
+        "prix_ppht": 23.34,
+        "prix_ip": 22.43,
+        "abandon_pct": 3.9,
+        "prix_pack": "LOVENOX 4000UI AXA/0,4ML INJ SER +S 6",
         "boites_par_pharma_an": 63,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 44.85,
+        "prix_ip_std": 43.11,
+        "abandon_std": 3.9,
+        "prix_pack_std": "LOVENOX 6000UI AXA/0,6ML INJ SER +S 10"
       },
       "biosimilaires": [
         {
@@ -3690,11 +4434,17 @@
           "ip_intern_ca": 5069.42,
           "ip_intern_qte": 277,
           "stock_dispo": 38,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 23.34,
+          "prix_ip": 22.43,
+          "abandon_pct": 3.9,
+          "prix_pack": "INHIXA 4000UI AXA/0,4ML INJ SER 6",
           "boites_par_pharma_an": 56,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 44.85,
+          "prix_ip_std": 43.11,
+          "abandon_std": 3.9,
+          "prix_pack_std": "INHIXA 6000UI AXA/0,6ML INJ SER 10"
         },
         {
           "nom": "Ghemaxan",
@@ -3714,9 +4464,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Crusia (Becat)",
@@ -3736,9 +4492,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Enoxaparine Arrow",
@@ -3762,11 +4524,17 @@
           "ip_intern_ca": 628.06,
           "ip_intern_qte": 16,
           "stock_dispo": 0,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 44.85,
+          "prix_ip": 43.11,
+          "abandon_pct": 3.9,
+          "prix_pack": "ENOXAPARINE ARROW 6000UI SER 10",
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 44.85,
+          "prix_ip_std": 43.11,
+          "abandon_std": 3.9,
+          "prix_pack_std": "ENOXAPARINE ARROW 6000UI SER 10"
         },
         {
           "nom": "Enoxaparine Biogaran",
@@ -3786,9 +4554,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Enoxaparine Teva",
@@ -3808,9 +4582,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": {
@@ -3858,11 +4638,17 @@
         "stock_dispo": 38,
         "prix_ppht": 188.17,
         "prix_ip": 180.85,
+        "abandon_pct": 3.9,
+        "prix_pack": "GONAL-F 900UI/1,5ML STYL. 1",
         "boites_par_pharma_an": 9,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": true
+        "disponible_ip": true,
+        "prix_ppht_std": 63.14,
+        "prix_ip_std": 60.68,
+        "abandon_std": 3.9,
+        "prix_pack_std": "GONAL F 300UI/0,5ML SOL INJ STYLO 1"
       },
       "biosimilaires": [
         {
@@ -3887,11 +4673,17 @@
           "ip_intern_ca": 6855.5,
           "ip_intern_qte": 86,
           "stock_dispo": 24,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 149.79,
+          "prix_ip": 143.96,
+          "abandon_pct": 3.9,
+          "prix_pack": "OVALEAP 900UI SOL INJ CART 1",
           "boites_par_pharma_an": 4,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 50.35,
+          "prix_ip_std": 48.39,
+          "abandon_std": 3.9,
+          "prix_pack_std": "OVALEAP 300 UI SOL INJ CART 1"
         },
         {
           "nom": "Bemfola",
@@ -3917,11 +4709,17 @@
           "ip_intern_ca": 11966.75,
           "ip_intern_qte": 377,
           "stock_dispo": 122,
-          "prix_ppht": null,
-          "prix_ip": null,
+          "prix_ppht": 13.04,
+          "prix_ip": 12.53,
+          "abandon_pct": 3.9,
+          "prix_pack": "BEMFOLA 75 UI SOL INJ STYLO 1",
           "boites_par_pharma_an": 26,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 50.35,
+          "prix_ip_std": 48.39,
+          "abandon_std": 3.9,
+          "prix_pack_std": "BEMFOLA 300 UI SOL INJ STYLO 1"
         }
       ],
       "mol_stats": {
@@ -3961,11 +4759,17 @@
         "stock_dispo": 0,
         "prix_ppht": null,
         "prix_ip": null,
+        "abandon_pct": null,
+        "prix_pack": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": false
+        "disponible_ip": false,
+        "prix_ppht_std": null,
+        "prix_ip_std": null,
+        "abandon_std": null,
+        "prix_pack_std": null
       },
       "biosimilaires": [
         {
@@ -3998,9 +4802,15 @@
           "stock_dispo": 4,
           "prix_ppht": 282.56,
           "prix_ip": 271.57,
+          "abandon_pct": 3.9,
+          "prix_pack": "OMNITROPE 15MG INJ C.1,5ML 1",
           "boites_par_pharma_an": 4,
           "distrib": null,
-          "disponible_ip": true
+          "disponible_ip": true,
+          "prix_ppht_std": 912.01,
+          "prix_ip_std": 892.51,
+          "abandon_std": 2.1,
+          "prix_pack_std": "OMNITROPE 10 MG SOL INJ CS 5"
         }
       ],
       "mol_stats": {
@@ -4040,11 +4850,17 @@
         "stock_dispo": 0,
         "prix_ppht": null,
         "prix_ip": null,
+        "abandon_pct": null,
+        "prix_pack": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
         "distrib": null,
         "acteur_majeur": false,
-        "disponible_ip": false
+        "disponible_ip": false,
+        "prix_ppht_std": null,
+        "prix_ip_std": null,
+        "abandon_std": null,
+        "prix_pack_std": null
       },
       "biosimilaires": [
         {
@@ -4065,9 +4881,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         },
         {
           "nom": "Epysqli",
@@ -4087,9 +4909,15 @@
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
+          "abandon_pct": null,
+          "prix_pack": null,
           "boites_par_pharma_an": 0,
           "distrib": null,
-          "disponible_ip": false
+          "disponible_ip": false,
+          "prix_ppht_std": null,
+          "prix_ip_std": null,
+          "abandon_std": null,
+          "prix_pack_std": null
         }
       ],
       "mol_stats": null,
