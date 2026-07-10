@@ -3,11 +3,11 @@
     "genere_le": "2026-07-10",
     "source": "biosim-referentiel.js (ANSM/Ameli/EMA) × données JARVIS",
     "nb_molecules": 24,
-    "nb_biosimilaires": 109,
+    "nb_biosimilaires": 114,
     "nb_substituables": 11,
     "nb_molecules_ville": 16,
     "nb_molecules_ref_ip": 19,
-    "nb_biosim_partenaire": 10,
+    "nb_biosim_partenaire": 13,
     "partenaires_ip": [
       "Zentiva",
       "EG",
@@ -58,6 +58,7 @@
         "prix_ip": 340.94,
         "boites_par_pharma_an": 16,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -66,8 +67,9 @@
           "nom": "Amgevita",
           "labo": "Amgen",
           "annee": 2018,
-          "partenaire": false,
-          "acteur_majeur": false,
+          "distrib": "Teva",
+          "partenaire": true,
+          "acteur_majeur": true,
           "cips": [
             "3400930294512",
             "3400930294536",
@@ -126,6 +128,7 @@
           "prix_ppht": 394.08,
           "prix_ip": 378.75,
           "boites_par_pharma_an": 3,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -155,6 +158,7 @@
           "prix_ppht": 394.08,
           "prix_ip": 378.75,
           "boites_par_pharma_an": 6,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -192,6 +196,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 6,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -218,6 +223,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 2,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -242,6 +248,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -275,6 +282,7 @@
           "prix_ppht": 394.08,
           "prix_ip": 378.75,
           "boites_par_pharma_an": 9,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -303,6 +311,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -330,6 +339,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 2,
+          "distrib": null,
           "disponible_ip": true
         }
       ],
@@ -383,6 +393,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 5,
         "partenaire": true,
+        "distrib": null,
         "acteur_majeur": true,
         "disponible_ip": true
       },
@@ -412,6 +423,7 @@
           "prix_ppht": 441.16,
           "prix_ip": 424,
           "boites_par_pharma_an": 6,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -439,6 +451,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 3,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -466,6 +479,7 @@
           "prix_ppht": 441.16,
           "prix_ip": 424,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         }
       ],
@@ -508,6 +522,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": false
       },
@@ -531,6 +546,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -559,6 +575,7 @@
           "prix_ppht": 318.21,
           "prix_ip": 305.83,
           "boites_par_pharma_an": 13,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -580,6 +597,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -601,6 +619,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -650,6 +669,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 11,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -674,6 +694,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -696,6 +717,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -744,6 +766,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 8,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -772,6 +795,7 @@
           "prix_ppht": 1053.17,
           "prix_ip": 1026.84,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -800,6 +824,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -828,6 +853,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -856,6 +882,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -881,6 +908,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -902,6 +930,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -923,6 +952,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -970,6 +1000,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 7,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -998,6 +1029,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -1024,6 +1056,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -1045,6 +1078,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -1087,6 +1121,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": false
       },
@@ -1110,6 +1145,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -1146,6 +1182,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": false
       },
@@ -1169,6 +1206,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1190,6 +1228,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1211,6 +1250,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1232,6 +1272,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -1268,6 +1309,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": false
       },
@@ -1291,6 +1333,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1312,6 +1355,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1333,6 +1377,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1354,6 +1399,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1375,6 +1421,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1396,6 +1443,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1417,6 +1465,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1438,6 +1487,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1459,6 +1509,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -1495,6 +1546,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": false
       },
@@ -1518,6 +1570,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1539,6 +1592,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1560,6 +1614,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1581,6 +1636,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1602,6 +1658,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1623,6 +1680,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1644,6 +1702,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1665,6 +1724,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1686,6 +1746,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1707,6 +1768,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -1748,6 +1810,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 1,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -1788,6 +1851,7 @@
           "prix_ppht": 54.62,
           "prix_ip": 52.5,
           "boites_par_pharma_an": 22,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -1816,6 +1880,34 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 3,
+          "distrib": null,
+          "disponible_ip": true
+        },
+        {
+          "nom": "Ratiograstim",
+          "labo": "Teva / ratiopharm",
+          "annee": 2008,
+          "partenaire": true,
+          "acteur_majeur": true,
+          "cips": [
+            "3400939981635",
+            "3400939981864",
+            "3400939981925",
+            "3400939982007"
+          ],
+          "labos_reels": [],
+          "dans_catalogue": false,
+          "ameli_boxes": 95542,
+          "ameli_ca": 11674935.7,
+          "ip_qty": 0,
+          "ip_ca": 0,
+          "ip_intern_ca": 0,
+          "ip_intern_qte": 0,
+          "stock_dispo": 0,
+          "prix_ppht": null,
+          "prix_ip": null,
+          "boites_par_pharma_an": 5,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -1848,6 +1940,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 7,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -1878,6 +1971,7 @@
           "prix_ppht": 54.62,
           "prix_ip": 52.5,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -1899,6 +1993,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -1920,6 +2015,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -1930,12 +2026,12 @@
         "remise": 44,
         "ca_pharma_an": 1201
       },
-      "ameli_boxes_total": 685161,
-      "biosim_ameli_boxes": 652539,
-      "penetration": 95,
+      "ameli_boxes_total": 780703,
+      "biosim_ameli_boxes": 748081,
+      "penetration": 96,
       "referenced_ip": true,
       "has_partenaire": true,
-      "nb_biosim": 6
+      "nb_biosim": 7
     },
     {
       "dci": "PEGFILGRASTIM",
@@ -1966,6 +2062,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 1,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -1993,6 +2090,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 4,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2020,6 +2118,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 2,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2048,6 +2147,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 2,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2074,6 +2174,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 2,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2099,6 +2200,7 @@
           "prix_ppht": 363.4,
           "prix_ip": 349.26,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2124,6 +2226,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2149,12 +2252,14 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 3,
+          "distrib": null,
           "disponible_ip": true
         },
         {
           "nom": "Stimufend",
           "labo": "Fresenius Kabi",
           "annee": 2022,
+          "distrib": "Teva",
           "partenaire": true,
           "acteur_majeur": true,
           "cips": [
@@ -2196,6 +2301,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -2217,6 +2323,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -2273,6 +2380,7 @@
         "prix_ip": 158.06,
         "boites_par_pharma_an": 3,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -2312,6 +2420,7 @@
           "prix_ppht": 123.5,
           "prix_ip": 118.7,
           "boites_par_pharma_an": 25,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2333,6 +2442,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -2368,6 +2478,7 @@
           "prix_ppht": 123.5,
           "prix_ip": 118.7,
           "boites_par_pharma_an": 10,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2389,6 +2500,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -2437,6 +2549,7 @@
         "prix_ip": 32.28,
         "boites_par_pharma_an": 65,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -2465,6 +2578,7 @@
           "prix_ppht": 31.19,
           "prix_ip": 29.97,
           "boites_par_pharma_an": 77,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2490,6 +2604,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         }
       ],
@@ -2539,6 +2654,7 @@
         "prix_ip": 11.32,
         "boites_par_pharma_an": 186,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -2562,6 +2678,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -2583,6 +2700,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -2637,6 +2755,7 @@
         "prix_ip": 12.63,
         "boites_par_pharma_an": 97,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -2660,6 +2779,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -2706,6 +2826,7 @@
         "prix_ip": 277.23,
         "boites_par_pharma_an": 14,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -2733,6 +2854,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2759,6 +2881,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 2,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2784,6 +2907,33 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
+          "disponible_ip": true
+        },
+        {
+          "nom": "Rimmyrah",
+          "labo": "Lupin",
+          "annee": 2024,
+          "partenaire": false,
+          "acteur_majeur": false,
+          "cips": [
+            "3400930283967"
+          ],
+          "labos_reels": [
+            "ORION PHARMA"
+          ],
+          "dans_catalogue": false,
+          "ameli_boxes": 0,
+          "ameli_ca": 0,
+          "ip_qty": 0,
+          "ip_ca": 0,
+          "ip_intern_ca": 0,
+          "ip_intern_qte": 0,
+          "stock_dispo": 1,
+          "prix_ppht": null,
+          "prix_ip": null,
+          "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         }
       ],
@@ -2799,7 +2949,7 @@
       "penetration": 14,
       "referenced_ip": true,
       "has_partenaire": true,
-      "nb_biosim": 3
+      "nb_biosim": 4
     },
     {
       "dci": "AFLIBERCEPT",
@@ -2833,6 +2983,7 @@
         "prix_ip": 300.25,
         "boites_par_pharma_an": 55,
         "partenaire": true,
+        "distrib": null,
         "acteur_majeur": true,
         "disponible_ip": true
       },
@@ -2860,6 +3011,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2882,6 +3034,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -2904,6 +3057,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -2926,6 +3080,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -2952,6 +3107,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -2974,6 +3130,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -2996,6 +3153,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -3042,6 +3200,7 @@
         "prix_ip": 181.67,
         "boites_par_pharma_an": 1,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -3071,6 +3230,7 @@
           "prix_ppht": 41.2,
           "prix_ip": null,
           "boites_par_pharma_an": 3,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3096,6 +3256,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3121,6 +3282,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3146,6 +3308,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 1,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3167,6 +3330,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -3215,6 +3379,7 @@
         "prix_ip": 139.16,
         "boites_par_pharma_an": 16,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -3226,7 +3391,8 @@
           "partenaire": false,
           "acteur_majeur": true,
           "cips": [
-            "3400930305867"
+            "3400930305867",
+            "3400930305874"
           ],
           "labos_reels": [
             "SANDOZ"
@@ -3236,12 +3402,13 @@
           "ameli_ca": 0,
           "ip_qty": 0,
           "ip_ca": 0,
-          "ip_intern_ca": 251.22,
-          "ip_intern_qte": 3,
+          "ip_intern_ca": 665.58,
+          "ip_intern_qte": 6,
           "stock_dispo": 0,
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3268,6 +3435,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3294,6 +3462,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3315,6 +3484,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -3336,6 +3506,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -3362,6 +3533,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3383,6 +3555,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -3404,6 +3577,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -3425,6 +3599,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -3481,6 +3656,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 63,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -3517,6 +3693,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 56,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3538,6 +3715,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -3559,6 +3737,79 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
+          "disponible_ip": false
+        },
+        {
+          "nom": "Enoxaparine Arrow",
+          "labo": "Arrow / Apotex",
+          "annee": 2021,
+          "partenaire": false,
+          "acteur_majeur": false,
+          "cips": [
+            "3400930199671",
+            "3400930201749",
+            "3400930201763"
+          ],
+          "labos_reels": [
+            "ARROW GENERIQUE"
+          ],
+          "dans_catalogue": false,
+          "ameli_boxes": 7228,
+          "ameli_ca": 218456.98,
+          "ip_qty": 0,
+          "ip_ca": 0,
+          "ip_intern_ca": 628.06,
+          "ip_intern_qte": 16,
+          "stock_dispo": 0,
+          "prix_ppht": null,
+          "prix_ip": null,
+          "boites_par_pharma_an": 0,
+          "distrib": null,
+          "disponible_ip": true
+        },
+        {
+          "nom": "Enoxaparine Biogaran",
+          "labo": "Biogaran",
+          "annee": 2021,
+          "partenaire": false,
+          "acteur_majeur": true,
+          "cips": [],
+          "labos_reels": [],
+          "dans_catalogue": false,
+          "ameli_boxes": 0,
+          "ameli_ca": 0,
+          "ip_qty": 0,
+          "ip_ca": 0,
+          "ip_intern_ca": 0,
+          "ip_intern_qte": 0,
+          "stock_dispo": 0,
+          "prix_ppht": null,
+          "prix_ip": null,
+          "boites_par_pharma_an": 0,
+          "distrib": null,
+          "disponible_ip": false
+        },
+        {
+          "nom": "Enoxaparine Teva",
+          "labo": "Teva",
+          "annee": 2021,
+          "partenaire": true,
+          "acteur_majeur": true,
+          "cips": [],
+          "labos_reels": [],
+          "dans_catalogue": false,
+          "ameli_boxes": 0,
+          "ameli_ca": 0,
+          "ip_qty": 0,
+          "ip_ca": 0,
+          "ip_intern_ca": 0,
+          "ip_intern_qte": 0,
+          "stock_dispo": 0,
+          "prix_ppht": null,
+          "prix_ip": null,
+          "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],
@@ -3569,12 +3820,12 @@
         "remise": 16,
         "ca_pharma_an": 429
       },
-      "ameli_boxes_total": 3128948,
-      "biosim_ameli_boxes": 936311,
+      "ameli_boxes_total": 3136176,
+      "biosim_ameli_boxes": 943539,
       "penetration": 30,
       "referenced_ip": true,
-      "has_partenaire": false,
-      "nb_biosim": 3
+      "has_partenaire": true,
+      "nb_biosim": 6
     },
     {
       "dci": "FOLLITROPINE ALFA",
@@ -3609,6 +3860,7 @@
         "prix_ip": 180.85,
         "boites_par_pharma_an": 9,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": true
       },
@@ -3638,6 +3890,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 4,
+          "distrib": null,
           "disponible_ip": true
         },
         {
@@ -3667,6 +3920,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 26,
+          "distrib": null,
           "disponible_ip": true
         }
       ],
@@ -3709,6 +3963,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": false
       },
@@ -3744,6 +3999,7 @@
           "prix_ppht": 282.56,
           "prix_ip": 271.57,
           "boites_par_pharma_an": 4,
+          "distrib": null,
           "disponible_ip": true
         }
       ],
@@ -3786,6 +4042,7 @@
         "prix_ip": null,
         "boites_par_pharma_an": 0,
         "partenaire": false,
+        "distrib": null,
         "acteur_majeur": false,
         "disponible_ip": false
       },
@@ -3809,6 +4066,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         },
         {
@@ -3830,6 +4088,7 @@
           "prix_ppht": null,
           "prix_ip": null,
           "boites_par_pharma_an": 0,
+          "distrib": null,
           "disponible_ip": false
         }
       ],

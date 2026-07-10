@@ -127,7 +127,7 @@
   function tags(e, isPrinceps) {
     var t = '';
     if (isPrinceps) t += '<span class="bs-tag pr">Princeps</span>';
-    if (e.partenaire) t += '<span class="bs-tag part">Partenaire</span>';
+    if (e.partenaire) t += '<span class="bs-tag part">Partenaire' + (e.distrib ? ' · ' + esc(e.distrib) : '') + '</span>';
     if (!isPrinceps) t += e.disponible_ip ? '<span class="bs-tag ip">Chez Intégral</span>' : '<span class="bs-tag no">non réf.</span>';
     return t;
   }

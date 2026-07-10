@@ -162,7 +162,7 @@ const molIndex = {};
 for (const m of molStats) molIndex[(m.m || "").toUpperCase()] = m;
 
 // ---- Utilitaires de matching marque -> produits ----------------------------
-const STOP = new Set(["INSULINE", "SANOFI", "LILLY", "BECAT", "WYOST", "XGEVA", "PROLIA"]);
+const STOP = new Set([]);
 function norm(s) {
   return (s || "").toString().toUpperCase()
     .normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -187,14 +187,23 @@ const atc2Of = (mol) => norm(mol.atc).slice(0, 3);
 
 // Trouve les CIP13 correspondant à une marque dans le contexte d'une molécule
 function matchProducts(brandNom, mol) {
-  const keys = brandKeys(brandNom);
   const wantAtc2 = atc2Of(mol);
   const wantMol = norm(mol.dci);
+  // mots de la DCI (génériques) : ne PAS matcher dessus seuls, sinon
+  // "Enoxaparine Teva" attraperait TOUS les produits enoxaparine.
+  const dciTokens = new Set(wantMol.split(/[^A-Z0-9]+/).filter((w) => w.length >= 4));
+  const allKeys = brandKeys(brandNom);
+  const distinctive = allKeys.filter((k) => !dciTokens.has(k)); // token de marque/labo
+  const dciInBrand = allKeys.filter((k) => dciTokens.has(k));   // mot-molécule dans la marque
+  const keys = distinctive.length ? distinctive : allKeys;
   const hits = [];
   for (const s of Object.values(byCip13)) {
     const desigs = s.designations.map(norm);
     const hasKey = keys.some((k) => desigs.some((d) => d.includes(k)));
     if (!hasKey) continue;
+    // marque du type "DCI + labo" (ex: "Enoxaparine Teva") : exiger AUSSI
+    // le mot-molécule dans la désignation → écarte les autres produits du labo.
+    if (dciInBrand.length && !dciInBrand.every((k) => desigs.some((d) => d.includes(k)))) continue;
     // garde-fou : cohérence ATC (niveau 2) ou molécule connue
     const atcOk = s.atc2 ? norm(s.atc2) === wantAtc2 : true;
     const molOk = s.molecule ? norm(s.molecule).includes(wantMol) || wantMol.includes(norm(s.molecule)) : true;
@@ -222,7 +231,7 @@ const molecules = BIOSIM_REFERENTIEL.map((mol) => {
 
   const biosimilaires = mol.biosimilaires.map((bs) => {
     const products = matchProducts(bs.nom, mol);
-    const en = roundE(enrichNoRound(products, bs.labo));
+    const en = roundE(enrichNoRound(products, bs.labo, bs.distrib));
     return { ...bs, partenaire: en.partenaire, acteur_majeur: en.acteur_majeur, ...en };
   });
 
@@ -248,7 +257,7 @@ const molecules = BIOSIM_REFERENTIEL.map((mol) => {
 });
 
 // helper défini après usage (hoisting des fonctions déclarées)
-function enrichNoRound(products, refLabo) {
+function enrichNoRound(products, refLabo, distrib) {
   const e = {
     cips: [], labos_reels: [], dans_catalogue: false,
     ameli_boxes: 0, ameli_ca: 0, ip_qty: 0, ip_ca: 0,
@@ -273,8 +282,9 @@ function enrichNoRound(products, refLabo) {
       e.prix_ip = s.cat_prix_ip ?? s.bench_prix_ip ?? null;
     }
   }
-  const allLabos = [refLabo, ...e.labos_reels];
+  const allLabos = [refLabo, distrib, ...e.labos_reels].filter(Boolean);
   e.partenaire = allLabos.some(partnerMatch);
+  e.distrib = distrib || null;
   e.acteur_majeur = allLabos.some(majorMatch);
   e.disponible_ip = e.cips.length > 0 &&
     (e.ameli_boxes > 0 || e.ip_qty > 0 || e.stock_dispo > 0 || e.dans_catalogue || e.ip_intern_ca > 0);
