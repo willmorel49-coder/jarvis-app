@@ -1,0 +1,58 @@
+name: CI (contrôle avant prod)
+
+# Filet de sécurité au push : attrape les erreurs de syntaxe JS et les écrans blancs
+# AVANT qu'ils n'arrivent en ligne. Ne se déclenche que si du code de l'app change
+# (pas sur les commits de données comme la veille du matin).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/**/*.js'
+      - 'crm/**/*.html'
+      - 'crm/**/*.css'
+      - '.github/scripts/smoke.mjs'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'crm/**/*.js'
+      - 'crm/**/*.html'
+      - 'crm/**/*.css'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Contrôle syntaxe (tous les JS de l'app, hors libs vendor)
+        run: |
+          set -e
+          n=0
+          while IFS= read -r f; do
+            node --check "$f"
+            n=$((n+1))
+          done < <(find crm -name '*.js' -not -path '*/vendor/*')
+          echo "✅ $n fichiers JS sans erreur de syntaxe"
+
+      - name: Installer Playwright (éphémère, non committé)
+        run: |
+          npm i --no-save playwright@latest >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+
+      - name: Servir l'app + smoke test (chargement + zéro erreur JS)
+        run: |
+          python3 -m http.server 8080 >/dev/null 2>&1 &
+          sleep 2
+          node .github/scripts/smoke.mjs
