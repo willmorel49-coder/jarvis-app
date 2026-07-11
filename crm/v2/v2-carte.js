@@ -140,8 +140,8 @@
     if (grp) bits.push(grp);
     if (comm) bits.push(comm);
     if (caOf(p) > 0) bits.push('CA ' + eurK(caOf(p)));
-    return '<b>' + esc(p[6] || 'Pharmacie') + '</b>' +
-      (p[10] ? '<i>' + esc(p[10]) + '</i>' : '') +
+    return '<b>' + esc(p[6] || p[10] || 'Pharmacie') + '</b>' +
+      (p[10] && p[6] ? '<i>' + esc(p[10]) + '</i>' : '') +
       '<span>' + esc(p[7] || '') + (p[8] ? ' · ' + esc(p[8]) : '') + '</span>' +
       (bits.length ? '<em>' + esc(bits.join(' · ')) + '</em>' : '');
   }
@@ -901,7 +901,11 @@
     var el = document.getElementById('cn-listpanel'); if (!el) return;
     var ids = filtered(), total = ids.length;
     if (listSort === 'ca') ids.sort(function (a, b) { return caOf(D.p[b]) - caOf(D.p[a]); });
-    else ids.sort(function (a, b) { return norm(D.p[a][6]) < norm(D.p[b][6]) ? -1 : 1; });
+    else ids.sort(function (a, b) {   // par nom, mais les officines sans nom en base passent à la fin
+      var na = norm(D.p[a][6] || ''), nb = norm(D.p[b][6] || '');
+      if (!na !== !nb) return na ? -1 : 1;
+      return na < nb ? -1 : (na > nb ? 1 : 0);
+    });
     if (listShown > total) listShown = Math.max(LIST_STEP, total);
     var shown = ids.slice(0, listShown), remaining = total - shown.length;
     var rows = shown.map(function (i) {
@@ -909,8 +913,8 @@
       var comm = p[5] ? D.comm[p[5]] : '';
       return '<div class="cn-lrow">' +
         '<div class="cn-lmain" onclick="V2.carteFiche(' + i + ')">' +
-          '<b>' + esc(p[6] || 'Pharmacie') + '</b>' +
-          '<span class="cn-lsub">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + (p[10] ? ' · ' + esc(p[10]) : '') + '</span>' +
+          '<b>' + esc(p[6] || p[10] || ('Pharmacie' + (p[7] ? ' · ' + p[7] : ''))) + '</b>' +
+          '<span class="cn-lsub">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + (p[10] && p[6] ? ' · ' + esc(p[10]) : '') + '</span>' +
           '<span class="cn-ltags">' +
             '<span class="cn-tag ' + (cl ? 'cl' : (pr ? 'pr' : '')) + '">' + esc(statusLabel(p)) + '</span>' +
             (caOf(p) > 0 ? '<span class="cn-tag ca">CA ' + eurK(caOf(p)) + '</span>' : '') +
