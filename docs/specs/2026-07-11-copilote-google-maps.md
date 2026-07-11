@@ -95,6 +95,21 @@ Site : la-longue-vue.fr · outil « La Loupe ».
 ### FAIT (phase 1) — 2026-07-11
 - Copilote → carte ✅. Section « Ma tournée » rangée (CTA clair + phrase + export discret, 2 liens sortis) ✅. Modes couleur : 5 boutons → menu « Colorer par » ✅.
 
+### FAIT (données) — 2026-07-11 · enrichissement groupements PHARMA_FR
+Will : « on avait un mapping des groupements, la donnée existe ». Vrai — elle était juste
+non branchée. `Base France Décembre 2024.xlsx` n'avait que **31 %** de groupements ;
+`JARVIS/GROUPEMENTS/data/output/pharmacies_par_groupement.xlsx` (~100 groupements /
+17 500 officines) les a. Branché dans `build_pharma_fr.py` :
+- remplissage groupement manquant par match **(CP + nom normalisé)**, match unique seul
+  (356 clés ambigües ignorées) → **31 % → 63 %** (+6 300 officines, 114 groupements).
+- fusion des libellés (APOTHERA == Apothera…), zéro doublon de casse.
+- écarté : 21 grossistes véto (ids `CAV` : ALCYON/CENTRAVET) + garde-fou géocodage
+  (CP métro hors bbox France = St-Barth-d'Anjou aux Caraïbes → supprimé).
+- Déployé 20260711a. `reconcileWithWml` (clients/segments depuis WML) reste par-dessus.
+- **Reste data** : segmentation prospects (Base France = 17 534 prospects, non re-segmentés
+  au source ; corrigés côté client pour les 607 clients WML). Fiches groupement manquantes
+  (groupements-data.js à compléter avec les 114 groupements réels).
+
 ### T4 — Aperçu + édition de la fiche officine DEPUIS la carte (demande Will)
 Au clic / à la recherche d'une officine sur la carte : ouvrir un **panneau** (réutiliser le pattern cn-listpanel/tourpanel) avec :
 - **Aperçu** : nom, adresse, ville, tél, commercial, groupement, CA.
