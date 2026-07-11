@@ -123,6 +123,35 @@
     }
   };
 
+  // Champs d'une fiche prospect créée de toutes pièces (identité + coordonnées, scope 'newpharma').
+  var NEWPH = [
+    { k: 'nom', l: 'Nom de la pharmacie' }, { k: 'ville', l: 'Ville' }, { k: 'cp', l: 'Code postal' },
+    { k: 'groupement', l: 'Groupement' }, { k: 'titulaire', l: 'Titulaire' },
+    { k: 'tel', l: 'Téléphone' }, { k: 'email', l: 'Email' }, { k: 'adresse', l: 'Adresse' }
+  ];
+  V2.profil.newProspectSection = function (scopeId, seed) {
+    ensureCss(); seed = seed || {};
+    return '<div class="v2-profil-box v2-card" data-st="newpharma" data-sid="' + esc(String(scopeId)) + '">' +
+        '<div class="v2-profil-hd">' + (V2.ICO ? V2.ICO('pharma', 16, 2) : '') + '<span>Identité & coordonnées</span><small class="v2-profil-meta"></small></div>' +
+        '<div class="v2-profil-grid">' +
+          NEWPH.map(function (f) { return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
+            '<input type="text" data-fk="' + f.k + '" value="' + esc(seed[f.k] || '') + '" placeholder="—" onchange="V2.profil.set(this)"></label>'; }).join('') +
+        '</div></div>';
+  };
+  function localScopeList(st) {
+    var m = localMap(), out = [], pre = st + ':';
+    Object.keys(m).forEach(function (k) { if (k.indexOf(pre) === 0) out.push({ sid: k.slice(pre.length), data: (m[k] && m[k].data) || {} }); });
+    return out;
+  }
+  // Charge TOUS les enregistrements d'un scope (ex. 'newpharma' pour lister les prospects créés).
+  V2.profil.loadScope = function (st) {
+    var c = sb();
+    if (c) return c.from(TABLE).select('scope_id,data').eq('scope_type', st)
+      .then(function (r) { if (r.error || !r.data) return localScopeList(st); return r.data.map(function (x) { return { sid: String(x.scope_id), data: x.data || {} }; }); })
+      .catch(function () { return localScopeList(st); });
+    return Promise.resolve(localScopeList(st));
+  };
+
   function fill(box) {
     var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid');
     load(st, sid).then(function (res) {
