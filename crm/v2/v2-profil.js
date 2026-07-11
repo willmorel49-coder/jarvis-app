@@ -89,7 +89,7 @@
     coordSection: function (scopeId, seed) {
       ensureCss();
       seed = seed || {};
-      return '<div class="v2-profil-box v2-card" data-st="coord" data-sid="' + esc(String(scopeId)) + '">' +
+      return '<div class="v2-profil-box v2-card" data-st="client" data-sid="' + esc(String(scopeId)) + '">' +
           '<div class="v2-profil-hd">' + (V2.ICO ? V2.ICO('pharma', 16, 2) : '') + '<span>Coordonnées</span><small class="v2-profil-meta"></small></div>' +
           '<div class="v2-profil-grid">' +
             COORD.map(function (f) { return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
@@ -113,13 +113,19 @@
         el.insertBefore(opt, el.querySelector('option[value="__add__"]'));
         el.value = custom;
       }
-      var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid'), data = {};
+      var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid'), mine = {};
       Array.prototype.forEach.call(box.querySelectorAll('[data-fk]'), function (f) {
-        var v = (f.value || '').trim(); if (v && v !== '__add__') data[f.getAttribute('data-fk')] = v;
+        mine[f.getAttribute('data-fk')] = (f.value || '').trim();
       });
-      var rec = save(st, sid, data);
-      setMeta(box, rec);
-      if (V2.toast) V2.toast('Profil enregistré');
+      // Sauvegarde par FUSION : on préserve les champs des AUTRES sections du même scope
+      // (ex. Coordonnées + Profil + Identité vivent dans le même enregistrement 'client').
+      load(st, sid).then(function (res) {
+        var base = (res && res.rec && res.rec.data) || {};
+        Object.keys(mine).forEach(function (k) { if (mine[k] && mine[k] !== '__add__') base[k] = mine[k]; else delete base[k]; });
+        var rec = save(st, sid, base);
+        setMeta(box, rec);
+        if (V2.toast) V2.toast('Enregistré');
+      });
     }
   };
 
@@ -131,7 +137,7 @@
   ];
   V2.profil.newProspectSection = function (scopeId, seed) {
     ensureCss(); seed = seed || {};
-    return '<div class="v2-profil-box v2-card" data-st="newpharma" data-sid="' + esc(String(scopeId)) + '">' +
+    return '<div class="v2-profil-box v2-card" data-st="client" data-sid="' + esc(String(scopeId)) + '">' +
         '<div class="v2-profil-hd">' + (V2.ICO ? V2.ICO('pharma', 16, 2) : '') + '<span>Identité & coordonnées</span><small class="v2-profil-meta"></small></div>' +
         '<div class="v2-profil-grid">' +
           NEWPH.map(function (f) { return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
