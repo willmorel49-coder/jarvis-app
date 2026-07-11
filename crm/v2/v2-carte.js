@@ -129,6 +129,21 @@
       '</div></div>';
   }
 
+  // Bulle de survol : lecture rapide sans cliquer (nom + titulaire + ville + statut + groupement + commercial + CA)
+  function tipHtml(p) {
+    if (!p) return '';
+    var grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '';
+    var comm = p[5] ? D.comm[p[5]] : '', st = D.seg[p[4]] || '';
+    var bits = [];
+    if (st) bits.push(st);
+    if (grp) bits.push(grp);
+    if (comm) bits.push(comm);
+    if (caOf(p) > 0) bits.push('CA ' + eurK(caOf(p)));
+    return '<b>' + esc(p[6] || 'Pharmacie') + '</b>' +
+      (p[10] ? '<i>' + esc(p[10]) + '</i>' : '') +
+      '<span>' + esc(p[7] || '') + (p[8] ? ' · ' + esc(p[8]) : '') + '</span>' +
+      (bits.length ? '<em>' + esc(bits.join(' · ')) + '</em>' : '');
+  }
   function deptOf(cp) { cp = String(cp || '').replace(/\s/g, ''); if (cp.length < 2) return ''; return /^97/.test(cp) ? cp.slice(0, 3) : cp.slice(0, 2); }
   function pass(p) {
     if (typeFocus === 'clients' && !isClient(p)) return false;
@@ -182,7 +197,7 @@
       if (bulles && caOf(p) <= 0) continue;   // bulles = uniquement les officines avec du CA
       var m = window.L.circleMarker([p[0], p[1]], bulles ? bubbleStyle(p, ii) : markerStyle(p, ii));
       m._pi = ii; if (!useCluster) m.on('click', openPop);
-      m.on('mouseover', function () { if (!this._ntt) { this._ntt = 1; this.bindTooltip(esc(D.p[this._pi][6] || ''), { direction: 'top', offset: [0, -3] }); } this.openTooltip(); });
+      m.on('mouseover', function () { if (!this._ntt) { this._ntt = 1; this.bindTooltip(tipHtml(D.p[this._pi]), { direction: 'top', offset: [0, -3], className: 'cn-tip' }); } this.openTooltip(); });
       markers.push(m); arr.push(m);
     }
     if (useCluster) cluster.addLayers(arr); else for (var a = 0; a < arr.length; a++) cluster.addLayer(arr[a]);
@@ -411,13 +426,16 @@
       styles += '<Style id="' + sid + '"><IconStyle><color>' + kmlColor(GRP_COL[g]) + '</color><scale>1.1</scale>' +
         '<Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle></Style>';
       var pms = byGrp[g].map(function (p) {
-        var ca = caOf(p), seg = D.seg[p[4]] || '';
+        var ca = caOf(p), seg = D.seg[p[4]] || '', comm = p[5] ? D.comm[p[5]] : '', uga = D.uga[p[2]] || '';
         var desc = [
           xe((p[7] || '') + (p[8] ? ', ' + p[8] : '')),
           p[10] ? 'Titulaire : ' + xe(p[10]) : '',
           p[9] ? 'Tél : ' + xe(p[9]) : '',
+          p[11] ? 'Email : ' + xe(p[11]) : '',
           seg ? 'Statut : ' + xe(seg) : '',
           gname !== 'Sans groupement' ? 'Groupement : ' + xe(gname) : '',
+          comm ? 'Commercial : ' + xe(comm) : '',
+          uga ? 'UGA : ' + xe(uga) : '',
           ca ? 'CA : ' + Math.round(ca).toLocaleString('fr') + ' €' : ''
         ].filter(Boolean).join('\n');
         return '<Placemark><name>' + xe(p[6] || 'Pharmacie') + '</name><description>' + desc + '</description>' +
@@ -572,6 +590,12 @@
     var s = document.createElement('style'); s.id = 'v2-carte-css';
     s.textContent = [
       '.cn-wrap{display:flex;flex-direction:row;height:calc(100vh - var(--topbar-h,60px));height:calc(100dvh - var(--topbar-h,60px));min-height:520px}',
+      // Bulle de survol enrichie (multi-lignes)
+      '.cn-tip{padding:7px 10px!important;border:none!important;border-radius:9px!important;box-shadow:0 6px 20px rgba(11,19,28,.22)!important;max-width:230px!important}',
+      '.cn-tip b{display:block;font-size:12.5px;font-weight:700;color:#0B131C;line-height:1.25}',
+      '.cn-tip i{display:block;font-style:normal;font-size:11px;color:#5A6472;margin-top:1px}',
+      '.cn-tip span{display:block;font-size:11px;color:#5A6472;margin-top:2px}',
+      '.cn-tip em{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:#0057FF;margin-top:3px}',
       '.cn-side{width:288px;flex:none;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:16px 15px 22px;display:flex;flex-direction:column;gap:16px}',
       '.cn-sgroup{display:flex;flex-direction:column;gap:8px}',
       '.cn-seg-wrap{flex-wrap:wrap}',
