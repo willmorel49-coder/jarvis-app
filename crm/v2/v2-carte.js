@@ -741,8 +741,11 @@
     var segIdx = {}; for (var s = 0; s < D.seg.length; s++) segIdx[D.seg[s]] = s;
     function ensureSeg(l) { if (segIdx[l] == null) { D.seg.push(l); segIdx[l] = D.seg.length - 1; } return segIdx[l]; }
     var iA = ensureSeg('Client A'), iB = ensureSeg('Client B'), iC = ensureSeg('Client C'), iPro = ensureSeg('Prospect');
-    var grpIdx = {}; for (var g = 0; g < D.grp.length; g++) grpIdx[String(D.grp[g] || '').toUpperCase()] = g;
-    function ensureGrp(name) { var k = String(name).toUpperCase(); if (grpIdx[k] == null) { D.grp.push(name); grpIdx[k] = D.grp.length - 1; } return grpIdx[k]; }
+    // Canon = même règle que build_pharma_fr.py (accents + ponctuation + casse ignorés)
+    // pour ne PAS recréer « LEADERSANTE » à côté de « Leadersanté » (WML sans accent).
+    var canon = function (s) { return String(s || '').normalize ? String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '') : String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+    var grpIdx = {}; for (var g = 0; g < D.grp.length; g++) grpIdx[canon(D.grp[g])] = g;
+    function ensureGrp(name) { var k = canon(name); if (grpIdx[k] == null) { D.grp.push(name); grpIdx[k] = D.grp.length - 1; } return grpIdx[k]; }
     var wml = {}; W.forEach(function (o) { if (o && o.id) wml[String(o.id).replace(/[^0-9]/g, '')] = o; });
     var nClient = 0, nDemoted = 0;
     D.p.forEach(function (p) {
