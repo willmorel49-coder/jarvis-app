@@ -599,6 +599,10 @@
       '.cn-seg button{border:none;background:transparent;font:inherit;font-size:12px;font-weight:700;color:var(--muted);padding:6px 11px;border-radius:var(--r-pill);cursor:pointer}',
       '.cn-seg button.on{background:var(--ip-blue);color:#fff}',
       '.cn-sel{font:inherit;font-size:13px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:var(--r-control,10px);padding:7px 10px;max-width:190px}',
+      // petit toggle Points/Bulles sous le sélecteur « Colorer par »
+      '.cn-disp{display:inline-flex;margin-top:8px;align-self:flex-start;background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px;gap:2px}',
+      '.cn-disp button{border:none;background:transparent;font:inherit;font-size:11.5px;font-weight:700;color:var(--muted);padding:5px 11px;border-radius:var(--r-pill);cursor:pointer}',
+      '.cn-disp button.on{background:var(--ip-blue,#0057FF);color:#fff}',
       '.cn-spacer{margin-left:auto}',
       '.cn-legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--card-2)}',
       '.cn-lg{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--ip-ink-2,#2A2F3C)}',
@@ -743,8 +747,13 @@
           '<aside class="cn-side">' +
             '<div class="cn-title">Carte nationale <small id="carte-count">chargement…</small></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Voir</span><div class="cn-seg">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div></div>' +
-            '<div class="cn-sgroup"><span class="cn-lbl">Couleur</span><div class="cn-seg cn-seg-wrap">' + segBtn('comm', 'Commercial') + segBtn('type', 'Client/Prospect') + segBtn('ca', 'CA (taille)') + segBtn('uga', 'UGA') + segBtn('grp', 'Groupement') + '</div></div>' +
-            '<div class="cn-sgroup"><span class="cn-lbl">Affichage</span><div class="cn-seg cn-seg-wrap">' + dispBtn('points', 'Points') + dispBtn('bulles', 'Bulles CA') + '</div></div>' +
+            '<div class="cn-sgroup"><span class="cn-lbl">Colorer par</span>' +
+              '<select class="cn-sel" onchange="V2.carteColor(this.value)">' +
+                [['comm', 'Commercial'], ['type', 'Client / Prospect'], ['ca', 'CA (taille des points)'], ['uga', 'UGA (zone)'], ['grp', 'Groupement']]
+                  .map(function (o) { return '<option value="' + o[0] + '"' + (colorMode === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+              '</select>' +
+              '<div class="cn-disp">' + dispBtn('points', 'Points') + dispBtn('bulles', 'Bulles (taille = CA)') + '</div>' +
+            '</div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Filtrer</span>' +
               '<select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
               '<select id="cn-deptsel" class="cn-sel" onchange="V2.carteDept(this.value)"></select>' +
