@@ -990,6 +990,35 @@
     return '<div class="ph-contact-row">' + links.join('') + '</div>';
   }
 
+  // Fiche prospect créée à la main (introuvable en base) : id « px_… ».
+  var _newProspectSeed = null;
+  V2.createProspect = function (name) {
+    var id = 'px_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    _newProspectSeed = { id: id, nom: name || '' };
+    V2.go('pharma', id);
+  };
+  function renderCreatedProspect(root, pid) {
+    var seed = (_newProspectSeed && _newProspectSeed.id === pid) ? { nom: _newProspectSeed.nom } : {};
+    root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
+      '<div class="v2-wrap v2-prospect">' +
+        '<div class="v2-card v2-prospect-hd">' +
+          '<div class="v2-prospect-top">' +
+            '<div class="v2-pharma-pin" style="background:linear-gradient(150deg,#00B37E,#00875A)">' + (V2.ICO ? V2.ICO('pharma', 22) : '') + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="v2-prospect-n">Nouvelle fiche prospect</div>' +
+              '<div class="v2-prospect-a">Renseigne l\'identité et les coordonnées ci-dessous</div>' +
+            '</div>' +
+          '</div>' +
+          '<p class="v2-prospect-note">Nouvelle officine — remplis son identité, ses coordonnées, infos et notes. Tout est sauvegardé et retrouvable dans la recherche.</p>' +
+        '</div>' +
+        (V2.profil ? V2.profil.newProspectSection(pid, seed) : '') +
+        (V2.profil ? V2.profil.section('client', pid) : '') +
+        (V2.notes ? V2.notes.section('client', pid) : '') +
+      '</div>';
+    if (V2.profil) V2.profil.hydrate();
+    if (V2.notes) V2.notes.hydrate();
+  }
+
   // Officine trouvée dans la base nationale (prospect / non-cliente) par son id.
   function pharmaFrById(pid) {
     var D = window.PHARMA_FR; if (!D || !D.p) return null;
@@ -1040,7 +1069,11 @@
 
   function renderDetail(root, pid) {
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
-    if (!pharma) { renderProspectFiche(root, pid); return; }
+    if (!pharma) {
+      if (String(pid).indexOf('px_') === 0) renderCreatedProspect(root, pid);   // fiche créée à la main
+      else renderProspectFiche(root, pid);                                        // prospect de la base nationale
+      return;
+    }
 
     // Agrégats marché + catalogue IP chargés ? sinon lazy-load + état loading
     if (!window.OPS_AGGREGATE || !window.BENCHMARK) {
