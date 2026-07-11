@@ -70,3 +70,24 @@ Un seul bouton « Copilote » = la carte de tournée claire. Bouton « Démarrer
 - La lisibilité de la carte elle-même est à revoir : marqueurs, modes couleur (trop nombreux ?), clustering, légende, ce qu'on comprend en 1 coup d'œil.
 - Méthode obligatoire : **variantes HTML numérotées** (Will choisit par n°), après avoir récupéré **2-3 références visuelles** de Will (cartes/apps qu'il trouve claires et belles) — règle anti-refonte-à-l'aveugle [[feedback_neya_visual_refs]].
 - Viser sobre et évident (moins de modes, hiérarchie claire), cf. [[feedback_neya_simplify]].
+
+**Référence maîtresse (Will) : « La Loupe » de La Longue Vue (géomarketing pharma, Atlas Articque).**
+Leçons à appliquer à notre carte :
+1. **Choropleth / aplats de couleur par territoire** à l'échelle large (densité, évolution) au lieu des ~19 000 marqueurs individuels — cause n°1 du « trop d'infos ». Agréger quand on est loin, détailler au zoom.
+2. **Un seul indicateur à la fois + légende évidente** (la couleur = une seule chose).
+3. **Niveaux géographiques** : national (zones) → département → commune → officines individuelles au zoom.
+4. Idées bonus de La Loupe : densité /100k hab., évolution du parc, zones de chalandise (temps d'accès), filtre par groupement/environnement.
+Site : la-longue-vue.fr · outil « La Loupe ».
+
+### ✅ DIRECTION CHOISIE PAR WILL (2026-07-11) — après les 10 maquettes
+- **Base esthétique = Design 7 (minimaliste éditorial)** appliqué partout : sobre, beaucoup de blanc, typo soignée, carte qui respire, contrôles secondaires dans des tiroirs/pop-overs.
+- **Workflow = Design 6 (focus tournée)** : « Ma tournée » au centre (liste d'arrêts qui se remplit au clic, itinéraire tracé, gros « Démarrer dans Google Maps », « Prospects proches », export My Maps discret).
+- **Carte = Design 9 (densité/zones, logique La Loupe)** : zones colorées à l'échelle large → clusters chiffrés au zoom → officines individuelles.
+- Maquettes de réf : `crm/v2/_maq/carte-design-7.html`, `-6.html`, `-9.html`. Galerie : `carte-redesign.html`.
+
+### Plan de build (par phases, à exécuter à réserve pleine)
+1. **Reskin éditorial + declutter (Design 7)** — refondre le chrome de `v2-carte.js` : sidebar épurée, moins de modes visibles, tiroirs, typo. Sortir les liens « Listes d'achats » / « Prix concurrents » vers « Autres outils » de l'accueil. **Sûr, pas de nouvelle donnée.**
+2. **Workflow tournée (Design 6)** — « Ma tournée » repensé (bouton clair + phrase d'explication), boutons Google Maps bien placés, export My Maps discret. **S'appuie sur l'existant (déjà codé).**
+3. **Zones / choropleth (Design 9)** — ⚠️ **LE plus gros morceau + une VRAIE nouvelle capacité** : colorer des territoires nécessite des **polygones GeoJSON** (départements/régions/UGA) + agrégation des données officines par zone + rendu Leaflet. À sourcer (GeoJSON France gratuit, simplifié). Drill-down zones→clusters→points.
+
+> ⚠️ Honnêteté : phases 1-2 = reshape de l'existant (raisonnable). Phase 3 (zones) = **nouvelle feature** (données polygones + agrégation), la plus longue. À faire proprement, pas à la va-vite sur une feature qui marche.
