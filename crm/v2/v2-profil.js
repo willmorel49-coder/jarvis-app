@@ -31,6 +31,13 @@
     { k: 'robot', l: 'Robot / automate', opts: ROBOT },
     { k: 'autre', l: 'Autre info', text: true }
   ];
+  // Coordonnées éditables (pour compléter une officine, prospect compris). Stockées à part (scope 'coord').
+  var COORD = [
+    { k: 'titulaire', l: 'Titulaire' },
+    { k: 'tel', l: 'Téléphone' },
+    { k: 'email', l: 'Email' },
+    { k: 'adresse', l: 'Adresse' }
+  ];
 
   function sb() { return (V2.sb && V2.sb()) || null; }
   function key(st, sid) { return st + ':' + sid; }
@@ -74,6 +81,19 @@
                 '<option value="">—</option>' + f.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') +
                 '<option value="__add__">➕ préciser…</option></select></label>';
             }).join('') +
+          '</div></div>';
+    },
+
+    // Coordonnées éditables — même stockage Supabase (scope 'coord'), pré-remplies depuis la carte.
+    // Valeur affichée = saisie enregistrée si elle existe, sinon la valeur connue (seed) passée en value.
+    coordSection: function (scopeId, seed) {
+      ensureCss();
+      seed = seed || {};
+      return '<div class="v2-profil-box v2-card" data-st="coord" data-sid="' + esc(String(scopeId)) + '">' +
+          '<div class="v2-profil-hd">' + (V2.ICO ? V2.ICO('pharma', 16, 2) : '') + '<span>Coordonnées</span><small class="v2-profil-meta"></small></div>' +
+          '<div class="v2-profil-grid">' +
+            COORD.map(function (f) { return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
+              '<input type="text" data-fk="' + f.k + '" value="' + esc(seed[f.k] || '') + '" placeholder="—" onchange="V2.profil.set(this)"></label>'; }).join('') +
           '</div></div>';
     },
 

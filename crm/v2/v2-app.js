@@ -924,7 +924,7 @@
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
     // Pharmacies
     (V2.pharmacies || []).forEach(function (p) {
-      idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', action: function () { V2.go('pharma', p.id); } });
+      idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', pid: String(p.id), action: function () { V2.go('pharma', p.id); } });
     });
     // Produits (top 300 PROD_STATS par rotation) — ouvre « Par produit » filtré sur le produit
     var PS = window.PROD_STATS || [];
@@ -932,6 +932,10 @@
       idx.push({ grp: 'Produits', label: r.d, ico: 'pill', meta: r.c, action: function () { V2.go('molecules', r.c); } });
     });
     return idx;
+  }
+  function deaccLower(s) {
+    s = String(s == null ? '' : s).toLowerCase();
+    return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s;
   }
   function cmdkSearch(q) {
     if (!cmdkIdx) cmdkIdx = buildCmdkIndex();
@@ -945,8 +949,41 @@
       scored.push({ x: x, s: (pos === 0 ? 0 : pos < 0 ? 50 : 10) + l.length / 200 });
     }
     scored.sort(function (a, b) { return a.s - b.s; });
-    return scored.slice(0, 24).map(function (o) { return o.x; });
+    var out = scored.slice(0, 24).map(function (o) { return o.x; });
+    // Toutes les officines de France (base nationale) : trouver PAR NOM / VILLE / CP / TITULAIRE,
+    // prospects compris. Clic -> fiche pharmacie (éditable même si non cliente).
+    if (q.length >= 2 && window.PHARMA_FR && window.PHARMA_FR.p) {
+      var shown = {}; out.forEach(function (x) { if (x.pid != null) shown[String(x.pid)] = 1; });
+      var D = window.PHARMA_FR, P = D.p, nq = deaccLower(q), extra = [];
+      for (var k = 0; k < P.length && extra.length < 20; k++) {
+        var p = P[k], id = String(p[13] || '');
+        if (!id || shown[id]) continue;
+        if (deaccLower(p[6]).indexOf(nq) >= 0 || deaccLower(p[7]).indexOf(nq) >= 0 ||
+            String(p[8] || '').indexOf(q) >= 0 || deaccLower(p[10]).indexOf(nq) >= 0) {
+          shown[id] = 1;
+          extra.push({ grp: 'Officines (France entière)', label: (p[6] || p[10] || 'Pharmacie'), ico: 'pharma',
+            meta: (p[7] || '') + (p[8] ? ' · ' + p[8] : ''), pid: id,
+            action: (function (pid) { return function () { V2.go('pharma', pid); }; })(id) });
+        }
+      }
+      out = out.concat(extra);
+    }
+    return out;
   }
+  // Chargeur partagé de la base nationale (2,7 Mo, lazy) — pour la recherche d'accueil et les fiches prospect.
+  V2.ensurePharmaFr = function (cb) {
+    if (window.PHARMA_FR) { if (cb) cb(); return; }
+    V2._pfrCbs = V2._pfrCbs || []; if (cb) V2._pfrCbs.push(cb);
+    if (V2._pfrLoading) return;
+    V2._pfrLoading = true;
+    var s = document.createElement('script'); s.src = 'pharma-fr-data.js?v=' + (window.V2_DATAV || '');
+    s.onload = s.onerror = function () {
+      V2._pfrLoading = false;
+      var cbs = V2._pfrCbs || []; V2._pfrCbs = [];
+      cbs.forEach(function (f) { try { f(); } catch (e) {} });
+    };
+    document.head.appendChild(s);
+  };
   function renderCmdkResults() {
     var box = document.getElementById('v2-cmdk-results'); if (!box) return;
     if (!cmdkResults.length) { box.innerHTML = '<div class="v2-cmdk-grp">Aucun résultat</div>'; return; }
@@ -962,10 +999,18 @@
       el.onclick = function () { var i = +el.dataset.i; if (cmdkResults[i]) { V2.closeCmdk(); cmdkResults[i].action(); } };
     });
   }
+  function preloadPharmaFrForSearch() {
+    if (window.PHARMA_FR || !V2.ensurePharmaFr) return;
+    V2.ensurePharmaFr(function () {   // dès que la base est là, on relance la recherche courante
+      var bd = document.getElementById('v2-cmdk'), inp = document.getElementById('v2-cmdk-input');
+      if (bd && bd.classList.contains('open') && inp && inp.value) { cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); }
+    });
+  }
   V2.openCmdk = function () {
     if (!V2.user) return;   // pas de recherche/navigation tant qu'on n'est pas connecté (écran login)
     var bd = document.getElementById('v2-cmdk'); if (!bd) return;
     bd.classList.add('open');
+    preloadPharmaFrForSearch();
     var inp = document.getElementById('v2-cmdk-input');
     inp.value = ''; cmdkSel = 0; cmdkResults = cmdkSearch(''); renderCmdkResults();
     setTimeout(function () { inp.focus(); }, 60);
@@ -982,6 +1027,7 @@
       var inp = document.getElementById('v2-cmdk-input');
       if (bd && inp) {
         bd.classList.add('open');
+        preloadPharmaFrForSearch();
         inp.value = ''; cmdkSel = 0; cmdkResults = cmdkSearch(''); renderCmdkResults();
         try { inp.focus(); } catch (e) {}   // focus synchrone = clavier mobile garanti
         return;
@@ -995,7 +1041,7 @@
     var bd = document.createElement('div');
     bd.id = 'v2-cmdk'; bd.className = 'v2-cmdk-bd';
     bd.innerHTML = '<div class="v2-cmdk" onclick="event.stopPropagation()">' +
-      '<div class="v2-cmdk-search">' + ICO('search', 22, 2) + '<input id="v2-cmdk-input" placeholder="Rechercher pharmacie, produit, page…" autocomplete="off"><kbd style="font-family:var(--mono);font-size:11px;background:#F1F3F8;padding:4px 8px;border-radius:7px;color:var(--ip-ink-2)">Esc</kbd></div>' +
+      '<div class="v2-cmdk-search">' + ICO('search', 22, 2) + '<input id="v2-cmdk-input" placeholder="Une pharmacie (nom, ville, CP), un produit, une page…" autocomplete="off"><kbd style="font-family:var(--mono);font-size:11px;background:#F1F3F8;padding:4px 8px;border-radius:7px;color:var(--ip-ink-2)">Esc</kbd></div>' +
       '<div id="v2-cmdk-results" class="v2-cmdk-results"></div>' +
       '<div class="v2-cmdk-foot"><span>↑↓ naviguer</span><span>↵ ouvrir</span><span>Esc fermer</span></div>' +
       '</div>';
