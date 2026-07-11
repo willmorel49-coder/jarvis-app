@@ -40,3 +40,28 @@ Vanilla JS, zéro dépendance/build, 100 % client-side, print-safe non concerné
 
 ## Succès
 Un seul bouton « Copilote » = la carte de tournée claire. Bouton « Démarrer dans Google Maps » qui lance l'itinéraire. Bouton « Exporter » qui produit un KML importable dans My Maps avec une icône par groupement. Zéro stat en doublon.
+
+---
+
+## Itération 2 — feedback Will (2026-07-11)
+
+### FAIT & déployé
+- B : « Démarrer dans Google Maps » (itinéraire, dépôt inclus, découpe >10). ✅
+- C : « Exporter vers Google My Maps » (KML du set FILTRÉ, 1 dossier+icône par groupement, garde-fou >9000). ✅
+- A1 : route `copilote` → rend la carte. ✅ (ancien hub à `#marche`, débranché)
+
+### RESTE À FAIRE (prochaine session, à réserve pleine)
+
+**T1 — La synthèse « quoi pousser » → dans Infos, en VISU MENSUEL sur l'année**
+- Pas une liste du jour : un **graphique 12 mois** avec **évolution + taux de variation**, découpé par **NOS segments** :
+  - Froid (`is_froid`) · Petits prix (<4,33 €) · Intermédiaires (4,33–468 €) · Chers (468–1500 €) · Très chers (>1500 €) · Biosimilaires (`artnature=biosimilaire`) · Génériques (`artnature=generique*`).
+  - Segmentation : familles (froid/biosim/génér.) en priorité, sinon tranche de prix (`prix_ip`/PPHT).
+- Métrique par mois : CA ou volume par segment (source `ameli_months[13]` + ventes réseau), avec variation MoM et/ou YoY.
+- Emplacement : page **Infos** (nouveau bloc « Marché » ou onglet). Utiliser le skill **dataviz**.
+- L'ancien hub `#marche` : retiré une fois T1 en place (les sections tour/visite sont déjà sur la carte ; « À sécuriser » = déjà dans Infos).
+
+**T2 — Carte plus INTUITIVE (trop d'infos aujourd'hui)**
+- Barre latérale = **essentiel seulement** : Voir · Couleur · Filtrer · Recherche · Légende.
+- **Sortir de la carte** les liens vers d'autres pages (« Listes d'achats groupements », « Prix concurrents ») → les mettre dans **« Autres outils »** de l'accueil.
+- **« Ma tournée »** : reste sur la carte (composition par clic), mais **bouton clair + phrase d'explication** (« Clique tes officines → compose ta tournée → démarre dans Google Maps »).
+- **Export My Maps** = **un simple bouton discret** dans le panneau tournée (plus dans la barre d'outils principale).
