@@ -95,9 +95,9 @@ def load_groupement_map():
 
 
 def load_finess_suppl(bf_keys, grpmap, grpcanon):
-    """Officines FINESS (cat 620) absentes de la Base France, restreint aux territoires
-    que la Base France n'inclut pas (Corse + Outre-mer). Renvoie des tuples pharma
-    (name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca, id) + le set de communes."""
+    """Officines FINESS (cat 620) absentes de la Base France, restreint à la CORSE
+    (France métropolitaine). L'Outre-mer est volontairement exclu. Renvoie des tuples
+    pharma (name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca, id) + communes."""
     if not os.path.exists(FINESS):
         print('  [finess] fichier absent :', FINESS)
         return [], {}
@@ -112,8 +112,8 @@ def load_finess_suppl(bf_keys, grpmap, grpcanon):
             if not m:
                 continue
             cp = m.group(1)
-            if cp[:2] not in ('20', '2A', '2B') and cp[:2] not in ('97', '98'):
-                continue  # métropole hors Corse : déjà couverte par la Base France
+            if cp[:2] not in ('20', '2A', '2B'):
+                continue  # France métropolitaine = métropole + Corse seulement (pas l'Outre-mer)
             rs = (row[3] or row[4] or '').strip()
             key = (cp, name_key(rs))
             if not rs or key in bf_keys or key in seen:
@@ -129,7 +129,7 @@ def load_finess_suppl(bf_keys, grpmap, grpcanon):
             tel = str(row[16] or '').strip() if len(row) > 16 else ''
             out.append((rs[:40], '', ville, cp, '', grp, 'Prospect', tel, '', '', 0, str(row[1] or '').strip()))
             need[(ville, cp)] = None
-    print('  [finess] complément Corse + Outre-mer : %d officines ajoutées' % len(out))
+    print('  [finess] complément Corse : %d officines ajoutées' % len(out))
     return out, need
 
 
@@ -346,7 +346,7 @@ def main():
     wb.close()
     print('Pharmacies Base France (métropole) :', len(pharmas), '| communes uniques :', len(need))
 
-    # complément national : Corse + Outre-mer depuis FINESS (absents de la Base France)
+    # complément métropolitain : Corse depuis FINESS (absente de la Base France)
     suppl, suppl_need = load_finess_suppl(bf_keys, GRPMAP, GRPCANON)
     pharmas.extend(suppl)
     for k in suppl_need:
@@ -415,7 +415,7 @@ def main():
     nClients = sum(1 for p in P if segs and inv(segs)[p[4]].startswith('Client'))
     data = {
         'meta': {'n': len(P), 'communes': len(need), 'clients': nClients,
-                 'source': 'Base France 12/2024 + FINESS (Corse & Outre-mer) · France entière'},
+                 'source': 'Base France 12/2024 + FINESS (Corse) · France métropolitaine'},
         'uga': inv(ugas), 'grp': inv(grps), 'seg': inv(segs), 'comm': inv(comms), 'p': P,
     }
     with open(OUT, 'w', encoding='utf-8') as fh:
