@@ -16,10 +16,14 @@ import re
 import csv
 import math
 import time
+import unicodedata
 import urllib.request
 
 ROOT = os.path.dirname(__file__)
 SRC = os.path.join(ROOT, 'Base France Décembre 2024.xlsx')
+# Mapping national pharmacie -> groupement (100 groupements, ~17 500 officines),
+# hors dossier APP. Sert à remplir le groupement quand la Base France est vide.
+GRP_MAP = os.path.join(ROOT, '..', 'GROUPEMENTS', 'data', 'output', 'pharmacies_par_groupement.xlsx')
 STATS = os.path.join(ROOT, 'STATS')
 CACHE = os.path.join(ROOT, 'STATS', 'geocode_cache.json')
 ADDR_CACHE = os.path.join(ROOT, 'STATS', 'geocode_addr_cache.json')  # adresse exacte -> [lat,lng]
@@ -29,6 +33,62 @@ BAN = 'https://api-adresse.data.gouv.fr/search/csv/'
 
 def norm(s):
     return ' '.join(str(s or '').strip().upper().split())
+
+
+_STOP = ('PHARMACIE', 'PHARMACIES', 'PHARMA', 'PHIE', 'PHIES', 'GRANDE', 'DE', 'DU',
+         'DES', 'LA', 'LE', 'LES', 'L', 'D', 'SARL', 'SELARL', 'SELAS', 'SNC', 'EURL')
+
+
+def name_key(s):
+    """Nom normalisé pour matcher officine ↔ mapping groupement (accents/mots vides retirés)."""
+    s = ''.join(c for c in unicodedata.normalize('NFD', str(s or '')) if unicodedata.category(c) != 'Mn')
+    s = re.sub(r'[^A-Z0-9 ]', ' ', s.upper())
+    return ' '.join(t for t in s.split() if t and t not in _STOP)
+
+
+def cp5(s):
+    d = re.sub(r'[^0-9]', '', str(s or ''))
+    return d.zfill(5)[:5] if d else ''
+
+
+def grp_canon(s):
+    """Clé de fusion d'un nom de groupement (casse/accents/ponctuation ignorés)."""
+    s = ''.join(c for c in unicodedata.normalize('NFD', str(s or '')) if unicodedata.category(c) != 'Mn')
+    return re.sub(r'[^A-Z0-9]', '', s.upper())
+
+
+def load_groupement_map():
+    """Renvoie (lookup, canon) :
+    - lookup : (cp, nom normalisé) -> groupement (match unique seulement, clés ambigües ignorées) ;
+    - canon  : clé canon -> libellé propre (titres du mapping), pour fusionner
+      « APOTHERA » (Base France) et « Apothera » (mapping) en un seul groupement."""
+    if not os.path.exists(GRP_MAP):
+        print('  [grp] mapping absent :', GRP_MAP)
+        return {}, {}
+    try:
+        wb = openpyxl.load_workbook(GRP_MAP, read_only=True, data_only=True)
+    except Exception as e:
+        print('  [grp] erreur lecture mapping :', e)
+        return {}, {}
+    acc = {}
+    canon = {}
+    for ws in wb.worksheets:
+        if ws.title == 'Sommaire':
+            continue
+        canon.setdefault(grp_canon(ws.title), ws.title)
+        it = ws.iter_rows(values_only=True)
+        next(it, None)
+        for r in it:
+            nom = r[0] if len(r) > 0 else ''
+            cp = r[3] if len(r) > 3 else ''
+            nk, cc = name_key(nom), cp5(cp)
+            if nk and cc:
+                acc.setdefault((cc, nk), set()).add(ws.title)
+    wb.close()
+    out = {k: next(iter(v)) for k, v in acc.items() if len(v) == 1}
+    print('  [grp] mapping : %d clés uniques (%d ambigües ignorées), %d groupements'
+          % (len(out), sum(1 for v in acc.values() if len(v) > 1), len(canon)))
+    return out, canon
 
 
 def is_corse(cp):
@@ -199,12 +259,19 @@ def main():
 
     comm_by_id, ca_by_id = wml_commercials()   # ID officine -> commercial + CA (nos clients réseau)
     EX = exact_coords()                          # ID officine -> (lat,lng) adresse exacte
+    GRPMAP, GRPCANON = load_groupement_map()     # (cp,nom)->groupement + fusion des libellés
     SEG_MAP = {'clients a': 'Client A', 'clients b': 'Client B', 'clients c': 'Client C', 'prospects': 'Prospect'}
 
+    nGrpFill = 0        # groupements ajoutés depuis le mapping (Base France vide)
+    nVetSkip = 0        # grossistes vétérinaires écartés
     pharmas = []          # (name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca, id)
     need = {}             # (ville,cp) -> None
     for r in it:
         if str(r[ci['Statut']] or '').strip().lower() == 'supprimée':
+            continue
+        _id = str(r[ci['ID']] or '').strip()
+        if _id.upper().startswith('CAV'):   # grossistes véto (ALCYON, CENTRAVET) : pas des officines
+            nVetSkip += 1
             continue
         cp = str(r[ci['CP']] or '').strip()
         if not cp or is_corse(cp):
@@ -216,11 +283,18 @@ def main():
         tit = str(r[ci['Titulaire']] or '').strip()
         name = str(r[ci['Etablissement']] or tit or '').strip()
         uga = str(r[ci['UGA']] or '').strip()
-        grp = str(r[ci['Groupement']] or '').strip() or '—'
+        grp = str(r[ci['Groupement']] or '').strip()
+        if not grp or grp == '—':           # Base France sans groupement -> mapping national
+            g2 = GRPMAP.get((cp, name_key(name or tit)))
+            if g2:
+                grp = g2
+                nGrpFill += 1
+        if grp and grp != '—':              # fusion des libellés (APOTHERA == Apothera)
+            grp = GRPCANON.get(grp_canon(grp), grp)
+        grp = grp or '—'
         seg = SEG_MAP.get(str(r[ci['SEGMENTATION']] or '').strip().lower(), 'Non défini')
         tel = str(r[ci['Téléphone']] or '').strip()
         mail = str(r[ci['Email']] or '').strip()
-        _id = str(r[ci['ID']] or '').strip()
         comm = comm_by_id.get(_id, '')
         ca = ca_by_id.get(_id, 0)
         pharmas.append((name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca, _id))
@@ -256,6 +330,7 @@ def main():
     P = []
     dropped = 0
     nExact = 0
+    nBadGeo = 0
     for (name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca, _id) in pharmas:
         ex = EX.get(_id)
         if ex:
@@ -274,6 +349,11 @@ def main():
                 rad = 0.0016 * ring
                 lat = round(lat + rad * math.cos(ang), 5)
                 lng = round(lng + rad * math.sin(ang) / max(0.3, math.cos(math.radians(lat))), 5)
+        # garde-fou : un CP métropolitain doit tomber dans la France métro (bbox).
+        # Sinon = géocodage foireux (ex. St-Barthélemy-d'Anjou 49 envoyé aux Caraïbes) -> on écarte.
+        if cp[:2] not in ('97', '98') and not (41.0 <= lat <= 51.6 and -5.5 <= lng <= 9.8):
+            nBadGeo += 1
+            continue
         ui = ugas.setdefault(uga, len(ugas))
         gi = grps.setdefault(grp, len(grps))
         si = segs.setdefault(seg, len(segs))
@@ -292,8 +372,12 @@ def main():
         fh.write('// segmentation client/prospect, commercial réseau. build_pharma_fr.py.\n')
         fh.write('// Chaque point: [lat,lng,ugaIdx,grpIdx,segIdx,commIdx,nom,ville,cp,tel,titulaire,email,ca,id]\n')
         fh.write('window.PHARMA_FR=' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    nGrpCovered = sum(1 for p in P if inv(grps)[p[3]] != '—')
     print('OK ->', OUT, '(%.1f Mo, %d pts, %d clients, %d adresses exactes, %d UGA, %d comm, %d dropped)'
           % (os.path.getsize(OUT) / 1048576.0, len(P), nClients, nExact, len(ugas), len(comms) - 1, dropped))
+    print('   groupements : %d officines rattachées (%.0f%%), dont %d ajoutées via le mapping national'
+          % (nGrpCovered, 100.0 * nGrpCovered / max(1, len(P)), nGrpFill))
+    print('   écartés : %d grossistes véto (CAV) · %d géocodages hors métropole' % (nVetSkip, nBadGeo))
 
 
 if __name__ == '__main__':
