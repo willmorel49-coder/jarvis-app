@@ -32,7 +32,7 @@
     { s: 'ESC', n: 'Escale Pharma', city: 'Chilly-Mazarin', lat: 48.7028, lng: 2.3119 },
     { s: 'PME', n: 'Pharmest', city: 'Metz', lat: 49.1193, lng: 6.1757 }
   ];
-  var colorMode = 'comm';        // comm | type | uga | grp
+  var colorMode = 'type';        // défaut : Client/Prospect (voir d'emblée les ~2200 clientes ET les ~17000 prospects sur toute la France) · comm | type | uga | grp | ca
   var commFocus = '', grpFocus = '', typeFocus = 'all';   // all | clients | prospects
   var searchTerm = '';   // recherche nom / ville / cp / titulaire
   var listSort = 'nom';  // tri de la liste : nom | ca
