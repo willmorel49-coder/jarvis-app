@@ -91,3 +91,15 @@ Site : la-longue-vue.fr · outil « La Loupe ».
 3. **Zones / choropleth (Design 9)** — ⚠️ **LE plus gros morceau + une VRAIE nouvelle capacité** : colorer des territoires nécessite des **polygones GeoJSON** (départements/régions/UGA) + agrégation des données officines par zone + rendu Leaflet. À sourcer (GeoJSON France gratuit, simplifié). Drill-down zones→clusters→points.
 
 > ⚠️ Honnêteté : phases 1-2 = reshape de l'existant (raisonnable). Phase 3 (zones) = **nouvelle feature** (données polygones + agrégation), la plus longue. À faire proprement, pas à la va-vite sur une feature qui marche.
+
+### FAIT (phase 1) — 2026-07-11
+- Copilote → carte ✅. Section « Ma tournée » rangée (CTA clair + phrase + export discret, 2 liens sortis) ✅. Modes couleur : 5 boutons → menu « Colorer par » ✅.
+
+### T4 — Aperçu + édition de la fiche officine DEPUIS la carte (demande Will)
+Au clic / à la recherche d'une officine sur la carte : ouvrir un **panneau** (réutiliser le pattern cn-listpanel/tourpanel) avec :
+- **Aperçu** : nom, adresse, ville, tél, commercial, groupement, CA.
+- **Infos officine ÉDITABLES** : réutiliser `V2.profil.section('client', <id>)` (grossistes/génériqueurs/logiciel/robot) + `V2.notes.section('client', <id>)` — puis `V2.profil.hydrate()` / `V2.notes.hydrate()`. Sauvegarde Supabase `profils`/`notes` comme dans l'onglet Pharmacies.
+- Lien « Ouvrir la fiche complète » → `V2.go('pharma', <id>)`.
+- **⚠️ DÉCISION À TRANCHER (data) : l'`<id>` doit être le MÊME que celui de l'onglet Pharmacies**, sinon deux fiches séparées pour la même officine.
+  - À vérifier : les officines de la carte (`PHARMA_FR`, national) portent-elles le `cip`/`code` des officines WML (`V2.pharmacies`, 630) ? Si oui → matcher par cip et utiliser l'`id` WML.
+  - Scoper : l'édition ne concerne probablement que **les officines de Will** (ses 630), pas les 19 000 nationales → filtrer/limiter l'édition à celles qui ont une fiche WML.
