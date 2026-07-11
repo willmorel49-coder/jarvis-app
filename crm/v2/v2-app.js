@@ -989,8 +989,9 @@
   }
   function loadNewProspects() {
     if (!V2.profil || !V2.profil.loadScope) return;
-    V2.profil.loadScope('newpharma').then(function (list) {
-      V2._newph = list || [];
+    // Les fiches créées à la main sont des enregistrements 'client' d'id « px_… » portant un nom.
+    V2.profil.loadScope('client').then(function (all) {
+      V2._newph = (all || []).filter(function (o) { return String(o.sid).indexOf('px_') === 0 && o.data && o.data.nom; });
       var bd = document.getElementById('v2-cmdk'), inp = document.getElementById('v2-cmdk-input');
       if (bd && bd.classList.contains('open') && inp && inp.value) { cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); }
     }).catch(function () {});
