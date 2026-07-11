@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilote · Carte — Command Bar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0057FF;
+    --ink:#0B1F4D;
+    --mint:#00E5A0;
+    --bg:#F3F6FB;
+    --card:#FFFFFF;
+    --line: rgba(11,31,77,0.10);
+    --line-soft: rgba(11,31,77,0.06);
+    --shadow-sm: 0 1px 2px rgba(11,31,77,0.06), 0 1px 1px rgba(11,31,77,0.04);
+    --shadow-md: 0 8px 24px rgba(11,31,77,0.10), 0 2px 6px rgba(11,31,77,0.06);
+    --shadow-lg: 0 20px 50px rgba(11,31,77,0.16), 0 4px 12px rgba(11,31,77,0.08);
+    --radius-lg: 22px;
+    --radius-md: 16px;
+    --radius-sm: 10px;
+    --muted:#5B6B8C;
+    --muted-2:#8B97B3;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    height:100vh;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.font-display{font-family:'Space Grotesk',sans-serif;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  .app{
+    position:relative;
+    width:100%;
+    height:100vh;
+  }
+
+  /* ============ MAP LAYER ============ */
+  .map-layer{
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(circle at 22% 18%, rgba(0,87,255,0.06), transparent 40%),
+      radial-gradient(circle at 78% 82%, rgba(0,229,160,0.07), transparent 45%),
+      #EDF1FA;
+    overflow:hidden;
+  }
+  .map-layer svg{
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    height:112%;
+    width:auto;
+  }
+  .map-hint{
+    position:absolute;
+    left:50%; bottom:22px;
+    transform:translateX(-50%);
+    font-size:11px;
+    letter-spacing:.04em;
+    color:var(--muted-2);
+    background:rgba(255,255,255,0.7);
+    padding:5px 12px;
+    border-radius:999px;
+    backdrop-filter:blur(6px);
+    white-space:nowrap;
+  }
+
+  /* ============ BRAND MARK ============ */
+  .brand-mark{
+    position:absolute; top:18px; left:18px;
+    width:38px; height:38px;
+    border-radius:11px;
+    background:var(--ink);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:-0.02em;
+    box-shadow:var(--shadow-md);
+    z-index:40;
+  }
+
+  /* ============ COMMAND BAR ============ */
+  .cmdbar-wrap{
+    position:absolute;
+    top:18px;
+    left:50%;
+    transform:translateX(-50%);
+    width:min(680px, calc(100vw - 100px));
+    z-index:50;
+  }
+  .cmdbar{
+    background:rgba(255,255,255,0.86);
+    backdrop-filter:blur(16px) saturate(160%);
+    border:1px solid rgba(255,255,255,0.6);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lg);
+    overflow:hidden;
+  }
+  .cmdbar-row1{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:14px 16px 12px 16px;
+  }
+  .cmdbar-row1 svg.icon-search{flex:none; color:var(--blue);}
+  .cmdbar-input{
+    flex:1;
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:6px;
+    font-size:15px;
+    font-weight:500;
+    color:var(--ink);
+    min-height:22px;
+  }
+  .cmdbar-input .plain{color:var(--muted); font-weight:500;}
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    background:rgba(0,87,255,0.10);
+    color:var(--blue);
+    font-weight:600;
+    font-size:13.5px;
+    padding:3px 10px 3px 9px;
+    border-radius:999px;
+    line-height:1.5;
+  }
+  .chip.mint{background:rgba(0,229,160,0.16); color:#04795B;}
+  .chip .x{opacity:.55; font-weight:700; margin-left:1px;}
+  .cmdbar-kbd{
+    flex:none;
+    font-size:11px;
+    color:var(--muted-2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:2px 6px;
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .cmdbar-row2{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 14px;
+    border-top:1px solid var(--line-soft);
+    background:rgba(248,250,253,0.6);
+  }
+  .cmdbar-results{
+    flex:1;
+    font-size:12.5px;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .cmdbar-results b{color:var(--ink); font-weight:700;}
+  .cmdbar-controls{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex:none;
+  }
+  .seg{
+    display:flex;
+    background:#EEF1F8;
+    border-radius:999px;
+    padding:2px;
+    gap:2px;
+  }
+  .seg button{
+    font-size:12px;
+    font-weight:600;
+    padding:5px 10px;
+    border-radius:999px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .seg button.active{
+    background:var(--ink);
+    color:#fff;
+    box-shadow:var(--shadow-sm);
+  }
+  .dropbtn{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink);
+    background:#EEF1F8;
+    padding:6px 10px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .dropbtn .dot{width:7px;height:7px;border-radius:50%;background:var(--blue);}
+  .dropbtn svg{width:10px;height:10px;opacity:.6;}
+  .filters-btn-mobile{display:none;}
+
+  /* Suggestions dropdown */
+  .suggest{
+    margin-top:8px;
+    background:rgba(255,255,255,0.96);
+    backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,0.7);
+    border-radius:var(--radius-md);
+    box-shadow:var(--shadow-lg);
+    padding:14px;
+    animation:fadeUp .18s ease;
+  }
+  @keyframes fadeUp{from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);}}
+  .suggest-label{
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted-2);
+    margin:2px 0 8px 2px;
+  }
+  .suggest-chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;}
+  .suggest-divider{height:1px; background:var(--line-soft); margin:10px 0;}
+  .suggest-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 6px;
+    border-radius:10px;
+    font-size:13px;
+    color:var(--ink);
+    font-weight:500;
+  }
+  .suggest-item:hover{background:#F4F6FB;}
+  .suggest-item svg{flex:none; color:var(--muted-2);}
+  .suggest-item span.k{color:var(--muted); font-weight:400;}
+  .suggest-footer{
+    display:flex; justify-content:flex-end; margin-top:4px;
+  }
+  .suggest-footer button{
+    font-size:12px; font-weight:600; color:var(--muted); padding:4px 8px;
+  }
+
+  /* Couleur popover */
+  .popover-wrap{position:relative;}
+  .popover{
+    position:absolute;
+    top:calc(100% + 8px);
+    right:0;
+    width:270px;
+    background:rgba(255,255,255,0.98);
+    backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,0.7);
+    border-radius:var(--radius-md);
+    box-shadow:var(--shadow-lg);
+    padding:10px;
+    z-index:60;
+    display:none;
+  }
+  .popover.open{display:block; animation:fadeUp .16s ease;}
+  .pop-lead{
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--blue);
+    padding:6px 8px 2px;
+  }
+  .pop-note{
+    font-size:11.5px;
+    color:var(--muted);
+    padding:0 8px 8px;
+    line-height:1.4;
+  }
+  .pop-opt{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 8px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .pop-opt:hover{background:#F4F6FB;}
+  .pop-opt.selected{background:rgba(0,87,255,0.08); color:var(--blue);}
+  .pop-opt .swatch{width:16px;height:16px;border-radius:5px;flex:none;}
+  .pop-opt .lbl-sub{font-size:11px; color:var(--muted-2); font-weight:400; margin-left:auto;}
+  .pop-sub-lead{
+    font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--muted-2); padding:10px 8px 4px;
+  }
+  .pop-opt.secondary{font-weight:500; font-size:12.5px;}
+  .pop-opt.secondary .swatch{width:12px;height:12px;border-radius:50%;}
+
+  /* ============ EXPORT (discreet) ============ */
+  .export-btn{
+    position:absolute;
+    top:18px; right:18px;
+    z-index:45;
+    display:flex; align-items:center; gap:6px;
+    background:rgba(255,255,255,0.8);
+    backdrop-filter:blur(10px);
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-size:12px; font-weight:600;
+    padding:8px 12px;
+    border-radius:999px;
+    box-shadow:var(--shadow-sm);
+    transition:background .15s;
+  }
+  .export-btn:hover{background:#fff; color:var(--ink);}
+  .export-btn svg{width:13px; height:13px;}
+
+  /* ============ ZOOM INSET ============ */
+  .zoom-inset{
+    position:absolute;
+    top:92px; left:18px;
+    width:216px;
+    background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.7);
+    border-radius:var(--radius-md);
+    box-shadow:var(--shadow-md);
+    padding:12px;
+    z-index:30;
+  }
+  .zoom-inset .zi-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:8px;
+  }
+  .zoom-inset .zi-title{font-size:12.5px; font-weight:700; color:var(--ink);}
+  .zoom-inset .zi-count{font-size:11px; color:var(--muted-2); font-weight:600;}
+  .zoom-inset svg{width:100%; height:auto; display:block;}
+  .zoom-inset .zi-foot{
+    display:flex; gap:12px; margin-top:8px; font-size:10.5px; color:var(--muted);
+  }
+  .zoom-inset .zi-foot span{display:flex; align-items:center; gap:4px;}
+  .zoom-inset .zi-foot i{width:8px;height:8px; border-radius:50%; display:inline-block;}
+
+  /* ============ LEGEND ============ */
+  .legend{
+    position:absolute;
+    left:18px; bottom:18px;
+    z-index:35;
+    background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.7);
+    border-radius:var(--radius-md);
+    box-shadow:var(--shadow-md);
+    padding:14px 16px;
+    width:224px;
+    transition:all .2s;
+  }
+  .legend.collapsed{
+    width:auto; padding:10px 14px;
+  }
+  .legend.collapsed .legend-body{display:none;}
+  .legend-head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    cursor:pointer;
+  }
+  .legend-head .lh-title{
+    font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--muted);
+  }
+  .legend-head svg{width:12px;height:12px; color:var(--muted-2); transition:transform .2s;}
+  .legend.collapsed .legend-head svg{transform:rotate(180deg);}
+  .legend-body{margin-top:10px;}
+  .legend-mode{font-size:13.5px; font-weight:700; color:var(--ink); margin-bottom:8px;}
+  .scale{
+    display:flex; height:10px; border-radius:6px; overflow:hidden; margin-bottom:5px;
+  }
+  .scale div{flex:1;}
+  .scale-labels{display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted-2); font-weight:600;}
+  .legend-shapes{display:flex; gap:14px; margin-top:12px; padding-top:10px; border-top:1px solid var(--line-soft);}
+  .legend-shapes div{display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); font-weight:600;}
+
+  /* ============ TOUR FAB + PANEL ============ */
+  .tour-fab{
+    position:absolute;
+    right:18px; bottom:18px;
+    z-index:55;
+    display:flex; align-items:center; gap:8px;
+    background:var(--ink);
+    color:#fff;
+    padding:13px 18px;
+    border-radius:999px;
+    box-shadow:var(--shadow-lg);
+    font-weight:700;
+    font-size:13.5px;
+  }
+  .tour-fab .badge{
+    background:var(--mint);
+    color:var(--ink);
+    font-size:11.5px;
+    font-weight:800;
+    padding:1px 7px;
+    border-radius:999px;
+  }
+  .tour-fab svg{width:15px;height:15px;}
+
+  .tour-panel{
+    position:absolute;
+    right:18px; bottom:82px;
+    z-index:56;
+    width:340px;
+    max-height:calc(100vh - 120px);
+    background:rgba(255,255,255,0.98);
+    backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,0.7);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lg);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .tp-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 18px 12px;
+  }
+  .tp-head h3{margin:0; font-size:16px; font-weight:700;}
+  .tp-head .tp-close{color:var(--muted-2); font-size:18px; padding:2px;}
+  .tp-list{padding:0 12px; overflow-y:auto; flex:1;}
+  .tp-item{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 8px;
+    border-radius:12px;
+  }
+  .tp-item:hover{background:#F4F6FB;}
+  .tp-item .grip{color:var(--muted-2); flex:none; cursor:grab;}
+  .tp-item .num{
+    width:22px; height:22px; border-radius:50%;
+    background:var(--blue); color:#fff;
+    font-size:11px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .tp-item .info{flex:1; min-width:0;}
+  .tp-item .info .name{font-size:13.5px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .tp-item .info .meta{font-size:11.5px; color:var(--muted); margin-top:1px;}
+  .tp-item .dist{font-size:11px; color:var(--muted-2); font-weight:600; flex:none;}
+  .tp-item .rm{color:var(--muted-2); font-size:16px; flex:none; padding:2px 4px;}
+
+  .tp-section-lead{
+    font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--muted-2); padding:12px 12px 6px;
+  }
+  .tp-prospect{
+    display:flex; align-items:center; gap:10px; padding:8px 8px; border-radius:12px;
+  }
+  .tp-prospect:hover{background:#F4F6FB;}
+  .tp-prospect .ring{
+    width:22px; height:22px; border-radius:50%; border:2px dashed var(--mint); flex:none;
+  }
+  .tp-prospect .info{flex:1; min-width:0;}
+  .tp-prospect .info .name{font-size:12.5px; font-weight:700; color:var(--ink);}
+  .tp-prospect .info .meta{font-size:11px; color:var(--muted);}
+  .tp-prospect .add{
+    background:rgba(0,229,160,0.18); color:#04795B; font-weight:800; font-size:13px;
+    width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none;
+  }
+
+  .tp-actions{padding:14px 16px 16px; border-top:1px solid var(--line-soft);}
+  .btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%;
+    padding:12px 14px;
+    border-radius:12px;
+    font-size:14px; font-weight:700;
+    margin-bottom:9px;
+  }
+  .btn:last-child{margin-bottom:0;}
+  .btn-primary{background:var(--blue); color:#fff; box-shadow:0 6px 16px rgba(0,87,255,0.30);}
+  .btn-secondary{background:#EEF1F8; color:var(--ink);}
+  .btn-ghost{background:none; color:var(--muted); font-size:12px; font-weight:600; padding:6px;}
+  .btn svg{width:16px;height:16px;}
+
+  /* ============ MOBILE SHEETS (filters) ============ */
+  .sheet-backdrop{
+    position:fixed; inset:0; background:rgba(11,31,77,0.35);
+    z-index:80; display:none;
+  }
+  .sheet-backdrop.open{display:block;}
+  .filters-sheet{
+    position:fixed; left:0; right:0; bottom:0;
+    background:#fff;
+    border-radius:22px 22px 0 0;
+    box-shadow:var(--shadow-lg);
+    padding:10px 18px 24px;
+    z-index:90;
+    transform:translateY(100%);
+    transition:transform .25s ease;
+  }
+  .filters-sheet.open{transform:translateY(0);}
+  .sheet-handle{width:36px; height:4px; background:var(--line); border-radius:99px; margin:6px auto 14px;}
+  .sheet-block{margin-bottom:16px;}
+  .sheet-block .sb-lead{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:8px;}
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 720px){
+    .cmdbar-wrap{ width:calc(100vw - 24px); left:12px; right:12px; transform:none; top:14px; }
+    .brand-mark{display:none;}
+    .export-btn{ top:auto; bottom:18px; left:18px; right:auto; padding:9px; }
+    .export-btn span{display:none;}
+    .zoom-inset{display:none;}
+    .cmdbar-controls{display:none;}
+    .filters-btn-mobile{
+      display:flex; align-items:center; gap:6px;
+      font-size:12px; font-weight:700; color:var(--ink);
+      background:#EEF1F8; padding:6px 10px; border-radius:999px; flex:none;
+    }
+    .cmdbar-results{font-size:11.5px;}
+    .legend{ left:auto; right:18px; bottom:96px; width:auto; }
+    .legend.expanded-mobile{width:200px;}
+    .tour-fab{ left:50%; right:auto; transform:translateX(-50%); bottom:18px; }
+    .tour-panel{
+      left:0; right:0; bottom:0; top:auto;
+      width:100%; max-height:78vh;
+      border-radius:22px 22px 0 0;
+      transform:translateY(0);
+    }
+    .suggest{position:absolute; left:0; right:0;}
+  }
+  @media (min-width:721px){
+    .filters-sheet, .sheet-backdrop{display:none !important;}
+  }
+
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ================= MAP LAYER (placeholder) ================= -->
+  <div class="map-layer" id="mapLayer">
+    <svg viewBox="0 0 520 560" width="520" height="560">
+      <defs>
+        <clipPath id="franceClip">
+          <polygon points="330,56 429,154 473,322 462,420 440,476 396,504 330,525 275,532 165,504 121,476 104,378 99,308 77,266 22,245 66,210 99,196 104,126 132,154 165,126 242,84"/>
+        </clipPath>
+        <filter id="blob" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="34"/>
+        </filter>
+        <filter id="blobSoft" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="20"/>
+        </filter>
+        <radialGradient id="waterGrad" cx="50%" cy="45%" r="70%">
+          <stop offset="0%" stop-color="#E9EFFB"/>
+          <stop offset="100%" stop-color="#DCE5F6"/>
+        </radialGradient>
+      </defs>
+
+      <!-- water / background -->
+      <rect x="0" y="0" width="520" height="560" fill="url(#waterGrad)"/>
+
+      <!-- France silhouette base (lowest density tint) -->
+      <g clip-path="url(#franceClip)">
+        <rect x="0" y="0" width="520" height="560" fill="#EAF8F1"/>
+
+        <!-- choropleth density blobs — ONE indicator: densité clients+prospects -->
+        <circle cx="300" cy="235" r="100" fill="#0B1F4D" filter="url(#blob)" opacity="0.9"/>
+        <circle cx="358" cy="330" r="72" fill="#0057FF" filter="url(#blob)" opacity="0.85"/>
+        <circle cx="150" cy="330" r="80" fill="#2F8CF5" filter="url(#blob)" opacity="0.8"/>
+        <circle cx="272" cy="102" r="62" fill="#2F8CF5" filter="url(#blob)" opacity="0.75"/>
+        <circle cx="150" cy="425" r="58" fill="#9FEFD2" filter="url(#blobSoft)" opacity="0.85"/>
+        <circle cx="382" cy="462" r="60" fill="#00E5A0" filter="url(#blobSoft)" opacity="0.8"/>
+        <circle cx="220" cy="465" r="50" fill="#9FEFD2" filter="url(#blobSoft)" opacity="0.7"/>
+        <circle cx="418" cy="150" r="46" fill="#9FEFD2" filter="url(#blobSoft)" opacity="0.7"/>
+      </g>
+
+      <!-- France outline stroke -->
+      <polygon points="330,56 429,154 473,322 462,420 440,476 396,504 330,525 275,532 165,504 121,476 104,378 99,308 77,266 22,245 66,210 99,196 104,126 132,154 165,126 242,84"
+        fill="none" stroke="#0B1F4D" stroke-opacity="0.18" stroke-width="2"/>
+
+      <!-- officine markers (points / bubbles by CA, hue = zone) -->
+      <!-- Paris (client, high CA) -->
+      <circle cx="300" cy="235" r="13" fill="#0B1F4D" stroke="#fff" stroke-width="2"/>
+      <!-- Lyon -->
+      <circle cx="358" cy="330" r="9" fill="#0057FF" stroke="#fff" stroke-width="2"/>
+      <!-- Nantes / 44 — highlighted (search example) -->
+      <circle cx="150" cy="330" r="15" fill="none" stroke="#0057FF" stroke-width="3" stroke-dasharray="3 3"/>
+      <circle cx="150" cy="330" r="6" fill="#0057FF"/>
+      <!-- Lille -->
+      <circle cx="272" cy="102" r="7" fill="#2F8CF5" stroke="#fff" stroke-width="2"/>
+      <!-- Strasbourg -->
+      <circle cx="418" cy="150" r="6" fill="#9FEFD2" stroke="#fff" stroke-width="2"/>
+      <!-- Bordeaux -->
+      <circle cx="150" cy="425" r="10" fill="#00E5A0" stroke="#fff" stroke-width="2"/>
+      <!-- Marseille -->
+      <circle cx="382" cy="462" r="11" fill="#00E5A0" stroke="#fff" stroke-width="2"/>
+      <!-- Toulouse -->
+      <circle cx="220" cy="465" r="5" fill="none" stroke="#00E5A0" stroke-width="2.5" stroke-dasharray="2 2"/>
+
+      <!-- subtle city labels -->
+      <text x="310" y="222" font-family="Space Grotesk" font-size="11" font-weight="700" fill="#0B1F4D" opacity="0.55">Paris</text>
+      <text x="128" y="352" font-family="Space Grotesk" font-size="11" font-weight="700" fill="#0057FF">Nantes · 44</text>
+    </svg>
+    <div class="map-hint">Carte de tournée — placeholder illustratif</div>
+  </div>
+
+  <!-- ================= BRAND MARK ================= -->
+  <div class="brand-mark">IP</div>
+
+  <!-- ================= EXPORT (discreet) ================= -->
+  <button class="export-btn" id="exportBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+    <span>Exporter · Google My Maps</span>
+  </button>
+
+  <!-- ================= ZOOM INSET (drill-down) ================= -->
+  <div class="zoom-inset">
+    <div class="zi-head">
+      <span class="zi-title">Loire-Atlantique</span>
+      <span class="zi-count">12 officines</span>
+    </div>
+    <svg viewBox="0 0 190 110">
+      <rect x="0" y="0" width="190" height="110" rx="10" fill="#EAF0FB"/>
+      <path d="M10 70 Q40 30 90 40 T180 55" stroke="#C9D6EF" stroke-width="2" fill="none"/>
+      <circle cx="35" cy="55" r="7" fill="#0057FF" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="70" cy="35" r="5" fill="#0057FF" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="70" cy="35" r="9" fill="none" stroke="#0057FF" stroke-opacity="0.3" stroke-width="1.5"/>
+      <circle cx="110" cy="60" r="4.5" fill="none" stroke="#00E5A0" stroke-width="2" stroke-dasharray="2 2"/>
+      <circle cx="140" cy="40" r="6" fill="#0057FF" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="160" cy="75" r="4" fill="none" stroke="#00E5A0" stroke-width="2" stroke-dasharray="2 2"/>
+      <circle cx="95" cy="85" r="5" fill="#0057FF" stroke="#fff" stroke-width="1.5"/>
+    </svg>
+    <div class="zi-foot">
+      <span><i style="background:#0057FF"></i>Client</span>
+      <span><i style="background:#fff;border:2px dashed #00E5A0"></i>Prospect</span>
+    </div>
+  </div>
+
+  <!-- ================= LEGEND ================= -->
+  <div class="legend" id="legend">
+    <div class="legend-head" id="legendToggle">
+      <span class="lh-title">Légende</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="legend-body">
+      <div class="legend-mode">Densité par zone (UGA)</div>
+      <div class="scale">
+        <div style="background:#EAF8F1"></div>
+        <div style="background:#9FEFD2"></div>
+        <div style="background:#00E5A0"></div>
+        <div style="background:#2F8CF5"></div>
+        <div style="background:#0057FF"></div>
+        <div style="background:#0B1F4D"></div>
+      </div>
+      <div class="scale-labels"><span>Faible</span><span>Forte</span></div>
+      <div class="legend-shapes">
+        <div><span style="width:10px;height:10px;border-radius:50%;background:#0057FF;display:inline-block;"></span>Client</div>
+        <div><span style="width:10px;height:10px;border-radius:50%;border:2px dashed #00E5A0;display:inline-block;"></span>Prospect</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= COMMAND BAR ================= -->
+  <div class="cmdbar-wrap">
+    <div class="cmdbar">
+      <div class="cmdbar-row1" id="cmdRow">
+        <svg class="icon-search" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <div class="cmdbar-input" id="cmdInput" tabindex="0">
+          <span class="plain">prospects</span>
+          <span class="chip">44 · Loire-Atlantique <span class="x">×</span></span>
+          <span class="plain">groupement</span>
+          <span class="chip mint">Pharmabest <span class="x">×</span></span>
+        </div>
+        <span class="cmdbar-kbd">⌘K</span>
+      </div>
+      <div class="cmdbar-row2">
+        <div class="cmdbar-results"><b>12 officines</b> · Loire-Atlantique · Groupement Pharmabest</div>
+        <div class="cmdbar-controls">
+          <div class="seg">
+            <button>Tout</button>
+            <button>Clients</button>
+            <button class="active">Prospects</button>
+          </div>
+          <div class="popover-wrap">
+            <button class="dropbtn" id="couleurBtn">
+              <span class="dot" style="background:#0057FF"></span> Zone
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="popover" id="couleurPop">
+              <div class="pop-lead">Recommandé à cette échelle</div>
+              <div class="pop-note">Colorer par zone révèle les territoires en un coup d'œil — comme un cadastre commercial.</div>
+              <div class="pop-opt selected"><span class="swatch" style="background:linear-gradient(135deg,#00E5A0,#0057FF)"></span> Par zone (UGA)</div>
+              <div class="pop-opt"><span class="swatch" style="background:linear-gradient(135deg,#EAF8F1,#0B1F4D)"></span> Par CA <span class="lbl-sub">taille</span></div>
+              <div class="pop-sub-lead">Autres vues</div>
+              <div class="pop-opt secondary"><span class="swatch" style="background:#0057FF;border-radius:50%"></span> Par commercial</div>
+              <div class="pop-opt secondary"><span class="swatch" style="background:#00E5A0;border-radius:50%"></span> Client / Prospect</div>
+              <div class="pop-opt secondary"><span class="swatch" style="background:#8B97B3;border-radius:50%"></span> Par groupement</div>
+            </div>
+          </div>
+          <div class="seg">
+            <button title="Points">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/></svg>
+            </button>
+            <button class="active" title="Bulles proportionnelles">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8"/></svg>
+            </button>
+          </div>
+        </div>
+        <button class="filters-btn-mobile" id="filtersBtnMobile">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          Filtres
+        </button>
+      </div>
+    </div>
+
+    <!-- suggestions dropdown -->
+    <div class="suggest" id="suggestBox">
+      <div class="suggest-label">Interprété comme</div>
+      <div class="suggest-chips">
+        <span class="chip">Statut : Prospects</span>
+        <span class="chip">Département : 44</span>
+        <span class="chip mint">Groupement : Pharmabest</span>
+      </div>
+      <div class="suggest-divider"></div>
+      <div class="suggest-label">Suggestions</div>
+      <div class="suggest-item">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+        Prospects proches de <span class="k">ma tournée du jour</span>
+      </div>
+      <div class="suggest-item">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m3 17 6-6 4 4 8-8"/></svg>
+        Clients CA <span class="k">&gt; 50 k€</span> en Bretagne
+      </div>
+      <div class="suggest-item">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>
+        Groupement <span class="k">Giphar</span> — Pays de la Loire
+      </div>
+      <div class="suggest-footer">
+        <button id="clearSuggest">Effacer les filtres</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TOUR FAB ================= -->
+  <button class="tour-fab" id="tourFab">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20V9a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v11"/><path d="M4 20h16"/><circle cx="6" cy="20" r="0"/></svg>
+    Ma tournée <span class="badge">3</span>
+  </button>
+
+  <!-- ================= TOUR PANEL ================= -->
+  <div class="tour-panel" id="tourPanel">
+    <div class="tp-head">
+      <h3>Ma tournée du jour</h3>
+      <button class="tp-close" id="tourClose">×</button>
+    </div>
+    <div class="tp-list">
+      <div class="tp-item">
+        <svg class="grip" width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="2" cy="2" r="1.4"/><circle cx="10" cy="2" r="1.4"/><circle cx="2" cy="8" r="1.4"/><circle cx="10" cy="8" r="1.4"/><circle cx="2" cy="14" r="1.4"/><circle cx="10" cy="14" r="1.4"/></svg>
+        <div class="num">1</div>
+        <div class="info">
+          <div class="name">Pharmacie du Centre</div>
+          <div class="meta">Nantes (44)</div>
+        </div>
+        <div class="dist">2,1 km</div>
+        <div class="rm">×</div>
+      </div>
+      <div class="tp-item">
+        <svg class="grip" width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="2" cy="2" r="1.4"/><circle cx="10" cy="2" r="1.4"/><circle cx="2" cy="8" r="1.4"/><circle cx="10" cy="8" r="1.4"/><circle cx="2" cy="14" r="1.4"/><circle cx="10" cy="14" r="1.4"/></svg>
+        <div class="num">2</div>
+        <div class="info">
+          <div class="name">Pharmacie Pharmabest Rezé</div>
+          <div class="meta">Rezé (44)</div>
+        </div>
+        <div class="dist">4,6 km</div>
+        <div class="rm">×</div>
+      </div>
+      <div class="tp-item">
+        <svg class="grip" width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="2" cy="2" r="1.4"/><circle cx="10" cy="2" r="1.4"/><circle cx="2" cy="8" r="1.4"/><circle cx="10" cy="8" r="1.4"/><circle cx="2" cy="14" r="1.4"/><circle cx="10" cy="14" r="1.4"/></svg>
+        <div class="num">3</div>
+        <div class="info">
+          <div class="name">Grande Pharmacie Saint-Sébastien</div>
+          <div class="meta">Saint-Sébastien-sur-Loire (44)</div>
+        </div>
+        <div class="dist">7,3 km</div>
+        <div class="rm">×</div>
+      </div>
+
+      <div class="tp-section-lead">Prospects proches de la tournée</div>
+      <div class="tp-prospect">
+        <div class="ring"></div>
+        <div class="info">
+          <div class="name">Pharmacie de la Loire</div>
+          <div class="meta">Vertou (44) · à 900 m de l'étape 2</div>
+        </div>
+        <div class="add">+</div>
+      </div>
+      <div class="tp-prospect">
+        <div class="ring"></div>
+        <div class="info">
+          <div class="name">Pharmacie des Trois Rivières</div>
+          <div class="meta">Basse-Goulaine (44) · à 1,4 km</div>
+        </div>
+        <div class="add">+</div>
+      </div>
+    </div>
+    <div class="tp-actions">
+      <button class="btn btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        Optimiser l'itinéraire
+      </button>
+      <button class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+        Démarrer dans Google Maps
+      </button>
+      <button class="btn btn-ghost">Exporter cette tournée vers Google My Maps</button>
+    </div>
+  </div>
+
+  <!-- ================= MOBILE FILTERS SHEET ================= -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="filters-sheet" id="filtersSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-block">
+      <div class="sb-lead">Voir</div>
+      <div class="seg" style="width:100%;">
+        <button style="flex:1;">Tout</button>
+        <button style="flex:1;">Clients</button>
+        <button class="active" style="flex:1;">Prospects</button>
+      </div>
+    </div>
+    <div class="sheet-block">
+      <div class="sb-lead">Couleur — recommandé</div>
+      <div class="pop-opt selected"><span class="swatch" style="background:linear-gradient(135deg,#00E5A0,#0057FF)"></span> Par zone (UGA)</div>
+      <div class="pop-opt"><span class="swatch" style="background:linear-gradient(135deg,#EAF8F1,#0B1F4D)"></span> Par CA <span class="lbl-sub">taille</span></div>
+    </div>
+    <div class="sheet-block">
+      <div class="sb-lead">Affichage</div>
+      <div class="seg" style="width:100%;">
+        <button style="flex:1;">Points</button>
+        <button class="active" style="flex:1;">Bulles</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="sheetApply">Appliquer</button>
+  </div>
+
+</div>
+
+<script>
+  // Couleur popover
+  const couleurBtn = document.getElementById('couleurBtn');
+  const couleurPop = document.getElementById('couleurPop');
+  couleurBtn.addEventListener('click', (e)=>{ e.stopPropagation(); couleurPop.classList.toggle('open'); });
+  document.addEventListener('click', (e)=>{ if(!couleurPop.contains(e.target) && e.target!==couleurBtn) couleurPop.classList.remove('open'); });
+
+  // Suggestions dropdown (open by default, click outside closes, click bar reopens)
+  const suggestBox = document.getElementById('suggestBox');
+  const cmdInput = document.getElementById('cmdInput');
+  cmdInput.addEventListener('click', (e)=>{ e.stopPropagation(); suggestBox.style.display='block'; });
+  document.getElementById('clearSuggest').addEventListener('click', (e)=>{ e.stopPropagation(); suggestBox.style.display='none'; });
+  document.addEventListener('click', (e)=>{
+    if(!suggestBox.contains(e.target) && !cmdInput.contains(e.target)) suggestBox.style.display='none';
+  });
+
+  // Legend collapse
+  document.getElementById('legendToggle').addEventListener('click', ()=>{
+    document.getElementById('legend').classList.toggle('collapsed');
+  });
+
+  // Tour panel
+  const tourFab = document.getElementById('tourFab');
+  const tourPanel = document.getElementById('tourPanel');
+  tourFab.addEventListener('click', ()=> tourPanel.classList.toggle('hidden'));
+  document.getElementById('tourClose').addEventListener('click', ()=> tourPanel.classList.add('hidden'));
+
+  // Mobile filters sheet
+  const sheetBackdrop = document.getElementById('sheetBackdrop');
+  const filtersSheet = document.getElementById('filtersSheet');
+  function openSheet(){ sheetBackdrop.classList.add('open'); filtersSheet.classList.add('open'); }
+  function closeSheet(){ sheetBackdrop.classList.remove('open'); filtersSheet.classList.remove('open'); }
+  document.getElementById('filtersBtnMobile').addEventListener('click', openSheet);
+  sheetBackdrop.addEventListener('click', closeSheet);
+  document.getElementById('sheetApply').addEventListener('click', closeSheet);
+</script>
+</body>
+</html>

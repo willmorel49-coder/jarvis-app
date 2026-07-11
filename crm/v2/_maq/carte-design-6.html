@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Copilote — Carte tournée (design 6)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0057FF;
+    --blue-dark:#0041C4;
+    --ink:#0B1F4D;
+    --mint:#00E5A0;
+    --mint-dark:#00B983;
+    --orange:#FF8A3D;
+    --violet:#7C3AED;
+    --cyan:#00B8D9;
+    --amber:#FFC53D;
+    --rose:#E0507A;
+    --gray:#9AA5B8;
+    --bg:#F4F6FB;
+    --card:#FFFFFF;
+    --line:#E4E8F1;
+    --line-soft:#EEF1F7;
+    --text:#33405E;
+    --text-dim:#7C88A6;
+    --shadow-sm:0 1px 2px rgba(11,31,77,.06), 0 1px 1px rgba(11,31,77,.04);
+    --shadow-md:0 8px 24px rgba(11,31,77,.10), 0 2px 6px rgba(11,31,77,.06);
+    --shadow-lg:0 20px 48px rgba(11,31,77,.16), 0 6px 16px rgba(11,31,77,.08);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  h1,h2,h3,.num,.font-head{font-family:'Space Grotesk',system-ui,sans-serif;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  .app{display:flex;flex-direction:column;height:100vh;}
+
+  /* ---------------- TOPBAR ---------------- */
+  .topbar{
+    display:flex;align-items:center;gap:14px;
+    padding:10px 18px;background:var(--card);
+    border-bottom:1px solid var(--line);
+    position:relative;z-index:120;
+    flex-shrink:0;
+  }
+  .brand{display:flex;align-items:center;gap:9px;margin-right:6px;flex-shrink:0;}
+  .brand-mark{
+    width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;font-family:'Space Grotesk';
+    box-shadow:var(--shadow-sm);flex-shrink:0;
+  }
+  .brand-text{line-height:1.15;}
+  .brand-text b{display:block;font-size:14px;color:var(--ink);font-weight:700;}
+  .brand-text span{display:block;font-size:11px;color:var(--text-dim);}
+
+  .segmented{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;flex-shrink:0;}
+  .segmented .seg-btn{
+    border:none;background:transparent;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;
+    color:var(--text-dim);white-space:nowrap;transition:.15s;
+  }
+  .segmented .seg-btn.active{background:var(--card);color:var(--ink);box-shadow:var(--shadow-sm);}
+  .segmented .seg-btn:not(.active):hover{color:var(--ink);}
+
+  .search-wrap{position:relative;flex:1;max-width:280px;}
+  .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.5;}
+  .search-wrap input{
+    width:100%;padding:9px 12px 9px 34px;border-radius:10px;border:1px solid var(--line);
+    background:var(--bg);font-size:13.5px;color:var(--ink);outline:none;
+  }
+  .search-wrap input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(0,87,255,.10);}
+
+  .topbar-actions{display:flex;gap:8px;margin-left:auto;flex-shrink:0;}
+  .popover-wrap{position:relative;}
+  .btn-ghost{
+    display:flex;align-items:center;gap:6px;padding:9px 13px;border-radius:10px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink);font-size:13.5px;font-weight:600;white-space:nowrap;
+  }
+  .btn-ghost:hover{border-color:#c7d0e6;background:#fafbfd;}
+  .btn-ghost .chev{transition:transform .15s;opacity:.6;}
+  .btn-ghost.is-open .chev{transform:rotate(180deg);}
+  .btn-ghost .count-badge{
+    background:var(--blue);color:#fff;font-size:10.5px;font-weight:700;border-radius:999px;
+    padding:1px 6px;line-height:1.4;
+  }
+
+  .popover{
+    position:absolute;top:calc(100% + 8px);right:0;width:290px;background:var(--card);
+    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-lg);
+    padding:14px;display:none;z-index:200;
+  }
+  .popover-wrap.open .popover{display:block;}
+  .popover-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);margin:0 0 8px;}
+  .popover-title.mt{margin-top:14px;}
+  .radio-row{
+    display:flex;align-items:center;gap:10px;padding:8px 8px;border-radius:9px;cursor:pointer;font-size:13.5px;
+    color:var(--ink);font-weight:500;
+  }
+  .radio-row:hover{background:var(--bg);}
+  .radio-row input{accent-color:var(--blue);width:15px;height:15px;flex-shrink:0;}
+  .radio-row .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .radio-row .sub{font-size:11px;color:var(--text-dim);font-weight:400;display:block;}
+  .radio-divider{border-top:1px dashed var(--line);margin:8px 0;}
+  .pop-note{font-size:11.5px;color:var(--text-dim);margin:8px 2px 0;line-height:1.4;}
+
+  select.filter-select{
+    width:100%;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);
+    font-size:13.5px;color:var(--ink);margin-bottom:9px;outline:none;
+  }
+  select.filter-select:focus{border-color:var(--blue);}
+  .filter-reset{
+    background:none;border:none;color:var(--blue);font-size:12.5px;font-weight:600;padding:4px 0;margin-top:2px;
+  }
+
+  /* ---------------- BODY LAYOUT ---------------- */
+  .body{flex:1;display:flex;min-height:0;overflow:hidden;position:relative;}
+
+  /* ---------------- TOURNEE PANEL ---------------- */
+  .tournee-panel{
+    width:392px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;overflow:hidden;z-index:60;
+  }
+  .tp-header{padding:16px 18px 12px;border-bottom:1px solid var(--line-soft);flex-shrink:0;}
+  .tp-header-row{display:flex;align-items:center;justify-content:space-between;}
+  .tp-title{display:flex;align-items:center;gap:9px;}
+  .tp-title h2{margin:0;font-size:17px;color:var(--ink);font-weight:700;}
+  .tp-badge{
+    background:var(--mint);color:var(--ink);font-size:12px;font-weight:700;border-radius:999px;
+    padding:2px 9px;font-family:'Space Grotesk';
+  }
+  .tp-clear{background:none;border:none;color:var(--text-dim);font-size:12.5px;font-weight:600;}
+  .tp-clear:hover{color:var(--rose);}
+  .tp-hint{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.45;}
+
+  .tp-scroll{flex:1;overflow-y:auto;padding:10px 12px;}
+  .tp-empty{
+    display:none;flex-direction:column;align-items:center;text-align:center;padding:40px 16px;color:var(--text-dim);
+  }
+  .tp-empty svg{margin-bottom:10px;opacity:.55;}
+  .tp-empty b{color:var(--ink);font-size:13.5px;display:block;margin-bottom:4px;}
+  .tp-empty span{font-size:12.5px;line-height:1.5;}
+  .panel.is-empty .tp-empty{display:flex;}
+  .panel.is-empty .stops-list{display:none;}
+
+  .stop-row{
+    display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:11px;background:var(--card);
+    border:1px solid var(--line-soft);margin-bottom:7px;cursor:grab;transition:.12s;
+  }
+  .stop-row:hover{border-color:#d7deec;box-shadow:var(--shadow-sm);}
+  .stop-row.drag-over{border-color:var(--blue);background:#EEF3FF;}
+  .stop-row.dragging{opacity:.4;}
+  .stop-handle{color:var(--gray);font-size:13px;letter-spacing:2px;flex-shrink:0;cursor:grab;padding:0 2px;}
+  .stop-num{
+    width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-family:'Space Grotesk';
+    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .stop-row:first-child .stop-num{background:var(--mint-dark);}
+  .stop-info{flex:1;min-width:0;}
+  .stop-name{font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stop-meta{font-size:11.5px;color:var(--text-dim);margin-top:1px;display:flex;align-items:center;gap:5px;}
+  .chip{
+    background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:10.5px;
+    font-weight:600;color:var(--text-dim);
+  }
+  .stop-dist{font-size:11.5px;color:var(--text-dim);font-weight:600;flex-shrink:0;white-space:nowrap;}
+  .stop-remove{
+    width:22px;height:22px;border-radius:50%;border:none;background:transparent;color:var(--gray);
+    font-size:16px;line-height:1;flex-shrink:0;
+  }
+  .stop-remove:hover{background:#FDEFF2;color:var(--rose);}
+
+  .tp-section-title{
+    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);
+    margin:16px 6px 8px;display:flex;align-items:center;gap:6px;
+  }
+  .prospect-row{
+    display:flex;align-items:center;gap:10px;padding:8px 8px;border-radius:10px;border:1px dashed var(--line);
+    margin-bottom:6px;
+  }
+  .prospect-dot{width:9px;height:9px;border-radius:50%;border:2px solid var(--orange);flex-shrink:0;}
+  .prospect-info{flex:1;min-width:0;}
+  .prospect-name{font-size:12.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .prospect-meta{font-size:11px;color:var(--text-dim);}
+  .prospect-add{
+    width:24px;height:24px;border-radius:50%;border:1px solid var(--blue);background:#fff;color:var(--blue);
+    font-size:15px;line-height:1;flex-shrink:0;font-weight:700;
+  }
+  .prospect-add:hover{background:var(--blue);color:#fff;}
+
+  .tp-footer{padding:14px 18px 16px;border-top:1px solid var(--line-soft);flex-shrink:0;background:var(--card);}
+  .tp-stats{display:flex;gap:14px;margin-bottom:12px;}
+  .tp-stat{flex:1;}
+  .tp-stat .v{font-family:'Space Grotesk';font-size:17px;font-weight:700;color:var(--ink);}
+  .tp-stat .l{font-size:10.5px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+
+  .btn-optimize{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:11px;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:13px;font-weight:700;margin-bottom:9px;
+  }
+  .btn-optimize:hover{border-color:var(--blue);color:var(--blue);}
+
+  .btn-start{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:14px;border-radius:12px;
+    border:none;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;font-size:14.5px;
+    font-weight:700;box-shadow:0 10px 24px rgba(0,87,255,.32);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .btn-start:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(0,87,255,.4);}
+  .btn-start:disabled{background:#C6CEE0;box-shadow:none;color:#fff;cursor:not-allowed;transform:none;}
+  .btn-start svg{flex-shrink:0;}
+
+  .export-link{
+    display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:none;border:none;
+    color:var(--text-dim);font-size:11.5px;font-weight:600;margin-top:11px;padding:4px;
+  }
+  .export-link:hover{color:var(--blue);}
+
+  /* ---------------- MAP AREA ---------------- */
+  .map-area{flex:1;position:relative;overflow:hidden;background:
+    radial-gradient(circle at 15% 10%, #E4EDFF 0%, transparent 45%),
+    linear-gradient(180deg,#EEF2FA 0%, #E7ECF6 100%);
+  }
+  .map-canvas{position:absolute;inset:0;overflow:hidden;}
+  .map-grid{
+    position:absolute;inset:0;
+    background-image:linear-gradient(#0B1F4D0a 1px, transparent 1px), linear-gradient(90deg,#0B1F4D0a 1px, transparent 1px);
+    background-size:40px 40px;
+  }
+  .sea{
+    position:absolute;left:-10%;top:-14%;width:60%;height:55%;
+    background:radial-gradient(ellipse at 30% 30%, #cfe3ff 0%, transparent 70%);
+    opacity:.9;pointer-events:none;
+  }
+
+  .zone-wrap{position:absolute;pointer-events:none;}
+  .zone-fill{
+    position:absolute;border-radius:50%;filter:blur(34px);transition:background .25s, opacity .25s;
+    background:var(--gray);opacity:.10;
+  }
+  body.colormode-uga .zone-fill{background:var(--c-uga);opacity:.5;}
+  body.colormode-ca .zone-fill{background:var(--c-ca);opacity:.62;}
+  .zone-label{
+    position:absolute;transform:translate(-50%,-50%);background:rgba(255,255,255,.92);border:1px solid var(--line);
+    border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;
+    box-shadow:var(--shadow-sm);display:flex;flex-direction:column;align-items:center;gap:0;line-height:1.3;
+  }
+  .zone-label .dept{font-family:'Space Grotesk';}
+  .zone-label .zone-stat{display:none;font-size:9.5px;font-weight:600;color:var(--text-dim);}
+  body.colormode-ca .zone-label .zone-stat, body.colormode-uga .zone-label .zone-stat{display:block;}
+  body.level-zones .zone-label{padding:6px 12px;font-size:13px;}
+  body.level-zones .zone-label .zone-stat{display:block;font-size:11px;}
+  body.level-zones .zone-fill{transform:scale(1.18);filter:blur(28px);}
+
+  .route-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:15;}
+  body.level-zones .route-svg{display:none;}
+  #routeLine{fill:none;stroke:var(--ink);stroke-width:.55;stroke-dasharray:2.2 1.6;stroke-linecap:round;opacity:.55;}
+  .route-glow{fill:none;stroke:var(--mint);stroke-width:1.5;opacity:.18;stroke-linecap:round;}
+
+  .marker{
+    position:absolute;transform:translate(-50%,-50%);z-index:20;background:none;border:none;padding:10px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  body.level-zones .marker{display:none;}
+  .marker-dot{
+    width:12px;height:12px;border-radius:50%;background:var(--blue);border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(11,31,77,.35);transition:.15s;
+  }
+  .marker.prospect .marker-dot{background:#fff;border:2.5px solid var(--orange);}
+  body.disp-bulles .marker-dot{width:calc(11px + var(--ca,.3) * 40px);height:calc(11px + var(--ca,.3) * 40px);}
+  .marker:hover .marker-dot{transform:scale(1.18);box-shadow:0 3px 8px rgba(11,31,77,.4);}
+  .marker.in-tour .marker-dot{background:var(--mint-dark)!important;border-color:#fff!important;}
+  .marker.in-tour.prospect .marker-dot{background:#fff!important;border:2.5px solid var(--mint-dark)!important;}
+  .marker-badge{
+    position:absolute;top:-9px;right:-9px;width:18px;height:18px;border-radius:50%;background:var(--ink);
+    color:#fff;font-size:10px;font-weight:700;font-family:'Space Grotesk';display:none;
+    align-items:center;justify-content:center;border:2px solid #fff;box-shadow:var(--shadow-sm);
+  }
+  .marker.in-tour .marker-badge{display:flex;}
+  .marker-tip{
+    position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+    padding:4px 9px;border-radius:7px;font-size:11px;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;
+    transition:opacity .12s;
+  }
+  .marker:hover .marker-tip{opacity:1;}
+
+  /* categorical color modes for markers */
+  body.colormode-commercial .marker .marker-dot{background:var(--c-commercial);border-color:#fff;}
+  body.colormode-commercial .marker.prospect .marker-dot{background:#fff;border:2.5px solid var(--c-commercial);}
+  body.colormode-groupement .marker .marker-dot{background:var(--c-groupement);border-color:#fff;}
+  body.colormode-groupement .marker.prospect .marker-dot{background:#fff;border:2.5px solid var(--c-groupement);}
+  body.colormode-uga .marker .marker-dot,body.colormode-ca .marker .marker-dot{background:#8592ad;border-color:#fff;opacity:.85;}
+  body.colormode-uga .marker.prospect .marker-dot,body.colormode-ca .marker.prospect .marker-dot{background:#fff;border:2.5px solid #8592ad;}
+  body.colormode-uga .marker.in-tour .marker-dot,body.colormode-ca .marker.in-tour .marker-dot{background:var(--mint-dark)!important;opacity:1;}
+
+  .map-toolbar{
+    position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:90;display:flex;gap:8px;
+    background:rgba(255,255,255,.9);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:11px;
+    padding:4px;box-shadow:var(--shadow-md);
+  }
+  .map-toolbar .seg-btn{font-size:12.5px;padding:6px 12px;}
+
+  .export-btn{
+    position:absolute;top:16px;right:16px;z-index:90;display:flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:10px;padding:7px 11px;
+    font-size:11.5px;font-weight:600;color:var(--text-dim);box-shadow:var(--shadow-sm);
+  }
+  .export-btn:hover{color:var(--blue);border-color:var(--blue);}
+
+  .locator{
+    position:absolute;bottom:16px;right:16px;z-index:90;width:96px;height:104px;background:rgba(255,255,255,.92);
+    border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-md);padding:8px;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .locator svg{width:70px;height:74px;}
+  .locator span{font-size:9.5px;color:var(--text-dim);font-weight:700;margin-top:2px;letter-spacing:.02em;}
+
+  .legend-card{
+    position:absolute;bottom:16px;left:16px;z-index:90;background:rgba(255,255,255,.96);border:1px solid var(--line);
+    border-radius:12px;box-shadow:var(--shadow-md);padding:12px 14px;min-width:190px;max-width:230px;
+  }
+  .legend-card h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:700;}
+  .legend-content{display:none;}
+  .legend-content.active{display:block;}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);font-weight:500;margin-bottom:6px;}
+  .legend-item:last-child{margin-bottom:0;}
+  .legend-swatch{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+  .legend-swatch.ring{background:#fff;border:2.5px solid var(--orange);}
+  .legend-scale{display:flex;align-items:center;gap:6px;}
+  .legend-scale .bar{flex:1;height:9px;border-radius:5px;background:linear-gradient(90deg,#B9CFFA,#245FCB,#0B1F4D);}
+  .legend-scale .lbl{font-size:10px;color:var(--text-dim);font-weight:600;}
+  .legend-note{font-size:10.5px;color:var(--text-dim);margin-top:8px;line-height:1.4;border-top:1px dashed var(--line);padding-top:7px;}
+
+  .locked-hint{
+    display:none;flex-direction:column;align-items:center;text-align:center;padding:32px 20px;color:var(--text-dim);
+    gap:8px;
+  }
+  body.level-zones .locked-hint{display:flex;}
+  body.level-zones .tp-scroll .stops-wrap{display:none;}
+  body.level-zones .tp-footer{opacity:.4;pointer-events:none;}
+  .locked-hint b{color:var(--ink);font-size:13.5px;}
+  .locked-hint span{font-size:12px;line-height:1.5;}
+
+  .toast{
+    position:fixed;bottom:26px;left:50%;transform:translate(-50%,12px);background:var(--ink);color:#fff;
+    padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);
+    z-index:500;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;display:flex;align-items:center;gap:8px;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  /* ---------------- MOBILE ---------------- */
+  .sheet-handle{display:none;}
+  @media (max-width:900px){
+    .topbar{flex-wrap:wrap;padding:8px 12px;gap:8px;row-gap:8px;}
+    .brand-text{display:none;}
+    .segmented.seg-voir{order:1;}
+    .search-wrap{order:3;flex:1 1 100%;max-width:none;}
+    .topbar-actions{order:2;margin-left:auto;}
+    .btn-ghost span.lbl{display:none;}
+    .popover{position:fixed;left:12px;right:12px;top:auto;width:auto;}
+
+    .body{position:relative;}
+    .tournee-panel{
+      position:fixed;left:0;right:0;bottom:0;width:auto;max-height:78vh;border-right:none;
+      border-top:1px solid var(--line);border-radius:18px 18px 0 0;box-shadow:0 -12px 30px rgba(11,31,77,.18);
+      transform:translateY(calc(100% - 118px));transition:transform .32s cubic-bezier(.2,.8,.2,1);z-index:150;
+      padding-bottom:env(safe-area-inset-bottom);
+    }
+    .tournee-panel.expanded{transform:translateY(0);}
+    .sheet-handle{
+      display:block;width:100%;padding:8px 0 2px;text-align:center;flex-shrink:0;background:var(--card);
+      border-radius:18px 18px 0 0;
+    }
+    .sheet-handle i{display:inline-block;width:38px;height:4px;border-radius:3px;background:var(--line);}
+    .tp-header{cursor:pointer;}
+    .locator{display:none;}
+    .map-toolbar{top:auto;bottom:130px;}
+    .export-btn{top:auto;bottom:130px;right:12px;}
+    .legend-card{bottom:130px;}
+  }
+  @media (max-width:520px){
+    .zone-fill{transform:scale(.8);}
+    .map-toolbar{left:12px;transform:none;}
+  }
+</style>
+
+<div class="app">
+
+  <!-- ============ TOPBAR ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">IP</div>
+      <div class="brand-text"><b>Copilote</b><span>Carte tournée</span></div>
+    </div>
+
+    <div class="segmented seg-voir" id="segVoir">
+      <button class="seg-btn active" data-voir="all">Tout</button>
+      <button class="seg-btn" data-voir="client">Clients</button>
+      <button class="seg-btn" data-voir="prospect">Prospects</button>
+    </div>
+
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#33405E" stroke-width="2"/><path d="M21 21l-4-4" stroke="#33405E" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="text" id="searchInput" placeholder="Pharmacie ou ville…">
+    </div>
+
+    <div class="topbar-actions">
+      <div class="popover-wrap" id="wrapAffichage">
+        <button class="btn-ghost" id="btnAffichage">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.4" fill="#33405E"/><path d="M12 3v3.2M12 17.8V21M3 12h3.2M17.8 12H21" stroke="#33405E" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="lbl">Affichage</span>
+          <svg class="chev" width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#33405E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="popover">
+          <p class="popover-title">Couleur — Recommandé</p>
+          <label class="radio-row"><input type="radio" name="colormode" value="client" checked><span class="dot" style="background:var(--blue)"></span><span>Client / Prospect<span class="sub">Qui visiter aujourd'hui</span></span></label>
+          <label class="radio-row"><input type="radio" name="colormode" value="ca"><span class="dot" style="background:var(--ink)"></span><span>Par CA<span class="sub">Zones colorées par densité — bulles activables</span></span></label>
+          <label class="radio-row"><input type="radio" name="colormode" value="uga"><span class="dot" style="background:var(--cyan)"></span><span>Par zone (UGA)<span class="sub">Territoires commerciaux</span></span></label>
+          <div class="radio-divider"></div>
+          <p class="popover-title">Avancé</p>
+          <label class="radio-row"><input type="radio" name="colormode" value="commercial"><span class="dot" style="background:var(--violet)"></span><span>Par commercial</span></label>
+          <label class="radio-row"><input type="radio" name="colormode" value="groupement"><span class="dot" style="background:var(--orange)"></span><span>Par groupement</span></label>
+          <div class="radio-divider"></div>
+          <p class="popover-title" style="margin-bottom:6px;">Marqueurs</p>
+          <div class="segmented" id="segAffichage" style="width:100%;">
+            <button class="seg-btn active" data-disp="points" style="flex:1;">Points</button>
+            <button class="seg-btn" data-disp="bulles" style="flex:1;">Bulles (CA)</button>
+          </div>
+          <p class="pop-note">Un seul indicateur affiché à la fois — la légende en bas de carte l'explique.</p>
+        </div>
+      </div>
+
+      <div class="popover-wrap" id="wrapFiltres">
+        <button class="btn-ghost" id="btnFiltres">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M7 12h10M10 18h4" stroke="#33405E" stroke-width="2" stroke-linecap="round"/></svg>
+          <span class="lbl">Filtres</span>
+          <span class="count-badge" id="filterBadge" style="display:none;">0</span>
+          <svg class="chev" width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#33405E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="popover">
+          <p class="popover-title">Commercial</p>
+          <select class="filter-select" id="filterCommercial">
+            <option value="all">Tous les commerciaux</option>
+            <option value="ingrid">Ingrid</option>
+            <option value="manon">Manon D.</option>
+            <option value="morgane">Morgane</option>
+            <option value="pauline">Pauline</option>
+          </select>
+          <p class="popover-title">Département</p>
+          <select class="filter-select" id="filterDept">
+            <option value="all">Tous les départements</option>
+            <option value="76">76 · Seine-Maritime</option>
+            <option value="27">27 · Eure</option>
+            <option value="14">14 · Calvados</option>
+            <option value="61">61 · Orne</option>
+            <option value="50">50 · Manche</option>
+          </select>
+          <p class="popover-title">Groupement</p>
+          <select class="filter-select" id="filterGroupement" style="margin-bottom:4px;">
+            <option value="all">Tous les groupements</option>
+            <option value="officinales">Les Officinales</option>
+            <option value="phr">PHR</option>
+            <option value="pharmabest">Pharmabest</option>
+            <option value="giphar">Giphar</option>
+            <option value="indep">Indépendant</option>
+          </select>
+          <button class="filter-reset" id="btnResetFilters">Réinitialiser les filtres</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ BODY ============ -->
+  <div class="body">
+
+    <!-- ======== TOURNEE PANEL ======== -->
+    <aside class="tournee-panel panel" id="tourneePanel">
+      <div class="sheet-handle" id="sheetHandle"><i></i></div>
+
+      <div class="tp-header" id="tpHeaderToggle">
+        <div class="tp-header-row">
+          <div class="tp-title">
+            <h2>Ma tournée</h2>
+            <span class="tp-badge" id="tpCount">4</span>
+          </div>
+          <button class="tp-clear" id="btnClearTour">Effacer</button>
+        </div>
+        <p class="tp-hint">Cliquez une pharmacie sur la carte pour l'ajouter ou la retirer.</p>
+      </div>
+
+      <div class="tp-scroll">
+        <div class="locked-hint">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 20l7-16 7 16M8 15h6" stroke="#7C88A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <b>Zoomez sur une commune</b>
+          <span>Passez en vue « Officines » pour composer votre tournée pharmacie par pharmacie.</span>
+        </div>
+
+        <div class="stops-wrap">
+          <div class="tp-empty">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.1 7-11.6A7 7 0 005 9.4C5 14.9 12 21 12 21z" stroke="#7C88A6" stroke-width="1.6"/><circle cx="12" cy="9.4" r="2.4" stroke="#7C88A6" stroke-width="1.6"/></svg>
+            <b>Aucun arrêt encore</b>
+            <span>Touchez les pharmacies sur la carte pour construire votre tournée du jour.</span>
+          </div>
+          <div class="stops-list" id="stopsList"></div>
+
+          <div class="tp-section-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#7C88A6" stroke-width="2"/></svg>
+            Prospects à proximité
+          </div>
+          <div id="prospectsList"></div>
+        </div>
+      </div>
+
+      <div class="tp-footer">
+        <div class="tp-stats">
+          <div class="tp-stat"><div class="v" id="statStops">4</div><div class="l">Arrêts</div></div>
+          <div class="tp-stat"><div class="v" id="statKm">136 km</div><div class="l">Distance</div></div>
+          <div class="tp-stat"><div class="v" id="statTime">2h47</div><div class="l">Temps estimé</div></div>
+        </div>
+        <button class="btn-optimize" id="btnOptimize">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 12h4l3-8 4 16 3-8h4" stroke="#33405E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Optimiser l'itinéraire
+        </button>
+        <button class="btn-start" id="btnStart">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2C7.6 2 4 5.6 4 10c0 5.5 8 12 8 12s8-6.5 8-12c0-4.4-3.6-8-8-8z" fill="#fff"/><circle cx="12" cy="10" r="3" fill="#0057FF"/></svg>
+          Démarrer dans Google Maps
+        </button>
+        <button class="export-link" id="btnExport">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="#7C88A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Exporter vers Google My Maps
+        </button>
+      </div>
+    </aside>
+
+    <!-- ======== MAP AREA ======== -->
+    <main class="map-area">
+      <div class="map-toolbar segmented" id="segLevel">
+        <button class="seg-btn active" data-level="officines">Officines</button>
+        <button class="seg-btn" data-level="zones">Zones (régional)</button>
+      </div>
+
+      <button class="export-btn" id="btnExportMap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="#7C88A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        My Maps
+      </button>
+
+      <div class="map-canvas" id="mapCanvas">
+        <div class="map-grid"></div>
+        <div class="sea"></div>
+
+        <!-- ZONES -->
+        <div class="zone-wrap" style="left:26%;top:16%;">
+          <div class="zone-fill" style="--c-uga:var(--blue);--c-ca:#0B1F4D;width:280px;height:280px;transform:translate(-50%,-50%);"></div>
+          <div class="zone-label" style="left:26%;top:16%;transform:translate(calc(-50% - 0px),calc(-50% - 60px));"><span class="dept">76 · Seine-Maritime</span><span class="zone-stat">5 officines · 1,3M€</span></div>
+        </div>
+        <div class="zone-wrap" style="left:56%;top:33%;">
+          <div class="zone-fill" style="--c-uga:var(--cyan);--c-ca:#245FCB;width:250px;height:250px;transform:translate(-50%,-50%);"></div>
+          <div class="zone-label" style="left:56%;top:33%;transform:translate(-50%,calc(-50% - 58px));"><span class="dept">27 · Eure</span><span class="zone-stat">4 officines · 620k€</span></div>
+        </div>
+        <div class="zone-wrap" style="left:19%;top:46%;">
+          <div class="zone-fill" style="--c-uga:var(--violet);--c-ca:#10306B;width:270px;height:270px;transform:translate(-50%,-50%);"></div>
+          <div class="zone-label" style="left:19%;top:46%;transform:translate(-50%,calc(-50% - 60px));"><span class="dept">14 · Calvados</span><span class="zone-stat">4 officines · 1,1M€</span></div>
+        </div>
+        <div class="zone-wrap" style="left:33%;top:68%;">
+          <div class="zone-fill" style="--c-uga:var(--rose);--c-ca:#7FA6F2;width:210px;height:210px;transform:translate(-50%,-50%);"></div>
+          <div class="zone-label" style="left:33%;top:68%;transform:translate(-50%,calc(-50% - 50px));"><span class="dept">61 · Orne</span><span class="zone-stat">2 officines · 240k€</span></div>
+        </div>
+        <div class="zone-wrap" style="left:10%;top:70%;">
+          <div class="zone-fill" style="--c-uga:var(--amber);--c-ca:#B9CFFA;width:220px;height:220px;transform:translate(-50%,-50%);"></div>
+          <div class="zone-label" style="left:10%;top:70%;transform:translate(-50%,calc(-50% - 50px));"><span class="dept">50 · Manche</span><span class="zone-stat">2 officines · 210k€</span></div>
+        </div>
+
+        <!-- ROUTE -->
+        <svg class="route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <polyline class="route-glow" id="routeGlow" points=""/>
+          <polyline id="routeLine" points=""/>
+        </svg>
+
+        <!-- MARKERS injected by JS -->
+      </div>
+
+      <div class="locator">
+        <svg viewBox="0 0 100 120">
+          <path d="M25,55 L35,20 L60,10 L85,25 L88,45 L95,70 L80,95 L55,105 L30,90 L18,75 Z" fill="#E4E8F1" stroke="#C7D0E6" stroke-width="1.5"/>
+          <circle cx="34" cy="34" r="6" fill="none" stroke="var(--blue)" stroke-width="2.4"/>
+          <circle cx="34" cy="34" r="2.4" fill="var(--blue)"/>
+        </svg>
+        <span>Normandie</span>
+      </div>
+
+      <div class="legend-card">
+        <h4>Légende</h4>
+        <div class="legend-content active" data-legend="client">
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--blue);border:2px solid #fff;"></span>Client</div>
+          <div class="legend-item"><span class="legend-swatch ring"></span>Prospect</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--mint-dark);"></span>Dans ma tournée</div>
+        </div>
+        <div class="legend-content" data-legend="ca">
+          <div class="legend-scale"><span class="lbl">Faible</span><span class="bar"></span><span class="lbl">Fort</span></div>
+          <div class="legend-note">CA cumulé par zone. Activez « Bulles » pour voir le CA officine par officine.</div>
+        </div>
+        <div class="legend-content" data-legend="uga">
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--blue);"></span>76 · Seine-Maritime</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--cyan);"></span>27 · Eure</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--violet);"></span>14 · Calvados</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--rose);"></span>61 · Orne</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--amber);"></span>50 · Manche</div>
+        </div>
+        <div class="legend-content" data-legend="commercial">
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--blue);"></span>Ingrid</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--violet);"></span>Manon D.</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--orange);"></span>Morgane</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--cyan);"></span>Pauline</div>
+        </div>
+        <div class="legend-content" data-legend="groupement">
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--blue);"></span>Les Officinales</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--violet);"></span>PHR</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--orange);"></span>Pharmabest</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--cyan);"></span>Giphar</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--gray);"></span>Indépendant</div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var COMMERCIAL_COLOR = {ingrid:"#0057FF",manon:"#7C3AED",morgane:"#FF8A3D",pauline:"#00B8D9"};
+  var GROUPEMENT_COLOR = {officinales:"#0057FF",phr:"#7C3AED",pharmabest:"#FF8A3D",giphar:"#00B8D9",indep:"#9AA5B8"};
+  var GROUPEMENT_LABEL = {officinales:"Les Officinales",phr:"PHR",pharmabest:"Pharmabest",giphar:"Giphar",indep:"Indépendant"};
+
+  var markersData = {
+    "rouen-vieuxmarche": {name:"Pharmacie du Vieux-Marché", city:"Rouen", type:"client", dept:"76", commercial:"ingrid", groupement:"officinales", ca:.88, x:28, y:16},
+    "rouen-saintsever":  {name:"Pharmacie Saint-Sever",     city:"Rouen", type:"client", dept:"76", commercial:"ingrid", groupement:"indep",       ca:.55, x:33, y:20},
+    "dieppe-plage":      {name:"Pharmacie de la Plage",     city:"Dieppe", type:"client", dept:"76", commercial:"ingrid", groupement:"phr",         ca:.40, x:34, y:8},
+    "bolbec-centre":     {name:"Pharmacie Bolbec Centre",   city:"Bolbec", type:"prospect", dept:"76", commercial:"ingrid", groupement:"pharmabest", ca:.30, x:20, y:22},
+    "lehavre-ocean":     {name:"Pharmacie du Havre-Océan",  city:"Le Havre", type:"client", dept:"76", commercial:"ingrid", groupement:"giphar",     ca:.95, x:10, y:26},
+    "yvetot-marche":     {name:"Pharmacie Yvetot Marché",   city:"Yvetot", type:"prospect", dept:"76", commercial:"ingrid", groupement:"indep",      ca:.22, x:24, y:13},
+
+    "evreux-tourelles":  {name:"Pharmacie des Tourelles",   city:"Évreux", type:"client", dept:"27", commercial:"manon", groupement:"officinales", ca:.60, x:58, y:40},
+    "louviers-centre":   {name:"Pharmacie de Louviers",     city:"Louviers", type:"client", dept:"27", commercial:"manon", groupement:"phr",         ca:.35, x:50, y:32},
+    "vernon-gare":       {name:"Pharmacie Vernon Gare",     city:"Vernon", type:"prospect", dept:"27", commercial:"manon", groupement:"indep",       ca:.25, x:66, y:30},
+    "pontaudemer":       {name:"Pharmacie Pont-Audemer",    city:"Pont-Audemer", type:"client", dept:"27", commercial:"manon", groupement:"pharmabest", ca:.45, x:46, y:26},
+
+    "caen-grande":       {name:"Grande Pharmacie de Caen",  city:"Caen", type:"client", dept:"14", commercial:"morgane", groupement:"giphar",       ca:.90, x:20, y:48},
+    "lisieux-centre":    {name:"Pharmacie Lisieux Centre",  city:"Lisieux", type:"client", dept:"14", commercial:"morgane", groupement:"officinales", ca:.50, x:30, y:50},
+    "bayeux-cathedrale": {name:"Pharmacie Bayeux Cathédrale", city:"Bayeux", type:"prospect", dept:"14", commercial:"morgane", groupement:"phr",      ca:.38, x:12, y:44},
+    "deauville-plage":   {name:"Pharmacie Deauville Plage", city:"Deauville", type:"client", dept:"14", commercial:"morgane", groupement:"indep",     ca:.70, x:22, y:38},
+
+    "alencon-centre":    {name:"Pharmacie d'Alençon",       city:"Alençon", type:"client", dept:"61", commercial:"pauline", groupement:"pharmabest", ca:.48, x:36, y:70},
+    "argentan-centre":   {name:"Pharmacie Argentan",        city:"Argentan", type:"prospect", dept:"61", commercial:"pauline", groupement:"officinales", ca:.28, x:28, y:66},
+
+    "cherbourg-centre":  {name:"Pharmacie de Cherbourg",    city:"Cherbourg", type:"client", dept:"50", commercial:"pauline", groupement:"giphar",   ca:.58, x:6, y:66},
+    "saintlo-centre":    {name:"Pharmacie Saint-Lô Centre", city:"Saint-Lô", type:"prospect", dept:"50", commercial:"pauline", groupement:"phr",      ca:.32, x:12, y:72}
+  };
+
+  var tourStops = ["rouen-vieuxmarche","lehavre-ocean","bolbec-centre","dieppe-plage"];
+  var suggestedProspects = ["yvetot-marche","vernon-gare","argentan-centre","bayeux-cathedrale"];
+
+  var mapCanvas = document.getElementById("mapCanvas");
+  var stopsList = document.getElementById("stopsList");
+  var prospectsList = document.getElementById("prospectsList");
+  var panel = document.getElementById("tourneePanel");
+
+  // ---------- build markers ----------
+  Object.keys(markersData).forEach(function(id){
+    var d = markersData[id];
+    var btn = document.createElement("button");
+    btn.className = "marker " + d.type;
+    btn.style.left = d.x + "%";
+    btn.style.top = d.y + "%";
+    btn.style.setProperty("--ca", d.ca);
+    btn.style.setProperty("--c-commercial", COMMERCIAL_COLOR[d.commercial]);
+    btn.style.setProperty("--c-groupement", GROUPEMENT_COLOR[d.groupement]);
+    btn.dataset.id = id; btn.dataset.type = d.type; btn.dataset.dept = d.dept;
+    btn.dataset.commercial = d.commercial; btn.dataset.groupement = d.groupement;
+    btn.dataset.name = d.name; btn.dataset.city = d.city;
+    btn.innerHTML = '<span class="marker-dot"></span><span class="marker-badge"></span><span class="marker-tip">'+d.name+' — '+d.city+'</span>';
+    btn.addEventListener("click", function(){ toggleStop(id); });
+    mapCanvas.appendChild(btn);
+  });
+
+  function dist(idA, idB){
+    var a = markersData[idA], b = markersData[idB];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+
+  function toggleStop(id){
+    var idx = tourStops.indexOf(id);
+    if(idx > -1){ tourStops.splice(idx,1); showToast(markersData[id].name + " retirée de la tournée"); }
+    else { tourStops.push(id); showToast(markersData[id].name + " ajoutée à la tournée"); }
+    renderAll();
+  }
+
+  function clearTour(){ tourStops = []; renderAll(); }
+
+  function optimizeRoute(){
+    if(tourStops.length < 3) return;
+    var remaining = tourStops.slice(1);
+    var route = [tourStops[0]];
+    var current = tourStops[0];
+    while(remaining.length){
+      remaining.sort(function(a,b){ return dist(current,a) - dist(current,b); });
+      current = remaining.shift();
+      route.push(current);
+    }
+    tourStops = route;
+    renderAll();
+    showToast("Itinéraire optimisé");
+  }
+
+  function renderAll(){
+    renderMarkersState();
+    renderStopsList();
+    renderRoute();
+    renderStats();
+    renderProspects();
+  }
+
+  function renderMarkersState(){
+    document.querySelectorAll(".marker").forEach(function(m){
+      var id = m.dataset.id;
+      var idx = tourStops.indexOf(id);
+      if(idx > -1){
+        m.classList.add("in-tour");
+        m.querySelector(".marker-badge").textContent = idx+1;
+      } else {
+        m.classList.remove("in-tour");
+        m.querySelector(".marker-badge").textContent = "";
+      }
+    });
+  }
+
+  function renderStopsList(){
+    document.getElementById("tpCount").textContent = tourStops.length;
+    document.getElementById("statStops").textContent = tourStops.length;
+    panel.classList.toggle("is-empty", tourStops.length === 0);
+    document.getElementById("btnStart").disabled = tourStops.length === 0;
+
+    stopsList.innerHTML = "";
+    tourStops.forEach(function(id, i){
+      var d = markersData[id];
+      var row = document.createElement("div");
+      row.className = "stop-row";
+      row.draggable = true;
+      row.dataset.id = id;
+      var legTxt = "Départ";
+      if(i > 0){ legTxt = "+" + Math.round(dist(tourStops[i-1], id) * 6.4) + " km"; }
+      row.innerHTML =
+        '<span class="stop-handle">⋮⋮</span>'+
+        '<span class="stop-num">'+(i+1)+'</span>'+
+        '<div class="stop-info"><div class="stop-name">'+d.name+'</div>'+
+        '<div class="stop-meta">'+d.city+' <span class="chip">'+GROUPEMENT_LABEL[d.groupement]+'</span></div></div>'+
+        '<div class="stop-dist">'+legTxt+'</div>'+
+        '<button class="stop-remove" data-remove="'+id+'">×</button>';
+      stopsList.appendChild(row);
+    });
+
+    stopsList.querySelectorAll(".stop-remove").forEach(function(btn){
+      btn.addEventListener("click", function(e){ e.stopPropagation(); toggleStop(btn.dataset.remove); });
+    });
+    attachDrag();
+  }
+
+  function attachDrag(){
+    var draggedId = null;
+    stopsList.querySelectorAll(".stop-row").forEach(function(row){
+      row.addEventListener("dragstart", function(){ draggedId = row.dataset.id; row.classList.add("dragging"); });
+      row.addEventListener("dragend", function(){ row.classList.remove("dragging"); });
+      row.addEventListener("dragover", function(e){ e.preventDefault(); row.classList.add("drag-over"); });
+      row.addEventListener("dragleave", function(){ row.classList.remove("drag-over"); });
+      row.addEventListener("drop", function(e){
+        e.preventDefault(); row.classList.remove("drag-over");
+        var targetId = row.dataset.id;
+        if(!draggedId || draggedId === targetId) return;
+        var from = tourStops.indexOf(draggedId), to = tourStops.indexOf(targetId);
+        tourStops.splice(from,1);
+        tourStops.splice(to,0,draggedId);
+        renderAll();
+      });
+    });
+  }
+
+  function renderRoute(){
+    var pts = tourStops.map(function(id){ var d = markersData[id]; return d.x+","+d.y; }).join(" ");
+    document.getElementById("routeLine").setAttribute("points", pts);
+    document.getElementById("routeGlow").setAttribute("points", pts);
+  }
+
+  function renderStats(){
+    var km = 0;
+    for(var i=1;i<tourStops.length;i++){ km += dist(tourStops[i-1], tourStops[i]) * 6.4; }
+    km = Math.round(km);
+    var mins = Math.round(km/48*60) + tourStops.length*8;
+    var h = Math.floor(mins/60), m = mins%60;
+    document.getElementById("statKm").textContent = tourStops.length ? km + " km" : "—";
+    document.getElementById("statTime").textContent = tourStops.length ? (h>0? h+"h"+(m<10?"0":"")+m : m+"min") : "—";
+  }
+
+  function renderProspects(){
+    var avail = suggestedProspects.filter(function(id){ return tourStops.indexOf(id) === -1; });
+    prospectsList.innerHTML = "";
+    if(avail.length === 0){
+      prospectsList.innerHTML = '<p style="font-size:12px;color:var(--text-dim);padding:4px 8px;">Aucun prospect proche restant.</p>';
+      return;
+    }
+    avail.slice(0,4).forEach(function(id){
+      var d = markersData[id];
+      var row = document.createElement("div");
+      row.className = "prospect-row";
+      row.innerHTML =
+        '<span class="prospect-dot"></span>'+
+        '<div class="prospect-info"><div class="prospect-name">'+d.name+'</div><div class="prospect-meta">'+d.city+'</div></div>'+
+        '<button class="prospect-add" data-add="'+id+'">+</button>';
+      prospectsList.appendChild(row);
+    });
+    prospectsList.querySelectorAll(".prospect-add").forEach(function(btn){
+      btn.addEventListener("click", function(){ toggleStop(btn.dataset.add); });
+    });
+  }
+
+  document.getElementById("btnClearTour").addEventListener("click", clearTour);
+  document.getElementById("btnOptimize").addEventListener("click", optimizeRoute);
+  document.getElementById("btnStart").addEventListener("click", function(){
+    if(tourStops.length===0) return;
+    showToast("Ouverture de Google Maps — itinéraire vers "+tourStops.length+" arrêt(s)");
+  });
+  [document.getElementById("btnExport"), document.getElementById("btnExportMap")].forEach(function(b){
+    b.addEventListener("click", function(){ showToast("Export Google My Maps généré ✓"); });
+  });
+
+  // ---------- generic segmented control ----------
+  function bindSegmented(container, onSelect){
+    container.querySelectorAll(".seg-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        container.querySelectorAll(".seg-btn").forEach(function(b){ b.classList.remove("active"); });
+        btn.classList.add("active");
+        onSelect(btn);
+      });
+    });
+  }
+
+  bindSegmented(document.getElementById("segVoir"), applyFilters);
+  bindSegmented(document.getElementById("segAffichage"), function(btn){
+    document.body.classList.toggle("disp-bulles", btn.dataset.disp === "bulles");
+  });
+  bindSegmented(document.getElementById("segLevel"), function(btn){
+    document.body.classList.toggle("level-zones", btn.dataset.level === "zones");
+  });
+
+  // ---------- color mode ----------
+  document.querySelectorAll('input[name="colormode"]').forEach(function(radio){
+    radio.addEventListener("change", function(){
+      ["client","ca","uga","commercial","groupement"].forEach(function(m){ document.body.classList.remove("colormode-"+m); });
+      document.body.classList.add("colormode-"+radio.value);
+      document.querySelectorAll(".legend-content").forEach(function(el){
+        el.classList.toggle("active", el.dataset.legend === radio.value);
+      });
+    });
+  });
+
+  // ---------- popovers ----------
+  [["btnAffichage","wrapAffichage"],["btnFiltres","wrapFiltres"]].forEach(function(pair){
+    var btn = document.getElementById(pair[0]), wrap = document.getElementById(pair[1]);
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var willOpen = !wrap.classList.contains("open");
+      document.querySelectorAll(".popover-wrap").forEach(function(w){ w.classList.remove("open"); w.querySelector(".btn-ghost").classList.remove("is-open"); });
+      if(willOpen){ wrap.classList.add("open"); btn.classList.add("is-open"); }
+    });
+  });
+  document.addEventListener("click", function(){
+    document.querySelectorAll(".popover-wrap").forEach(function(w){ w.classList.remove("open"); w.querySelector(".btn-ghost").classList.remove("is-open"); });
+  });
+  document.querySelectorAll(".popover").forEach(function(p){ p.addEventListener("click", function(e){ e.stopPropagation(); }); });
+
+  // ---------- filters ----------
+  var filterCommercial = document.getElementById("filterCommercial");
+  var filterDept = document.getElementById("filterDept");
+  var filterGroupement = document.getElementById("filterGroupement");
+  var searchInput = document.getElementById("searchInput");
+
+  function applyFilters(){
+    var voirBtn = document.querySelector(".seg-voir .seg-btn.active");
+    var voir = voirBtn ? voirBtn.dataset.voir : "all";
+    var com = filterCommercial.value, dept = filterDept.value, grp = filterGroupement.value;
+    var q = searchInput.value.trim().toLowerCase();
+    document.querySelectorAll(".marker").forEach(function(m){
+      var show = true;
+      if(voir !== "all" && m.dataset.type !== voir) show = false;
+      if(com !== "all" && m.dataset.commercial !== com) show = false;
+      if(dept !== "all" && m.dataset.dept !== dept) show = false;
+      if(grp !== "all" && m.dataset.groupement !== grp) show = false;
+      if(q && m.dataset.name.toLowerCase().indexOf(q) === -1 && m.dataset.city.toLowerCase().indexOf(q) === -1) show = false;
+      m.style.display = show ? "" : "none";
+    });
+    var activeCount = [com,dept,grp].filter(function(v){ return v !== "all"; }).length;
+    var badge = document.getElementById("filterBadge");
+    badge.style.display = activeCount ? "inline-block" : "none";
+    badge.textContent = activeCount;
+  }
+  [filterCommercial, filterDept, filterGroupement].forEach(function(el){ el.addEventListener("change", applyFilters); });
+  searchInput.addEventListener("input", applyFilters);
+  document.getElementById("btnResetFilters").addEventListener("click", function(){
+    filterCommercial.value = "all"; filterDept.value = "all"; filterGroupement.value = "all";
+    applyFilters();
+  });
+
+  // ---------- mobile sheet ----------
+  document.getElementById("tpHeaderToggle").addEventListener("click", function(){
+    if(window.innerWidth <= 900){ panel.classList.toggle("expanded"); }
+  });
+  document.getElementById("sheetHandle").addEventListener("click", function(){
+    panel.classList.toggle("expanded");
+  });
+
+  // ---------- toast ----------
+  var toastTimer = null;
+  function showToast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
