@@ -680,9 +680,9 @@
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir</button></div>';
   }
 
-  // Le Copilote EST le cerveau de la tournée (Top opportunités · ta tournée · prépare ta visite).
-  // La carte nationale reste à un clic depuis ce cerveau (bloc « Carte nationale » en tête).
-  V2.pages.copilote = { render: function (root) { V2.pages.marche.render(root); } };
+  // Copilote = LA CARTE de tournée (choix Will : « carte de mes trajets », zéro doublon de stats).
+  // L'ancien hub de stats reste accessible via #marche (à trancher : garder en tuile « Opportunités » ou retirer).
+  V2.pages.copilote = { render: function (root) { if (V2.pages.carte) { V2.pages.carte.render(root); return; } V2.pages.marche.render(root); } };
   V2.pages.marche = {
     render: function (root) {
       injectCss();
