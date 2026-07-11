@@ -234,7 +234,8 @@
           '<p style="color:#737A8C;font-size:14px;margin:0 0 4px">Tous les biosimilaires disponibles en France, croisés à tes ventes et stocks réseau. Les <b style="color:' + GREEN + '">substituables en officine</b> et les <b style="color:' + ORANGE + '">labos partenaires</b> en tête.</p>' +
           '<div class="bs-dls">' +
             '<a class="bs-dl" href="../../base-biosimilaires.xlsx" download>' + ICO('fiche', 15) + ' Excel complet</a>' +
-            '<a class="bs-dl alt" href="../../biosim-poster-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche PDF (à remettre au pharmacien)</a>' +
+            '<a class="bs-dl alt" href="../../biosim-poster-synthese-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche PDF · synthèse</a>' +
+            '<a class="bs-dl alt" href="../../biosim-poster-detail-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche PDF · toutes présentations</a>' +
           '</div>' +
           stats + filters +
           '<div class="bs-count" id="bs-count">' + countLabel() + '</div>' +
