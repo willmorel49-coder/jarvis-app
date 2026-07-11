@@ -65,3 +65,8 @@ Un seul bouton « Copilote » = la carte de tournée claire. Bouton « Démarrer
 - **Sortir de la carte** les liens vers d'autres pages (« Listes d'achats groupements », « Prix concurrents ») → les mettre dans **« Autres outils »** de l'accueil.
 - **« Ma tournée »** : reste sur la carte (composition par clic), mais **bouton clair + phrase d'explication** (« Clique tes officines → compose ta tournée → démarre dans Google Maps »).
 - **Export My Maps** = **un simple bouton discret** dans le panneau tournée (plus dans la barre d'outils principale).
+
+**⚠️ T2 est un VRAI chantier design UX/UI (exigence Will), pas juste du rangement.**
+- La lisibilité de la carte elle-même est à revoir : marqueurs, modes couleur (trop nombreux ?), clustering, légende, ce qu'on comprend en 1 coup d'œil.
+- Méthode obligatoire : **variantes HTML numérotées** (Will choisit par n°), après avoir récupéré **2-3 références visuelles** de Will (cartes/apps qu'il trouve claires et belles) — règle anti-refonte-à-l'aveugle [[feedback_neya_visual_refs]].
+- Viser sobre et évident (moins de modes, hiérarchie claire), cf. [[feedback_neya_simplify]].
