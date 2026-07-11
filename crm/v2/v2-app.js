@@ -968,7 +968,32 @@
       }
       out = out.concat(extra);
     }
+    // Prospects déjà créés à la main (Supabase 'newpharma')
+    if (q.length >= 2 && V2._newph && V2._newph.length) {
+      var nq2 = deaccLower(q), seen2 = {};
+      out.forEach(function (x) { if (x.pid != null) seen2[String(x.pid)] = 1; });
+      V2._newph.forEach(function (o) {
+        var d = o.data || {}, id = String(o.sid); if (seen2[id]) return;
+        var hay = deaccLower((d.nom || '') + ' ' + (d.ville || '') + ' ' + (d.cp || '') + ' ' + (d.titulaire || ''));
+        if (hay.indexOf(nq2) >= 0) out.push({ grp: 'Fiches créées', label: (d.nom || 'Prospect'), ico: 'pharma',
+          meta: (d.ville || '') + (d.cp ? ' · ' + d.cp : ''), pid: id,
+          action: (function (pid) { return function () { V2.go('pharma', pid); }; })(id) });
+      });
+    }
+    // Toujours proposer de CRÉER une fiche prospect si on ne trouve pas (ou pour ajouter)
+    if (q.length >= 2) {
+      out.push({ grp: 'Créer', label: '➕ Créer une fiche prospect « ' + q + ' »', ico: 'pharma',
+        action: (function (name) { return function () { if (V2.createProspect) V2.createProspect(name); }; })(q.trim()) });
+    }
     return out;
+  }
+  function loadNewProspects() {
+    if (!V2.profil || !V2.profil.loadScope) return;
+    V2.profil.loadScope('newpharma').then(function (list) {
+      V2._newph = list || [];
+      var bd = document.getElementById('v2-cmdk'), inp = document.getElementById('v2-cmdk-input');
+      if (bd && bd.classList.contains('open') && inp && inp.value) { cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); }
+    }).catch(function () {});
   }
   // Chargeur partagé de la base nationale (2,7 Mo, lazy) — pour la recherche d'accueil et les fiches prospect.
   V2.ensurePharmaFr = function (cb) {
@@ -1000,6 +1025,7 @@
     });
   }
   function preloadPharmaFrForSearch() {
+    loadNewProspects();   // recharge les fiches créées (petite table) à chaque ouverture
     if (window.PHARMA_FR || !V2.ensurePharmaFr) return;
     V2.ensurePharmaFr(function () {   // dès que la base est là, on relance la recherche courante
       var bd = document.getElementById('v2-cmdk'), inp = document.getElementById('v2-cmdk-input');
