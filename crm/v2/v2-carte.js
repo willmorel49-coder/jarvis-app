@@ -648,6 +648,10 @@
       '.cn-tourbar button{border:none;background:#F59E0B;color:#10131C;font:inherit;font-weight:800;font-size:13px;padding:8px 14px;border-radius:999px;cursor:pointer}',
       // panneau tournée
       '.cn-panel{position:fixed;inset:0;z-index:3000;background:rgba(16,19,28,.48);display:flex;align-items:flex-end;justify-content:center}',
+      // Bloc éditable (Infos officine + notes) dans le panneau fiche
+      '.cn-fedit{padding:2px 14px 10px}',
+      '.cn-fedit .v2-profil-box,.cn-fedit .v2-notes-box{margin-top:12px}',
+      '.cn-fedit .v2-profil-grid{grid-template-columns:1fr}',
       '@media(min-width:640px){.cn-panel{align-items:center}}',
       '.cn-pdialog{width:100%;max-width:460px;max-height:82vh;display:flex;flex-direction:column;background:var(--card,#fff);border-radius:18px 18px 0 0;overflow:hidden}',
       '@media(min-width:640px){.cn-pdialog{border-radius:18px}}',
@@ -894,6 +898,7 @@
     var el = document.getElementById('cn-fiche'); if (!el) return;
     var p = D.p[i], det = (DETAIL && p[13]) ? DETAIL[p[13]] : null;
     var comm = p[5] ? D.comm[p[5]] : '', inT = inTour(i);
+    var inWml = !!(p[13] && (V2.pharmacies || []).some(function (x) { return String(x.id) === String(p[13]); }));   // une de tes 630 officines → lien fiche complète
     var spark = '';
     if (det && det.m) { var mx = Math.max.apply(null, det.m.concat([1])); spark = '<div class="cn-fspark">' + det.m.map(function (v, j) { var h = Math.round((v / mx) * 46) + 2; return '<div class="cn-fbar" title="' + FMO[j] + ' : ' + eurK(v) + '"><i style="height:' + h + 'px"></i><span>' + FMO[j] + '</span></div>'; }).join('') + '</div>'; }
     var top = (det && det.top && det.top.length) ? '<div class="cn-fsec"><h4>Top produits (CA)</h4>' + det.top.map(function (t) { return '<div class="cn-ftrow"><span>' + esc(t[0]) + '</span><b>' + eurK(t[1]) + '</b></div>'; }).join('') + '</div>' : '';
@@ -916,10 +921,15 @@
         (spark ? '<div class="cn-fsec"><h4>CA par mois</h4>' + spark + '</div>' : (caOf(p) ? '' : '<div class="cn-tempty" style="padding:18px 16px">Pas encore de ventes réseau pour cette officine.</div>')) +
         top +
         ((p[9] || p[11]) ? '<div class="cn-pop-contact" style="padding:10px 16px 14px">' + (p[9] ? '<a href="tel:' + esc((p[9] || '').replace(/[^0-9+]/g, '')) + '">' + esc(p[9]) + '</a>' : '') + (p[11] ? '<a href="mailto:' + esc(p[11]) + '">' + esc(p[11]) + '</a>' : '') + '</div>' : '') +
+        // Infos client ÉDITABLES + notes — même id (p[13]) que l'onglet Pharmacies → même fiche, même sauvegarde
+        (p[13] ? '<div class="cn-fedit">' + (V2.profil ? V2.profil.section('client', p[13]) : '') + (V2.notes ? V2.notes.section('client', p[13]) : '') + '</div>' : '') +
       '</div>' +
       '<div class="cn-pacts">' +
         '<button class="v2-btn ' + (inT ? 'v2-btn-ghost' : 'v2-btn-primary') + '" onclick="V2.carteTour(' + i + ');V2.carteFiche(' + i + ')">' + (inT ? '✓ Dans la tournée' : '+ Ajouter à la tournée') + '</button>' +
+        (inWml ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteFicheClose();V2.go(\'pharma\',\'' + esc(String(p[13])) + '\')">Fiche complète</button>' : '') +
         '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Google Maps</a>' +
       '</div></div>';
+    if (V2.profil) V2.profil.hydrate();   // charge/sauve les infos officine (Supabase profils), comme l'onglet Pharmacies
+    if (V2.notes) V2.notes.hydrate();
   }
 })();
