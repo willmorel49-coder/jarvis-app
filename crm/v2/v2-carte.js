@@ -580,7 +580,15 @@
       '.cn-side .cn-legend{padding:0;border:none;background:none;flex-direction:column;gap:6px}',
       '.cn-lg-note{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.4}',
       '.cn-side .cn-tools{padding:0;border:none;background:none;flex-direction:column;align-items:stretch;gap:8px}',
-      '.cn-side .cn-tools button{width:100%;text-align:left}',
+      // Éditorial : « Ma tournée » = CTA clair, phrase d\'aide, export en lien discret
+      '.cn-tour-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border:none;border-radius:12px;background:linear-gradient(150deg,#0057FF,#0034A0);color:#fff;font:inherit;font-size:14px;font-weight:700;letter-spacing:-.01em;cursor:pointer;box-shadow:0 8px 20px rgba(0,52,160,.22);transition:transform .16s var(--ease),box-shadow .16s var(--ease)}',
+      '.cn-tour-cta svg{color:#fff}',
+      '.cn-tour-cta:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(0,52,160,.28)}',
+      '.cn-tour-hint{margin:0;font-size:12px;line-height:1.45;color:var(--muted);text-align:left}',
+      '.cn-side .cn-tools .cn-export-link{display:inline-flex;align-items:center;gap:6px;width:auto;align-self:flex-start;padding:4px 2px;border:none;background:none;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left}',
+      '.cn-export-link svg{color:var(--muted)}',
+      '.cn-side .cn-tools .cn-export-link:hover{color:var(--ip-blue,#0057FF)}',
+      '.cn-export-link:hover svg{color:var(--ip-blue,#0057FF)}',
       '@media(max-width:760px){.cn-wrap{flex-direction:column}.cn-side{width:100%;max-height:40vh;border-right:none;border-bottom:1px solid var(--line)}.cn-maparea{min-height:0}}',
       '.cn-bar{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:9px 16px;border-bottom:1px solid var(--line);background:var(--card)}',
       '.cn-title{font-weight:800;font-size:15px;color:var(--ip-ink);display:flex;align-items:baseline;gap:8px}',
@@ -744,11 +752,10 @@
             '<div class="cn-sgroup"><input id="cn-search" class="cn-search" type="search" placeholder="Chercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
               '<button class="cn-listbtn" onclick="V2.carteListOpen()">Liste des officines</button></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Légende</span><div class="cn-legend" id="carte-legend"></div></div>' +
-            '<div class="cn-sgroup cn-tools"><span class="cn-lbl">Outils terrain</span>' +
-              '<button onclick="V2.carteTourOpen()">Ma tournée</button>' +
-              '<button onclick="V2.go(\'pharma\',\'groupements\')">Listes d\'achats groupements</button>' +
-              '<button onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
-              '<button onclick="V2.carteExportKml()">Exporter vers Google My Maps</button>' +
+            '<div class="cn-sgroup cn-tools">' +
+              '<button class="cn-tour-cta" onclick="V2.carteTourOpen()">' + ICO('pharma', 16) + 'Ma tournée</button>' +
+              '<p class="cn-tour-hint">Clique tes officines sur la carte → compose ta tournée → démarre dans Google Maps.</p>' +
+              '<button class="cn-export-link" onclick="V2.carteExportKml()">' + ICO('download', 14) + 'Exporter vers Google My Maps</button>' +
             '</div>' +
           '</aside>' +
           '<div class="cn-maparea"><div id="carte-map"></div>' +
