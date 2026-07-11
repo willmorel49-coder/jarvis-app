@@ -36,6 +36,7 @@
   var commFocus = '', grpFocus = '', typeFocus = 'all';   // all | clients | prospects
   var searchTerm = '';   // recherche nom / ville / cp / titulaire
   var listSort = 'nom';  // tri de la liste : nom | ca
+  var LIST_STEP = 500, listShown = LIST_STEP;   // liste : rendu par paquets (toutes dispo, DOM borné)
   var deptFocus = '';    // filtre département (2 chiffres, 3 pour DOM)
   var caMin = 0;         // filtre CA minimum (€)
   var DEPT_NAMES = { '01': 'Ain', '02': 'Aisne', '03': 'Allier', '04': 'Alpes-de-Hte-Provence', '05': 'Hautes-Alpes', '06': 'Alpes-Maritimes', '07': 'Ardèche', '08': 'Ardennes', '09': 'Ariège', '10': 'Aube', '11': 'Aude', '12': 'Aveyron', '13': 'Bouches-du-Rhône', '14': 'Calvados', '15': 'Cantal', '16': 'Charente', '17': 'Charente-Maritime', '18': 'Cher', '19': 'Corrèze', '21': "Côte-d'Or", '22': "Côtes-d'Armor", '23': 'Creuse', '24': 'Dordogne', '25': 'Doubs', '26': 'Drôme', '27': 'Eure', '28': 'Eure-et-Loir', '29': 'Finistère', '30': 'Gard', '31': 'Haute-Garonne', '32': 'Gers', '33': 'Gironde', '34': 'Hérault', '35': 'Ille-et-Vilaine', '36': 'Indre', '37': 'Indre-et-Loire', '38': 'Isère', '39': 'Jura', '40': 'Landes', '41': 'Loir-et-Cher', '42': 'Loire', '43': 'Haute-Loire', '44': 'Loire-Atlantique', '45': 'Loiret', '46': 'Lot', '47': 'Lot-et-Garonne', '48': 'Lozère', '49': 'Maine-et-Loire', '50': 'Manche', '51': 'Marne', '52': 'Haute-Marne', '53': 'Mayenne', '54': 'Meurthe-et-Moselle', '55': 'Meuse', '56': 'Morbihan', '57': 'Moselle', '58': 'Nièvre', '59': 'Nord', '60': 'Oise', '61': 'Orne', '62': 'Pas-de-Calais', '63': 'Puy-de-Dôme', '64': 'Pyrénées-Atlantiques', '65': 'Hautes-Pyrénées', '66': 'Pyrénées-Orientales', '67': 'Bas-Rhin', '68': 'Haut-Rhin', '69': 'Rhône', '70': 'Haute-Saône', '71': 'Saône-et-Loire', '72': 'Sarthe', '73': 'Savoie', '74': 'Haute-Savoie', '75': 'Paris', '76': 'Seine-Maritime', '77': 'Seine-et-Marne', '78': 'Yvelines', '79': 'Deux-Sèvres', '80': 'Somme', '81': 'Tarn', '82': 'Tarn-et-Garonne', '83': 'Var', '84': 'Vaucluse', '85': 'Vendée', '86': 'Vienne', '87': 'Haute-Vienne', '88': 'Vosges', '89': 'Yonne', '90': 'Belfort', '91': 'Essonne', '92': 'Hauts-de-Seine', '93': 'Seine-St-Denis', '94': 'Val-de-Marne', '95': "Val-d'Oise", '971': 'Guadeloupe', '972': 'Martinique', '973': 'Guyane', '974': 'La Réunion', '976': 'Mayotte' };
@@ -186,8 +187,12 @@
     var useCluster = !bulles && !!window.L.markerClusterGroup;
     function openPop(e) { var p = D.p[e.layer._pi]; if (p) e.layer.bindPopup(popupHtml(p, e.layer._pi), { minWidth: 216 }).openPopup(); }
     if (useCluster) {
-      cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 48, disableClusteringAtZoom: 9, removeOutsideVisibleBounds: true });
+      cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40, disableClusteringAtZoom: 8, removeOutsideVisibleBounds: true, spiderfyOnMaxZoom: true });
       cluster.on('click', openPop);
+      cluster.on('clustermouseover', function (a) {   // survol d'un paquet : dire combien de pharmacies et comment les voir
+        var n = a.layer.getChildCount();
+        a.layer.bindTooltip(n.toLocaleString('fr') + ' pharmacies — clique ou zoome pour les voir une par une', { direction: 'top', className: 'cn-tip', sticky: true }).openTooltip();
+      });
     } else {
       cluster = window.L.layerGroup();
     }
@@ -603,6 +608,8 @@
       '.cn-side .cn-search{width:100%}',
       '.cn-side .cn-legend{padding:0;border:none;background:none;flex-direction:column;gap:6px}',
       '.cn-lg-note{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.4}',
+      '.cn-listmore{display:block;width:calc(100% - 24px);margin:8px 12px 14px;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--blue);font:inherit;font-size:13px;font-weight:700;cursor:pointer}',
+      '.cn-listmore:hover{background:color-mix(in srgb,var(--blue) 8%,var(--card))}',
       '.cn-side .cn-tools{padding:0;border:none;background:none;flex-direction:column;align-items:stretch;gap:8px}',
       // Éditorial : « Ma tournée » = CTA clair, phrase d\'aide, export en lien discret
       '.cn-tour-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border:none;border-radius:12px;background:linear-gradient(150deg,#0057FF,#0034A0);color:#fff;font:inherit;font-size:14px;font-weight:700;letter-spacing:-.01em;cursor:pointer;box-shadow:0 8px 20px rgba(0,52,160,.22);transition:transform .16s var(--ease),box-shadow .16s var(--ease)}',
@@ -874,6 +881,7 @@
   // ── LISTE-DONNÉES : voir précisément noms + infos, filtrable, cliquable ──
   function filtered() { var out = []; if (!D) return out; for (var i = 0; i < D.p.length; i++) if (pass(D.p[i])) out.push(i); return out; }
   V2.carteListOpen = function () {
+    listShown = LIST_STEP;
     if (!document.getElementById('cn-listpanel')) {
       var el = document.createElement('div'); el.id = 'cn-listpanel'; el.className = 'cn-panel';
       el.onclick = function (e) { if (e.target === el) V2.carteListClose(); };
@@ -891,10 +899,11 @@
   function statusLabel(p) { return D.seg[p[4]] || '—'; }
   function renderListPanel() {
     var el = document.getElementById('cn-listpanel'); if (!el) return;
-    var ids = filtered(), total = ids.length, cap = 400;
+    var ids = filtered(), total = ids.length;
     if (listSort === 'ca') ids.sort(function (a, b) { return caOf(D.p[b]) - caOf(D.p[a]); });
     else ids.sort(function (a, b) { return norm(D.p[a][6]) < norm(D.p[b][6]) ? -1 : 1; });
-    var shown = ids.slice(0, cap);
+    if (listShown > total) listShown = Math.max(LIST_STEP, total);
+    var shown = ids.slice(0, listShown), remaining = total - shown.length;
     var rows = shown.map(function (i) {
       var p = D.p[i], cl = isClient(p), pr = D.seg[p[4]] === 'Prospect', inT = tourPos(keyOf(p)) >= 0;
       var comm = p[5] ? D.comm[p[5]] : '';
@@ -913,14 +922,21 @@
         '<button class="cn-ladd' + (inT ? ' in' : '') + '" onclick="V2.carteTour(' + i + ');V2.carteListRefreshRow(' + i + ')" title="Tournée">' + (inT ? '✓' : '+') + '</button>' +
       '</div>';
     }).join('') || '<div class="cn-tempty">Aucune pharmacie ne correspond.<br>Change les filtres ou la recherche.</div>';
+    var more = remaining > 0 ? '<button class="cn-listmore" onclick="V2.carteListMore()">Afficher plus (' + remaining.toLocaleString('fr') + ' restantes)</button>' : '';
     el.innerHTML = '<div class="cn-pdialog cn-listdlg" onclick="event.stopPropagation()">' +
-      '<div class="cn-phead"><div><b>Liste des pharmacies</b><small>' + total.toLocaleString('fr') + ' résultat' + (total > 1 ? 's' : '') + (total > cap ? ' · ' + cap + ' affichés (affine la recherche)' : '') + '</small></div>' +
+      '<div class="cn-phead"><div><b>Liste des pharmacies</b><small>' + total.toLocaleString('fr') + ' pharmacie' + (total > 1 ? 's' : '') + (remaining > 0 ? ' · ' + shown.length.toLocaleString('fr') + ' affichées' : '') + '</small></div>' +
         '<button class="cn-px" onclick="V2.carteListClose()">✕</button></div>' +
-      '<div class="cn-prosbar"><input id="cn-search2" type="search" class="cn-search" style="flex:1" placeholder="Rechercher…" value="' + esc(searchTerm) + '" oninput="V2.carteSearch(this.value);document.getElementById(\'cn-search\')&&(document.getElementById(\'cn-search\').value=this.value)">' +
+      '<div class="cn-prosbar"><input id="cn-search2" type="search" class="cn-search" style="flex:1" placeholder="Rechercher un nom, une ville, un CP…" value="' + esc(searchTerm) + '" oninput="V2.carteSearch(this.value);document.getElementById(\'cn-search\')&&(document.getElementById(\'cn-search\').value=this.value)">' +
         '<span class="cn-sortlbl">Trier :</span><div class="cn-seg cn-sortseg"><button' + (listSort === 'nom' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'nom\')">Nom</button><button' + (listSort === 'ca' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'ca\')">CA</button></div></div>' +
-      '<div class="cn-plist">' + rows + '</div></div>';
+      '<div class="cn-plist">' + rows + more + '</div></div>';
   }
   V2.carteListSort = function (s) { listSort = s; renderListPanel(); };
+  V2.carteListMore = function () {
+    var el = document.getElementById('cn-listpanel'), sc = el && el.querySelector('.cn-plist');
+    var y = sc ? sc.scrollTop : 0;
+    listShown += LIST_STEP; renderListPanel();
+    var sc2 = el && el.querySelector('.cn-plist'); if (sc2) sc2.scrollTop = y;   // garder la position de lecture
+  };
   V2.carteListRefreshRow = function () { if (document.getElementById('cn-listpanel')) renderListPanel(); };
 
   // ── FICHE OFFICINE : détail complet (CA mensuel, top produits, potentiel) ──
