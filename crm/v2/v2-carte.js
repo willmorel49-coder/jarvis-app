@@ -703,8 +703,36 @@
     document.head.appendChild(s);
   }
 
+  // Réconciliation avec WML_OFFICINES (source de vérité clients) : corrige le statut client/prospect
+  // et le groupement de la base nationale (PHARMA_FR), qui sont faux/vides pour les vrais clients.
+  function reconcileWithWml() {
+    var W = window.WML_OFFICINES; if (!W || !W.length || !D || !D.seg || !D.p) return;
+    var segIdx = {}; for (var s = 0; s < D.seg.length; s++) segIdx[D.seg[s]] = s;
+    function ensureSeg(l) { if (segIdx[l] == null) { D.seg.push(l); segIdx[l] = D.seg.length - 1; } return segIdx[l]; }
+    var iA = ensureSeg('Client A'), iB = ensureSeg('Client B'), iC = ensureSeg('Client C'), iPro = ensureSeg('Prospect');
+    var grpIdx = {}; for (var g = 0; g < D.grp.length; g++) grpIdx[String(D.grp[g] || '').toUpperCase()] = g;
+    function ensureGrp(name) { var k = String(name).toUpperCase(); if (grpIdx[k] == null) { D.grp.push(name); grpIdx[k] = D.grp.length - 1; } return grpIdx[k]; }
+    var wml = {}; W.forEach(function (o) { if (o && o.id) wml[String(o.id).replace(/[^0-9]/g, '')] = o; });
+    var nClient = 0, nDemoted = 0;
+    D.p.forEach(function (p) {
+      var o = wml[String(p[13] || '').replace(/[^0-9]/g, '')];
+      if (o) {   // vrai client Intégral → tier selon CA + groupement depuis WML (vérité)
+        var ca = p[12] || 0;
+        p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC);
+        var gr = o.groupement && String(o.groupement).trim();
+        if (gr && gr !== '—') p[3] = ensureGrp(gr);
+        nClient++;
+      } else if (String(D.seg[p[4]] || '').indexOf('Client') === 0) {   // faux client (absent de WML) → prospect
+        p[4] = iPro; nDemoted++;
+      }
+    });
+    if (D.meta) D.meta.clients = nClient;
+    try { console.log('[carte] WML réconcilié : ' + nClient + ' clients confirmés · ' + nDemoted + ' faux clients → prospects'); } catch (e) {}
+  }
+
   function boot(root) {
     D = window.PHARMA_FR;
+    reconcileWithWml();   // WML = vérité clients : corrige statut + groupement AVANT tout calcul de couleur
     loadTour();
     try { var dp = JSON.parse(localStorage.getItem('jarvis_depot_v1') || 'null'); if (dp && dp.lat) depot = dp; } catch (e) {}
     computeColors();
