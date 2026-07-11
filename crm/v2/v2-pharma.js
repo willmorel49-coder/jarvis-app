@@ -990,9 +990,57 @@
     return '<div class="ph-contact-row">' + links.join('') + '</div>';
   }
 
+  // Officine trouvée dans la base nationale (prospect / non-cliente) par son id.
+  function pharmaFrById(pid) {
+    var D = window.PHARMA_FR; if (!D || !D.p) return null;
+    for (var i = 0; i < D.p.length; i++) if (String(D.p[i][13]) === String(pid)) return D.p[i];
+    return null;
+  }
+  // Fiche d'une officine NON cliente (prospect) : coordonnées + infos + notes éditables,
+  // sauvegardées comme pour un futur client (Supabase, même id que la carte).
+  function renderProspectFiche(root, pid) {
+    if (!window.PHARMA_FR) {   // base nationale pas encore chargée → lazy-load puis re-rendu
+      root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
+        '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de la fiche…</div></div>';
+      if (V2.ensurePharmaFr) V2.ensurePharmaFr(function () { V2.render(); });
+      else renderList(root);
+      return;
+    }
+    var p = pharmaFrById(pid);
+    if (!p) { renderList(root); return; }
+    var D = window.PHARMA_FR;
+    var ville = p[7] || '', cp = p[8] || '', seg = D.seg[p[4]] || 'Prospect';
+    var grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '', uga = D.uga[p[2]] || '';
+    var q = encodeURIComponent((p[6] || '') + ' ' + ville + ' ' + cp);
+    var seed = { titulaire: p[10] || '', tel: p[9] || '', email: p[11] || '', adresse: '' };
+    var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
+    root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
+      '<div class="v2-wrap v2-prospect">' +
+        '<div class="v2-card v2-prospect-hd">' +
+          '<div class="v2-prospect-top">' +
+            '<div class="v2-pharma-pin" style="background:linear-gradient(150deg,#0057FF,#0034A0)">' + (V2.ICO ? V2.ICO('pharma', 22) : '') + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="v2-prospect-n">' + esc(p[6] || p[10] || 'Pharmacie') + '</div>' +
+              '<div class="v2-prospect-a">' + esc(ville) + (cp ? ' · ' + esc(cp) : '') + '</div>' +
+              '<div class="v2-prospect-badges">' + badge(seg, 'pr') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<p class="v2-prospect-note">Officine non cliente — complète ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>' +
+        '</div>' +
+        (V2.profil ? V2.profil.coordSection(pid, seed) : '') +
+        (V2.profil ? V2.profil.section('client', pid) : '') +
+        (V2.notes ? V2.notes.section('client', pid) : '') +
+        '<div class="v2-card v2-prospect-acts">' +
+          '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Voir sur Google Maps</a>' +
+        '</div>' +
+      '</div>';
+    if (V2.profil) V2.profil.hydrate();
+    if (V2.notes) V2.notes.hydrate();
+  }
+
   function renderDetail(root, pid) {
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
-    if (!pharma) { renderList(root); return; }
+    if (!pharma) { renderProspectFiche(root, pid); return; }
 
     // Agrégats marché + catalogue IP chargés ? sinon lazy-load + état loading
     if (!window.OPS_AGGREGATE || !window.BENCHMARK) {
@@ -2471,6 +2519,15 @@
     var st = document.createElement('style');
     st.id = 'v2-pharma-style';
     st.textContent = [
+      '.v2-prospect{display:flex;flex-direction:column;gap:0}',
+      '.v2-prospect-hd{padding:18px 20px}',
+      '.v2-prospect-top{display:flex;align-items:center;gap:14px}',
+      '.v2-prospect-n{font-size:18px;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
+      '.v2-prospect-a{color:var(--muted);font-size:13px;margin-top:2px}',
+      '.v2-prospect-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}',
+      '.v2-chip.pr{background:color-mix(in srgb,var(--ip-blue) 12%,#fff);color:var(--ip-blue);box-shadow:0 0 0 1px color-mix(in srgb,var(--ip-blue) 22%,transparent) inset}',
+      '.v2-prospect-note{margin:14px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted)}',
+      '.v2-prospect-acts{padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap}',
       '.v2-pharma-pin{width:46px;height:46px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 3px 9px rgba(16,19,28,.18),0 1px 0 rgba(255,255,255,.25) inset}',
       '.v2-pharma-stats{display:grid;grid-template-columns:repeat(4,1fr)}',
       '@media(max-width:720px){.v2-pharma-stats{grid-template-columns:repeat(2,1fr)}}',
