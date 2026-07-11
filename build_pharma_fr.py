@@ -24,6 +24,9 @@ SRC = os.path.join(ROOT, 'Base France Décembre 2024.xlsx')
 # Mapping national pharmacie -> groupement (100 groupements, ~17 500 officines),
 # hors dossier APP. Sert à remplir le groupement quand la Base France est vide.
 GRP_MAP = os.path.join(ROOT, '..', 'GROUPEMENTS', 'data', 'output', 'pharmacies_par_groupement.xlsx')
+# Registre national officiel FINESS (etalab). Sert à compléter les officines absentes
+# de la Base France : Corse + Outre-mer (que la Base France n'inclut pas).
+FINESS = os.path.join(ROOT, '..', 'GROUPEMENTS', 'data', 'finess', 'finess1.csv')
 STATS = os.path.join(ROOT, 'STATS')
 CACHE = os.path.join(ROOT, 'STATS', 'geocode_cache.json')
 ADDR_CACHE = os.path.join(ROOT, 'STATS', 'geocode_addr_cache.json')  # adresse exacte -> [lat,lng]
@@ -89,6 +92,45 @@ def load_groupement_map():
     print('  [grp] mapping : %d clés uniques (%d ambigües ignorées), %d groupements'
           % (len(out), sum(1 for v in acc.values() if len(v) > 1), len(canon)))
     return out, canon
+
+
+def load_finess_suppl(bf_keys, grpmap, grpcanon):
+    """Officines FINESS (cat 620) absentes de la Base France, restreint aux territoires
+    que la Base France n'inclut pas (Corse + Outre-mer). Renvoie des tuples pharma
+    (name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca, id) + le set de communes."""
+    if not os.path.exists(FINESS):
+        print('  [finess] fichier absent :', FINESS)
+        return [], {}
+    csv.field_size_limit(10 ** 7)
+    out, need = [], {}
+    seen = set()
+    with open(FINESS, encoding='utf-8', errors='ignore') as f:
+        for row in csv.reader(f, delimiter=';'):
+            if len(row) < 19 or row[0] != 'structureet' or row[18].strip() != '620':
+                continue
+            m = re.match(r'\s*(\d{5})\s+(.*)', row[15] or '')
+            if not m:
+                continue
+            cp = m.group(1)
+            if cp[:2] not in ('20', '2A', '2B') and cp[:2] not in ('97', '98'):
+                continue  # métropole hors Corse : déjà couverte par la Base France
+            rs = (row[3] or row[4] or '').strip()
+            key = (cp, name_key(rs))
+            if not rs or key in bf_keys or key in seen:
+                continue  # déjà dans la Base France ou doublon FINESS
+            seen.add(key)
+            ville = norm(m.group(2))
+            if not ville:
+                continue
+            grp = grpmap.get((cp, name_key(rs)), '')
+            if grp:
+                grp = grpcanon.get(grp_canon(grp), grp)
+            grp = grp or '—'
+            tel = str(row[16] or '').strip() if len(row) > 16 else ''
+            out.append((rs[:40], '', ville, cp, '', grp, 'Prospect', tel, '', '', 0, str(row[1] or '').strip()))
+            need[(ville, cp)] = None
+    print('  [finess] complément Corse + Outre-mer : %d officines ajoutées' % len(out))
+    return out, need
 
 
 def is_corse(cp):
@@ -266,6 +308,7 @@ def main():
     nVetSkip = 0        # grossistes vétérinaires écartés
     pharmas = []          # (name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca, id)
     need = {}             # (ville,cp) -> None
+    bf_keys = set()       # (cp, nom normalisé) présents dans la Base France
     for r in it:
         if str(r[ci['Statut']] or '').strip().lower() == 'supprimée':
             continue
@@ -299,8 +342,16 @@ def main():
         ca = ca_by_id.get(_id, 0)
         pharmas.append((name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca, _id))
         need[(ville, cp)] = None
+        bf_keys.add((cp, name_key(name or tit)))
     wb.close()
-    print('Pharmacies (hors Corse) :', len(pharmas), '| communes uniques :', len(need))
+    print('Pharmacies Base France (métropole) :', len(pharmas), '| communes uniques :', len(need))
+
+    # complément national : Corse + Outre-mer depuis FINESS (absents de la Base France)
+    suppl, suppl_need = load_finess_suppl(bf_keys, GRPMAP, GRPCANON)
+    pharmas.extend(suppl)
+    for k in suppl_need:
+        need.setdefault(k, None)
+    print('Total officines :', len(pharmas), '| communes uniques :', len(need))
 
     # géocodage : cache + BAN pour les manquantes
     cache = load_cache()
@@ -364,7 +415,7 @@ def main():
     nClients = sum(1 for p in P if segs and inv(segs)[p[4]].startswith('Client'))
     data = {
         'meta': {'n': len(P), 'communes': len(need), 'clients': nClients,
-                 'source': 'Base France 12/2024 · hors Corse · statut actif'},
+                 'source': 'Base France 12/2024 + FINESS (Corse & Outre-mer) · France entière'},
         'uga': inv(ugas), 'grp': inv(grps), 'seg': inv(segs), 'comm': inv(comms), 'p': P,
     }
     with open(OUT, 'w', encoding='utf-8') as fh:
