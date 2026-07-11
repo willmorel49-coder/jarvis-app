@@ -54,6 +54,23 @@ def cp5(s):
     return d.zfill(5)[:5] if d else ''
 
 
+# Établissements qui ne sont PAS des officines et polluent la Base France.
+_PH_WORDS = ('PHARMACIE', 'PHARMACIES', 'PHIE', 'PHARMA', 'OFFICINE')
+_NON_PH_KW = ('DENTAL', 'DENTAIRE', 'MATERIEL MEDICAL', 'OPTICIEN', 'LABORATOIRE',
+              'VETERINAIRE', 'AUDIOPROTH', 'ORTHOPEDIE', 'EHPAD', 'CLINIQUE',
+              'HOPITAL', 'MUTUELLE', 'GROSSISTE')
+_NON_PH_IDS = {'2002843'}   # BOTICINAL SERVICES : entité services d'un groupement, pas une officine
+
+
+def is_non_pharmacy(name, _id):
+    if str(_id or '').strip() in _NON_PH_IDS:
+        return True
+    n = ''.join(c for c in unicodedata.normalize('NFD', str(name or '')) if unicodedata.category(c) != 'Mn').upper()
+    if any(w in n for w in _PH_WORDS):
+        return False                        # a « pharmacie/officine » dans le nom -> vraie officine
+    return any(b in n for b in _NON_PH_KW)  # sinon : intrus seulement si mot-clé non-officine
+
+
 def grp_canon(s):
     """Clé de fusion d'un nom de groupement (casse/accents/ponctuation ignorés)."""
     s = ''.join(c for c in unicodedata.normalize('NFD', str(s or '')) if unicodedata.category(c) != 'Mn')
@@ -306,6 +323,7 @@ def main():
 
     nGrpFill = 0        # groupements ajoutés depuis le mapping (Base France vide)
     nVetSkip = 0        # grossistes vétérinaires écartés
+    nNonPh = 0          # établissements non-officine écartés (dentaire, labo, EHPAD…)
     pharmas = []          # (name, tit, ville, cp, uga, grp, seg, tel, mail, comm, ca, id)
     need = {}             # (ville,cp) -> None
     bf_keys = set()       # (cp, nom normalisé) présents dans la Base France
@@ -325,6 +343,9 @@ def main():
             continue
         tit = str(r[ci['Titulaire']] or '').strip()
         name = str(r[ci['Etablissement']] or tit or '').strip()
+        if is_non_pharmacy(name, _id):      # dentaire, matériel médical, labo, EHPAD… : pas une officine
+            nNonPh += 1
+            continue
         uga = str(r[ci['UGA']] or '').strip()
         grp = str(r[ci['Groupement']] or '').strip()
         if not grp or grp == '—':           # Base France sans groupement -> mapping national
@@ -428,7 +449,7 @@ def main():
           % (os.path.getsize(OUT) / 1048576.0, len(P), nClients, nExact, len(ugas), len(comms) - 1, dropped))
     print('   groupements : %d officines rattachées (%.0f%%), dont %d ajoutées via le mapping national'
           % (nGrpCovered, 100.0 * nGrpCovered / max(1, len(P)), nGrpFill))
-    print('   écartés : %d grossistes véto (CAV) · %d géocodages hors métropole' % (nVetSkip, nBadGeo))
+    print('   écartés : %d grossistes véto (CAV) · %d non-officines (dentaire/labo/EHPAD…) · %d géocodages hors métropole' % (nVetSkip, nNonPh, nBadGeo))
 
 
 if __name__ == '__main__':
