@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Carte Copilote — Densité &amp; Zones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink:#0B1F4D;
+    --blue:#0057FF;
+    --mint:#00E5A0;
+    --bg:#F5F7FB;
+    --card:#FFFFFF;
+    --line:rgba(11,31,77,.10);
+    --line-soft:rgba(11,31,77,.06);
+    --ink-60:rgba(11,31,77,.60);
+    --ink-45:rgba(11,31,77,.45);
+    --shadow:0 1px 2px rgba(11,31,77,.04), 0 10px 30px -12px rgba(11,31,77,.18);
+    --shadow-sm:0 1px 2px rgba(11,31,77,.06);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(0,87,255,.06), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(0,229,160,.08), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.disp{font-family:'Space Grotesk',system-ui,sans-serif; letter-spacing:-.01em;}
+  svg{display:block;}
+  .icon{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+
+  /* ============ PAGE SHELL ============ */
+  .page{max-width:1360px;margin:0 auto;padding:38px 20px 80px;}
+
+  .masthead{max-width:760px;margin:0 auto 40px;text-align:center;}
+  .kicker{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--blue); background:rgba(0,87,255,.08); border:1px solid rgba(0,87,255,.18);
+    padding:6px 14px;border-radius:999px;margin-bottom:16px;
+  }
+  .kicker .dot{width:6px;height:6px;border-radius:50%;background:var(--mint);}
+  .masthead h1{font-size:clamp(26px,4vw,38px);font-weight:700;margin:0 0 12px;color:var(--ink);}
+  .masthead p{font-size:15.5px;color:var(--ink-60);margin:0;max-width:600px;margin:0 auto;}
+  .masthead .ref{
+    margin-top:18px;display:inline-flex;gap:10px;align-items:center;
+    font-size:12.5px;color:var(--ink-45);background:var(--card);border:1px solid var(--line);
+    padding:8px 14px;border-radius:12px;box-shadow:var(--shadow-sm);
+  }
+  .masthead .ref b{color:var(--ink);font-weight:700;}
+
+  .section-label{
+    display:flex;align-items:center;gap:12px;margin:56px 0 20px;
+  }
+  .section-label h2{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-45);margin:0;white-space:nowrap;}
+  .section-label .rule{height:1px;flex:1;background:var(--line);}
+  .section-label .tag{
+    font-size:11.5px;font-weight:600;color:var(--blue);background:rgba(0,87,255,.07);
+    padding:4px 10px;border-radius:8px;white-space:nowrap;
+  }
+
+  /* ============ DEVICE FRAME (browser chrome) ============ */
+  .browser{
+    background:var(--card);border:1px solid var(--line);border-radius:20px;
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .browser-bar{
+    display:flex;align-items:center;gap:8px;padding:11px 16px;
+    border-bottom:1px solid var(--line-soft); background:#FBFCFE;
+  }
+  .browser-bar .dots{display:flex;gap:6px;}
+  .browser-bar .dots span{width:9px;height:9px;border-radius:50%;background:#E3E8F2;}
+  .browser-bar .url{
+    margin-left:8px;font-size:11.5px;color:var(--ink-45);
+    background:#F1F4F9;border-radius:7px;padding:4px 12px;flex:1;max-width:340px;
+    font-family:'Inter',monospace;
+  }
+
+  /* ============ APP LAYOUT ============ */
+  .app{display:flex;flex-direction:column;height:720px;}
+  .topbar{
+    display:flex;align-items:center;gap:16px;padding:12px 20px;
+    border-bottom:1px solid var(--line-soft); flex-shrink:0; flex-wrap:wrap;
+    background:linear-gradient(180deg,#fff,#FCFDFF);
+  }
+  .brand{display:flex;align-items:center;gap:10px;margin-right:6px;}
+  .brand .mark{
+    width:32px;height:32px;border-radius:9px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--blue),var(--ink) 130%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 10px -4px rgba(0,87,255,.5);
+  }
+  .brand .mark svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;}
+  .brand .txt{display:flex;flex-direction:column;line-height:1.1;}
+  .brand .txt b{font-family:'Space Grotesk';font-size:14.5px;font-weight:700;}
+  .brand .txt span{font-size:10.5px;color:var(--ink-45);font-weight:600;letter-spacing:.03em;}
+
+  .seg{
+    display:flex;background:#EEF1F7;border-radius:11px;padding:3px;gap:2px;
+  }
+  .seg button{
+    border:none;background:transparent;font-family:inherit;font-size:12.5px;font-weight:600;
+    color:var(--ink-60); padding:7px 13px;border-radius:8px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;white-space:nowrap;
+  }
+  .seg button b{font-weight:700;opacity:.55;font-size:11px;}
+  .seg button.active{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);}
+  .seg button.active b{color:var(--blue);opacity:1;}
+
+  .searchbar{
+    flex:1;min-width:150px;max-width:280px;display:flex;align-items:center;gap:8px;
+    background:#EEF1F7;border-radius:11px;padding:8px 12px;color:var(--ink-45);
+  }
+  .searchbar input{border:none;background:none;outline:none;font-family:inherit;font-size:12.5px;color:var(--ink);width:100%;}
+
+  .topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;}
+  .btn-ghost{
+    display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-60);
+    background:#fff;border:1px solid var(--line);padding:8px 12px;border-radius:10px;cursor:pointer;
+  }
+
+  .app-body{display:flex;flex:1;min-height:0;}
+
+  /* ---- Sidebar ---- */
+  .sidebar{
+    width:296px;flex-shrink:0;border-right:1px solid var(--line-soft);
+    display:flex;flex-direction:column;min-height:0;background:#FCFDFF;
+  }
+  .tabs{display:flex;gap:6px;padding:14px 16px 4px;flex-shrink:0;}
+  .tabs button{
+    flex:1;border:none;background:transparent;font-family:inherit;font-weight:700;font-size:12.5px;
+    color:var(--ink-45);padding:9px 8px;border-radius:9px;cursor:pointer;position:relative;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .tabs button.active{background:rgba(0,87,255,.08);color:var(--blue);}
+  .tabs button .badge{
+    background:var(--ink);color:#fff;font-size:10px;font-weight:700;border-radius:999px;
+    min-width:16px;height:16px;padding:0 4px;display:flex;align-items:center;justify-content:center;
+  }
+  .tabs button.active .badge{background:var(--blue);}
+
+  .sidebar-scroll{flex:1;overflow-y:auto;padding:6px 16px 14px;}
+  .sb-block{margin-top:18px;}
+  .sb-block:first-child{margin-top:6px;}
+  .sb-label{
+    font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-45);margin-bottom:10px;display:flex;align-items:center;gap:6px;
+  }
+
+  .toggle-pair{display:flex;background:#EEF1F7;border-radius:10px;padding:3px;}
+  .toggle-pair button{
+    flex:1;border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:600;
+    color:var(--ink-60);padding:8px 6px;border-radius:8px;cursor:pointer;display:flex;
+    align-items:center;justify-content:center;gap:6px;
+  }
+  .toggle-pair button.active{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);}
+  .toggle-pair button.active svg{stroke:var(--blue);}
+
+  .mode-active{
+    display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--blue);
+    border-radius:12px;padding:10px 12px;margin-top:10px;box-shadow:0 3px 10px -6px rgba(0,87,255,.35);
+  }
+  .mode-active .ic{
+    width:30px;height:30px;border-radius:9px;background:rgba(0,87,255,.1);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .mode-active .ic svg{stroke:var(--blue);}
+  .mode-active .lbl{flex:1;}
+  .mode-active .lbl b{display:block;font-size:12.5px;font-weight:700;}
+  .mode-active .lbl span{font-size:10.5px;color:var(--ink-45);}
+  .mode-active .swatch{display:flex;gap:4px;flex-shrink:0;}
+  .mode-active .swatch i{width:9px;height:9px;border-radius:50%;display:block;}
+
+  .mode-alts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .mode-alts button{
+    border:1px solid var(--line);background:#fff;color:var(--ink-60);font-family:inherit;
+    font-size:11px;font-weight:600;padding:6px 9px;border-radius:8px;cursor:pointer;
+    display:flex;align-items:center;gap:5px;
+  }
+  .mode-alts button svg{width:12px;height:12px;}
+
+  .info-card{
+    display:flex;gap:10px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.28);
+    border-radius:12px;padding:10px 12px;margin-top:12px;
+  }
+  .info-card .ic{width:26px;height:26px;border-radius:8px;background:rgba(0,229,160,.22);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .info-card .ic svg{width:14px;height:14px;stroke:#0B8C63;}
+  .info-card p{margin:0;font-size:11.5px;color:#0B7A57;font-weight:500;line-height:1.4;}
+
+  .accordion{
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;
+  }
+  .accordion summary{
+    list-style:none;cursor:pointer;padding:11px 12px;display:flex;align-items:center;gap:8px;
+    font-size:12.5px;font-weight:600;color:var(--ink);
+  }
+  .accordion summary::-webkit-details-marker{display:none;}
+  .accordion summary .chev{margin-left:auto;color:var(--ink-45);transition:transform .15s;}
+  .accordion[open] summary .chev{transform:rotate(90deg);}
+  .accordion summary .count{
+    background:#EEF1F7;color:var(--ink-60);font-size:10.5px;font-weight:700;
+    border-radius:999px;padding:2px 8px;
+  }
+  .accordion .acc-body{padding:4px 12px 14px;border-top:1px solid var(--line-soft);}
+  .filter-row{margin-top:10px;}
+  .filter-row .flabel{font-size:10.5px;font-weight:700;color:var(--ink-45);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{
+    font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);
+    background:#fff;color:var(--ink-60);cursor:pointer;
+  }
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .chip.on.b{background:var(--blue);border-color:var(--blue);}
+
+  .legend-card{
+    margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 14px;
+  }
+  .legend-card h4{margin:0 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-45);display:flex;align-items:center;gap:6px;}
+  .leg-row{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink);margin-bottom:8px;}
+  .leg-row:last-of-type{margin-bottom:0;}
+  .leg-row .sw{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .leg-row .sw.client{background:var(--ink);}
+  .leg-row .sw.prospect{background:transparent;border:1.8px dashed var(--mint);}
+  .leg-row .n{margin-left:auto;font-weight:700;color:var(--ink-45);font-size:11.5px;}
+  .leg-grad{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);}
+  .leg-grad .bar{height:8px;border-radius:5px;background:linear-gradient(90deg,#EAF9F3,#CFEFE3,#9FDFD0,#5FC7C8,#2E8FD9,#0057FF);}
+  .leg-grad .lbls{display:flex;justify-content:space-between;font-size:10px;color:var(--ink-45);margin-top:5px;font-weight:600;}
+
+  .sb-export{
+    display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+    background:#fff;border:1px dashed var(--line);color:var(--ink-45);font-family:inherit;
+    font-size:11.5px;font-weight:600;padding:10px;border-radius:11px;margin-top:16px;cursor:pointer;
+  }
+
+  .tournee-pin{
+    flex-shrink:0;border-top:1px solid var(--line-soft);
+    background:linear-gradient(180deg,#0B1F4D,#0A1A40);
+    color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;
+  }
+  .tournee-pin .route-ic{
+    width:34px;height:34px;border-radius:10px;background:rgba(0,229,160,.18);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .tournee-pin .route-ic svg{stroke:var(--mint);}
+  .tournee-pin .meta{flex:1;min-width:0;}
+  .tournee-pin .meta b{display:block;font-size:12.5px;font-weight:700;}
+  .tournee-pin .meta span{font-size:10.5px;color:rgba(255,255,255,.55);}
+  .tournee-pin .go{
+    background:var(--mint);color:#04351F;font-weight:700;font-size:11.5px;border:none;
+    padding:9px 13px;border-radius:9px;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;
+  }
+
+  /* ---- Map area ---- */
+  .maparea{flex:1;position:relative;overflow:hidden;background:#EAF0FA;}
+  .map-svg{width:100%;height:100%;display:block;}
+
+  .map-overlay-top{
+    position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;
+    align-items:flex-start;gap:10px;pointer-events:none;
+  }
+  .breadcrumb{
+    pointer-events:auto;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);
+    backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:11px;padding:8px 12px;
+    box-shadow:var(--shadow-sm);font-size:12px;font-weight:600;
+  }
+  .breadcrumb .crumb{color:var(--ink-45);}
+  .breadcrumb .crumb.now{color:var(--ink);font-weight:700;}
+  .breadcrumb .sep{color:var(--ink-45);opacity:.5;}
+  .breadcrumb .zoomout{
+    margin-left:6px;padding-left:8px;border-left:1px solid var(--line);display:flex;align-items:center;
+    color:var(--blue);cursor:pointer;
+  }
+
+  .inset{
+    pointer-events:auto;width:132px;background:rgba(255,255,255,.95);border:1px solid var(--line);
+    border-radius:12px;padding:8px;box-shadow:var(--shadow-sm);
+  }
+  .inset .lbl{font-size:9.5px;font-weight:700;color:var(--ink-45);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;display:block;}
+  .inset .thumb{position:relative;border-radius:7px;overflow:hidden;background:#EAF0FA;}
+  .inset .thumb svg{width:100%;height:70px;display:block;}
+  .inset .crop{
+    position:absolute;border:1.5px dashed var(--blue);border-radius:2px;background:rgba(0,87,255,.12);
+  }
+
+  .map-legend{
+    position:absolute;left:14px;bottom:14px;background:rgba(255,255,255,.95);backdrop-filter:blur(6px);
+    border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow-sm);
+    font-size:11px;min-width:150px;
+  }
+  .map-legend .t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-45);margin-bottom:8px;}
+  .map-legend .row{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+  .map-legend .row:last-child{margin-bottom:0;}
+  .map-legend .sw{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+  .map-legend .sw.client{background:var(--ink);}
+  .map-legend .sw.prospect{background:transparent;border:1.6px dashed var(--mint);}
+  .map-legend .sw.big{width:16px;height:16px;background:var(--blue);opacity:.85;}
+  .map-legend .sw.med{width:11px;height:11px;background:var(--blue);opacity:.65;}
+  .map-legend .sw.small{width:7px;height:7px;background:var(--blue);opacity:.5;}
+
+  .near-chip{
+    position:absolute;right:14px;bottom:14px;background:var(--ink);color:#fff;font-size:11.5px;
+    font-weight:600;padding:9px 13px;border-radius:11px;display:flex;align-items:center;gap:7px;
+    box-shadow:var(--shadow); cursor:pointer;
+  }
+  .near-chip svg{stroke:var(--mint);width:14px;height:14px;}
+
+  .map-pin{
+    position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;
+  }
+  .map-pin .dot{
+    border-radius:50%;background:var(--ink);border:2px solid #fff;box-shadow:0 2px 6px rgba(11,31,77,.35);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;font-family:'Space Grotesk';
+  }
+  .map-pin.prospect .dot{background:rgba(0,229,160,.28);border:2px dashed var(--mint);color:#0B7A57;}
+  .map-pin .stemless{}
+  .map-pin.cluster .dot{background:var(--blue);color:#fff;font-size:11px;box-shadow:0 3px 10px -2px rgba(0,87,255,.6);}
+
+  .route-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .route-line{stroke:var(--blue);stroke-width:2.5;stroke-dasharray:2 6;fill:none;stroke-linecap:round;}
+
+  .route-tag{
+    position:absolute;background:#fff;border:1px solid var(--line);border-radius:9px;padding:5px 10px;
+    font-size:10.5px;font-weight:700;color:var(--ink);box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:5px;
+  }
+  .route-tag svg{stroke:var(--blue);width:12px;height:12px;}
+
+  /* frame captions */
+  .frame-wrap{display:flex;flex-direction:column;gap:12px;}
+  .frame-cap{display:flex;align-items:baseline;gap:8px;padding:0 4px;}
+  .frame-cap b{font-size:14px;font-family:'Space Grotesk';}
+  .frame-cap span{font-size:12px;color:var(--ink-45);}
+
+  .row2{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;}
+  .row2 > .frame-wrap{flex:1 1 560px;min-width:320px;}
+
+  /* ============ MOBILE FRAMES ============ */
+  .phones{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;}
+  .phone-wrap{display:flex;flex-direction:column;gap:12px;align-items:center;width:266px;}
+  .phone{
+    width:266px;height:560px;border-radius:34px;background:#0B1220;padding:9px;
+    box-shadow:var(--shadow);flex-shrink:0;
+  }
+  .phone-screen{
+    width:100%;height:100%;border-radius:26px;overflow:hidden;position:relative;
+    background:#EAF0FA; display:flex;flex-direction:column;
+  }
+  .phone-notch{
+    position:absolute;top:6px;left:50%;transform:translateX(-50%);width:80px;height:16px;
+    background:#0B1220;border-radius:10px;z-index:5;
+  }
+  .phone-top{
+    flex-shrink:0;background:#fff;padding:20px 14px 9px;display:flex;align-items:center;gap:8px;
+    border-bottom:1px solid var(--line-soft);position:relative;z-index:2;
+  }
+  .phone-top .seg{flex:1;transform:scale(.96);}
+  .phone-map{flex:1;position:relative;min-height:0;}
+  .phone-map svg{width:100%;height:100%;}
+
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;
+    box-shadow:0 -8px 24px -6px rgba(11,31,77,.18); border-top:1px solid var(--line-soft);
+  }
+  .sheet .handle{width:34px;height:4px;background:#DDE3EE;border-radius:99px;margin:9px auto 4px;}
+  .sheet.peek{padding:0 14px 14px;}
+  .sheet.peek .peek-row{display:flex;align-items:center;gap:8px;padding:6px 0 2px;}
+  .sheet.peek .peek-row .p1{font-size:12px;font-weight:700;flex:1;}
+  .sheet.peek .peek-row .p2{font-size:10.5px;color:var(--ink-45);}
+  .sheet.peek .quickchips{display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px;}
+  .sheet.peek .quickchips .chip{white-space:nowrap;font-size:10.5px;padding:5px 9px;}
+
+  .sheet.full{padding:0 16px 16px;height:78%;display:flex;flex-direction:column;}
+  .sheet.full .sh-title{display:flex;align-items:center;gap:8px;padding:4px 0 12px;flex-shrink:0;}
+  .sheet.full .sh-title b{font-size:14px;font-family:'Space Grotesk';flex:1;}
+  .sheet.full .sh-body{flex:1;overflow-y:auto;}
+
+  .stop-card{
+    display:flex;align-items:center;gap:10px;background:#F7F9FC;border:1px solid var(--line-soft);
+    border-radius:12px;padding:9px 10px;margin-bottom:8px;
+  }
+  .stop-card .num{
+    width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Space Grotesk';
+  }
+  .stop-card .txt{flex:1;min-width:0;}
+  .stop-card .txt b{display:block;font-size:12px;font-weight:700;}
+  .stop-card .txt span{font-size:10.5px;color:var(--ink-45);}
+  .stop-card .drag{color:var(--ink-45);font-size:14px;}
+
+  .near-list-item{
+    display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--line-soft);
+  }
+  .near-list-item .dotp{width:9px;height:9px;border-radius:50%;border:1.6px dashed var(--mint);flex-shrink:0;}
+  .near-list-item b{font-size:11.5px;flex:1;}
+  .near-list-item span{font-size:10px;color:var(--ink-45);}
+  .near-list-item .add{
+    width:20px;height:20px;border-radius:6px;background:rgba(0,87,255,.08);color:var(--blue);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;
+  }
+
+  .primary-cta{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--blue);
+    color:#fff;font-weight:700;font-size:13px;padding:13px;border-radius:12px;border:none;
+    box-shadow:0 8px 18px -6px rgba(0,87,255,.5);margin-top:6px;flex-shrink:0;
+  }
+  .secondary-cta{
+    display:flex;align-items:center;justify-content:center;gap:7px;width:100%;background:#fff;
+    color:var(--ink);font-weight:600;font-size:12px;padding:10px;border-radius:11px;border:1px solid var(--line);
+    margin-top:8px;flex-shrink:0;
+  }
+
+  .fab{
+    position:absolute;right:14px;bottom:100px;width:52px;height:52px;border-radius:50%;background:var(--ink);
+    box-shadow:0 8px 18px -6px rgba(11,31,77,.5); display:flex;align-items:center;justify-content:center;
+    color:#fff;
+  }
+  .fab .badge{
+    position:absolute;top:-4px;right:-4px;background:var(--mint);color:#04351F;font-size:10px;font-weight:700;
+    width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff;
+  }
+
+  /* ============ PRINCIPLES ============ */
+  .principles{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:4px;
+  }
+  .p-card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;
+    box-shadow:var(--shadow-sm);
+  }
+  .p-card .ic{
+    width:36px;height:36px;border-radius:10px;background:rgba(0,87,255,.09);display:flex;
+    align-items:center;justify-content:center;margin-bottom:12px;
+  }
+  .p-card .ic svg{stroke:var(--blue);width:18px;height:18px;}
+  .p-card h3{font-size:13.5px;margin:0 0 6px;font-weight:700;}
+  .p-card p{font-size:12px;color:var(--ink-60);margin:0;line-height:1.5;}
+  .p-card .quote{font-size:10.5px;color:var(--blue);font-weight:700;margin-top:10px;display:block;}
+
+  @media (max-width:980px){
+    .principles{grid-template-columns:repeat(2,1fr);}
+    .app{height:auto;}
+    .app-body{flex-direction:column;}
+    .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--line-soft);}
+    .sidebar-scroll{max-height:340px;}
+    .maparea{height:420px;}
+  }
+  @media (max-width:640px){
+    .principles{grid-template-columns:1fr;}
+    .topbar{gap:10px;}
+    .searchbar{order:5;max-width:100%;}
+  }
+</style>
+
+<div class="page">
+
+  <div class="masthead">
+    <div class="kicker"><span class="dot"></span> Refonte Copilote — angle densité de données</div>
+    <h1>Des zones qui parlent avant les points qui empilent</h1>
+    <p>La carte ne montre plus 3 000 marqueurs d'un coup. À l'échelle large, la couleur raconte la densité par territoire. Le zoom fait apparaître les officines une à une, groupées en clusters chiffrés tant qu'elles se superposent.</p>
+    <div class="ref">🔎 Inspiré de <b>La Loupe</b> (La Longue Vue) — 1 indicateur, 1 légende, zones avant marqueurs.</div>
+  </div>
+
+  <!-- ============ DESKTOP ============ -->
+  <div class="section-label"><h2>Poste de travail — desktop</h2><div class="rule"></div><span class="tag">2 états du même panneau</span></div>
+
+  <div class="row2">
+
+    <!-- FRAME A — EXPLORER -->
+    <div class="frame-wrap">
+      <div class="frame-cap"><b>① Explorer</b><span>— filtres + zones + tournée en cours sur la carte</span></div>
+      <div class="browser">
+        <div class="browser-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="url">integral-pharma.app / copilote / carte</div>
+        </div>
+        <div class="app">
+          <div class="topbar">
+            <div class="brand">
+              <div class="mark"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg></div>
+              <div class="txt"><b>Copilote</b><span>Carte tournée</span></div>
+            </div>
+            <div class="seg">
+              <button class="active">Tout <b>128</b></button>
+              <button>Clients <b>54</b></button>
+              <button>Prospects <b>74</b></button>
+            </div>
+            <div class="searchbar">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input placeholder="Pharmacie, ville…" readonly>
+            </div>
+            <div class="topbar-actions">
+              <button class="btn-ghost"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg> My Maps</button>
+            </div>
+          </div>
+
+          <div class="app-body">
+            <div class="sidebar">
+              <div class="tabs">
+                <button class="active">Explorer</button>
+                <button>Ma tournée <span class="badge">5</span></button>
+              </div>
+              <div class="sidebar-scroll">
+
+                <div class="sb-block">
+                  <div class="sb-label">Affichage</div>
+                  <div class="toggle-pair">
+                    <button><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/></svg> Points</button>
+                    <button class="active"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg> Bulles · CA</button>
+                  </div>
+
+                  <div class="mode-active">
+                    <div class="ic"><svg class="icon" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="16" r="3" stroke-dasharray="2 2"/></svg></div>
+                    <div class="lbl"><b>Couleur : Client / Prospect</b><span>Mode par défaut</span></div>
+                    <div class="swatch"><i style="background:var(--ink)"></i><i style="border:1.6px dashed var(--mint)"></i></div>
+                  </div>
+                  <div class="mode-alts">
+                    <button><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 20c0-3 3-5 6-5s6 2 6 5"/></svg> Commercial</button>
+                    <button><svg class="icon" viewBox="0 0 24 24"><path d="M6 20V10M12 20V4M18 20v-7"/></svg> CA</button>
+                    <button><svg class="icon" viewBox="0 0 24 24"><path d="M3 12h18M12 3v18"/></svg> UGA</button>
+                    <button><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10l8-6 8 6v10"/></svg> Groupement</button>
+                  </div>
+
+                  <div class="info-card">
+                    <div class="ic"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
+                    <p>Zoom région / département : densité affichée par zones. Zoomez pour voir chaque officine.</p>
+                  </div>
+                </div>
+
+                <div class="sb-block">
+                  <details class="accordion">
+                    <summary>
+                      <svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+                      Filtres <span class="count">3</span>
+                      <svg class="chev icon" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                    </summary>
+                    <div class="acc-body">
+                      <div class="filter-row">
+                        <div class="flabel">Commercial</div>
+                        <div class="chips">
+                          <span class="chip on b">Ingrid</span><span class="chip on b">Manon</span>
+                          <span class="chip on b">Morgane</span><span class="chip">Pauline</span>
+                        </div>
+                      </div>
+                      <div class="filter-row">
+                        <div class="flabel">Département</div>
+                        <div class="chips"><span class="chip on">76</span><span class="chip">27</span><span class="chip">14</span><span class="chip">61</span></div>
+                      </div>
+                      <div class="filter-row">
+                        <div class="flabel">Groupement</div>
+                        <div class="chips"><span class="chip">Giphar</span><span class="chip on">PHR</span><span class="chip">Novapharm</span><span class="chip">Indépendant</span></div>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+
+                <div class="legend-card">
+                  <h4><svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--ink-45)"><path d="M4 6h16M4 12h16M4 18h16"/></svg> Légende active</h4>
+                  <div class="leg-row"><span class="sw client"></span> Client <span class="n">54</span></div>
+                  <div class="leg-row"><span class="sw prospect"></span> Prospect <span class="n">74</span></div>
+                  <div class="leg-grad">
+                    <div style="font-size:10.5px;color:var(--ink-45);margin-bottom:6px;font-weight:600;">Densité de zone (officines / 100k hab.)</div>
+                    <div class="bar"></div>
+                    <div class="lbls"><span>Faible</span><span>Forte</span></div>
+                  </div>
+                </div>
+
+                <button class="sb-export"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg> Exporter vers Google My Maps</button>
+              </div>
+
+              <div class="tournee-pin">
+                <div class="route-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M9 20l-5-2V6l5 2 6-2 5 2v12l-5-2-6 2z"/></svg></div>
+                <div class="meta"><b>5 officines · 48 km</b><span>Tournée en cours · 1h05 estimé</span></div>
+                <button class="go"><svg class="icon" viewBox="0 0 24 24" style="stroke:#04351F;width:13px;height:13px"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Démarrer</button>
+              </div>
+            </div>
+
+            <div class="maparea" id="mapA">
+              <svg class="map-svg" viewBox="120 110 260 260" preserveAspectRatio="xMidYMid slice"><use href="#fr-zones" width="600" height="640"/></svg>
+              <svg class="route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="route-line" d="M22,72 L38,54 L47,38 L64,44 L79,26"/>
+              </svg>
+              <div class="map-pin" style="left:22%;top:72%"><div class="dot" style="width:22px;height:22px">1</div></div>
+              <div class="map-pin" style="left:38%;top:54%"><div class="dot" style="width:22px;height:22px">2</div></div>
+              <div class="map-pin" style="left:47%;top:38%"><div class="dot" style="width:22px;height:22px">3</div></div>
+              <div class="map-pin" style="left:64%;top:44%"><div class="dot" style="width:22px;height:22px">4</div></div>
+              <div class="map-pin" style="left:79%;top:26%"><div class="dot" style="width:22px;height:22px">5</div></div>
+              <div class="map-pin prospect" style="left:57%;top:65%"><div class="dot" style="width:16px;height:16px"></div></div>
+              <div class="map-pin prospect" style="left:30%;top:30%"><div class="dot" style="width:13px;height:13px"></div></div>
+              <div class="map-pin cluster" style="left:70%;top:70%"><div class="dot" style="width:26px;height:26px">+6</div></div>
+
+              <div class="route-tag" style="left:50%;top:47%;transform:translate(-50%,-140%)"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg> Optimisée</div>
+
+              <div class="map-overlay-top">
+                <div class="breadcrumb">
+                  <span class="crumb">France</span><span class="sep">›</span>
+                  <span class="crumb">Normandie</span><span class="sep">›</span>
+                  <span class="crumb now">Seine-Maritime (76)</span>
+                  <span class="zoomout"><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-4.3-4.3"/></svg></span>
+                </div>
+                <div class="inset">
+                  <span class="lbl">Vue nationale</span>
+                  <div class="thumb">
+                    <svg viewBox="0 0 600 640"><use href="#fr-zones" width="600" height="640"/></svg>
+                    <div class="crop" style="left:20%;top:17%;width:40%;height:40%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="map-legend">
+                <div class="t">Officines (bulles = CA)</div>
+                <div class="row"><span class="sw big"></span> Gros CA</div>
+                <div class="row"><span class="sw med"></span> CA moyen</div>
+                <div class="row"><span class="sw small"></span> Petit CA</div>
+              </div>
+
+              <div class="near-chip"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/></svg> 8 prospects proches</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRAME B — MA TOURNEE -->
+    <div class="frame-wrap">
+      <div class="frame-cap"><b>② Ma tournée</b><span>— même carte, panneau route au premier plan</span></div>
+      <div class="browser">
+        <div class="browser-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="url">integral-pharma.app / copilote / carte</div>
+        </div>
+        <div class="app">
+          <div class="topbar">
+            <div class="brand">
+              <div class="mark"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg></div>
+              <div class="txt"><b>Copilote</b><span>Carte tournée</span></div>
+            </div>
+            <div class="seg">
+              <button class="active">Tout <b>128</b></button>
+              <button>Clients <b>54</b></button>
+              <button>Prospects <b>74</b></button>
+            </div>
+            <div class="searchbar">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input placeholder="Pharmacie, ville…" readonly>
+            </div>
+            <div class="topbar-actions">
+              <button class="btn-ghost"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg> My Maps</button>
+            </div>
+          </div>
+
+          <div class="app-body">
+            <div class="sidebar">
+              <div class="tabs">
+                <button>Explorer</button>
+                <button class="active">Ma tournée <span class="badge">5</span></button>
+              </div>
+              <div class="sidebar-scroll">
+                <div class="sb-block">
+                  <div class="sb-label">Étapes — dans l'ordre</div>
+
+                  <div class="stop-card"><div class="num">1</div><div class="txt"><b>Pharmacie du Marché</b><span>Rouen (76000) · Client</span></div><span class="drag">⠿</span></div>
+                  <div class="stop-card"><div class="num">2</div><div class="txt"><b>Pharmacie Saint-Sever</b><span>Rouen (76100) · Client</span></div><span class="drag">⠿</span></div>
+                  <div class="stop-card"><div class="num">3</div><div class="txt"><b>Pharmacie de la Gare</b><span>Sotteville-lès-Rouen · Prospect</span></div><span class="drag">⠿</span></div>
+                  <div class="stop-card"><div class="num">4</div><div class="txt"><b>Pharmacie Centrale</b><span>Elbeuf (76500) · Client</span></div><span class="drag">⠿</span></div>
+                  <div class="stop-card"><div class="num">5</div><div class="txt"><b>Pharmacie du Vieux Marché</b><span>Yvetot (76190) · Client</span></div><span class="drag">⠿</span></div>
+
+                  <button class="secondary-cta" style="margin-top:12px"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M17 3l4 4-4 4M21 7H3M7 21l-4-4 4-4M3 17h18"/></svg> Optimiser l'ordre</button>
+                </div>
+
+                <div class="sb-block">
+                  <div class="sb-label">Prospects proches <span class="count" style="background:#EEF1F7;color:var(--ink-60);font-size:10px;border-radius:999px;padding:1px 7px;margin-left:4px;">8</span></div>
+                  <div class="near-list-item"><span class="dotp"></span><b>Pharmacie des Bruyères</b><span>+1,2 km</span><span class="add">+</span></div>
+                  <div class="near-list-item"><span class="dotp"></span><b>Pharmacie de l'Hôtel de Ville</b><span>+2,4 km</span><span class="add">+</span></div>
+                  <div class="near-list-item"><span class="dotp"></span><b>Pharmacie Boieldieu</b><span>+3,1 km</span><span class="add">+</span></div>
+                </div>
+              </div>
+
+              <div class="tournee-pin">
+                <div class="route-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M9 20l-5-2V6l5 2 6-2 5 2v12l-5-2-6 2z"/></svg></div>
+                <div class="meta"><b>48 km · 1h05</b><span>Ordre optimisé</span></div>
+                <button class="go"><svg class="icon" viewBox="0 0 24 24" style="stroke:#04351F;width:13px;height:13px"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Démarrer</button>
+              </div>
+            </div>
+
+            <div class="maparea" id="mapB">
+              <svg class="map-svg" viewBox="120 110 260 260" preserveAspectRatio="xMidYMid slice"><use href="#fr-zones" width="600" height="640"/></svg>
+              <svg class="route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="route-line" d="M22,72 L38,54 L47,38 L64,44 L79,26"/>
+              </svg>
+              <div class="map-pin" style="left:22%;top:72%"><div class="dot" style="width:22px;height:22px">1</div></div>
+              <div class="map-pin" style="left:38%;top:54%"><div class="dot" style="width:22px;height:22px">2</div></div>
+              <div class="map-pin" style="left:47%;top:38%"><div class="dot" style="width:22px;height:22px">3</div></div>
+              <div class="map-pin" style="left:64%;top:44%"><div class="dot" style="width:22px;height:22px">4</div></div>
+              <div class="map-pin" style="left:79%;top:26%"><div class="dot" style="width:22px;height:22px">5</div></div>
+
+              <div class="map-overlay-top">
+                <div class="breadcrumb">
+                  <span class="crumb">Tournée</span><span class="sep">›</span>
+                  <span class="crumb now">5 étapes · Seine-Maritime</span>
+                </div>
+              </div>
+              <div class="map-legend">
+                <div class="t">Ordre de tournée</div>
+                <div class="row"><span class="sw" style="background:var(--ink);width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:700;">1</span> Étape suivante</div>
+                <div class="row"><span class="sw" style="border:1.8px dashed var(--blue);background:none;"></span> Trajet estimé</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ MOBILE ============ -->
+  <div class="section-label"><h2>Au comptoir — mobile</h2><div class="rule"></div><span class="tag">tiroir bas · 3 états</span></div>
+
+  <div class="phones">
+
+    <div class="phone-wrap">
+      <div class="frame-cap"><b>Carte</b><span>tiroir replié</span></div>
+      <div class="phone"><div class="phone-screen">
+        <div class="phone-notch"></div>
+        <div class="phone-top">
+          <div class="seg" style="flex:1"><button class="active">Tout</button><button>Clients</button><button>Prospects</button></div>
+        </div>
+        <div class="phone-map">
+          <svg class="map-svg" viewBox="120 110 260 260" preserveAspectRatio="xMidYMid slice"><use href="#fr-zones" width="600" height="640"/></svg>
+          <div class="map-pin" style="left:30%;top:60%"><div class="dot" style="width:18px;height:18px"></div></div>
+          <div class="map-pin prospect" style="left:55%;top:40%"><div class="dot" style="width:14px;height:14px"></div></div>
+          <div class="map-pin cluster" style="left:65%;top:65%"><div class="dot" style="width:22px;height:22px;font-size:9px;">+4</div></div>
+          <div class="map-pin" style="left:40%;top:30%"><div class="dot" style="width:15px;height:15px"></div></div>
+          <div class="fab"><svg class="icon" viewBox="0 0 24 24" style="stroke:#fff"><path d="M9 20l-5-2V6l5 2 6-2 5 2v12l-5-2-6 2z"/></svg><span class="badge">5</span></div>
+          <div class="sheet peek">
+            <div class="handle"></div>
+            <div class="peek-row"><span class="p1">Client / Prospect</span><span class="p2">128 officines</span></div>
+            <div class="quickchips">
+              <span class="chip on b">Tout secteur</span><span class="chip">Bulles CA</span><span class="chip">Filtres (3)</span>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="frame-cap"><b>Filtres</b><span>tiroir ouvert</span></div>
+      <div class="phone"><div class="phone-screen">
+        <div class="phone-notch"></div>
+        <div class="phone-top">
+          <div class="seg" style="flex:1"><button class="active">Tout</button><button>Clients</button><button>Prospects</button></div>
+        </div>
+        <div class="phone-map">
+          <svg class="map-svg" viewBox="120 110 260 260" preserveAspectRatio="xMidYMid slice"><use href="#fr-zones" width="600" height="640"/></svg>
+          <div class="sheet full" style="height:88%">
+            <div class="handle"></div>
+            <div class="sh-title"><b>Affichage &amp; filtres</b></div>
+            <div class="sh-body">
+              <div class="sb-label" style="margin-top:0">Affichage</div>
+              <div class="toggle-pair"><button>Points</button><button class="active">Bulles · CA</button></div>
+              <div class="mode-active" style="margin-top:10px"><div class="ic"><svg class="icon" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="16" r="3" stroke-dasharray="2 2"/></svg></div><div class="lbl"><b>Client / Prospect</b><span>Mode actif</span></div></div>
+              <div class="mode-alts"><button>Commercial</button><button>CA</button><button>UGA</button><button>Groupement</button></div>
+
+              <div class="sb-label" style="margin-top:18px">Filtres</div>
+              <div class="filter-row" style="margin-top:0"><div class="flabel">Commercial</div><div class="chips"><span class="chip on b">Ingrid</span><span class="chip on b">Manon</span><span class="chip">Morgane</span><span class="chip">Pauline</span></div></div>
+              <div class="filter-row"><div class="flabel">Département</div><div class="chips"><span class="chip on">76</span><span class="chip">27</span><span class="chip">14</span></div></div>
+              <div class="filter-row"><div class="flabel">Groupement</div><div class="chips"><span class="chip">Giphar</span><span class="chip on">PHR</span><span class="chip">Novapharm</span></div></div>
+
+              <div class="legend-card" style="margin-top:16px"><h4>Légende</h4><div class="leg-row"><span class="sw client"></span> Client <span class="n">54</span></div><div class="leg-row"><span class="sw prospect"></span> Prospect <span class="n">74</span></div></div>
+            </div>
+            <button class="primary-cta" style="background:var(--ink)">Voir 41 résultats</button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="frame-cap"><b>Ma tournée</b><span>tiroir ouvert</span></div>
+      <div class="phone"><div class="phone-screen">
+        <div class="phone-notch"></div>
+        <div class="phone-top">
+          <div class="seg" style="flex:1"><button class="active">Tout</button><button>Clients</button><button>Prospects</button></div>
+        </div>
+        <div class="phone-map">
+          <svg class="map-svg" viewBox="120 110 260 260" preserveAspectRatio="xMidYMid slice"><use href="#fr-zones" width="600" height="640"/></svg>
+          <div class="sheet full" style="height:88%">
+            <div class="handle"></div>
+            <div class="sh-title"><b>Ma tournée</b><span class="badge" style="background:var(--ink)">5</span></div>
+            <div class="sh-body">
+              <div class="stop-card"><div class="num">1</div><div class="txt"><b>Pharmacie du Marché</b><span>Rouen</span></div></div>
+              <div class="stop-card"><div class="num">2</div><div class="txt"><b>Pharmacie Saint-Sever</b><span>Rouen</span></div></div>
+              <div class="stop-card"><div class="num">3</div><div class="txt"><b>Pharmacie de la Gare</b><span>Sotteville</span></div></div>
+              <div class="stop-card"><div class="num">4</div><div class="txt"><b>Pharmacie Centrale</b><span>Elbeuf</span></div></div>
+              <div class="stop-card"><div class="num">5</div><div class="txt"><b>Vieux Marché</b><span>Yvetot</span></div></div>
+              <div class="sb-label" style="margin-top:14px">Prospects proches <span style="color:var(--ink-45)">(8)</span></div>
+              <div class="near-list-item"><span class="dotp"></span><b>Pharmacie des Bruyères</b><span>+1,2 km</span><span class="add">+</span></div>
+              <div class="near-list-item"><span class="dotp"></span><b>Pharmacie Boieldieu</b><span>+3,1 km</span><span class="add">+</span></div>
+            </div>
+            <button class="primary-cta"><svg class="icon" viewBox="0 0 24 24" style="stroke:#fff;width:15px;height:15px"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Démarrer dans Google Maps</button>
+            <button class="secondary-cta">48 km · 1h05 · ordre optimisé</button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+
+  <!-- ============ PRINCIPLES ============ -->
+  <div class="section-label"><h2>Pourquoi ce design</h2><div class="rule"></div><span class="tag">densité de données</span></div>
+
+  <div class="principles">
+    <div class="p-card">
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
+      <h3>Zones avant marqueurs</h3>
+      <p>À l'échelle région/département, la couleur raconte la densité d'un territoire — pas 3 000 points qui se recouvrent.</p>
+      <span class="quote">Comme La Loupe</span>
+    </div>
+    <div class="p-card">
+      <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
+      <h3>Un indicateur, une légende</h3>
+      <p>Chaque mode de couleur est exclusif. La légende change avec lui — jamais deux histoires racontées en même temps.</p>
+      <span class="quote">5 modes → 1 à la fois</span>
+    </div>
+    <div class="p-card">
+      <div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11h6"/></svg></div>
+      <h3>Le zoom agrège</h3>
+      <p>Zones → communes → officines : le niveau de détail suit le geste de zoom, jamais l'inverse.</p>
+      <span class="quote">Agrégation dynamique</span>
+    </div>
+    <div class="p-card">
+      <div class="ic"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="9" r="2"/><circle cx="12" cy="16" r="2.4"/></svg></div>
+      <h3>Clusters chiffrés</h3>
+      <p>Sous ce zoom, un badge « +6 » remplace 6 points superposés. On ne développe qu'au clic, jamais par défaut.</p>
+      <span class="quote">Taille &amp; opacité graduées</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Symbole carte réutilisable (zones hex = densité) ===== -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <symbol id="fr-zones" viewBox="0 0 600 640">
+    <clipPath id="frClip"><path d="M 300,18 L 360,40 L 410,70 L 455,120 L 478,190 L 468,240 L 490,300 L 470,360 L 478,420 L 440,470 L 430,520 L 390,560 L 340,610 L 295,600 L 250,570 L 210,585 L 175,540 L 150,490 L 110,460 L 95,410 L 60,385 L 80,330 L 55,270 L 85,215 L 70,160 L 115,120 L 150,150 L 160,95 L 210,60 L 255,40 Z"/></clipPath>
+    <g clip-path="url(#frClip)">
+      <polygon class="zone z3" points="332.8,27.9 322.0,46.5 300.5,46.5 289.8,27.9 300.5,9.3 322.0,9.3" fill="#5FC7C8"/>
+<polygon class="zone z3" points="281.0,47.8 270.2,66.5 248.8,66.5 238.0,47.8 248.8,29.2 270.2,29.2" fill="#5FC7C8"/>
+<polygon class="zone z3" points="315.5,47.8 304.8,66.5 283.2,66.5 272.5,47.8 283.2,29.2 304.8,29.2" fill="#5FC7C8"/>
+<polygon class="zone z3" points="350.0,47.8 339.2,66.5 317.8,66.5 307.0,47.8 317.8,29.2 339.2,29.2" fill="#5FC7C8"/>
+<polygon class="zone z2" points="384.5,47.8 373.8,66.5 352.2,66.5 341.5,47.8 352.2,29.2 373.8,29.2" fill="#9FDFD0"/>
+<polygon class="zone z3" points="229.2,67.8 218.5,86.4 197.0,86.4 186.2,67.8 197.0,49.1 218.5,49.1" fill="#5FC7C8"/>
+<polygon class="zone z4" points="263.8,67.8 253.0,86.4 231.5,86.4 220.8,67.8 231.5,49.1 253.0,49.1" fill="#2E8FD9"/>
+<polygon class="zone z4" points="298.2,67.8 287.5,86.4 266.0,86.4 255.2,67.8 266.0,49.1 287.5,49.1" fill="#2E8FD9"/>
+<polygon class="zone z4" points="332.8,67.8 322.0,86.4 300.5,86.4 289.8,67.8 300.5,49.1 322.0,49.1" fill="#2E8FD9"/>
+<polygon class="zone z3" points="367.2,67.8 356.5,86.4 335.0,86.4 324.2,67.8 335.0,49.1 356.5,49.1" fill="#5FC7C8"/>
+<polygon class="zone z2" points="401.8,67.8 391.0,86.4 369.5,86.4 358.8,67.8 369.5,49.1 391.0,49.1" fill="#9FDFD0"/>
+<polygon class="zone z3" points="212.0,87.7 201.2,106.3 179.8,106.3 169.0,87.7 179.8,69.1 201.2,69.1" fill="#5FC7C8"/>
+<polygon class="zone z4" points="246.5,87.7 235.8,106.3 214.2,106.3 203.5,87.7 214.2,69.1 235.8,69.1" fill="#2E8FD9"/>
+<polygon class="zone z4" points="281.0,87.7 270.2,106.3 248.8,106.3 238.0,87.7 248.8,69.1 270.2,69.1" fill="#2E8FD9"/>
+<polygon class="zone z5" points="315.5,87.7 304.8,106.3 283.2,106.3 272.5,87.7 283.2,69.1 304.8,69.1" fill="#0057FF"/>
+<polygon class="zone z4" points="350.0,87.7 339.2,106.3 317.8,106.3 307.0,87.7 317.8,69.1 339.2,69.1" fill="#2E8FD9"/>
+<polygon class="zone z3" points="384.5,87.7 373.8,106.3 352.2,106.3 341.5,87.7 352.2,69.1 373.8,69.1" fill="#5FC7C8"/>
+<polygon class="zone z2" points="419.0,87.7 408.2,106.3 386.8,106.3 376.0,87.7 386.8,69.1 408.2,69.1" fill="#9FDFD0"/>
+<polygon class="zone z2" points="194.8,107.6 184.0,126.2 162.5,126.2 151.8,107.6 162.5,89.0 184.0,89.0" fill="#9FDFD0"/>
+<polygon class="zone z3" points="229.2,107.6 218.5,126.2 197.0,126.2 186.2,107.6 197.0,89.0 218.5,89.0" fill="#5FC7C8"/>
+<polygon class="zone z4" points="263.8,107.6 253.0,126.2 231.5,126.2 220.8,107.6 231.5,89.0 253.0,89.0" fill="#2E8FD9"/>
+<polygon class="zone z5" points="298.2,107.6 287.5,126.2 266.0,126.2 255.2,107.6 266.0,89.0 287.5,89.0" fill="#0057FF"/>
+<polygon class="zone z5" points="332.8,107.6 322.0,126.2 300.5,126.2 289.8,107.6 300.5,89.0 322.0,89.0" fill="#0057FF"/>
+<polygon class="zone z4" points="367.2,107.6 356.5,126.2 335.0,126.2 324.2,107.6 335.0,89.0 356.5,89.0" fill="#2E8FD9"/>
+<polygon class="zone z3" points="401.8,107.6 391.0,126.2 369.5,126.2 358.8,107.6 369.5,89.0 391.0,89.0" fill="#5FC7C8"/>
+<polygon class="zone z2" points="436.2,107.6 425.5,126.2 404.0,126.2 393.2,107.6 404.0,89.0 425.5,89.0" fill="#9FDFD0"/>
+<polygon class="zone z1" points="143.0,127.5 132.2,146.1 110.8,146.1 100.0,127.5 110.7,108.9 132.2,108.9" fill="#CFEFE3"/>
+<polygon class="zone z2" points="177.5,127.5 166.8,146.1 145.2,146.1 134.5,127.5 145.2,108.9 166.8,108.9" fill="#9FDFD0"/>
+<polygon class="zone z3" points="212.0,127.5 201.2,146.1 179.8,146.1 169.0,127.5 179.8,108.9 201.2,108.9" fill="#5FC7C8"/>
+<polygon class="zone z4" points="246.5,127.5 235.8,146.1 214.2,146.1 203.5,127.5 214.2,108.9 235.8,108.9" fill="#2E8FD9"/>
+<polygon class="zone z5" points="281.0,127.5 270.2,146.1 248.8,146.1 238.0,127.5 248.8,108.9 270.2,108.9" fill="#0057FF"/>
+<polygon class="zone z5" points="315.5,127.5 304.8,146.1 283.2,146.1 272.5,127.5 283.2,108.9 304.8,108.9" fill="#0057FF"/>
+<polygon class="zone z5" points="350.0,127.5 339.2,146.1 317.8,146.1 307.0,127.5 317.8,108.9 339.2,108.9" fill="#0057FF"/>
+<polygon class="zone z4" points="384.5,127.5 373.8,146.1 352.2,146.1 341.5,127.5 352.2,108.9 373.8,108.9" fill="#2E8FD9"/>
+<polygon class="zone z2" points="419.0,127.5 408.2,146.1 386.8,146.1 376.0,127.5 386.8,108.9 408.2,108.9" fill="#9FDFD0"/>
+<polygon class="zone z1" points="453.5,127.5 442.8,146.1 421.2,146.1 410.5,127.5 421.2,108.9 442.8,108.9" fill="#CFEFE3"/>
+<polygon class="zone z1" points="125.8,147.4 115.0,166.0 93.5,166.0 82.8,147.4 93.5,128.8 115.0,128.8" fill="#CFEFE3"/>
+<polygon class="zone z2" points="160.2,147.4 149.5,166.0 128.0,166.0 117.2,147.4 128.0,128.8 149.5,128.8" fill="#9FDFD0"/>
+<polygon class="zone z3" points="194.8,147.4 184.0,166.0 162.5,166.0 151.8,147.4 162.5,128.8 184.0,128.8" fill="#5FC7C8"/>
+<polygon class="zone z4" points="229.2,147.4 218.5,166.0 197.0,166.0 186.2,147.4 197.0,128.8 218.5,128.8" fill="#2E8FD9"/>
+<polygon class="zone z5" points="263.8,147.4 253.0,166.0 231.5,166.0 220.8,147.4 231.5,128.8 253.0,128.8" fill="#0057FF"/>
+<polygon class="zone z5" points="298.2,147.4 287.5,166.0 266.0,166.0 255.2,147.4 266.0,128.8 287.5,128.8" fill="#0057FF"/>
+<polygon class="zone z5" points="332.8,147.4 322.0,166.0 300.5,166.0 289.8,147.4 300.5,128.8 322.0,128.8" fill="#0057FF"/>
+<polygon class="zone z4" points="367.2,147.4 356.5,166.0 335.0,166.0 324.2,147.4 335.0,128.8 356.5,128.8" fill="#2E8FD9"/>
+<polygon class="zone z3" points="401.8,147.4 391.0,166.0 369.5,166.0 358.8,147.4 369.5,128.8 391.0,128.8" fill="#5FC7C8"/>
+<polygon class="zone z2" points="436.2,147.4 425.5,166.0 404.0,166.0 393.2,147.4 404.0,128.8 425.5,128.8" fill="#9FDFD0"/>
+<polygon class="zone z1" points="470.8,147.4 460.0,166.0 438.5,166.0 427.8,147.4 438.5,128.8 460.0,128.8" fill="#CFEFE3"/>
+<polygon class="zone z0" points="108.5,167.3 97.8,186.0 76.2,186.0 65.5,167.3 76.2,148.7 97.8,148.7" fill="#EAF9F3"/>
+<polygon class="zone z1" points="143.0,167.3 132.2,186.0 110.8,186.0 100.0,167.3 110.7,148.7 132.2,148.7" fill="#CFEFE3"/>
+<polygon class="zone z2" points="177.5,167.3 166.8,186.0 145.2,186.0 134.5,167.3 145.2,148.7 166.8,148.7" fill="#9FDFD0"/>
+<polygon class="zone z3" points="212.0,167.3 201.2,186.0 179.8,186.0 169.0,167.3 179.8,148.7 201.2,148.7" fill="#5FC7C8"/>
+<polygon class="zone z5" points="246.5,167.3 235.8,186.0 214.2,186.0 203.5,167.3 214.2,148.7 235.8,148.7" fill="#0057FF"/>
+<polygon class="zone z5" points="281.0,167.3 270.2,186.0 248.8,186.0 238.0,167.3 248.8,148.7 270.2,148.7" fill="#0057FF"/>
+<polygon class="zone z5" points="315.5,167.3 304.8,186.0 283.2,186.0 272.5,167.3 283.2,148.7 304.8,148.7" fill="#0057FF"/>
+<polygon class="zone z5" points="350.0,167.3 339.2,186.0 317.8,186.0 307.0,167.3 317.8,148.7 339.2,148.7" fill="#0057FF"/>
+<polygon class="zone z4" points="384.5,167.3 373.8,186.0 352.2,186.0 341.5,167.3 352.2,148.7 373.8,148.7" fill="#2E8FD9"/>
+<polygon class="zone z3" points="419.0,167.3 408.2,186.0 386.8,186.0 376.0,167.3 386.8,148.7 408.2,148.7" fill="#5FC7C8"/>
+<polygon class="zone z1" points="453.5,167.3 442.8,186.0 421.2,186.0 410.5,167.3 421.2,148.7 442.8,148.7" fill="#CFEFE3"/>
+<polygon class="zone z1" points="488.0,167.3 477.2,186.0 455.8,186.0 445.0,167.3 455.8,148.7 477.2,148.7" fill="#CFEFE3"/>
+<polygon class="zone z1" points="125.8,187.3 115.0,205.9 93.5,205.9 82.8,187.3 93.5,168.6 115.0,168.6" fill="#CFEFE3"/>
+<polygon class="zone z2" points="160.2,187.3 149.5,205.9 128.0,205.9 117.2,187.3 128.0,168.6 149.5,168.6" fill="#9FDFD0"/>
+<polygon class="zone z3" points="194.8,187.3 184.0,205.9 162.5,205.9 151.8,187.3 162.5,168.6 184.0,168.6" fill="#5FC7C8"/>
+<polygon class="zone z4" points="229.2,187.3 218.5,205.9 197.0,205.9 186.2,187.3 197.0,168.6 218.5,168.6" fill="#2E8FD9"/>
+<polygon class="zone z5" points="263.8,187.3 253.0,205.9 231.5,205.9 220.8,187.3 231.5,168.6 253.0,168.6" fill="#0057FF"/>
+<polygon class="zone z5" points="298.2,187.3 287.5,205.9 266.0,205.9 255.2,187.3 266.0,168.6 287.5,168.6" fill="#0057FF"/>
+<polygon class="zone z5" points="332.8,187.3 322.0,205.9 300.5,205.9 289.8,187.3 300.5,168.6 322.0,168.6" fill="#0057FF"/>
+<polygon class="zone z4" points="367.2,187.3 356.5,205.9 335.0,205.9 324.2,187.3 335.0,168.6 356.5,168.6" fill="#2E8FD9"/>
+<polygon class="zone z3" points="401.8,187.3 391.0,205.9 369.5,205.9 358.8,187.3 369.5,168.6 391.0,168.6" fill="#5FC7C8"/>
+<polygon class="zone z2" points="436.2,187.3 425.5,205.9 404.0,205.9 393.2,187.3 404.0,168.6 425.5,168.6" fill="#9FDFD0"/>
+<polygon class="zone z1" points="470.8,187.3 460.0,205.9 438.5,205.9 427.8,187.3 438.5,168.6 460.0,168.6" fill="#CFEFE3"/>
+<polygon class="zone z0" points="108.5,207.2 97.8,225.8 76.2,225.8 65.5,207.2 76.2,188.6 97.8,188.6" fill="#EAF9F3"/>
+<polygon class="zone z1" points="143.0,207.2 132.2,225.8 110.8,225.8 100.0,207.2 110.7,188.6 132.2,188.6" fill="#CFEFE3"/>
+<polygon class="zone z2" points="177.5,207.2 166.8,225.8 145.2,225.8 134.5,207.2 145.2,188.6 166.8,188.6" fill="#9FDFD0"/>
+<polygon class="zone z3" points="212.0,207.2 201.2,225.8 179.8,225.8 169.0,207.2 179.8,188.6 201.2,188.6" fill="#5FC7C8"/>
+<polygon class="zone z4" points="246.5,207.2 235.8,225.8 214.2,225.8 203.5,207.2 214.2,188.6 235.8,188.6" fill="#2E8FD9"/>
+<polygon class="zone z5" points="281.0,207.2 270.2,225.8 248.8,225.8 238.0,207.2 248.8,188.6 270.2,188.6" fill="#0057FF"/>
+<polygon class="zone z5" points="315.5,207.2 304.8,225.8 283.2,225.8 272.5,207.2 283.2,188.6 304.8,188.6" fill="#0057FF"/>
+<polygon class="zone z4" points="350.0,207.2 339.2,225.8 317.8,225.8 307.0,207.2 317.8,188.6 339.2,188.6" fill="#2E8FD9"/>
+<polygon class="zone z3" points="384.5,207.2 373.8,225.8 352.2,225.8 341.5,207.2 352.2,188.6 373.8,188.6" fill="#5FC7C8"/>
+<polygon class="zone z2" points="419.0,207.2 408.2,225.8 386.8,225.8 376.0,207.2 386.8,188.6 408.2,188.6" fill="#9FDFD0"/>
+<polygon class="zone z1" points="453.5,207.2 442.8,225.8 421.2,225.8 410.5,207.2 421.2,188.6 442.8,188.6" fill="#CFEFE3"/>
+<polygon class="zone z0" points="488.0,207.2 477.2,225.8 455.8,225.8 445.0,207.2 455.8,188.6 477.2,188.6" fill="#EAF9F3"/>
+<polygon class="zone z1" points="125.8,227.1 115.0,245.7 93.5,245.7 82.8,227.1 93.5,208.5 115.0,208.5" fill="#CFEFE3"/>
+<polygon class="zone z2" points="160.2,227.1 149.5,245.7 128.0,245.7 117.2,227.1 128.0,208.5 149.5,208.5" fill="#9FDFD0"/>
+<polygon class="zone z3" points="194.8,227.1 184.0,245.7 162.5,245.7 151.8,227.1 162.5,208.5 184.0,208.5" fill="#5FC7C8"/>
+<polygon class="zone z4" points="229.2,227.1 218.5,245.7 197.0,245.7 186.2,227.1 197.0,208.5 218.5,208.5" fill="#2E8FD9"/>
+<polygon class="zone z4" points="263.8,227.1 253.0,245.7 231.5,245.7 220.8,227.1 231.5,208.5 253.0,208.5" fill="#2E8FD9"/>
+<polygon class="zone z5" points="298.2,227.1 287.5,245.7 266.0,245.7 255.2,227.1 266.0,208.5 287.5,208.5" fill="#0057FF"/>
+<polygon class="zone z4" points="332.8,227.1 322.0,245.7 300.5,245.7 289.8,227.1 300.5,208.5 322.0,208.5" fill="#2E8FD9"/>
+<polygon class="zone z4" points="367.2,227.1 356.5,245.7 335.0,245.7 324.2,227.1 335.0,208.5 356.5,208.5" fill="#2E8FD9"/>
+<polygon class="zone z3" points="401.8,227.1 391.0,245.7 369.5,245.7 358.8,227.1 369.5,208.5 391.0,208.5" fill="#5FC7C8"/>
+<polygon class="zone z2" points="436.2,227.1 425.5,245.7 404.0,245.7 393.2,227.1 404.0,208.5 425.5,208.5" fill="#9FDFD0"/>
+<polygon class="zone z1" points="470.8,227.1 460.0,245.7 438.5,245.7 427.8,227.1 438.5,208.5 460.0,208.5" fill="#CFEFE3"/>
+<polygon class="zone z0" points="108.5,247.0 97.8,265.6 76.2,265.6 65.5,247.0 76.2,228.4 97.8,228.4" fill="#EAF9F3"/>
+<polygon class="zone z1" points="143.0,247.0 132.2,265.6 110.8,265.6 100.0,247.0 110.7,228.4 132.2,228.4" fill="#CFEFE3"/>
+<polygon class="zone z2" points="177.5,247.0 166.8,265.6 145.2,265.6 134.5,247.0 145.2,228.4 166.8,228.4" fill="#9FDFD0"/>
+<polygon class="zone z3" points="212.0,247.0 201.2,265.6 179.8,265.6 169.0,247.0 179.8,228.4 201.2,228.4" fill="#5FC7C8"/>
+<polygon class="zone z4" points="246.5,247.0 235.8,265.6 214.2,265.6 203.5,247.0 214.2,228.4 235.8,228.4" fill="#2E8FD9"/>
+<polygon class="zone z4" points="281.0,247.0 270.2,265.6 248.8,265.6 238.0,247.0 248.8,228.4 270.2,228.4" fill="#2E8FD9"/>
+<polygon class="zone z4" points="315.5,247.0 304.8,265.6 283.2,265.6 272.5,247.0 283.2,228.4 304.8,228.4" fill="#2E8FD9"/>
+<polygon class="zone z4" points="350.0,247.0 339.2,265.6 317.8,265.6 307.0,247.0 317.8,228.4 339.2,228.4" fill="#2E8FD9"/>
+<polygon class="zone z3" points="384.5,247.0 373.8,265.6 352.2,265.6 341.5,247.0 352.2,228.4 373.8,228.4" fill="#5FC7C8"/>
+<polygon class="zone z2" points="419.0,247.0 408.2,265.6 386.8,265.6 376.0,247.0 386.8,228.4 408.2,228.4" fill="#9FDFD0"/>
+<polygon class="zone z1" points="453.5,247.0 442.8,265.6 421.2,265.6 410.5,247.0 421.2,228.4 442.8,228.4" fill="#CFEFE3"/>
+<polygon class="zone z0" points="488.0,247.0 477.2,265.6 455.8,265.6 445.0,247.0 455.8,228.4 477.2,228.4" fill="#EAF9F3"/>
+<polygon class="zone z0" points="91.2,266.9 80.5,285.6 59.0,285.6 48.2,266.9 59.0,248.3 80.5,248.3" fill="#EAF9F3"/>
+<polygon class="zone z1" points="125.8,266.9 115.0,285.6 93.5,285.6 82.8,266.9 93.5,248.3 115.0,248.3" fill="#CFEFE3"/>
+<polygon class="zone z2" points="160.2,266.9 149.5,285.6 128.0,285.6 117.2,266.9 128.0,248.3 149.5,248.3" fill="#9FDFD0"/>
+<polygon class="zone z2" points="194.8,266.9 184.0,285.6 162.5,285.6 151.8,266.9 162.5,248.3 184.0,248.3" fill="#9FDFD0"/>
+<polygon class="zone z3" points="229.2,266.9 218.5,285.6 197.0,285.6 186.2,266.9 197.0,248.3 218.5,248.3" fill="#5FC7C8"/>
+<polygon class="zone z4" points="263.8,266.9 253.0,285.6 231.5,285.6 220.8,266.9 231.5,248.3 253.0,248.3" fill="#2E8FD9"/>
+<polygon class="zone z4" points="298.2,266.9 287.5,285.6 266.0,285.6 255.2,266.9 266.0,248.3 287.5,248.3" fill="#2E8FD9"/>
+<polygon class="zone z4" points="332.8,266.9 322.0,285.6 300.5,285.6 289.8,266.9 300.5,248.3 322.0,248.3" fill="#2E8FD9"/>
+<polygon class="zone z3" points="367.2,266.9 356.5,285.6 335.0,285.6 324.2,266.9 335.0,248.3 356.5,248.3" fill="#5FC7C8"/>
+<polygon class="zone z2" points="401.8,266.9 391.0,285.6 369.5,285.6 358.8,266.9 369.5,248.3 391.0,248.3" fill="#9FDFD0"/>
+<polygon class="zone z1" points="436.2,266.9 425.5,285.6 404.0,285.6 393.2,266.9 404.0,248.3 425.5,248.3" fill="#CFEFE3"/>
+<polygon class="zone z1" points="470.8,266.9 460.0,285.6 438.5,285.6 427.8,266.9 438.5,248.3 460.0,248.3" fill="#CFEFE3"/>
+<polygon class="zone z1" points="108.5,286.9 97.8,305.5 76.2,305.5 65.5,286.9 76.2,268.2 97.8,268.2" fill="#CFEFE3"/>
+<polygon class="zone z1" points="143.0,286.9 132.2,305.5 110.8,305.5 100.0,286.9 110.7,268.2 132.2,268.2" fill="#CFEFE3"/>
+<polygon class="zone z2" points="177.5,286.9 166.8,305.5 145.2,305.5 134.5,286.9 145.2,268.2 166.8,268.2" fill="#9FDFD0"/>
+<polygon class="zone z3" points="212.0,286.9 201.2,305.5 179.8,305.5 169.0,286.9 179.8,268.2 201.2,268.2" fill="#5FC7C8"/>
+<polygon class="zone z3" points="246.5,286.9 235.8,305.5 214.2,305.5 203.5,286.9 214.2,268.2 235.8,268.2" fill="#5FC7C8"/>
+<polygon class="zone z4" points="281.0,286.9 270.2,305.5 248.8,305.5 238.0,286.9 248.8,268.2 270.2,268.2" fill="#2E8FD9"/>
+<polygon class="zone z4" points="315.5,286.9 304.8,305.5 283.2,305.5 272.5,286.9 283.2,268.2 304.8,268.2" fill="#2E8FD9"/>
+<polygon class="zone z3" points="350.0,286.9 339.2,305.5 317.8,305.5 307.0,286.9 317.8,268.2 339.2,268.2" fill="#5FC7C8"/>
+<polygon class="zone z3" points="384.5,286.9 373.8,305.5 352.2,305.5 341.5,286.9 352.2,268.2 373.8,268.2" fill="#5FC7C8"/>
+<polygon class="zone z2" points="419.0,286.9 408.2,305.5 386.8,305.5 376.0,286.9 386.8,268.2 408.2,268.2" fill="#9FDFD0"/>
+<polygon class="zone z1" points="453.5,286.9 442.8,305.5 421.2,305.5 410.5,286.9 421.2,268.2 442.8,268.2" fill="#CFEFE3"/>
+<polygon class="zone z1" points="488.0,286.9 477.2,305.5 455.8,305.5 445.0,286.9 455.8,268.2 477.2,268.2" fill="#CFEFE3"/>
+<polygon class="zone z1" points="125.8,306.8 115.0,325.4 93.5,325.4 82.8,306.8 93.5,288.2 115.0,288.2" fill="#CFEFE3"/>
+<polygon class="zone z2" points="160.2,306.8 149.5,325.4 128.0,325.4 117.2,306.8 128.0,288.2 149.5,288.2" fill="#9FDFD0"/>
+<polygon class="zone z2" points="194.8,306.8 184.0,325.4 162.5,325.4 151.8,306.8 162.5,288.2 184.0,288.2" fill="#9FDFD0"/>
+<polygon class="zone z3" points="229.2,306.8 218.5,325.4 197.0,325.4 186.2,306.8 197.0,288.2 218.5,288.2" fill="#5FC7C8"/>
+<polygon class="zone z3" points="263.8,306.8 253.0,325.4 231.5,325.4 220.8,306.8 231.5,288.2 253.0,288.2" fill="#5FC7C8"/>
+<polygon class="zone z3" points="298.2,306.8 287.5,325.4 266.0,325.4 255.2,306.8 266.0,288.2 287.5,288.2" fill="#5FC7C8"/>
+<polygon class="zone z3" points="332.8,306.8 322.0,325.4 300.5,325.4 289.8,306.8 300.5,288.2 322.0,288.2" fill="#5FC7C8"/>
+<polygon class="zone z3" points="367.2,306.8 356.5,325.4 335.0,325.4 324.2,306.8 335.0,288.2 356.5,288.2" fill="#5FC7C8"/>
+<polygon class="zone z2" points="401.8,306.8 391.0,325.4 369.5,325.4 358.8,306.8 369.5,288.2 391.0,288.2" fill="#9FDFD0"/>
+<polygon class="zone z2" points="436.2,306.8 425.5,325.4 404.0,325.4 393.2,306.8 404.0,288.2 425.5,288.2" fill="#9FDFD0"/>
+<polygon class="zone z1" points="470.8,306.8 460.0,325.4 438.5,325.4 427.8,306.8 438.5,288.2 460.0,288.2" fill="#CFEFE3"/>
+<polygon class="zone z0" points="505.2,306.8 494.5,325.4 473.0,325.4 462.2,306.8 473.0,288.2 494.5,288.2" fill="#EAF9F3"/>
+<polygon class="zone z1" points="108.5,326.7 97.8,345.3 76.2,345.3 65.5,326.7 76.2,308.1 97.8,308.1" fill="#CFEFE3"/>
+<polygon class="zone z1" points="143.0,326.7 132.2,345.3 110.8,345.3 100.0,326.7 110.7,308.1 132.2,308.1" fill="#CFEFE3"/>
+<polygon class="zone z2" points="177.5,326.7 166.8,345.3 145.2,345.3 134.5,326.7 145.2,308.1 166.8,308.1" fill="#9FDFD0"/>
+<polygon class="zone z2" points="212.0,326.7 201.2,345.3 179.8,345.3 169.0,326.7 179.8,308.1 201.2,308.1" fill="#9FDFD0"/>
+<polygon class="zone z3" points="246.5,326.7 235.8,345.3 214.2,345.3 203.5,326.7 214.2,308.1 235.8,308.1" fill="#5FC7C8"/>
+<polygon class="zone z3" points="281.0,326.7 270.2,345.3 248.8,345.3 238.0,326.7 248.8,308.1 270.2,308.1" fill="#5FC7C8"/>
+<polygon class="zone z3" points="315.5,326.7 304.8,345.3 283.2,345.3 272.5,326.7 283.2,308.1 304.8,308.1" fill="#5FC7C8"/>
+<polygon class="zone z3" points="350.0,326.7 339.2,345.3 317.8,345.3 307.0,326.7 317.8,308.1 339.2,308.1" fill="#5FC7C8"/>
+<polygon class="zone z3" points="384.5,326.7 373.8,345.3 352.2,345.3 341.5,326.7 352.2,308.1 373.8,308.1" fill="#5FC7C8"/>
+<polygon class="zone z2" points="419.0,326.7 408.2,345.3 386.8,345.3 376.0,326.7 386.8,308.1 408.2,308.1" fill="#9FDFD0"/>
+<polygon class="zone z1" points="453.5,326.7 442.8,345.3 421.2,345.3 410.5,326.7 421.2,308.1 442.8,308.1" fill="#CFEFE3"/>
+<polygon class="zone z1" points="488.0,326.7 477.2,345.3 455.8,345.3 445.0,326.7 455.8,308.1 477.2,308.1" fill="#CFEFE3"/>
+<polygon class="zone z1" points="125.8,346.6 115.0,365.2 93.5,365.2 82.8,346.6 93.5,328.0 115.0,328.0" fill="#CFEFE3"/>
+<polygon class="zone z2" points="160.2,346.6 149.5,365.2 128.0,365.2 117.2,346.6 128.0,328.0 149.5,328.0" fill="#9FDFD0"/>
+<polygon class="zone z2" points="194.8,346.6 184.0,365.2 162.5,365.2 151.8,346.6 162.5,328.0 184.0,328.0" fill="#9FDFD0"/>
+<polygon class="zone z2" points="229.2,346.6 218.5,365.2 197.0,365.2 186.2,346.6 197.0,328.0 218.5,328.0" fill="#9FDFD0"/>
+<polygon class="zone z3" points="263.8,346.6 253.0,365.2 231.5,365.2 220.8,346.6 231.5,328.0 253.0,328.0" fill="#5FC7C8"/>
+<polygon class="zone z3" points="298.2,346.6 287.5,365.2 266.0,365.2 255.2,346.6 266.0,328.0 287.5,328.0" fill="#5FC7C8"/>
+<polygon class="zone z3" points="332.8,346.6 322.0,365.2 300.5,365.2 289.8,346.6 300.5,328.0 322.0,328.0" fill="#5FC7C8"/>
+<polygon class="zone z3" points="367.2,346.6 356.5,365.2 335.0,365.2 324.2,346.6 335.0,328.0 356.5,328.0" fill="#5FC7C8"/>
+<polygon class="zone z3" points="401.8,346.6 391.0,365.2 369.5,365.2 358.8,346.6 369.5,328.0 391.0,328.0" fill="#5FC7C8"/>
+<polygon class="zone z2" points="436.2,346.6 425.5,365.2 404.0,365.2 393.2,346.6 404.0,328.0 425.5,328.0" fill="#9FDFD0"/>
+<polygon class="zone z1" points="470.8,346.6 460.0,365.2 438.5,365.2 427.8,346.6 438.5,328.0 460.0,328.0" fill="#CFEFE3"/>
+<polygon class="zone z1" points="108.5,366.5 97.8,385.2 76.2,385.2 65.5,366.5 76.2,347.9 97.8,347.9" fill="#CFEFE3"/>
+<polygon class="zone z2" points="143.0,366.5 132.2,385.2 110.8,385.2 100.0,366.5 110.7,347.9 132.2,347.9" fill="#9FDFD0"/>
+<polygon class="zone z2" points="177.5,366.5 166.8,385.2 145.2,385.2 134.5,366.5 145.2,347.9 166.8,347.9" fill="#9FDFD0"/>
+<polygon class="zone z2" points="212.0,366.5 201.2,385.2 179.8,385.2 169.0,366.5 179.8,347.9 201.2,347.9" fill="#9FDFD0"/>
+<polygon class="zone z3" points="246.5,366.5 235.8,385.2 214.2,385.2 203.5,366.5 214.2,347.9 235.8,347.9" fill="#5FC7C8"/>
+<polygon class="zone z3" points="281.0,366.5 270.2,385.2 248.8,385.2 238.0,366.5 248.8,347.9 270.2,347.9" fill="#5FC7C8"/>
+<polygon class="zone z3" points="315.5,366.5 304.8,385.2 283.2,385.2 272.5,366.5 283.2,347.9 304.8,347.9" fill="#5FC7C8"/>
+<polygon class="zone z3" points="350.0,366.5 339.2,385.2 317.8,385.2 307.0,366.5 317.8,347.9 339.2,347.9" fill="#5FC7C8"/>
+<polygon class="zone z3" points="384.5,366.5 373.8,385.2 352.2,385.2 341.5,366.5 352.2,347.9 373.8,347.9" fill="#5FC7C8"/>
+<polygon class="zone z3" points="419.0,366.5 408.2,385.2 386.8,385.2 376.0,366.5 386.8,347.9 408.2,347.9" fill="#5FC7C8"/>
+<polygon class="zone z2" points="453.5,366.5 442.8,385.2 421.2,385.2 410.5,366.5 421.2,347.9 442.8,347.9" fill="#9FDFD0"/>
+<polygon class="zone z1" points="488.0,366.5 477.2,385.2 455.8,385.2 445.0,366.5 455.8,347.9 477.2,347.9" fill="#CFEFE3"/>
+<polygon class="zone z1" points="91.2,386.5 80.5,405.1 59.0,405.1 48.2,386.5 59.0,367.8 80.5,367.8" fill="#CFEFE3"/>
+<polygon class="zone z1" points="125.8,386.5 115.0,405.1 93.5,405.1 82.8,386.5 93.5,367.8 115.0,367.8" fill="#CFEFE3"/>
+<polygon class="zone z2" points="160.2,386.5 149.5,405.1 128.0,405.1 117.2,386.5 128.0,367.8 149.5,367.8" fill="#9FDFD0"/>
+<polygon class="zone z2" points="194.8,386.5 184.0,405.1 162.5,405.1 151.8,386.5 162.5,367.8 184.0,367.8" fill="#9FDFD0"/>
+<polygon class="zone z2" points="229.2,386.5 218.5,405.1 197.0,405.1 186.2,386.5 197.0,367.8 218.5,367.8" fill="#9FDFD0"/>
+<polygon class="zone z3" points="263.8,386.5 253.0,405.1 231.5,405.1 220.8,386.5 231.5,367.8 253.0,367.8" fill="#5FC7C8"/>
+<polygon class="zone z3" points="298.2,386.5 287.5,405.1 266.0,405.1 255.2,386.5 266.0,367.8 287.5,367.8" fill="#5FC7C8"/>
+<polygon class="zone z3" points="332.8,386.5 322.0,405.1 300.5,405.1 289.8,386.5 300.5,367.8 322.0,367.8" fill="#5FC7C8"/>
+<polygon class="zone z3" points="367.2,386.5 356.5,405.1 335.0,405.1 324.2,386.5 335.0,367.8 356.5,367.8" fill="#5FC7C8"/>
+<polygon class="zone z3" points="401.8,386.5 391.0,405.1 369.5,405.1 358.8,386.5 369.5,367.8 391.0,367.8" fill="#5FC7C8"/>
+<polygon class="zone z2" points="436.2,386.5 425.5,405.1 404.0,405.1 393.2,386.5 404.0,367.8 425.5,367.8" fill="#9FDFD0"/>
+<polygon class="zone z2" points="470.8,386.5 460.0,405.1 438.5,405.1 427.8,386.5 438.5,367.8 460.0,367.8" fill="#9FDFD0"/>
+<polygon class="zone z2" points="143.0,406.4 132.2,425.0 110.8,425.0 100.0,406.4 110.7,387.8 132.2,387.8" fill="#9FDFD0"/>
+<polygon class="zone z2" points="177.5,406.4 166.8,425.0 145.2,425.0 134.5,406.4 145.2,387.8 166.8,387.8" fill="#9FDFD0"/>
+<polygon class="zone z2" points="212.0,406.4 201.2,425.0 179.8,425.0 169.0,406.4 179.8,387.8 201.2,387.8" fill="#9FDFD0"/>
+<polygon class="zone z3" points="246.5,406.4 235.8,425.0 214.2,425.0 203.5,406.4 214.2,387.8 235.8,387.8" fill="#5FC7C8"/>
+<polygon class="zone z3" points="281.0,406.4 270.2,425.0 248.8,425.0 238.0,406.4 248.8,387.8 270.2,387.8" fill="#5FC7C8"/>
+<polygon class="zone z3" points="315.5,406.4 304.8,425.0 283.2,425.0 272.5,406.4 283.2,387.8 304.8,387.8" fill="#5FC7C8"/>
+<polygon class="zone z4" points="350.0,406.4 339.2,425.0 317.8,425.0 307.0,406.4 317.8,387.8 339.2,387.8" fill="#2E8FD9"/>
+<polygon class="zone z4" points="384.5,406.4 373.8,425.0 352.2,425.0 341.5,406.4 352.2,387.8 373.8,387.8" fill="#2E8FD9"/>
+<polygon class="zone z3" points="419.0,406.4 408.2,425.0 386.8,425.0 376.0,406.4 386.8,387.8 408.2,387.8" fill="#5FC7C8"/>
+<polygon class="zone z2" points="453.5,406.4 442.8,425.0 421.2,425.0 410.5,406.4 421.2,387.8 442.8,387.8" fill="#9FDFD0"/>
+<polygon class="zone z1" points="488.0,406.4 477.2,425.0 455.8,425.0 445.0,406.4 455.8,387.8 477.2,387.8" fill="#CFEFE3"/>
+<polygon class="zone z2" points="125.8,426.3 115.0,444.9 93.5,444.9 82.8,426.3 93.5,407.7 115.0,407.7" fill="#9FDFD0"/>
+<polygon class="zone z2" points="160.2,426.3 149.5,444.9 128.0,444.9 117.2,426.3 128.0,407.7 149.5,407.7" fill="#9FDFD0"/>
+<polygon class="zone z2" points="194.8,426.3 184.0,444.9 162.5,444.9 151.8,426.3 162.5,407.7 184.0,407.7" fill="#9FDFD0"/>
+<polygon class="zone z3" points="229.2,426.3 218.5,444.9 197.0,444.9 186.2,426.3 197.0,407.7 218.5,407.7" fill="#5FC7C8"/>
+<polygon class="zone z3" points="263.8,426.3 253.0,444.9 231.5,444.9 220.8,426.3 231.5,407.7 253.0,407.7" fill="#5FC7C8"/>
+<polygon class="zone z3" points="298.2,426.3 287.5,444.9 266.0,444.9 255.2,426.3 266.0,407.7 287.5,407.7" fill="#5FC7C8"/>
+<polygon class="zone z4" points="332.8,426.3 322.0,444.9 300.5,444.9 289.8,426.3 300.5,407.7 322.0,407.7" fill="#2E8FD9"/>
+<polygon class="zone z4" points="367.2,426.3 356.5,444.9 335.0,444.9 324.2,426.3 335.0,407.7 356.5,407.7" fill="#2E8FD9"/>
+<polygon class="zone z3" points="401.8,426.3 391.0,444.9 369.5,444.9 358.8,426.3 369.5,407.7 391.0,407.7" fill="#5FC7C8"/>
+<polygon class="zone z3" points="436.2,426.3 425.5,444.9 404.0,444.9 393.2,426.3 404.0,407.7 425.5,407.7" fill="#5FC7C8"/>
+<polygon class="zone z2" points="470.8,426.3 460.0,444.9 438.5,444.9 427.8,426.3 438.5,407.7 460.0,407.7" fill="#9FDFD0"/>
+<polygon class="zone z2" points="143.0,446.2 132.2,464.8 110.8,464.8 100.0,446.2 110.7,427.6 132.2,427.6" fill="#9FDFD0"/>
+<polygon class="zone z2" points="177.5,446.2 166.8,464.8 145.2,464.8 134.5,446.2 145.2,427.6 166.8,427.6" fill="#9FDFD0"/>
+<polygon class="zone z2" points="212.0,446.2 201.2,464.8 179.8,464.8 169.0,446.2 179.8,427.6 201.2,427.6" fill="#9FDFD0"/>
+<polygon class="zone z3" points="246.5,446.2 235.8,464.8 214.2,464.8 203.5,446.2 214.2,427.6 235.8,427.6" fill="#5FC7C8"/>
+<polygon class="zone z3" points="281.0,446.2 270.2,464.8 248.8,464.8 238.0,446.2 248.8,427.6 270.2,427.6" fill="#5FC7C8"/>
+<polygon class="zone z4" points="315.5,446.2 304.8,464.8 283.2,464.8 272.5,446.2 283.2,427.6 304.8,427.6" fill="#2E8FD9"/>
+<polygon class="zone z4" points="350.0,446.2 339.2,464.8 317.8,464.8 307.0,446.2 317.8,427.6 339.2,427.6" fill="#2E8FD9"/>
+<polygon class="zone z4" points="384.5,446.2 373.8,464.8 352.2,464.8 341.5,446.2 352.2,427.6 373.8,427.6" fill="#2E8FD9"/>
+<polygon class="zone z3" points="419.0,446.2 408.2,464.8 386.8,464.8 376.0,446.2 386.8,427.6 408.2,427.6" fill="#5FC7C8"/>
+<polygon class="zone z2" points="453.5,446.2 442.8,464.8 421.2,464.8 410.5,446.2 421.2,427.6 442.8,427.6" fill="#9FDFD0"/>
+<polygon class="zone z2" points="160.2,466.1 149.5,484.7 128.0,484.7 117.2,466.1 128.0,447.5 149.5,447.5" fill="#9FDFD0"/>
+<polygon class="zone z2" points="194.8,466.1 184.0,484.7 162.5,484.7 151.8,466.1 162.5,447.5 184.0,447.5" fill="#9FDFD0"/>
+<polygon class="zone z2" points="229.2,466.1 218.5,484.7 197.0,484.7 186.2,466.1 197.0,447.5 218.5,447.5" fill="#9FDFD0"/>
+<polygon class="zone z3" points="263.8,466.1 253.0,484.7 231.5,484.7 220.8,466.1 231.5,447.5 253.0,447.5" fill="#5FC7C8"/>
+<polygon class="zone z3" points="298.2,466.1 287.5,484.7 266.0,484.7 255.2,466.1 266.0,447.5 287.5,447.5" fill="#5FC7C8"/>
+<polygon class="zone z4" points="332.8,466.1 322.0,484.7 300.5,484.7 289.8,466.1 300.5,447.5 322.0,447.5" fill="#2E8FD9"/>
+<polygon class="zone z4" points="367.2,466.1 356.5,484.7 335.0,484.7 324.2,466.1 335.0,447.5 356.5,447.5" fill="#2E8FD9"/>
+<polygon class="zone z4" points="401.8,466.1 391.0,484.7 369.5,484.7 358.8,466.1 369.5,447.5 391.0,447.5" fill="#2E8FD9"/>
+<polygon class="zone z3" points="436.2,466.1 425.5,484.7 404.0,484.7 393.2,466.1 404.0,447.5 425.5,447.5" fill="#5FC7C8"/>
+<polygon class="zone z2" points="177.5,486.0 166.8,504.7 145.2,504.7 134.5,486.0 145.2,467.4 166.8,467.4" fill="#9FDFD0"/>
+<polygon class="zone z2" points="212.0,486.0 201.2,504.7 179.8,504.7 169.0,486.0 179.8,467.4 201.2,467.4" fill="#9FDFD0"/>
+<polygon class="zone z3" points="246.5,486.0 235.8,504.7 214.2,504.7 203.5,486.0 214.2,467.4 235.8,467.4" fill="#5FC7C8"/>
+<polygon class="zone z3" points="281.0,486.0 270.2,504.7 248.8,504.7 238.0,486.0 248.8,467.4 270.2,467.4" fill="#5FC7C8"/>
+<polygon class="zone z4" points="315.5,486.0 304.8,504.7 283.2,504.7 272.5,486.0 283.2,467.4 304.8,467.4" fill="#2E8FD9"/>
+<polygon class="zone z4" points="350.0,486.0 339.2,504.7 317.8,504.7 307.0,486.0 317.8,467.4 339.2,467.4" fill="#2E8FD9"/>
+<polygon class="zone z4" points="384.5,486.0 373.8,504.7 352.2,504.7 341.5,486.0 352.2,467.4 373.8,467.4" fill="#2E8FD9"/>
+<polygon class="zone z3" points="419.0,486.0 408.2,504.7 386.8,504.7 376.0,486.0 386.8,467.4 408.2,467.4" fill="#5FC7C8"/>
+<polygon class="zone z2" points="453.5,486.0 442.8,504.7 421.2,504.7 410.5,486.0 421.2,467.4 442.8,467.4" fill="#9FDFD0"/>
+<polygon class="zone z2" points="194.8,506.0 184.0,524.6 162.5,524.6 151.8,506.0 162.5,487.3 184.0,487.3" fill="#9FDFD0"/>
+<polygon class="zone z2" points="229.2,506.0 218.5,524.6 197.0,524.6 186.2,506.0 197.0,487.3 218.5,487.3" fill="#9FDFD0"/>
+<polygon class="zone z3" points="263.8,506.0 253.0,524.6 231.5,524.6 220.8,506.0 231.5,487.3 253.0,487.3" fill="#5FC7C8"/>
+<polygon class="zone z3" points="298.2,506.0 287.5,524.6 266.0,524.6 255.2,506.0 266.0,487.3 287.5,487.3" fill="#5FC7C8"/>
+<polygon class="zone z4" points="332.8,506.0 322.0,524.6 300.5,524.6 289.8,506.0 300.5,487.3 322.0,487.3" fill="#2E8FD9"/>
+<polygon class="zone z4" points="367.2,506.0 356.5,524.6 335.0,524.6 324.2,506.0 335.0,487.3 356.5,487.3" fill="#2E8FD9"/>
+<polygon class="zone z4" points="401.8,506.0 391.0,524.6 369.5,524.6 358.8,506.0 369.5,487.3 391.0,487.3" fill="#2E8FD9"/>
+<polygon class="zone z3" points="436.2,506.0 425.5,524.6 404.0,524.6 393.2,506.0 404.0,487.3 425.5,487.3" fill="#5FC7C8"/>
+<polygon class="zone z2" points="212.0,525.9 201.2,544.5 179.8,544.5 169.0,525.9 179.8,507.3 201.2,507.3" fill="#9FDFD0"/>
+<polygon class="zone z2" points="246.5,525.9 235.8,544.5 214.2,544.5 203.5,525.9 214.2,507.3 235.8,507.3" fill="#9FDFD0"/>
+<polygon class="zone z3" points="281.0,525.9 270.2,544.5 248.8,544.5 238.0,525.9 248.8,507.3 270.2,507.3" fill="#5FC7C8"/>
+<polygon class="zone z3" points="315.5,525.9 304.8,544.5 283.2,544.5 272.5,525.9 283.2,507.3 304.8,507.3" fill="#5FC7C8"/>
+<polygon class="zone z4" points="350.0,525.9 339.2,544.5 317.8,544.5 307.0,525.9 317.8,507.3 339.2,507.3" fill="#2E8FD9"/>
+<polygon class="zone z4" points="384.5,525.9 373.8,544.5 352.2,544.5 341.5,525.9 352.2,507.3 373.8,507.3" fill="#2E8FD9"/>
+<polygon class="zone z3" points="419.0,525.9 408.2,544.5 386.8,544.5 376.0,525.9 386.8,507.3 408.2,507.3" fill="#5FC7C8"/>
+<polygon class="zone z2" points="229.2,545.8 218.5,564.4 197.0,564.4 186.2,545.8 197.0,527.2 218.5,527.2" fill="#9FDFD0"/>
+<polygon class="zone z2" points="263.8,545.8 253.0,564.4 231.5,564.4 220.8,545.8 231.5,527.2 253.0,527.2" fill="#9FDFD0"/>
+<polygon class="zone z3" points="298.2,545.8 287.5,564.4 266.0,564.4 255.2,545.8 266.0,527.2 287.5,527.2" fill="#5FC7C8"/>
+<polygon class="zone z3" points="332.8,545.8 322.0,564.4 300.5,564.4 289.8,545.8 300.5,527.2 322.0,527.2" fill="#5FC7C8"/>
+<polygon class="zone z4" points="367.2,545.8 356.5,564.4 335.0,564.4 324.2,545.8 335.0,527.2 356.5,527.2" fill="#2E8FD9"/>
+<polygon class="zone z3" points="401.8,545.8 391.0,564.4 369.5,564.4 358.8,545.8 369.5,527.2 391.0,527.2" fill="#5FC7C8"/>
+<polygon class="zone z2" points="246.5,565.7 235.8,584.3 214.2,584.3 203.5,565.7 214.2,547.1 235.8,547.1" fill="#9FDFD0"/>
+<polygon class="zone z2" points="281.0,565.7 270.2,584.3 248.8,584.3 238.0,565.7 248.8,547.1 270.2,547.1" fill="#9FDFD0"/>
+<polygon class="zone z3" points="315.5,565.7 304.8,584.3 283.2,584.3 272.5,565.7 283.2,547.1 304.8,547.1" fill="#5FC7C8"/>
+<polygon class="zone z3" points="350.0,565.7 339.2,584.3 317.8,584.3 307.0,565.7 317.8,547.1 339.2,547.1" fill="#5FC7C8"/>
+<polygon class="zone z3" points="384.5,565.7 373.8,584.3 352.2,584.3 341.5,565.7 352.2,547.1 373.8,547.1" fill="#5FC7C8"/>
+<polygon class="zone z2" points="298.2,585.6 287.5,604.3 266.0,604.3 255.2,585.6 266.0,567.0 287.5,567.0" fill="#9FDFD0"/>
+<polygon class="zone z3" points="332.8,585.6 322.0,604.3 300.5,604.3 289.8,585.6 300.5,567.0 322.0,567.0" fill="#5FC7C8"/>
+<polygon class="zone z3" points="367.2,585.6 356.5,604.3 335.0,604.3 324.2,585.6 335.0,567.0 356.5,567.0" fill="#5FC7C8"/>
+<polygon class="zone z2" points="350.0,605.6 339.2,624.2 317.8,624.2 307.0,605.6 317.8,586.9 339.2,586.9" fill="#9FDFD0"/>
+    </g>
+    <path d="M 300,18 L 360,40 L 410,70 L 455,120 L 478,190 L 468,240 L 490,300 L 470,360 L 478,420 L 440,470 L 430,520 L 390,560 L 340,610 L 295,600 L 250,570 L 210,585 L 175,540 L 150,490 L 110,460 L 95,410 L 60,385 L 80,330 L 55,270 L 85,215 L 70,160 L 115,120 L 150,150 L 160,95 L 210,60 L 255,40 Z" fill="none" stroke="#0B1F4D" stroke-opacity=".18" stroke-width="2"/>
+  </symbol>
+</svg>
+</body>
+</html>

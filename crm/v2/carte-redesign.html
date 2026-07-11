@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carte Copilote — 10 propositions design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --blue:#0057FF; --ink:#0B1F4D; --mint:#00E5A0; --bg:#F4F6FB; --line:#E2E7F0; --muted:#6B7590; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+  header{flex:none;background:#fff;border-bottom:1px solid var(--line);padding:12px 16px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 1px 0 rgba(11,31,77,.03)}
+  .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:-.01em;margin:0}
+  .sub{font-size:12.5px;color:var(--muted)}
+  .cur{margin:9px 0 11px;font-size:13px;line-height:1.4;color:var(--ink)}
+  .cur b{font-family:'Space Grotesk',sans-serif}
+  .cur .ap{color:var(--muted);display:block;margin-top:2px;font-size:12px}
+  nav{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:thin}
+  nav button{flex:none;display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:112px;
+    border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;font-family:Inter,sans-serif;
+    text-align:left;transition:border-color .15s,transform .12s,box-shadow .15s;color:var(--ink)}
+  nav button:hover{border-color:color-mix(in srgb,var(--blue) 40%,var(--line))}
+  nav button.on{border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 14%,transparent);transform:translateY(-1px)}
+  nav .num{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px}
+  nav button.on .num{color:var(--blue)}
+  nav .lbl{font-size:11px;color:var(--muted);white-space:nowrap}
+  .frame{flex:1;position:relative;background:#fff}
+  iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+  .full{position:absolute;top:10px;right:12px;z-index:5;background:rgba(11,31,77,.92);color:#fff;text-decoration:none;
+    font-size:12px;font-weight:600;padding:8px 12px;border-radius:9px;box-shadow:0 6px 18px rgba(11,31,77,.25);backdrop-filter:blur(4px)}
+  .full:hover{background:var(--blue)}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>Carte Copilote — 10 propositions</h1><span class="sub">Touche un numéro · « Ouvrir en plein écran » pour bien voir</span></div>
+  <div class="cur" id="cur"></div>
+  <nav id="nav"></nav>
+</header>
+<div class="frame">
+  <a class="full" id="full" href="#" target="_blank" rel="noopener">Ouvrir en plein écran ↗</a>
+  <iframe id="fr" title="Maquette" src="_maq/carte-design-1.html"></iframe>
+</div>
+<script>
+  var D = [
+    { n:1,  lbl:'Choropleth « La Loupe »', title:'« La Loupe » : zones colorées + loupe', ap:'Un seul sélecteur « Colorer », zones à l’échelle large, la loupe révèle les officines au zoom. Sidebar en accordéon, légende flottante.' },
+    { n:2,  lbl:'Field-tool mobile', title:'Field Tool (Uber/Waze)', ap:'Carte plein écran, un seul bouton « Couleur », filtres derrière une pastille, tournée en bottom-sheet tirée du pouce.' },
+    { n:3,  lbl:'Sidebar épurée', title:'Zones & Loupe — sidebar critères', ap:'La sidebar = qui/quoi seulement (3 blocs max) ; le comment-afficher vit en chrome flottant sur la carte + fil d’Ariane de zoom.' },
+    { n:4,  lbl:'Command-bar', title:'Command Bar', ap:'Une barre de commande tokenisée pilote tous les filtres ; carte choropleth plein écran, « Ma tournée » en bouton flottant.' },
+    { n:5,  lbl:'Calques', title:'Calques — un indicateur à la fois', ap:'Sélecteur de calques (radio, un seul actif) ; le fond s’estompe dès qu’un calque coloré s’active → jamais deux infos superposées.' },
+    { n:6,  lbl:'Focus tournée', title:'La tournée pilote la carte', ap:'Le panneau « Ma tournée » est le centre de gravité ; la carte le sert. Switch Officines / Zones pour les niveaux de zoom.' },
+    { n:7,  lbl:'Minimaliste éditorial', title:'Éditorial minimal', ap:'Deux couches (zones par défaut, officines au clic), tous les contrôles secondaires dans des tiroirs. La carte reste quasi vide.' },
+    { n:8,  lbl:'Bento', title:'La Loupe Bento', ap:'La carte en choropleth + des tuiles bento compartimentées autour (KPI secteur, prochaine visite, top officines, Ma tournée).' },
+    { n:9,  lbl:'Densité de données', title:'Zones avant marqueurs', ap:'Choropleth hexagonal à l’échelle large, clusters chiffrés au zoom, sidebar à onglets Explorer / Ma tournée.' },
+    { n:10, lbl:'Clarté / onboarding', title:'Clarté & Onboarding', ap:'La légende devient le filtre (cliquable) ; un seul indicateur affiché, les autres cachés ; mini « comment ça marche » en 3 gestes.' },
+  ];
+  var nav = document.getElementById('nav'), fr = document.getElementById('fr'), cur = document.getElementById('cur'), full = document.getElementById('full');
+  function sel(i){
+    var d = D[i];
+    fr.src = '_maq/carte-design-' + d.n + '.html';
+    full.href = '_maq/carte-design-' + d.n + '.html';
+    cur.innerHTML = '<b>' + d.n + '. ' + d.title + '</b><span class="ap">' + d.ap + '</span>';
+    [].forEach.call(nav.children, function(b,k){ b.classList.toggle('on', k===i); });
+    try{ nav.children[i].scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'}); }catch(e){}
+  }
+  D.forEach(function(d,i){
+    var b = document.createElement('button');
+    b.innerHTML = '<span class="num">' + d.n + '</span><span class="lbl">' + d.lbl + '</span>';
+    b.onclick = function(){ sel(i); };
+    nav.appendChild(b);
+  });
+  sel(0);
+</script>
+</body>
+</html>

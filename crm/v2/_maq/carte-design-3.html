@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilote — Carte tournée · Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0057FF;
+    --blue-dark:#0043CC;
+    --blue-pale:#EAF0FF;
+    --ink:#0B1F4D;
+    --mint:#00E5A0;
+    --mint-dark:#00B87F;
+    --bg:#F3F6FB;
+    --surface:#FFFFFF;
+    --border:#E4E9F5;
+    --border-soft:#EEF1F9;
+    --muted:#5B6B8C;
+    --muted-2:#98A2BE;
+    --radius-lg:18px;
+    --radius-md:13px;
+    --radius-sm:9px;
+    --shadow-sm:0 1px 2px rgba(11,31,77,.05);
+    --shadow-md:0 10px 30px rgba(11,31,77,.09);
+    --shadow-lg:0 24px 60px rgba(11,31,77,.16);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    height:100vh;
+    overflow:hidden;
+  }
+  h1,h2,h3,.font-display{font-family:'Space Grotesk',sans-serif;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+
+  .app{
+    display:grid;
+    grid-template-rows:60px 1fr;
+    height:100vh;
+  }
+
+  /* ===== TOPBAR ===== */
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding:0 20px;
+    background:var(--surface);
+    border-bottom:1px solid var(--border);
+    z-index:40;
+  }
+  .brand{display:flex;align-items:center;gap:9px;flex-shrink:0;}
+  .brand-mark{
+    width:26px;height:26px;border-radius:8px;
+    background:linear-gradient(135deg,var(--blue),#3B7CFF);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:12px;font-family:'Space Grotesk',sans-serif;
+    flex-shrink:0;
+  }
+  .brand-text{display:flex;flex-direction:column;line-height:1.15;}
+  .brand-text b{font-size:13.5px;font-weight:700;letter-spacing:-.01em;}
+  .brand-text span{font-size:10.5px;color:var(--muted);font-weight:500;}
+
+  .breadcrumb{
+    display:flex;align-items:center;gap:5px;
+    font-size:12.5px;color:var(--muted);
+    padding:6px 4px;flex:1;min-width:0;overflow:hidden;
+  }
+  .breadcrumb b{color:var(--ink);font-weight:600;}
+  .crumb{
+    padding:4px 10px;border-radius:999px;white-space:nowrap;
+    color:var(--muted);font-weight:500;
+  }
+  .crumb.active{background:var(--blue-pale);color:var(--blue);font-weight:700;}
+  .crumb-sep{color:var(--muted-2);font-size:11px;}
+  .crumb-count{
+    margin-left:2px;background:var(--ink);color:#fff;font-size:10.5px;
+    font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;
+  }
+
+  .topbar-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .btn-ghost{
+    display:flex;align-items:center;gap:6px;
+    background:transparent;border:1px solid var(--border);
+    color:var(--muted);border-radius:999px;padding:7px 13px;
+    font-size:12.5px;font-weight:600;transition:.15s;
+  }
+  .btn-ghost:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-pale);}
+  .avatar{
+    width:30px;height:30px;border-radius:999px;background:var(--ink);
+    color:#fff;font-size:11px;font-weight:700;font-family:'Space Grotesk',sans-serif;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+
+  /* ===== LAYOUT ===== */
+  .layout{
+    display:grid;
+    grid-template-columns:284px 1fr;
+    min-height:0;
+    position:relative;
+  }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    overflow-y:auto;
+    padding:18px 16px 24px;
+    display:flex;flex-direction:column;gap:20px;
+  }
+  .side-block{display:flex;flex-direction:column;gap:9px;}
+  .side-label{
+    font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted-2);display:flex;align-items:center;justify-content:space-between;
+  }
+  .side-label .hint{
+    font-size:10px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--mint-dark);
+    background:#E7FBF3;padding:2px 7px;border-radius:999px;
+  }
+
+  /* VOIR segmented */
+  .segmented{
+    display:grid;grid-template-columns:1fr 1fr 1fr;
+    background:var(--bg);border-radius:999px;padding:3px;gap:2px;
+  }
+  .segmented button{
+    border:none;background:transparent;padding:7px 4px;border-radius:999px;
+    font-size:12.5px;font-weight:600;color:var(--muted);transition:.15s;
+  }
+  .segmented button.active{background:var(--ink);color:#fff;box-shadow:var(--shadow-sm);}
+
+  /* COULEUR — hero tile + collapsed others */
+  .mode-hero{
+    display:flex;align-items:center;gap:11px;
+    border:1.5px solid var(--blue);background:var(--blue-pale);
+    border-radius:var(--radius-md);padding:11px 12px;
+    position:relative;
+  }
+  .mode-hero .swatch{
+    width:30px;height:30px;border-radius:9px;flex-shrink:0;
+    background:linear-gradient(135deg,#DCE6FF,var(--blue) 60%,var(--ink));
+  }
+  .mode-hero .txt{display:flex;flex-direction:column;line-height:1.25;}
+  .mode-hero .txt b{font-size:13px;font-weight:700;}
+  .mode-hero .txt span{font-size:11px;color:var(--muted);}
+  .mode-hero .check{
+    position:absolute;top:8px;right:8px;width:16px;height:16px;border-radius:999px;
+    background:var(--blue);display:flex;align-items:center;justify-content:center;
+  }
+  .mode-hero .check svg{width:9px;height:9px;}
+
+  details.more-modes{border-top:1px dashed var(--border);padding-top:8px;}
+  details.more-modes summary{
+    list-style:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);
+    display:flex;align-items:center;gap:5px;
+  }
+  details.more-modes summary::-webkit-details-marker{display:none;}
+  details.more-modes summary::before{
+    content:'';width:7px;height:7px;border-right:1.6px solid var(--muted-2);border-bottom:1.6px solid var(--muted-2);
+    transform:rotate(-45deg);transition:.2s;flex-shrink:0;
+  }
+  details.more-modes[open] summary::before{transform:rotate(45deg);}
+  details.more-modes summary:hover{color:var(--blue);}
+  .mode-list{display:flex;flex-direction:column;gap:5px;margin-top:9px;}
+  .mode-row{
+    display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:9px;
+    font-size:12.5px;font-weight:500;color:var(--ink);transition:.12s;
+  }
+  .mode-row:hover{background:var(--bg);}
+  .mode-row .dot{width:9px;height:9px;border-radius:999px;flex-shrink:0;}
+  .mode-row span.d{color:var(--muted);font-size:11px;margin-left:auto;}
+
+  /* Recherche */
+  .search-box{
+    display:flex;align-items:center;gap:8px;
+    border:1px solid var(--border);border-radius:999px;padding:9px 13px;
+    background:var(--bg);
+  }
+  .search-box svg{flex-shrink:0;color:var(--muted-2);}
+  .search-box input{
+    border:none;background:transparent;outline:none;font-size:13px;width:100%;color:var(--ink);
+  }
+  .search-box input::placeholder{color:var(--muted-2);}
+
+  /* Filtres avancés */
+  details.adv{border-top:1px solid var(--border-soft);padding-top:12px;}
+  details.adv summary{
+    list-style:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  details.adv summary::-webkit-details-marker{display:none;}
+  .adv-summary-left{display:flex;align-items:center;gap:7px;}
+  .adv-summary-left b{font-size:12px;font-weight:700;color:var(--ink);}
+  .adv-badge{
+    background:var(--ink);color:#fff;font-size:10px;font-weight:700;
+    padding:1px 6px;border-radius:999px;
+  }
+  .chev{
+    width:8px;height:8px;border-right:1.6px solid var(--muted-2);border-bottom:1.6px solid var(--muted-2);
+    transform:rotate(45deg);transition:.2s;
+  }
+  details.adv[open] .chev{transform:rotate(225deg);}
+  .adv-body{display:flex;flex-direction:column;gap:11px;margin-top:14px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11px;font-weight:600;color:var(--muted);}
+  .select{
+    border:1px solid var(--border);border-radius:var(--radius-sm);
+    padding:8px 10px;font-size:12.5px;color:var(--ink);background:var(--surface);
+    appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2398A2BE'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;
+  }
+  .chips-row{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{
+    border:1px solid var(--border);padding:5px 11px;border-radius:999px;
+    font-size:11.5px;font-weight:600;color:var(--muted);background:var(--surface);
+  }
+  .chip.on{background:var(--ink);border-color:var(--ink);color:#fff;}
+
+  .side-reset{
+    margin-top:auto;padding-top:14px;border-top:1px solid var(--border-soft);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .link-reset{font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;}
+  .link-reset:hover{color:var(--blue);}
+  .count-pill{font-size:11px;color:var(--muted-2);}
+
+  /* ===== MAP ZONE ===== */
+  .mapzone{
+    position:relative;overflow:hidden;background:
+      radial-gradient(ellipse 900px 500px at 70% -10%, #EAF0FF 0%, transparent 60%),
+      linear-gradient(180deg,#F7F9FD 0%, #EEF2FA 100%);
+  }
+  .map-svg-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:30px 10px;}
+  .map-svg-wrap svg{height:100%;max-width:100%;filter:drop-shadow(0 20px 45px rgba(11,31,77,.10));}
+
+  /* map top controls */
+  .map-topline{
+    position:absolute;top:16px;left:16px;right:16px;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+    z-index:20;pointer-events:none;
+  }
+  .zoomcard{
+    pointer-events:auto;
+    background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+    border:1px solid var(--border);border-radius:var(--radius-md);
+    padding:9px 13px;box-shadow:var(--shadow-sm);
+    display:flex;align-items:center;gap:6px;font-size:12px;
+  }
+  .zoomcard b{font-weight:700;}
+  .zoomcard .muted{color:var(--muted-2);}
+
+  .display-toggle{
+    pointer-events:auto;
+    background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+    border:1px solid var(--border);border-radius:999px;padding:4px;
+    display:flex;gap:2px;box-shadow:var(--shadow-sm);
+  }
+  .display-toggle button{
+    border:none;background:transparent;padding:6px 12px;border-radius:999px;
+    font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;
+  }
+  .display-toggle button.active{background:var(--blue);color:#fff;}
+
+  /* legend + layer badge bottom-left over map */
+  .map-bottomline{
+    position:absolute;bottom:16px;left:16px;z-index:20;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .legend-card{
+    background:rgba(255,255,255,.95);backdrop-filter:blur(6px);
+    border:1px solid var(--border);border-radius:var(--radius-md);
+    padding:13px 15px;box-shadow:var(--shadow-md);width:222px;
+  }
+  .legend-title{
+    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted-2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .legend-title b{color:var(--ink);text-transform:none;letter-spacing:0;font-weight:700;font-size:12.5px;}
+  .legend-gradient{
+    height:8px;border-radius:999px;
+    background:linear-gradient(90deg,#EAF0FF, #7FA6FF 35%, var(--blue) 65%, var(--ink) 100%);
+    margin-bottom:5px;
+  }
+  .legend-scale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);}
+  .legend-note{
+    margin-top:9px;padding-top:9px;border-top:1px dashed var(--border);
+    font-size:10.5px;color:var(--muted-2);line-height:1.4;
+  }
+
+  .selected-zone-pill{
+    display:flex;align-items:center;gap:7px;
+    background:var(--ink);color:#fff;padding:8px 12px;border-radius:999px;
+    font-size:11.5px;font-weight:600;box-shadow:var(--shadow-md);width:fit-content;
+  }
+  .selected-zone-pill .mintdot{width:7px;height:7px;border-radius:999px;background:var(--mint);}
+
+  /* popover on map */
+  .map-popover{
+    position:absolute;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-md);box-shadow:var(--shadow-lg);padding:13px 14px;
+    width:198px;z-index:25;
+  }
+  .map-popover .pname{font-size:12.5px;font-weight:700;color:var(--ink);}
+  .map-popover .pville{font-size:11px;color:var(--muted);margin-top:1px;}
+  .map-popover .prow{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
+  .badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;}
+  .badge.blue{background:var(--blue-pale);color:var(--blue);}
+  .badge.mint{background:#E7FBF3;color:var(--mint-dark);}
+  .map-popover .pbtns{display:flex;gap:6px;margin-top:11px;}
+  .pbtn{
+    flex:1;text-align:center;font-size:11px;font-weight:700;padding:7px 6px;border-radius:8px;
+    border:1px solid var(--border);color:var(--muted);
+  }
+  .pbtn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+  /* ===== TOURNEE PANEL ===== */
+  .tournee-panel{
+    position:absolute;top:16px;right:16px;bottom:16px;width:326px;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lg);z-index:30;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .tp-head{
+    padding:16px 16px 12px;border-bottom:1px solid var(--border-soft);
+    display:flex;align-items:flex-start;justify-content:space-between;gap:8px;
+  }
+  .tp-head h3{margin:0;font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px;}
+  .tp-head h3 .pin{
+    width:22px;height:22px;border-radius:7px;background:var(--mint);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .tp-head p{margin:5px 0 0;font-size:11.5px;color:var(--muted);}
+  .tp-close{
+    width:26px;height:26px;border-radius:999px;border:1px solid var(--border);background:var(--surface);
+    color:var(--muted-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  }
+  .tp-list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+  .stop{
+    display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:var(--radius-sm);
+    border:1px solid var(--border-soft);background:var(--bg);
+  }
+  .stop .num{
+    width:22px;height:22px;border-radius:999px;background:var(--ink);color:#fff;
+    font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .stop .info{flex:1;min-width:0;}
+  .stop .info b{font-size:12.5px;display:block;line-height:1.2;}
+  .stop .info span{font-size:11px;color:var(--muted);}
+  .stop .drag{color:var(--muted-2);flex-shrink:0;}
+
+  .tp-suggest{padding:4px 12px 8px;}
+  .tp-suggest-label{font-size:10.5px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.06em;margin:8px 4px 8px;}
+  .suggest-chip{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:9px 11px;border:1px dashed var(--border);border-radius:var(--radius-sm);
+    margin-bottom:6px;background:#FBFCFE;
+  }
+  .suggest-chip .info b{font-size:12px;display:block;}
+  .suggest-chip .info span{font-size:10.5px;color:var(--muted);}
+  .add-btn{
+    width:24px;height:24px;border-radius:999px;background:var(--blue-pale);color:var(--blue);
+    border:none;font-size:15px;font-weight:700;flex-shrink:0;line-height:1;
+  }
+
+  .tp-foot{padding:13px 16px 16px;border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:9px;}
+  .btn-optimize{
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    border:1px solid var(--border);background:var(--surface);color:var(--ink);
+    border-radius:999px;padding:10px;font-size:12.5px;font-weight:700;
+  }
+  .btn-optimize:hover{border-color:var(--blue);color:var(--blue);}
+  .btn-gmaps{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--blue);color:#fff;border:none;border-radius:999px;padding:12px;
+    font-size:13.5px;font-weight:700;box-shadow:0 10px 24px rgba(0,87,255,.28);
+  }
+  .btn-gmaps:hover{background:var(--blue-dark);}
+  .tp-export{
+    text-align:center;font-size:11px;color:var(--muted-2);font-weight:600;
+    display:flex;align-items:center;justify-content:center;gap:5px;
+  }
+  .tp-export:hover{color:var(--blue);}
+
+  .fab-tournee{
+    position:absolute;bottom:18px;right:18px;z-index:29;
+    background:var(--ink);color:#fff;border:none;border-radius:999px;
+    padding:13px 18px;font-size:13px;font-weight:700;box-shadow:var(--shadow-lg);
+    display:none;align-items:center;gap:8px;
+  }
+  .fab-tournee .n{background:var(--mint);color:var(--ink);border-radius:999px;padding:1px 7px;font-size:11px;}
+
+  /* mobile filter fab */
+  .fab-filters{
+    position:absolute;bottom:18px;left:18px;z-index:29;
+    background:var(--surface);border:1px solid var(--border);color:var(--ink);
+    border-radius:999px;padding:12px 17px;font-size:13px;font-weight:700;box-shadow:var(--shadow-lg);
+    display:none;align-items:center;gap:7px;
+  }
+  .sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(11,31,77,.35);z-index:38;}
+
+  /* ===================== RESPONSIVE ===================== */
+  @media (max-width:980px){
+    .tournee-panel{width:300px;}
+  }
+
+  @media (max-width:760px){
+    .app{grid-template-rows:56px 1fr;}
+    .breadcrumb{display:none;}
+    .brand-text span{display:none;}
+
+    .layout{grid-template-columns:1fr;}
+    .sidebar{
+      position:fixed;left:0;right:0;bottom:0;top:auto;
+      max-height:78vh;border-right:none;border-top:1px solid var(--border);
+      border-radius:20px 20px 0 0;box-shadow:0 -20px 50px rgba(11,31,77,.22);
+      transform:translateY(105%);transition:transform .28s ease;z-index:39;
+      padding-top:10px;
+    }
+    .sidebar::before{
+      content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);
+      width:38px;height:4px;border-radius:999px;background:var(--border);
+    }
+    .sidebar.open{transform:translateY(0);}
+    .sidebar-scrim.show{display:block;}
+
+    .fab-filters{display:flex;}
+
+    .tournee-panel{
+      left:12px;right:12px;top:auto;bottom:0;width:auto;
+      max-height:62vh;border-radius:20px 20px 0 0;
+      transform:translateY(102%);transition:transform .28s ease;
+    }
+    .tournee-panel.open{transform:translateY(0);}
+    .fab-tournee{display:flex;}
+
+    .map-bottomline{left:10px;bottom:80px;}
+    .legend-card{width:190px;}
+    .map-topline{top:10px;left:10px;right:10px;}
+    .zoomcard span.long{display:none;}
+  }
+
+  @media (min-width:761px){
+    .tournee-panel{display:flex;}
+  }
+
+  /* scrollbar */
+  .sidebar::-webkit-scrollbar,.tp-list::-webkit-scrollbar{width:6px;}
+  .sidebar::-webkit-scrollbar-thumb,.tp-list::-webkit-scrollbar-thumb{background:#D7DEEC;border-radius:999px;}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">IP</div>
+      <div class="brand-text">
+        <b>Copilote</b>
+        <span>Carte tournée · Intégral Pharma</span>
+      </div>
+    </div>
+
+    <nav class="breadcrumb">
+      <span class="crumb">France</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb">Normandie</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb active">Calvados (14)</span>
+      <span class="crumb-count">14 officines</span>
+    </nav>
+
+    <div class="topbar-actions">
+      <button class="btn-ghost" title="Exporter la vue vers Google My Maps">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Exporter
+      </button>
+      <div class="avatar">PS</div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar-scrim" onclick="toggleSidebar(false)"></div>
+    <aside class="sidebar" id="sidebar">
+
+      <!-- 1. VOIR -->
+      <div class="side-block">
+        <div class="side-label">Voir</div>
+        <div class="segmented">
+          <button class="active">Tout</button>
+          <button>Clients</button>
+          <button>Prospects</button>
+        </div>
+      </div>
+
+      <!-- 2. COULEUR -->
+      <div class="side-block">
+        <div class="side-label">Couleur <span class="hint">1 seul indicateur</span></div>
+
+        <div class="mode-hero">
+          <div class="swatch"></div>
+          <div class="txt">
+            <b>Chiffre d'affaires — par zone</b>
+            <span>Densité, dégradé bleu → encre</span>
+          </div>
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg>
+          </div>
+        </div>
+
+        <details class="more-modes">
+          <summary>Autres modes de couleur</summary>
+          <div class="mode-list">
+            <div class="mode-row"><span class="dot" style="background:var(--blue)"></span> Par commercial <span class="d">4 secteurs</span></div>
+            <div class="mode-row"><span class="dot" style="background:#7C8BFF"></span> Client / Prospect <span class="d">2 valeurs</span></div>
+            <div class="mode-row"><span class="dot" style="background:#98A2BE"></span> Par UGA (zone) <span class="d">4 zones</span></div>
+            <div class="mode-row"><span class="dot" style="background:var(--mint-dark)"></span> Par groupement <span class="d">9 groupements</span></div>
+          </div>
+        </details>
+      </div>
+
+      <!-- 3. RECHERCHE -->
+      <div class="side-block">
+        <div class="side-label">Recherche</div>
+        <div class="search-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input placeholder="Pharmacie, ville…">
+        </div>
+      </div>
+
+      <!-- FILTRES AVANCÉS (repliés) -->
+      <details class="adv">
+        <summary>
+          <span class="adv-summary-left"><b>Filtres avancés</b><span class="adv-badge">3</span></span>
+          <span class="chev"></span>
+        </summary>
+        <div class="adv-body">
+          <div class="field">
+            <label>Commercial</label>
+            <select class="select">
+              <option>Tous les commerciaux</option>
+              <option selected>Pauline S. — PGN</option>
+              <option>Ingrid — ILE</option>
+              <option>Manon D. — MD</option>
+              <option>Morgane — MDC</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Département</label>
+            <select class="select">
+              <option selected>Calvados (14)</option>
+              <option>Seine-Maritime (76)</option>
+              <option>Eure (27)</option>
+              <option>Orne (61)</option>
+              <option>Manche (50)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Groupement</label>
+            <div class="chips-row">
+              <span class="chip on">Tous</span>
+              <span class="chip">Giphar</span>
+              <span class="chip">PHR</span>
+              <span class="chip">Pharmabest</span>
+              <span class="chip">Les Officinales</span>
+              <span class="chip">Univers Ph.</span>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="side-reset">
+        <a href="#" class="link-reset">↺ Réinitialiser</a>
+        <span class="count-pill">14 officines visibles</span>
+      </div>
+    </aside>
+
+    <!-- MAP -->
+    <section class="mapzone">
+
+      <div class="map-svg-wrap">
+        <!-- FRANCE PLACEHOLDER SVG -->
+        <svg viewBox="0 0 300 320" width="480" height="512" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="france-clip">
+              <path d="M140,10 L190,35 L215,90 L205,150 L225,190 L200,240 L150,275 L110,260 L70,270 L45,225 L55,175 L25,150 L55,130 L60,95 L35,80 L65,55 L95,25 Z"/>
+            </clipPath>
+            <filter id="blur1"><feGaussianBlur stdDeviation="16"/></filter>
+            <filter id="blur2"><feGaussianBlur stdDeviation="22"/></filter>
+          </defs>
+
+          <!-- base fill -->
+          <path d="M140,10 L190,35 L215,90 L205,150 L225,190 L200,240 L150,275 L110,260 L70,270 L45,225 L55,175 L25,150 L55,130 L60,95 L35,80 L65,55 L95,25 Z"
+                fill="#F6F9FE"/>
+
+          <!-- choropleth density blobs, one hue ramp only -->
+          <g clip-path="url(#france-clip)" filter="url(#blur1)">
+            <ellipse cx="150" cy="95" rx="55" ry="48" fill="#0B1F4D" opacity=".55"/>
+            <ellipse cx="90" cy="70" rx="42" ry="36" fill="#0057FF" opacity=".65"/>
+            <ellipse cx="65" cy="155" rx="46" ry="42" fill="#7FA6FF" opacity=".55"/>
+            <ellipse cx="110" cy="235" rx="52" ry="42" fill="#BBD0FF" opacity=".6"/>
+            <ellipse cx="190" cy="215" rx="46" ry="42" fill="#5B8CFF" opacity=".55"/>
+            <ellipse cx="190" cy="110" rx="34" ry="34" fill="#DCE6FF" opacity=".6"/>
+          </g>
+
+          <!-- outline -->
+          <path d="M140,10 L190,35 L215,90 L205,150 L225,190 L200,240 L150,275 L110,260 L70,270 L45,225 L55,175 L25,150 L55,130 L60,95 L35,80 L65,55 L95,25 Z"
+                fill="none" stroke="#B9C6E6" stroke-width="1.6"/>
+
+          <!-- selected zone: Normandie (dashed ring + officine pins) -->
+          <circle cx="82" cy="72" r="46" fill="none" stroke="#00E5A0" stroke-width="2" stroke-dasharray="4 5"/>
+
+          <!-- officine markers inside selected zone -->
+          <g>
+            <circle cx="70" cy="60" r="4.5" fill="#0B1F4D" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="88" cy="52" r="4.5" fill="#0B1F4D" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="95" cy="78" r="7" fill="#00E5A0" stroke="#0B1F4D" stroke-width="2"/>
+            <circle cx="72" cy="88" r="4.5" fill="#0B1F4D" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="60" cy="80" r="4.5" fill="#0B1F4D" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="100" cy="58" r="4.5" fill="#0B1F4D" stroke="#fff" stroke-width="1.5"/>
+          </g>
+
+          <!-- faint markers elsewhere on the map to suggest national coverage -->
+          <g opacity=".45">
+            <circle cx="150" cy="95" r="3" fill="#0B1F4D"/>
+            <circle cx="163" cy="105" r="3" fill="#0B1F4D"/>
+            <circle cx="188" cy="210" r="3" fill="#0B1F4D"/>
+            <circle cx="118" cy="240" r="3" fill="#0B1F4D"/>
+            <circle cx="63" cy="150" r="3" fill="#0B1F4D"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- top controls -->
+      <div class="map-topline">
+        <div class="zoomcard">
+          <span class="muted">Échelle</span> <b>Zones</b> <span class="muted">→</span> <span class="muted long">glissez pour zoomer sur les officines</span>
+        </div>
+        <div class="display-toggle">
+          <button class="active">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="18" cy="12" r="3"/></svg>
+            Points
+          </button>
+          <button>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="12" r="6" opacity=".5"/><circle cx="16" cy="12" r="3"/></svg>
+            Bulles (CA)
+          </button>
+        </div>
+      </div>
+
+      <!-- bottom-left: selected zone pill + legend -->
+      <div class="map-bottomline">
+        <div class="selected-zone-pill">
+          <span class="mintdot"></span> Zone active : Normandie · 214 officines
+        </div>
+        <div class="legend-card">
+          <div class="legend-title"><b>Chiffre d'affaires</b> <span>par zone</span></div>
+          <div class="legend-gradient"></div>
+          <div class="legend-scale"><span>Faible</span><span>Élevé</span></div>
+          <div class="legend-note">Une seule couleur affichée à la fois — changez de mode dans la barre latérale pour comparer un autre indicateur.</div>
+        </div>
+      </div>
+
+      <!-- popover card on a pin -->
+      <div class="map-popover" style="top:44%; left:38%;">
+        <div class="pname">Pharmacie du Marché</div>
+        <div class="pville">Caen (14)</div>
+        <div class="prow">
+          <span class="badge blue">Giphar</span>
+          <span class="badge mint">1,2 M€</span>
+        </div>
+        <div class="pbtns">
+          <button class="pbtn">Fiche</button>
+          <button class="pbtn primary">+ Tournée</button>
+        </div>
+      </div>
+
+      <!-- mobile fabs -->
+      <button class="fab-filters" onclick="toggleSidebar(true)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        Filtres
+      </button>
+      <button class="fab-tournee" onclick="toggleTournee(true)">
+        📍 Ma tournée <span class="n">3</span>
+      </button>
+
+      <!-- TOURNEE PANEL -->
+      <aside class="tournee-panel" id="tournee">
+        <div class="tp-head">
+          <div>
+            <h3><span class="pin">📍</span> Ma tournée</h3>
+            <p>3 officines sélectionnées · Calvados</p>
+          </div>
+          <button class="tp-close" onclick="toggleTournee(false)">✕</button>
+        </div>
+
+        <div class="tp-list">
+          <div class="stop">
+            <div class="num">1</div>
+            <div class="info"><b>Pharmacie du Marché</b><span>Caen · Giphar</span></div>
+            <div class="drag">⠿</div>
+          </div>
+          <div class="stop">
+            <div class="num">2</div>
+            <div class="info"><b>Pharmacie Centrale</b><span>Lisieux · Les Officinales</span></div>
+            <div class="drag">⠿</div>
+          </div>
+          <div class="stop">
+            <div class="num">3</div>
+            <div class="info"><b>Pharmacie du Vieux Bassin</b><span>Honfleur · Pharmabest</span></div>
+            <div class="drag">⠿</div>
+          </div>
+
+          <div class="tp-suggest">
+            <div class="tp-suggest-label">Prospects proches</div>
+            <div class="suggest-chip">
+              <div class="info"><b>Pharmacie des Fontaines</b><span>Bayeux · 12 min du trajet</span></div>
+              <button class="add-btn">+</button>
+            </div>
+            <div class="suggest-chip">
+              <div class="info"><b>Grande Pharmacie de la Gare</b><span>Le Havre · 38 min du trajet</span></div>
+              <button class="add-btn">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tp-foot">
+          <button class="btn-optimize">⇄ Optimiser l'itinéraire</button>
+          <button class="btn-gmaps">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            Démarrer dans Google Maps
+          </button>
+          <a href="#" class="tp-export">⇪ Exporter cette tournée vers Google My Maps</a>
+        </div>
+      </aside>
+
+    </section>
+  </div>
+</div>
+
+<script>
+  function toggleSidebar(open){
+    document.getElementById('sidebar').classList.toggle('open', open);
+    document.querySelector('.sidebar-scrim').classList.toggle('show', open);
+  }
+  function toggleTournee(open){
+    document.getElementById('tournee').classList.toggle('open', open);
+  }
+  // segmented control demo
+  document.querySelectorAll('.segmented').forEach(seg=>{
+    seg.addEventListener('click', e=>{
+      if(e.target.tagName==='BUTTON'){
+        seg.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+        e.target.classList.add('active');
+      }
+    });
+  });
+  document.querySelectorAll('.display-toggle').forEach(seg=>{
+    seg.addEventListener('click', e=>{
+      if(e.target.closest('button')){
+        seg.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+        e.target.closest('button').classList.add('active');
+      }
+    });
+  });
+  document.querySelectorAll('.chips-row').forEach(row=>{
+    row.addEventListener('click', e=>{
+      if(e.target.classList.contains('chip')){
+        row.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+        e.target.classList.add('on');
+      }
+    });
+  });
+  // open tournée panel by default on mobile widths so it's visible in the demo
+  if(window.innerWidth<=760){ document.getElementById('tournee').classList.add('open'); }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilote — Carte Tournée · Angle « Field Tool »</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0057FF;
+    --blue-dark:#0042C4;
+    --ink:#0B1F4D;
+    --mint:#00E5A0;
+    --bg:#F3F5FA;
+    --card:#FFFFFF;
+    --line:#E3E7F0;
+    --muted:#6B7590;
+    --z0:#EAF1FF;
+    --z1:#BFD4FF;
+    --z2:#7FA6FF;
+    --z3:#3A72FF;
+    --z4:#0B1F4D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.disp{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.01em;}
+  button{font-family:inherit;cursor:pointer;}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+
+  /* ================= HERO APP SCREEN ================= */
+  .app{
+    position:relative;
+    width:100%;
+    min-height:100vh;
+    overflow:hidden;
+    background:linear-gradient(160deg,#EEF3FF 0%,#E4ECFF 55%,#DCE7FF 100%);
+    isolation:isolate;
+  }
+
+  /* ---- map layer ---- */
+  .map-layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  .map-layer svg{width:min(680px,150%);height:auto;filter:drop-shadow(0 30px 60px rgba(11,31,77,.14));}
+  .zone{stroke:#fff;stroke-width:2;transition:opacity .2s;}
+  .zone-label{font-family:'Space Grotesk',sans-serif;font-weight:600;fill:#0B1F4D;font-size:11px;pointer-events:none;}
+  .zone-label.light{fill:#fff;}
+  .officine-dot{fill:var(--blue);stroke:#fff;stroke-width:2;}
+  .prospect-dot{fill:#fff;stroke:var(--blue);stroke-width:2.5;}
+  .halo{fill:none;stroke:var(--mint);stroke-width:2;stroke-dasharray:4 4;opacity:.9;}
+
+  /* ---- top floating controls ---- */
+  .topbar{
+    position:absolute;top:0;left:0;right:0;z-index:20;
+    padding:max(16px, env(safe-area-inset-top)) 16px 0;
+    display:flex;flex-direction:column;gap:10px;
+    align-items:center;
+  }
+  .search-row{width:100%;max-width:640px;display:flex;gap:8px;align-items:center;}
+  .search-pill{
+    flex:1;display:flex;align-items:center;gap:10px;
+    background:var(--card);border-radius:16px;padding:13px 16px;
+    box-shadow:0 8px 24px rgba(11,31,77,.14);
+    border:1px solid rgba(255,255,255,.6);
+  }
+  .search-pill svg{flex:none;color:var(--muted);}
+  .search-pill input{
+    border:none;outline:none;flex:1;font-size:15px;font-family:'Inter',sans-serif;
+    background:transparent;color:var(--ink);font-weight:500;
+  }
+  .search-pill input::placeholder{color:#9AA3BD;font-weight:400;}
+  .icon-btn{
+    flex:none;width:48px;height:48px;border-radius:16px;background:var(--card);
+    border:1px solid rgba(255,255,255,.6);box-shadow:0 8px 24px rgba(11,31,77,.14);
+    display:flex;align-items:center;justify-content:center;position:relative;color:var(--ink);
+  }
+  .icon-btn .dot-badge{
+    position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;
+    background:var(--mint);border:2px solid var(--card);
+  }
+
+  .chip-row{width:100%;max-width:640px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+  .chip-row::-webkit-scrollbar{display:none;}
+  .segmented{
+    display:flex;background:rgba(255,255,255,.75);backdrop-filter:blur(6px);
+    border-radius:14px;padding:4px;box-shadow:0 6px 18px rgba(11,31,77,.10);
+    border:1px solid rgba(255,255,255,.6);
+  }
+  .segmented button{
+    border:none;background:transparent;padding:8px 14px;border-radius:11px;
+    font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap;
+    transition:all .15s;
+  }
+  .segmented button.active{background:var(--ink);color:#fff;box-shadow:0 4px 10px rgba(11,31,77,.25);}
+
+  .chip{
+    flex:none;display:flex;align-items:center;gap:6px;background:var(--card);
+    border-radius:12px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--ink);
+    box-shadow:0 6px 16px rgba(11,31,77,.10);border:1px solid rgba(255,255,255,.6);white-space:nowrap;
+  }
+  .chip svg{color:var(--blue);}
+  .chip .val{color:var(--muted);font-weight:500;}
+
+  /* ---- right side floating stack ---- */
+  .fab-stack{
+    position:absolute;top:150px;right:16px;z-index:20;
+    display:flex;flex-direction:column;gap:10px;align-items:flex-end;
+  }
+  .fab{
+    background:var(--card);border-radius:16px;box-shadow:0 8px 22px rgba(11,31,77,.14);
+    border:1px solid rgba(255,255,255,.6);display:flex;align-items:center;gap:8px;
+    padding:10px 12px;color:var(--ink);
+  }
+  .fab.round{width:48px;height:48px;padding:0;justify-content:center;border-radius:50%;}
+  .fab .lbl{font-size:12px;font-weight:700;color:var(--ink);}
+  .fab .sub{font-size:10px;color:var(--muted);font-weight:500;}
+  .fab-indicator{flex-direction:column;align-items:stretch;padding:10px 12px 10px 12px;min-width:126px;}
+  .fab-indicator .top{display:flex;align-items:center;gap:8px;}
+  .swatch{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,var(--z1),var(--z4));flex:none;}
+  .seg2{display:flex;background:var(--bg);border-radius:10px;padding:3px;margin-top:2px;}
+  .seg2 button{flex:1;border:none;background:transparent;padding:6px 0;border-radius:8px;font-size:11px;font-weight:700;color:var(--muted);}
+  .seg2 button.active{background:#fff;color:var(--blue);box-shadow:0 2px 6px rgba(11,31,77,.12);}
+
+  /* ---- zoom hint ---- */
+  .zoom-hint{
+    position:absolute;left:50%;top:224px;transform:translateX(-50%);z-index:15;
+    background:rgba(11,31,77,.92);color:#fff;font-size:12px;font-weight:600;
+    padding:9px 16px;border-radius:99px;display:flex;align-items:center;gap:8px;
+    box-shadow:0 10px 24px rgba(11,31,77,.25);
+  }
+  .zoom-hint svg{color:var(--mint);}
+
+  /* ---- breadcrumb level ---- */
+  .level-pill{
+    position:absolute;left:16px;top:150px;z-index:20;
+    background:var(--ink);color:#fff;border-radius:12px;padding:8px 12px;
+    font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;
+    display:flex;align-items:center;gap:6px;box-shadow:0 8px 20px rgba(11,31,77,.2);
+  }
+  .level-pill .step{opacity:.45;}
+  .level-pill .step.now{opacity:1;color:var(--mint);}
+
+  /* ---- legend card ---- */
+  .legend-card{
+    position:absolute;left:16px;bottom:112px;z-index:20;
+    background:var(--card);border-radius:16px;padding:14px 16px;
+    box-shadow:0 10px 26px rgba(11,31,77,.16);border:1px solid rgba(255,255,255,.7);
+    width:198px;
+  }
+  .legend-card .lt{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+  .legend-card .lt svg{color:#B9C0D6;}
+  .grad-bar{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--z0),var(--z1),var(--z2),var(--z3),var(--z4));margin-bottom:6px;}
+  .grad-lbls{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:600;}
+  .legend-foot{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.5;font-weight:500;}
+  .legend-foot b{color:var(--ink);}
+
+  /* ---- bottom sheet ---- */
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;z-index:30;
+    background:var(--card);border-radius:22px 22px 0 0;
+    box-shadow:0 -12px 40px rgba(11,31,77,.22);
+    max-width:100%;margin:0 auto;
+  }
+  .sheet-handle{display:flex;justify-content:center;padding:10px 0 2px;}
+  .sheet-handle .bar{width:40px;height:4px;border-radius:99px;background:var(--line);}
+  .sheet-peek{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 18px;}
+  .peek-left{display:flex;align-items:center;gap:12px;}
+  .peek-badge{
+    width:38px;height:38px;border-radius:12px;background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-family:'Space Grotesk',sans-serif;
+  }
+  .peek-title{font-size:14px;font-weight:700;color:var(--ink);}
+  .peek-sub{font-size:12px;color:var(--muted);font-weight:500;margin-top:1px;}
+  .peek-chevron{color:var(--muted);}
+
+  /* ================= EXPLANATION SECTION ================= */
+  .explain{max-width:1180px;margin:0 auto;padding:64px 24px 90px;}
+  .explain-head{max-width:680px;margin:0 auto 44px;text-align:center;}
+  .kicker{
+    display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);
+    border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;color:var(--blue);margin-bottom:16px;
+  }
+  .kicker .d{width:6px;height:6px;border-radius:50%;background:var(--mint);}
+  .explain-head h2{font-size:clamp(24px,3.4vw,34px);margin:0 0 12px;color:var(--ink);}
+  .explain-head p{font-size:15px;color:var(--muted);line-height:1.6;margin:0;}
+
+  .principles{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:56px;
+  }
+  .p-card{
+    background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;
+  }
+  .p-card .p-ic{
+    width:38px;height:38px;border-radius:11px;background:var(--z0);color:var(--blue);
+    display:flex;align-items:center;justify-content:center;margin-bottom:14px;
+  }
+  .p-card h3{font-size:14.5px;margin:0 0 6px;color:var(--ink);}
+  .p-card p{font-size:12.5px;color:var(--muted);line-height:1.55;margin:0;}
+
+  .frames-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px;}
+  .frames-head h2{font-size:20px;margin:0;color:var(--ink);}
+  .frames-head span{font-size:13px;color:var(--muted);font-weight:500;}
+
+  .frames{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;}
+  .frame-col{display:flex;flex-direction:column;align-items:center;gap:16px;}
+  .frame-tag{
+    display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink);
+  }
+  .frame-tag .n{
+    width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'Space Grotesk',sans-serif;
+  }
+  .frame-cap{font-size:12px;color:var(--muted);text-align:center;line-height:1.5;max-width:260px;margin-top:-4px;}
+
+  .device{
+    width:280px;height:560px;border-radius:34px;background:#0B1F4D;padding:10px;
+    box-shadow:0 30px 60px rgba(11,31,77,.28), 0 0 0 1px rgba(11,31,77,.1);
+    position:relative;
+  }
+  .device .screen{
+    width:100%;height:100%;border-radius:26px;overflow:hidden;position:relative;
+    background:linear-gradient(160deg,#EEF3FF 0%,#E4ECFF 55%,#DCE7FF 100%);
+  }
+  .device .notch{
+    position:absolute;top:10px;left:50%;transform:translateX(-50%);
+    width:90px;height:18px;background:#0B1F4D;border-radius:0 0 14px 14px;z-index:5;
+  }
+
+  /* mini ui reused inside device frames, smaller scale */
+  .mini-top{position:absolute;top:26px;left:12px;right:12px;display:flex;flex-direction:column;gap:8px;z-index:10;}
+  .mini-search{background:#fff;border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:7px;box-shadow:0 6px 16px rgba(11,31,77,.14);font-size:11px;color:#9AA3BD;font-weight:500;}
+  .mini-search svg{width:14px;height:14px;color:#9AA3BD;flex:none;}
+  .mini-seg{display:flex;background:rgba(255,255,255,.8);border-radius:10px;padding:3px;box-shadow:0 4px 12px rgba(11,31,77,.1);width:fit-content;}
+  .mini-seg span{padding:6px 10px;border-radius:8px;font-size:10px;font-weight:700;color:#6B7590;}
+  .mini-seg span.on{background:#0B1F4D;color:#fff;}
+
+  .mini-fab{position:absolute;right:10px;background:#fff;border-radius:12px;box-shadow:0 6px 16px rgba(11,31,77,.14);padding:8px 9px;z-index:10;}
+  .mini-fab .t{font-size:9px;font-weight:800;color:#0B1F4D;display:flex;align-items:center;gap:5px;}
+  .mini-fab .sw{width:12px;height:12px;border-radius:4px;background:linear-gradient(135deg,#BFD4FF,#0B1F4D);}
+
+  .mini-legend{position:absolute;left:10px;background:#fff;border-radius:12px;padding:10px 11px;box-shadow:0 6px 16px rgba(11,31,77,.14);width:118px;z-index:10;}
+  .mini-legend .lt{font-size:8px;font-weight:800;color:#9AA3BD;text-transform:uppercase;margin-bottom:6px;}
+  .mini-grad{height:6px;border-radius:99px;background:linear-gradient(90deg,#EAF1FF,#BFD4FF,#7FA6FF,#3A72FF,#0B1F4D);margin-bottom:4px;}
+  .mini-grad-lbl{display:flex;justify-content:space-between;font-size:7px;color:#9AA3BD;font-weight:700;}
+
+  .mini-sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -10px 26px rgba(11,31,77,.2);z-index:10;}
+  .mini-sheet .handle{display:flex;justify-content:center;padding:7px 0 2px;}
+  .mini-sheet .handle span{width:28px;height:3px;border-radius:99px;background:#E3E7F0;}
+  .mini-row{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 12px;}
+  .mini-badge{width:26px;height:26px;border-radius:8px;background:#0B1F4D;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;}
+  .mini-title{font-size:11px;font-weight:800;color:#0B1F4D;}
+  .mini-sub{font-size:9px;color:#6B7590;font-weight:600;}
+
+  .mini-card{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid #EEF1F8;}
+  .mini-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .mini-name{font-size:10px;font-weight:700;color:#0B1F4D;}
+  .mini-city{font-size:8.5px;color:#9AA3BD;font-weight:600;}
+  .mini-dist{font-size:8.5px;color:#6B7590;font-weight:700;margin-left:auto;}
+
+  .mini-actions{padding:10px 14px 16px;display:flex;flex-direction:column;gap:6px;}
+  .mini-btn{border-radius:11px;padding:10px;text-align:center;font-size:10.5px;font-weight:800;color:#fff;background:#0057FF;box-shadow:0 6px 14px rgba(0,87,255,.3);}
+  .mini-btn2{border-radius:11px;padding:9px;text-align:center;font-size:9.5px;font-weight:700;color:#0B1F4D;background:#EAF1FF;}
+  .mini-link{text-align:center;font-size:8.5px;color:#9AA3BD;font-weight:700;text-decoration:underline;margin-top:2px;}
+
+  .mini-popover{position:absolute;background:#fff;border-radius:14px;box-shadow:0 12px 28px rgba(11,31,77,.24);padding:8px;z-index:20;width:150px;}
+  .mini-popover .h{font-size:8px;font-weight:800;color:#9AA3BD;text-transform:uppercase;padding:4px 8px 6px;}
+  .mini-opt{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:9px;font-size:10px;font-weight:700;color:#0B1F4D;}
+  .mini-opt.sel{background:#EAF1FF;color:#0057FF;}
+  .mini-opt .rd{width:8px;height:8px;border-radius:50%;border:2px solid #C7CFE3;flex:none;}
+  .mini-opt.sel .rd{border-color:#0057FF;background:#0057FF;}
+
+  .mini-drawer{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -10px 26px rgba(11,31,77,.2);padding:14px 14px 18px;z-index:10;}
+  .mini-drawer .dh{font-size:11px;font-weight:800;color:#0B1F4D;margin-bottom:10px;display:flex;justify-content:space-between;}
+  .mini-drawer .dh span{font-size:9px;color:#0057FF;font-weight:700;}
+  .mini-field{margin-bottom:9px;}
+  .mini-field .fl{font-size:8.5px;font-weight:800;color:#9AA3BD;text-transform:uppercase;margin-bottom:5px;}
+  .mini-chips{display:flex;gap:5px;flex-wrap:wrap;}
+  .mini-chip{background:#EEF1F8;border-radius:8px;padding:5px 8px;font-size:9px;font-weight:700;color:#0B1F4D;}
+  .mini-chip.on{background:#0057FF;color:#fff;}
+
+  @media (max-width:980px){
+    .principles{grid-template-columns:repeat(2,1fr);}
+    .frames{grid-template-columns:1fr;}
+    .device{width:300px;height:600px;}
+  }
+  @media (max-width:640px){
+    .fab-stack{top:auto;top:150px;}
+    .legend-card{width:170px;padding:12px 13px;}
+    .principles{grid-template-columns:1fr;}
+    .explain{padding:48px 18px 70px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- HERO — L'ÉCRAN RÉEL, PROPRE, "ZOOM FRANCE" PAR DÉFAUT -->
+<!-- ============================================================ -->
+<section class="app" aria-label="Carte Copilote — vue par défaut, échelle nationale">
+
+  <div class="map-layer">
+    <!-- SVG placeholder : silhouette France stylisée + zones choropleth CA -->
+    <svg viewBox="0 0 420 480" xmlns="http://www.w3.org/2000/svg">
+      <!-- silhouette globale (contour doux) -->
+      <path d="M150 18 L260 14 L318 55 L340 118 L392 150 L378 210 L330 226 L340 292 L296 372 L246 420 L192 456 L146 430 L108 372 L64 330 L40 250 L58 176 L36 120 L86 70 L150 18 Z"
+            fill="#fff" opacity="0" />
+
+      <!-- zone Nord / Hauts-de-France -->
+      <path class="zone" d="M150 18 L260 14 L280 60 L232 92 L172 84 L142 52 Z" fill="var(--z2)"/>
+      <text class="zone-label light" x="205" y="55">Hauts-de-France</text>
+
+      <!-- zone Normandie (mise en avant, secteur du commercial) -->
+      <path class="zone" d="M64 90 L142 52 L172 84 L160 140 L96 156 L60 130 Z" fill="var(--z4)"/>
+      <text class="zone-label light" x="98" y="108">Normandie</text>
+      <circle class="halo" cx="115" cy="112" r="46"/>
+
+      <!-- zone Bretagne -->
+      <path class="zone" d="M36 120 L60 130 L96 156 L84 206 L28 196 L18 150 Z" fill="var(--z1)"/>
+      <text class="zone-label" x="42" y="168" style="fill:#0B1F4D">Bretagne</text>
+
+      <!-- zone IDF -->
+      <path class="zone" d="M172 84 L232 92 L246 138 L206 160 L160 140 Z" fill="var(--z3)"/>
+      <text class="zone-label light" x="192" y="120">IDF</text>
+
+      <!-- zone Grand Est -->
+      <path class="zone" d="M232 92 L280 60 L340 118 L318 168 L246 138 Z" fill="var(--z2)"/>
+      <text class="zone-label light" x="278" y="115">Grand Est</text>
+
+      <!-- zone Pays de la Loire / Centre -->
+      <path class="zone" d="M84 206 L96 156 L160 140 L206 160 L188 220 L128 238 Z" fill="var(--z1)"/>
+      <text class="zone-label" x="130" y="196" style="fill:#0B1F4D">Centre</text>
+
+      <!-- zone Bourgogne / Rhône -->
+      <path class="zone" d="M206 160 L246 138 L318 168 L330 226 L286 250 L228 234 L188 220 Z" fill="var(--z2)"/>
+      <text class="zone-label light" x="255" y="200">Rhône-Alpes</text>
+
+      <!-- zone Nouvelle-Aquitaine -->
+      <path class="zone" d="M28 196 L84 206 L128 238 L120 320 L58 330 L20 260 Z" fill="var(--z0)"/>
+      <text class="zone-label" x="60" y="270" style="fill:#0B1F4D">Nouvelle-Aquitaine</text>
+
+      <!-- zone Auvergne -->
+      <path class="zone" d="M128 238 L188 220 L228 234 L214 296 L156 300 Z" fill="var(--z1)"/>
+
+      <!-- zone Occitanie -->
+      <path class="zone" d="M58 330 L120 320 L156 300 L214 296 L228 350 L176 396 L118 384 Z" fill="var(--z2)"/>
+      <text class="zone-label light" x="130" y="352">Occitanie</text>
+
+      <!-- zone PACA -->
+      <path class="zone" d="M214 296 L286 250 L330 226 L340 292 L296 340 L228 350 Z" fill="var(--z3)"/>
+      <text class="zone-label light" x="270" y="290">PACA</text>
+
+      <!-- Corse -->
+      <path class="zone" d="M352 300 L366 296 L372 330 L358 344 L346 322 Z" fill="var(--z1)"/>
+
+      <!-- mini officines/prospects épars, discrets, seulement 5-6 sur toute la France -->
+      <circle class="officine-dot" cx="118" cy="118" r="5"/>
+      <circle class="officine-dot" cx="130" cy="98" r="5"/>
+      <circle class="prospect-dot" cx="104" cy="132" r="5"/>
+      <circle class="officine-dot" cx="200" cy="130" r="4"/>
+      <circle class="officine-dot" cx="270" cy="270" r="4"/>
+      <circle class="prospect-dot" cx="90" cy="290" r="4"/>
+    </svg>
+  </div>
+
+  <!-- niveau / breadcrumb zoom -->
+  <div class="level-pill" aria-hidden="true">
+    <span class="step now">France</span>
+    <span>›</span>
+    <span class="step">Département</span>
+    <span>›</span>
+    <span class="step">Officines</span>
+  </div>
+
+  <!-- top : recherche + vue -->
+  <div class="topbar">
+    <div class="search-row">
+      <div class="search-pill">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" placeholder="Pharmacie, ville, groupement…" />
+      </div>
+      <button class="icon-btn" aria-label="Filtres">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        <span class="dot-badge"></span>
+      </button>
+    </div>
+    <div class="chip-row">
+      <div class="segmented">
+        <button class="active">Tout</button>
+        <button>Clients</button>
+        <button>Prospects</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- indicateur zoom -->
+  <div class="zoom-hint">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    Zoomez pour voir les officines
+  </div>
+
+  <!-- pile flottante droite : indicateur + points/bulles + géoloc -->
+  <div class="fab-stack">
+    <div class="fab fab-indicator">
+      <div class="top">
+        <span class="swatch"></span>
+        <div>
+          <div class="lbl">CA</div>
+          <div class="sub">1 indicateur actif</div>
+        </div>
+      </div>
+    </div>
+    <div class="fab round" aria-label="Points ou bulles" title="Points / Bulles — dispo au zoom officines">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity=".4"><circle cx="8" cy="12" r="2.4"/><circle cx="16" cy="12" r="4.4"/></svg>
+    </div>
+    <div class="fab round" aria-label="Ma position">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="5"/></svg>
+    </div>
+  </div>
+
+  <!-- légende (un seul indicateur = une seule légende) -->
+  <div class="legend-card">
+    <div class="lt">
+      Chiffre d'affaires
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="grad-bar"></div>
+    <div class="grad-lbls"><span>Faible</span><span>Fort</span></div>
+    <div class="legend-foot">Zone en surbrillance : <b>Normandie</b> — 214 officines · CA fort</div>
+  </div>
+
+  <!-- bottom sheet Ma tournée, à l'état "peek" (repliée) -->
+  <div class="sheet" role="region" aria-label="Ma tournée">
+    <div class="sheet-handle"><div class="bar"></div></div>
+    <div class="sheet-peek">
+      <div class="peek-left">
+        <div class="peek-badge">3</div>
+        <div>
+          <div class="peek-title">Ma tournée</div>
+          <div class="peek-sub">3 officines sélectionnées · ~42 km</div>
+        </div>
+      </div>
+      <svg class="peek-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M18 15l-6-6-6 6"/></svg>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============================================================ -->
+<!-- EXPLICATION DU PARTI-PRIS -->
+<!-- ============================================================ -->
+<section class="explain">
+
+  <div class="explain-head">
+    <div class="kicker"><span class="d"></span>ANGLE « FIELD TOOL »</div>
+    <h2>Une carte qu'on lit au comptoir, en 2 secondes</h2>
+    <p>Inspiration Uber / Waze : plein écran, contrôles flottants minimaux, zéro sidebar. Et la leçon de La Loupe : à l'échelle large, on colore des <b>zones</b>, pas 19&nbsp;000 points — un seul indicateur à la fois, une légende évidente.</p>
+  </div>
+
+  <div class="principles">
+    <div class="p-card">
+      <div class="p-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+      <h3>Zones avant points</h3>
+      <p>À l'échelle France/région : choropleth. Il faut zoomer pour faire apparaître les officines individuelles (points ou bulles). Le trop-plein disparaît par construction.</p>
+    </div>
+    <div class="p-card">
+      <div class="p-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+      <h3>Un indicateur à la fois</h3>
+      <p>Un seul bouton « Couleur » affiche le mode actif (CA, Commercial, UGA…). On ne voit jamais 5 légendes en même temps — la couleur ne veut dire qu'une seule chose.</p>
+    </div>
+    <div class="p-card">
+      <div class="p-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="3"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+      <h3>Tournée en bottom-sheet</h3>
+      <p>Repliée par défaut (une ligne). On la tire du pouce pour composer, optimiser puis démarrer dans Google Maps — jamais un panneau qui mange la carte.</p>
+    </div>
+    <div class="p-card">
+      <div class="p-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div>
+      <h3>Filtres rangés</h3>
+      <p>Commercial, département, groupement : cachés derrière un seul bouton filtre avec pastille. Ils ne polluent l'écran que quand on les demande.</p>
+    </div>
+  </div>
+
+  <div class="frames-head">
+    <h2>3 états, le même langage</h2>
+    <span>Zones → Officines → Filtres/Indicateur</span>
+  </div>
+
+  <div class="frames">
+
+    <!-- FRAME 1 : zoom officines + bulles + tournée ouverte -->
+    <div class="frame-col">
+      <div class="frame-tag"><span class="n">1</span> Zoom officines</div>
+      <div class="device">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="mini-top">
+            <div class="mini-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Rouen, Pharmacie…</div>
+            <div class="mini-seg"><span class="on">Tout</span><span>Clients</span><span>Prospects</span></div>
+          </div>
+
+          <div class="mini-fab" style="top:104px;">
+            <div class="t"><span class="sw"></span>CA · Bulles</div>
+          </div>
+
+          <div class="mini-legend" style="top:150px;">
+            <div class="lt">Chiffre d'affaires</div>
+            <div class="mini-grad"></div>
+            <div class="mini-grad-lbl"><span>Faible</span><span>Fort</span></div>
+          </div>
+
+          <!-- bulles proportionnelles au CA, zoom Rouen -->
+          <svg viewBox="0 0 280 560" style="position:absolute;inset:0;">
+            <circle cx="150" cy="230" r="26" fill="#0057FF" opacity=".85"/>
+            <circle cx="90" cy="290" r="16" fill="#3A72FF" opacity=".85"/>
+            <circle cx="200" cy="180" r="10" fill="#7FA6FF" opacity=".9"/>
+            <circle cx="205" cy="300" r="9" fill="#fff" stroke="#0057FF" stroke-width="2.5"/>
+            <circle cx="120" cy="180" r="7" fill="#fff" stroke="#0057FF" stroke-width="2.5"/>
+            <circle cx="150" cy="230" r="26" fill="none" stroke="#00E5A0" stroke-width="2" stroke-dasharray="3 3"/>
+          </svg>
+
+          <div class="mini-sheet" style="height:236px;">
+            <div class="handle"><span></span></div>
+            <div class="mini-row">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="mini-badge">3</div>
+                <div><div class="mini-title">Ma tournée</div><div class="mini-sub">42 km · optimisée</div></div>
+              </div>
+            </div>
+            <div class="mini-card"><span class="mini-dot" style="background:#0057FF"></span><div><div class="mini-name">Pharmacie du Vieux-Marché</div><div class="mini-city">Rouen (76)</div></div><span class="mini-dist">4,2 km</span></div>
+            <div class="mini-card"><span class="mini-dot" style="background:#0057FF"></span><div><div class="mini-name">Pharmacie Saint-Sever</div><div class="mini-city">Rouen (76)</div></div><span class="mini-dist">6,8 km</span></div>
+            <div class="mini-card"><span class="mini-dot" style="background:#fff;border:2px solid #0057FF"></span><div><div class="mini-name">Pharmacie de la Mairie</div><div class="mini-city">Sotteville (76)</div></div><span class="mini-dist">9,1 km</span></div>
+            <div class="mini-actions">
+              <div class="mini-btn">📍 Démarrer dans Google Maps</div>
+              <div class="mini-btn2">Prospects proches</div>
+              <div class="mini-link">Exporter vers Google My Maps</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="frame-cap">Au zoom, les zones cèdent la place aux officines : points ou bulles (taille = CA). Sélection → tournée déjà ouverte, prête à démarrer.</p>
+    </div>
+
+    <!-- FRAME 2 : indicateur ouvert -->
+    <div class="frame-col">
+      <div class="frame-tag"><span class="n">2</span> Choisir l'indicateur</div>
+      <div class="device">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="mini-top">
+            <div class="mini-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Pharmacie, ville…</div>
+          </div>
+
+          <div style="position:absolute;top:100px;right:10px;">
+            <div class="mini-fab" style="position:relative;top:0;right:0;margin-bottom:8px;"><div class="t"><span class="sw"></span>CA</div></div>
+            <div class="mini-popover" style="position:relative;">
+              <div class="h">Couleur = 1 indicateur</div>
+              <div class="mini-opt sel"><span class="rd"></span>Chiffre d'affaires</div>
+              <div class="mini-opt"><span class="rd"></span>Commercial</div>
+              <div class="mini-opt"><span class="rd"></span>Client / Prospect</div>
+              <div class="mini-opt"><span class="rd"></span>UGA (zone)</div>
+              <div class="mini-opt"><span class="rd"></span>Groupement</div>
+            </div>
+          </div>
+
+          <svg viewBox="0 0 280 560" style="position:absolute;inset:0;opacity:.5;">
+            <path d="M60 200 L150 170 L220 220 L200 320 L120 360 L60 300 Z" fill="#0B1F4D"/>
+            <path d="M40 300 L60 300 L120 360 L100 420 L50 400 Z" fill="#7FA6FF"/>
+          </svg>
+
+          <div class="mini-sheet" style="height:52px;">
+            <div class="handle"><span></span></div>
+            <div class="mini-row">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="mini-badge">0</div>
+                <div><div class="mini-title">Ma tournée</div><div class="mini-sub">Touchez des officines</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="frame-cap">Un tap sur le bouton « Couleur » : liste courte à choix unique. Jamais 5 légendes en même temps — on hiérarchise, on ne cumule pas.</p>
+    </div>
+
+    <!-- FRAME 3 : filtres ouverts -->
+    <div class="frame-col">
+      <div class="frame-tag"><span class="n">3</span> Filtres au tiroir</div>
+      <div class="device">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="mini-top">
+            <div class="mini-search" style="opacity:.4;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Pharmacie, ville…</div>
+          </div>
+          <svg viewBox="0 0 280 560" style="position:absolute;inset:0;opacity:.25;">
+            <path d="M60 200 L150 170 L220 220 L200 320 L120 360 L60 300 Z" fill="#3A72FF"/>
+          </svg>
+
+          <div class="mini-drawer" style="height:410px;">
+            <div class="dh">Filtres <span>Réinitialiser</span></div>
+            <div class="mini-field">
+              <div class="fl">Commercial</div>
+              <div class="mini-chips">
+                <span class="mini-chip on">Pauline</span>
+                <span class="mini-chip">Ingrid</span>
+                <span class="mini-chip">Manon</span>
+                <span class="mini-chip">Morgane</span>
+              </div>
+            </div>
+            <div class="mini-field">
+              <div class="fl">Département</div>
+              <div class="mini-chips">
+                <span class="mini-chip on">76 · Seine-Mar.</span>
+                <span class="mini-chip">14 · Calvados</span>
+                <span class="mini-chip">27 · Eure</span>
+                <span class="mini-chip">61 · Orne</span>
+              </div>
+            </div>
+            <div class="mini-field">
+              <div class="fl">Groupement</div>
+              <div class="mini-chips">
+                <span class="mini-chip">Giphar</span>
+                <span class="mini-chip on">Pharmabest</span>
+                <span class="mini-chip">Pharmavie</span>
+                <span class="mini-chip">Novapharm</span>
+                <span class="mini-chip">Indépendant</span>
+              </div>
+            </div>
+            <div class="mini-actions" style="padding-top:6px;">
+              <div class="mini-btn">Appliquer les filtres</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="frame-cap">Commercial, département, groupement : un seul tiroir, une pastille sur l'icône si des filtres sont actifs. La carte reste dégagée.</p>
+    </div>
+
+  </div>
+
+</section>
+
+</body>
+</html>
