@@ -376,7 +376,65 @@
   }
   V2.carteTourItinerary = function () {
     if (!tour.length) return;
-    window.open('https://www.google.com/maps/dir/' + tour.map(function (s) { return s.lat + ',' + s.lng; }).join('/'), '_blank');
+    var stops = routeStops();   // inclut le dépôt en départ/retour si défini
+    var coords = stops.map(function (s) { return s.lat + ',' + s.lng; });
+    var MAX = 10;   // Google Maps ~10 points max par itinéraire
+    if (coords.length <= MAX) { window.open('https://www.google.com/maps/dir/' + coords.join('/'), '_blank'); return; }
+    // tournée longue → découpe en itinéraires qui s'enchaînent (fin d'un = départ du suivant)
+    var parts = []; for (var i = 0; i < coords.length - 1; i += MAX - 1) parts.push(coords.slice(i, i + MAX));
+    parts.forEach(function (c) { window.open('https://www.google.com/maps/dir/' + c.join('/'), '_blank'); });
+    if (V2.toast) V2.toast('Tournée longue : ouverte en ' + parts.length + ' itinéraires Google Maps');
+  };
+
+  // Export KML de toutes les officines → à importer dans Google My Maps (1 icône/couleur par groupement)
+  V2.carteExportKml = function () {
+    if (!D || !D.p || !D.p.length) { if (V2.toast) V2.toast('Carte pas encore chargée'); return; }
+    var xe = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    var kmlColor = function (hex) {   // #rrggbb -> aabbggrr (ordre KML)
+      var h = (hex || '#8894a8').replace('#', '');
+      if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+      return 'ff' + h.slice(4, 6) + h.slice(2, 4) + h.slice(0, 2);
+    };
+    var byGrp = {}, nExp = 0;
+    D.p.forEach(function (p) {
+      if (!(p[0] && p[1])) return;   // pas de coordonnées -> on saute
+      if (!pass(p)) return;          // seulement le set filtré/visible à l'écran (pas les 19 000 pharmacies de France)
+      var g = p[3] || '';
+      (byGrp[g] = byGrp[g] || []).push(p); nExp++;
+    });
+    if (!nExp) { if (V2.toast) V2.toast('Aucune officine dans le filtre courant'); return; }
+    if (nExp > 9000) { if (V2.toast) V2.toast('Trop d\'officines (' + nExp + ') pour Google My Maps — filtre d\'abord par commercial ou département'); return; }
+    var styles = '', folders = '', gi = 0;
+    Object.keys(byGrp).forEach(function (g) {
+      var gname = (D.grp[g] && D.grp[g] !== '—') ? D.grp[g] : 'Sans groupement';
+      var sid = 'grp' + (gi++);
+      styles += '<Style id="' + sid + '"><IconStyle><color>' + kmlColor(GRP_COL[g]) + '</color><scale>1.1</scale>' +
+        '<Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle></Style>';
+      var pms = byGrp[g].map(function (p) {
+        var ca = caOf(p), seg = D.seg[p[4]] || '';
+        var desc = [
+          xe((p[7] || '') + (p[8] ? ', ' + p[8] : '')),
+          p[10] ? 'Titulaire : ' + xe(p[10]) : '',
+          p[9] ? 'Tél : ' + xe(p[9]) : '',
+          seg ? 'Statut : ' + xe(seg) : '',
+          gname !== 'Sans groupement' ? 'Groupement : ' + xe(gname) : '',
+          ca ? 'CA : ' + Math.round(ca).toLocaleString('fr') + ' €' : ''
+        ].filter(Boolean).join('\n');
+        return '<Placemark><name>' + xe(p[6] || 'Pharmacie') + '</name><description>' + desc + '</description>' +
+          '<styleUrl>#' + sid + '</styleUrl><Point><coordinates>' + p[1] + ',' + p[0] + ',0</coordinates></Point></Placemark>';
+      }).join('');
+      folders += '<Folder><name>' + xe(gname) + ' (' + byGrp[g].length + ')</name>' + pms + '</Folder>';
+    });
+    var kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document>' +
+      '<name>Officines Intégral Pharma</name>' + styles + folders + '</Document></kml>';
+    try {
+      var blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
+      var url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = 'officines-integral-' + new Date().toISOString().slice(0, 10) + '.kml';
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { if (a.parentNode) document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+      if (V2.toast) V2.toast(nExp + ' officines exportées — importe le .kml dans Google My Maps');
+    } catch (e) { if (V2.toast) V2.toast('Export impossible sur ce navigateur', 'error'); }
   };
   V2.carteTourAgenda = function () {
     if (!tour.length) return;
@@ -489,7 +547,7 @@
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteProspects()">Prospects proches</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourSaveAs()">Enregistrer</button>' : '') +
         '<button class="v2-btn v2-btn-ghost" onclick="V2.carteToursOpen()">Mes tournées</button>' +
-        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourItinerary()">Itinéraire GPS</button>' : '') +
+        (tour.length >= 1 ? '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourItinerary()">' + ICO('pharma', 15) + 'Démarrer dans Google Maps</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourAgenda()">Agenda</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourClear()">Vider</button>' : '') +
         '</div>' +
@@ -690,6 +748,7 @@
               '<button onclick="V2.carteTourOpen()">Ma tournée</button>' +
               '<button onclick="V2.go(\'pharma\',\'groupements\')">Listes d\'achats groupements</button>' +
               '<button onclick="V2.go(\'offilog\')">Prix concurrents</button>' +
+              '<button onclick="V2.carteExportKml()">Exporter vers Google My Maps</button>' +
             '</div>' +
           '</aside>' +
           '<div class="cn-maparea"><div id="carte-map"></div>' +
