@@ -1,0 +1,1337 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilote — Carte (Design 7 · Éditorial minimal)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ RESET ============ */
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0;}
+input{font:inherit;color:inherit;}
+ul{margin:0;padding:0;list-style:none;}
+svg{display:block;}
+
+/* ============ TOKENS ============ */
+:root{
+  --blue:#0057FF;
+  --blue-dim:#3D7BFF;
+  --blue-pale:#86ACFF;
+  --encre:#0B1F4D;
+  --mint:#00E5A0;
+  --teal:#00A99A;
+  --violet:#6C63FF;
+  --slate:#5B6B8C;
+  --amber:#E2963C;
+  --grey-cat:#9AA5B8;
+
+  --bg-page:#EEF1F6;
+  --bg:#FAFBFC;
+  --surface:#FFFFFF;
+  --border:#E7EAF0;
+  --border-soft:#EEF1F6;
+  --text:#0B1F4D;
+  --text-mut:#66708A;
+  --text-faint:#9AA5B8;
+
+  --radius-sm:8px;
+  --radius:12px;
+  --radius-lg:18px;
+  --shadow-sm:0 1px 2px rgba(11,31,77,.05);
+  --shadow-md:0 10px 28px rgba(11,31,77,.10), 0 2px 6px rgba(11,31,77,.05);
+  --shadow-lg:0 24px 64px rgba(11,31,77,.16), 0 4px 12px rgba(11,31,77,.06);
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+
+body{
+  min-height:100vh;
+  background:var(--bg-page);
+  font-family:'Inter',sans-serif;
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ============ PAGE / PRESENTATION CHROME ============ */
+.page{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  padding:22px clamp(14px,3vw,36px);
+  gap:16px;
+}
+.page-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.page-head .lockup{display:flex;flex-direction:column;gap:2px;}
+.eyebrow{
+  font:600 11px/1.2 'Inter',sans-serif;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--text-faint);
+}
+.page-title{
+  font:600 15px/1.3 'Space Grotesk',sans-serif;
+  color:var(--text);
+}
+.preview-toggle{
+  display:inline-flex;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:3px;
+  gap:2px;
+  box-shadow:var(--shadow-sm);
+}
+.preview-toggle button{
+  padding:7px 16px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--text-mut);
+  display:flex;align-items:center;gap:6px;
+  transition:background .18s var(--ease),color .18s var(--ease);
+}
+.preview-toggle button.active{background:var(--encre);color:#fff;}
+.preview-toggle button svg{width:14px;height:14px;}
+
+.frame-wrap{
+  flex:1;
+  display:flex;
+  justify-content:center;
+  min-height:0;
+}
+.app-frame{
+  background:var(--bg);
+  width:100%;
+  height:min(860px, calc(100vh - 130px));
+  border-radius:20px;
+  overflow:hidden;
+  border:1px solid rgba(11,31,77,.07);
+  box-shadow:var(--shadow-lg);
+  display:flex;
+  flex-direction:column;
+  container-type:inline-size;
+  container-name:app;
+  transition:width .38s var(--ease), border-radius .38s var(--ease);
+  position:relative;
+}
+.app-frame.is-mobile{
+  width:392px;
+  height:min(830px, calc(100vh - 130px));
+  border-radius:38px;
+  border:1px solid rgba(11,31,77,.10);
+  flex:0 0 auto;
+}
+.app-frame.is-mobile::before{
+  content:"";
+  position:absolute;
+  top:10px;left:50%;
+  transform:translateX(-50%);
+  width:84px;height:5px;
+  border-radius:4px;
+  background:rgba(11,31,77,.14);
+  z-index:50;
+}
+
+/* ============ TOPBAR ============ */
+.topbar{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:0 22px;
+  height:60px;
+  flex:0 0 auto;
+  border-bottom:1px solid var(--border);
+  background:var(--surface);
+  flex-wrap:wrap;
+}
+.brand{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Space Grotesk',sans-serif;
+  font-weight:700;font-size:15px;color:var(--text);
+  white-space:nowrap;
+}
+.brand .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);flex:0 0 auto;}
+.brand .sub{font-family:'Inter',sans-serif;font-weight:500;font-size:11px;color:var(--text-faint);margin-left:2px;}
+
+.segmented{
+  display:inline-flex;
+  background:var(--border-soft);
+  border-radius:10px;
+  padding:3px;
+  gap:2px;
+}
+.segmented button{
+  padding:7px 14px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--text-mut);
+  transition:background .18s var(--ease),color .18s var(--ease),box-shadow .18s var(--ease);
+  white-space:nowrap;
+}
+.segmented button.active{background:#fff;color:var(--text);box-shadow:var(--shadow-sm);}
+
+.search{
+  flex:1 1 220px;
+  position:relative;
+  max-width:360px;
+}
+.search svg{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;color:var(--text-faint);
+  pointer-events:none;
+}
+.search input{
+  width:100%;
+  border:1px solid var(--border);
+  background:var(--border-soft);
+  border-radius:10px;
+  padding:9px 12px 9px 34px;
+  font-size:13.5px;
+  color:var(--text);
+  outline:none;
+  transition:border-color .18s var(--ease), background .18s var(--ease);
+}
+.search input::placeholder{color:var(--text-faint);}
+.search input:focus{border-color:var(--blue);background:#fff;}
+
+.topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.icon-btn{
+  position:relative;
+  width:36px;height:36px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-mut);
+  transition:border-color .18s var(--ease), color .18s var(--ease), background .18s var(--ease);
+}
+.icon-btn:hover{border-color:var(--blue);color:var(--blue);}
+.icon-btn svg{width:17px;height:17px;}
+.icon-btn .badge{
+  position:absolute;top:-6px;right:-6px;
+  min-width:17px;height:17px;padding:0 4px;
+  background:var(--blue);color:#fff;
+  border-radius:9px;
+  font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #fff;
+}
+.btn-filters{
+  display:flex;align-items:center;gap:7px;
+  height:36px;padding:0 13px;
+  border-radius:10px;border:1px solid var(--border);background:#fff;
+  font-size:13px;font-weight:600;color:var(--text);
+  transition:border-color .18s var(--ease);
+}
+.btn-filters:hover{border-color:var(--blue);}
+.btn-filters svg{width:15px;height:15px;color:var(--text-mut);}
+.btn-filters .count{
+  min-width:18px;height:18px;padding:0 5px;
+  background:var(--encre);color:#fff;border-radius:9px;
+  font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+
+.avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--border-soft);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font:700 11px 'Space Grotesk',sans-serif;color:var(--text-mut);
+  flex:0 0 auto;
+}
+
+/* ============ SUBBAR (display controls) ============ */
+.subbar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 22px;
+  height:48px;
+  flex:0 0 auto;
+  border-bottom:1px solid var(--border-soft);
+  background:#FCFDFE;
+}
+.subbar-label{
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-faint);
+  white-space:nowrap;
+}
+
+.color-picker{position:relative;}
+.color-trigger{
+  display:flex;align-items:center;gap:8px;
+  height:34px;padding:0 12px;
+  border:1px solid var(--border);border-radius:9px;background:#fff;
+  font-size:13px;font-weight:600;color:var(--text);
+  transition:border-color .18s var(--ease);
+}
+.color-trigger:hover{border-color:var(--blue);}
+.color-trigger .swatch{
+  width:12px;height:12px;border-radius:3px;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--blue-pale),var(--blue) 55%,var(--encre));
+}
+.color-trigger svg{width:13px;height:13px;color:var(--text-faint);transition:transform .18s var(--ease);}
+.color-trigger[aria-expanded="true"] svg{transform:rotate(180deg);}
+
+.color-menu{
+  position:absolute;top:calc(100% + 8px);left:0;
+  width:300px;
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow-md);
+  padding:6px;
+  z-index:80;
+  opacity:0;visibility:hidden;transform:translateY(-6px);
+  transition:opacity .16s var(--ease), transform .16s var(--ease), visibility .16s;
+}
+.color-menu.open{opacity:1;visibility:visible;transform:translateY(0);}
+.color-opt{
+  display:flex;align-items:flex-start;gap:10px;
+  width:100%;padding:9px 10px;border-radius:8px;text-align:left;
+  transition:background .14s var(--ease);
+}
+.color-opt:hover{background:var(--border-soft);}
+.color-opt.active{background:rgba(0,87,255,.07);}
+.color-opt .swatch{
+  width:16px;height:16px;border-radius:4px;flex:0 0 auto;margin-top:2px;
+}
+.color-opt .meta{display:flex;flex-direction:column;gap:1px;}
+.color-opt .name{font-size:13px;font-weight:600;color:var(--text);}
+.color-opt .desc{font-size:11.5px;color:var(--text-mut);line-height:1.35;}
+.color-opt .check{margin-left:auto;width:15px;height:15px;color:var(--blue);flex:0 0 auto;opacity:0;}
+.color-opt.active .check{opacity:1;}
+
+.display-toggle{
+  display:inline-flex;background:var(--border-soft);border-radius:9px;padding:3px;gap:2px;
+}
+.display-toggle button{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 11px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--text-mut);
+  transition:background .18s var(--ease),color .18s var(--ease);
+}
+.display-toggle button svg{width:13px;height:13px;}
+.display-toggle button.active{background:#fff;color:var(--text);box-shadow:var(--shadow-sm);}
+.display-toggle button:disabled{opacity:.35;cursor:not-allowed;}
+
+.subbar-counter{
+  margin-left:auto;
+  font-size:12px;color:var(--text-faint);
+  white-space:nowrap;
+}
+.subbar-counter b{color:var(--text-mut);font-weight:700;}
+
+/* ============ STAGE / MAP ============ */
+.stage{
+  position:relative;
+  flex:1;
+  min-height:0;
+  background:linear-gradient(175deg,#F6F8FC 0%, #EEF2F8 100%);
+  overflow:hidden;
+}
+.mapcanvas{
+  position:absolute;
+  top:0;left:0;right:0;bottom:0;
+  margin:auto;
+  aspect-ratio:600/640;
+  max-width:100%;
+  max-height:100%;
+}
+.mapcanvas svg{width:100%;height:100%;display:block;}
+.zone-shape{transition:opacity .35s var(--ease);}
+.zone-shape.dim{opacity:.10;}
+.zone-shape.lit{opacity:.9;}
+.france-outline{fill:#F3F5F9;stroke:#DCE1EC;stroke-width:1.6;stroke-linejoin:round;}
+
+.map-caption{
+  position:absolute;top:18px;left:20px;
+  z-index:5;
+  pointer-events:none;
+}
+.map-caption .k1{
+  font:700 11px/1 'Inter',sans-serif;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--text-faint);
+}
+.map-caption .k2{
+  font:600 15px/1.3 'Space Grotesk',sans-serif;color:var(--text);margin-top:2px;
+}
+
+/* pins */
+.pins-layer{position:absolute;inset:0;}
+.pin{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  z-index:6;
+}
+.pin .dot{
+  display:block;
+  width:var(--ps,14px);height:var(--ps,14px);
+  border-radius:50%;
+  background:var(--pc,#0B1F4D);
+  border:2px solid #fff;
+  box-shadow:0 1px 3px rgba(11,31,77,.25), 0 0 0 1px rgba(11,31,77,.06);
+  transition:width .28s var(--ease), height .28s var(--ease), background-color .28s var(--ease), border-color .28s var(--ease), transform .15s var(--ease), box-shadow .2s var(--ease);
+}
+.pin.prospect .dot{border:2px dashed var(--mint);background:color-mix(in srgb, var(--pc,#0B1F4D) 78%, transparent);}
+.pin:hover .dot{transform:scale(1.18);}
+.pin.selected .dot{box-shadow:0 0 0 3px rgba(0,87,255,.35), 0 1px 3px rgba(11,31,77,.3);}
+.pin.hidden-filt{opacity:.12;pointer-events:none;transform:translate(-50%,-50%) scale(.7);}
+.pin.nearby .dot{animation:pulse 1.1s ease-in-out infinite;}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.55),0 1px 3px rgba(11,31,77,.25);}
+  50%{box-shadow:0 0 0 7px rgba(0,229,160,0),0 1px 3px rgba(11,31,77,.25);}
+}
+
+/* zoom inset */
+.zoom-inset{
+  position:absolute;
+  top:9%;left:5.5%;
+  width:170px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-md);
+  padding:11px 12px;
+  z-index:7;
+}
+.zoom-inset .zh{display:flex;align-items:center;gap:6px;color:var(--text-mut);margin-bottom:8px;}
+.zoom-inset .zh svg{width:12px;height:12px;}
+.zoom-inset .zh span{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+.zoom-inset .zrow{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+.zoom-inset .zrow:last-child{margin-bottom:0;}
+.zoom-inset .zdot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex:0 0 auto;}
+.zoom-inset .zname{font-size:11.5px;color:var(--text);font-weight:600;}
+.zoom-inset .zsub{font-size:10.5px;color:var(--text-faint);margin-left:auto;}
+
+/* legend */
+.legend{
+  position:absolute;
+  left:20px;bottom:20px;
+  width:238px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-md);
+  padding:14px 15px;
+  z-index:8;
+}
+.legend .lh{
+  font:700 11px/1 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text-faint);margin-bottom:10px;
+}
+.legend-body .row{display:flex;align-items:center;gap:9px;margin-bottom:8px;}
+.legend-body .row:last-child{margin-bottom:0;}
+.legend-body .sw{width:11px;height:11px;border-radius:50%;flex:0 0 auto;border:2px solid #fff;box-shadow:0 0 0 1px rgba(11,31,77,.1);}
+.legend-body .lbl{font-size:12.5px;color:var(--text);font-weight:500;}
+.legend-body .lbl small{display:block;color:var(--text-faint);font-size:10.5px;font-weight:400;}
+.legend-grad{height:8px;border-radius:5px;background:linear-gradient(90deg,#DCE7FF,var(--blue-pale),var(--blue-dim),var(--blue));margin-bottom:7px;}
+.legend-grad-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-faint);margin-bottom:9px;}
+.legend-note{font-size:11px;color:var(--text-faint);line-height:1.4;padding-top:9px;margin-top:9px;border-top:1px solid var(--border-soft);}
+.legend-sizes{display:flex;align-items:flex-end;gap:14px;margin-bottom:4px;}
+.legend-sizes .sz{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.legend-sizes .circ{border-radius:50%;background:var(--blue);opacity:.85;}
+.legend-sizes .szlbl{font-size:10.5px;color:var(--text-faint);}
+
+/* FAB tournée */
+.fab-tournee{
+  position:absolute;
+  right:20px;bottom:20px;
+  z-index:9;
+  display:flex;align-items:center;gap:9px;
+  height:48px;padding:0 18px 0 16px;
+  background:var(--encre);color:#fff;
+  border-radius:24px;
+  box-shadow:var(--shadow-lg);
+  font-size:13.5px;font-weight:600;
+  transition:transform .18s var(--ease), background .18s var(--ease);
+}
+.fab-tournee:hover{transform:translateY(-2px);background:#0e2a68;}
+.fab-tournee svg{width:16px;height:16px;}
+.fab-tournee .fcount{
+  min-width:20px;height:20px;padding:0 6px;
+  background:var(--mint);color:#04351f;
+  border-radius:10px;font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* toast */
+.toast{
+  position:absolute;
+  bottom:80px;left:50%;
+  transform:translate(-50%,10px);
+  background:var(--encre);color:#fff;
+  padding:10px 16px;border-radius:10px;
+  font-size:12.5px;font-weight:500;
+  box-shadow:var(--shadow-lg);
+  display:flex;align-items:center;gap:8px;
+  z-index:60;
+  opacity:0;pointer-events:none;
+  transition:opacity .22s var(--ease), transform .22s var(--ease);
+  white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+.toast svg{width:14px;height:14px;color:var(--mint);flex:0 0 auto;}
+
+/* backdrop */
+.backdrop{
+  position:absolute;inset:0;background:rgba(11,31,77,.28);
+  z-index:30;
+  opacity:0;visibility:hidden;
+  transition:opacity .25s var(--ease), visibility .25s;
+}
+.backdrop.show{opacity:1;visibility:visible;}
+
+/* ============ PANELS (filters / tournee / detail) ============ */
+.panel{
+  position:absolute;
+  top:0;bottom:0;
+  width:340px;
+  background:#fff;
+  z-index:40;
+  display:flex;flex-direction:column;
+  box-shadow:var(--shadow-lg);
+  transition:transform .32s var(--ease);
+}
+.panel-filters{left:0;transform:translateX(-100%);border-right:1px solid var(--border);}
+.panel-filters.open{transform:translateX(0);}
+.panel-tournee, .panel-detail{right:0;transform:translateX(100%);border-left:1px solid var(--border);}
+.panel-tournee.open, .panel-detail.open{transform:translateX(0);}
+
+.panel-head{
+  display:flex;align-items:center;gap:10px;
+  padding:16px 18px;
+  border-bottom:1px solid var(--border-soft);
+  flex:0 0 auto;
+}
+.panel-head h3{
+  font:600 15px 'Space Grotesk',sans-serif;color:var(--text);margin:0;flex:1;
+}
+.panel-head .close{
+  width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  color:var(--text-mut);border:1px solid var(--border);
+}
+.panel-head .close svg{width:14px;height:14px;}
+.panel-body{flex:1;overflow-y:auto;padding:16px 18px;}
+.panel-foot{padding:14px 18px 18px;border-top:1px solid var(--border-soft);flex:0 0 auto;}
+
+.filt-section{margin-bottom:22px;}
+.filt-section:last-child{margin-bottom:0;}
+.filt-title{font:700 11px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);margin-bottom:10px;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{
+  padding:6.5px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;
+  font-size:12.5px;font-weight:600;color:var(--text-mut);
+  transition:all .16s var(--ease);
+}
+.chip:hover{border-color:var(--blue);}
+.chip.active{background:var(--encre);border-color:var(--encre);color:#fff;}
+.chip .dotc{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle;}
+
+.results-line{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:12.5px;color:var(--text-mut);margin-bottom:10px;
+}
+.results-line b{color:var(--text);font-weight:700;}
+.reset-link{color:var(--blue);font-weight:600;font-size:12.5px;}
+.panel-foot .divider{height:1px;background:var(--border-soft);margin:12px 0;}
+.export-link{
+  display:flex;align-items:center;gap:8px;
+  color:var(--text-mut);font-size:12.5px;font-weight:500;
+  transition:color .16s var(--ease);
+}
+.export-link:hover{color:var(--blue);}
+.export-link svg{width:15px;height:15px;color:var(--text-faint);}
+
+/* tournee list */
+.stop-empty{
+  text-align:center;padding:30px 10px;color:var(--text-faint);font-size:13px;
+}
+.stop-empty svg{width:30px;height:30px;color:var(--border);margin-bottom:10px;}
+.stop{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-bottom:1px solid var(--border-soft);
+}
+.stop:last-child{border-bottom:none;}
+.stop .num{
+  width:22px;height:22px;border-radius:50%;background:var(--border-soft);color:var(--text-mut);
+  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+}
+.stop .info{flex:1;min-width:0;}
+.stop .nm{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stop .ct{font-size:11.5px;color:var(--text-faint);}
+.stop .rm{width:24px;height:24px;border-radius:6px;color:var(--text-faint);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.stop .rm:hover{color:#D64545;background:#FDECEC;}
+.stop .rm svg{width:13px;height:13px;}
+
+.actions-row{display:flex;gap:8px;margin-bottom:10px;}
+.btn-secondary{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  height:38px;border-radius:9px;border:1px solid var(--border);background:#fff;
+  font-size:12.5px;font-weight:700;color:var(--text);
+  transition:border-color .16s var(--ease);
+}
+.btn-secondary:hover{border-color:var(--blue);color:var(--blue);}
+.btn-secondary svg{width:14px;height:14px;}
+.btn-primary{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  height:46px;border-radius:10px;border:none;background:var(--blue);color:#fff;
+  font-size:13.5px;font-weight:700;
+  box-shadow:0 8px 20px rgba(0,87,255,.28);
+  transition:transform .16s var(--ease), background .16s var(--ease);
+}
+.btn-primary:hover{background:#0049DB;transform:translateY(-1px);}
+.btn-primary:disabled{background:var(--border);color:var(--text-faint);box-shadow:none;cursor:not-allowed;transform:none;}
+.btn-primary svg{width:16px;height:16px;}
+
+/* detail panel */
+.detail-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:7px;font-size:11px;font-weight:700;
+}
+.detail-badge.client{background:rgba(11,31,77,.08);color:var(--encre);}
+.detail-badge.prospect{background:rgba(0,229,160,.14);color:#03875f;}
+.detail-name{font:600 18px 'Space Grotesk',sans-serif;color:var(--text);margin:10px 0 3px;}
+.detail-city{font-size:13.5px;color:var(--text-mut);margin-bottom:18px;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;}
+.detail-item .dl{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin-bottom:4px;}
+.detail-item .dv{font-size:14px;font-weight:600;color:var(--text);}
+.detail-item .dv.big{font:600 20px 'Space Grotesk',sans-serif;color:var(--blue);}
+
+/* ============ MOBILE (container query) ============ */
+@container app (max-width: 700px){
+  .topbar{height:auto;padding:12px 14px;gap:9px;}
+  .brand .sub{display:none;}
+  .segmented{order:5;flex:1 1 100%;}
+  .search{order:6;flex:1 1 100%;max-width:none;}
+  .topbar-actions{margin-left:0;}
+  .btn-filters .lbl-text{display:none;}
+  .btn-filters{padding:0;width:36px;justify-content:center;}
+
+  .subbar{padding:0 14px;gap:9px;}
+  .subbar-counter{display:none;}
+  .color-trigger .lbl-text{max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .zoom-inset{display:none;}
+  .map-caption{top:14px;left:14px;}
+
+  .legend{
+    left:12px;right:12px;bottom:12px;width:auto;
+    display:flex;align-items:center;gap:10px;padding:10px 12px;
+    overflow-x:auto;
+  }
+  .legend .lh{display:none;}
+  .legend-body{display:flex;align-items:center;gap:14px;flex:1;}
+  .legend-body .row{margin-bottom:0;flex:0 0 auto;}
+  .legend-note{display:none;}
+  .legend-grad{width:70px;margin-bottom:0;}
+  .legend-grad-labels{display:none;}
+  .legend-sizes{gap:10px;margin-bottom:0;}
+
+  .fab-tournee{
+    right:12px;bottom:78px;
+    height:44px;padding:0 14px 0 12px;
+  }
+  .fab-tournee .flabel{display:none;}
+
+  .panel{width:100%;top:auto;bottom:0;height:auto;max-height:82%;border-radius:20px 20px 0 0;}
+  .panel-filters{transform:translateY(100%);border-right:none;}
+  .panel-filters.open{transform:translateY(0);}
+  .panel-tournee, .panel-detail{transform:translateY(100%);border-left:none;}
+  .panel-tournee.open, .panel-detail.open{transform:translateY(0);}
+}
+@container app (max-width: 420px){
+  .detail-grid{grid-template-columns:1fr 1fr;}
+  .legend{gap:8px;}
+}
+
+/* focus visibility */
+button:focus-visible, input:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px;}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-head">
+    <div class="lockup">
+      <span class="eyebrow">Maquette — Copilote · Carte tournée</span>
+      <span class="page-title">Design 7 — Éditorial minimal</span>
+    </div>
+    <div class="preview-toggle" id="previewToggle">
+      <button class="active" data-size="desktop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="1.5"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Bureau
+      </button>
+      <button data-size="mobile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        Mobile
+      </button>
+    </div>
+  </div>
+
+  <div class="frame-wrap">
+    <div class="app-frame" id="appFrame">
+
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="brand"><span class="dot"></span>Copilote<span class="sub">· Intégral Pharma</span></div>
+
+        <div class="segmented" id="viewSeg">
+          <button class="active" data-view="all">Tout</button>
+          <button data-view="client">Clients</button>
+          <button data-view="prospect">Prospects</button>
+        </div>
+
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="searchInput" type="text" placeholder="Pharmacie, ville…">
+        </div>
+
+        <div class="topbar-actions">
+          <button class="btn-filters" id="btnFilters">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6.2 7.7v6.3l-3.6 1.8v-8.1z"/></svg>
+            <span class="lbl-text">Filtres</span>
+            <span class="count" id="filtCount" style="display:none;">0</span>
+          </button>
+          <div class="avatar">WM</div>
+        </div>
+      </header>
+
+      <!-- SUBBAR -->
+      <div class="subbar">
+        <span class="subbar-label">Couleur</span>
+        <div class="color-picker" id="colorPicker">
+          <button class="color-trigger" id="colorTrigger" aria-expanded="false">
+            <span class="swatch" id="colorSwatch"></span>
+            <span class="lbl-text" id="colorLabel">UGA (zones)</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="color-menu" id="colorMenu">
+            <button class="color-opt active" data-mode="zone">
+              <span class="swatch" style="background:linear-gradient(135deg,#86ACFF,#0057FF)"></span>
+              <span class="meta"><span class="name">UGA (zones)</span><span class="desc">Vue territoire — densité par région</span></span>
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button class="color-opt" data-mode="commercial">
+              <span class="swatch" style="background:#0057FF"></span>
+              <span class="meta"><span class="name">Commercial</span><span class="desc">Qui couvre quelle officine</span></span>
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button class="color-opt" data-mode="type">
+              <span class="swatch" style="background:#00E5A0"></span>
+              <span class="meta"><span class="name">Client / Prospect</span><span class="desc">Statut de la relation</span></span>
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button class="color-opt" data-mode="ca">
+              <span class="swatch" style="background:#0B1F4D"></span>
+              <span class="meta"><span class="name">CA (bulles)</span><span class="desc">Poids économique de l'officine</span></span>
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button class="color-opt" data-mode="groupement">
+              <span class="swatch" style="background:#6C63FF"></span>
+              <span class="meta"><span class="name">Groupement</span><span class="desc">Appartenance réseau</span></span>
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <span class="subbar-label">Affichage</span>
+        <div class="display-toggle" id="displayToggle">
+          <button class="active" data-disp="points">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+            Points
+          </button>
+          <button data-disp="bulles">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="7"/></svg>
+            Bulles
+          </button>
+        </div>
+
+        <span class="subbar-counter" id="subbarCounter"><b id="visCount">19</b> officines affichées</span>
+      </div>
+
+      <!-- STAGE -->
+      <div class="stage" id="stage">
+        <div class="mapcanvas">
+          <svg viewBox="0 0 600 640" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <filter id="softBlur" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="16"/>
+              </filter>
+            </defs>
+            <path class="france-outline" d="M230,30 L300,35 L380,70 L400,160 L390,230 L430,300 L400,400 L340,470 L300,500 L230,510 L160,480 L130,420 L150,380 L120,340 L60,300 L30,255 L70,230 L130,200 L110,150 L120,100 L150,90 L180,60 Z"/>
+            <g filter="url(#softBlur)" id="zoneGroup">
+              <ellipse class="zone-shape lit" data-zone="Normandie" cx="190" cy="155" rx="95" ry="72" transform="rotate(8 190 155)" fill="#86ACFF" fill-opacity="0.55"/>
+              <ellipse class="zone-shape lit" data-zone="Pays de la Loire" cx="185" cy="345" rx="98" ry="86" transform="rotate(-6 185 345)" fill="#3D7BFF" fill-opacity="0.55"/>
+              <ellipse class="zone-shape lit" data-zone="Bretagne" cx="120" cy="262" rx="102" ry="82" transform="rotate(-16 120 262)" fill="#0057FF" fill-opacity="0.6"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="map-caption">
+          <div class="k1">Territoire suivi</div>
+          <div class="k2">Grand Ouest — 3 régions</div>
+        </div>
+
+        <div class="zoom-inset">
+          <div class="zh">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <span>Zoom · Rennes</span>
+          </div>
+          <div class="zrow"><span class="zdot"></span><span class="zname">Rennes</span><span class="zsub">35</span></div>
+          <div class="zrow"><span class="zdot" style="background:var(--slate)"></span><span class="zname">Fougères</span><span class="zsub">35</span></div>
+          <div class="zrow"><span class="zdot" style="background:var(--slate)"></span><span class="zname">Saint-Malo</span><span class="zsub">35</span></div>
+        </div>
+
+        <div class="pins-layer" id="pinsLayer">
+          <!-- Bretagne -->
+          <button class="pin client" data-id="1" data-name="Pharmacie du Marché" data-city="Rennes" data-dept="35" data-zone="Bretagne" data-group="Giphar" data-rep="Ingrid L." data-ca="210" data-type="client" style="left:28.3%;top:39.8%"><span class="dot"></span></button>
+          <button class="pin prospect" data-id="2" data-name="Pharmacie des Remparts" data-city="Saint-Malo" data-dept="35" data-zone="Bretagne" data-group="PHR" data-rep="Ingrid L." data-ca="95" data-type="prospect" style="left:23.3%;top:32.8%"><span class="dot"></span></button>
+          <button class="pin client" data-id="3" data-name="Grande Pharmacie du Golfe" data-city="Vannes" data-dept="56" data-zone="Bretagne" data-group="Pharmabest" data-rep="Ingrid L." data-ca="165" data-type="client" style="left:18.3%;top:46.9%"><span class="dot"></span></button>
+          <button class="pin prospect" data-id="4" data-name="Pharmacie de la Rade" data-city="Lorient" data-dept="56" data-zone="Bretagne" data-group="Indépendant" data-rep="Pauline G." data-ca="70" data-type="prospect" style="left:14.2%;top:45.3%"><span class="dot"></span></button>
+          <button class="pin client" data-id="5" data-name="Pharmacie du Château" data-city="Brest" data-dept="29" data-zone="Bretagne" data-group="Univers Pharmacie" data-rep="Ingrid L." data-ca="180" data-type="client" style="left:9.2%;top:40.6%"><span class="dot"></span></button>
+          <button class="pin prospect" data-id="6" data-name="Pharmacie de la Cathédrale" data-city="Quimper" data-dept="29" data-zone="Bretagne" data-group="Aprium" data-rep="Pauline G." data-ca="60" data-type="prospect" style="left:10.8%;top:46.9%"><span class="dot"></span></button>
+          <button class="pin client" data-id="7" data-name="Pharmacie Saint-Léonard" data-city="Fougères" data-dept="35" data-zone="Bretagne" data-group="Giphar" data-rep="Ingrid L." data-ca="120" data-type="client" style="left:32.5%;top:36.7%"><span class="dot"></span></button>
+
+          <!-- Normandie -->
+          <button class="pin client" data-id="8" data-name="Pharmacie de l'Hôtel de Ville" data-city="Caen" data-dept="14" data-zone="Normandie" data-group="PHR" data-rep="Morgane C." data-ca="230" data-type="client" style="left:32.5%;top:23.4%"><span class="dot"></span></button>
+          <button class="pin prospect" data-id="9" data-name="Pharmacie du Port" data-city="Cherbourg-en-Cotentin" data-dept="50" data-zone="Normandie" data-group="Indépendant" data-rep="Morgane C." data-ca="55" data-type="prospect" style="left:23.3%;top:17.2%"><span class="dot"></span></button>
+          <button class="pin client" data-id="10" data-name="Pharmacie de la Vire" data-city="Saint-Lô" data-dept="50" data-zone="Normandie" data-group="Giphar" data-rep="Morgane C." data-ca="88" data-type="client" style="left:26.7%;top:21.9%"><span class="dot"></span></button>
+          <button class="pin prospect" data-id="11" data-name="Pharmacie du Donjon" data-city="Alençon" data-dept="61" data-zone="Normandie" data-group="Aprium" data-rep="Pauline G." data-ca="75" data-type="prospect" style="left:38.3%;top:31.3%"><span class="dot"></span></button>
+          <button class="pin client" data-id="12" data-name="Pharmacie de la Plage" data-city="Bayeux" data-dept="14" data-zone="Normandie" data-group="Pharmabest" data-rep="Morgane C." data-ca="110" data-type="client" style="left:30%;top:22.7%"><span class="dot"></span></button>
+          <button class="pin prospect" data-id="13" data-name="Pharmacie Victor Hugo" data-city="Lisieux" data-dept="14" data-zone="Normandie" data-group="Univers Pharmacie" data-rep="Morgane C." data-ca="64" data-type="prospect" style="left:35%;top:24.2%"><span class="dot"></span></button>
+
+          <!-- Pays de la Loire -->
+          <button class="pin client" data-id="14" data-name="Pharmacie de l'Erdre" data-city="Nantes" data-dept="44" data-zone="Pays de la Loire" data-group="Giphar" data-rep="Manon D." data-ca="255" data-type="client" style="left:29.2%;top:53.9%"><span class="dot"></span></button>
+          <button class="pin client" data-id="15" data-name="Pharmacie Saint-Michel" data-city="Angers" data-dept="49" data-zone="Pays de la Loire" data-group="PHR" data-rep="Manon D." data-ca="145" data-type="client" style="left:37.5%;top:50%"><span class="dot"></span></button>
+          <button class="pin prospect" data-id="16" data-name="Pharmacie de la Mairie" data-city="Laval" data-dept="53" data-zone="Pays de la Loire" data-group="Indépendant" data-rep="Pauline G." data-ca="68" data-type="prospect" style="left:35.8%;top:43.8%"><span class="dot"></span></button>
+          <button class="pin client" data-id="17" data-name="Pharmacie de l'Estuaire" data-city="Saint-Nazaire" data-dept="44" data-zone="Pays de la Loire" data-group="Aprium" data-rep="Manon D." data-ca="98" data-type="client" style="left:23.3%;top:54.7%"><span class="dot"></span></button>
+          <button class="pin prospect" data-id="18" data-name="Pharmacie des Jacobins" data-city="Cholet" data-dept="49" data-zone="Pays de la Loire" data-group="Pharmabest" data-rep="Manon D." data-ca="82" data-type="prospect" style="left:33.3%;top:57.8%"><span class="dot"></span></button>
+          <button class="pin client" data-id="19" data-name="Pharmacie du Marais" data-city="La Roche-sur-Yon" data-dept="85" data-zone="Pays de la Loire" data-group="Univers Pharmacie" data-rep="Manon D." data-ca="120" data-type="client" style="left:27.5%;top:60.9%"><span class="dot"></span></button>
+        </div>
+
+        <!-- LEGEND -->
+        <div class="legend" id="legend">
+          <div class="lh" id="legendTitle">Densité officines suivies</div>
+          <div class="legend-body" id="legendBody"></div>
+        </div>
+
+        <!-- FAB -->
+        <button class="fab-tournee" id="fabTournee">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          <span class="flabel">Ma tournée</span>
+          <span class="fcount" id="fabCount" style="display:none;">0</span>
+        </button>
+
+        <!-- TOAST -->
+        <div class="toast" id="toast">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span id="toastMsg">—</span>
+        </div>
+
+        <!-- BACKDROP -->
+        <div class="backdrop" id="backdrop"></div>
+
+        <!-- FILTERS PANEL -->
+        <aside class="panel panel-filters" id="panelFilters">
+          <div class="panel-head">
+            <h3>Filtres</h3>
+            <button class="close" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
+          </div>
+          <div class="panel-body">
+            <div class="results-line"><span><b id="resultCount">19</b> / 19 officines</span><button class="reset-link" id="resetFilters">Réinitialiser</button></div>
+
+            <div class="filt-section">
+              <div class="filt-title">Commercial</div>
+              <div class="chips" id="chipsCommercial">
+                <button class="chip active" data-f="commercial" data-v="all">Toutes</button>
+                <button class="chip" data-f="commercial" data-v="Ingrid L."><span class="dotc" style="background:#0057FF"></span>Ingrid L.</button>
+                <button class="chip" data-f="commercial" data-v="Manon D."><span class="dotc" style="background:#00A99A"></span>Manon D.</button>
+                <button class="chip" data-f="commercial" data-v="Morgane C."><span class="dotc" style="background:#6C63FF"></span>Morgane C.</button>
+                <button class="chip" data-f="commercial" data-v="Pauline G."><span class="dotc" style="background:#5B6B8C"></span>Pauline G.</button>
+              </div>
+            </div>
+
+            <div class="filt-section">
+              <div class="filt-title">Département</div>
+              <div class="chips" id="chipsDept">
+                <button class="chip" data-f="dept" data-v="35">35 · Rennes</button>
+                <button class="chip" data-f="dept" data-v="56">56 · Vannes</button>
+                <button class="chip" data-f="dept" data-v="29">29 · Brest</button>
+                <button class="chip" data-f="dept" data-v="50">50 · Cherbourg</button>
+                <button class="chip" data-f="dept" data-v="14">14 · Caen</button>
+                <button class="chip" data-f="dept" data-v="61">61 · Alençon</button>
+                <button class="chip" data-f="dept" data-v="44">44 · Nantes</button>
+                <button class="chip" data-f="dept" data-v="49">49 · Angers</button>
+                <button class="chip" data-f="dept" data-v="85">85 · La Roche/Yon</button>
+              </div>
+            </div>
+
+            <div class="filt-section">
+              <div class="filt-title">Groupement</div>
+              <div class="chips" id="chipsGroup">
+                <button class="chip" data-f="group" data-v="Giphar">Giphar</button>
+                <button class="chip" data-f="group" data-v="PHR">PHR</button>
+                <button class="chip" data-f="group" data-v="Pharmabest">Pharmabest</button>
+                <button class="chip" data-f="group" data-v="Aprium">Aprium</button>
+                <button class="chip" data-f="group" data-v="Univers Pharmacie">Univers Pharmacie</button>
+                <button class="chip" data-f="group" data-v="Indépendant">Indépendant</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel-foot">
+            <div class="divider"></div>
+            <button class="export-link" id="btnExport">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 19h14"/></svg>
+              Exporter la sélection vers Google My Maps
+            </button>
+          </div>
+        </aside>
+
+        <!-- TOURNEE PANEL -->
+        <aside class="panel panel-tournee" id="panelTournee">
+          <div class="panel-head">
+            <h3>Ma tournée</h3>
+            <button class="close" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
+          </div>
+          <div class="panel-body">
+            <div id="stopsList">
+              <div class="stop-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                <div>Cliquez une officine sur la carte<br>pour l'ajouter à votre tournée.</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-foot">
+            <div class="actions-row">
+              <button class="btn-secondary" id="btnOptimize">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l1.5 4.5L19 9l-4.5 1.5L13 15l-1.5-4.5L7 9l4.5-1.5L13 3z"/></svg>
+                Optimiser
+              </button>
+              <button class="btn-secondary" id="btnNearby">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+                Prospects proches
+              </button>
+            </div>
+            <button class="btn-primary" id="btnStart" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              Démarrer dans Google Maps
+            </button>
+          </div>
+        </aside>
+
+        <!-- DETAIL PANEL -->
+        <aside class="panel panel-detail" id="panelDetail">
+          <div class="panel-head">
+            <h3>Fiche officine</h3>
+            <button class="close" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
+          </div>
+          <div class="panel-body">
+            <span class="detail-badge" id="detailBadge">Client</span>
+            <div class="detail-name" id="detailName">—</div>
+            <div class="detail-city" id="detailCity">—</div>
+            <div class="detail-grid">
+              <div class="detail-item"><div class="dl">Groupement</div><div class="dv" id="detailGroup">—</div></div>
+              <div class="detail-item"><div class="dl">Commercial</div><div class="dv" id="detailRep">—</div></div>
+              <div class="detail-item"><div class="dl">Zone</div><div class="dv" id="detailZone">—</div></div>
+              <div class="detail-item"><div class="dl">CA annuel</div><div class="dv big" id="detailCa">—</div></div>
+            </div>
+          </div>
+          <div class="panel-foot">
+            <button class="btn-primary" id="detailAddBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Ajouter à ma tournée
+            </button>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var pins = Array.prototype.slice.call(document.querySelectorAll('.pin'));
+  var state = {
+    view:'all', search:'', commercial:'all', depts:new Set(), groups:new Set(),
+    colorMode:'zone', display:'points', selected:[]
+  };
+
+  var repColors = {"Ingrid L.":"#0057FF","Manon D.":"#00A99A","Morgane C.":"#6C63FF","Pauline G.":"#5B6B8C"};
+  var groupColors = {"Giphar":"#0057FF","PHR":"#00A99A","Pharmabest":"#6C63FF","Aprium":"#E2963C","Univers Pharmacie":"#5B6B8C","Indépendant":"#9AA5B8"};
+  var zoneColors = {"Bretagne":"#0057FF","Pays de la Loire":"#3D7BFF","Normandie":"#86ACFF"};
+
+  function caSize(ca){
+    var v = 18 + (ca-55)/200*28;
+    return Math.max(16, Math.min(46, v));
+  }
+
+  function pinColor(p){
+    var d = p.dataset;
+    switch(state.colorMode){
+      case 'zone': return zoneColors[d.zone] || '#0B1F4D';
+      case 'commercial': return repColors[d.rep] || '#0B1F4D';
+      case 'groupement': return groupColors[d.group] || '#0B1F4D';
+      case 'type': return d.type === 'client' ? '#0B1F4D' : '#00E5A0';
+      case 'ca': return '#0057FF';
+      default: return '#0B1F4D';
+    }
+  }
+
+  function render(){
+    var useBubbles = state.display === 'bulles' || state.colorMode === 'ca';
+    pins.forEach(function(p){
+      var d = p.dataset;
+      p.style.setProperty('--pc', pinColor(p));
+      var size = useBubbles ? caSize(parseInt(d.ca,10)) : 14;
+      p.style.setProperty('--ps', size+'px');
+    });
+    // zone layer emphasis
+    var zoneEls = document.querySelectorAll('.zone-shape');
+    zoneEls.forEach(function(z){
+      z.classList.toggle('lit', state.colorMode === 'zone');
+      z.classList.toggle('dim', state.colorMode !== 'zone');
+    });
+    renderLegend();
+    applyFilters();
+  }
+
+  function renderLegend(){
+    var title = document.getElementById('legendTitle');
+    var body = document.getElementById('legendBody');
+    var html = '';
+    if(state.colorMode === 'zone'){
+      title.textContent = 'Densité officines suivies';
+      html += '<div style="width:100%">'
+            + '<div class="legend-grad"></div>'
+            + '<div class="legend-grad-labels"><span>Normandie</span><span>Pays de la Loire</span><span>Bretagne</span></div>'
+            + '<div class="legend-note">1 couleur = 1 indicateur. Zoomez une zone pour voir chaque officine (cf. inset Rennes).</div>'
+            + '</div>';
+    } else if(state.colorMode === 'commercial'){
+      title.textContent = 'Commercial';
+      Object.keys(repColors).forEach(function(k){
+        html += '<div class="row"><span class="sw" style="background:'+repColors[k]+'"></span><span class="lbl">'+k+'</span></div>';
+      });
+    } else if(state.colorMode === 'groupement'){
+      title.textContent = 'Groupement';
+      Object.keys(groupColors).forEach(function(k){
+        html += '<div class="row"><span class="sw" style="background:'+groupColors[k]+'"></span><span class="lbl">'+k+'</span></div>';
+      });
+    } else if(state.colorMode === 'type'){
+      title.textContent = 'Statut';
+      html += '<div class="row"><span class="sw" style="background:#0B1F4D;border:2px solid #fff"></span><span class="lbl">Client</span></div>';
+      html += '<div class="row"><span class="sw" style="background:rgba(0,229,160,.55);border:2px dashed #00E5A0"></span><span class="lbl">Prospect</span></div>';
+    } else if(state.colorMode === 'ca'){
+      title.textContent = 'CA annuel (taille)';
+      html += '<div class="legend-sizes">'
+            + '<div class="sz"><div class="circ" style="width:16px;height:16px"></div><span class="szlbl">&lt;80k€</span></div>'
+            + '<div class="sz"><div class="circ" style="width:28px;height:28px"></div><span class="szlbl">80–180k€</span></div>'
+            + '<div class="sz"><div class="circ" style="width:42px;height:42px"></div><span class="szlbl">&gt;180k€</span></div>'
+            + '</div>';
+    }
+    body.innerHTML = html;
+  }
+
+  function matchesFilters(p){
+    var d = p.dataset;
+    if(state.view !== 'all' && d.type !== state.view) return false;
+    if(state.commercial !== 'all' && d.rep !== state.commercial) return false;
+    if(state.depts.size && !state.depts.has(d.dept)) return false;
+    if(state.groups.size && !state.groups.has(d.group)) return false;
+    if(state.search){
+      var hay = (d.name+' '+d.city).toLowerCase();
+      if(hay.indexOf(state.search) === -1) return false;
+    }
+    return true;
+  }
+
+  function applyFilters(){
+    var visible = 0;
+    pins.forEach(function(p){
+      var ok = matchesFilters(p);
+      p.classList.toggle('hidden-filt', !ok);
+      if(ok) visible++;
+    });
+    document.getElementById('visCount').textContent = visible;
+    document.getElementById('resultCount').textContent = visible;
+
+    var activeCount = (state.commercial!=='all'?1:0) + state.depts.size + state.groups.size;
+    var badge = document.getElementById('filtCount');
+    if(activeCount>0){ badge.style.display='flex'; badge.textContent = activeCount; }
+    else { badge.style.display='none'; }
+  }
+
+  // ---------- view segmented ----------
+  document.getElementById('viewSeg').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-view]');
+    if(!btn) return;
+    this.querySelectorAll('button').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    state.view = btn.dataset.view;
+    applyFilters();
+  });
+
+  // ---------- search ----------
+  document.getElementById('searchInput').addEventListener('input', function(e){
+    state.search = e.target.value.trim().toLowerCase();
+    applyFilters();
+  });
+
+  // ---------- color mode dropdown ----------
+  var colorTrigger = document.getElementById('colorTrigger');
+  var colorMenu = document.getElementById('colorMenu');
+  colorTrigger.addEventListener('click', function(e){
+    e.stopPropagation();
+    var open = colorMenu.classList.toggle('open');
+    colorTrigger.setAttribute('aria-expanded', open);
+  });
+  document.addEventListener('click', function(){
+    colorMenu.classList.remove('open');
+    colorTrigger.setAttribute('aria-expanded','false');
+  });
+  colorMenu.querySelectorAll('.color-opt').forEach(function(opt){
+    opt.addEventListener('click', function(e){
+      e.stopPropagation();
+      colorMenu.querySelectorAll('.color-opt').forEach(function(o){o.classList.remove('active');});
+      opt.classList.add('active');
+      state.colorMode = opt.dataset.mode;
+      document.getElementById('colorLabel').textContent = opt.querySelector('.name').textContent;
+      document.getElementById('colorSwatch').style.background = opt.querySelector('.swatch').style.background;
+      colorMenu.classList.remove('open');
+      colorTrigger.setAttribute('aria-expanded','false');
+
+      var dt = document.getElementById('displayToggle');
+      var pointsBtn = dt.querySelector('[data-disp="points"]');
+      var bullesBtn = dt.querySelector('[data-disp="bulles"]');
+      if(state.colorMode === 'ca'){
+        pointsBtn.disabled = true;
+        pointsBtn.title = "Indisponible en mode CA — la taille encode déjà le chiffre d'affaires";
+        bullesBtn.classList.add('active'); pointsBtn.classList.remove('active');
+        state.display = 'bulles';
+      } else {
+        pointsBtn.disabled = false; pointsBtn.title='';
+      }
+      render();
+    });
+  });
+
+  // ---------- display toggle ----------
+  document.getElementById('displayToggle').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-disp]');
+    if(!btn || btn.disabled) return;
+    this.querySelectorAll('button').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    state.display = btn.dataset.disp;
+    render();
+  });
+
+  // ---------- filter chips ----------
+  function wireChipGroup(containerId, key, multi){
+    var container = document.getElementById(containerId);
+    container.addEventListener('click', function(e){
+      var chip = e.target.closest('.chip');
+      if(!chip) return;
+      var v = chip.dataset.v;
+      if(!multi){
+        container.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
+        chip.classList.add('active');
+        state[key] = v;
+      } else {
+        chip.classList.toggle('active');
+        if(chip.classList.contains('active')) state[key].add(v);
+        else state[key].delete(v);
+      }
+      applyFilters();
+    });
+  }
+  wireChipGroup('chipsCommercial','commercial', false);
+  wireChipGroup('chipsDept','depts', true);
+  wireChipGroup('chipsGroup','groups', true);
+
+  document.getElementById('resetFilters').addEventListener('click', function(){
+    state.commercial='all'; state.depts.clear(); state.groups.clear();
+    document.querySelectorAll('#chipsCommercial .chip').forEach(function(c,i){c.classList.toggle('active', i===0);});
+    document.querySelectorAll('#chipsDept .chip, #chipsGroup .chip').forEach(function(c){c.classList.remove('active');});
+    applyFilters();
+  });
+
+  // ---------- panels ----------
+  var backdrop = document.getElementById('backdrop');
+  var panels = {
+    filters: document.getElementById('panelFilters'),
+    tournee: document.getElementById('panelTournee'),
+    detail: document.getElementById('panelDetail')
+  };
+  function closeAll(){
+    Object.keys(panels).forEach(function(k){ panels[k].classList.remove('open'); });
+    backdrop.classList.remove('show');
+  }
+  function open(name){
+    closeAll();
+    panels[name].classList.add('open');
+    backdrop.classList.add('show');
+  }
+  backdrop.addEventListener('click', closeAll);
+  document.querySelectorAll('[data-close]').forEach(function(b){ b.addEventListener('click', closeAll); });
+
+  document.getElementById('btnFilters').addEventListener('click', function(){ open('filters'); });
+  document.getElementById('fabTournee').addEventListener('click', function(){ open('tournee'); });
+
+  // ---------- toast ----------
+  var toastTimer;
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+  }
+
+  // ---------- pin click -> detail ----------
+  var currentDetailId = null;
+  pins.forEach(function(p){
+    p.addEventListener('click', function(){
+      var d = p.dataset;
+      currentDetailId = d.id;
+      document.getElementById('detailBadge').textContent = d.type === 'client' ? 'Client' : 'Prospect';
+      document.getElementById('detailBadge').className = 'detail-badge ' + d.type;
+      document.getElementById('detailName').textContent = d.name;
+      document.getElementById('detailCity').textContent = d.city + ' · ' + d.dept;
+      document.getElementById('detailGroup').textContent = d.group;
+      document.getElementById('detailRep').textContent = d.rep;
+      document.getElementById('detailZone').textContent = d.zone;
+      document.getElementById('detailCa').textContent = d.ca + ' k€';
+      updateDetailAddBtn();
+      open('detail');
+    });
+  });
+
+  function updateDetailAddBtn(){
+    var btn = document.getElementById('detailAddBtn');
+    var inTournee = state.selected.indexOf(currentDetailId) !== -1;
+    btn.innerHTML = inTournee
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>Retirer de ma tournée'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter à ma tournée';
+  }
+
+  document.getElementById('detailAddBtn').addEventListener('click', function(){
+    if(!currentDetailId) return;
+    var idx = state.selected.indexOf(currentDetailId);
+    if(idx === -1){ state.selected.push(currentDetailId); showToast('Ajoutée à votre tournée'); }
+    else { state.selected.splice(idx,1); showToast('Retirée de votre tournée'); }
+    var pinEl = document.querySelector('.pin[data-id="'+currentDetailId+'"]');
+    if(pinEl) pinEl.classList.toggle('selected', state.selected.indexOf(currentDetailId) !== -1);
+    updateDetailAddBtn();
+    renderTournee();
+  });
+
+  // ---------- tournée panel ----------
+  function pinById(id){ return document.querySelector('.pin[data-id="'+id+'"]'); }
+
+  function renderTournee(){
+    var list = document.getElementById('stopsList');
+    var count = state.selected.length;
+    document.getElementById('fabCount').style.display = count ? 'flex' : 'none';
+    document.getElementById('fabCount').textContent = count;
+    document.getElementById('btnStart').disabled = count === 0;
+
+    if(count === 0){
+      list.innerHTML = '<div class="stop-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><div>Cliquez une officine sur la carte<br>pour l\'ajouter à votre tournée.</div></div>';
+      return;
+    }
+    var html = '';
+    state.selected.forEach(function(id, i){
+      var p = pinById(id); if(!p) return;
+      var d = p.dataset;
+      html += '<div class="stop" data-id="'+id+'">'
+            + '<div class="num">'+(i+1)+'</div>'
+            + '<div class="info"><div class="nm">'+d.name+'</div><div class="ct">'+d.city+' · '+d.group+'</div></div>'
+            + '<button class="rm" data-id="'+id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>'
+            + '</div>';
+    });
+    list.innerHTML = html;
+  }
+
+  document.getElementById('stopsList').addEventListener('click', function(e){
+    var rm = e.target.closest('.rm');
+    if(!rm) return;
+    var id = rm.dataset.id;
+    var idx = state.selected.indexOf(id);
+    if(idx !== -1) state.selected.splice(idx,1);
+    var pinEl = pinById(id);
+    if(pinEl) pinEl.classList.remove('selected');
+    renderTournee();
+  });
+
+  document.getElementById('btnOptimize').addEventListener('click', function(){
+    if(state.selected.length < 2){ showToast('Ajoutez au moins 2 officines'); return; }
+    state.selected.sort(function(a,b){
+      var pa = pinById(a), pb = pinById(b);
+      var za = pa.dataset.zone, zb = pb.dataset.zone;
+      if(za !== zb) return za.localeCompare(zb);
+      return parseFloat(pa.style.left) - parseFloat(pb.style.left);
+    });
+    renderTournee();
+    showToast('Itinéraire optimisé ✓');
+  });
+
+  document.getElementById('btnNearby').addEventListener('click', function(){
+    pins.forEach(function(p){ p.classList.remove('nearby'); });
+    if(state.selected.length === 0){ showToast('Ajoutez une officine à votre tournée'); return; }
+    var selPins = state.selected.map(pinById);
+    var found = 0;
+    pins.forEach(function(p){
+      if(p.dataset.type !== 'prospect') return;
+      if(state.selected.indexOf(p.dataset.id) !== -1) return;
+      var px = parseFloat(p.style.left), py = parseFloat(p.style.top);
+      var near = selPins.some(function(sp){
+        var sx = parseFloat(sp.style.left), sy = parseFloat(sp.style.top);
+        return Math.hypot(px-sx, py-sy) < 9;
+      });
+      if(near){ p.classList.add('nearby'); found++; }
+    });
+    showToast(found ? found + ' prospect(s) à proximité de votre tournée' : 'Aucun prospect à proximité immédiate');
+    setTimeout(function(){ pins.forEach(function(p){ p.classList.remove('nearby'); }); }, 3200);
+  });
+
+  document.getElementById('btnStart').addEventListener('click', function(){
+    if(state.selected.length === 0) return;
+    var stops = state.selected.map(function(id){
+      var d = pinById(id).dataset;
+      return d.name + ', ' + d.city;
+    });
+    var destination = encodeURIComponent(stops[stops.length-1]);
+    var waypoints = stops.slice(0,-1).map(encodeURIComponent).join('|');
+    var url = 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + destination
+            + (waypoints ? '&waypoints=' + waypoints : '');
+    window.open(url, '_blank');
+  });
+
+  document.getElementById('btnExport').addEventListener('click', function(){
+    showToast('Export Google My Maps généré ✓');
+  });
+
+  // ---------- preview toggle ----------
+  document.getElementById('previewToggle').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-size]');
+    if(!btn) return;
+    this.querySelectorAll('button').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    document.getElementById('appFrame').classList.toggle('is-mobile', btn.dataset.size === 'mobile');
+  });
+
+  render();
+  renderTournee();
+})();
+</script>
+</body>
+</html>

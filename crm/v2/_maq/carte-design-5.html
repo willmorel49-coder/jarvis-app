@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilote — Carte de tournée · Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B1F4D;
+    --blue:#0057FF;
+    --mint:#00E5A0;
+    --amber:#FF8A00;
+    --bg:#F5F7FB;
+    --card:#FFFFFF;
+    --line:#E3E8F1;
+    --line-soft:#EEF1F7;
+    --muted:#6C7690;
+    --muted-2:#98A2B8;
+    --radius:16px;
+    --radius-sm:10px;
+    --shadow:0 1px 2px rgba(11,31,77,.04), 0 8px 24px -8px rgba(11,31,77,.10);
+    --shadow-lg:0 12px 32px -8px rgba(11,31,77,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--bg);
+    color:var(--navy);
+    height:100vh;
+    overflow:hidden;
+  }
+  h1,h2,h3,.font-head{font-family:'Space Grotesk',sans-serif}
+  button{font-family:inherit}
+  input,select{font-family:inherit}
+  ::selection{background:var(--blue);color:#fff}
+
+  /* ---------- App grid ---------- */
+  #appwrap{
+    display:grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "subbar subbar"
+      "map    rail";
+    height:100vh;
+    width:100vw;
+  }
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    grid-area:topbar;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding:12px 22px;
+    background:var(--card);
+    border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+    z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .mark{
+    width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(135deg,var(--blue),var(--navy));
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:13px;font-family:'Space Grotesk',sans-serif;
+    letter-spacing:.5px;
+    box-shadow:0 4px 10px -2px rgba(0,87,255,.5);
+    flex-shrink:0;
+  }
+  .brand .word{display:flex;flex-direction:column;line-height:1.1}
+  .brand .word small{font-size:10.5px;color:var(--muted-2);letter-spacing:.09em;text-transform:uppercase;font-weight:600}
+  .brand .word strong{font-size:15px;font-weight:700;color:var(--navy)}
+  .topbar .divider{width:1px;height:26px;background:var(--line);flex-shrink:0}
+  .page-title{display:flex;flex-direction:column;line-height:1.15;margin-right:auto}
+  .page-title h1{font-size:17px;font-weight:600;margin:0;color:var(--navy)}
+  .page-title span{font-size:12px;color:var(--muted)}
+
+  .segmented{
+    display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;flex-shrink:0;
+  }
+  .segmented label{
+    display:flex;align-items:center;gap:5px;
+    padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--muted);
+    cursor:pointer;white-space:nowrap;transition:.15s;
+  }
+  .segmented input{display:none}
+  .segmented label svg{width:13px;height:13px;flex-shrink:0}
+  #appwrap:has(#voir-tout:checked) label[for="voir-tout"],
+  #appwrap:has(#voir-clients:checked) label[for="voir-clients"],
+  #appwrap:has(#voir-prospects:checked) label[for="voir-prospects"],
+  #appwrap:has(#aff-points:checked) label[for="aff-points"],
+  #appwrap:has(#aff-bulles:checked) label[for="aff-bulles"]{
+    background:var(--navy);color:#fff;box-shadow:0 2px 6px -1px rgba(11,31,77,.4);
+  }
+
+  .topbar-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .ctrl-label{font-size:11px;color:var(--muted-2);font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-right:2px}
+
+  /* ---------- Subbar filters ---------- */
+  .subbar{
+    grid-area:subbar;
+    display:flex;align-items:center;gap:10px;
+    padding:10px 22px;
+    background:var(--card);
+    border-bottom:1px solid var(--line);
+    overflow-x:auto;
+    z-index:19;
+  }
+  .subbar::-webkit-scrollbar{height:0}
+  .filter-chip{
+    display:flex;align-items:center;gap:7px;
+    background:var(--bg);border:1px solid var(--line);border-radius:9px;
+    padding:7px 12px;font-size:13px;color:var(--navy);font-weight:500;
+    cursor:pointer;white-space:nowrap;flex-shrink:0;
+  }
+  .filter-chip .k{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .filter-chip svg{width:11px;height:11px;color:var(--muted-2)}
+  .search-box{
+    display:flex;align-items:center;gap:8px;background:var(--bg);
+    border:1px solid var(--line);border-radius:9px;padding:7px 12px;
+    flex:1;max-width:340px;min-width:160px;flex-shrink:0;
+  }
+  .search-box svg{width:14px;height:14px;color:var(--muted-2);flex-shrink:0}
+  .search-box input{border:none;background:none;outline:none;font-size:13px;width:100%;color:var(--navy)}
+  .search-box input::placeholder{color:var(--muted-2)}
+  .reset-link{font-size:12.5px;color:var(--blue);font-weight:600;cursor:pointer;flex-shrink:0;margin-left:auto;padding:6px 4px}
+
+  /* ---------- Map zone ---------- */
+  .mapzone{
+    grid-area:map;
+    position:relative;
+    background:
+      radial-gradient(circle at 30% 20%, #EAF1FF 0%, transparent 45%),
+      var(--bg);
+    overflow:hidden;
+  }
+  .map-svg-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px}
+  .map-svg-wrap svg{width:100%;height:100%;max-width:640px}
+  .france-outline{fill:none;stroke:var(--navy);stroke-width:2.4;stroke-linejoin:round;opacity:.9}
+  .mesh{transition:opacity .3s, filter .3s; opacity:1}
+  #appwrap:has(#r-clients:checked) .mesh,
+  #appwrap:has(#r-prospects:checked) .mesh,
+  #appwrap:has(#r-groupements:checked) .mesh,
+  #appwrap:has(#r-tournee:checked) .mesh{
+    opacity:.16; filter:grayscale(1);
+  }
+  .map-legend{transition:opacity .3s}
+  #appwrap:has(#r-clients:checked) .map-legend,
+  #appwrap:has(#r-prospects:checked) .map-legend,
+  #appwrap:has(#r-groupements:checked) .map-legend,
+  #appwrap:has(#r-tournee:checked) .map-legend{
+    opacity:.4;
+  }
+  .citylabel{font-family:'Inter',sans-serif;font-size:9.5px;font-weight:700;fill:var(--navy);opacity:.38;letter-spacing:.03em;text-transform:uppercase}
+
+  .layer-clients,.layer-prospects,.layer-groupements,.layer-tournee{
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  #appwrap:has(#r-clients:checked) .layer-clients{opacity:1;pointer-events:auto}
+  #appwrap:has(#r-prospects:checked) .layer-prospects{opacity:1;pointer-events:auto}
+  #appwrap:has(#r-groupements:checked) .layer-groupements{opacity:1;pointer-events:auto}
+  #appwrap:has(#r-tournee:checked) .layer-tournee{opacity:1;pointer-events:auto}
+  #appwrap:has(#r-tournee:checked) .layer-clients{opacity:.55;pointer-events:none}
+
+  circle.pt{r:4px;stroke:#fff;stroke-width:1.3px;transition:r .25s}
+  #appwrap:has(#aff-bulles:checked) circle.pt{r:var(--rb,6px)}
+  .cli{fill:var(--blue)}
+  .pro{fill:var(--amber)}
+  #appwrap:has(#voir-clients:checked) .pro{display:none}
+  #appwrap:has(#voir-prospects:checked) .cli{display:none}
+  #appwrap:has(#colorby-com:checked) .layer-clients circle.cli{fill:var(--com,var(--blue))}
+
+  .ring{fill:none;stroke-width:2.2;opacity:.85}
+  .grp-label{font-size:9px;font-weight:700;font-family:'Inter',sans-serif}
+
+  .route-line{fill:none;stroke:var(--navy);stroke-width:2;stroke-dasharray:5 5}
+  .route-pin{fill:var(--navy)}
+  .route-num{fill:#fff;font-size:10px;font-weight:700;text-anchor:middle;font-family:'Space Grotesk',sans-serif}
+
+  /* zoom breadcrumb */
+  .zoom-crumb{
+    position:absolute;top:16px;left:16px;z-index:5;
+    display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.9);
+    backdrop-filter:blur(6px);
+    border:1px solid var(--line);border-radius:10px;padding:5px;box-shadow:var(--shadow);
+  }
+  .zoom-crumb span{
+    font-size:11px;font-weight:600;color:var(--muted);padding:5px 9px;border-radius:7px;white-space:nowrap;
+  }
+  .zoom-crumb span.active{background:var(--navy);color:#fff}
+  .zoom-crumb .sep{color:var(--muted-2);font-size:10px}
+
+  /* legend card */
+  .map-legend{
+    position:absolute;bottom:16px;left:16px;z-index:5;
+    background:rgba(255,255,255,.96);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--shadow);
+    min-width:190px;max-width:230px;
+  }
+  .map-legend h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+  .legend-scale{display:flex;height:8px;border-radius:5px;overflow:hidden;margin-bottom:5px}
+  .legend-scale div{flex:1}
+  .legend-scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted-2);font-weight:600}
+  .legend-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--navy);font-weight:500;margin-top:6px}
+  .legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .legend-ring{width:9px;height:9px;border-radius:50%;border:2px solid;flex-shrink:0}
+
+  /* zoom inset callout */
+  .zoom-inset{
+    position:absolute;top:16px;right:16px;z-index:5;
+    background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:var(--radius-sm);
+    box-shadow:var(--shadow);padding:10px;width:168px;
+  }
+  .zoom-inset .cap{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+  .zoom-inset .cap svg{width:11px;height:11px;color:var(--blue)}
+  .zoom-inset svg.mini{width:100%;height:auto;display:block}
+
+  /* export discreet button, floats bottom of map */
+  .export-btn{
+    position:absolute;bottom:16px;right:16px;z-index:5;
+    display:flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,.95);border:1px solid var(--line);
+    border-radius:9px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--muted);
+    cursor:pointer;box-shadow:var(--shadow);
+  }
+  .export-btn svg{width:13px;height:13px}
+  .export-btn:hover{color:var(--navy);border-color:var(--muted-2)}
+
+  /* zoom +/- control */
+  .zoom-ctl{
+    position:absolute;right:16px;bottom:64px;z-index:5;
+    display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);
+    border-radius:9px;box-shadow:var(--shadow);overflow:hidden;
+  }
+  .zoom-ctl button{
+    width:32px;height:32px;border:none;background:none;font-size:16px;color:var(--navy);
+    cursor:pointer;font-family:'Space Grotesk',sans-serif;
+  }
+  .zoom-ctl button:first-child{border-bottom:1px solid var(--line)}
+
+  /* ---------- Right rail ---------- */
+  .rail{
+    grid-area:rail;
+    background:var(--card);
+    border-left:1px solid var(--line);
+    display:flex;flex-direction:column;
+    overflow-y:auto;
+    z-index:10;
+  }
+  .rail-head{padding:16px 18px 8px}
+  .rail-head .eyebrow{font-size:11px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.08em}
+  .rail-head h2{font-size:16px;margin:3px 0 2px;color:var(--navy)}
+  .rail-head p{font-size:12px;color:var(--muted);margin:0}
+
+  .layer-cards{display:flex;flex-direction:column;gap:6px;padding:8px 12px}
+  .layer-card{
+    display:flex;align-items:flex-start;gap:10px;
+    padding:10px 11px;border-radius:12px;border:1.5px solid transparent;
+    cursor:pointer;position:relative;transition:.15s;
+  }
+  .layer-card input{position:absolute;opacity:0;pointer-events:none}
+  .layer-card:hover{background:var(--bg)}
+  .layer-card .ic{
+    width:32px;height:32px;border-radius:9px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg);color:var(--muted);
+  }
+  .layer-card .ic svg{width:16px;height:16px}
+  .layer-card .tx strong{display:block;font-size:13.5px;color:var(--navy);font-weight:600}
+  .layer-card .tx span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px;line-height:1.3}
+  .layer-card .chk{
+    margin-left:auto;width:17px;height:17px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;margin-top:2px;
+  }
+  .layer-card.active,
+  #appwrap:has(#r-densite:checked) .lc-densite,
+  #appwrap:has(#r-clients:checked) .lc-clients,
+  #appwrap:has(#r-prospects:checked) .lc-prospects,
+  #appwrap:has(#r-groupements:checked) .lc-groupements,
+  #appwrap:has(#r-tournee:checked) .lc-tournee{
+    border-color:var(--blue);background:#EFF4FF;
+  }
+  #appwrap:has(#r-densite:checked) .lc-densite .ic{background:var(--blue);color:#fff}
+  #appwrap:has(#r-clients:checked) .lc-clients .ic{background:var(--blue);color:#fff}
+  #appwrap:has(#r-prospects:checked) .lc-prospects .ic{background:var(--amber);color:#fff}
+  #appwrap:has(#r-groupements:checked) .lc-groupements .ic{background:var(--navy);color:#fff}
+  #appwrap:has(#r-tournee:checked) .lc-tournee .ic{background:var(--mint);color:var(--navy)}
+  #appwrap:has(#r-densite:checked) .lc-densite .chk,
+  #appwrap:has(#r-clients:checked) .lc-clients .chk,
+  #appwrap:has(#r-prospects:checked) .lc-prospects .chk,
+  #appwrap:has(#r-groupements:checked) .lc-groupements .chk,
+  #appwrap:has(#r-tournee:checked) .lc-tournee .chk{
+    border-color:var(--blue);background:radial-gradient(circle,var(--blue) 42%,#fff 46%);
+  }
+
+  .rail-divider{height:1px;background:var(--line);margin:8px 18px}
+
+  .detail-panel{display:none;padding:6px 18px 18px}
+  #appwrap:has(#r-densite:checked) .detail-densite{display:block}
+  #appwrap:has(#r-clients:checked) .detail-clients{display:block}
+  #appwrap:has(#r-prospects:checked) .detail-prospects{display:block}
+  #appwrap:has(#r-groupements:checked) .detail-groupements{display:block}
+  #appwrap:has(#r-tournee:checked) .detail-tournee{display:block}
+
+  .detail-panel h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:6px 0 10px}
+  .dp-scale{display:flex;height:10px;border-radius:6px;overflow:hidden;margin-bottom:6px}
+  .dp-scale div{flex:1}
+  .dp-scale-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted-2);font-weight:600;margin-bottom:14px}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid var(--line-soft);font-size:13px;color:var(--navy);font-weight:500}
+  .mini-switch{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px}
+  .mini-switch label{padding:4px 8px;font-size:11px;font-weight:600;color:var(--muted);border-radius:6px;cursor:pointer}
+  .mini-switch input{display:none}
+  #appwrap:has(#colorby-uni:checked) label[for="colorby-uni"],
+  #appwrap:has(#colorby-com:checked) label[for="colorby-com"]{background:var(--navy);color:#fff}
+
+  .stat-pill{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--navy);margin-bottom:10px}
+  .stat-pill b{color:var(--blue);font-family:'Space Grotesk',sans-serif}
+
+  .grp-chip-list{display:flex;flex-direction:column;gap:8px}
+  .grp-chip{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--navy);font-weight:500}
+  .grp-chip .r{width:11px;height:11px;border-radius:50%;border:2.4px solid;flex-shrink:0;background:#fff}
+  .grp-chip .cnt{margin-left:auto;color:var(--muted);font-weight:600;font-size:12px}
+
+  .note{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)}
+
+  /* Ma tournée workspace */
+  .stops{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+  .stop{
+    display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--line);
+    border-radius:10px;padding:8px 9px;
+  }
+  .stop .num{
+    width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Space Grotesk',sans-serif;
+  }
+  .stop .info{flex:1;min-width:0}
+  .stop .info strong{display:block;font-size:12.5px;color:var(--navy);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stop .info span{display:block;font-size:11px;color:var(--muted)}
+  .stop .rm{color:var(--muted-2);cursor:pointer;font-size:15px;line-height:1;padding:2px;flex-shrink:0}
+
+  .tour-summary{display:flex;gap:14px;padding:9px 0 13px;border-bottom:1px solid var(--line-soft);margin-bottom:12px}
+  .tour-summary div{display:flex;flex-direction:column}
+  .tour-summary b{font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--navy)}
+  .tour-summary span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    border-radius:11px;padding:11px 14px;font-size:13.5px;font-weight:700;
+    cursor:pointer;border:none;width:100%;font-family:'Inter',sans-serif;
+  }
+  .btn svg{width:15px;height:15px;flex-shrink:0}
+  .btn-primary{background:var(--blue);color:#fff;box-shadow:0 6px 16px -4px rgba(0,87,255,.5);margin-bottom:8px}
+  .btn-secondary{background:#fff;color:var(--navy);border:1.5px solid var(--line);margin-bottom:8px}
+  .btn-ghost{background:none;color:var(--muted);font-weight:600;font-size:12.5px;padding:8px}
+
+  .near-card{background:#F0FBF6;border:1px solid #CDF0E1;border-radius:11px;padding:10px 11px;margin-top:4px}
+  .near-card .h{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#0A8F5C;margin-bottom:7px}
+  .near-card .h svg{width:12px;height:12px}
+  .near-item{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;color:var(--navy);padding:4px 0}
+  .near-item span.d{color:var(--muted);font-weight:500;font-size:11px}
+  .near-add{font-size:11px;font-weight:700;color:var(--blue);cursor:pointer;flex-shrink:0}
+
+  /* radios hidden holders */
+  .radio-store{display:none}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:980px){
+    body{height:auto;overflow:auto}
+    #appwrap{
+      display:grid;
+      grid-template-columns:1fr;
+      grid-template-rows:auto auto auto auto auto;
+      grid-template-areas:
+        "topbar"
+        "cards"
+        "map"
+        "subbar"
+        "detail";
+      height:auto;
+    }
+    .rail{
+      display:contents;
+    }
+    .rail-head{display:none}
+    .layer-cards{
+      grid-area:cards;
+      flex-direction:row;
+      overflow-x:auto;
+      padding:10px 14px;
+      background:var(--card);
+      border-bottom:1px solid var(--line);
+    }
+    .layer-card{flex-direction:column;align-items:center;text-align:center;min-width:84px;gap:6px;padding:9px 8px}
+    .layer-card .tx span{display:none}
+    .layer-card .chk{display:none}
+    .rail-divider{display:none}
+    .detail-panel{grid-area:detail;padding:14px 16px 24px;border-top:1px solid var(--line);background:var(--card)}
+    .mapzone{grid-area:map;height:56vh;min-height:340px}
+    .topbar{grid-area:topbar}
+    .subbar{grid-area:subbar}
+    .page-title{margin-right:0;width:100%}
+    .topbar{gap:10px}
+    .topbar .divider{display:none}
+    .zoom-inset{width:128px;padding:8px}
+    .map-legend{max-width:148px}
+    .export-btn span.lbl{display:none}
+    .export-btn{padding:9px;border-radius:50%}
+  }
+  @media (max-width:560px){
+    .topbar{padding:10px 14px}
+    .topbar-controls{gap:8px}
+    .segmented label{padding:5px 8px;font-size:11px}
+    .segmented label svg{width:11px;height:11px}
+    .zoom-inset{display:none}
+    .zoom-crumb{
+      max-width:calc(100% - 24px);
+      overflow-x:auto;
+      scrollbar-width:none;
+    }
+    .zoom-crumb::-webkit-scrollbar{display:none}
+    .zoom-crumb span{font-size:10px;padding:4px 7px}
+    .subbar{padding:10px 14px}
+  }
+</style>
+</head>
+<body>
+
+<div id="appwrap">
+
+  <!-- ============ TOPBAR ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">IP</div>
+      <div class="word"><small>Intégral Pharma</small><strong>Copilote</strong></div>
+    </div>
+    <div class="divider"></div>
+    <div class="page-title">
+      <h1>Carte de tournée</h1>
+      <span>1 calque actif à la fois — pensé pour la route</span>
+    </div>
+
+    <div class="topbar-controls">
+      <span class="ctrl-label">Voir</span>
+      <div class="segmented">
+        <input type="radio" name="voir" id="voir-tout" checked><label for="voir-tout"><span class="lbl">Tout</span></label>
+        <input type="radio" name="voir" id="voir-clients"><label for="voir-clients"><span class="lbl">Clients</span></label>
+        <input type="radio" name="voir" id="voir-prospects"><label for="voir-prospects"><span class="lbl">Prospects</span></label>
+      </div>
+    </div>
+    <div class="topbar-controls">
+      <span class="ctrl-label">Affichage</span>
+      <div class="segmented">
+        <input type="radio" name="aff" id="aff-points" checked><label for="aff-points">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/></svg><span class="lbl">Points</span></label>
+        <input type="radio" name="aff" id="aff-bulles"><label for="aff-bulles">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" opacity=".35"/><circle cx="12" cy="12" r="4"/></svg><span class="lbl">Bulles (CA)</span></label>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ SUBBAR FILTERS ============ -->
+  <div class="subbar">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Rechercher une pharmacie, une ville…">
+    </div>
+    <div class="filter-chip"><span class="k">Commercial</span>Tous <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="filter-chip"><span class="k">Département</span>Tous <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="filter-chip"><span class="k">Groupement</span>Tous <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="reset-link">Réinitialiser</div>
+  </div>
+
+  <!-- ============ MAP ============ -->
+  <main class="mapzone">
+
+    <div class="zoom-crumb">
+      <span class="active">France · zones</span><span class="sep">›</span>
+      <span>Département</span><span class="sep">›</span>
+      <span>Commune</span><span class="sep">›</span>
+      <span>Officines</span>
+    </div>
+
+    <div class="zoom-inset">
+      <div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Zoom · Lyon</div>
+      <svg class="mini" viewBox="0 0 150 110">
+        <rect x="0" y="0" width="150" height="110" rx="8" fill="#F5F7FB"/>
+        <path d="M15 85 Q45 20 90 30 T140 25" fill="none" stroke="#0B1F4D" stroke-width="1.6" stroke-dasharray="4 4" opacity=".5"/>
+        <circle cx="15" cy="85" r="5" fill="#0B1F4D"/><text x="15" y="88" text-anchor="middle" fill="#fff" font-size="6" font-weight="700">1</text>
+        <circle cx="45" cy="42" r="5" fill="#0B1F4D"/><text x="45" y="45" text-anchor="middle" fill="#fff" font-size="6" font-weight="700">2</text>
+        <circle cx="90" cy="30" r="5" fill="#0B1F4D"/><text x="90" y="33" text-anchor="middle" fill="#fff" font-size="6" font-weight="700">3</text>
+        <circle cx="128" cy="22" r="5" fill="#0B1F4D"/><text x="128" y="25" text-anchor="middle" fill="#fff" font-size="6" font-weight="700">4</text>
+        <circle cx="70" cy="70" r="3.5" fill="#FF8A00"/>
+        <circle cx="105" cy="60" r="3.5" fill="#FF8A00"/>
+      </svg>
+    </div>
+
+    <div class="map-svg-wrap">
+      <svg viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg">
+        <g class="mesh">
+          <polygon points="56.2,241.2 94.1,233.6 47.4,259.3" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="94.1,233.6 96.5,270.7 47.4,259.3" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="47.4,259.3 96.5,270.7 92.1,303.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="47.4,259.3 92.1,303.0 48.1,301.5" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="48.1,301.5 92.1,303.0 60.1,329.5" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="92.1,303.0 81.2,335.0 60.1,329.5" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="60.1,329.5 81.2,335.0 90.2,370.2" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="122.6,205.0 124.8,239.4 94.1,233.6" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="94.1,233.6 124.8,239.4 122.5,275.8" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="94.1,233.6 122.5,275.8 96.5,270.7" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="96.5,270.7 122.5,275.8 92.1,303.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="122.5,275.8 118.9,302.3 92.1,303.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="92.1,303.0 118.9,302.3 114.3,331.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="92.1,303.0 114.3,331.3 81.2,335.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="81.2,335.0 114.3,331.3 90.2,370.2" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="114.3,331.3 114.2,378.7 90.2,370.2" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="90.2,370.2 114.2,378.7 123.0,411.7" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="90.2,370.2 123.0,411.7 87.2,401.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="87.2,401.1 123.0,411.7 86.1,438.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="123.0,411.7 125.4,446.7 86.1,438.1" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="117.2,131.7 157.6,127.7 158.1,159.7" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="113.5,172.7 158.1,159.7 122.6,205.0" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="158.1,159.7 152.9,195.0 122.6,205.0" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="122.6,205.0 152.9,195.0 148.5,236.9" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="122.6,205.0 148.5,236.9 124.8,239.4" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="124.8,239.4 148.5,236.9 122.5,275.8" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="148.5,236.9 154.8,274.7 122.5,275.8" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="122.5,275.8 154.8,274.7 157.0,307.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="122.5,275.8 157.0,307.1 118.9,302.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="118.9,302.3 157.0,307.1 114.3,331.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="157.0,307.1 148.3,339.1 114.3,331.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="114.3,331.3 148.3,339.1 161.2,378.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="114.3,331.3 161.2,378.5 114.2,378.7" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="114.2,378.7 161.2,378.5 123.0,411.7" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="161.2,378.5 151.8,397.3 123.0,411.7" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="123.0,411.7 151.8,397.3 153.2,444.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="123.0,411.7 153.2,444.0 125.4,446.7" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="125.4,446.7 153.2,444.0 113.0,469.9" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="153.2,444.0 155.5,472.0 113.0,469.9" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.3,67.6 195.8,94.1 158.6,106.9" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="158.6,106.9 195.8,94.1 181.1,130.5" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="158.6,106.9 181.1,130.5 157.6,127.7" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="157.6,127.7 181.1,130.5 158.1,159.7" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="181.1,130.5 185.5,163.3 158.1,159.7" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="158.1,159.7 185.5,163.3 195.6,208.7" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="158.1,159.7 195.6,208.7 152.9,195.0" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="152.9,195.0 195.6,208.7 148.5,236.9" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.6,208.7 197.4,239.1 148.5,236.9" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="148.5,236.9 197.4,239.1 195.9,262.8" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="148.5,236.9 195.9,262.8 154.8,274.7" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="154.8,274.7 195.9,262.8 157.0,307.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.9,262.8 182.9,303.1 157.0,307.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="157.0,307.1 182.9,303.1 195.1,343.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="157.0,307.1 195.1,343.1 148.3,339.1" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="148.3,339.1 195.1,343.1 161.2,378.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.1,343.1 182.9,365.8 161.2,378.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="161.2,378.5 182.9,365.8 190.5,399.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="161.2,378.5 190.5,399.3 151.8,397.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="151.8,397.3 190.5,399.3 153.2,444.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="190.5,399.3 193.7,440.4 153.2,444.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="153.2,444.0 193.7,440.4 184.6,472.1" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="153.2,444.0 184.6,472.1 155.5,472.0" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="155.5,472.0 184.6,472.1 156.1,512.0" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.3,67.6 219.4,65.3 221.9,101.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.3,67.6 221.9,101.0 195.8,94.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.8,94.1 221.9,101.0 181.1,130.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="221.9,101.0 221.6,133.2 181.1,130.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="181.1,130.5 221.6,133.2 221.6,159.2" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="181.1,130.5 221.6,159.2 185.5,163.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="185.5,163.3 221.6,159.2 195.6,208.7" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="221.6,159.2 230.3,205.5 195.6,208.7" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.6,208.7 230.3,205.5 228.5,233.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.6,208.7 228.5,233.6 197.4,239.1" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="197.4,239.1 228.5,233.6 195.9,262.8" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="228.5,233.6 219.5,264.3 195.9,262.8" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.9,262.8 219.5,264.3 219.5,298.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.9,262.8 219.5,298.0 182.9,303.1" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="182.9,303.1 219.5,298.0 195.1,343.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="219.5,298.0 217.8,339.9 195.1,343.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.1,343.1 217.8,339.9 215.7,375.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="195.1,343.1 215.7,375.0 182.9,365.8" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="182.9,365.8 215.7,375.0 190.5,399.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="215.7,375.0 217.0,397.9 190.5,399.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="190.5,399.3 217.0,397.9 222.3,435.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="190.5,399.3 222.3,435.3 193.7,440.4" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="193.7,440.4 222.3,435.3 184.6,472.1" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="222.3,435.3 215.1,467.8 184.6,472.1" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="184.6,472.1 215.1,467.8 225.5,513.1" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="184.6,472.1 225.5,513.1 195.5,511.9" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="222.6,35.9 258.5,70.8 219.4,65.3" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="219.4,65.3 258.5,70.8 221.9,101.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="258.5,70.8 249.4,97.3 221.9,101.0" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="221.9,101.0 249.4,97.3 266.2,135.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="221.9,101.0 266.2,135.4 221.6,133.2" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="221.6,133.2 266.2,135.4 221.6,159.2" fill="#0B1F4D" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="266.2,135.4 264.3,174.9 221.6,159.2" fill="#0B1F4D" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="221.6,159.2 264.3,174.9 263.7,204.3" fill="#0057FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="221.6,159.2 263.7,204.3 230.3,205.5" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="230.3,205.5 263.7,204.3 228.5,233.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="263.7,204.3 252.2,239.2 228.5,233.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="228.5,233.6 252.2,239.2 253.3,269.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="228.5,233.6 253.3,269.6 219.5,264.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="219.5,264.3 253.3,269.6 219.5,298.0" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="253.3,269.6 262.9,302.1 219.5,298.0" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="219.5,298.0 262.9,302.1 260.9,329.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="219.5,298.0 260.9,329.6 217.8,339.9" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="217.8,339.9 260.9,329.6 215.7,375.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="260.9,329.6 253.9,363.3 215.7,375.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="215.7,375.0 253.9,363.3 249.9,398.6" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="215.7,375.0 249.9,398.6 217.0,397.9" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="217.0,397.9 249.9,398.6 222.3,435.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="249.9,398.6 250.0,431.3 222.3,435.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="222.3,435.3 250.0,431.3 250.6,470.2" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="222.3,435.3 250.6,470.2 215.1,467.8" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="215.1,467.8 250.6,470.2 225.5,513.1" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="250.6,470.2 261.3,509.5 225.5,513.1" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="251.2,25.0 294.3,38.1 258.5,70.8" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="294.3,38.1 296.1,60.2 258.5,70.8" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="258.5,70.8 296.1,60.2 286.0,91.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="258.5,70.8 286.0,91.1 249.4,97.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="249.4,97.3 286.0,91.1 266.2,135.4" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="286.0,91.1 292.3,134.1 266.2,135.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="266.2,135.4 292.3,134.1 291.4,165.7" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="266.2,135.4 291.4,165.7 264.3,174.9" fill="#0B1F4D" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="264.3,174.9 291.4,165.7 263.7,204.3" fill="#0057FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="291.4,165.7 287.1,200.3 263.7,204.3" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="263.7,204.3 287.1,200.3 289.0,239.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="263.7,204.3 289.0,239.4 252.2,239.2" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="252.2,239.2 289.0,239.4 253.3,269.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="289.0,239.4 287.7,266.5 253.3,269.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="253.3,269.6 287.7,266.5 293.1,306.7" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="253.3,269.6 293.1,306.7 262.9,302.1" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="262.9,302.1 293.1,306.7 260.9,329.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="293.1,306.7 298.9,344.4 260.9,329.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="260.9,329.6 298.9,344.4 290.6,377.4" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="260.9,329.6 290.6,377.4 253.9,363.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="253.9,363.3 290.6,377.4 249.9,398.6" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="290.6,377.4 288.6,400.5 249.9,398.6" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="249.9,398.6 288.6,400.5 284.3,442.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="249.9,398.6 284.3,442.3 250.0,431.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="250.0,431.3 284.3,442.3 250.6,470.2" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="284.3,442.3 283.8,463.4 250.6,470.2" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="250.6,470.2 283.8,463.4 287.1,497.6" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="250.6,470.2 287.1,497.6 261.3,509.5" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="261.3,509.5 287.1,497.6 262.8,542.1" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="296.1,60.2 334.6,57.1 286.0,91.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="334.6,57.1 318.1,102.8 286.0,91.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="286.0,91.1 318.1,102.8 329.2,124.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="286.0,91.1 329.2,124.0 292.3,134.1" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="292.3,134.1 329.2,124.0 291.4,165.7" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="329.2,124.0 318.5,158.8 291.4,165.7" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="291.4,165.7 318.5,158.8 323.4,191.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="291.4,165.7 323.4,191.5 287.1,200.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="287.1,200.3 323.4,191.5 289.0,239.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="323.4,191.5 334.5,232.1 289.0,239.4" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="289.0,239.4 334.5,232.1 319.4,275.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="289.0,239.4 319.4,275.4 287.7,266.5" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="287.7,266.5 319.4,275.4 293.1,306.7" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="319.4,275.4 333.4,301.0 293.1,306.7" fill="#0057FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="293.1,306.7 333.4,301.0 321.0,344.1" fill="#0057FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="293.1,306.7 321.0,344.1 298.9,344.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="298.9,344.4 321.0,344.1 290.6,377.4" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="321.0,344.1 331.7,365.7 290.6,377.4" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="290.6,377.4 331.7,365.7 330.7,400.2" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="290.6,377.4 330.7,400.2 288.6,400.5" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="288.6,400.5 330.7,400.2 284.3,442.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="330.7,400.2 321.6,431.9 284.3,442.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="284.3,442.3 321.6,431.9 322.5,467.2" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="284.3,442.3 322.5,467.2 283.8,463.4" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="283.8,463.4 322.5,467.2 287.1,497.6" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="322.5,467.2 319.4,503.5 287.1,497.6" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="287.1,497.6 319.4,503.5 319.7,535.6" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="334.6,57.1 353.3,93.5 318.1,102.8" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="318.1,102.8 353.3,93.5 329.2,124.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="353.3,93.5 367.2,137.0 329.2,124.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="329.2,124.0 367.2,137.0 357.2,161.8" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="329.2,124.0 357.2,161.8 318.5,158.8" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="318.5,158.8 357.2,161.8 323.4,191.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="357.2,161.8 351.5,196.0 323.4,191.5" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="323.4,191.5 351.5,196.0 358.2,242.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="323.4,191.5 358.2,242.0 334.5,232.1" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="334.5,232.1 358.2,242.0 319.4,275.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="358.2,242.0 357.4,267.2 319.4,275.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="319.4,275.4 357.4,267.2 362.0,302.1" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="319.4,275.4 362.0,302.1 333.4,301.0" fill="#0B1F4D" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="333.4,301.0 362.0,302.1 321.0,344.1" fill="#0B1F4D" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="362.0,302.1 358.2,335.8 321.0,344.1" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="321.0,344.1 358.2,335.8 353.7,377.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="321.0,344.1 353.7,377.5 331.7,365.7" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="331.7,365.7 353.7,377.5 330.7,400.2" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="353.7,377.5 360.0,398.2 330.7,400.2" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="330.7,400.2 360.0,398.2 352.5,444.1" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="330.7,400.2 352.5,444.1 321.6,431.9" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="321.6,431.9 352.5,444.1 322.5,467.2" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="352.5,444.1 361.5,472.5 322.5,467.2" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="322.5,467.2 361.5,472.5 352.9,512.0" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="322.5,467.2 352.9,512.0 319.4,503.5" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="353.3,93.5 392.0,104.7 400.7,137.4" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="353.3,93.5 400.7,137.4 367.2,137.0" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="367.2,137.0 400.7,137.4 357.2,161.8" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="400.7,137.4 399.9,159.9 357.2,161.8" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="357.2,161.8 399.9,159.9 389.7,203.5" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="357.2,161.8 389.7,203.5 351.5,196.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="351.5,196.0 389.7,203.5 358.2,242.0" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="389.7,203.5 398.0,228.1 358.2,242.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="358.2,242.0 398.0,228.1 395.5,275.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="358.2,242.0 395.5,275.3 357.4,267.2" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="357.4,267.2 395.5,275.3 362.0,302.1" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="395.5,275.3 394.2,305.5 362.0,302.1" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="362.0,302.1 394.2,305.5 402.8,342.0" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="362.0,302.1 402.8,342.0 358.2,335.8" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="358.2,335.8 402.8,342.0 353.7,377.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="402.8,342.0 395.3,373.6 353.7,377.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="353.7,377.5 395.3,373.6 391.2,395.3" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="353.7,377.5 391.2,395.3 360.0,398.2" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="360.0,398.2 391.2,395.3 352.5,444.1" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="391.2,395.3 400.7,441.1 352.5,444.1" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="352.5,444.1 400.7,441.1 398.5,474.8" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="352.5,444.1 398.5,474.8 361.5,472.5" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="361.5,472.5 398.5,474.8 352.9,512.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="400.7,137.4 419.4,174.1 399.9,159.9" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="399.9,159.9 419.4,174.1 389.7,203.5" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="419.4,174.1 436.2,199.1 389.7,203.5" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="389.7,203.5 436.2,199.1 421.3,227.7" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="389.7,203.5 421.3,227.7 398.0,228.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="398.0,228.1 421.3,227.7 395.5,275.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="421.3,227.7 426.6,275.5 395.5,275.3" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="395.5,275.3 426.6,275.5 427.1,302.6" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="395.5,275.3 427.1,302.6 394.2,305.5" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="394.2,305.5 427.1,302.6 402.8,342.0" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="427.1,302.6 421.9,334.8 402.8,342.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="402.8,342.0 421.9,334.8 420.6,362.0" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="402.8,342.0 420.6,362.0 395.3,373.6" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="395.3,373.6 420.6,362.0 391.2,395.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="420.6,362.0 423.5,395.3 391.2,395.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="391.2,395.3 423.5,395.3 424.1,433.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="391.2,395.3 424.1,433.4 400.7,441.1" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="400.7,441.1 424.1,433.4 398.5,474.8" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="421.3,227.7 462.0,268.6 426.6,275.5" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="426.6,275.5 462.0,268.6 427.1,302.6" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="462.0,268.6 461.6,309.9 427.1,302.6" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="427.1,302.6 461.6,309.9 462.3,333.1" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="427.1,302.6 462.3,333.1 421.9,334.8" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="421.9,334.8 462.3,333.1 420.6,362.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="462.3,333.1 465.4,368.7 420.6,362.0" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="420.6,362.0 465.4,368.7 466.2,404.9" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="420.6,362.0 466.2,404.9 423.5,395.3" fill="#8FB2FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="423.5,395.3 466.2,404.9 424.1,433.4" fill="#3D74FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="462.3,333.1 490.5,332.7 488.3,377.9" fill="#EEF3FF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="462.3,333.1 488.3,377.9 465.4,368.7" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+          <polygon points="465.4,368.7 488.3,377.9 466.2,404.9" fill="#C7DBFF" stroke="#F7F9FC" stroke-width="1.6" />
+        </g>
+        <path class="france-outline" d="M260,40 L300,55 L330,70 L365,90 L395,115 L410,150 L430,190 L445,230 L455,265 L460,300 L485,330 L500,360 L475,385 L455,410 L430,435 L410,460 L375,485 L340,510 L300,520 L260,520 L220,510 L190,500 L160,485 L140,470 L115,450 L100,430 L85,400 L75,370 L55,330 L40,290 L55,255 L65,230 L85,220 L110,215 L120,185 L130,160 L145,130 L165,100 L185,80 L210,60 Z"/>
+
+        <g class="citylabel-group">
+          <text class="citylabel" x="258" y="145">Paris</text>
+          <text class="citylabel" x="322" y="296">Lyon</text>
+          <text class="citylabel" x="395" y="424">Marseille</text>
+          <text class="citylabel" x="118" y="380">Bordeaux</text>
+          <text class="citylabel" x="230" y="86">Lille</text>
+          <text class="citylabel" x="88" y="228">Rennes</text>
+          <text class="citylabel" x="182" y="432">Toulouse</text>
+          <text class="citylabel" x="405" y="164">Strasbourg</text>
+        </g>
+
+        <!-- CLIENTS -->
+        <g class="layer-clients">
+          <circle class="pt cli" cx="255" cy="150" r="4" style="--rb:11px;--com:#0057FF"/>
+          <circle class="pt cli" cx="270" cy="160" r="4" style="--rb:7px;--com:#5B8CFF"/>
+          <circle class="pt cli" cx="240" cy="135" r="4" style="--rb:9px;--com:#0057FF"/>
+          <circle class="pt cli" cx="330" cy="300" r="4" style="--rb:13px;--com:#00B894"/>
+          <circle class="pt cli" cx="345" cy="288" r="4" style="--rb:6px;--com:#00B894"/>
+          <circle class="pt cli" cx="318" cy="315" r="4" style="--rb:8px;--com:#5B8CFF"/>
+          <circle class="pt cli" cx="400" cy="428" r="4" style="--rb:10px;--com:#FF8A00"/>
+          <circle class="pt cli" cx="415" cy="440" r="4" style="--rb:6px;--com:#FF8A00"/>
+          <circle class="pt cli" cx="140" cy="380" r="4" style="--rb:12px;--com:#0057FF"/>
+          <circle class="pt cli" cx="128" cy="395" r="4" style="--rb:7px;--com:#5B8CFF"/>
+          <circle class="pt cli" cx="230" cy="90" r="4" style="--rb:8px;--com:#00B894"/>
+          <circle class="pt cli" cx="95" cy="230" r="4" style="--rb:6px;--com:#0057FF"/>
+          <circle class="pt cli" cx="190" cy="435" r="4" style="--rb:9px;--com:#FF8A00"/>
+          <circle class="pt cli" cx="400" cy="165" r="4" style="--rb:7px;--com:#5B8CFF"/>
+        </g>
+
+        <!-- PROSPECTS -->
+        <g class="layer-prospects">
+          <circle class="pt pro" cx="262" cy="168" r="4" style="--rb:8px"/>
+          <circle class="pt pro" cx="248" cy="120" r="4" style="--rb:6px"/>
+          <circle class="pt pro" cx="360" cy="310" r="4" style="--rb:10px"/>
+          <circle class="pt pro" cx="305" cy="330" r="4" style="--rb:6px"/>
+          <circle class="pt pro" cx="425" cy="415" r="4" style="--rb:7px"/>
+          <circle class="pt pro" cx="155" cy="360" r="4" style="--rb:9px"/>
+          <circle class="pt pro" cx="112" cy="410" r="4" style="--rb:6px"/>
+          <circle class="pt pro" cx="245" cy="95" r="4" style="--rb:7px"/>
+          <circle class="pt pro" cx="205" cy="450" r="4" style="--rb:6px"/>
+          <circle class="pt pro" cx="380" cy="180" r="4" style="--rb:8px"/>
+        </g>
+
+        <!-- GROUPEMENTS -->
+        <g class="layer-groupements">
+          <circle class="ring" cx="252" cy="148" r="22" stroke="#0057FF"/>
+          <text class="grp-label" x="252" y="118" text-anchor="middle" fill="#0057FF">Pharmabest</text>
+
+          <circle class="ring" cx="332" cy="300" r="20" stroke="#00B894"/>
+          <text class="grp-label" x="332" y="273" text-anchor="middle" fill="#00B894">Giphar</text>
+
+          <circle class="ring" cx="405" cy="432" r="18" stroke="#FF8A00"/>
+          <text class="grp-label" x="405" y="407" text-anchor="middle" fill="#FF8A00">PHR</text>
+
+          <circle class="ring" cx="135" cy="386" r="19" stroke="#7A5CFF"/>
+          <text class="grp-label" x="135" y="360" text-anchor="middle" fill="#7A5CFF">Elsie</text>
+
+          <circle class="pt cli" cx="255" cy="150" r="4"/><circle class="pt cli" cx="240" cy="135" r="4"/><circle class="pt cli" cx="270" cy="160" r="4"/>
+          <circle class="pt cli" cx="330" cy="300" r="4"/><circle class="pt cli" cx="345" cy="288" r="4"/>
+          <circle class="pt cli" cx="400" cy="428" r="4"/><circle class="pt cli" cx="415" cy="440" r="4"/>
+          <circle class="pt cli" cx="140" cy="380" r="4"/><circle class="pt cli" cx="128" cy="395" r="4"/>
+          <circle class="pt" cx="220" cy="480" r="4" fill="#C7CEDC"/>
+          <circle class="pt" cx="440" cy="360" r="4" fill="#C7CEDC"/>
+        </g>
+
+        <!-- MA TOURNEE -->
+        <g class="layer-tournee">
+          <path class="route-line" d="M330,300 L345,288 L365,270 L385,255"/>
+          <circle class="route-pin" cx="330" cy="300" r="9"/><text class="route-num" x="330" y="303">1</text>
+          <circle class="route-pin" cx="345" cy="288" r="9"/><text class="route-num" x="345" y="291">2</text>
+          <circle class="route-pin" cx="365" cy="270" r="9"/><text class="route-num" x="365" y="273">3</text>
+          <circle class="route-pin" cx="385" cy="255" r="9"/><text class="route-num" x="385" y="258">4</text>
+          <circle cx="318" cy="315" r="4" fill="#FF8A00" opacity=".8"/>
+          <circle cx="400" cy="240" r="4" fill="#FF8A00" opacity=".8"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="map-legend" id="legendDensite">
+      <h4>Densité officines / 100k hab.</h4>
+      <div class="legend-scale">
+        <div style="background:#EEF3FF"></div><div style="background:#C7DBFF"></div><div style="background:#8FB2FF"></div><div style="background:#3D74FF"></div><div style="background:#0057FF"></div><div style="background:#0B1F4D"></div>
+      </div>
+      <div class="legend-scale-labels"><span>Faible</span><span>Très dense</span></div>
+    </div>
+
+    <div class="zoom-ctl">
+      <button>+</button><button>–</button>
+    </div>
+
+    <div class="export-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+      <span class="lbl">Exporter · Google My Maps</span>
+    </div>
+  </main>
+
+  <!-- ============ RIGHT RAIL ============ -->
+  <aside class="rail">
+    <div class="rail-head">
+      <div class="eyebrow">Couleur de la carte</div>
+      <h2>Calques</h2>
+      <p>Un seul actif à la fois — la donnée respire.</p>
+    </div>
+
+    <div class="layer-cards">
+      <label class="layer-card lc-densite" for="r-densite">
+        <input type="radio" name="calque" id="r-densite" checked>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5" opacity=".55"/><rect x="3" y="13" width="8" height="8" rx="1.5" opacity=".3"/><rect x="13" y="13" width="8" height="8" rx="1.5" opacity=".8"/></svg></div>
+        <div class="tx"><strong>Densité</strong><span>Zones par territoire — vue large</span></div>
+        <div class="chk"></div>
+      </label>
+
+      <label class="layer-card lc-clients" for="r-clients">
+        <input type="radio" name="calque" id="r-clients">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></div>
+        <div class="tx"><strong>Clients</strong><span>Officines actives</span></div>
+        <div class="chk"></div>
+      </label>
+
+      <label class="layer-card lc-prospects" for="r-prospects">
+        <input type="radio" name="calque" id="r-prospects">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6" opacity=".5"/><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></div>
+        <div class="tx"><strong>Prospects</strong><span>À conquérir</span></div>
+        <div class="chk"></div>
+      </label>
+
+      <label class="layer-card lc-groupements" for="r-groupements">
+        <input type="radio" name="calque" id="r-groupements">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3" opacity=".6"/><circle cx="12" cy="16" r="3" opacity=".35"/></svg></div>
+        <div class="tx"><strong>Groupements</strong><span>Pharmabest, Giphar, PHR…</span></div>
+        <div class="chk"></div>
+      </label>
+
+      <label class="layer-card lc-tournee" for="r-tournee">
+        <input type="radio" name="calque" id="r-tournee">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 20l6-16 3 8 3-5 4 13z"/></svg></div>
+        <div class="tx"><strong>Ma tournée</strong><span>Composer l'itinéraire du jour</span></div>
+        <div class="chk"></div>
+      </label>
+    </div>
+
+    <div class="rail-divider"></div>
+
+    <!-- DETAIL: DENSITE -->
+    <div class="detail-panel detail-densite">
+      <h3>Légende — Densité</h3>
+      <div class="dp-scale">
+        <div style="background:#EEF3FF"></div><div style="background:#C7DBFF"></div><div style="background:#8FB2FF"></div><div style="background:#3D74FF"></div><div style="background:#0057FF"></div><div style="background:#0B1F4D"></div>
+      </div>
+      <div class="dp-scale-labels"><span>Faible</span><span>Très dense</span></div>
+      <div class="toggle-row">Contours UGA <div class="mini-switch"><label>Off</label><label style="background:var(--navy);color:#fff">On</label></div></div>
+      <div class="toggle-row">Évolution 12 mois <div class="mini-switch"><label style="background:var(--navy);color:#fff">Off</label><label>On</label></div></div>
+      <div class="note">Vue nationale : un seul indicateur, une seule échelle de couleur. Zoomez sur un territoire pour révéler les officines une à une.</div>
+    </div>
+
+    <!-- DETAIL: CLIENTS -->
+    <div class="detail-panel detail-clients">
+      <div class="stat-pill">● <b>146</b> clients visibles</div>
+      <h3>Légende — Clients</h3>
+      <div class="legend-row"><span class="legend-dot" style="background:#0057FF"></span>Officine cliente</div>
+      <div class="toggle-row">Colorer par
+        <div class="mini-switch">
+          <input type="radio" name="colorby" id="colorby-uni" checked><label for="colorby-uni">Uniforme</label>
+          <input type="radio" name="colorby" id="colorby-com"><label for="colorby-com">Commercial</label>
+        </div>
+      </div>
+      <div class="note">Taille du point = chiffre d'affaires, si l'affichage « Bulles » est activé en haut de l'écran.</div>
+    </div>
+
+    <!-- DETAIL: PROSPECTS -->
+    <div class="detail-panel detail-prospects">
+      <div class="stat-pill">● <b>38</b> prospects visibles</div>
+      <h3>Légende — Prospects</h3>
+      <div class="legend-row"><span class="legend-dot" style="background:#FF8A00"></span>Jamais commandé / +12 mois</div>
+      <div class="note">Combinez avec le filtre « Groupement » ci-dessus pour cibler les indépendants d'un secteur.</div>
+    </div>
+
+    <!-- DETAIL: GROUPEMENTS -->
+    <div class="detail-panel detail-groupements">
+      <h3>Légende — Groupements</h3>
+      <div class="grp-chip-list">
+        <div class="grp-chip"><span class="r" style="border-color:#0057FF"></span>Pharmabest<span class="cnt">12</span></div>
+        <div class="grp-chip"><span class="r" style="border-color:#00B894"></span>Giphar<span class="cnt">9</span></div>
+        <div class="grp-chip"><span class="r" style="border-color:#FF8A00"></span>PHR<span class="cnt">7</span></div>
+        <div class="grp-chip"><span class="r" style="border-color:#7A5CFF"></span>Elsie<span class="cnt">5</span></div>
+        <div class="grp-chip"><span class="r" style="border-color:#C7CEDC"></span>Indépendant<span class="cnt">14</span></div>
+      </div>
+      <div class="note">L'anneau coloré indique le groupement d'appartenance ; le point reste bleu = client, orange = prospect.</div>
+    </div>
+
+    <!-- DETAIL: MA TOURNEE -->
+    <div class="detail-panel detail-tournee">
+      <h3>Tournée du jour</h3>
+      <div class="tour-summary">
+        <div><b>4</b><span>Arrêts</span></div>
+        <div><b>12,4 km</b><span>Distance</span></div>
+        <div><b>28 min</b><span>Trajet</span></div>
+      </div>
+      <div class="stops">
+        <div class="stop"><div class="num">1</div><div class="info"><strong>Pharmacie du Marché</strong><span>Lyon 6e</span></div><div class="rm">×</div></div>
+        <div class="stop"><div class="num">2</div><div class="info"><strong>Pharmacie Centrale</strong><span>Villeurbanne</span></div><div class="rm">×</div></div>
+        <div class="stop"><div class="num">3</div><div class="info"><strong>Grande Pharmacie de la Guillotière</strong><span>Lyon 7e</span></div><div class="rm">×</div></div>
+        <div class="stop"><div class="num">4</div><div class="info"><strong>Pharmacie des Halles</strong><span>Lyon 3e</span></div><div class="rm">×</div></div>
+      </div>
+      <button class="btn btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l6 3 6-3 6 3v12l-6-3-6 3-6-3V6z"/></svg>
+        Optimiser l'itinéraire
+      </button>
+      <button class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+        Démarrer dans Google Maps
+      </button>
+
+      <div class="near-card">
+        <div class="h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Prospects proches (3)</div>
+        <div class="near-item">Pharmacie de la Gare <span class="d">800 m · arrêt 2</span><span class="near-add">+ Ajouter</span></div>
+        <div class="near-item">Pharmacie Saxe-Gambetta <span class="d">1,1 km · arrêt 3</span><span class="near-add">+ Ajouter</span></div>
+        <div class="near-item">Pharmacie du Rhône <span class="d">1,4 km · arrêt 1</span><span class="near-add">+ Ajouter</span></div>
+      </div>
+
+      <button class="btn btn-ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+        Exporter cette tournée vers Google My Maps
+      </button>
+    </div>
+
+  </aside>
+
+</div>
+</body>
+</html>

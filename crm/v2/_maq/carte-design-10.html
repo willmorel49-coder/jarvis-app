@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilote — Carte Tournée · Prop.10 Clarté &amp; Onboarding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0057FF;
+    --blue-dark:#0044CC;
+    --ink:#0B1F4D;
+    --mint:#00E5A0;
+    --amber:#FFB020;
+    --bg:#F4F6FB;
+    --card:#FFFFFF;
+    --line:#E3E8F2;
+    --line-soft:#EEF1F8;
+    --text:#0B1F4D;
+    --text-soft:#5B6B8C;
+    --text-faint:#8B97B3;
+    --radius:16px;
+    --radius-sm:10px;
+    --shadow-sm:0 1px 2px rgba(11,31,77,.06);
+    --shadow-md:0 8px 24px rgba(11,31,77,.10);
+    --shadow-lg:0 20px 50px rgba(11,31,77,.16);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 500px at 15% -10%, #E7ECFB 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #E4FBF1 0%, transparent 55%),
+      var(--bg);
+    font-family:'Inter',system-ui,sans-serif;
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    padding:28px 20px 60px;
+  }
+  h1,h2,h3,.font-display{font-family:'Space Grotesk',sans-serif;}
+
+  /* ============ INTRO RIBBON ============ */
+  .intro{
+    max-width:1360px;margin:0 auto 30px;
+    display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px;
+    padding:0 4px;
+  }
+  .intro-left{max-width:680px;}
+  .badge-prop{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--ink);color:#fff;
+    font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12.5px;
+    padding:6px 12px;border-radius:100px;letter-spacing:.02em;margin-bottom:14px;
+  }
+  .badge-prop .dot{width:6px;height:6px;border-radius:50%;background:var(--mint);}
+  .intro h1{font-size:30px;font-weight:700;margin:0 0 8px;letter-spacing:-.01em;}
+  .intro h1 span{color:var(--blue);}
+  .intro p{margin:0;color:var(--text-soft);font-size:15px;line-height:1.55;max-width:560px;}
+  .intro-tag{
+    font-size:12.5px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+    background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;
+    box-shadow:var(--shadow-sm);
+  }
+  .intro-tag b{display:block;color:var(--ink);font-size:14px;text-transform:none;letter-spacing:0;margin-top:3px;font-family:'Space Grotesk',sans-serif;}
+
+  /* ============ STAGE (frames holder) ============ */
+  .stage{
+    max-width:1360px;margin:0 auto;
+    display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;
+  }
+
+  /* ============ SHARED FRAME CHROME ============ */
+  .frame{
+    background:#fff;border-radius:22px;box-shadow:var(--shadow-lg);overflow:hidden;border:1px solid var(--line);
+  }
+  .frame-label{
+    text-align:center;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;
+    color:var(--text-faint);margin-bottom:12px;letter-spacing:.02em;
+  }
+  .frame-col{display:flex;flex-direction:column;}
+
+  /* ===== fake browser chrome ===== */
+  .browser-bar{
+    height:38px;background:#EEF1F8;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--line);
+  }
+  .browser-bar .dots{display:flex;gap:6px;}
+  .browser-bar .dots span{width:9px;height:9px;border-radius:50%;background:#D3DAEA;}
+  .browser-bar .url{
+    margin-left:10px;background:#fff;border-radius:7px;padding:5px 12px;font-size:11.5px;color:var(--text-faint);
+    border:1px solid var(--line);flex:1;max-width:280px;
+  }
+
+  /* ============ DESKTOP APP ============ */
+  .app{width:1000px;display:flex;flex-direction:column;height:1010px;}
+  .app-top{
+    height:60px;flex:0 0 auto;display:flex;align-items:center;gap:16px;padding:0 20px;
+    border-bottom:1px solid var(--line);background:#fff;
+  }
+  .brand{display:flex;align-items:center;gap:9px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:var(--ink);}
+  .brand .sq{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,var(--blue),var(--ink));flex:0 0 auto;}
+  .search-wrap{
+    flex:1;max-width:320px;display:flex;align-items:center;gap:8px;
+    background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:var(--text-faint);font-size:13.5px;
+  }
+  .search-wrap svg{flex:0 0 auto;}
+  .seg{
+    display:flex;background:var(--bg);border-radius:10px;padding:3px;border:1px solid var(--line);gap:2px;
+  }
+  .seg button{
+    border:none;background:transparent;font-family:'Inter';font-weight:600;font-size:12.5px;
+    padding:7px 14px;border-radius:8px;color:var(--text-soft);cursor:pointer;
+  }
+  .seg button.active{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);}
+  .top-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+  .icon-btn{
+    width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--text-soft);cursor:pointer;
+  }
+  .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--mint),#00B57E);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#04331F;font-family:'Space Grotesk';}
+
+  .app-body{flex:1;display:flex;overflow:hidden;}
+
+  /* ---- SIDEBAR ---- */
+  .sidebar{
+    width:264px;flex:0 0 auto;border-right:1px solid var(--line);background:#FBFCFE;
+    display:flex;flex-direction:column;overflow-y:auto;
+  }
+  .side-sec{padding:16px 16px 14px;border-bottom:1px solid var(--line-soft);}
+  .side-sec.tight{padding-bottom:16px;}
+  .side-label{
+    display:flex;align-items:center;justify-content:space-between;
+    font-family:'Space Grotesk';font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--text-faint);margin-bottom:10px;
+  }
+  .side-label .hint-mini{font-size:10.5px;text-transform:none;letter-spacing:0;color:var(--text-faint);font-weight:500;font-family:'Inter';}
+
+  /* color-mode primary buttons */
+  .mode-row{display:flex;flex-direction:column;gap:6px;}
+  .mode-btn{
+    display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;
+    border:1.5px solid transparent;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--text-soft);
+    background:transparent;text-align:left;
+  }
+  .mode-btn .swatch{width:16px;height:16px;border-radius:50%;flex:0 0 auto;}
+  .mode-btn.active{background:#fff;border-color:var(--blue);color:var(--ink);box-shadow:var(--shadow-sm);}
+  .mode-btn.active .swatch{background:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.15);}
+  .mode-more{
+    margin-top:8px;display:flex;align-items:center;justify-content:space-between;
+    font-size:12px;font-weight:600;color:var(--text-faint);cursor:pointer;padding:6px 10px;border-radius:8px;
+  }
+  .mode-more:hover{background:var(--line-soft);}
+  .mode-more-list{margin-top:2px;padding-left:2px;display:flex;flex-direction:column;gap:1px;}
+  .mode-more-item{font-size:12.5px;color:var(--text-faint);padding:6px 10px;display:flex;align-items:center;gap:8px;}
+  .mode-more-item .sw2{width:10px;height:10px;border-radius:50%;background:var(--line);flex:0 0 auto;}
+
+  /* legend */
+  .legend-hint{
+    font-size:11.5px;color:var(--blue);font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:5px;
+  }
+  .legend-list{display:flex;flex-direction:column;gap:6px;}
+  .legend-item{
+    display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;
+    border:1px solid var(--line);background:#fff;transition:.15s;
+  }
+  .legend-item.isolated{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.10);}
+  .legend-item .mk{width:14px;height:14px;border-radius:50%;flex:0 0 auto;background:var(--blue);}
+  .legend-item .mk.hollow{background:#fff;border:2px dashed var(--blue);}
+  .legend-item .lbl{font-size:13px;font-weight:600;color:var(--ink);flex:1;}
+  .legend-item .cnt{font-size:12px;color:var(--text-faint);font-weight:600;background:var(--bg);border-radius:6px;padding:2px 7px;}
+  .legend-item .eye{color:var(--text-faint);}
+
+  /* filters */
+  .chip-row{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{
+    font-size:12px;font-weight:600;padding:6px 11px;border-radius:100px;border:1px solid var(--line);
+    background:#fff;color:var(--text-soft);cursor:pointer;
+  }
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .filter-group{margin-bottom:12px;}
+  .filter-group:last-child{margin-bottom:0;}
+  .filter-group .fg-label{font-size:11.5px;color:var(--text-faint);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+  .advanced-toggle{
+    display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--blue);
+    cursor:pointer;margin-top:10px;
+  }
+
+  /* display toggle points/bulles */
+  .switch-row{display:flex;background:var(--bg);border-radius:10px;border:1px solid var(--line);padding:3px;}
+  .switch-row button{flex:1;border:none;background:transparent;font-size:12.5px;font-weight:600;color:var(--text-soft);padding:8px 0;border-radius:8px;cursor:pointer;}
+  .switch-row button.active{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);}
+
+  /* how it works card */
+  .how-card{
+    background:linear-gradient(160deg,#E9FBF3,#F3FBFF);border:1px solid #C9F3E1;border-radius:12px;padding:12px 13px 13px;position:relative;
+  }
+  .how-card .close-x{position:absolute;top:8px;right:9px;color:var(--text-faint);font-size:14px;cursor:pointer;}
+  .how-title{display:flex;align-items:center;gap:6px;font-family:'Space Grotesk';font-weight:700;font-size:12.5px;color:var(--ink);margin-bottom:9px;}
+  .how-steps{display:flex;flex-direction:column;gap:8px;}
+  .how-step{display:flex;align-items:flex-start;gap:9px;}
+  .how-step .num{
+    width:19px;height:19px;border-radius:50%;background:var(--ink);color:#fff;font-size:10.5px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:'Space Grotesk';
+  }
+  .how-step p{margin:0;font-size:12px;color:var(--text-soft);line-height:1.4;padding-top:1px;}
+  .how-step b{color:var(--ink);}
+
+  .export-link{
+    display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--text-faint);
+    padding:9px 10px;border-radius:9px;cursor:pointer;
+  }
+  .export-link:hover{background:var(--line-soft);color:var(--ink);}
+  .export-link svg{flex:0 0 auto;}
+
+  /* ---- MAP AREA ---- */
+  .map-area{flex:1;position:relative;background:#EEF3FB;overflow:hidden;}
+  .map-toolbar{
+    position:absolute;top:14px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-start;z-index:5;pointer-events:none;
+  }
+  .zoom-seg{
+    pointer-events:auto;display:flex;background:#fff;border-radius:10px;padding:3px;box-shadow:var(--shadow-md);border:1px solid var(--line);
+  }
+  .zoom-seg button{border:none;background:transparent;font-size:12px;font-weight:600;padding:7px 13px;border-radius:8px;color:var(--text-soft);cursor:pointer;}
+  .zoom-seg button.active{background:var(--ink);color:#fff;}
+  .my-maps-btn{
+    pointer-events:auto;display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:8px 12px;font-size:12px;font-weight:600;color:var(--text-soft);box-shadow:var(--shadow-sm);cursor:pointer;
+  }
+  .my-maps-btn:hover{color:var(--ink);border-color:#C7D2EA;}
+
+  .map-svg-wrap{position:absolute;inset:0;}
+  .map-svg-wrap svg{width:100%;height:100%;}
+
+  .zoom-ctrl{
+    position:absolute;bottom:18px;left:16px;display:flex;flex-direction:column;background:#fff;border-radius:10px;box-shadow:var(--shadow-md);border:1px solid var(--line);overflow:hidden;z-index:5;
+  }
+  .zoom-ctrl button{width:34px;height:34px;border:none;background:#fff;font-size:16px;color:var(--text-soft);cursor:pointer;}
+  .zoom-ctrl button:first-child{border-bottom:1px solid var(--line);}
+  .scale-note{
+    position:absolute;bottom:20px;left:64px;font-size:11px;color:var(--text-faint);background:rgba(255,255,255,.85);
+    padding:5px 9px;border-radius:7px;z-index:5;font-weight:600;
+  }
+
+  /* marker tooltip */
+  .mtip{
+    position:absolute;background:var(--ink);color:#fff;border-radius:10px;padding:10px 12px;font-size:12px;box-shadow:var(--shadow-lg);
+    z-index:8;width:190px;
+  }
+  .mtip .t-name{font-weight:700;font-family:'Space Grotesk';font-size:12.5px;margin-bottom:2px;}
+  .mtip .t-city{color:#AFC0EA;font-size:11px;margin-bottom:7px;}
+  .mtip .t-row{display:flex;justify-content:space-between;font-size:11px;color:#D6E0FA;margin-bottom:3px;}
+  .mtip .t-row b{color:#fff;}
+  .mtip .t-cta{
+    margin-top:8px;width:100%;background:var(--mint);color:#04331F;border:none;border-radius:7px;padding:6px 0;font-size:11.5px;font-weight:700;cursor:pointer;
+  }
+  .mtip:after{
+    content:'';position:absolute;bottom:-6px;left:22px;width:12px;height:12px;background:var(--ink);transform:rotate(45deg);
+  }
+
+  /* discreet hint bubble on a marker */
+  .hint-callout{
+    position:absolute;display:flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--blue);
+    color:var(--blue);font-size:11.5px;font-weight:700;padding:7px 12px 7px 10px;border-radius:100px;box-shadow:var(--shadow-md);
+    z-index:7;white-space:nowrap;
+  }
+  .hint-callout .hc-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,87,255,.45);}70%{box-shadow:0 0 0 7px rgba(0,87,255,0);}100%{box-shadow:0 0 0 0 rgba(0,87,255,0);}}
+
+  /* choropleth legend mini (La Loupe principle) */
+  .loupe-note{
+    position:absolute;top:66px;left:16px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 12px;
+    box-shadow:var(--shadow-sm);z-index:5;width:198px;
+  }
+  .loupe-note .ln-title{font-size:11px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px;margin-bottom:6px;font-family:'Space Grotesk';}
+  .loupe-note .ln-scale{height:8px;border-radius:100px;background:linear-gradient(90deg,#EAF6FF,#8FD8FF,var(--blue));margin-bottom:5px;}
+  .loupe-note p{margin:0;font-size:10.5px;color:var(--text-faint);line-height:1.4;}
+
+  /* ---- TOURNEE PANEL ---- */
+  .tournee{
+    position:absolute;right:16px;bottom:18px;width:270px;background:#fff;border-radius:14px;box-shadow:var(--shadow-lg);
+    border:1px solid var(--line);z-index:9;overflow:hidden;
+  }
+  .tournee-head{
+    display:flex;align-items:center;gap:10px;padding:13px 14px;background:linear-gradient(135deg,var(--ink),#12306E);color:#fff;
+  }
+  .tournee-head .th-icon{
+    width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+  .tournee-head .th-txt{flex:1;}
+  .tournee-head .th-txt b{display:block;font-family:'Space Grotesk';font-size:13.5px;font-weight:700;}
+  .tournee-head .th-txt span{font-size:11px;color:#B9C8F0;}
+  .tournee-head .th-chevron{color:#B9C8F0;font-size:12px;}
+  .tournee-body{padding:11px 12px 13px;}
+  .stop{
+    display:flex;align-items:center;gap:9px;padding:7px 6px;border-radius:9px;
+  }
+  .stop:hover{background:var(--bg);}
+  .stop .snum{
+    width:20px;height:20px;border-radius:50%;background:var(--mint);color:#04331F;font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:'Space Grotesk';
+  }
+  .stop .stxt{flex:1;min-width:0;}
+  .stop .stxt b{display:block;font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stop .stxt span{font-size:11px;color:var(--text-faint);}
+  .stop .sdrag{color:var(--text-faint);font-size:13px;cursor:grab;}
+  .tournee-divider{height:1px;background:var(--line-soft);margin:8px 0;}
+  .tournee-meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-faint);font-weight:600;padding:2px 6px 10px;}
+  .btn-optimize{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;border:1.5px solid var(--line);
+    color:var(--ink);font-weight:700;font-size:12.5px;padding:9px 0;border-radius:9px;cursor:pointer;margin-bottom:7px;
+  }
+  .btn-start{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--blue);border:none;
+    color:#fff;font-weight:700;font-size:13px;padding:11px 0;border-radius:9px;cursor:pointer;box-shadow:0 6px 16px rgba(0,87,255,.35);margin-bottom:8px;
+  }
+  .btn-near{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:#F3F0FF;border:1px dashed #C9B8FF;
+    color:#5A3FD6;font-weight:700;font-size:11.5px;padding:8px 0;border-radius:9px;cursor:pointer;
+  }
+
+  /* France svg markers */
+  .fp{cursor:pointer;}
+  .fp circle.ring{opacity:0;transition:.2s;}
+  .fp:hover circle.ring{opacity:1;}
+
+  /* ============ MOBILE APP ============ */
+  .phone{width:372px;}
+  .phone-shell{
+    width:372px;height:760px;border-radius:44px;background:#0B1220;padding:12px;box-shadow:var(--shadow-lg);position:relative;
+  }
+  .phone-notch{
+    position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:22px;background:#0B1220;border-radius:0 0 16px 16px;z-index:20;
+  }
+  .phone-screen{
+    width:100%;height:100%;background:#fff;border-radius:34px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  }
+  .m-top{padding:20px 16px 10px;flex:0 0 auto;background:#fff;position:relative;z-index:6;}
+  .m-brand-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .m-brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk';font-weight:700;font-size:13.5px;color:var(--ink);}
+  .m-brand .sq{width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,var(--blue),var(--ink));}
+  .m-search{
+    display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:9px 12px;color:var(--text-faint);font-size:13px;margin-bottom:9px;
+  }
+  .m-seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;border:1px solid var(--line);}
+  .m-seg button{flex:1;border:none;background:transparent;font-size:12px;font-weight:700;padding:8px 0;border-radius:8px;color:var(--text-soft);}
+  .m-seg button.active{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);}
+
+  .m-map{flex:1;position:relative;background:#EEF3FB;overflow:hidden;}
+  .m-map svg{position:absolute;inset:0;width:100%;height:100%;}
+
+  .m-mode-strip{
+    position:absolute;top:12px;left:12px;right:12px;display:flex;gap:7px;overflow-x:auto;z-index:5;
+  }
+  .m-mode-chip{
+    flex:0 0 auto;display:flex;align-items:center;gap:6px;background:#fff;border-radius:100px;padding:7px 12px;font-size:11.5px;font-weight:700;
+    color:var(--text-soft);box-shadow:var(--shadow-md);border:1.5px solid transparent;white-space:nowrap;
+  }
+  .m-mode-chip.active{border-color:var(--blue);color:var(--ink);}
+  .m-mode-chip .d{width:9px;height:9px;border-radius:50%;background:var(--blue);}
+
+  .m-fab{
+    position:absolute;right:14px;bottom:210px;width:52px;height:52px;border-radius:50%;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-lg);z-index:6;
+  }
+  .m-fab .badge{
+    position:absolute;top:-5px;right:-5px;background:var(--mint);color:#04331F;font-size:10px;font-weight:700;
+    width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';
+    border:2px solid #fff;
+  }
+
+  .m-hint{
+    position:absolute;display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--blue);color:var(--blue);
+    font-size:11px;font-weight:700;padding:6px 11px 6px 9px;border-radius:100px;box-shadow:var(--shadow-md);z-index:6;white-space:nowrap;
+  }
+  .m-hint .hc-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 1.8s infinite;}
+
+  .m-sheet{
+    position:relative;flex:0 0 auto;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -12px 30px rgba(11,31,77,.12);
+    padding:9px 16px 18px;z-index:10;
+  }
+  .m-handle{width:36px;height:4px;background:var(--line);border-radius:100px;margin:0 auto 12px;}
+  .m-sheet-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .m-sheet-title{font-family:'Space Grotesk';font-weight:700;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;}
+  .m-sheet-sub{font-size:11px;color:var(--text-faint);font-weight:600;}
+  .m-legend-row{display:flex;gap:8px;margin-bottom:12px;}
+  .m-legend-pill{
+    flex:1;display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+  }
+  .m-legend-pill.isolated{border-color:var(--blue);background:#EEF3FF;}
+  .m-legend-pill .mk{width:11px;height:11px;border-radius:50%;background:var(--blue);flex:0 0 auto;}
+  .m-legend-pill .mk.hollow{background:#fff;border:2px dashed var(--blue);}
+  .m-legend-pill span{font-size:11.5px;font-weight:700;color:var(--ink);}
+  .m-legend-pill em{margin-left:auto;font-size:10.5px;color:var(--text-faint);font-style:normal;font-weight:700;}
+
+  .m-stops{display:flex;flex-direction:column;gap:6px;margin-bottom:11px;}
+  .m-stop{display:flex;align-items:center;gap:8px;}
+  .m-stop .snum{
+    width:18px;height:18px;border-radius:50%;background:var(--mint);color:#04331F;font-size:10px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:'Space Grotesk';
+  }
+  .m-stop b{font-size:12px;color:var(--ink);}
+  .m-stop span{font-size:10.5px;color:var(--text-faint);margin-left:4px;}
+
+  .m-btn-start{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--blue);border:none;
+    color:#fff;font-weight:700;font-size:14px;padding:14px 0;border-radius:13px;box-shadow:0 8px 20px rgba(0,87,255,.35);margin-bottom:9px;
+  }
+  .m-row2{display:flex;gap:8px;}
+  .m-btn-ghost{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;border:1.5px solid var(--line);
+    color:var(--ink);font-weight:700;font-size:11.5px;padding:9px 0;border-radius:10px;
+  }
+  .m-export{
+    text-align:center;margin-top:10px;font-size:11px;color:var(--text-faint);font-weight:600;
+  }
+
+  /* footer principles */
+  .principles{max-width:1360px;margin:44px auto 0;padding:0 4px;}
+  .principles h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);font-weight:700;margin:0 0 12px;}
+  .pchips{display:flex;flex-wrap:wrap;gap:10px;}
+  .pchip{
+    display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:100px;
+    padding:10px 16px;font-size:13px;font-weight:600;color:var(--ink);box-shadow:var(--shadow-sm);
+  }
+  .pchip .pn{
+    width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:10.5px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';flex:0 0 auto;
+  }
+
+  @media (max-width:1060px){
+    .stage{justify-content:center;}
+    .app{width:100%;max-width:920px;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="intro">
+    <div class="intro-left">
+      <div class="badge-prop"><span class="dot"></span>Proposition 10 — Clarté &amp; Onboarding</div>
+      <h1>Une carte qui <span>s'explique elle-même</span></h1>
+      <p>Un seul indicateur de couleur à la fois, une légende cliquable qui fait aussi office de filtre, et une tournée qui se construit en 3 gestes : cliquer, ajouter, démarrer. Inspiré de la lisibilité "zones avant marqueurs" de La Loupe.</p>
+    </div>
+    <div class="intro-tag">Ce qu'on doit comprendre<b>en 5 secondes, sans mode d'emploi</b></div>
+  </div>
+
+  <div class="stage">
+
+    <!-- ================= DESKTOP FRAME ================= -->
+    <div class="frame-col">
+      <div class="frame-label">Desktop — vue commerciale, filtres complets</div>
+      <div class="frame">
+        <div class="browser-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="url">copilote.integralpharma.fr/carte</div>
+        </div>
+
+        <div class="app">
+          <!-- TOP BAR -->
+          <div class="app-top">
+            <div class="brand"><div class="sq"></div>Copilote</div>
+            <div class="search-wrap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Pharmacie, ville, groupement…
+            </div>
+            <div class="seg">
+              <button>Tout</button>
+              <button class="active">Clients</button>
+              <button>Prospects</button>
+            </div>
+            <div class="top-right">
+              <div class="icon-btn">⤓</div>
+              <div class="avatar">MD</div>
+            </div>
+          </div>
+
+          <div class="app-body">
+            <!-- SIDEBAR -->
+            <div class="sidebar">
+
+              <div class="side-sec">
+                <div class="side-label">Couleur <span class="hint-mini">1 seul indicateur</span></div>
+                <div class="mode-row">
+                  <button class="mode-btn active"><span class="swatch"></span>Client / Prospect</button>
+                  <button class="mode-btn"><span class="swatch" style="background:var(--amber)"></span>Par commercial</button>
+                </div>
+                <div class="mode-more">
+                  <span>+ 3 autres modes (CA, zones, groupement)</span>
+                  <span>⌄</span>
+                </div>
+              </div>
+
+              <div class="side-sec">
+                <div class="side-label">Légende</div>
+                <div class="legend-hint">👆 Clique une couleur pour l'isoler</div>
+                <div class="legend-list">
+                  <div class="legend-item isolated">
+                    <div class="mk"></div>
+                    <div class="lbl">Clients</div>
+                    <div class="cnt">148</div>
+                    <div class="eye">◉</div>
+                  </div>
+                  <div class="legend-item">
+                    <div class="mk hollow"></div>
+                    <div class="lbl">Prospects</div>
+                    <div class="cnt">63</div>
+                    <div class="eye">○</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="side-sec">
+                <div class="side-label">Filtres <span class="hint-mini">3 essentiels</span></div>
+                <div class="filter-group">
+                  <div class="fg-label">Commercial</div>
+                  <div class="chip-row">
+                    <div class="chip active">Morgane</div>
+                    <div class="chip">Ingrid</div>
+                    <div class="chip">Manon</div>
+                    <div class="chip">Pauline</div>
+                  </div>
+                </div>
+                <div class="filter-group">
+                  <div class="fg-label">Département</div>
+                  <div class="chip-row">
+                    <div class="chip active">38</div>
+                    <div class="chip">69</div>
+                    <div class="chip">73</div>
+                    <div class="chip">74</div>
+                    <div class="chip">+4</div>
+                  </div>
+                </div>
+                <div class="advanced-toggle"><span>Groupement, environnement…</span><span>›</span></div>
+              </div>
+
+              <div class="side-sec">
+                <div class="side-label">Affichage</div>
+                <div class="switch-row">
+                  <button class="active">● Points</button>
+                  <button>◎ Bulles (CA)</button>
+                </div>
+              </div>
+
+              <div class="side-sec tight">
+                <div class="how-card">
+                  <div class="close-x">✕</div>
+                  <div class="how-title">✨ Comment ça marche</div>
+                  <div class="how-steps">
+                    <div class="how-step"><div class="num">1</div><p><b>Clique</b> sur une officine sur la carte</p></div>
+                    <div class="how-step"><div class="num">2</div><p>Elle s'ajoute à <b>Ma tournée</b>, en bas à droite</p></div>
+                    <div class="how-step"><div class="num">3</div><p><b>Optimise</b> puis démarre l'itinéraire sur Google Maps</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="side-sec" style="border-bottom:none;margin-top:auto;">
+                <div class="export-link">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Exporter vers Google My Maps
+                </div>
+              </div>
+
+            </div>
+
+            <!-- MAP -->
+            <div class="map-area">
+
+              <div class="map-toolbar">
+                <div class="zoom-seg">
+                  <button>Vue région</button>
+                  <button class="active">Vue officines</button>
+                </div>
+                <div class="my-maps-btn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  My Maps
+                </div>
+              </div>
+
+              <div class="loupe-note">
+                <div class="ln-title">🔎 Principe La Loupe</div>
+                <div class="ln-scale"></div>
+                <p>À l'échelle région : des <b>zones colorées</b> par densité. On ne voit les officines qu'en zoomant — jamais 200 points d'un coup.</p>
+              </div>
+
+              <div class="map-svg-wrap">
+                <svg viewBox="0 0 400 420" preserveAspectRatio="xMidYMid meet">
+                  <!-- simplified France silhouette -->
+                  <path d="M225,38 C265,42 295,58 308,90 C318,115 325,148 334,178
+                           C341,202 338,228 320,253 C306,274 298,298 286,320
+                           C273,344 253,358 227,360 C203,362 188,350 166,336
+                           C146,324 126,318 106,304 C87,290 71,270 61,246
+                           C51,220 47,195 53,170 C47,148 42,128 47,106
+                           C51,88 62,74 80,64 C92,80 88,98 100,104
+                           C114,110 122,94 116,76 C128,60 155,48 182,44
+                           C197,42 211,39 225,38 Z"
+                        fill="#E4EAF7" stroke="#CBD6EE" stroke-width="1.5"/>
+
+                  <!-- choropleth zones (density) around Auvergne-Rhône-Alpes -->
+                  <path d="M255,175 C280,168 305,178 315,200 C322,216 315,235 298,244 C282,252 264,248 252,236 C240,224 236,204 244,190 C247,183 251,178 255,175 Z"
+                        fill="#00E5A0" opacity=".28"/>
+                  <path d="M228,205 C246,198 264,206 268,222 C271,235 260,248 244,250 C230,251 218,242 216,228 C215,217 219,210 228,205 Z"
+                        fill="#0057FF" opacity=".16"/>
+                  <path d="M262,240 C280,236 296,244 298,258 C300,270 288,280 273,280 C260,280 249,271 249,259 C249,250 254,244 262,240 Z"
+                        fill="#0057FF" opacity=".24"/>
+                  <text x="223" y="196" text-anchor="end" font-family="Space Grotesk" font-size="9" fill="#4C6099" font-weight="600" opacity=".8">Rhône</text>
+                  <text x="225" y="215" text-anchor="end" font-family="Space Grotesk" font-size="9" fill="#4C6099" font-weight="600" opacity=".8">Savoie</text>
+                  <text x="208" y="270" text-anchor="end" font-family="Space Grotesk" font-size="9" fill="#4C6099" font-weight="600" opacity=".8">Isère</text>
+
+                  <!-- markers (client=filled, prospect=hollow, added-to-tournee=mint numbered) -->
+                  <g class="fp"><circle cx="238" cy="214" r="10" class="ring" fill="none" stroke="#0057FF" stroke-width="2"/><circle cx="238" cy="214" r="6.5" fill="#0057FF"/></g>
+                  <g class="fp"><circle cx="255" cy="256" r="10" class="ring" fill="none" stroke="#0057FF" stroke-width="2"/><circle cx="255" cy="256" r="6.5" fill="#00E5A0"/><text x="255" y="259" font-size="8" text-anchor="middle" fill="#04331F" font-weight="700" font-family="Space Grotesk">1</text></g>
+                  <g class="fp"><circle cx="276" cy="264" r="10" class="ring" fill="none" stroke="#0057FF" stroke-width="2"/><circle cx="276" cy="264" r="6.5" fill="#00E5A0"/><text x="276" y="267" font-size="8" text-anchor="middle" fill="#04331F" font-weight="700" font-family="Space Grotesk">2</text></g>
+                  <g class="fp"><circle cx="272" cy="196" r="9" fill="#fff" stroke="#0057FF" stroke-width="2" stroke-dasharray="2.5 2.5"/></g>
+                  <g class="fp"><circle cx="297" cy="220" r="6.5" fill="#0057FF"/></g>
+                  <g class="fp"><circle cx="216" cy="238" r="9" fill="#fff" stroke="#0057FF" stroke-width="2" stroke-dasharray="2.5 2.5"/></g>
+                  <g class="fp"><circle cx="296" cy="252" r="6.5" fill="#0057FF"/></g>
+                  <g class="fp"><circle cx="243" cy="250" r="9" fill="#fff" stroke="#0057FF" stroke-width="2" stroke-dasharray="2.5 2.5"/></g>
+                </svg>
+              </div>
+
+              <!-- discreet hint arrow near unclicked marker -->
+              <div class="hint-callout" style="top:132px;left:302px;">
+                <span class="hc-dot"></span>Clique pour ajouter à ta tournée
+              </div>
+
+              <!-- tooltip on hover -->
+              <div class="mtip" style="top:265px;left:66px;">
+                <div class="t-name">Pharmacie des Alpes</div>
+                <div class="t-city">Grenoble (38) · Groupement Giphar</div>
+                <div class="t-row"><span>CA annuel</span><b>312 k€</b></div>
+                <div class="t-row"><span>Dernière visite</span><b>12 mars</b></div>
+                <button class="t-cta">+ Ajouter à la tournée</button>
+              </div>
+
+              <div class="scale-note">Rhône-Alpes · zoom x1</div>
+              <div class="zoom-ctrl"><button>+</button><button>–</button></div>
+
+              <!-- MA TOURNEE -->
+              <div class="tournee">
+                <div class="tournee-head">
+                  <div class="th-icon">🚗</div>
+                  <div class="th-txt"><b>Ma tournée</b><span>2 arrêts · 24 km · 38 min</span></div>
+                  <div class="th-chevron">▾</div>
+                </div>
+                <div class="tournee-body">
+                  <div class="stop">
+                    <div class="snum">1</div>
+                    <div class="stxt"><b>Pharmacie Centrale</b><span>Grenoble</span></div>
+                    <div class="sdrag">⠿</div>
+                  </div>
+                  <div class="stop">
+                    <div class="snum">2</div>
+                    <div class="stxt"><b>Grande Pharmacie du Vercors</b><span>Voiron</span></div>
+                    <div class="sdrag">⠿</div>
+                  </div>
+                  <div class="tournee-divider"></div>
+                  <button class="btn-optimize">↻ Optimiser l'ordre</button>
+                  <button class="btn-start">▶ Démarrer dans Google Maps</button>
+                  <button class="btn-near">✦ 4 prospects proches de ta route</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MOBILE FRAME ================= -->
+    <div class="frame-col">
+      <div class="frame-label">Mobile — au comptoir, en voiture</div>
+      <div class="phone">
+        <div class="phone-shell">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+
+            <div class="m-top">
+              <div class="m-brand-row">
+                <div class="m-brand"><div class="sq"></div>Copilote</div>
+                <div class="icon-btn" style="width:30px;height:30px;">⤓</div>
+              </div>
+              <div class="m-search">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                Pharmacie, ville…
+              </div>
+              <div class="m-seg">
+                <button>Tout</button>
+                <button class="active">Clients</button>
+                <button>Prospects</button>
+              </div>
+            </div>
+
+            <div class="m-map">
+              <div class="m-mode-strip">
+                <div class="m-mode-chip active"><span class="d"></span>Client/Prospect</div>
+                <div class="m-mode-chip"><span class="d" style="background:var(--amber)"></span>Commercial</div>
+                <div class="m-mode-chip"><span class="d" style="background:var(--mint)"></span>Zones</div>
+              </div>
+
+              <svg viewBox="0 0 400 420" preserveAspectRatio="xMidYMid slice">
+                <path d="M225,38 C265,42 295,58 308,90 C318,115 325,148 334,178
+                         C341,202 338,228 320,253 C306,274 298,298 286,320
+                         C273,344 253,358 227,360 C203,362 188,350 166,336
+                         C146,324 126,318 106,304 C87,290 71,270 61,246
+                         C51,220 47,195 53,170 C47,148 42,128 47,106
+                         C51,88 62,74 80,64 C92,80 88,98 100,104
+                         C114,110 122,94 116,76 C128,60 155,48 182,44
+                         C197,42 211,39 225,38 Z"
+                      fill="#E4EAF7" stroke="#CBD6EE" stroke-width="1.5"/>
+                <path d="M255,175 C280,168 305,178 315,200 C322,216 315,235 298,244 C282,252 264,248 252,236 C240,224 236,204 244,190 C247,183 251,178 255,175 Z"
+                      fill="#00E5A0" opacity=".28"/>
+                <path d="M228,205 C246,198 264,206 268,222 C271,235 260,248 244,250 C230,251 218,242 216,228 C215,217 219,210 228,205 Z"
+                      fill="#0057FF" opacity=".16"/>
+                <g><circle cx="238" cy="214" r="7" fill="#0057FF"/></g>
+                <g><circle cx="255" cy="256" r="7" fill="#00E5A0"/><text x="255" y="259" font-size="8" text-anchor="middle" fill="#04331F" font-weight="700" font-family="Space Grotesk">1</text></g>
+                <g><circle cx="272" cy="196" r="9" fill="#fff" stroke="#0057FF" stroke-width="2" stroke-dasharray="2.5 2.5"/></g>
+                <g><circle cx="297" cy="220" r="7" fill="#0057FF"/></g>
+                <g><circle cx="216" cy="238" r="9" fill="#fff" stroke="#0057FF" stroke-width="2" stroke-dasharray="2.5 2.5"/></g>
+              </svg>
+
+              <div class="m-hint" style="top:108px;left:186px;"><span class="hc-dot"></span>Touche une officine</div>
+            </div>
+
+            <div class="m-sheet">
+              <div class="m-handle"></div>
+              <div class="m-sheet-row">
+                <div class="m-sheet-title">✨ Ma tournée</div>
+                <div class="m-sheet-sub">6 km · 11 min</div>
+              </div>
+              <div class="m-legend-row">
+                <div class="m-legend-pill isolated"><div class="mk"></div><span>Clients</span><em>148</em></div>
+                <div class="m-legend-pill"><div class="mk hollow"></div><span>Prospects</span><em>63</em></div>
+              </div>
+              <div class="m-stops">
+                <div class="m-stop"><div class="snum">1</div><b>Pharmacie Centrale</b><span>Grenoble</span></div>
+              </div>
+              <button class="m-btn-start">▶ Démarrer dans Google Maps</button>
+              <div class="m-row2">
+                <button class="m-btn-ghost">✦ Prospects proches</button>
+                <button class="m-btn-ghost">↻ Optimiser</button>
+              </div>
+              <div class="m-export">⤓ Exporter vers Google My Maps</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="principles">
+    <h3>Ce qui rend cette carte évidente</h3>
+    <div class="pchips">
+      <div class="pchip"><span class="pn">1</span>Un seul indicateur de couleur affiché à la fois</div>
+      <div class="pchip"><span class="pn">2</span>La légende est cliquable — elle sert aussi de filtre</div>
+      <div class="pchip"><span class="pn">3</span>Zones colorées avant marqueurs, comme La Loupe</div>
+      <div class="pchip"><span class="pn">4</span>3 filtres essentiels visibles, le reste à 1 clic</div>
+      <div class="pchip"><span class="pn">5</span>Tournée en 3 gestes : cliquer → ajouter → démarrer</div>
+      <div class="pchip"><span class="pn">6</span>Hints discrets, jamais plus d'un à l'écran</div>
+    </div>
+  </div>
+
+</body>
+</html>

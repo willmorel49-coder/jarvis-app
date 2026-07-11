@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilote — Carte (design 8, bento zones)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0057FF;
+    --blue-dark:#0046CC;
+    --ink:#0B1F4D;
+    --mint:#00E5A0;
+    --bg:#F3F5FA;
+    --card:#FFFFFF;
+    --border:#E4E9F2;
+    --border-soft:#EEF1F7;
+    --muted:#6B7488;
+    --muted-soft:#9AA2B4;
+    --danger:#FF5C7A;
+    --amber:#FFB020;
+    --violet:#7B61FF;
+    --cyan:#00B4D8;
+    --gray-cat:#A3A9B8;
+    --radius-lg:20px;
+    --radius-md:14px;
+    --radius-sm:10px;
+    --shadow-1:0 1px 2px rgba(11,31,77,.04);
+    --shadow-2:0 10px 30px -8px rgba(11,31,77,.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.font-display{font-family:'Space Grotesk',sans-serif;}
+  .app{max-width:1440px;margin:0 auto;padding:16px 16px 96px;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;flex-direction:column;gap:12px;
+    margin-bottom:16px;
+  }
+  .topbar-row1{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:10px;margin-right:auto;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(135deg,var(--blue),var(--ink));
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .brand-mark svg{width:18px;height:18px;}
+  .brand-text{line-height:1.15;}
+  .brand-text .t1{font-family:'Space Grotesk';font-weight:700;font-size:15px;letter-spacing:-.2px;}
+  .brand-text .t2{font-size:11.5px;color:var(--muted);font-weight:500;}
+
+  .seg{
+    display:inline-flex;background:#EAEDF5;border-radius:999px;padding:3px;gap:2px;
+  }
+  .seg button{
+    border:none;background:transparent;padding:7px 14px;border-radius:999px;
+    font-size:13px;font-weight:600;color:var(--muted);transition:.15s;white-space:nowrap;
+  }
+  .seg button.active{background:var(--ink);color:#fff;box-shadow:var(--shadow-1);}
+  .seg button:not(.active):hover{color:var(--ink);}
+
+  .search-box{
+    display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);
+    border-radius:999px;padding:8px 14px;min-width:220px;flex:1 1 220px;max-width:340px;
+  }
+  .search-box svg{flex-shrink:0;color:var(--muted-soft);}
+  .search-box input{
+    border:none;outline:none;font-size:13.5px;font-family:inherit;width:100%;background:transparent;color:var(--ink);
+  }
+  .search-box input::placeholder{color:var(--muted-soft);}
+
+  .btn-ghost-export{
+    display:flex;align-items:center;gap:6px;background:transparent;border:1px dashed var(--border);
+    color:var(--muted);font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:999px;transition:.15s;
+    flex-shrink:0;
+  }
+  .btn-ghost-export:hover{border-color:var(--blue);color:var(--blue);border-style:solid;}
+
+  .topbar-row2{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .filters-label{font-size:11.5px;font-weight:700;color:var(--muted-soft);text-transform:uppercase;letter-spacing:.06em;margin-right:4px;}
+  .chip{
+    display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);
+    border-radius:999px;padding:7px 12px 7px 13px;font-size:13px;font-weight:600;color:var(--ink);
+    transition:.15s;
+  }
+  .chip:hover{border-color:var(--blue);}
+  .chip svg{color:var(--muted-soft);}
+  .chip.filled{background:#EAF1FF;border-color:#CFE0FF;color:var(--blue-dark);}
+  .chip.filled svg{color:var(--blue);}
+
+  /* ---------- Bento grid ---------- */
+  .bento{
+    display:flex;flex-direction:column;gap:16px;
+  }
+  .tile{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-1);padding:16px;display:flex;flex-direction:column;
+    min-width:0;
+  }
+  .tile-head{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;
+  }
+  .tile-title{
+    display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.06em;
+  }
+  .tile-title .dot-ico{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;}
+  .tile-sub{font-size:11.5px;color:var(--muted-soft);font-weight:500;}
+
+  /* ===== MAP TILE ===== */
+  .map-tile{padding:0;overflow:hidden;position:relative;}
+  .map-toolbar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:14px 16px;flex-wrap:wrap;border-bottom:1px solid var(--border-soft);
+  }
+  .zoombread{
+    display:inline-flex;align-items:center;background:#F3F5FA;border-radius:999px;padding:3px;gap:2px;
+  }
+  .zoombread button{
+    border:none;background:transparent;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;
+    color:var(--muted);display:flex;align-items:center;gap:5px;transition:.15s;
+  }
+  .zoombread button.active{background:#fff;color:var(--ink);box-shadow:var(--shadow-1);}
+  .zoombread .arrow{color:var(--muted-soft);font-size:11px;padding:0 1px;}
+
+  .display-toggle{
+    display:inline-flex;background:#F3F5FA;border-radius:999px;padding:3px;gap:2px;transition:.2s;
+  }
+  .display-toggle button{
+    border:none;background:transparent;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;
+    color:var(--muted);display:flex;align-items:center;gap:5px;
+  }
+  .display-toggle button.active{background:var(--blue);color:#fff;}
+  .display-toggle.disabled{opacity:.4;pointer-events:none;}
+
+  .map-canvas-wrap{position:relative;background:radial-gradient(circle at 30% 20%, #EEF3FF, #F7F9FD 60%);}
+  #mapSvg{display:block;width:100%;height:auto;}
+
+  .map-caption-fixed{
+    position:absolute;right:14px;bottom:14px;display:flex;align-items:center;gap:6px;
+    font-size:11px;color:var(--muted);font-weight:600;background:rgba(255,255,255,.92);
+    padding:6px 11px;border-radius:999px;border:1px solid var(--border);backdrop-filter:blur(2px);
+    white-space:nowrap;box-shadow:var(--shadow-1);
+  }
+  .map-caption-fixed svg{color:var(--blue);flex-shrink:0;}
+
+  .zone-label{font-family:'Space Grotesk';font-weight:700;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;}
+  .zone-count{font-family:'Inter';font-weight:700;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;}
+
+  .pt{cursor:pointer;transition:r .18s, fill .18s, stroke .18s;stroke:#fff;stroke-width:1.5;}
+  .pt:hover{stroke:var(--ink);stroke-width:2;}
+  .pt.selected{stroke:var(--ink);stroke-width:2.5;filter:drop-shadow(0 0 0 rgba(0,0,0,0));}
+  .pointsLayer{opacity:0;pointer-events:none;transition:opacity .35s;}
+  .pointsLayer.on{opacity:1;pointer-events:auto;}
+  .zonesLayer,.loupeLayer{transition:opacity .35s;}
+  .zonesLayer.off,.loupeLayer.off{opacity:0;pointer-events:none;}
+  .show-near [data-client="p"]{stroke:var(--mint);stroke-width:3;}
+
+  /* ===== KPI tile ===== */
+  .kpi-rows{display:flex;flex-direction:column;gap:12px;}
+  .kpi-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px dashed var(--border);}
+  .kpi-row:last-child{border-bottom:none;padding-bottom:0;}
+  .kpi-label{font-size:12.5px;color:var(--muted);font-weight:500;}
+  .kpi-value{font-family:'Space Grotesk';font-weight:700;font-size:19px;color:var(--ink);white-space:nowrap;}
+  .kpi-value .delta{font-family:'Inter';font-size:11.5px;font-weight:700;color:var(--mint);background:#E6FBF2;padding:2px 6px;border-radius:6px;margin-left:6px;}
+
+  /* ===== Legend tile ===== */
+  .legend-scale{display:flex;height:10px;border-radius:6px;overflow:hidden;margin:10px 0 6px;}
+  .legend-scale span{flex:1;}
+  .legend-ticks{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted-soft);font-weight:600;margin-bottom:14px;}
+  .legend-marker-list{display:flex;flex-direction:column;gap:8px;margin-top:2px;}
+  .legend-marker-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);font-weight:500;}
+  .legend-swatch{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .legend-modeswitch{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft);}
+  .mode-chip{
+    border:1px solid var(--border);background:#fff;border-radius:999px;padding:5px 11px;font-size:11.5px;font-weight:600;
+    color:var(--muted);transition:.15s;
+  }
+  .mode-chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .mode-chip:not(.active):hover{border-color:var(--blue);color:var(--blue-dark);}
+  .legend-hint{font-size:11px;color:var(--muted-soft);margin-top:10px;line-height:1.4;}
+
+  /* ===== Next visit tile ===== */
+  .visit-time{
+    display:inline-flex;align-items:center;gap:6px;background:#EAF1FF;color:var(--blue-dark);
+    font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;margin-bottom:10px;width:fit-content;
+  }
+  .visit-name{font-family:'Space Grotesk';font-weight:700;font-size:16px;margin-bottom:3px;}
+  .visit-addr{font-size:12.5px;color:var(--muted);margin-bottom:10px;line-height:1.4;}
+  .visit-tags{display:flex;gap:6px;margin-bottom:14px;}
+  .tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#F3F5FA;color:var(--muted);}
+  .tag.groupement{background:#FFF3E4;color:#B4700A;}
+  .visit-actions{display:flex;gap:8px;margin-top:auto;}
+  .btn-sm{
+    display:flex;align-items:center;justify-content:center;gap:6px;flex:1;padding:9px 10px;border-radius:10px;
+    font-size:12.5px;font-weight:700;border:1px solid var(--border);background:#fff;color:var(--ink);transition:.15s;
+  }
+  .btn-sm.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
+  .btn-sm.primary:hover{background:var(--blue-dark);}
+  .btn-sm:not(.primary):hover{border-color:var(--ink);}
+
+  /* ===== Top officines tile ===== */
+  .top-list{display:flex;flex-direction:column;gap:10px;}
+  .top-row{display:flex;align-items:center;gap:10px;}
+  .top-rank{
+    width:20px;height:20px;border-radius:6px;background:#F3F5FA;color:var(--muted);font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .top-row:first-child .top-rank{background:var(--ink);color:#fff;}
+  .top-info{flex:1;min-width:0;}
+  .top-name{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .top-meta{font-size:11px;color:var(--muted-soft);}
+  .top-bar-track{height:4px;background:#F0F2F7;border-radius:3px;margin-top:4px;overflow:hidden;}
+  .top-bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--mint));border-radius:3px;}
+  .top-value{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;flex-shrink:0;}
+
+  /* ===== Tour tile ===== */
+  .tour-tile{padding:18px 16px 16px;}
+  .tour-head-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .tour-title-big{font-family:'Space Grotesk';font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;}
+  .tour-title-big .count-badge{
+    background:var(--ink);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;
+  }
+  .tour-optimized-flag{display:none;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--mint);}
+  .tour-optimized-flag.show{display:flex;}
+  .btn-text-clear{font-size:12px;font-weight:600;color:var(--muted-soft);background:none;border:none;}
+  .btn-text-clear:hover{color:var(--danger);}
+
+  .tour-scroller{
+    display:flex;gap:10px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;
+    scroll-snap-type:x proximate;
+  }
+  .stop-card{
+    scroll-snap-align:start;flex:0 0 168px;background:#F8F9FC;border:1px solid var(--border);border-radius:14px;
+    padding:12px;position:relative;
+  }
+  .stop-num{
+    position:absolute;top:-9px;left:-9px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;
+    font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;
+  }
+  .stop-remove{
+    position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;color:var(--muted-soft);font-size:11px;line-height:1;
+  }
+  .stop-remove:hover{border-color:var(--danger);color:var(--danger);}
+  .stop-name{font-size:12.5px;font-weight:700;color:var(--ink);margin:6px 0 2px;padding-right:16px;}
+  .stop-ville{font-size:11.5px;color:var(--muted);}
+  .stop-connector{flex:0 0 18px;display:flex;align-items:center;justify-content:center;color:var(--border);}
+  .stop-add{
+    scroll-snap-align:start;flex:0 0 168px;border:1.5px dashed var(--border);border-radius:14px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted-soft);
+    font-size:11.5px;font-weight:600;text-align:center;padding:12px;
+  }
+
+  .tour-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .btn-lg{
+    display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:12px;font-size:13.5px;font-weight:700;
+    border:1px solid var(--border);background:#fff;color:var(--ink);transition:.15s;
+  }
+  .btn-lg:hover{border-color:var(--ink);}
+  .btn-lg.ghost-mint{color:#0B8F63;border-color:#BFEFDD;background:#F1FDF8;}
+  .btn-lg.ghost-mint:hover{border-color:var(--mint);}
+  .btn-lg.primary-cta{
+    background:var(--blue);border-color:var(--blue);color:#fff;margin-left:auto;box-shadow:0 8px 20px -6px rgba(0,87,255,.45);
+  }
+  .btn-lg.primary-cta:hover{background:var(--blue-dark);}
+
+  /* ===== Desktop grid layout ===== */
+  @media (min-width:900px){
+    .bento{
+      display:grid;grid-template-columns:1.7fr 1fr 1fr;grid-auto-rows:min-content;
+      align-items:start;
+      grid-template-areas:
+        "map kpi legend"
+        "map next top"
+        "tour tour tour";
+      gap:18px;
+    }
+    .bento > .tile{align-self:start;}
+    .map-tile{grid-area:map;align-self:stretch;}
+    .kpi-tile{grid-area:kpi;}
+    .legend-tile{grid-area:legend;}
+    .next-tile{grid-area:next;}
+    .top-tile{grid-area:top;}
+    .tour-tile{grid-area:tour;}
+    .topbar-row1{flex-wrap:nowrap;}
+  }
+  @media (min-width:900px) and (max-width:1180px){
+    .bento{grid-template-columns:1.5fr 1fr 1fr;}
+  }
+
+  /* ===== Mobile bottom bar ===== */
+  .mobile-tour-bar{
+    display:none;
+  }
+  @media (max-width:899px){
+    .mobile-tour-bar{
+      display:flex;position:fixed;left:12px;right:12px;bottom:12px;z-index:40;
+      background:var(--ink);color:#fff;border-radius:16px;padding:12px 14px;align-items:center;gap:12px;
+      box-shadow:0 12px 30px -6px rgba(11,31,77,.4);
+    }
+    .mobile-tour-bar .mtb-info{flex:1;}
+    .mobile-tour-bar .mtb-count{font-size:13px;font-weight:700;}
+    .mobile-tour-bar .mtb-sub{font-size:11px;color:#A9B6D9;}
+    .mobile-tour-bar a.mtb-go{
+      background:var(--blue);color:#fff;border-radius:10px;padding:9px 14px;font-size:12.5px;font-weight:700;
+      display:flex;align-items:center;gap:6px;flex-shrink:0;
+    }
+    .app{padding-bottom:100px;}
+  }
+
+  .scrollx::-webkit-scrollbar{height:6px;}
+  .scrollx::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===================== TOP BAR ===================== -->
+  <div class="topbar">
+    <div class="topbar-row1">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L21 7 V17 L12 22 L3 17 V7 Z" stroke="white" stroke-width="1.6" fill="none"/><circle cx="12" cy="12" r="3" fill="#00E5A0"/></svg>
+        </div>
+        <div class="brand-text">
+          <div class="t1">Copilote</div>
+          <div class="t2">Carte commerciale · Intégral Pharma</div>
+        </div>
+      </div>
+
+      <div class="seg" id="segVoir">
+        <button class="active" data-voir="tout">Tout</button>
+        <button data-voir="clients">Clients</button>
+        <button data-voir="prospects">Prospects</button>
+      </div>
+
+      <div class="search-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Pharmacie, ville…">
+      </div>
+
+      <button class="btn-ghost-export" title="Exporter les officines affichées vers Google My Maps">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Exporter · My Maps
+      </button>
+    </div>
+
+    <div class="topbar-row2">
+      <span class="filters-label">Filtres</span>
+      <button class="chip">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6" stroke="currentColor" stroke-width="2"/></svg>
+        Commercial <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+      <button class="chip">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke="currentColor" stroke-width="2"/></svg>
+        Département <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+      <button class="chip filled">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
+        Groupement : Tous <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================== BENTO GRID ===================== -->
+  <div class="bento">
+
+    <!-- ===== MAP TILE ===== -->
+    <section class="tile map-tile">
+      <div class="map-toolbar">
+        <div class="zoombread" id="zoomBread">
+          <button class="active" data-level="france">France</button>
+          <span class="arrow">→</span>
+          <button data-level="dept">Département</button>
+          <span class="arrow">→</span>
+          <button data-level="officines">Officines</button>
+        </div>
+        <div class="display-toggle disabled" id="displayToggle">
+          <button class="active" data-disp="points">● Points</button>
+          <button data-disp="bulles">◍ Bulles (CA)</button>
+        </div>
+      </div>
+
+      <div class="map-canvas-wrap">
+        <svg viewBox="0 0 380 400" id="mapSvg">
+          <defs>
+            <clipPath id="franceClip">
+              <path d="M150,10 C190,8 225,20 250,35 C275,50 290,45 305,70 C320,95 300,115 315,140 C330,165 340,190 325,215 C345,235 330,260 305,270 C315,295 295,315 270,320 C260,345 235,350 215,335 C205,360 180,365 165,345 C150,360 125,355 118,335 C95,330 80,315 75,295 C55,290 40,270 45,250 C20,240 15,215 30,195 C10,180 12,155 30,140 C15,120 25,95 50,85 C45,60 65,45 90,45 C95,25 120,15 150,10 Z"/>
+            </clipPath>
+            <clipPath id="lensClip">
+              <circle cx="272" cy="258" r="44"/>
+            </clipPath>
+            <pattern id="dotgrid" width="10" height="10" patternUnits="userSpaceOnUse">
+              <circle cx="1.2" cy="1.2" r="1.1" fill="#0B1F4D"/>
+            </pattern>
+          </defs>
+
+          <!-- ===== ZONES (choropleth, macro level) ===== -->
+          <g class="zonesLayer" id="zonesLayer">
+            <g clip-path="url(#franceClip)">
+              <rect x="0" y="0" width="380" height="400" fill="#F7F9FD"/>
+              <rect x="0" y="0" width="380" height="400" fill="url(#dotgrid)" opacity="0.05"/>
+              <g stroke="#fff" stroke-width="3">
+                <circle cx="160" cy="55" r="48" fill="#7FA8FF"/>
+                <circle cx="150" cy="95" r="62" fill="#0B1F4D"/>
+                <circle cx="70" cy="150" r="58" fill="#BBD6FF"/>
+                <circle cx="295" cy="145" r="55" fill="#7FA8FF"/>
+                <circle cx="165" cy="205" r="60" fill="#BBD6FF"/>
+                <circle cx="100" cy="280" r="58" fill="#BBD6FF"/>
+                <circle cx="272" cy="258" r="58" fill="#0057FF"/>
+                <circle cx="255" cy="325" r="42" fill="#0057FF"/>
+                <circle cx="200" cy="270" r="46" fill="#7FA8FF"/>
+              </g>
+            </g>
+            <path d="M150,10 C190,8 225,20 250,35 C275,50 290,45 305,70 C320,95 300,115 315,140 C330,165 340,190 325,215 C345,235 330,260 305,270 C315,295 295,315 270,320 C260,345 235,350 215,335 C205,360 180,365 165,345 C150,360 125,355 118,335 C95,330 80,315 75,295 C55,290 40,270 45,250 C20,240 15,215 30,195 C10,180 12,155 30,140 C15,120 25,95 50,85 C45,60 65,45 90,45 C95,25 120,15 150,10 Z"
+                  fill="none" stroke="#0B1F4D" stroke-opacity="0.4" stroke-width="2.5"/>
+
+            <text x="150" y="80" text-anchor="middle" class="zone-label" font-size="11">Île-de-France</text>
+            <text x="150" y="93" text-anchor="middle" class="zone-count" font-size="9">48 off. /100k hab</text>
+
+            <text x="272" y="198" text-anchor="middle" class="zone-label" font-size="11">Rhône-Alpes</text>
+            <text x="272" y="211" text-anchor="middle" class="zone-count" font-size="9">36 off. /100k hab</text>
+
+            <text x="95" y="278" text-anchor="middle" class="zone-label" font-size="10.5">Sud-Ouest</text>
+            <text x="95" y="291" text-anchor="middle" class="zone-count" font-size="9">21 off. /100k hab</text>
+          </g>
+
+          <!-- ===== LOUPE (métaphore de zoom / La Loupe) ===== -->
+          <g class="loupeLayer" id="loupeLayer">
+            <circle cx="272" cy="258" r="44" fill="#F8FAFF" stroke="#0057FF" stroke-width="3.5"/>
+            <line x1="303" y1="289" x2="325" y2="311" stroke="#0057FF" stroke-width="7" stroke-linecap="round"/>
+            <g clip-path="url(#lensClip)">
+              <circle cx="256" cy="245" r="4.2" fill="#0057FF"/>
+              <circle cx="272" cy="238" r="3.4" fill="#00E5A0"/>
+              <circle cx="286" cy="250" r="4.6" fill="#0057FF"/>
+              <circle cx="262" cy="266" r="3.4" fill="#0057FF"/>
+              <circle cx="280" cy="272" r="3.8" fill="#00E5A0"/>
+              <circle cx="290" cy="262" r="3" fill="#0057FF"/>
+              <circle cx="266" cy="252" r="2.8" fill="#00E5A0"/>
+            </g>
+            <circle cx="272" cy="258" r="44" fill="none" stroke="#0057FF" stroke-width="3.5"/>
+
+            <g transform="translate(300,190)">
+              <rect x="0" y="0" width="76" height="30" rx="8" fill="#0B1F4D"/>
+              <text x="38" y="13" text-anchor="middle" fill="#fff" font-size="8.5" font-weight="700" font-family="Space Grotesk">156 officines</text>
+              <text x="38" y="23" text-anchor="middle" fill="#A9B6D9" font-size="7.5">au zoom · Rhône</text>
+              <line x1="20" y1="30" x2="8" y2="55" stroke="#0B1F4D" stroke-width="1.5" stroke-dasharray="2,2"/>
+            </g>
+          </g>
+
+          <!-- ===== POINTS (échelle officine) ===== -->
+          <g class="pointsLayer" id="pointsLayer" clip-path="url(#franceClip)">
+            <circle class="pt selected" cx="268" cy="255" r="9" data-id="1" data-name="Pharmacie Bellecour" data-ville="Lyon" data-client="c" data-ca="l" data-commercial="morgane" data-uga="est" data-groupement="pharmabest"/>
+            <circle class="pt selected" cx="260" cy="245" r="6.5" data-id="2" data-name="Pharmacie des Terreaux" data-ville="Lyon" data-client="c" data-ca="m" data-commercial="morgane" data-uga="est" data-groupement="giphar"/>
+            <circle class="pt selected" cx="280" cy="250" r="4" data-id="3" data-name="Pharmacie Jean Macé" data-ville="Villeurbanne" data-client="p" data-ca="s" data-commercial="morgane" data-uga="est" data-groupement="indep"/>
+            <circle class="pt selected" cx="285" cy="262" r="6.5" data-id="4" data-name="Pharmacie de la Part-Dieu" data-ville="Villeurbanne" data-client="c" data-ca="m" data-commercial="morgane" data-uga="est" data-groupement="well"/>
+            <circle class="pt" cx="275" cy="277" r="4" data-id="5" data-name="Pharmacie Monplaisir" data-ville="Vénissieux" data-client="p" data-ca="s" data-commercial="morgane" data-uga="est" data-groupement="indep"/>
+            <circle class="pt" cx="253" cy="234" r="4" data-id="6" data-name="Pharmacie du Parc" data-ville="Caluire-et-Cuire" data-client="c" data-ca="s" data-commercial="morgane" data-uga="est" data-groupement="phr"/>
+            <circle class="pt" cx="296" cy="266" r="6.5" data-id="7" data-name="Pharmacie Saint-Exupéry" data-ville="Bron" data-client="p" data-ca="m" data-commercial="morgane" data-uga="est" data-groupement="giphar"/>
+            <circle class="pt" cx="244" cy="251" r="9" data-id="8" data-name="Pharmacie de la Croix-Rousse" data-ville="Écully" data-client="c" data-ca="l" data-commercial="morgane" data-uga="est" data-groupement="pharmabest"/>
+            <circle class="pt" cx="150" cy="90" r="9" data-id="9" data-name="Pharmacie Centrale" data-ville="Paris" data-client="c" data-ca="l" data-commercial="ingrid" data-uga="nord" data-groupement="pharmabest"/>
+            <circle class="pt" cx="160" cy="96" r="6.5" data-id="10" data-name="Pharmacie de la Gare" data-ville="Paris" data-client="p" data-ca="m" data-commercial="ingrid" data-uga="nord" data-groupement="giphar"/>
+            <circle class="pt" cx="70" cy="170" r="6.5" data-id="11" data-name="Grande Pharmacie Saint-Michel" data-ville="Nantes" data-client="c" data-ca="m" data-commercial="pauline" data-uga="ouest" data-groupement="well"/>
+            <circle class="pt" cx="95" cy="270" r="4" data-id="12" data-name="Pharmacie des Halles" data-ville="Bordeaux" data-client="p" data-ca="s" data-commercial="pauline" data-uga="ouest" data-groupement="indep"/>
+            <circle class="pt" cx="130" cy="300" r="6.5" data-id="13" data-name="Pharmacie de la Mairie" data-ville="Toulouse" data-client="c" data-ca="m" data-commercial="pauline" data-uga="sud" data-groupement="phr"/>
+            <circle class="pt" cx="255" cy="325" r="9" data-id="14" data-name="Pharmacie du Vieux-Port" data-ville="Marseille" data-client="c" data-ca="l" data-commercial="manon" data-uga="sud" data-groupement="pharmabest"/>
+            <circle class="pt" cx="308" cy="308" r="6.5" data-id="15" data-name="Pharmacie Pasteur" data-ville="Nice" data-client="p" data-ca="m" data-commercial="manon" data-uga="sud" data-groupement="giphar"/>
+            <circle class="pt" cx="310" cy="120" r="6.5" data-id="16" data-name="Pharmacie de l'Europe" data-ville="Strasbourg" data-client="c" data-ca="m" data-commercial="ingrid" data-uga="est" data-groupement="well"/>
+            <circle class="pt" cx="168" cy="42" r="4" data-id="17" data-name="Pharmacie Victor Hugo" data-ville="Lille" data-client="p" data-ca="s" data-commercial="ingrid" data-uga="nord" data-groupement="indep"/>
+            <circle class="pt" cx="60" cy="122" r="4" data-id="18" data-name="Pharmacie de la République" data-ville="Rennes" data-client="c" data-ca="s" data-commercial="pauline" data-uga="ouest" data-groupement="phr"/>
+            <circle class="pt" cx="291" cy="286" r="6.5" data-id="19" data-name="Pharmacie de la Presqu'île" data-ville="Grenoble" data-client="p" data-ca="m" data-commercial="morgane" data-uga="est" data-groupement="giphar"/>
+            <circle class="pt" cx="228" cy="150" r="4" data-id="20" data-name="Pharmacie du Marché" data-ville="Dijon" data-client="c" data-ca="s" data-commercial="ingrid" data-uga="nord" data-groupement="well"/>
+          </g>
+        </svg>
+
+        <div class="map-caption-fixed" id="mapCaption">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Zoomez pour voir les officines
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== KPI TILE ===== -->
+    <section class="tile kpi-tile">
+      <div class="tile-head">
+        <div class="tile-title"><span class="dot-ico"></span>Secteur affiché</div>
+      </div>
+      <div class="kpi-rows">
+        <div class="kpi-row">
+          <span class="kpi-label">Officines visibles</span>
+          <span class="kpi-value">184</span>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">CA secteur</span>
+          <span class="kpi-value">2,38 M€<span class="delta">+6,4%</span></span>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Prospects actifs</span>
+          <span class="kpi-value">41</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== LEGEND TILE ===== -->
+    <section class="tile legend-tile">
+      <div class="tile-head">
+        <div class="tile-title"><span class="dot-ico" style="background:var(--mint)"></span>Légende</div>
+      </div>
+
+      <div id="legendZone">
+        <div class="tile-sub" style="margin-bottom:2px;">Densité officines / 100k hab — vue France</div>
+        <div class="legend-scale">
+          <span style="background:#EAF3FF"></span><span style="background:#BBD6FF"></span><span style="background:#7FA8FF"></span><span style="background:#0057FF"></span><span style="background:#0B1F4D"></span>
+        </div>
+        <div class="legend-ticks"><span>&lt;10</span><span>20</span><span>30</span><span>40</span><span>&gt;40</span></div>
+        <div class="legend-hint">Un seul indicateur à la fois. Zoomez pour passer aux officines individuelles et changer de mode couleur ci-dessous.</div>
+      </div>
+
+      <div id="legendMarker" style="display:none;">
+        <div class="tile-sub" id="legendMarkerTitle" style="margin-bottom:8px;">Client / Prospect — vue Officines</div>
+        <div class="legend-marker-list" id="legendMarkerList"></div>
+      </div>
+
+      <div class="legend-modeswitch" id="modeSwitch">
+        <button class="mode-chip active" data-mode="client">Client / Prospect</button>
+        <button class="mode-chip" data-mode="commercial">Commercial</button>
+        <button class="mode-chip" data-mode="ca">CA</button>
+        <button class="mode-chip" data-mode="uga">UGA</button>
+        <button class="mode-chip" data-mode="groupement">Groupement</button>
+      </div>
+    </section>
+
+    <!-- ===== NEXT VISIT TILE ===== -->
+    <section class="tile next-tile">
+      <div class="tile-head">
+        <div class="tile-title"><span class="dot-ico" style="background:var(--blue)"></span>Prochaine visite</div>
+      </div>
+      <div class="visit-time">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Aujourd'hui · 14:30
+      </div>
+      <div class="visit-name">Pharmacie de la Part-Dieu</div>
+      <div class="visit-addr">12 rue de la Villette, 69003 Villeurbanne</div>
+      <div class="visit-tags">
+        <span class="tag groupement">Well</span>
+        <span class="tag">Client</span>
+      </div>
+      <div class="visit-actions">
+        <button class="btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.7a2 2 0 01-.5 2.1L8 9.7a16 16 0 006 6l1.2-1.2a2 2 0 012.1-.5c.9.3 1.8.5 2.7.6a2 2 0 011.7 2z" stroke="currentColor" stroke-width="1.8"/></svg>
+          Appeler
+        </button>
+        <a class="btn-sm primary" href="https://www.google.com/maps/dir/?api=1&destination=12+rue+de+la+Villette+69003+Villeurbanne" target="_blank" rel="noopener">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9" r="2.4" fill="currentColor" stroke="none"/></svg>
+          Itinéraire
+        </a>
+      </div>
+    </section>
+
+    <!-- ===== TOP OFFICINES TILE ===== -->
+    <section class="tile top-tile">
+      <div class="tile-head">
+        <div class="tile-title"><span class="dot-ico" style="background:var(--amber)"></span>Top officines · CA</div>
+      </div>
+      <div class="top-list">
+        <div class="top-row">
+          <div class="top-rank">1</div>
+          <div class="top-info">
+            <div class="top-name">Pharmacie Bellecour — Lyon</div>
+            <div class="top-bar-track"><div class="top-bar-fill" style="width:100%"></div></div>
+          </div>
+          <div class="top-value">128 k€</div>
+        </div>
+        <div class="top-row">
+          <div class="top-rank">2</div>
+          <div class="top-info">
+            <div class="top-name">Pharmacie du Vieux-Port — Marseille</div>
+            <div class="top-bar-track"><div class="top-bar-fill" style="width:94%"></div></div>
+          </div>
+          <div class="top-value">121 k€</div>
+        </div>
+        <div class="top-row">
+          <div class="top-rank">3</div>
+          <div class="top-info">
+            <div class="top-name">Pharmacie Centrale — Paris</div>
+            <div class="top-bar-track"><div class="top-bar-fill" style="width:92%"></div></div>
+          </div>
+          <div class="top-value">118 k€</div>
+        </div>
+        <div class="top-row">
+          <div class="top-rank">4</div>
+          <div class="top-info">
+            <div class="top-name">Pharmacie de la Part-Dieu — Villeurbanne</div>
+            <div class="top-bar-track"><div class="top-bar-fill" style="width:81%"></div></div>
+          </div>
+          <div class="top-value">104 k€</div>
+        </div>
+        <div class="top-row">
+          <div class="top-rank">5</div>
+          <div class="top-info">
+            <div class="top-name">Pharmacie des Terreaux — Lyon</div>
+            <div class="top-bar-track"><div class="top-bar-fill" style="width:76%"></div></div>
+          </div>
+          <div class="top-value">97 k€</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TOUR TILE ===== -->
+    <section class="tile tour-tile" id="tourTile">
+      <div class="tour-head-row">
+        <div class="tour-title-big">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke="#0057FF" stroke-width="2"/><circle cx="12" cy="9" r="2.4" fill="#0057FF" stroke="none"/></svg>
+          Ma tournée <span class="count-badge" id="tourCount">4</span>
+          <span class="tour-optimized-flag" id="optFlag">✓ Itinéraire optimisé</span>
+        </div>
+        <button class="btn-text-clear" id="clearTour">Vider la tournée</button>
+      </div>
+
+      <div class="tour-scroller scrollx" id="tourScroller"></div>
+
+      <div class="tour-actions">
+        <button class="btn-lg" id="optimizeBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0 11-3-6.7M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Optimiser l'itinéraire
+        </button>
+        <button class="btn-lg ghost-mint" id="nearBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Prospects proches
+        </button>
+        <a class="btn-lg primary-cta" id="startMapsBtn" href="#" target="_blank" rel="noopener">
+          Démarrer dans Google Maps
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ===== Mobile bottom bar ===== -->
+<div class="mobile-tour-bar">
+  <div class="mtb-info">
+    <div class="mtb-count"><span id="mtbCount">4</span> arrêts sélectionnés</div>
+    <div class="mtb-sub">Lyon · Villeurbanne</div>
+  </div>
+  <a class="mtb-go" href="#tourTile">Voir la tournée →</a>
+</div>
+
+<script>
+(function(){
+  var state = { zoom:'france', mode:'client', bubbles:false };
+
+  var modeColors = {
+    client:      { c:'#0057FF', p:'#00E5A0' },
+    commercial:  { ingrid:'#0057FF', manon:'#7B61FF', morgane:'#FF8A3D', pauline:'#00B4D8' },
+    ca:          { s:'#0B1F4D', m:'#0B1F4D', l:'#0B1F4D' },
+    uga:         { nord:'#0057FF', sud:'#00E5A0', est:'#FFB020', ouest:'#7B61FF' },
+    groupement:  { pharmabest:'#0057FF', giphar:'#00E5A0', phr:'#FF5C7A', well:'#FFB020', indep:'#A3A9B8' }
+  };
+  var modeLabels = {
+    client:      { c:'Client', p:'Prospect' },
+    commercial:  { ingrid:'Ingrid', manon:'Manon', morgane:'Morgane', pauline:'Pauline' },
+    ca:          { s:'CA modeste (taille)', m:'CA moyen (taille)', l:'CA fort (taille)' },
+    uga:         { nord:'Secteur Nord', sud:'Secteur Sud', est:'Secteur Est', ouest:'Secteur Ouest' },
+    groupement:  { pharmabest:'Pharmabest', giphar:'Giphar', phr:'PHR', well:'Well', indep:'Indépendant' }
+  };
+  var modeTitles = {
+    client:'Client / Prospect — vue Officines',
+    commercial:'Par commercial — vue Officines',
+    ca:'Par CA — la couleur reste neutre, seule la taille des bulles varie',
+    uga:'Par UGA (zone) — vue Officines',
+    groupement:'Par groupement — vue Officines'
+  };
+  var radiusMap = { s:4, m:6.5, l:9 };
+
+  var pts = Array.prototype.slice.call(document.querySelectorAll('.pt'));
+
+  function applyPointStyles(){
+    pts.forEach(function(dot){
+      var key = dot.getAttribute('data-' + state.mode);
+      var color = (modeColors[state.mode] && modeColors[state.mode][key]) || '#0057FF';
+      dot.setAttribute('fill', color);
+      var caKey = dot.getAttribute('data-ca');
+      dot.setAttribute('r', state.bubbles ? radiusMap[caKey] : 5);
+    });
+  }
+
+  function updateLegend(){
+    document.getElementById('legendMarkerTitle').textContent = modeTitles[state.mode];
+    var entries = modeLabels[state.mode];
+    var colors = modeColors[state.mode];
+    var html = '';
+    Object.keys(entries).forEach(function(k){
+      html += '<div class="legend-marker-row"><span class="legend-swatch" style="background:' + colors[k] + '"></span>' + entries[k] + '</div>';
+    });
+    document.getElementById('legendMarkerList').innerHTML = html;
+  }
+
+  function setMode(mode){
+    state.mode = mode;
+    document.querySelectorAll('#modeSwitch .mode-chip').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+    });
+    applyPointStyles();
+    updateLegend();
+  }
+
+  function setZoom(level){
+    state.zoom = level;
+    document.querySelectorAll('#zoomBread button').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-level') === level);
+    });
+    var showPoints = level !== 'france';
+    document.getElementById('pointsLayer').classList.toggle('on', showPoints);
+    document.getElementById('zonesLayer').classList.toggle('off', showPoints);
+    document.getElementById('loupeLayer').classList.toggle('off', showPoints);
+    document.getElementById('legendZone').style.display = showPoints ? 'none' : 'block';
+    document.getElementById('legendMarker').style.display = showPoints ? 'block' : 'none';
+    document.getElementById('displayToggle').classList.toggle('disabled', !showPoints);
+    document.getElementById('mapCaption').style.opacity = showPoints ? '0' : '1';
+    if(showPoints){ updateLegend(); }
+  }
+
+  document.getElementById('zoomBread').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-level]');
+    if(b) setZoom(b.getAttribute('data-level'));
+  });
+
+  document.getElementById('modeSwitch').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-mode]');
+    if(b) setMode(b.getAttribute('data-mode'));
+  });
+
+  document.getElementById('displayToggle').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-disp]');
+    if(!b) return;
+    state.bubbles = b.getAttribute('data-disp') === 'bulles';
+    document.querySelectorAll('#displayToggle button').forEach(function(x){ x.classList.toggle('active', x === b); });
+    applyPointStyles();
+  });
+
+  document.getElementById('segVoir').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-voir]');
+    if(!b) return;
+    document.querySelectorAll('#segVoir button').forEach(function(x){ x.classList.toggle('active', x === b); });
+  });
+
+  /* ---- Tour building ---- */
+  function renderTour(){
+    var selected = pts.filter(function(p){ return p.classList.contains('selected'); });
+    var scroller = document.getElementById('tourScroller');
+    var html = '';
+    selected.forEach(function(dot, i){
+      html += '<div class="stop-card"><span class="stop-num">' + (i+1) + '</span>' +
+              '<button class="stop-remove" data-remove-id="' + dot.getAttribute('data-id') + '">✕</button>' +
+              '<div class="stop-name">' + dot.getAttribute('data-name') + '</div>' +
+              '<div class="stop-ville">' + dot.getAttribute('data-ville') + '</div></div>';
+      if(i < selected.length - 1){
+        html += '<div class="stop-connector"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" stroke-width="2"/></svg></div>';
+      }
+    });
+    html += (selected.length ? '<div class="stop-connector"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" stroke-width="2"/></svg></div>' : '') +
+            '<div class="stop-add">+ Ajouter un arrêt<br>Cliquez une officine en zoom Officines</div>';
+    scroller.innerHTML = html;
+
+    var count = selected.length;
+    document.getElementById('tourCount').textContent = count;
+    document.getElementById('mtbCount').textContent = count;
+    document.getElementById('optFlag').classList.remove('show');
+
+    var base = 'https://www.google.com/maps/dir/';
+    var villes = selected.map(function(d){ return encodeURIComponent(d.getAttribute('data-name') + ' ' + d.getAttribute('data-ville')); });
+    document.getElementById('startMapsBtn').href = villes.length ? base + villes.join('/') : '#';
+
+    scroller.querySelectorAll('.stop-remove').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-remove-id');
+        var dot = pts.find(function(p){ return p.getAttribute('data-id') === id; });
+        if(dot){ dot.classList.remove('selected'); renderTour(); }
+      });
+    });
+  }
+
+  pts.forEach(function(dot){
+    dot.addEventListener('click', function(){
+      if(state.zoom === 'france') return;
+      dot.classList.toggle('selected');
+      renderTour();
+    });
+  });
+
+  document.getElementById('clearTour').addEventListener('click', function(){
+    pts.forEach(function(p){ p.classList.remove('selected'); });
+    renderTour();
+  });
+
+  document.getElementById('optimizeBtn').addEventListener('click', function(){
+    document.getElementById('optFlag').classList.add('show');
+  });
+
+  document.getElementById('nearBtn').addEventListener('click', function(){
+    document.getElementById('mapSvg').classList.toggle('show-near');
+    setZoom('officines');
+  });
+
+  applyPointStyles();
+  updateLegend();
+  renderTour();
+})();
+</script>
+
+</body>
+</html>
