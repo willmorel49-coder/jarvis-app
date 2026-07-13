@@ -8,7 +8,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
-  var CB = '?v=20260713p';
+  var CB = '?v=20260713q';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var selId = null;        // grossiste ouvert en fiche
@@ -96,6 +96,19 @@
       '<div class="gr-mtiles"><div><b>~22 Md€</b><span>marché FR</span></div><div><b>' + list().length + '</b><span>acteurs recensés</span></div><div><b>~90 %</b><span>aux 3 leaders</span></div><div><b>~57 %</b><span>du médicament (volume)</span></div></div>' +
       '<div class="gr-mbar">' + seg + '</div><div class="gr-mbleg">' + leg + '</div></div>';
   }
+  function docsHtml() {
+    var docs = (DATA() && DATA().docs) || []; if (!docs.length) return '';
+    return '<details class="gr-docs"><summary>📑 Documents officiels du marché (' + docs.length + ')</summary>' +
+      docs.map(function (m) {
+        var cc = (m.chiffres_cles || []).slice(0, 5).map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('');
+        return '<div class="gr-doc">' +
+          '<div class="gr-doc-h"><b>' + esc(m.titre) + '</b><span class="gr-doc-acc ' + (m.gratuit ? 'lib' : 'abo') + '">' + (m.gratuit ? 'gratuit' : 'payant') + '</span></div>' +
+          '<div class="gr-doc-ed">' + esc(m.editeur || '') + (m.annee ? ' · ' + esc(m.annee) : '') + '</div>' +
+          (cc ? '<ul class="gr-doc-cc">' + cc + '</ul>' : '') +
+          (m.url ? '<a class="gr-doc-lk" href="' + esc(m.url) + '" target="_blank" rel="noopener">Ouvrir le document ↗</a>' : '') +
+        '</div>';
+      }).join('') + '</details>';
+  }
   function groupCardHtml(g) {
     var mem = membersOf(g.id), open = (openGroupe === g.id);
     var head = '<button class="gr-ghead" onclick="V2.grossisteGroupe(\'' + g.id + '\')">' +
@@ -129,7 +142,7 @@
     var chips = '<div class="gr-filts">' + STATUTS.map(function (s) { return '<button class="gr-filt' + (filt === s[0] ? ' on' : '') + '" onclick="V2.grossisteFilter(\'' + s[0] + '\')">' + esc(s[1]) + '</button>'; }).join('') + '</div>';
     var shown = gs.filter(function (g) { return !filt || g.statut === filt; }).sort(function (a, b) { return a.rang - b.rang; });
     var cards = shown.map(groupCardHtml).join('') || '<div class="gr-empty">Aucun groupe dans ce filtre.</div>';
-    return marketBar() + chips + '<div class="gr-glist">' + cards + '</div>';
+    return marketBar() + docsHtml() + chips + '<div class="gr-glist">' + cards + '</div>';
   }
 
   // ── FICHE d'un grossiste ────────────────────────────────────────
@@ -312,6 +325,18 @@
       '.gr-mbleg{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}',
       '.gr-mbl{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--ip-ink)}',
       '.gr-mbl i{width:9px;height:9px;border-radius:2px}',
+      // Documents officiels
+      '.gr-docs{margin-bottom:14px;border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden}',
+      '.gr-docs>summary{cursor:pointer;padding:12px 15px;font-size:13px;font-weight:800;list-style:none}',
+      '.gr-docs>summary::-webkit-details-marker{display:none}',
+      '.gr-doc{padding:12px 15px;border-top:1px solid var(--line)}',
+      '.gr-doc-h{display:flex;align-items:baseline;gap:8px}',
+      '.gr-doc-h b{font-size:13px;font-weight:700;flex:1}',
+      '.gr-doc-acc{font-size:9.5px;font-weight:800;padding:1px 7px;border-radius:999px}',
+      '.gr-doc-acc.lib{background:#E7F8EF;color:#0B7A44}.gr-doc-acc.abo{background:#FDECEC;color:#B42318}',
+      '.gr-doc-ed{font-size:11px;color:var(--muted);margin:2px 0 6px}',
+      '.gr-doc-cc{margin:0;padding-left:16px;font-size:11.5px;line-height:1.5;color:var(--ip-ink)}',
+      '.gr-doc-lk{display:inline-block;margin-top:7px;font-size:12px;font-weight:700;color:var(--ip-blue);text-decoration:none}',
       // Filtres
       '.gr-filts{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}',
       '.gr-filt{padding:6px 13px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ip-ink);font:inherit;font-size:12px;font-weight:600;cursor:pointer}',
