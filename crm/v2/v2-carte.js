@@ -587,7 +587,10 @@
       tour = stops.map(function (s) { return { k: (s.name || '') + '|' + (s.cp || ''), n: s.name, v: s.ville, c: s.cp, t: s.tel, lat: s.ref.lat, lng: s.ref.lng, id: s.id, sg: s.seg, gp: s.grp, rdv: s.rdvStr || '' }; });
       depot = { n: (originPt ? (originPt.n || 'Mon départ') : ('Départ · ' + (zoneName || 'zone'))), lat: origin.lat, lng: origin.lng };
       try { localStorage.setItem('jarvis_depot_v1', JSON.stringify(depot)); } catch (e) {}
-      saveTour(); updateTourBar(); rebuild(); drawTourLine(); renderTourPanel(); V2.carteTourFit();
+      // pas de rebuild() ici : re-rendre les 19 000 marqueurs peut figer le navigateur.
+      // La tournée s'affiche via drawTourLine (ligne + pastilles) ; on rafraîchit juste les styles des arrêts.
+      saveTour(); updateTourBar(); drawTourLine(); renderTourPanel(); V2.carteTourFit();
+      tour.forEach(function (s) { for (var m = 0; markers && m < markers.length; m++) { if (D.p[markers[m]._pi] && D.p[markers[m]._pi][13] === s.id) { refreshMarkerStyle(markers[m]._pi); break; } } });
       if (V2.toast) V2.toast(tour.length + ' pharmacies · ' + Math.round(routeKm()) + ' km' + (res.sim && !res.sim.ok ? ' · ⚠ RDV serré' : ''));
     };
 
