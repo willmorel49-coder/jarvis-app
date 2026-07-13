@@ -355,7 +355,7 @@
   var TP = {
     NEAR_VILLE: 30, CORRIDOR_MAX: 20, BBOX_PAD: 0.55, T_LO: -0.15, T_HI: 1.15, K_SHORT: 120,
     DAY_MIN: 10 * 60, SAFETY: 30, RDV_MARGIN: 12,
-    W: { detourMin: 1.0, latKm: 0.8, grpTarget: 15, grpCover: 5,
+    W: { villeMin: 1.0, detourMin: 0.4, latKm: 0.8, grpTarget: 15, grpCover: 5,
          seg: { prospection: { 0: 2, 1: 3, 2: 3, 3: 8 }, mixte: { 0: 10, 1: 5, 2: 5, 3: 8 } },
          densHi: 12, densLo: 4, isol: -10, caTop: 6 }
   };
@@ -395,7 +395,9 @@
     }
   }
   function tpScore(c, plan, caMax, firstOfGrp) {   // minutes-équivalent, + haut = mieux
-    var s = -TP.W.detourMin * (c.detour * 1.30 * (60 / 38)) - TP.W.latKm * c.latKm;
+    // Priorité DOMINANTE : proximité de la ville à prospecter (on veut visiter LÀ-BAS, pas au départ).
+    // Le détour "sur l'axe" reste un critère secondaire (pas de zigzag, on the way).
+    var s = -TP.W.villeMin * (c.dVille * 1.30 * (60 / 38)) - TP.W.detourMin * (c.detour * 1.30 * (60 / 38)) - TP.W.latKm * c.latKm;
     if (plan.grpTargets[c.grp]) { s += TP.W.grpTarget; if (!firstOfGrp[c.grp]) s += TP.W.grpCover; }
     s += (TP.W.seg[plan.segMode] || TP.W.seg.mixte)[c.seg] || 0;
     s += c.dens;
