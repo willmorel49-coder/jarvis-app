@@ -8,7 +8,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
-  var CB = '?v=20260713l';
+  var CB = '?v=20260713m';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var selId = null;        // grossiste ouvert en fiche
@@ -57,8 +57,10 @@
   function annuaireHtml() {
     var gs = list();
     if (!gs.length) return '<div class="gr-empty">Base concurrents en cours de constitution (renseignement multi-agents). Reviens dans un instant.</div>';
+    var cov = (DATA() && DATA().couverture) || '';
+    var banner = '<div class="gr-cov"><b>' + gs.length + ' grossistes-répartiteurs recensés</b>' + (cov ? '<span>' + esc(cov) + '</span>' : '') + '</div>';
     gs = gs.slice().sort(function (a, b) { return (rank(b) - rank(a)); });
-    return '<div class="gr-grid">' + gs.map(function (g) {
+    return banner + '<div class="gr-grid">' + gs.map(function (g) {
       var ens = (g.enseignes || []).slice(0, 4).map(function (e) { return '<span class="gr-chip">' + esc(e.nom) + '</span>'; }).join('');
       return '<button class="gr-card' + (g.lien_ip ? ' ip' : '') + '" onclick="V2.grossisteOpen(\'' + esc(g.id) + '\')">' +
         '<div class="gr-card-h"><b>' + esc(g.nom) + '</b>' + (g.lien_ip ? '<span class="gr-iplink">Lié à Intégral</span>' : typeBadge(g.type)) + '</div>' +
@@ -226,6 +228,9 @@
       '.gr-actu-meta{font-size:11.5px;color:var(--muted)}.gr-actu-meta i{color:var(--ip-blue);font-style:normal;font-weight:600}',
       '.gr-actu-go{color:var(--muted);font-weight:700}',
       '.gr-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:13.5px}',
+      '.gr-cov{margin-bottom:14px;padding:12px 16px;border-radius:12px;background:color-mix(in srgb,var(--ip-blue) 5%,var(--card));border:1px solid var(--line)}',
+      '.gr-cov b{display:block;font-size:14px;font-weight:800}',
+      '.gr-cov span{display:block;margin-top:4px;font-size:11.5px;line-height:1.5;color:var(--muted)}',
       '.gr-card.ip{border-color:color-mix(in srgb,#0E7C86 40%,var(--line));background:color-mix(in srgb,#0E7C86 4%,var(--card))}',
       '.gr-iplink{font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:#0E7C86;color:#fff;white-space:nowrap}',
       '.gr-ipnote{margin:10px 0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,#0E7C86 8%,var(--card));border:1px solid color-mix(in srgb,#0E7C86 25%,transparent);font-size:12.5px;font-weight:600;color:#0A5A62}',
