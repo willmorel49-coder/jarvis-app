@@ -584,7 +584,7 @@
       for (var k = 1; k < D.comm.length; k++) out += lg(COMM_COL[k], D.comm[k]);
       return out + lg(PROSPECT_COL, 'Prospect (à conquérir)') + lg('#D4DAE3', 'Hors réseau');
     }
-    if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A') + lg(SEG_COL['Client B'], 'Client B') + lg(SEG_COL['Client C'], 'Client C') + lg(SEG_COL.Prospect, 'Prospect') + lg('#AEB6C4', 'Non défini');
+    if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A · gros (≥ 40 k€)') + lg(SEG_COL['Client B'], 'Client B · moyen (12–40 k€)') + lg(SEG_COL['Client C'], 'Client C · petit (< 12 k€)') + lg(SEG_COL.Prospect, 'Prospect (à conquérir)');
     if (colorMode === 'grp') return Object.keys(GRP_COL).map(function (g) { return lg(GRP_COL[g], D.grp[g]); }).join('') + lg('#CBD2DD', 'Autres');
     if (colorMode === 'ca') return lg('#FCD34D', '< 2 k€') + lg('#F59E0B', '2–8 k€') + lg('#EA580C', '8–20 k€') + lg('#C7283D', '20–50 k€') + lg('#7A0C2E', '≥ 50 k€') + lg('#E2E6EC', 'Pas de CA');
     return '<span class="cn-lg-txt">' + (D ? D.uga.length : 0) + ' UGA · une couleur par secteur</span>';
@@ -756,7 +756,7 @@
         var gr = o.groupement && String(o.groupement).trim();
         if (gr && gr !== '—') p[3] = ensureGrp(gr);
         nClient++;
-      } else if (String(D.seg[p[4]] || '').indexOf('Client') === 0) {   // faux client (absent de WML) → prospect
+      } else if (D.seg[p[4]] !== 'Prospect') {   // pas un client WML → prospect (faux clients ET « Non défini »)
         p[4] = iPro; nDemoted++;
       }
     });
