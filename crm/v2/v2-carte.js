@@ -410,6 +410,9 @@
       var cost = travelMin(a.ref, stop.ref) + travelMin(stop.ref, b.ref) - travelMin(a.ref, b.ref);
       if (cost < bestCost - 1e-9) { bestCost = cost; best = k + 1; }
     }
+    // route ouverte : ajouter en fin (coût = dernière étape) — gère aussi la séquence [origine] seule
+    var last = seq[seq.length - 1], endCost = travelMin(last.ref, stop.ref);
+    if (endCost < bestCost - 1e-9) { bestCost = endCost; best = seq.length; }
     if (best < 0) return null;
     var out = seq.slice(); out.splice(best, 0, stop); return out;
   }
@@ -481,6 +484,12 @@
         }
         a = i;
       }
+    }
+    if (seq.length - a > 2) {   // tronçon final libre (route ouverte, pas d'ancre en fin)
+      var midF = seq.slice(a + 1), headF = seq[a].ref;
+      var ordF = twoOpt(nearestOrder(midF.map(function (s) { return s.ref; }), headF), headF, null);
+      var trialF = seq.slice(0, a + 1).concat(tpReorder(midF, ordF));
+      if (tpCost(trialF, plan) <= tpCost(seq, plan) + 1e-6) seq = trialF;
     }
     for (var len = 1; len <= 2; len++) {   // or-opt : déplacer 1-2 arrêts libres si le coût baisse
       for (i = 1; i < seq.length - len; i++) {
