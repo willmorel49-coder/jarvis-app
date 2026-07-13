@@ -510,11 +510,18 @@
     var stops = routeStops();   // inclut le dépôt en départ/retour si défini
     var coords = stops.map(function (s) { return s.lat + ',' + s.lng; });
     var MAX = 10;   // Google Maps ~10 points max par itinéraire
-    if (coords.length <= MAX) { window.open('https://www.google.com/maps/dir/' + coords.join('/'), '_blank'); return; }
+    // Navigation GPS turn-by-turn : origin/destination/waypoints + dir_action=navigate
+    function gmapsUrl(seg) {
+      var origin = seg[0], dest = seg[seg.length - 1], way = seg.slice(1, -1);
+      var u = 'https://www.google.com/maps/dir/?api=1&travelmode=driving&dir_action=navigate&origin=' + origin + '&destination=' + dest;
+      if (way.length) u += '&waypoints=' + way.join('%7C');
+      return u;
+    }
+    if (coords.length <= MAX) { window.open(gmapsUrl(coords), '_blank'); return; }
     // tournée longue → découpe en itinéraires qui s'enchaînent (fin d'un = départ du suivant)
     var parts = []; for (var i = 0; i < coords.length - 1; i += MAX - 1) parts.push(coords.slice(i, i + MAX));
-    parts.forEach(function (c) { window.open('https://www.google.com/maps/dir/' + c.join('/'), '_blank'); });
-    if (V2.toast) V2.toast('Tournée longue : ouverte en ' + parts.length + ' itinéraires Google Maps');
+    parts.forEach(function (c) { window.open(gmapsUrl(c), '_blank'); });
+    if (V2.toast) V2.toast('Tournée longue : GPS ouvert en ' + parts.length + ' itinéraires enchaînés');
   };
 
   // Export KML de toutes les officines → à importer dans Google My Maps (1 icône/couleur par groupement)
@@ -704,7 +711,7 @@
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteProspects()">Prospects proches</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourSaveAs()">Enregistrer</button>' : '') +
         '<button class="v2-btn v2-btn-ghost" onclick="V2.carteToursOpen()">Mes tournées</button>' +
-        (tour.length >= 1 ? '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourItinerary()">' + ICO('pharma', 15) + 'Démarrer dans Google Maps</button>' : '') +
+        (tour.length >= 1 ? '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourItinerary()">' + ICO('pharma', 15) + 'Lancer le GPS (Google Maps)</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourAgenda()">Agenda</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourClear()">Vider</button>' : '') +
         '</div>' +
