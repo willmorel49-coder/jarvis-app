@@ -8,7 +8,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
-  var CB = '?v=20260713r';
+  var CB = '?v=20260713s';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var selId = null;        // grossiste ouvert en fiche
@@ -61,7 +61,17 @@
   function groupes() { var d = DATA(); return (d && d.groupes) || []; }
   function membersOf(gid) { return list().filter(function (f) { return f.groupe_id === gid; }); }
   function kNum(s) { s = String(s || ''); var m = s.match(/([\d.,]+)\s*Md/i); if (m) return parseFloat(m[1].replace(',', '.')) * 1000; m = s.match(/([\d.,]+)\s*M/i); if (m) return parseFloat(m[1].replace(',', '.')); return 0; }
-  function statutCls(s) { s = s || ''; return /national/.test(s) ? 'nat' : (/coop/.test(s) ? 'coop' : (/DOM/.test(s) ? 'dom' : (/export/.test(s) ? 'exp' : (/hors/.test(s) ? 'warn' : 'sl')))); }
+  function statutCls(s) { s = s || ''; return /notre|nous/.test(s) ? 'us' : (/national/.test(s) ? 'nat' : (/coop/.test(s) ? 'coop' : (/DOM/.test(s) ? 'dom' : (/export/.test(s) ? 'exp' : (/hors/.test(s) ? 'warn' : 'sl'))))); }
+  function maillageHtml(g) {
+    var m = g.maillage; if (!m) return '';
+    var pen = (m.c60 + m.p60) ? Math.round(m.c60 / (m.c60 + m.p60) * 100) : 0;
+    var note = m.c60 === 0 ? 'Zone blanche : aucun client, <b>' + m.p60 + ' officines à conquérir</b>.' : '<b>' + pen + '%</b> de pénétration sur la zone (60 km).';
+    return '<div class="gr-sec gr-maill"><h4>📍 Maillage autour de l\'établissement (' + esc(m.ville) + ')</h4>' +
+      '<div class="gr-maillg">' +
+        '<div class="gr-mcell cli"><b>' + m.c60 + '</b><span>clients &lt; 60 km</span><u>' + m.c30 + ' à &lt; 30 km</u></div>' +
+        '<div class="gr-mcell pro"><b>' + m.p60 + '</b><span>prospects &lt; 60 km</span><u>' + m.p30 + ' à &lt; 30 km</u></div>' +
+      '</div><div class="gr-maill-n">' + note + '</div></div>';
+  }
   function flagOf(g) { var t = (g.pays || '') + (g.mere || ''); return /allemagne/i.test(t) ? '🇩🇪' : (/usa|américain|amerisource|cencora/i.test(t) ? '🇺🇸' : (/japon|toyota/i.test(t) ? '🇯🇵' : '🇫🇷')); }
   function shortNom(s) { return String(s || '').split('(')[0].split('—')[0].split('/')[0].trim(); }
   function fmtEur(n) { if (n == null) return '—'; var a = Math.abs(n); if (a >= 1e9) return (Math.round(n / 1e8) / 10).toLocaleString('fr') + ' Md€'; if (a >= 1e6) return (Math.round(n / 1e5) / 10).toLocaleString('fr') + ' M€'; if (a >= 1e3) return Math.round(n / 1e3).toLocaleString('fr') + ' k€'; return Math.round(n).toLocaleString('fr') + ' €'; }
@@ -189,6 +199,7 @@
         '<div class="gr-fkpi"><b>' + esc(g.effectifs || '—') + '</b><span>effectifs</span></div>' +
       '</div>' +
       angles +
+      maillageHtml(g) +
       finHtml(g) +
       sec('Positionnement géographique', g.geo ? '<p>' + esc(g.geo) + '</p>' : '') +
       sec('Enseignes & groupements affiliés', ens) +
@@ -413,7 +424,17 @@
       '.gr-gkpis b{display:block;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}',
       '.gr-gkpis span{font-size:9.5px;color:var(--muted)}',
       '.gr-gstat{font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap;flex:none}',
-      '.gr-gstat.s-nat{background:#E9F0FF;color:#0034A0}.gr-gstat.s-coop{background:#E7F8EF;color:#0B7A44}.gr-gstat.s-sl{background:#FFF2E0;color:#A35B00}.gr-gstat.s-dom{background:#E0F7FA;color:#00707C}.gr-gstat.s-exp{background:#F3F4E7;color:#6B6B1F}.gr-gstat.s-warn{background:#FDE8E8;color:#B42318}',
+      '.gr-gstat.s-nat{background:#E9F0FF;color:#0034A0}.gr-gstat.s-coop{background:#E7F8EF;color:#0B7A44}.gr-gstat.s-sl{background:#FFF2E0;color:#A35B00}.gr-gstat.s-dom{background:#E0F7FA;color:#00707C}.gr-gstat.s-exp{background:#F3F4E7;color:#6B6B1F}.gr-gstat.s-warn{background:#FDE8E8;color:#B42318}.gr-gstat.s-us{background:#F39A1B;color:#fff}',
+      // Maillage (fiches établissements Intégral)
+      '.gr-maill{border:1px solid color-mix(in srgb,#F39A1B 35%,var(--line));background:color-mix(in srgb,#F39A1B 5%,var(--card));border-radius:12px;padding:14px 16px}',
+      '.gr-maillg{display:grid;grid-template-columns:1fr 1fr;gap:12px}',
+      '.gr-mcell{border-radius:10px;padding:12px 14px;text-align:center}',
+      '.gr-mcell.cli{background:color-mix(in srgb,#0B7A44 10%,var(--card))}.gr-mcell.pro{background:color-mix(in srgb,#0050E6 8%,var(--card))}',
+      '.gr-mcell b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1}',
+      '.gr-mcell.cli b{color:#0B7A44}.gr-mcell.pro b{color:#0050E6}',
+      '.gr-mcell span{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}',
+      '.gr-mcell u{display:block;font-size:10.5px;text-decoration:none;color:var(--muted);margin-top:4px}',
+      '.gr-maill-n{margin-top:10px;font-size:12.5px;color:var(--ip-ink)}',
       '.gr-gchev{font-size:12px;font-weight:700;color:var(--muted);flex:none}',
       // Niveau 2 — arborescence mère → membres → enseignes
       '.gr-gbody{padding:2px 16px 16px;border-top:1px solid var(--line)}',
