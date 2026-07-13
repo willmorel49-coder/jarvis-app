@@ -8,7 +8,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
-  var CB = '?v=20260713n';
+  var CB = '?v=20260713p';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var selId = null;        // grossiste ouvert en fiche
@@ -62,6 +62,28 @@
   function statutCls(s) { s = s || ''; return /national/.test(s) ? 'nat' : (/coop/.test(s) ? 'coop' : (/DOM/.test(s) ? 'dom' : (/export/.test(s) ? 'exp' : (/hors/.test(s) ? 'warn' : 'sl')))); }
   function flagOf(g) { var t = (g.pays || '') + (g.mere || ''); return /allemagne/i.test(t) ? '🇩🇪' : (/usa|américain|amerisource|cencora/i.test(t) ? '🇺🇸' : (/japon|toyota/i.test(t) ? '🇯🇵' : '🇫🇷')); }
   function shortNom(s) { return String(s || '').split('(')[0].split('—')[0].split('/')[0].trim(); }
+  function fmtEur(n) { if (n == null) return '—'; var a = Math.abs(n); if (a >= 1e9) return (Math.round(n / 1e8) / 10).toLocaleString('fr') + ' Md€'; if (a >= 1e6) return (Math.round(n / 1e5) / 10).toLocaleString('fr') + ' M€'; if (a >= 1e3) return Math.round(n / 1e3).toLocaleString('fr') + ' k€'; return Math.round(n).toLocaleString('fr') + ' €'; }
+  var EFF = { '00': '0 sal.', '01': '1-2', '02': '3-5', '03': '6-9', '11': '10-19', '12': '20-49', '21': '50-99', '22': '100-199', '31': '200-249', '32': '250-499', '41': '500-999', '42': '1000-1999', '51': '2000-4999', '52': '5000-9999', '53': '≥10 000' };
+  function finHtml(g) {
+    var F = g.financials; if (!F) return '';
+    var ca = F.ca || {}, rn = F.rn || {};
+    var years = Object.keys(ca).concat(Object.keys(rn)).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort();
+    var body;
+    if (years.length) {
+      var maxca = Math.max.apply(null, years.map(function (y) { return ca[y] || 0; }).concat([1]));
+      body = '<div class="gr-fingraph">' + years.map(function (y) {
+        var c = ca[y], r = rn[y], h = c ? Math.round(Math.max(4, (c / maxca) * 56)) : 4;
+        return '<div class="gr-finbar"><i style="height:' + h + 'px"></i><b>' + (c ? fmtEur(c) : '—') + '</b>' +
+          (r != null ? '<u class="' + (r < 0 ? 'neg' : 'pos') + '">' + fmtEur(r) + '</u>' : '') + '<span>' + esc(y) + '</span></div>';
+      }).join('') + '</div><div class="gr-finlg">Barres = chiffre d\'affaires · sous chaque barre = résultat net</div>';
+    } else {
+      body = '<p class="gr-finconf">Société identifiée mais <b>comptes déposés confidentiels</b> — chiffres non publics à ce jour.</p>';
+    }
+    var eff = EFF[String(F.effectif)] || '';
+    var meta = '<div class="gr-finmeta">SIREN ' + esc(F.siren || '—') + (F.creation ? ' · créée ' + esc((F.creation || '').slice(0, 4)) : '') + (eff ? ' · effectif ' + esc(eff) + (F.effectif_an ? ' (' + esc(String(F.effectif_an)) + ')' : '') : '') +
+      (F.siren ? ' · <a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(F.siren) + '" target="_blank" rel="noopener">fiche officielle ↗</a>' : '') + '</div>';
+    return '<div class="gr-sec gr-finsec"><h4>Comptes officiels (RNE · data.gouv.fr)</h4>' + body + meta + '</div>';
+  }
 
   function marketBar() {
     var gs = groupes().filter(function (g) { return g.pdm_num > 0; }).sort(function (a, b) { return b.pdm_num - a.pdm_num; });
@@ -127,6 +149,7 @@
         '<div class="gr-fkpi"><b>' + esc(g.part_marche || '—') + '</b><span>part de marché</span></div>' +
         '<div class="gr-fkpi"><b>' + esc(g.effectifs || '—') + '</b><span>effectifs</span></div>' +
       '</div>' +
+      finHtml(g) +
       sec('Positionnement géographique', g.geo ? '<p>' + esc(g.geo) + '</p>' : '') +
       sec('Enseignes & groupements affiliés', ens) +
       sec('Partenariats', ul(g.partenariats)) +
@@ -246,6 +269,17 @@
       '.gr-ul{margin:0;padding-left:18px;font-size:14px;line-height:1.6}',
       '.gr-ensrow{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}',
       '.gr-ensrow b{font-size:13.5px;font-weight:700}.gr-ensrow span{font-size:12px;color:var(--muted)}',
+      '.gr-finsec{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:color-mix(in srgb,var(--ip-blue) 3%,var(--card))}',
+      '.gr-fingraph{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;padding:6px 0 4px}',
+      '.gr-finbar{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:70px}',
+      '.gr-finbar i{width:34px;background:linear-gradient(180deg,#0057FF,#0034A0);border-radius:4px 4px 0 0}',
+      '.gr-finbar b{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums}',
+      '.gr-finbar u{font-size:10px;text-decoration:none;font-weight:700}',
+      '.gr-finbar u.pos{color:#0B7A44}.gr-finbar u.neg{color:#B42318}',
+      '.gr-finbar span{font-size:10.5px;color:var(--muted);font-weight:600}',
+      '.gr-finlg{font-size:10.5px;color:var(--muted);margin-top:6px}',
+      '.gr-finconf{margin:0;font-size:12.5px;color:var(--muted)}',
+      '.gr-finmeta{margin-top:10px;font-size:11px;color:var(--muted)}.gr-finmeta a{color:var(--ip-blue);text-decoration:none}',
       '.gr-src{margin:14px 0;font-size:11.5px;color:var(--muted);word-break:break-all}',
       '.gr-src a{color:var(--ip-blue);text-decoration:none}',
       '.gr-notes{margin-top:22px;border-top:2px solid var(--line);padding-top:16px}',
