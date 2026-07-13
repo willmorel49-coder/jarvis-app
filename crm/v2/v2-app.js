@@ -804,6 +804,10 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
         P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
       }
+      // Concurrents · grossistes-répartiteurs (annuaire + actualités) — app JARVIS
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) {
+        P.push({ k: 'grossistes', cls: 'p5', accent: '#0E7C86', ico: 'spark', tag: 'Veille', t: 'Grossistes concurrents', d: 'La carte de la concurrence : OCP, CERP, Alliance, Phoenix, Sagitta… agences, CA, enseignes affiliées, livraison, conditions — plus l\'actualité du secteur et tes remontées terrain.', go: 'Ouvrir la base concurrents' });
+      }
       // Remontées équipe (mur d'idées interne) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.remontees) {
         P.push({ k: 'remontees', cls: 'p6', accent: '#7C3AED', ico: 'spark', tag: 'Équipe', t: 'Remontées', d: 'Le mur d\'idées de l\'équipe : propose une amélioration de l\'appli, vote pour celles des autres, suis leur avancement.', go: 'Voir les remontées' });
@@ -910,7 +914,8 @@
   function buildCmdkIndex() {
     var idx = [];
     // Pages
-    var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Grossistes concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
+    var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Offilog · prix concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) PAGES.splice(3, 0, ['grossistes', 'Concurrents · grossistes-répartiteurs', 'spark']);
     if (window.V2_BRAND && window.V2_BRAND.opso) PAGES.splice(2, 0, ['fiches', 'Fiches commerciales', 'fiche']); // OPSO garde les fiches
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
