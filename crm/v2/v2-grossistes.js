@@ -8,7 +8,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
-  var CB = '?v=20260713k';
+  var CB = '?v=20260713l';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var selId = null;        // grossiste ouvert en fiche
