@@ -8,10 +8,12 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
-  var CB = '?v=20260713m';
+  var CB = '?v=20260713n';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var selId = null;        // grossiste ouvert en fiche
+  var openGroupe = null;   // groupe déplié (niveau 2)
+  var filt = '';           // filtre statut des groupes
   var actuTag = '';        // filtre actualités par grossiste
   var ACTU = null;         // cache actualités
 
@@ -53,33 +55,59 @@
   }
   var TAGNAME = { '': 'Secteur', 'ocp': 'Phoenix OCP', 'cerp-rouen': 'CERP Rouen', 'cerp-rrm': 'CERP RRM', 'alliance': 'Alliance Healthcare', 'phoenix': 'Phoenix', 'sagitta': 'Sagitta', 'cophana': 'Cophana', 'welcoop': 'Welcoop', 'giphar': 'Giphar' };
 
-  // ── ANNUAIRE : grille de cartes ─────────────────────────────────
-  function annuaireHtml() {
-    var gs = list();
-    if (!gs.length) return '<div class="gr-empty">Base concurrents en cours de constitution (renseignement multi-agents). Reviens dans un instant.</div>';
-    var cov = (DATA() && DATA().couverture) || '';
-    var banner = '<div class="gr-cov"><b>' + gs.length + ' grossistes-répartiteurs recensés</b>' + (cov ? '<span>' + esc(cov) + '</span>' : '') + '</div>';
-    gs = gs.slice().sort(function (a, b) { return (rank(b) - rank(a)); });
-    return banner + '<div class="gr-grid">' + gs.map(function (g) {
-      var ens = (g.enseignes || []).slice(0, 4).map(function (e) { return '<span class="gr-chip">' + esc(e.nom) + '</span>'; }).join('');
-      return '<button class="gr-card' + (g.lien_ip ? ' ip' : '') + '" onclick="V2.grossisteOpen(\'' + esc(g.id) + '\')">' +
-        '<div class="gr-card-h"><b>' + esc(g.nom) + '</b>' + (g.lien_ip ? '<span class="gr-iplink">Lié à Intégral</span>' : typeBadge(g.type)) + '</div>' +
-        (g.groupe ? '<div class="gr-card-grp">' + esc(g.groupe) + '</div>' : '') +
-        '<div class="gr-card-kpis">' +
-          '<div><b>' + esc(g.ca_eur || '—') + '</b><span>CA</span></div>' +
-          '<div><b>' + esc(g.nb_agences || '—') + '</b><span>agences</span></div>' +
-          '<div><b>' + esc(g.part_marche || '—') + '</b><span>part marché</span></div>' +
-        '</div>' +
-        (ens ? '<div class="gr-card-ens">' + ens + '</div>' : '') +
-        '<span class="gr-card-go">Voir la fiche →</span>' +
-      '</button>';
-    }).join('') + '</div>';
+  // ── ANNUAIRE PAR GROUPE (niveau 0 marché → 1 groupes → 2 membres/mère) ──
+  function groupes() { var d = DATA(); return (d && d.groupes) || []; }
+  function membersOf(gid) { return list().filter(function (f) { return f.groupe_id === gid; }); }
+  function kNum(s) { s = String(s || ''); var m = s.match(/([\d.,]+)\s*Md/i); if (m) return parseFloat(m[1].replace(',', '.')) * 1000; m = s.match(/([\d.,]+)\s*M/i); if (m) return parseFloat(m[1].replace(',', '.')); return 0; }
+  function statutCls(s) { s = s || ''; return /national/.test(s) ? 'nat' : (/coop/.test(s) ? 'coop' : (/DOM/.test(s) ? 'dom' : (/export/.test(s) ? 'exp' : (/hors/.test(s) ? 'warn' : 'sl')))); }
+  function flagOf(g) { var t = (g.pays || '') + (g.mere || ''); return /allemagne/i.test(t) ? '🇩🇪' : (/usa|américain|amerisource|cencora/i.test(t) ? '🇺🇸' : (/japon|toyota/i.test(t) ? '🇯🇵' : '🇫🇷')); }
+  function shortNom(s) { return String(s || '').split('(')[0].split('—')[0].split('/')[0].trim(); }
+
+  function marketBar() {
+    var gs = groupes().filter(function (g) { return g.pdm_num > 0; }).sort(function (a, b) { return b.pdm_num - a.pdm_num; });
+    var sum = gs.reduce(function (s, g) { return s + g.pdm_num; }, 0), autres = Math.max(0, Math.round((100 - sum) * 10) / 10);
+    var seg = gs.map(function (g) { return '<span class="gr-mbseg" style="width:' + g.pdm_num + '%;background:' + g.couleur + '" title="' + esc(shortNom(g.nom)) + ' ' + g.pdm_num + '%"></span>'; }).join('') +
+      (autres > 0 ? '<span class="gr-mbseg" style="width:' + autres + '%;background:#CBD2DD" title="Indépendants, short-liners & DOM-TOM"></span>' : '');
+    var leg = gs.map(function (g) { return '<span class="gr-mbl"><i style="background:' + g.couleur + '"></i>' + esc(shortNom(g.nom)) + ' ' + g.pdm_num + '%</span>'; }).join('') +
+      '<span class="gr-mbl"><i style="background:#CBD2DD"></i>Autres ~' + Math.round(autres) + '%</span>';
+    return '<div class="gr-market">' +
+      '<div class="gr-mtiles"><div><b>~22 Md€</b><span>marché FR</span></div><div><b>' + list().length + '</b><span>acteurs recensés</span></div><div><b>~90 %</b><span>aux 3 leaders</span></div><div><b>~57 %</b><span>du médicament (volume)</span></div></div>' +
+      '<div class="gr-mbar">' + seg + '</div><div class="gr-mbleg">' + leg + '</div></div>';
   }
-  function rank(g) {   // ordre : gros acteurs d'abord (heuristique sur le CA en Md/M)
-    var s = (g.ca_eur || '').replace(/\s/g, '');
-    var m = s.match(/([\d.,]+)\s*Md/i); if (m) return 1000 * parseFloat(m[1].replace(',', '.'));
-    m = s.match(/([\d.,]+)\s*M/i); if (m) return parseFloat(m[1].replace(',', '.'));
-    return 0;
+  function groupCardHtml(g) {
+    var mem = membersOf(g.id), open = (openGroupe === g.id);
+    var head = '<button class="gr-ghead" onclick="V2.grossisteGroupe(\'' + g.id + '\')">' +
+      '<span class="gr-grang">#' + g.rang + '</span>' +
+      '<div class="gr-gmain"><b>' + esc(shortNom(g.nom)) + '</b>' +
+        '<span class="gr-gmere">' + flagOf(g) + ' ' + esc(shortNom(g.mere).slice(0, 44) || '—') + '</span></div>' +
+      '<div class="gr-gkpis"><div><b>' + esc(g.part_marche || '—') + '</b><span>part</span></div>' +
+        '<div><b>' + mem.length + '</b><span>répart.</span></div>' +
+        '<div><b>' + ((g.enseignes && g.enseignes.length) || '—') + '</b><span>enseignes</span></div></div>' +
+      '<span class="gr-gstat s-' + statutCls(g.statut) + '">' + esc(g.statut) + '</span>' +
+      '<span class="gr-gchev">' + (open ? '▾' : '▸') + ' ' + mem.length + '</span></button>';
+    return '<div class="gr-gcard' + (open ? ' open' : '') + '" style="--gc:' + g.couleur + '">' + head + (open ? groupBodyHtml(g, mem) : '') + '</div>';
+  }
+  function groupBodyHtml(g, mem) {
+    var mere = '<div class="gr-lvl"><span class="gr-lvlab">Société mère</span><div class="gr-mere"><i class="gr-pas mere"></i>' + esc(g.mere || '—') + '</div></div>';
+    var rows = mem.slice().sort(function (a, b) { return kNum(b.ca_eur) - kNum(a.ca_eur); }).map(function (f) {
+      var right = (f.ca_eur && f.ca_eur !== 'inconnu' && f.ca_eur !== '—') ? shortNom(f.ca_eur) : shortNom((f.geo || '').split(',')[0]).slice(0, 22);
+      return '<button class="gr-mrow" onclick="V2.grossisteOpen(\'' + esc(f.id) + '\')">' +
+        '<i class="gr-pas memb"></i><span class="gr-mname">' + esc(shortNom(f.nom)) + (f.lien_ip ? '<em class="gr-mip">IP</em>' : '') + '</span>' +
+        '<span class="gr-mca">' + esc(right) + '</span><span class="gr-marr">→</span></button>';
+    }).join('');
+    var ens = (g.enseignes && g.enseignes.length) ? '<div class="gr-lvl"><span class="gr-lvlab">Enseignes / groupements</span><div class="gr-ens">' +
+      g.enseignes.map(function (e) { return '<span class="gr-enschip"><i class="gr-pas ens"></i>' + esc(typeof e === 'string' ? e : e.nom) + '</span>'; }).join('') + '</div></div>' : '';
+    return '<div class="gr-gbody">' + (g.resume ? '<p class="gr-gres">' + esc(g.resume) + '</p>' : '') + mere +
+      '<div class="gr-lvl"><span class="gr-lvlab">Répartiteurs (' + mem.length + ')</span>' + rows + '</div>' + ens + '</div>';
+  }
+  function annuaireHtml() {
+    var gs = groupes();
+    if (!gs.length) return '<div class="gr-empty">Base concurrents en cours de constitution. Reviens dans un instant.</div>';
+    var STATUTS = [['', 'Tous'], ['national', 'Nationaux'], ['coopérative', 'Coopératives'], ['short-liner', 'Short-liners'], ['DOM-TOM', 'DOM-TOM'], ['export', 'Export']];
+    var chips = '<div class="gr-filts">' + STATUTS.map(function (s) { return '<button class="gr-filt' + (filt === s[0] ? ' on' : '') + '" onclick="V2.grossisteFilter(\'' + s[0] + '\')">' + esc(s[1]) + '</button>'; }).join('') + '</div>';
+    var shown = gs.filter(function (g) { return !filt || g.statut === filt; }).sort(function (a, b) { return a.rang - b.rang; });
+    var cards = shown.map(groupCardHtml).join('') || '<div class="gr-empty">Aucun groupe dans ce filtre.</div>';
+    return marketBar() + chips + '<div class="gr-glist">' + cards + '</div>';
   }
 
   // ── FICHE d'un grossiste ────────────────────────────────────────
@@ -120,20 +148,23 @@
   function actuHtml() {
     var items = (ACTU && ACTU.items) || [];
     var tags = {}; items.forEach(function (i) { tags[i.tag || ''] = (tags[i.tag || ''] || 0) + 1; });
-    var chips = '<button class="gr-actutag' + (actuTag === '' ? ' on' : '') + '" onclick="V2.grossisteActuTag(\'\')">Tout (' + items.length + ')</button>';
+    var nLibre = items.filter(function (i) { return i.libre; }).length;
+    var chips = '<button class="gr-actutag' + (actuTag === '' ? ' on' : '') + '" onclick="V2.grossisteActuTag(\'\')">Tout (' + items.length + ')</button>' +
+      '<button class="gr-actutag lib' + (actuTag === '__libre' ? ' on' : '') + '" onclick="V2.grossisteActuTag(\'__libre\')">🔓 Accès libre (' + nLibre + ')</button>';
     Object.keys(tags).filter(function (t) { return t; }).forEach(function (t) {
       chips += '<button class="gr-actutag' + (actuTag === t ? ' on' : '') + '" onclick="V2.grossisteActuTag(\'' + esc(t) + '\')">' + esc(TAGNAME[t] || t) + ' (' + tags[t] + ')</button>';
     });
-    var shown = actuTag ? items.filter(function (i) { return i.tag === actuTag; }) : items;
+    var shown = actuTag === '__libre' ? items.filter(function (i) { return i.libre; }) : (actuTag ? items.filter(function (i) { return i.tag === actuTag; }) : items);
     var rows = shown.map(function (i) {
       return '<a class="gr-actu" href="' + esc(i.url) + '" target="_blank" rel="noopener">' +
         '<div class="gr-actu-main"><b>' + esc(i.titre) + '</b>' +
-          '<span class="gr-actu-meta">' + esc(i.source || '') + (i.tag ? ' · <i>' + esc(TAGNAME[i.tag] || i.tag) + '</i>' : '') + ' · ' + timeAgo(i.date) + '</span></div>' +
+          (i.resume ? '<span class="gr-actu-res">' + esc(i.resume) + '</span>' : '') +
+          '<span class="gr-actu-meta"><span class="gr-actu-acc ' + (i.libre ? 'lib' : 'abo') + '">' + (i.libre ? 'accès libre' : 'abonnés') + '</span> · ' + esc(i.source || '') + (i.tag ? ' · <i>' + esc(TAGNAME[i.tag] || i.tag) + '</i>' : '') + ' · ' + timeAgo(i.date) + '</span></div>' +
         '<span class="gr-actu-go">↗</span></a>';
     }).join('') || '<div class="gr-empty">Pas encore d\'actualités. Le robot de veille tourne chaque jour.</div>';
     var maj = ACTU && ACTU.maj ? 'Mis à jour ' + timeAgo(ACTU.maj) : '';
     return '<div class="gr-actubar">' + chips + '</div>' +
-      '<div class="gr-actumaj">' + esc(maj) + ' · source : Google News (secteur répartition)</div>' +
+      '<div class="gr-actumaj">' + esc(maj) + ' · sources : FSPF, ANSM &amp; presse (Google News) — filtre « accès libre » pour l\'info lisible en entier</div>' +
       '<div class="gr-actulist">' + rows + '</div>';
   }
 
@@ -141,6 +172,9 @@
   V2.grossisteTab = function (v) { view = v; selId = null; V2.render(); };
   V2.grossisteOpen = function (id) { selId = id; V2.render(); };
   V2.grossisteClose = function () { selId = null; V2.render(); };
+  function reAnnu() { var b = document.getElementById('gr-body'); if (b) b.innerHTML = annuaireHtml(); }
+  V2.grossisteGroupe = function (id) { openGroupe = (openGroupe === id ? null : id); reAnnu(); };
+  V2.grossisteFilter = function (f) { filt = f; openGroupe = null; reAnnu(); };
   V2.grossisteActuTag = function (t) { actuTag = t; var el = document.getElementById('gr-actuwrap'); if (el) el.innerHTML = actuHtml(); };
 
   // ── page ────────────────────────────────────────────────────────
@@ -227,7 +261,61 @@
       '.gr-actu-main b{display:block;font-size:14px;font-weight:600;line-height:1.35}',
       '.gr-actu-meta{font-size:11.5px;color:var(--muted)}.gr-actu-meta i{color:var(--ip-blue);font-style:normal;font-weight:600}',
       '.gr-actu-go{color:var(--muted);font-weight:700}',
+      '.gr-actu-res{display:block;font-size:12px;line-height:1.45;color:var(--muted);margin:3px 0 4px}',
+      '.gr-actu-acc{font-weight:800;font-size:10px;padding:1px 6px;border-radius:999px}',
+      '.gr-actu-acc.lib{background:#E7F8EF;color:#0B7A44}.gr-actu-acc.abo{background:#FDECEC;color:#B42318}',
+      '.gr-actutag.lib.on{background:#0B7A44}',
       '.gr-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:13.5px}',
+      // Niveau 0 — bandeau de marché
+      '.gr-market{margin-bottom:16px}',
+      '.gr-mtiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}',
+      '@media(max-width:560px){.gr-mtiles{grid-template-columns:repeat(2,1fr)}}',
+      '.gr-mtiles>div{border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:var(--card)}',
+      '.gr-mtiles b{display:block;font-size:17px;font-weight:800;letter-spacing:-.01em}',
+      '.gr-mtiles span{font-size:10.5px;color:var(--muted)}',
+      '.gr-mbar{display:flex;height:14px;border-radius:7px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)}',
+      '.gr-mbseg{height:100%}',
+      '.gr-mbleg{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}',
+      '.gr-mbl{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--ip-ink)}',
+      '.gr-mbl i{width:9px;height:9px;border-radius:2px}',
+      // Filtres
+      '.gr-filts{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}',
+      '.gr-filt{padding:6px 13px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ip-ink);font:inherit;font-size:12px;font-weight:600;cursor:pointer}',
+      '.gr-filt.on{background:var(--ip-blue,#0057FF);color:#fff;border-color:transparent}',
+      // Niveau 1 — cartes de groupe
+      '.gr-glist{display:flex;flex-direction:column;gap:10px}',
+      '.gr-gcard{border:1px solid var(--line);border-left:5px solid var(--gc);border-radius:14px;background:var(--card);overflow:hidden}',
+      '.gr-gcard.open{box-shadow:0 10px 28px rgba(16,19,28,.09)}',
+      '.gr-ghead{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border:none;background:none;cursor:pointer;font:inherit;color:var(--ip-ink);text-align:left}',
+      '.gr-grang{font-size:13px;font-weight:800;color:var(--gc);min-width:26px}',
+      '.gr-gmain{flex:1;min-width:0}',
+      '.gr-gmain b{display:block;font-size:15.5px;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
+      '.gr-gmere{font-size:11.5px;color:var(--muted)}',
+      '.gr-gkpis{display:flex;gap:16px;flex:none}',
+      '@media(max-width:640px){.gr-gkpis>div:nth-child(3){display:none}}',
+      '@media(max-width:460px){.gr-gkpis{display:none}}',
+      '.gr-gkpis>div{text-align:right}',
+      '.gr-gkpis b{display:block;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}',
+      '.gr-gkpis span{font-size:9.5px;color:var(--muted)}',
+      '.gr-gstat{font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap;flex:none}',
+      '.gr-gstat.s-nat{background:#E9F0FF;color:#0034A0}.gr-gstat.s-coop{background:#E7F8EF;color:#0B7A44}.gr-gstat.s-sl{background:#FFF2E0;color:#A35B00}.gr-gstat.s-dom{background:#E0F7FA;color:#00707C}.gr-gstat.s-exp{background:#F3F4E7;color:#6B6B1F}.gr-gstat.s-warn{background:#FDE8E8;color:#B42318}',
+      '.gr-gchev{font-size:12px;font-weight:700;color:var(--muted);flex:none}',
+      // Niveau 2 — arborescence mère → membres → enseignes
+      '.gr-gbody{padding:2px 16px 16px;border-top:1px solid var(--line)}',
+      '.gr-gres{margin:12px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted)}',
+      '.gr-lvl{margin-top:14px}',
+      '.gr-lvlab{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}',
+      '.gr-pas{width:11px;height:11px;flex:none;display:inline-block;background:var(--gc)}',
+      '.gr-pas.mere{border-radius:3px}.gr-pas.memb{border-radius:50%}.gr-pas.ens{border-radius:50%;background:transparent!important;box-shadow:inset 0 0 0 2px var(--gc)}',
+      '.gr-mere{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--ip-ink)}',
+      '.gr-mrow{display:flex;align-items:center;gap:9px;width:100%;padding:8px 6px;border:none;border-radius:8px;background:none;cursor:pointer;font:inherit;color:var(--ip-ink);text-align:left}',
+      '.gr-mrow:hover{background:color-mix(in srgb,var(--gc) 7%,transparent)}',
+      '.gr-mname{flex:1;min-width:0;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.gr-mip{font-style:normal;font-size:9px;font-weight:800;background:#0E7C86;color:#fff;padding:1px 5px;border-radius:999px;margin-left:6px}',
+      '.gr-mca{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.gr-marr{color:var(--gc);font-weight:700}',
+      '.gr-ens{display:flex;flex-wrap:wrap;gap:6px}',
+      '.gr-enschip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px;background:color-mix(in srgb,var(--gc) 8%,var(--card));border:1px solid color-mix(in srgb,var(--gc) 22%,transparent)}',
       '.gr-cov{margin-bottom:14px;padding:12px 16px;border-radius:12px;background:color-mix(in srgb,var(--ip-blue) 5%,var(--card));border:1px solid var(--line)}',
       '.gr-cov b{display:block;font-size:14px;font-weight:800}',
       '.gr-cov span{display:block;margin-top:4px;font-size:11.5px;line-height:1.5;color:var(--muted)}',
