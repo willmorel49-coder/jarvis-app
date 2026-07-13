@@ -8,7 +8,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
-  var CB = '?v=20260713t';
+  var CB = '?v=20260713u';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var selId = null;        // grossiste ouvert en fiche
@@ -64,13 +64,19 @@
   function statutCls(s) { s = s || ''; return /notre|nous/.test(s) ? 'us' : (/national/.test(s) ? 'nat' : (/coop/.test(s) ? 'coop' : (/DOM/.test(s) ? 'dom' : (/export/.test(s) ? 'exp' : (/hors/.test(s) ? 'warn' : 'sl'))))); }
   function maillageHtml(g) {
     var m = g.maillage; if (!m) return '';
-    var pen = (m.c60 + m.p60) ? Math.round(m.c60 / (m.c60 + m.p60) * 100) : 0;
-    var note = m.c60 === 0 ? 'Zone blanche : aucun client, <b>' + m.p60 + ' officines à conquérir</b>.' : '<b>' + pen + '%</b> de pénétration sur la zone (60 km).';
-    return '<div class="gr-sec gr-maill"><h4>📍 Maillage autour de l\'établissement (' + esc(m.ville) + ')</h4>' +
+    var pen = (m.nCli + m.nPro) ? Math.round(m.nCli / (m.nCli + m.nPro) * 100) : 0;
+    var deptRows = (m.depts || []).map(function (x) { return '<span class="gr-dchip' + (x.cli ? ' has' : '') + '"><b>' + esc(x.d) + '</b> ' + x.cli + 'c·' + x.pro + 'p</span>'; }).join('');
+    var note = (m.nDept === 0) ? 'Aucun département alloué par le proxy (chevauchement de dépôts) — à définir avec l\'allocation officielle.' :
+      '<b>' + m.nCli + '</b> clients · <b>' + m.nPro + '</b> prospects sur <b>' + m.nDept + '</b> départements · <b>' + pen + '%</b> de pénétration.';
+    return '<div class="gr-sec gr-maill"><h4>📍 Maillage par département alloué</h4>' +
       '<div class="gr-maillg">' +
-        '<div class="gr-mcell cli"><b>' + m.c60 + '</b><span>clients &lt; 60 km</span><u>' + m.c30 + ' à &lt; 30 km</u></div>' +
-        '<div class="gr-mcell pro"><b>' + m.p60 + '</b><span>prospects &lt; 60 km</span><u>' + m.p30 + ' à &lt; 30 km</u></div>' +
-      '</div><div class="gr-maill-n">' + note + '</div></div>';
+        '<div class="gr-mcell cli"><b>' + m.nCli + '</b><span>clients</span></div>' +
+        '<div class="gr-mcell pro"><b>' + m.nPro + '</b><span>prospects à conquérir</span></div>' +
+        '<div class="gr-mcell dep"><b>' + m.nDept + '</b><span>départements</span></div>' +
+      '</div>' +
+      (deptRows ? '<div class="gr-depts">' + deptRows + '</div>' : '') +
+      '<div class="gr-maill-n">' + note + '</div>' +
+      '<div class="gr-maill-w">⚠ Allocation géographique automatique (département → dépôt le plus proche, plafond 170 km). À valider avec ta répartition officielle.</div></div>';
   }
   function flagOf(g) { var t = (g.pays || '') + (g.mere || ''); return /allemagne/i.test(t) ? '🇩🇪' : (/usa|américain|amerisource|cencora/i.test(t) ? '🇺🇸' : (/japon|toyota/i.test(t) ? '🇯🇵' : '🇫🇷')); }
   function shortNom(s) { return String(s || '').split('(')[0].split('—')[0].split('/')[0].trim(); }
@@ -427,7 +433,13 @@
       '.gr-gstat.s-nat{background:#E9F0FF;color:#0034A0}.gr-gstat.s-coop{background:#E7F8EF;color:#0B7A44}.gr-gstat.s-sl{background:#FFF2E0;color:#A35B00}.gr-gstat.s-dom{background:#E0F7FA;color:#00707C}.gr-gstat.s-exp{background:#F3F4E7;color:#6B6B1F}.gr-gstat.s-warn{background:#FDE8E8;color:#B42318}.gr-gstat.s-us{background:#F39A1B;color:#fff}',
       // Maillage (fiches établissements Intégral)
       '.gr-maill{border:1px solid color-mix(in srgb,#F39A1B 35%,var(--line));background:color-mix(in srgb,#F39A1B 5%,var(--card));border-radius:12px;padding:14px 16px}',
-      '.gr-maillg{display:grid;grid-template-columns:1fr 1fr;gap:12px}',
+      '.gr-maillg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}',
+      '.gr-mcell.dep{background:color-mix(in srgb,#F39A1B 12%,var(--card))}.gr-mcell.dep b{color:#A35B00}',
+      '.gr-depts{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}',
+      '.gr-dchip{font-size:11px;font-weight:600;padding:3px 8px;border-radius:7px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-variant-numeric:tabular-nums}',
+      '.gr-dchip.has{border-color:color-mix(in srgb,#0B7A44 40%,var(--line));background:color-mix(in srgb,#0B7A44 6%,var(--card));color:var(--ip-ink)}',
+      '.gr-dchip b{color:var(--ip-ink)}',
+      '.gr-maill-w{margin-top:10px;font-size:11px;color:#A35B00;background:color-mix(in srgb,#F39A1B 8%,transparent);padding:7px 10px;border-radius:8px}',
       '.gr-mcell{border-radius:10px;padding:12px 14px;text-align:center}',
       '.gr-mcell.cli{background:color-mix(in srgb,#0B7A44 10%,var(--card))}.gr-mcell.pro{background:color-mix(in srgb,#0050E6 8%,var(--card))}',
       '.gr-mcell b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1}',
