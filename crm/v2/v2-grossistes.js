@@ -8,12 +8,14 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
-  var CB = '?v=20260713q';
+  var CB = '?v=20260713r';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var selId = null;        // grossiste ouvert en fiche
   var openGroupe = null;   // groupe déplié (niveau 2)
   var filt = '';           // filtre statut des groupes
+  var q = '';              // recherche instantanée
+  var sortBy = 'rang';     // tri : rang | part | ca
   var actuTag = '';        // filtre actualités par grossiste
   var ACTU = null;         // cache actualités
 
@@ -111,15 +113,18 @@
   }
   function groupCardHtml(g) {
     var mem = membersOf(g.id), open = (openGroupe === g.id);
+    var pdm = g.pdm_num || 0, barW = pdm ? Math.max(4, Math.min(100, Math.round(pdm / 40 * 100))) : 0;
+    var micro = barW ? '<div class="gr-gbar"><i style="width:' + barW + '%;background:' + g.couleur + '"></i></div>' : '';
+    var band = '<div class="gr-gband"><span><b>' + esc(g.part_marche || '—') + '</b> part</span>' +
+      '<span><b>' + mem.length + '</b> répart.</span>' +
+      '<span><b>' + ((g.enseignes && g.enseignes.length) || '—') + '</b> ens.</span></div>';
     var head = '<button class="gr-ghead" onclick="V2.grossisteGroupe(\'' + g.id + '\')">' +
-      '<span class="gr-grang">#' + g.rang + '</span>' +
-      '<div class="gr-gmain"><b>' + esc(shortNom(g.nom)) + '</b>' +
-        '<span class="gr-gmere">' + flagOf(g) + ' ' + esc(shortNom(g.mere).slice(0, 44) || '—') + '</span></div>' +
-      '<div class="gr-gkpis"><div><b>' + esc(g.part_marche || '—') + '</b><span>part</span></div>' +
-        '<div><b>' + mem.length + '</b><span>répart.</span></div>' +
-        '<div><b>' + ((g.enseignes && g.enseignes.length) || '—') + '</b><span>enseignes</span></div></div>' +
-      '<span class="gr-gstat s-' + statutCls(g.statut) + '">' + esc(g.statut) + '</span>' +
-      '<span class="gr-gchev">' + (open ? '▾' : '▸') + ' ' + mem.length + '</span></button>';
+      '<div class="gr-ghrow"><span class="gr-grang">#' + g.rang + '</span><b class="gr-gnom">' + esc(shortNom(g.nom)) + '</b>' +
+        '<span class="gr-gstat s-' + statutCls(g.statut) + '">' + esc(g.statut) + '</span>' +
+        '<span class="gr-gchev">' + (open ? '▾' : '▸') + ' ' + mem.length + '</span></div>' +
+      micro +
+      '<div class="gr-gmere">' + flagOf(g) + ' ' + esc(shortNom(g.mere).slice(0, 54) || '—') + '</div>' +
+      band + '</button>';
     return '<div class="gr-gcard' + (open ? ' open' : '') + '" style="--gc:' + g.couleur + '">' + head + (open ? groupBodyHtml(g, mem) : '') + '</div>';
   }
   function groupBodyHtml(g, mem) {
@@ -135,14 +140,33 @@
     return '<div class="gr-gbody">' + (g.resume ? '<p class="gr-gres">' + esc(g.resume) + '</p>' : '') + mere +
       '<div class="gr-lvl"><span class="gr-lvlab">Répartiteurs (' + mem.length + ')</span>' + rows + '</div>' + ens + '</div>';
   }
+  function norm(s) { s = String(s || '').toLowerCase(); return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s; }
+  function matchGroup(g, nq) {
+    if (norm(g.nom).indexOf(nq) >= 0 || norm(g.mere).indexOf(nq) >= 0) return true;
+    var mem = membersOf(g.id), i; for (i = 0; i < mem.length; i++) if (norm(mem[i].nom).indexOf(nq) >= 0) return true;
+    var ens = g.enseignes || []; for (i = 0; i < ens.length; i++) { var e = typeof ens[i] === 'string' ? ens[i] : ens[i].nom; if (norm(e).indexOf(nq) >= 0) return true; }
+    return false;
+  }
+  function grpCaNum(g) { var mem = membersOf(g.id), s = 0, i; for (i = 0; i < mem.length; i++) s += kNum(mem[i].ca_eur); return s; }
   function annuaireHtml() {
     var gs = groupes();
     if (!gs.length) return '<div class="gr-empty">Base concurrents en cours de constitution. Reviens dans un instant.</div>';
-    var STATUTS = [['', 'Tous'], ['national', 'Nationaux'], ['coopérative', 'Coopératives'], ['short-liner', 'Short-liners'], ['DOM-TOM', 'DOM-TOM'], ['export', 'Export']];
-    var chips = '<div class="gr-filts">' + STATUTS.map(function (s) { return '<button class="gr-filt' + (filt === s[0] ? ' on' : '') + '" onclick="V2.grossisteFilter(\'' + s[0] + '\')">' + esc(s[1]) + '</button>'; }).join('') + '</div>';
-    var shown = gs.filter(function (g) { return !filt || g.statut === filt; }).sort(function (a, b) { return a.rang - b.rang; });
-    var cards = shown.map(groupCardHtml).join('') || '<div class="gr-empty">Aucun groupe dans ce filtre.</div>';
-    return marketBar() + docsHtml() + chips + '<div class="gr-glist">' + cards + '</div>';
+    var nq = norm(q.trim());
+    var shown = gs.filter(function (g) { return (!filt || g.statut === filt) && (nq.length < 2 || matchGroup(g, nq)); });
+    if (sortBy === 'part') shown.sort(function (a, b) { return (b.pdm_num || 0) - (a.pdm_num || 0) || a.rang - b.rang; });
+    else if (sortBy === 'ca') shown.sort(function (a, b) { return grpCaNum(b) - grpCaNum(a) || a.rang - b.rang; });
+    else shown.sort(function (a, b) { return a.rang - b.rang; });
+    var nAct = shown.reduce(function (s, g) { return s + membersOf(g.id).length; }, 0);
+    var STATUTS = [['', 'Tous'], ['national', 'Nationaux'], ['coopérative', 'Coop.'], ['short-liner', 'Short-liners'], ['DOM-TOM', 'DOM-TOM'], ['export', 'Export'], ['hors-répartition', 'Groupements']];
+    var chips = STATUTS.map(function (s) { return '<button class="gr-filt' + (filt === s[0] ? ' on' : '') + '" onclick="V2.grossisteFilter(\'' + s[0] + '\')">' + esc(s[1]) + '</button>'; }).join('');
+    var sorts = [['rang', 'Rang'], ['part', 'Part'], ['ca', 'CA']].map(function (s) { return '<button class="gr-sort' + (sortBy === s[0] ? ' on' : '') + '" onclick="V2.grossisteSort(\'' + s[0] + '\')">' + s[1] + '</button>'; }).join('');
+    var controls = '<div class="gr-controls">' +
+      '<div class="gr-search">' + ICO('search', 16, 2) + '<input id="gr-q" type="search" placeholder="Rechercher un groupe, un répartiteur, une enseigne…" value="' + esc(q) + '" oninput="V2.grossisteSearch(this.value)">' + (q ? '<button class="gr-qx" onclick="V2.grossisteSearch(\'\')" title="Effacer">✕</button>' : '') + '</div>' +
+      '<div class="gr-ctlrow"><div class="gr-sorts"><span>Trier</span>' + sorts + '</div><span class="gr-count">' + nAct + ' acteurs</span></div>' +
+      '<div class="gr-filts">' + chips + '</div>' +
+    '</div>';
+    var cards = shown.map(groupCardHtml).join('') || '<div class="gr-empty">Aucun acteur pour « ' + esc(q) + ' ».<br><button class="gr-filt" style="margin-top:10px" onclick="V2.grossisteSearch(\'\')">Effacer la recherche</button></div>';
+    return marketBar() + docsHtml() + controls + '<div class="gr-glist">' + cards + '</div>';
   }
 
   // ── FICHE d'un grossiste ────────────────────────────────────────
@@ -152,8 +176,10 @@
     function ul(arr) { return (arr && arr.length) ? '<ul class="gr-ul">' + arr.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : ''; }
     var ens = (g.enseignes || []).map(function (e) { return '<div class="gr-ensrow"><b>' + esc(e.nom) + '</b>' + (e.lien ? '<span>' + esc(e.lien) + '</span>' : '') + '</div>'; }).join('');
     var src = (g.sources || []).map(function (u) { return /^https?:/.test(u) ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(u.replace(/^https?:\/\//, '').slice(0, 40)) + '↗</a>' : '<span>' + esc(u) + '</span>'; }).join(' · ');
+    var grp = (groupes().filter(function (x) { return x.id === g.groupe_id; })[0]) || null;
+    var angles = (g.angles && g.angles.length) ? '<div class="gr-sec gr-angles"><h4>⚔ Angles d\'attaque commerciale</h4>' + ul(g.angles) + '</div>' : '';
     return '<div class="gr-fiche">' +
-      '<button class="gr-back" onclick="V2.grossisteClose()">← Tous les concurrents</button>' +
+      '<nav class="gr-crumb"><button onclick="V2.grossisteClose()">Concurrents</button>' + (grp ? '<span>›</span><button onclick="V2.grossisteClose();V2.grossisteGroupe(\'' + esc(grp.id) + '\')">' + esc(shortNom(grp.nom)) + '</button>' : '') + '<span>›</span><b>' + esc(shortNom(g.nom)) + '</b></nav>' +
       '<div class="gr-fhead"><div><h2>' + esc(g.nom) + '</h2><div class="gr-fmeta">' + typeBadge(g.type) + (g.lien_ip ? '<span class="gr-iplink">Lié à Intégral Pharma</span>' : '') + (g.groupe ? '<span>' + esc(g.groupe) + '</span>' : '') + (g.siege ? '<span>· ' + esc(g.siege) + '</span>' : '') + fiab(g) + '</div></div></div>' +
       (g.lien_ip_txt ? '<div class="gr-ipnote">⚑ ' + esc(g.lien_ip_txt) + '</div>' : '') +
       '<div class="gr-fkpis">' +
@@ -162,6 +188,7 @@
         '<div class="gr-fkpi"><b>' + esc(g.part_marche || '—') + '</b><span>part de marché</span></div>' +
         '<div class="gr-fkpi"><b>' + esc(g.effectifs || '—') + '</b><span>effectifs</span></div>' +
       '</div>' +
+      angles +
       finHtml(g) +
       sec('Positionnement géographique', g.geo ? '<p>' + esc(g.geo) + '</p>' : '') +
       sec('Enseignes & groupements affiliés', ens) +
@@ -171,7 +198,6 @@
       sec('Forces', ul(g.forces)) +
       sec('Faiblesses', ul(g.faiblesses)) +
       sec('Actualité récente', g.actu ? '<p>' + esc(g.actu) + '</p>' : '') +
-      sec("Angles d'attaque commerciale", ul(g.angles)) +
       (src ? '<div class="gr-src">Sources : ' + src + '</div>' : '') +
       // Notes terrain éditables (remontées commercial, sauvegardées Supabase) — scope 'client' + id préfixé (compatible contrainte)
       '<div class="gr-notes"><h4>Mes remontées terrain</h4>' +
@@ -208,9 +234,11 @@
   V2.grossisteTab = function (v) { view = v; selId = null; V2.render(); };
   V2.grossisteOpen = function (id) { selId = id; V2.render(); };
   V2.grossisteClose = function () { selId = null; V2.render(); };
-  function reAnnu() { var b = document.getElementById('gr-body'); if (b) b.innerHTML = annuaireHtml(); }
+  function reAnnu(refocus) { var b = document.getElementById('gr-body'); if (b) b.innerHTML = annuaireHtml(); if (refocus) { var i = document.getElementById('gr-q'); if (i) { i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (e) {} } } }
   V2.grossisteGroupe = function (id) { openGroupe = (openGroupe === id ? null : id); reAnnu(); };
   V2.grossisteFilter = function (f) { filt = f; openGroupe = null; reAnnu(); };
+  V2.grossisteSearch = function (v) { q = v || ''; reAnnu(true); };
+  V2.grossisteSort = function (s) { sortBy = s; reAnnu(); };
   V2.grossisteActuTag = function (t) { actuTag = t; var el = document.getElementById('gr-actuwrap'); if (el) el.innerHTML = actuHtml(); };
 
   // ── page ────────────────────────────────────────────────────────
@@ -269,6 +297,11 @@
       '.gr-fiab.hi{background:#E7F8EF;color:#0B7A44}.gr-fiab.mid{background:#FFF6E0;color:#8A6100}.gr-fiab.lo{background:#FDE8E8;color:#B42318}',
       '.gr-fiche{max-width:820px}',
       '.gr-back{border:none;background:none;color:var(--ip-blue);font:inherit;font-weight:700;font-size:13px;cursor:pointer;padding:0;margin-bottom:12px}',
+      '.gr-crumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;margin-bottom:12px}',
+      '.gr-crumb button{border:none;background:none;color:var(--ip-blue);font:inherit;font-weight:700;cursor:pointer;padding:0}',
+      '.gr-crumb span{color:var(--muted)}.gr-crumb b{color:var(--ip-ink);font-weight:800}',
+      '.gr-angles{border:1px solid color-mix(in srgb,var(--ip-blue) 30%,var(--line));background:color-mix(in srgb,var(--ip-blue) 6%,var(--card));border-radius:12px;padding:12px 15px;margin:16px 0}',
+      '.gr-angles h4{color:var(--ip-blue)!important}',
       '.gr-fhead h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:0}',
       '.gr-fmeta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;font-size:12.5px;color:var(--muted)}',
       '.gr-fkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}',
@@ -337,10 +370,33 @@
       '.gr-doc-ed{font-size:11px;color:var(--muted);margin:2px 0 6px}',
       '.gr-doc-cc{margin:0;padding-left:16px;font-size:11.5px;line-height:1.5;color:var(--ip-ink)}',
       '.gr-doc-lk{display:inline-block;margin-top:7px;font-size:12px;font-weight:700;color:var(--ip-blue);text-decoration:none}',
-      // Filtres
-      '.gr-filts{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}',
-      '.gr-filt{padding:6px 13px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ip-ink);font:inherit;font-size:12px;font-weight:600;cursor:pointer}',
-      '.gr-filt.on{background:var(--ip-blue,#0057FF);color:#fff;border-color:transparent}',
+      // Contrôles sticky (recherche + tri + filtres)
+      '.gr-controls{position:sticky;top:0;z-index:20;background:var(--paper,var(--card));padding:10px 0 8px;margin-bottom:6px;border-bottom:1px solid var(--line)}',
+      '.gr-search{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);margin-bottom:9px}',
+      '.gr-search svg{color:var(--muted);flex:none}',
+      '.gr-search input{flex:1;border:none;background:none;font:inherit;font-size:14px;color:var(--ip-ink);outline:none;min-width:0}',
+      '.gr-qx{border:none;background:none;color:var(--muted);font-size:14px;cursor:pointer;flex:none}',
+      '.gr-ctlrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}',
+      '.gr-sorts{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}',
+      '.gr-sorts>span{margin-right:2px;font-weight:600}',
+      '.gr-sort{padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ip-ink);font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
+      '.gr-sort.on{background:var(--ip-ink);color:#fff;border-color:transparent}',
+      '.gr-count{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}',
+      // Filtres (scroll-x une ligne)
+      '.gr-filts{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:none}',
+      '.gr-filts::-webkit-scrollbar{display:none}',
+      '.gr-filt{white-space:nowrap;flex:none;padding:6px 13px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ip-ink);font:inherit;font-size:12px;font-weight:600;cursor:pointer}',
+      '.gr-filt.on{background:var(--ip-blue,#0050E6);color:#fff;border-color:transparent}',
+      // Carte groupe : 3 lignes, part TOUJOURS visible + micro-barre
+      '.gr-ghrow{display:flex;align-items:center;gap:10px}',
+      '.gr-gnom{flex:1;min-width:0;font-size:15.5px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.gr-gbar{height:4px;border-radius:3px;margin:8px 0 6px;background:color-mix(in srgb,var(--gc) 14%,transparent)}',
+      '.gr-gbar i{display:block;height:100%;border-radius:3px}',
+      '.gr-gband{display:flex;gap:0;font-size:12px;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.gr-gband span{padding:0 12px;border-left:1px solid var(--line)}',
+      '.gr-gband span:first-child{padding-left:0;border-left:none}',
+      '.gr-gband b{font-weight:800}',
+      '.gr-fildummy{}',
       // Niveau 1 — cartes de groupe
       '.gr-glist{display:flex;flex-direction:column;gap:10px}',
       '.gr-gcard{border:1px solid var(--line);border-left:5px solid var(--gc);border-radius:14px;background:var(--card);overflow:hidden}',
@@ -367,7 +423,7 @@
       '.gr-pas{width:11px;height:11px;flex:none;display:inline-block;background:var(--gc)}',
       '.gr-pas.mere{border-radius:3px}.gr-pas.memb{border-radius:50%}.gr-pas.ens{border-radius:50%;background:transparent!important;box-shadow:inset 0 0 0 2px var(--gc)}',
       '.gr-mere{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--ip-ink)}',
-      '.gr-mrow{display:flex;align-items:center;gap:9px;width:100%;padding:8px 6px;border:none;border-radius:8px;background:none;cursor:pointer;font:inherit;color:var(--ip-ink);text-align:left}',
+      '.gr-mrow{display:flex;align-items:center;gap:9px;width:100%;min-height:44px;padding:11px 8px;border:none;border-radius:8px;background:none;cursor:pointer;font:inherit;color:var(--ip-ink);text-align:left}',
       '.gr-mrow:hover{background:color-mix(in srgb,var(--gc) 7%,transparent)}',
       '.gr-mname{flex:1;min-width:0;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.gr-mip{font-style:normal;font-size:9px;font-weight:800;background:#0E7C86;color:#fff;padding:1px 5px;border-radius:999px;margin-left:6px}',
