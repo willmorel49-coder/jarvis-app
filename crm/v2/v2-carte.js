@@ -888,9 +888,11 @@
     var rows = tour.map(function (s, j) {
       var sc = sched[j] || {};
       var arr = sc.arr != null ? '<span class="cn-tarr' + (sc.late ? ' late' : '') + '">≈ ' + fmtHM(sc.arr) + '</span>' : '';
+      var gq = encodeURIComponent((s.n || '') + ' ' + (s.v || '') + ' ' + (s.c || ''));
       return '<div class="cn-trow"><span class="cn-tnum">' + (j + 1) + '</span>' +
         '<div class="cn-tmain"><b>' + esc(s.n) + '</b><span>' + esc(s.v) + ' · ' + esc(s.c) + (s.t ? ' · ' + esc(s.t) : '') + '</span>' +
-          '<div class="cn-trdvrow">' + arr + '<label class="cn-trdvl">RDV <input type="time" class="cn-trdv" value="' + esc(s.rdv || '') + '" onchange="V2.carteTourRdv(' + j + ',this.value)"></label></div>' +
+          '<div class="cn-trdvrow">' + arr + '<label class="cn-trdvl">RDV <input type="time" class="cn-trdv" value="' + esc(s.rdv || '') + '" onchange="V2.carteTourRdv(' + j + ',this.value)"></label>' +
+            '<a class="cn-tmaps" href="https://www.google.com/maps/search/?api=1&query=' + gq + '" target="_blank" rel="noopener" title="Ouvrir dans Google Maps">Maps ↗</a></div>' +
         '</div>' +
         '<button class="cn-trm" onclick="V2.carteTourRemove(' + j + ')" title="Retirer">✕</button></div>';
     }).join('') || '<div class="cn-tempty">Ta tournée est vide.<br>Utilise « Composer ma tournée » ci-dessus, ou clique une pharmacie → « Partir d\'ici ».</div>';
@@ -918,13 +920,12 @@
       tgenHtml() +
       metrics + depotRow +
       '<div class="cn-plist">' + rows + '</div>' +
+      (tour.length >= 1 ? '<div class="cn-gps-wrap"><button class="v2-btn v2-btn-primary cn-gps-btn" onclick="V2.carteTourItinerary()">' + ICO('pharma', 17) + 'Ouvrir dans Google Maps (GPS)</button></div>' : '') +
       '<div class="cn-pacts">' +
-        (tour.length >= 2 ? '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourOptimize()">Optimiser la tournée</button>' : '') +
-        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteProspects()">Prospects proches</button>' : '') +
+        (tour.length >= 2 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourOptimize()">Ré-optimiser</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourSaveAs()">Enregistrer</button>' : '') +
         '<button class="v2-btn v2-btn-ghost" onclick="V2.carteToursOpen()">Mes tournées</button>' +
-        (tour.length >= 1 ? '<button class="v2-btn v2-btn-primary" onclick="V2.carteTourItinerary()">' + ICO('pharma', 15) + 'Lancer le GPS (Google Maps)</button>' : '') +
-        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourAgenda()">Agenda</button>' : '') +
+        (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteProspects()">Prospects proches</button>' : '') +
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourClear()">Vider</button>' : '') +
         '</div>' +
       '</div>';
@@ -981,6 +982,11 @@
       '.cn-tarr.late{color:#C7283D}',
       '.cn-trdvl{font-size:10.5px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:4px}',
       '.cn-trdv{padding:2px 5px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:11px;background:var(--card);color:var(--ip-ink)}',
+      '.cn-tmaps{margin-left:auto;font-size:10.5px;font-weight:700;color:var(--blue);text-decoration:none;white-space:nowrap}',
+      '.cn-tmaps:hover{text-decoration:underline}',
+      // Bouton GPS Google Maps : plein largeur, bien visible sous le listing
+      '.cn-gps-wrap{padding:12px 16px 0}',
+      '.cn-gps-btn{width:100%;justify-content:center;gap:8px;font-size:15px;font-weight:800;padding:13px}',
       '.cn-tour-from{background:#fff!important;color:var(--blue)!important;border:1px solid color-mix(in srgb,var(--blue) 30%,var(--line))!important}',
       '.cn-listmore{display:block;width:calc(100% - 24px);margin:8px 12px 14px;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--blue);font:inherit;font-size:13px;font-weight:700;cursor:pointer}',
       '.cn-listmore:hover{background:color-mix(in srgb,var(--blue) 8%,var(--card))}',
@@ -1015,6 +1021,11 @@
       '.cn-lg-txt{font-size:12px;color:var(--muted);font-weight:600}',
       '.cn-maparea{position:relative;flex:1 1 auto;min-height:60vh}',
       '#carte-map{position:absolute;inset:0;background:#EAF0F6}',
+      // Bouton flottant TOUJOURS visible : ouvre l\'organisateur de tournée
+      '.cn-organiser{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:600;display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border:none;border-radius:999px;background:linear-gradient(150deg,#0057FF,#0034A0);color:#fff;font:inherit;font-size:14px;font-weight:800;letter-spacing:-.01em;cursor:pointer;box-shadow:0 10px 26px rgba(0,52,160,.34);transition:transform .16s var(--ease,ease),box-shadow .16s var(--ease,ease)}',
+      '.cn-organiser svg{color:#fff}',
+      '.cn-organiser:hover{transform:translateX(-50%) translateY(-1px);box-shadow:0 14px 32px rgba(0,52,160,.42)}',
+      '@media(max-width:640px){.cn-organiser{font-size:13px;padding:10px 14px;top:8px}.cn-organiser span{display:inline}}',
       '.cn-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--muted);z-index:5;background:var(--card)}',
       '.leaflet-popup-content{margin:12px 14px}',
       '.cn-pop{font-family:var(--font,system-ui);min-width:200px;max-width:250px}',
@@ -1202,12 +1213,13 @@
               '<button class="cn-listbtn" onclick="V2.carteListOpen()">Liste des officines</button></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Légende</span><div class="cn-legend" id="carte-legend"></div></div>' +
             '<div class="cn-sgroup cn-tools">' +
-              '<button class="cn-tour-cta" onclick="V2.carteTourOpen()">' + ICO('pharma', 16) + 'Ma tournée</button>' +
-              '<p class="cn-tour-hint">Clique tes officines sur la carte → compose ta tournée → démarre dans Google Maps.</p>' +
+              '<button class="cn-tour-cta" onclick="V2.carteTourOpen()">' + ICO('pharma', 16) + 'Organisateur de tournée</button>' +
+              '<p class="cn-tour-hint">Compose ta tournée du jour (adresse de départ + ville + groupements), vois le listing, puis ouvre-la dans Google Maps.</p>' +
               '<button class="cn-export-link" onclick="V2.carteExportKml()">' + ICO('download', 14) + 'Exporter vers Google My Maps</button>' +
             '</div>' +
           '</aside>' +
           '<div class="cn-maparea"><div id="carte-map"></div>' +
+            '<button class="cn-organiser" onclick="V2.carteTourOpen()">' + ICO('pharma', 17) + '<span>Organisateur de tournée</span></button>' +
             '<div class="cn-tourbar" id="cn-tourbar"><b id="cn-tourbar-n">0 pharmacie</b>' +
               '<button onclick="V2.carteTourOpen()">Voir / organiser</button></div>' +
             '<div class="cn-load" id="carte-load"><div class="v2-spinner"></div><div>Chargement de la carte nationale…</div></div>' +
