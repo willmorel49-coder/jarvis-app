@@ -124,6 +124,7 @@
         (mail ? '<a href="mailto:' + esc(mail) + '">' + esc(mail) + '</a>' : '') + '</div>' : '') +
       (i != null ? '<button class="cn-fiche-btn" onclick="V2.carteFiche(' + i + ')">Voir la fiche complète</button>' : '') +
       (i != null ? '<button class="cn-tour-btn' + (inT ? ' in' : '') + '" id="cn-tour-' + i + '" onclick="V2.carteTour(' + i + ')">' + (inT ? '✓ Dans ma tournée' : '+ Ajouter à ma tournée') + '</button>' : '') +
+      (i != null ? '<button class="cn-tour-btn cn-tour-from" onclick="V2.carteTourFrom(' + i + ')">🧭 Partir d\'ici — composer une tournée</button>' : '') +
       '<div class="cn-pop-btns">' +
         '<a class="cn-pop-btn on" href="' + gmaps + '" target="_blank" rel="noopener">Fiche Google Maps</a>' +
         '<a class="cn-pop-btn" href="' + dir + '" target="_blank" rel="noopener">Itinéraire</a>' +
@@ -287,6 +288,116 @@
     seq = twoOpt(seq, depot || null, depot || null);
     tour = seq; saveTour(); renderTourPanel(); drawTourLine();
     if (V2.toast) V2.toast('Tournée optimisée · ' + Math.round(routeKm()) + ' km');
+  };
+
+  // ── GÉNÉRATEUR DE TOURNÉE ──────────────────────────────────────────
+  // Départ = ton adresse perso (géocodée) et/ou une ville/pharmacie à prospecter.
+  // Compose N pharmacies (6–10) proches, ordre optimisé, avec heure de RDV par arrêt.
+  var _startTime = '09:00';            // heure de départ de la journée
+  var _geoCache = {};                  // adresse -> {lat,lng,label}
+  function geocodeAddress(q, cb) {     // BAN (gratuit, sans clé)
+    q = (q || '').trim(); if (!q) { cb(null); return; }
+    if (_geoCache[q]) { cb(_geoCache[q]); return; }
+    try {
+      fetch('https://api-adresse.data.gouv.fr/search/?limit=1&q=' + encodeURIComponent(q))
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          var f = j && j.features && j.features[0];
+          if (f && f.geometry && f.geometry.coordinates) { var c = { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], label: (f.properties && f.properties.label) || q }; _geoCache[q] = c; cb(c); }
+          else cb(null);
+        }).catch(function () { cb(null); });
+    } catch (e) { cb(null); }
+  }
+  function parseHM(s) { var m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? (+m[1] * 60 + +m[2]) : null; }
+  function fmtHM(mins) { mins = Math.round(mins); var h = Math.floor(mins / 60) % 24, m = ((mins % 60) + 60) % 60; return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
+  // Agenda : heure d'arrivée estimée à chaque arrêt (départ + trajets + visites), en attendant les RDV fixes.
+  function computeSchedule() {
+    var t = parseHM(_startTime); if (t == null) t = 9 * 60;
+    var out = [], prev = depot ? depot : (tour[0] || null), cur = t;
+    for (var j = 0; j < tour.length; j++) {
+      var s = tour[j];
+      if (j === 0 && !depot) { out.push({ arr: cur, rdv: s.rdv || '' }); prev = s; cur += SERVICE; continue; }
+      cur += prev ? haversine(prev, s) / SPEED * 60 : 0;
+      var rdv = parseHM(s.rdv), wait = false;
+      if (rdv != null && rdv > cur) { cur = rdv; wait = true; }
+      out.push({ arr: cur, rdv: s.rdv || '', wait: wait, late: (rdv != null && cur - rdv > 5) });
+      cur += SERVICE; prev = s;
+    }
+    return out;
+  }
+  V2.carteTourStartTime = function (v) { _startTime = v || '09:00'; renderTourPanel(); };
+  V2.carteTourRdv = function (j, v) { if (tour[j]) { tour[j].rdv = v || ''; saveTour(); renderTourPanel(); } };
+  function mkStop(p) { return { k: keyOf(p), n: p[6], v: p[7], c: p[8], t: p[9], lat: p[0], lng: p[1] }; }
+  function resolveStart(q) {   // -> {center:{lat,lng,name?}, startIdx} ou null
+    if (q) {
+      var nq = norm(q), idx = -1, i;
+      for (i = 0; i < D.p.length; i++) if (D.p[i][6] && norm(D.p[i][6]) === nq) { idx = i; break; }
+      if (idx < 0) for (i = 0; i < D.p.length; i++) if (D.p[i][6] && norm(D.p[i][6]).indexOf(nq) >= 0) { idx = i; break; }
+      if (idx >= 0) return { center: { lat: D.p[idx][0], lng: D.p[idx][1] }, startIdx: idx };
+      var sx = 0, sy = 0, n = 0;
+      for (i = 0; i < D.p.length; i++) { var v = norm(D.p[i][7]); if (v && (v === nq || v.indexOf(nq) >= 0)) { sx += D.p[i][0]; sy += D.p[i][1]; n++; } }
+      if (n) return { center: { lat: sx / n, lng: sy / n, name: q }, startIdx: -1 };
+      return null;
+    }
+    if (map) { var c = map.getCenter(); return { center: { lat: c.lat, lng: c.lng, name: 'centre de la carte' }, startIdx: -1 }; }
+    return null;
+  }
+  V2.carteBuildTour = function () {
+    if (!D || !D.p) return;
+    var addr = ((document.getElementById('cn-tgen-addr') || {}).value || '').trim();       // adresse de départ perso
+    var zone = ((document.getElementById('cn-tgen-start') || {}).value || '').trim();      // ville / pharmacie à prospecter
+    var count = parseInt((document.getElementById('cn-tgen-n') || {}).value, 10) || 8;
+    count = Math.max(2, Math.min(12, count));
+    var incClients = true; var cb = document.getElementById('cn-tgen-cli'); if (cb) incClients = cb.checked;
+    var tv = (document.getElementById('cn-tgen-time') || {}).value; if (tv) _startTime = tv;
+
+    var build = function (depotPt) {   // depotPt = adresse géocodée (ou null)
+      var startIdx = -1, center = null;
+      if (zone) { var r = resolveStart(zone); if (!r) { if (V2.toast) V2.toast('« ' + zone + ' » introuvable (ville ou pharmacie)'); return; } center = r.center; startIdx = r.startIdx; }
+      else if (depotPt) center = { lat: depotPt.lat, lng: depotPt.lng };
+      else if (map) { var c = map.getCenter(); center = { lat: c.lat, lng: c.lng, name: 'centre de la carte' }; }
+      if (!center) { if (V2.toast) V2.toast('Indique une adresse, une ville ou une pharmacie'); return; }
+      var cand = [], i;
+      for (i = 0; i < D.p.length; i++) {
+        var p = D.p[i]; if (!p[0] || !p[1] || i === startIdx) continue;
+        if (commFocus && D.comm[p[5]] !== commFocus) continue;   // respecte le secteur commercial si filtré
+        if (isClient(p) && !incClients) continue;
+        cand.push({ p: p, d: haversine(center, { lat: p[0], lng: p[1] }) });
+      }
+      cand.sort(function (a, b) { return a.d - b.d; });
+      var stops = [], used = {};
+      if (startIdx >= 0) { stops.push(mkStop(D.p[startIdx])); used[keyOf(D.p[startIdx])] = 1; }
+      for (var j = 0; j < cand.length && stops.length < count; j++) { var k = keyOf(cand[j].p); if (used[k]) continue; used[k] = 1; stops.push(mkStop(cand[j].p)); }
+      if (stops.length < 2) { if (V2.toast) V2.toast('Pas assez de pharmacies autour de ce point — élargis la zone'); return; }
+      if (depotPt) {                          // départ = ton adresse (dépôt)
+        depot = { n: depotPt.n || 'Mon départ', lat: depotPt.lat, lng: depotPt.lng };
+        tour = twoOpt(nearestOrder(stops, depot), depot, null);
+      } else if (startIdx >= 0) {             // départ = pharmacie : 1er arrêt, pas de dépôt
+        depot = null; var head = stops[0];
+        tour = [head].concat(twoOpt(nearestOrder(stops.slice(1), head), head, null));
+      } else {                                // départ = ville : centre = dépôt d'ancrage
+        depot = { n: 'Départ · ' + (center.name || 'ville'), lat: center.lat, lng: center.lng };
+        tour = twoOpt(nearestOrder(stops, depot), depot, null);
+      }
+      try { depot ? localStorage.setItem('jarvis_depot_v1', JSON.stringify(depot)) : localStorage.removeItem('jarvis_depot_v1'); } catch (e) {}
+      saveTour(); updateTourBar(); rebuild(); drawTourLine(); renderTourPanel(); V2.carteTourFit();
+      if (V2.toast) V2.toast(tour.length + ' pharmacies · ' + Math.round(routeKm()) + ' km');
+    };
+
+    if (addr) {
+      if (V2.toast) V2.toast('Localisation de « ' + addr +' »…');
+      geocodeAddress(addr, function (pt) {
+        if (!pt) { if (V2.toast) V2.toast('Adresse « ' + addr + ' » introuvable'); return; }
+        build({ n: pt.label || addr, lat: pt.lat, lng: pt.lng });
+      });
+    } else build(null);
+  };
+  // Depuis le popup d'une pharmacie : « partir d'ici » compose la tournée autour d'elle.
+  V2.carteTourFrom = function (i) {
+    if (!D || !D.p[i]) return;
+    V2.carteTourOpen();
+    var inp = document.getElementById('cn-tgen-start'); if (inp) inp.value = D.p[i][6] || D.p[i][7] || '';
+    V2.carteBuildTour();
   };
   // Tracé de la tournée sur la carte (ligne + pastilles numérotées)
   function drawTourLine() {
@@ -535,13 +646,35 @@
     }
     renderTourPanel();
   };
+  function tgenHtml() {
+    var opts = ''; for (var n = 6; n <= 12; n++) opts += '<option value="' + n + '"' + (n === 8 ? ' selected' : '') + '>' + n + '</option>';
+    return '<div class="cn-tgen">' +
+      '<div class="cn-tgen-t">🧭 Composer ma tournée du jour</div>' +
+      '<label class="cn-tgen-fld"><span>Je pars de (mon adresse)</span>' +
+        '<div class="cn-tgen-2"><input id="cn-tgen-addr" class="cn-tgen-in" type="search" placeholder="ex. 12 rue Nationale, Nantes" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.carteBuildTour();}">' +
+        '<input id="cn-tgen-time" class="cn-tgen-time" type="time" value="' + esc(_startTime) + '" title="Heure de départ"></div></label>' +
+      '<label class="cn-tgen-fld"><span>Zone à prospecter (ville ou pharmacie)</span>' +
+        '<input id="cn-tgen-start" class="cn-tgen-in" type="search" placeholder="ex. Angers — vide = autour de mon départ" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.carteBuildTour();}"></label>' +
+      '<div class="cn-tgen-row">' +
+        '<label class="cn-tgen-lb">Visites&nbsp;<select id="cn-tgen-n" class="cn-tgen-sel">' + opts + '</select></label>' +
+        '<label class="cn-tgen-chk"><input type="checkbox" id="cn-tgen-cli" checked> Inclure mes clients</label>' +
+      '</div>' +
+      '<button class="v2-btn v2-btn-primary cn-tgen-go" onclick="V2.carteBuildTour()">Générer la tournée</button>' +
+      '<div class="cn-tgen-h">6 à 12 pharmacies proches, ordre le plus court. Ajoute une heure de RDV sur un arrêt ci-dessous.</div>' +
+    '</div>';
+  }
   function renderTourPanel() {
     var el = document.getElementById('cn-tourpanel'); if (!el) return;
+    var sched = tour.length ? computeSchedule() : [];
     var rows = tour.map(function (s, j) {
+      var sc = sched[j] || {};
+      var arr = sc.arr != null ? '<span class="cn-tarr' + (sc.late ? ' late' : '') + '">≈ ' + fmtHM(sc.arr) + '</span>' : '';
       return '<div class="cn-trow"><span class="cn-tnum">' + (j + 1) + '</span>' +
-        '<div class="cn-tmain"><b>' + esc(s.n) + '</b><span>' + esc(s.v) + ' · ' + esc(s.c) + (s.t ? ' · ' + esc(s.t) : '') + '</span></div>' +
+        '<div class="cn-tmain"><b>' + esc(s.n) + '</b><span>' + esc(s.v) + ' · ' + esc(s.c) + (s.t ? ' · ' + esc(s.t) : '') + '</span>' +
+          '<div class="cn-trdvrow">' + arr + '<label class="cn-trdvl">RDV <input type="time" class="cn-trdv" value="' + esc(s.rdv || '') + '" onchange="V2.carteTourRdv(' + j + ',this.value)"></label></div>' +
+        '</div>' +
         '<button class="cn-trm" onclick="V2.carteTourRemove(' + j + ')" title="Retirer">✕</button></div>';
-    }).join('') || '<div class="cn-tempty">Ta tournée est vide.<br>Clique une pharmacie sur la carte, puis « + Ajouter à ma tournée ».</div>';
+    }).join('') || '<div class="cn-tempty">Ta tournée est vide.<br>Utilise « Composer ma tournée » ci-dessus, ou clique une pharmacie → « Partir d\'ici ».</div>';
     var kmTot = Math.round(routeKm());
     var perStop = tour.length ? (Math.round(kmTot / tour.length * 10) / 10) : 0;
     var metrics = tour.length ? '<div class="cn-tmetrics">' +
@@ -563,6 +696,7 @@
     el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
       '<div class="cn-phead"><div><b>Ma tournée</b><small>' + tour.length + ' arrêt' + (tour.length > 1 ? 's' : '') + (tour.length > 1 ? ' · ~' + kmTot + ' km' : '') + '</small></div>' +
         '<button class="cn-px" onclick="V2.carteTourClose()">✕</button></div>' +
+      tgenHtml() +
       metrics + depotRow +
       '<div class="cn-plist">' + rows + '</div>' +
       '<div class="cn-pacts">' +
@@ -608,6 +742,27 @@
       '.cn-side .cn-search{width:100%}',
       '.cn-side .cn-legend{padding:0;border:none;background:none;flex-direction:column;gap:6px}',
       '.cn-lg-note{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.4}',
+      // Générateur de tournée (dans le panneau « Ma tournée »)
+      '.cn-tgen{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:9px;background:color-mix(in srgb,var(--blue) 4%,var(--card))}',
+      '.cn-tgen-t{font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.cn-tgen-in{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px;background:var(--card);color:var(--ip-ink)}',
+      '.cn-tgen-in:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 14%,transparent)}',
+      '.cn-tgen-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}',
+      '.cn-tgen-lb{font-size:12.5px;font-weight:600;color:var(--ip-ink);display:inline-flex;align-items:center}',
+      '.cn-tgen-sel{padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;background:var(--card);color:var(--ip-ink)}',
+      '.cn-tgen-chk{font-size:12.5px;font-weight:600;color:var(--ip-ink);display:inline-flex;align-items:center;gap:6px;cursor:pointer}',
+      '.cn-tgen-go{width:100%;justify-content:center}',
+      '.cn-tgen-h{font-size:11px;line-height:1.45;color:var(--muted)}',
+      '.cn-tgen-fld{display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:600;color:var(--muted)}',
+      '.cn-tgen-2{display:flex;gap:7px}',
+      '.cn-tgen-2 .cn-tgen-in{flex:1}',
+      '.cn-tgen-time{padding:9px 8px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13px;background:var(--card);color:var(--ip-ink)}',
+      '.cn-trdvrow{display:flex;align-items:center;gap:8px;margin-top:4px}',
+      '.cn-tarr{font-size:11px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums}',
+      '.cn-tarr.late{color:#C7283D}',
+      '.cn-trdvl{font-size:10.5px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:4px}',
+      '.cn-trdv{padding:2px 5px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:11px;background:var(--card);color:var(--ip-ink)}',
+      '.cn-tour-from{background:#fff!important;color:var(--blue)!important;border:1px solid color-mix(in srgb,var(--blue) 30%,var(--line))!important}',
       '.cn-listmore{display:block;width:calc(100% - 24px);margin:8px 12px 14px;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--blue);font:inherit;font-size:13px;font-weight:700;cursor:pointer}',
       '.cn-listmore:hover{background:color-mix(in srgb,var(--blue) 8%,var(--card))}',
       '.cn-side .cn-tools{padding:0;border:none;background:none;flex-direction:column;align-items:stretch;gap:8px}',
@@ -815,7 +970,7 @@
             '<div class="cn-sgroup"><span class="cn-lbl">Voir</span><div class="cn-seg">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Colorer par</span>' +
               '<select class="cn-sel" onchange="V2.carteColor(this.value)">' +
-                [['comm', 'Commercial'], ['type', 'Client / Prospect'], ['ca', 'CA (taille des points)'], ['uga', 'UGA (zone)'], ['grp', 'Groupement']]
+                [['comm', 'Commercial'], ['type', 'Client / Prospect'], ['ca', 'CA (taille des points)'], ['uga', 'UGA (zone)']]
                   .map(function (o) { return '<option value="' + o[0] + '"' + (colorMode === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
               '</select>' +
               '<div class="cn-disp">' + dispBtn('points', 'Points') + dispBtn('bulles', 'Bulles (taille = CA)') + '</div>' +
