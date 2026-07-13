@@ -1,0 +1,40 @@
+name: Actualités grossistes (veille concurrents)
+
+# Robot GRATUIT : agrège chaque jour les actualités du secteur de la répartition
+# pharmaceutique (Google News RSS : secteur + chaque grossiste) et committe
+# crm/v2/grossistes-actu.json que l'onglet Concurrents du CRM lit. Aucune clé, aucun coût.
+
+on:
+  schedule:
+    - cron: '31 6 * * *'    # ~08h31 Paris (été)
+    - cron: '31 15 * * *'   # ~17h31 Paris — filet de sécurité
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: grossistes-actu
+  cancel-in-progress: false
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Générer la veille grossistes
+        run: python3 generate_grossistes_actu.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/grossistes-actu.json; then
+            echo "Pas de changement."
+          else
+            git config user.name  "JARVIS veille"
+            git config user.email "actions@users.noreply.github.com"
+            git add crm/v2/grossistes-actu.json
+            git commit -m "data(concurrents): actualités grossistes $(date -u +%Y-%m-%d)"
+            git push
+          fi
