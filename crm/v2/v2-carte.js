@@ -238,13 +238,17 @@
   function routeStops() { var a = []; if (depot) a.push(depot); for (var j = 0; j < tour.length; j++) a.push(tour[j]); if (depot && tour.length) a.push(depot); return a; }
   function routeKm() { var pts = routeStops(), d = 0; for (var j = 1; j < pts.length; j++) d += haversine(pts[j - 1], pts[j]); return d; }
   function tourDistance() { return routeKm(); }
-  function estMinutes() { var km = routeKm(); return Math.round(km / SPEED * 60 + tour.length * SERVICE); }
+  function estMinutes() {   // cohérent avec l'agenda : dernière arrivée - départ + durée du dernier arrêt
+    var s = computeSchedule(); if (!s.length) return 0;
+    var t0 = parseHM(_startTime); if (t0 == null) t0 = 540;
+    return Math.round(s[s.length - 1].arr - t0 + serviceMin(tour[tour.length - 1]));
+  }
   function fmtDur(min) { var h = Math.floor(min / 60), m = min % 60; return h ? (h + ' h ' + (m < 10 ? '0' : '') + m) : (m + ' min'); }
 
   V2.carteTour = function (i) {
     var p = D.p[i], k = keyOf(p), pos = tourPos(k);
     if (pos >= 0) tour.splice(pos, 1);
-    else tour.push({ k: k, n: p[6], v: p[7], c: p[8], t: p[9], lat: p[0], lng: p[1] });
+    else tour.push({ k: k, n: p[6], v: p[7], c: p[8], t: p[9], lat: p[0], lng: p[1], id: p[13], sg: p[4], gp: p[3] });
     saveTour(); updateTourBar(); refreshMarkerStyle(i); drawTourLine();
     var b = document.getElementById('cn-tour-' + i);
     if (b) { var inT = tourPos(k) >= 0; b.classList.toggle('in', inT); b.textContent = inT ? '✓ Dans ma tournée' : '+ Ajouter à ma tournée'; }
@@ -310,24 +314,28 @@
   }
   function parseHM(s) { var m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? (+m[1] * 60 + +m[2]) : null; }
   function fmtHM(mins) { mins = Math.round(mins); var h = Math.floor(mins / 60) % 24, m = ((mins % 60) + 60) % 60; return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
-  // Agenda : heure d'arrivée estimée à chaque arrêt (départ + trajets + visites), en attendant les RDV fixes.
+  // Durée de visite (min) selon segment : Client A=30, B/C=20, Prospect=12 ; RDV titulaire=45.
+  var TP_SERV = { 0: 30, 1: 20, 2: 20, 3: 12 };
+  function serviceMin(s) { if (parseHM(s.rdv) != null) return 45; var sg = (s.sg != null ? s.sg : 3); return TP_SERV[sg] != null ? TP_SERV[sg] : 12; }
+  function travelMin(a, b) { return haversine(a, b) * 1.30 / 38 * 60; }   // vol d'oiseau -> km routiers / vitesse effective
+  // Agenda : heure d'arrivée estimée à chaque arrêt (départ + trajets routiers + visites), en attendant les RDV fixes.
   function computeSchedule() {
     var t = parseHM(_startTime); if (t == null) t = 9 * 60;
     var out = [], prev = depot ? depot : (tour[0] || null), cur = t;
     for (var j = 0; j < tour.length; j++) {
       var s = tour[j];
-      if (j === 0 && !depot) { out.push({ arr: cur, rdv: s.rdv || '' }); prev = s; cur += SERVICE; continue; }
-      cur += prev ? haversine(prev, s) / SPEED * 60 : 0;
+      if (j === 0 && !depot) { out.push({ arr: cur, rdv: s.rdv || '' }); prev = s; cur += serviceMin(s); continue; }
+      cur += prev ? travelMin(prev, s) : 0;
       var rdv = parseHM(s.rdv), wait = false;
       if (rdv != null && rdv > cur) { cur = rdv; wait = true; }
-      out.push({ arr: cur, rdv: s.rdv || '', wait: wait, late: (rdv != null && cur - rdv > 5) });
-      cur += SERVICE; prev = s;
+      out.push({ arr: cur, rdv: s.rdv || '', wait: wait, late: (rdv != null && cur - rdv > 10) });
+      cur += serviceMin(s); prev = s;
     }
     return out;
   }
   V2.carteTourStartTime = function (v) { _startTime = v || '09:00'; renderTourPanel(); };
   V2.carteTourRdv = function (j, v) { if (tour[j]) { tour[j].rdv = v || ''; saveTour(); renderTourPanel(); } };
-  function mkStop(p) { return { k: keyOf(p), n: p[6], v: p[7], c: p[8], t: p[9], lat: p[0], lng: p[1] }; }
+  function mkStop(p) { return { k: keyOf(p), n: p[6], v: p[7], c: p[8], t: p[9], lat: p[0], lng: p[1], id: p[13], sg: p[4], gp: p[3] }; }
   function resolveStart(q) {   // -> {center:{lat,lng,name?}, startIdx} ou null
     if (q) {
       var nq = norm(q), idx = -1, i;
@@ -342,55 +350,242 @@
     if (map) { var c = map.getCenter(); return { center: { lat: c.lat, lng: c.lng, name: 'centre de la carte' }, startIdx: -1 }; }
     return null;
   }
+  // ══ MOTEUR D'OPTIMISATION (corridor "sur l'axe" + priorités + groupements + RDV) ══
+  // Conçu par orchestration multi-agents (VRP + terrain + impl) puis passé au crible d'une critique adverse.
+  var TP = {
+    NEAR_VILLE: 30, CORRIDOR_MAX: 20, BBOX_PAD: 0.55, T_LO: -0.15, T_HI: 1.15, K_SHORT: 120,
+    DAY_MIN: 10 * 60, SAFETY: 30, RDV_MARGIN: 12,
+    W: { detourMin: 1.0, latKm: 0.8, grpTarget: 15, grpCover: 5,
+         seg: { prospection: { 0: 2, 1: 3, 2: 3, 3: 8 }, mixte: { 0: 10, 1: 5, 2: 5, 3: 8 } },
+         densHi: 12, densLo: 4, isol: -10, caTop: 6 }
+  };
+  function llOK(p) { return isFinite(p[0]) && isFinite(p[1]) && (p[0] !== 0 || p[1] !== 0); }
+  function LL(p) { return { lat: p[0], lng: p[1] }; }
+  function detourKm(A, c, B, dAB) { return haversine(A, c) + haversine(c, B) - dAB; }
+  function projT(A, c, B) {   // position projetée le long de A->B (équirectangulaire local) : <0 derrière, >1 au-delà
+    var lat0 = (A.lat + B.lat) / 2 * Math.PI / 180, kx = 111.320 * Math.cos(lat0), ky = 110.574;
+    var ax = A.lng * kx, ay = A.lat * ky, bx = B.lng * kx, by = B.lat * ky, cx = c.lng * kx, cy = c.lat * ky;
+    var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1e-9;
+    return ((cx - ax) * dx + (cy - ay) * dy) / L2;
+  }
+  function segLatKm(A, c, B) {   // écart latéral (km) au corridor A->B
+    var t = Math.max(0, Math.min(1, projT(A, c, B)));
+    return haversine(c, { lat: A.lat + t * (B.lat - A.lat), lng: A.lng + t * (B.lng - A.lng) });
+  }
+  function tpSelect(plan, corridorMax) {   // une passe O(n) : bbox O(1) puis corridor/zone-ville
+    var A = plan.origin, B = plan.ville, dAB = haversine(A, B), out = [];
+    var minLat = Math.min(A.lat, B.lat) - TP.BBOX_PAD, maxLat = Math.max(A.lat, B.lat) + TP.BBOX_PAD;
+    var minLng = Math.min(A.lng, B.lng) - TP.BBOX_PAD, maxLng = Math.max(A.lng, B.lng) + TP.BBOX_PAD;
+    for (var i = 0; i < D.p.length; i++) {
+      var p = D.p[i]; if (!llOK(p) || plan.pinnedIds[p[13]]) continue;
+      if (p[0] < minLat || p[0] > maxLat || p[1] < minLng || p[1] > maxLng) continue;
+      if (plan.commFocus && D.comm[p[5]] !== plan.commFocus) continue;
+      if ((D.seg[p[4]] || '').indexOf('Client') === 0 && !plan.incClients) continue;
+      var c = LL(p), dVille = haversine(c, B), det = detourKm(A, c, B, dAB), nearV = dVille <= TP.NEAR_VILLE;
+      if (!nearV && det > corridorMax) continue;
+      if (!nearV) { var t = projT(A, c, B); if (t < TP.T_LO || t > TP.T_HI) continue; }
+      out.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: p[12] || 0, detour: det, latKm: segLatKm(A, c, B), dVille: dVille, dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] });
+    }
+    return out;
+  }
+  function tpDensity(cand) {
+    for (var a = 0; a < cand.length; a++) { var n4 = 0, n6 = 0;
+      for (var b = 0; b < cand.length; b++) { if (a === b) continue; var d = haversine(cand[a].ref, cand[b].ref); if (d < 4) n4++; if (d < 6) n6++; }
+      cand[a].dens = n4 >= 3 ? TP.W.densHi : (n4 >= 1 ? TP.W.densLo : (n6 === 0 ? TP.W.isol : 0));
+    }
+  }
+  function tpScore(c, plan, caMax, firstOfGrp) {   // minutes-équivalent, + haut = mieux
+    var s = -TP.W.detourMin * (c.detour * 1.30 * (60 / 38)) - TP.W.latKm * c.latKm;
+    if (plan.grpTargets[c.grp]) { s += TP.W.grpTarget; if (!firstOfGrp[c.grp]) s += TP.W.grpCover; }
+    s += (TP.W.seg[plan.segMode] || TP.W.seg.mixte)[c.seg] || 0;
+    s += c.dens;
+    if (caMax > 0 && c.ca >= 0.75 * caMax) s += TP.W.caTop;
+    return s;
+  }
+  function tpStop(c) { return { ref: c.ref, id: c.id, seg: c.seg, grp: c.grp, rdv: null, rdvStr: '', name: c.name, ville: c.ville, cp: c.cp, tel: c.tel }; }
+  function tpInsert(seq, stop) {   // insertion la moins chère (jamais entre 2 ancres RDV) ; à coût égal, position la + basse
+    var best = -1, bestCost = Infinity;
+    for (var k = 0; k < seq.length - 1; k++) {
+      var a = seq[k], b = seq[k + 1]; if (a.rdv != null && b.rdv != null) continue;
+      var cost = travelMin(a.ref, stop.ref) + travelMin(stop.ref, b.ref) - travelMin(a.ref, b.ref);
+      if (cost < bestCost - 1e-9) { bestCost = cost; best = k + 1; }
+    }
+    if (best < 0) return null;
+    var out = seq.slice(); out.splice(best, 0, stop); return out;
+  }
+  function tpSvc(s) { return s.rdv != null ? 45 : (TP_SERV[s.seg != null ? s.seg : 3] != null ? TP_SERV[s.seg != null ? s.seg : 3] : 12); }
+  function tpSimulate(seq, plan) {   // horaires + retards (fenêtres RDV)
+    var t = plan.t0, lateness = 0, timeline = [];
+    for (var k = 0; k < seq.length; k++) {
+      if (k > 0) t += travelMin(seq[k - 1].ref, seq[k].ref);
+      var s = seq[k];
+      if (s.rdv != null) { if (t > s.rdvEnd) lateness += (t - s.rdvEnd); if (t < s.rdv - TP.RDV_MARGIN) t = s.rdv - TP.RDV_MARGIN; }
+      timeline.push({ arr: t, s: s });
+      if (!s.isOrigin) t += tpSvc(s);
+    }
+    var dur = t - plan.t0;
+    return { ok: lateness === 0 && dur <= TP.DAY_MIN - TP.SAFETY, lateness: lateness, endT: t, dur: dur, timeline: timeline };
+  }
+  function tpCost(seq, plan) { var s = tpSimulate(seq, plan); return s.dur + 60000 * s.lateness; }   // retard >> durée
+  function tpGreedy(seq, cand, plan) {
+    var caMax = 0, i; for (i = 0; i < cand.length; i++) if (cand[i].ca > caMax) caMax = cand[i].ca;
+    tpDensity(cand);
+    var count = {}, firstOfGrp = {}, chosen = {};
+    for (i = 0; i < seq.length; i++) { var s = seq[i]; if (s.isOrigin) continue; chosen[s.id] = 1; if (s.grp != null) { count[s.grp] = (count[s.grp] || 0) + 1; firstOfGrp[s.grp] = 1; } }
+    function nVisits() { var n = 0; for (var x = 0; x < seq.length; x++) if (!seq[x].isOrigin) n++; return n; }
+    // (a) quota minimal par groupement ciblé (en tenant compte des imposés déjà présents)
+    for (var g in plan.grpTargets) { g = +g;
+      var need = (plan.grpQuota[g] ? plan.grpQuota[g].min : 1) - (count[g] || 0); if (need <= 0) continue;
+      var pool = cand.filter(function (c) { return c.grp === g && !chosen[c.id]; })
+        .sort(function (x, y) { return tpScore(y, plan, caMax, firstOfGrp) - tpScore(x, plan, caMax, firstOfGrp) || x.id - y.id; });
+      for (var j = 0; j < need && j < pool.length; j++) {
+        var c0 = pool[j]; chosen[c0.id] = 1; var tr0 = tpInsert(seq, tpStop(c0));
+        if (tr0 && tpSimulate(tr0, plan).ok) { seq = tr0; count[g] = (count[g] || 0) + 1; firstOfGrp[g] = 1; }
+      }
+    }
+    // (b) complétion : meilleur (score - coût réel d'insertion en minutes) jusqu'à nWanted
+    var guard = cand.length + 5;
+    while (nVisits() < plan.nWanted && guard-- > 0) {
+      var best = null, bestSc = -Infinity, baseCost = tpCost(seq, plan);
+      for (i = 0; i < cand.length; i++) { var c = cand[i]; if (chosen[c.id]) continue;
+        var qmax = (plan.grpQuota[c.grp] ? plan.grpQuota[c.grp].max : Infinity); if ((count[c.grp] || 0) >= qmax) continue;
+        var trial = tpInsert(seq, tpStop(c)); if (!trial) continue;
+        var sc = tpScore(c, plan, caMax, firstOfGrp) - (tpCost(trial, plan) - baseCost);
+        if (sc > bestSc || (sc === bestSc && best && c.id < best.id)) { bestSc = sc; best = c; }
+      }
+      if (!best) break;
+      chosen[best.id] = 1; var tr = tpInsert(seq, tpStop(best));
+      if (tr && tpSimulate(tr, plan).ok) { seq = tr; count[best.grp] = (count[best.grp] || 0) + 1; firstOfGrp[best.grp] = 1; }
+    }
+    return seq;
+  }
+  function tpReorder(stops, ordRefs) {   // remap refs ordonnées -> objets stop (par identité de ref)
+    var used = new Array(stops.length), res = [], r, i;
+    for (r = 0; r < ordRefs.length; r++) { var rf = ordRefs[r], bi = -1;
+      for (i = 0; i < stops.length; i++) { if (used[i]) continue; if (stops[i].ref === rf || (stops[i].ref.lat === rf.lat && stops[i].ref.lng === rf.lng)) { bi = i; break; } }
+      if (bi >= 0) { used[bi] = 1; res.push(stops[bi]); }
+    }
+    for (i = 0; i < stops.length; i++) if (!used[i]) res.push(stops[i]);
+    return res;
+  }
+  function tpOptimize(seq, plan) {
+    var fixed = {}, i; for (i = 0; i < seq.length; i++) if (seq[i].isOrigin || seq[i].rdv != null) fixed[i] = 1;
+    var a = 0;   // 2-opt par tronçon libre entre ancres, accepté seulement si le coût ne se dégrade pas
+    for (i = 1; i < seq.length; i++) {
+      if (fixed[i]) {
+        if (i - a > 2) {
+          var mid = seq.slice(a + 1, i), head = seq[a].ref, tail = seq[i].ref;
+          var ordRefs = twoOpt(nearestOrder(mid.map(function (s) { return s.ref; }), head), head, tail);
+          var trial = seq.slice(0, a + 1).concat(tpReorder(mid, ordRefs), seq.slice(i));
+          if (tpCost(trial, plan) <= tpCost(seq, plan) + 1e-6) seq = trial;
+        }
+        a = i;
+      }
+    }
+    for (var len = 1; len <= 2; len++) {   // or-opt : déplacer 1-2 arrêts libres si le coût baisse
+      for (i = 1; i < seq.length - len; i++) {
+        var slc = seq.slice(i, i + len), anyFixed = false, z;
+        for (z = 0; z < slc.length; z++) if (slc[z].isOrigin || slc[z].rdv != null) anyFixed = true;
+        if (anyFixed) continue;
+        var rest = seq.slice(0, i).concat(seq.slice(i + len)), bestSeq = seq, bestC = tpCost(seq, plan);
+        for (var jj = 1; jj < rest.length; jj++) {
+          if (rest[jj - 1].rdv != null && rest[jj].rdv != null) continue;
+          var tr2 = rest.slice(0, jj).concat(slc, rest.slice(jj)), cc = tpCost(tr2, plan);
+          if (cc < bestC - 1e-6) { bestC = cc; bestSeq = tr2; }
+        }
+        seq = bestSeq;
+      }
+    }
+    return seq;
+  }
+  function tpRepair(seq, plan) {   // si RDV raté / journée trop longue : retirer l'optionnel le plus coûteux
+    var sim = tpSimulate(seq, plan), guard = seq.length + 1;
+    while (!sim.ok && guard-- > 0) {
+      var at = -1, k; for (k = 0; k < sim.timeline.length; k++) { var it = sim.timeline[k]; if (it.s.rdv != null && it.arr > it.s.rdvEnd) { at = k; break; } }
+      var upto = at < 0 ? seq.length : at, victim = -1, worst = -1;
+      for (k = 1; k < upto && k + 1 < seq.length; k++) { var s = seq[k]; if (s.isOrigin || s.rdv != null || s.pinned) continue;
+        var cc2 = travelMin(seq[k - 1].ref, s.ref) + travelMin(s.ref, seq[k + 1].ref) - travelMin(seq[k - 1].ref, seq[k + 1].ref);
+        if (cc2 > worst) { worst = cc2; victim = k; }
+      }
+      if (victim < 0) { for (k = seq.length - 2; k >= 1; k--) { if (!seq[k].isOrigin && seq[k].rdv == null && !seq[k].pinned) { victim = k; break; } } }
+      if (victim < 0) break;
+      seq.splice(victim, 1); sim = tpSimulate(seq, plan);
+    }
+    return { seq: seq, sim: sim };
+  }
+  function tpPlan(plan) {
+    var corridorMax = TP.CORRIDOR_MAX, cand = tpSelect(plan, corridorMax);
+    while (cand.length < Math.max(plan.nWanted * 3, 12) && corridorMax < 60) { corridorMax *= 1.6; cand = tpSelect(plan, corridorMax); }
+    if (!cand.length) {   // repli radial autour de la ville (désert / home≈ville)
+      var B = plan.ville, all = [], i;
+      for (i = 0; i < D.p.length; i++) { var p = D.p[i]; if (!llOK(p) || plan.pinnedIds[p[13]]) continue;
+        if (plan.commFocus && D.comm[p[5]] !== plan.commFocus) continue;
+        if ((D.seg[p[4]] || '').indexOf('Client') === 0 && !plan.incClients) continue;
+        var c = LL(p); all.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: p[12] || 0, detour: 2 * haversine(c, B), latKm: 0, dVille: haversine(c, B), dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] }); }
+      all.sort(function (x, y) { return x.dVille - y.dVille || x.id - y.id; }); cand = all.slice(0, TP.K_SHORT);
+    } else {   // shortlist double : proches de la ville + faibles détours (prospecter la ville ET rester sur l'axe)
+      var byDet = cand.slice().sort(function (x, y) { return x.detour - y.detour || x.id - y.id; });
+      var byVil = cand.slice().sort(function (x, y) { return x.dVille - y.dVille || x.id - y.id; });
+      var seen = {}, merged = [], q;
+      for (q = 0; merged.length < TP.K_SHORT && (q < byDet.length || q < byVil.length); q++) {
+        if (q < byVil.length && !seen[byVil[q].id]) { seen[byVil[q].id] = 1; merged.push(byVil[q]); }
+        if (merged.length < TP.K_SHORT && q < byDet.length && !seen[byDet[q].id]) { seen[byDet[q].id] = 1; merged.push(byDet[q]); }
+      }
+      cand = merged;
+    }
+    var origin = { isOrigin: true, ref: { lat: plan.origin.lat, lng: plan.origin.lng }, id: -1 };
+    var anchors = plan.pinned.filter(function (s) { return s.rdv != null; }).sort(function (x, y) { return x.rdv - y.rdv || (x.id > y.id ? 1 : -1); });
+    var freePin = plan.pinned.filter(function (s) { return s.rdv == null; });
+    var seq = [origin].concat(anchors);
+    for (var f = 0; f < freePin.length; f++) { var tr = tpInsert(seq, freePin[f]); if (tr) seq = tr; }
+    seq = tpGreedy(seq, cand, plan);
+    seq = tpOptimize(seq, plan);
+    return tpRepair(seq, plan);
+  }
+  function parseGrpTargets(str) {   // "Giphar, Aprium" -> { grpIdx: true }
+    var set = {}; if (!str) return set;
+    str.split(',').forEach(function (tk) { tk = norm(tk); if (!tk) return;
+      for (var g = 0; g < D.grp.length; g++) { var gn = norm(D.grp[g]); if (gn && gn !== '—' && (gn === tk || gn.indexOf(tk) >= 0)) set[g] = true; }
+    });
+    return set;
+  }
+
   V2.carteBuildTour = function () {
     if (!D || !D.p) return;
-    var addr = ((document.getElementById('cn-tgen-addr') || {}).value || '').trim();       // adresse de départ perso
-    var zone = ((document.getElementById('cn-tgen-start') || {}).value || '').trim();      // ville / pharmacie à prospecter
-    var count = parseInt((document.getElementById('cn-tgen-n') || {}).value, 10) || 8;
-    count = Math.max(2, Math.min(12, count));
+    var addr = ((document.getElementById('cn-tgen-addr') || {}).value || '').trim();
+    var zone = ((document.getElementById('cn-tgen-start') || {}).value || '').trim();
+    var count = parseInt((document.getElementById('cn-tgen-n') || {}).value, 10) || 8; count = Math.max(2, Math.min(12, count));
     var incClients = true; var cb = document.getElementById('cn-tgen-cli'); if (cb) incClients = cb.checked;
+    var grpTargets = parseGrpTargets(((document.getElementById('cn-tgen-grp') || {}).value || '').trim());
     var tv = (document.getElementById('cn-tgen-time') || {}).value; if (tv) _startTime = tv;
 
-    var build = function (depotPt) {   // depotPt = adresse géocodée (ou null)
-      var startIdx = -1, center = null;
-      if (zone) { var r = resolveStart(zone); if (!r) { if (V2.toast) V2.toast('« ' + zone + ' » introuvable (ville ou pharmacie)'); return; } center = r.center; startIdx = r.startIdx; }
-      else if (depotPt) center = { lat: depotPt.lat, lng: depotPt.lng };
-      else if (map) { var c = map.getCenter(); center = { lat: c.lat, lng: c.lng, name: 'centre de la carte' }; }
-      if (!center) { if (V2.toast) V2.toast('Indique une adresse, une ville ou une pharmacie'); return; }
-      var cand = [], i;
-      for (i = 0; i < D.p.length; i++) {
-        var p = D.p[i]; if (!p[0] || !p[1] || i === startIdx) continue;
-        if (commFocus && D.comm[p[5]] !== commFocus) continue;   // respecte le secteur commercial si filtré
-        if (isClient(p) && !incClients) continue;
-        cand.push({ p: p, d: haversine(center, { lat: p[0], lng: p[1] }) });
-      }
-      cand.sort(function (a, b) { return a.d - b.d; });
-      var stops = [], used = {};
-      if (startIdx >= 0) { stops.push(mkStop(D.p[startIdx])); used[keyOf(D.p[startIdx])] = 1; }
-      for (var j = 0; j < cand.length && stops.length < count; j++) { var k = keyOf(cand[j].p); if (used[k]) continue; used[k] = 1; stops.push(mkStop(cand[j].p)); }
-      if (stops.length < 2) { if (V2.toast) V2.toast('Pas assez de pharmacies autour de ce point — élargis la zone'); return; }
-      if (depotPt) {                          // départ = ton adresse (dépôt)
-        depot = { n: depotPt.n || 'Mon départ', lat: depotPt.lat, lng: depotPt.lng };
-        tour = twoOpt(nearestOrder(stops, depot), depot, null);
-      } else if (startIdx >= 0) {             // départ = pharmacie : 1er arrêt, pas de dépôt
-        depot = null; var head = stops[0];
-        tour = [head].concat(twoOpt(nearestOrder(stops.slice(1), head), head, null));
-      } else {                                // départ = ville : centre = dépôt d'ancrage
-        depot = { n: 'Départ · ' + (center.name || 'ville'), lat: center.lat, lng: center.lng };
-        tour = twoOpt(nearestOrder(stops, depot), depot, null);
-      }
-      try { depot ? localStorage.setItem('jarvis_depot_v1', JSON.stringify(depot)) : localStorage.removeItem('jarvis_depot_v1'); } catch (e) {}
+    var run = function (originPt) {
+      var villeCenter = null, zoneName = '';
+      if (zone) { var r = resolveStart(zone); if (!r) { if (V2.toast) V2.toast('« ' + zone + ' » introuvable (ville ou pharmacie)'); return; } villeCenter = r.center; zoneName = zone; }
+      if (!originPt && !villeCenter && map) { var c = map.getCenter(); originPt = { n: 'centre de la carte', lat: c.lat, lng: c.lng }; }
+      var origin = originPt || villeCenter, ville = villeCenter || origin;
+      if (!origin || !ville) { if (V2.toast) V2.toast('Indique une adresse, une ville ou une pharmacie'); return; }
+      var pinned = tour.map(function (s) { var rm = parseHM(s.rdv);
+        return { ref: { lat: s.lat, lng: s.lng }, id: (s.id != null ? s.id : s.k), seg: (s.sg != null ? s.sg : 3), grp: (s.gp != null ? s.gp : null),
+          rdv: rm, rdvEnd: rm != null ? rm + 10 : null, pinned: true, rdvStr: s.rdv || '', name: s.n, ville: s.v, cp: s.c, tel: s.t }; });
+      var pinnedIds = {}; pinned.forEach(function (s) { if (s.id != null) pinnedIds[s.id] = 1; });
+      var t0 = parseHM(_startTime); if (t0 == null) t0 = 540;
+      var plan = { origin: { lat: origin.lat, lng: origin.lng }, ville: { lat: ville.lat, lng: ville.lng }, t0: t0,
+        pinned: pinned, pinnedIds: pinnedIds, grpTargets: grpTargets, grpQuota: {}, segMode: incClients ? 'mixte' : 'prospection',
+        nWanted: count, incClients: incClients, commFocus: commFocus || '' };
+      var res = tpPlan(plan), stops = res.seq.filter(function (s) { return !s.isOrigin; });
+      if (stops.length < 1) { if (V2.toast) V2.toast('Pas assez de pharmacies — élargis la zone ou change de ville'); return; }
+      tour = stops.map(function (s) { return { k: (s.name || '') + '|' + (s.cp || ''), n: s.name, v: s.ville, c: s.cp, t: s.tel, lat: s.ref.lat, lng: s.ref.lng, id: s.id, sg: s.seg, gp: s.grp, rdv: s.rdvStr || '' }; });
+      depot = { n: (originPt ? (originPt.n || 'Mon départ') : ('Départ · ' + (zoneName || 'zone'))), lat: origin.lat, lng: origin.lng };
+      try { localStorage.setItem('jarvis_depot_v1', JSON.stringify(depot)); } catch (e) {}
       saveTour(); updateTourBar(); rebuild(); drawTourLine(); renderTourPanel(); V2.carteTourFit();
-      if (V2.toast) V2.toast(tour.length + ' pharmacies · ' + Math.round(routeKm()) + ' km');
+      if (V2.toast) V2.toast(tour.length + ' pharmacies · ' + Math.round(routeKm()) + ' km' + (res.sim && !res.sim.ok ? ' · ⚠ RDV serré' : ''));
     };
 
     if (addr) {
-      if (V2.toast) V2.toast('Localisation de « ' + addr +' »…');
-      geocodeAddress(addr, function (pt) {
-        if (!pt) { if (V2.toast) V2.toast('Adresse « ' + addr + ' » introuvable'); return; }
-        build({ n: pt.label || addr, lat: pt.lat, lng: pt.lng });
-      });
-    } else build(null);
+      if (V2.toast) V2.toast('Localisation de « ' + addr + ' »…');
+      geocodeAddress(addr, function (pt) { if (!pt) { if (V2.toast) V2.toast('Adresse « ' + addr + ' » introuvable'); return; } run({ n: pt.label || addr, lat: pt.lat, lng: pt.lng }); });
+    } else run(null);
   };
   // Depuis le popup d'une pharmacie : « partir d'ici » compose la tournée autour d'elle.
   V2.carteTourFrom = function (i) {
@@ -655,19 +850,22 @@
   };
   function tgenHtml() {
     var opts = ''; for (var n = 6; n <= 12; n++) opts += '<option value="' + n + '"' + (n === 8 ? ' selected' : '') + '>' + n + '</option>';
-    return '<div class="cn-tgen">' +
+    var grpDl = '<datalist id="cn-grp-datalist">' + (D && D.grp ? D.grp.filter(function (g) { return g && g !== '—'; }).map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') : '') + '</datalist>';
+    return grpDl + '<div class="cn-tgen">' +
       '<div class="cn-tgen-t">🧭 Composer ma tournée du jour</div>' +
       '<label class="cn-tgen-fld"><span>Je pars de (mon adresse)</span>' +
         '<div class="cn-tgen-2"><input id="cn-tgen-addr" class="cn-tgen-in" type="search" placeholder="ex. 12 rue Nationale, Nantes" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.carteBuildTour();}">' +
         '<input id="cn-tgen-time" class="cn-tgen-time" type="time" value="' + esc(_startTime) + '" title="Heure de départ"></div></label>' +
-      '<label class="cn-tgen-fld"><span>Zone à prospecter (ville ou pharmacie)</span>' +
+      '<label class="cn-tgen-fld"><span>Ville à prospecter (ou pharmacie)</span>' +
         '<input id="cn-tgen-start" class="cn-tgen-in" type="search" placeholder="ex. Angers — vide = autour de mon départ" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.carteBuildTour();}"></label>' +
+      '<label class="cn-tgen-fld"><span>Groupements à cibler (optionnel)</span>' +
+        '<input id="cn-tgen-grp" class="cn-tgen-in" list="cn-grp-datalist" placeholder="ex. Giphar, Aprium, Mediprix" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.carteBuildTour();}"></label>' +
       '<div class="cn-tgen-row">' +
         '<label class="cn-tgen-lb">Visites&nbsp;<select id="cn-tgen-n" class="cn-tgen-sel">' + opts + '</select></label>' +
         '<label class="cn-tgen-chk"><input type="checkbox" id="cn-tgen-cli" checked> Inclure mes clients</label>' +
       '</div>' +
       '<button class="v2-btn v2-btn-primary cn-tgen-go" onclick="V2.carteBuildTour()">Générer la tournée</button>' +
-      '<div class="cn-tgen-h">6 à 12 pharmacies proches, ordre le plus court. Ajoute une heure de RDV sur un arrêt ci-dessous.</div>' +
+      '<div class="cn-tgen-h">Optimise <b>sur les axes</b> (pharmacies sur le trajet), priorise tes groupements ciblés, et respecte les RDV. Astuce : ajoute d\'abord un client/une pharmacie « + Ajouter à ma tournée » → il sera gardé comme <b>arrêt imposé</b>.</div>' +
     '</div>';
   }
   function renderTourPanel() {
