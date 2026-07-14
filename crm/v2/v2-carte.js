@@ -210,6 +210,7 @@
     if (useCluster) cluster.addLayers(arr); else for (var a = 0; a < arr.length; a++) cluster.addLayer(arr[a]);
     map.addLayer(cluster);
     if (cn) cn.textContent = markers.length.toLocaleString('fr') + (bulles ? ' officines avec CA' : ' pharmacies');
+    renderDock();   // dock (liste dockée) synchronisé avec les filtres de la carte
   }
   function recolor() { if (markers) for (var k = 0; k < markers.length; k++) markers[k].setStyle(markerStyle(D.p[markers[k]._pi], markers[k]._pi)); }
 
@@ -243,7 +244,8 @@
           layer.on('click', function () {   // drill-down : filtre + liste du département
             deptFocus = depCode(f.properties.code);
             var ds = document.getElementById('cn-deptsel'); if (ds) ds.value = deptFocus;
-            if (document.getElementById('cn-listpanel')) renderListPanel(); else V2.carteListOpen();
+            renderLists();
+            var dk = document.getElementById('cn-dock'); if (!dk || !dk.offsetParent) V2.carteListOpen();   // dock masqué (mobile) → modale
             try { map.fitBounds(layer.getBounds().pad(0.1)); } catch (e) {}
           });
         }
@@ -1166,8 +1168,18 @@
       '.cn-ltags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}',
       '.cn-ladd{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ip-blue,#0057FF);font-size:16px;font-weight:800;cursor:pointer}',
       '.cn-ladd.in{background:var(--ip-blue,#0057FF);color:#fff;border-color:var(--ip-blue,#0057FF)}',
+      '.cn-lloc{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:14px;cursor:pointer}',
+      '.cn-lloc:hover{border-color:var(--ip-blue,#0057FF);color:var(--ip-blue,#0057FF)}',
       '.cn-pacts{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}',
       '.cn-pacts .v2-btn{flex:1 1 auto}',
+      // ── DOCK : liste toujours visible à droite de la carte (desktop) ──
+      '.cn-dock{width:324px;flex:none;display:flex;flex-direction:column;background:var(--card);border-left:1px solid var(--line);overflow:hidden}',
+      '.cn-dockhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}',
+      '.cn-dockhead b{font-size:14px;font-weight:800;color:var(--ip-ink)}.cn-dockhead small{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}',
+      '.cn-dock .cn-plist{padding:4px 0}',
+      '.cn-dock .cn-lrow{padding:9px 12px}',
+      '.cn-dock .cn-sortseg button{font-size:11.5px;padding:4px 9px}',
+      '@media(max-width:980px){.cn-dock{display:none}}',
     ].join('\n');
     document.head.appendChild(s);
   }
@@ -1281,6 +1293,7 @@
               '<button onclick="V2.carteTourOpen()">Voir / organiser</button></div>' +
             '<div class="cn-load" id="carte-load"><div class="v2-spinner"></div><div>Chargement de la carte nationale…</div></div>' +
           '</div>' +
+          '<aside class="cn-dock" id="cn-dock"></aside>' +
         '</div>';
       var load = document.getElementById('carte-load');
       ensureLeaflet(function (e) {
@@ -1315,14 +1328,14 @@
     ['all', 'clients', 'prospects'].forEach(function (k) { var b = document.getElementById('ct-' + k); if (b) b.classList.toggle('on', k === t); });
     rebuild();
   };
-  V2.carteComm = function (v) { commFocus = v || ''; rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); };
-  V2.carteGrp = function (v) { grpFocus = v || ''; rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); };
-  V2.carteDept = function (v) { deptFocus = v || ''; rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); };
+  V2.carteComm = function (v) { commFocus = v || ''; if (!zonesOn) rebuild(); renderLists(); };
+  V2.carteGrp = function (v) { grpFocus = v || ''; if (!zonesOn) rebuild(); renderLists(); };
+  V2.carteDept = function (v) { deptFocus = v || ''; if (!zonesOn) rebuild(); renderLists(); };
   var _searchTO = null;
   V2.carteSearch = function (v) {
     searchTerm = v || '';
     if (_searchTO) clearTimeout(_searchTO);
-    _searchTO = setTimeout(function () { rebuild(); if (document.getElementById('cn-listpanel')) renderListPanel(); }, 220);
+    _searchTO = setTimeout(function () { if (!zonesOn) rebuild(); renderLists(); }, 220);
   };
   // ── LISTE-DONNÉES : voir précisément noms + infos, filtrable, cliquable ──
   function filtered() { var out = []; if (!D) return out; for (var i = 0; i < D.p.length; i++) if (pass(D.p[i])) out.push(i); return out; }
@@ -1343,8 +1356,8 @@
     V2.carteListClose();
   };
   function statusLabel(p) { return D.seg[p[4]] || '—'; }
-  function renderListPanel() {
-    var el = document.getElementById('cn-listpanel'); if (!el) return;
+  // ── Cœur partagé : calcule la liste filtrée + triée (utilisé par le dock ET la modale) ──
+  function listComputed() {
     var ids = filtered(), total = ids.length;
     if (listSort === 'ca') ids.sort(function (a, b) { return caOf(D.p[b]) - caOf(D.p[a]); });
     else ids.sort(function (a, b) {   // par nom, mais les officines sans nom en base passent à la fin
@@ -1369,25 +1382,45 @@
             (p[9] ? '<span class="cn-tag">' + esc(p[9]) + '</span>' : '') +
           '</span>' +
         '</div>' +
+        '<button class="cn-lloc" onclick="V2.carteLocate(' + i + ')" title="Voir sur la carte">◎</button>' +
         '<button class="cn-ladd' + (inT ? ' in' : '') + '" onclick="V2.carteTour(' + i + ');V2.carteListRefreshRow(' + i + ')" title="Tournée">' + (inT ? '✓' : '+') + '</button>' +
       '</div>';
     }).join('') || '<div class="cn-tempty">Aucune pharmacie ne correspond.<br>Change les filtres ou la recherche.</div>';
     var more = remaining > 0 ? '<button class="cn-listmore" onclick="V2.carteListMore()">Afficher plus (' + remaining.toLocaleString('fr') + ' restantes)</button>' : '';
+    return { total: total, shown: shown, remaining: remaining, rows: rows, more: more };
+  }
+  function sortSegHtml() {
+    return '<span class="cn-sortlbl">Trier :</span><div class="cn-seg cn-sortseg"><button' + (listSort === 'nom' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'nom\')">Nom</button><button' + (listSort === 'ca' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'ca\')">CA</button></div>';
+  }
+  // Dock : liste toujours visible à côté de la carte (desktop) — pas de recherche propre (la barre latérale l'a déjà)
+  function renderDock() {
+    var el = document.getElementById('cn-dock'); if (!el || !D) return;
+    var sc = el.querySelector('.cn-plist'); var y = sc ? sc.scrollTop : 0;
+    var c = listComputed();
+    el.innerHTML = '<div class="cn-dockhead"><div><b>Officines</b><small>' + c.total.toLocaleString('fr') + (c.total > 1 ? ' résultats' : ' résultat') + (c.remaining > 0 ? ' · ' + c.shown.length.toLocaleString('fr') + ' affichés' : '') + '</small></div>' + sortSegHtml() + '</div>' +
+      '<div class="cn-plist">' + c.rows + c.more + '</div>';
+    var sc2 = el.querySelector('.cn-plist'); if (sc2) sc2.scrollTop = y;
+  }
+  function renderListPanel() {
+    var el = document.getElementById('cn-listpanel'); if (!el) return;
+    var c = listComputed();
     el.innerHTML = '<div class="cn-pdialog cn-listdlg" onclick="event.stopPropagation()">' +
-      '<div class="cn-phead"><div><b>Liste des pharmacies</b><small>' + total.toLocaleString('fr') + ' pharmacie' + (total > 1 ? 's' : '') + (remaining > 0 ? ' · ' + shown.length.toLocaleString('fr') + ' affichées' : '') + '</small></div>' +
+      '<div class="cn-phead"><div><b>Liste des pharmacies</b><small>' + c.total.toLocaleString('fr') + ' pharmacie' + (c.total > 1 ? 's' : '') + (c.remaining > 0 ? ' · ' + c.shown.length.toLocaleString('fr') + ' affichées' : '') + '</small></div>' +
         '<button class="cn-px" onclick="V2.carteListClose()">✕</button></div>' +
       '<div class="cn-prosbar"><input id="cn-search2" type="search" class="cn-search" style="flex:1" placeholder="Rechercher un nom, une ville, un CP…" value="' + esc(searchTerm) + '" oninput="V2.carteSearch(this.value);document.getElementById(\'cn-search\')&&(document.getElementById(\'cn-search\').value=this.value)">' +
-        '<span class="cn-sortlbl">Trier :</span><div class="cn-seg cn-sortseg"><button' + (listSort === 'nom' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'nom\')">Nom</button><button' + (listSort === 'ca' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'ca\')">CA</button></div></div>' +
-      '<div class="cn-plist">' + rows + more + '</div></div>';
+        sortSegHtml() + '</div>' +
+      '<div class="cn-plist">' + c.rows + c.more + '</div></div>';
   }
-  V2.carteListSort = function (s) { listSort = s; renderListPanel(); };
+  // Rafraîchit dock + modale d'un coup (chacun no-op si absent)
+  function renderLists() { renderDock(); renderListPanel(); }
+  V2.carteListSort = function (s) { listSort = s; renderLists(); };
   V2.carteListMore = function () {
     var el = document.getElementById('cn-listpanel'), sc = el && el.querySelector('.cn-plist');
     var y = sc ? sc.scrollTop : 0;
-    listShown += LIST_STEP; renderListPanel();
+    listShown += LIST_STEP; renderLists();
     var sc2 = el && el.querySelector('.cn-plist'); if (sc2) sc2.scrollTop = y;   // garder la position de lecture
   };
-  V2.carteListRefreshRow = function () { if (document.getElementById('cn-listpanel')) renderListPanel(); };
+  V2.carteListRefreshRow = function () { renderLists(); };
 
   // ── FICHE OFFICINE : détail complet (CA mensuel, top produits, potentiel) ──
   var DETAIL = null;
